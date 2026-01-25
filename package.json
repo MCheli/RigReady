@@ -1,0 +1,55 @@
+{
+  "name": "sim-manager",
+  "version": "1.0.0",
+  "description": "Desktop tool for managing simulation rig software, hardware, and configurations",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "powershell -Command \"Copy-Item -Path 'src/renderer/*.html' -Destination 'dist/renderer/' -Force; Copy-Item -Path 'src/renderer/*.css' -Destination 'dist/renderer/' -Force\"",
+    "start": "npm run build && electron .",
+    "dev": "tsc && electron .",
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\"",
+    "rebuild": "npm run clean && npm run build",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MCheli/sim-manager.git"
+  },
+  "keywords": [
+    "simulation",
+    "flight-sim",
+    "dcs",
+    "hotas",
+    "controller"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MCheli/sim-manager/issues"
+  },
+  "homepage": "https://github.com/MCheli/sim-manager#readme",
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "electron": "^40.0.0",
+    "electron-builder": "^26.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "com.simmanager.app",
+    "productName": "Sim Manager",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ]
+  }
+}
