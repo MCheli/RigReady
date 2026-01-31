@@ -391,6 +391,35 @@ export interface PreflightResult {
 }
 
 // =============================================================================
+// Update Types
+// =============================================================================
+
+export type UpdateState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error';
+
+export interface UpdateDownloadProgress {
+  percent: number;
+  bytesPerSecond: number;
+  transferred: number;
+  total: number;
+}
+
+export interface UpdateStatus {
+  state: UpdateState;
+  version: string;
+  availableVersion?: string;
+  releaseNotes?: string;
+  downloadProgress?: UpdateDownloadProgress;
+  error?: string;
+}
+
+// =============================================================================
 // IPC Types (Future - for type-safe IPC)
 // =============================================================================
 

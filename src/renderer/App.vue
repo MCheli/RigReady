@@ -37,6 +37,7 @@ const toastIcon = computed(() => {
   }
 });
 const appStatus = ref<'scanning' | 'ready' | 'error'>('scanning');
+const appVersion = ref('v1.0.0');
 
 const navItems = [
   { id: 'launch', title: 'Launch', icon: 'mdi-rocket-launch', shortcut: '1' },
@@ -105,6 +106,14 @@ onMounted(async () => {
   setTimeout(() => {
     appStatus.value = 'ready';
   }, 1000);
+
+  // Get app version
+  try {
+    const version = await window.rigReady.updates.getVersion();
+    appVersion.value = `v${version}`;
+  } catch {
+    // Keep default version if failed
+  }
 });
 </script>
 
@@ -158,7 +167,7 @@ onMounted(async () => {
 
         <!-- Footer -->
         <div class="pa-3 text-center text-caption text-medium-emphasis">
-          <div>v1.0.0</div>
+          <div>{{ appVersion }}</div>
           <a
             href="https://www.markcheli.com"
             target="_blank"

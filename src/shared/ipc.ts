@@ -26,6 +26,7 @@ import type {
   SimulatorScanResult,
   SimulatorPath,
   AppSettings,
+  UpdateStatus,
 } from './types';
 
 // =============================================================================
@@ -200,6 +201,13 @@ export interface IpcChannels {
   'settings:autoScanSimulator': { args: [simulator: Simulator]; return: SimulatorPath | null };
   'settings:autoScanAllSimulators': { args: []; return: SimulatorPath[] };
   'settings:verifySimulatorPath': { args: [simulator: Simulator]; return: boolean };
+
+  // Update channels
+  'update:check': { args: []; return: boolean };
+  'update:download': { args: []; return: boolean };
+  'update:install': { args: []; return: void };
+  'update:getStatus': { args: []; return: UpdateStatus };
+  'update:getVersion': { args: []; return: string };
 }
 
 /**
@@ -216,6 +224,7 @@ export interface IpcOnChannels {
   'hid:inputStates': { data: HIDInputState[] };
   'pygame:inputStates': { data: PygameInputState[] };
   'pygame:devicesChanged': { data: PygameDevice[] };
+  'update:status': { data: UpdateStatus };
 }
 
 // =============================================================================
@@ -353,6 +362,15 @@ export interface RigReadyApi {
     autoScanSimulator: (simulator: Simulator) => Promise<SimulatorPath | null>;
     autoScanAllSimulators: () => Promise<SimulatorPath[]>;
     verifySimulatorPath: (simulator: Simulator) => Promise<boolean>;
+  };
+
+  updates: {
+    check: () => Promise<boolean>;
+    download: () => Promise<boolean>;
+    install: () => Promise<void>;
+    getStatus: () => Promise<UpdateStatus>;
+    getVersion: () => Promise<string>;
+    onStatusChange: (callback: (status: UpdateStatus) => void) => void;
   };
 }
 

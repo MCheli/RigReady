@@ -22,6 +22,12 @@ const pathForm = ref({
   configPath: '',
 });
 
+// Update settings state
+const checkForUpdates = ref(true);
+const checkingUpdates = ref(false);
+const updateMessage = ref('');
+const updateMessageClass = ref('');
+
 // Computed
 const availableSimulators = computed(() => {
   return SIMULATORS.map((sim) => ({
@@ -119,9 +125,41 @@ function getSimulatorIcon(simulator: Simulator): string {
   }
 }
 
+async function updateCheckForUpdates(value: boolean) {
+  await window.rigReady.settings.update({ checkForUpdates: value });
+}
+
+async function checkForUpdatesNow() {
+  checkingUpdates.value = true;
+  updateMessage.value = '';
+
+  try {
+    const hasUpdate = await window.rigReady.updates.check();
+    if (hasUpdate) {
+      const status = await window.rigReady.updates.getStatus();
+      if (status.availableVersion) {
+        updateMessage.value = `Update available: v${status.availableVersion}`;
+        updateMessageClass.value = 'text-success';
+      }
+    } else {
+      updateMessage.value = 'You are running the latest version.';
+      updateMessageClass.value = 'text-medium-emphasis';
+    }
+  } catch {
+    updateMessage.value = 'Failed to check for updates.';
+    updateMessageClass.value = 'text-error';
+  } finally {
+    checkingUpdates.value = false;
+  }
+}
+
 onMounted(async () => {
   await settingsComposable.loadSettings();
   await loadDevices();
+
+  // Load the checkForUpdates setting
+  const settings = await window.rigReady.settings.get();
+  checkForUpdates.value = settings.checkForUpdates;
 });
 </script>
 
@@ -269,9 +307,28 @@ onMounted(async () => {
           <v-card-text>
             <v-switch label="Start with Windows" color="primary" hide-details disabled />
             <v-switch label="Minimize to tray" color="primary" hide-details disabled />
-            <v-switch label="Check for updates" color="primary" hide-details disabled />
+            <v-switch
+              v-model="checkForUpdates"
+              label="Check for updates on startup"
+              color="primary"
+              hide-details
+              @update:model-value="updateCheckForUpdates"
+            />
+            <v-btn
+              class="mt-4"
+              variant="outlined"
+              size="small"
+              :loading="checkingUpdates"
+              @click="checkForUpdatesNow"
+            >
+              <v-icon start>mdi-update</v-icon>
+              Check for Updates Now
+            </v-btn>
+            <div v-if="updateMessage" class="text-caption mt-2" :class="updateMessageClass">
+              {{ updateMessage }}
+            </div>
             <div class="text-caption text-medium-emphasis mt-4">
-              These settings will be available in a future update.
+              Start with Windows and Minimize to tray will be available in a future update.
             </div>
           </v-card-text>
         </v-card>

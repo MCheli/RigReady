@@ -11,6 +11,7 @@ import { gameLaunchService, type GameProfile } from './services/gameLaunchServic
 import { keybindingProfileService } from './services/keybindingProfileService';
 import { simulatorConfigService } from './services/simulatorConfigService';
 import { settingsService, type SimulatorPath } from './services/settingsService';
+import { updateService } from './services/updateService';
 import type {
   CommonAction,
   VehicleBinding,
@@ -607,6 +608,20 @@ app.whenReady().then(() => {
 
   createWindow();
   console.log('Main window created');
+
+  // Set up update service with main window
+  if (mainWindow) {
+    updateService.setMainWindow(mainWindow);
+  }
+
+  // Check for updates on startup (after 5 second delay)
+  const settings = settingsService.getSettings();
+  if (settings.checkForUpdates) {
+    setTimeout(() => {
+      console.log('Checking for updates...');
+      updateService.checkForUpdates();
+    }, 5000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

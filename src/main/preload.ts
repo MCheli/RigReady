@@ -11,6 +11,7 @@ import type {
   SimulatorPath,
   AppSettings,
   GameProfile,
+  UpdateStatus,
 } from '../shared/types';
 
 // Type-safe API exposed to renderer
@@ -165,6 +166,18 @@ const api: RigReadyApi = {
     autoScanAllSimulators: () => ipcRenderer.invoke('settings:autoScanAllSimulators'),
     verifySimulatorPath: (simulator: Simulator) =>
       ipcRenderer.invoke('settings:verifySimulatorPath', simulator),
+  },
+
+  // Auto-update service
+  updates: {
+    check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
+    install: () => ipcRenderer.invoke('update:install'),
+    getStatus: () => ipcRenderer.invoke('update:getStatus'),
+    getVersion: () => ipcRenderer.invoke('update:getVersion'),
+    onStatusChange: (callback: (status: UpdateStatus) => void) => {
+      ipcRenderer.on('update:status', (_event, status) => callback(status));
+    },
   },
 };
 

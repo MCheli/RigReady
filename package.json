@@ -13,6 +13,11 @@
     "rebuild": "npm run clean && npm run build",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
+    "dist:unsigned": "npm run build && electron-builder --win --publish never",
+    "dist:publish": "npm run build && electron-builder --win --publish always",
+    "version:patch": "npm version patch && git push && git push --tags",
+    "version:minor": "npm version minor && git push && git push --tags",
+    "version:major": "npm version major && git push && git push --tags",
     "kill": "powershell -Command \"Get-Process -Name 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force\"",
     "logs": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.rigready\\app.log' -Tail 50\"",
     "logs:watch": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.rigready\\app.log' -Wait -Tail 20\"",
@@ -90,20 +95,59 @@
   "build": {
     "appId": "io.rigready.app",
     "productName": "RigReady",
+    "copyright": "Copyright (c) 2026 Mark Cheli",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "RigReady",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
     },
     "files": [
       "dist/**/*",
       "package.json"
-    ]
+    ],
+    "extraResources": [
+      {
+        "from": "python",
+        "to": "python",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "MCheli",
+      "repo": "RigReady",
+      "releaseType": "release"
+    }
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "electron-updater": "^6.7.3",
     "node-hid": "^3.2.0",
     "vue": "^3.5.27",
     "vuetify": "^3.11.8"
