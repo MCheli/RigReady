@@ -66,7 +66,7 @@ export class PreflightService {
   private config: PreflightConfig;
 
   constructor() {
-    this.configDir = path.join(process.env.USERPROFILE || '', '.sim-manager');
+    this.configDir = path.join(process.env.USERPROFILE || '', '.rigready');
     this.configPath = path.join(this.configDir, 'preflight-config.json');
     this.config = this.loadConfig();
   }

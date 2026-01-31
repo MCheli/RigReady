@@ -156,7 +156,7 @@ class SettingsService {
   private settings: AppSettings;
 
   constructor() {
-    const configDir = path.join(os.homedir(), '.sim-manager');
+    const configDir = path.join(os.homedir(), '.rigready');
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
     }

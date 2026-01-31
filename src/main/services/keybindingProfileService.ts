@@ -106,7 +106,7 @@ export class KeybindingProfileService {
   private profiles: Map<string, KeybindingProfile> = new Map();
 
   constructor() {
-    this.configDir = path.join(process.env.USERPROFILE || '', '.sim-manager');
+    this.configDir = path.join(process.env.USERPROFILE || '', '.rigready');
     this.profilesDir = path.join(this.configDir, 'keybinding-profiles');
     this.ensureDirectories();
     this.loadProfiles();

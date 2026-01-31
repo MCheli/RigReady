@@ -5,6 +5,16 @@ import * as path from 'path';
 
 const execAsync = promisify(exec);
 
+// Raw data structure from PowerShell display query
+interface RawDisplayData {
+  Name?: string;
+  Width?: number;
+  Height?: number;
+  X?: number;
+  Y?: number;
+  IsPrimary?: boolean;
+}
+
 export interface DisplayInfo {
   name: string;
   devicePath: string;
@@ -29,11 +39,7 @@ export class DisplayManager {
   private savedConfigurations: DisplayConfiguration[] = [];
 
   constructor() {
-    this.configPath = path.join(
-      process.env.USERPROFILE || '',
-      '.sim-manager',
-      'display-configs.json'
-    );
+    this.configPath = path.join(process.env.USERPROFILE || '', '.rigready', 'display-configs.json');
     this.loadConfigurations();
   }
 
@@ -74,10 +80,10 @@ export class DisplayManager {
         return [];
       }
 
-      const rawDisplays = JSON.parse(stdout);
+      const rawDisplays = JSON.parse(stdout) as RawDisplayData | RawDisplayData[];
       const displays: DisplayInfo[] = (
         Array.isArray(rawDisplays) ? rawDisplays : [rawDisplays]
-      ).map((d: any, index: number) => ({
+      ).map((d, index) => ({
         name: d.Name || `Display ${index + 1}`,
         devicePath: d.Name || '',
         width: d.Width || 0,

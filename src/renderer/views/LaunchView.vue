@@ -6,7 +6,8 @@ import {
   type GameProfile,
   type ProcessCheckResult,
   type LaunchResult,
-} from '../composables/useSimManager';
+} from '../composables/useRigReady';
+import PageHeader from '../components/PageHeader.vue';
 
 const games = useGames();
 const process = useProcess();
@@ -18,6 +19,8 @@ const launchStatus = ref<LaunchResult | null>(null);
 const showLaunchDialog = ref(false);
 const runningProcesses = ref<ProcessCheckResult[]>([]);
 const isChecking = ref(false);
+const isDetecting = ref(false);
+const showDetectedDialog = ref(false);
 
 // Form data for profile editing
 const profileForm = ref({
@@ -156,26 +159,58 @@ function isProcessRunning(processName: string): boolean {
     (p) => p.processName.toLowerCase() === processName.toLowerCase() && p.running
   );
 }
+
+// Auto-detect installed games
+async function autoDetectGames() {
+  isDetecting.value = true;
+  try {
+    await games.detectGames();
+    if (games.detectedGames.value.length > 0) {
+      showDetectedDialog.value = true;
+    } else {
+      alert('No supported games were detected on this system.');
+    }
+  } finally {
+    isDetecting.value = false;
+  }
+}
+
+// Create profile from detected game
+async function createFromDetected(detected: { name: string; path: string }) {
+  const profile: GameProfile = {
+    id: crypto.randomUUID(),
+    name: detected.name,
+    executablePath: detected.path,
+    arguments: [],
+    preLaunchProcesses: [],
+    autoStartProcesses: [],
+  };
+  await games.saveProfile(profile);
+  showDetectedDialog.value = false;
+}
 </script>
 
 <template>
   <div class="launch-view">
-    <div class="d-flex justify-space-between align-center mb-6">
-      <h1 class="text-h4 font-weight-bold">Launch Center</h1>
-      <div class="d-flex gap-2">
+    <PageHeader title="Launch Center">
+      <template #actions>
         <v-btn variant="outlined" :loading="isChecking" @click="refreshStatus">
           <v-icon start>mdi-refresh</v-icon>
           Refresh Status
+        </v-btn>
+        <v-btn variant="outlined" :loading="isDetecting" @click="autoDetectGames">
+          <v-icon start>mdi-magnify</v-icon>
+          Auto Detect
         </v-btn>
         <v-btn color="primary" @click="openNewProfile">
           <v-icon start>mdi-plus</v-icon>
           New Profile
         </v-btn>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Running Processes Status -->
-    <v-card class="mb-6">
+    <v-card class="mb-8">
       <v-card-title class="d-flex justify-space-between align-center">
         <span>Running Support Software</span>
         <v-chip :color="runningProcesses.length > 0 ? 'success' : 'warning'" size="small">
@@ -256,8 +291,8 @@ function isProcessRunning(processName: string): boolean {
     <!-- Empty State -->
     <v-card v-else color="surface-variant">
       <v-card-text class="text-center py-10">
-        <v-icon size="48" class="mb-4 text-medium-emphasis">mdi-rocket-launch-outline</v-icon>
-        <div class="text-body-1 text-medium-emphasis mb-4">No game profiles configured yet.</div>
+        <v-icon size="48" class="mb-4">mdi-rocket-launch-outline</v-icon>
+        <div class="text-body-1 mb-4">No game profiles configured yet.</div>
         <v-btn color="primary" @click="openNewProfile">
           <v-icon start>mdi-plus</v-icon>
           Create Your First Profile
@@ -362,6 +397,55 @@ function isProcessRunning(processName: string): boolean {
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="showLaunchDialog = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Detected Games Dialog -->
+    <v-dialog v-model="showDetectedDialog" max-width="500">
+      <v-card>
+        <v-card-title>Detected Games</v-card-title>
+        <v-card-text>
+          <p class="mb-4">
+            Found {{ games.detectedGames.value.length }} installed game(s). Click "Add" to create a
+            profile.
+          </p>
+          <v-list>
+            <v-list-item
+              v-for="game in games.detectedGames.value"
+              :key="game.path"
+              class="mb-2 rounded"
+              :class="{
+                'bg-surface-variant': games.profiles.value.some(
+                  (p) => p.executablePath === game.path
+                ),
+              }"
+            >
+              <template #prepend>
+                <v-icon :icon="getGameIcon(game.path)" class="mr-3" />
+              </template>
+              <v-list-item-title>{{ game.name }}</v-list-item-title>
+              <v-list-item-subtitle class="text-truncate" style="max-width: 300px">
+                {{ game.path }}
+              </v-list-item-subtitle>
+              <template #append>
+                <v-btn
+                  v-if="!games.profiles.value.some((p) => p.executablePath === game.path)"
+                  size="small"
+                  color="primary"
+                  variant="tonal"
+                  @click="createFromDetected(game)"
+                >
+                  Add
+                </v-btn>
+                <v-chip v-else size="small" color="success" variant="tonal"> Added </v-chip>
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showDetectedDialog = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

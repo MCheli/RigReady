@@ -129,8 +129,9 @@ export class HIDManager {
       this.openDevices.set(path, device);
       console.log(`Opened HID device: ${path}`);
       return true;
-    } catch (error: any) {
-      console.error(`Failed to open HID device (${path}):`, error.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Failed to open HID device (${path}):`, message);
       return false;
     }
   }

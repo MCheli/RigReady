@@ -1,4 +1,4 @@
-# Sim Manager - Requirements Document
+# RigReady - Requirements Document
 
 ## Overview
 A desktop tool for managing simulation rig software, hardware, and configurations. Initially focused on flight simulators (DCS), with racing simulator support planned for later.
@@ -17,8 +17,8 @@ A desktop tool for managing simulation rig software, hardware, and configuration
 ### 1. Pre-Launch Checklist
 Verify everything is ready before launching the game.
 
-- [ ] Required software is running (TrackIR, WinWing software, Stream Deck, etc.)
-- [ ] All expected USB devices are connected
+- [x] Required software is running (TrackIR, WinWing software, Stream Deck, etc.)
+- [x] All expected USB devices are connected
 - [ ] Displays are in correct configuration (resolution, arrangement, refresh rate)
 - [ ] Network connectivity (for multiplayer/updates)
 - [ ] Disk space check (DCS is large)
@@ -26,35 +26,35 @@ Verify everything is ready before launching the game.
 ### 2. Device Management
 Monitor and troubleshoot connected controllers.
 
-- [ ] List all connected input devices (joysticks, throttles, pedals, etc.)
-- [ ] Show device connection status (connected/disconnected)
-- [ ] Real-time input testing (axes, buttons, hats)
+- [x] List all connected input devices (joysticks, throttles, pedals, etc.)
+- [x] Show device connection status (connected/disconnected)
+- [x] Real-time input testing (axes, buttons, hats)
 - [ ] Device identification (which physical device is which)
-- [ ] Alert when expected device is missing
+- [x] Alert when expected device is missing
 
 ### 3. Display Configuration
 Manage multi-monitor setups.
 
-- [ ] Save/restore display profiles (resolution, position, refresh rate)
+- [x] Save/restore display profiles (resolution, position, refresh rate)
 - [ ] Quick switch between profiles (e.g., "Flight Sim" vs "Racing" vs "Desktop")
-- [ ] Detect current configuration
+- [x] Detect current configuration
 - [ ] Validate against expected configuration
 
 ### 4. Keybinding Management
 Backup, restore, and manage game keybindings.
 
-- [ ] Backup DCS keybindings (per aircraft)
-- [ ] Restore keybindings from backup
+- [x] Backup DCS keybindings (per aircraft)
+- [x] Restore keybindings from backup
 - [ ] Detect keybinding conflicts
-- [ ] Export/import binding profiles
-- [ ] Track which bindings are set for which devices
+- [x] Export/import binding profiles
+- [x] Track which bindings are set for which devices
 
 ### 5. Software Launcher
 Start required software in the right order.
 
-- [ ] Define software dependencies and launch order
-- [ ] One-click "prepare for flight" button
-- [ ] Monitor running processes
+- [x] Define software dependencies and launch order (game profiles)
+- [x] One-click "prepare for flight" button (Launch button with pre-flight checks)
+- [x] Monitor running processes
 - [ ] Graceful shutdown sequence
 
 ### 6. Troubleshooting Tools
@@ -63,7 +63,7 @@ Diagnose common issues.
 - [ ] Device not responding diagnostics
 - [ ] Input lag testing
 - [ ] USB hub/port diagnostics
-- [ ] Log viewer for related software
+- [x] Log viewer for related software (Debug view)
 - [ ] Common issue knowledge base
 
 ### 7. Configuration Backup
@@ -130,12 +130,14 @@ Protect settings and configurations.
 
 ---
 
-## Technical Decisions (TBD)
+## Technical Decisions (Implemented)
 
-- **UI Framework**: Electron? Tauri? Native Windows (WPF/WinUI)?
-- **Language**: TypeScript? C#? Rust?
-- **Device Detection**: Windows API? DirectInput? HID?
-- **Configuration Storage**: JSON files? SQLite?
+- **UI Framework**: Electron with Vue 3 + Vuetify 3
+- **Language**: TypeScript (full stack - main process and renderer)
+- **Device Detection**: node-hid (raw HID) + pygame via Python subprocess (DirectInput)
+- **Configuration Storage**: JSON files in user data directory
+- **Build System**: Vite via electron-vite
+- **Testing**: Jest (unit) + Playwright (E2E)
 
 ---
 

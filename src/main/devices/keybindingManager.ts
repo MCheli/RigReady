@@ -61,10 +61,10 @@ export class KeybindingManager {
   private backupConfigPath: string;
 
   constructor() {
-    this.backupDir = path.join(process.env.USERPROFILE || '', '.sim-manager', 'keybinding-backups');
+    this.backupDir = path.join(process.env.USERPROFILE || '', '.rigready', 'keybinding-backups');
     this.backupConfigPath = path.join(
       process.env.USERPROFILE || '',
-      '.sim-manager',
+      '.rigready',
       'keybinding-backups.json'
     );
     this.loadBackups();

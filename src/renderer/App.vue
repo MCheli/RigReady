@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import LaunchView from './views/LaunchView.vue';
 import DevicesView from './views/DevicesView.vue';
 import InputTesterView from './views/InputTesterView.vue';
@@ -7,21 +7,100 @@ import DisplaysView from './views/DisplaysView.vue';
 import KeybindingsView from './views/KeybindingsView.vue';
 import SettingsView from './views/SettingsView.vue';
 import DebugView from './views/DebugView.vue';
+import { useToast } from './composables/useToast';
+import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts';
+import { createNavigation } from './composables/useNavigation';
+
+const { toastState, hide: hideToast } = useToast();
+const { shortcuts, showShortcutsHelp, registerShortcuts, formatShortcut, hideHelp } =
+  useKeyboardShortcuts();
 
 const currentSection = ref('launch');
+
+// Create navigation provider for child components
+const _navigation = createNavigation((section) => {
+  currentSection.value = section;
+});
+
+// Toast icon based on type
+const toastIcon = computed(() => {
+  switch (toastState.value.type) {
+    case 'success':
+      return 'mdi-check-circle';
+    case 'error':
+      return 'mdi-alert-circle';
+    case 'warning':
+      return 'mdi-alert';
+    case 'info':
+    default:
+      return 'mdi-information';
+  }
+});
 const appStatus = ref<'scanning' | 'ready' | 'error'>('scanning');
 
 const navItems = [
-  { id: 'launch', title: 'Launch', icon: 'mdi-rocket-launch' },
-  { id: 'devices', title: 'Devices', icon: 'mdi-controller' },
-  { id: 'input-test', title: 'Input Tester', icon: 'mdi-gamepad-variant' },
-  { id: 'displays', title: 'Displays', icon: 'mdi-monitor' },
-  { id: 'keybindings', title: 'Keybindings', icon: 'mdi-keyboard' },
-  { id: 'settings', title: 'Settings', icon: 'mdi-cog' },
-  { id: 'debug', title: 'Debug', icon: 'mdi-wrench' },
+  { id: 'launch', title: 'Launch', icon: 'mdi-rocket-launch', shortcut: '1' },
+  { id: 'devices', title: 'Devices', icon: 'mdi-controller', shortcut: '2' },
+  { id: 'input-test', title: 'Input Tester', icon: 'mdi-gamepad-variant', shortcut: '3' },
+  { id: 'displays', title: 'Displays', icon: 'mdi-monitor', shortcut: '4' },
+  { id: 'keybindings', title: 'Keybindings', icon: 'mdi-keyboard', shortcut: '5' },
+  { id: 'settings', title: 'Settings', icon: 'mdi-cog', shortcut: '6' },
+  { id: 'debug', title: 'Debug', icon: 'mdi-wrench', shortcut: '7' },
 ];
 
 onMounted(async () => {
+  // Register keyboard shortcuts
+  registerShortcuts([
+    {
+      key: '1',
+      ctrl: true,
+      description: 'Go to Launch',
+      action: () => (currentSection.value = 'launch'),
+    },
+    {
+      key: '2',
+      ctrl: true,
+      description: 'Go to Devices',
+      action: () => (currentSection.value = 'devices'),
+    },
+    {
+      key: '3',
+      ctrl: true,
+      description: 'Go to Input Tester',
+      action: () => (currentSection.value = 'input-test'),
+    },
+    {
+      key: '4',
+      ctrl: true,
+      description: 'Go to Displays',
+      action: () => (currentSection.value = 'displays'),
+    },
+    {
+      key: '5',
+      ctrl: true,
+      description: 'Go to Keybindings',
+      action: () => (currentSection.value = 'keybindings'),
+    },
+    {
+      key: '6',
+      ctrl: true,
+      description: 'Go to Settings',
+      action: () => (currentSection.value = 'settings'),
+    },
+    {
+      key: '7',
+      ctrl: true,
+      description: 'Go to Debug',
+      action: () => (currentSection.value = 'debug'),
+    },
+    {
+      key: ',',
+      ctrl: true,
+      description: 'Go to Settings',
+      action: () => (currentSection.value = 'settings'),
+    },
+  ]);
+
   // Simulate initial scan
   setTimeout(() => {
     appStatus.value = 'ready';
@@ -33,7 +112,7 @@ onMounted(async () => {
   <v-app>
     <!-- Navigation Drawer (Sidebar) -->
     <v-navigation-drawer permanent width="220">
-      <v-list-item prepend-icon="mdi-airplane" title="Sim Manager" class="py-4" />
+      <v-list-item prepend-icon="mdi-airplane" title="RigReady" class="py-4" />
 
       <v-divider />
 
@@ -42,11 +121,17 @@ onMounted(async () => {
           v-for="item in navItems"
           :key="item.id"
           :prepend-icon="item.icon"
-          :title="item.title"
           :active="currentSection === item.id"
           @click="currentSection = item.id"
           rounded="lg"
-        />
+        >
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
+          <template #append>
+            <span class="text-caption text-medium-emphasis shortcut-hint">
+              Ctrl+{{ item.shortcut }}
+            </span>
+          </template>
+        </v-list-item>
       </v-list>
 
       <template #append>
@@ -83,19 +168,19 @@ onMounted(async () => {
           </a>
           <div class="mt-1">
             <a
-              href="https://github.com/MCheli/sim-manager"
+              href="https://rigready.io"
+              target="_blank"
+              class="text-decoration-none text-medium-emphasis"
+            >
+              rigready.io
+            </a>
+            <span class="mx-1">·</span>
+            <a
+              href="https://github.com/MCheli/rigready"
               target="_blank"
               class="text-decoration-none text-medium-emphasis"
             >
               GitHub
-            </a>
-            <span class="mx-1">·</span>
-            <a
-              href="https://github.com/MCheli/sim-manager/blob/main/LICENSE"
-              target="_blank"
-              class="text-decoration-none text-medium-emphasis"
-            >
-              MIT
             </a>
           </div>
         </div>
@@ -104,7 +189,7 @@ onMounted(async () => {
 
     <!-- Main Content -->
     <v-main>
-      <v-container fluid class="fill-height pa-6">
+      <v-container fluid class="main-content pa-6">
         <transition name="fade" mode="out-in">
           <LaunchView v-if="currentSection === 'launch'" />
           <DevicesView v-else-if="currentSection === 'devices'" />
@@ -116,6 +201,60 @@ onMounted(async () => {
         </transition>
       </v-container>
     </v-main>
+
+    <!-- Global Toast Notifications -->
+    <v-snackbar
+      v-model="toastState.visible"
+      :color="toastState.type"
+      :timeout="toastState.timeout"
+      location="bottom right"
+      rounded="lg"
+    >
+      <div class="d-flex align-center">
+        <v-icon :icon="toastIcon" class="mr-2" />
+        {{ toastState.message }}
+      </div>
+      <template #actions>
+        <v-btn variant="text" icon="mdi-close" size="small" @click="hideToast" />
+      </template>
+    </v-snackbar>
+
+    <!-- Keyboard Shortcuts Help Dialog -->
+    <v-dialog v-model="showShortcutsHelp" max-width="500">
+      <v-card>
+        <v-card-title class="d-flex justify-space-between align-center">
+          <span>Keyboard Shortcuts</span>
+          <v-btn icon="mdi-close" variant="text" size="small" @click="hideHelp" />
+        </v-card-title>
+        <v-card-text>
+          <v-list density="compact" class="bg-transparent">
+            <v-list-subheader>Navigation</v-list-subheader>
+            <v-list-item v-for="shortcut in shortcuts" :key="shortcut.key">
+              <template #prepend>
+                <v-chip size="small" variant="outlined" class="shortcut-chip font-mono">
+                  {{ formatShortcut(shortcut) }}
+                </v-chip>
+              </template>
+              <v-list-item-title>{{ shortcut.description }}</v-list-item-title>
+            </v-list-item>
+            <v-divider class="my-2" />
+            <v-list-subheader>Help</v-list-subheader>
+            <v-list-item>
+              <template #prepend>
+                <v-chip size="small" variant="outlined" class="shortcut-chip font-mono">?</v-chip>
+              </template>
+              <v-list-item-title>Show/hide this dialog</v-list-item-title>
+            </v-list-item>
+            <v-list-item>
+              <template #prepend>
+                <v-chip size="small" variant="outlined" class="shortcut-chip font-mono">ESC</v-chip>
+              </template>
+              <v-list-item-title>Close dialogs</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </v-app>
 </template>
 
@@ -124,8 +263,30 @@ onMounted(async () => {
   border-right: 1px solid rgb(var(--v-theme-surface-variant)) !important;
 }
 
-.fill-height {
+.main-content {
   height: 100%;
+  max-height: 100vh;
   overflow-y: auto;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.main-content > * {
+  width: 100%;
+}
+
+.shortcut-hint {
+  font-family: 'Consolas', monospace;
+  font-size: 0.65rem;
+  opacity: 0.5;
+}
+
+.shortcut-chip {
+  min-width: 60px;
+  justify-content: center;
+}
+
+.font-mono {
+  font-family: 'Consolas', monospace;
 }
 </style>

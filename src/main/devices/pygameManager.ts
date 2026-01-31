@@ -21,10 +21,34 @@ export interface PygameInputState {
   timestamp: number;
 }
 
-interface PygameMessage {
-  type: string;
-  [key: string]: any;
+// Messages from the Python input server
+interface PygameReadyMessage {
+  type: 'ready';
+  version: string;
+  deviceCount: number;
+  devices: PygameDevice[];
 }
+
+interface PygameStatesMessage {
+  type: 'states';
+  devices: PygameInputState[];
+}
+
+interface PygameErrorMessage {
+  type: 'error';
+  message: string;
+}
+
+interface PygameDevicesMessage {
+  type: 'devices';
+  devices: PygameDevice[];
+}
+
+type PygameMessage =
+  | PygameReadyMessage
+  | PygameStatesMessage
+  | PygameErrorMessage
+  | PygameDevicesMessage;
 
 export class PygameManager {
   private process: ChildProcess | null = null;

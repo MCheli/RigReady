@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { useDebug } from '../composables/useSimManager';
+import { useDebug } from '../composables/useRigReady';
+import { useToast } from '../composables/useToast';
+import PageHeader from '../components/PageHeader.vue';
 
 const { systemInfo, deviceStatus, paths, logs, loadDebugInfo, exportLogs } = useDebug();
+const toast = useToast();
 
 async function handleExport() {
   const result = await exportLogs();
   if (result.success) {
-    alert(`Logs exported to: ${result.path}`);
+    toast.success(`Logs exported to: ${result.path}`);
   } else {
-    alert(`Failed to export logs: ${result.error}`);
+    toast.error(`Failed to export logs: ${result.error}`);
   }
 }
 
@@ -20,15 +23,14 @@ onMounted(() => {
 
 <template>
   <div class="debug-view">
-    <div class="d-flex justify-space-between align-center mb-6">
-      <h1 class="text-h4 font-weight-bold">Debug</h1>
-      <div class="d-flex gap-2">
+    <PageHeader title="Debug">
+      <template #actions>
         <v-btn prepend-icon="mdi-export" @click="handleExport"> Export Logs </v-btn>
         <v-btn variant="outlined" prepend-icon="mdi-refresh" @click="loadDebugInfo">
           Refresh
         </v-btn>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <v-row>
       <!-- System Info -->

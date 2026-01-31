@@ -22,10 +22,10 @@ test.afterAll(async () => {
   await electronApp.close();
 });
 
-test.describe('Sim Manager App', () => {
+test.describe('RigReady App', () => {
   test('should display the app title', async () => {
     const title = await page.title();
-    expect(title).toBe('Sim Manager');
+    expect(title).toBe('RigReady');
   });
 
   test('should show navigation drawer with menu items', async () => {
@@ -90,8 +90,8 @@ test.describe('Sim Manager App', () => {
   test('should show footer with attribution', async () => {
     // Check for footer elements
     await expect(page.locator('text=Mark Cheli')).toBeVisible();
+    await expect(page.locator('text=rigready.io')).toBeVisible();
     await expect(page.locator('text=GitHub')).toBeVisible();
-    await expect(page.locator('text=MIT')).toBeVisible();
   });
 
   test('should navigate back to Launch view', async () => {
@@ -109,5 +109,74 @@ test.describe('Sim Manager App', () => {
 
   test('should show Running Support Software section', async () => {
     await expect(page.locator('text=Running Support Software')).toBeVisible();
+  });
+
+  test('should show input state UI immediately when a device is selected in Input Tester', async () => {
+    // Navigate to Input Tester
+    await page.click('text=Input Tester');
+    await expect(page.locator('h1:has-text("Input Tester")')).toBeVisible();
+
+    // Wait for devices dropdown to be available
+    const dropdown = page.locator('.v-select');
+    await expect(dropdown).toBeVisible();
+
+    // Check if there are any devices available by clicking the dropdown
+    await dropdown.click();
+
+    // Wait a moment for dropdown options to appear
+    await page.waitForTimeout(500);
+
+    // Try to find device options in the dropdown menu
+    const deviceOptions = page.locator('.v-list-item').filter({ hasText: /pygame:|hid:/ });
+    const deviceCount = await deviceOptions.count();
+
+    if (deviceCount > 0) {
+      // Select the first device
+      await deviceOptions.first().click();
+
+      // Wait for input state to initialize
+      await page.waitForTimeout(300);
+
+      // Verify the input state UI is visible (Device Info card) - this should appear immediately
+      // without requiring any button press on the device
+      await expect(page.locator('text=Device Info')).toBeVisible({ timeout: 3000 });
+
+      // Also verify we see the input counts (Axes, Buttons, Hats chips)
+      await expect(page.locator('text=/\\d+ Axes/')).toBeVisible({ timeout: 3000 });
+      await expect(page.locator('text=/\\d+ Buttons/')).toBeVisible({ timeout: 3000 });
+    } else {
+      // No devices available - close dropdown and verify empty state message
+      await page.keyboard.press('Escape');
+      await expect(
+        page.locator('text=Select a device from the dropdown to test inputs.')
+      ).toBeVisible();
+    }
+  });
+
+  test('should allow clicking on a device in Devices view to navigate to Input Tester', async () => {
+    // Navigate to Devices view
+    await page.click('text=Devices');
+    await expect(page.locator('h1:has-text("Connected Devices")')).toBeVisible();
+
+    // Wait for devices to load
+    await page.waitForTimeout(1000);
+
+    // Check if there are any "Test Inputs" buttons on device cards
+    const testButtons = page.locator('button:has-text("Test Inputs")');
+    const buttonCount = await testButtons.count();
+
+    if (buttonCount > 0) {
+      // Click the first Test Inputs button
+      await testButtons.first().click();
+
+      // Should navigate to Input Tester
+      await expect(page.locator('h1:has-text("Input Tester")')).toBeVisible({ timeout: 3000 });
+
+      // Should have a device selected (Device Info card visible)
+      await expect(page.locator('text=Device Info')).toBeVisible({ timeout: 3000 });
+    } else {
+      // No testable devices - test passes by verifying we're on the Devices view
+      await expect(page.locator('h1:has-text("Connected Devices")')).toBeVisible();
+    }
   });
 });

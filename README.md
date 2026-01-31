@@ -1,6 +1,8 @@
-# Sim Manager
+# RigReady
 
 A desktop tool for managing simulation rig software, hardware, and configurations. Built with Electron for Windows.
+
+**Website**: [rigready.io](https://rigready.io)
 
 ## Features
 
@@ -32,8 +34,8 @@ A desktop tool for managing simulation rig software, hardware, and configuration
 
 ```bash
 # Clone the repository
-git clone https://github.com/MCheli/sim-manager.git
-cd sim-manager
+git clone https://github.com/MCheli/rigready.git
+cd rigready
 
 # Install dependencies
 npm install
@@ -54,11 +56,14 @@ npm run dev
 # Build the application
 npm run build
 
-# Run tests
+# Run unit tests
 npm test
 
-# Run tests with coverage
+# Run unit tests with coverage
 npm run test:coverage
+
+# Run E2E tests (includes screenshot capture)
+npm run test:e2e
 
 # Lint code
 npm run lint
@@ -73,31 +78,41 @@ npm run typecheck
 ## Project Structure
 
 ```
-sim-manager/
+rigready/
 ├── src/
-│   ├── main/           # Electron main process
-│   │   ├── main.ts     # App entry point
-│   │   ├── preload.ts  # Preload script for IPC
-│   │   └── devices/    # Device management modules
-│   └── renderer/       # Electron renderer (UI)
-│       ├── index.html
-│       ├── renderer.js
-│       └── styles.css
-├── __tests__/          # Test files
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-├── docs/               # Documentation
-├── scripts/            # Build and utility scripts
-└── resources/          # Runtime resources (Python env)
+│   ├── main/                    # Electron main process
+│   │   ├── main.ts              # App entry point & IPC handlers
+│   │   ├── preload.ts           # Preload script for IPC bridge
+│   │   └── devices/             # Device management modules
+│   ├── renderer/                # Vue 3 + Vuetify UI
+│   │   ├── App.vue              # Root Vue component
+│   │   ├── main.ts              # Vue app entry point
+│   │   ├── views/               # Page components
+│   │   │   ├── LaunchView.vue   # Game launcher & pre-flight checks
+│   │   │   ├── DevicesView.vue  # Connected device status
+│   │   │   ├── InputTesterView.vue  # Real-time input visualization
+│   │   │   ├── DisplaysView.vue # Monitor configuration
+│   │   │   ├── KeybindingsView.vue  # Keybinding profiles & backups
+│   │   │   ├── SettingsView.vue # App settings
+│   │   │   └── DebugView.vue    # System info & logs
+│   │   ├── composables/         # Vue composables for state/API
+│   │   └── plugins/             # Vuetify theme configuration
+│   └── shared/                  # Shared types between main/renderer
+├── __tests__/                   # Test files
+│   ├── unit/                    # Jest unit tests
+│   └── e2e/                     # Playwright E2E tests
+├── docs/                        # Documentation
+├── scripts/                     # Build and utility scripts
+└── resources/                   # Runtime resources (Python env)
 ```
 
 ## Architecture
 
 The app uses Electron with:
 - **Main Process**: Node.js backend handling device communication, file system operations
-- **Renderer Process**: Web-based UI with vanilla JavaScript
+- **Renderer Process**: Vue 3 + Vuetify 3 with Composition API and TypeScript
 - **IPC Bridge**: Type-safe communication between processes via preload script
+- **Build System**: Vite via electron-vite for fast development and optimized builds
 
 ### Key Modules
 

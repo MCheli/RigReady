@@ -166,6 +166,18 @@ export interface CommonAction {
  */
 export type Simulator = 'dcs' | 'msfs' | 'xplane' | 'il2' | 'iracing' | 'acc' | 'other';
 
+export const SIMULATORS: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2', 'iracing', 'acc'];
+
+export const SIMULATOR_DISPLAY_NAMES: Record<Simulator, string> = {
+  dcs: 'DCS World',
+  msfs: 'Microsoft Flight Simulator',
+  xplane: 'X-Plane',
+  il2: 'IL-2 Sturmovik',
+  iracing: 'iRacing',
+  acc: 'Assetto Corsa Competizione',
+  other: 'Other',
+};
+
 /**
  * Mapping from a common action to a specific aircraft/vehicle's control in a simulator
  */

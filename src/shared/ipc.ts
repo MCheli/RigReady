@@ -232,7 +232,7 @@ export type IpcArgs<T extends keyof IpcChannels> = IpcChannels[T]['args'];
 // Typed API Interface (for renderer)
 // =============================================================================
 
-export interface SimManagerApi {
+export interface RigReadyApi {
   log: (message: string) => void;
 
   devices: {
@@ -359,6 +359,6 @@ export interface SimManagerApi {
 // Augment the Window interface
 declare global {
   interface Window {
-    simManager: SimManagerApi;
+    rigReady: RigReadyApi;
   }
 }

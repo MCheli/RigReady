@@ -1,4 +1,4 @@
-# Contributing to Sim Manager
+# Contributing to RigReady
 
 Thank you for your interest in contributing! This guide will help you get started.
 
@@ -15,8 +15,8 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/sim-manager.git
-   cd sim-manager
+   git clone https://github.com/YOUR_USERNAME/rigready.git
+   cd rigready
    ```
 
 2. **Install dependencies**
@@ -182,7 +182,7 @@ Types used by both processes (when converting to TypeScript):
 
 3. Use in renderer:
    ```javascript
-   const result = await window.simManager.feature.action('value');
+   const result = await window.rigReady.feature.action('value');
    ```
 
 ### Adding a New Device Manager

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { SimManagerApi } from '../shared/ipc';
+import type { RigReadyApi } from '../shared/ipc';
 import type {
   HIDInputState,
   PygameInputState,
@@ -10,10 +10,11 @@ import type {
   Simulator,
   SimulatorPath,
   AppSettings,
+  GameProfile,
 } from '../shared/types';
 
 // Type-safe API exposed to renderer
-const api: SimManagerApi = {
+const api: RigReadyApi = {
   // Logging
   log: (message: string) => ipcRenderer.send('log', message),
 
@@ -107,7 +108,7 @@ const api: SimManagerApi = {
   games: {
     getProfiles: () => ipcRenderer.invoke('games:getProfiles'),
     getProfile: (id: string) => ipcRenderer.invoke('games:getProfile', id),
-    saveProfile: (profile: any) => ipcRenderer.invoke('games:saveProfile', profile),
+    saveProfile: (profile: GameProfile) => ipcRenderer.invoke('games:saveProfile', profile),
     deleteProfile: (id: string) => ipcRenderer.invoke('games:deleteProfile', id),
     detectGames: () => ipcRenderer.invoke('games:detectGames'),
     launch: (profileId: string) => ipcRenderer.invoke('games:launch', profileId),
@@ -168,4 +169,4 @@ const api: SimManagerApi = {
 };
 
 // Expose the typed API to renderer
-contextBridge.exposeInMainWorld('simManager', api);
+contextBridge.exposeInMainWorld('rigReady', api);

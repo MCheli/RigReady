@@ -8,8 +8,12 @@ import {
   type KeybindingProfile,
   type CommonAction,
   type ActionCategory,
-} from '../composables/useSimManager';
+} from '../composables/useRigReady';
+import { useToast } from '../composables/useToast';
 import { DEFAULT_ACTION_CATEGORIES } from '../../shared/types';
+import PageHeader from '../components/PageHeader.vue';
+
+const toast = useToast();
 
 // Legacy backup system
 const {
@@ -100,7 +104,7 @@ async function handleBackup(simulator: string) {
 async function handleRestore(name: string) {
   if (confirm(`Restore backup "${name}"? This will overwrite current keybindings.`)) {
     await restoreBackup(name);
-    alert('Backup restored!');
+    toast.success('Backup restored!');
   }
 }
 
@@ -145,7 +149,7 @@ async function exportProfileToClipboard(id: string) {
   const json = await profilesComposable.exportProfile(id);
   if (json) {
     await navigator.clipboard.writeText(json);
-    alert('Profile copied to clipboard! Share this JSON with others.');
+    toast.success('Profile copied to clipboard!');
   }
 }
 
@@ -156,12 +160,14 @@ async function importProfileFromClipboard() {
     const imported = await profilesComposable.importProfile(json, newName || undefined);
     if (imported) {
       selectedProfileId.value = imported.id;
-      alert('Profile imported successfully!');
+      toast.success('Profile imported successfully!');
     } else {
-      alert('Failed to import profile. Make sure you have a valid profile JSON in your clipboard.');
+      toast.error(
+        'Failed to import profile. Make sure you have a valid profile JSON in your clipboard.'
+      );
     }
   } catch {
-    alert('Failed to read clipboard. Make sure you have copied a profile JSON.');
+    toast.error('Failed to read clipboard. Make sure you have copied a profile JSON.');
   }
 }
 
@@ -348,9 +354,7 @@ onUnmounted(() => {
 
 <template>
   <div class="keybindings-view">
-    <div class="d-flex justify-space-between align-center mb-6">
-      <h1 class="text-h4 font-weight-bold">Keybinding Manager</h1>
-    </div>
+    <PageHeader title="Keybinding Manager" />
 
     <v-tabs v-model="activeTab" class="mb-6">
       <v-tab value="profiles">Keybinding Profiles</v-tab>
@@ -365,8 +369,13 @@ onUnmounted(() => {
           <v-card>
             <v-card-title class="d-flex justify-space-between align-center">
               Profiles
-              <div class="d-flex gap-1">
-                <v-btn size="small" variant="outlined" @click="importProfileFromClipboard">
+              <div class="d-flex align-center">
+                <v-btn
+                  size="small"
+                  variant="outlined"
+                  class="mr-4"
+                  @click="importProfileFromClipboard"
+                >
                   <v-icon start>mdi-import</v-icon>
                   Import
                 </v-btn>
@@ -492,10 +501,8 @@ onUnmounted(() => {
           </v-card>
           <v-card v-else color="surface-variant">
             <v-card-text class="text-center py-10">
-              <v-icon size="48" class="mb-4 text-medium-emphasis">mdi-keyboard</v-icon>
-              <div class="text-body-1 text-medium-emphasis">
-                Select a profile to view and edit its keybindings.
-              </div>
+              <v-icon size="48" class="mb-4">mdi-keyboard</v-icon>
+              <div class="text-body-1">Select a profile to view and edit its keybindings.</div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -599,7 +606,7 @@ onUnmounted(() => {
       </v-row>
       <v-card v-else color="surface-variant">
         <v-card-text class="text-center py-6">
-          <div class="text-body-1 text-medium-emphasis">
+          <div class="text-body-1">
             No backups saved. Create a backup from an installed simulator above.
           </div>
         </v-card-text>

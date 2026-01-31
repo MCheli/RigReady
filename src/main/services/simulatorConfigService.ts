@@ -24,16 +24,59 @@ interface SimulatorPaths {
   vehicleConfigPath: (configPath: string) => string;
 }
 
+// MSFS Config Types
+interface MSFSConfigBinding {
+  Primary?: MSFSInputConfig;
+  FriendlyName?: string;
+  Category?: string;
+  DeviceName?: string;
+}
+
+interface MSFSInputConfig {
+  JoystickButton?: number;
+  JoystickAxis?: number;
+  JoystickAxisDir?: number;
+  JoystickPov?: number;
+  JoystickPovDir?: number;
+  Keyboard?: string;
+}
+
+interface MSFSConfig {
+  ControllerBinding?: Record<string, MSFSConfigBinding>;
+}
+
 const SIMULATOR_PATHS: Record<Simulator, SimulatorPaths | null> = {
   dcs: {
     possibleInstallPaths: [
+      // Steam paths
+      'C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld',
+      'D:\\Steam\\steamapps\\common\\DCSWorld',
+      'E:\\Steam\\steamapps\\common\\DCSWorld',
+      'D:\\SteamLibrary\\steamapps\\common\\DCSWorld',
+      'E:\\SteamLibrary\\steamapps\\common\\DCSWorld',
+      // Standalone paths
       'C:\\Program Files\\Eagle Dynamics\\DCS World',
       'C:\\Program Files\\Eagle Dynamics\\DCS World OpenBeta',
       'D:\\DCS World',
       'D:\\DCS World OpenBeta',
       'E:\\DCS World',
     ],
-    configPath: () => path.join(os.homedir(), 'Saved Games', 'DCS', 'Config', 'Input'),
+    configPath: () => {
+      // DCS stores configs in Saved Games regardless of install location
+      // Check both DCS and DCS.openbeta folders
+      const dcsPath = path.join(os.homedir(), 'Saved Games', 'DCS', 'Config', 'Input');
+      const dcsBetaPath = path.join(os.homedir(), 'Saved Games', 'DCS.openbeta', 'Config', 'Input');
+
+      // Prefer the one that exists, or DCS if neither exists yet
+      if (fs.existsSync(dcsBetaPath)) {
+        return dcsBetaPath;
+      }
+      if (fs.existsSync(dcsPath)) {
+        return dcsPath;
+      }
+      // Default to DCS path
+      return dcsPath;
+    },
     vehicleConfigPath: (configPath: string) => configPath,
   },
   msfs: {
@@ -371,7 +414,7 @@ function parseMSFSConfig(configPath: string): SimulatorVehicleConfig[] {
   return vehicles;
 }
 
-function parseMSFSBindings(config: any): SimulatorBinding[] {
+function parseMSFSBindings(config: MSFSConfig): SimulatorBinding[] {
   const bindings: SimulatorBinding[] = [];
 
   if (!config.ControllerBinding) return bindings;
@@ -381,7 +424,7 @@ function parseMSFSBindings(config: any): SimulatorBinding[] {
   for (const [controlId, binding] of Object.entries(controllerBindings)) {
     if (typeof binding !== 'object' || binding === null) continue;
 
-    const b = binding as any;
+    const b = binding as MSFSConfigBinding;
     if (b.Primary) {
       const parsed = parseMSFSInput(b.Primary);
       if (parsed) {
@@ -399,7 +442,7 @@ function parseMSFSBindings(config: any): SimulatorBinding[] {
   return bindings;
 }
 
-function parseMSFSInput(input: any): SimulatorBinding['input'] | null {
+function parseMSFSInput(input: MSFSInputConfig): SimulatorBinding['input'] | null {
   if (!input) return null;
 
   if (input.JoystickButton !== undefined) {
@@ -659,16 +702,21 @@ class SimulatorConfigService {
   }
 
   getInstallation(simulator: Simulator): SimulatorInstallation {
-    if (!this.cachedInstallations.has(simulator)) {
-      const inst = detectSimulatorInstallation(simulator);
-      this.cachedInstallations.set(simulator, inst);
+    const cached = this.cachedInstallations.get(simulator);
+    if (cached) {
+      return cached;
     }
-    return this.cachedInstallations.get(simulator)!;
+    const inst = detectSimulatorInstallation(simulator);
+    this.cachedInstallations.set(simulator, inst);
+    return inst;
   }
 
   scanSimulator(simulator: Simulator, forceRefresh = false): SimulatorScanResult {
-    if (!forceRefresh && this.cachedScans.has(simulator)) {
-      return this.cachedScans.get(simulator)!;
+    if (!forceRefresh) {
+      const cached = this.cachedScans.get(simulator);
+      if (cached) {
+        return cached;
+      }
     }
 
     const result = scanSimulator(simulator);

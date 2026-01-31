@@ -1,5 +1,5 @@
 {
-  "name": "sim-manager",
+  "name": "rigready",
   "version": "1.0.0",
   "description": "Desktop tool for managing simulation rig software, hardware, and configurations",
   "main": "dist/main/index.js",
@@ -14,8 +14,8 @@
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "kill": "powershell -Command \"Get-Process -Name 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force\"",
-    "logs": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.sim-manager\\app.log' -Tail 50\"",
-    "logs:watch": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.sim-manager\\app.log' -Wait -Tail 20\"",
+    "logs": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.rigready\\app.log' -Tail 50\"",
+    "logs:watch": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.rigready\\app.log' -Wait -Tail 20\"",
     "setup:python": "powershell -ExecutionPolicy Bypass -File scripts/setup-python.ps1",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -33,7 +33,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MCheli/sim-manager.git"
+    "url": "git+https://github.com/MCheli/rigready.git"
   },
   "keywords": [
     "simulation",
@@ -48,9 +48,9 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/MCheli/sim-manager/issues"
+    "url": "https://github.com/MCheli/rigready/issues"
   },
-  "homepage": "https://github.com/MCheli/sim-manager#readme",
+  "homepage": "https://rigready.io",
   "devDependencies": {
     "@electron/rebuild": "^4.0.2",
     "@playwright/test": "^1.58.1",
@@ -88,8 +88,8 @@
     ]
   },
   "build": {
-    "appId": "com.simmanager.app",
-    "productName": "Sim Manager",
+    "appId": "io.rigready.app",
+    "productName": "RigReady",
     "directories": {
       "output": "release"
     },

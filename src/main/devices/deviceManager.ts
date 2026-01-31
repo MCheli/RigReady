@@ -62,6 +62,14 @@ const KNOWN_PRODUCTS: Record<string, Record<string, string>> = {
   },
 };
 
+// Raw data structure from PowerShell Get-PnpDevice
+interface RawPowerShellDevice {
+  VendorId: string;
+  ProductId: string;
+  InstanceId: string;
+  FriendlyName: string;
+}
+
 export interface Device {
   vendorId: string;
   productId: string;
@@ -85,7 +93,7 @@ export class DeviceManager {
   private expectedDevices: Device[] = [];
 
   constructor() {
-    this.configPath = path.join(process.env.USERPROFILE || '', '.sim-manager', 'devices.json');
+    this.configPath = path.join(process.env.USERPROFILE || '', '.rigready', 'devices.json');
     this.loadExpectedDevices();
   }
 
@@ -127,10 +135,10 @@ export class DeviceManager {
         return [];
       }
 
-      const rawDevices = JSON.parse(stdout);
+      const rawDevices = JSON.parse(stdout) as RawPowerShellDevice | RawPowerShellDevice[];
       const devices: Device[] = (Array.isArray(rawDevices) ? rawDevices : [rawDevices])
-        .filter((d: any) => d.VendorId)
-        .map((d: any) => this.parseDevice(d));
+        .filter((d) => d.VendorId)
+        .map((d) => this.parseDevice(d));
 
       // Deduplicate by vendorId + productId (keep first occurrence)
       const seen = new Set<string>();
@@ -146,7 +154,7 @@ export class DeviceManager {
     }
   }
 
-  private parseDevice(raw: any): Device {
+  private parseDevice(raw: RawPowerShellDevice): Device {
     const vendorId = raw.VendorId.toUpperCase();
     const productId = raw.ProductId.toUpperCase();
     const vendorName = KNOWN_VENDORS[vendorId] || `Unknown (${vendorId})`;

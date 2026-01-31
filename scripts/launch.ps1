@@ -2,7 +2,7 @@
 # Usage: .\scripts\launch.ps1
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$logFile = "$env:USERPROFILE\.sim-manager\app.log"
+$logFile = "$env:USERPROFILE\.rigready\app.log"
 
 # Kill existing electron processes
 $killed = Get-Process -Name "electron" -ErrorAction SilentlyContinue
@@ -30,7 +30,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Start electron in background
-Write-Host "Starting Sim Manager..." -ForegroundColor Cyan
+Write-Host "Starting RigReady..." -ForegroundColor Cyan
 Start-Process -FilePath "npx" -ArgumentList "electron", "." -WindowStyle Normal -WorkingDirectory $projectRoot
 
 Start-Sleep -Seconds 2

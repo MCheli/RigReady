@@ -3,7 +3,7 @@ import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 
 // Custom dark greyscale theme matching our style guide
-const simManagerTheme: ThemeDefinition = {
+const rigReadyTheme: ThemeDefinition = {
   dark: true,
   colors: {
     background: '#0a0a0a',
@@ -37,9 +37,9 @@ export const vuetify = createVuetify({
   components,
   directives,
   theme: {
-    defaultTheme: 'simManagerTheme',
+    defaultTheme: 'rigReadyTheme',
     themes: {
-      simManagerTheme,
+      rigReadyTheme,
     },
   },
   defaults: {

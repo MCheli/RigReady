@@ -1,5 +1,5 @@
 /**
- * Composables for accessing the Sim Manager IPC API
+ * Composables for accessing the RigReady IPC API
  * Provides type-safe access to the preload-exposed API
  */
 
@@ -22,6 +22,9 @@ import type {
   GameProfile,
   LaunchResult,
   DetectedGame,
+  Simulator,
+  SimulatorPath,
+  AppSettings,
 } from '../../shared/types';
 import type {
   DeviceStatus,
@@ -29,7 +32,7 @@ import type {
   DebugDeviceStatus,
   DebugPaths,
   ExportLogsResult,
-  SimManagerApi,
+  RigReadyApi,
 } from '../../shared/ipc';
 
 // Re-export types for convenience
@@ -56,11 +59,14 @@ export type {
   DebugDeviceStatus,
   DebugPaths,
   ExportLogsResult,
+  Simulator,
+  SimulatorPath,
+  AppSettings,
 };
 
 // Get the typed API from window
-function getApi(): SimManagerApi {
-  return window.simManager;
+function getApi(): RigReadyApi {
+  return window.rigReady;
 }
 
 // =============================================================================
@@ -559,5 +565,88 @@ export function useKeybindingProfiles() {
     removeBinding,
     exportProfile,
     importProfile,
+  };
+}
+
+// =============================================================================
+// Settings Composables
+// =============================================================================
+
+export function useSettings() {
+  const settings = ref<AppSettings | null>(null);
+  const simulatorPaths = ref<SimulatorPath[]>([]);
+  const loading = ref(false);
+  const scanning = ref(false);
+
+  async function loadSettings(): Promise<void> {
+    loading.value = true;
+    try {
+      settings.value = await getApi().settings.get();
+      simulatorPaths.value = settings.value?.simulatorPaths || [];
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function updateSettings(updates: Partial<AppSettings>): Promise<void> {
+    await getApi().settings.update(updates);
+    await loadSettings();
+  }
+
+  async function getSimulatorPath(simulator: Simulator): Promise<SimulatorPath | undefined> {
+    return getApi().settings.getSimulatorPath(simulator);
+  }
+
+  async function setSimulatorPath(simulatorPath: SimulatorPath): Promise<void> {
+    await getApi().settings.setSimulatorPath(simulatorPath);
+    await loadSettings();
+  }
+
+  async function removeSimulatorPath(simulator: Simulator): Promise<void> {
+    await getApi().settings.removeSimulatorPath(simulator);
+    await loadSettings();
+  }
+
+  async function autoScanSimulator(simulator: Simulator): Promise<SimulatorPath | null> {
+    scanning.value = true;
+    try {
+      const result = await getApi().settings.autoScanSimulator(simulator);
+      if (result) {
+        await loadSettings();
+      }
+      return result;
+    } finally {
+      scanning.value = false;
+    }
+  }
+
+  async function autoScanAllSimulators(): Promise<SimulatorPath[]> {
+    scanning.value = true;
+    try {
+      const results = await getApi().settings.autoScanAllSimulators();
+      await loadSettings();
+      return results;
+    } finally {
+      scanning.value = false;
+    }
+  }
+
+  async function verifySimulatorPath(simulator: Simulator): Promise<boolean> {
+    return getApi().settings.verifySimulatorPath(simulator);
+  }
+
+  return {
+    settings,
+    simulatorPaths,
+    loading,
+    scanning,
+    loadSettings,
+    updateSettings,
+    getSimulatorPath,
+    setSimulatorPath,
+    removeSimulatorPath,
+    autoScanSimulator,
+    autoScanAllSimulators,
+    verifySimulatorPath,
   };
 }

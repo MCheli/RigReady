@@ -14,7 +14,7 @@ Start-Sleep -Seconds 3
 $procs = Get-Process -Name "electron" -ErrorAction SilentlyContinue
 if ($procs) {
     Write-Host "Electron running: $($procs.Count) process(es)"
-    Write-Host "Log file: $env:USERPROFILE\.sim-manager\app.log"
+    Write-Host "Log file: $env:USERPROFILE\.rigready\app.log"
 } else {
     Write-Host "Electron not running"
 }

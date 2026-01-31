@@ -1,4 +1,4 @@
-# Sim Manager Style Guide
+# RigReady Style Guide
 
 ## Color Palette
 

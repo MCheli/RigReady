@@ -27,7 +27,7 @@ let displayManager: DisplayManager;
 let keybindingManager: KeybindingManager;
 
 // Logging setup
-const logDir = path.join(process.env.USERPROFILE || '', '.sim-manager');
+const logDir = path.join(process.env.USERPROFILE || '', '.rigready');
 const logFile = path.join(logDir, 'app.log');
 
 // Keep original console methods FIRST
@@ -64,7 +64,7 @@ function clearLog(): void {
 }
 
 // Override console methods
-console.log = (...args: any[]) => {
+console.log = (...args: unknown[]) => {
   if (isLogging) return;
   isLogging = true;
   try {
@@ -80,7 +80,7 @@ console.log = (...args: any[]) => {
   }
 };
 
-console.error = (...args: any[]) => {
+console.error = (...args: unknown[]) => {
   if (isLogging) return;
   isLogging = true;
   try {
@@ -105,7 +105,7 @@ function createWindow(): void {
     height: 900,
     minWidth: 800,
     minHeight: 600,
-    title: 'Sim Manager',
+    title: 'RigReady',
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
@@ -383,12 +383,13 @@ function setupIPC(): void {
       const exportPath = path.join(
         process.env.USERPROFILE || '',
         'Desktop',
-        `sim-manager-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`
+        `rigready-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`
       );
       fs.writeFileSync(exportPath, content);
       return { success: true, path: exportPath };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { success: false, error: message };
     }
   });
 
@@ -565,7 +566,7 @@ function setupIPC(): void {
 
 app.whenReady().then(() => {
   clearLog();
-  console.log('Initializing Sim Manager...');
+  console.log('Initializing RigReady...');
 
   deviceManager = new DeviceManager();
   console.log('Device manager initialized');

@@ -181,8 +181,8 @@ export class ProcessService {
           ? `"${executablePath}" ${args.map((a) => `"${a}"`).join(' ')}`
           : `"${executablePath}"`;
 
-      // Use start to launch in background
-      await execAsync(`start "" ${command}`, { shell: true });
+      // Use start to launch in background (use cmd.exe shell)
+      await execAsync(`start "" ${command}`, { shell: 'cmd.exe' });
       return true;
     } catch (error) {
       console.error(`Failed to launch process: ${executablePath}`, error);

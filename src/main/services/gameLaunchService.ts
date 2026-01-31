@@ -7,6 +7,92 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { processService } from './processService';
 
+/**
+ * Get Steam library paths from Steam's libraryfolders.vdf
+ */
+function getSteamLibraryPaths(): string[] {
+  const paths: string[] = [];
+
+  // Default Steam paths
+  const defaultSteamPaths = [
+    'C:\\Program Files (x86)\\Steam',
+    'D:\\Steam',
+    'E:\\Steam',
+    'D:\\SteamLibrary',
+    'E:\\SteamLibrary',
+  ];
+
+  // Try to read Steam's libraryfolders.vdf for additional paths
+  const steamConfigPath = 'C:\\Program Files (x86)\\Steam\\steamapps\\libraryfolders.vdf';
+  if (fs.existsSync(steamConfigPath)) {
+    try {
+      const content = fs.readFileSync(steamConfigPath, 'utf-8');
+      // Parse VDF format - look for "path" entries
+      const pathMatches = content.matchAll(/"path"\s+"([^"]+)"/g);
+      for (const match of pathMatches) {
+        const steamPath = match[1].replace(/\\\\/g, '\\');
+        if (fs.existsSync(steamPath)) {
+          paths.push(steamPath);
+        }
+      }
+    } catch {
+      // Ignore errors reading Steam config
+    }
+  }
+
+  // Add default paths that exist
+  for (const p of defaultSteamPaths) {
+    if (fs.existsSync(p) && !paths.includes(p)) {
+      paths.push(p);
+    }
+  }
+
+  return paths;
+}
+
+/**
+ * Build game paths dynamically including Steam libraries
+ */
+function buildGamePaths(): Record<string, string[]> {
+  const steamLibraries = getSteamLibraryPaths();
+
+  const dcsPaths: string[] = [];
+  // Add Steam library paths for DCS
+  for (const lib of steamLibraries) {
+    dcsPaths.push(path.join(lib, 'steamapps', 'common', 'DCSWorld', 'bin', 'DCS.exe'));
+  }
+  // Add standalone paths
+  dcsPaths.push(
+    'C:\\Program Files\\Eagle Dynamics\\DCS World\\bin\\DCS.exe',
+    'C:\\Program Files\\Eagle Dynamics\\DCS World OpenBeta\\bin\\DCS.exe',
+    'D:\\DCS World\\bin\\DCS.exe',
+    'D:\\Games\\DCS World\\bin\\DCS.exe',
+    'E:\\DCS World\\bin\\DCS.exe'
+  );
+
+  return {
+    'DCS World': dcsPaths,
+    'Microsoft Flight Simulator': [
+      'C:\\Program Files\\WindowsApps\\Microsoft.FlightSimulator_*\\FlightSimulator.exe',
+    ],
+    'X-Plane 12': ['C:\\X-Plane 12\\X-Plane.exe', 'D:\\X-Plane 12\\X-Plane.exe'],
+    iRacing: ['C:\\Program Files (x86)\\iRacing\\iRacingUI.exe'],
+    'Assetto Corsa Competizione': steamLibraries.map((lib) =>
+      path.join(
+        lib,
+        'steamapps',
+        'common',
+        'Assetto Corsa Competizione',
+        'AC2',
+        'Binaries',
+        'Win64',
+        'AC2-Win64-Shipping.exe'
+      )
+    ),
+    'IL-2 Sturmovik': ['C:\\Program Files\\IL-2 Sturmovik Great Battles\\bin\\game\\Il-2.exe'],
+  };
+}
+
 export interface GameProfile {
   id: string;
   name: string;
@@ -33,34 +119,12 @@ export interface LaunchResult {
   startedProcesses?: string[];
 }
 
-// Common game paths (Steam, standalone, etc.)
-const COMMON_GAME_PATHS: Record<string, string[]> = {
-  'DCS World': [
-    'C:\\Program Files\\Eagle Dynamics\\DCS World\\bin\\DCS.exe',
-    'C:\\Program Files\\Eagle Dynamics\\DCS World OpenBeta\\bin\\DCS.exe',
-    'D:\\Games\\DCS World\\bin\\DCS.exe',
-  ],
-  'Microsoft Flight Simulator': [
-    'C:\\Program Files\\WindowsApps\\Microsoft.FlightSimulator_*\\FlightSimulator.exe',
-  ],
-  'X-Plane 12': ['C:\\X-Plane 12\\X-Plane.exe', 'D:\\X-Plane 12\\X-Plane.exe'],
-  iRacing: ['C:\\Program Files (x86)\\iRacing\\iRacingUI.exe'],
-  'Assetto Corsa Competizione': [
-    'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Assetto Corsa Competizione\\AC2\\Binaries\\Win64\\AC2-Win64-Shipping.exe',
-  ],
-  'IL-2 Sturmovik': ['C:\\Program Files\\IL-2 Sturmovik Great Battles\\bin\\game\\Il-2.exe'],
-};
-
 export class GameLaunchService {
   private configPath: string;
   private profiles: GameProfile[] = [];
 
   constructor() {
-    this.configPath = path.join(
-      process.env.USERPROFILE || '',
-      '.sim-manager',
-      'game-profiles.json'
-    );
+    this.configPath = path.join(process.env.USERPROFILE || '', '.rigready', 'game-profiles.json');
     this.loadProfiles();
   }
 
@@ -133,8 +197,9 @@ export class GameLaunchService {
    */
   async detectGames(): Promise<Array<{ name: string; path: string }>> {
     const detected: Array<{ name: string; path: string }> = [];
+    const gamePaths = buildGamePaths();
 
-    for (const [gameName, paths] of Object.entries(COMMON_GAME_PATHS)) {
+    for (const [gameName, paths] of Object.entries(gamePaths)) {
       for (const gamePath of paths) {
         // Handle wildcards for Windows Store apps
         if (gamePath.includes('*')) {
