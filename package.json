@@ -2,16 +2,34 @@
   "name": "sim-manager",
   "version": "1.0.0",
   "description": "Desktop tool for managing simulation rig software, hardware, and configurations",
-  "main": "dist/main/main.js",
+  "main": "dist/main/index.js",
   "scripts": {
-    "build": "tsc && npm run copy-assets",
-    "copy-assets": "powershell -Command \"Copy-Item -Path 'src/renderer/*.html' -Destination 'dist/renderer/' -Force; Copy-Item -Path 'src/renderer/*.css' -Destination 'dist/renderer/' -Force\"",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build && npm run copy-ps1",
+    "copy-ps1": "powershell -Command \"Copy-Item -Path 'src/main/devices/*.ps1' -Destination 'dist/main/' -Force\"",
     "start": "npm run build && electron .",
-    "dev": "tsc && electron .",
+    "preview": "electron-vite preview",
     "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\"",
     "rebuild": "npm run clean && npm run build",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "kill": "powershell -Command \"Get-Process -Name 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force\"",
+    "logs": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.sim-manager\\app.log' -Tail 50\"",
+    "logs:watch": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.sim-manager\\app.log' -Wait -Tail 20\"",
+    "setup:python": "powershell -ExecutionPolicy Bypass -File scripts/setup-python.ps1",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "npm run build && npx playwright test",
+    "test:e2e:headed": "npm run build && npx playwright test --headed",
+    "test:e2e:debug": "npm run build && npx playwright test --debug",
+    "lint": "eslint src __tests__ --ext .ts,.js,.vue",
+    "lint:fix": "eslint src __tests__ --ext .ts,.js,.vue --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,vue,json,css,html}\" \"__tests__/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,vue,json,css,html}\" \"__tests__/**/*.ts\"",
+    "typecheck": "vue-tsc --noEmit",
+    "generate-icons": "node scripts/generate-icons.js",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -24,18 +42,50 @@
     "hotas",
     "controller"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "Mark Cheli",
+    "url": "https://www.markcheli.com"
+  },
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/MCheli/sim-manager/issues"
   },
   "homepage": "https://github.com/MCheli/sim-manager#readme",
   "devDependencies": {
+    "@electron/rebuild": "^4.0.2",
+    "@playwright/test": "^1.58.1",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "@vitejs/plugin-vue": "^6.0.3",
     "electron": "^40.0.0",
     "electron-builder": "^26.4.0",
+    "electron-vite": "^5.0.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.7.0",
+    "husky": "^9.1.7",
+    "jest": "^30.2.0",
+    "lint-staged": "^16.2.7",
+    "png-to-ico": "^3.0.1",
+    "prettier": "^3.8.1",
+    "sharp": "^0.34.5",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vue-eslint-parser": "^10.2.0",
+    "vue-tsc": "^3.2.4"
+  },
+  "lint-staged": {
+    "*.{ts,js,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,html,md}": [
+      "prettier --write"
+    ]
   },
   "build": {
     "appId": "com.simmanager.app",
@@ -51,5 +101,11 @@
       "dist/**/*",
       "package.json"
     ]
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "node-hid": "^3.2.0",
+    "vue": "^3.5.27",
+    "vuetify": "^3.11.8"
   }
 }

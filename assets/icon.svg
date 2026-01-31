@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Version 3: Abstract speed/control symbol -->
+  <defs>
+    <linearGradient id="bgGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a"/>
+      <stop offset="100%" style="stop-color:#0d0d0d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="url(#bgGrad3)"/>
+
+  <!-- Abstract wing/speed shape -->
+  <g transform="translate(256, 256)">
+    <!-- Main chevron shape (represents forward motion) -->
+    <path d="M-120,40 L0,-100 L120,40 L80,40 L0,-40 L-80,40 Z"
+          fill="#e0e0e0"/>
+
+    <!-- Secondary chevron (racing stripes feel) -->
+    <path d="M-80,90 L0,10 L80,90 L50,90 L0,50 L-50,90 Z"
+          fill="#888"/>
+
+    <!-- Green accent dot (control center) -->
+    <circle cx="0" cy="100" r="20" fill="#4CAF50"/>
+  </g>
+</svg>

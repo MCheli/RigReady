@@ -24,27 +24,27 @@ const KNOWN_VENDORS: Record<string, string> = {
 const KNOWN_PRODUCTS: Record<string, Record<string, string>> = {
   '4098': {
     // WinWing devices - identified from user's rig
-    'BE03': 'WinWing Device',
-    'BEA8': 'Orion Joystick Base 2 + F-16 Grip',
-    'BEE0': 'WinWing Device',
-    'BEDE': 'WinWing Device',
-    'BEE1': 'WinWing Device',
-    'BEE2': 'WinWing Device',
-    'BF05': 'WinWing Device',
-    'BF06': 'WinWing Device',
-    'BD26': 'Throttle Base1 + F-15EX Handles',
+    BE03: 'Combat Panel II',
+    BEA8: 'Orion Joystick Base 2 + F-16 Grip',
+    BEE0: 'Take Off Panel',
+    BEDE: 'MFD Panel (Left)',
+    BEE1: 'MFD Panel (Center)',
+    BEE2: 'MFD Panel (Right)',
+    BF05: 'UFC Panel',
+    BF06: 'UFC Expansion',
+    BD26: 'Throttle Base1 + F-15EX Handles',
   },
   '044F': {
-    'B68F': 'T-Pendular-Rudder (TPR)',
-    'B10A': 'T.16000M Joystick',
-    'B679': 'T.Flight Rudder Pedals',
-    'B67B': 'TPR Rudder Pedals',
-    'B351': 'Warthog Throttle',
-    'B352': 'Warthog Joystick',
-    'B687': 'TWCS Throttle',
+    B68F: 'T-Pendular-Rudder (TPR)',
+    B10A: 'T.16000M Joystick',
+    B679: 'T.Flight Rudder Pedals',
+    B67B: 'TPR Rudder Pedals',
+    B351: 'Warthog Throttle',
+    B352: 'Warthog Joystick',
+    B687: 'TWCS Throttle',
   },
   '3344': {
-    'C259': 'VPC Panel #1',
+    C259: 'VPC Panel #1',
     '412B': 'VPC Constellation Alpha',
     '8194': 'VPC MongoosT-50CM3',
     '0194': 'VPC Throttle',
@@ -80,25 +80,12 @@ export interface DeviceStatus {
   allExpectedConnected: boolean;
 }
 
-export interface GamepadState {
-  index: number;
-  id: string;
-  axes: number[];
-  buttons: { pressed: boolean; value: number }[];
-  timestamp: number;
-}
-
 export class DeviceManager {
   private configPath: string;
   private expectedDevices: Device[] = [];
-  private pollingInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.configPath = path.join(
-      process.env.USERPROFILE || '',
-      '.sim-manager',
-      'devices.json'
-    );
+    this.configPath = path.join(process.env.USERPROFILE || '', '.sim-manager', 'devices.json');
     this.loadExpectedDevices();
   }
 
@@ -120,10 +107,7 @@ export class DeviceManager {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(
-        this.configPath,
-        JSON.stringify(this.expectedDevices, null, 2)
-      );
+      fs.writeFileSync(this.configPath, JSON.stringify(this.expectedDevices, null, 2));
     } catch (error) {
       console.error('Failed to save expected devices:', error);
     }
@@ -166,8 +150,7 @@ export class DeviceManager {
     const vendorId = raw.VendorId.toUpperCase();
     const productId = raw.ProductId.toUpperCase();
     const vendorName = KNOWN_VENDORS[vendorId] || `Unknown (${vendorId})`;
-    const productName =
-      KNOWN_PRODUCTS[vendorId]?.[productId] || `Unknown Device (${productId})`;
+    const productName = KNOWN_PRODUCTS[vendorId]?.[productId] || `Unknown Device (${productId})`;
 
     return {
       vendorId,
@@ -221,20 +204,14 @@ export class DeviceManager {
 
   async checkDeviceStatus(): Promise<DeviceStatus> {
     const connected = await this.getAllDevices();
-    const connectedKeys = new Set(
-      connected.map((d) => `${d.vendorId}:${d.productId}`)
-    );
-    const expectedKeys = new Set(
-      this.expectedDevices.map((d) => `${d.vendorId}:${d.productId}`)
-    );
+    const connectedKeys = new Set(connected.map((d) => `${d.vendorId}:${d.productId}`));
+    const expectedKeys = new Set(this.expectedDevices.map((d) => `${d.vendorId}:${d.productId}`));
 
     const missing = this.expectedDevices.filter(
       (d) => !connectedKeys.has(`${d.vendorId}:${d.productId}`)
     );
 
-    const unexpected = connected.filter(
-      (d) => !expectedKeys.has(`${d.vendorId}:${d.productId}`)
-    );
+    const unexpected = connected.filter((d) => !expectedKeys.has(`${d.vendorId}:${d.productId}`));
 
     return {
       connected,
@@ -242,18 +219,5 @@ export class DeviceManager {
       unexpected,
       allExpectedConnected: missing.length === 0,
     };
-  }
-
-  startGamepadPolling(callback: (state: GamepadState[]) => void): void {
-    // Note: In Electron main process, we can't use the Gamepad API directly
-    // We'll use a renderer-side implementation instead
-    // This is a placeholder for the IPC handler
-  }
-
-  stopGamepadPolling(): void {
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
-    }
   }
 }
