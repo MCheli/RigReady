@@ -28,6 +28,20 @@ import type {
   AppSettings,
   UpdateStatus,
 } from './types';
+import type {
+  DCSScanResult,
+  DCSDeviceBindings,
+  DCSGuidMapping,
+  DCSRestoreOptions,
+  DCSRestoreResult,
+} from './dcsTypes';
+import type {
+  StreamDeckInstallation,
+  StreamDeckProfile,
+  StreamDeckBackup,
+  StreamDeckBackupResult,
+  StreamDeckRestoreResult,
+} from './streamDeckTypes';
 
 // =============================================================================
 // Device Status Types
@@ -208,6 +222,42 @@ export interface IpcChannels {
   'update:install': { args: []; return: void };
   'update:getStatus': { args: []; return: UpdateStatus };
   'update:getVersion': { args: []; return: string };
+
+  // DCS Bindings channels
+  'dcs:scanModules': { args: []; return: DCSScanResult };
+  'dcs:getModuleBindings': { args: [moduleId: string]; return: DCSDeviceBindings[] };
+  'dcs:getBackupBindings': {
+    args: [backupPath: string, moduleId: string];
+    return: DCSDeviceBindings[];
+  };
+  'dcs:getGuidMappings': {
+    args: [currentBindings: DCSDeviceBindings[], backupBindings: DCSDeviceBindings[]];
+    return: DCSGuidMapping[];
+  };
+  'dcs:restoreBindings': {
+    args: [backupPath: string, options: DCSRestoreOptions];
+    return: DCSRestoreResult;
+  };
+  'dcs:getAvailableBackups': {
+    args: [];
+    return: { name: string; path: string; timestamp: number }[];
+  };
+  'dcs:createBackup': { args: [name: string]; return: string | null };
+  'dcs:deleteBackup': { args: [backupPath: string]; return: boolean };
+  'dcs:getSavedGamesPath': { args: []; return: string | null };
+  'dcs:setSavedGamesPath': { args: [customPath: string]; return: boolean };
+
+  // Stream Deck channels
+  'streamdeck:detectInstallation': { args: []; return: StreamDeckInstallation };
+  'streamdeck:getProfiles': { args: []; return: StreamDeckProfile[] };
+  'streamdeck:createBackup': { args: [name: string]; return: StreamDeckBackupResult };
+  'streamdeck:restoreBackup': { args: [backupPath: string]; return: StreamDeckRestoreResult };
+  'streamdeck:getBackups': { args: []; return: StreamDeckBackup[] };
+  'streamdeck:deleteBackup': { args: [backupPath: string]; return: boolean };
+  'streamdeck:openSoftware': { args: []; return: boolean };
+  'streamdeck:openDownloadPage': { args: []; return: void };
+  'streamdeck:openProfilesFolder': { args: []; return: boolean };
+  'streamdeck:importBackup': { args: [sourcePath: string]; return: StreamDeckBackupResult };
 }
 
 /**
@@ -371,6 +421,35 @@ export interface RigReadyApi {
     getStatus: () => Promise<UpdateStatus>;
     getVersion: () => Promise<string>;
     onStatusChange: (callback: (status: UpdateStatus) => void) => void;
+  };
+
+  dcs: {
+    scanModules: () => Promise<DCSScanResult>;
+    getModuleBindings: (moduleId: string) => Promise<DCSDeviceBindings[]>;
+    getBackupBindings: (backupPath: string, moduleId: string) => Promise<DCSDeviceBindings[]>;
+    getGuidMappings: (
+      currentBindings: DCSDeviceBindings[],
+      backupBindings: DCSDeviceBindings[]
+    ) => Promise<DCSGuidMapping[]>;
+    restoreBindings: (backupPath: string, options: DCSRestoreOptions) => Promise<DCSRestoreResult>;
+    getAvailableBackups: () => Promise<{ name: string; path: string; timestamp: number }[]>;
+    createBackup: (name: string) => Promise<string | null>;
+    deleteBackup: (backupPath: string) => Promise<boolean>;
+    getSavedGamesPath: () => Promise<string | null>;
+    setSavedGamesPath: (customPath: string) => Promise<boolean>;
+  };
+
+  streamDeck: {
+    detectInstallation: () => Promise<StreamDeckInstallation>;
+    getProfiles: () => Promise<StreamDeckProfile[]>;
+    createBackup: (name: string) => Promise<StreamDeckBackupResult>;
+    restoreBackup: (backupPath: string) => Promise<StreamDeckRestoreResult>;
+    getBackups: () => Promise<StreamDeckBackup[]>;
+    deleteBackup: (backupPath: string) => Promise<boolean>;
+    openSoftware: () => Promise<boolean>;
+    openDownloadPage: () => Promise<void>;
+    openProfilesFolder: () => Promise<boolean>;
+    importBackup: (sourcePath: string) => Promise<StreamDeckBackupResult>;
   };
 }
 

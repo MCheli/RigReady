@@ -12,6 +12,8 @@ import { keybindingProfileService } from './services/keybindingProfileService';
 import { simulatorConfigService } from './services/simulatorConfigService';
 import { settingsService, type SimulatorPath } from './services/settingsService';
 import { updateService } from './services/updateService';
+import { dcsKeybindingService } from './services/dcsKeybindingService';
+import { streamDeckService } from './services/streamDeckService';
 import type {
   CommonAction,
   VehicleBinding,
@@ -19,6 +21,7 @@ import type {
   Simulator,
   AppSettings,
 } from '../shared/types';
+import type { DCSDeviceBindings, DCSRestoreOptions } from '../shared/dcsTypes';
 
 let mainWindow: BrowserWindow | null = null;
 let deviceManager: DeviceManager;
@@ -562,6 +565,94 @@ function setupIPC(): void {
 
   ipcMain.handle('settings:verifySimulatorPath', async (_event, simulator: Simulator) => {
     return settingsService.verifySimulatorPath(simulator);
+  });
+
+  // DCS Bindings service
+  ipcMain.handle('dcs:scanModules', async () => {
+    return dcsKeybindingService.scanModules();
+  });
+
+  ipcMain.handle('dcs:getModuleBindings', async (_event, moduleId: string) => {
+    return dcsKeybindingService.getModuleBindings(moduleId);
+  });
+
+  ipcMain.handle('dcs:getBackupBindings', async (_event, backupPath: string, moduleId: string) => {
+    return dcsKeybindingService.getBackupBindings(backupPath, moduleId);
+  });
+
+  ipcMain.handle(
+    'dcs:getGuidMappings',
+    async (_event, currentBindings: DCSDeviceBindings[], backupBindings: DCSDeviceBindings[]) => {
+      return dcsKeybindingService.computeGuidMappings(currentBindings, backupBindings);
+    }
+  );
+
+  ipcMain.handle(
+    'dcs:restoreBindings',
+    async (_event, backupPath: string, options: DCSRestoreOptions) => {
+      return dcsKeybindingService.restoreBindings(backupPath, options);
+    }
+  );
+
+  ipcMain.handle('dcs:getAvailableBackups', async () => {
+    return dcsKeybindingService.getAvailableBackups();
+  });
+
+  ipcMain.handle('dcs:createBackup', async (_event, name: string) => {
+    return dcsKeybindingService.createBackup(name);
+  });
+
+  ipcMain.handle('dcs:deleteBackup', async (_event, backupPath: string) => {
+    return dcsKeybindingService.deleteBackup(backupPath);
+  });
+
+  ipcMain.handle('dcs:getSavedGamesPath', async () => {
+    return dcsKeybindingService.getSavedGamesPath();
+  });
+
+  ipcMain.handle('dcs:setSavedGamesPath', async (_event, customPath: string) => {
+    return dcsKeybindingService.setSavedGamesPath(customPath);
+  });
+
+  // Stream Deck service
+  ipcMain.handle('streamdeck:detectInstallation', async () => {
+    return streamDeckService.detectInstallation();
+  });
+
+  ipcMain.handle('streamdeck:getProfiles', async () => {
+    return streamDeckService.getProfiles();
+  });
+
+  ipcMain.handle('streamdeck:createBackup', async (_event, name: string) => {
+    return streamDeckService.createBackup(name);
+  });
+
+  ipcMain.handle('streamdeck:restoreBackup', async (_event, backupPath: string) => {
+    return streamDeckService.restoreBackup(backupPath);
+  });
+
+  ipcMain.handle('streamdeck:getBackups', async () => {
+    return streamDeckService.getBackups();
+  });
+
+  ipcMain.handle('streamdeck:deleteBackup', async (_event, backupPath: string) => {
+    return streamDeckService.deleteBackup(backupPath);
+  });
+
+  ipcMain.handle('streamdeck:openSoftware', async () => {
+    return streamDeckService.openSoftware();
+  });
+
+  ipcMain.handle('streamdeck:openDownloadPage', async () => {
+    streamDeckService.openDownloadPage();
+  });
+
+  ipcMain.handle('streamdeck:openProfilesFolder', async () => {
+    return streamDeckService.openProfilesFolder();
+  });
+
+  ipcMain.handle('streamdeck:importBackup', async (_event, sourcePath: string) => {
+    return streamDeckService.importBackup(sourcePath);
   });
 }
 

@@ -650,3 +650,36 @@ export function useSettings() {
     verifySimulatorPath,
   };
 }
+
+// =============================================================================
+// Re-export DCS Bindings Composable
+// =============================================================================
+
+export { useDCSBindings } from './useDCSBindings';
+export type {
+  DCSModule,
+  DCSScanResult,
+  DCSDeviceBindings,
+  DCSGuidMapping,
+  DCSRestoreOptions,
+  DCSRestoreResult,
+  DCSAxisBinding,
+  DCSKeyBinding,
+  DCSAxisFilter,
+  DCSBindingComparison,
+  DCSBindingDifference,
+  DCSBackup,
+} from './useDCSBindings';
+
+// =============================================================================
+// Re-export Stream Deck Composable
+// =============================================================================
+
+export { useStreamDeck } from './useStreamDeck';
+export type {
+  StreamDeckInstallation,
+  StreamDeckProfile,
+  StreamDeckBackup,
+  StreamDeckBackupResult,
+  StreamDeckRestoreResult,
+} from './useStreamDeck';

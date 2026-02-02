@@ -18,11 +18,13 @@ const rigReadyTheme: ThemeDefinition = {
     info: '#60a5fa',
     'on-background': '#ffffff',
     'on-surface': '#ffffff',
+    'on-surface-variant': '#e0e0e0',
     'on-primary': '#0a0a0a',
     'on-secondary': '#0a0a0a',
     'on-error': '#0a0a0a',
     'on-warning': '#0a0a0a',
     'on-success': '#0a0a0a',
+    'on-info': '#0a0a0a',
   },
   variables: {
     'border-color': '#2a2a2a',

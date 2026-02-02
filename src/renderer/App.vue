@@ -5,6 +5,7 @@ import DevicesView from './views/DevicesView.vue';
 import InputTesterView from './views/InputTesterView.vue';
 import DisplaysView from './views/DisplaysView.vue';
 import KeybindingsView from './views/KeybindingsView.vue';
+import StreamDeckView from './views/StreamDeckView.vue';
 import SettingsView from './views/SettingsView.vue';
 import DebugView from './views/DebugView.vue';
 import { useToast } from './composables/useToast';
@@ -45,8 +46,9 @@ const navItems = [
   { id: 'input-test', title: 'Input Tester', icon: 'mdi-gamepad-variant', shortcut: '3' },
   { id: 'displays', title: 'Displays', icon: 'mdi-monitor', shortcut: '4' },
   { id: 'keybindings', title: 'Keybindings', icon: 'mdi-keyboard', shortcut: '5' },
-  { id: 'settings', title: 'Settings', icon: 'mdi-cog', shortcut: '6' },
-  { id: 'debug', title: 'Debug', icon: 'mdi-wrench', shortcut: '7' },
+  { id: 'streamdeck', title: 'Stream Deck', icon: 'mdi-grid', shortcut: '6' },
+  { id: 'settings', title: 'Settings', icon: 'mdi-cog', shortcut: '7' },
+  { id: 'debug', title: 'Debug', icon: 'mdi-wrench', shortcut: '8' },
 ];
 
 onMounted(async () => {
@@ -85,11 +87,17 @@ onMounted(async () => {
     {
       key: '6',
       ctrl: true,
+      description: 'Go to Stream Deck',
+      action: () => (currentSection.value = 'streamdeck'),
+    },
+    {
+      key: '7',
+      ctrl: true,
       description: 'Go to Settings',
       action: () => (currentSection.value = 'settings'),
     },
     {
-      key: '7',
+      key: '8',
       ctrl: true,
       description: 'Go to Debug',
       action: () => (currentSection.value = 'debug'),
@@ -205,6 +213,7 @@ onMounted(async () => {
           <InputTesterView v-else-if="currentSection === 'input-test'" />
           <DisplaysView v-else-if="currentSection === 'displays'" />
           <KeybindingsView v-else-if="currentSection === 'keybindings'" />
+          <StreamDeckView v-else-if="currentSection === 'streamdeck'" />
           <SettingsView v-else-if="currentSection === 'settings'" />
           <DebugView v-else-if="currentSection === 'debug'" />
         </transition>

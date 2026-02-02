@@ -13,6 +13,9 @@ import type {
   GameProfile,
   UpdateStatus,
 } from '../shared/types';
+import type { DCSDeviceBindings, DCSRestoreOptions } from '../shared/dcsTypes';
+// StreamDeck types are used via IPC invoke return types, imported for documentation
+import type {} from '../shared/streamDeckTypes';
 
 // Type-safe API exposed to renderer
 const api: RigReadyApi = {
@@ -178,6 +181,39 @@ const api: RigReadyApi = {
     onStatusChange: (callback: (status: UpdateStatus) => void) => {
       ipcRenderer.on('update:status', (_event, status) => callback(status));
     },
+  },
+
+  // DCS Bindings service
+  dcs: {
+    scanModules: () => ipcRenderer.invoke('dcs:scanModules'),
+    getModuleBindings: (moduleId: string) => ipcRenderer.invoke('dcs:getModuleBindings', moduleId),
+    getBackupBindings: (backupPath: string, moduleId: string) =>
+      ipcRenderer.invoke('dcs:getBackupBindings', backupPath, moduleId),
+    getGuidMappings: (currentBindings: DCSDeviceBindings[], backupBindings: DCSDeviceBindings[]) =>
+      ipcRenderer.invoke('dcs:getGuidMappings', currentBindings, backupBindings),
+    restoreBindings: (backupPath: string, options: DCSRestoreOptions) =>
+      ipcRenderer.invoke('dcs:restoreBindings', backupPath, options),
+    getAvailableBackups: () => ipcRenderer.invoke('dcs:getAvailableBackups'),
+    createBackup: (name: string) => ipcRenderer.invoke('dcs:createBackup', name),
+    deleteBackup: (backupPath: string) => ipcRenderer.invoke('dcs:deleteBackup', backupPath),
+    getSavedGamesPath: () => ipcRenderer.invoke('dcs:getSavedGamesPath'),
+    setSavedGamesPath: (customPath: string) =>
+      ipcRenderer.invoke('dcs:setSavedGamesPath', customPath),
+  },
+
+  // Stream Deck service
+  streamDeck: {
+    detectInstallation: () => ipcRenderer.invoke('streamdeck:detectInstallation'),
+    getProfiles: () => ipcRenderer.invoke('streamdeck:getProfiles'),
+    createBackup: (name: string) => ipcRenderer.invoke('streamdeck:createBackup', name),
+    restoreBackup: (backupPath: string) =>
+      ipcRenderer.invoke('streamdeck:restoreBackup', backupPath),
+    getBackups: () => ipcRenderer.invoke('streamdeck:getBackups'),
+    deleteBackup: (backupPath: string) => ipcRenderer.invoke('streamdeck:deleteBackup', backupPath),
+    openSoftware: () => ipcRenderer.invoke('streamdeck:openSoftware'),
+    openDownloadPage: () => ipcRenderer.invoke('streamdeck:openDownloadPage'),
+    openProfilesFolder: () => ipcRenderer.invoke('streamdeck:openProfilesFolder'),
+    importBackup: (sourcePath: string) => ipcRenderer.invoke('streamdeck:importBackup', sourcePath),
   },
 };
 
