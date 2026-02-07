@@ -36,10 +36,16 @@ export const contextBridge = {
   exposeInMainWorld: jest.fn(),
 };
 
+export const shell = {
+  openPath: jest.fn().mockResolvedValue(''),
+  openExternal: jest.fn().mockResolvedValue(undefined),
+};
+
 export default {
   app,
   BrowserWindow,
   ipcMain,
   ipcRenderer,
   contextBridge,
+  shell,
 };

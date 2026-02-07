@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import LaunchView from './views/LaunchView.vue';
+import ProfilesView from './views/ProfilesView.vue';
+import ChecklistView from './views/ChecklistView.vue';
+import ProfileWizardView from './views/ProfileWizardView.vue';
 import DevicesView from './views/DevicesView.vue';
 import InputTesterView from './views/InputTesterView.vue';
 import DisplaysView from './views/DisplaysView.vue';
@@ -16,7 +19,7 @@ const { toastState, hide: hideToast } = useToast();
 const { shortcuts, showShortcutsHelp, registerShortcuts, formatShortcut, hideHelp } =
   useKeyboardShortcuts();
 
-const currentSection = ref('launch');
+const currentSection = ref('profiles');
 
 // Create navigation provider for child components
 const _navigation = createNavigation((section) => {
@@ -41,14 +44,16 @@ const appStatus = ref<'scanning' | 'ready' | 'error'>('scanning');
 const appVersion = ref('v1.0.0');
 
 const navItems = [
-  { id: 'launch', title: 'Launch', icon: 'mdi-rocket-launch', shortcut: '1' },
-  { id: 'devices', title: 'Devices', icon: 'mdi-controller', shortcut: '2' },
-  { id: 'input-test', title: 'Input Tester', icon: 'mdi-gamepad-variant', shortcut: '3' },
-  { id: 'displays', title: 'Displays', icon: 'mdi-monitor', shortcut: '4' },
-  { id: 'keybindings', title: 'Keybindings', icon: 'mdi-keyboard', shortcut: '5' },
-  { id: 'streamdeck', title: 'Stream Deck', icon: 'mdi-grid', shortcut: '6' },
-  { id: 'settings', title: 'Settings', icon: 'mdi-cog', shortcut: '7' },
-  { id: 'debug', title: 'Debug', icon: 'mdi-wrench', shortcut: '8' },
+  { id: 'profiles', title: 'Profiles', icon: 'mdi-account-box', shortcut: '1' },
+  { id: 'checklist', title: 'Checklist', icon: 'mdi-clipboard-check', shortcut: '2' },
+  { id: 'launch', title: 'Launch', icon: 'mdi-rocket-launch', shortcut: '3' },
+  { id: 'devices', title: 'Devices', icon: 'mdi-controller', shortcut: '4' },
+  { id: 'input-test', title: 'Input Tester', icon: 'mdi-gamepad-variant', shortcut: '5' },
+  { id: 'displays', title: 'Displays', icon: 'mdi-monitor', shortcut: '6' },
+  { id: 'keybindings', title: 'Keybindings', icon: 'mdi-keyboard', shortcut: '7' },
+  { id: 'streamdeck', title: 'Stream Deck', icon: 'mdi-grid', shortcut: '8' },
+  { id: 'settings', title: 'Settings', icon: 'mdi-cog', shortcut: '9' },
+  { id: 'debug', title: 'Debug', icon: 'mdi-wrench', shortcut: '0' },
 ];
 
 onMounted(async () => {
@@ -57,47 +62,59 @@ onMounted(async () => {
     {
       key: '1',
       ctrl: true,
+      description: 'Go to Profiles',
+      action: () => (currentSection.value = 'profiles'),
+    },
+    {
+      key: '2',
+      ctrl: true,
+      description: 'Go to Checklist',
+      action: () => (currentSection.value = 'checklist'),
+    },
+    {
+      key: '3',
+      ctrl: true,
       description: 'Go to Launch',
       action: () => (currentSection.value = 'launch'),
     },
     {
-      key: '2',
+      key: '4',
       ctrl: true,
       description: 'Go to Devices',
       action: () => (currentSection.value = 'devices'),
     },
     {
-      key: '3',
+      key: '5',
       ctrl: true,
       description: 'Go to Input Tester',
       action: () => (currentSection.value = 'input-test'),
     },
     {
-      key: '4',
+      key: '6',
       ctrl: true,
       description: 'Go to Displays',
       action: () => (currentSection.value = 'displays'),
     },
     {
-      key: '5',
+      key: '7',
       ctrl: true,
       description: 'Go to Keybindings',
       action: () => (currentSection.value = 'keybindings'),
     },
     {
-      key: '6',
+      key: '8',
       ctrl: true,
       description: 'Go to Stream Deck',
       action: () => (currentSection.value = 'streamdeck'),
     },
     {
-      key: '7',
+      key: '9',
       ctrl: true,
       description: 'Go to Settings',
       action: () => (currentSection.value = 'settings'),
     },
     {
-      key: '8',
+      key: '0',
       ctrl: true,
       description: 'Go to Debug',
       action: () => (currentSection.value = 'debug'),
@@ -208,7 +225,10 @@ onMounted(async () => {
     <v-main>
       <v-container fluid class="main-content pa-6">
         <transition name="fade" mode="out-in">
-          <LaunchView v-if="currentSection === 'launch'" />
+          <ProfilesView v-if="currentSection === 'profiles'" />
+          <ChecklistView v-else-if="currentSection === 'checklist'" />
+          <ProfileWizardView v-else-if="currentSection === 'profile-wizard'" />
+          <LaunchView v-else-if="currentSection === 'launch'" />
           <DevicesView v-else-if="currentSection === 'devices'" />
           <InputTesterView v-else-if="currentSection === 'input-test'" />
           <DisplaysView v-else-if="currentSection === 'displays'" />

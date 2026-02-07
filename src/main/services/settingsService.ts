@@ -144,6 +144,31 @@ export const SIMULATOR_PATH_CONFIG: Record<Simulator, SimulatorPathConfig | null
     ),
     executableName: 'AC2-Win64-Shipping.exe',
   },
+  beamng: {
+    name: 'BeamNG.drive',
+    possibleInstallPaths: [
+      'C:\\Program Files (x86)\\Steam\\steamapps\\common\\BeamNG.drive',
+      'D:\\SteamLibrary\\steamapps\\common\\BeamNG.drive',
+      'E:\\SteamLibrary\\steamapps\\common\\BeamNG.drive',
+      'D:\\Steam\\steamapps\\common\\BeamNG.drive',
+    ],
+    standaloneConfigPath: path.join(
+      process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+      'BeamNG.drive'
+    ),
+    executableName: 'BeamNG.drive.x64.exe',
+  },
+  lmu: {
+    name: 'Le Mans Ultimate',
+    possibleInstallPaths: [
+      'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Le Mans Ultimate',
+      'D:\\SteamLibrary\\steamapps\\common\\Le Mans Ultimate',
+      'E:\\SteamLibrary\\steamapps\\common\\Le Mans Ultimate',
+      'D:\\Steam\\steamapps\\common\\Le Mans Ultimate',
+    ],
+    standaloneConfigPath: path.join(os.homedir(), 'Documents', 'Le Mans Ultimate'),
+    executableName: 'Le Mans Ultimate.exe',
+  },
   other: null,
 };
 
@@ -294,7 +319,16 @@ class SettingsService {
 
   autoScanAllSimulators(): SimulatorPath[] {
     const results: SimulatorPath[] = [];
-    const simulators: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2', 'iracing', 'acc'];
+    const simulators: Simulator[] = [
+      'dcs',
+      'msfs',
+      'xplane',
+      'il2',
+      'iracing',
+      'acc',
+      'beamng',
+      'lmu',
+    ];
 
     for (const sim of simulators) {
       const result = this.autoScanSimulator(sim);
@@ -341,8 +375,8 @@ class SettingsService {
     if (!simPath) return false;
 
     const isValid =
-      (simPath.installPath && fs.existsSync(simPath.installPath)) ||
-      (simPath.configPath && fs.existsSync(simPath.configPath));
+      (!!simPath.installPath && fs.existsSync(simPath.installPath)) ||
+      (!!simPath.configPath && fs.existsSync(simPath.configPath));
 
     if (isValid) {
       // Update last verified timestamp

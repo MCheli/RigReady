@@ -12,6 +12,7 @@ export interface NavigationState {
 
 export interface NavigationApi {
   state: Ref<NavigationState>;
+  navigateTo: (section: string) => void;
   navigateToInputTester: (deviceId: string) => void;
   clearNavigationState: () => void;
 }
@@ -26,6 +27,14 @@ export function createNavigation(setCurrentSection: (section: string) => void): 
     targetSection: null,
     targetDeviceId: null,
   });
+
+  function navigateTo(section: string) {
+    state.value = {
+      targetSection: section,
+      targetDeviceId: null,
+    };
+    setCurrentSection(section);
+  }
 
   function navigateToInputTester(deviceId: string) {
     state.value = {
@@ -44,6 +53,7 @@ export function createNavigation(setCurrentSection: (section: string) => void): 
 
   const api: NavigationApi = {
     state,
+    navigateTo,
     navigateToInputTester,
     clearNavigationState,
   };

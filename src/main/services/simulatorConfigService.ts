@@ -122,6 +122,29 @@ const SIMULATOR_PATHS: Record<Simulator, SimulatorPaths | null> = {
   },
   iracing: null,
   acc: null,
+  beamng: {
+    possibleInstallPaths: [
+      'C:\\Program Files (x86)\\Steam\\steamapps\\common\\BeamNG.drive',
+      'D:\\SteamLibrary\\steamapps\\common\\BeamNG.drive',
+      'E:\\SteamLibrary\\steamapps\\common\\BeamNG.drive',
+      'D:\\Steam\\steamapps\\common\\BeamNG.drive',
+    ],
+    configPath: () => {
+      const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+      return path.join(localAppData, 'BeamNG.drive');
+    },
+    vehicleConfigPath: (configPath: string) => configPath,
+  },
+  lmu: {
+    possibleInstallPaths: [
+      'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Le Mans Ultimate',
+      'D:\\SteamLibrary\\steamapps\\common\\Le Mans Ultimate',
+      'E:\\SteamLibrary\\steamapps\\common\\Le Mans Ultimate',
+      'D\\Steam\\steamapps\\common\\Le Mans Ultimate',
+    ],
+    configPath: () => path.join(os.homedir(), 'Documents', 'Le Mans Ultimate'),
+    vehicleConfigPath: (configPath: string) => path.join(configPath, 'UserData', 'Controller'),
+  },
   other: null,
 };
 
@@ -178,7 +201,7 @@ export function detectSimulatorInstallation(simulator: Simulator): SimulatorInst
 }
 
 export function detectAllSimulators(): SimulatorInstallation[] {
-  const simulators: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2'];
+  const simulators: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2', 'beamng', 'lmu'];
   return simulators.map(detectSimulatorInstallation);
 }
 
@@ -190,6 +213,8 @@ function getSimulatorName(simulator: Simulator): string {
     il2: 'IL-2 Sturmovik',
     iracing: 'iRacing',
     acc: 'Assetto Corsa Competizione',
+    beamng: 'BeamNG.drive',
+    lmu: 'Le Mans Ultimate',
     other: 'Other',
   };
   return names[simulator];
@@ -457,8 +482,8 @@ function parseMSFSInput(input: MSFSInputConfig): SimulatorBinding['input'] | nul
     };
   }
 
-  if (input.Key !== undefined) {
-    return { type: 'key', key: input.Key };
+  if (input.Keyboard !== undefined) {
+    return { type: 'key', key: input.Keyboard };
   }
 
   return null;
@@ -681,7 +706,7 @@ export function scanSimulator(simulator: Simulator): SimulatorScanResult {
 }
 
 export function scanAllSimulators(): SimulatorScanResult[] {
-  const simulators: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2'];
+  const simulators: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2', 'beamng', 'lmu'];
   return simulators.map(scanSimulator);
 }
 
@@ -725,7 +750,7 @@ class SimulatorConfigService {
   }
 
   scanAllSimulators(forceRefresh = false): SimulatorScanResult[] {
-    const simulators: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2'];
+    const simulators: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2', 'beamng', 'lmu'];
     return simulators.map((s) => this.scanSimulator(s, forceRefresh));
   }
 

@@ -14,6 +14,13 @@ import { settingsService, type SimulatorPath } from './services/settingsService'
 import { updateService } from './services/updateService';
 import { dcsKeybindingService } from './services/dcsKeybindingService';
 import { streamDeckService } from './services/streamDeckService';
+import { profileService } from './services/profileService';
+import { checklistService } from './services/checklistService';
+import { migrationService } from './services/migrationService';
+import { scriptService } from './services/scriptService';
+import { displayWriteService } from './services/displayWriteService';
+import { bundleService } from './services/bundleService';
+import { privacyReviewService } from './services/privacyReviewService';
 import type {
   CommonAction,
   VehicleBinding,
@@ -22,6 +29,9 @@ import type {
   AppSettings,
 } from '../shared/types';
 import type { DCSDeviceBindings, DCSRestoreOptions } from '../shared/dcsTypes';
+import type { Profile, ChecklistItem, Remediation } from '../shared/profileTypes';
+import type { ScriptConfig, ScriptExecutionOptions } from '../shared/scriptTypes';
+import type { ExportOptions, ImportOptions } from '../shared/bundleTypes';
 
 let mainWindow: BrowserWindow | null = null;
 let deviceManager: DeviceManager;
@@ -654,6 +664,110 @@ function setupIPC(): void {
   ipcMain.handle('streamdeck:importBackup', async (_event, sourcePath: string) => {
     return streamDeckService.importBackup(sourcePath);
   });
+
+  // =========================================================================
+  // Unified Profile handlers
+  // =========================================================================
+  ipcMain.handle('profiles:list', async () => {
+    return profileService.list();
+  });
+
+  ipcMain.handle('profiles:getAll', async () => {
+    return profileService.getAll();
+  });
+
+  ipcMain.handle('profiles:getById', async (_event, id: string) => {
+    return profileService.getById(id);
+  });
+
+  ipcMain.handle(
+    'profiles:create',
+    async (_event, data: Omit<Profile, 'id' | 'createdAt' | 'lastUsed'>) => {
+      return profileService.create(data);
+    }
+  );
+
+  ipcMain.handle('profiles:save', async (_event, profile: Profile) => {
+    profileService.save(profile);
+  });
+
+  ipcMain.handle('profiles:delete', async (_event, id: string) => {
+    return profileService.delete(id);
+  });
+
+  ipcMain.handle('profiles:clone', async (_event, id: string, newName: string) => {
+    return profileService.clone(id, newName);
+  });
+
+  ipcMain.handle('profiles:setActive', async (_event, id: string) => {
+    return profileService.setActive(id);
+  });
+
+  ipcMain.handle('profiles:getActive', async () => {
+    return profileService.getActive();
+  });
+
+  ipcMain.handle('profiles:getActiveId', async () => {
+    return profileService.getActiveId();
+  });
+
+  // =========================================================================
+  // Checklist handlers
+  // =========================================================================
+  ipcMain.handle('checklist:run', async (_event, profileId: string) => {
+    const profile = profileService.getById(profileId);
+    if (!profile) {
+      return {
+        profileId,
+        profileName: 'Unknown',
+        overallStatus: 'fail' as const,
+        results: [],
+        allRequiredPassed: false,
+        timestamp: Date.now(),
+      };
+    }
+    return checklistService.runChecklist(profile);
+  });
+
+  ipcMain.handle('checklist:runSingle', async (_event, item: ChecklistItem) => {
+    return checklistService.runSingleCheck(item);
+  });
+
+  ipcMain.handle('checklist:remediate', async (_event, remediation: Remediation) => {
+    return checklistService.executeRemediation(remediation);
+  });
+
+  // =========================================================================
+  // Script execution handlers
+  // =========================================================================
+  ipcMain.handle(
+    'scripts:execute',
+    async (_event, config: ScriptConfig, options?: ScriptExecutionOptions) => {
+      return scriptService.execute(config, options);
+    }
+  );
+
+  // =========================================================================
+  // Display write handlers
+  // =========================================================================
+  ipcMain.handle('displays:applyLayout', async (_event, configurationName: string) => {
+    return displayWriteService.applyConfiguration(configurationName);
+  });
+
+  // =========================================================================
+  // Bundle export/import handlers
+  // =========================================================================
+  ipcMain.handle('bundles:export', async (_event, options: ExportOptions) => {
+    return bundleService.exportBundle(options);
+  });
+
+  ipcMain.handle('bundles:import', async (_event, options: ImportOptions) => {
+    return bundleService.importBundle(options);
+  });
+
+  ipcMain.handle('bundles:reviewPrivacy', async (_event, profileId: string) => {
+    return privacyReviewService.reviewProfile(profileId);
+  });
 }
 
 app.whenReady().then(() => {
@@ -693,6 +807,15 @@ app.whenReady().then(() => {
   pygameManager.onDeviceChange((devices) => {
     mainWindow?.webContents.send('pygame:devicesChanged', devices);
   });
+
+  // Inject managers into services that need them
+  displayWriteService.setDisplayManager(displayManager);
+  checklistService.setHidManager(hidManager);
+  checklistService.setDisplayManager(displayManager);
+
+  // Run profile migration from old JSON format
+  migrationService.migrateIfNeeded();
+  console.log('Profile migration checked');
 
   setupIPC();
   console.log('IPC handlers registered');

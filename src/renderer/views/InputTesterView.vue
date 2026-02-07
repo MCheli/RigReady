@@ -20,6 +20,8 @@ const inputState = ref<{ axes: number[]; buttons: boolean[]; hats: [number, numb
 const previousButtons = ref<boolean[]>([]);
 const previousAxes = ref<number[]>([]);
 const maxLogEntries = 50;
+const captureMode = ref(false);
+const lastCapturedInput = ref<{ input: string; value: string; type: string } | null>(null);
 
 // Selected device info
 const selectedDevice = computed(() => {
@@ -69,6 +71,11 @@ function parseDeviceId(id: string | null) {
 
 // Log an input event
 function logEvent(input: string, value: string, type: string) {
+  // Update capture mode with last input
+  if (captureMode.value) {
+    lastCapturedInput.value = { input, value, type };
+  }
+
   const now = new Date();
   const time =
     now.toLocaleTimeString('en-US', { hour12: false }) +
@@ -84,6 +91,13 @@ function logEvent(input: string, value: string, type: string) {
   // Keep log size reasonable
   if (activityLog.value.length > maxLogEntries) {
     activityLog.value.pop();
+  }
+}
+
+function toggleCaptureMode() {
+  captureMode.value = !captureMode.value;
+  if (!captureMode.value) {
+    lastCapturedInput.value = null;
   }
 }
 
@@ -247,9 +261,28 @@ function getAxisLabel(index: number): string {
             </v-list-item>
           </template>
         </v-select>
+        <v-btn
+          :variant="captureMode ? 'flat' : 'outlined'"
+          :color="captureMode ? 'warning' : undefined"
+          @click="toggleCaptureMode"
+        >
+          {{ captureMode ? 'Stop Capture' : 'Press Any Button' }}
+        </v-btn>
         <v-btn variant="outlined" @click="clearLog"> Clear Log </v-btn>
       </template>
     </PageHeader>
+
+    <!-- Capture Mode Overlay -->
+    <v-card v-if="captureMode && selectedDeviceId" color="warning" variant="tonal" class="mb-4">
+      <v-card-text class="text-center py-6">
+        <v-icon size="48" class="mb-2">mdi-gesture-tap-button</v-icon>
+        <div class="text-h5 mb-2">Press Any Button</div>
+        <div v-if="lastCapturedInput" class="text-h4 font-weight-bold">
+          {{ lastCapturedInput.input }}: {{ lastCapturedInput.value }}
+        </div>
+        <div v-else class="text-body-1 text-medium-emphasis">Waiting for input...</div>
+      </v-card-text>
+    </v-card>
 
     <v-row v-if="selectedDeviceId && inputState">
       <!-- Device Info & Visual Controllers -->

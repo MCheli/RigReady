@@ -42,6 +42,22 @@ import type {
   StreamDeckBackupResult,
   StreamDeckRestoreResult,
 } from './streamDeckTypes';
+import type {
+  Profile,
+  ProfileSummary,
+  ChecklistItem,
+  CheckResult,
+  ChecklistResult,
+  Remediation,
+} from './profileTypes';
+import type { ScriptConfig, ScriptResult, ScriptExecutionOptions } from './scriptTypes';
+import type {
+  ExportOptions,
+  ExportResult,
+  ImportOptions,
+  ImportResult,
+  PrivacyReviewResult,
+} from './bundleTypes';
 
 // =============================================================================
 // Device Status Types
@@ -258,6 +274,46 @@ export interface IpcChannels {
   'streamdeck:openDownloadPage': { args: []; return: void };
   'streamdeck:openProfilesFolder': { args: []; return: boolean };
   'streamdeck:importBackup': { args: [sourcePath: string]; return: StreamDeckBackupResult };
+
+  // Unified Profile channels
+  'profiles:list': { args: []; return: ProfileSummary[] };
+  'profiles:getAll': { args: []; return: Profile[] };
+  'profiles:getById': { args: [id: string]; return: Profile | undefined };
+  'profiles:create': {
+    args: [data: Omit<Profile, 'id' | 'createdAt' | 'lastUsed'>];
+    return: Profile;
+  };
+  'profiles:save': { args: [profile: Profile]; return: void };
+  'profiles:delete': { args: [id: string]; return: boolean };
+  'profiles:clone': { args: [id: string, newName: string]; return: Profile | undefined };
+  'profiles:setActive': { args: [id: string]; return: boolean };
+  'profiles:getActive': { args: []; return: Profile | null };
+  'profiles:getActiveId': { args: []; return: string | null };
+
+  // Checklist channels
+  'checklist:run': { args: [profileId: string]; return: ChecklistResult };
+  'checklist:runSingle': { args: [item: ChecklistItem]; return: CheckResult };
+  'checklist:remediate': {
+    args: [remediation: Remediation];
+    return: { success: boolean; message: string };
+  };
+
+  // Script channels
+  'scripts:execute': {
+    args: [config: ScriptConfig, options?: ScriptExecutionOptions];
+    return: ScriptResult;
+  };
+
+  // Bundle channels
+  'bundles:export': { args: [options: ExportOptions]; return: ExportResult };
+  'bundles:import': { args: [options: ImportOptions]; return: ImportResult };
+  'bundles:reviewPrivacy': { args: [profileId: string]; return: PrivacyReviewResult };
+
+  // Display write channels
+  'displays:applyLayout': {
+    args: [configurationName: string];
+    return: { success: boolean; message: string };
+  };
 }
 
 /**
@@ -333,6 +389,7 @@ export interface RigReadyApi {
     getSavedConfigurations: () => Promise<DisplayConfiguration[]>;
     deleteConfiguration: (name: string) => Promise<boolean>;
     checkConfiguration: (name: string) => Promise<boolean>;
+    applyLayout: (configurationName: string) => Promise<{ success: boolean; message: string }>;
   };
 
   keybindings: {
@@ -450,6 +507,35 @@ export interface RigReadyApi {
     openDownloadPage: () => Promise<void>;
     openProfilesFolder: () => Promise<boolean>;
     importBackup: (sourcePath: string) => Promise<StreamDeckBackupResult>;
+  };
+
+  profiles: {
+    list: () => Promise<ProfileSummary[]>;
+    getAll: () => Promise<Profile[]>;
+    getById: (id: string) => Promise<Profile | undefined>;
+    create: (data: Omit<Profile, 'id' | 'createdAt' | 'lastUsed'>) => Promise<Profile>;
+    save: (profile: Profile) => Promise<void>;
+    delete: (id: string) => Promise<boolean>;
+    clone: (id: string, newName: string) => Promise<Profile | undefined>;
+    setActive: (id: string) => Promise<boolean>;
+    getActive: () => Promise<Profile | null>;
+    getActiveId: () => Promise<string | null>;
+  };
+
+  checklist: {
+    run: (profileId: string) => Promise<ChecklistResult>;
+    runSingle: (item: ChecklistItem) => Promise<CheckResult>;
+    remediate: (remediation: Remediation) => Promise<{ success: boolean; message: string }>;
+  };
+
+  scripts: {
+    execute: (config: ScriptConfig, options?: ScriptExecutionOptions) => Promise<ScriptResult>;
+  };
+
+  bundles: {
+    export: (options: ExportOptions) => Promise<ExportResult>;
+    import: (options: ImportOptions) => Promise<ImportResult>;
+    reviewPrivacy: (profileId: string) => Promise<PrivacyReviewResult>;
   };
 }
 

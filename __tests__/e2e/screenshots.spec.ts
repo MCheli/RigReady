@@ -40,9 +40,9 @@ test.afterAll(async () => {
 
 test.describe('UI Screenshots', () => {
   test('capture Launch view', async () => {
-    await page.click('text=Launch');
+    await page.click('.v-list-item-title:has-text("Launch")');
     await page.waitForSelector('h1:has-text("Launch Center")');
-    await page.waitForTimeout(500); // Allow animations to complete
+    await page.waitForTimeout(500);
     await page.screenshot({
       path: path.join(screenshotDir, '01-launch-view.png'),
       fullPage: true,
@@ -50,7 +50,7 @@ test.describe('UI Screenshots', () => {
   });
 
   test('capture Devices view', async () => {
-    await page.click('text=Devices');
+    await page.click('.v-list-item-title:has-text("Devices")');
     await page.waitForSelector('h1:has-text("Connected Devices")');
     await page.waitForTimeout(500);
     await page.screenshot({
@@ -60,7 +60,7 @@ test.describe('UI Screenshots', () => {
   });
 
   test('capture Input Tester view', async () => {
-    await page.click('text=Input Tester');
+    await page.click('.v-list-item-title:has-text("Input Tester")');
     await page.waitForSelector('h1:has-text("Input Tester")');
     await page.waitForTimeout(500);
     await page.screenshot({
@@ -70,7 +70,7 @@ test.describe('UI Screenshots', () => {
   });
 
   test('capture Displays view', async () => {
-    await page.click('text=Displays');
+    await page.click('.v-list-item-title:has-text("Displays")');
     await page.waitForSelector('h1:has-text("Display Configuration")');
     await page.waitForTimeout(500);
     await page.screenshot({
@@ -80,7 +80,7 @@ test.describe('UI Screenshots', () => {
   });
 
   test('capture Keybindings view - Profiles tab', async () => {
-    await page.click('text=Keybindings');
+    await page.click('.v-list-item-title:has-text("Keybindings")');
     await page.waitForSelector('h1:has-text("Keybinding Manager")');
     await page.waitForTimeout(500);
     await page.screenshot({
@@ -90,7 +90,6 @@ test.describe('UI Screenshots', () => {
   });
 
   test('capture Keybindings view - Sim Backups tab', async () => {
-    // Click on Sim Backups tab if it exists
     const simBackupsTab = page.locator('text=Sim Backups');
     if (await simBackupsTab.isVisible()) {
       await simBackupsTab.click();
@@ -103,7 +102,7 @@ test.describe('UI Screenshots', () => {
   });
 
   test('capture Settings view', async () => {
-    await page.click('text=Settings');
+    await page.click('.v-list-item-title:has-text("Settings")');
     await page.waitForSelector('h1:has-text("Settings")');
     await page.waitForTimeout(500);
     await page.screenshot({
@@ -113,11 +112,127 @@ test.describe('UI Screenshots', () => {
   });
 
   test('capture Debug view', async () => {
-    await page.click('text=Debug');
+    await page.click('.v-list-item-title:has-text("Debug")');
     await page.waitForSelector('h1:has-text("Debug")');
     await page.waitForTimeout(500);
     await page.screenshot({
       path: path.join(screenshotDir, '08-debug-view.png'),
+      fullPage: true,
+    });
+  });
+
+  // ===== New screenshots for MVP views =====
+
+  test('capture Profiles view', async () => {
+    await page.click('.v-list-item-title:has-text("Profiles")');
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: path.join(screenshotDir, '09-profiles-view.png'),
+      fullPage: true,
+    });
+  });
+
+  test('capture Profiles create dialog', async () => {
+    await page.click('.v-list-item-title:has-text("Profiles")');
+    await page.waitForTimeout(300);
+    const newProfileBtn = page.locator('button:has-text("New Profile")');
+    if (await newProfileBtn.isVisible()) {
+      await newProfileBtn.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: path.join(screenshotDir, '10-profiles-create-dialog.png'),
+        fullPage: true,
+      });
+      // Close dialog if open
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
+    }
+  });
+
+  test('capture Checklist view', async () => {
+    await page.click('.v-list-item-title:has-text("Checklist")');
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: path.join(screenshotDir, '11-checklist-view.png'),
+      fullPage: true,
+    });
+  });
+
+  test('capture Profile Wizard step 1', async () => {
+    await page.click('.v-list-item-title:has-text("Profiles")');
+    await page.waitForTimeout(300);
+    const wizardBtn = page.locator('button', { hasText: /^Wizard$/ });
+    if (await wizardBtn.isVisible()) {
+      await wizardBtn.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: path.join(screenshotDir, '12-profile-wizard-step1.png'),
+        fullPage: true,
+      });
+      // Navigate back to profiles
+      const backBtn = page.locator('button:has-text("Back")');
+      if (await backBtn.isVisible()) {
+        await backBtn.click();
+        await page.waitForTimeout(300);
+      }
+    }
+  });
+
+  test('capture Keybindings - Duplicates tab', async () => {
+    await page.click('.v-list-item-title:has-text("Keybindings")');
+    await page.waitForTimeout(300);
+    const tab = page.locator('text=Duplicates');
+    if (await tab.isVisible()) {
+      await tab.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: path.join(screenshotDir, '13-keybindings-duplicates-tab.png'),
+        fullPage: true,
+      });
+    }
+  });
+
+  test('capture Keybindings - Per Device tab', async () => {
+    const tab = page.locator('text=Per Device');
+    if (await tab.isVisible()) {
+      await tab.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: path.join(screenshotDir, '14-keybindings-per-device-tab.png'),
+        fullPage: true,
+      });
+    }
+  });
+
+  test('capture Keybindings - Snapshots tab', async () => {
+    const tab = page.locator('text=Snapshots');
+    if (await tab.isVisible()) {
+      await tab.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: path.join(screenshotDir, '15-keybindings-snapshots-tab.png'),
+        fullPage: true,
+      });
+    }
+  });
+
+  test('capture Keybindings - UUID Migration tab', async () => {
+    const tab = page.locator('text=UUID Migration');
+    if (await tab.isVisible()) {
+      await tab.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: path.join(screenshotDir, '16-keybindings-uuid-migration-tab.png'),
+        fullPage: true,
+      });
+    }
+  });
+
+  test('capture Stream Deck view', async () => {
+    await page.click('.v-list-item-title:has-text("Stream Deck")');
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: path.join(screenshotDir, '17-streamdeck-view.png'),
       fullPage: true,
     });
   });

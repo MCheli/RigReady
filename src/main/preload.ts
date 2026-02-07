@@ -14,6 +14,9 @@ import type {
   UpdateStatus,
 } from '../shared/types';
 import type { DCSDeviceBindings, DCSRestoreOptions } from '../shared/dcsTypes';
+import type { Profile, ChecklistItem, Remediation } from '../shared/profileTypes';
+import type { ScriptConfig, ScriptExecutionOptions } from '../shared/scriptTypes';
+import type { ExportOptions, ImportOptions } from '../shared/bundleTypes';
 // StreamDeck types are used via IPC invoke return types, imported for documentation
 import type {} from '../shared/streamDeckTypes';
 
@@ -71,6 +74,8 @@ const api: RigReadyApi = {
     getSavedConfigurations: () => ipcRenderer.invoke('displays:getSavedConfigurations'),
     deleteConfiguration: (name: string) => ipcRenderer.invoke('displays:deleteConfiguration', name),
     checkConfiguration: (name: string) => ipcRenderer.invoke('displays:checkConfiguration', name),
+    applyLayout: (configurationName: string) =>
+      ipcRenderer.invoke('displays:applyLayout', configurationName),
   },
 
   // Keybinding management
@@ -214,6 +219,41 @@ const api: RigReadyApi = {
     openDownloadPage: () => ipcRenderer.invoke('streamdeck:openDownloadPage'),
     openProfilesFolder: () => ipcRenderer.invoke('streamdeck:openProfilesFolder'),
     importBackup: (sourcePath: string) => ipcRenderer.invoke('streamdeck:importBackup', sourcePath),
+  },
+
+  // Unified Profile service
+  profiles: {
+    list: () => ipcRenderer.invoke('profiles:list'),
+    getAll: () => ipcRenderer.invoke('profiles:getAll'),
+    getById: (id: string) => ipcRenderer.invoke('profiles:getById', id),
+    create: (data: Omit<Profile, 'id' | 'createdAt' | 'lastUsed'>) =>
+      ipcRenderer.invoke('profiles:create', data),
+    save: (profile: Profile) => ipcRenderer.invoke('profiles:save', profile),
+    delete: (id: string) => ipcRenderer.invoke('profiles:delete', id),
+    clone: (id: string, newName: string) => ipcRenderer.invoke('profiles:clone', id, newName),
+    setActive: (id: string) => ipcRenderer.invoke('profiles:setActive', id),
+    getActive: () => ipcRenderer.invoke('profiles:getActive'),
+    getActiveId: () => ipcRenderer.invoke('profiles:getActiveId'),
+  },
+
+  // Checklist service
+  checklist: {
+    run: (profileId: string) => ipcRenderer.invoke('checklist:run', profileId),
+    runSingle: (item: ChecklistItem) => ipcRenderer.invoke('checklist:runSingle', item),
+    remediate: (remediation: Remediation) => ipcRenderer.invoke('checklist:remediate', remediation),
+  },
+
+  // Script execution service
+  scripts: {
+    execute: (config: ScriptConfig, options?: ScriptExecutionOptions) =>
+      ipcRenderer.invoke('scripts:execute', config, options),
+  },
+
+  // Bundle export/import service
+  bundles: {
+    export: (options: ExportOptions) => ipcRenderer.invoke('bundles:export', options),
+    import: (options: ImportOptions) => ipcRenderer.invoke('bundles:import', options),
+    reviewPrivacy: (profileId: string) => ipcRenderer.invoke('bundles:reviewPrivacy', profileId),
   },
 };
 

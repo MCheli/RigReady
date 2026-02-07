@@ -12,6 +12,11 @@ import {
 import { useToast } from '../composables/useToast';
 import { DEFAULT_ACTION_CATEGORIES } from '../../shared/types';
 import PageHeader from '../components/PageHeader.vue';
+import DCSBindingsPanel from '../components/dcs/DCSBindingsPanel.vue';
+import DCSUuidMigration from '../components/keybindings/DCSUuidMigration.vue';
+import DuplicateBindings from '../components/keybindings/DuplicateBindings.vue';
+import PerDeviceView from '../components/keybindings/PerDeviceView.vue';
+import SnapshotManager from '../components/keybindings/SnapshotManager.vue';
 
 const toast = useToast();
 
@@ -359,6 +364,11 @@ onUnmounted(() => {
     <v-tabs v-model="activeTab" class="mb-6">
       <v-tab value="profiles">Keybinding Profiles</v-tab>
       <v-tab value="backups">Sim Backups</v-tab>
+      <v-tab value="dcs">DCS Bindings</v-tab>
+      <v-tab value="duplicates">Duplicates</v-tab>
+      <v-tab value="per-device">Per Device</v-tab>
+      <v-tab value="snapshots">Snapshots</v-tab>
+      <v-tab value="uuid-migration">UUID Migration</v-tab>
     </v-tabs>
 
     <!-- Keybinding Profiles Tab -->
@@ -611,6 +621,31 @@ onUnmounted(() => {
           </div>
         </v-card-text>
       </v-card>
+    </div>
+
+    <!-- DCS Bindings Tab -->
+    <div v-else-if="activeTab === 'dcs'">
+      <DCSBindingsPanel />
+    </div>
+
+    <!-- Duplicate Bindings Tab -->
+    <div v-else-if="activeTab === 'duplicates'">
+      <DuplicateBindings />
+    </div>
+
+    <!-- Per-Device View Tab -->
+    <div v-else-if="activeTab === 'per-device'">
+      <PerDeviceView />
+    </div>
+
+    <!-- Snapshots Tab -->
+    <div v-else-if="activeTab === 'snapshots'">
+      <SnapshotManager />
+    </div>
+
+    <!-- UUID Migration Tab -->
+    <div v-else-if="activeTab === 'uuid-migration'">
+      <DCSUuidMigration />
     </div>
 
     <!-- New Profile Dialog -->

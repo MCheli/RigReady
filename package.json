@@ -61,6 +61,7 @@
     "@playwright/test": "^1.58.1",
     "@types/archiver": "^7.0.0",
     "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.1.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
@@ -151,6 +152,7 @@
     "archiver": "^7.0.1",
     "electron-updater": "^6.7.3",
     "extract-zip": "^2.0.1",
+    "js-yaml": "^4.1.1",
     "node-hid": "^3.2.0",
     "vue": "^3.5.27",
     "vuetify": "^3.11.8"

@@ -164,9 +164,27 @@ export interface CommonAction {
 /**
  * Supported simulators
  */
-export type Simulator = 'dcs' | 'msfs' | 'xplane' | 'il2' | 'iracing' | 'acc' | 'other';
+export type Simulator =
+  | 'dcs'
+  | 'msfs'
+  | 'xplane'
+  | 'il2'
+  | 'iracing'
+  | 'acc'
+  | 'beamng'
+  | 'lmu'
+  | 'other';
 
-export const SIMULATORS: Simulator[] = ['dcs', 'msfs', 'xplane', 'il2', 'iracing', 'acc'];
+export const SIMULATORS: Simulator[] = [
+  'dcs',
+  'msfs',
+  'xplane',
+  'il2',
+  'iracing',
+  'acc',
+  'beamng',
+  'lmu',
+];
 
 export const SIMULATOR_DISPLAY_NAMES: Record<Simulator, string> = {
   dcs: 'DCS World',
@@ -175,6 +193,8 @@ export const SIMULATOR_DISPLAY_NAMES: Record<Simulator, string> = {
   il2: 'IL-2 Sturmovik',
   iracing: 'iRacing',
   acc: 'Assetto Corsa Competizione',
+  beamng: 'BeamNG.drive',
+  lmu: 'Le Mans Ultimate',
   other: 'Other',
 };
 
