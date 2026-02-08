@@ -98,6 +98,14 @@ class ProfileService {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
   }
 
+  /**
+   * Strip non-serializable artifacts (YAML metadata, prototypes) so objects
+   * survive Electron's structured-clone across IPC.
+   */
+  private toPlain<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
   // =========================================================================
   // CRUD Operations
   // =========================================================================
@@ -110,11 +118,12 @@ class ProfileService {
       lastUsed: Date.now(),
     };
     this.saveProfileToDisk(profile);
-    return profile;
+    return this.toPlain(profile);
   }
 
   getById(id: string): Profile | undefined {
-    return this.profiles.get(id);
+    const p = this.profiles.get(id);
+    return p ? this.toPlain(p) : undefined;
   }
 
   list(): ProfileSummary[] {
@@ -129,7 +138,7 @@ class ProfileService {
   }
 
   getAll(): Profile[] {
-    return Array.from(this.profiles.values());
+    return this.toPlain(Array.from(this.profiles.values()));
   }
 
   save(profile: Profile): void {
@@ -161,14 +170,14 @@ class ProfileService {
     if (!original) return undefined;
 
     const cloned: Profile = {
-      ...JSON.parse(JSON.stringify(original)),
+      ...this.toPlain(original),
       id: this.generateId(),
       name: newName,
       createdAt: Date.now(),
       lastUsed: Date.now(),
     };
     this.saveProfileToDisk(cloned);
-    return cloned;
+    return this.toPlain(cloned);
   }
 
   // =========================================================================
@@ -184,7 +193,8 @@ class ProfileService {
 
   getActive(): Profile | null {
     if (!this.activeProfileId) return null;
-    return this.profiles.get(this.activeProfileId) || null;
+    const p = this.profiles.get(this.activeProfileId);
+    return p ? this.toPlain(p) : null;
   }
 
   getActiveId(): string | null {

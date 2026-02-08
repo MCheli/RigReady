@@ -39,12 +39,12 @@ test.afterAll(async () => {
 });
 
 test.describe('UI Screenshots', () => {
-  test('capture Launch view', async () => {
-    await page.click('.v-list-item-title:has-text("Launch")');
-    await page.waitForSelector('h1:has-text("Launch Center")');
+  test('capture Home view', async () => {
+    await page.click('.v-list-item-title:has-text("Home")');
+    await page.waitForSelector('h1:has-text("Home")');
     await page.waitForTimeout(500);
     await page.screenshot({
-      path: path.join(screenshotDir, '01-launch-view.png'),
+      path: path.join(screenshotDir, '01-home-view.png'),
       fullPage: true,
     });
   });
@@ -147,15 +147,6 @@ test.describe('UI Screenshots', () => {
       await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
     }
-  });
-
-  test('capture Checklist view', async () => {
-    await page.click('.v-list-item-title:has-text("Checklist")');
-    await page.waitForTimeout(500);
-    await page.screenshot({
-      path: path.join(screenshotDir, '11-checklist-view.png'),
-      fullPage: true,
-    });
   });
 
   test('capture Profile Wizard step 1', async () => {

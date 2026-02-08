@@ -7,6 +7,8 @@ import ProfileCard from '../components/profiles/ProfileCard.vue';
 import ProfileForm from '../components/profiles/ProfileForm.vue';
 import ChecklistItemEditor from '../components/profiles/ChecklistItemEditor.vue';
 import RemediationEditor from '../components/profiles/RemediationEditor.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
+import PromptDialog from '../components/PromptDialog.vue';
 import type { Profile, ChecklistItem, Remediation } from '../../shared/profileTypes';
 import type { Simulator } from '../../shared/types';
 import { useNavigation } from '../composables/useNavigation';
@@ -34,6 +36,17 @@ const editingCheckItem = ref<ChecklistItem | null>(null);
 const remediationTarget = ref<{ itemIndex: number; remediation: Remediation | null } | null>(null);
 const selectedProfileId = ref<string | null>(null);
 
+// Dialog state
+const showDeleteProfileConfirm = ref(false);
+const pendingDeleteProfileId = ref<string | null>(null);
+const pendingDeleteProfileName = ref('');
+
+const showClonePrompt = ref(false);
+const pendingCloneId = ref<string | null>(null);
+
+const showDeleteCheckConfirm = ref(false);
+const pendingDeleteCheckId = ref<string | null>(null);
+
 onMounted(async () => {
   await loadProfiles();
   if (profiles.value.length > 0 && !selectedProfileId.value) {
@@ -54,31 +67,41 @@ async function handleSelect(id: string) {
   await getProfile(id);
 }
 
-async function handleDelete(id: string) {
+function handleDelete(id: string) {
   const profile = profiles.value.find((p) => p.id === id);
-  if (confirm(`Delete profile "${profile?.name}"?`)) {
-    await deleteProfile(id);
-    if (selectedProfileId.value === id) {
-      selectedProfileId.value = profiles.value[0]?.id || null;
-      if (selectedProfileId.value) {
-        await getProfile(selectedProfileId.value);
-      } else {
-        currentProfile.value = null;
-      }
-    }
-    toast.success('Profile deleted');
-  }
+  pendingDeleteProfileId.value = id;
+  pendingDeleteProfileName.value = profile?.name || '';
+  showDeleteProfileConfirm.value = true;
 }
 
-async function handleClone(id: string) {
-  const name = prompt('Enter a name for the cloned profile:');
-  if (name) {
-    const cloned = await cloneProfile(id, name);
-    if (cloned) {
-      selectedProfileId.value = cloned.id;
-      await getProfile(cloned.id);
-      toast.success(`Cloned as "${name}"`);
+async function confirmDeleteProfile() {
+  const id = pendingDeleteProfileId.value;
+  if (!id) return;
+  await deleteProfile(id);
+  if (selectedProfileId.value === id) {
+    selectedProfileId.value = profiles.value[0]?.id || null;
+    if (selectedProfileId.value) {
+      await getProfile(selectedProfileId.value);
+    } else {
+      currentProfile.value = null;
     }
+  }
+  toast.success('Profile deleted');
+}
+
+function handleClone(id: string) {
+  pendingCloneId.value = id;
+  showClonePrompt.value = true;
+}
+
+async function confirmClone(name: string) {
+  const id = pendingCloneId.value;
+  if (!id) return;
+  const cloned = await cloneProfile(id, name);
+  if (cloned) {
+    selectedProfileId.value = cloned.id;
+    await getProfile(cloned.id);
+    toast.success(`Cloned as "${name}"`);
   }
 }
 
@@ -111,13 +134,24 @@ async function handleSaveCheckItem(item: ChecklistItem) {
   await getProfile(profile.id);
 }
 
-async function handleDeleteCheck(id: string) {
+function handleDeleteCheck(id: string) {
   if (!currentProfile.value) return;
-  if (!confirm('Delete this check?')) return;
-  const profile = { ...currentProfile.value };
-  profile.checklistItems = profile.checklistItems.filter((c) => c.id !== id);
-  await saveProfile(profile);
-  await getProfile(profile.id);
+  pendingDeleteCheckId.value = id;
+  showDeleteCheckConfirm.value = true;
+}
+
+async function confirmDeleteCheck() {
+  if (!currentProfile.value || !pendingDeleteCheckId.value) return;
+  try {
+    const profile = JSON.parse(JSON.stringify(currentProfile.value));
+    profile.checklistItems = profile.checklistItems.filter(
+      (c: ChecklistItem) => c.id !== pendingDeleteCheckId.value
+    );
+    await saveProfile(profile);
+    await getProfile(profile.id);
+  } catch {
+    toast.error('Failed to delete check');
+  }
 }
 
 function openRemediationEditor(itemIndex: number) {
@@ -142,8 +176,8 @@ async function handleSaveRemediation(remediation: Remediation) {
   await getProfile(profile.id);
 }
 
-function navigateToChecklist() {
-  nav.navigateTo('checklist');
+function navigateToHome() {
+  nav.navigateTo('home');
 }
 
 function navigateToWizard() {
@@ -203,7 +237,7 @@ function navigateToWizard() {
                   variant="outlined"
                   prepend-icon="mdi-play"
                   class="mr-2"
-                  @click="navigateToChecklist"
+                  @click="navigateToHome"
                 >
                   Run Checks
                 </v-btn>
@@ -294,6 +328,25 @@ function navigateToWizard() {
       v-model="showRemediationEditor"
       :remediation="remediationTarget?.remediation"
       @save="handleSaveRemediation"
+    />
+    <ConfirmDialog
+      v-model="showDeleteProfileConfirm"
+      title="Delete Profile"
+      :message="`Delete profile &quot;${pendingDeleteProfileName}&quot;?`"
+      @confirm="confirmDeleteProfile"
+    />
+    <ConfirmDialog
+      v-model="showDeleteCheckConfirm"
+      title="Delete Check"
+      message="Delete this check?"
+      @confirm="confirmDeleteCheck"
+    />
+    <PromptDialog
+      v-model="showClonePrompt"
+      title="Clone Profile"
+      label="Profile Name"
+      placeholder="Enter a name for the cloned profile"
+      @submit="confirmClone"
     />
   </div>
 </template>

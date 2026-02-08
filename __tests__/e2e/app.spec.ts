@@ -30,9 +30,8 @@ test.describe('RigReady App', () => {
 
   test('should show navigation drawer with menu items', async () => {
     // Check for all navigation items in the drawer
+    await expect(page.locator('.v-list-item-title:has-text("Home")')).toBeVisible();
     await expect(page.locator('.v-list-item-title:has-text("Profiles")')).toBeVisible();
-    await expect(page.locator('.v-list-item-title:has-text("Checklist")')).toBeVisible();
-    await expect(page.locator('.v-list-item-title:has-text("Launch")')).toBeVisible();
     await expect(page.locator('.v-list-item-title:has-text("Devices")')).toBeVisible();
     await expect(page.locator('.v-list-item-title:has-text("Input Tester")')).toBeVisible();
     await expect(page.locator('.v-list-item-title:has-text("Displays")')).toBeVisible();
@@ -42,9 +41,9 @@ test.describe('RigReady App', () => {
     await expect(page.locator('.v-list-item-title:has-text("Debug")')).toBeVisible();
   });
 
-  test('should show Profiles view by default', async () => {
-    // The Profiles view should be active by default (currentSection defaults to 'profiles')
-    await expect(page.locator('text=Profiles').first()).toBeVisible();
+  test('should show Home view by default', async () => {
+    // The Home view should be active by default (currentSection defaults to 'home')
+    await expect(page.locator('h1:has-text("Home")')).toBeVisible();
   });
 
   test('should navigate to Profiles view', async () => {
@@ -61,10 +60,10 @@ test.describe('RigReady App', () => {
     await expect(page.getByRole('button', { name: 'Wizard', exact: true })).toBeVisible();
   });
 
-  test('should navigate to Checklist view', async () => {
-    await page.click('.v-list-item-title:has-text("Checklist")');
+  test('should navigate to Home view', async () => {
+    await page.click('.v-list-item-title:has-text("Home")');
     await page.waitForTimeout(300);
-    await expect(page.locator('text=Pre-Flight Checklist')).toBeVisible();
+    await expect(page.locator('h1:has-text("Home")')).toBeVisible();
   });
 
   test('should navigate to Devices view', async () => {

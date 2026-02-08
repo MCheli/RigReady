@@ -9,6 +9,7 @@ import {
 import { useToast } from '../composables/useToast';
 import { SIMULATORS, SIMULATOR_DISPLAY_NAMES } from '../../shared/types';
 import PageHeader from '../components/PageHeader.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 
 const settingsComposable = useSettings();
 const { devices, loadDevices } = useDevices();
@@ -39,13 +40,20 @@ const availableSimulators = computed(() => {
 
 const expectedDeviceCount = computed(() => devices.value.length);
 
+// Dialog state
+const showClearDevicesConfirm = ref(false);
+const showRemovePathConfirm = ref(false);
+const pendingRemoveSimulator = ref<Simulator | null>(null);
+
 // Methods
-async function clearExpectedDevices() {
-  if (confirm('Clear all expected devices? This will reset the device tracking.')) {
-    // Clear by saving an empty expected list
-    // Note: This functionality would need to be implemented in the device service
-    toast.info('This feature will be available in a future update.');
-  }
+function clearExpectedDevices() {
+  showClearDevicesConfirm.value = true;
+}
+
+function confirmClearDevices() {
+  // Clear by saving an empty expected list
+  // Note: This functionality would need to be implemented in the device service
+  toast.info('This feature will be available in a future update.');
 }
 
 function openEditPath(simulator: Simulator) {
@@ -73,10 +81,14 @@ async function savePath() {
   showPathDialog.value = false;
 }
 
-async function removePath(simulator: Simulator) {
-  if (confirm(`Remove ${SIMULATOR_DISPLAY_NAMES[simulator]} configuration?`)) {
-    await settingsComposable.removeSimulatorPath(simulator);
-  }
+function removePath(simulator: Simulator) {
+  pendingRemoveSimulator.value = simulator;
+  showRemovePathConfirm.value = true;
+}
+
+async function confirmRemovePath() {
+  if (!pendingRemoveSimulator.value) return;
+  await settingsComposable.removeSimulatorPath(pendingRemoveSimulator.value);
 }
 
 async function autoScan(simulator: Simulator) {
@@ -363,6 +375,21 @@ onMounted(async () => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <ConfirmDialog
+      v-model="showClearDevicesConfirm"
+      title="Clear Expected Devices"
+      message="Clear all expected devices? This will reset the device tracking."
+      confirm-text="Clear"
+      @confirm="confirmClearDevices"
+    />
+    <ConfirmDialog
+      v-model="showRemovePathConfirm"
+      title="Remove Configuration"
+      :message="`Remove ${pendingRemoveSimulator ? SIMULATOR_DISPLAY_NAMES[pendingRemoveSimulator] : ''} configuration?`"
+      confirm-text="Remove"
+      @confirm="confirmRemovePath"
+    />
   </div>
 </template>
 

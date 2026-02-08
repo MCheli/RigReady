@@ -26,29 +26,25 @@ test.afterAll(async () => {
 });
 
 test.describe('Flow 1: Daily Pre-flight Check', () => {
-  test('should show Profiles view with profile list on app open', async () => {
-    // App opens to Profiles view by default
-    await expect(page.locator('text=Profiles').first()).toBeVisible();
+  test('should show Home view on app open', async () => {
+    // App opens to Home view by default
+    await expect(page.locator('h1:has-text("Home")')).toBeVisible();
   });
 
-  test('should navigate to Checklist view', async () => {
-    await page.click('.v-list-item-title:has-text("Checklist")');
-    await page.waitForTimeout(300);
-    await expect(page.locator('text=Pre-Flight Checklist')).toBeVisible();
-  });
-
-  test('should display checklist items or empty state', async () => {
-    await page.click('.v-list-item-title:has-text("Checklist")');
-    await page.waitForTimeout(500);
+  test('should display checklist results or empty state on Home', async () => {
+    await page.click('.v-list-item-title:has-text("Home")');
+    await page.waitForTimeout(1000);
     // Should show one of:
-    // 1. "Run Pre-Flight Checks" button (when profile is selected)
-    // 2. "Ready to Check" empty state (when profile selected but no results yet)
-    // 3. "Select a profile" message (when no profiles exist)
-    const hasRunButton = await page.locator('text=Run Pre-Flight Checks').isVisible();
-    const hasReadyState = await page.locator('text=Ready to Check').isVisible();
+    // 1. Check results (auto-ran on mount when profile is selected)
+    // 2. "Welcome to RigReady" (when no profiles exist)
+    // 3. "Select a profile" message
+    // 4. "Running Pre-Flight Checks..." loading state
+    const hasResults = await page.locator('text=Check Results').isVisible();
+    const hasWelcome = await page.locator('text=Welcome to RigReady').isVisible();
     const hasNoProfile = await page.locator('text=Select a profile').isVisible();
-    const hasCreateProfile = await page.locator('text=Create a profile').isVisible();
-    expect(hasRunButton || hasReadyState || hasNoProfile || hasCreateProfile).toBe(true);
+    const hasRunning = await page.locator('text=Running Pre-Flight Checks').isVisible();
+    const hasNoChecks = await page.locator('text=No Checks Configured').isVisible();
+    expect(hasResults || hasWelcome || hasNoProfile || hasRunning || hasNoChecks).toBe(true);
   });
 });
 

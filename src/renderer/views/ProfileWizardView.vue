@@ -8,6 +8,7 @@ import ProfileWizardStep1 from '../components/profiles/ProfileWizardStep1.vue';
 import ProfileWizardStep2 from '../components/profiles/ProfileWizardStep2.vue';
 import ProfileWizardStep3 from '../components/profiles/ProfileWizardStep3.vue';
 import ProfileWizardStep4 from '../components/profiles/ProfileWizardStep4.vue';
+import ProfileWizardStep5 from '../components/profiles/ProfileWizardStep5.vue';
 import type { Simulator } from '../../shared/types';
 import type { ChecklistItem, TrackedConfiguration } from '../../shared/profileTypes';
 
@@ -16,7 +17,7 @@ const nav = useNavigation();
 const { createProfile, setActiveProfile } = useProfiles();
 
 const step = ref(1);
-const totalSteps = 4;
+const totalSteps = 5;
 
 // Step 1 state
 const profileName = ref('');
@@ -50,27 +51,34 @@ function prevStep() {
 }
 
 async function finish() {
-  const allChecklistItems = [...deviceItems.value, ...softwareItems.value, ...displayItems.value];
+  try {
+    // JSON round-trip strips Vue reactive proxies so data survives IPC structured-clone
+    const allChecklistItems = JSON.parse(
+      JSON.stringify([...deviceItems.value, ...softwareItems.value, ...displayItems.value])
+    );
 
-  const profile = await createProfile({
-    name: profileName.value.trim(),
-    game: profileGame.value,
-    checklistItems: allChecklistItems,
-  });
+    const profile = await createProfile({
+      name: profileName.value.trim(),
+      game: profileGame.value,
+      checklistItems: allChecklistItems,
+    });
 
-  // Set as active and save tracked configs
-  await setActiveProfile(profile.id);
+    // Set as active and save tracked configs
+    await setActiveProfile(profile.id);
 
-  if (trackedConfigs.value.length > 0) {
-    const fullProfile = await window.rigReady.profiles.getById(profile.id);
-    if (fullProfile) {
-      fullProfile.trackedConfigurations = trackedConfigs.value;
-      await window.rigReady.profiles.save(fullProfile);
+    if (trackedConfigs.value.length > 0) {
+      const fullProfile = await window.rigReady.profiles.getById(profile.id);
+      if (fullProfile) {
+        fullProfile.trackedConfigurations = JSON.parse(JSON.stringify(trackedConfigs.value));
+        await window.rigReady.profiles.save(fullProfile);
+      }
     }
-  }
 
-  toast.success(`Profile "${profileName.value}" created!`);
-  nav.navigateTo('profiles');
+    toast.success(`Profile "${profileName.value}" created!`);
+    nav.navigateTo('home');
+  } catch (err) {
+    toast.error(`Failed to create profile: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 </script>
 
@@ -112,8 +120,11 @@ async function finish() {
         <ProfileWizardStep4
           v-else-if="step === 4"
           :display-items="displayItems"
-          :tracked-configs="trackedConfigs"
           @update:display-items="displayItems = $event"
+        />
+        <ProfileWizardStep5
+          v-else-if="step === 5"
+          :tracked-configs="trackedConfigs"
           @update:tracked-configs="trackedConfigs = $event"
         />
       </v-card-text>

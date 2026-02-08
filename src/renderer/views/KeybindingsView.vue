@@ -17,6 +17,8 @@ import DCSUuidMigration from '../components/keybindings/DCSUuidMigration.vue';
 import DuplicateBindings from '../components/keybindings/DuplicateBindings.vue';
 import PerDeviceView from '../components/keybindings/PerDeviceView.vue';
 import SnapshotManager from '../components/keybindings/SnapshotManager.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
+import PromptDialog from '../components/PromptDialog.vue';
 
 const toast = useToast();
 
@@ -63,6 +65,28 @@ const capturedInput = ref<{
 } | null>(null);
 const isCapturing = ref(false);
 
+// Confirm/prompt dialog state
+const showBackupPrompt = ref(false);
+const pendingBackupSimulator = ref('');
+
+const showRestoreConfirm = ref(false);
+const pendingRestoreName = ref('');
+
+const showDeleteBackupConfirm = ref(false);
+const pendingDeleteBackupName = ref('');
+
+const showDeleteProfileConfirm = ref(false);
+const pendingDeleteProfileId = ref('');
+
+const showImportPrompt = ref(false);
+const pendingImportJson = ref('');
+
+const showDuplicatePrompt = ref(false);
+const pendingDuplicateId = ref('');
+
+const showDeleteActionConfirm = ref(false);
+const pendingDeleteActionId = ref('');
+
 // Category filter
 const selectedCategory = ref<ActionCategory | 'all'>('all');
 
@@ -98,26 +122,34 @@ async function loadData() {
 }
 
 // Legacy backup handlers
-async function handleBackup(simulator: string) {
-  const name = prompt('Enter a name for this backup:');
-  if (name) {
-    await createBackup(simulator, name);
-    await loadKeybindings();
-  }
+function handleBackup(simulator: string) {
+  pendingBackupSimulator.value = simulator;
+  showBackupPrompt.value = true;
 }
 
-async function handleRestore(name: string) {
-  if (confirm(`Restore backup "${name}"? This will overwrite current keybindings.`)) {
-    await restoreBackup(name);
-    toast.success('Backup restored!');
-  }
+async function confirmBackup(name: string) {
+  await createBackup(pendingBackupSimulator.value, name);
+  await loadKeybindings();
 }
 
-async function handleDeleteBackup(name: string) {
-  if (confirm(`Delete backup "${name}"?`)) {
-    await deleteBackup(name);
-    await loadKeybindings();
-  }
+function handleRestore(name: string) {
+  pendingRestoreName.value = name;
+  showRestoreConfirm.value = true;
+}
+
+async function confirmRestore() {
+  await restoreBackup(pendingRestoreName.value);
+  toast.success('Backup restored!');
+}
+
+function handleDeleteBackup(name: string) {
+  pendingDeleteBackupName.value = name;
+  showDeleteBackupConfirm.value = true;
+}
+
+async function confirmDeleteBackup() {
+  await deleteBackup(pendingDeleteBackupName.value);
+  await loadKeybindings();
 }
 
 // Profile handlers
@@ -141,12 +173,16 @@ async function createProfile() {
   newProfileDescription.value = '';
 }
 
-async function deleteProfile(id: string) {
-  if (confirm('Are you sure you want to delete this profile?')) {
-    await profilesComposable.deleteProfile(id);
-    if (selectedProfileId.value === id) {
-      selectedProfileId.value = profilesComposable.profiles.value[0]?.id || null;
-    }
+function deleteProfile(id: string) {
+  pendingDeleteProfileId.value = id;
+  showDeleteProfileConfirm.value = true;
+}
+
+async function confirmDeleteProfile() {
+  const id = pendingDeleteProfileId.value;
+  await profilesComposable.deleteProfile(id);
+  if (selectedProfileId.value === id) {
+    selectedProfileId.value = profilesComposable.profiles.value[0]?.id || null;
   }
 }
 
@@ -161,28 +197,37 @@ async function exportProfileToClipboard(id: string) {
 async function importProfileFromClipboard() {
   try {
     const json = await navigator.clipboard.readText();
-    const newName = prompt('Enter a name for the imported profile (leave blank to use original):');
-    const imported = await profilesComposable.importProfile(json, newName || undefined);
-    if (imported) {
-      selectedProfileId.value = imported.id;
-      toast.success('Profile imported successfully!');
-    } else {
-      toast.error(
-        'Failed to import profile. Make sure you have a valid profile JSON in your clipboard.'
-      );
-    }
+    pendingImportJson.value = json;
+    showImportPrompt.value = true;
   } catch {
     toast.error('Failed to read clipboard. Make sure you have copied a profile JSON.');
   }
 }
 
-async function duplicateProfile(id: string) {
-  const newName = prompt('Enter a name for the duplicate:');
-  if (newName) {
-    const duplicate = await profilesComposable.duplicateProfile(id, newName);
-    if (duplicate) {
-      selectedProfileId.value = duplicate.id;
-    }
+async function confirmImport(newName: string) {
+  const imported = await profilesComposable.importProfile(
+    pendingImportJson.value,
+    newName || undefined
+  );
+  if (imported) {
+    selectedProfileId.value = imported.id;
+    toast.success('Profile imported successfully!');
+  } else {
+    toast.error(
+      'Failed to import profile. Make sure you have a valid profile JSON in your clipboard.'
+    );
+  }
+}
+
+function duplicateProfile(id: string) {
+  pendingDuplicateId.value = id;
+  showDuplicatePrompt.value = true;
+}
+
+async function confirmDuplicate(newName: string) {
+  const duplicate = await profilesComposable.duplicateProfile(pendingDuplicateId.value, newName);
+  if (duplicate) {
+    selectedProfileId.value = duplicate.id;
   }
 }
 
@@ -236,12 +281,16 @@ async function saveAction() {
   showActionDialog.value = false;
 }
 
-async function deleteAction(actionId: string) {
+function deleteAction(actionId: string) {
   if (!selectedProfileId.value) return;
-  if (confirm('Delete this action?')) {
-    await profilesComposable.removeAction(selectedProfileId.value, actionId);
-    await profilesComposable.getProfile(selectedProfileId.value);
-  }
+  pendingDeleteActionId.value = actionId;
+  showDeleteActionConfirm.value = true;
+}
+
+async function confirmDeleteAction() {
+  if (!selectedProfileId.value) return;
+  await profilesComposable.removeAction(selectedProfileId.value, pendingDeleteActionId.value);
+  await profilesComposable.getProfile(selectedProfileId.value);
 }
 
 // Input capture
@@ -747,6 +796,55 @@ onUnmounted(() => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Confirm/Prompt Dialogs -->
+    <PromptDialog
+      v-model="showBackupPrompt"
+      title="Create Backup"
+      label="Backup Name"
+      placeholder="Enter a name for this backup"
+      @submit="confirmBackup"
+    />
+    <ConfirmDialog
+      v-model="showRestoreConfirm"
+      title="Restore Backup"
+      :message="`Restore backup &quot;${pendingRestoreName}&quot;? This will overwrite current keybindings.`"
+      confirm-text="Restore"
+      confirm-color="primary"
+      @confirm="confirmRestore"
+    />
+    <ConfirmDialog
+      v-model="showDeleteBackupConfirm"
+      title="Delete Backup"
+      :message="`Delete backup &quot;${pendingDeleteBackupName}&quot;?`"
+      @confirm="confirmDeleteBackup"
+    />
+    <ConfirmDialog
+      v-model="showDeleteProfileConfirm"
+      title="Delete Profile"
+      message="Are you sure you want to delete this profile?"
+      @confirm="confirmDeleteProfile"
+    />
+    <PromptDialog
+      v-model="showImportPrompt"
+      title="Import Profile"
+      label="Profile Name"
+      placeholder="Enter a name (leave blank to use original)"
+      @submit="confirmImport"
+    />
+    <PromptDialog
+      v-model="showDuplicatePrompt"
+      title="Duplicate Profile"
+      label="Profile Name"
+      placeholder="Enter a name for the duplicate"
+      @submit="confirmDuplicate"
+    />
+    <ConfirmDialog
+      v-model="showDeleteActionConfirm"
+      title="Delete Action"
+      message="Delete this action?"
+      @confirm="confirmDeleteAction"
+    />
   </div>
 </template>
 

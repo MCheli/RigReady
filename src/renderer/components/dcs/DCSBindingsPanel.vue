@@ -6,6 +6,7 @@ import {
   type DCSGuidMapping,
 } from '../../composables/useDCSBindings';
 import { useToast } from '../../composables/useToast';
+import ConfirmDialog from '../ConfirmDialog.vue';
 
 const toast = useToast();
 const dcs = useDCSBindings();
@@ -19,6 +20,9 @@ const showGuidMappingDialog = ref(false);
 const newBackupName = ref('');
 const restoreTarget = ref<'all' | 'device'>('all');
 const restoreDeviceGuid = ref<string | null>(null);
+const showDeleteBackupConfirm = ref(false);
+const pendingDeleteBackupPath = ref('');
+const pendingDeleteBackupName = ref('');
 
 // Computed
 const selectedDevice = computed((): DCSDeviceBindings | null => {
@@ -85,14 +89,18 @@ async function handleCreateBackup() {
   }
 }
 
-async function handleDeleteBackup(backupPath: string, backupName: string) {
-  if (confirm(`Delete backup "${backupName}"?`)) {
-    const result = await dcs.deleteBackup(backupPath);
-    if (result) {
-      toast.success('Backup deleted');
-    } else {
-      toast.error('Failed to delete backup');
-    }
+function handleDeleteBackup(backupPath: string, backupName: string) {
+  pendingDeleteBackupPath.value = backupPath;
+  pendingDeleteBackupName.value = backupName;
+  showDeleteBackupConfirm.value = true;
+}
+
+async function confirmDeleteBackup() {
+  const result = await dcs.deleteBackup(pendingDeleteBackupPath.value);
+  if (result) {
+    toast.success('Backup deleted');
+  } else {
+    toast.error('Failed to delete backup');
   }
 }
 
@@ -546,6 +554,13 @@ onMounted(async () => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <ConfirmDialog
+      v-model="showDeleteBackupConfirm"
+      title="Delete Backup"
+      :message="`Delete backup &quot;${pendingDeleteBackupName}&quot;?`"
+      @confirm="confirmDeleteBackup"
+    />
 
     <!-- Restore Confirmation Dialog -->
     <v-dialog v-model="showRestoreConfirmDialog" max-width="400">

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useDisplays, type DisplayInfo } from '../composables/useRigReady';
 import PageHeader from '../components/PageHeader.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
+import PromptDialog from '../components/PromptDialog.vue';
 
 const { displays, savedConfigs, loading, loadDisplays, saveConfiguration, deleteConfiguration } =
   useDisplays();
@@ -47,19 +49,27 @@ const diagramData = computed(() => {
   return { monitors, containerWidth, containerHeight, scale };
 });
 
-async function handleSave() {
-  const name = prompt('Enter a name for this configuration:');
-  if (name) {
-    await saveConfiguration(name);
-    await loadDisplays();
-  }
+const showSavePrompt = ref(false);
+const showDeleteConfirm = ref(false);
+const pendingDeleteName = ref('');
+
+function handleSave() {
+  showSavePrompt.value = true;
 }
 
-async function handleDelete(name: string) {
-  if (confirm(`Delete configuration "${name}"?`)) {
-    await deleteConfiguration(name);
-    await loadDisplays();
-  }
+async function confirmSave(name: string) {
+  await saveConfiguration(name);
+  await loadDisplays();
+}
+
+function handleDelete(name: string) {
+  pendingDeleteName.value = name;
+  showDeleteConfirm.value = true;
+}
+
+async function confirmDelete() {
+  await deleteConfiguration(pendingDeleteName.value);
+  await loadDisplays();
 }
 
 onMounted(() => {
@@ -200,6 +210,20 @@ onMounted(() => {
         </div>
       </v-card-text>
     </v-card>
+
+    <PromptDialog
+      v-model="showSavePrompt"
+      title="Save Display Configuration"
+      label="Configuration Name"
+      placeholder="Enter a name for this configuration"
+      @submit="confirmSave"
+    />
+    <ConfirmDialog
+      v-model="showDeleteConfirm"
+      title="Delete Configuration"
+      :message="`Delete configuration &quot;${pendingDeleteName}&quot;?`"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 

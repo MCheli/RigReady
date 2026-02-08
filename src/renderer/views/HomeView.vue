@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useProfiles } from '../composables/useProfiles';
 import { useChecklist } from '../composables/useChecklist';
 import { useToast } from '../composables/useToast';
@@ -16,6 +16,7 @@ const { lastResult, running, runChecklist, remediate } = useChecklist();
 
 const selectedProfileId = ref<string | null>(null);
 const selectedProfile = ref<Profile | null>(null);
+const showLaunchWarning = ref(false);
 
 onMounted(async () => {
   await loadProfiles();
@@ -28,6 +29,17 @@ onMounted(async () => {
     selectedProfileId.value = profiles.value[0].id;
     selectedProfile.value = (await getProfile(profiles.value[0].id)) || null;
   }
+  // Auto-run checklist on mount
+  if (selectedProfileId.value) {
+    await run();
+  }
+});
+
+// Auto-run when profile changes
+watch(selectedProfileId, async (newId) => {
+  if (newId) {
+    await run();
+  }
 });
 
 const profileOptions = computed(() =>
@@ -36,6 +48,8 @@ const profileOptions = computed(() =>
     value: p.id,
   }))
 );
+
+const allRequiredPassed = computed(() => lastResult.value?.allRequiredPassed ?? false);
 
 async function onProfileChange(id: string) {
   selectedProfileId.value = id;
@@ -62,7 +76,16 @@ function getRemediationForItem(checklistItemId: string): Remediation | undefined
   return selectedProfile.value?.checklistItems.find((i) => i.id === checklistItemId)?.remediation;
 }
 
+function handleLaunch() {
+  if (!allRequiredPassed.value) {
+    showLaunchWarning.value = true;
+    return;
+  }
+  launchGame();
+}
+
 async function launchGame() {
+  showLaunchWarning.value = false;
   if (!selectedProfile.value?.launchTarget) return;
   const target = selectedProfile.value.launchTarget;
 
@@ -119,8 +142,15 @@ async function launchGame() {
 
 <template>
   <div>
-    <PageHeader title="Pre-Flight Checklist">
+    <PageHeader title="Home">
       <template #actions>
+        <v-btn variant="text" prepend-icon="mdi-pencil" @click="nav.navigateTo('profiles')">
+          Edit Profile
+        </v-btn>
+        <v-btn icon variant="text" :loading="running" @click="run">
+          <v-icon>mdi-refresh</v-icon>
+          <v-tooltip activator="parent">Re-run Checks</v-tooltip>
+        </v-btn>
         <v-select
           v-model="selectedProfileId"
           :items="profileOptions"
@@ -137,17 +167,15 @@ async function launchGame() {
     </PageHeader>
 
     <template v-if="selectedProfile">
-      <!-- Run button -->
-      <div class="d-flex justify-center mb-6">
-        <v-btn
-          size="x-large"
-          color="primary"
-          :loading="running"
-          prepend-icon="mdi-clipboard-check"
-          @click="run"
-        >
-          Run Pre-Flight Checks
-        </v-btn>
+      <!-- Loading state while checks run -->
+      <div v-if="running && !lastResult" class="text-center py-10">
+        <v-progress-circular indeterminate size="64" class="mb-4" />
+        <div class="text-h6">Running Pre-Flight Checks...</div>
+        <div class="text-body-2 text-medium-emphasis">
+          Checking {{ selectedProfile.checklistItems.length }} items for "{{
+            selectedProfile.name
+          }}"
+        </div>
       </div>
 
       <!-- Results -->
@@ -169,56 +197,85 @@ async function launchGame() {
             />
           </v-list>
         </v-card>
-
-        <!-- Launch button -->
-        <div
-          v-if="selectedProfile.launchTarget && lastResult.allRequiredPassed"
-          class="text-center"
-        >
-          <v-btn
-            size="x-large"
-            color="success"
-            prepend-icon="mdi-rocket-launch"
-            @click="launchGame"
-          >
-            Launch {{ selectedProfile.name }}
-          </v-btn>
-        </div>
       </template>
 
-      <!-- No results yet -->
-      <v-card v-else color="surface-variant">
+      <!-- No checklist items configured -->
+      <v-card
+        v-else-if="!running && selectedProfile.checklistItems.length === 0"
+        color="surface-variant"
+      >
         <v-card-text class="text-center py-10">
-          <v-icon size="64" class="mb-4">mdi-clipboard-check-outline</v-icon>
-          <div class="text-h6 mb-2">Ready to Check</div>
-          <div class="text-body-1 text-medium-emphasis">
-            {{ selectedProfile.checklistItems.length }} checks configured for "{{
-              selectedProfile.name
-            }}"
+          <v-icon size="64" class="mb-4">mdi-clipboard-plus-outline</v-icon>
+          <div class="text-h6 mb-2">No Checks Configured</div>
+          <div class="text-body-1 text-medium-emphasis mb-4">
+            Add checklist items to "{{ selectedProfile.name }}" to verify your rig before launch.
           </div>
+          <v-btn color="primary" prepend-icon="mdi-pencil" @click="nav.navigateTo('profiles')">
+            Edit Profile
+          </v-btn>
         </v-card-text>
       </v-card>
+
+      <!-- Always-visible Launch button -->
+      <div v-if="selectedProfile.launchTarget" class="text-center mt-6">
+        <v-btn
+          size="x-large"
+          :color="allRequiredPassed ? 'success' : 'warning'"
+          prepend-icon="mdi-rocket-launch"
+          :loading="running"
+          @click="handleLaunch"
+        >
+          Launch {{ selectedProfile.name }}
+        </v-btn>
+        <div v-if="lastResult && !allRequiredPassed" class="text-caption text-warning mt-2">
+          Some required checks have not passed
+        </div>
+      </div>
     </template>
 
-    <v-card v-else color="surface-variant">
+    <!-- No profiles exist -->
+    <v-card v-else-if="!profilesLoading && profiles.length === 0" color="surface-variant">
       <v-card-text class="text-center py-10">
-        <v-icon size="48" class="mb-4">mdi-account-box-outline</v-icon>
-        <div class="text-body-1 mb-4">
-          {{
-            profiles.length === 0
-              ? 'Create a profile to get started with pre-flight checks.'
-              : 'Select a profile to run pre-flight checks.'
-          }}
+        <v-icon size="64" class="mb-4">mdi-hand-wave-outline</v-icon>
+        <div class="text-h5 mb-2">Welcome to RigReady</div>
+        <div class="text-body-1 text-medium-emphasis mb-6">
+          Set up your first profile to start verifying your sim rig before each session.
         </div>
         <v-btn
-          v-if="profiles.length === 0"
           color="primary"
-          prepend-icon="mdi-plus"
+          size="large"
+          prepend-icon="mdi-auto-fix"
           @click="nav.navigateTo('profile-wizard')"
         >
-          Create Profile
+          Start Setup Wizard
         </v-btn>
       </v-card-text>
     </v-card>
+
+    <!-- Profiles exist but none selected (shouldn't normally happen) -->
+    <v-card v-else-if="!profilesLoading" color="surface-variant">
+      <v-card-text class="text-center py-10">
+        <v-icon size="48" class="mb-4">mdi-account-box-outline</v-icon>
+        <div class="text-body-1">Select a profile to run pre-flight checks.</div>
+      </v-card-text>
+    </v-card>
+
+    <!-- Launch warning dialog -->
+    <v-dialog v-model="showLaunchWarning" max-width="450">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon color="warning" class="mr-2">mdi-alert</v-icon>
+          Checks Not Passed
+        </v-card-title>
+        <v-card-text>
+          Some required pre-flight checks have not passed. Are you sure you want to launch anyway?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showLaunchWarning = false">Cancel</v-btn>
+          <v-btn color="warning" variant="flat" @click="launchGame">Launch Anyway</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>

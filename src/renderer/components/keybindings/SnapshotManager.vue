@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useToast } from '../../composables/useToast';
+import ConfirmDialog from '../ConfirmDialog.vue';
 
 const toast = useToast();
 
@@ -8,6 +9,9 @@ const backups = ref<{ name: string; path: string; timestamp: number }[]>([]);
 const loading = ref(false);
 const newBackupName = ref('');
 const showNewBackupDialog = ref(false);
+const showDeleteConfirm = ref(false);
+const pendingDeletePath = ref('');
+const pendingDeleteName = ref('');
 
 async function loadBackups() {
   loading.value = true;
@@ -32,10 +36,14 @@ async function createBackup() {
   }
 }
 
-async function deleteBackup(backupPath: string, name: string) {
-  if (!confirm(`Delete backup "${name}"?`)) return;
+function deleteBackup(backupPath: string, name: string) {
+  pendingDeletePath.value = backupPath;
+  pendingDeleteName.value = name;
+  showDeleteConfirm.value = true;
+}
 
-  const success = await window.rigReady.dcs.deleteBackup(backupPath);
+async function confirmDelete() {
+  const success = await window.rigReady.dcs.deleteBackup(pendingDeletePath.value);
   if (success) {
     toast.success('Backup deleted');
     await loadBackups();
@@ -114,4 +122,11 @@ onMounted(loadBackups);
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <ConfirmDialog
+    v-model="showDeleteConfirm"
+    title="Delete Snapshot"
+    :message="`Delete backup &quot;${pendingDeleteName}&quot;?`"
+    @confirm="confirmDelete"
+  />
 </template>

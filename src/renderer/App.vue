@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import LaunchView from './views/LaunchView.vue';
+import HomeView from './views/HomeView.vue';
 import ProfilesView from './views/ProfilesView.vue';
-import ChecklistView from './views/ChecklistView.vue';
 import ProfileWizardView from './views/ProfileWizardView.vue';
 import DevicesView from './views/DevicesView.vue';
 import InputTesterView from './views/InputTesterView.vue';
@@ -19,7 +18,7 @@ const { toastState, hide: hideToast } = useToast();
 const { shortcuts, showShortcutsHelp, registerShortcuts, formatShortcut, hideHelp } =
   useKeyboardShortcuts();
 
-const currentSection = ref('profiles');
+const currentSection = ref('home');
 
 // Create navigation provider for child components
 const _navigation = createNavigation((section) => {
@@ -43,17 +42,22 @@ const toastIcon = computed(() => {
 const appStatus = ref<'scanning' | 'ready' | 'error'>('scanning');
 const appVersion = ref('v1.0.0');
 
-const navItems = [
-  { id: 'profiles', title: 'Profiles', icon: 'mdi-account-box', shortcut: '1' },
-  { id: 'checklist', title: 'Checklist', icon: 'mdi-clipboard-check', shortcut: '2' },
-  { id: 'launch', title: 'Launch', icon: 'mdi-rocket-launch', shortcut: '3' },
-  { id: 'devices', title: 'Devices', icon: 'mdi-controller', shortcut: '4' },
-  { id: 'input-test', title: 'Input Tester', icon: 'mdi-gamepad-variant', shortcut: '5' },
-  { id: 'displays', title: 'Displays', icon: 'mdi-monitor', shortcut: '6' },
-  { id: 'keybindings', title: 'Keybindings', icon: 'mdi-keyboard', shortcut: '7' },
-  { id: 'streamdeck', title: 'Stream Deck', icon: 'mdi-grid', shortcut: '8' },
-  { id: 'settings', title: 'Settings', icon: 'mdi-cog', shortcut: '9' },
-  { id: 'debug', title: 'Debug', icon: 'mdi-wrench', shortcut: '0' },
+const primaryNav = [
+  { id: 'home', title: 'Home', icon: 'mdi-home', shortcut: '1' },
+  { id: 'profiles', title: 'Profiles', icon: 'mdi-account-box', shortcut: '2' },
+];
+
+const toolsNav = [
+  { id: 'devices', title: 'Devices', icon: 'mdi-controller', shortcut: '3' },
+  { id: 'input-test', title: 'Input Tester', icon: 'mdi-gamepad-variant', shortcut: '4' },
+  { id: 'displays', title: 'Displays', icon: 'mdi-monitor', shortcut: '5' },
+  { id: 'keybindings', title: 'Keybindings', icon: 'mdi-keyboard', shortcut: '6' },
+  { id: 'streamdeck', title: 'Stream Deck', icon: 'mdi-grid', shortcut: '7' },
+];
+
+const systemNav = [
+  { id: 'settings', title: 'Settings', icon: 'mdi-cog', shortcut: '8' },
+  { id: 'debug', title: 'Debug', icon: 'mdi-wrench', shortcut: '9' },
 ];
 
 onMounted(async () => {
@@ -62,59 +66,53 @@ onMounted(async () => {
     {
       key: '1',
       ctrl: true,
-      description: 'Go to Profiles',
-      action: () => (currentSection.value = 'profiles'),
+      description: 'Go to Home',
+      action: () => (currentSection.value = 'home'),
     },
     {
       key: '2',
       ctrl: true,
-      description: 'Go to Checklist',
-      action: () => (currentSection.value = 'checklist'),
+      description: 'Go to Profiles',
+      action: () => (currentSection.value = 'profiles'),
     },
     {
       key: '3',
-      ctrl: true,
-      description: 'Go to Launch',
-      action: () => (currentSection.value = 'launch'),
-    },
-    {
-      key: '4',
       ctrl: true,
       description: 'Go to Devices',
       action: () => (currentSection.value = 'devices'),
     },
     {
-      key: '5',
+      key: '4',
       ctrl: true,
       description: 'Go to Input Tester',
       action: () => (currentSection.value = 'input-test'),
     },
     {
-      key: '6',
+      key: '5',
       ctrl: true,
       description: 'Go to Displays',
       action: () => (currentSection.value = 'displays'),
     },
     {
-      key: '7',
+      key: '6',
       ctrl: true,
       description: 'Go to Keybindings',
       action: () => (currentSection.value = 'keybindings'),
     },
     {
-      key: '8',
+      key: '7',
       ctrl: true,
       description: 'Go to Stream Deck',
       action: () => (currentSection.value = 'streamdeck'),
     },
     {
-      key: '9',
+      key: '8',
       ctrl: true,
       description: 'Go to Settings',
       action: () => (currentSection.value = 'settings'),
     },
     {
-      key: '0',
+      key: '9',
       ctrl: true,
       description: 'Go to Debug',
       action: () => (currentSection.value = 'debug'),
@@ -152,7 +150,45 @@ onMounted(async () => {
 
       <v-list density="compact" nav>
         <v-list-item
-          v-for="item in navItems"
+          v-for="item in primaryNav"
+          :key="item.id"
+          :prepend-icon="item.icon"
+          :active="currentSection === item.id"
+          @click="currentSection = item.id"
+          rounded="lg"
+        >
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
+          <template #append>
+            <span class="text-caption text-medium-emphasis shortcut-hint">
+              Ctrl+{{ item.shortcut }}
+            </span>
+          </template>
+        </v-list-item>
+
+        <v-divider class="my-1" />
+        <v-list-subheader>Tools</v-list-subheader>
+
+        <v-list-item
+          v-for="item in toolsNav"
+          :key="item.id"
+          :prepend-icon="item.icon"
+          :active="currentSection === item.id"
+          @click="currentSection = item.id"
+          rounded="lg"
+        >
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
+          <template #append>
+            <span class="text-caption text-medium-emphasis shortcut-hint">
+              Ctrl+{{ item.shortcut }}
+            </span>
+          </template>
+        </v-list-item>
+
+        <v-divider class="my-1" />
+        <v-list-subheader>System</v-list-subheader>
+
+        <v-list-item
+          v-for="item in systemNav"
           :key="item.id"
           :prepend-icon="item.icon"
           :active="currentSection === item.id"
@@ -225,10 +261,9 @@ onMounted(async () => {
     <v-main>
       <v-container fluid class="main-content pa-6">
         <transition name="fade" mode="out-in">
-          <ProfilesView v-if="currentSection === 'profiles'" />
-          <ChecklistView v-else-if="currentSection === 'checklist'" />
+          <HomeView v-if="currentSection === 'home'" />
+          <ProfilesView v-else-if="currentSection === 'profiles'" />
           <ProfileWizardView v-else-if="currentSection === 'profile-wizard'" />
-          <LaunchView v-else-if="currentSection === 'launch'" />
           <DevicesView v-else-if="currentSection === 'devices'" />
           <InputTesterView v-else-if="currentSection === 'input-test'" />
           <DisplaysView v-else-if="currentSection === 'displays'" />

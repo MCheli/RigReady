@@ -184,6 +184,7 @@ export const SIMULATORS: Simulator[] = [
   'acc',
   'beamng',
   'lmu',
+  'other',
 ];
 
 export const SIMULATOR_DISPLAY_NAMES: Record<Simulator, string> = {
