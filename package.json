@@ -153,7 +153,7 @@
     "electron-updater": "^6.7.3",
     "extract-zip": "^2.0.1",
     "js-yaml": "^4.1.1",
-    "node-hid": "^3.2.0",
+    "node-hid": "^3.3.0",
     "vue": "^3.5.27",
     "vuetify": "^3.11.8"
   }
