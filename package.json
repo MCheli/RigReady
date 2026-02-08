@@ -1,6 +1,6 @@
 {
   "name": "rigready",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Desktop tool for managing simulation rig software, hardware, and configurations",
   "main": "dist/main/index.js",
   "scripts": {
