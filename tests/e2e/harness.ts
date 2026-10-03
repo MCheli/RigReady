@@ -209,9 +209,27 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
               const file = path.join(dir, `${String(count).padStart(2, '0')}-${name}.png`);
               // Let fonts load and every running transition finish, so dialogs are fully shown.
               await page.evaluate('document.fonts.ready');
-              await page.evaluate(
-                'Promise.all(document.getAnimations().filter((a) => a.effect && a.effect.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => undefined)))'
-              );
+              // A dialog starts its own animation a couple of frames after it is mounted, so
+              // "nothing is animating" only counts once it has held for a few frames.
+              await page.evaluate(`(async () => {
+                const frame = () => new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+                const running = () =>
+                  document
+                    .getAnimations()
+                    .filter((a) => a.effect && a.effect.getComputedTiming().iterations !== Infinity)
+                    .filter((a) => a.playState !== 'finished' && a.playState !== 'idle');
+                for (let round = 0; round < 40; round++) {
+                  const now = running();
+                  if (now.length > 0) {
+                    await Promise.all(now.map((a) => a.finished.catch(() => undefined)));
+                    continue;
+                  }
+                  await frame();
+                  await frame();
+                  await frame();
+                  if (running().length === 0) return;
+                }
+              })()`);
               await page.screenshot({ path: file });
               return file;
             },

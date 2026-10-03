@@ -1030,3 +1030,46 @@ export async function cleanupScenarioTemp(
   }
   return removed;
 }
+
+export interface StartedScenario {
+  ports: FakePorts;
+  /** The scenario's description, shown in the app's scenario banner. */
+  description: string;
+}
+
+/**
+ * Everything a scenario run needs before the app wires its features: loads the scenario,
+ * picks the fake user folder and data root, builds the fake ports and seeds the files.
+ * With RIGREADY_HOME set the data root is that folder and the fake user folder is its
+ * sibling "scenario-home"; without it both live in a fresh temp folder.
+ */
+export async function startScenario(
+  scenarioFile: string,
+  env: NodeJS.ProcessEnv,
+  tempDir: string
+): Promise<StartedScenario> {
+  const file = path.resolve(scenarioFile);
+  const fixturesDir = path.resolve(path.dirname(file), '..');
+  const loaded = await loadScenario(file, fixturesDir);
+  void cleanupScenarioTemp(tempDir, Date.now());
+  const override = env['RIGREADY_HOME'];
+  const home = override
+    ? path.resolve(override, '..', 'scenario-home')
+    : await fs.mkdtemp(path.join(tempDir, 'rigready-scenario-'));
+  const dataRoot = override ? path.resolve(override) : path.join(home, '.rigready');
+  const fromEnv = dialogScriptFromEnv(env);
+  const ports = createFakePorts({
+    state: loaded.state,
+    homeDir: home,
+    dataRoot,
+    scenario: {
+      ...loaded.scripts,
+      dialogs: {
+        open: [...fromEnv.open, ...loaded.scripts.dialogs.open],
+        save: [...fromEnv.save, ...loaded.scripts.dialogs.save],
+      },
+    },
+  });
+  await seedScenario(loaded, ports);
+  return { ports, description: loaded.scenario.description };
+}

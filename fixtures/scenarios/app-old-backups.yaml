@@ -1,0 +1,6 @@
+description: Desk state, with 55 changes from early 2025 in the safety journal
+rig: mark-full
+# For the retention rule: automatic backups older than 30 days are removed at startup,
+# except that the newest 50 changes are always kept.
+data:
+  journal.jsonl: data/old-journal.jsonl

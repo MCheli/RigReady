@@ -1,5 +1,3 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import { readDirectInputIdentities } from '../core/directInput';
 import { nullLogger } from '../core/logger';
 import { createWindowsPorts } from '../platform/windows';
@@ -13,8 +11,8 @@ export async function runDiagnose(
   options: { projectRoot: string; resourcesPath?: string }
 ): Promise<number> {
   const report: Record<string, unknown> = { ok: false };
+  const ports = createWindowsPorts({ log: nullLogger, ...options });
   try {
-    const ports = createWindowsPorts({ log: nullLogger, ...options });
     const section = async (
       name: string,
       read: () => Promise<{ ok: boolean } & Record<string, unknown>>
@@ -48,7 +46,9 @@ export async function runDiagnose(
   } catch (e) {
     report['error'] = String(e);
   }
-  await fs.mkdir(path.dirname(outFile), { recursive: true });
-  await fs.writeFile(outFile, JSON.stringify(report, null, 2));
-  return report['ok'] === true ? 0 : 1;
+  // Through FileStore like every other write: a file already at that path is backed up first.
+  const written = await ports.files.write(outFile, JSON.stringify(report, null, 2), {
+    reason: 'Diagnose report',
+  });
+  return written.ok && report['ok'] === true ? 0 : 1;
 }

@@ -324,6 +324,8 @@ export interface JournalEntry {
   reason: string;
   /** Snapshot of the previous content. Null when the file did not exist before. */
   backupPath: string | null;
+  /** sha256 of the content that was replaced. Null when the file did not exist before. */
+  hashBefore?: string | null;
   /** sha256 of the content this change left behind. Null for a removal. */
   hashAfter?: string | null;
   /** The action this change belongs to. Absent for a single change. */

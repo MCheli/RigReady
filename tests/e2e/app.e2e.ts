@@ -135,6 +135,7 @@ test('safety: changes are listed by action with their files, and Undo puts the f
     '[data-testid="change-group"][data-reason="Add RigReady line to Export.lua"]'
   );
   await exportGroup.getByTestId('change-undo').click();
+  await expect(page.getByTestId('undo-confirm')).toBeVisible();
   await expect(page.getByTestId('undo-confirm')).toContainText('was changed again');
   await run.shot('changed-since');
   await page.getByTestId('undo-force').click();
@@ -192,4 +193,43 @@ test('harness: live changes reach the screen, dialogs are scripted, HTML renders
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-games').click();
   await expect(page.getByTestId('game-row').first()).toContainText('DCSWorld');
+});
+
+test('retention: old automatic backups are pruned at startup, the newest 50 changes always stay', async ({
+  rig,
+}) => {
+  // The scenario's journal holds 55 changes from early 2025, all older than 30 days.
+  const first = await rig.launch('app-old-backups', 'app-retention');
+  let { page } = first;
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-safety').click();
+  await expect(page.getByTestId('change-group')).toHaveCount(50);
+  await expect(page.getByTestId('change-group').first()).toHaveAttribute(
+    'data-reason',
+    'Old change 55'
+  );
+  await expect(page.getByTestId('change-group').last()).toHaveAttribute(
+    'data-reason',
+    'Old change 6'
+  );
+  await expect(page.getByTestId('safety-usage')).toContainText('newest 50 changes');
+  await first.shot('fifty-kept');
+
+  // The limit is a setting; the next start applies it.
+  await page.getByTestId('nav-settings').click();
+  const groups = page.getByTestId('setting-backup-groups').locator('input');
+  await groups.fill('10');
+  await groups.blur();
+  await expect(page.getByTestId('settings-saved')).toHaveText('Saved');
+  const second = await first.restart();
+  page = second.page;
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-safety').click();
+  await expect(page.getByTestId('change-group')).toHaveCount(10);
+  await expect(page.getByTestId('change-group').last()).toHaveAttribute(
+    'data-reason',
+    'Old change 46'
+  );
+  await expect(page.getByTestId('safety-usage')).toContainText('newest 10 changes');
+  await second.shot('ten-kept');
 });

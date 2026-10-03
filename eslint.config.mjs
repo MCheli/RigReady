@@ -5,6 +5,21 @@ import prettier from 'eslint-config-prettier';
 
 const unused = ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }];
 
+/** Modules that read or change the machine. Only src/platform may import them. */
+const machineModules = [
+  'fs',
+  'node:fs',
+  'fs/promises',
+  'node:fs/promises',
+  'child_process',
+  'node:child_process',
+  'koffi',
+];
+const viaPorts = (name) => ({
+  name,
+  message: 'only src/platform touches the machine; use the ports in src/core/ports',
+});
+
 export default tseslint.config(
   {
     ignores: [
@@ -18,7 +33,6 @@ export default tseslint.config(
       'playwright-report/**',
       'test-results/**',
       'src/legacy/**',
-      'scripts/sign.js',
     ],
   },
   ...tseslint.configs.recommended,
@@ -46,33 +60,32 @@ export default tseslint.config(
   },
   {
     // Architecture: core is pure. Machine access goes through ports.
-    files: ['src/core/**/*.ts', 'src/features/*/core/**/*.ts', 'src/features/games/*/**/*.ts'],
+    files: ['src/core/**/*.ts'],
     ignores: ['**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            'electron',
-            'fs',
-            'node:fs',
-            'fs/promises',
-            'node:fs/promises',
-            'child_process',
-            'node:child_process',
-            'koffi',
-          ].map((name) => ({ name, message: 'core code must go through ports (src/core/ports)' })),
+          paths: [...machineModules, 'electron'].map(viaPorts),
+          patterns: [
+            {
+              group: ['**/platform/**', '**/main/**', '**/features/**', '**/renderer/**'],
+              message: 'core depends on nothing but src/shared',
+            },
+          ],
         },
       ],
     },
   },
   {
-    // Architecture: features never reach into another feature's internals.
+    // Architecture: features use ports and never reach into another layer or feature.
     files: ['src/features/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
+          paths: [...machineModules, 'electron'].map(viaPorts),
           patterns: [
             {
               group: ['**/legacy/**'],
@@ -85,6 +98,15 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  {
+    // Only src/platform touches the file system or starts programs. The Electron
+    // bootstrap, the shared types and the renderer shell go through ports too.
+    files: ['src/main/**/*.ts', 'src/shared/**/*.ts', 'src/renderer/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: machineModules.map(viaPorts) }],
     },
   },
   prettier

@@ -1,13 +1,11 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } from 'electron';
-import { promises as fs } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { z } from 'zod';
 import trayIconPath from '../../assets/icon.ico?asset';
 import { bind } from '../core/feature';
 import { createLogger, type Logger } from '../core/logger';
 import { isWithin } from '../core/paths';
-import type { Ports } from '../core/ports';
+import type { FileStore, Ports } from '../core/ports';
 import { err, ok } from '../core/result';
 import {
   ElectronDialogs,
@@ -18,15 +16,7 @@ import {
   ElectronSecrets,
   HIDDEN_ARG,
 } from '../platform/electron';
-import {
-  applyLiveMutations,
-  cleanupScenarioTemp,
-  createFakePorts,
-  dialogScriptFromEnv,
-  loadScenario,
-  seedScenario,
-  type FakePorts,
-} from '../platform/fake';
+import { applyLiveMutations, startScenario, type FakePorts } from '../platform/fake';
 import { pngSize } from '../platform/fake/png';
 import { MutationSchema } from '../platform/fake/scenario';
 import { RotatingFileSink, systemClock } from '../platform/node';
@@ -83,30 +73,9 @@ async function createPlatform(): Promise<Platform> {
     };
   }
   // Scenario runs never use the real profile: without RIGREADY_HOME they get a temp folder.
-  const file = path.resolve(scenarioFile);
-  const fixturesDir = path.resolve(path.dirname(file), '..');
-  const loaded = await loadScenario(file, fixturesDir);
-  void cleanupScenarioTemp(os.tmpdir(), Date.now());
-  const home = process.env['RIGREADY_HOME']
-    ? path.resolve(process.env['RIGREADY_HOME'], '..', 'scenario-home')
-    : await fs.mkdtemp(path.join(os.tmpdir(), 'rigready-scenario-'));
-  const dataRoot = process.env['RIGREADY_HOME']
-    ? path.resolve(process.env['RIGREADY_HOME'])
-    : path.join(home, '.rigready');
-  const fromEnv = dialogScriptFromEnv(process.env);
-  const fake = createFakePorts({
-    state: loaded.state,
-    homeDir: home,
-    dataRoot,
-    scenario: {
-      ...loaded.scripts,
-      dialogs: {
-        open: [...fromEnv.open, ...loaded.scripts.dialogs.open],
-        save: [...fromEnv.save, ...loaded.scripts.dialogs.save],
-      },
-    },
-  });
-  await seedScenario(loaded, fake);
+  const started = await startScenario(scenarioFile, process.env, app.getPath('temp'));
+  const fake = started.ports;
+  const dataRoot = fake.folders.dataRoot();
   // Encryption and HTML rendering do not depend on the rig, so scenario runs use the real
   // ones (inside the temp data root). Everything that describes or changes the machine is fake.
   const ports: Ports = {
@@ -114,7 +83,7 @@ async function createPlatform(): Promise<Platform> {
     secrets: new ElectronSecrets(dataRoot),
     render: new ElectronRender(dataRoot),
   };
-  return { ports, scenario: loaded.scenario.description, fake };
+  return { ports, scenario: started.description, fake };
 }
 
 const WindowStateSchema = z.object({
@@ -126,10 +95,12 @@ const WindowStateSchema = z.object({
 });
 type WindowState = z.infer<typeof WindowStateSchema>;
 
-async function readWindowState(file: string): Promise<WindowState> {
+async function readWindowState(files: FileStore, file: string): Promise<WindowState> {
   const fallback: WindowState = { width: 1280, height: 860, maximized: false };
   try {
-    const state = WindowStateSchema.parse(JSON.parse(await fs.readFile(file, 'utf8')));
+    const text = await files.readText(file);
+    if (!text.ok) return fallback;
+    const state = WindowStateSchema.parse(JSON.parse(text.value));
     if (state.x === undefined || state.y === undefined) return state;
     // Only reuse a position that is still on a connected screen.
     const visible = screen.getAllDisplays().some((display) => {
@@ -149,7 +120,12 @@ async function readWindowState(file: string): Promise<WindowState> {
   }
 }
 
-function createWindow(state: WindowState, stateFile: string, show: boolean): BrowserWindow {
+function createWindow(
+  state: WindowState,
+  files: FileStore,
+  stateFile: string,
+  show: boolean
+): BrowserWindow {
   const window = new BrowserWindow({
     width: state.width,
     height: state.height,
@@ -183,7 +159,8 @@ function createWindow(state: WindowState, stateFile: string, show: boolean): Bro
       if (window.isDestroyed() || window.isMinimized()) return;
       const bounds = window.getNormalBounds();
       const next: WindowState = { ...bounds, maximized: window.isMaximized() };
-      void fs.writeFile(stateFile, JSON.stringify(next, null, 2)).catch(() => undefined);
+      // Inside the data root, so this is a plain write with no journal entry.
+      void files.write(stateFile, JSON.stringify(next, null, 2), { reason: 'Window position' });
     }, 400);
   };
   window.on('resize', save);
@@ -422,7 +399,12 @@ async function start(): Promise<void> {
 
   const stateFile = path.join(dataRoot, 'window.json');
   const startHidden = process.argv.includes(HIDDEN_ARG) && tray !== undefined;
-  mainWindow = createWindow(await readWindowState(stateFile), stateFile, !startHidden);
+  mainWindow = createWindow(
+    await readWindowState(ports.files, stateFile),
+    ports.files,
+    stateFile,
+    !startHidden
+  );
   mainWindow.on('close', (event) => {
     if (quitting || !tray) return;
     // Decided from the cached settings: the close event cannot wait for a file read.

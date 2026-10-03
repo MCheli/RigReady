@@ -144,6 +144,7 @@ describe('BackupFileStore: copies and groups', () => {
     expect(await fs.readFile(target, 'utf8')).toBe('snapshot');
     if (!copied.ok || !copied.value) throw new Error('expected a journal entry');
     expect(await fs.readFile(copied.value.backupPath!, 'utf8')).toBe('current');
+    expect(copied.value.hashBefore).toBe(sha256('current'));
     expect(copied.value.hashAfter).toBe(sha256('snapshot'));
     expect(await store.copy(path.join(dir, 'missing'), target, { reason: 'x' })).toMatchObject({
       ok: false,

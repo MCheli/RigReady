@@ -218,9 +218,12 @@ export class BackupFileStore implements FileStore {
       const now = this.clock.now();
       const id = this.nextId();
       let backupPath: string | null = null;
+      let hashBefore: string | null = null;
       if (await this.raw.exists(target)) {
         backupPath = path.join(this.backupRoot, id, path.basename(target));
         await this.raw.copyFile(target, backupPath);
+        // Hash the copy: it is what an undo would put back.
+        hashBefore = sha256(await this.raw.readBytes(backupPath));
       }
       // The journal is written before the change: a crash leaves a record, never a silent edit.
       const entry: JournalEntry = {
@@ -230,6 +233,7 @@ export class BackupFileStore implements FileStore {
         action,
         reason: options.reason,
         backupPath,
+        hashBefore,
         hashAfter,
         ...(options.group ? { groupId: options.group.id, groupReason: options.group.reason } : {}),
         ...(options.undoOf ? { undoOf: options.undoOf } : {}),

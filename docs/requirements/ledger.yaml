@@ -5,10 +5,12 @@
 # under artifacts/screens/<flow>/ from a scenario run.
 #
 # Conventions used in done_means:
-#   fixture  = fixtures/rigs/<name>/ (mark-flight is recorded from the owner's rig; generic-rig is a
-#              second, non-WinWing rig used to prove nothing is hardcoded)
+#   fixture  = fixtures/rigs/<name>/. The one that exists is mark-full, recorded from the owner's rig
+#              with everything connected; where an entry says mark-flight or mark-racing, use mark-full
+#              with mutations. generic-rig (a second, non-WinWing rig used to prove nothing is
+#              hardcoded) has not been recorded yet.
 #   scenario = RIGREADY_SCENARIO run on fake providers: <fixture> + <mutation>, e.g.
-#              mark-flight + pedals-unplugged
+#              mark-full + pedals unplugged (fixtures/scenarios/flying-pedals-unplugged.yaml)
 #   Paths use path variables ({DCS_USER}, {DOCUMENTS}, {RIGREADY_HOME}, ...) and forward slashes.
 
 requirements:
@@ -1769,8 +1771,15 @@ requirements:
       - "Every FileStore.write, rename or delete outside the data root first copies the previous content (if any) to {RIGREADY_HOME}/backups/auto/<timestamp>/ and appends a journal entry with path, action, reason and hashes."
       - "A unit test writes through FileStore with a failing backup step and asserts the target was not modified."
       - "There is no code path that writes outside the data root without FileStore (lint rule forbidding fs write imports outside src/platform)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/fileStore.test.ts#backs up the previous content before writing outside the data root, and can undo"
+      - "tests/unit/fileStore.test.ts#backs up before removing, keeps every change of the same file separately"
+      - "tests/unit/fileStoreGroups.test.ts#copy backs up and journals the destination like a write"
+      - "tests/unit/extras.test.ts#move renames a file as one undoable action"
+      - "tests/unit/fileStoreGroups.test.ts#a failing backup stops the write: the target is not modified"
+      - "tests/unit/architecture.test.ts#only src/platform imports the file system, child processes or native bindings"
+      - "eslint.config.mjs"
 
   - id: BACKUP-011
     title: Visible description of every change
@@ -1793,8 +1802,15 @@ requirements:
       - "Undo restores every file in the group to its pre-change content; if a file changed since, the user is told and asked before overwriting it."
       - "Undo itself is journalled and can be undone."
       - "Unit test: write, modify externally, undo -> prompt; write, undo -> original bytes."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/fileStoreGroups.test.ts#writes and removes under beginGroup are one action; a lone change is its own group"
+      - "tests/unit/fileStoreGroups.test.ts#refuses to undo a file that changed since, unless forced; the undo can itself be undone"
+      - "tests/unit/settings.test.ts#lists every change by action with what happened to each file, and undoes a whole action"
+      - "tests/e2e/app.e2e.ts#safety: changes are listed by action with their files, and Undo puts the files back"
+      - "artifacts/screens/app-safety/02-two-changes.png"
+      - "artifacts/screens/app-safety/03-undone.png"
+      - "artifacts/screens/app-safety/04-changed-since.png"
 
   - id: BACKUP-013
     title: Auto-backup retention
@@ -1804,8 +1820,14 @@ requirements:
     done_means:
       - "Auto-backups are kept for at least 30 days and the newest 50 action groups regardless of age; older ones are pruned on startup."
       - "The retention limits are visible and changeable in settings; the Changes page shows total size used."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/fileStoreGroups.test.ts#measures the backups and prunes those that are old and beyond the newest N actions"
+      - "tests/e2e/app.e2e.ts#retention: old automatic backups are pruned at startup, the newest 50 changes always stay"
+      - "tests/e2e/app.e2e.ts#settings: defaults are shown, a desk layout is saved and chosen, changes survive a restart"
+      - "artifacts/screens/app-retention/01-fifty-kept.png"
+      - "artifacts/screens/app-retention/02-ten-kept.png"
+      - "artifacts/screens/app-settings/01-defaults.png"
 
   - id: BACKUP-014
     title: Path variables resolve on another machine
