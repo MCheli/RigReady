@@ -70,7 +70,7 @@ function manualGuard(displays: DisplayProvider, seconds = 15) {
 function fixFor(r: TestRig, names: MonitorNames = {}) {
   const harness = manualGuard(r.ports.displays);
   const recovery = new RecoveryStore(r.ports.files, r.ports.folders.dataRoot(), r.clock);
-  const applier = new LayoutApplier(r.ports.displays, harness.guard, recovery);
+  const applier = new LayoutApplier(r.ports.displays, harness.guard, recovery, r.ports.window);
   const remediation = createApplyLayoutRemediation({ ...depsFor(r, names), applier });
   return { ...harness, recovery, applier, remediation };
 }
@@ -233,10 +233,11 @@ describe('display.applyLayout fix', () => {
       'Apply the "Flying" layout'
     );
     expect((await check.run(good, rig.ctx)).pass).toBe(false);
-    expect(await remediation.run(good, rig.ctx)).toEqual({
-      ok: true,
-      value: 'Applied the layout to 4 monitors',
-    });
+    // The fix applies the layout and then waits for the answer to "Keep this layout?".
+    let finished = false;
+    const running = remediation.run(good, rig.ctx).finally(() => (finished = true));
+    await expect.poll(() => guard.pending).toBe(true);
+    expect(finished).toBe(false);
     expect((await check.run(good, rig.ctx)).pass).toBe(true);
     // The Dell is off, the three MFD screens are on in portrait, the ultrawide is main.
     const state = rig.ports.state.displays;
@@ -255,6 +256,17 @@ describe('display.applyLayout fix', () => {
       enabled: true,
       primary: true,
     });
+    // The RigReady window was put on a monitor that stays on before the change (the
+    // ultrawide, where it was then; never the Dell, which goes dark), and is on the new
+    // main display afterwards: the question is always somewhere the user can see it.
+    const [beforeChange, afterChange] = rig.ports.window.shown;
+    expect(beforeChange).toHaveLength(4);
+    expect(beforeChange![0]).toEqual({ x: 2560, y: 0, width: 5120, height: 1440 });
+    expect(beforeChange!.some((a) => a.x === 0 && a.width === 2560)).toBe(false);
+    expect(afterChange![0]).toEqual({ x: 0, y: 0, width: 5120, height: 1440 });
+    expect(afterChange).toHaveLength(4);
+    guard.keep();
+    expect(await running).toEqual({ ok: true, value: 'Applied the layout to 4 monitors' });
     // Nothing to do the second time.
     expect(await remediation.run(good, rig.ctx)).toEqual({
       ok: true,
@@ -367,22 +379,31 @@ describe('RevertGuard', () => {
     rig = await scenarioRig('desk-mfds-wrong', NO_FILES);
     const desk = await currentLayout(rig);
     const harness = fixFor(rig);
-    await harness.remediation.run(good, rig.ctx);
-    return { ...harness, good, desk, check: createLayoutCheck(depsFor(rig)) };
+    const running = harness.remediation.run(good, rig.ctx);
+    await expect.poll(() => harness.guard.pending).toBe(true);
+    return { ...harness, running, good, desk, check: createLayoutCheck(depsFor(rig)) };
   }
 
-  it('reverts by itself when nobody confirms in time', async () => {
-    const { guard, events, timeout, desk, check } = await applied();
+  it('reverts by itself when nobody confirms in time, and the fix says the layout was not kept', async () => {
+    const { guard, events, timeout, desk, check, running } = await applied();
     timeout();
     await expect.poll(() => events).toEqual(['armed 15', 'reverted']);
     expect(guard.pending).toBe(false);
     expect((await check.run(desk, rig.ctx)).pass).toBe(true);
+    expect(await running).toEqual({
+      ok: false,
+      error: {
+        code: 'display.reverted',
+        message: 'The new monitor layout was not kept, so the previous one is back.',
+      },
+    });
   });
 
   it('keep stops the countdown and leaves the layout, which Stand down can still revert', async () => {
-    const { guard, events, good, desk, cancelled, check } = await applied();
+    const { guard, events, good, desk, cancelled, check, running } = await applied();
     guard.keep();
     guard.keep();
+    expect(await running).toMatchObject({ ok: true });
     expect(events).toEqual(['armed 15', 'kept']);
     expect(cancelled()).toBe(1);
     expect((await check.run(good, rig.ctx)).pass).toBe(true);
@@ -396,10 +417,11 @@ describe('RevertGuard', () => {
   });
 
   it('reports a revert that fails', async () => {
-    const { guard, events } = await applied();
+    const { guard, events, running } = await applied();
     rig.ports.displays.revert = async () => err('display.revert', 'Could not restore.');
     expect(await guard.revertNow()).toMatchObject({ ok: false });
     expect(events).toEqual(['armed 15', 'revertFailed']);
+    expect(await running).toMatchObject({ ok: false, error: { code: 'display.revert' } });
   });
 
   it('uses a real timer by default', async () => {
@@ -410,10 +432,17 @@ describe('RevertGuard', () => {
       { armed: () => events.push('armed'), settled: (o) => events.push(o) },
       0.01
     );
-    guard.arm();
-    guard.arm();
+    const first = guard.arm();
+    // A newer change builds on the first, which is thereby kept.
+    const second = guard.arm();
+    expect(await first).toBe('kept');
     guard.keep();
+    expect(await second).toBe('kept');
     expect(events).toEqual(['armed', 'armed', 'kept']);
+    // With nothing to go back to, a revert is refused and nobody is left waiting.
+    const third = guard.arm();
+    expect(await guard.revertNow()).toMatchObject({ ok: false });
+    expect(await third).toBe('kept');
   });
 });
 
@@ -459,7 +488,7 @@ describe('display capture', () => {
     expect(
       createApplyLayoutRemediation({
         ...deps,
-        applier: { apply: async () => err('x', 'x') },
+        applier: { applyAndWait: async () => err('x', 'x') },
       }).describe(params)
     ).toBe('Apply the "Flying" layout');
     expect(await createLayoutCheck(deps).run(params, rig.ctx)).toEqual({

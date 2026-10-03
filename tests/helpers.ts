@@ -91,22 +91,38 @@ export interface WiredApp extends TestRig {
   events: { channel: string; payload: unknown }[];
   /** Calls an IPC channel exactly as the renderer would, through validation. */
   invoke<T = unknown>(channel: string, input?: unknown): Promise<T>;
+  /**
+   * What "the user" answers when a monitor layout was applied and RigReady asks whether
+   * to keep it: 'keep' (the default), 'revert', or 'wait' to leave the question open so
+   * the test answers through displays:keep / displays:revert itself.
+   */
+  layoutAnswer: 'keep' | 'revert' | 'wait';
 }
 
 /** The whole main side (every discovered feature) wired onto fake ports for a scenario. */
 export async function wiredApp(scenario: string, options: SeedOptions = {}): Promise<WiredApp> {
   const rig = await scenarioRig(scenario, options);
   const events: WiredApp['events'] = [];
-  const wiring = wireFeatures({
+  const answer = (channel: string): void => {
+    // After the event, as a click would be: never inside the apply that raised it.
+    setTimeout(() => void wiring.handlers.get(channel)?.(undefined), 0);
+  };
+  const wiring: Wiring = wireFeatures({
     features: discoverFeatures(),
     ports: rig.ports,
     log: nullLogger,
-    send: (channel, payload) => events.push({ channel, payload }),
+    send: (channel, payload) => {
+      events.push({ channel, payload });
+      if (channel === 'displays:event:applied' && app.layoutAnswer !== 'wait') {
+        answer(app.layoutAnswer === 'keep' ? 'displays:keep' : 'displays:revert');
+      }
+    },
   });
-  return {
+  const app: WiredApp = {
     ...rig,
     wiring,
     events,
+    layoutAnswer: 'keep',
     async invoke<T>(channel: string, input?: unknown): Promise<T> {
       const handler = wiring.handlers.get(channel);
       if (!handler) throw new Error(`No handler for ${channel}`);
@@ -118,4 +134,5 @@ export async function wiredApp(scenario: string, options: SeedOptions = {}): Pro
       return envelope.value as T;
     },
   };
+  return app;
 }

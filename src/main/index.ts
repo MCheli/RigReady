@@ -8,6 +8,7 @@ import { isWithin } from '../core/paths';
 import type { FileStore, Ports } from '../core/ports';
 import { err, ok } from '../core/result';
 import {
+  ElectronAppWindow,
   ElectronDialogs,
   ElectronLoginItem,
   ElectronNotifications,
@@ -77,6 +78,7 @@ async function createPlatform(): Promise<Platform> {
           notifications: new ElectronNotifications(),
           loginItem: new ElectronLoginItem(),
           overlays: new ElectronOverlays(),
+          window: new ElectronAppWindow(() => mainWindow),
         }),
       }),
     };

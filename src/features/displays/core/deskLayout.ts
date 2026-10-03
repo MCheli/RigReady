@@ -21,7 +21,7 @@ export async function deskLayoutId(ctx: Ctx): Promise<string | undefined> {
  */
 export function createDeskLayoutStep(
   ctx: Ctx,
-  applier: Pick<LayoutApplier, 'apply'>,
+  applier: Pick<LayoutApplier, 'applyAndWait'>,
   names: () => Promise<MonitorNames>
 ): StandDownStep {
   return {
@@ -56,7 +56,7 @@ export function createDeskLayoutStep(
         );
       }
       if (analysis.changes.length === 0) return ok(null);
-      const applied = await applier.apply(analysis.targets);
+      const applied = await applier.applyAndWait(analysis.targets);
       if (!applied.ok) return applied;
       const skipped = layout.value.displays.length - analysis.targets.length;
       const note =

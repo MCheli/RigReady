@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, Notification, safeStorage, screen } from 'e
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
+  AppWindow,
   Dialogs,
   LoginItem,
   Notifications,
@@ -9,6 +10,7 @@ import type {
   Overlays,
   Render,
   SaveDialogOptions,
+  ScreenArea,
   ScreenLabel,
   Secrets,
 } from '../../core/ports';
@@ -287,6 +289,47 @@ const escapeHtml = (text: string): string =>
  * coordinates are desktop pixels (what DisplayProvider reports); Electron wants its own
  * scaled units, so each label is placed through the matching Electron display.
  */
+/** Keeps the app window where the user can see it across a monitor layout change. */
+export class ElectronAppWindow implements AppWindow {
+  constructor(private readonly window: () => BrowserWindow | undefined) {}
+
+  async showOn(areas: ScreenArea[]): Promise<Result<{ moved: boolean }>> {
+    const window = this.window();
+    if (!window || window.isDestroyed() || areas.length === 0) return ok({ moved: false });
+    try {
+      // Areas are physical pixels; Electron places windows in its own scaled units.
+      const dip = areas.map((area) => screen.screenToDipRect(null, area));
+      const bounds = window.getNormalBounds();
+      const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+      const inside = dip.some(
+        (a) =>
+          centre.x >= a.x &&
+          centre.x < a.x + a.width &&
+          centre.y >= a.y &&
+          centre.y < a.y + a.height
+      );
+      if (!inside) {
+        const target = dip[0]!;
+        if (window.isMaximized()) window.unmaximize();
+        const width = Math.min(bounds.width, target.width);
+        const height = Math.min(bounds.height, target.height);
+        window.setBounds({
+          x: Math.round(target.x + (target.width - width) / 2),
+          y: Math.round(target.y + (target.height - height) / 2),
+          width,
+          height,
+        });
+      }
+      if (window.isMinimized()) window.restore();
+      window.show();
+      window.focus();
+      return ok({ moved: !inside });
+    } catch (e) {
+      return err('window.show', 'Could not move the RigReady window.', String(e));
+    }
+  }
+}
+
 export class ElectronOverlays implements Overlays {
   private windows: BrowserWindow[] = [];
   private timer: ReturnType<typeof setTimeout> | undefined;

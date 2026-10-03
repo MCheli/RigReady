@@ -14,8 +14,11 @@ const realSchedule: Schedule = (fn, ms) => {
  * (for example because the screen they would click on went dark), the previous
  * layout comes back by itself.
  */
+export type LayoutDecision = 'kept' | 'reverted' | 'revertFailed';
+
 export class RevertGuard {
   private cancel: (() => void) | undefined;
+  private decide: ((outcome: LayoutDecision) => void) | undefined;
 
   constructor(
     private readonly displays: DisplayProvider,
@@ -23,7 +26,7 @@ export class RevertGuard {
       /** A layout was applied; the countdown started. */
       armed(seconds: number): void;
       /** The countdown ended, by keep, by revert or by timeout. */
-      settled(outcome: 'kept' | 'reverted' | 'revertFailed'): void;
+      settled(outcome: LayoutDecision): void;
     },
     /** How long the user has to keep the new layout. Follows the app settings. */
     public seconds = 15,
@@ -34,13 +37,27 @@ export class RevertGuard {
     return this.cancel !== undefined;
   }
 
-  arm(): void {
+  /**
+   * Starts the countdown. Resolves when this layout change has its answer: kept,
+   * reverted (by the user or by the countdown), or a revert that failed. A newer change
+   * arming the guard again answers the older one as kept (it was built upon).
+   */
+  arm(): Promise<LayoutDecision> {
     this.cancel?.();
+    this.answer('kept');
     this.cancel = this.schedule(() => {
       this.cancel = undefined;
       void this.revertNow();
     }, this.seconds * 1000);
+    const decision = new Promise<LayoutDecision>((resolve) => (this.decide = resolve));
     this.events.armed(this.seconds);
+    return decision;
+  }
+
+  private answer(outcome: LayoutDecision): void {
+    const decide = this.decide;
+    this.decide = undefined;
+    decide?.(outcome);
   }
 
   /** The user confirmed the new layout. It can still be reverted later through Stand down. */
@@ -49,16 +66,20 @@ export class RevertGuard {
     this.cancel();
     this.cancel = undefined;
     this.events.settled('kept');
+    this.answer('kept');
   }
 
   async revertNow(): Promise<Result<DisplayLayout>> {
     this.cancel?.();
     this.cancel = undefined;
     if (!this.displays.canRevert()) {
+      this.answer('kept');
       return err('display.norevert', 'There is no earlier monitor layout to go back to.');
     }
     const reverted = await this.displays.revert();
-    this.events.settled(reverted.ok ? 'reverted' : 'revertFailed');
+    const outcome = reverted.ok ? 'reverted' : 'revertFailed';
+    this.events.settled(outcome);
+    this.answer(outcome);
     return reverted;
   }
 }

@@ -2,6 +2,7 @@ import { spawn, type SpawnOptions, type SpawnOptionsWithoutStdio } from 'node:ch
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
+  AppWindow,
   Clock,
   Dialogs,
   Http,
@@ -205,6 +206,7 @@ export const headlessPorts: {
   notifications: Notifications;
   loginItem: LoginItem;
   overlays: Overlays;
+  window: AppWindow;
 } = {
   secrets: {
     get: async () => unavailable('The secret store'),
@@ -225,6 +227,8 @@ export const headlessPorts: {
     setEnabled: async () => unavailable('Start with Windows'),
   },
   overlays: { showLabels: async () => unavailable('Screen labels') },
+  // No window to move outside the app; a layout change from a script needs none.
+  window: { showOn: async () => ok({ moved: false }) },
 };
 
 /** Appends to a log file without blocking the caller; rotates at maxBytes keeping `keep` older files. */

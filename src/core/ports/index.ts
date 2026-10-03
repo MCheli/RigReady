@@ -259,6 +259,25 @@ export interface Overlays {
   showLabels(labels: ScreenLabel[], durationMs: number): Promise<Result<void>>;
 }
 
+export interface ScreenArea {
+  /** Desktop coordinates in pixels, as DisplayProvider reports monitors. */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** RigReady's own window, for the one thing features need of it: being where the user can see it. */
+export interface AppWindow {
+  /**
+   * Shows the window (restored from the tray or the taskbar) on one of these areas. When
+   * it is not already on one of them it is moved to the first, resized to fit. Used
+   * before and after a monitor layout change, so the "Keep this layout?" question is
+   * never on a screen that just went dark.
+   */
+  showOn(areas: ScreenArea[]): Promise<Result<{ moved: boolean }>>;
+}
+
 /** The per-user "start with Windows" entry. */
 export interface LoginItem {
   isEnabled(): Promise<Result<boolean>>;
@@ -458,4 +477,5 @@ export interface Ports {
   notifications: Notifications;
   loginItem: LoginItem;
   overlays: Overlays;
+  window: AppWindow;
 }

@@ -338,22 +338,29 @@ describe('Stand down and the desk layout', () => {
     app.ports.state.displays = flying;
     expect((await app.invoke<ChecklistReport>('fly:check', P)).ready).toBe(true);
 
-    const down = await app.invoke<ActionReport>('fly:standDown', P);
+    // The countdown starts, exactly as for any other layout change, and Stand down
+    // waits for the answer before it says what it did.
+    app.layoutAnswer = 'wait';
+    const standingDown = app.invoke<ActionReport>('fly:standDown', P);
+    await expect
+      .poll(async () => (await app!.invoke<{ pending: boolean }>('displays:pending')).pending)
+      .toBe(true);
+    expect(app.events.some((e) => e.channel === 'displays:event:applied')).toBe(true);
+    expect(await app.invoke('displays:pending')).toMatchObject({ pending: true, seconds: 15 });
+    const dell = app.ports.state.displays.find((d) => d.name === 'DELL G3223D')!;
+    expect(dell).toMatchObject({ enabled: true, primary: true, x: 0, y: 0 });
+    expect(
+      app.ports.state.displays.filter((d) => d.name === 'USB_Monitor').map((d) => d.rotation)
+    ).toEqual([0, 0, 0]);
+    await app.invoke('displays:keep');
+    const down = await standingDown;
     expect(down.steps).toContainEqual({
       itemId: 'displays.deskLayout',
       title: 'Desk monitor layout',
       ok: true,
       message: 'Applied desk layout "Desk"',
     });
-    const dell = app.ports.state.displays.find((d) => d.name === 'DELL G3223D')!;
-    expect(dell).toMatchObject({ enabled: true, primary: true, x: 0, y: 0 });
-    expect(
-      app.ports.state.displays.filter((d) => d.name === 'USB_Monitor').map((d) => d.rotation)
-    ).toEqual([0, 0, 0]);
-    // The countdown started, exactly as for any other layout change.
-    expect(app.events.some((e) => e.channel === 'displays:event:applied')).toBe(true);
-    expect(await app.invoke('displays:pending')).toMatchObject({ pending: true, seconds: 15 });
-    await app.invoke('displays:keep');
+    app.layoutAnswer = 'keep';
 
     // Already in the desk layout: nothing to do, and nothing is claimed.
     const again = await app.invoke<ActionReport>('fly:standDown', P);
@@ -410,9 +417,14 @@ describe('Stand down and the desk layout', () => {
   it('the revert countdown follows the setting', async () => {
     app = await wiredApp('flying-mfd-rotated', NO_FILES);
     await app.invoke('settings:update', { displayRevertSeconds: 30 });
-    await app.invoke<ActionReport>('fly:makeReady', P);
+    app.layoutAnswer = 'wait';
+    const making = app.invoke<ActionReport>('fly:makeReady', P);
+    await expect
+      .poll(async () => (await app!.invoke<{ pending: boolean }>('displays:pending')).pending)
+      .toBe(true);
     expect(await app.invoke('displays:pending')).toEqual({ pending: true, seconds: 30 });
     await app.invoke('displays:keep');
+    await making;
   });
 });
 

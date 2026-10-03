@@ -28,7 +28,7 @@ export default defineFeatureMain({
         ctx.emit(displaysContract, 'settled', { outcome });
       },
     });
-    const applier = new LayoutApplier(ctx.ports.displays, guard, recovery);
+    const applier = new LayoutApplier(ctx.ports.displays, guard, recovery, ctx.ports.window);
     const deps: LayoutDeps = { names: () => names.readOrEmpty(), layouts: ctx.layouts };
     // Other features (DCS screen setup) call monitors by the names given here.
     ctx.names.provideMonitors(() => names.readOrEmpty());

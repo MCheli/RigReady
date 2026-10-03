@@ -84,7 +84,7 @@ export function createLayoutCheck(deps: LayoutDeps): CheckDefinition<LayoutParam
 }
 
 export function createApplyLayoutRemediation(
-  deps: LayoutDeps & { applier: Pick<LayoutApplier, 'apply'> }
+  deps: LayoutDeps & { applier: Pick<LayoutApplier, 'applyAndWait'> }
 ): RemediationDefinition<LayoutParams> {
   return {
     type: DISPLAY_APPLY,
@@ -110,7 +110,8 @@ export function createApplyLayoutRemediation(
         return err('display.invalid', 'The layout cannot be applied.', analysis.problems.join(' '));
       }
       if (analysis.changes.length === 0) return ok('The monitors already match the layout');
-      const applied = await deps.applier.apply(analysis.targets);
+      // Waits for Keep or Go back: what follows in Make ready must know which layout is there.
+      const applied = await deps.applier.applyAndWait(analysis.targets);
       if (!applied.ok) return applied;
       const on = monitors(analysis.enabledCount);
       return ok(

@@ -1,6 +1,7 @@
 import { BackupFileStore } from '../../core/files/fileStore';
 import type { Logger } from '../../core/logger';
 import type {
+  AppWindow,
   Dialogs,
   LoginItem,
   Notifications,
@@ -27,6 +28,7 @@ export interface AppPorts {
   notifications: Notifications;
   loginItem: LoginItem;
   overlays: Overlays;
+  window: AppWindow;
 }
 
 export interface WindowsPlatformOptions {

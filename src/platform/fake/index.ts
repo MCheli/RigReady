@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { BackupFileStore } from '../../core/files/fileStore';
 import { createMatcher } from '../../core/files/glob';
 import type {
+  AppWindow,
   AudioProvider,
   Clock,
   CloseOptions,
@@ -26,6 +27,7 @@ import type {
   Registry,
   Render,
   SaveDialogOptions,
+  ScreenArea,
   ScreenLabel,
   Secrets,
   ServiceProvider,
@@ -650,6 +652,15 @@ export class FakeOverlays implements Overlays {
   }
 }
 
+export class FakeAppWindow implements AppWindow {
+  /** Every showOn() call, for assertions. */
+  readonly shown: ScreenArea[][] = [];
+  async showOn(areas: ScreenArea[]): Promise<Result<{ moved: boolean }>> {
+    this.shown.push(structuredClone(areas));
+    return ok({ moved: false });
+  }
+}
+
 export interface FakePorts extends Ports {
   devices: FakeDeviceProvider;
   processes: FakeProcessProvider;
@@ -664,6 +675,7 @@ export interface FakePorts extends Ports {
   notifications: FakeNotifications;
   loginItem: FakeLoginItem;
   overlays: FakeOverlays;
+  window: FakeAppWindow;
   /** The mutable machine state behind the providers. */
   state: RigState;
 }
@@ -717,6 +729,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     notifications: new FakeNotifications(),
     loginItem: new FakeLoginItem(),
     overlays: new FakeOverlays(),
+    window: new FakeAppWindow(),
   };
 }
 

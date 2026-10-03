@@ -154,7 +154,19 @@ describe('Fly, end to end on scenarios', () => {
       ],
       fix: 'Apply the monitor layout',
     });
-    const made = await app.invoke<ActionReport>('fly:makeReady', P);
+    // The test answers the question itself, to see that Make ready waits for it.
+    app.layoutAnswer = 'wait';
+    let finished = false;
+    const making = app.invoke<ActionReport>('fly:makeReady', P).finally(() => (finished = true));
+    await expect
+      .poll(async () => (await app.invoke<{ pending: boolean }>('displays:pending')).pending)
+      .toBe(true);
+    expect(app.events).toEqual([{ channel: 'displays:event:applied', payload: { seconds: 15 } }]);
+    expect(await app.invoke('displays:pending')).toEqual({ pending: true, seconds: 15 });
+    // The layout is applied, and the run goes no further until Keep or Go back.
+    expect(finished).toBe(false);
+    expect(await app.invoke('displays:keep')).toEqual({ kept: true });
+    const made = await making;
     expect(made.steps).toEqual([
       {
         itemId: 'c16',
@@ -164,15 +176,32 @@ describe('Fly, end to end on scenarios', () => {
       },
     ]);
     expect(made.report.ready).toBe(true);
-    expect(app.events).toEqual([{ channel: 'displays:event:applied', payload: { seconds: 15 } }]);
-    expect(await app.invoke('displays:pending')).toEqual({ pending: true, seconds: 15 });
-    expect(await app.invoke('displays:keep')).toEqual({ kept: true });
     expect(app.events[1]).toEqual({
       channel: 'displays:event:settled',
       payload: { outcome: 'kept' },
     });
     expect(await app.invoke('displays:keep')).toEqual({ kept: false });
     expect((await app.invoke<ChecklistReport>('fly:check', P)).ready).toBe(true);
+  });
+
+  it('MFD rotated: when the new layout is not kept, Make ready says so and the setup stays Not ready', async () => {
+    app = await wiredApp('flying-mfd-rotated');
+    app.layoutAnswer = 'revert';
+    const made = await app.invoke<ActionReport>('fly:makeReady', P);
+    expect(made.steps).toEqual([
+      {
+        itemId: 'c16',
+        title: 'Monitor layout',
+        ok: false,
+        message: 'The new monitor layout was not kept, so the previous one is back.',
+      },
+    ]);
+    expect(made.report.ready).toBe(false);
+    expect(statusOf(made.report, 'Monitor layout')).toBe('fail');
+    expect(app.events.map((e) => e.channel)).toEqual([
+      'displays:event:applied',
+      'displays:event:settled',
+    ]);
   });
 
   it('desk state: Make ready fixes the layout; Go back restores the desk; Stand down does too and closes TrackIR', async () => {
