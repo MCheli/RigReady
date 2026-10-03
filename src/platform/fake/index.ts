@@ -318,6 +318,8 @@ export interface LoadedScenario {
   state: RigState;
   /** Absolute paths of the profile files to seed. */
   profileFiles: string[];
+  /** The rig's recorded user files (fixtures/rigs/<rig>/files), mirrored into the fake home. */
+  filesDir: string;
 }
 
 /** Reads a scenario file, follows `extends`, loads its rig and applies the mutations. */
@@ -345,6 +347,48 @@ export async function loadScenario(
   const profileFiles = chain.flatMap((c) =>
     c.scenario.profiles.map((p) => path.resolve(path.dirname(c.file), p))
   );
-  const rig = await loadRig(path.join(fixturesDir, 'rigs', leaf.scenario.rig));
-  return { scenario: leaf.scenario, state: applyMutations(rig, mutations), profileFiles };
+  const rigDir = path.join(fixturesDir, 'rigs', leaf.scenario.rig);
+  const rig = await loadRig(rigDir);
+  return {
+    scenario: leaf.scenario,
+    state: applyMutations(rig, mutations),
+    profileFiles,
+    filesDir: path.join(rigDir, 'files'),
+  };
+}
+
+/**
+ * Puts a scenario's files where the app will look for them: the rig's recorded user
+ * files (e.g. Saved Games\DCS\Config\Input) under the fake home, and the scenario's
+ * profiles in the data root. Existing files are left alone, so a second start of the
+ * same data root keeps what the user did.
+ */
+export async function seedScenario(loaded: LoadedScenario, ports: Ports): Promise<void> {
+  const copyTree = async (from: string, to: string): Promise<void> => {
+    let entries;
+    try {
+      entries = await fs.readdir(from, { withFileTypes: true });
+    } catch {
+      return; // the rig recorded no files
+    }
+    for (const entry of entries) {
+      const source = path.join(from, entry.name);
+      const target = path.join(to, entry.name);
+      if (entry.isDirectory()) {
+        await copyTree(source, target);
+      } else if (!(await ports.files.exists(target))) {
+        await fs.mkdir(to, { recursive: true });
+        await fs.copyFile(source, target);
+      }
+    }
+  };
+  await copyTree(loaded.filesDir, ports.folders.home());
+  for (const profileFile of loaded.profileFiles) {
+    const target = path.join(ports.folders.dataRoot(), 'profiles', path.basename(profileFile));
+    if (!(await ports.files.exists(target))) {
+      await ports.files.write(target, await fs.readFile(profileFile, 'utf8'), {
+        reason: 'Scenario profile',
+      });
+    }
+  }
 }

@@ -298,15 +298,24 @@ describe('Devices and games', () => {
 
   it('DCS module finds Steam installs in every library and the Saved Games folder', async () => {
     app = await wiredApp('flying-all-good');
+    // The scenario mirrors the rig's recorded Saved Games folder into the fake home.
+    const savedGames = path.join(app.ports.folders.savedGames(), 'DCS');
     expect(await app.invoke<GameSummary[]>('games:list')).toEqual([
-      { id: 'dcs', name: 'DCS World', installs: [], configLocations: [], problems: [] },
+      {
+        id: 'dcs',
+        name: 'DCS World',
+        installs: [],
+        configLocations: [{ id: 'dcs', label: 'Saved Games\\DCS', path: savedGames }],
+        problems: [],
+      },
     ]);
+    const joystick = path.join(savedGames, 'Config', 'Input', 'FA-18C_hornet', 'joystick');
+    expect((await fs.readdir(joystick)).some((f) => f.startsWith('WINWING MFD1-L {'))).toBe(true);
 
     const library = path.join(app.home, 'SteamLibrary');
     const installDir = path.join(library, 'steamapps', 'common', 'DCSWorld');
     await fs.mkdir(path.join(installDir, 'bin'), { recursive: true });
     await fs.writeFile(path.join(installDir, 'bin', 'DCS.exe'), '');
-    await fs.mkdir(path.join(app.ports.folders.savedGames(), 'DCS', 'Config'), { recursive: true });
     app.ports.folders.steamLibraries = async () =>
       ok([path.join(app.home, 'EmptyLibrary'), library]);
     const [summary] = await app.invoke<GameSummary[]>('games:list');

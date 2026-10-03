@@ -6,7 +6,7 @@ import { bind } from '../core/feature';
 import { createLogger } from '../core/logger';
 import type { Ports } from '../core/ports';
 import { ok } from '../core/result';
-import { createFakePorts, loadScenario } from '../platform/fake';
+import { createFakePorts, loadScenario, seedScenario } from '../platform/fake';
 import { RotatingFileSink, systemClock } from '../platform/node';
 import { createWindowsPorts } from '../platform/windows';
 import { appContract } from '../shared/appContract';
@@ -45,14 +45,7 @@ async function createPlatform(): Promise<{ ports: Ports; scenario?: string }> {
     ? path.resolve(process.env['RIGREADY_HOME'])
     : path.join(home, '.rigready');
   const ports = createFakePorts({ state: loaded.state, homeDir: home, dataRoot });
-  for (const profileFile of loaded.profileFiles) {
-    const target = path.join(dataRoot, 'profiles', path.basename(profileFile));
-    if (!(await ports.files.exists(target))) {
-      await ports.files.write(target, await fs.readFile(profileFile, 'utf8'), {
-        reason: 'Scenario profile',
-      });
-    }
-  }
+  await seedScenario(loaded, ports);
   return { ports, scenario: loaded.scenario.description };
 }
 

@@ -4,7 +4,13 @@ import path from 'node:path';
 import type { CheckContext } from '../src/core/checks/registry';
 import { nullLogger } from '../src/core/logger';
 import type { Clock } from '../src/core/ports';
-import { createFakePorts, loadRig, loadScenario, type FakePorts } from '../src/platform/fake';
+import {
+  createFakePorts,
+  loadRig,
+  loadScenario,
+  seedScenario,
+  type FakePorts,
+} from '../src/platform/fake';
 import type { RigState } from '../src/platform/fake/scenario';
 import { discoverFeatures, wireFeatures, type Wiring } from '../src/main/bootstrap';
 
@@ -48,10 +54,7 @@ export async function scenarioRig(name: string): Promise<TestRig> {
     fixturesDir
   );
   const rig = await rigFromState(loaded.state);
-  for (const file of loaded.profileFiles) {
-    const target = path.join(rig.ports.folders.dataRoot(), 'profiles', path.basename(file));
-    await rig.ports.files.write(target, await fs.readFile(file, 'utf8'), { reason: 'seed' });
-  }
+  await seedScenario(loaded, rig.ports);
   return rig;
 }
 
