@@ -27,6 +27,7 @@ describe('feature discovery', () => {
   it('finds every feature folder and registers its checks, fixes and channels', async () => {
     app = await wiredApp('flying-all-good');
     expect(app.wiring.features.map((f) => f.id)).toEqual([
+      'audio',
       'devices',
       'displays',
       'fly',
@@ -37,11 +38,13 @@ describe('feature discovery', () => {
       'settings',
     ]);
     expect(app.wiring.context.checks.checkTypes()).toEqual([
+      'audio.defaultDevice',
       'device.connected',
       'display.layout',
       'process.running',
     ]);
     expect(app.wiring.context.checks.remediationTypes()).toEqual([
+      'audio.setDefault',
       'display.applyLayout',
       'process.launch',
     ]);
@@ -215,7 +218,7 @@ describe('Profiles: create by capturing the current state', () => {
     }>('profiles:capture');
     expect(capture.problems).toEqual([]);
     expect(new Set(capture.candidates.map((c) => c.group))).toEqual(
-      new Set(['devices', 'apps', 'displays'])
+      new Set(['devices', 'apps', 'displays', 'audio'])
     );
 
     // What the capture screen does: keep the defaults plus the apps the user ticks.

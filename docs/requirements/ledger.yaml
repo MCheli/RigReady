@@ -464,8 +464,14 @@ requirements:
       - "An audio check passes when the Windows default playback device id matches the profile's device (matched by endpoint id, falling back to name)."
       - "Scenario mark-flight + audio-default-speakers fails 'Headset is default output' with 'Default is Speakers (Realtek)'."
       - "Rig smoke reads the real default playback device name without admin rights."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/audio/core/audio.test.ts#passes when the headset is the default output and the headset mic the default input"
+      - "src/features/audio/core/audio.test.ts#fails naming the device Windows uses instead"
+      - "src/features/audio/core/audio.test.ts#finds a device by name when Windows gave it a new id"
+      - "tests/e2e/audio.e2e.ts#audio: speakers are the default, Make ready sets the headset, Stand down puts the speakers back"
+      - "tests/rig/displaysAudio.rig.test.ts#reads the default playback and recording devices and the captured audio checks pass"
+      - "artifacts/screens/audio-default-speakers/01-wrong-default.png"
 
   - id: CHECK-009
     title: Default audio recording device check
@@ -475,8 +481,12 @@ requirements:
     done_means:
       - "An audio check with role recording passes when the Windows default recording device matches; the communications default is checked only when the profile asks for it."
       - "Scenario mark-flight + mic-default-webcam fails 'Headset mic is default input' with the current default named."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/audio/core/audio.test.ts#checks the communications default only when the setup asks for it"
+      - "src/features/audio/core/audio.test.ts#fails naming the device Windows uses instead"
+      - "tests/e2e/audio.e2e.ts#audio: another microphone is the default input; the check names it"
+      - "artifacts/screens/audio-mic-wrong/01-wrong-mic.png"
 
   - id: CHECK-010
     title: Config file exists check
@@ -602,8 +612,13 @@ requirements:
       - "The audio fix sets the Windows default playback or recording device (and communications default if the check covers it) to the profile's device without admin rights."
       - "Scenario mark-flight + audio-default-speakers: the fix makes the audio item green."
       - "Rig smoke: switch default playback to another endpoint and back in a finally block; both changes are observed by reading the default."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/audio/core/audio.test.ts#sets only the roles the check covers, then reads it back"
+      - "src/features/audio/core/audio.test.ts#Make ready sets the headset as default; Stand down puts the speakers back"
+      - "tests/e2e/audio.e2e.ts#audio: speakers are the default, Make ready sets the headset, Stand down puts the speakers back"
+      - "tests/rig/audioApply.rig.test.ts#switches the default playback and recording device and restores every role exactly"
+      - "artifacts/screens/audio-default-speakers/02-fixed.png"
 
   - id: FIX-005
     title: Run script remediation with optional confirmation

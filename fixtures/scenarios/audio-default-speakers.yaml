@@ -1,0 +1,8 @@
+description: Flying, but Windows switched the sound output to the speakers
+rig: mark-full
+extends: audio-headset-ready.yaml
+mutations:
+  - op: setAudioDefault
+    flow: playback
+    match: { name: Speakers (Realtek }
+    role: default

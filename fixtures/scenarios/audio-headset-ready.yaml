@@ -1,0 +1,10 @@
+description: Flying with the headset as the default sound output and microphone
+rig: mark-full
+extends: flying-fresh.yaml
+profiles:
+  - profiles/audio-headset.yaml
+mutations:
+  - op: setAudioDefault
+    flow: playback
+    match: { name: Arctis Pro Wireless Game }
+    role: default

@@ -1,0 +1,9 @@
+description: Flying, but another microphone is the default input
+rig: mark-full
+extends: audio-headset-ready.yaml
+# The rig has no webcam; the Steam Streaming Microphone stands in for "some other mic".
+mutations:
+  - op: setAudioDefault
+    flow: recording
+    match: { name: Steam Streaming Microphone }
+    role: default

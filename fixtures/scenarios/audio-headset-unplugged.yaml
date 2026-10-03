@@ -1,0 +1,6 @@
+description: Flying, headset output unplugged (Windows moved the default elsewhere)
+rig: mark-full
+extends: audio-headset-ready.yaml
+mutations:
+  - op: unplugAudio
+    match: { name: Arctis Pro Wireless Game }
