@@ -26,7 +26,16 @@ import { eventName } from '../shared/channels';
 import type { Envelope } from '../shared/ipc';
 import { discoverFeatures, wireFeatures } from './bootstrap';
 import { runDiagnose } from './diagnose';
-import { statusFromFlyResponse, trayMenu, trayTooltip, type TrayStatus } from './trayModel';
+import {
+  paintBadge,
+  statusFromFlyResponse,
+  TONE_RGB,
+  trayMenu,
+  trayTone,
+  trayTooltip,
+  type TrayMenuItem,
+  type TrayStatus,
+} from './trayModel';
 
 /**
  * Electron bootstrap. Thin: pick the platform (real machine or scenario), wire the
@@ -325,6 +334,14 @@ async function start(): Promise<void> {
         trayStatus = next;
         refreshTray();
       }
+      // After a launch the window gets out of the way, when the user wants that.
+      if (channel === 'fly:launch') {
+        const value = envelope.value as { outcome?: string; minimize?: boolean };
+        if (value.outcome === 'launched' && value.minimize && mainWindow) {
+          if (tray) mainWindow.hide();
+          else mainWindow.minimize();
+        }
+      }
     }
     return envelope;
   };
@@ -334,50 +351,147 @@ async function start(): Promise<void> {
     app.quit();
   };
 
-  const makeReadyFromTray = async (): Promise<void> => {
+  /** The Fly screen picks up a setup switched or acted on from the tray. */
+  const flyChanged = (): void => {
+    send(eventName('fly', 'profilesChanged'), { ids: [] });
+    machineChanged('tray');
+  };
+
+  const fromTray = async (
+    work: (profileId: string, name: string) => Promise<void>
+  ): Promise<void> => {
     if (trayBusy || !trayStatus.profileId) return;
     trayBusy = true;
     refreshTray();
     try {
-      const result = await call('fly:makeReady', { profileId: trayStatus.profileId });
-      machineChanged('tray');
-      const name = trayStatus.profileName ?? 'Setup';
-      await ports.notifications.notify(
-        result.ok
-          ? {
-              title: trayStatus.ready ? `${name} is ready` : `${name} is not ready`,
-              body: trayStatus.ready
-                ? 'Make ready finished.'
-                : 'Make ready finished, but some checks still fail. Open RigReady for details.',
-            }
-          : { title: 'Make ready failed', body: result.error.message }
-      );
+      await work(trayStatus.profileId, trayStatus.profileName ?? 'Setup');
     } finally {
       trayBusy = false;
       refreshTray();
+      flyChanged();
     }
   };
+
+  const trayActions: Record<string, () => Promise<void> | void> = {
+    open: showWindow,
+    quit,
+    makeReady: () =>
+      fromTray(async (profileId, name) => {
+        const result = await call('fly:makeReady', { profileId });
+        await ports.notifications.notify(
+          result.ok
+            ? {
+                title: trayStatus.ready ? `${name} is ready` : `${name} is not ready`,
+                body: trayStatus.ready
+                  ? 'Make ready finished.'
+                  : 'Make ready finished, but some checks still fail. Open RigReady for details.',
+              }
+            : { title: 'Make ready failed', body: result.error.message }
+        );
+      }),
+    launch: () =>
+      fromTray(async (profileId, name) => {
+        // Never blocked; when the rig is not ready the notification says so.
+        const notReady = trayStatus.ready === false;
+        const result = await call('fly:launch', { profileId });
+        const value = result.ok
+          ? (result.value as { outcome: string; message: string })
+          : undefined;
+        await ports.notifications.notify(
+          value?.outcome === 'launched'
+            ? {
+                title: `${name} launched`,
+                body: notReady
+                  ? `${value.message}. It was not ready: open RigReady to see what is missing.`
+                  : value.message,
+              }
+            : {
+                title: 'Launch did not finish',
+                body: value ? value.message : result.ok ? '' : result.error.message,
+              }
+        );
+      }),
+    standDown: () =>
+      fromTray(async (profileId) => {
+        const result = await call('fly:standDown', { profileId });
+        await ports.notifications.notify(
+          result.ok
+            ? { title: 'Stood down', body: (result.value as { headline: string }).headline }
+            : { title: 'Stand down failed', body: result.error.message }
+        );
+      }),
+  };
+
+  const switchFromTray = async (profileId: string): Promise<void> => {
+    if (trayBusy || profileId === trayStatus.profileId) return;
+    // Checking a setup makes it the one in use, on the Fly screen too.
+    await call('fly:check', { profileId });
+    await call('fly:state');
+    flyChanged();
+  };
+
+  const trayImages = new Map<string, Electron.NativeImage>();
+  function trayImage(tone: 'ok' | 'warn' | 'bad' | undefined): Electron.NativeImage {
+    const key = tone ?? 'none';
+    const cached = trayImages.get(key);
+    if (cached) return cached;
+    const base = nativeImage.createFromPath(trayIconPath);
+    let image = base;
+    if (tone && !base.isEmpty()) {
+      const size = 32;
+      const bitmap = base.resize({ width: size, height: size }).toBitmap();
+      image = nativeImage.createFromBitmap(Buffer.from(paintBadge(bitmap, size, TONE_RGB[tone])), {
+        width: size,
+        height: size,
+      });
+    }
+    trayImages.set(key, image);
+    return image;
+  }
+
+  function trayTemplate(items: TrayMenuItem[]): Electron.MenuItemConstructorOptions[] {
+    return items.map((item) => {
+      if (item.id === 'separator') return { type: 'separator' as const };
+      if (item.submenu) {
+        return { label: item.label, enabled: item.enabled, submenu: trayTemplate(item.submenu) };
+      }
+      if (item.id.startsWith('profile:')) {
+        return {
+          label: item.label,
+          type: 'radio' as const,
+          checked: item.checked === true,
+          enabled: item.enabled,
+          click: () => void switchFromTray(item.id.slice('profile:'.length)),
+        };
+      }
+      return {
+        label: item.label,
+        enabled: item.enabled,
+        click: () => void trayActions[item.id]?.(),
+      };
+    });
+  }
 
   function refreshTray(): void {
     if (!tray) return;
     tray.setToolTip(trayTooltip(trayStatus));
-    tray.setContextMenu(
-      Menu.buildFromTemplate(
-        trayMenu(trayStatus, trayBusy).map((item) =>
-          item.id === 'separator'
-            ? { type: 'separator' as const }
-            : {
-                label: item.label,
-                enabled: item.enabled,
-                click: () => {
-                  if (item.id === 'open') showWindow();
-                  else if (item.id === 'makeReady') void makeReadyFromTray();
-                  else if (item.id === 'quit') quit();
-                },
-              }
-        )
-      )
-    );
+    tray.setImage(trayImage(trayTone(trayStatus)));
+    tray.setContextMenu(Menu.buildFromTemplate(trayTemplate(trayMenu(trayStatus, trayBusy))));
+  }
+
+  if (fake) {
+    // Scenario runs only: lets an end-to-end test read and use the tray like a user would.
+    const hooks = globalThis as unknown as Record<string, unknown>;
+    hooks['__rigreadyTray'] = () => ({
+      tooltip: trayTooltip(trayStatus),
+      tone: trayTone(trayStatus) ?? null,
+      menu: trayMenu(trayStatus, trayBusy),
+      notifications: fake.notifications.sent,
+    });
+    hooks['__rigreadyTrayClick'] = async (id: string) => {
+      if (id.startsWith('profile:')) await switchFromTray(id.slice('profile:'.length));
+      else await trayActions[id]?.();
+    };
   }
 
   for (const channel of handlers.keys()) {

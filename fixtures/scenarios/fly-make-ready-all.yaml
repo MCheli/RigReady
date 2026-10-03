@@ -1,0 +1,13 @@
+description: Flying, MFD 2 rotated, TrackIR and SimAppPro not running, options.lua missing
+rig: mark-full
+extends: flying-mfd-rotated.yaml
+mutations:
+  - { op: stopProcess, name: TrackIR5.exe }
+  - { op: stopProcess, name: SimAppPro.exe }
+  - { op: removeFile, path: Saved Games/DCS/Config/options.lua }
+profiles:
+  - profiles/fly-hornet-full.yaml
+data:
+  state.json: data/fly/state-hornet-full.json
+  checks-generic/copies/index.json: data/fly/copies-index.json
+  checks-generic/copies/2026-10-01T18-00-00-000Z-known/options.lua: data/fly/options-known-good.lua

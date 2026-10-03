@@ -27,6 +27,7 @@ describe('feature discovery', () => {
   it('finds every feature folder and registers its checks, fixes and channels', async () => {
     app = await wiredApp('flying-all-good');
     expect(app.wiring.features.map((f) => f.id)).toEqual([
+      'checks-generic',
       'devices',
       'displays',
       'fly',
@@ -39,11 +40,19 @@ describe('feature discovery', () => {
     expect(app.wiring.context.checks.checkTypes()).toEqual([
       'device.connected',
       'display.layout',
+      'file.content',
+      'file.exists',
+      'game.updated',
       'process.running',
+      'script.check',
+      'service.running',
     ]);
     expect(app.wiring.context.checks.remediationTypes()).toEqual([
       'display.applyLayout',
+      'file.restore',
+      'instructions.show',
       'process.launch',
+      'script.run',
     ]);
     expect([...app.wiring.handlers.keys()]).toContain('fly:makeReady');
     expect(app.wiring.context.games.get('dcs')?.name).toBe('DCS World');
@@ -65,11 +74,23 @@ describe('Fly, end to end on scenarios', () => {
     const state = await app.invoke<{
       profiles: { id: string; name: string; canLaunch: boolean }[];
       activeProfileId?: string;
+      active?: { items: unknown[] };
     }>('fly:state');
-    expect(state).toEqual({
-      profiles: [{ id: 'dcs-f-a-18c', name: 'DCS F/A-18C', canLaunch: true }],
+    expect(state).toMatchObject({
+      profiles: [
+        {
+          id: 'dcs-f-a-18c',
+          name: 'DCS F/A-18C',
+          game: 'dcs',
+          gameName: 'DCS World',
+          canLaunch: true,
+        },
+      ],
+      invalid: [],
       activeProfileId: 'dcs-f-a-18c',
     });
+    // The checklist can be drawn before any check has run.
+    expect(state.active?.items).toHaveLength(16);
     const report = await app.invoke<ChecklistReport>('fly:check', P);
     expect(report).toMatchObject({ ready: true, failed: 0, warnings: 0, fixable: 0 });
     expect(report.results).toHaveLength(16);
@@ -170,14 +191,19 @@ describe('Fly, end to end on scenarios', () => {
     ]);
     expect(await app.invoke('displays:read')).toEqual(desk);
     expect(statusOf(down.report, 'TrackIR5')).toBe('fail');
-    // Nothing left to stand down.
-    expect((await app.invoke<ActionReport>('fly:standDown', P)).steps).toEqual([]);
+    // Nothing left to stand down; it says why the monitors were not touched.
+    expect(
+      (await app.invoke<ActionReport>('fly:standDown', P)).steps.map((s) => s.message)
+    ).toEqual(['No desk layout is chosen in Settings, so the monitors were left as they are']);
   });
 
   it('Launch starts the game whether or not the setup is ready', async () => {
     app = await wiredApp('flying-pedals-unplugged');
     expect((await app.invoke<ChecklistReport>('fly:check', P)).ready).toBe(false);
-    expect(await app.invoke('fly:launch', P)).toEqual({ message: 'Started DCS.exe' });
+    expect(await app.invoke('fly:launch', P)).toMatchObject({
+      outcome: 'launched',
+      message: 'Launched DCS.exe',
+    });
     expect(app.ports.processes.started).toEqual([
       {
         exe: 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\bin\\DCS.exe',
@@ -195,14 +221,17 @@ describe('Fly, end to end on scenarios', () => {
     const profile = await app.invoke<Profile>('profiles:get', { id: 'dcs-f-a-18c' });
     const { launch: _launch, ...withoutLaunch } = profile;
     await app.invoke('profiles:save', withoutLaunch);
-    await expect(app.invoke('fly:launch', P)).rejects.toThrow(/fly.noLaunch/);
+    expect(await app.invoke('fly:launch', P)).toMatchObject({
+      outcome: 'failed',
+      message: '"DCS F/A-18C" has no program to launch.',
+    });
   });
 });
 
 describe('Profiles: create by capturing the current state', () => {
   it('captures devices, apps and monitors; the created setup is Ready; breaking the rig is detected', async () => {
     app = await wiredApp('flying-fresh');
-    expect(await app.invoke('fly:state')).toEqual({ profiles: [] });
+    expect(await app.invoke('fly:state')).toEqual({ profiles: [], invalid: [] });
     const capture = await app.invoke<{
       candidates: {
         key: string;
@@ -215,7 +244,7 @@ describe('Profiles: create by capturing the current state', () => {
     }>('profiles:capture');
     expect(capture.problems).toEqual([]);
     expect(new Set(capture.candidates.map((c) => c.group))).toEqual(
-      new Set(['devices', 'apps', 'displays'])
+      new Set(['devices', 'apps', 'displays', 'other'])
     );
 
     // What the capture screen does: keep the defaults plus the apps the user ticks.

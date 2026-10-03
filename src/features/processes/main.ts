@@ -1,11 +1,20 @@
 import { defineFeatureMain } from '../../core/feature';
-import { createLaunchRemediation, processCapture, processRunningCheck } from './core/processCheck';
+import {
+  createLaunchRemediation,
+  createProcessRunningCheck,
+  pathResolver,
+  processCapture,
+  SessionStarts,
+} from './core/processCheck';
 
 export default defineFeatureMain({
   id: 'processes',
   setup(ctx) {
-    ctx.checks.registerCheck(processRunningCheck);
-    ctx.checks.registerRemediation(createLaunchRemediation());
+    // Shared by the check and its fix: Stand down closes what Make ready started.
+    const session = new SessionStarts();
+    const resolve = pathResolver(ctx.games);
+    ctx.checks.registerCheck(createProcessRunningCheck(session, resolve));
+    ctx.checks.registerRemediation(createLaunchRemediation(session, resolve));
     ctx.checks.registerCapture(processCapture);
   },
 });

@@ -1,0 +1,7 @@
+schemaVersion: 1
+id: broken
+name: Broken by a hand edit
+createdAt: '2026-10-01T18:00:00.000Z'
+updatedAt: '2026-10-01T18:00:00.000Z'
+checks:
+  - { id: c1, type: process.running, title: TrackIR, required: maybe, params: { name: TrackIR5.exe } }

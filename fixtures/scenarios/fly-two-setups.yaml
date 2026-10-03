@@ -1,0 +1,8 @@
+description: Flying, two setups (UH-1H used last) and one broken setup file
+rig: mark-full
+extends: flying-all-good.yaml
+profiles:
+  - profiles/fly-dcs-uh-1h.yaml
+data:
+  state.json: data/fly/state-uh1h.json
+  profiles/broken.yaml: data/fly/broken.yaml

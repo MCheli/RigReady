@@ -253,8 +253,8 @@ describe('check timeout', () => {
     };
     const report = await runChecks(profile, registry, rig.ctx, { timeoutMs: 50 });
     expect(report.results.map((r) => [r.title, r.status, r.summary])).toEqual([
-      ['Slow one', 'fail', 'Timed out after 0.1 s'],
-      ['Slow optional', 'warn', 'Timed out after 0.1 s'],
+      ['Slow one', 'error', 'Timed out after 0.1 s'],
+      ['Slow optional', 'error', 'Timed out after 0.1 s'],
       ['Fast one', 'pass', 'fine'],
     ]);
     expect(report.ready).toBe(false);

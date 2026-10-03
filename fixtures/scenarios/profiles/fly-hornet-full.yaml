@@ -1,0 +1,51 @@
+schemaVersion: 1
+id: fly-hornet-full
+name: DCS F/A-18C full
+game: dcs
+createdAt: '2026-10-01T18:00:00.000Z'
+updatedAt: '2026-10-01T18:00:00.000Z'
+launch:
+  exe: '{DCS_INSTALL}/bin/DCS.exe'
+  args: []
+checks:
+  - { id: c1, type: device.connected, title: WINWING Orion Joystick Base 2 + JGRIP-F16, required: true, params: { vendorId: '4098', productId: BEA8 } }
+  - { id: c2, type: device.connected, title: T-Pendular-Rudder, required: true, params: { vendorId: 044F, productId: B68F } }
+  - { id: c3, type: device.connected, title: WINWING MFD1-L, required: true, params: { vendorId: '4098', productId: BEE1 } }
+  - id: c4
+    type: process.running
+    title: SimAppPro
+    required: true
+    params: { name: SimAppPro.exe }
+    remediation:
+      type: process.launch
+      params: { exe: '{LOCALAPPDATA}/Programs/SimAppPro/SimAppPro.exe', args: [] }
+  - id: c5
+    type: process.running
+    title: TrackIR
+    required: true
+    params: { name: TrackIR5.exe }
+    remediation:
+      type: process.launch
+      params: { exe: '{PROGRAM_FILES_X86}/TrackIR5/TrackIR5.exe', args: [] }
+  - id: c6
+    type: file.exists
+    title: DCS options
+    required: true
+    params: { path: '{DCS_USER}/Config/options.lua' }
+    remediation:
+      type: file.restore
+      params: { path: '{DCS_USER}/Config/options.lua' }
+  - id: c7
+    type: display.layout
+    title: Monitor layout
+    required: true
+    params: &layout
+      displays:
+        - { id: '\\?\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: LC49G95T, enabled: true, primary: true, x: 0, y: 0, width: 5120, height: 1440, rotation: 0 }
+        - { id: '\\?\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 5120, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 5888, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 6656, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: DELL G3223D, enabled: false, primary: false, x: 0, y: 0, rotation: 0 }
+    remediation:
+      type: display.applyLayout
+      params: *layout

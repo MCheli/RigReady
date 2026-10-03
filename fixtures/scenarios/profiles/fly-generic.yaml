@@ -1,0 +1,44 @@
+schemaVersion: 1
+id: fly-generic
+name: DCS checks of every kind
+game: dcs
+createdAt: '2026-10-01T18:00:00.000Z'
+updatedAt: '2026-10-01T18:00:00.000Z'
+launch:
+  exe: '{DCS_INSTALL}/bin/DCS.exe'
+  args: []
+checks:
+  - { id: s1, type: service.running, title: HidHide service, required: true, params: { name: HidHide } }
+  - id: s2
+    type: service.running
+    title: DCS-SRS server
+    required: true
+    params: { name: SRS-Server }
+    remediation:
+      type: instructions.show
+      params:
+        text: |
+          The SRS server runs as a Windows service, which needs an administrator to install.
+
+          1. Download **DCS-SRS** from [the SRS releases page](https://github.com/ciribob/DCS-SimpleRadioStandalone/releases).
+          2. Run the installer and tick `Install server as a service`.
+          3. Come back and press the re-check button.
+  - { id: f1, type: file.exists, title: DCS options, required: true, params: { path: '{DCS_USER}/Config/options.lua' } }
+  - id: f2
+    type: file.content
+    title: MFDs export in options.lua
+    required: true
+    params: { path: '{DCS_USER}/Config/options.lua', rule: equals, keyPath: options.graphics.multiMonitorSetup, value: RigReady MFDs }
+    remediation:
+      type: script.run
+      params: { exe: '{USER}/Scripts/set-mfds.cmd', args: ['--monitor-setup', 'RigReady MFDs'], requiresConfirmation: true }
+  - id: f3
+    type: file.exists
+    title: RigReady monitor setup
+    required: false
+    params: { path: '{DCS_USER}/Config/MonitorSetup/RigReady.lua' }
+    remediation:
+      type: file.restore
+      params: { path: '{DCS_USER}/Config/MonitorSetup/RigReady.lua' }
+  - { id: o1, type: script.check, title: SRS radio check, required: true, params: { exe: '{USER}/Scripts/srs-check.cmd', args: ['--quiet'] } }
+  - { id: o2, type: game.updated, title: DCS not updated since verified, required: false, params: { game: dcs, verifiedVersion: build 25000000 } }

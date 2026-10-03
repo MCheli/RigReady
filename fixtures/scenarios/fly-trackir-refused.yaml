@@ -1,0 +1,7 @@
+description: Flying, TrackIR not running, and starting it does not bring it up
+rig: mark-full
+extends: flying-trackir-not-running.yaml
+profiles:
+  - profiles/fly-trackir-launcher.yaml
+data:
+  state.json: data/fly/state-trackir-launcher.json

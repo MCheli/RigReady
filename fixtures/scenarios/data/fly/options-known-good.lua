@@ -1,0 +1,5 @@
+options = {
+	["graphics"] = {
+		["multiMonitorSetup"] = "wwtMonitor",
+	},
+}

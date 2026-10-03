@@ -24,11 +24,14 @@ test('a new rig: capture the current state into a setup, which is then Ready', a
     .locator('input')
     .fill('C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\bin\\DCS.exe');
 
-  // Running apps are the user's choice: find TrackIR and keep it.
-  await page.getByTestId('capture-app-filter').locator('input').fill('trackir');
-  const trackir = page.locator('[data-testid="capture-candidate"][data-title="TrackIR5"]');
-  await trackir.getByRole('checkbox').check();
-  await expect(page.getByTestId('capture-group-apps')).toContainText('1 of');
+  // Known sim helpers come first and are kept already; other apps are the user's choice.
+  const trackir = page.locator('[data-testid="capture-candidate"][data-title="TrackIR"]');
+  await expect(trackir.getByRole('checkbox')).toBeChecked();
+  await expect(page.getByTestId('capture-group-apps')).toContainText('3 of');
+  await page.getByTestId('capture-app-filter').locator('input').fill('discord');
+  const discord = page.locator('[data-testid="capture-candidate"][data-title="Discord"]');
+  await expect(discord.getByRole('checkbox')).not.toBeChecked();
+  await page.getByTestId('capture-app-filter').locator('input').fill('');
 
   // The Stream Deck is nice to have, not required.
   const streamDeck = page.locator('[data-testid="capture-candidate"][data-title="Stream Deck XL"]');
@@ -41,7 +44,7 @@ test('a new rig: capture the current state into a setup, which is then Ready', a
   // Back on Fly with the new setup active and everything green.
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
   await expect(page.getByTestId('profile-switcher')).toContainText('DCS F/A-18C');
-  await expect(page.getByTestId('group-apps')).toContainText('1 of 1 OK');
+  await expect(page.getByTestId('group-apps')).toContainText('3 of 3 OK');
   await expect(page.getByTestId('group-displays')).toContainText('1 of 1 OK');
   await page.getByTestId('group-toggle-devices').click();
   await expect(checkRow(page, 'Stream Deck XL')).toContainText('optional');
@@ -80,9 +83,12 @@ test('a new rig: capture the current state into a setup, which is then Ready', a
   await expect(page.getByTestId('profile-switcher')).toContainText('Hornet');
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
 
-  // Delete: back to the empty state.
+  // Delete: asked first, then back to the empty state.
   await page.getByTestId('mode-configure').click();
+  await page.getByTestId('profile-more').click();
   await page.getByTestId('profile-delete').click();
+  await expect(page.getByTestId('profile-delete-dialog')).toContainText('Delete "Hornet"?');
   await page.getByTestId('profile-delete-confirm').click();
   await expect(page.getByTestId('profiles-empty')).toBeVisible();
+  await expect(page.getByTestId('profiles-message')).toContainText('Safety page can bring it back');
 });

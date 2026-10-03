@@ -129,7 +129,7 @@ describe('runChecks', () => {
     expect(report.fixable).toBe(1);
   });
 
-  it('turns unknown types, bad params and throwing checks into failures instead of crashing', async () => {
+  it('turns unknown types, bad params and throwing checks into errors instead of crashing', async () => {
     const report = await runChecks(
       profile([
         item('u', { type: 'from.the.future' }),
@@ -140,8 +140,11 @@ describe('runChecks', () => {
       registry,
       rig.ctx
     );
-    expect(report.results.map((r) => r.status)).toEqual(['fail', 'warn', 'fail', 'fail']);
-    expect(report.results[0]!.summary).toContain('from.the.future');
+    expect(report.results.map((r) => r.status)).toEqual(['error', 'error', 'error', 'error']);
+    expect(report).toMatchObject({ failed: 3, warnings: 1, errors: 4 });
+    expect(report.results[0]!.summary).toBe(
+      'Check type "from.the.future" is not available in this version of RigReady.'
+    );
     expect(report.results[0]!.group).toBe('other');
     expect(report.results[2]!.summary).toBe('This check is not set up correctly.');
     expect(report.results[3]!.details).toEqual(['driver exploded']);
