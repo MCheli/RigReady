@@ -23,7 +23,7 @@ import uuid
 from ctypes import wintypes as w
 
 VERSION = "directinput-1"
-POLL_INTERVAL_MS = 50  # 20 updates a second
+POLL_INTERVAL_MS = 16  # about 60 updates a second (the input tester needs at least 30)
 AXIS_DEADZONE = 0.01
 RESCAN_INTERVAL_MS = 2000
 

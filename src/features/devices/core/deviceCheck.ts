@@ -1,23 +1,44 @@
 import { z } from 'zod';
-import type { CaptureDefinition, CheckDefinition } from '../../../core/checks/registry';
+import type {
+  CaptureDefinition,
+  CheckContext,
+  CheckDefinition,
+} from '../../../core/checks/registry';
+import type { Ports } from '../../../core/ports';
+import { ProfileStore } from '../../../core/profile/store';
 import { ok } from '../../../core/result';
 import type { DeviceInfo } from '../../../shared/models';
+import { canSeeHidden, hiddenDeviceIds, hidHideCached, type HidHideInfo } from './hidhide';
+import {
+  formatWhen,
+  hubNames,
+  identifiedBy,
+  identityFor as narrowIdentity,
+  locate,
+  sameModel,
+  vidPid,
+} from './identity';
+import { deviceStores, findName, lastSighting } from './store';
 
 export const DEVICE_CONNECTED = 'device.connected';
 
 /**
  * Identity is vendor/product id, narrowed by serial number or instance path when the
- * rig has several identical devices. Never the display name.
+ * rig has several identical devices. Never the display name: a check with only a name
+ * is rejected (PRODUCT.md rule 4).
  */
 export const DeviceParamsSchema = z.object({
   vendorId: z.string().regex(/^[0-9A-Fa-f]{4}$/),
   productId: z.string().regex(/^[0-9A-Fa-f]{4}$/),
   serial: z.string().optional(),
   instanceId: z.string().optional(),
+  /** How many matching devices must be present. */
+  count: z.number().int().min(1).max(16).optional(),
 });
 export type DeviceParams = z.infer<typeof DeviceParamsSchema>;
 
 export function matchesDevice(device: DeviceInfo, params: DeviceParams): boolean {
+  if (device.isHub) return false;
   if (device.vendorId !== params.vendorId.toUpperCase()) return false;
   if (device.productId !== params.productId.toUpperCase()) return false;
   if (params.serial !== undefined && device.serial !== params.serial) return false;
@@ -30,32 +51,110 @@ export function matchesDevice(device: DeviceInfo, params: DeviceParams): boolean
   return true;
 }
 
+export const BY_PORT_NOTE =
+  'This device is identified by USB port, so moving it to another port breaks this check.';
+
+/** The program the active setup launches: whether a HidHide-hidden device matters depends on it. */
+async function activeGameExe(ports: Ports): Promise<string | undefined> {
+  const store = new ProfileStore(ports.files, ports.folders.dataRoot());
+  const profiles = await store.list();
+  if (!profiles.ok) return undefined;
+  const id = await store.lastProfileId();
+  // The setup Fly shows: the one used last, else the first.
+  const active = profiles.value.find((p) => p.id === id) ?? profiles.value[0];
+  return active?.launch?.exe;
+}
+
+const exeName = (exe: string): string => exe.split(/[\\/]/).pop() ?? exe;
+
+/** Fails the check when HidHide hides a matching device from the game; undefined when it does not. */
+async function hiddenOutcome(
+  matches: DeviceInfo[],
+  ctx: CheckContext
+): Promise<{ pass: false; summary: string; details: string[] } | undefined> {
+  let info: HidHideInfo;
+  try {
+    info = await hidHideCached(ctx.ports);
+  } catch (e) {
+    ctx.log.warn('could not read HidHide', e);
+    return undefined;
+  }
+  if (!info.installed || !info.cloak) return undefined;
+  const hidden = hiddenDeviceIds(info, matches);
+  if (!matches.some((d) => hidden.has(d.instanceId.toUpperCase()))) return undefined;
+  const exe = await activeGameExe(ctx.ports);
+  const visible = canSeeHidden(info, exe);
+  if (visible === true) return undefined;
+  const details = [
+    exe
+      ? `HidHide hides it from every program not on its allow list, and ${exeName(exe)} is not on that list.`
+      : 'HidHide hides it from every program not on its allow list.',
+    'To fix it, open HidHide Configuration Client: on the Devices tab untick this device, or on the Applications tab add the game.',
+    'RigReady does not change HidHide settings.',
+  ];
+  return { pass: false, summary: 'Hidden by HidHide', details };
+}
+
 export const deviceConnectedCheck: CheckDefinition<DeviceParams> = {
   type: DEVICE_CONNECTED,
   group: 'devices',
   label: 'Device connected',
   params: DeviceParamsSchema,
   async run(params, ctx) {
-    const devices = await ctx.ports.devices.list();
-    if (!devices.ok) return { pass: false, summary: devices.error.message };
-    const found = devices.value.find((d) => matchesDevice(d, params));
-    if (!found) return { pass: false, summary: 'Not connected' };
-    const hub = found.hubChain[0]?.name;
-    return { pass: true, summary: hub ? `Connected · ${hub}` : 'Connected' };
+    const listed = await ctx.ports.devices.list();
+    if (!listed.ok) return { pass: false, summary: listed.error.message };
+    const devices = listed.value;
+    const wanted = params.count ?? 1;
+    const matches = devices.filter((d) => matchesDevice(d, params));
+    const hubs = hubNames(devices);
+    const stores = deviceStores(ctx.ports);
+
+    if (matches.length >= wanted) {
+      const hidden = await hiddenOutcome(matches, ctx);
+      if (hidden) return hidden;
+      const where = locate(matches[0]!, hubs).text;
+      const details: string[] = [];
+      if (params.instanceId !== undefined) details.push(BY_PORT_NOTE);
+      return {
+        pass: true,
+        summary: wanted > 1 ? `${matches.length} connected` : `Connected · ${where}`,
+        details,
+      };
+    }
+
+    const details: string[] = [];
+    let summary = wanted > 1 ? `${matches.length} of ${wanted} connected` : 'Not connected';
+    const history = await stores.history.read();
+    const seen = history.ok ? lastSighting(history.value, params) : undefined;
+    if (seen && !seen.connected) {
+      const when = formatWhen(new Date(seen.lastSeen), ctx.ports.clock.now());
+      const phrase = seen.location.charAt(0).toLowerCase() + seen.location.slice(1);
+      summary += ` · last seen ${when}, ${phrase}`;
+      details.push(
+        `It was last plugged in ${phrase.startsWith('on ') ? phrase : `to ${phrase}`} (USB path ${seen.path}).`
+      );
+    }
+    // Same model, different unit: say so rather than a bare "not connected".
+    const others = devices.filter((d) => !d.isHub && sameModel(d, params) && !matches.includes(d));
+    if (others.length > 0 && (params.serial !== undefined || params.instanceId !== undefined)) {
+      const other = others[0]!;
+      const names = await stores.data.read();
+      const label = (names.ok && findName(names.value.names, other, devices)?.name) || other.name;
+      details.unshift(
+        params.serial !== undefined
+          ? `A different ${label} is connected (serial ${other.serial ?? 'none'}), not this one.`
+          : `A ${label} is connected on another USB port (${locate(other, hubs).text.toLowerCase()}).`
+      );
+    }
+    details.push('Check that it is plugged in and powered on, then check again.');
+    if (params.instanceId !== undefined) details.push(BY_PORT_NOTE);
+    return { pass: false, summary, details };
   },
 };
 
 /** Narrowest identity that still tells this device apart from the others present. */
 export function identityFor(device: DeviceInfo, all: DeviceInfo[]): DeviceParams {
-  const params: DeviceParams = { vendorId: device.vendorId, productId: device.productId };
-  const twins = all.filter(
-    (d) => d.vendorId === device.vendorId && d.productId === device.productId
-  );
-  if (twins.length <= 1) return params;
-  const serials = new Set(twins.map((d) => d.serial));
-  if (device.serial !== undefined && serials.size === twins.length)
-    return { ...params, serial: device.serial };
-  return { ...params, instanceId: device.instanceId };
+  return narrowIdentity(device, all);
 }
 
 export const deviceCapture: CaptureDefinition = {
@@ -65,18 +164,27 @@ export const deviceCapture: CaptureDefinition = {
     const devices = await ctx.ports.devices.list();
     if (!devices.ok) return devices;
     const peripherals = devices.value.filter((d) => !d.isHub);
+    const names = await deviceStores(ctx.ports).data.read();
     return ok(
       peripherals.map((device) => {
         const params = identityFor(device, peripherals);
-        const id = `${device.vendorId}:${device.productId}`;
+        const given = names.ok ? findName(names.value.names, device, peripherals)?.name : undefined;
+        const title = given ?? device.name;
+        const id = vidPid(device);
+        const how = identifiedBy(params);
         return {
           key: `device:${device.instanceId}`,
           group: 'devices' as const,
-          title: device.name,
-          description: device.serial ? `${id} · serial ${device.serial}` : id,
+          title,
+          description:
+            how === 'serial'
+              ? `${id} · serial ${device.serial}`
+              : how === 'port'
+                ? `${id} · identified by USB port`
+                : id,
           // Sim gear is pre-selected; keyboards, mice, headsets and the rest are the user's call.
           selectedByDefault: device.isGameController,
-          check: { type: DEVICE_CONNECTED, title: device.name, required: true, params },
+          check: { type: DEVICE_CONNECTED, title, required: true, params },
         };
       })
     );

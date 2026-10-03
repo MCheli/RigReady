@@ -1,0 +1,8 @@
+description: Devices - three identical MFD screens and two identical trackballs, the right screen unplugged
+rig: mark-full
+extends: flying-fresh.yaml
+profiles:
+  - profiles/devices-identical.yaml
+mutations:
+  - op: unplugDevice
+    match: { vendorId: '17E9', productId: FF00, serial: WWIN29320221210163532 }

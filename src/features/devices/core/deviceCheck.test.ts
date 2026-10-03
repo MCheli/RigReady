@@ -1,8 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { err } from '../../../core/result';
 import type { DeviceInfo } from '../../../shared/models';
-import { scenarioRig, type TestRig } from '../../../../tests/helpers';
-import { deviceCapture, deviceConnectedCheck, identityFor, matchesDevice } from './deviceCheck';
+import { mutate, scenarioRig, type TestRig } from '../../../../tests/helpers';
+import {
+  BY_PORT_NOTE,
+  deviceCapture,
+  deviceConnectedCheck,
+  DeviceParamsSchema,
+  identityFor,
+  matchesDevice,
+} from './deviceCheck';
+import { deviceStores, updateHistory, withName } from './store';
 
 let rig: TestRig;
 afterEach(() => rig?.cleanup());
@@ -34,7 +42,7 @@ describe('device.connected', () => {
     rig = await scenarioRig('flying-pedals-unplugged');
     expect(
       await deviceConnectedCheck.run({ vendorId: '044F', productId: 'B68F' }, rig.ctx)
-    ).toEqual({ pass: false, summary: 'Not connected' });
+    ).toMatchObject({ pass: false, summary: 'Not connected' });
   });
 
   it('reports a provider failure as a failed check', async () => {
@@ -114,5 +122,143 @@ describe('device capture', () => {
     }
     rig.ports.devices.list = async () => err('device.enumerate', 'nope');
     expect(await deviceCapture.capture(rig.ctx)).toMatchObject({ ok: false });
+  });
+});
+
+describe('device checks on the recorded rig', () => {
+  it('rejects a device check that names a device but gives no vendor and product id', () => {
+    expect(DeviceParamsSchema.safeParse({ name: 'TPR pedals' }).success).toBe(false);
+    expect(DeviceParamsSchema.safeParse({ vendorId: '044F' }).success).toBe(false);
+    expect(DeviceParamsSchema.safeParse({ vendorId: '044F', productId: 'B68F' }).success).toBe(
+      true
+    );
+    expect(DeviceParamsSchema.safeParse({ vendorId: '44F', productId: 'B68F' }).success).toBe(
+      false
+    );
+  });
+
+  it('passes when the required number of matching devices is present', async () => {
+    rig = await scenarioRig('flying-all-good', { files: [] });
+    const trackballs = { vendorId: '047D', productId: '80A6' };
+    expect(await deviceConnectedCheck.run({ ...trackballs, count: 2 }, rig.ctx)).toMatchObject({
+      pass: true,
+      summary: '2 connected',
+    });
+    expect(await deviceConnectedCheck.run({ ...trackballs, count: 3 }, rig.ctx)).toMatchObject({
+      pass: false,
+      summary: '2 of 3 connected',
+    });
+  });
+
+  it('checks identical devices unit by unit: one MFD screen unplugged fails only its own check', async () => {
+    rig = await scenarioRig('devices-identical', { files: [] });
+    const screen = (serial: string) => ({ vendorId: '17E9', productId: 'FF00', serial });
+    const left = await deviceConnectedCheck.run(screen('WWIN29320221210092611'), rig.ctx);
+    const centre = await deviceConnectedCheck.run(screen('WWIN29320221210093818'), rig.ctx);
+    const right = await deviceConnectedCheck.run(screen('WWIN29320221210163532'), rig.ctx);
+    expect([left.pass, centre.pass, right.pass]).toEqual([true, true, false]);
+    expect(right.summary).toBe('Not connected');
+    expect(right.details![0]).toBe(
+      'A different WINWING USB 3.0 Display1 is connected (serial WWIN29320221210092611), not this one.'
+    );
+  });
+
+  it('says a device identified by USB port is tied to that port, and notices it moved', async () => {
+    rig = await scenarioRig('devices-identical', { files: [] });
+    const a = {
+      vendorId: '047D',
+      productId: '80A6',
+      instanceId: 'USB\\VID_047D&PID_80A6\\8&66de2c5&0&1',
+    };
+    const passed = await deviceConnectedCheck.run(a, rig.ctx);
+    expect(passed.pass).toBe(true);
+    expect(passed.summary).toBe('Connected · Port 1 on USB2.0 Hub');
+    expect(passed.details).toEqual([BY_PORT_NOTE]);
+    expect(BY_PORT_NOTE).toContain('identified by USB port');
+    // Trackball A is gone; B, on the other port, is the same model.
+    rig.ports.state.devices = rig.ports.state.devices.filter((d) => d.instanceId !== a.instanceId);
+    const failed = await deviceConnectedCheck.run(a, rig.ctx);
+    expect(failed.pass).toBe(false);
+    expect(failed.details).toContain(
+      'A ORBIT WIRELESS TB is connected on another USB port (port 2 on usb2.0 hub).'
+    );
+    expect(failed.details).toContain(BY_PORT_NOTE);
+  });
+
+  it('says when and where a missing device was last plugged in', async () => {
+    rig = await scenarioRig('flying-all-good', { files: [] });
+    const stores = deviceStores(rig.ports);
+    const before = await rig.ports.devices.list();
+    if (!before.ok) throw new Error('list');
+    await updateHistory(stores, before.value, rig.clock);
+    await mutate(rig, [{ op: 'unplugDevice', match: { vendorId: '044F', productId: 'B68F' } }]);
+    const after = await rig.ports.devices.list();
+    if (!after.ok) throw new Error('list');
+    await updateHistory(stores, after.value, rig.clock);
+    rig.clock.advance(25 * 60 * 60 * 1000);
+    const outcome = await deviceConnectedCheck.run(
+      { vendorId: '044F', productId: 'B68F' },
+      rig.ctx
+    );
+    expect(outcome.pass).toBe(false);
+    expect(outcome.summary).toMatch(
+      /^Not connected · last seen (yesterday|today|\d+ \w+) \d\d:\d\d, port 2 on USB2\.1 Hub$/
+    );
+    expect(outcome.details).toContain(
+      'It was last plugged in to port 2 on USB2.1 Hub (USB path 6 › 4 › 2 › 2).'
+    );
+  });
+
+  it('fails a required device that HidHide hides from the game, and only that one', async () => {
+    rig = await scenarioRig('devices-tpr-hidden', {
+      files: ['Program Files/Nefarius Software Solutions/**'],
+    });
+    const tpr = { vendorId: '044F', productId: 'B68F' };
+    const hidden = await deviceConnectedCheck.run(tpr, rig.ctx);
+    expect(hidden.pass).toBe(false);
+    expect(hidden.summary).toBe('Hidden by HidHide');
+    expect(hidden.details![0]).toBe(
+      'HidHide hides it from every program not on its allow list, and DCS.exe is not on that list.'
+    );
+    expect(hidden.details).toContain('RigReady does not change HidHide settings.');
+    expect(
+      (await deviceConnectedCheck.run({ vendorId: '4098', productId: 'BEA8' }, rig.ctx)).pass
+    ).toBe(true);
+
+    // The game on the allow list sees hidden devices.
+    await mutate(rig, [
+      {
+        op: 'setHidHide',
+        apps: ['C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\bin\\DCS.exe'],
+      },
+    ]);
+    rig.clock.advance(5000);
+    expect((await deviceConnectedCheck.run(tpr, rig.ctx)).pass).toBe(true);
+    // Cloaking off: nothing is hidden.
+    await mutate(rig, [{ op: 'setHidHide', apps: [], cloak: false }]);
+    rig.clock.advance(5000);
+    expect((await deviceConnectedCheck.run(tpr, rig.ctx)).pass).toBe(true);
+    // No HidHide at all: the check adds nothing and does not error.
+    await mutate(rig, [{ op: 'setHidHide', installed: false, cloak: true }]);
+    rig.clock.advance(5000);
+    expect(await deviceConnectedCheck.run(tpr, rig.ctx)).toMatchObject({
+      pass: true,
+      summary: 'Connected · Port 2 on USB2.1 Hub',
+    });
+  });
+
+  it('proposes names the user gave as titles when capturing', async () => {
+    rig = await scenarioRig('flying-fresh', { files: [] });
+    const stores = deviceStores(rig.ports);
+    const listed = await rig.ports.devices.list();
+    if (!listed.ok) throw new Error('list');
+    const pedals = listed.value.find((d) => d.productId === 'B68F')!;
+    await stores.data.update((data) => withName(data, pedals, listed.value, 'Rudder pedals'));
+    const result = await deviceCapture.capture(rig.ctx);
+    if (!result.ok) throw new Error('capture');
+    const candidate = result.value.find((c) => c.title === 'Rudder pedals')!;
+    expect(candidate.check.params).toEqual({ vendorId: '044F', productId: 'B68F' });
+    const trackball = result.value.find((c) => c.title === 'ORBIT WIRELESS TB')!;
+    expect(trackball.description).toBe('047D:80A6 · identified by USB port');
   });
 });

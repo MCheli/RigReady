@@ -375,8 +375,14 @@ requirements:
       - "A device check matches on VID and PID (hex) and passes when at least the required count of matching devices is present (default 1)."
       - "Scenario mark-flight passes 'TPR pedals' (Thrustmaster VID/PID from the fixture); mark-flight + pedals-unplugged fails it with 'Not connected'."
       - "The schema rejects a device check that has only a display name and no VID/PID (rule 4); unit test on the zod schema."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/deviceCheck.test.ts#passes when the required number of matching devices is present"
+      - "src/features/devices/core/deviceCheck.test.ts#fails when the device is unplugged"
+      - "src/features/devices/core/deviceCheck.test.ts#passes for a connected device and names the hub it is on"
+      - "src/features/devices/core/deviceCheck.test.ts#rejects a device check that names a device but gives no vendor and product id"
+      - "tests/e2e/devices.e2e.ts#devices: an unplugged device says where it was last plugged in, on Fly and in Devices"
+      - "artifacts/screens/devices-missing/01-fly.png"
 
   - id: CHECK-002
     title: Device check tells identical devices apart
@@ -387,8 +393,12 @@ requirements:
       - "A device check may also specify serial number or, when the device has none, the USB instance/port path; matching then requires that exact unit."
       - "Fixture mark-flight has three WinWing MFD panels with the same VID/PID; checks 'MFD left', 'MFD centre', 'MFD right' each pass on their own unit, and mutation mfd-right-unplugged fails only 'MFD right'."
       - "When identity falls back to instance path, the check detail says 'identified by USB port' so the user knows moving ports breaks it."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/deviceCheck.test.ts#checks identical devices unit by unit: one MFD screen unplugged fails only its own check"
+      - "src/features/devices/core/deviceCheck.test.ts#says a device identified by USB port is tied to that port, and notices it moved"
+      - "tests/e2e/devices.e2e.ts#devices: identical devices are checked unit by unit, by serial or by USB port"
+      - "artifacts/screens/devices-identical/01-fly.png"
 
   - id: CHECK-003
     title: Missing device detail helps find it
@@ -398,8 +408,13 @@ requirements:
     done_means:
       - "A failed device check shows the last time and hub/port the device was seen (from DEV history) e.g. 'Last seen on USB hub 2, port 3, yesterday 21:14'."
       - "If a device with the same VID/PID but a different serial is present, the detail says so ('a different TPR is connected') instead of plain 'Not connected'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/deviceCheck.test.ts#says when and where a missing device was last plugged in"
+      - "src/features/devices/core/deviceCheck.test.ts#checks identical devices unit by unit: one MFD screen unplugged fails only its own check"
+      - "tests/e2e/devices.e2e.ts#devices: an unplugged device says where it was last plugged in, on Fly and in Devices"
+      - "artifacts/screens/devices-missing/01-fly.png"
+      - "artifacts/screens/devices-identical/01-fly.png"
 
   - id: CHECK-004
     title: Process check
@@ -531,8 +546,14 @@ requirements:
       - "Fixture provides HidHide registry data; mutation tpr-hidden fails the TPR check with that detail while the device is present."
       - "If HidHide is not installed the check adds nothing and does not error."
       - "The fix is 'Show instructions' (how to unhide in HidHide's client); RigReady does not change HidHide settings."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/deviceCheck.test.ts#fails a required device that HidHide hides from the game, and only that one"
+      - "src/features/devices/core/hidhide.test.ts#traces a hidden HID node to its USB device: the pedals, and only the pedals"
+      - "src/features/devices/core/hidhide.test.ts#says nothing when HidHide is not installed, and reports a CLI that fails"
+      - "src/features/devices/core/hidhide.test.ts#reads the recorded rig without changing anything: every query ends with --cancel"
+      - "tests/e2e/devices.e2e.ts#devices: HidHide hiding the pedals is shown on the device and fails its check"
+      - "artifacts/screens/devices-hidhide/01-fly.png"
 
   - id: CHECK-015
     title: Check types register through features
@@ -943,8 +964,12 @@ requirements:
       - "'Identify' starts listening to all devices; the first button press or large axis move highlights the device that produced it and scrolls it into view."
       - "Scenario with fake InputProvider emitting button 5 on 'MFD right' highlights that device row (E2E)."
       - "Identify ignores axis noise below a threshold so a jittery axis does not win (unit test with noisy fake axis)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/e2e/devices.e2e.ts#devices: controllers apart from the rest, find one by pressing a button, name it, names survive a restart"
+      - "src/features/devices/core/input.test.ts#ignores a jittery axis and takes only a large axis move"
+      - "src/features/devices/core/input.test.ts#takes a new button press or hat move at once"
+      - "artifacts/screens/devices-list/02-found.png"
 
   - id: DEV-003
     title: Name a device
@@ -990,8 +1015,12 @@ requirements:
     done_means:
       - "A raw toggle shows each axis's raw integer (e.g. 0-65535) alongside the normalised percent, and button numbers as the game numbers them (JOY_BTN1 based)."
       - "Unit test: fake InputProvider value 32767 on a 16-bit axis displays 32767 and 50%."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/input.test.ts#shows a 16-bit raw value next to the percent: the centre reads 32767 and 50%"
+      - "src/features/devices/core/input.test.ts#numbers buttons and names axes the way games do"
+      - "tests/e2e/devices.e2e.ts#devices: the input tester shows buttons, axes and hats as a game sees them, raw values, a readable log, one or all controllers"
+      - "artifacts/screens/devices-tester/03-raw.png"
 
   - id: DEV-007
     title: Input tester for all devices at once
@@ -1001,8 +1030,13 @@ requirements:
     done_means:
       - "An all-devices view shows a compact row per device and lights up whichever device and input is active, so the user can press things on a full cockpit without choosing a device first."
       - "It stays responsive with 16 devices at 60 Hz input from the fake provider (no frame takes over 50 ms in a performance test)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/e2e/devices.e2e.ts#devices: all controllers stay responsive with 16 controllers at 60 Hz"
+      - "tests/e2e/devices.e2e.ts#devices: the input tester shows buttons, axes and hats as a game sees them, raw values, a readable log, one or all controllers"
+      - "src/features/devices/main.test.ts#sends live input to the window only while it is watched, keeping every button change"
+      - "artifacts/screens/devices-tester/01-all.png"
+      - "artifacts/screens/devices-tester-load/01-sixteen-controllers.png"
 
   - id: DEV-008
     title: Stuck button detection
@@ -1013,8 +1047,15 @@ requirements:
       - "A health scan reports any button held continuously for more than 5 s while the user is told not to touch anything, naming device and button."
       - "Toggle-switch panels (startup panel switches that are legitimately on) are listed separately as 'held (switch?)' and can be marked as expected so they are not reported again."
       - "Scenario mutation startup-panel-button3-stuck is reported."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/health.test.ts#reports a button held the whole time as stuck on a stick and as a switch on a panel"
+      - "src/features/devices/core/health.test.ts#lists a switch marked as normally on apart, and uses the names the user gave"
+      - "src/features/devices/core/health.test.ts#reports a button pressed and held part of the time for longer than 5 s, and short presses as rogue"
+      - "src/features/devices/main.test.ts#runs the hands-off check on live input and remembers switches marked as normally on"
+      - "tests/e2e/devices.e2e.ts#devices: hands-off health check reports stuck buttons, switches, noisy axes and rogue inputs"
+      - "artifacts/screens/devices-health/04-findings.png"
+      - "artifacts/screens/devices-health/05-switch-marked.png"
 
   - id: DEV-009
     title: Noisy axis and rogue input detection
@@ -1025,8 +1066,14 @@ requirements:
       - "The health scan samples all axes for 10 s untouched and reports axes whose value range exceeds 1% of full scale as noisy, with the measured spread."
       - "Any device that produces input during the untouched window (e.g. a drifting MFD brightness knob) is reported as rogue input with the input name."
       - "Scenario mutation throttle-axis-noisy is reported; the clean mark-flight fixture reports nothing."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/health.test.ts#reports an axis that wanders more than 1% of its travel as noisy, with the spread"
+      - "src/features/devices/core/health.test.ts#reports a hat that moves and a button released once as rogue input"
+      - "src/features/devices/core/health.test.ts#reports nothing on a quiet rig"
+      - "tests/e2e/devices.e2e.ts#devices: hands-off health check reports stuck buttons, switches, noisy axes and rogue inputs"
+      - "artifacts/screens/devices-health/03-all-quiet.png"
+      - "artifacts/screens/devices-health/04-findings.png"
 
   - id: DEV-010
     title: Binding inspector from the tester
@@ -1048,8 +1095,13 @@ requirements:
       - "A USB map shows the tree of host controllers, hubs and ports with each device placed on its port, using friendly names."
       - "Fixture mark-flight renders the owner's tree with every device on the hub it was recorded on (screenshot artifacts/screens/usb-map/)."
       - "Selecting a device in the map highlights it in the devices list and vice versa."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/main.test.ts#places every device of the recorded rig on its hub, with depth and what could be unplugged"
+      - "tests/e2e/devices.e2e.ts#devices: USB map places every device on its hub, and selecting one shows it in Devices and back"
+      - "artifacts/screens/usb-map/01-tree.png"
+      - "artifacts/screens/usb-map/02-pedals-selected.png"
+      - "artifacts/screens/usb-map/03-in-devices.png"
 
   - id: DEV-012
     title: USB limits and what to unplug
@@ -1059,8 +1111,12 @@ requirements:
     done_means:
       - "For each host controller the map shows device count and, where obtainable, endpoint usage against the controller's limit, and highlights controllers near or over the limit."
       - "When over a limit it lists devices on that controller not required by the active profile as candidates to unplug or move."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/overview.test.ts#flags a controller near or over its 127 addresses and lists what is not needed"
+      - "src/features/devices/core/overview.test.ts#warns about devices four or five hubs deep"
+      - "tests/e2e/devices.e2e.ts#devices: USB map places every device on its hub, and selecting one shows it in Devices and back"
+      - "artifacts/screens/usb-map/04-what-to-unplug.png"
 
   - id: DEV-013
     title: Connect and disconnect notifications from the tray
@@ -1071,8 +1127,13 @@ requirements:
       - "While RigReady is in the tray, connecting or disconnecting a device shows a Windows notification with the device's friendly name within 2 s."
       - "Notifications can be turned off, or limited to devices required by the last-used profile, in settings."
       - "Rapid reconnects (USB flapping) of the same device within 3 s are merged into one notification."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/main.test.ts#tells about a device unplugged while the window is hidden, within 2 s, as the user chose"
+      - "src/features/devices/core/notifier.test.ts#merges a device that drops out and comes back within 3 s into one notification"
+      - "src/features/devices/core/notifier.test.ts#tells about an unplugged device within 2 s, by the name the user gave it"
+      - "src/features/devices/core/notifier.test.ts#tells about a whole hub in one notification, and only about wanted devices"
+      - "artifacts/screens/devices-hidhide/03-hidhide-panel.png"
 
   - id: DEV-014
     title: HidHide visibility on the devices page
@@ -1082,8 +1143,13 @@ requirements:
     done_means:
       - "If HidHide is installed, the devices page marks each device hidden by HidHide with a badge and shows whether RigReady and the game executables are on HidHide's whitelist."
       - "Fixture mutation tpr-hidden shows the badge on the TPR only."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/e2e/devices.e2e.ts#devices: HidHide hiding the pedals is shown on the device and fails its check"
+      - "src/features/devices/core/overview.test.ts#summarises HidHide for RigReady and the games the setups launch"
+      - "src/features/devices/core/hidhide.test.ts#traces a hidden HID node to its USB device: the pedals, and only the pedals"
+      - "artifacts/screens/devices-hidhide/02-devices.png"
+      - "artifacts/screens/devices-hidhide/03-hidhide-panel.png"
 
   # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files

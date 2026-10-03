@@ -1,0 +1,248 @@
+import { defineStore } from 'pinia';
+import { computed, ref, shallowReactive, shallowRef } from 'vue';
+import { errorText, useClient } from '../../../renderer/ipc';
+import type { InputDevice, InputState } from '../../../shared/models';
+import { devicesContract } from '../contract';
+import { ActivityLog, widen, type AxisRange } from '../core/input';
+import type { NotificationMode, Overview, RigDevice } from '../core/model';
+
+/** The Devices overview: names, controllers, location, HidHide, what setups need. */
+export const useDevicesStore = defineStore('devices', () => {
+  const api = useClient(devicesContract);
+  const overview = shallowRef<Overview>();
+  const error = ref<string>();
+  const loading = ref(false);
+  let generation = 0;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+
+  async function load(): Promise<void> {
+    const mine = ++generation;
+    loading.value = true;
+    const result = await api.overview();
+    if (mine !== generation) return;
+    loading.value = false;
+    if (result.ok) {
+      overview.value = result.value;
+      error.value = undefined;
+      clearTimeout(retry);
+      // The controller reader was still starting: look again shortly.
+      if (result.value.inputPending) retry = setTimeout(() => void load(), 1500);
+    } else {
+      error.value = errorText(result.error);
+    }
+  }
+
+  async function rename(key: string, name: string): Promise<string | undefined> {
+    const result = await api.rename({ key, name });
+    if (!result.ok) return errorText(result.error);
+    await load();
+    return undefined;
+  }
+
+  async function setNotifications(mode: NotificationMode): Promise<string | undefined> {
+    const result = await api.setNotifications({ mode });
+    if (!result.ok) return errorText(result.error);
+    if (overview.value) overview.value = { ...overview.value, notifications: result.value.mode };
+    return undefined;
+  }
+
+  /** The device a DirectInput controller belongs to. */
+  function deviceOfController(index: number): RigDevice | undefined {
+    return overview.value?.devices.find((d) => d.controllers.some((c) => c.index === index));
+  }
+
+  /** What to call a controller: the device's name, with the collection when it has several. */
+  function controllerName(controller: Pick<InputDevice, 'index' | 'name'>): string {
+    const device = deviceOfController(controller.index);
+    if (!device) return controller.name.trim();
+    if (device.controllers.length > 1 && !device.controllersShared) {
+      const position = device.controllers.findIndex((c) => c.index === controller.index) + 1;
+      return `${device.name} (controller ${position} of ${device.controllers.length})`;
+    }
+    return device.name;
+  }
+
+  return {
+    overview,
+    error,
+    loading,
+    load,
+    rename,
+    setNotifications,
+    deviceOfController,
+    controllerName,
+  };
+});
+
+type Listener = (state: InputState, previous: InputState | undefined) => void;
+
+/**
+ * Live controller input. States arrive from main at most ~60 times a second; they are kept
+ * outside Vue's reactivity and each controller's version is bumped at most once per frame,
+ * so only the views of controllers that changed re-render.
+ */
+export const useInputStore = defineStore('devices-input', () => {
+  const api = useClient(devicesContract);
+  const reported = shallowRef<InputDevice[]>([]);
+  const error = ref<string>();
+  const ready = ref(false);
+  /** True once main is sending live input to this window. */
+  const watching = ref(false);
+  const states = new Map<number, InputState>();
+  /** Per controller index: bumped when its state changed (read it to re-render). */
+  const versions = shallowReactive<Record<number, number>>({});
+  /** Controllers seen in input but not (yet) in the reported list, e.g. just plugged in. */
+  const extra = shallowRef<InputDevice[]>([]);
+  const lastActivity = new Map<number, number>();
+  const ranges = new Map<string, AxisRange>();
+  const log = new ActivityLog();
+  const logVersion = ref(0);
+  const lastInput = ref<{ index: number; text: string }>();
+  /** The latest log line per controller. */
+  const lastByIndex = new Map<number, string>();
+  const listeners = new Set<Listener>();
+  const client = `tester-${Math.random().toString(36).slice(2)}`;
+  let users = 0;
+  let off: (() => void) | undefined;
+  let dirty = new Set<number>();
+  let frame: number | undefined;
+  let names: (d: InputDevice) => string = (d) => d.name.trim();
+
+  const devices = computed(() =>
+    [...reported.value, ...extra.value].sort((a, b) => a.index - b.index)
+  );
+
+  function deviceFor(index: number): InputDevice | undefined {
+    return (
+      reported.value.find((d) => d.index === index) ?? extra.value.find((d) => d.index === index)
+    );
+  }
+
+  function paint(): void {
+    frame = undefined;
+    for (const index of dirty) versions[index] = (versions[index] ?? 0) + 1;
+    dirty = new Set();
+    logVersion.value++;
+  }
+
+  function receive(incoming: InputState[]): void {
+    const now = Date.now();
+    let logged = false;
+    for (const state of incoming) {
+      const previous = states.get(state.index);
+      states.set(state.index, state);
+      let device = deviceFor(state.index);
+      if (!device) {
+        device = {
+          index: state.index,
+          name: state.name,
+          guid: `index-${state.index}`,
+          productGuid: '',
+          vendorId: '',
+          productId: '',
+          numAxes: state.axes.length,
+          numButtons: state.buttons.length,
+          numHats: state.hats.length,
+          axisNames: [],
+        };
+        extra.value = [...extra.value, device];
+      }
+      state.axes.forEach((v, i) => {
+        const key = `${state.index}:${i}`;
+        ranges.set(key, widen(ranges.get(key), v));
+      });
+      if (previous) {
+        const entry = log.record(device, names(device), previous, state, now);
+        if (entry) {
+          logged = true;
+          lastActivity.set(state.index, now);
+          lastInput.value = { index: state.index, text: entry.text };
+          lastByIndex.set(state.index, entry.text);
+        }
+      } else {
+        log.record(device, names(device), undefined, state, now);
+      }
+      dirty.add(state.index);
+      for (const listener of listeners) listener(state, previous);
+    }
+    if (logged || dirty.size > 0) frame ??= requestAnimationFrame(paint);
+  }
+
+  async function loadDevices(): Promise<void> {
+    const result = await api.inputDevices();
+    if (result.ok) {
+      reported.value = result.value;
+      extra.value = extra.value.filter((e) => !result.value.some((d) => d.index === e.index));
+      error.value = undefined;
+    } else {
+      error.value = errorText(result.error);
+    }
+    ready.value = true;
+  }
+
+  /** Starts live input for a screen. Call release() when the screen goes away. */
+  async function acquire(): Promise<void> {
+    users++;
+    if (users > 1) return;
+    off = api.on('input', ({ states: incoming }) => receive(incoming));
+    await loadDevices();
+    const watched = await api.watchInput({ client, on: true });
+    if (watched.ok) watching.value = users > 0;
+    else error.value = errorText(watched.error);
+  }
+
+  async function release(): Promise<void> {
+    users = Math.max(0, users - 1);
+    if (users > 0) return;
+    off?.();
+    off = undefined;
+    watching.value = false;
+    await api.watchInput({ client, on: false });
+  }
+
+  function onInput(listener: Listener): () => void {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }
+
+  function setNamer(namer: (d: InputDevice) => string): void {
+    names = namer;
+  }
+
+  function clearLog(): void {
+    log.clear();
+    lastInput.value = undefined;
+    lastByIndex.clear();
+    logVersion.value++;
+  }
+
+  function resetRanges(index: number): void {
+    for (const key of [...ranges.keys()]) if (key.startsWith(`${index}:`)) ranges.delete(key);
+    const state = states.get(index);
+    state?.axes.forEach((v, i) => ranges.set(`${index}:${i}`, widen(undefined, v)));
+    versions[index] = (versions[index] ?? 0) + 1;
+  }
+
+  return {
+    devices,
+    error,
+    ready,
+    watching,
+    states,
+    versions,
+    lastActivity,
+    ranges,
+    log,
+    logVersion,
+    lastInput,
+    lastByIndex,
+    deviceFor,
+    loadDevices,
+    acquire,
+    release,
+    onInput,
+    setNamer,
+    clearLog,
+    resetRanges,
+  };
+});

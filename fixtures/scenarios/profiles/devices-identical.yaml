@@ -1,0 +1,11 @@
+schemaVersion: 1
+id: devices-identical
+name: MFD screens
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+checks:
+  - { id: s1, type: device.connected, title: MFD screen left, required: true, params: { vendorId: '17E9', productId: FF00, serial: WWIN29320221210092611 } }
+  - { id: s2, type: device.connected, title: MFD screen centre, required: true, params: { vendorId: '17E9', productId: FF00, serial: WWIN29320221210093818 } }
+  - { id: s3, type: device.connected, title: MFD screen right, required: true, params: { vendorId: '17E9', productId: FF00, serial: WWIN29320221210163532 } }
+  - { id: s4, type: device.connected, title: Trackball A, required: true, params: { vendorId: 047D, productId: 80A6, instanceId: 'USB\VID_047D&PID_80A6\8&66de2c5&0&1' } }
+  - { id: s5, type: device.connected, title: Trackball B, required: true, params: { vendorId: 047D, productId: 80A6, instanceId: 'USB\VID_047D&PID_80A6\8&66de2c5&0&2' } }
