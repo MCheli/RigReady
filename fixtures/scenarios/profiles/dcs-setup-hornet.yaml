@@ -1,0 +1,51 @@
+schemaVersion: 1
+id: dcs-setup-hornet
+name: DCS F/A-18C
+game: dcs
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+launch:
+  exe: C:\Program Files (x86)\Steam\steamapps\common\DCSWorld\bin\DCS.exe
+  args: []
+# The Hornet uses the UFC display and backlight sync, so it needs SimAppPro running.
+extensions:
+  dcs-setup:
+    winwingRuntime: [displays, backlight]
+checks:
+  - id: c1
+    type: display.layout
+    title: Monitor layout
+    required: true
+    params: &layout
+      displays:
+        - { id: '\\?\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: LC49G95T, enabled: true, primary: true, x: 0, y: 0, width: 5120, height: 1440, rotation: 0 }
+        - { id: '\\?\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 5120, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 5888, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 6656, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: DELL G3223D, enabled: false, primary: false, x: 0, y: 0, rotation: 0 }
+    remediation:
+      type: display.applyLayout
+      params: *layout
+  - id: c2
+    type: dcs.monitorSetup
+    title: DCS monitor setup
+    required: false
+    params: { setup: wwtMonitor }
+  - id: c3
+    type: dcs.exportLua
+    title: Export.lua tools
+    required: true
+    params: { tools: [wwt, dcs-bios] }
+    remediation: { type: dcs.repairExportLua, params: { tools: [wwt, dcs-bios] } }
+  - id: c4
+    type: dcs.options
+    title: DCS graphics options
+    required: false
+    params: { width: 7424, height: 1440, fullScreen: false, vr: false }
+    remediation: { type: dcs.setOptions, params: { width: 7424, height: 1440, fullScreen: false, vr: false } }
+  - id: dcs-simapppro
+    type: dcs.simAppProRunning
+    title: SimAppPro running
+    required: true
+    params: { features: [displays, backlight] }
+    remediation: { type: dcs.startSimAppPro, params: {} }

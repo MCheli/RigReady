@@ -8,6 +8,11 @@ export interface GameInstall {
   installDir: string;
   /** How to start it, when known. */
   launch?: LaunchTarget;
+  /**
+   * The per-user folder this install reads and writes (DCS: Saved Games\DCS or
+   * Saved Games\DCS.<variant>), for games that keep one per install.
+   */
+  userDir?: string;
 }
 
 export interface GameVersion {

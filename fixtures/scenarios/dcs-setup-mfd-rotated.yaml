@@ -1,0 +1,7 @@
+description: DCS setup, middle MFD screen back in landscape
+rig: mark-full
+extends: dcs-setup-flying.yaml
+mutations:
+  - op: setDisplay
+    match: { name: USB_Monitor, index: 1 }
+    set: { width: 1024, height: 768, rotation: 0 }

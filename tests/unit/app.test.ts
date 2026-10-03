@@ -28,6 +28,7 @@ describe('feature discovery', () => {
     app = await wiredApp('flying-all-good');
     expect(app.wiring.features.map((f) => f.id)).toEqual([
       'audio',
+      'dcs-setup',
       'devices',
       'displays',
       'fly',
@@ -42,6 +43,12 @@ describe('feature discovery', () => {
     ]);
     expect(app.wiring.context.checks.checkTypes()).toEqual([
       'audio.defaultDevice',
+      'dcs.exportLua',
+      'dcs.install',
+      'dcs.managedFiles',
+      'dcs.monitorSetup',
+      'dcs.options',
+      'dcs.simAppProRunning',
       'device.connected',
       'display.layout',
       'process.running',
@@ -56,6 +63,11 @@ describe('feature discovery', () => {
     ]);
     expect(app.wiring.context.checks.remediationTypes()).toEqual([
       'audio.setDefault',
+      'dcs.repairExportLua',
+      'dcs.restoreManaged',
+      'dcs.setOptions',
+      'dcs.startSimAppPro',
+      'dcs.writeScreenSetup',
       'display.applyLayout',
       'process.launch',
       'stream-deck.start',
@@ -230,8 +242,9 @@ describe('Profiles: create by capturing the current state', () => {
       problems: string[];
     }>('profiles:capture');
     expect(capture.problems).toEqual([]);
+    // DCS adds its install (other), Export.lua and options.lua (files) and its monitor setup.
     expect(new Set(capture.candidates.map((c) => c.group))).toEqual(
-      new Set(['devices', 'apps', 'displays', 'audio'])
+      new Set(['devices', 'apps', 'displays', 'audio', 'files', 'other'])
     );
 
     // What the capture screen does: keep the defaults plus the apps the user ticks.
@@ -329,10 +342,10 @@ describe('Devices and games', () => {
           {
             source: 'steam',
             installDir: path.join(recorded, 'DCSWorld'),
+            // Through Steam, which applies a queued update and authorises the game first.
             launch: {
-              exe: path.join(recorded, 'DCSWorld', 'bin', 'DCS.exe'),
-              args: [],
-              cwd: path.join(recorded, 'DCSWorld', 'bin'),
+              exe: path.join(app.home, 'Program Files (x86)', 'Steam', 'steam.exe'),
+              args: ['-applaunch', '223750'],
             },
           },
         ],
@@ -349,6 +362,8 @@ describe('Devices and games', () => {
     await fs.writeFile(path.join(installDir, 'bin', 'DCS.exe'), '');
     app.ports.folders.steamLibraries = async () =>
       ok([path.join(app.home, 'EmptyLibrary'), library]);
+    // Without steam.exe where Steam is, the game itself is started.
+    await fs.rm(path.join(app.home, 'Program Files (x86)', 'Steam', 'steam.exe'));
     const summary = (await app.invoke<GameSummary[]>('games:list')).find((g) => g.id === 'dcs');
     expect(summary!.installs).toEqual([
       {

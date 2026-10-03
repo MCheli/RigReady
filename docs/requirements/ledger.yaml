@@ -1209,8 +1209,11 @@ requirements:
     done_means:
       - "Detection reads the Eagle Dynamics registry keys (DCS World, DCS World OpenBeta) under HKCU and HKLM and reports each install path that contains bin/DCS.exe."
       - "Fixture registry data with one standalone install is detected; a key pointing at a deleted folder is ignored."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/games/dcs/module.test.ts#finds standalone installs from the Eagle Dynamics keys and ignores one whose folder is gone"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the overview shows install, version, screens, Export.lua, SimAppPro and aircraft"
+      - "artifacts/screens/dcs-setup-overview/01-overview.png"
 
   - id: DCS-002
     title: Detect DCS in every Steam library
@@ -1220,8 +1223,12 @@ requirements:
     done_means:
       - "Detection parses Steam's libraryfolders.vdf and finds DCSWorld under any library's steamapps/common, not just the default Steam folder."
       - "Fixture with three Steam libraries and DCS in the second one is detected (unit test)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/games/dcs/module.test.ts#finds DCS in the second of three Steam libraries"
+      - "src/features/games/dcs/module.test.ts#follows the app manifest when DCS was installed under another folder name"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the overview shows install, version, screens, Export.lua, SimAppPro and aircraft"
+      - "artifacts/screens/dcs-setup-overview/01-overview.png"
 
   - id: DCS-003
     title: Resolve the right Saved Games folder for each install
@@ -1232,8 +1239,14 @@ requirements:
       - "For each install the user folder is resolved from the install's dcs_variant.txt (e.g. openbeta -> Saved Games/DCS.openbeta) and otherwise Saved Games/DCS, using the Saved Games known folder (which may be redirected)."
       - "All existing Saved Games/DCS* folders are listed, and a folder with no matching install is shown as 'orphaned' (useful after reinstall)."
       - "Unit tests cover DCS, DCS.openbeta and a redirected Saved Games folder."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/games/dcs/module.test.ts#finds standalone installs from the Eagle Dynamics keys and ignores one whose folder is gone"
+      - "src/features/games/dcs/module.test.ts#lists every Saved Games DCS folder, the installs own first"
+      - "src/features/games/dcs/module.test.ts#uses the Saved Games known folder even when it is redirected"
+      - "src/features/dcs-setup/core/service.test.ts#marks a Steam update and Saved Games folders without an install"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the overview shows install, version, screens, Export.lua, SimAppPro and aircraft"
+      - "artifacts/screens/dcs-setup-overview/03-update-waiting.png"
 
   - id: DCS-004
     title: Choose the DCS install per profile
@@ -1254,8 +1267,12 @@ requirements:
     done_means:
       - "Installed aircraft are listed from the install's Mods/aircraft folders with display names, and aircraft that only have input folders in Saved Games are listed too."
       - "Fixture mark-flight lists FA-18C_hornet and UH-1H among others."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/service.test.ts#shows the install, version, aircraft, monitor setup, Export.lua and SimAppPro at a glance"
+      - "src/features/dcs-setup/core/service.test.ts#lists aircraft that only have bindings in Saved Games"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the overview shows install, version, screens, Export.lua, SimAppPro and aircraft"
+      - "artifacts/screens/dcs-setup-overview/02-aircraft.png"
 
   - id: DCS-006
     title: options.lua awareness
@@ -1266,8 +1283,14 @@ requirements:
       - "options.lua is parsed with the shared Lua table reader; the DCS page shows resolution, multiMonitorSetup, fullscreen and the active MonitorSetup file name."
       - "A built-in check 'DCS monitor setup matches layout' warns when multiMonitorSetup names a file that does not exist or when the DCS resolution does not equal the bounding box of the profile's display layout."
       - "RigReady changes options.lua only through DCS-MON-004 (single key edit with backup), never by rewriting the file from a model."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/service.test.ts#shows the install, version, aircraft, monitor setup, Export.lua and SimAppPro at a glance"
+      - "src/features/dcs-setup/core/service.test.ts#monitor setup check names a missing file, the wrong selection and a window that is too small"
+      - "src/features/dcs-setup/core/service.test.ts#options check compares VR, resolution and full screen, and its fix sets only those keys"
+      - "src/features/dcs-setup/core/screens.test.ts#writes RigReady.lua and changes only the monitor setup key of options.lua, as one undoable action"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the overview shows install, version, screens, Export.lua, SimAppPro and aircraft"
+      - "artifacts/screens/dcs-setup-overview/01-overview.png"
 
   - id: DCS-007
     title: Shared DCS Lua reader and writer
@@ -1294,8 +1317,11 @@ requirements:
       - "All files in {DCS_USER}/Config/MonitorSetup/ and the install's Config/MonitorSetup/ are listed with name, description and viewports (Center, LEFT_MFCD, RIGHT_MFCD, CENTER_MFCD and others)."
       - "Viewports are drawn over the current display layout diagram so the user sees which screen each viewport lands on."
       - "The fixture's wwtMonitor.lua (SimAppPro-generated) is read and drawn correctly."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#lists every MonitorSetup file and reads the SimAppPro one"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
+      - "artifacts/screens/dcs-setup-screens/02-viewing-simapppro-file.png"
 
   - id: DCS-MON-002
     title: Generate a MonitorSetup for MFD viewports
@@ -1306,8 +1332,13 @@ requirements:
       - "From a display layout, the user assigns roles (main view, left MFCD, right MFCD, centre/AMPCD) to monitors and RigReady generates a MonitorSetup .lua with matching viewport coordinates relative to the DCS window origin."
       - "For fixture mark-flight Flying layout, the generated file places the main view on the ultrawide and the three MFCD viewports on the three MFD screens; a unit test asserts the coordinates."
       - "The generated file parses with DCS-007 and is shown as a preview diagram before writing."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#imports SimAppPro's plan for the flying layout and generates the same viewports"
+      - "src/features/dcs-setup/core/screens.test.ts#writes per-aircraft overrides when two aircraft place the same display differently"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
+      - "artifacts/screens/dcs-setup-screens/01-imported.png"
+      - "artifacts/screens/dcs-setup-screens/03-file-preview.png"
 
   - id: DCS-MON-003
     title: Never clobber user MonitorSetup edits
@@ -1318,8 +1349,12 @@ requirements:
       - "RigReady writes only to a file it owns (default name 'RigReady.lua'); if that file was edited outside RigReady since RigReady last wrote it (hash mismatch), RigReady shows a diff and asks before overwriting."
       - "Other MonitorSetup files are never modified; writing goes through FileStore with backup and journal."
       - "Unit test: hand-modified RigReady.lua triggers the diff prompt; unmodified one is updated silently with a journal entry."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#asks before replacing a RigReady.lua edited outside RigReady"
+      - "src/features/dcs-setup/core/screens.test.ts#updates its own unmodified RigReady.lua without asking, with a journal entry"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
+      - "artifacts/screens/dcs-setup-screens/06-edited-outside.png"
 
   - id: DCS-MON-004
     title: Select the monitor setup in options.lua
@@ -1330,8 +1365,13 @@ requirements:
       - "'Use in DCS' sets graphics.multiMonitorSetup (and resolution to the layout bounding box, if the user ticks it) in options.lua by changing only those keys, with a pre-write backup and a visible description of both changes."
       - "Refuses while DCS.exe is running, explaining that DCS rewrites options.lua on exit."
       - "Unit test: all other keys in a fixture options.lua are unchanged after the edit."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#writes RigReady.lua and changes only the monitor setup key of options.lua, as one undoable action"
+      - "src/features/dcs-setup/core/screens.test.ts#sets the resolution to the window the setup needs, and full screen off"
+      - "src/features/dcs-setup/core/screens.test.ts#refuses to write while DCS is running"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
+      - "artifacts/screens/dcs-setup-screens/04-in-use.png"
 
   - id: DCS-MON-005
     title: Detect drift between MonitorSetup and the display layout
@@ -1341,8 +1381,12 @@ requirements:
     done_means:
       - "A check (optional by default) warns when any viewport of the active MonitorSetup lies outside an enabled monitor of the current layout, e.g. after an MFD screen was rotated."
       - "Scenario mark-flight + mfd2-rotated shows this warning alongside the display check failure, and both clear after the display fix."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/service.test.ts#monitor setup check warns when an MFD screen is rotated and clears after the layout fix"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: a rotated MFD screen also warns about the DCS monitor setup, and both clear after the layout fix"
+      - "artifacts/screens/dcs-setup-mfd-rotated/01-both-warn.png"
+      - "artifacts/screens/dcs-setup-mfd-rotated/02-both-clear.png"
 
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines
@@ -1353,8 +1397,13 @@ requirements:
       - "{DCS_USER}/Scripts/Export.lua is read and its dofile/loadfile/pcall lines are attributed to known tools: DCS-BIOS, WinWing (wwt), SRS, Tacview, plus 'unknown' for anything else."
       - "The page lists each tool's lines in order and whether the referenced script file exists."
       - "Fixture Export.lua with DCS-BIOS, wwt, SRS and Tacview lines lists all four."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/exportLua.test.ts#attributes the owner file lines to WinWing and DCS-BIOS"
+      - "src/features/dcs-setup/core/exportLua.test.ts#lists DCS-BIOS, WinWing, SRS and Tacview lines, plus anything unknown"
+      - "src/features/dcs-setup/core/service.test.ts#lists each tool, says which are installed, and finds what the Stream Deck plugin needs"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: Export.lua gets the DCS-ExportScript line the Stream Deck plugin needs; a rewrite is noticed and put right"
+      - "artifacts/screens/dcs-setup-export/01-needs-export-script.png"
 
   - id: DCS-EXPORT-002
     title: Add or remove a tool's lines without losing others
@@ -1365,8 +1414,14 @@ requirements:
       - "Adding a known tool appends that tool's canonical line; removing one deletes only its lines; every other line, comment and order is preserved byte-for-byte (unit test on fixture)."
       - "Writes go through FileStore with backup and a visible before/after diff."
       - "Duplicate lines for the same tool are detected and offered for dedupe."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/exportLua.test.ts#adds a tool at the end with the file dominant line ending and changes nothing else"
+      - "src/features/dcs-setup/core/exportLua.test.ts#removes only one tool, with its helper line, keeping every other byte"
+      - "src/features/dcs-setup/core/exportLua.test.ts#finds duplicates and removes all but the first"
+      - "src/features/dcs-setup/core/service.test.ts#adds and removes one tool with a preview, and notices when another program rewrites the file"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: Export.lua gets the DCS-ExportScript line the Stream Deck plugin needs; a rewrite is noticed and put right"
+      - "artifacts/screens/dcs-setup-export/02-confirm-add.png"
 
   - id: DCS-EXPORT-003
     title: Export.lua integrity check and repair
@@ -1376,8 +1431,12 @@ requirements:
     done_means:
       - "A profile can require tools in Export.lua (e.g. DCS-BIOS and wwt); a check fails naming any missing tool line, as happens after SimAppPro or a DCS-BIOS installer rewrites the file."
       - "The fix re-adds the missing lines using DCS-EXPORT-002, and the check turns green (scenario mark-flight + export-lua-overwritten)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/service.test.ts#Export.lua check fails naming the missing tool and Make ready puts the line back"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: Export.lua overwritten without DCS-BIOS fails the check and Make ready puts the line back"
+      - "artifacts/screens/dcs-setup-export-overwritten/01-missing.png"
+      - "artifacts/screens/dcs-setup-export-overwritten/02-fixed.png"
 
   # ---------------------------------------------------------------------------
   # DCS BINDINGS
@@ -2619,8 +2678,13 @@ requirements:
     done_means:
       - "A profile declares which WinWing runtime features it uses (backlight sync, UFC/ICP displays, vibration); a 'SimAppPro running' check is added (required) only if at least one is declared."
       - "Scenario mark-flight F/A-18C (UFC display declared) + simapppro-not-running fails the check with fix 'Start SimAppPro'; the UH-1H profile (none declared) has no SimAppPro item."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/dcs-setup/core/service.test.ts#adds a required "SimAppPro running" check only to a setup that uses WinWing runtime features'
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: SimAppPro not running fails only the setup that uses WinWing runtime features"
+      - "artifacts/screens/dcs-setup-simapppro/01-hornet-not-running.png"
+      - "artifacts/screens/dcs-setup-simapppro/02-huey-no-simapppro.png"
+      - "artifacts/screens/dcs-setup-simapppro/03-simapppro-page.png"
 
   - id: SAP-004
     title: Notice when SimAppPro rewrites DCS files
@@ -2630,8 +2694,12 @@ requirements:
     done_means:
       - "When MonitorSetup files, options.lua multiMonitorSetup or Export.lua change outside RigReady since the last check, the Fly screen shows a warning naming the file and offering the journal-style diff and 'Restore RigReady version'."
       - "Scenario mutation simapppro-rewrote-monitorsetup triggers the warning."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/service.test.ts#notices SimAppPro rewriting the monitor setup choice, and restores RigReady's version"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: simapppro-rewrote-monitorsetup — SimAppPro puts its setup back into options.lua, the Fly screen warns and restores"
+      - "artifacts/screens/dcs-setup-simapppro-rewrote/01-simapppro-page-changed.png"
+      - "artifacts/screens/dcs-setup-simapppro-rewrote/02-fly-warning.png"
 
   - id: SAP-005
     title: Research driving WinWing displays and backlights directly

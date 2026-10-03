@@ -1,0 +1,8 @@
+description: DCS setup, Export.lua rewritten without the DCS-BIOS line
+rig: mark-full
+extends: dcs-setup-flying.yaml
+mutations:
+  # What a fresh SimAppPro install or another tool rewriting Export.lua leaves behind.
+  - op: writeFile
+    path: Saved Games/DCS/Scripts/Export.lua
+    content: "local wwtlfs=require('lfs')\r\ndofile(wwtlfs.writedir()..'Scripts/wwt/wwtExport.lua')\r\n"

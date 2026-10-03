@@ -1,0 +1,6 @@
+description: DCS setup, SimAppPro not running
+rig: mark-full
+extends: dcs-setup-flying.yaml
+mutations:
+  - op: stopProcess
+    name: SimAppPro.exe
