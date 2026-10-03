@@ -194,7 +194,7 @@ test('fly: services, config files, scripts and the game version, with instructio
   const game = checkRow(page, 'DCS not updated since verified');
   await expect(game).toHaveAttribute('data-status', 'warn');
   await expect(game).toContainText(
-    'DCS World updated build 25000000 -> build 25625823 since you last verified'
+    'DCS World updated Steam build 25000000 -> Steam build 25625823 since you last verified'
   );
   // From a newer RigReady: an unknown check type is an error, an unknown fix offers no button.
   const unknown = checkRow(page, 'Backlight in sync');
@@ -224,7 +224,7 @@ test('fly: services, config files, scripts and the game version, with instructio
   // The version check: confirm it, and it turns green.
   await game.getByTestId('check-acknowledge').click();
   await expect(game).toHaveAttribute('data-status', 'pass');
-  await expect(game).toContainText('DCS World build 25625823, verified');
+  await expect(game).toContainText('DCS World Steam build 25625823, verified');
 
   // A fix that runs a program shows exactly what will run first.
   await content.getByTestId('check-fix').click();

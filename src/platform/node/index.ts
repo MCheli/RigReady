@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type SpawnOptions, type SpawnOptionsWithoutStdio } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
@@ -16,6 +16,7 @@ import type {
   Render,
   Secrets,
   Shell,
+  ShellOptions,
   ShellResult,
 } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
@@ -80,11 +81,41 @@ export class NodeRawFs implements RawFs {
   }
 }
 
+/** The spawn options of Shell.run: never a shell, hidden unless asked otherwise. */
+export function runSpawnOptions(
+  options: ShellOptions & { timeoutMs?: number } = {},
+  baseEnv: NodeJS.ProcessEnv = process.env
+): SpawnOptionsWithoutStdio {
+  return {
+    cwd: options.cwd,
+    shell: false,
+    windowsHide: options.hidden ?? true,
+    timeout: options.timeoutMs ?? 30_000,
+    ...(options.env ? { env: { ...baseEnv, ...options.env } } : {}),
+  };
+}
+
+/** The spawn options of Shell.launch: detached, with its own window unless hidden. */
+export function launchSpawnOptions(
+  exe: string,
+  options: ShellOptions = {},
+  baseEnv: NodeJS.ProcessEnv = process.env
+): SpawnOptions {
+  return {
+    cwd: options.cwd ?? path.dirname(exe),
+    shell: false,
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: options.hidden ?? false,
+    ...(options.env ? { env: { ...baseEnv, ...options.env } } : {}),
+  };
+}
+
 export class NodeShell implements Shell {
   run(
     exe: string,
     args: string[],
-    options: { cwd?: string; timeoutMs?: number } = {}
+    options: ShellOptions & { timeoutMs?: number } = {}
   ): Promise<Result<ShellResult>> {
     return new Promise((resolve) => {
       let stdout = '';
@@ -96,12 +127,7 @@ export class NodeShell implements Shell {
         resolve(result);
       };
       try {
-        const child = spawn(exe, args, {
-          cwd: options.cwd,
-          shell: false,
-          windowsHide: true,
-          timeout: options.timeoutMs ?? 30_000,
-        });
+        const child = spawn(exe, args, runSpawnOptions(options));
         child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
         child.stderr.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
         child.on('error', (e) => finish(err('shell.spawn', `Could not start ${exe}.`, e.message)));
@@ -115,16 +141,11 @@ export class NodeShell implements Shell {
   launch(
     exe: string,
     args: string[],
-    options: { cwd?: string } = {}
+    options: ShellOptions = {}
   ): Promise<Result<{ pid: number | undefined }>> {
     return new Promise((resolve) => {
       try {
-        const child = spawn(exe, args, {
-          cwd: options.cwd ?? path.dirname(exe),
-          shell: false,
-          detached: true,
-          stdio: 'ignore',
-        });
+        const child = spawn(exe, args, launchSpawnOptions(exe, options));
         child.once('error', (e) =>
           resolve(err('shell.launch', `Could not start ${exe}.`, e.message))
         );

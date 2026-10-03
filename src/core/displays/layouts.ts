@@ -22,8 +22,13 @@ const FileSchema = z.object({
 
 /** What a layout read from the machine looks like as apply() targets: every monitor, on or off. */
 export function layoutToTargets(layout: DisplayLayout): DisplayTarget[] {
-  return layout.displays.map((d) =>
-    d.enabled
+  return layout.displays.map((d) => {
+    // What finds the monitor again when its id changed (another connector or USB port).
+    const identity = {
+      ...(d.serial ? { serial: d.serial } : {}),
+      ...(d.usbSerial ? { usbSerial: d.usbSerial } : {}),
+    };
+    return d.enabled
       ? {
           id: d.id,
           name: d.name,
@@ -34,9 +39,19 @@ export function layoutToTargets(layout: DisplayLayout): DisplayTarget[] {
           width: d.width,
           height: d.height,
           rotation: d.rotation,
+          ...identity,
         }
-      : { id: d.id, name: d.name, enabled: false, primary: false, x: 0, y: 0, rotation: 0 }
-  );
+      : {
+          id: d.id,
+          name: d.name,
+          enabled: false,
+          primary: false,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          ...identity,
+        };
+  });
 }
 
 /** Named display layouts at <data root>/displays/layouts.json. */

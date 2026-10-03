@@ -337,6 +337,7 @@ describe('the generic editor form', () => {
       description: 'edit-description',
       game: 'edit-game',
       gameName: 'edit-game-name',
+      gameInstall: 'edit-game-install',
       'checks[].id': 'kept as it is',
       'checks[].type': 'edit-add-check',
       'checks[].title': 'edit-check-title',

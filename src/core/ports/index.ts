@@ -133,18 +133,32 @@ export interface ShellResult {
   stderr: string;
 }
 
+export interface ShellOptions {
+  cwd?: string;
+  /**
+   * Extra environment variables for the program, added to RigReady's own environment.
+   * This is how values from a setup reach a script: as variables, never as command text.
+   */
+  env?: Record<string, string>;
+  /**
+   * No console window. Default true for run(); launch() shows the program's window unless
+   * this is set.
+   */
+  hidden?: boolean;
+}
+
 export interface Shell {
   /** Runs a program to completion. Executable plus argument array; no shell is involved. */
   run(
     exe: string,
     args: string[],
-    options?: { cwd?: string; timeoutMs?: number }
+    options?: ShellOptions & { timeoutMs?: number }
   ): Promise<Result<ShellResult>>;
   /** Starts a program and leaves it running after RigReady exits. */
   launch(
     exe: string,
     args: string[],
-    options?: { cwd?: string }
+    options?: ShellOptions
   ): Promise<Result<{ pid: number | undefined }>>;
 }
 

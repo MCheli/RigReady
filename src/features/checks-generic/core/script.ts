@@ -7,6 +7,7 @@ import type {
 import type { GameRegistry } from '../../../core/games';
 import type { ShellResult } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
+import { scriptEnvironment } from '../../../core/scriptEnv';
 import { fileName, lastLines, resolveStored } from './paths';
 
 export const SCRIPT_CHECK = 'script.check';
@@ -54,7 +55,7 @@ type Run =
 
 /** Runs a program to completion with a timeout. The real Shell also kills it at the timeout. */
 async function runProgram(
-  params: z.infer<z.ZodObject<typeof ScriptBase>> & { timeoutSeconds: number },
+  params: z.infer<z.ZodObject<typeof ScriptBase>> & { timeoutSeconds: number; hidden?: boolean },
   ctx: CheckContext,
   games: GameRegistry,
   sleep: Sleep
@@ -73,6 +74,9 @@ async function runProgram(
   const raced = await Promise.race([
     ctx.ports.shell.run(exe.value, params.args, {
       timeoutMs,
+      // Values from the setup reach the script as environment variables, never as command text.
+      env: await scriptEnvironment(ctx, games),
+      hidden: params.hidden ?? true,
       ...(cwd ? { cwd: cwd.value } : {}),
     }),
     sleep(timeoutMs + 500).then((): typeof TIMED_OUT => TIMED_OUT),
@@ -160,11 +164,11 @@ export function createScriptRemediation(
         }
         const cwd = params.cwd ? await resolveStored(params.cwd, ctx, games) : undefined;
         if (cwd && !cwd.ok) return cwd;
-        const started = await ctx.ports.shell.launch(
-          exe.value,
-          params.args,
-          cwd ? { cwd: cwd.value } : {}
-        );
+        const started = await ctx.ports.shell.launch(exe.value, params.args, {
+          env: await scriptEnvironment(ctx, games),
+          hidden: params.hidden,
+          ...(cwd ? { cwd: cwd.value } : {}),
+        });
         return started.ok ? ok(`Started ${name}`) : started;
       }
       const run = await runProgram(params, ctx, games, sleep);

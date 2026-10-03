@@ -20,7 +20,7 @@ const KEY_SERVICE = propertyKey(DEVICE_GUID, 6);
 const KEY_MANUFACTURER = propertyKey(DEVICE_GUID, 13);
 const KEY_FRIENDLY_NAME = propertyKey(DEVICE_GUID, 14);
 const KEY_BUS_REPORTED_DESC = propertyKey('{540b947e-8b40-45bc-a8a2-6a0b894cbda2}', 4);
-const KEY_PARENT = propertyKey('{4340a6c5-93fa-4706-972c-7b648008a5a7}', 8);
+export const KEY_PARENT = propertyKey('{4340a6c5-93fa-4706-972c-7b648008a5a7}', 8);
 
 const USB_DEVICE = /^USB\\VID_([0-9A-F]{4})&PID_([0-9A-F]{4})\\([^\\]+)$/i;
 const ROOT_HUB = /^USB\\ROOT_HUB/i;
@@ -39,7 +39,7 @@ function presentInstanceIds(): string[] {
     .filter((id) => id.length > 0);
 }
 
-class DevTree {
+export class DevTree {
   private nodes = new Map<string, number | null>();
   private scratch = Buffer.alloc(4096);
 

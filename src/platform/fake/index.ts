@@ -30,6 +30,7 @@ import type {
   Secrets,
   ServiceProvider,
   Shell,
+  ShellOptions,
   ShellResult,
 } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
@@ -58,7 +59,9 @@ import {
   applyMutations,
   findRegistryKey,
   isFileMutation,
+  isHung,
   mutateState,
+  never,
   registryKeyPath,
   type DialogScript,
   type FileMutation,
@@ -102,6 +105,7 @@ export class FakeDeviceProvider implements DeviceProvider {
   private listeners = new Set<() => void>();
   constructor(private readonly state: RigState) {}
   async list(): Promise<Result<DeviceInfo[]>> {
+    if (isHung(this.state, 'devices')) return never();
     return ok(structuredClone(this.state.devices));
   }
   subscribe(listener: () => void): () => void {
@@ -126,6 +130,7 @@ export class FakeProcessProvider implements ProcessProvider {
   constructor(private readonly state: RigState) {}
 
   async list(): Promise<Result<ProcessInfo[]>> {
+    if (isHung(this.state, 'processes')) return never();
     return ok(structuredClone(this.state.processes));
   }
 
@@ -137,7 +142,13 @@ export class FakeProcessProvider implements ProcessProvider {
         'The program path must be absolute.'
       );
     }
+    const fault = this.state.faults?.startFails[path.win32.basename(target.exe).toLowerCase()];
+    if (fault === 'error') {
+      return err('shell.launch', `Could not start ${target.exe}.`, 'Access is denied.');
+    }
     this.started.push(target);
+    // Accepted by Windows, but the program exits at once and never shows up.
+    if (fault === 'neverRuns') return ok({ pid: undefined });
     const pid = Math.max(1000, ...this.state.processes.map((p) => p.pid)) + 4;
     this.state.processes.push({ pid, name: path.win32.basename(target.exe), path: target.exe });
     return ok({ pid });
@@ -176,9 +187,11 @@ export class FakeProcessProvider implements ProcessProvider {
 export class FakeServiceProvider implements ServiceProvider {
   constructor(private readonly state: RigState) {}
   async list(): Promise<Result<ServiceInfo[]>> {
+    if (isHung(this.state, 'services')) return never();
     return ok(structuredClone(this.state.services));
   }
   async get(name: string): Promise<Result<ServiceInfo | undefined>> {
+    if (isHung(this.state, 'services')) return never();
     const found = this.state.services.find((s) => s.name.toLowerCase() === name.toLowerCase());
     return ok(found ? structuredClone(found) : undefined);
   }
@@ -189,6 +202,7 @@ export class FakeDisplayProvider implements DisplayProvider {
   constructor(private readonly state: RigState) {}
 
   async read(): Promise<Result<DisplayLayout>> {
+    if (isHung(this.state, 'displays')) return never();
     return ok({ displays: structuredClone(this.state.displays) });
   }
 
@@ -277,6 +291,7 @@ export class FakeAudioProvider implements AudioProvider {
   readonly calls: { id: string; roles: AudioRole[] }[] = [];
   constructor(private readonly state: RigState) {}
   async read(): Promise<Result<AudioState>> {
+    if (isHung(this.state, 'audio')) return never();
     return ok(structuredClone(this.state.audio));
   }
   async setDefault(id: string, options: { roles?: AudioRole[] } = {}): Promise<Result<AudioState>> {
@@ -409,7 +424,7 @@ const quoted = (flag: string, values: string[]): string[] => values.map((v) => `
  * scenario's `shell` script, and HidHideCLI.exe is emulated from the rig's HidHide state.
  */
 export class FakeShell implements Shell {
-  readonly calls: { exe: string; args: string[] }[] = [];
+  readonly calls: { exe: string; args: string[]; options?: ShellOptions }[] = [];
   /** Scripted answers, first match wins. Tests may push more. */
   readonly scripts: ShellScript[] = [];
   constructor(
@@ -417,8 +432,8 @@ export class FakeShell implements Shell {
     private readonly state: RigState
   ) {}
 
-  async run(exe: string, args: string[]): Promise<Result<ShellResult>> {
-    this.calls.push({ exe, args });
+  async run(exe: string, args: string[], options?: ShellOptions): Promise<Result<ShellResult>> {
+    this.calls.push({ exe, args, ...(options ? { options } : {}) });
     const script = this.scripts.find(
       (s) =>
         exe.toLowerCase().includes(s.match.exe.toLowerCase()) &&
@@ -471,9 +486,9 @@ export class FakeShell implements Shell {
   launch(
     exe: string,
     args: string[],
-    options: { cwd?: string } = {}
+    options: ShellOptions = {}
   ): Promise<Result<{ pid: number | undefined }>> {
-    this.calls.push({ exe, args });
+    this.calls.push({ exe, args, ...(Object.keys(options).length > 0 ? { options } : {}) });
     return this.processes.start(options.cwd ? { exe, args, cwd: options.cwd } : { exe, args });
   }
 }

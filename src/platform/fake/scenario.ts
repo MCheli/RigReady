@@ -74,7 +74,26 @@ export interface RigState {
   services: ServiceInfo[];
   registry: RegistryFixture;
   hidHide: HidHideState;
+  /** What unplugDevice removed, so plugDevice can put it back as it was. */
+  unplugged?: { devices: DeviceInfo[]; input: InputDevice[] };
+  /** Injected faults (see the hangProvider and failProcessStart mutations). */
+  faults?: {
+    /** Ports whose reads never answer. */
+    hang: HangablePort[];
+    /** Program names (lower case) that do not start. */
+    startFails: Record<string, 'error' | 'neverRuns'>;
+  };
 }
+
+export const HangablePortSchema = z.enum(['devices', 'displays', 'processes', 'services', 'audio']);
+export type HangablePort = z.infer<typeof HangablePortSchema>;
+
+/** True when a test or scenario made this port hang. */
+export const isHung = (state: RigState, port: HangablePort): boolean =>
+  state.faults?.hang.includes(port) === true;
+
+/** A promise that never settles: what a hung driver call looks like to the caller. */
+export const never = <T>(): Promise<T> => new Promise<T>(() => {});
 
 const DeviceMatchSchema = z
   .object({
@@ -123,6 +142,62 @@ const HomePathSchema = z
 /** Changes to the fake machine's state. */
 const StateMutationSchemas = [
   z.object({ op: z.literal('unplugDevice'), match: DeviceMatchSchema }),
+  /**
+   * Plugs a device in. With `match`: one that unplugDevice removed earlier comes back as it
+   * was, with its game controller. With `device`: a new device appears, and `controller`
+   * adds the DirectInput controller a game would see for it.
+   */
+  z
+    .object({
+      op: z.literal('plugDevice'),
+      match: DeviceMatchSchema.optional(),
+      device: DeviceInfoSchema.optional(),
+      controller: InputDeviceSchema.omit({ index: true })
+        .partial({ numAxes: true, numButtons: true, numHats: true })
+        .optional(),
+    })
+    .refine(
+      (m) => (m.match === undefined) !== (m.device === undefined),
+      'plugDevice needs exactly one of match and device'
+    ),
+  /**
+   * Changes a DirectInput controller in place: a new instance GUID (what Windows does when
+   * it re-enumerates a device) or another name.
+   */
+  z.object({
+    op: z.literal('setController'),
+    match: z
+      .object({
+        guid: z.string().optional(),
+        /** Case-insensitive substring of the controller name. */
+        name: z.string().optional(),
+        vendorId: z.string().optional(),
+        productId: z.string().optional(),
+        /** Which one, when several match (0-based). */
+        nth: z.number().int().optional(),
+      })
+      .refine(
+        (m) => Object.values(m).some((v) => v !== undefined),
+        'A controller match needs at least one field'
+      ),
+    set: z.object({ guid: z.string().optional(), name: z.string().optional() }),
+  }),
+  /** Makes every read of a port hang (never answer), or stops doing so with `hang: false`. */
+  z.object({
+    op: z.literal('hangProvider'),
+    port: HangablePortSchema,
+    hang: z.boolean().default(true),
+  }),
+  /**
+   * Makes starting a program fail: `error` (Windows refuses to start it) or `neverRuns`
+   * (the start is accepted but the program never shows up). `mode: off` ends it.
+   */
+  z.object({
+    op: z.literal('failProcessStart'),
+    /** Image name, e.g. DCS.exe. */
+    name: z.string(),
+    mode: z.enum(['error', 'neverRuns', 'off']).default('error'),
+  }),
   z.object({ op: z.literal('stopProcess'), name: z.string() }),
   z.object({ op: z.literal('startProcess'), name: z.string(), path: z.string() }),
   z.object({
@@ -345,9 +420,82 @@ export function mutateState(state: RigState, mutation: StateMutation): void {
       }
       state.devices = state.devices.filter((d) => !gone.includes(d));
       // A game controller that is unplugged also disappears from DirectInput.
+      const isGone = (i: InputDevice): boolean =>
+        gone.some((d) => d.vendorId === i.vendorId && d.productId === i.productId);
+      const unplugged = (state.unplugged ??= { devices: [], input: [] });
+      unplugged.devices.push(...gone);
+      unplugged.input.push(...state.input.filter(isGone));
       state.input = state.input
-        .filter((i) => !gone.some((d) => d.vendorId === i.vendorId && d.productId === i.productId))
+        .filter((i) => !isGone(i))
         .map((device, index) => ({ ...device, index }));
+      break;
+    }
+    case 'plugDevice': {
+      if (mutation.match) {
+        const match = mutation.match;
+        const unplugged = (state.unplugged ??= { devices: [], input: [] });
+        const back = unplugged.devices.filter((d) => matchesDevice(d, match));
+        if (back.length === 0) {
+          throw new Error(`plugDevice matched no unplugged device: ${JSON.stringify(match)}`);
+        }
+        const isBack = (i: InputDevice): boolean =>
+          back.some((d) => d.vendorId === i.vendorId && d.productId === i.productId);
+        state.devices.push(...back);
+        state.input = [...state.input, ...unplugged.input.filter(isBack)].map((device, index) => ({
+          ...device,
+          index,
+        }));
+        unplugged.devices = unplugged.devices.filter((d) => !back.includes(d));
+        unplugged.input = unplugged.input.filter((i) => !isBack(i));
+        break;
+      }
+      const device = mutation.device!;
+      if (
+        state.devices.some((d) => d.instanceId.toLowerCase() === device.instanceId.toLowerCase())
+      ) {
+        throw new Error(`plugDevice: ${device.instanceId} is already connected`);
+      }
+      state.devices.push(structuredClone(device));
+      if (mutation.controller) {
+        state.input.push({
+          numAxes: 0,
+          numButtons: 32,
+          numHats: 0,
+          ...mutation.controller,
+          index: state.input.length,
+        });
+      }
+      break;
+    }
+    case 'setController': {
+      const { match } = mutation;
+      let found = state.input.filter(
+        (i) =>
+          (match.guid === undefined || i.guid.toLowerCase() === match.guid.toLowerCase()) &&
+          (match.name === undefined || i.name.toLowerCase().includes(match.name.toLowerCase())) &&
+          (match.vendorId === undefined || i.vendorId === match.vendorId.toUpperCase()) &&
+          (match.productId === undefined || i.productId === match.productId.toUpperCase())
+      );
+      if (match.nth !== undefined) found = found[match.nth] ? [found[match.nth]!] : [];
+      if (found.length === 0) {
+        throw new Error(`setController matched no controller: ${JSON.stringify(match)}`);
+      }
+      for (const controller of found) {
+        if (mutation.set.guid !== undefined) controller.guid = mutation.set.guid.toUpperCase();
+        if (mutation.set.name !== undefined) controller.name = mutation.set.name;
+      }
+      break;
+    }
+    case 'hangProvider': {
+      const faults = (state.faults ??= { hang: [], startFails: {} });
+      faults.hang = faults.hang.filter((p) => p !== mutation.port);
+      if (mutation.hang) faults.hang.push(mutation.port);
+      break;
+    }
+    case 'failProcessStart': {
+      const faults = (state.faults ??= { hang: [], startFails: {} });
+      if (mutation.mode === 'off') delete faults.startFails[mutation.name.toLowerCase()];
+      else faults.startFails[mutation.name.toLowerCase()] = mutation.mode;
       break;
     }
     case 'stopProcess': {

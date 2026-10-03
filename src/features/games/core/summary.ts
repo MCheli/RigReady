@@ -44,7 +44,9 @@ export async function summarizeGame(
       if (tracked.ok) summary.trackedFiles = tracked.value;
       else summary.problems.push(tracked.error.message);
     }
-    const names = new Set((extras?.processes ?? []).map((p) => p.toLowerCase()));
+    const names = new Set(
+      [...(module.processes ?? []), ...(extras?.processes ?? [])].map((p) => p.toLowerCase())
+    );
     summary.running = processes.some((p) => names.has(p.name.toLowerCase()));
     if (extras?.facts) summary.facts = await extras.facts(ctx);
     if (extras?.manualFolder) {

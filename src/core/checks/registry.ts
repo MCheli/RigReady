@@ -4,9 +4,40 @@ import type { Ports } from '../ports';
 import type { CheckGroup, CheckItem } from '../profile/schema';
 import type { Result } from '../result';
 
+/** The setup a check, fix or action runs for. */
+export interface RunProfile {
+  id: string;
+  name: string;
+  /** Game module id, when the setup belongs to a known game. */
+  game?: string;
+  /** The install folder the setup uses, when it names one (see Profile.gameInstall). */
+  install?: string;
+}
+
 export interface CheckContext {
   ports: Ports;
   log: Logger;
+  /**
+   * The setup being checked or fixed. Set by the engine; absent on Configure pages, which
+   * are not about one setup. Path variables and script environments follow it.
+   */
+  profile?: RunProfile;
+}
+
+/** The same context, for one setup. */
+export function withProfile<C extends CheckContext>(
+  ctx: C,
+  profile: { id: string; name: string; game?: string | undefined; gameInstall?: string | undefined }
+): C {
+  return {
+    ...ctx,
+    profile: {
+      id: profile.id,
+      name: profile.name,
+      ...(profile.game ? { game: profile.game } : {}),
+      ...(profile.gameInstall ? { install: profile.gameInstall } : {}),
+    },
+  };
 }
 
 export interface CheckOutcome {

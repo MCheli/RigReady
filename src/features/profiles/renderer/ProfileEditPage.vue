@@ -101,12 +101,42 @@ const detectedLaunch = computed(() => {
   return game?.installs.find((i) => i.launch)?.launch;
 });
 
+/** The installs of the setup's game, for choosing one when there are several. */
+const installItems = computed(() => {
+  const game = games.value.find((g) => g.id === draft.value?.game);
+  const installs = game?.installs ?? [];
+  const chosen = draft.value?.gameInstall;
+  const known = installs.some((i) => i.installDir.toLowerCase() === chosen?.toLowerCase());
+  return [
+    { title: 'The first one found', value: '' },
+    ...installs.map((i) => ({
+      title: `${i.installDir} (${i.source === 'steam' ? 'Steam' : i.source})`,
+      value: i.installDir,
+    })),
+    ...(chosen && !known ? [{ title: `${chosen} (not found on this PC)`, value: chosen }] : []),
+  ];
+});
+// Offered only when there is a choice to make, or one was made before.
+const showInstall = computed(
+  () => installItems.value.length > 2 || draft.value?.gameInstall !== undefined
+);
+
+function setInstall(value: string): void {
+  if (!draft.value) return;
+  const next = { ...draft.value };
+  if (value) next.gameInstall = value;
+  else delete next.gameInstall;
+  draft.value = next;
+}
+
 function setGame(value: string): void {
   if (!draft.value) return;
   const next = { ...draft.value };
   if (value) next.game = value;
   else delete next.game;
   if (value !== 'other') delete next.gameName;
+  // An install belongs to the game it was chosen for.
+  if (value !== draft.value.game) delete next.gameInstall;
   draft.value = next;
   // A known game fills in what Launch starts, unless the user already chose.
   if (launchKind.value === 'none' && detectedLaunch.value) useDetected();
@@ -472,6 +502,16 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
           placeholder="e.g. Richard Burns Rally"
           data-testid="edit-game-name"
           @update:model-value="draft = { ...draft!, gameName: $event || undefined }"
+        />
+        <v-select
+          v-if="showInstall"
+          :model-value="draft.gameInstall ?? ''"
+          :items="installItems"
+          label="Install this setup uses"
+          hint="Its folders are what {DCS_INSTALL} and {DCS_USER} mean for this setup's checks, fixes and launch."
+          persistent-hint
+          data-testid="edit-game-install"
+          @update:model-value="setInstall($event)"
         />
         <v-textarea
           :model-value="draft.description ?? ''"

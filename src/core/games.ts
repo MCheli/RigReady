@@ -66,8 +66,17 @@ export interface GameModule {
   /**
    * Path variables this game adds, e.g. { DCS_USER: <Saved Games>\\DCS, DCS_INSTALL: ... }.
    * Only variables whose folder exists on this PC. See core/pathVariables.ts.
+   *
+   * `installDir` is the install a setup chose (Profile.gameInstall): the variables then
+   * describe that install, and the result is an error when it is no longer there. The
+   * wrong install's folders are never handed out in its place.
    */
-  pathVariables?(ctx: CheckContext): Promise<Result<Record<string, string>>>;
+  pathVariables?(ctx: CheckContext, installDir?: string): Promise<Result<Record<string, string>>>;
+  /**
+   * Image names that mean the game is running ("DCS.exe"). Used to tell whether a game
+   * started through Steam is up, and by backup: the game must be closed before a restore.
+   */
+  processes?: string[];
   bindings?: BindingManager;
 }
 

@@ -48,7 +48,9 @@ export async function allPathVariables(
   for (const module of games.all()) {
     if (!module.pathVariables) continue;
     try {
-      const own = await module.pathVariables(ctx);
+      // A setup that names an install of its game gets that install's folders.
+      const install = ctx.profile?.game === module.id ? ctx.profile.install : undefined;
+      const own = await module.pathVariables(ctx, install);
       if (own.ok) Object.assign(variables, own.value);
     } catch (e) {
       ctx.log.error(`path variables of ${module.id} threw`, e);

@@ -85,6 +85,12 @@ export const ProfileSchema = z.object({
   game: z.string().optional(),
   /** For game "other": what the game is called. */
   gameName: z.string().max(80).optional(),
+  /**
+   * The install folder this setup uses, for a game installed more than once (DCS stable
+   * and open beta). The game's path variables ({DCS_INSTALL}, {DCS_USER}) then mean this
+   * install for everything the setup checks, fixes and launches. Absent: the first found.
+   */
+  gameInstall: z.string().max(400).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   checks: z.array(CheckItemSchema).default([]),

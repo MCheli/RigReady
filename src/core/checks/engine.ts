@@ -7,6 +7,7 @@ import type {
   CommandPreview,
   RemediationDefinition,
 } from './registry';
+import { withProfile } from './registry';
 
 /**
  * pass; fail (a required check is not met); warn (an optional check is not met); error
@@ -264,9 +265,10 @@ export function summarize(profileId: string, results: CheckResult[]): ChecklistR
 export async function runChecks(
   profile: Profile,
   registry: CheckRegistry,
-  ctx: CheckContext,
+  baseCtx: CheckContext,
   options: RunOptions = {}
 ): Promise<ChecklistReport> {
+  const ctx = withProfile(baseCtx, profile);
   const results = await Promise.all(
     profile.checks.map(async (item) => {
       const result = await runCheckItem(item, registry, ctx, options);
@@ -400,9 +402,10 @@ export async function fixItem(
   profile: Profile,
   itemId: string,
   registry: CheckRegistry,
-  ctx: CheckContext,
+  baseCtx: CheckContext,
   options: FixOptions & RunOptions = {}
 ): Promise<{ step: StepResult; result: CheckResult } | undefined> {
+  const ctx = withProfile(baseCtx, profile);
   const item = profile.checks.find((c) => c.id === itemId);
   if (!item) return undefined;
   const definition = item.remediation ? registry.remediation(item.remediation.type) : undefined;
@@ -463,9 +466,10 @@ function needsYouOf(profile: Profile, report: ChecklistReport, steps: StepResult
 export async function makeReady(
   profile: Profile,
   registry: CheckRegistry,
-  ctx: CheckContext,
+  baseCtx: CheckContext,
   options: MakeReadyOptions = {}
 ): Promise<ActionReport> {
+  const ctx = withProfile(baseCtx, profile);
   const before = options.before ?? (await runChecks(profile, registry, ctx, options));
   const plan = planFixes(profile, before, registry);
   for (const { item } of plan) {
@@ -500,9 +504,10 @@ export interface StandDownOptions extends RunOptions {
 export async function standDown(
   profile: Profile,
   registry: CheckRegistry,
-  ctx: CheckContext,
+  baseCtx: CheckContext,
   options: StandDownOptions = {}
 ): Promise<ActionReport> {
+  const ctx = withProfile(baseCtx, profile);
   const steps: StepResult[] = [];
   for (const item of profile.checks) {
     if (options.skipItems?.has(item.id)) continue;

@@ -19,7 +19,7 @@ const STANDALONE_KEYS = [
   'Software\\Eagle Dynamics\\DCS World OpenBeta',
 ] as const;
 
-const sameDir = (a: string, b: string): boolean =>
+export const sameDir = (a: string, b: string): boolean =>
   path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
 
 /** The Saved Games folder name for an install: "DCS", or "DCS.<variant>" from dcs_variant.txt. */

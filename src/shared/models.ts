@@ -37,12 +37,34 @@ export const RotationSchema = z.union([
 ]);
 export type Rotation = z.infer<typeof RotationSchema>;
 
+/** A display mode a monitor offers, in its unrotated (landscape) form. */
+export const DisplayModeSchema = z.object({
+  width: z.number().int(),
+  height: z.number().int(),
+  refreshHz: z.number(),
+});
+export type DisplayMode = z.infer<typeof DisplayModeSchema>;
+
 export const DisplayInfoSchema = z.object({
   /**
-   * Stable identity: the monitor device interface path, lower-cased. It includes the
-   * per-connector instance, so identical monitors get different ids.
+   * The monitor device interface path, lower-cased. It includes the per-connector
+   * instance, so identical monitors get different ids; it changes when the monitor is
+   * moved to another connector (or, for a USB screen without `usbSerial`, another port).
    */
   id: z.string(),
+  /** Serial number from the monitor's EDID. Absent when the EDID has none (or says 0). */
+  serial: z.string().optional(),
+  /**
+   * For a USB (DisplayLink and similar) screen: the serial number of the USB device it
+   * hangs off. It stays the same on any USB port, which the id does not.
+   */
+  usbSerial: z.string().optional(),
+  /** For a USB screen: "VVVV:PPPP" of that USB device. */
+  usbId: z.string().optional(),
+  /** How it is connected: HDMI, DisplayPort, USB, DVI, VGA, Internal, Wireless, Other. */
+  connector: z.string().optional(),
+  /** The modes it offers, when Windows lists them (only while the monitor is on). */
+  modes: z.array(DisplayModeSchema).optional(),
   /** EDID friendly name, e.g. "USB_Monitor". May be empty for generic panels. */
   name: z.string(),
   /** EDID manufacturer + product code, e.g. "SAM7053". */
@@ -77,6 +99,11 @@ export const DisplayTargetSchema = z.object({
   width: z.number().int().optional(),
   height: z.number().int().optional(),
   rotation: RotationSchema.default(0),
+  /** Only set when the refresh rate matters; otherwise Windows keeps or picks one. */
+  refreshHz: z.number().positive().optional(),
+  /** The monitor's EDID serial and USB device serial when it was saved, to find it again on another connector. */
+  serial: z.string().optional(),
+  usbSerial: z.string().optional(),
 });
 export type DisplayTarget = z.infer<typeof DisplayTargetSchema>;
 

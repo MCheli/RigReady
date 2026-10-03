@@ -286,7 +286,7 @@ describe('script.check and script.run', () => {
       },
     });
     expect(await run(check(['--ok']))).toMatchObject({ status: 'pass', summary: 'Succeeded' });
-    expect(app.ports.shell.calls.at(-1)).toEqual({ exe: script, args: ['--ok'] });
+    expect(app.ports.shell.calls.at(-1)).toMatchObject({ exe: script, args: ['--ok'] });
     const failed = await run(check(['--fail']));
     expect(failed).toMatchObject({ status: 'fail', summary: 'Exit code 3' });
     // The last 50 lines, so the panel stays readable.
@@ -344,7 +344,7 @@ describe('script.check and script.run', () => {
     expect(fix.describe(params)).toBe('Run check.cmd');
     expect(await fix.run(params, app.ctx)).toEqual(ok('Ran check.cmd'));
     // Every argument reaches the program as one literal element.
-    expect(app.ports.shell.calls.at(-1)).toEqual({ exe: script, args: ['a b', '&& del *'] });
+    expect(app.ports.shell.calls.at(-1)).toMatchObject({ exe: script, args: ['a b', '&& del *'] });
     app.ports.shell.scripts.push({
       match: { exe: 'check.cmd', args: ['boom'] },
       result: { code: 2, stdout: 'it broke', stderr: '' },

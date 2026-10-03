@@ -52,6 +52,19 @@ export function decodeRegistryValue(type: number, data: Buffer): RegistryValue {
   }
 }
 
+/** One value, read synchronously; undefined when the key or value is missing or unreadable. */
+export function readRegistryValue(
+  hive: RegistryHive,
+  key: string,
+  name: string
+): RegistryValue | undefined {
+  try {
+    return withKey(hive, key, (handle) => queryValue(handle, name));
+  } catch {
+    return undefined;
+  }
+}
+
 /** Runs fn with the key open. Gives undefined when the key does not exist. */
 function withKey<T>(hive: RegistryHive, key: string, fn: (handle: bigint) => T): T | undefined {
   const out: [bigint] = [0n];

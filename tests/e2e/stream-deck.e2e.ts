@@ -304,7 +304,7 @@ test('stream deck: the app and hardware checks are captured into a setup and fix
   await expect(row.getByTestId('check-fix')).toContainText('Start the Stream Deck app');
   await shot('not-running');
   await page.getByTestId('make-ready').click();
-  await expect(page.getByTestId('group-apps')).toContainText('1 of 1 OK');
+  await expect(page.getByTestId('group-apps')).toContainText(/(\d+) of \1 OK/);
   await page.getByTestId('group-toggle-devices').click();
   await expect(checkRow(page, 'Stream Deck hardware')).toContainText('Stream Deck XL connected');
   await shot('fixed');

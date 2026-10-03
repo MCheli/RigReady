@@ -13,6 +13,7 @@ import {
 import type { MainContext } from '../../../core/feature';
 import { JsonStore } from '../../../core/jsonStore';
 import { allPathVariables, expandPath } from '../../../core/pathVariables';
+import { withProfile } from '../../../core/checks/registry';
 import { profileActions, type Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
 import { steamRoot } from '../../../core/steam';
@@ -58,6 +59,17 @@ export interface FlyOptions {
 
 const baseName = (exe: string): string => path.win32.basename(exe.replace(/\//g, '\\'));
 const sameName = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
+
+/**
+ * True when Launch hands the game to Steam (a Steam app id, or steam.exe as the program):
+ * Steam then starts the game itself, so steam.exe is never "the game".
+ */
+export function isSteamHandoff(profile: Pick<Profile, 'launch' | 'steamAppId'>): boolean {
+  return (
+    profile.steamAppId !== undefined ||
+    (profile.launch !== undefined && sameName(baseName(profile.launch.exe), 'steam.exe'))
+  );
+}
 
 /**
  * Fly mode on the main side. Holds what lives for the session: the newest check run (so a
@@ -117,7 +129,9 @@ export class Fly {
     const launchLabel = profile.steamAppId
       ? `Steam app ${profile.steamAppId}`
       : profile.launch
-        ? baseName(profile.launch.exe)
+        ? isSteamHandoff(profile)
+          ? `${this.gameName(profile) ?? profile.name} through Steam`
+          : baseName(profile.launch.exe)
         : undefined;
     return {
       profileId: profile.id,
@@ -243,7 +257,9 @@ export class Fly {
     const item = found.value.profile.checks.find((c) => c.id === itemId);
     if (!item) return err('fly.noItem', `"${found.value.profile.name}" has no item ${itemId}.`);
     return ok(
-      await runCheckItem(item, this.ctx.checks, this.ctx, { timeoutMs: await this.timeoutMs() })
+      await runCheckItem(item, this.ctx.checks, withProfile(this.ctx, found.value.profile), {
+        timeoutMs: await this.timeoutMs(),
+      })
     );
   }
 
@@ -291,7 +307,7 @@ export class Fly {
     }
     const params = definition.params.safeParse(item.params);
     if (!params.success) return err('fly.invalidItem', 'This check is not set up correctly.');
-    const next = await definition.acknowledge.run(params.data, this.ctx);
+    const next = await definition.acknowledge.run(params.data, withProfile(this.ctx, profile));
     if (!next.ok) return next;
     const updated: Profile = {
       ...profile,
@@ -327,7 +343,9 @@ export class Fly {
     const target = profile.launch;
     if (!target) return err('fly.noLaunch', `"${profile.name}" has no program to launch.`);
     const needsVariables = target.exe.includes('{') || (target.cwd ?? '').includes('{');
-    const variables = needsVariables ? await allPathVariables(this.ctx, this.ctx.games) : {};
+    const variables = needsVariables
+      ? await allPathVariables(withProfile(this.ctx, profile), this.ctx.games)
+      : {};
     const exe = expandPath(target.exe, variables);
     if (!exe.ok) return exe;
     const cwd = target.cwd ? expandPath(target.cwd, variables) : undefined;
@@ -340,13 +358,26 @@ export class Fly {
     return list.ok && list.value.some((p) => sameName(p.name, name));
   }
 
+  /**
+   * The image names that mean this setup's game is running: the launched program, or for
+   * a game started through Steam, the names its game module declares.
+   */
+  private gameProcesses(profile: Profile): string[] {
+    if (!isSteamHandoff(profile)) return profile.launch ? [baseName(profile.launch.exe)] : [];
+    const module = profile.game ? this.ctx.games.get(profile.game) : undefined;
+    return module?.processes ?? [];
+  }
+
   async gameStatus(profileId: string): Promise<Result<{ running: boolean; name?: string }>> {
     const found = await this.profile(profileId);
     if (!found.ok) return found;
-    const profile = found.value.profile;
-    if (!profile.launch || profile.steamAppId) return ok({ running: false });
-    const name = baseName(profile.launch.exe);
-    return ok({ running: await this.isRunning(name), name });
+    const names = this.gameProcesses(found.value.profile);
+    if (names.length === 0) return ok({ running: false });
+    const list = await this.ctx.ports.processes.list();
+    const running = list.ok
+      ? names.find((name) => list.value.some((p) => sameName(p.name, name)))
+      : undefined;
+    return ok({ running: running !== undefined, name: running ?? names[0]! });
   }
 
   async launch(
@@ -381,7 +412,7 @@ export class Fly {
     for (const action of pre) report('preLaunch', action.id, action.title, 'pending');
     for (const [offset, action] of pre.entries()) {
       report('preLaunch', action.id, action.title, 'running');
-      const step = await runAction(action, this.ctx.checks, this.ctx, {
+      const step = await runAction(action, this.ctx.checks, withProfile(this.ctx, profile), {
         timer: this.timer,
         approved,
       });
@@ -418,7 +449,8 @@ export class Fly {
     };
     const target = await this.launchTarget(profile);
     if (!target.ok) return fail(target.error.message);
-    const shown = profile.steamAppId ? 'Steam' : baseName(target.value.exe);
+    const viaSteam = isSteamHandoff(profile);
+    const shown = viaSteam ? 'Steam' : baseName(target.value.exe);
     const started = await this.ctx.ports.processes.start({
       exe: target.value.exe,
       args: target.value.args,
@@ -444,9 +476,8 @@ export class Fly {
       await this.sleep(500);
     }
     const launchedAt = this.ctx.ports.clock.now().getTime();
-    const message = profile.steamAppId
-      ? `Asked Steam to start ${profile.name}`
-      : `Launched ${shown}`;
+    // Steam starts the game itself (after an update or a sign-in if it needs one).
+    const message = viaSteam ? `Asked Steam to start ${profile.name}` : `Launched ${shown}`;
     steps.push({ itemId: 'game', title, ok: true, message, phase: 'launch' });
     report('launch', 'game', title, 'done', message);
     this.ctx.log.info(`launched ${target.value.exe}`, { pid: started.value.pid });
@@ -459,7 +490,7 @@ export class Fly {
         const wait = launchedAt + action.delaySeconds * 1000 - this.ctx.ports.clock.now().getTime();
         if (wait > 0) await this.sleep(wait);
         report('postLaunch', action.id, action.title, 'running');
-        const step = await runAction(action, this.ctx.checks, this.ctx, {
+        const step = await runAction(action, this.ctx.checks, withProfile(this.ctx, profile), {
           timer: this.timer,
           approved,
         });
@@ -499,14 +530,17 @@ export class Fly {
     const found = await this.profile(profileId);
     if (!found.ok) return found;
     const profile = found.value.profile;
-    const game = profile.launch && !profile.steamAppId ? baseName(profile.launch.exe) : undefined;
+    // Never steam.exe: for a game started through Steam, the game's own programs.
+    const games = this.gameProcesses(profile);
     // The game itself is closed only when the user said so.
     const skipItems = new Set(
       profile.checks
         .filter((c) => {
           const name = c.params['name'];
           return (
-            game && c.type === 'process.running' && typeof name === 'string' && sameName(name, game)
+            c.type === 'process.running' &&
+            typeof name === 'string' &&
+            games.some((game) => sameName(name, game))
           );
         })
         .map((c) => c.id)
@@ -538,9 +572,11 @@ export class Fly {
       skipItems,
       between: async () => {
         const steps: StepResult[] = [];
-        if (options.closeGame && game) {
-          const closed = await closeGracefully(game, profile.name);
-          if (closed) steps.push(closed);
+        if (options.closeGame) {
+          for (const game of games) {
+            const closed = await closeGracefully(game, profile.name);
+            if (closed) steps.push(closed);
+          }
         }
         // Programs a launch action started this session.
         for (const program of [...this.startedByActions]) {
@@ -550,7 +586,7 @@ export class Fly {
         }
         for (const action of profileActions(profile).standDown) {
           steps.push(
-            await runAction(action, this.ctx.checks, this.ctx, {
+            await runAction(action, this.ctx.checks, withProfile(this.ctx, profile), {
               timer: this.timer,
               // Stand-down actions are run deliberately by pressing Stand down.
               approved: new Set([action.id]),

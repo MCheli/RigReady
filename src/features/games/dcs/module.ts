@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { GameModule, TrackedFileSuggestion } from '../../../core/games';
-import { ok } from '../../../core/result';
-import { detectInstalls, installVersion, userLocations } from './detect';
+import { err, ok } from '../../../core/result';
+import { detectInstalls, installVersion, sameDir, userLocations } from './detect';
 
 /**
  * DCS World: installs (every Steam library and standalone), the Saved Games folder of
@@ -11,6 +11,8 @@ import { detectInstalls, installVersion, userLocations } from './detect';
 const dcs: GameModule = {
   id: 'dcs',
   name: 'DCS World',
+
+  processes: ['DCS.exe'],
 
   detect: (ctx) => detectInstalls(ctx),
 
@@ -39,9 +41,19 @@ const dcs: GameModule = {
    * {DCS_INSTALL} is the first install found (Steam first); {DCS_USER} is the Saved Games
    * folder that install writes to, or the first DCS folder in Saved Games when it has none yet.
    */
-  async pathVariables(ctx) {
+  async pathVariables(ctx, installDir) {
     const variables: Record<string, string> = {};
     const installs = await detectInstalls(ctx);
+    if (installDir) {
+      // The install a setup chose: its folders, or nothing. Never another install's.
+      const chosen = (installs.ok ? installs.value : []).find((i) =>
+        sameDir(i.installDir, installDir)
+      );
+      if (!chosen) return err('dcs.installMissing', 'DCS install not found', installDir);
+      variables['DCS_INSTALL'] = chosen.installDir;
+      if (chosen.userDir) variables['DCS_USER'] = chosen.userDir;
+      return ok(variables);
+    }
     const first = installs.ok ? installs.value[0] : undefined;
     if (first) variables['DCS_INSTALL'] = first.installDir;
     const locations = await userLocations(ctx, installs.ok ? installs.value : []);
