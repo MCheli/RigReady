@@ -1,0 +1,17 @@
+description: Racing at the desk - Fanatec Service and trophi.ai closed, desk monitor layout
+rig: mark-full
+extends: racing-fresh.yaml
+profiles:
+  - profiles/racing-iracing.yaml
+# Back to the desk as recorded: Dell on and primary, the ultrawide to its right.
+mutations:
+  - op: stopProcess
+    name: FanatecService.exe
+  - op: stopProcess
+    name: trophi.ai.exe
+  - op: setDisplay
+    match: { name: DELL G3223D }
+    set: { enabled: true, primary: true, x: 0, y: 0, width: 2560, height: 1440 }
+  - op: setDisplay
+    match: { name: LC49G95T }
+    set: { primary: false, x: 2560, y: 0 }

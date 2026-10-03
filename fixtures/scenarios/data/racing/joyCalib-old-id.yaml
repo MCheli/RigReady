@@ -1,0 +1,28 @@
+---
+CalibrationInfo:
+ DeviceList:
+ - DeviceName: 'FANATEC Podium Wheel Base DD2'
+   InstanceGUID: '{11112222-3333-11F1-8001-444553540000}'
+   ProductGUID: '{00070EB7-0000-0000-0000-504944564944}'
+   AxisList:
+   - Axis: 0
+     AxisName: 'Combined Pedals'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+   - Axis: 1
+     AxisName: 'Brake'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+   - Axis: 2
+     AxisName: 'Accelerator'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+   - Axis: 3
+     AxisName: 'Wheel Axis'
+     CalibMin: 0
+     CalibCenter: 33145
+     CalibMax: 65535
+...

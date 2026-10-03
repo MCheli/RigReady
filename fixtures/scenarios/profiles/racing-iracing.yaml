@@ -1,0 +1,42 @@
+schemaVersion: 1
+id: racing-iracing
+name: iRacing
+game: iracing
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+launch:
+  exe: C:\Program Files (x86)\iRacing\ui\iRacingUI.exe
+  args: []
+  cwd: C:\Program Files (x86)\iRacing\ui
+checks:
+  - { id: c1, type: device.connected, title: FANATEC Podium Wheel Base DD2, required: true, params: { vendorId: 0EB7, productId: '0007' } }
+  - { id: c2, type: racing.wheelBase, title: Wheel base in PC mode, required: true, params: { vendorId: 0EB7, productId: '0007' } }
+  - id: c3
+    type: process.running
+    title: Fanatec Service
+    required: true
+    params: { name: FanatecService.exe, stopOnStandDown: false }
+    remediation:
+      type: process.launch
+      params: { exe: 'C:\Program Files\Fanatec\FanatecService\Service\FanatecService.exe', args: [] }
+  - id: c4
+    type: process.running
+    title: trophi.ai
+    required: false
+    params: { name: trophi.ai.exe, stopOnStandDown: true }
+    remediation:
+      type: process.launch
+      params: { exe: 'C:\Users\User\AppData\Local\trophi.ai\Game\trophi.ai.exe', args: [] }
+  - { id: c5, type: racing.iracingService, title: iRacing helper service, required: true, params: {} }
+  - { id: c6, type: racing.iracingDevices, title: iRacing knows the wheel, required: true, params: {} }
+  - id: c7
+    type: display.layout
+    title: Monitor layout
+    required: true
+    params: &layout
+      displays:
+        - { id: '\\?\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: LC49G95T, enabled: true, primary: true, x: 0, y: 0, width: 5120, height: 1440, rotation: 0 }
+        - { id: '\\?\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: DELL G3223D, enabled: false, primary: false, x: 0, y: 0, rotation: 0 }
+    remediation:
+      type: display.applyLayout
+      params: *layout
