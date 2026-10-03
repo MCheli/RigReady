@@ -16,6 +16,7 @@ export interface SimulatorPath {
   simulator: Simulator;
   installPath?: string; // Game installation directory
   configPath?: string; // Config/keybindings directory
+  executablePath?: string; // Full path to game executable
   isAutoDetected: boolean;
   lastVerified?: number;
 }
@@ -301,12 +302,31 @@ class SettingsService {
       }
     }
 
+    // Resolve full executable path
+    let foundExePath: string | undefined;
+    if (foundInstallPath && config.executableName) {
+      const candidates = [
+        path.join(foundInstallPath, config.executableName),
+        path.join(foundInstallPath, 'bin', config.executableName),
+      ];
+      if (config.executableName === 'X-Plane.exe') {
+        candidates.push(path.join(foundInstallPath, 'X-Plane 12.exe'));
+      }
+      for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+          foundExePath = candidate;
+          break;
+        }
+      }
+    }
+
     // If we found either path, create and save the result
     if (foundInstallPath || foundConfigPath) {
       const result: SimulatorPath = {
         simulator,
         installPath: foundInstallPath,
         configPath: foundConfigPath,
+        executablePath: foundExePath,
         isAutoDetected: true,
         lastVerified: Date.now(),
       };

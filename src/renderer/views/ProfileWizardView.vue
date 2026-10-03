@@ -9,15 +9,16 @@ import ProfileWizardStep2 from '../components/profiles/ProfileWizardStep2.vue';
 import ProfileWizardStep3 from '../components/profiles/ProfileWizardStep3.vue';
 import ProfileWizardStep4 from '../components/profiles/ProfileWizardStep4.vue';
 import ProfileWizardStep5 from '../components/profiles/ProfileWizardStep5.vue';
+import ProfileWizardStep6 from '../components/profiles/ProfileWizardStep6.vue';
 import type { Simulator } from '../../shared/types';
-import type { ChecklistItem, TrackedConfiguration } from '../../shared/profileTypes';
+import type { ChecklistItem, LaunchTarget, TrackedConfiguration } from '../../shared/profileTypes';
 
 const toast = useToast();
 const nav = useNavigation();
 const { createProfile, setActiveProfile } = useProfiles();
 
 const step = ref(1);
-const totalSteps = 5;
+const totalSteps = 6;
 
 // Step 1 state
 const profileName = ref('');
@@ -32,6 +33,9 @@ const softwareItems = ref<ChecklistItem[]>([]);
 // Step 4 state
 const displayItems = ref<ChecklistItem[]>([]);
 const trackedConfigs = ref<TrackedConfiguration[]>([]);
+
+// Step 6 state
+const launchTarget = ref<LaunchTarget | null>(null);
 
 const canProceed = computed(() => {
   if (step.value === 1) return profileName.value.trim().length > 0;
@@ -66,10 +70,15 @@ async function finish() {
     // Set as active and save tracked configs
     await setActiveProfile(profile.id);
 
-    if (trackedConfigs.value.length > 0) {
+    if (trackedConfigs.value.length > 0 || launchTarget.value) {
       const fullProfile = await window.rigReady.profiles.getById(profile.id);
       if (fullProfile) {
-        fullProfile.trackedConfigurations = JSON.parse(JSON.stringify(trackedConfigs.value));
+        if (trackedConfigs.value.length > 0) {
+          fullProfile.trackedConfigurations = JSON.parse(JSON.stringify(trackedConfigs.value));
+        }
+        if (launchTarget.value) {
+          fullProfile.launchTarget = JSON.parse(JSON.stringify(launchTarget.value));
+        }
         await window.rigReady.profiles.save(fullProfile);
       }
     }
@@ -126,6 +135,12 @@ async function finish() {
           v-else-if="step === 5"
           :tracked-configs="trackedConfigs"
           @update:tracked-configs="trackedConfigs = $event"
+        />
+        <ProfileWizardStep6
+          v-else-if="step === 6"
+          :launch-target="launchTarget"
+          :game="profileGame"
+          @update:launch-target="launchTarget = $event"
         />
       </v-card-text>
 

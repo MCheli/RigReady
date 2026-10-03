@@ -309,6 +309,7 @@ export interface SimulatorPath {
   simulator: Simulator;
   installPath?: string;
   configPath?: string;
+  executablePath?: string;
   isAutoDetected: boolean;
   lastVerified?: number;
 }
