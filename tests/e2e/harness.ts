@@ -8,6 +8,7 @@ import {
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import type { InputState } from '../../src/shared/models';
 
 /**
  * End-to-end harness. Every launch is isolated: USERPROFILE, APPDATA, LOCALAPPDATA and
@@ -72,8 +73,48 @@ export interface RunningApp {
   app: ElectronApplication;
   page: Page;
   dataRoot: string;
+  /** The fake user folder: Saved Games, Documents, AppData, Program Files (x86)\Steam, ... */
+  home: string;
   /** Saves artifacts/screens/<flow>/<nn>-<name>.png (numbered in call order). */
   shot(name: string): Promise<string>;
+  /**
+   * Changes the fake machine while the app runs, with the same mutations a scenario file
+   * uses: await mutate([{ op: 'unplugDevice', match: { productId: 'B68F' } }]).
+   */
+  mutate(mutations: unknown[]): Promise<void>;
+  /** Delivers controller input as if the user moved or pressed something. */
+  sendInput(states: InputState[]): Promise<void>;
+  /**
+   * Changes files below the fake user folder through FileStore as one journaled action,
+   * the way a feature would, so the change shows up on the Safety page.
+   */
+  changeFiles(reason: string, files: { path: string; content: string }[]): Promise<void>;
+  /** Renders HTML with the real Render port and reports the size of what came back. */
+  render(
+    html: string,
+    size: { width: number; height: number }
+  ): Promise<{
+    pngBytes: number;
+    pngWidth: number;
+    pngHeight: number;
+    pdfBytes: number;
+    pdfHeader: string;
+  }>;
+  /**
+   * Quits the app and starts it again on the same data root and fake user folder, as a
+   * user would. The returned page replaces the old one; screenshots keep counting.
+   */
+  restart(): Promise<RunningApp>;
+}
+
+export interface LaunchOptions {
+  /** Extra environment variables for the app. */
+  env?: Record<string, string>;
+  /**
+   * What the native file pickers return, one entry per call (relative paths are below
+   * the fake user folder): { open: [['Documents/setup.rigready']], save: ['Documents/out.zip'] }.
+   */
+  dialogs?: { open?: string[][]; save?: (string | null)[] };
 }
 
 export interface Rig {
@@ -81,7 +122,7 @@ export interface Rig {
    * Starts the built app on a named scenario (fixtures/scenarios/<scenario>.yaml).
    * `flow` names the screenshot folder under artifacts/screens/.
    */
-  launch(scenario: string, flow: string): Promise<RunningApp>;
+  launch(scenario: string, flow: string, options?: LaunchOptions): Promise<RunningApp>;
 }
 
 export interface HarnessOptions {
@@ -96,50 +137,100 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
     const started: { app: ElectronApplication; isolated: IsolatedEnv; page: Page }[] = [];
 
     const rig: Rig = {
-      async launch(scenario, flow) {
-        const isolated = await isolatedEnv({ RIGREADY_SCENARIO: scenarioFile(scenario) });
-        const app = await _electron.launch({
-          ...(executablePath ? { executablePath, args: [] } : { args: [repoRoot] }),
-          env: isolated.env,
+      async launch(scenario, flow, options = {}) {
+        const isolated = await isolatedEnv({
+          RIGREADY_SCENARIO: scenarioFile(scenario),
+          ...(options.dialogs?.open
+            ? { RIGREADY_DIALOG_OPEN: JSON.stringify(options.dialogs.open) }
+            : {}),
+          ...(options.dialogs?.save
+            ? { RIGREADY_DIALOG_SAVE: JSON.stringify(options.dialogs.save) }
+            : {}),
+          ...options.env,
         });
-        const page = await app.firstWindow();
-        started.push({ app, isolated, page });
-        await page.waitForLoadState('domcontentloaded');
-        // Every scenario run says so on screen; this also proves the app is on fake providers.
-        await expect(page.getByTestId('scenario-banner')).toBeVisible();
-
         const dir = path.join(screensDir, flow);
         await fs.rm(dir, { recursive: true, force: true });
         await fs.mkdir(dir, { recursive: true });
         let count = 0;
-        return {
-          app,
-          page,
-          dataRoot: isolated.dataRoot,
-          async shot(name) {
-            count++;
-            const file = path.join(dir, `${String(count).padStart(2, '0')}-${name}.png`);
-            // Let fonts load and every running transition finish, so dialogs are fully shown.
-            await page.evaluate('document.fonts.ready');
-            await page.evaluate(
-              'Promise.all(document.getAnimations().filter((a) => a.effect && a.effect.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => undefined)))'
-            );
-            await page.screenshot({ path: file });
-            return file;
-          },
+
+        const open = async (): Promise<RunningApp> => {
+          const app = await _electron.launch({
+            ...(executablePath ? { executablePath, args: [] } : { args: [repoRoot] }),
+            env: isolated.env,
+          });
+          const page = await app.firstWindow();
+          const entry = { app, isolated, page };
+          started.push(entry);
+          await page.waitForLoadState('domcontentloaded');
+          // Every scenario run says so on screen; this also proves the app is on fake providers.
+          await expect(page.getByTestId('scenario-banner')).toBeVisible();
+
+          const scenarioCall = async (input: unknown): Promise<Record<string, unknown>> => {
+            const result = (await page.evaluate(
+              (payload) =>
+                (
+                  globalThis as unknown as {
+                    rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+                  }
+                ).rigready.invoke('app:scenario', payload),
+              input
+            )) as {
+              ok: boolean;
+              value?: Record<string, unknown>;
+              error?: { message: string; detail?: string };
+            };
+            if (!result.ok) {
+              throw new Error(
+                `scenario change failed: ${result.error?.message} ${result.error?.detail ?? ''}`
+              );
+            }
+            return result.value ?? {};
+          };
+
+          return {
+            app,
+            page,
+            dataRoot: isolated.dataRoot,
+            home: path.join(isolated.root, 'scenario-home'),
+            async shot(name) {
+              count++;
+              const file = path.join(dir, `${String(count).padStart(2, '0')}-${name}.png`);
+              // Let fonts load and every running transition finish, so dialogs are fully shown.
+              await page.evaluate('document.fonts.ready');
+              await page.evaluate(
+                'Promise.all(document.getAnimations().filter((a) => a.effect && a.effect.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => undefined)))'
+              );
+              await page.screenshot({ path: file });
+              return file;
+            },
+            mutate: async (mutations) => void (await scenarioCall({ mutations })),
+            sendInput: async (states) => void (await scenarioCall({ input: states })),
+            changeFiles: async (reason, files) =>
+              void (await scenarioCall({ change: { reason, files } })),
+            render: async (html, size) =>
+              (await scenarioCall({ render: { html, ...size } }))['render'] as never,
+            async restart() {
+              await app.close();
+              started.splice(started.indexOf(entry), 1);
+              return open();
+            },
+          };
         };
+        return open();
       },
     };
 
     await use(rig);
 
+    const roots = new Set<IsolatedEnv>();
     for (const { app, isolated, page } of started) {
       if (testInfo.status !== testInfo.expectedStatus) {
         await page.screenshot({ path: testInfo.outputPath('failure.png') }).catch(() => undefined);
       }
       await app.close().catch(() => undefined);
-      await isolated.cleanup().catch(() => undefined);
+      roots.add(isolated);
     }
+    for (const isolated of roots) await isolated.cleanup().catch(() => undefined);
   },
 });
 
