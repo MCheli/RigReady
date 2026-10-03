@@ -42,7 +42,7 @@ A sim rig PC is also used for other things. Getting it ready to fly or race mean
 
 ## Scope
 
-- **Games:** DCS World first and deepest (F/A-18C, then UH-1H Huey). Racing in full scope: iRacing, Le Mans Ultimate, BeamNG.drive, including wheel settings per game. Any other game works generically (checklist, launch, tracked files, backup).
+- **Games:** DCS World first and deepest (F/A-18C, then UH-1H Huey). Racing in full scope: iRacing, Le Mans Ultimate, BeamNG.drive, including wheel settings per game. Microsoft Flight Simulator 2024 is supported as a game module. Beyond these, add game modules for as many sims as can be done well (the owner also has Assetto Corsa, Assetto Corsa EVO and Assetto Corsa Rally installed). Any other game works generically (checklist, launch, tracked files, backup).
 - **Hardware on the owner's rig:** nine WinWing devices, Thrustmaster TPR pedals, Virpil control panel, TrackIR 5, Stream Deck, Fanatec Podium DD2 wheel. Samsung 49" ultrawide (flying and racing), three identical USB MFD screens (flying), a Dell desk monitor (off while flying), a TV (racing).
 - **SimAppPro:** the goal is to replace it where possible. Configuration (MFD screen setup, export scripts, binding backup) must not need it. Runtime features that use WinWing's proprietary protocol (backlight sync, UFC/ICP displays, vibration) are a research item; until solved, RigReady checks that SimAppPro is running when a profile needs those.
 - **Platform:** Windows 10/11 only. No admin rights for normal use. Starts with Windows (optional) and lives in the tray.
@@ -60,3 +60,7 @@ A sim rig PC is also used for other things. Getting it ready to fly or race mean
 ## Explicitly later
 
 Active in-game overlay, VR headset checks, a hosted sharing service (file sharing comes first; the owner has a home server for later), plugin system.
+
+## The final pass
+
+Requested by the owner on 2026-10-03, to be done only once everything above is built and proven: step back, look at the whole application as it then stands, and brainstorm as many "wow" moments as possible — visual polish, intuitive functionality, clean workflows, visual style — then build them in. Polish may be added along the way, but this thorough pass happens at the end.
