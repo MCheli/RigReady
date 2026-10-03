@@ -3,7 +3,7 @@ import {
   createLaunchRemediation,
   createProcessRunningCheck,
   pathResolver,
-  processCapture,
+  createProcessCapture,
   SessionStarts,
 } from './core/processCheck';
 
@@ -15,6 +15,6 @@ export default defineFeatureMain({
     const resolve = pathResolver(ctx.games);
     ctx.checks.registerCheck(createProcessRunningCheck(session, resolve));
     ctx.checks.registerRemediation(createLaunchRemediation(session, resolve));
-    ctx.checks.registerCapture(processCapture);
+    ctx.checks.registerCapture(createProcessCapture(ctx.games));
   },
 });

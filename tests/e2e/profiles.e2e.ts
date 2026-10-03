@@ -216,6 +216,31 @@ test('setups: a hand edit shows up on its own; a broken edit keeps the last good
   await expect(page.getByTestId('fly-problem')).toHaveCount(0, { timeout: 2500 });
   await expect(page.getByTestId('profile-switcher')).toContainText('DCS F/A-18C');
   await shot('fixed');
+
+  // A file with comments of its own: saving from RigReady says once that they go.
+  await fs.writeFile(file, `# My notes on the Hornet\n${original}`);
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await page.getByTestId('fly-more').click();
+  await page.getByTestId('fly-edit').click();
+  await page.getByTestId('edit-name').locator('input').fill('Hornet');
+  await page.getByTestId('edit-save').click();
+  await expect(page.getByTestId('comments-warning')).toContainText('Your comments will be lost');
+  await shot('comments-warning');
+  await page.getByTestId('comments-save').click();
+  await expect(page.getByTestId('profiles-page')).toBeVisible();
+  expect(await fs.readFile(file, 'utf8')).not.toContain('# My notes');
+
+  // The YAML file itself: open it in the editor Windows uses for it.
+  await page
+    .locator('[data-testid="profile-row"][data-name="Hornet"]')
+    .getByTestId('profile-more')
+    .click();
+  await page
+    .getByRole('option')
+    .or(page.locator('.v-overlay--active .v-list-item'))
+    .filter({ hasText: 'Open the YAML file' })
+    .click();
+  await expect(page.getByTestId('profiles-message')).toHaveText('Opened in your editor.');
 });
 
 test('setups: choosing a detected game fills in what Launch starts, and the setup can launch it', async ({

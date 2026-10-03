@@ -119,6 +119,14 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
         <v-icon :icon="fixMessage.ok ? 'mdi-check' : 'mdi-alert-circle'" size="15" />
         {{ fixMessage.message }}
       </div>
+      <router-link
+        v-if="fixMessage && !fixMessage.ok"
+        :to="`/configure/profiles/${profileId}`"
+        class="check-edit-link"
+        data-testid="fix-edit-setup"
+      >
+        Change the fix in the setup editor
+      </router-link>
       <div v-if="showInstructions && result?.instructions" class="check-instructions rr-panel">
         <SafeMarkdown :source="result.instructions" />
       </div>
@@ -246,6 +254,12 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
 .check-fix-result {
   margin-top: 4px;
   font-size: 12.5px;
+}
+.check-edit-link {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--rr-accent);
 }
 .check-instructions {
   margin-top: 8px;

@@ -505,6 +505,49 @@ describe('Launch', () => {
     );
   });
 
+  it('a failing post-launch step is reported and never touches the game', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    await saveProfile({
+      id: 'p',
+      name: 'P',
+      launch: { exe: DCS, args: [] },
+      actions: {
+        preLaunch: [],
+        postLaunch: [
+          action('p1', 'Broken helper', 'script.run', {
+            exe: '{USER}/missing.cmd',
+            requiresConfirmation: false,
+          }),
+          action(
+            'p2',
+            'Start SRS',
+            'process.launch',
+            { exe: 'C:\\SRS\\SR-ClientRadio.exe' },
+            { delaySeconds: 5 }
+          ),
+        ],
+        standDown: [],
+      },
+    });
+    const { fly: f, events } = fly();
+    const launched = await f.launch('p', { runId: 'L' });
+    expect(launched.ok && launched.value.outcome).toBe('launched');
+    await vi.waitFor(() =>
+      expect(
+        events.filter((e) => e.payload['id'] === 'p2').map((e) => e.payload['state'])
+      ).toContain('done')
+    );
+    expect(
+      events.find((e) => e.payload['id'] === 'p1' && e.payload['state'] === 'failed')?.payload
+    ).toMatchObject({
+      phase: 'postLaunch',
+      message: expect.stringMatching(/^Script not found: /),
+    });
+    // The game was neither stopped nor closed, and the next step still ran.
+    expect(app.ports.processes.closed).toEqual([]);
+    expect(await f.gameStatus('p')).toEqual(ok({ running: true, name: 'DCS.exe' }));
+  });
+
   it('a failing step that must not fail pauses the launch; "Launch anyway" goes on after it', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
     await fs.writeFile(path.join(app.home, 'check.cmd'), '');

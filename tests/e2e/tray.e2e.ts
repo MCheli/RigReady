@@ -1,5 +1,8 @@
+import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import type { ElectronApplication } from '@playwright/test';
-import { expect, test } from './harness';
+import { expect, repoRoot, scenarioFile, test } from './harness';
 
 /**
  * The tray, used the way a user would. A scenario run exposes the tray's model and its
@@ -18,6 +21,8 @@ interface TrayView {
   notifications: { title: string; body: string }[];
 }
 
+const windowVisible = (app: ElectronApplication): Promise<boolean> =>
+  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false);
 const tray = (app: ElectronApplication): Promise<TrayView> =>
   app.evaluate(() => (globalThis as unknown as { __rigreadyTray(): TrayView }).__rigreadyTray());
 const click = (app: ElectronApplication, id: string): Promise<void> =>
@@ -88,4 +93,35 @@ test('tray: shows readiness as a colour, switches setup, and runs Make ready, La
   });
   await expect(page.getByTestId('fly-status-title')).toHaveText('Not ready');
   await shot('stood-down-from-tray');
+});
+
+test('tray: closing the window keeps RigReady in the tray, and starting it again brings the window back', async ({
+  rig,
+}) => {
+  const { page, app, dataRoot, shot } = await rig.launch('flying-all-good', 'tray-single-instance');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close());
+  await expect.poll(() => windowVisible(app)).toBe(false);
+  // Still running, in the tray.
+  expect((await tray(app)).tooltip).toBe('RigReady - DCS F/A-18C: Ready');
+
+  // A second start (the Start menu, a shortcut) finds the first one and shows its window.
+  const root = path.dirname(dataRoot);
+  const user = path.join(root, 'user');
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) if (value !== undefined) env[key] = value;
+  delete env['ELECTRON_RUN_AS_NODE'];
+  Object.assign(env, {
+    USERPROFILE: user,
+    APPDATA: path.join(user, 'AppData', 'Roaming'),
+    LOCALAPPDATA: path.join(user, 'AppData', 'Local'),
+    RIGREADY_HOME: dataRoot,
+    RIGREADY_SCENARIO: scenarioFile('flying-all-good'),
+  });
+  const electron = createRequire(__filename)('electron') as string;
+  const second = spawn(electron, [repoRoot], { env, stdio: 'ignore' });
+  const code = await new Promise<number | null>((resolve) => second.on('exit', resolve));
+  expect(code).toBe(0);
+  await expect.poll(() => windowVisible(app)).toBe(true);
+  await shot('shown-again');
 });

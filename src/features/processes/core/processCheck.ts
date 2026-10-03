@@ -8,7 +8,7 @@ import type {
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import type { GameRegistry } from '../../../core/games';
-import { allPathVariables, expandPath } from '../../../core/pathVariables';
+import { allPathVariables, collapsePath, expandPath } from '../../../core/pathVariables';
 import { err, ok, type Result } from '../../../core/result';
 import type { ProcessInfo } from '../../../shared/models';
 
@@ -254,40 +254,47 @@ export const KNOWN_HELPERS: Record<string, string> = {
 /** Never offered: RigReady itself and the shells it might be started from. */
 const NEVER = new Set(['rigready.exe', 'electron.exe']);
 
-export const processCapture: CaptureDefinition = {
-  id: 'processes',
-  label: 'Apps',
-  async capture(ctx) {
-    const processes = await ctx.ports.processes.list();
-    if (!processes.ok) return processes;
-    const byName = new Map<string, CaptureCandidate & { known: boolean }>();
-    for (const process of processes.value) {
-      // Only programs we could start again: a known path, and not part of Windows.
-      if (!process.path || WINDOWS_DIR.test(process.path)) continue;
-      const key = process.name.toLowerCase();
-      if (byName.has(key) || NEVER.has(key)) continue;
-      const known = KNOWN_HELPERS[key];
-      const title = known ?? process.name.replace(/\.exe$/i, '');
-      byName.set(key, {
-        key: `process:${key}`,
-        group: 'apps',
-        title,
-        description: process.path,
-        selectedByDefault: known !== undefined,
-        known: known !== undefined,
-        check: {
-          type: PROCESS_RUNNING,
+/** Proposes the running apps; their paths are stored with a path variable where one applies. */
+export function createProcessCapture(games: GameRegistry): CaptureDefinition {
+  return {
+    id: 'processes',
+    label: 'Apps',
+    async capture(ctx) {
+      const processes = await ctx.ports.processes.list();
+      if (!processes.ok) return processes;
+      const variables = await allPathVariables(ctx, games);
+      const byName = new Map<string, CaptureCandidate & { known: boolean }>();
+      for (const process of processes.value) {
+        // Only programs we could start again: a known path, and not part of Windows.
+        if (!process.path || WINDOWS_DIR.test(process.path)) continue;
+        const key = process.name.toLowerCase();
+        if (byName.has(key) || NEVER.has(key)) continue;
+        const known = KNOWN_HELPERS[key];
+        const title = known ?? process.name.replace(/\.exe$/i, '');
+        byName.set(key, {
+          key: `process:${key}`,
+          group: 'apps',
           title,
-          required: true,
-          params: { name: process.name },
-          remediation: { type: PROCESS_LAUNCH, params: { exe: process.path, args: [] } },
-        },
-      });
-    }
-    return ok(
-      [...byName.values()]
-        .sort((a, b) => Number(b.known) - Number(a.known) || a.title.localeCompare(b.title))
-        .map(({ known: _known, ...candidate }) => candidate)
-    );
-  },
-};
+          description: process.path,
+          selectedByDefault: known !== undefined,
+          known: known !== undefined,
+          check: {
+            type: PROCESS_RUNNING,
+            title,
+            required: true,
+            params: { name: process.name },
+            remediation: {
+              type: PROCESS_LAUNCH,
+              params: { exe: collapsePath(process.path, variables), args: [] },
+            },
+          },
+        });
+      }
+      return ok(
+        [...byName.values()]
+          .sort((a, b) => Number(b.known) - Number(a.known) || a.title.localeCompare(b.title))
+          .map(({ known: _known, ...candidate }) => candidate)
+      );
+    },
+  };
+}

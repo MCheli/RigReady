@@ -42,3 +42,11 @@ checks:
       params: { path: '{DCS_USER}/Config/MonitorSetup/RigReady.lua' }
   - { id: o1, type: script.check, title: SRS radio check, required: true, params: { exe: '{USER}/Scripts/srs-check.cmd', args: ['--quiet'] } }
   - { id: o2, type: game.updated, title: DCS not updated since verified, required: false, params: { game: dcs, verifiedVersion: build 25000000 } }
+  # Written by a newer RigReady: this version has neither the check type nor the fix type.
+  - { id: o3, type: winwing.backlight, title: Backlight in sync, required: false, params: {} }
+  - id: o4
+    type: service.running
+    title: Fanatec service
+    required: false
+    params: { name: FanatecService }
+    remediation: { type: fanatec.restartService, params: {} }

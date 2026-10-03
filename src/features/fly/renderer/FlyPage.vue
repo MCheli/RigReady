@@ -512,7 +512,7 @@ onBeforeUnmount(() => {
           <div
             v-for="need in fly.activity.needsYou"
             :key="need.itemId"
-            class="rr-row"
+            class="rr-row fly-entry"
             data-testid="needs-you"
           >
             <v-icon icon="mdi-hand-back-right-outline" class="rr-warn" size="20" />

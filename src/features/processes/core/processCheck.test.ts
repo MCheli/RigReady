@@ -9,7 +9,7 @@ import {
   createProcessRunningCheck,
   LaunchParamsSchema,
   pathResolver,
-  processCapture,
+  createProcessCapture,
   ProcessParamsSchema,
   SessionStarts,
 } from './processCheck';
@@ -239,14 +239,26 @@ describe('process capture', () => {
       name: 'RigReady.exe',
       path: 'C:\\Users\\User\\AppData\\Local\\Programs\\RigReady\\RigReady.exe',
     });
+    // An app installed under the user folder is stored with its path variable.
+    rig.ports.state.processes.push({
+      pid: 99998,
+      name: 'VoiceAttack.exe',
+      path: path.join(rig.ports.folders.programFiles(), 'VoiceAttack', 'VoiceAttack.exe'),
+    });
+    const processCapture = createProcessCapture(new GameRegistry());
     const result = await processCapture.capture(rig.ctx);
     if (!result.ok) throw new Error('capture failed');
+    expect(result.value.find((c) => c.title === 'VoiceAttack')?.check.remediation).toEqual({
+      type: 'process.launch',
+      params: { exe: '{PROGRAM_FILES}/VoiceAttack/VoiceAttack.exe', args: [] },
+    });
     const titles = result.value.map((c) => c.title);
-    expect(titles.slice(0, 3)).toEqual(['SimAppPro', 'Stream Deck', 'TrackIR']);
+    expect(titles.slice(0, 4)).toEqual(['SimAppPro', 'Stream Deck', 'TrackIR', 'VoiceAttack']);
     expect(result.value.filter((c) => c.selectedByDefault).map((c) => c.title)).toEqual([
       'SimAppPro',
       'Stream Deck',
       'TrackIR',
+      'VoiceAttack',
     ]);
     const trackir = result.value.find((c) => c.title === 'TrackIR')!;
     expect(trackir.check).toMatchObject({

@@ -81,6 +81,17 @@ test('fly: one item is checked again on its own; the others keep their time', as
   await expect(trackir).toHaveAttribute('data-status', 'fail');
   await shot('rechecked-one');
 
+  // Re-check all runs every item again.
+  const all = await page
+    .getByTestId('check-row')
+    .evaluateAll((rows) => rows.map((r) => r.getAttribute('data-checked-at')));
+  await page.getByTestId('recheck').click();
+  await expect(simAppPro).not.toHaveAttribute('data-checked-at', before!);
+  const after = await page
+    .getByTestId('check-row')
+    .evaluateAll((rows) => rows.map((r) => r.getAttribute('data-checked-at')));
+  expect(after.every((at, i) => at !== all[i])).toBe(true);
+
   // TrackIR is started by hand; checking it again shows it running. The group stays open.
   await page.getByTestId('group-toggle-apps').click();
   await page.getByTestId('group-toggle-apps').click();
@@ -150,6 +161,11 @@ test('fly: a fix that does not bring the app up leaves it red and says so', asyn
     { timeout: 20_000 }
   );
   await expect(trackir).toHaveAttribute('data-status', 'fail');
+  // The way out: the setup editor, where the program can be put right.
+  await expect(trackir.getByTestId('fix-edit-setup')).toHaveAttribute(
+    'href',
+    /#?\/configure\/profiles\/fly-trackir-launcher$/
+  );
   await shot('still-red');
 });
 
@@ -180,9 +196,20 @@ test('fly: services, config files, scripts and the game version, with instructio
   await expect(game).toContainText(
     'DCS World updated build 25000000 -> build 25625823 since you last verified'
   );
+  // From a newer RigReady: an unknown check type is an error, an unknown fix offers no button.
+  const unknown = checkRow(page, 'Backlight in sync');
+  await expect(unknown).toHaveAttribute('data-status', 'error');
+  await expect(unknown).toContainText(
+    'Check type "winwing.backlight" is not available in this version of RigReady.'
+  );
+  const fanatec = checkRow(page, 'Fanatec service');
+  await expect(fanatec).toHaveAttribute('data-status', 'warn');
+  await expect(fanatec.getByTestId('check-fix')).toHaveCount(0);
   await srs.getByTestId('check-instructions').click();
   await expect(srs.getByTestId('instructions')).toContainText('tick Install server as a service');
   await shot('every-kind');
+  await unknown.scrollIntoViewIfNeeded();
+  await shot('script-output-and-error');
 
   // A link in instructions opens only after asking.
   await srs
@@ -218,7 +245,7 @@ test('fly: services, config files, scripts and the game version, with instructio
   await page.getByTestId('confirm-run-skip').click();
   await expect(page.getByTestId('step-skipped')).toContainText('Skipped by you');
   const needs = page.getByTestId('needs-you');
-  await expect(needs).toHaveCount(4);
+  await expect(needs).toHaveCount(6);
   await expect(needs.first()).toContainText('DCS-SRS server');
   await expect(needs.first()).toContainText('Download DCS-SRS');
   await shot('needs-you');
@@ -340,4 +367,60 @@ test('configure: one switch to Configure and back; the app starts in Fly', async
   await again.page.getByTestId('mode-configure').click();
   await again.page.getByTestId('mode-fly').click();
   await expect(again.page.getByTestId('fly-status-title')).toHaveText('Ready with warnings');
+});
+
+test('fly: Stand down applies the desk layout chosen in Settings, with the keep prompt', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('desk-mfds-wrong', 'fly-stand-down-desk');
+  // At the desk: save this arrangement as the desk layout.
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-settings').click();
+  await page.getByTestId('layout-new-name').locator('input').fill('Desk');
+  await page.getByTestId('layout-save-current').click();
+  await page.getByTestId('setting-desk-layout').click();
+  await page.getByRole('option', { name: 'Desk' }).click();
+  await expect(page.getByTestId('layout-row')).toContainText('desk layout');
+
+  // Fly, then stand down.
+  await page.getByTestId('mode-fly').click();
+  await page.getByTestId('make-ready').click();
+  await page.getByTestId('keep-layout-keep').click();
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await page.getByTestId('stand-down').click();
+  await expect(page.getByTestId('keep-layout')).toBeVisible();
+  await expect(page.getByTestId('fly-activity')).toContainText('Applied desk layout "Desk"');
+  await shot('desk-applied');
+  await page.getByTestId('keep-layout-keep').click();
+  await expect(checkRow(page, 'Monitor layout')).toContainText('DELL G3223D is on, expected off');
+  await shot('at-the-desk');
+});
+
+test('fly: a path whose game folder is not on this PC is an error, not "Missing"', async ({
+  rig,
+}) => {
+  const { page, shot, mutate } = await rig.launch('fly-two-setups', 'fly-path-variable');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await mutate([{ op: 'removeFile', path: 'Saved Games/DCS' }]);
+  const options = checkRow(page, 'DCS options');
+  await expect(options).toHaveAttribute('data-status', 'error');
+  await expect(options).toContainText('DCS user folder not found');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Not ready');
+  await shot('variable-missing');
+});
+
+test('fly: Start SimAppPro from its row turns it green', async ({ rig }) => {
+  const { page, shot, mutate } = await rig.launch('flying-all-good', 'fly-start-app');
+  await mutate([{ op: 'stopProcess', name: 'SimAppPro.exe' }]);
+  const row = checkRow(page, 'SimAppPro');
+  await expect(row).toHaveAttribute('data-status', 'fail');
+  await expect(row.getByTestId('check-fix')).toHaveText('Start SimAppPro.exe');
+  await shot('not-running');
+  await page.getByTestId('group-toggle-apps').click();
+  await page.getByTestId('group-toggle-apps').click();
+  await row.getByTestId('check-fix').click();
+  await expect(row.getByTestId('fix-result')).toHaveText('Started SimAppPro.exe');
+  await expect(row).toHaveAttribute('data-status', 'pass');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await shot('started');
 });
