@@ -1947,8 +1947,15 @@ requirements:
     done_means:
       - "Detection finds the iRacing install from the iRacing registry key or default Program Files path and the user folder {DOCUMENTS}/iRacing (respecting a redirected Documents folder)."
       - "Fixture with iRacing installed is detected; generic-rig without it shows 'not installed' and offers manual path."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/games/core/games.test.ts#finds iRacing from its uninstall entry, its version file and the Documents folder"
+      - "src/features/games/core/games.test.ts#follows a redirected Documents folder"
+      - "src/features/games/core/games.test.ts#says iRacing is not installed, and accepts a folder the user chooses only when it holds iRacing"
+      - "tests/e2e/racing.e2e.ts#racing: game pages show status at a glance, launch, and a folder chosen by hand"
+      - "artifacts/screens/racing-game-pages/02-iracing.png"
+      - "artifacts/screens/racing-game-pages/03-not-found.png"
+      - "artifacts/screens/racing-game-pages/04-folder-chosen.png"
 
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults
@@ -1958,8 +1965,13 @@ requirements:
     done_means:
       - "The iRacing module suggests tracking app.ini, controls.cfg, joyCalib.yaml, rendererDX11*.ini and setups/*/controls.cfg and joyCalib.yaml (per-car controls)."
       - "The iRacing page shows which per-car control sets exist."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/games/core/games.test.ts#finds iRacing from its uninstall entry, its version file and the Documents folder"
+      - "src/features/games/core/games.test.ts#suggests the custom controls of every car for tracking"
+      - "src/features/racing/core/iracing/iracing.test.ts#also updates a car with custom controls, and lists the per-car sets"
+      - "tests/e2e/racing.e2e.ts#racing: overview, iRacing bindings, and repairing a wheel with a new Windows id"
+      - "artifacts/screens/racing-iracing-repair/04-repaired.png"
 
   - id: RACE-IRACING-003
     title: iRacing backup and restore
@@ -1981,8 +1993,15 @@ requirements:
       - "joyCalib.yaml is parsed and lists each device iRacing knows with its InstanceGUID and calibrated axes, matched to connected devices."
       - "Devices in joyCalib with GUIDs not matching any connected device are flagged 'iRacing will ask to recalibrate'."
       - "controls.cfg (binary) is not edited; if the format can be decoded read-only, bound actions are listed, otherwise the page says bindings are not viewable for iRacing."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/iracing/iracing.test.ts#lists the calibrated device and its axes"
+      - "src/features/racing/core/iracing/iracing.test.ts#reads every record of the recorded file and the 17 bindings on the DD2"
+      - "src/features/racing/core/iracing/iracing.test.ts#lists bindings per device in plain language, matched to the connected wheel"
+      - "src/features/racing/core/iracing/iracing.test.ts#flags a wheel whose stored id no longer matches and repairs both files through FileStore"
+      - "src/features/racing/core/iracing/iracing.test.ts#says a controller is not connected when no controller of that model is attached"
+      - "tests/e2e/racing.e2e.ts#racing: overview, iRacing bindings, and repairing a wheel with a new Windows id"
+      - "artifacts/screens/racing-iracing-repair/02-moved.png"
 
   - id: RACE-IRACING-005
     title: iRacing device-ID repair where the format allows
@@ -2007,8 +2026,11 @@ requirements:
     done_means:
       - "Detection finds 'Le Mans Ultimate' in any Steam library (libraryfolders.vdf) and its UserData folder."
       - "Fixture with LMU in a non-default library is detected."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/games/core/games.test.ts#finds Le Mans Ultimate in a second Steam library with its UserData"
+      - "tests/e2e/racing.e2e.ts#racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a backup and restore"
+      - "artifacts/screens/racing-games/01-lmu.png"
 
   - id: RACE-LMU-002
     title: LMU config locations, backup and restore
@@ -2029,8 +2051,14 @@ requirements:
     done_means:
       - "The controller JSON is parsed and the page lists each control with its device and input, matched to connected devices by the name=#VIDPID identifier."
       - "Devices referenced but not connected are flagged."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/lmu/lmu.test.ts#decodes the input ids: axis halves, hats and buttons"
+      - "src/features/racing/core/lmu/lmu.test.ts#lists each control with its English name, device and input, matched to the connected wheel"
+      - "src/features/racing/core/lmu/lmu.test.ts#flags a referenced controller that is not connected, and the base in compatibility mode"
+      - "tests/e2e/racing.e2e.ts#racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a backup and restore"
+      - "artifacts/screens/racing-games/01-lmu.png"
+      - "artifacts/screens/racing-games/06-lmu-unplugged.png"
 
   - id: RACE-LMU-004
     title: LMU device-ID repair where the format allows
@@ -2055,8 +2083,12 @@ requirements:
     done_means:
       - "Detection finds BeamNG.drive in any Steam library and the user folder from the userpath_override registry value or {LOCALAPPDATA}/BeamNG.drive, choosing the newest version subfolder (e.g. 0.32) and listing older ones."
       - "Unit tests cover override present, absent, and multiple version folders."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/beamng/beamng.test.ts#finds the user folder from startup.ini, the registry override, or the newest version folder"
+      - "src/features/games/core/games.test.ts#BeamNG: tracked inputmaps and settings, last-run version and the migration warning"
+      - "tests/e2e/racing.e2e.ts#racing: BeamNG.drive older user folders, per-vehicle maps and a replaced wheel base"
+      - "artifacts/screens/racing-beamng/01-replaced-wheel.png"
 
   - id: RACE-BEAMNG-002
     title: BeamNG backup and restore
@@ -2066,8 +2098,12 @@ requirements:
     done_means:
       - "Suggested tracked items: settings/inputmaps/** (including per-vehicle folders), settings/*.ini and *.json; excluded: mods, replays, cache."
       - "Restoring a backup from an older version folder into the current one is offered explicitly ('restore 0.31 bindings into 0.32')."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/games/core/games.test.ts#BeamNG: tracked inputmaps and settings, last-run version and the migration warning"
+      - "src/features/racing/core/beamng/beamng.test.ts#copies the bindings of an older version folder into the current one"
+      - "tests/e2e/racing.e2e.ts#racing: BeamNG.drive older user folders, per-vehicle maps and a replaced wheel base"
+      - "artifacts/screens/racing-beamng/03-copied.png"
 
   - id: RACE-BEAMNG-003
     title: BeamNG binding view
@@ -2077,8 +2113,13 @@ requirements:
     done_means:
       - "inputmaps/*.diff files are parsed; with the game's default .json maps loaded from the install, the effective bindings per device (by VID/PID file name) are listed."
       - "Per-vehicle diff folders are shown under the vehicle name."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/beamng/beamng.test.ts#lists the diff bindings per device with the force feedback of the steering binding"
+      - "src/features/racing/core/beamng/beamng.test.ts#merges the default map of the game with the diff into the effective bindings, and shows per-vehicle maps"
+      - "tests/e2e/racing.e2e.ts#racing: BeamNG.drive older user folders, per-vehicle maps and a replaced wheel base"
+      - "artifacts/screens/racing-games/04-beamng.png"
+      - "artifacts/screens/racing-beamng/01-replaced-wheel.png"
 
   - id: RACE-BEAMNG-004
     title: BeamNG device-ID repair where the format allows
@@ -2087,8 +2128,11 @@ requirements:
     priority: p3
     done_means:
       - "If a .diff file's VID/PID name matches no connected device but a connected device of the same kind exists (e.g. wheel base replaced), RigReady offers to copy the bindings to the new device's file name with preview and backup."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/beamng/beamng.test.ts#flags a map for a controller that is gone and gives its bindings to the new one"
+      - "tests/e2e/racing.e2e.ts#racing: BeamNG.drive older user folders, per-vehicle maps and a replaced wheel base"
+      - "artifacts/screens/racing-beamng/02-copy-preview.png"
 
   # ---------------------------------------------------------------------------
   # RACING — Fanatec and racing profile
@@ -2113,8 +2157,13 @@ requirements:
     done_means:
       - "The Fanatec wheel base (Podium DD2) is detected by VID/PID, and the Fanatec driver/control panel install and version are detected."
       - "Research note in docs/research/ records whether the attached rim is detectable (separate HID, driver API, or not); if detectable the devices page shows the rim."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/fanatec/fanatec.test.ts#detects the Podium DD2 by vendor and product id, in PC mode, with its controllers"
+      - "src/features/racing/core/fanatec/fanatec.test.ts#shows the driver, app and service, the shipped firmware and what the driver last saw"
+      - "tests/e2e/racing.e2e.ts#racing: the wheel page, recorded presets and recommended settings"
+      - "artifacts/screens/racing-wheel/01-wheel.png"
+      - "docs/research/racing.md"
 
   - id: RACE-FANATEC-002
     title: Locate what the Fanatec software stores
@@ -2124,8 +2173,13 @@ requirements:
     done_means:
       - "Research note documents where Fanatec Control Panel / Fanatec App store tuning profiles and settings (files, registry, or only on the base), verified on the owner's PC."
       - "The Fanatec module suggests those locations as tracked items; if settings live only on the wheel base, the UI says backup is not possible rather than offering it."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/backups.test.ts#backs up the Fanatec App settings and the service registry as a record; restoring closes and restarts the app"
+      - "src/features/racing/core/fanatec/fanatec.test.ts#keeps the five presets the user records, and never shows base values as matching"
+      - "tests/e2e/racing.e2e.ts#racing: the wheel page, recorded presets and recommended settings"
+      - "artifacts/screens/racing-wheel/02-presets.png"
+      - "docs/research/racing.md"
 
   - id: RACE-FANATEC-003
     title: Back up and restore Fanatec settings
@@ -2147,8 +2201,13 @@ requirements:
       - "For iRacing, LMU and BeamNG, a table shows recommended wheel settings (from a shipped, sourced data file citing where each recommendation comes from) next to the current values where readable."
       - "Values that are not readable are shown as 'set on the wheel' with the recommended value, not as matching."
       - "A profile can include a 'wheel settings match' check (optional) using readable values only."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/fanatec/fanatec.test.ts#keeps the five presets the user records, and never shows base values as matching"
+      - "src/features/racing/core/fanatec/fanatec.test.ts#checks the in-game wheel settings it can read against the recommendations"
+      - "src/features/racing/core/checks.test.ts#capture on a racing rig proposes the wheel in PC mode, the helper apps and the game checks"
+      - "tests/e2e/racing.e2e.ts#racing: the wheel page, recorded presets and recommended settings"
+      - "artifacts/screens/racing-wheel/03-recommended.png"
 
   - id: RACE-FANATEC-005
     title: Rim variants via separate profiles
@@ -2159,6 +2218,67 @@ requirements:
       - "Cloning a racing profile into a rim variant (e.g. 'iRacing GT3 - Formula rim') with a different binding backup works end-to-end; if the rim is detectable (RACE-FANATEC-001) the rim becomes a device check."
     status: todo
     evidence: []
+
+  - id: GAME-MSFS-001
+    title: Detect Microsoft Flight Simulator 2024 and its settings
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "The Steam edition is found from its app manifest in any Steam library, with its build and whether Steam has an update waiting, and is launched through steam.exe -applaunch 2537590."
+      - "The Microsoft Store edition is found by its Microsoft.Limitless package folder; the page says RigReady cannot launch it directly."
+      - "Settings folders (Roaming\\Microsoft Flight Simulator 2024 or the package LocalCache) and the Steam Cloud controller-profile folders are listed; UserCfg.opt, FlightSimulator2024.CFG, Cameras.CFG, SimConnect.xml and inputprofile_* files are suggested for tracking."
+      - "The game page says the controller profiles are binary and their bindings cannot be listed."
+    status: done
+    evidence:
+      - "src/features/games/core/games.test.ts#Microsoft Flight Simulator 2024: Steam install, settings, and controller profiles as files"
+      - "src/features/games/core/games.test.ts#Microsoft Flight Simulator 2024: the Microsoft Store edition is found by its package folder"
+      - "tests/e2e/racing.e2e.ts#racing: game pages show status at a glance, launch, and a folder chosen by hand"
+      - "artifacts/screens/racing-game-pages/05-msfs2024.png"
+
+  - id: GAME-AC-001
+    title: Detect Assetto Corsa, Assetto Corsa EVO and Assetto Corsa Rally
+    job: configure
+    area: games
+    priority: p3
+    done_means:
+      - "Each is found from its Steam app manifest in any Steam library (Assetto Corsa also needs AssettoCorsa.exe), with its build, and is launched through Steam."
+      - "Assetto Corsa's Documents\\Assetto Corsa\\cfg (and Content Manager's folder when present), EVO's Documents\\ACE when present and Rally's %LOCALAPPDATA%\\acr\\Saved are listed, with their settings files suggested for tracking."
+      - "When a game is not found, a folder chosen by hand is accepted only if it holds the game's program."
+    status: done
+    evidence:
+      - "src/features/games/core/games.test.ts#Assetto Corsa, EVO and Rally are found in Steam with their settings"
+      - "tests/e2e/racing.e2e.ts#racing: game pages show status at a glance, launch, and a folder chosen by hand"
+      - "artifacts/screens/racing-game-pages/01-games.png"
+
+  - id: GAME-AC-002
+    title: Assetto Corsa bindings view
+    job: configure
+    area: games
+    priority: p3
+    done_means:
+      - "controls.ini is read: each controller (name, instance and product GUID) is matched to the connected controllers, and each bound action is listed with its controller and input in plain language, including keyboard keys."
+      - "Force feedback values (lock, gain, filter, minimum force, effects) are shown; a controller that bindings use but is not connected under its stored id is flagged, with restore-from-backup offered."
+    status: done
+    evidence:
+      - "src/features/racing/core/checks.test.ts#reads Assetto Corsa controllers and bindings from controls.ini"
+      - "tests/e2e/racing.e2e.ts#racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a backup and restore"
+      - "artifacts/screens/racing-games/05-assetto-corsa.png"
+
+  - id: GAME-PAGES-001
+    title: Game pages with status at a glance
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "The Games page lists every game module with where it was found, its version, an update waiting in Steam, whether it is running and how many settings files are worth backing up."
+      - "Each game has a page with its installs, version, launch target and a working Launch button, settings folders, tracked files and plain-language notes on what RigReady can and cannot read; racing games link to their bindings page."
+    status: done
+    evidence:
+      - "src/features/games/core/games.test.ts#launches a standalone game directly and a Steam game through Steam"
+      - "tests/e2e/racing.e2e.ts#racing: game pages show status at a glance, launch, and a folder chosen by hand"
+      - "artifacts/screens/racing-game-pages/01-games.png"
+      - "artifacts/screens/racing-game-pages/02-iracing.png"
 
   # ---------------------------------------------------------------------------
   # STREAM DECK

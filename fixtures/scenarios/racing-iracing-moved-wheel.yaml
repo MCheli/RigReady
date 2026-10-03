@@ -1,0 +1,12 @@
+description: Racing, the wheel has a new Windows id since iRacing was set up
+rig: mark-full
+extends: racing-fresh.yaml
+# iRacing's files still name the id the DD2 had before a USB port change
+# (11112222-3333-11F1-8001-...); the connected wheel is 20B0BED0-03A4-11F1-8001-...
+mutations:
+  - op: writeFile
+    path: Documents/iRacing/controls.cfg
+    from: data/racing/controls-old-id.cfg
+  - op: writeFile
+    path: Documents/iRacing/joyCalib.yaml
+    from: data/racing/joyCalib-old-id.yaml

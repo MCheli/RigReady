@@ -192,7 +192,8 @@ test('harness: live changes reach the screen, dialogs are scripted, HTML renders
   ).resolves.toBeUndefined();
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-games').click();
-  await expect(page.getByTestId('game-row').first()).toContainText('DCSWorld');
+  await page.locator('[data-testid="game-row"][data-game="dcs"]').click();
+  await expect(page.getByTestId('game-glance')).toContainText('DCSWorld');
 });
 
 test('retention: old automatic backups are pruned at startup, the newest 50 changes always stay', async ({
