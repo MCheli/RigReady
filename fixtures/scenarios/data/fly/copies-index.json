@@ -1,0 +1,11 @@
+{
+  "copies": [
+    {
+      "id": "2026-10-01T18-00-00-000Z-known",
+      "path": "{DCS_USER}/Config/options.lua",
+      "savedAt": "2026-10-01T18:00:00.000Z",
+      "size": 33,
+      "sha256": "known-good-copy-from-the-scenario"
+    }
+  ]
+}

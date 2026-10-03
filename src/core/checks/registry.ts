@@ -15,6 +15,21 @@ export interface CheckOutcome {
   summary: string;
   /** Extra lines, e.g. one per difference. */
   details?: string[];
+  /**
+   * True when the check could not be evaluated at all (a folder variable that does not
+   * resolve, a script that is missing, a provider that failed). Shown as "error", not "failed".
+   */
+  error?: boolean;
+  /** Longer captured text (script output), shown in an expandable panel. */
+  output?: string;
+}
+
+/** Something a check type lets the user confirm on an item, e.g. "Mark verified". */
+export interface CheckAcknowledge<P> {
+  /** Button label. */
+  label: string;
+  /** Resolves with the item's new params, which the profile then stores. */
+  run(params: P, ctx: CheckContext): Promise<Result<P>>;
 }
 
 export interface CheckDefinition<P = unknown> {
@@ -29,6 +44,27 @@ export interface CheckDefinition<P = unknown> {
    * describing what was done, or null when there was nothing to do.
    */
   standDown?(params: P, ctx: CheckContext): Promise<Result<string | null>>;
+  /** Optional: an action that updates the item's own params (e.g. "Mark verified"). */
+  acknowledge?: CheckAcknowledge<P>;
+  /**
+   * Remediation types that suit this check, offered first (and only these) in the setup
+   * editor. Absent: every remediation type is offered.
+   */
+  fixes?: string[];
+  /**
+   * Seconds this item needs when its params say so (a script with its own timeout). Used
+   * instead of the settings' check timeout unless the item sets one.
+   */
+  timeoutSeconds?(params: P): number | undefined;
+  /** Never decides readiness: when not met it is a warning even on a required item. */
+  advisory?: boolean;
+}
+
+/** The exact program a fix would run, shown to the user before it runs. */
+export interface CommandPreview {
+  exe: string;
+  args: string[];
+  cwd?: string;
 }
 
 export interface RemediationDefinition<P = unknown> {
@@ -42,6 +78,33 @@ export interface RemediationDefinition<P = unknown> {
   describe(params: P): string;
   /** Resolves with a message describing what was done. */
   run(params: P, ctx: CheckContext): Promise<Result<string>>;
+  /**
+   * "instructions": the fix only tells the user what to do. Make ready never runs it and
+   * never reports it as fixed; it lists it under "Needs you". Default "action".
+   */
+  kind?: 'action' | 'instructions';
+  /** For kind "instructions": the text (Markdown subset) shown next to the item. */
+  instructions?(params: P): string;
+  /**
+   * When present and it returns a command, the fix runs only after the user confirmed
+   * that exact command. Make ready asks first; the tray skips it.
+   */
+  confirm?(params: P): CommandPreview | undefined;
+  /**
+   * Optional: whether the fix can run at all right now (e.g. a backup copy exists).
+   * When it cannot, no fix is offered and the reason is shown on the item. When it can,
+   * `description` may replace describe() with what was found ("Restore options.lua from
+   * the copy of 3 Oct 12:00").
+   */
+  available?(
+    params: P,
+    ctx: CheckContext
+  ): Promise<{ ok: true; description?: string } | { ok: false; reason: string }>;
+  /**
+   * Optional: something the setup editor offers while the fix is being set up, e.g.
+   * "Keep a copy of the file as it is now" for a restore. Resolves with what was done.
+   */
+  prepare?: { label: string; run(params: P, ctx: CheckContext): Promise<Result<string>> };
 }
 
 /** A check proposed from the current state of the machine. */

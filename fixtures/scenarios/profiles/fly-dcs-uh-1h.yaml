@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: fly-dcs-uh-1h
+name: DCS UH-1H
+game: dcs
+description: Huey with the collective on the throttle base.
+createdAt: '2026-10-01T18:00:00.000Z'
+updatedAt: '2026-10-01T18:00:00.000Z'
+launch:
+  exe: '{DCS_INSTALL}/bin/DCS.exe'
+  args: []
+  cwd: '{DCS_INSTALL}/bin'
+checks:
+  - { id: c1, type: device.connected, title: WINWING Orion Joystick Base 2 + JGRIP-F16, required: true, params: { vendorId: '4098', productId: BEA8 } }
+  - { id: c2, type: device.connected, title: WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R, required: true, params: { vendorId: '4098', productId: BD26 } }
+  - { id: c3, type: device.connected, title: T-Pendular-Rudder, required: true, params: { vendorId: 044F, productId: B68F } }
+  - { id: c4, type: device.connected, title: TrackIR 5, required: true, params: { vendorId: 131D, productId: '0159' } }
+  - id: c6
+    type: file.exists
+    title: DCS options
+    required: true
+    params: { path: '{DCS_USER}/Config/options.lua' }

@@ -1,0 +1,16 @@
+description: Flying, a setup with services, config files, scripts and the game version
+rig: mark-full
+extends: flying-all-good.yaml
+mutations:
+  - { op: writeFile, path: Scripts/set-mfds.cmd, content: '@echo off' }
+  - { op: writeFile, path: Scripts/srs-check.cmd, content: '@echo off' }
+profiles:
+  - profiles/fly-generic.yaml
+data:
+  state.json: data/fly/state-generic.json
+shell:
+  - match: { exe: srs-check.cmd }
+    result:
+      code: 2
+      stdout: "Checking SRS radios...\nRadio 1: OK\nRadio 2: no response from the server\n"
+      stderr: 'SRS server not reachable on port 5002'

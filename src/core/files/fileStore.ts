@@ -211,7 +211,7 @@ export class BackupFileStore implements FileStore {
     if (!path.isAbsolute(file)) return err('file.relative', `The path must be absolute: ${file}`);
     const target = path.resolve(file);
     try {
-      if (isWithin(this.dataRoot, target)) {
+      if (isWithin(this.dataRoot, target) && !options.journal) {
         await perform();
         return ok(null);
       }

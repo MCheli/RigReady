@@ -622,9 +622,11 @@ describe('SimAppPro', () => {
     expect(overview.managedChanged).toEqual(['options.lua', 'Export.lua']);
 
     const made = await app.invoke<ActionReport>('fly:makeReady', { profileId: 'p' });
+    // Make ready does monitors before files: the screen setup goes back first (which
+    // also selects it in options.lua), then the file restore has only Export.lua left.
     expect(made.steps.map((s) => s.message)).toEqual([
-      "Restored RigReady's version of options.lua, Export.lua",
-      'The RigReady screen setup was already in place',
+      'Put the RigReady screen setup back in DCS',
+      "Restored RigReady's version of Export.lua",
     ]);
     expect(result(made.report, 'DCS files').status).toBe('pass');
     expect(result(made.report, 'Screens').status).toBe('pass');

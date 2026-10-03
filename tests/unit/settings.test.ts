@@ -491,13 +491,15 @@ describe('tray model', () => {
     expect(trayTooltip({})).toBe('RigReady - No setup yet');
   });
 
-  it('offers Open, the status, Make ready and Quit; Make ready needs a setup and is disabled while busy', () => {
+  it('offers Open, the status, Make ready, Launch, Stand down and Quit; actions need a setup and wait while busy', () => {
     const none = trayMenu({});
     expect(none.map((i) => i.id)).toEqual([
       'open',
       'separator',
       'status',
       'makeReady',
+      'launch',
+      'standDown',
       'separator',
       'quit',
     ]);
@@ -514,14 +516,18 @@ describe('tray model', () => {
     const busy = trayMenu({ profileId: 'a', profileName: 'A' }, true);
     expect(busy.find((i) => i.id === 'makeReady')).toMatchObject({
       enabled: false,
-      label: 'Making ready...',
+      label: 'Working...',
     });
   });
 
   it('follows the answers of the fly feature', async () => {
     app = await wiredApp('flying-trackir-not-running', NO_FILES);
     let status = statusFromFlyResponse('fly:state', await app.invoke('fly:state'), {})!;
-    expect(status).toEqual({ profileId: 'dcs-f-a-18c', profileName: 'DCS F/A-18C' });
+    expect(status).toEqual({
+      profileId: 'dcs-f-a-18c',
+      profileName: 'DCS F/A-18C',
+      profiles: [{ id: 'dcs-f-a-18c', name: 'DCS F/A-18C', canLaunch: true }],
+    });
 
     const P = { profileId: 'dcs-f-a-18c' };
     status = statusFromFlyResponse('fly:check', await app.invoke('fly:check', P), status)!;
@@ -536,12 +542,13 @@ describe('tray model', () => {
     expect(statusFromFlyResponse('devices:list', [], status)).toBeUndefined();
     expect(statusFromFlyResponse('fly:check', null, status)).toBeUndefined();
     expect(statusFromFlyResponse('fly:makeReady', { steps: [] }, status)).toBeUndefined();
-    expect(statusFromFlyResponse('fly:state', { profiles: [] }, status)).toEqual({});
+    expect(statusFromFlyResponse('fly:state', { profiles: [] }, status)).toEqual({ profiles: [] });
     expect(
       statusFromFlyResponse('fly:check', { profileId: 'other', ready: false, failed: 2 }, status)
     ).toEqual({
       profileId: 'other',
       profileName: 'other',
+      profiles: status.profiles,
       ready: false,
       failed: 2,
       warnings: 0,
@@ -549,6 +556,10 @@ describe('tray model', () => {
     });
     expect(
       statusFromFlyResponse('fly:state', { profiles: [{ id: 'b' }], activeProfileId: 'b' }, status)
-    ).toEqual({ profileId: 'b', profileName: 'b' });
+    ).toEqual({
+      profileId: 'b',
+      profileName: 'b',
+      profiles: [{ id: 'b', name: 'b', canLaunch: false }],
+    });
   });
 });

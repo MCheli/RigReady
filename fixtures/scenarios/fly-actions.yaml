@@ -1,0 +1,13 @@
+description: Flying, a setup with steps before and after launch; the TrackIR check script fails
+rig: mark-full
+extends: flying-all-good.yaml
+mutations:
+  - { op: writeFile, path: Scripts/warmup.cmd, content: '@echo off' }
+  - { op: writeFile, path: Scripts/check-trackir.cmd, content: '@echo off' }
+profiles:
+  - profiles/fly-actions.yaml
+data:
+  state.json: data/fly/state-actions.json
+shell:
+  - match: { exe: check-trackir.cmd }
+    result: { code: 1, stdout: 'TrackIR did not answer within 5 s', stderr: '' }

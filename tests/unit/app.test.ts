@@ -26,54 +26,41 @@ const statusOf = (report: ChecklistReport, title: string) =>
 describe('feature discovery', () => {
   it('finds every feature folder and registers its checks, fixes and channels', async () => {
     app = await wiredApp('flying-all-good');
-    // Features are discovered in folder order; others are added in parallel, so only the
-    // foundation's own are listed here.
+    // Features are discovered from the folders under src/features, in folder order. The
+    // lists below name only what the Fly flow itself depends on: adding a feature, a
+    // check type or a fix must not need an edit here.
     const ids = app.wiring.features.map((f) => f.id);
-    expect(ids).toEqual([...ids].sort());
+    const folders = (await fs.readdir(path.join(__dirname, '../../src/features'))).sort();
+    const withMain: string[] = [];
+    for (const folder of folders) {
+      const main = path.join(__dirname, '../../src/features', folder, 'main.ts');
+      if (
+        await fs.stat(main).then(
+          () => true,
+          () => false
+        )
+      )
+        withMain.push(folder);
+    }
+    expect(ids).toEqual(withMain);
     expect(ids).toEqual(
-      expect.arrayContaining([
-        'devices',
-        'displays',
-        'fly',
-        'games',
-        'processes',
-        'profiles',
-        'safety',
-        'settings',
-      ])
+      expect.arrayContaining(['devices', 'displays', 'fly', 'games', 'processes', 'profiles'])
     );
-    expect(app.wiring.context.checks.checkTypes()).toEqual([
-      'audio.defaultDevice',
-      'dcs.exportLua',
-      'dcs.install',
-      'dcs.managedFiles',
-      'dcs.monitorSetup',
-      'dcs.options',
-      'dcs.simAppProRunning',
-      'device.connected',
-      'display.layout',
-      'process.running',
-      'racing.iracingDevices',
-      'racing.iracingService',
-      'racing.wheelBase',
-      'racing.wheelSettings',
-      'stream-deck.connected',
-      'stream-deck.running',
-      'trackir.connected',
-      'trackir.running',
-    ]);
-    expect(app.wiring.context.checks.remediationTypes()).toEqual([
-      'audio.setDefault',
-      'dcs.repairExportLua',
-      'dcs.restoreManaged',
-      'dcs.setOptions',
-      'dcs.startSimAppPro',
-      'dcs.writeScreenSetup',
-      'display.applyLayout',
-      'process.launch',
-      'stream-deck.start',
-      'trackir.start',
-    ]);
+
+    const typeName = /^[a-z][a-z0-9-]*\.[A-Za-z][A-Za-z0-9]*$/;
+    for (const types of [
+      app.wiring.context.checks.checkTypes(),
+      app.wiring.context.checks.remediationTypes(),
+    ]) {
+      expect(types).toEqual([...new Set(types)].sort());
+      for (const type of types) expect(type).toMatch(typeName);
+    }
+    expect(app.wiring.context.checks.checkTypes()).toEqual(
+      expect.arrayContaining(['device.connected', 'display.layout', 'process.running'])
+    );
+    expect(app.wiring.context.checks.remediationTypes()).toEqual(
+      expect.arrayContaining(['display.applyLayout', 'process.launch'])
+    );
     expect([...app.wiring.handlers.keys()]).toContain('fly:makeReady');
     expect(app.wiring.context.games.get('dcs')?.name).toBe('DCS World');
   });
@@ -94,11 +81,23 @@ describe('Fly, end to end on scenarios', () => {
     const state = await app.invoke<{
       profiles: { id: string; name: string; canLaunch: boolean }[];
       activeProfileId?: string;
+      active?: { items: unknown[] };
     }>('fly:state');
-    expect(state).toEqual({
-      profiles: [{ id: 'dcs-f-a-18c', name: 'DCS F/A-18C', canLaunch: true }],
+    expect(state).toMatchObject({
+      profiles: [
+        {
+          id: 'dcs-f-a-18c',
+          name: 'DCS F/A-18C',
+          game: 'dcs',
+          gameName: 'DCS World',
+          canLaunch: true,
+        },
+      ],
+      invalid: [],
       activeProfileId: 'dcs-f-a-18c',
     });
+    // The checklist can be drawn before any check has run.
+    expect(state.active?.items).toHaveLength(16);
     const report = await app.invoke<ChecklistReport>('fly:check', P);
     expect(report).toMatchObject({ ready: true, failed: 0, warnings: 0, fixable: 0 });
     expect(report.results).toHaveLength(16);
@@ -199,14 +198,19 @@ describe('Fly, end to end on scenarios', () => {
     ]);
     expect(await app.invoke('displays:read')).toEqual(desk);
     expect(statusOf(down.report, 'TrackIR5')).toBe('fail');
-    // Nothing left to stand down.
-    expect((await app.invoke<ActionReport>('fly:standDown', P)).steps).toEqual([]);
+    // Nothing left to stand down; it says why the monitors were not touched.
+    expect(
+      (await app.invoke<ActionReport>('fly:standDown', P)).steps.map((s) => s.message)
+    ).toEqual(['No desk layout is chosen in Settings, so the monitors were left as they are']);
   });
 
   it('Launch starts the game whether or not the setup is ready', async () => {
     app = await wiredApp('flying-pedals-unplugged');
     expect((await app.invoke<ChecklistReport>('fly:check', P)).ready).toBe(false);
-    expect(await app.invoke('fly:launch', P)).toEqual({ message: 'Started DCS.exe' });
+    expect(await app.invoke('fly:launch', P)).toMatchObject({
+      outcome: 'launched',
+      message: 'Launched DCS.exe',
+    });
     expect(app.ports.processes.started).toEqual([
       {
         exe: 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\bin\\DCS.exe',
@@ -224,14 +228,17 @@ describe('Fly, end to end on scenarios', () => {
     const profile = await app.invoke<Profile>('profiles:get', { id: 'dcs-f-a-18c' });
     const { launch: _launch, ...withoutLaunch } = profile;
     await app.invoke('profiles:save', withoutLaunch);
-    await expect(app.invoke('fly:launch', P)).rejects.toThrow(/fly.noLaunch/);
+    expect(await app.invoke('fly:launch', P)).toMatchObject({
+      outcome: 'failed',
+      message: '"DCS F/A-18C" has no program to launch.',
+    });
   });
 });
 
 describe('Profiles: create by capturing the current state', () => {
   it('captures devices, apps and monitors; the created setup is Ready; breaking the rig is detected', async () => {
     app = await wiredApp('flying-fresh');
-    expect(await app.invoke('fly:state')).toEqual({ profiles: [] });
+    expect(await app.invoke('fly:state')).toEqual({ profiles: [], invalid: [] });
     const capture = await app.invoke<{
       candidates: {
         key: string;

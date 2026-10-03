@@ -5,7 +5,7 @@ import type { z } from 'zod';
 import type { CaptureCandidateSchema } from '../../../core/checks/engine';
 import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
 import { errorText, useClient } from '../../../renderer/ipc';
-import { profilesContract } from '../contract';
+import { profilesContract, type DetectedGame } from '../contract';
 
 type Candidate = z.infer<typeof CaptureCandidateSchema>;
 
@@ -13,8 +13,35 @@ const api = useClient(profilesContract);
 const router = useRouter();
 
 const name = ref('');
+const game = ref('');
+const gameName = ref('');
+const games = ref<DetectedGame[]>([]);
 const launchExe = ref('');
 const launchArgs = ref('');
+const launchCwd = ref('');
+
+const gameItems = computed(() => [
+  { title: 'No particular game', value: '' },
+  ...games.value.filter((g) => g.installs.length > 0).map((g) => ({ title: g.name, value: g.id })),
+  { title: 'Other game…', value: 'other' },
+]);
+
+/** A known game fills in what Launch starts and ticks its own files and version check. */
+function chooseGame(id: string): void {
+  game.value = id ?? '';
+  const launch = games.value.find((g) => g.id === id)?.installs.find((i) => i.launch)?.launch;
+  if (launch) {
+    launchExe.value = launch.exe;
+    launchArgs.value = launch.args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ');
+    launchCwd.value = launch.cwd ?? '';
+  }
+  for (const candidate of candidates.value) {
+    if (candidate.key.startsWith('file:') || candidate.key.startsWith('game:')) {
+      const own = candidate.key.startsWith(`file:${id}:`) || candidate.key === `game:${id}`;
+      selected[candidate.key] = own;
+    }
+  }
+}
 const candidates = ref<Candidate[]>([]);
 const problems = ref<string[]>([]);
 const loading = ref(true);
@@ -27,6 +54,8 @@ const required = reactive<Record<string, boolean>>({});
 
 async function capture(): Promise<void> {
   loading.value = true;
+  const detected = await api.games();
+  if (detected.ok) games.value = detected.value;
   const result = await api.capture();
   loading.value = false;
   if (!result.ok) {
@@ -62,9 +91,8 @@ const groups = computed(() =>
 );
 
 const chosenCount = computed(() => candidates.value.filter((c) => selected[c.key]).length);
-const canSave = computed(
-  () => name.value.trim().length > 0 && chosenCount.value > 0 && !saving.value
-);
+// Every part can be skipped: a setup with only a name is still a valid one to start from.
+const canSave = computed(() => name.value.trim().length > 0 && !saving.value);
 
 /** Splits an argument line on spaces, keeping "quoted parts" together. Arguments stay an array end to end. */
 function splitArgs(line: string): string[] {
@@ -75,9 +103,12 @@ async function save(): Promise<void> {
   saving.value = true;
   error.value = undefined;
   const exe = launchExe.value.trim();
+  const cwd = launchCwd.value.trim();
   const result = await api.create({
     name: name.value,
-    ...(exe ? { launch: { exe, args: splitArgs(launchArgs.value) } } : {}),
+    ...(game.value ? { game: game.value } : {}),
+    ...(game.value === 'other' && gameName.value.trim() ? { gameName: gameName.value.trim() } : {}),
+    ...(exe ? { launch: { exe, args: splitArgs(launchArgs.value), ...(cwd ? { cwd } : {}) } } : {}),
     checks: candidates.value
       .filter((c) => selected[c.key])
       .map((c) => ({ ...c.check, required: required[c.key] ?? true })),
@@ -109,11 +140,27 @@ onMounted(capture);
     </v-alert>
 
     <div class="rr-panel capture-basics">
+      <div class="capture-launch">
+        <v-text-field
+          v-model="name"
+          label="Name"
+          placeholder="DCS F/A-18C"
+          data-testid="capture-name"
+        />
+        <v-select
+          :model-value="game"
+          :items="gameItems"
+          label="Game"
+          data-testid="capture-game"
+          @update:model-value="chooseGame($event)"
+        />
+      </div>
       <v-text-field
-        v-model="name"
-        label="Name"
-        placeholder="DCS F/A-18C"
-        data-testid="capture-name"
+        v-if="game === 'other'"
+        v-model="gameName"
+        label="Game name"
+        placeholder="e.g. Richard Burns Rally"
+        data-testid="capture-game-name"
       />
       <div class="capture-launch">
         <v-text-field
@@ -128,6 +175,12 @@ onMounted(capture);
           data-testid="capture-launch-args"
         />
       </div>
+      <v-text-field
+        v-if="launchCwd"
+        v-model="launchCwd"
+        label="Working folder"
+        data-testid="capture-launch-cwd"
+      />
     </div>
 
     <div v-if="loading" class="rr-empty">Looking at the rig…</div>

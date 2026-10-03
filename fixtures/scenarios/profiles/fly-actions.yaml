@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: fly-actions
+name: DCS with launch steps
+game: dcs
+createdAt: '2026-10-01T18:00:00.000Z'
+updatedAt: '2026-10-01T18:00:00.000Z'
+launch:
+  exe: '{DCS_INSTALL}/bin/DCS.exe'
+  args: ['--force_enable_VR']
+checks:
+  - { id: c1, type: device.connected, title: T-Pendular-Rudder, required: true, params: { vendorId: 044F, productId: B68F } }
+  - { id: c2, type: process.running, title: TrackIR, required: true, params: { name: TrackIR5.exe } }
+actions:
+  preLaunch:
+    - { id: a1, title: Start VoiceAttack, type: process.launch, params: { exe: '{PROGRAM_FILES}/VoiceAttack/VoiceAttack.exe', args: [] } }
+    - { id: a2, title: Warm up the hub, type: script.run, params: { exe: '{USER}/Scripts/warmup.cmd', args: [], requiresConfirmation: false } }
+    - { id: a3, title: Check TrackIR answers, type: script.run, continueOnError: false, params: { exe: '{USER}/Scripts/check-trackir.cmd', args: [], requiresConfirmation: false } }
+  postLaunch:
+    - { id: p1, title: Start SRS, type: process.launch, delaySeconds: 2, params: { exe: '{PROGRAM_FILES}/DCS-SimpleRadio-Standalone/SR-ClientRadio.exe', args: [] } }
+  standDown:
+    - { id: d1, title: Put the hub back, type: script.run, params: { exe: '{USER}/Scripts/warmup.cmd', args: ['--off'], requiresConfirmation: false } }

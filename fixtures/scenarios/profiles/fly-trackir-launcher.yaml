@@ -1,0 +1,15 @@
+schemaVersion: 1
+id: fly-trackir-launcher
+name: TrackIR through its launcher
+createdAt: '2026-10-01T18:00:00.000Z'
+updatedAt: '2026-10-01T18:00:00.000Z'
+checks:
+  - id: c1
+    type: process.running
+    title: TrackIR
+    required: true
+    params: { name: TrackIR5.exe }
+    remediation:
+      type: process.launch
+      # The launcher starts, but TrackIR5.exe never shows up.
+      params: { exe: '{PROGRAM_FILES_X86}/TrackIR5/TrackIRLauncher.exe', args: [], waitFor: TrackIR5.exe, timeoutMs: 10000 }

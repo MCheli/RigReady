@@ -312,6 +312,11 @@ export interface ChangeOptions {
   reason: string;
   /** From beginGroup(): makes this change part of a multi-file action. */
   group?: ChangeGroup;
+  /**
+   * Back up and journal the change even inside the data root, where changes are
+   * otherwise plain writes (e.g. deleting a profile, so it can be undone).
+   */
+  journal?: boolean;
 }
 
 export interface JournalEntry {

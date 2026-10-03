@@ -29,8 +29,17 @@ requirements:
       - "The last-used profile id survives an app restart: launch, switch to 'DCS F/A-18C', quit, relaunch; the Fly screen shows 'DCS F/A-18C'."
       - "If the last-used profile file was deleted or fails validation, the app opens on the most recently modified valid profile and shows a one-line notice naming the missing profile; it does not show an empty or crashed screen."
       - "With zero profiles, the Fly screen shows an empty state with a single 'Create a setup from this rig' action (see CFG-PROFILE-001) instead of a checklist."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#opens on the last used setup and draws its checklist before checking'
+      - 'src/features/fly/core/fly.test.ts#falls back to the most recently changed setup, with a one-line notice, when the last one is gone or broken'
+      - 'src/features/fly/core/fly.test.ts#with no setups there is nothing active'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: opens on the setup used last, switches in one click, broken files cannot be picked, the choice survives a restart'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: when the setup used last no longer opens, it opens on another with a one-line notice'
+      - 'tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready'
+      - 'artifacts/screens/fly-switch/01-uh-1h.png'
+      - 'artifacts/screens/fly-fallback/01-fallback.png'
+      - 'artifacts/screens/profile-capture/01-empty.png'
 
   - id: FLY-002
     title: Quick profile switch from the Fly screen
@@ -42,8 +51,12 @@ requirements:
       - "Selecting another profile replaces the checklist and re-runs all checks for that profile without navigating away from the Fly screen (E2E screenshot artifacts/screens/fly-switch/)."
       - "Invalid profile files appear in the switcher as disabled entries with the validation error on hover, and cannot be selected."
       - "Switching while checks are still running cancels the in-flight results of the previous profile; no result from the old profile is shown under the new one (unit test with a slow fake ProcessProvider)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#streams results of a tagged run, and a newer run silences an older, slower one'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: opens on the setup used last, switches in one click, broken files cannot be picked, the choice survives a restart'
+      - 'artifacts/screens/fly-switch/02-switcher-open.png'
+      - 'artifacts/screens/fly-switch/03-switched.png'
 
   - id: FLY-003
     title: Checklist grouped by kind
@@ -68,8 +81,15 @@ requirements:
       - "Each status has both a distinct icon and colour (passed green, failed red, warning yellow, checking grey spinner, error red outline); status is never conveyed by colour alone."
       - "A check that throws or times out shows 'error' with the reason, not 'passed' and not 'failed' (unit test with a throwing fake provider)."
       - "Each item shows when it was last evaluated; results older than the last refresh are not shown as current."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/unit/engine.test.ts#turns unknown types, bad params and throwing checks into errors instead of crashing'
+      - 'src/features/fly/core/fly.test.ts#one hung check times out on its own; the others and the verdict do not wait for it'
+      - 'tests/e2e/fly.e2e.ts#all good: opens on the setup, every group is green, Ready'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: one item is checked again on its own; the others keep their time'
+      - 'artifacts/screens/fly-generic-checks/02-script-output-and-error.png'
+      - 'artifacts/screens/fly-pedals-unplugged/01-not-ready.png'
 
   - id: FLY-005
     title: Required vs optional items and overall readiness
@@ -81,8 +101,13 @@ requirements:
       - "The overall banner reads 'Ready' when all required items pass, 'Ready with warnings (n)' when only optional items fail, and 'Not ready (n)' when any required item fails or errors."
       - "Scenario mark-flight + streamdeck-not-running (Stream Deck marked optional) shows the Stream Deck item yellow and the banner 'Ready with warnings (1)', never 'Not ready'."
       - "Scenario mark-flight + pedals-unplugged (pedals required) shows the banner 'Not ready (1)'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/unit/engine.test.ts#is ready only when every required check passes; optional failures warn and never block'
+      - 'tests/e2e/fly.e2e.ts#pedals unplugged: red, no fix available, Launch warns but is not blocked'
+      - 'tests/e2e/fly.e2e.ts#optional device missing: yellow, never red, Ready with warnings; Launch goes straight through'
+      - 'artifacts/screens/fly-optional-missing/01-ready-with-warning.png'
+      - 'artifacts/screens/fly-pedals-unplugged/01-not-ready.png'
 
   - id: FLY-006
     title: Run all checks on open and on demand
@@ -94,8 +119,14 @@ requirements:
       - "A 'Re-check all' control re-runs every check; items go to 'checking' and then to their new status."
       - "Independent checks run concurrently; the total time for the mark-flight F/A-18C profile is bounded by NFR-001."
       - "While checks run, the rest of the screen (switcher, Launch, per-item fixes for completed items) stays interactive."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#one hung check times out on its own; the others and the verdict do not wait for it'
+      - 'src/features/fly/core/fly.test.ts#streams results of a tagged run, and a newer run silences an older, slower one'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: one item is checked again on its own; the others keep their time'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: usable within two seconds of starting'
+      - 'artifacts/screens/fly-all-good/01-ready.png'
+      - 'artifacts/screens/fly-recheck/01-rechecked-one.png'
 
   - id: FLY-007
     title: Run a single check
@@ -105,8 +136,12 @@ requirements:
     done_means:
       - "Every item has a re-check control that re-runs only that item; other items' statuses and timestamps do not change (E2E asserts other timestamps unchanged)."
       - "Re-running an item that changed state on the machine (scenario mutation trackir-started applied mid-run) updates that item from failed to passed."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#re-checks one item without touching the others'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: one item is checked again on its own; the others keep their time'
+      - 'artifacts/screens/fly-recheck/01-rechecked-one.png'
+      - 'artifacts/screens/fly-recheck/02-started-by-hand.png'
 
   - id: FLY-008
     title: Per-check timeout so one hung check never blocks the list
@@ -141,8 +176,14 @@ requirements:
       - "After a fix completes, the app re-runs that item's check and shows the check's result; a fix is reported as successful only if the re-run check passes."
       - "Scenario mark-flight + trackir-not-running where the fake ProcessProvider refuses to start the process: clicking 'Start TrackIR' leaves the item red with 'Started TrackIR5.exe but it is not running after 10 s'."
       - "Fix progress is visible on the item (spinner and verb) while it runs; a second click while running is ignored."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#a fix counts only when its check passes afterwards'
+      - 'src/features/processes/core/processCheck.test.ts#fails honestly when the program does not show up before the timeout'
+      - 'tests/unit/engine.test.ts#runs fixes for unmet checks in remediation order and reports what happened'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: a fix that does not bring the app up leaves it red and says so'
+      - 'artifacts/screens/fly-fix-verified/01-fixing.png'
+      - 'artifacts/screens/fly-fix-verified/02-still-red.png'
 
   - id: FLY-011
     title: Make ready runs every available fix in the right order
@@ -154,8 +195,14 @@ requirements:
       - "Within the apps step, order follows the profile's item order, so a profile can start SimAppPro before Stream Deck."
       - "Scenario mark-flight + mfd2-rotated + trackir-not-running + options-lua-missing: one Make ready click ends with the banner 'Ready'; the E2E asserts the fake providers saw display apply before process start."
       - "Items with no available fix are listed at the end as 'Needs you' with their instructions."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#fixes monitors first, then config files, then apps in the setup order, and verifies each'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: Make ready fixes monitors, files and apps in that order, and ends Ready'
+      - 'src/features/checks-generic/core/checks.test.ts#is never run by Make ready: the item is listed under Needs you with its text'
+      - 'artifacts/screens/fly-make-ready-all/01-four-problems.png'
+      - 'artifacts/screens/fly-make-ready-all/03-ready.png'
+      - 'artifacts/screens/fly-generic-checks/04-needs-you.png'
 
   - id: FLY-012
     title: Make ready progress, partial failure and summary
@@ -178,8 +225,12 @@ requirements:
     done_means:
       - "A remediation marked requiresConfirmation (e.g. script 'Power cycle hub') is not run by Make ready until the user confirms it in a dialog that shows the exact executable and arguments."
       - "Declining the confirmation marks that fix 'skipped by you' in the summary and continues with the others."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#asks before a fix that runs a program: declined is "skipped by you", approved runs, a failure does not stop the rest'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified'
+      - 'artifacts/screens/fly-generic-checks/03-confirm-run.png'
+      - 'artifacts/screens/fly-generic-checks/04-needs-you.png'
 
   - id: FLY-014
     title: Launch is never blocked, only warned
@@ -191,8 +242,14 @@ requirements:
       - "Launching while not ready shows a warning listing the failing required items with 'Launch anyway' and 'Cancel'; 'Launch anyway' starts the game."
       - "Launching while 'Ready with warnings' launches without a dialog and shows the warnings as a toast."
       - "Scenario mark-flight + pedals-unplugged: E2E clicks Launch, confirms, and asserts the fake ProcessProvider received the DCS start call."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/e2e/fly.e2e.ts#pedals unplugged: red, no fix available, Launch warns but is not blocked'
+      - 'tests/e2e/fly.e2e.ts#optional device missing: yellow, never red, Ready with warnings; Launch goes straight through'
+      - 'tests/unit/app.test.ts#Launch starts the game whether or not the setup is ready'
+      - 'artifacts/screens/fly-pedals-unplugged/02-launch-warning.png'
+      - 'artifacts/screens/fly-pedals-unplugged/03-launched-anyway.png'
+      - 'artifacts/screens/fly-optional-missing/02-launched-with-warning.png'
 
   - id: FLY-015
     title: Launch target definition
@@ -228,8 +285,11 @@ requirements:
       - "A profile can list pre-launch actions (start program, run script, apply display layout, set audio device) that run in listed order before the game starts."
       - "Each action shows in a launch progress panel as pending, running, done, failed or skipped."
       - "Scenario run: a profile with pre-launch 'Start VoiceAttack' then 'run script warmup.cmd' results in the fake Shell receiving both calls in order before the DCS start call."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#runs pre-launch actions in order before the game, and post-launch ones at their delay after it'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
+      - 'artifacts/screens/fly-launch-actions/02-launched.png'
 
   - id: FLY-018
     title: Post-launch actions
@@ -240,8 +300,12 @@ requirements:
       - "Post-launch actions run after the game process is confirmed running, in listed order."
       - "A post-launch action can have a delay in seconds (e.g. 20 s after DCS starts); the fake Clock test asserts it fires at the delay."
       - "Post-launch failures are reported in the launch panel and log but never close or affect the game."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#runs pre-launch actions in order before the game, and post-launch ones at their delay after it'
+      - 'src/features/fly/core/fly.test.ts#a failing post-launch step is reported and never touches the game'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
+      - 'artifacts/screens/fly-launch-actions/02-launched.png'
 
   - id: FLY-019
     title: Action continue-on-error
@@ -252,8 +316,11 @@ requirements:
       - "Each pre-launch action has continueOnError (default true). A failing action with continueOnError true is marked failed and the sequence continues."
       - "A failing pre-launch action with continueOnError false pauses the launch and asks 'Launch anyway' / 'Cancel' with the failure output; it never silently aborts and never silently proceeds."
       - "Unit test covers both values with a fake Shell returning exit code 1."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#a failing step that must not fail pauses the launch; "Launch anyway" goes on after it'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
+      - 'artifacts/screens/fly-launch-actions/01-paused.png'
 
   - id: FLY-020
     title: Action wait-for-completion and timeout
@@ -265,8 +332,12 @@ requirements:
       - "With waitForCompletion true, the next action starts only after exit; a script exceeding its timeout is killed and marked 'timed out after 30 s'."
       - "With waitForCompletion false, the next action starts as soon as the process has spawned."
       - "Unit tests with fake Clock and fake Shell cover wait, no-wait and timeout."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#an action that hangs is timed out; waiting and not waiting for a script are honoured'
+      - 'src/features/processes/core/processCheck.test.ts#as a launch action can wait for the program to finish, within its timeout'
+      - 'src/features/checks-generic/core/checks.test.ts#the fix shows the exact command to confirm, runs it, and reports exit codes and output'
+      - 'artifacts/screens/fly-launch-actions/02-launched.png'
 
   - id: FLY-021
     title: Hidden actions
@@ -301,8 +372,15 @@ requirements:
       - "Apps are asked to close gracefully first and are force-terminated only after 10 s and only if the item allows force (default false); unclosed apps are listed."
       - "Stand down never closes the game itself unless the game is still running and the user confirms."
       - "Scenario mark-flight after a Make ready that started TrackIR and SimAppPro: Stand down results in the fake ProcessProvider receiving stop for both and the summary 'Closed 2 apps'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#closes only the apps RigReady started this session, politely, and says how many'
+      - 'src/features/fly/core/fly.test.ts#never closes the game unless asked, closes what launch actions started, and runs its own actions'
+      - 'src/features/processes/core/processCheck.test.ts#stand down closes politely: always, never, or only what RigReady started this session'
+      - 'src/features/processes/core/processCheck.test.ts#stand down lists an app that will not close, and forces it only when the item allows'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
+      - 'artifacts/screens/fly-launch-actions/03-game-running.png'
+      - 'artifacts/screens/fly-launch-actions/04-stood-down.png'
 
   - id: FLY-024
     title: Stand down restores the desk display layout
@@ -313,8 +391,14 @@ requirements:
       - "Settings name one display layout as the desk layout; Stand down applies it with the same timed-revert behaviour as FIX-002."
       - "Scenario mark-flight with flying layout active: after Stand down the fake DisplayProvider holds the desk layout (Dell on, MFD screens off or as recorded) and the summary says 'Applied desk layout'."
       - "If no desk layout is defined, Stand down skips this step and says so instead of reporting success."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/unit/settings.test.ts#applies the desk layout named in the settings, with the keep-or-revert countdown'
+      - 'tests/unit/app.test.ts#desk state: Make ready fixes the layout; Go back restores the desk; Stand down does too and closes TrackIR'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: Stand down applies the desk layout chosen in Settings, with the keep prompt'
+      - 'artifacts/screens/fly-stand-down-desk/01-desk-applied.png'
+      - 'artifacts/screens/fly-stand-down-desk/02-at-the-desk.png'
+      - 'artifacts/screens/fly-launch-actions/04-stood-down.png'
 
   - id: FLY-025
     title: Stand down extras and summary
@@ -324,8 +408,13 @@ requirements:
     done_means:
       - "A profile can list post-session actions (restore audio default, run script) that run during Stand down after apps close."
       - "Stand down shows a summary of each step's real outcome and is reachable from the Fly screen and the tray menu."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/core/fly.test.ts#never closes the game unless asked, closes what launch actions started, and runs its own actions'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
+      - 'tests/e2e/tray.e2e.ts#tray: shows readiness as a colour, switches setup, and runs Make ready, Launch and Stand down'
+      - 'artifacts/screens/fly-launch-actions/04-stood-down.png'
+      - 'artifacts/screens/tray/02-stood-down-from-tray.png'
 
   - id: FLY-026
     title: Fly screen usable within 2 seconds
@@ -348,8 +437,12 @@ requirements:
       - "The Fly screen is a single page with profile switcher, banner, checklist, Make ready, Launch and Stand down, and no configure-mode navigation in its main area."
       - "A single control switches to Configure mode (profiles, bindings, backups, devices, settings) and back; the app always starts in Fly mode."
       - "Screenshots artifacts/screens/fly/ and artifacts/screens/configure/ show visibly different layouts."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - test: 'tests/e2e/fly-depth.e2e.ts#fly: the Fly screen is one page with its own controls'
+      - test: 'tests/e2e/fly-depth.e2e.ts#configure: one switch to Configure and back; the app starts in Fly'
+      - 'artifacts/screens/fly/01-fly.png'
+      - 'artifacts/screens/configure/01-configure.png'
 
   - id: FLY-028
     title: Checklist reacts to device connect and disconnect
@@ -425,8 +518,13 @@ requirements:
       - "A process check passes when a process with the given image name (case-insensitive, e.g. TrackIR5.exe) is running; optionally it must also match a full executable path."
       - "Scenario mark-flight passes TrackIR, SimAppPro and Stream Deck; mark-flight + trackir-not-running fails 'TrackIR' with 'Not running'."
       - "Rig smoke: the check finds explorer.exe on the real machine without admin rights."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/processes/core/processCheck.test.ts#passes when the app runs (case-insensitive) and fails when it does not'
+      - 'src/features/processes/core/processCheck.test.ts#optionally requires the exact executable path'
+      - 'tests/rig/checks.rig.test.ts#the process check finds explorer.exe, by name and by its full path'
+      - 'tests/e2e/fly.e2e.ts#TrackIR not running: Make ready starts it'
+      - 'artifacts/screens/fly-trackir-not-running/01-not-running.png'
 
   - id: CHECK-005
     title: Windows service check
@@ -437,8 +535,12 @@ requirements:
       - "A service check passes when the named Windows service is in state Running and reports Stopped, Start pending or Not installed otherwise."
       - "Fixture provides a service list; unit tests cover running, stopped and not installed."
       - "Rig smoke reads the state of the 'Audiosrv' service without admin rights."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/checks-generic/core/checks.test.ts#reports running, stopped, start pending and not installed'
+      - 'tests/rig/checks.rig.test.ts#the service check reads Windows Audio (Audiosrv) without admin rights'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified'
+      - 'artifacts/screens/fly-generic-checks/01-every-kind.png'
 
   - id: CHECK-006
     title: Display layout check
@@ -512,8 +614,14 @@ requirements:
       - "A file check with a path variable path (e.g. {DCS_USER}/Config/options.lua) passes when the file exists and fails 'Missing' otherwise."
       - "A folder variant passes when the folder exists and contains at least one file matching an optional glob (e.g. {DCS_USER}/Config/Input/FA-18C_hornet/joystick/*.diff.lua)."
       - "An unresolvable path variable (game not detected) shows 'error: DCS user folder not found' rather than 'Missing'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/checks-generic/core/checks.test.ts#passes when the file is there, says Missing when not, and resolves path variables'
+      - 'src/features/checks-generic/core/checks.test.ts#checks a folder for files matching a pattern'
+      - 'src/features/checks-generic/core/checks.test.ts#is an error, not "Missing", when the game behind the variable is not on this PC'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: a path whose game folder is not on this PC is an error, not "Missing"'
+      - 'artifacts/screens/fly-path-variable/01-variable-missing.png'
+      - 'artifacts/screens/fly-generic-checks/01-every-kind.png'
 
   - id: CHECK-011
     title: Config file content rule
@@ -524,8 +632,12 @@ requirements:
       - "A file check can add a content rule: contains text, matches regex, or (for .lua, .ini, .json) a key path equals a value, e.g. options.lua graphics.multiMonitorSetup == 'RigReady MFDs'."
       - "Failure detail shows the expected and actual value, e.g. 'multiMonitorSetup is wwtMonitor, expected RigReady MFDs'."
       - "Unit tests run each rule kind against fixture copies of options.lua, an app.ini and a JSON file."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/checks-generic/core/checks.test.ts#compares a Lua key and says what it is and what was expected'
+      - 'src/features/checks-generic/core/checks.test.ts#reads INI sections (with trailing comments) and JSON paths'
+      - 'src/features/checks-generic/core/checks.test.ts#checks for text or a pattern, and reports a missing file or variable'
+      - 'artifacts/screens/fly-generic-checks/01-every-kind.png'
 
   - id: CHECK-012
     title: Script check
@@ -537,8 +649,12 @@ requirements:
       - "On failure the item shows the exit code and the captured stdout/stderr (last 50 lines) in an expandable panel."
       - "A script exceeding its timeout (default 10 s) is killed and the item shows error 'timed out'."
       - "A script whose executable is missing shows error 'script not found: <path>' rather than failed."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/checks-generic/core/checks.test.ts#passes on a success exit code and shows the output of a failure'
+      - 'src/features/checks-generic/core/checks.test.ts#says a missing script is missing (error), and times out a hung one'
+      - 'src/features/checks-generic/core/checks.test.ts#a script that never answers is reported after its timeout, without waiting for it'
+      - 'artifacts/screens/fly-generic-checks/02-script-output-and-error.png'
 
   - id: CHECK-013
     title: Game updated since last verified
@@ -579,8 +695,12 @@ requirements:
     done_means:
       - "Every check type above is registered with registerCheck from its feature folder; there is no switch over check types in core (lint rule or unit test that greps for it)."
       - "A profile item with an unknown check type loads, shows 'error: check type xyz is not available in this version', and does not break the rest of the checklist."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/checks-generic/core/registration.test.ts#are registered by features; core never switches over them'
+      - 'tests/unit/engine.test.ts#turns unknown types, bad params and throwing checks into errors instead of crashing'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified'
+      - 'artifacts/screens/fly-generic-checks/02-script-output-and-error.png'
 
   # ---------------------------------------------------------------------------
   # REMEDIATIONS
@@ -595,8 +715,15 @@ requirements:
       - "A start-app fix launches an executable with an argument array and optional working directory via Shell.run, then waits up to 10 s for the checked process to appear."
       - "Scenario mark-flight + simapppro-not-running: clicking 'Start SimAppPro' makes the item green."
       - "When the executable path does not exist the fix reports 'SimAppPro.exe not found at <path>' and offers to browse for it in the profile editor."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/processes/core/processCheck.test.ts#starts the program with its argument array, confirms it is running and remembers it'
+      - 'src/features/processes/core/processCheck.test.ts#says where it looked when the program is not there (real spawn)'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: Start SimAppPro from its row turns it green'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: a fix that does not bring the app up leaves it red and says so'
+      - 'artifacts/screens/fly-start-app/01-not-running.png'
+      - 'artifacts/screens/fly-start-app/02-started.png'
+      - 'artifacts/screens/fly-fix-verified/02-still-red.png'
 
   - id: FIX-002
     title: Apply display layout remediation with timed revert
@@ -621,8 +748,15 @@ requirements:
       - "If the target exists it is first snapshotted to the auto-backup journal (BACKUP-012) so the restore itself can be undone."
       - "Scenario mark-flight + options-lua-missing: the fix restores options.lua and the file check turns green."
       - "If no backup contains the file, the fix button is not shown and the item says 'No backup of this file yet'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/checks-generic/core/checks.test.ts#offers no fix until there is a copy, then restores the newest copy and the check passes'
+      - 'src/features/checks-generic/core/checks.test.ts#uses the automatic backup FileStore took before a change, and refuses what cannot be resolved'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: Make ready fixes monitors, files and apps in that order, and ends Ready'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified'
+      - 'artifacts/screens/fly-make-ready-all/01-four-problems.png'
+      - 'artifacts/screens/fly-make-ready-all/03-ready.png'
+      - 'artifacts/screens/fly-generic-checks/01-every-kind.png'
 
   - id: FIX-004
     title: Set default audio device remediation
@@ -661,8 +795,14 @@ requirements:
     done_means:
       - "An instructions fix shows the profile's markdown text (sanitised: no HTML, no script, links open in the external browser only after a confirm) in a panel next to the item."
       - "Instruction-only items are listed under 'Needs you' by Make ready and never reported as fixed."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/fly/renderer/markdown.test.ts#turns paragraphs, lists, bold, code and links into plain data'
+      - 'src/features/fly/renderer/markdown.test.ts#never makes HTML or non-web links live: they stay text'
+      - 'src/features/checks-generic/core/checks.test.ts#is never run by Make ready: the item is listed under Needs you with its text'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified'
+      - 'artifacts/screens/fly-generic-checks/01-every-kind.png'
+      - 'artifacts/screens/fly-generic-checks/04-needs-you.png'
 
   # ---------------------------------------------------------------------------
   # PROFILES
@@ -689,8 +829,11 @@ requirements:
       - "The capture lists running user applications (excluding Windows system processes and RigReady itself) with known sim helpers (TrackIR, SimAppPro, Stream Deck, VoiceAttack, SimHub, SRS, Fanatec control panel) sorted first and pre-ticked."
       - "Each ticked app becomes a process check with a start-app fix using the running process's full executable path."
       - "Scenario mark-flight capture produces process checks for TrackIR5.exe, SimAppPro.exe and StreamDeck.exe."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
+      - 'tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready'
+      - 'artifacts/screens/profile-capture/02-capture.png'
 
   - id: CFG-PROFILE-003
     title: Capture monitor layout and audio devices
@@ -724,8 +867,12 @@ requirements:
     done_means:
       - "Before saving, a review lists every item that will be created, grouped as in Fly mode, each with a required/optional toggle and remove control."
       - "Saving writes one YAML file under {RIGREADY_HOME}/profiles/ and opens the Fly screen on the new profile, which then passes all its checks on the unchanged rig (scenario mark-flight)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready'
+      - 'src/features/profiles/core/profiles.test.ts#creating from the capture opens the Fly screen on the new setup; every part can be skipped'
+      - 'artifacts/screens/profile-capture/02-capture.png'
+      - 'artifacts/screens/profile-capture/03-ready.png'
 
   - id: CFG-PROFILE-006
     title: Edit profile basics and launch
@@ -749,8 +896,16 @@ requirements:
       - "Each item's required flag and timeout are editable."
       - "Adding a device check offers 'pick from connected devices' and 'press a button on it' rather than typing VID/PID; typing is still allowed."
       - "E2E: edit the TrackIR item to optional, save, return to Fly mode with mutation trackir-not-running, and see a yellow item."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#names the device a button was pressed on; buttons already held do not count'
+      - 'src/features/profiles/core/profiles.test.ts#every field of every registered check and fix type has a control'
+      - 'tests/e2e/profiles.e2e.ts#setups: an item made optional is yellow on the Fly screen'
+      - 'tests/e2e/profiles.e2e.ts#setups: a device is added by pressing a button on it'
+      - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
+      - 'artifacts/screens/profile-edit-item/01-editing-trackir.png'
+      - 'artifacts/screens/profile-edit-item/02-yellow-on-fly.png'
+      - 'artifacts/screens/profile-press-button/02-found.png'
 
   - id: CFG-PROFILE-008
     title: Edit remediations and launch actions
@@ -761,8 +916,13 @@ requirements:
       - "Each item's remediation can be set, changed or removed, choosing only from registered remediation types valid for that check type."
       - "Pre-launch, post-launch and stand-down actions can be added, edited, reordered and removed with all options (continueOnError, waitForCompletion, hidden, timeoutSeconds, delay, closeOnStandDown)."
       - "Every field that exists in the profile schema is editable in the UI; a test walks the zod schema and asserts each leaf field has an editor control."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#every field of every registered check and fix type has a control'
+      - 'src/features/profiles/core/profiles.test.ts#every field a profile has is edited somewhere in the setup editor'
+      - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
+      - 'artifacts/screens/profile-add-check/01-file-check.png'
+      - 'artifacts/screens/profile-edit-item/01-editing-trackir.png'
 
   - id: CFG-PROFILE-009
     title: Clone a profile
@@ -772,8 +932,11 @@ requirements:
     done_means:
       - "Clone creates a new profile file with a new id and the name '<name> (copy)', then opens it in the editor for renaming."
       - "The clone is deep: editing the clone's TrackIR item leaves the original file unchanged (unit test)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#clones deeply under a new id and opens nothing shared with the original'
+      - 'tests/e2e/profiles.e2e.ts#setups: clone, copy items from another setup, delete with a confirm; broken files are listed with the reason'
+      - 'artifacts/screens/profile-clone-copy/01-list.png'
 
   - id: CFG-PROFILE-010
     title: Copy items between profiles
@@ -784,8 +947,12 @@ requirements:
       - "'Copy from profile...' lists another profile's checklist items and actions with checkboxes; ticked items are appended to the current profile."
       - "Items that already exist (same type and same target, e.g. same process name) are flagged and skipped unless the user chooses 'Add anyway'."
       - "E2E: copy TrackIR and Stream Deck items from 'DCS F/A-18C' to 'DCS UH-1H' and see them in the UH-1H Fly checklist."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#compares type and target, ignoring case'
+      - 'tests/e2e/profiles.e2e.ts#setups: clone, copy items from another setup, delete with a confirm; broken files are listed with the reason'
+      - 'artifacts/screens/profile-clone-copy/02-copy-dialog.png'
+      - 'artifacts/screens/profile-clone-copy/03-copied-on-fly.png'
 
   - id: CFG-PROFILE-011
     title: Delete a profile
@@ -796,8 +963,12 @@ requirements:
       - "Delete asks for confirmation naming the profile; on confirm the file moves to {RIGREADY_HOME}/backups/auto/<timestamp>/ (journal entry, undoable) rather than being erased."
       - "Deleting the last-used profile makes the app fall back as in FLY-001."
       - "Named display layouts and backups referenced by the profile are not deleted."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#deletes into an undoable backup, and the Fly screen falls back'
+      - 'tests/e2e/profiles.e2e.ts#setups: clone, copy items from another setup, delete with a confirm; broken files are listed with the reason'
+      - 'artifacts/screens/profile-clone-copy/04-delete-confirm.png'
+      - 'artifacts/screens/profile-clone-copy/05-in-safety.png'
 
   - id: CFG-PROFILE-012
     title: Profiles are YAML validated by a schema
@@ -809,8 +980,14 @@ requirements:
       - "A directory with one valid profile and one file containing a YAML syntax error and one with a schema error lists the valid profile normally and the other two as invalid with file name, line (if known) and message."
       - "Saving never writes a file that fails the schema; the editor shows the field errors instead."
       - "Profiles carry schemaVersion; a v1 fixture loads through a migration test when the version changes."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#lists a valid profile normally and broken ones as invalid, with file, line and message'
+      - 'src/features/profiles/core/profiles.test.ts#a version 1 file loads through the migration, and a newer one is reported instead of guessed'
+      - 'src/features/profiles/core/profiles.test.ts#never writes a profile that fails its schema or its check types'
+      - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
+      - 'artifacts/screens/profile-clone-copy/01-list.png'
+      - 'artifacts/screens/profile-add-check/02-field-error.png'
 
   - id: CFG-PROFILE-013
     title: Hand-edit a profile and reload
@@ -822,8 +999,16 @@ requirements:
       - "Changes saved on disk are picked up within 2 s by a file watcher; the Fly screen re-renders the active profile and re-runs checks."
       - "A hand edit that breaks the schema keeps the last valid in-memory version active and shows a banner with the validation error until fixed."
       - "Comments and key order in a hand-edited file survive a round trip only if RigReady did not edit that profile; when RigReady saves, it warns once that comments will be lost (or preserves them if the chosen YAML library supports it)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#opens the YAML file with Windows and shows it in Explorer, through an argument array'
+      - 'src/features/profiles/core/profiles.test.ts#says when a hand-edited file has comments a save would drop'
+      - 'src/features/fly/core/fly.test.ts#notices profile files changed, added or removed on disk'
+      - 'src/features/fly/core/fly.test.ts#keeps the last version that loaded when a hand edit breaks the active setup'
+      - 'tests/e2e/profiles.e2e.ts#setups: a hand edit shows up on its own; a broken edit keeps the last good version with a banner'
+      - 'artifacts/screens/profile-hand-edit/01-broken-edit.png'
+      - 'artifacts/screens/profile-hand-edit/02-fixed.png'
+      - 'artifacts/screens/profile-hand-edit/03-comments-warning.png'
 
   - id: CFG-PROFILE-014
     title: Generic and custom games
@@ -846,8 +1031,13 @@ requirements:
       - "All variables are resolved only by KnownFolders and game modules; with USERPROFILE pointed at a temp dir, {USER} resolves there (unit test)."
       - "Capture and editor write paths with variables where a prefix matches, e.g. C:/Users/Owner/Saved Games/DCS becomes {DCS_USER}."
       - "An unknown variable fails schema validation with the variable name."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#path variables resolve under the user folder of this run, never the real one'
+      - 'src/features/profiles/core/profiles.test.ts#refuses unknown path variables by name, and keeps game variables of games not installed'
+      - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
+      - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
+      - 'artifacts/screens/profile-add-check/01-file-check.png'
 
   # ---------------------------------------------------------------------------
   # DISPLAYS
@@ -2812,8 +3002,14 @@ requirements:
       - "Closing the window hides it to the tray (setting, default on); the tray icon reflects readiness of the last-used profile (green, yellow, red) when checks have run."
       - "Tray menu offers: Open, profile list with quick switch, Make ready, Launch, Stand down, Quit."
       - "Only one instance runs; starting a second focuses the first."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/unit/tray.test.ts#the icon badge follows readiness: none until checked, then green, yellow or red'
+      - 'tests/unit/tray.test.ts#lists the setups for a quick switch, and Launch only for a setup that can launch'
+      - 'tests/e2e/tray.e2e.ts#tray: shows readiness as a colour, switches setup, and runs Make ready, Launch and Stand down'
+      - 'tests/e2e/tray.e2e.ts#tray: closing the window keeps RigReady in the tray, and starting it again brings the window back'
+      - 'artifacts/screens/tray/01-not-ready.png'
+      - 'artifacts/screens/tray-single-instance/01-shown-again.png'
 
   - id: PLAT-003
     title: Auto-update with channels
