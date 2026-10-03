@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { readDirectInputIdentities } from '../core/directInput';
 import { nullLogger } from '../core/logger';
 import { createWindowsPorts } from '../platform/windows';
 
@@ -29,6 +30,8 @@ export async function runDiagnose(
     await section('processes', () => ports.processes.list());
     await section('audio', () => ports.audio.read());
     await section('steamLibraries', () => ports.folders.steamLibraries());
+    await section('services', () => ports.services.list());
+    await section('directInputRegistry', () => readDirectInputIdentities(ports.registry));
     await section('input', async () => {
       const started = await ports.input.start();
       await ports.input.stop();

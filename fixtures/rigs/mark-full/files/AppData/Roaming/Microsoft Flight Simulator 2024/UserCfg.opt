@@ -1,0 +1,276 @@
+Version 66
+{Video
+	Adapter "NVIDIA GeForce RTX 5080"
+	Monitor 0
+	Windowed 1
+	FullscreenBorderless 1
+	WindowActive 0
+	Resolution 5120 1369
+	FullScreenResolution 5120 1440
+	PosX 0
+	PosY 23
+	AntiAliasing DLSS
+	DLSSMode AUTO
+	Reflex ON
+	FSRMode BALANCED
+	FrameGeneration NONE
+	NBFramesToGenerate 1
+	PrimaryScaling 1.000000
+	SecondaryScaling 1.000000
+	SharpenAmount 1.000000
+	ExposureBias 0.000000
+	DynamicSettings 1
+	TargetFrameRate 30
+	ReprojectionMode 0
+	EnvironmentBlendMode 0
+	FoveatedRendering 0
+	FoveatedRenderingScale 0.500000
+	WorldScalePercentVR 100
+	AntiAliasingVR TAA
+	DLSSModeVR AUTO
+	ReflexVR ON
+	FSRModeVR PERFORMANCE
+	FrameGenerationVR NONE
+	NBFramesToGenerateVR 1
+	PrimaryScalingVR 0.800000
+	SecondaryScalingVR 1.000000
+	SharpenAmountVR 1.000000
+	ExposureBiasVR 0.000000
+	DynamicSettingsVR 1
+	TargetFrameRateVR 60
+	VSync 1
+	HDR10 0
+	IntelMessageBoxDisplayed 0
+	CurrentGPUDriverVersion 0.0.0
+	DoNotShowGpuDriverRequirementPopup 0
+	FrameLimiter 0
+}
+{Graphics
+	Version 2.1.0
+	Preset High
+	{Texture
+		MaxAnisotropy 8
+		Quality 1
+	}
+	{Terrain
+		LoDFactor 1.000000
+		POMMaxDist 20.000000
+		POMSubsplitsMaxDist 7.500000
+	}
+	{OffscreenTerrainPreCaching
+		Enabled 1
+		Quality 1
+	}
+	{ObjectsLoD
+		LoDFactor 1.000000
+	}
+	{Shadows
+		MaxSliceCount 4
+		Size 1536
+		DLightContributionCullingThresholdS0 0.100000
+		DLightContributionCullingThresholdS1 0.100000
+		DLightContributionCullingThresholdS2 0.100000
+		DLightContributionCullingThresholdS3 0.100000
+		OmniContributionCullingThreshold 0.020000
+	}
+	{HeightFieldShadows
+		Enabled 1
+		Size 512
+	}
+	{ContactShadows
+		Enabled 1
+		Quality 2
+	}
+	{Water
+		FFTSize 512
+	}
+	{VolumetricClouds
+		Enabled 1
+		Quality 2
+	}
+	{VolumetricLights
+		Enabled 1
+		Quality 2
+	}
+	{RaytracedShadows
+		Enabled 1
+	}
+	{ReflectionProbe
+		Size 256
+	}
+	{SSR
+		Enabled 1
+		HalfRes 0
+		Quality 2
+	}
+	{WindShield
+		Quality 2
+	}
+	{SSAO
+		Enabled 1
+		FullRes 0
+		Quality 2
+	}
+	{DisplacementMapping
+		Enabled 1
+	}
+	{DOF
+		Enabled 1
+		Quality 2
+	}
+	{MotionBlur
+		Enabled 1
+		Quality 2
+	}
+	{Buildings
+		Quality 2
+	}
+	{Procedural
+		TreesQuality 2
+		PlantsQuality 2
+		RocksQuality 2
+		GrassQuality 2
+	}
+	{Characters
+		Quantity 2
+		Quality 2
+		Variety 2
+	}
+	{Traffic
+		AircraftTrafficQuantity 2
+		AircraftTrafficVariety 2
+		AirportsServicesQuantity 2
+		AirportsServicesVariety 2
+		ParkedAircraftQuantity 2
+		ParkedAircraftVariety 2
+		RoadQuality 2
+		SeaQuality 2
+	}
+	{Fauna
+		Quantity 2
+	}
+	{GlassCockpitsRefreshRate
+		Quality 1
+	}
+	{Seatbelts
+		Enabled 1
+	}
+	{Particles
+		Quality 1
+	}
+}
+{GraphicsVR
+	Version 2.1.0
+	Preset VRMedium
+	{Texture
+		MaxAnisotropy 4
+		Quality 2
+	}
+	{Terrain
+		LoDFactor 0.500000
+		POMMaxDist 20.000000
+		POMSubsplitsMaxDist 7.500000
+	}
+	{OffscreenTerrainPreCaching
+		Enabled 1
+		Quality 0
+	}
+	{ObjectsLoD
+		LoDFactor 0.500000
+	}
+	{Shadows
+		MaxSliceCount 4
+		Size 1024
+		DLightContributionCullingThresholdS0 0.100000
+		DLightContributionCullingThresholdS1 0.100000
+		DLightContributionCullingThresholdS2 0.100000
+		DLightContributionCullingThresholdS3 0.100000
+		OmniContributionCullingThreshold 0.030000
+	}
+	{HeightFieldShadows
+		Enabled 1
+		Size 256
+	}
+	{ContactShadows
+		Enabled 1
+		Quality 1
+	}
+	{Water
+		FFTSize 256
+	}
+	{VolumetricClouds
+		Enabled 1
+		Quality 1
+	}
+	{VolumetricLights
+		Enabled 1
+		Quality 0
+	}
+	{RaytracedShadows
+		Enabled 0
+	}
+	{ReflectionProbe
+		Size 192
+	}
+	{SSR
+		Enabled 1
+		HalfRes 0
+		Quality 0
+	}
+	{WindShield
+		Quality 2
+	}
+	{SSAO
+		Enabled 1
+		FullRes 0
+		Quality 0
+	}
+	{DisplacementMapping
+		Enabled 0
+	}
+	{DOF
+		Enabled 0
+		Quality 1
+	}
+	{MotionBlur
+		Enabled 0
+		Quality 1
+	}
+	{Buildings
+		Quality 0
+	}
+	{Procedural
+		TreesQuality 0
+		PlantsQuality 0
+		RocksQuality 0
+		GrassQuality 0
+	}
+	{Characters
+		Quantity -1
+		Quality 0
+		Variety 0
+	}
+	{Traffic
+		AircraftTrafficQuantity -1
+		AircraftTrafficVariety 0
+		AirportsServicesQuantity -1
+		AirportsServicesVariety 0
+		ParkedAircraftQuantity -1
+		ParkedAircraftVariety 0
+		RoadQuality -1
+		SeaQuality -1
+	}
+	{Fauna
+		Quantity -1
+	}
+	{GlassCockpitsRefreshRate
+		Quality 0
+	}
+	{Seatbelts
+		Enabled 0
+	}
+	{Particles
+		Quality 0
+	}
+}
+InstalledPackagesPath "C:\Users\User\AppData\Roaming\Microsoft Flight Simulator 2024\Packages"

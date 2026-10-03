@@ -33,6 +33,8 @@ describe('feature discovery', () => {
       'games',
       'processes',
       'profiles',
+      'safety',
+      'settings',
     ]);
     expect(app.wiring.context.checks.checkTypes()).toEqual([
       'device.connected',
@@ -298,13 +300,25 @@ describe('Devices and games', () => {
 
   it('DCS module finds Steam installs in every library and the Saved Games folder', async () => {
     app = await wiredApp('flying-all-good');
-    // The scenario mirrors the rig's recorded Saved Games folder into the fake home.
+    // The scenario mirrors the rig's recorded files into the fake home: the Saved Games
+    // folder, and the Steam library (found through the recorded registry) with DCS in it.
     const savedGames = path.join(app.ports.folders.savedGames(), 'DCS');
+    const recorded = path.join(app.home, 'Program Files (x86)', 'Steam', 'steamapps', 'common');
     expect(await app.invoke<GameSummary[]>('games:list')).toEqual([
       {
         id: 'dcs',
         name: 'DCS World',
-        installs: [],
+        installs: [
+          {
+            source: 'steam',
+            installDir: path.join(recorded, 'DCSWorld'),
+            launch: {
+              exe: path.join(recorded, 'DCSWorld', 'bin', 'DCS.exe'),
+              args: [],
+              cwd: path.join(recorded, 'DCSWorld', 'bin'),
+            },
+          },
+        ],
         configLocations: [{ id: 'dcs', label: 'Saved Games\\DCS', path: savedGames }],
         problems: [],
       },

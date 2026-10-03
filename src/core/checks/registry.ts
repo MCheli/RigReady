@@ -61,6 +61,17 @@ export interface CaptureDefinition {
   capture(ctx: CheckContext): Promise<Result<CaptureCandidate[]>>;
 }
 
+/** Something Stand down does once, whatever the profile's checks are (e.g. apply the desk layout). */
+export interface StandDownStep {
+  id: string;
+  /** Shown as the step's title in the Stand down summary. */
+  label: string;
+  /** Steps run in ascending order, after the per-check stand-down actions. */
+  order: number;
+  /** Resolves with what was done, or null when there was nothing to do. */
+  run(ctx: CheckContext): Promise<Result<string | null>>;
+}
+
 /**
  * Check, remediation and capture types are registered by features. There is no
  * central switch statement to edit.
@@ -69,6 +80,7 @@ export class CheckRegistry {
   private checks = new Map<string, CheckDefinition>();
   private remediations = new Map<string, RemediationDefinition>();
   private captures = new Map<string, CaptureDefinition>();
+  private steps = new Map<string, StandDownStep>();
 
   registerCheck<P>(definition: CheckDefinition<P>): void {
     if (this.checks.has(definition.type)) {
@@ -89,6 +101,15 @@ export class CheckRegistry {
       throw new Error(`Capture registered twice: ${definition.id}`);
     }
     this.captures.set(definition.id, definition);
+  }
+
+  registerStandDownStep(step: StandDownStep): void {
+    if (this.steps.has(step.id)) throw new Error(`Stand-down step registered twice: ${step.id}`);
+    this.steps.set(step.id, step);
+  }
+
+  standDownSteps(): StandDownStep[] {
+    return [...this.steps.values()].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
   }
 
   check(type: string): CheckDefinition | undefined {

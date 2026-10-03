@@ -1,0 +1,243 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "FANATEC ClubSport Wheel Base V2": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Jolt magnitude": 1.5,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 1.5,
+                "Rumble strip update thresh": 0.05,
+                "Steering effects strength": 10000,
+                "Steering resistance coefficient": 0.1,
+                "Steering resistance saturation": 0.1,
+                "Steering resistance type": 0,
+                "Steering torque capability": 7.0
+            },
+            "Type": "Wheel",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RX-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RY+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RY-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RZ+": {
+                    "center": 1,
+                    "max": 1,
+                    "min": 1
+                },
+                "RZ-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Y-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Z+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Z-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                }
+            },
+            "instance name": "FANATEC ClubSport Wheel Base V2",
+            "layout": null,
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": 1,
+                "Hardware 3Digit Display": 1,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1.0,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0.0,
+                "Steering Wheel Maximum Rotation": 900,
+                "Steering Wheel Maximum Rotation From Driver": true,
+                "Steering Wheel Range": 612,
+                "Throttle Sensitivity": 1,
+                "use leds": true
+            },
+            "product guid": "10EB7-0-0-0000000000000000",
+            "product name": "FANATEC ClubSport Wheel Base V2"
+        }
+    },
+    "Input": {
+        "Bias Forward": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 9
+        },
+        "Bias Rearward": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 8
+        },
+        "Brake": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 11
+        },
+        "Clutch In": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 13
+        },
+        "Decrement Mixture": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 6
+        },
+        "Display Mode": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 35
+        },
+        "Driving Cameras": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 38
+        },
+        "Headlights": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 53
+        },
+        "Ignition": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 40
+        },
+        "Increment Mixture": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 7
+        },
+        "Look Left": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 57
+        },
+        "Look Right": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 56
+        },
+        "Lower Track Bar": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 33
+        },
+        "Neutral": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 42
+        },
+        "Pit Menu Dec": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 19
+        },
+        "Pit Menu Down": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 18
+        },
+        "Pit Menu Inc": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 17
+        },
+        "Pit Menu Up": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 16
+        },
+        "Pit Request": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 43
+        },
+        "Raise Track Bar": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 34
+        },
+        "Shift Down": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 37
+        },
+        "Shift Up": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 36
+        },
+        "Speed Limiter": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 39
+        },
+        "Starter": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 41
+        },
+        "Steer Left": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 1
+        },
+        "Steer Right": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 0
+        },
+        "Throttle": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 3
+        },
+        "Vehicle Status": {
+            "device": "FANATEC ClubSport Wheel Base V2",
+            "id": 32
+        }
+    },
+    "Type": "Direct Input"
+}

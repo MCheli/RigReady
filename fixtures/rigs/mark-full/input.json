@@ -2,81 +2,199 @@
   {
     "index": 0,
     "name": "FANATEC Podium Wheel Base DD2",
-    "guid": "0300fbe3b70e00000700000000000000",
+    "guid": "20B0BED0-03A4-11F1-8001-444553540000",
+    "productGuid": "00070EB7-0000-0000-0000-504944564944",
+    "vendorId": "0EB7",
+    "productId": "0007",
     "numAxes": 8,
     "numButtons": 108,
-    "numHats": 1
+    "numHats": 1,
+    "axisNames": [
+      "X",
+      "Y",
+      "Z",
+      "RX",
+      "RY",
+      "RZ",
+      "SLIDER1",
+      "SLIDER2"
+    ]
   },
   {
     "index": 1,
     "name": "R-VPC Panel #1",
-    "guid": "0300686e4433000059c2000000000000",
+    "guid": "DF6F4BD0-FA0C-11F0-8002-444553540000",
+    "productGuid": "C2593344-0000-0000-0000-504944564944",
+    "vendorId": "3344",
+    "productId": "C259",
     "numAxes": 2,
     "numButtons": 41,
-    "numHats": 0
+    "numHats": 0,
+    "axisNames": [
+      "SLIDER1",
+      "SLIDER2"
+    ]
   },
   {
     "index": 2,
-    "name": "WINWING MFD1-C",
-    "guid": "030012c398400000e0be000000000000",
-    "numAxes": 1,
-    "numButtons": 50,
-    "numHats": 0
+    "name": "T-Pendular-Rudder",
+    "guid": "7F3956A0-B756-11F0-801B-444553540000",
+    "productGuid": "B68F044F-0000-0000-0000-504944564944",
+    "vendorId": "044F",
+    "productId": "B68F",
+    "numAxes": 3,
+    "numButtons": 0,
+    "numHats": 0,
+    "axisNames": [
+      "X",
+      "Y",
+      "Z"
+    ]
   },
   {
     "index": 3,
-    "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
-    "guid": "0300e98998400000a8be000000000000",
-    "numAxes": 6,
-    "numButtons": 42,
-    "numHats": 1
+    "name": "WINWING F18 STARTUP PANEL",
+    "guid": "806D90E0-B756-11F0-801E-444553540000",
+    "productGuid": "BE034098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BE03",
+    "numAxes": 2,
+    "numButtons": 57,
+    "numHats": 0,
+    "axisNames": [
+      "RX",
+      "RY"
+    ]
   },
   {
     "index": 4,
-    "name": "WINWING UFC1 + HUD1",
-    "guid": "03007c5c98400000debe000000000000",
-    "numAxes": 8,
-    "numButtons": 128,
-    "numHats": 0
+    "name": "WINWING F18 TAKEOFF PANEL 2",
+    "guid": "806E0610-B756-11F0-8025-444553540000",
+    "productGuid": "BF054098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BF05",
+    "numAxes": 0,
+    "numButtons": 64,
+    "numHats": 0,
+    "axisNames": []
   },
   {
     "index": 5,
-    "name": "WINWING MFD1-L",
-    "guid": "030052c798400000e1be000000000000",
-    "numAxes": 1,
-    "numButtons": 50,
-    "numHats": 0
+    "name": "WINWING ICP",
+    "guid": "806DB7F0-B756-11F0-8020-444553540000",
+    "productGuid": "BF064098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BF06",
+    "numAxes": 4,
+    "numButtons": 34,
+    "numHats": 0,
+    "axisNames": [
+      "X",
+      "Y",
+      "RX",
+      "RY"
+    ]
   },
   {
     "index": 6,
-    "name": "WINWING ICP",
-    "guid": "030078c89840000006bf000000000000",
-    "numAxes": 4,
-    "numButtons": 34,
-    "numHats": 0
+    "name": "WINWING MFD1-C",
+    "guid": "806DDF00-B756-11F0-8021-444553540000",
+    "productGuid": "BEE04098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BEE0",
+    "numAxes": 1,
+    "numButtons": 50,
+    "numHats": 0,
+    "axisNames": [
+      "SLIDER1"
+    ]
   },
   {
     "index": 7,
-    "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
-    "guid": "03003fc19840000026bd000000000000",
-    "numAxes": 7,
-    "numButtons": 62,
-    "numHats": 0
+    "name": "WINWING MFD1-L",
+    "guid": "7F3956A0-B756-11F0-801A-444553540000",
+    "productGuid": "BEE14098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BEE1",
+    "numAxes": 1,
+    "numButtons": 50,
+    "numHats": 0,
+    "axisNames": [
+      "SLIDER1"
+    ]
   },
   {
     "index": 8,
-    "name": "WINWING F18 STARTUP PANEL",
-    "guid": "030062449840000003be000000000000",
-    "numAxes": 2,
-    "numButtons": 57,
-    "numHats": 0
+    "name": "WINWING MFD1-R",
+    "guid": "806E0610-B756-11F0-8024-444553540000",
+    "productGuid": "BEE24098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BEE2",
+    "numAxes": 1,
+    "numButtons": 50,
+    "numHats": 0,
+    "axisNames": [
+      "SLIDER1"
+    ]
   },
   {
     "index": 9,
-    "name": "WINWING MFD1-R",
-    "guid": "0300d2cf98400000e2be000000000000",
-    "numAxes": 1,
-    "numButtons": 50,
-    "numHats": 0
+    "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+    "guid": "806DDF00-B756-11F0-8023-444553540000",
+    "productGuid": "BEA84098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BEA8",
+    "numAxes": 6,
+    "numButtons": 42,
+    "numHats": 1,
+    "axisNames": [
+      "X",
+      "Y",
+      "RX",
+      "RY",
+      "RZ",
+      "SLIDER1"
+    ]
+  },
+  {
+    "index": 10,
+    "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
+    "guid": "806DDF00-B756-11F0-8022-444553540000",
+    "productGuid": "BD264098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BD26",
+    "numAxes": 7,
+    "numButtons": 62,
+    "numHats": 0,
+    "axisNames": [
+      "X",
+      "Y",
+      "Z",
+      "RX",
+      "RY",
+      "RZ",
+      "SLIDER1"
+    ]
+  },
+  {
+    "index": 11,
+    "name": "WINWING UFC1 + HUD1",
+    "guid": "806E0610-B756-11F0-8026-444553540000",
+    "productGuid": "BEDE4098-0000-0000-0000-504944564944",
+    "vendorId": "4098",
+    "productId": "BEDE",
+    "numAxes": 8,
+    "numButtons": 128,
+    "numHats": 0,
+    "axisNames": [
+      "X",
+      "Y",
+      "Z",
+      "RX",
+      "RY",
+      "RZ",
+      "SLIDER1",
+      "SLIDER2"
+    ]
   }
 ]

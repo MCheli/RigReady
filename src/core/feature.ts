@@ -1,10 +1,12 @@
 import type { z } from 'zod';
 import type { ChannelMap, Contract, EventMap, Handlers } from '../shared/ipc';
 import type { CheckRegistry } from './checks/registry';
+import type { DisplayLayoutStore } from './displays/layouts';
 import type { GameRegistry } from './games';
 import type { Logger } from './logger';
 import type { Ports } from './ports';
 import type { ProfileStore } from './profile/store';
+import type { SettingsStore } from './settings';
 
 /** What a feature's main.ts receives. */
 export interface MainContext {
@@ -13,6 +15,10 @@ export interface MainContext {
   checks: CheckRegistry;
   games: GameRegistry;
   profiles: ProfileStore;
+  /** App settings (desk layout, retention, timeouts, ...). */
+  settings: SettingsStore;
+  /** Named monitor layouts. */
+  layouts: DisplayLayoutStore;
   /** Sends an event declared in a contract to the renderer. */
   emit<E extends EventMap, K extends keyof E & string>(
     contract: Contract<ChannelMap, E>,

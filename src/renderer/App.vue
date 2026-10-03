@@ -1,21 +1,28 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { appContract } from '../shared/appContract';
 import { manifests } from './features';
 import { useClient } from './ipc';
+import { notifyMachineChanged } from './machine';
 
 const route = useRoute();
 const mode = computed(() => (route.path.startsWith('/configure') ? 'configure' : 'fly'));
 const scenario = ref<string>();
 const version = ref('');
 const overlays = manifests.flatMap((m) => m.overlays ?? []);
+const notices = ref<string[]>([]);
+const shell = useClient(appContract);
+// The tray and live scenario changes act outside the renderer; screens refresh when told.
+const off = shell.on('machineChanged', () => notifyMachineChanged());
+onBeforeUnmount(off);
 
 onMounted(async () => {
-  const info = await useClient(appContract).info();
+  const info = await shell.info();
   if (info.ok) {
     scenario.value = info.value.scenario;
     version.value = info.value.version;
+    notices.value = info.value.notices;
   }
 });
 </script>
@@ -52,6 +59,17 @@ onMounted(async () => {
       <span class="shell-version">{{ version }}</span>
     </v-app-bar>
     <v-main>
+      <v-alert
+        v-for="notice in notices"
+        :key="notice"
+        type="warning"
+        variant="tonal"
+        closable
+        class="shell-notice"
+        data-testid="app-notice"
+      >
+        {{ notice }}
+      </v-alert>
       <router-view />
     </v-main>
     <component :is="overlay" v-for="(overlay, index) in overlays" :key="index" />
@@ -106,6 +124,9 @@ onMounted(async () => {
   border-radius: 6px;
   padding: 3px 10px;
   margin-right: 12px;
+}
+.shell-notice {
+  margin: 12px 16px 0;
 }
 .shell-version {
   font-size: 12px;

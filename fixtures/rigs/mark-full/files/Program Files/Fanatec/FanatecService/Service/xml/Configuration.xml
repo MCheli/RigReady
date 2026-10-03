@@ -1,0 +1,497 @@
+<?xml version="1.0"?>
+<!-- Release Config v26 -->
+<Config>
+  <Game majorId="0" minorId="0" isSupported="True">
+    <title>Assetto Corsa</title>
+		<img>assets/windows/game_img/ac.jpg</img>
+    <exe>acs.exe</exe>
+    <steamlaunch id="244210">steam://rungameid/244210</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/517-assetto-corsa-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iERS CountCar Fuel_F Fuel_I Gear IsAbsInAction IsDriverInVehicle IsDrsInAction IsInGame IsInPit IsPitLimiterOn IsTcInAction LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Steering Throttle SuspensionTravel WheelAngularSpeed UnderOverSteer</supportedTelemetry>
+  </Game>
+  <Game majorId="0" minorId="1" isSupported="True">
+    <title>Assetto Corsa Competizione</title>
+		<img>assets/windows/game_img/acc.jpg</img>
+    <exe>AC2-Win64-Shipping.exe</exe>
+    <steamlaunch id="805550">steam://rungameid/805550</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/522-assetto-corsa-competizione-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>EngineMap TCGraphics ABSGraphics CountCar Fuel_F Fuel_I Gear IsAbsInAction IsDriverInVehicle IsInGame IsInPit IsPitLimiterOn IsTcInAction LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Steering Throttle SuspensionTravel WheelAngularSpeed UnderOverSteer IsFlagYellow IsFlagBlue IsFlagWhite IsFlagGreen IsFlagOrange IsRainLights IsFlashinglights IsLightsOn IsDirectionLightsLeft IsDirectionLightsRight</supportedTelemetry>
+  </Game> 
+  <Game majorId="0" minorId="2" isSupported="True">
+    <title>Assetto Corsa Evolution</title>
+		<img>assets/windows/game_img/ace.jpg</img>
+    <exe>AssettoCorsaEVO.exe</exe>
+    <steamlaunch id="3058630">steam://rungameid/3058630</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/discussion/36462/assetto-corsa-evo-wheel-base-guide-already-here/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>EngineMap TCGraphics ABSGraphics CountCar Fuel_F Fuel_I Gear IsAbsInAction IsDriverInVehicle IsInGame IsInPit IsPitLimiterOn IsTcInAction LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Steering Throttle SuspensionTravel WheelAngularSpeed UnderOverSteer IsFlagYellow IsFlagBlue IsFlagWhite IsFlagGreen IsFlagOrange IsRainLights IsFlashinglights IsLightsOn IsDirectionLightsLeft IsDirectionLightsRight</supportedTelemetry>
+  </Game>
+
+  <Game majorId="0" minorId="3" isSupported="True">
+    <title>Assetto Corsa Rally</title>
+		<img>assets/windows/game_img/acr.jpg</img>
+    <exe>acr.exe</exe>
+    <steamlaunch id="3917090">steam://rungameid/3917090</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/18740-assetto-corsa-rally-thread/</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>IsInGame</supportedTelemetry>
+  </Game>
+
+  <Game majorId="1" minorId="0" isSupported="True">
+    <title>Automobilista</title>
+		<img>assets/windows/game_img/ams.jpg</img>
+    <exe>AMS.exe</exe>
+    <steamlaunch id="431600">steam://rungameid/431600</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/521-automobilista-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>CountCar Fuel_F Fuel_I Gear IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle</supportedTelemetry>
+  </Game>
+  <Game majorId="1" minorId="1" isSupported="True">
+    <title>Automobilista 2</title>
+		<img>assets/windows/game_img/ams2.jpg</img>
+    <exe>AMS2.exe</exe>
+    <exe>AMS2AVX.exe</exe>
+    <steamlaunch id="1066890">steam://rungameid/1066890</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/2963-automobilista-2-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iERS iBrakeBias TCGraphics ABSGraphics CountCar Fuel_F Fuel_I Gear IsAbsInAction IsDriverInVehicle IsDrsInAction IsDrsAllowed IsInGame IsInPitLedDisplay IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle WheelAngularSpeed SuspensionTravel IsFlagYellow IsFlagBlue IsFlagGreen IsFlagWhite InGameWheelSpinVibration</supportedTelemetry>
+  </Game>
+  <Game majorId="2" minorId="0" isSupported="True">
+    <title>DiRT Rally</title>
+		<img>assets/windows/game_img/dirt_rally.jpg</img>
+    <exe>drt.exe</exe>
+    <steamlaunch id="310560">steam://rungameid/310560</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/523-dirt-rally-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>Gear IsInGame LapNumber LapTotal MaxRPM Position RPM iRPM Speed TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed</supportedTelemetry>
+  </Game>
+  <Game majorId="2" minorId="1" isSupported="True">
+    <title>DiRT Rally 2.0</title>
+		<img>assets/windows/game_img/dirt_rally_2.jpg</img>
+    <exe>dirtrally2.exe</exe>
+    <steamlaunch id="690790">steam://rungameid/690790</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/530-dirt-rally-20-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>Gear IsInGame LapNumber LapTotal MaxRPM Position RPM iRPM Speed TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="3" isSupported="True">
+    <title>F1 2017</title>
+		<img>assets/windows/game_img/f1_2017.jpg</img>
+    <exe>F1_2017.exe</exe>
+    <steamlaunch id="515220">steam://rungameid/515220</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="4" isSupported="True">
+    <title>F1 2018</title>
+		<img>assets/windows/game_img/f1_2018.jpg</img>
+    <exe>F1_2018.exe</exe>
+    <steamlaunch id="737800">steam://rungameid/737800</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/533-f1-2018-pc-fanatec-recommended-settings//p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="5" isSupported="True">
+    <title>F1 2019</title>
+		<img>assets/windows/game_img/f1_2019.jpg</img>
+    <exe>F1_2019.exe</exe>
+    <exe>F1_2019_dx12.exe</exe>
+    <steamlaunch id="928600">steam://rungameid/928600</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/720-f1-201920202021-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="6" isSupported="True">
+    <title>F1 2020</title>
+		<img>assets/windows/game_img/f1_2020.jpg</img>
+    <exe>F1_2020.exe</exe>
+    <exe>F1_2020_dx12.exe</exe>
+    <steamlaunch id="1080110">steam://rungameid/1080110</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/720-f1-201920202021-pc-fanatec-recommended-settings/P1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="7" isSupported="True">
+    <title>F1 2021</title>
+		<img>assets/windows/game_img/f1_2021.jpg</img>
+    <exe>F1_2021_dx12.exe</exe>
+    <steamlaunch id="1134570">steam://rungameid/1134570</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/720-f1-201920202021-pc-fanatec-recommended-settings/P1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="8" isSupported="True">
+    <title>F1 22</title>
+		<img>assets/windows/game_img/f1_22_01.jpg</img>
+    <exe>F1_22.exe</exe>
+    <steamlaunch id="1692250">steam://rungameid/1692250</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/9009-f1-22-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="9" isSupported="True">
+    <title>F1 23</title>
+		<img>assets/windows/game_img/f1_23.jpg</img>
+    <exe>F1_23.exe</exe>
+    <steamlaunch id="2108330">steam://rungameid/2108330</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/10255-f1-23-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="10" isSupported="True">
+    <title>F1 24</title>
+		<img>assets/windows/game_img/f1_24.jpg</img>
+    <exe>F1_24.exe</exe>
+    <steamlaunch id="2488620">steam://rungameid/2488620</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+		<recommendedFFBLink>https://forum.fanatec.com/discussion/31181/f1-24-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="4" minorId="11" isSupported="True">
+    <title>F1 25</title>
+    <img>assets/windows/game_img/f1_25.jpg</img>
+    <exe>F1_25.exe</exe>
+    <steamlaunch id="3059520">steam://rungameid/3059520</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias CountCar Fuel_F Fuel_I Gear IsDrsInAction IsDrsAllowed IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed IsFlagRed IsFlagYellow IsFlagBlue IsFlagGreen iERS</supportedTelemetry>
+  </Game>
+  <Game majorId="5" minorId="0" isSupported="True">
+    <title>iRacing</title>
+		<img>assets/windows/game_img/iRacing.jpg</img>
+    <exe>iRacingSim.exe</exe>
+    <exe>iRacingSim64.exe</exe>
+    <exe>iRacingSimDX11.exe</exe>
+    <exe>iRacingSim64DX11.exe</exe>
+    <exe>iRacingLocalServer64.exe</exe>
+    <steamlaunch id="266410">steam://rungameid/266410</steamlaunch>
+    <exelaunch>C:\Program Files (x86)\iRacing\iRacingLauncher.exe</exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/541-iracing-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>Fuel_I Fuel_F Gear IsPitLimiterOn IsAbsInAction IsInPit LapNumber LapTotal Position RPM iRPM Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Steering Throttle IsInGame SuspensionTravel IsFlagYellow IsFlagBlue IsFlagGreen IsFlagWhite PushToPass PushToPassStatus IsP2PActive IsP2PAvailable PushToPassCount</supportedTelemetry>
+  </Game>
+  <Game majorId="6" minorId="0" isSupported="True">
+    <title>Kart Kraft</title>
+		<img>assets/windows/game_img/kart_kraft.jpg</img>
+    <exe>project_k-Win64-Shipping.exe</exe>
+    <steamlaunch id="406350">steam://rungameid/406350</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>Gear LapNumber LapNumber LapTotal Position RPM iRPM Speed Sector MaxRPM Brake Steering Throttle IsInGame</supportedTelemetry>
+  </Game>
+  <Game majorId="8" minorId="0" isSupported="True">
+    <title>Project Cars</title>
+		<img>assets/windows/game_img/pcars.jpg</img>
+    <exe>pCARS64.exe</exe>
+    <steamlaunch id="234630">steam://rungameid/234630</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry> CountCar Fuel_F Fuel_I Gear IsAbsInAction IsDriverInVehicle IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle WheelAngularSpeed IsFlagYellow IsFlagBlue IsFlagGreen IsFlagWhite</supportedTelemetry>
+  </Game>
+  <Game majorId="8" minorId="1" isSupported="True">
+    <title>Project Cars 2</title>
+		<img>assets/windows/game_img/pcars2.jpg</img>
+    <exe>pCARS2.exe</exe>
+    <exe>pCARS2AVX.exe</exe>
+    <steamlaunch id="378860">steam://rungameid/378860</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/542-project-cars-2-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias IsInPitLedDisplay CountCar Fuel_F Fuel_I Gear IsAbsInAction IsDriverInVehicle IsInGame IsInPit LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle WheelAngularSpeed SuspensionTravel IsFlagYellow IsFlagBlue IsFlagGreen IsFlagWhite InGameWheelSpinVibration</supportedTelemetry>
+  </Game>
+  
+  <Game majorId="8" minorId="2" isSupported="True">
+    <title>Project Motor Racing</title>
+		<img>assets/windows/game_img/pmr.jpg</img>
+    <exe>ProjectMotorRacing.exe</exe>
+    <steamlaunch id="299970">steam://rungameid/299970</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>IsInGame</supportedTelemetry>
+  </Game>
+
+  <Game majorId="10" minorId="0" isSupported="True">
+    <title>RaceRoom Experience</title>
+		<img>assets/windows/game_img/raceroom.jpg</img>
+    <exe>RRRE64.exe</exe>
+    <exe>RRRE.exe</exe>
+    <steamlaunch id="211500">steam://rungameid/211500</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/545-raceroom-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>iBrakeBias EngineMap TCGraphics CountCar Fuel_F Fuel_I Gear IsAbsInAction IsDrsInAction IsDrsAllowed IsTcInAction IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle IsFlagYellow IsFlagBlue IsFlagGreen IsFlagWhite WheelAngularSpeed PushToPass PushToPassStatus IsP2PActive IsP2PAvailable PushToPassCount</supportedTelemetry>
+  </Game>
+  <Game majorId="11" minorId="0" isSupported="True">
+    <title>rFactor</title>
+		<img>assets/windows/game_img/rfactor.jpg</img>
+    <exe>rFactor.exe</exe>
+    <steamlaunch id="339790">steam://rungameid/339790</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>CountCar Fuel_F Fuel_I Gear IsInGame IsInPit IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle</supportedTelemetry>
+  </Game>
+  <Game majorId="11" minorId="1" isSupported="True">
+    <title>rFactor 2</title>
+		<img>assets/windows/game_img/rfactor2.jpg</img>
+    <exe>rFactor2.exe</exe>
+    <steamlaunch id="365960">steam://rungameid/365960</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink>https://forum.fanatec.com/topic/546-rfactor-2-pc-fanatec-recommended-settings/p1</recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>CountCar Fuel_F Fuel_I Gear IsInGame IsDrsInAction IsDrsAllowed IsInPit IsInPitLedDisplay IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel IsFlagBlue IsFlagGreen IsFlagYellow WheelAngularSpeed</supportedTelemetry>
+  </Game>
+  <Game majorId="11" minorId="2" isSupported="True">
+    <title>Le Mans Ultimate</title>
+		<img>assets/windows/game_img/LMU.jpg</img>
+    <exe>Le Mans Ultimate.exe</exe>
+    <exe>start_protected_game.exe</exe>
+    <steamlaunch id="2399420">steam://rungameid/2399420</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>CountCar Fuel_F Fuel_I Gear IsInGame IsInPit IsInPitLedDisplay IsPitLimiterOn LapNumber LapTotal MaxRPM Position RPM iRPM Sector Speed TimeLapBest TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel IsFlagBlue IsFlagGreen IsFlagYellow WheelAngularSpeed</supportedTelemetry>
+  </Game>
+  <Game majorId="14" minorId="0" isSupported="True">
+    <title>GRID 2019</title>
+		<img>assets/windows/game_img/grid_2019.jpg</img>
+    <exe>Grid.exe</exe>
+    <exe>Grid_dx12.exe</exe>
+    <steamlaunch id="703860">steam://rungameid/703860</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>Gear IsInGame LapNumber LapTotal Position RPM iRPM Speed TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed</supportedTelemetry>
+  </Game>
+  <Game majorId="15" minorId="0" isSupported="True">
+    <title>WRC Generations</title>
+		<img>assets/windows/game_img/wrc_generations_01.jpg</img>
+    <exe>WRCG.exe</exe>
+    <steamlaunch id="1953520">steam://rungameid/1953520</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>Gear IsInGame LapNumber LapTotal MaxRPM Position RPM iRPM Speed TimeLapCurrent TimeLapLast Brake Clutch Steering Throttle SuspensionTravel WheelAngularSpeed</supportedTelemetry>
+  </Game>
+  <Game majorId="16" minorId="0" isSupported="True">
+    <title>EA WRC</title>
+		<img>assets/windows/game_img/ea_wrc.jpg</img>
+    <exe>WRC.exe</exe>
+    <steamlaunch id="1849250">steam://rungameid/1849250</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>IsInGame TimeLapCurrent SuspensionTravel InGameEngineVibration WheelAngularSpeed InGameRevLimiterVibration</supportedTelemetry>
+  </Game>
+  <Game majorId="17" minorId="0" isSupported="True">
+    <title>Forza Motorsport</title>
+		<img>assets/windows/game_img/ForzaMotorsport.jpg</img>
+    <exe>forza_steamworks_release_final.exe</exe>
+    <exe>forza_gaming.desktop.x64_release_final.exe</exe>
+    <steamlaunch id="2440510">steam://rungameid/2440510</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>IsInGame SuspensionTravel WheelAngularSpeed UnderOverSteer</supportedTelemetry>
+  </Game>
+  <Game majorId="18" minorId="0" isSupported="True">
+    <title>Rennsport</title>
+		<img>assets/windows/game_img/rennsport.jpg</img>
+    <exe>Rennsport.exe</exe>
+    <steamlaunch id="2077750">steam://rungameid/2077750</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>IsInGame</supportedTelemetry>
+  </Game>
+  <!--
+  <Game majorId="18" minorId="0" isSupported="True">
+    <title>BeamNG.drive</title>
+    <img>image\BeamNg.jpg</img>
+    <exe>BeamNG.drive.exe</exe>
+    <steamlaunch id="284160">steam://rungameid/284160</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>IsInGame</supportedTelemetry>
+  </Game>  
+  <Game majorId="19" minorId="0" isSupported="True">
+    <title>Euro Truck Simulator 2</title>
+    <img>image\ETS2.jpg</img>
+    <exe>Eurotruck2.exe</exe>
+    <steamlaunch id="227300">steam://rungameid/227300</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>IsInGame</supportedTelemetry>
+  </Game>
+  <Game majorId="19" minorId="1" isSupported="True">
+    <title>American Truck Simulator</title>
+    <img>image\ATS.jpg</img>
+    <exe>Amtruck.exe</exe>
+    <steamlaunch id="270880">steam://rungameid/270880</steamlaunch>
+    <exelaunch>
+    </exelaunch>
+    <inipath>
+    </inipath>
+    <recommendedFFBLink></recommendedFFBLink>
+    <deviceSettings>
+    </deviceSettings>
+    <supportedTelemetry>IsInGame</supportedTelemetry>
+  </Game>
+  -->
+</Config>

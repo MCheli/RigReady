@@ -285,7 +285,15 @@ describe('fake providers behave like the machine', () => {
         expect(dir.startsWith(rig.home)).toBe(true);
       }
       expect(f.home()).toBe(rig.home);
-      expect(await f.steamLibraries()).toEqual({ ok: true, value: [] });
+      for (const dir of [f.programFiles(), f.programFilesX86(), f.programData()]) {
+        expect(dir.startsWith(rig.home)).toBe(true);
+      }
+      // The recorded registry says where Steam is; in the fake that is inside the home too.
+      const libraries = await f.steamLibraries();
+      expect(libraries.ok && libraries.value).toHaveLength(1);
+      expect(libraries.ok && libraries.value[0]!.toLowerCase()).toBe(
+        path.join(rig.home, 'Program Files (x86)', 'Steam').toLowerCase()
+      );
     } finally {
       await rig.cleanup();
     }

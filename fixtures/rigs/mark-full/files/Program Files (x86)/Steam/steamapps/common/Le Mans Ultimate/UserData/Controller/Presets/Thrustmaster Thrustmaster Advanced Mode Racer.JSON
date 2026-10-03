@@ -1,0 +1,267 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Invert Force Feedback": true,
+                "Jolt magnitude": 1,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 1.5,
+                "Rumble strip update thresh": 0.05,
+                "Steering bump stop degrees": 60,
+                "Steering effects strength": 4000,
+                "Steering resistance coefficient": 0.1,
+                "Steering resistance saturation": 0.1,
+                "Steering torque capability": 10,
+                "Steering torque minimum": 0,
+                "Steering torque sensitivity": 1,
+                "constant steering force": false
+            },
+            "Type": "Wheel",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RX-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RY+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RY-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RZ+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RZ-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Y-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "Z+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Z-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                }
+            },
+            "instance name": "Thrustmaster Advanced Mode Racer",
+            "layout": {
+                "axes": 10,
+                "buttons": 26,
+                "povs": 1
+            },
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": false,
+                "Hardware 3Digit Display": 0,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0,
+                "Steering Wheel Maximum Rotation": 900,
+                "Steering Wheel Maximum Rotation From Driver": true,
+                "Throttle Sensitivity": 1,
+                "device release": false,
+                "use leds": false
+            },
+            "product guid": "B696044F-0-0-4449564449500000",
+            "product name": "Thrustmaster Advanced Mode Racer"
+        }
+    },
+    "Input": {
+        "Bias Forward": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 48
+        },
+        "Bias Rearward": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 47
+        },
+        "Brake": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 3
+        },
+        "Clutch In": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 13
+        },
+        "Decrease Vertical FOV": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 50
+        },
+        "Decrement Motor Map": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 51
+        },
+        "Driver Overlay Next MFD": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 43
+        },
+        "Driver Overlay Previous MFD": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 42
+        },
+        "Headlights": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 35
+        },
+        "Headlights Pulse": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 44
+        },
+        "Ignition": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 53
+        },
+        "Increase Vertical FOV": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 49
+        },
+        "Increment Motor Map": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 52
+        },
+        "Look Left": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 38
+        },
+        "Look Right": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 39
+        },
+        "Pit Menu Dec": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 19
+        },
+        "Pit Menu Down": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 18
+        },
+        "Pit Menu Inc": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 17
+        },
+        "Pit Menu Up": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 16
+        },
+        "Pit Request": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 41
+        },
+        "Push To change camera view": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 37
+        },
+        "Rear Look": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 36
+        },
+        "Shift Down": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 32
+        },
+        "Shift Up": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 33
+        },
+        "Speed Limiter": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 40
+        },
+        "Starter": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 54
+        },
+        "Steer Left": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 1
+        },
+        "Steer Right": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 0
+        },
+        "Throttle": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 11
+        },
+        "Traction Control Down": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 46
+        },
+        "Traction Control Up": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 45
+        },
+        "Wipers": {
+            "device": "Thrustmaster Advanced Mode Racer-2483ED35E9B147F5",
+            "id": 34
+        }
+    },
+    "Type": "Direct Input"
+}

@@ -1,0 +1,21 @@
+return {
+	keyCommands = {
+		{combos = {{key = 'F1'}}, 	down = ICommandMenuItem1, 				name = 'Command menu item 1', 				category = _('Communications')},
+		{combos = {{key = 'F2'}}, 	down = ICommandMenuItem2, 				name = 'Command menu item 2', 				category = _('Communications')},
+		{combos = {{key = 'F3'}}, 	down = ICommandMenuItem3, 				name = 'Command menu item 3', 				category = _('Communications')},
+		{combos = {{key = 'F4'}}, 	down = ICommandMenuItem4, 				name = 'Command menu item 4', 				category = _('Communications')},
+		{combos = {{key = 'F5'}}, 	down = ICommandMenuItem5, 				name = 'Command menu item 5', 				category = _('Communications')},
+		{combos = {{key = 'F6'}}, 	down = ICommandMenuItem6, 				name = 'Command menu item 6', 				category = _('Communications')},
+		{combos = {{key = 'F7'}}, 	down = ICommandMenuItem7, 				name = 'Command menu item 7', 				category = _('Communications')},
+		{combos = {{key = 'F8'}}, 	down = ICommandMenuItem8, 				name = 'Command menu item 8', 				category = _('Communications')},
+		{combos = {{key = 'F9'}}, 	down = ICommandMenuItem9, 				name = 'Command menu item 9', 				category = _('Communications')},
+		{combos = {{key = 'F10'}}, 	down = ICommandMenuItem10, 				name = 'Command menu item 10', 				category = _('Communications')},
+		{combos = {{key = 'F11'}}, 	down = ICommandMenuItem11, 				name = 'Command menu item 11', 				category = _('Communications')},
+		{combos = {{key = 'F12'}}, 	down = ICommandMenuItem12, 				name = 'Command menu item 12', 				category = _('Communications')},
+		{combos = {{key = 'Tab', reformers = {'LShift'}}}, down = ICommandSwitchDialog, name = 'Command switch dialog', category = _('Communications')},
+		{							down = ICommandMenuItemPrev,			name = 'Command Menu Previous Item', 		category = _('Communications')},
+		{							down = ICommandMenuItemNext,			name = 'Command Menu Next Item', 			category = _('Communications')},
+		{							down = ICommandMenuSelectCurrentItem,	name = 'Command Menu Select Item', 			category = _('Communications')},
+		{							down = ICommandMenuReturn,				name = 'Command Menu Return', 				category = _('Communications')},		
+	},
+}

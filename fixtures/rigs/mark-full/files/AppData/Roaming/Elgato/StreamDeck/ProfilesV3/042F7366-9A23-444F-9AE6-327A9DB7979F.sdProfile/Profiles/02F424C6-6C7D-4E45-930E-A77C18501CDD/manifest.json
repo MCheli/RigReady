@@ -1,0 +1,718 @@
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "962ac6f5-122a-4c08-8cc4-d2a20ea652af",
+          "LinkedTitle": false,
+          "Name": "Open Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "bottom",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.backtoparent"
+        },
+        "0,2": {
+          "ActionID": "fd64489b-58d7-4188-9ce5-9e0779f4a9b8",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Text Above)",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/P7LD3JKDTH4P50FKV9SFCLWTL0Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/KCOKABSOA52R142S89SJ9N8IL0Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.textdial.two-state"
+        },
+        "1,0": {
+          "ActionID": "8ca391d9-5bdf-44d3-92a6-364f3c4a014e",
+          "LinkedTitle": false,
+          "Name": "Switch Input",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/9AQV9QFHD537R8HT7W9HEVSONKZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "IR/TV",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/7TAHI5PMCT6DJDQWJIIT2TFNM4Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "IR/TV",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.up-down.switch.two-state"
+        },
+        "1,1": {
+          "ActionID": "1532a4d7-b0a6-48ef-8c47-3d971888137a",
+          "LinkedTitle": false,
+          "Name": "Switch Input",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/24WCCMN2LP79L3QWEOT0Q17ML0Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "RDR",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/TT0ORC1EO53616NBWJSTTHWFRSZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "RDR",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.up-down.switch.two-state"
+        },
+        "1,2": {
+          "ActionID": "036f43dd-5d11-4bd6-94f1-c282607c4666",
+          "LinkedTitle": false,
+          "Name": "Switch Input",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/T67HTWCOHH4L38AAW2KD4MIOS8Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "DDD",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/7STVC35S995RJDEME9N9A64DOSZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "DDD",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.up-down.switch.two-state"
+        },
+        "1,3": {
+          "ActionID": "8e8c350f-370a-4940-bd5c-76b8c81a4291",
+          "LinkedTitle": false,
+          "Name": "Switch Input",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/RQE9O7G23H3ELB3MAN9E1T68K0Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "TID",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/N4LAC7LN5P2SDDOVTFV84W7BQCZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "TID",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.up-down.switch.two-state"
+        },
+        "2,0": {
+          "ActionID": "4dcbb1ad-02a0-4233-8cdf-af8a7ae768e7",
+          "LinkedTitle": false,
+          "Name": "Momentary Button with Lamp",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/379BSJWDM179HAG9FMEFM57LWOZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "RID\nDIS",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/748R9K7C1P4NB1FATAH3ETEIVKZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "RID\nDIS",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.lamp.button.two-state"
+        },
+        "2,2": {
+          "ActionID": "6c207c4d-4caf-42e0-a32d-3152746c8279",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Text Above)",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/BLHOO1W5512VFD73C980OFROTCZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/GOGVKP7JV97BT5F9ALP96ITQVGZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.textdial.two-state"
+        },
+        "3,0": {
+          "ActionID": "42fbd1c3-1fe1-47ac-a727-fab8b0d1abf7",
+          "LinkedTitle": false,
+          "Name": "Momentary Button with Lamp",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/H0G5C6IG2T2DP48SREO0M87KNOZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "ALT\nNUM",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/VTLWB6V0TP7QL7P45BFC0H415CZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "ALT\nNUM",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.lamp.button.two-state"
+        },
+        "3,1": {
+          "ActionID": "f1c5a3a1-9ff9-4955-bc58-e64904c66191",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Text Above)",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/VVG7B2RC85269A4J8HS0J3AW0CZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/NR7OK8FD0T1VP49G6T41HIG0L8Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.textdial.two-state"
+        },
+        "4,0": {
+          "ActionID": "242d9542-0da4-41a5-99ba-825d402d2895",
+          "LinkedTitle": false,
+          "Name": "Momentary Button with Lamp",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/VI1OOFRRS53HN2405HAC2LB9F8Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "SYM\nELEM",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/G6AK7KNTQ90LP1VINP2S8FVMWCZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "SYM\nELEM",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.lamp.button.two-state"
+        },
+        "4,1": {
+          "ActionID": "7291e320-34d0-4920-9486-93aaeef822d1",
+          "LinkedTitle": false,
+          "Name": "Momentary Button with Lamp",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 13,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/8V0RCOLQ7T25FCQPBHT6RJ8BP0Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "LAUNCH\nZONE",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 13,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/LW0O6NGLIH79H96F3GW56GO4QKZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "LAUNCH\nZONE",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.lamp.button.two-state"
+        },
+        "5,0": {
+          "ActionID": "3c1c0474-6a70-4ced-9cb8-49e55ce71086",
+          "LinkedTitle": false,
+          "Name": "Momentary Button with Lamp",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/N7QNP2JF6T43R18MWFNB89PNAKZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "DATA\nLINK",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/KRVRO3T1V103W3A461P4L6C3WOZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "DATA\nLINK",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.lamp.button.two-state"
+        },
+        "5,1": {
+          "ActionID": "dd206a93-4ee7-4fe6-a769-97f2ef7aab33",
+          "LinkedTitle": false,
+          "Name": "Momentary Button with Lamp",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 16,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/VTI5W0IGAP18BC9BIM778EDO10Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "VEL\nVECTOR",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 16,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/0D2NA32M253LJ1L0S87PO24L2GZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "VEL\nVECTOR",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.lamp.button.two-state"
+        },
+        "6,0": {
+          "ActionID": "2aac7225-e9b3-4425-91c5-a1b1f0043024",
+          "LinkedTitle": false,
+          "Name": "Momentary Button with Lamp",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 17,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/19ACDMR9DD6BHBPO4J5LGD8W0OZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "JAM\nSTROBE",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 17,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/CTF6LQI4H51E981PPWF9PLVG88Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "JAM\nSTROBE",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.lamp.button.two-state"
+        },
+        "6,1": {
+          "ActionID": "e7355e14-d3f3-4366-bbe3-d02be806201d",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Text Above)",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 11,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/P1T2TJLGSL04B7KK3GGBR0BCK4Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 11,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/AB7MFH86NL6BWEATA4W38N6H6KZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.textdial.two-state"
+        },
+        "6,2": {
+          "ActionID": "d0ea5a32-3310-485c-a07e-f5179e66338d",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Text Above)",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 11,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/RINOP3K1ED2WJ0M4DT6HL56EW0Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 11,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/7OJQL80PK95TR4P6TGKBBRQHICZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.textdial.two-state"
+        },
+        "6,3": {
+          "ActionID": "1cdb472b-3343-405e-9c69-8aed36751559",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Text Above)",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/VQRV4020OP2SWE9BMA5HBDMFSKZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/W4GO19TNWD12BBBP37CFG24FASZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.textdial.two-state"
+        },
+        "7,0": {
+          "ActionID": "6616ac35-59a0-41c2-9658-0d9d9d2ae461",
+          "LinkedTitle": false,
+          "Name": "Momentary Button with Lamp",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/2N91N8JOA11C5AMWJCKNT328BCZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "NON\nATTK",
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 19,
+              "FontStyle": "Regular",
+              "FontUnderline": false,
+              "Image": "Images/5WM0PIDCFT77FBI4LPEIB77TK0Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "NON\nATTK",
+              "TitleAlignment": "middle",
+              "TitleColor": "#55ff00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.lamp.button.two-state"
+        },
+        "7,2": {
+          "ActionID": "f3487a0f-5b34-4e8e-9ac8-ae90ead3fd05",
+          "LinkedTitle": false,
+          "Name": "Switch Input",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/VCM4FTDBS5183B2V9HO1GVIS2CZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "RWR PWR\nOFF",
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/3WDKVNNG916R16HQM0423719PKZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "RWR PWR\nON",
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.up-down.switch.two-state"
+        },
+        "7,3": {
+          "ActionID": "a9fa28f2-4b20-4452-bdd9-ca4cc3899903",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Text Above)",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/K89D9GO8WT66J709OQQKIQIBHKZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/9BSSITI7K15OFA2L8MFDD88H4CZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "top",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.textdial.two-state"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

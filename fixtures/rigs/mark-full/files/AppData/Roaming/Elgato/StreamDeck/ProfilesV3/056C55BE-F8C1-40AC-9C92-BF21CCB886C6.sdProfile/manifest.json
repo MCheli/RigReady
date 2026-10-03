@@ -1,0 +1,16 @@
+{
+  "Device": {
+    "Model": "20GAT9902",
+    "UUID": "@(1)[4057/143/A00NA33331P1UB]"
+  },
+  "Name": "SFX MFS 2024 XL ",
+  "Pages": {
+    "Current": "6e29fdf0-384a-4151-b06d-3aed062289a5",
+    "Default": "3fb390c7-91a9-4aa9-b5a9-1146c4809772",
+    "Pages": [
+      "6e29fdf0-384a-4151-b06d-3aed062289a5",
+      "5520716e-d33b-45e0-b9f4-4badc5bfe874"
+    ]
+  },
+  "Version": "3.0"
+}

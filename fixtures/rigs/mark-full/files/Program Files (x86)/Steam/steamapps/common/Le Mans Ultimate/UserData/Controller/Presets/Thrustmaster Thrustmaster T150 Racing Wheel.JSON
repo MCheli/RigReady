@@ -1,0 +1,227 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "Thrustmaster T150 Racing Wheel-8009351DFDFBF423": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Invert Force Feedback": true,
+                "Jolt magnitude": 1.5,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 1.5,
+                "Rumble strip update thresh": 0.05,
+                "Steering bump stop degrees": 40,
+                "Steering effects strength": 8500,
+                "Steering resistance coefficient": 0.1,
+                "Steering resistance saturation": 0.1,
+                "Steering torque capability": 2,
+                "Steering torque minimum": 0,
+                "Steering torque sensitivity": 1.5,
+                "constant steering force": false
+            },
+            "Type": "Wheel",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RX-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RY+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RY-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RZ+": {
+                    "center": 1,
+                    "max": 1,
+                    "min": 1
+                },
+                "RZ-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 1,
+                    "max": 1,
+                    "min": 1
+                },
+                "Y-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "Z+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Z-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                }
+            },
+            "instance name": "Thrustmaster T150 Racing Wheel",
+            "layout": {
+                "axes": 4,
+                "buttons": 13,
+                "povs": 1
+            },
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": true,
+                "Hardware 3Digit Display": 1,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0,
+                "Steering Wheel Maximum Rotation": 900,
+                "Steering Wheel Maximum Rotation From Driver": true,
+                "Throttle Sensitivity": 1,
+                "device release": true,
+                "use leds": true
+            },
+            "product guid": "B677044F-0-0-4449564449500000",
+            "product name": "Thrustmaster T150 Racing Wheel"
+        }
+    },
+    "Input": {
+        "Brake": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 3
+        },
+        "Clutch In": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 13
+        },
+        "Driver Overlay Next MFD": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 43
+        },
+        "Driver Overlay Previous MFD": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 42
+        },
+        "Headlights": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 35
+        },
+        "Headlights Pulse": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 44
+        },
+        "Look Left": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 38
+        },
+        "Look Right": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 39
+        },
+        "Pit Menu Dec": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 19
+        },
+        "Pit Menu Down": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 18
+        },
+        "Pit Menu Inc": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 17
+        },
+        "Pit Menu Up": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 16
+        },
+        "Pit Request": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 41
+        },
+        "Push To change camera view": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 37
+        },
+        "Rear Look": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 36
+        },
+        "Shift Down": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 32
+        },
+        "Shift Up": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 33
+        },
+        "Speed Limiter": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 40
+        },
+        "Steer Left": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 1
+        },
+        "Steer Right": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 0
+        },
+        "Throttle": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 11
+        },
+        "Wipers": {
+            "device": "Thrustmaster T150 Racing Wheel-8009351DFDFBF423",
+            "id": 34
+        }
+    },
+    "Type": "Direct Input"
+}

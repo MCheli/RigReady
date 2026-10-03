@@ -1,0 +1,2189 @@
+{
+  "dcsCameraMode": "1Camera",
+  "dcsCameraModeApply": "1Camera",
+  "dcsCameraModeApplyStatus": 1,
+  "gameId": "DCS",
+  "gameName": "DCS World",
+  "gameRunningStatus": false,
+  "gameRunningKey": "DCS.exe",
+  "currentMod": "FA-18C",
+  "applyMod": "FA-18C",
+  "mainMonitorApplyStatus": 1,
+  "monitorLayoutApplyStatus": 1,
+  "mfdSettingApplyStatus": 1,
+  "applyStatusArray": [
+    "mainMonitorApplyStatus",
+    "dcsCameraModeApplyStatus",
+    "monitorLayoutApplyStatus",
+    "mfdSettingApplyStatus"
+  ],
+  "mainMonitorInfoById": {
+    "005": {
+      "id": "005",
+      "driveName": "NVIDIA GeForce RTX 5080",
+      "deviceName": "\\\\.\\DISPLAY2",
+      "direction": "landscape",
+      "mode": "extend",
+      "left": 0,
+      "top": 0,
+      "right": 5120,
+      "bottom": 1440,
+      "width": 5120,
+      "height": 1440
+    }
+  },
+  "usbMonitorInfoById": {
+    "004": {
+      "id": "004",
+      "driveName": "DisplayLink USB Device",
+      "deviceName": "\\\\.\\DISPLAY5",
+      "direction": "portrait",
+      "mode": "extend",
+      "left": 5120,
+      "top": 0,
+      "right": 5888,
+      "bottom": 1024,
+      "width": 768,
+      "height": 1024
+    },
+    "002": {
+      "id": "002",
+      "driveName": "DisplayLink USB Device",
+      "deviceName": "\\\\.\\DISPLAY6",
+      "direction": "portrait",
+      "mode": "extend",
+      "left": 5888,
+      "top": 0,
+      "right": 6656,
+      "bottom": 1024,
+      "width": 768,
+      "height": 1024
+    },
+    "003": {
+      "id": "003",
+      "driveName": "DisplayLink USB Device",
+      "deviceName": "\\\\.\\DISPLAY7",
+      "direction": "portrait",
+      "mode": "extend",
+      "left": 6656,
+      "top": 0,
+      "right": 7424,
+      "bottom": 1024,
+      "width": 768,
+      "height": 1024
+    }
+  },
+  "gameViewports": {
+    "Center": {
+      "id": [
+        "005"
+      ],
+      "name": "Center",
+      "direction": "landscape",
+      "tailorMonitor": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "uiMonitor": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "width": 0,
+        "height": 0
+      },
+      "gameMonitor": {
+        "left": 0,
+        "top": 0,
+        "right": 5120,
+        "bottom": 1440,
+        "width": 5120,
+        "height": 1440,
+        "aspect": 3.5555555555555554
+      },
+      "displayMonitor": {
+        "left": 0,
+        "top": 0,
+        "right": 5120,
+        "bottom": 1440,
+        "width": 5120,
+        "height": 1440,
+        "aspect": 3.5555555555555554
+      }
+    }
+  },
+  "stepActive": 7,
+  "gameAppSettings": {
+    "windowPlacement": {
+      "x": 0,
+      "y": 0,
+      "w": 7424,
+      "h": 1440
+    }
+  },
+  "gameMonitor": {
+    "left": 0,
+    "top": 0,
+    "right": 7424,
+    "bottom": 1440,
+    "width": 7424,
+    "height": 1440,
+    "aspect": 5.155555555555556
+  },
+  "gameOffset": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0,
+    "width": 0,
+    "height": 0,
+    "aspect": 0
+  },
+  "gameOptions": {
+    "graphics": {
+      "multiMonitorSetup": "wwtMonitor",
+      "width": 7424,
+      "height": 1440,
+      "aspect": 5.155555555555556
+    }
+  },
+  "modsInfo": {
+    "FA-18C": {
+      "name": "FA-18C",
+      "instruments": {
+        "LEFT_MFCD": {
+          "id": [
+            "002"
+          ],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 120,
+            "top": 110,
+            "right": 320,
+            "bottom": 282,
+            "width": 200,
+            "height": 172
+          },
+          "gameMonitor": {
+            "left": 5896,
+            "top": 256,
+            "right": 6648,
+            "bottom": 1018,
+            "width": 752,
+            "height": 762,
+            "aspect": 0.9868766404199475
+          },
+          "displayMonitor": {
+            "left": 5888,
+            "top": 0,
+            "right": 6656,
+            "bottom": 1024,
+            "width": 768,
+            "height": 1024,
+            "aspect": 0.75
+          },
+          "overlayerBackColor": "#2aff17",
+          "_id": "002"
+        },
+        "RIGHT_MFCD": {
+          "id": [
+            "004"
+          ],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 690,
+            "top": 110,
+            "right": 890,
+            "bottom": 282,
+            "width": 200,
+            "height": 172
+          },
+          "gameMonitor": {
+            "left": 5128,
+            "top": 256,
+            "right": 5880,
+            "bottom": 1018,
+            "width": 752,
+            "height": 762,
+            "aspect": 0.9868766404199475
+          },
+          "displayMonitor": {
+            "left": 5120,
+            "top": 0,
+            "right": 5888,
+            "bottom": 1024,
+            "width": 768,
+            "height": 1024,
+            "aspect": 0.75
+          },
+          "overlayerBackColor": "#2aff17",
+          "_id": ""
+        },
+        "CENTER_MFCD": {
+          "id": [
+            "003"
+          ],
+          "name": "CENTER_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "CENTER_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 408,
+            "top": 385,
+            "right": 608,
+            "bottom": 570,
+            "width": 200,
+            "height": 185
+          },
+          "gameMonitor": {
+            "left": 6664,
+            "top": 256,
+            "right": 7416,
+            "bottom": 1018,
+            "width": 752,
+            "height": 762,
+            "aspect": 0.9868766404199475
+          },
+          "displayMonitor": {
+            "left": 6656,
+            "top": 0,
+            "right": 7424,
+            "bottom": 1024,
+            "width": 768,
+            "height": 1024,
+            "aspect": 0.75
+          },
+          "overlayerBackColor": "#2aff17",
+          "_id": "003"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\FA-18C\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\FA-18C\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\FA-18C\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\F18_Cockpit.png"
+    },
+    "F-16C": {
+      "name": "F-16C",
+      "instruments": {
+        "LEFT_MFCD": {
+          "id": [],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 170,
+            "top": 185,
+            "right": 336,
+            "bottom": 313,
+            "width": 166,
+            "height": 128
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 685,
+            "top": 185,
+            "right": 851,
+            "bottom": 313,
+            "width": 166,
+            "height": 128
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "EHSI": {
+          "id": [],
+          "name": "EHSI",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "EHSI",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 436,
+            "top": 476,
+            "right": 578,
+            "bottom": 596,
+            "width": 142,
+            "height": 120
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "DED": {
+          "id": [],
+          "name": "DED",
+          "direction": "landscape",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "isgameMonitorShow": false,
+          "gameConfigKey": "DED",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "tailorMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-16C\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-16C\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-16C\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\F16_Cockpit.png"
+    },
+    "AH-64D": {
+      "name": "AH-64D",
+      "instruments": {
+        "LEFT_MFCD": {
+          "id": [],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 72,
+            "top": 320,
+            "right": -72,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 110,
+            "top": 240,
+            "right": 320,
+            "bottom": 466,
+            "width": 210,
+            "height": 226
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "AH-64D_MFCD_leaderLine.png"
+        },
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 72,
+            "top": 320,
+            "right": -72,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 720,
+            "top": 240,
+            "right": 930,
+            "bottom": 466,
+            "width": 210,
+            "height": 226
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "AH-64D_MFCD_leaderLine.png"
+        },
+        "TEDAC": {
+          "id": [],
+          "name": "TEDAC",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "TEDAC",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 48,
+            "top": 296,
+            "right": -48,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 402,
+            "top": 94,
+            "right": 616,
+            "bottom": 304,
+            "width": 214,
+            "height": 210
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "AH-64D_TEDAC_leaderLine.png"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\AH-64D\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\AH-64D\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\AH-64D\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\AH-64D_Cockpit.png"
+    },
+    "A-10C": {
+      "name": "A-10C",
+      "instruments": {
+        "LEFT_MFCD": {
+          "id": [],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 108,
+            "top": 114,
+            "right": 290,
+            "bottom": 324,
+            "width": 182,
+            "height": 210
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 742,
+            "top": 122,
+            "right": 897,
+            "bottom": 332,
+            "width": 182,
+            "height": 210
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\A-10C\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\A-10C\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\A-10C\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\A-10C_Cockpit.png"
+    },
+    "A-10C_2": {
+      "name": "A-10C_2",
+      "instruments": {
+        "LEFT_MFCD": {
+          "id": [],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 108,
+            "top": 114,
+            "right": 290,
+            "bottom": 324,
+            "width": 182,
+            "height": 210
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 742,
+            "top": 122,
+            "right": 897,
+            "bottom": 332,
+            "width": 182,
+            "height": 210
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\A-10C_2\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\A-10C_2\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\A-10C_2\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\A-10C_2_Cockpit.png"
+    },
+    "AV8BNA": {
+      "name": "AV8BNA",
+      "instruments": {
+        "LEFT_MFCD": {
+          "id": [],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "overlayerOpacity": 0,
+          "tailorMonitor": {
+            "left": 2,
+            "top": 256,
+            "right": -2,
+            "bottom": 0
+          },
+          "uiMonitor": {
+            "left": 140,
+            "top": 200,
+            "right": 328,
+            "bottom": 398,
+            "width": 188,
+            "height": 198
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          }
+        },
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "overlayerOpacity": 0,
+          "tailorMonitor": {
+            "left": 2,
+            "top": 256,
+            "right": -2,
+            "bottom": 0
+          },
+          "uiMonitor": {
+            "left": 651,
+            "top": 214,
+            "right": 839,
+            "bottom": 412,
+            "width": 188,
+            "height": 198
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          }
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\AV8BNA\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\AV8BNA\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\AV8BNA\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\AV8BNA_Cockpit.png"
+    },
+    "F14": {
+      "name": "F14",
+      "instruments": {
+        "F14_VDI": {
+          "id": [],
+          "name": "F14_VDI",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "F14_VDI",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 394,
+            "top": 140,
+            "right": 614,
+            "bottom": 350,
+            "width": 220,
+            "height": 210
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "F14_HSD": {
+          "id": [],
+          "name": "F14_HSD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "F14_HSD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 424,
+            "top": 390,
+            "right": 922,
+            "bottom": 474,
+            "width": 182,
+            "height": 200
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "F14_UHF_ARC159": {
+          "id": [],
+          "name": "F14_UHF_ARC159",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "F14_UHF_ARC159",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 812,
+            "top": 5,
+            "right": 962,
+            "bottom": 130,
+            "width": 182,
+            "height": 125
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "F14_VHF_ARC182": {
+          "id": [],
+          "name": "F14_VHF_ARC182",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "F14_VHF_ARC182",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 812,
+            "top": 133,
+            "right": 994,
+            "bottom": 258,
+            "width": 182,
+            "height": 125
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F14\\Skins\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F14\\Skins\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F14\\Skins\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\F14_Cockpit.png"
+    },
+    "F14_WSO": {
+      "name": "F14_WSO",
+      "instruments": {
+        "F14_DDD": {
+          "id": [],
+          "name": "F14_DDD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "F14_DDD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 395,
+            "top": 100,
+            "right": 540,
+            "bottom": 245,
+            "width": 145,
+            "height": 145
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "F14_ECMD": {
+          "id": [],
+          "name": "F14_ECMD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "F14_ECMD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 775,
+            "top": 435,
+            "right": 945,
+            "bottom": 595,
+            "width": 170,
+            "height": 160
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "F14_TID": {
+          "id": [],
+          "name": "F14_TID",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "F14_TID",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 383,
+            "top": 310,
+            "right": 563,
+            "bottom": 470,
+            "width": 180,
+            "height": 160
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F14\\Skins\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F14\\Skins\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F14\\Skins\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\F14_WOS_Cockpit.png"
+    },
+    "JF-17": {
+      "name": "JF-17",
+      "instruments": {
+        "LEFT_MFCD": {
+          "id": [],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 151,
+            "top": 320,
+            "right": -151,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 70,
+            "top": 200,
+            "right": 304,
+            "bottom": 452,
+            "width": 234,
+            "height": 252
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "JF-17_MFCD_leaderLine.png"
+        },
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 151,
+            "top": 320,
+            "right": -151,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 570,
+            "top": 200,
+            "right": 798,
+            "bottom": 450,
+            "width": 228,
+            "height": 250
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "JF-17_MFCD_leaderLine.png"
+        },
+        "CENTER_MFCD": {
+          "id": [],
+          "name": "CENTER_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "CENTER_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 151,
+            "top": 320,
+            "right": -151,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 320,
+            "top": 328,
+            "right": 555,
+            "bottom": 590,
+            "width": 235,
+            "height": 262
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "JF-17_MFCD_leaderLine.png"
+        },
+        "CLOCK_WIN1": {
+          "id": [],
+          "name": "CLOCK_WIN1",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "CLOCK_WIN1",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 151,
+            "top": 320,
+            "right": -151,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 815,
+            "top": 293,
+            "right": 1015,
+            "bottom": 443,
+            "width": 200,
+            "height": 150
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "JF-17_MFCD_leaderLine.png"
+        },
+        "CLOCK_WIN2": {
+          "id": [],
+          "name": "CLOCK_WIN2",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "CLOCK_WIN2",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 151,
+            "top": 320,
+            "right": -151,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 815,
+            "top": 445,
+            "right": 1015,
+            "bottom": 595,
+            "width": 200,
+            "height": 150
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "JF-17_MFCD_leaderLine.png"
+        },
+        "RADIO": {
+          "id": [],
+          "name": "RADIO",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "RADIO",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 151,
+            "top": 320,
+            "right": -151,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 50,
+            "top": 454,
+            "right": 250,
+            "bottom": 594,
+            "width": 200,
+            "height": 140
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "JF-17_MFCD_leaderLine.png"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\JF-17\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\JF-17\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\JF-17\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\JF-17_Cockpit.png"
+    },
+    "Ka-50": {
+      "name": "Ka-50",
+      "instruments": {
+        "Shkval": {
+          "id": [],
+          "name": "Shkval",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "Shkval",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 438,
+            "top": 140,
+            "right": 644,
+            "bottom": 312,
+            "width": 206,
+            "height": 172
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "ABRIS": {
+          "id": [],
+          "name": "ABRIS",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "ABRIS",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 114,
+            "top": 266,
+            "right": -124,
+            "bottom": -70
+          },
+          "uiMonitor": {
+            "left": 698,
+            "top": 188,
+            "right": 866,
+            "bottom": 448,
+            "width": 168,
+            "height": 260
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "KA-50_ABRIS_leaderLine.png"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\Ka-50\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\Ka-50\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\Ka-50\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\Ka-50_Cockpit.png"
+    },
+    "M-2000C": {
+      "name": "M-2000C",
+      "instruments": {
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": true,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 72,
+            "top": 296,
+            "right": -72,
+            "bottom": -94
+          },
+          "uiMonitor": {
+            "left": 448,
+            "top": 210,
+            "right": 622,
+            "bottom": 386,
+            "width": 174,
+            "height": 176
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17",
+          "overlayerBackImg": "M-2000C_HDD.png"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\M-2000C\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\M-2000C\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\M-2000C\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\M-2000C_Cockpit.png"
+    },
+    "MIG-21bis": {
+      "name": "MIG-21bis",
+      "instruments": {
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 492,
+            "top": 290,
+            "right": 624,
+            "bottom": 450,
+            "width": 132,
+            "height": 160
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\MIG-21bis\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\MIG-21bis\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\MIG-21bis\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\MIG-21bis_Cockpit.png"
+    },
+    "F-15E": {
+      "name": "F-15E",
+      "instruments": {
+        "LEFT_MFCD": {
+          "id": [],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 120,
+            "top": 170,
+            "right": 350,
+            "bottom": 372,
+            "width": 230,
+            "height": 202
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 690,
+            "top": 170,
+            "right": 920,
+            "bottom": 372,
+            "width": 230,
+            "height": 202
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "CENTER_MFCD": {
+          "id": [],
+          "name": "CENTER_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "CENTER_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 426,
+            "top": 416,
+            "right": 606,
+            "bottom": 576,
+            "width": 180,
+            "height": 160
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-15E\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-15E\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-15E\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\F15_Cockpit.png"
+    },
+    "F-15E_WSO": {
+      "name": "F-15E_WSO",
+      "instruments": {
+        "OUTER_LEFT_MFCD": {
+          "id": [],
+          "name": "OUTER_LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "OUTER_LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 170,
+            "top": 205,
+            "right": 316,
+            "bottom": 355,
+            "width": 146,
+            "height": 150
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "LEFT_MFCD": {
+          "id": [],
+          "name": "LEFT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "LEFT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 335,
+            "top": 185,
+            "right": 485,
+            "bottom": 345,
+            "width": 150,
+            "height": 160
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 510,
+            "top": 185,
+            "right": 660,
+            "bottom": 345,
+            "width": 150,
+            "height": 160
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        },
+        "OUTER_RIGHT_MFCD": {
+          "id": [],
+          "name": "OUTER_RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "OUTER_RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 675,
+            "top": 205,
+            "right": 821,
+            "bottom": 355,
+            "width": 146,
+            "height": 150
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-15E\\Skins\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-15E\\Skins\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-15E\\Skins\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\F15_WOS_Cockpit.png"
+    },
+    "F-5E": {
+      "name": "F-5E",
+      "instruments": {
+        "RIGHT_MFCD": {
+          "id": [],
+          "name": "RIGHT_MFCD",
+          "direction": "portrait",
+          "isEnableKeyGuide": false,
+          "isEnableKeyGuideShow": false,
+          "gameConfigKey": "RIGHT_MFCD",
+          "overlayerOpacity": 0,
+          "overlayerTailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "tailorMonitor": {
+            "left": 8,
+            "top": 256,
+            "right": -8,
+            "bottom": -6
+          },
+          "uiMonitor": {
+            "left": 470,
+            "top": 200,
+            "right": 620,
+            "bottom": 360,
+            "width": 150,
+            "height": 160
+          },
+          "gameMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "displayMonitor": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "overlayerBackColor": "#2aff17"
+        }
+      },
+      "iconPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-5E\\Theme\\1\\icon.png",
+      "iconActivePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-5E\\Theme\\1\\icon_active.png",
+      "iconBuyPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\DemoMods\\aircraft\\F-5E\\Theme\\1\\icon_buy.png",
+      "cockpitImgPath": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar\\www\\LoadImages\\MFD\\F-5E_Cockpit.png"
+    }
+  },
+  "isDebug": true
+}

@@ -177,7 +177,7 @@ export async function makeReady(
   return { steps, report: await runChecks(profile, registry, ctx) };
 }
 
-/** Runs the stand-down action of every check type that has one, then re-checks. */
+/** Runs the stand-down action of every check type that has one, then the registered stand-down steps, then re-checks. */
 export async function standDown(
   profile: Profile,
   registry: CheckRegistry,
@@ -206,6 +206,31 @@ export async function standDown(
       steps.push({
         itemId: item.id,
         title: item.title,
+        ok: false,
+        message: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+  for (const step of registry.standDownSteps()) {
+    try {
+      const outcome = await step.run(ctx);
+      if (!outcome.ok) {
+        steps.push({
+          itemId: step.id,
+          title: step.label,
+          ok: false,
+          message: outcome.error.detail
+            ? `${outcome.error.message} ${outcome.error.detail}`
+            : outcome.error.message,
+        });
+      } else if (outcome.value !== null) {
+        steps.push({ itemId: step.id, title: step.label, ok: true, message: outcome.value });
+      }
+    } catch (e) {
+      ctx.log.error(`standDown step ${step.id} threw`, e);
+      steps.push({
+        itemId: step.id,
+        title: step.label,
         ok: false,
         message: e instanceof Error ? e.message : String(e),
       });

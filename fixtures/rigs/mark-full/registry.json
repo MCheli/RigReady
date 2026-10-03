@@ -1,0 +1,4363 @@
+{
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_044F&PID_B68F\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "a056397f56b7f011801b444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "01000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_044F&PID_B68F\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_044F&PID_B68F\\DeviceInstances": {
+    "9&1B2AD82B&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&319D73F2&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_045E&PID_028E\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "a0c503ec38bff1118001444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "0b000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_045E&PID_028E\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_045E&PID_028E\\DeviceInstances": {
+    "3&8968588&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "3&966D8B0&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "3&31639E2F&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "3&1C9C56E4&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "c0015ade51b7f011800c444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "d0285ade51b7f011800d444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\2": {
+    "GUID": {
+      "type": "binary",
+      "value": "307b7314ba10f1118001444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\2\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\3": {
+    "GUID": {
+      "type": "binary",
+      "value": "307b7314ba10f1118002444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\3\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\DeviceInstances": {
+    "7&2F5FAC48&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&359381E8&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&2366B4A&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&260DA90C&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&34E26BC3&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&110B2E01&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&73C844A&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&32C30163&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "a0c790006c25f1118001444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "a0c790006c25f1118002444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\2": {
+    "GUID": {
+      "type": "binary",
+      "value": "a0c790006c25f1118003444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\2\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\DeviceInstances": {
+    "9&82F3015&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&82F3015&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&21293414&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "a0e288e51f10f1118001444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "c03089e51f10f1118002444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\DeviceInstances": {
+    "9&4C9BF16&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&4C9BF16&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&9B4EA6D&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&9B4EA6D&0&0001": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0B05&PID_19AF\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "b089cd0751b7f0118003444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0B05&PID_19AF\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0B05&PID_19AF\\DeviceInstances": {
+    "7&382C88B3&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "d0beb020a403f1118001444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "0b000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "d0beb020a403f1118002444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "01000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\2": {
+    "GUID": {
+      "type": "binary",
+      "value": "d0beb020a403f1118003444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\2\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\DeviceInstances": {
+    "7&2A952C6A&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&2A952C6A&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&2A952C6A&0&0002": {
+      "type": "binary",
+      "value": "02"
+    },
+    "8&333F9D8D&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "8&333F9D8D&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "8&333F9D8D&0&0002": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&2A952C6A&1&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0FD9&PID_008F\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "f0b76d8056b7f011801f444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0FD9&PID_008F\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0FD9&PID_008F\\DeviceInstances": {
+    "9&125EACBC&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "b01565d852b7f0118010444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "b01565d852b7f0118011444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\DeviceInstances": {
+    "9&387C9E9F&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&14A560DD&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "807333d752b7f011800e444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "807333d752b7f011800f444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\DeviceInstances": {
+    "9&2552FDD4&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&2552FDD4&0&0001": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "b089cd0751b7f0118001444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "b089cd0751b7f0118002444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\2": {
+    "GUID": {
+      "type": "binary",
+      "value": "b06bd20751b7f0118005444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\2\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\3": {
+    "GUID": {
+      "type": "binary",
+      "value": "b06bd20751b7f0118007444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\3\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\4": {
+    "GUID": {
+      "type": "binary",
+      "value": "b06bd20751b7f011800b444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\4\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\DeviceInstances": {
+    "7&26D3421&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&E1D0EE9&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&1A30C066&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&31F44CAB&0&0002": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&15BA2ED9&0&0002": {
+      "type": "binary",
+      "value": "02"
+    },
+    "8&1C342FC9&0&0002": {
+      "type": "binary",
+      "value": "02"
+    },
+    "8&470A384&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "8&2847E146&0&0002": {
+      "type": "binary",
+      "value": "02"
+    },
+    "8&11082E3&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "8&18D40F28&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "a056397f56b7f011801c444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "a056397f56b7f011801d444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\DeviceInstances": {
+    "A&2DC9D824&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&9F29A62&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&375F401C&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&1F9BB3D7&0&0001": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "b089cd0751b7f0118004444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "b06bd20751b7f0118006444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\2": {
+    "GUID": {
+      "type": "binary",
+      "value": "b06bd20751b7f0118008444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\2\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\3": {
+    "GUID": {
+      "type": "binary",
+      "value": "b06bd20751b7f0118009444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\3\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\4": {
+    "GUID": {
+      "type": "binary",
+      "value": "b06bd20751b7f011800a444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\4\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\DeviceInstances": {
+    "7&2A4AAF07&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&2A4AAF07&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&2A4AAF07&0&0003": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&2A4AAF07&0&0004": {
+      "type": "binary",
+      "value": "02"
+    },
+    "7&1E0013E&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "10e4626756b7f0118015444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "10e4626756b7f0118016444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\2": {
+    "GUID": {
+      "type": "binary",
+      "value": "200b636756b7f0118017444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\2\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\3": {
+    "GUID": {
+      "type": "binary",
+      "value": "200b636756b7f0118018444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\3\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\4": {
+    "GUID": {
+      "type": "binary",
+      "value": "200b636756b7f0118019444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\4\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\DeviceInstances": {
+    "A&3747491E&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&3747491E&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&3747491E&0&0003": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&3747491E&0&0004": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&13700B5C&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3344&PID_C259\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "d04b6fdf0cfaf0118001444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "00000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3344&PID_C259\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3344&PID_C259\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "d04b6fdf0cfaf0118002444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "0a000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3344&PID_C259\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3344&PID_C259\\DeviceInstances": {
+    "9&1056D17&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&1056D17&0&0001": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "a0a5306656b7f0118012444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\1": {
+    "GUID": {
+      "type": "binary",
+      "value": "a0a5306656b7f0118013444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\1\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\2": {
+    "GUID": {
+      "type": "binary",
+      "value": "a0a5306656b7f0118014444553540000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\2\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\DeviceInstances": {
+    "9&F1268B5&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&41DB389&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "9&41DB389&0&0002": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&1B2ED895&0&0000": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&36B4C50&0&0001": {
+      "type": "binary",
+      "value": "02"
+    },
+    "A&36B4C50&0&0002": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BD26\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "00df6d8056b7f0118022444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "05000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BD26\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BD26\\DeviceInstances": {
+    "9&13288787&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BE03\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "e0906d8056b7f011801e444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "02000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BE03\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BE03\\DeviceInstances": {
+    "9&15E630C0&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEA8\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "00df6d8056b7f0118023444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "06000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEA8\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEA8\\DeviceInstances": {
+    "9&35BE61A5&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEDE\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "10066e8056b7f0118026444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "09000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEDE\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEDE\\DeviceInstances": {
+    "9&3AE99ABD&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE0\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "00df6d8056b7f0118021444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "04000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE0\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE0\\DeviceInstances": {
+    "9&2C7F5C07&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE1\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "a056397f56b7f011801a444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "00000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE1\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE1\\DeviceInstances": {
+    "9&1A9FA625&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE2\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "10066e8056b7f0118024444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "07000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE2\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE2\\DeviceInstances": {
+    "9&278FBCA&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BF05\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "10066e8056b7f0118025444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "08000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BF05\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BF05\\DeviceInstances": {
+    "9&2251A97E&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BF06\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "f0b76d8056b7f0118020444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "03000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BF06\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BF06\\DeviceInstances": {
+    "9&1C1AAE79&0&0000": {
+      "type": "binary",
+      "value": "02"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_044F&PID_B68F": {
+    "OEMName": {
+      "type": "string",
+      "value": "T-Pendular-Rudder"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_045E&PID_028E": {
+    "OEMName": {
+      "type": "string",
+      "value": "Controller (XBOX 360 For Windows)"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_0007": {
+    "OEMName": {
+      "type": "string",
+      "value": "FANATEC Podium Wheel Base DD2"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_3344&PID_C259": {
+    "OEMName": {
+      "type": "string",
+      "value": "R-VPC Panel #1"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BD26": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BE03": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING F18 STARTUP PANEL"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEA8": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING Orion Joystick Base 2 + JGRIP-F16"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEDE": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING UFC1 + HUD1"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEE0": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING MFD1-C"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEE1": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING MFD1-L"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEE2": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING MFD1-R"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BF05": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING F18 TAKEOFF PANEL 2"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BF06": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING ICP"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_044F&PID_B68F": {
+    "OEMName": {
+      "type": "string",
+      "value": "T-Pendular-Rudder"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_045E&PID_028E": {
+    "OEMName": {
+      "type": "string",
+      "value": "Controller (XBOX 360 For Windows)"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_0007": {
+    "OEMName": {
+      "type": "string",
+      "value": "FANATEC Podium Wheel Base DD2"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_1839": {
+    "OEMName": {
+      "type": "string",
+      "value": "Fanatec USB Pedals"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_183B": {
+    "OEMName": {
+      "type": "string",
+      "value": "Fanatec USB Pedals"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_1A92": {
+    "OEMName": {
+      "type": "string",
+      "value": "ClubSport USB Adapter (shifter mode)"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_1A93": {
+    "OEMName": {
+      "type": "string",
+      "value": "ClubSport USB Adapter (handbrake mode)"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_1A95": {
+    "OEMName": {
+      "type": "string",
+      "value": "Fanatec USB Pedals"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_6204": {
+    "OEMName": {
+      "type": "string",
+      "value": "Fanatec USB Pedals"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_6205": {
+    "OEMName": {
+      "type": "string",
+      "value": "Fanatec USB Pedals"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_6206": {
+    "OEMName": {
+      "type": "string",
+      "value": "Fanatec USB Pedals"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_0EB7&PID_6207": {
+    "OEMName": {
+      "type": "string",
+      "value": "Fanatec USB Pedals"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_3344&PID_C259": {
+    "OEMName": {
+      "type": "string",
+      "value": "R-VPC Panel #1"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BD26": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BE03": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING F18 STARTUP PANEL"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEA8": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING Orion Joystick Base 2 + JGRIP-F16"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEDE": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING UFC1 + HUD1"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEE0": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING MFD1-C"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEE1": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING MFD1-L"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BEE2": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING MFD1-R"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BF05": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING F18 TAKEOFF PANEL 2"
+    }
+  },
+  "HKLM\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_4098&PID_BF06": {
+    "OEMName": {
+      "type": "string",
+      "value": "WINWING ICP"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaResources\\Joystick\\DINPUT.DLL\\CurrentJoystickSettings": {
+    "Joystick8Configuration": {
+      "type": "binary",
+      "value": "01000010320000000e0000000000000000000000000000000000000000000000000000000000000000000000ffff000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000001400000000000000"
+    },
+    "Joystick8OEMName": {
+      "type": "string",
+      "value": "VID_4098&PID_BEE2"
+    },
+    "Joystick3Configuration": {
+      "type": "binary",
+      "value": "00008011390000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000ff0f0000ff0f000000000000000000000000000000000000000800000008000000000000000000000000000000000000000000000f00000000000000"
+    },
+    "Joystick3OEMName": {
+      "type": "string",
+      "value": "VID_4098&PID_BE03"
+    },
+    "Joystick9Configuration": {
+      "type": "binary",
+      "value": "00000010400000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001500000000000000"
+    },
+    "Joystick9OEMName": {
+      "type": "string",
+      "value": "VID_4098&PID_BF05"
+    },
+    "Joystick6Configuration": {
+      "type": "binary",
+      "value": "010088113e0000000f000000000000000000000000000000000000000000000000000000ff0f0000ff0f0000ff0f0000ffff0000ffff0000ffff000000080000000800000008000000800000008000000080000000000000000000000000000000000000000000001200000000000000"
+    },
+    "Joystick6OEMName": {
+      "type": "string",
+      "value": "VID_4098&PID_BD26"
+    },
+    "Joystick4Configuration": {
+      "type": "binary",
+      "value": "00008011220000000e000000000000000000000000000000000000000000000000000000ff0f0000ff0f00000000000000000000ff0f0000ff0f000000080000000800000000000000000000000800000008000000000000000000000000000000000000000000001000000000000000"
+    },
+    "Joystick4OEMName": {
+      "type": "string",
+      "value": "VID_4098&PID_BF06"
+    },
+    "Joystick1Configuration": {
+      "type": "binary",
+      "value": "01000010000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d00000000000000"
+    },
+    "Joystick1OEMName": {
+      "type": "string",
+      "value": "VID_3344&PID_C259"
+    },
+    "Joystick10Configuration": {
+      "type": "binary",
+      "value": "01008811800000000f000000000000000000000000000000000000000000000000000000ff0f0000ff0f0000ff0f0000ff0f0000ff0f0000ff0f000000080000000800000008000000080000000800000008000000000000000000000000000000000000000000001600000000000000"
+    },
+    "Joystick10OEMName": {
+      "type": "string",
+      "value": "VID_4098&PID_BEDE"
+    },
+    "Joystick7Configuration": {
+      "type": "binary",
+      "value": "030088112a0000000f000000000000000000000000000000000000000000000000000000ffff0000ffff0000ff0f0000ff0f0000ff0f0000ff0f000000800000008000000008000000080000000800000008000000000000000000000000000000000000000000001300000000000000"
+    },
+    "Joystick7OEMName": {
+      "type": "string",
+      "value": "VID_4098&PID_BEA8"
+    },
+    "Joystick2Configuration": {
+      "type": "binary",
+      "value": "01000010000000000e000000000000000000000000000000000000000000000000000000ffff0000ffff0000ffff000000000000000000000000000000800000008000000080000000000000000000000000000000000000000000000000000000000000000000000e00000000000000"
+    },
+    "Joystick2OEMName": {
+      "type": "string",
+      "value": "VID_044F&PID_B68F"
+    },
+    "Joystick5Configuration": {
+      "type": "binary",
+      "value": "01000010320000000e0000000000000000000000000000000000000000000000000000000000000000000000ffff000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000001100000000000000"
+    },
+    "Joystick5OEMName": {
+      "type": "string",
+      "value": "VID_4098&PID_BEE0"
+    },
+    "Joystick11Configuration": {
+      "type": "binary",
+      "value": "01000010290000000e000000000000000000000000000000000000000000000000000000000000000000000060ea000000000000000000000000000000000000000000003075000000000000000000000000000000000000000000000000000000000000000000001700000000000000"
+    },
+    "Joystick11OEMName": {
+      "type": "string",
+      "value": "VID_3344&PID_C259"
+    },
+    "Joystick12Configuration": {
+      "type": "binary",
+      "value": "030088116c0000000f0000000000000000000000000000000000000080ffffff80ffffffffff0000ffff0000ffff0000ffff00007f0000007f00000000800000008000000080000000800000000000000000000000000000000000000000000000000000000000001800000000000000"
+    },
+    "Joystick12OEMName": {
+      "type": "string",
+      "value": "VID_0EB7&PID_0007"
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam": {
+    "SteamExe": {
+      "type": "string",
+      "value": "c:/program files (x86)/steam/steam.exe"
+    },
+    "SteamPath": {
+      "type": "string",
+      "value": "c:/program files (x86)/steam"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam": {
+    "InstallPath": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam"
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\0_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\0_1": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\0_2": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\0_3": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\10_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\11_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\11_1": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\11_2": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\14_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\15_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\16_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\17_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\18_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\1_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\1_1": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\2_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\2_1": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_10": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_11": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_3": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_4": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_5": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_6": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_7": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_8": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\4_9": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\5_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "01"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\iRacing\\iRacingLauncher.exe"
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\6_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\8_0": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\8_1": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Games\\8_2": {
+    "IsHidden": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsFavorite": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsSteamInstalled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsExeLaunch": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ExeLaunch": {
+      "type": "string",
+      "value": ""
+    },
+    "DefaultProfile": {
+      "type": "string",
+      "value": ""
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM": {
+    "IsItmEnabled": {
+      "type": "binary",
+      "value": "01"
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\Base": {
+    "FavoritePage": {
+      "type": "number",
+      "value": 0
+    },
+    "DisplayDuration": {
+      "type": "number",
+      "value": 10
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\Base\\ThresholdChange\\Down": {
+    "FUEL": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ERS_LEVEL": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "THRESHOLD_FUEL": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_ERS_LEVEL": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\Base\\ThresholdChange\\Up": {
+    "OIL_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "THRESHOLD_OIL_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\Base\\ValueChange": {
+    "LAP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "POSITION": {
+      "type": "binary",
+      "value": "00"
+    },
+    "DRS_ZONE": {
+      "type": "binary",
+      "value": "00"
+    },
+    "DRS_ACTIVE": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TC_SETTING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ABS_SETTING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ENGINE_MAPPING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "BRAKE_BIAS": {
+      "type": "binary",
+      "value": "00"
+    },
+    "BEST_LAP_TIME": {
+      "type": "binary",
+      "value": "00"
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\Rim": {
+    "FavoritePage": {
+      "type": "number",
+      "value": 0
+    },
+    "DisplayDuration": {
+      "type": "number",
+      "value": 10
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\Rim\\ThresholdChange\\Down": {
+    "FUEL": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ERS_LEVEL": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "THRESHOLD_FUEL": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_ERS_LEVEL": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\Rim\\ThresholdChange\\Up": {
+    "OIL_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "THRESHOLD_OIL_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\Rim\\ValueChange": {
+    "LAP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "POSITION": {
+      "type": "binary",
+      "value": "00"
+    },
+    "DRS_ZONE": {
+      "type": "binary",
+      "value": "00"
+    },
+    "DRS_ACTIVE": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TC_SETTING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ABS_SETTING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ENGINE_MAPPING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "BRAKE_BIAS": {
+      "type": "binary",
+      "value": "00"
+    },
+    "BEST_LAP_TIME": {
+      "type": "binary",
+      "value": "00"
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\SW": {
+    "FavoritePage": {
+      "type": "number",
+      "value": 0
+    },
+    "DisplayDuration": {
+      "type": "number",
+      "value": 10
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\SW\\ThresholdChange\\Down": {
+    "FUEL": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ERS_LEVEL": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "THRESHOLD_FUEL": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_ERS_LEVEL": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\SW\\ThresholdChange\\Up": {
+    "OIL_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_FR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RL_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TYRE_RR_C_TEMP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "THRESHOLD_OIL_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_FR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RL_C_TEMP": {
+      "type": "number",
+      "value": 0
+    },
+    "THRESHOLD_TYRE_RR_C_TEMP": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\ITM\\SW\\ValueChange": {
+    "LAP": {
+      "type": "binary",
+      "value": "00"
+    },
+    "POSITION": {
+      "type": "binary",
+      "value": "00"
+    },
+    "DRS_ZONE": {
+      "type": "binary",
+      "value": "00"
+    },
+    "DRS_ACTIVE": {
+      "type": "binary",
+      "value": "00"
+    },
+    "TC_SETTING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ABS_SETTING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "ENGINE_MAPPING": {
+      "type": "binary",
+      "value": "00"
+    },
+    "BRAKE_BIAS": {
+      "type": "binary",
+      "value": "00"
+    },
+    "BEST_LAP_TIME": {
+      "type": "binary",
+      "value": "00"
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Led": {
+    "DefaultSettings": {
+      "type": "binary",
+      "value": "01"
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Led\\BacklightButtons": {
+    "Button1_RedRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_GreenRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button1_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button2_RedRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_GreenRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button2_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button3_RedRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button3_GreenRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button3_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button4_RedRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button4_GreenRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button4_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button5_RedRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button5_GreenRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button6_RedRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_GreenRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_BlueRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button6_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button7_RedRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_GreenRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button7_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button8_RedRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_GreenRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button8_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button9_RedRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button9_GreenRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button9_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button10_RedRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button10_GreenRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button10_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button11_RedRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button11_GreenRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_BlueRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "Button12_RedRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_GreenRevLed": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_BlueRevLed": {
+      "type": "number",
+      "value": 15
+    },
+    "Button12_BrightnessRevLed": {
+      "type": "number",
+      "value": 12
+    },
+    "IsLedBacklightButtonsChecked": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsLedBacklightButtonsRevLedChecked": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsBaseRGBCapable": {
+      "type": "binary",
+      "value": "00"
+    },
+    "RawRpmMax": {
+      "type": "number",
+      "value": 10000
+    },
+    "RawRpmMin": {
+      "type": "number",
+      "value": 5000
+    },
+    "RpmFlash": {
+      "type": "number",
+      "value": 0
+    },
+    "RawRpmFlash": {
+      "type": "number",
+      "value": 0
+    },
+    "RpmEnabled": {
+      "type": "binary",
+      "value": "00"
+    },
+    "RawRpmEnabled": {
+      "type": "binary",
+      "value": "01"
+    },
+    "Button1_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button1_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button2_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button3_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button4_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button5_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button6_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button7_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button8_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button9_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button10_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button11_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_RedTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_GreenTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_BlueTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_BrightnessTelemetry1": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_RedTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_GreenTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_BlueTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_BrightnessTelemetry2": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_RedTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_GreenTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_BlueTelemetry3": {
+      "type": "number",
+      "value": 0
+    },
+    "Button12_BrightnessTelemetry3": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Led\\Flags": {
+    "IsInPit": {
+      "type": "number",
+      "value": 4816240639
+    },
+    "IsPitLimiterOn": {
+      "type": "number",
+      "value": 13945274367
+    },
+    "WheelSpin": {
+      "type": "number",
+      "value": 32069091327
+    },
+    "WheelLock": {
+      "type": "number",
+      "value": 27487793151
+    },
+    "IsTcInAction": {
+      "type": "number",
+      "value": 13945274367
+    },
+    "IsAbsInAction": {
+      "type": "number",
+      "value": 13945274367
+    },
+    "IsDrsAllowed": {
+      "type": "number",
+      "value": 13945274367
+    },
+    "IsDrsActive": {
+      "type": "number",
+      "value": 13945274367
+    },
+    "IsFlagGreen": {
+      "type": "number",
+      "value": 9162600447
+    },
+    "IsFlagYellow": {
+      "type": "number",
+      "value": 18325196799
+    },
+    "IsFlagRed": {
+      "type": "number",
+      "value": 4581302271
+    },
+    "IsFlagBlue": {
+      "type": "number",
+      "value": 13743898623
+    },
+    "IsFlagWhite": {
+      "type": "number",
+      "value": 32069091327
+    },
+    "IsLedRevsChecked": {
+      "type": "binary",
+      "value": "01"
+    },
+    "LedFlagsBrightness": {
+      "type": "number",
+      "value": 100
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Led\\Rev": {
+    "IsLedRevsChecked": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsRevLedSupported": {
+      "type": "binary",
+      "value": "01"
+    },
+    "IsLedRevsMirrorChecked": {
+      "type": "binary",
+      "value": "00"
+    },
+    "LedRevBrightness": {
+      "type": "number",
+      "value": 100
+    },
+    "IsLedRevsRawChecked": {
+      "type": "binary",
+      "value": "01"
+    },
+    "Rpm": {
+      "type": "number",
+      "value": 18321838899
+    },
+    "SliderLed1": {
+      "type": "binary",
+      "value": "0000000000405540"
+    },
+    "SliderLed2": {
+      "type": "binary",
+      "value": "0000000000a05540"
+    },
+    "SliderLed3": {
+      "type": "binary",
+      "value": "0000000000605640"
+    },
+    "SliderLed4": {
+      "type": "binary",
+      "value": "0000000000c05640"
+    },
+    "SliderLed5": {
+      "type": "binary",
+      "value": "0000000000205740"
+    },
+    "SliderLed6": {
+      "type": "binary",
+      "value": "0000000000805740"
+    },
+    "SliderLed7": {
+      "type": "binary",
+      "value": "0000000000e05740"
+    },
+    "SliderLed8": {
+      "type": "binary",
+      "value": "0000000000c05840"
+    },
+    "SliderLed9": {
+      "type": "binary",
+      "value": "0000000000c05840"
+    },
+    "SliderFlash": {
+      "type": "binary",
+      "value": "0000000000c05840"
+    },
+    "SliderFlashIntervall": {
+      "type": "number",
+      "value": 200
+    },
+    "IsInPit": {
+      "type": "number",
+      "value": 4831837969
+    },
+    "IsPitLimiterOn": {
+      "type": "number",
+      "value": 13958643507
+    },
+    "RevLedFlash": {
+      "type": "number",
+      "value": 4581298449
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Led\\RevBase": {
+    "IsLedRevsChecked": {
+      "type": "binary",
+      "value": "00"
+    },
+    "IsLedRevsRawChecked": {
+      "type": "binary",
+      "value": "01"
+    },
+    "LedRevBrightness": {
+      "type": "number",
+      "value": 100
+    },
+    "Rpm": {
+      "type": "number",
+      "value": 18321838899
+    },
+    "IsInPit": {
+      "type": "number",
+      "value": 18522046259
+    },
+    "IsPitLimiterOn": {
+      "type": "number",
+      "value": 18522046259
+    },
+    "RevLedFlash": {
+      "type": "number",
+      "value": 18321838899
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Led\\RevBaseRaw": {
+    "Rpm": {
+      "type": "number",
+      "value": 18321838899
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Led\\RevRaw": {
+    "Rpm": {
+      "type": "number",
+      "value": 18321838899
+    },
+    "SliderLedRaw1": {
+      "type": "number",
+      "value": 6500
+    },
+    "SliderLedRaw2": {
+      "type": "number",
+      "value": 6700
+    },
+    "SliderLedRaw3": {
+      "type": "number",
+      "value": 6900
+    },
+    "SliderLedRaw4": {
+      "type": "number",
+      "value": 7100
+    },
+    "SliderLedRaw5": {
+      "type": "number",
+      "value": 7300
+    },
+    "SliderLedRaw6": {
+      "type": "number",
+      "value": 7500
+    },
+    "SliderLedRaw7": {
+      "type": "number",
+      "value": 7700
+    },
+    "SliderLedRaw8": {
+      "type": "number",
+      "value": 7900
+    },
+    "SliderLedRaw9": {
+      "type": "number",
+      "value": 8100
+    },
+    "SliderRawFlash": {
+      "type": "number",
+      "value": 8200
+    },
+    "SliderRawFlashIntervall": {
+      "type": "number",
+      "value": 200
+    },
+    "RpmMax": {
+      "type": "number",
+      "value": 20000
+    },
+    "RpmMin": {
+      "type": "number",
+      "value": 1000
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Led\\ThreeDigit": {
+    "IsLedThreeDigitChecked": {
+      "type": "binary",
+      "value": "01"
+    },
+    "Speed": {
+      "type": "number",
+      "value": 0
+    },
+    "iRPM": {
+      "type": "number",
+      "value": 4
+    },
+    "Fuel_I": {
+      "type": "number",
+      "value": 4
+    },
+    "Gear": {
+      "type": "number",
+      "value": 1
+    },
+    "TCGraphics": {
+      "type": "number",
+      "value": 4
+    },
+    "IsTcInAction": {
+      "type": "number",
+      "value": 4
+    },
+    "ABSGraphics": {
+      "type": "number",
+      "value": 4
+    },
+    "IsAbsInAction": {
+      "type": "number",
+      "value": 4
+    },
+    "EngineMap": {
+      "type": "number",
+      "value": 4
+    },
+    "IsDrsAllowed": {
+      "type": "number",
+      "value": 4
+    },
+    "IsPitLimiterOn": {
+      "type": "number",
+      "value": 4
+    },
+    "IsInPitLedDisplay": {
+      "type": "number",
+      "value": 4
+    },
+    "LapNumber": {
+      "type": "number",
+      "value": 4
+    },
+    "Position": {
+      "type": "number",
+      "value": 4
+    },
+    "Sector": {
+      "type": "number",
+      "value": 4
+    },
+    "iERS": {
+      "type": "number",
+      "value": 4
+    },
+    "iBrakeBias": {
+      "type": "number",
+      "value": 4
+    }
+  },
+  "HKCU\\Software\\Endor\\FanatecService\\Settings": {
+    "UnitSpeed": {
+      "type": "number",
+      "value": 0
+    },
+    "UnitUnitTemperature": {
+      "type": "number",
+      "value": 0
+    },
+    "UnitVolume": {
+      "type": "number",
+      "value": 0
+    },
+    "UnitRpm": {
+      "type": "number",
+      "value": 0
+    },
+    "BalloonMessage": {
+      "type": "binary",
+      "value": "00"
+    },
+    "UpdateMessage": {
+      "type": "binary",
+      "value": "01"
+    },
+    "AudioNotification": {
+      "type": "binary",
+      "value": "00"
+    },
+    "MinimizeToTray": {
+      "type": "binary",
+      "value": "00"
+    },
+    "MinimizeToTrayAtStart": {
+      "type": "binary",
+      "value": "00"
+    },
+    "DeviceMismatchRememberChoice": {
+      "type": "binary",
+      "value": "00"
+    },
+    "Language": {
+      "type": "number",
+      "value": 0
+    },
+    "AutoLaunchAtWindowsStartUp": {
+      "type": "binary",
+      "value": "00"
+    },
+    "DefaultProfileRFactor2": {
+      "type": "string",
+      "value": "ClubSport Wheel"
+    },
+    "ProfileListWidth": {
+      "type": "binary",
+      "value": "0000000000e07540"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Fanatec Endor AG\\CSP": {
+    "BrakeMultiplier": {
+      "type": "number",
+      "value": 50
+    },
+    "FirmwareCheckedCspV3": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareCheckedCslEpLck": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareCheckedCslEp": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Fanatec Endor AG\\CSUA": {
+    "Calibrated": {
+      "type": "number",
+      "value": 1
+    },
+    "GearshiftSQMode": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareCheckedHb": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareCheckedGs": {
+      "type": "number",
+      "value": 0
+    },
+    "ActiveCsusb": {
+      "type": "number",
+      "value": 0
+    },
+    "UpdateCsusb": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Fanatec Endor AG\\FanatecWheel": {
+    "EBLDC": {
+      "type": "number",
+      "value": 1
+    },
+    "ManualFirmwareUpdate": {
+      "type": "number",
+      "value": 1
+    },
+    "PS4ModeAutoSwitch": {
+      "type": "number",
+      "value": 0
+    },
+    "LogHWEventsEnabled": {
+      "type": "number",
+      "value": 0
+    },
+    "DisableUpdateEnforcement": {
+      "type": "number",
+      "value": 0
+    },
+    "AllowCswV2Mode": {
+      "type": "number",
+      "value": 0
+    },
+    "RnDHiddenTricker": {
+      "type": "number",
+      "value": 0
+    },
+    "DeviceModuleBootloaderRecovery": {
+      "type": "number",
+      "value": 0
+    },
+    "PID_0007": {
+      "type": "number",
+      "value": 0
+    },
+    "DowngradeLevel": {
+      "type": "number",
+      "value": 0
+    },
+    "UsbAdapterMode": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Fanatec Endor AG\\FanatecWheel\\{249A63FC-B9F5-4685-B20A-C936E0D5DD19}\\0": {
+    "WheelCalibration": {
+      "type": "number",
+      "value": 0
+    },
+    "CombinedPedals": {
+      "type": "number",
+      "value": 0
+    },
+    "ShifterPaddlesAs2GS": {
+      "type": "number",
+      "value": 0
+    },
+    "MPSDisabled": {
+      "type": "number",
+      "value": 0
+    },
+    "BrakeMultiplier": {
+      "type": "number",
+      "value": 0
+    },
+    "RimUHFrontButtonMapped": {
+      "type": "number",
+      "value": 0
+    },
+    "CSWRBMWMouseSettings": {
+      "type": "binary",
+      "value": "000101800420ff00ff00191aff0f"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Fanatec Endor AG\\FanatecWheel\\{249A63FC-B9F5-4685-B20A-C936E0D5DD19}\\16": {
+    "WheelCalibration": {
+      "type": "number",
+      "value": 0
+    },
+    "CombinedPedals": {
+      "type": "number",
+      "value": 0
+    },
+    "ShifterPaddlesAs2GS": {
+      "type": "number",
+      "value": 0
+    },
+    "MPSDisabled": {
+      "type": "number",
+      "value": 0
+    },
+    "BrakeMultiplier": {
+      "type": "number",
+      "value": 0
+    },
+    "RimUHFrontButtonMapped": {
+      "type": "number",
+      "value": 0
+    },
+    "CSWRBMWMouseSettings": {
+      "type": "binary",
+      "value": "000101800420ff00ff00191aff0f"
+    },
+    "WheelType": {
+      "type": "number",
+      "value": 16
+    },
+    "RimType": {
+      "type": "number",
+      "value": 13
+    },
+    "BaseType": {
+      "type": "number",
+      "value": 8
+    },
+    "PedalsType": {
+      "type": "number",
+      "value": 1
+    },
+    "FirmwareVersion": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareVersionMotor": {
+      "type": "number",
+      "value": 0
+    },
+    "SystemConfig": {
+      "type": "number",
+      "value": 6
+    },
+    "SystemConfigExt": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareVersionRim": {
+      "type": "number",
+      "value": 0
+    },
+    "MPSFunction": {
+      "type": "number",
+      "value": 0
+    },
+    "DisableRevStripe": {
+      "type": "number",
+      "value": 0
+    },
+    "HardwareExtFlags": {
+      "type": "number",
+      "value": 0
+    },
+    "DeviceModule": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareVersionModule": {
+      "type": "number",
+      "value": 0
+    },
+    "BaseAccessories": {
+      "type": "number",
+      "value": 0
+    },
+    "IsSteeringWheelRaceCar": {
+      "type": "number",
+      "value": 0
+    },
+    "ClutchBitePoint": {
+      "type": "number",
+      "value": 100
+    },
+    "FirmwareVersionWqr": {
+      "type": "number",
+      "value": 0
+    },
+    "SystemReport": {
+      "type": "binary",
+      "value": "ff08080000b30200000002852a000000000100060000000011000300000000000000000000000100000000000000000083000300000d000f000000000000"
+    },
+    "WheelRotation": {
+      "type": "number",
+      "value": 1080
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Fanatec Endor AG\\FanatecWheel\\{FB546087-AE88-4B06-83AE-BC04F3B382A8}\\0": {
+    "WheelCalibration": {
+      "type": "number",
+      "value": 0
+    },
+    "CombinedPedals": {
+      "type": "number",
+      "value": 0
+    },
+    "ShifterPaddlesAs2GS": {
+      "type": "number",
+      "value": 0
+    },
+    "MPSDisabled": {
+      "type": "number",
+      "value": 0
+    },
+    "BrakeMultiplier": {
+      "type": "number",
+      "value": 0
+    },
+    "RimUHFrontButtonMapped": {
+      "type": "number",
+      "value": 0
+    },
+    "CSWRBMWMouseSettings": {
+      "type": "binary",
+      "value": "000101800420ff00ff00191aff0f"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Fanatec Endor AG\\FanatecWheel\\{FB546087-AE88-4B06-83AE-BC04F3B382A8}\\16": {
+    "WheelType": {
+      "type": "number",
+      "value": 16
+    },
+    "RimType": {
+      "type": "number",
+      "value": 17
+    },
+    "FirmwareVersion": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareVersionMotor": {
+      "type": "number",
+      "value": 0
+    },
+    "SystemConfig": {
+      "type": "number",
+      "value": 6
+    },
+    "FirmwareVersionRim": {
+      "type": "number",
+      "value": 0
+    },
+    "MPSFunction": {
+      "type": "number",
+      "value": 0
+    },
+    "WheelCalibration": {
+      "type": "number",
+      "value": 0
+    },
+    "CombinedPedals": {
+      "type": "number",
+      "value": 0
+    },
+    "ShifterPaddlesAs2GS": {
+      "type": "number",
+      "value": 0
+    },
+    "MPSDisabled": {
+      "type": "number",
+      "value": 0
+    },
+    "BrakeMultiplier": {
+      "type": "number",
+      "value": 0
+    },
+    "RimUHFrontButtonMapped": {
+      "type": "number",
+      "value": 0
+    },
+    "CSWRBMWMouseSettings": {
+      "type": "binary",
+      "value": "000101800420ff00ff00191aff0f"
+    },
+    "SystemConfigExt": {
+      "type": "number",
+      "value": 0
+    },
+    "HardwareExtFlags": {
+      "type": "number",
+      "value": 0
+    },
+    "DeviceModule": {
+      "type": "number",
+      "value": 0
+    },
+    "FirmwareVersionModule": {
+      "type": "number",
+      "value": 0
+    },
+    "BaseAccessories": {
+      "type": "number",
+      "value": 0
+    },
+    "IsSteeringWheelRaceCar": {
+      "type": "number",
+      "value": 0
+    },
+    "PedalsType": {
+      "type": "number",
+      "value": 1
+    },
+    "ClutchBitePoint": {
+      "type": "number",
+      "value": 100
+    },
+    "FirmwareVersionWqr": {
+      "type": "number",
+      "value": 0
+    },
+    "BaseType": {
+      "type": "number",
+      "value": 8
+    },
+    "SystemReport": {
+      "type": "binary",
+      "value": "ff08080000b30200000002852a000000000100060000000015070100000000000000000000000100000000000000000083000300000d000f000000000000"
+    },
+    "DisableRevStripe": {
+      "type": "number",
+      "value": 0
+    },
+    "WheelRotation": {
+      "type": "number",
+      "value": 1080
+    },
+    "CSWRUHXMouseSettings": {
+      "type": "binary",
+      "value": "000101200420ff00ff00191aff0f"
+    },
+    "AutoCenterSpring": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 223750": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steam\\games\\f4d05390df20b963048d2f3f5ebeb70d1eed499b.ico"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "DCS World Steam Edition"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Eagle Dynamics SA"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 2399420": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steam\\games\\5464fece9c8ce0d0fbd99aedeb8b536521aa1f29.ico"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "Le Mans Ultimate"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Le Mans Ultimate"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Studio 397"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 244210": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steam\\games\\2da95c73fc0c607dc9c0448f33577956112bd2d6.ico"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "Assetto Corsa"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Kunos Simulazioni"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 2537590": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steam\\games\\1bf25ba0ecc0ac48b22632388f2bd4a70ca9b65c.ico"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "Microsoft Flight Simulator 2024"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\MSFS2024"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Asobo Studio"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 266410": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steam\\games\\bd3b34b608b98040344ba2b51b6bd20197b177ba.ico"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "iRacing"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\iRacing"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "iRacing.com Motorsport Simulations"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 284160": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steam\\games\\72037f753bb4f49cd9e7d5c18bc6431551177597.ico"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "BeamNG.drive"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\BeamNG.drive"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "BeamNG"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 3058630": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steam\\games\\71fd07174acfa525c479cc0e20b7e214cfd28ea9.ico"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "Assetto Corsa EVO"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Assetto Corsa EVO"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "KUNOS Simulazioni"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 3917090": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steam\\games\\d1560174004949065d7d1b0d1e4a2202647ce756.ico"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "Assetto Corsa Rally"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Assetto Corsa Rally"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Supernova Games Studios"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{01E0AB21-D1CC-42B4-9DFF-84FFE4F26DAF}": {
+    "DisplayVersion": {
+      "type": "string",
+      "value": "1.5.230"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files\\Nefarius Software Solutions\\HidHide\\"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Nefarius Software Solutions e.U."
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "HidHide"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{491D46E4-BEEC-42DF-BE42-53645983E01C}": {
+    "DisplayVersion": {
+      "type": "string",
+      "value": "7.4.2.22730"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": ""
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Corsair Memory, Inc."
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "Elgato Stream Deck"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{966606F3-2745-49E9-BF15-5C3EAA4E9077}": {
+    "DisplayVersion": {
+      "type": "string",
+      "value": "1.22.0"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files\\Nefarius Software Solutions\\ViGEm Bus Driver\\"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Nefarius Software Solutions e.U."
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "ViGEm Bus Driver"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{F6A28FA9-93DF-4507-B327-3BCDA7660D00}": {
+    "DisplayVersion": {
+      "type": "string",
+      "value": "0.52.2"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": ""
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Corsair Fanatec"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "FANATEC driver package"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Mosquitto64": {
+    "DisplayName": {
+      "type": "string",
+      "value": "Eclipse Mosquitto MQTT broker (64 bit)"
+    },
+    "DisplayVersion": {
+      "type": "string",
+      "value": "2.0.18"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam": {
+    "DisplayName": {
+      "type": "string",
+      "value": "Steam"
+    },
+    "DisplayVersion": {
+      "type": "string",
+      "value": "2.10.91.91"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Valve Corporation"
+    },
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\Steam\\uninstall.exe"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{2CB193B9-1B9D-4A84-BC70-0948145BA4BA}_is1": {
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files (x86)\\iRacing\\"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "iRacing.com Race Simulation"
+    },
+    "DisplayVersion": {
+      "type": "string",
+      "value": "2026.03.13.02"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "iRacing.com"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{84234F8F-74EF-42E6-A35C-CAC758645015}": {
+    "DisplayVersion": {
+      "type": "string",
+      "value": "5.5.3"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": ""
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "OptiTrack"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "TrackIR 5"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{B8793D4E-B2C7-475A-BA2D-14099BBDC95F}": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\ProgramData\\Package Cache\\{B8793D4E-B2C7-475A-BA2D-14099BBDC95F}\\TrackIR5_Bootstrapper.exe,0"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "TrackIR"
+    },
+    "DisplayVersion": {
+      "type": "string",
+      "value": "5.5.3.317"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "OptiTrack"
+    }
+  },
+  "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{db3c6c83-e26c-4648-8000-3b364f938f74}": {
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\ProgramData\\Package Cache\\{db3c6c83-e26c-4648-8000-3b364f938f74}\\FanatecAppInstaller.exe,0"
+    },
+    "DisplayName": {
+      "type": "string",
+      "value": "FanatecApp"
+    },
+    "DisplayVersion": {
+      "type": "string",
+      "value": "1.2.1.3"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Corsair"
+    }
+  },
+  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\2873a9d6-0e65-5078-b232-daee9dce2239": {
+    "DisplayName": {
+      "type": "string",
+      "value": "SimAppPro 1.16.91"
+    },
+    "DisplayVersion": {
+      "type": "string",
+      "value": "1.16.91"
+    },
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\uninstallerIcon.ico"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "WINWING"
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam\\Apps\\223750": {
+    "Installed": {
+      "type": "number",
+      "value": 1
+    },
+    "Updating": {
+      "type": "number",
+      "value": 0
+    },
+    "Running": {
+      "type": "number",
+      "value": 0
+    },
+    "Name": {
+      "type": "string",
+      "value": "DCS World Steam Edition"
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam\\Apps\\244210": {
+    "Installed": {
+      "type": "number",
+      "value": 1
+    },
+    "Updating": {
+      "type": "number",
+      "value": 0
+    },
+    "Running": {
+      "type": "number",
+      "value": 0
+    },
+    "Name": {
+      "type": "string",
+      "value": "Assetto Corsa"
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam\\Apps\\266410": {
+    "Installed": {
+      "type": "number",
+      "value": 1
+    },
+    "Updating": {
+      "type": "number",
+      "value": 0
+    },
+    "Name": {
+      "type": "string",
+      "value": "iRacing"
+    },
+    "Running": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam\\Apps\\284160": {
+    "Installed": {
+      "type": "number",
+      "value": 1
+    },
+    "Updating": {
+      "type": "number",
+      "value": 0
+    },
+    "Running": {
+      "type": "number",
+      "value": 0
+    },
+    "Name": {
+      "type": "string",
+      "value": "BeamNG.drive"
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam\\Apps\\2399420": {
+    "Installed": {
+      "type": "number",
+      "value": 1
+    },
+    "Updating": {
+      "type": "number",
+      "value": 0
+    },
+    "Running": {
+      "type": "number",
+      "value": 0
+    },
+    "Name": {
+      "type": "string",
+      "value": "Le Mans Ultimate"
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam\\Apps\\2537590": {
+    "Installed": {
+      "type": "number",
+      "value": 1
+    },
+    "Updating": {
+      "type": "number",
+      "value": 0
+    },
+    "Name": {
+      "type": "string",
+      "value": "Microsoft Flight Simulator 2024"
+    },
+    "Running": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam\\Apps\\3058630": {
+    "Installed": {
+      "type": "number",
+      "value": 1
+    },
+    "Updating": {
+      "type": "number",
+      "value": 0
+    },
+    "Name": {
+      "type": "string",
+      "value": "Assetto Corsa EVO"
+    },
+    "Running": {
+      "type": "number",
+      "value": 0
+    }
+  },
+  "HKCU\\Software\\Valve\\Steam\\Apps\\3917090": {
+    "Installed": {
+      "type": "number",
+      "value": 1
+    },
+    "Updating": {
+      "type": "number",
+      "value": 0
+    },
+    "Running": {
+      "type": "number",
+      "value": 0
+    },
+    "Name": {
+      "type": "string",
+      "value": "Assetto Corsa Rally"
+    }
+  }
+}

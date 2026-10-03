@@ -1,17 +1,21 @@
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { z } from 'zod';
 import type { CheckContext } from '../src/core/checks/registry';
 import { nullLogger } from '../src/core/logger';
 import type { Clock } from '../src/core/ports';
 import {
+  applyLiveMutations,
   createFakePorts,
   loadRig,
   loadScenario,
   seedScenario,
   type FakePorts,
+  type LoadedScenario,
+  type SeedOptions,
 } from '../src/platform/fake';
-import type { RigState } from '../src/platform/fake/scenario';
+import { MutationSchema, type RigState } from '../src/platform/fake/scenario';
 import { discoverFeatures, wireFeatures, type Wiring } from '../src/main/bootstrap';
 
 export const repoRoot = path.resolve(__dirname, '..');
@@ -48,20 +52,28 @@ export interface TestRig {
 }
 
 /** Fake ports on a named scenario (fixtures/scenarios/<name>.yaml), with profiles seeded like the app does. */
-export async function scenarioRig(name: string): Promise<TestRig> {
+export async function scenarioRig(name: string, options: SeedOptions = {}): Promise<TestRig> {
   const loaded = await loadScenario(
     path.join(fixturesDir, 'scenarios', `${name}.yaml`),
     fixturesDir
   );
-  const rig = await rigFromState(loaded.state);
-  await seedScenario(loaded, rig.ports);
+  const rig = await rigFromState(loaded.state, loaded.scripts);
+  await seedScenario(loaded, rig.ports, options);
   return rig;
 }
 
-export async function rigFromState(state: RigState): Promise<TestRig> {
+/** Changes the fake machine of a running test rig with scenario mutations (as in a scenario file). */
+export function mutate(rig: TestRig, mutations: unknown[]): Promise<void> {
+  return applyLiveMutations(rig.ports, z.array(MutationSchema).parse(mutations));
+}
+
+export async function rigFromState(
+  state: RigState,
+  scenario?: LoadedScenario['scripts']
+): Promise<TestRig> {
   const { dir, cleanup } = await tempDir();
   const clock = new TestClock();
-  const ports = createFakePorts({ state, homeDir: dir, clock });
+  const ports = createFakePorts({ state, homeDir: dir, clock, ...(scenario ? { scenario } : {}) });
   return { ports, ctx: { ports, log: nullLogger }, clock, home: dir, cleanup };
 }
 
@@ -73,8 +85,8 @@ export interface WiredApp extends TestRig {
 }
 
 /** The whole main side (every discovered feature) wired onto fake ports for a scenario. */
-export async function wiredApp(scenario: string): Promise<WiredApp> {
-  const rig = await scenarioRig(scenario);
+export async function wiredApp(scenario: string, options: SeedOptions = {}): Promise<WiredApp> {
+  const rig = await scenarioRig(scenario, options);
   const events: WiredApp['events'] = [];
   const wiring = wireFeatures({
     features: discoverFeatures(),

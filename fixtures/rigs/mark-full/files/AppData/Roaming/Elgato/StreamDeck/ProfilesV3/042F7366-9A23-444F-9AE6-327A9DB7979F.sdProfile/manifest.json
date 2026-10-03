@@ -1,0 +1,16 @@
+{
+  "AppIdentifier": "*",
+  "Device": {
+    "Model": "20GAT9902",
+    "UUID": "@(1)[4057/143/A00NA33331P1UB]"
+  },
+  "Name": "DCS World",
+  "Pages": {
+    "Current": "3a2eb2e1-8a50-48a1-8bd0-48944f142aa7",
+    "Default": "0a482c24-7f67-45ee-9e92-dd7b91a45084",
+    "Pages": [
+      "3a2eb2e1-8a50-48a1-8bd0-48944f142aa7"
+    ]
+  },
+  "Version": "3.0"
+}

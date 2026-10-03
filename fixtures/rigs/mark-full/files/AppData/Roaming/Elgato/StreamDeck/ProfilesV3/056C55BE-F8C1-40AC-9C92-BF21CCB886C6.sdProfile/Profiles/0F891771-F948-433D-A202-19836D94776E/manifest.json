@@ -1,0 +1,100 @@
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "6093187f-5b06-4442-b51d-031a92e2f328",
+          "LinkedTitle": true,
+          "Name": "Parent Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/O3E3GNKWPH6I19MNL1RRG48DQ4Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.backtoparent"
+        },
+        "1,1": {
+          "ActionID": "00961603-8cc9-489f-9d61-738ddfa4f340",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/L3OI4DQ9C90GDC8LBMNNHPHP1OZ.png",
+              "Title": "VR"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "2,1": {
+          "ActionID": "1e4c590b-5c39-445d-8232-f7df7f118ccd",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/9F892K4B7P1JF1A39LAVSLG5F0Z.png",
+              "Title": "VR"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "3,1": {
+          "ActionID": "265ff56d-6f8a-4732-a8cf-ed94b1bf7ffd",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/KAP7CBFJTT7PR8A3EBGRRRA2OGZ.png",
+              "Title": "VR"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "4,1": {
+          "ActionID": "3ca4c83f-01ae-4012-ad72-c06e38be8f15",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/VN1KSAO2JL2VH80BVBQ4QP4M00Z.png",
+              "Title": "VR"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "5,1": {
+          "ActionID": "1eca061a-2c5d-47c5-b4c4-4633b200293e",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/K0HPVWDSS565J717TM78AFF20GZ.png",
+              "Title": "VR"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

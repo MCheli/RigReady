@@ -1,0 +1,284 @@
+{
+  "Alternative Input": {
+    "Bias Forward": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 135
+    },
+    "Bias Rearward": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 134
+    },
+    "Decrement Motor Map": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 97
+    },
+    "Increment Motor Map": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 96
+    },
+    "Look Left": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 137
+    },
+    "Look Right": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 136
+    },
+    "Pit Menu Dec": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 130
+    },
+    "Pit Menu Inc": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 131
+    },
+    "Traction Control Down": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 126
+    },
+    "Traction Control Up": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 127
+    }
+  },
+  "Devices": {
+    "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5": {
+      "Force Feedback": {
+        "Enabled": true,
+        "Invert Force Feedback": false,
+        "Jolt magnitude": 1.0,
+        "Steering bump stop degrees": 40.0,
+        "Steering effects strength": 4000.0,
+        "Steering torque minimum": 0.0,
+        "Steering torque sensitivity": 1.0,
+        "Use vendor specific Force Feedback": true,
+        "Vibrotactile effects strength": 0.0,
+        "constant steering force": false
+      },
+      "Type": "Wheel",
+      "input axis properties": {
+        "RX+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "RX-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "RY+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "RY-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "RZ+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "RZ-": {
+          "center": 1.0,
+          "max": 0.0,
+          "min": 1.0
+        },
+        "S0+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "S0-": {
+          "center": 1.0,
+          "max": 0.0,
+          "min": 1.0
+        },
+        "S1+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "S1-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "X+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "X-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "Y+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "Y-": {
+          "center": 1.0,
+          "max": 0.0,
+          "min": 1.0
+        },
+        "Z+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "Z-": {
+          "center": 1.0,
+          "max": 0.0,
+          "min": 1.0
+        }
+      },
+      "instance name": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD",
+      "layout": {
+        "axes": 8,
+        "buttons": 108,
+        "povs": 1
+      },
+      "options": {
+        "Brake Bias Axis": false,
+        "Brake Sensitivity": 1.0,
+        "Clutch Sensitivity": 1.0,
+        "Gear Select Button Hold": false,
+        "Hardware 3Digit Display": 0,
+        "Keyboard Brake": 0.5,
+        "Keyboard Clutch": 0.20000000298023224,
+        "Keyboard Throttle": 0.5,
+        "Never Release Device": false,
+        "Sensitivity Type": 1,
+        "Slip Angle Target": 4.5,
+        "Steering Rate Factor": 0.5,
+        "Steering Return Rate Multiplier": 1.0,
+        "Steering Sensitivity": 1.0,
+        "Steering Snap Factor": 0.5,
+        "Steering Speed Sensitivity": 0.0,
+        "Steering Wheel Maximum Rotation": 900.0,
+        "Steering Wheel Maximum Rotation From Driver": true,
+        "Throttle Sensitivity": 1.0,
+        "use leds": false
+      },
+      "product guid": "{00070EB7-0000-0000-0000-504944564944}",
+      "product name": "FANATEC Podium Wheel Base DD2"
+    }
+  },
+  "Input": {
+    "Bias Forward": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 64
+    },
+    "Bias Rearward": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 62
+    },
+    "Brake": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 11
+    },
+    "Clutch In": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 3
+    },
+    "Decrement Motor Map": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 63
+    },
+    "Driver Overlay Next MFD": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 17
+    },
+    "Driver Overlay Previous MFD": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 19
+    },
+    "Headlights Pulse": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 42
+    },
+    "Increment Motor Map": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 65
+    },
+    "Look Left": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 6
+    },
+    "Look Right": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 7
+    },
+    "Neutral": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 40
+    },
+    "Pit Menu Dec": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 54
+    },
+    "Pit Menu Down": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 18
+    },
+    "Pit Menu Inc": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 55
+    },
+    "Pit Menu Up": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 16
+    },
+    "Pit Request": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 35
+    },
+    "Push To change camera view": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 43
+    },
+    "Shift Down": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 37
+    },
+    "Shift Up": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 36
+    },
+    "Speed Limiter": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 41
+    },
+    "Steer Left": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 1
+    },
+    "Steer Right": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 0
+    },
+    "Throttle": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 5
+    },
+    "Traction Control Down": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 81
+    },
+    "Traction Control Up": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 80
+    },
+    "Wipers": {
+      "device": "FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5",
+      "id": 38
+    }
+  },
+  "Type": "Direct Input"
+}

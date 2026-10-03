@@ -1,0 +1,49 @@
+"AppState"
+{
+	"appid"		"2399420"
+	"universe"		"1"
+	"LauncherPath"		"C:\\Program Files (x86)\\Steam\\steam.exe"
+	"name"		"Le Mans Ultimate"
+	"StateFlags"		"4"
+	"installdir"		"Le Mans Ultimate"
+	"LastUpdated"		"1791057780"
+	"LastPlayed"		"1777160445"
+	"SizeOnDisk"		"53734803047"
+	"StagingSize"		"0"
+	"buildid"		"25611540"
+	"LastOwner"		"76561197960265728"
+	"DownloadType"		"1"
+	"UpdateResult"		"0"
+	"BytesToDownload"		"1937169520"
+	"BytesDownloaded"		"1937169520"
+	"BytesToStage"		"3695215153"
+	"BytesStaged"		"3695215153"
+	"TargetBuildID"		"25611540"
+	"AutoUpdateBehavior"		"0"
+	"AllowOtherDownloadsWhileRunning"		"0"
+	"ScheduledAutoUpdate"		"0"
+	"InstalledDepots"
+	{
+		"2399421"
+		{
+			"manifest"		"7829070413439998930"
+			"size"		"53734803047"
+		}
+	}
+	"InstallScripts"
+	{
+		"2399421"		"installscript-directx.vdf"
+	}
+	"SharedDepots"
+	{
+		"228989"		"228980"
+	}
+	"UserConfig"
+	{
+		"language"		"english"
+	}
+	"MountedConfig"
+	{
+		"language"		"english"
+	}
+}

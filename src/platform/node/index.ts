@@ -1,7 +1,22 @@
 import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { Clock, LogSink, RawFs, Shell, ShellResult } from '../../core/ports';
+import type {
+  Clock,
+  Dialogs,
+  Http,
+  HttpRequest,
+  HttpResponse,
+  LogSink,
+  LoginItem,
+  Notifications,
+  RawFs,
+  RawStat,
+  Render,
+  Secrets,
+  Shell,
+  ShellResult,
+} from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
 
 /** Real implementations that are not Windows-specific. Shared by the windows and fake platforms. */
@@ -11,6 +26,20 @@ export const systemClock: Clock = { now: () => new Date() };
 export class NodeRawFs implements RawFs {
   readText(file: string): Promise<string> {
     return fs.readFile(file, 'utf8');
+  }
+  async readBytes(file: string): Promise<Uint8Array> {
+    return new Uint8Array(await fs.readFile(file));
+  }
+  async stat(file: string): Promise<RawStat | undefined> {
+    try {
+      const stat = await fs.stat(file);
+      return { isDirectory: stat.isDirectory(), size: stat.size, mtimeMs: stat.mtimeMs };
+    } catch {
+      return undefined;
+    }
+  }
+  async removeDir(dir: string): Promise<void> {
+    await fs.rm(dir, { recursive: true, force: true });
   }
   async writeBytes(file: string, data: Uint8Array | string): Promise<void> {
     await fs.mkdir(path.dirname(file), { recursive: true });
@@ -108,6 +137,71 @@ export class NodeShell implements Shell {
     });
   }
 }
+
+/** fetch, restricted to https. Used by the real platform; tests use the scripted fake. */
+export class NodeHttp implements Http {
+  async request(request: HttpRequest): Promise<Result<HttpResponse>> {
+    let url: URL;
+    try {
+      url = new URL(request.url);
+    } catch {
+      return err('http.url', `Not a valid address: ${request.url}`);
+    }
+    if (url.protocol !== 'https:') return err('http.url', 'Only https addresses are allowed.');
+    try {
+      const response = await fetch(url, {
+        method: request.method ?? 'GET',
+        ...(request.headers ? { headers: request.headers } : {}),
+        ...(request.body !== undefined ? { body: request.body } : {}),
+        signal: AbortSignal.timeout(request.timeoutMs ?? 60_000),
+      });
+      const headers: Record<string, string> = {};
+      response.headers.forEach((value, key) => (headers[key.toLowerCase()] = value));
+      return ok({ status: response.status, headers, body: await response.text() });
+    } catch (e) {
+      const timedOut = e instanceof Error && e.name === 'TimeoutError';
+      return err(
+        timedOut ? 'http.timeout' : 'http.network',
+        timedOut ? `${url.host} did not answer in time.` : `Could not reach ${url.host}.`,
+        e instanceof Error ? e.message : String(e)
+      );
+    }
+  }
+}
+
+const unavailable = (what: string): Result<never> =>
+  err('port.unavailable', `${what} is only available inside the RigReady app.`);
+
+/**
+ * Stand-ins for the ports that need Electron, used when the platform is created
+ * outside the app (scripts, rig smoke tests). They fail clearly instead of pretending.
+ */
+export const headlessPorts: {
+  secrets: Secrets;
+  dialogs: Dialogs;
+  render: Render;
+  notifications: Notifications;
+  loginItem: LoginItem;
+} = {
+  secrets: {
+    get: async () => unavailable('The secret store'),
+    set: async () => unavailable('The secret store'),
+    remove: async () => unavailable('The secret store'),
+  },
+  dialogs: {
+    open: async () => unavailable('The file picker'),
+    save: async () => unavailable('The file picker'),
+  },
+  render: {
+    png: async () => unavailable('Rendering'),
+    pdf: async () => unavailable('Rendering'),
+  },
+  notifications: { notify: async () => unavailable('Notifications') },
+  loginItem: {
+    isEnabled: async () => unavailable('Start with Windows'),
+    setEnabled: async () => unavailable('Start with Windows'),
+  },
+};
 
 /** Appends to a log file without blocking the caller; rotates at maxBytes keeping `keep` older files. */
 export class RotatingFileSink implements LogSink {

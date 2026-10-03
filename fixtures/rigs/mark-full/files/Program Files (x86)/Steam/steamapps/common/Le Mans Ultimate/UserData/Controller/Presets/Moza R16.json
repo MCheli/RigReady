@@ -1,0 +1,237 @@
+{
+  "Alternative Input": {},
+  "Devices": {
+    "MOZA R16 Base-2F01BCC90E955CA3": {
+      "Force Feedback": {
+        "Enabled": true,
+        "Invert Force Feedback": true,
+        "Jolt magnitude": 1.0,
+        "Steering bump stop degrees": 40.0,
+        "Steering effects strength": 10000.0,
+        "Steering torque minimum": 0.0,
+        "Steering torque sensitivity": 1.0,
+        "constant steering force": false
+      },
+      "Type": "Wheel",
+      "input axis properties": {
+        "RX+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "RX-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "RY+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "RY-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "RZ+": {
+          "center": 0.0,
+          "max": 1.0,
+          "min": 0.0
+        },
+        "RZ-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "S0+": {
+          "center": 0.0,
+          "max": 1.0,
+          "min": 0.0
+        },
+        "S0-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "S1+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "S1-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "X+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "X-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "Y+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "Y-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "Z+": {
+          "center": 0.0,
+          "max": 1.0,
+          "min": 0.0
+        },
+        "Z-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        }
+      },
+      "instance name": "MOZA R16 Base",
+      "layout": {
+        "axes": 8,
+        "buttons": 128,
+        "povs": 1
+      },
+      "options": {
+        "Brake Bias Axis": false,
+        "Brake Sensitivity": 1.0,
+        "Clutch Sensitivity": 1.0,
+        "Gear Select Button Hold": false,
+        "Hardware 3Digit Display": 0,
+        "Keyboard Brake": 0.5,
+        "Keyboard Clutch": 0.20000000298023224,
+        "Keyboard Throttle": 0.5,
+        "Never Release Device": false,
+        "Sensitivity Type": 1,
+        "Steering Aggression": 0.5,
+        "Steering Rate Factor": 0.5,
+        "Steering Return Rate Multiplier": 1.0,
+        "Steering Sensitivity": 1.0,
+        "Steering Snap Factor": 0.5,
+        "Steering Speed Sensitivity": 0.0,
+        "Steering Wheel Maximum Rotation": 900.0,
+        "Steering Wheel Maximum Rotation From Driver": true,
+        "Throttle Sensitivity": 1.0,
+        "use leds": false
+      },
+      "product guid": "346E-0-0-4449564449500000",
+      "product name": "MOZA R16 Base"
+    }
+  },
+  "Input": {
+    "Bias Forward": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 77
+    },
+    "Bias Rearward": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 76
+    },
+    "Brake": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 10
+    },
+    "Clutch In": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 12
+    },
+    "Decrement Motor Map": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 78
+    },
+    "Driver Overlay Next MFD": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 37
+    },
+    "Driver Overlay Previous MFD": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 39
+    },
+    "Driving Cameras": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 66
+    },
+    "Headlights": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 51
+    },
+    "Headlights Pulse": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 52
+    },
+    "Increment Motor Map": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 79
+    },
+    "Look Left": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 43
+    },
+    "Look Right": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 41
+    },
+    "Pit Menu Down": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 38
+    },
+    "Pit Menu Up": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 36
+    },
+    "Pit Request": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 54
+    },
+    "Rear Look": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 42
+    },
+    "Shift Down": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 44
+    },
+    "Shift Up": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 45
+    },
+    "Speed Limiter": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 50
+    },
+    "Steer Left": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 1
+    },
+    "Steer Right": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 0
+    },
+    "Throttle": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 4
+    },
+    "Traction Control Down": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 74
+    },
+    "Traction Control Up": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 75
+    },
+    "Wipers": {
+      "device": "MOZA R16 Base-2F01BCC90E955CA3",
+      "id": 53
+    }
+  },
+  "Type": "Direct Input"
+}

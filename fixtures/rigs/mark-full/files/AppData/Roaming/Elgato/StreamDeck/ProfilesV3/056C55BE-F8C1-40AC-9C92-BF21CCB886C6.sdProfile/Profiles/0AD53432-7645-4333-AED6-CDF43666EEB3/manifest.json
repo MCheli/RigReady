@@ -1,0 +1,205 @@
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "f59533f3-28c8-4dce-91d1-ef49a77dd110",
+          "LinkedTitle": true,
+          "Name": "Parent Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/HCPA8T993124983THSI3CHQHOCZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.backtoparent"
+        },
+        "1,0": {
+          "ActionID": "5277cd15-cc54-4f51-a58a-1c96d13b7645",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/STN8FALJBT2BJ6413RPE2E37P4Z.png",
+              "Title": "instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "1,1": {
+          "ActionID": "0839b4d3-fa9b-470d-9e76-f599be7e22eb",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/BG79W8S7M957RDT51B51JW9V2KZ.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "1,2": {
+          "ActionID": "1fe2209e-e674-4ad6-bf3e-ba7fd094616e",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/QQJGJVCFV160LELPS7RMJ6OTT4Z.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "2,0": {
+          "ActionID": "ce0ad43b-8e88-49c6-b3e3-665e14f7eeb4",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/AQVKWSGPO552RERPS5M25LF9TOZ.png",
+              "Title": "instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "2,1": {
+          "ActionID": "ff159e02-2f9c-4d21-9d26-1b746ab16910",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/85H0R82TH118T2MSDJIC9BQWH4Z.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "2,2": {
+          "ActionID": "fac9dea7-ca81-4b6b-a38e-02f9f73ddfcf",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/LHFOK3FNNL17P6OKLB3FML8W4CZ.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "3,1": {
+          "ActionID": "3c311237-8d4a-46bc-9997-fff709c610ac",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/7HK99WIN0D4PN86ED7AQFIAH8GZ.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "3,2": {
+          "ActionID": "b3a5ef4f-7e49-4a33-a213-3c9ab0a64096",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/3F9G0473KL23F49A8CI7H3TLVSZ.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "4,1": {
+          "ActionID": "a6950204-bfff-44af-9bfe-d13b37596d99",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/QLWNBVAAN567W23Q27B2CQ7R6SZ.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "4,2": {
+          "ActionID": "5d40781b-70aa-4ea5-a34f-69602906b62b",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/2QV73R30AD4QF2BABDK2VHFHS4Z.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "5,1": {
+          "ActionID": "ffb118e0-0c58-478a-856e-06b0eb21e99e",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/D73CBWK58T05D9PKPTRGIIMNDKZ.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "5,2": {
+          "ActionID": "94d96790-fab2-408a-8cb5-4ddd1517edf2",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/6NE179VH25195BD0FDQLV64N5SZ.png",
+              "Title": "toggle instrument view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

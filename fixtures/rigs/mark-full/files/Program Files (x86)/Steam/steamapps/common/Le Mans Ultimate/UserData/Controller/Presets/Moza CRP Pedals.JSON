@@ -1,0 +1,151 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "MOZA CRP pedals-71D69042A46EDC7F": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Invert Force Feedback": false,
+                "Jolt magnitude": 0.7,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 0,
+                "Rumble strip update thresh": 0.05,
+                "Steering bump stop degrees": 40,
+                "Steering effects strength": 0,
+                "Steering resistance coefficient": 0.6,
+                "Steering resistance saturation": 0.5,
+                "Steering torque capability": 16,
+                "Steering torque minimum": 0,
+                "Steering torque sensitivity": 1,
+                "constant steering force": false
+            },
+            "Type": "Pedals",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0,
+                    "max": 1,
+                    "min": 0
+                },
+                "RX-": {
+                    "center": 0,
+                    "max": 0,
+                    "min": 0
+                },
+                "RY+": {
+                    "center": 0,
+                    "max": 1,
+                    "min": 0
+                },
+                "RY-": {
+                    "center": 0,
+                    "max": 0,
+                    "min": 0
+                },
+                "RZ+": {
+                    "center": 0,
+                    "max": 1,
+                    "min": 0
+                },
+                "RZ-": {
+                    "center": 0,
+                    "max": 0,
+                    "min": 0
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 1,
+                    "max": 1,
+                    "min": 1
+                },
+                "Y-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "Z+": {
+                    "center": 1,
+                    "max": 1,
+                    "min": 1
+                },
+                "Z-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                }
+            },
+            "instance name": "MOZA CRP pedals",
+            "layout": {
+                "axes": 4,
+                "buttons": 1,
+                "povs": 0
+            },
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": true,
+                "Hardware 3Digit Display": 1,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0,
+                "Steering Wheel Maximum Rotation": 1440,
+                "Steering Wheel Maximum Rotation From Driver": false,
+                "Throttle Sensitivity": 1,
+                "device release": true,
+                "use leds": true
+            },
+            "product guid": "1346E-0-0-4449564449500000",
+            "product name": "MOZA CRP pedals"
+        }
+    },
+    "Input": {
+        "Brake": {
+            "device": "MOZA CRP pedals-71D69042A46EDC7F",
+            "id": 8
+        },
+        "Clutch In": {
+            "device": "MOZA CRP pedals-71D69042A46EDC7F",
+            "id": 10
+        },
+        "Throttle": {
+            "device": "MOZA CRP pedals-71D69042A46EDC7F",
+            "id": 6
+        }
+    },
+    "Type": "Direct Input"
+}

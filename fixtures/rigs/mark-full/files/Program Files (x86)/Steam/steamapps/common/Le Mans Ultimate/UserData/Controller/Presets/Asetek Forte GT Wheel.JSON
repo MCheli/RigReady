@@ -1,0 +1,239 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "Forte GT Wheel-B776868F168DF0E4": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Invert Force Feedback": false,
+                "Jolt magnitude": 1,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 1.5,
+                "Rumble strip update thresh": 0.05,
+                "Steering bump stop degrees": 40,
+                "Steering effects strength": 10000,
+                "Steering resistance coefficient": 0.1,
+                "Steering resistance saturation": 0.1,
+                "Steering torque capability": 5,
+                "Steering torque minimum": 0,
+                "Steering torque sensitivity": 1,
+                "constant steering force": false
+            },
+            "Type": "Wheel",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RX-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RY+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RY-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RZ+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RZ-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Y-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Z+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Z-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                }
+            },
+            "instance name": "Forte GT Wheel",
+            "layout": {
+                "axes": 2,
+                "buttons": 96,
+                "povs": 1
+            },
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": false,
+                "Hardware 3Digit Display": 0,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0,
+                "Steering Wheel Maximum Rotation": 900,
+                "Steering Wheel Maximum Rotation From Driver": true,
+                "Throttle Sensitivity": 1,
+                "device release": true,
+                "use leds": false
+            },
+            "product guid": "F2072433-0-0-4449564449500000",
+            "product name": "Forte GT Wheel"
+        }
+    },
+    "Input": {
+        "Bias Forward": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 51
+        },
+        "Bias Rearward": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 50
+        },
+        "Decrement Motor Map": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 108
+        },
+        "Decrement Regeneration": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 76
+        },
+        "Driver Overlay Next MFD": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 123
+        },
+        "Driver Overlay Previous MFD": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 122
+        },
+        "Headlights": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 40
+        },
+        "Headlights Pulse": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 33
+        },
+        "Increment Motor Map": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 109
+        },
+        "Increment Regeneration": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 77
+        },
+        "Look Left": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 32
+        },
+        "Look Right": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 36
+        },
+        "Pit Menu Dec": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 19
+        },
+        "Pit Menu Down": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 18
+        },
+        "Pit Menu Inc": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 17
+        },
+        "Pit Menu Up": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 16
+        },
+        "Pit Request": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 37
+        },
+        "Shift Down": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 61
+        },
+        "Shift Up": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 63
+        },
+        "Speed Limiter": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 34
+        },
+        "Traction Control 2 Down": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 90
+        },
+        "Traction Control 2 Up": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 91
+        },
+        "Traction Control Down": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 56
+        },
+        "Traction Control Up": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 57
+        },
+        "Wipers": {
+            "device": "Forte GT Wheel-B776868F168DF0E4",
+            "id": 41
+        }
+    },
+    "Type": "Direct Input"
+}

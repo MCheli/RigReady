@@ -161,7 +161,41 @@ export function enumerateUsbDevices(): DeviceInfo[] {
   return devices;
 }
 
+/** Total length of the present-device id list: cheap to read, and it changes on any plug or unplug. */
+function presentListSize(): number {
+  const len = [0];
+  return CM_Get_Device_ID_List_SizeW(len, null, CM_GETIDLIST_FILTER_PRESENT) === 0 ? len[0]! : -1;
+}
+
 export class WindowsDeviceProvider implements DeviceProvider {
+  private listeners = new Set<() => void>();
+  private timer: ReturnType<typeof setInterval> | undefined;
+  private lastSize = -1;
+
+  constructor(private readonly pollMs = 1500) {}
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    if (!this.timer) {
+      this.lastSize = presentListSize();
+      this.timer = setInterval(() => {
+        const size = presentListSize();
+        if (size === this.lastSize) return;
+        this.lastSize = size;
+        for (const each of [...this.listeners]) each();
+      }, this.pollMs);
+      // Watching for devices must never keep the process alive.
+      this.timer.unref();
+    }
+    return () => {
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0 && this.timer) {
+        clearInterval(this.timer);
+        this.timer = undefined;
+      }
+    };
+  }
+
   async list(): Promise<Result<DeviceInfo[]>> {
     try {
       return ok(enumerateUsbDevices());

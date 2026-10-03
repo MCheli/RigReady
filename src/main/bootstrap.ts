@@ -1,9 +1,11 @@
 import { CheckRegistry } from '../core/checks/registry';
+import { DisplayLayoutStore } from '../core/displays/layouts';
 import type { FeatureMain, IpcBinding, MainContext } from '../core/feature';
 import { GameRegistry } from '../core/games';
 import type { Logger } from '../core/logger';
 import type { Ports } from '../core/ports';
 import { ProfileStore } from '../core/profile/store';
+import { SettingsStore } from '../core/settings';
 import { channelName, eventName } from '../shared/channels';
 import { createInvoker, type Envelope } from '../shared/ipc';
 
@@ -45,6 +47,8 @@ export function wireFeatures(options: {
     checks: new CheckRegistry(),
     games: new GameRegistry(),
     profiles: new ProfileStore(ports.files, ports.folders.dataRoot()),
+    settings: new SettingsStore(ports.files, ports.folders.dataRoot(), ports.clock),
+    layouts: new DisplayLayoutStore(ports.files, ports.folders.dataRoot(), ports.clock),
     emit(contract, event, payload) {
       const schema = contract.events[event];
       if (!schema) throw new Error(`Unknown event ${contract.feature}:${event}`);

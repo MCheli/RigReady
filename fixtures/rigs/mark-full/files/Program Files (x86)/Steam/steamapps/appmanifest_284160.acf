@@ -1,0 +1,46 @@
+"AppState"
+{
+	"appid"		"284160"
+	"universe"		"1"
+	"LauncherPath"		"C:\\Program Files (x86)\\Steam\\steam.exe"
+	"name"		"BeamNG.drive"
+	"StateFlags"		"4"
+	"installdir"		"BeamNG.drive"
+	"LastUpdated"		"1786205672"
+	"LastPlayed"		"1778366659"
+	"SizeOnDisk"		"53633513758"
+	"StagingSize"		"0"
+	"buildid"		"24617469"
+	"LastOwner"		"76561197960265728"
+	"DownloadType"		"1"
+	"UpdateResult"		"0"
+	"BytesToDownload"		"115055712"
+	"BytesDownloaded"		"115055712"
+	"BytesToStage"		"19294424563"
+	"BytesStaged"		"19294424563"
+	"TargetBuildID"		"24617469"
+	"AutoUpdateBehavior"		"0"
+	"AllowOtherDownloadsWhileRunning"		"0"
+	"ScheduledAutoUpdate"		"0"
+	"InstalledDepots"
+	{
+		"284161"
+		{
+			"manifest"		"5975039348266591145"
+			"size"		"53633513758"
+		}
+	}
+	"SharedDepots"
+	{
+		"228989"		"228980"
+		"228990"		"228980"
+	}
+	"UserConfig"
+	{
+		"language"		"english"
+	}
+	"MountedConfig"
+	{
+		"language"		"english"
+	}
+}

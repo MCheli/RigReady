@@ -46,6 +46,21 @@ export const TerminateProcess = kernel32.func(
   'int32_t TerminateProcess(intptr_t process, uint32_t code)'
 );
 export const CloseHandle = kernel32.func('int32_t CloseHandle(intptr_t handle)');
+export const WaitForSingleObject = kernel32.func(
+  'uint32_t WaitForSingleObject(intptr_t handle, uint32_t milliseconds)'
+);
+
+// ---- user32: top-level windows (to ask a program to close) ----
+export const FindWindowExW = user32.func(
+  'intptr_t FindWindowExW(intptr_t parent, intptr_t after, const char16_t *className, const char16_t *title)'
+);
+export const GetWindowThreadProcessId = user32.func(
+  'uint32_t GetWindowThreadProcessId(intptr_t window, _Out_ uint32_t *pid)'
+);
+export const IsWindowVisible = user32.func('int32_t IsWindowVisible(intptr_t window)');
+export const PostMessageW = user32.func(
+  'int32_t PostMessageW(intptr_t window, uint32_t message, uintptr_t wParam, intptr_t lParam)'
+);
 
 // ---- cfgmgr32: device tree ----
 export const CM_Get_Device_ID_List_SizeW = cfgmgr32.func(
@@ -71,9 +86,29 @@ export const PropVariantClear = ole32.func('int32_t PropVariantClear(void *varia
 export const SHGetKnownFolderPath = shell32.func(
   'int32_t SHGetKnownFolderPath(void *rfid, uint32_t flags, void *token, _Out_ void **path)'
 );
-export const RegGetValueW = advapi32.func(
-  'int32_t RegGetValueW(uintptr_t key, const char16_t *subKey, const char16_t *value, uint32_t flags, void *type, void *data, _Inout_ uint32_t *size)'
+
+export const RegOpenKeyExW = advapi32.func(
+  'int32_t RegOpenKeyExW(uintptr_t key, const char16_t *subKey, uint32_t options, uint32_t access, _Out_ uintptr_t *result)'
 );
+export const RegCloseKey = advapi32.func('int32_t RegCloseKey(uintptr_t key)');
+export const RegEnumKeyExW = advapi32.func(
+  'int32_t RegEnumKeyExW(uintptr_t key, uint32_t index, void *name, _Inout_ uint32_t *nameLength, void *reserved, void *className, void *classLength, void *lastWrite)'
+);
+export const RegEnumValueW = advapi32.func(
+  'int32_t RegEnumValueW(uintptr_t key, uint32_t index, void *name, _Inout_ uint32_t *nameLength, void *reserved, _Out_ uint32_t *type, void *data, _Inout_ uint32_t *dataLength)'
+);
+export const RegQueryValueExW = advapi32.func(
+  'int32_t RegQueryValueExW(uintptr_t key, const char16_t *name, void *reserved, _Out_ uint32_t *type, void *data, _Inout_ uint32_t *dataLength)'
+);
+
+// ---- advapi32: service control manager (read-only) ----
+export const OpenSCManagerW = advapi32.func(
+  'uintptr_t OpenSCManagerW(const char16_t *machine, const char16_t *database, uint32_t access)'
+);
+export const EnumServicesStatusExW = advapi32.func(
+  'int32_t EnumServicesStatusExW(uintptr_t manager, int32_t level, uint32_t type, uint32_t state, void *buffer, uint32_t size, _Out_ uint32_t *needed, _Out_ uint32_t *returned, _Inout_ uint32_t *resume, const char16_t *group)'
+);
+export const CloseServiceHandle = advapi32.func('int32_t CloseServiceHandle(uintptr_t handle)');
 
 export const HKEY_CURRENT_USER = 0x80000001n;
 export const HKEY_LOCAL_MACHINE = 0x80000002n;

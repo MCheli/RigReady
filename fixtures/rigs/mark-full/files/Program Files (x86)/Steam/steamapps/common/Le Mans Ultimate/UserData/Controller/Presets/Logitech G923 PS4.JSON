@@ -1,0 +1,235 @@
+{
+  "Alternative Input": {},
+  "Devices": {
+    "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC": {
+      "Force Feedback": {
+        "Enabled": true,
+        "Jolt magnitude": 1.5,
+        "Rumble strip magnitude": 0,
+        "Rumble strip pull factor": 1.5,
+        "Rumble strip update thresh": 0.05,
+        "Steering effects strength": 10000,
+        "Steering resistance coefficient": 0.1,
+        "Steering resistance saturation": 0.1,
+        "Steering resistance type": 0,
+        "Steering torque capability": 2.5
+      },
+      "Type": "Wheel",
+      "input axis properties": {
+        "RX+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "RX-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "RY+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "RY-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "RZ+": {
+          "center": 1,
+          "max": 1,
+          "min": 1
+        },
+        "RZ-": {
+          "center": 1,
+          "max": 0,
+          "min": 1
+        },
+        "S0+": {
+          "center": 1,
+          "max": 1,
+          "min": 1
+        },
+        "S0-": {
+          "center": 1,
+          "max": 0,
+          "min": 1
+        },
+        "S1+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "S1-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "X+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "X-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "Y+": {
+          "center": 1,
+          "max": 1,
+          "min": 1
+        },
+        "Y-": {
+          "center": 1,
+          "max": 0,
+          "min": 1
+        },
+        "Z+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "Z-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        }
+      },
+      "instance name": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "layout": null,
+      "options": {
+        "Brake Bias Axis": false,
+        "Brake Sensitivity": 1,
+        "Clutch Sensitivity": 1,
+        "Gear Select Button Hold": 1,
+        "Hardware 3Digit Display": 1,
+        "Keyboard Brake": 0.5,
+        "Keyboard Clutch": 0.2,
+        "Keyboard Throttle": 0.5,
+        "Sensitivity Type": 1,
+        "Steering Aggression": 0.5,
+        "Steering Rate Factor": 0.5,
+        "Steering Return Rate Multiplier": 1.0,
+        "Steering Sensitivity": 1,
+        "Steering Snap Factor": 0.5,
+        "Steering Speed Sensitivity": 0.0,
+        "Steering Wheel Maximum Rotation": 900,
+        "Steering Wheel Maximum Rotation From Driver": false,
+        "Steering Wheel Range": 450,
+        "Throttle Sensitivity": 1,
+        "use leds": true
+      },
+      "product guid": "C267046D-0-0-0000000000000000",
+      "product name": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC"
+    }
+  },
+  "Input": {
+    "Antilock Brake System Down": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 52
+    },
+    "Antilock Brake System Up": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 51
+    },
+    "Bias Forward": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 42
+    },
+    "Bias Rearward": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 43
+    },
+    "Brake": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 11
+    },
+    "Clutch In": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 13
+    },
+    "Display Mode": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 39
+    },
+    "Headlights": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 35
+    },
+    "Look Left": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 41
+    },
+    "Look Right": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 40
+    },
+    "Pit Menu Dec": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 19
+    },
+    "Pit Menu Down": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 18
+    },
+    "Pit Menu Inc": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 17
+    },
+    "Pit Menu Up": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 16
+    },
+    "Pit Request": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 34
+    },
+    "Rear Flap": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 32
+    },
+    "Rear Look": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 55
+    },
+    "Shift Down": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 37
+    },
+    "Shift Up": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 36
+    },
+    "Speed Limiter": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 38
+    },
+    "Steer Left": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 1
+    },
+    "Steer Right": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 0
+    },
+    "Throttle": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 3
+    },
+    "Traction Control Down": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 54
+    },
+    "Traction Control Up": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 53
+    },
+    "Wipers": {
+      "device": "G923 Racing Sim Wheel and Pedals for PlayStation 4/PC",
+      "id": 33
+    }
+  },
+  "Type": "Direct Input"
+}

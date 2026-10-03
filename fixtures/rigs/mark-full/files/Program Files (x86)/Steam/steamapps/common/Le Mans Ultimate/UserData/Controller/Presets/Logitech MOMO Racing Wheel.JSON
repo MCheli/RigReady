@@ -1,0 +1,208 @@
+{
+  "Alternative Input": {},
+  "Devices": {
+    "Logitech MOMO Racing Wheel USB": {
+      "Force Feedback": {
+        "Brake effects on steer axis": 0,
+        "Brake effects strength": 10000,
+        "Brake spring coefficient": 0.3,
+        "Brake spring saturation": 1.0,
+        "Clutch effects strength": 10000,
+        "Clutch spring coefficient": 0.2,
+        "Clutch spring saturation": 1.0,
+        "Enabled": true,
+        "Gearbox effects strength": 10000,
+        "Gearbox spring coefficient": 0,
+        "Gearbox spring saturation": 1,
+        "Jolt magnitude": 1.5,
+        "Rumble strip magnitude": 0,
+        "Rumble strip pull factor": 1.5,
+        "Rumble strip update thresh": 0.05,
+        "Steering effects strength": 10000,
+        "Steering resistance coefficient": 0.1,
+        "Steering resistance saturation": 0.1,
+        "Steering resistance type": 0,
+        "Steering spring coefficient": 0,
+        "Steering spring saturation": 0.1,
+        "Steering torque sensitivity":1.5,
+        "Steering torque capability": 2.5,
+        "Throttle effects strength": 10000,
+        "Throttle spring coefficient": 0.1,
+        "Throttle spring saturation": 1.0
+      },
+      "Type": "Wheel",
+      "input axis properties": {
+        "RX+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "RX-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "RY+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "RY-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "RZ+": {
+          "center": 1,
+          "max": 1,
+          "min": 1
+        },
+        "RZ-": {
+          "center": 1,
+          "max": 0,
+          "min": 1
+        },
+        "S0+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "S0-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "S1+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "S1-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "X+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "X-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "Y+": {
+          "center": 1,
+          "max": 1,
+          "min": 1
+        },
+        "Y-": {
+          "center": 1,
+          "max": 0,
+          "min": 1
+        },
+        "Z+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "Z-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        }
+      },
+      "instance name": "Logitech MOMO Racing Wheel USB",
+      "layout": null,
+      "options": {
+        "Brake Bias Axis": false,
+        "Brake Sensitivity": 1,
+        "Clutch Sensitivity": 1,
+        "Gear Select Button Hold": 1,
+        "Hardware 3Digit Display": 1,
+        "Keyboard Brake": 0.5,
+        "Keyboard Clutch": 0.2,
+        "Keyboard Throttle": 0.5,
+        "Sensitivity Type": 1,
+        "Steering Aggression": 0.5,
+        "Steering Rate Factor": 0.5,
+        "Steering Return Rate Multiplier": 1.0,
+        "Steering Sensitivity": 1,
+        "Steering Snap Factor": 0.5,
+        "Steering Speed Sensitivity": 0.0,
+        "Steering Wheel Range": 612,
+        "Throttle Sensitivity": 1,
+        "use leds": true
+      },
+      "product name": "Logitech MOMO Racing Wheel USB"
+    }
+  },
+  "Force Feedback": {
+    "Brake effects on steer axis": 0,
+    "Clutch effects on steer axis": 0,
+    "Gearbox effects on steer axis": 0,
+    "Off-road multiplier": 0.3,
+    "Steering Wheel Software Rotation": false,
+    "Steering effects strength": 10000,
+    "Steering torque extrap blend": 0,
+    "Steering torque extrap time": 0.015,
+    "Steering torque filter": 9,
+    "Steering torque minimum": 0,
+    "Steering torque sensitivity": 1,
+    "Steering torque zero-speed mult": 0.3,
+    "Throttle effects on steer axis": 0,
+    "Use thread": true
+  },
+  "Input": {
+    "Brake": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 11
+    },
+    "Clutch In": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 39
+    },
+    "Display Mode": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 35
+    },
+    "Look Left": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 36
+    },
+    "Look Right": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 37
+    },
+    "Pit Request": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 34
+    },
+    "Shift Down": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 32
+    },
+    "Shift Up": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 33
+    },
+    "Speed Limiter": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 38
+    },
+    "Steer Left": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 1
+    },
+    "Steer Right": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 0
+    },
+    "Throttle": {
+      "device": "Logitech MOMO Racing Wheel USB",
+      "id": 3
+    }
+  },
+  "Type": "Direct Input"
+}

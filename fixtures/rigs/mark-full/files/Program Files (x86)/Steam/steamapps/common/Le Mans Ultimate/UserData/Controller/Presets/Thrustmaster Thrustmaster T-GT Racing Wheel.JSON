@@ -1,0 +1,275 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Invert Force Feedback": true,
+                "Jolt magnitude": 1.5,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 1.5,
+                "Rumble strip update thresh": 0.05,
+                "Steering bump stop degrees": 40,
+                "Steering effects strength": 6500,
+                "Steering resistance coefficient": 0.1,
+                "Steering resistance saturation": 0.1,
+                "Steering torque capability": 6,
+                "Steering torque minimum": 0,
+                "Steering torque sensitivity": 1,
+                "constant steering force": false
+            },
+            "Type": "Wheel",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RX-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RY+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RY-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RZ+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RZ-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Y-": {
+                    "center": 1,
+                    "max": 0,
+                    "min": 1
+                },
+                "Z+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Z-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                }
+            },
+            "instance name": "Thrustmaster T-GT Racing Wheel",
+            "layout": {
+                "axes": 8,
+                "buttons": 25,
+                "povs": 1
+            },
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": true,
+                "Hardware 3Digit Display": 1,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0,
+                "Steering Wheel Maximum Rotation": 900,
+                "Steering Wheel Maximum Rotation From Driver": true,
+                "Throttle Sensitivity": 1,
+                "device release": true,
+                "use leds": true
+            },
+            "product guid": "B684044F-0-0-4449564449500000",
+            "product name": "Thrustmaster T-GT Racing Wheel"
+        }
+    },
+    "Input": {
+        "Adjust Seat Aft": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 5
+        },
+        "Adjust Seat Down": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 14
+        },
+        "Adjust Seat Fore": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 4
+        },
+        "Adjust Seat Up": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 15
+        },
+        "Bias Forward": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 49
+        },
+        "Bias Rearward": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 48
+        },
+        "Brake": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 3
+        },
+        "Clutch In": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 13
+        },
+        "Decrease Vertical FOV": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 51
+        },
+        "Decrement Motor Map": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 54
+        },
+        "Driver Overlay Next MFD": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 43
+        },
+        "Driver Overlay Previous MFD": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 42
+        },
+        "Headlights": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 35
+        },
+        "Headlights Pulse": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 44
+        },
+        "Increase Vertical FOV": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 52
+        },
+        "Increment Motor Map": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 55
+        },
+        "Look Left": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 38
+        },
+        "Look Right": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 39
+        },
+        "Pit Menu Dec": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 19
+        },
+        "Pit Menu Down": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 18
+        },
+        "Pit Menu Inc": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 17
+        },
+        "Pit Menu Up": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 16
+        },
+        "Pit Request": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 41
+        },
+        "Push To change camera view": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 37
+        },
+        "Rear Look": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 36
+        },
+        "Shift Down": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 32
+        },
+        "Shift Up": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 33
+        },
+        "Speed Limiter": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 40
+        },
+        "Steer Left": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 1
+        },
+        "Steer Right": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 0
+        },
+        "Throttle": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 11
+        },
+        "Traction Control Down": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 45
+        },
+        "Traction Control Up": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 46
+        },
+        "Wipers": {
+            "device": "Thrustmaster T-GT Racing Wheel-E81D661C1FE9CA7B",
+            "id": 34
+        }
+    },
+    "Type": "Direct Input"
+}

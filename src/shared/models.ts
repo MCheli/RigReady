@@ -144,3 +144,55 @@ export const LaunchTargetSchema = z.object({
   cwd: z.string().optional(),
 });
 export type LaunchTarget = z.infer<typeof LaunchTargetSchema>;
+
+export const AudioRoleSchema = z.enum(['console', 'multimedia', 'communications']);
+export type AudioRole = z.infer<typeof AudioRoleSchema>;
+
+export const ServiceInfoSchema = z.object({
+  /** Short name, e.g. "HidHide". */
+  name: z.string(),
+  displayName: z.string(),
+  state: z.enum(['running', 'stopped', 'starting', 'stopping', 'paused', 'other']),
+  /** Process id while running. */
+  pid: z.number().int().optional(),
+});
+export type ServiceInfo = z.infer<typeof ServiceInfoSchema>;
+
+export const RegistryHiveSchema = z.enum(['HKCU', 'HKLM']);
+export type RegistryHive = z.infer<typeof RegistryHiveSchema>;
+
+export const RegistryValueSchema = z.discriminatedUnion('type', [
+  /** REG_SZ and REG_EXPAND_SZ (not expanded). */
+  z.object({ type: z.literal('string'), value: z.string() }),
+  /** REG_DWORD and REG_QWORD. */
+  z.object({ type: z.literal('number'), value: z.number() }),
+  /** REG_BINARY and anything else, as lower-case hex. */
+  z.object({ type: z.literal('binary'), value: z.string() }),
+  /** REG_MULTI_SZ. */
+  z.object({ type: z.literal('strings'), value: z.array(z.string()) }),
+]);
+export type RegistryValue = z.infer<typeof RegistryValueSchema>;
+
+/** What Windows remembers about one DirectInput game controller model (VID/PID). */
+export const DirectInputIdentitySchema = z.object({
+  vendorId: z.string().regex(/^[0-9A-F]{4}$/),
+  productId: z.string().regex(/^[0-9A-F]{4}$/),
+  /** DirectInput product name (the "OEMName"), untrimmed. Empty when Windows has none. */
+  name: z.string(),
+  /** {PPPPVVVV-0000-0000-0000-504944564944} without braces. */
+  productGuid: z.string(),
+  /**
+   * One per calibration slot Windows has handed out for this VID/PID. More than one
+   * means identical devices, or a stale slot left behind by an earlier re-enumeration.
+   */
+  instances: z.array(
+    z.object({
+      slot: z.number().int(),
+      /** Instance GUID, upper-case without braces. */
+      guid: z.string(),
+      /** winmm joystick id recorded with the slot, when present. */
+      joystickId: z.number().int().optional(),
+    })
+  ),
+});
+export type DirectInputIdentity = z.infer<typeof DirectInputIdentitySchema>;

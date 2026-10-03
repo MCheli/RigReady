@@ -1,14 +1,32 @@
 {
   "name": "mark-full",
-  "recordedAt": "2026-10-03T20:19:25.374Z",
+  "parts": {
+    "devices": "2026-10-03T21:00:03.100Z",
+    "displays": "2026-10-03T21:00:03.100Z",
+    "processes": "2026-10-03T21:00:03.100Z",
+    "services": "2026-10-03T21:00:03.100Z",
+    "audio": "2026-10-03T21:00:03.100Z",
+    "input": "2026-10-03T21:00:03.100Z",
+    "registry": "2026-10-03T21:00:03.100Z",
+    "hidhide": "2026-10-03T21:00:03.100Z",
+    "files": "2026-10-03T21:00:03.100Z"
+  },
+  "recordedAt": "2026-10-03T21:00:03.100Z",
   "os": "Windows_NT 10.0.26200",
   "counts": {
     "devices": 62,
     "displays": 5,
-    "processes": 344,
+    "processes": 342,
+    "services": 718,
     "audioEndpoints": 10,
-    "inputDevices": 10,
-    "dcsFiles": 18
+    "inputDevices": 12,
+    "registryKeys": 252,
+    "files": 359,
+    "fileBytes": 2851224,
+    "placeholders": 20
   },
-  "notes": []
+  "notes": [
+    "Stream Deck: 2 of 10 profiles recorded (manifests only, action settings emptied).",
+    "Skipped as too large: C:\\Program Files (x86)\\Steam\\steamapps\\common\\BeamNG.drive\\integrity.json (1714948 bytes)"
+  ]
 }

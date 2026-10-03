@@ -1,0 +1,239 @@
+{
+  "Alternative Input": {},
+  "Devices": {
+    "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3": {
+      "Force Feedback": {
+        "Enabled": true,
+        "Invert Force Feedback": false,
+        "Jolt magnitude": 1.0,
+        "Steering bump stop degrees": 40.0,
+        "Steering effects strength": 8500.0,
+        "Steering torque minimum": 0.0,
+        "Steering torque sensitivity": 1.0,
+        "Use vendor specific Force Feedback": true,
+        "Vibrotactile effects strength": 1.0,
+        "constant steering force": false
+      },
+      "Type": "Wheel",
+      "input axis properties": {
+        "RX+": {
+          "center": 0.0,
+          "max": 1.0,
+          "min": 0.0
+        },
+        "RX-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "RY+": {
+          "center": 0.0,
+          "max": 1.0,
+          "min": 0.0
+        },
+        "RY-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "RZ+": {
+          "center": 0.0,
+          "max": 1.0,
+          "min": 0.0
+        },
+        "RZ-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "S0+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "S0-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "S1+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "S1-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "X+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "X-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "Y+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "Y-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        },
+        "Z+": {
+          "center": 0.5,
+          "max": 1.0,
+          "min": 0.5
+        },
+        "Z-": {
+          "center": 0.5,
+          "max": 0.0,
+          "min": 0.5
+        }
+      },
+      "instance name": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)",
+      "layout": {
+        "axes": 8,
+        "buttons": 92,
+        "povs": 1
+      },
+      "options": {
+        "Brake Bias Axis": false,
+        "Brake Sensitivity": 1.0,
+        "Clutch Sensitivity": 1.0,
+        "Gear Select Button Hold": false,
+        "Hardware 3Digit Display": 0,
+        "Keyboard Brake": 0.5,
+        "Keyboard Clutch": 0.20000000298023224,
+        "Keyboard Throttle": 0.5,
+        "Never Release Device": true,
+        "Sensitivity Type": 1,
+        "Steering Aggression": 0.5,
+        "Steering Rate Factor": 0.5,
+        "Steering Return Rate Multiplier": 1.0,
+        "Steering Sensitivity": 1.0,
+        "Steering Snap Factor": 0.5,
+        "Steering Speed Sensitivity": 0.0,
+        "Steering Wheel Maximum Rotation": 900.0,
+        "Steering Wheel Maximum Rotation From Driver": true,
+        "Throttle Sensitivity": 1.0,
+        "use leds": true
+      },
+      "product guid": "{C272046D-0000-0000-0000-504944564944}",
+      "product name": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)"
+    }
+  },
+  "Input": {
+    "Alternate Esc": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 41
+    },
+    "Bias Forward": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 57
+    },
+    "Bias Rearward": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 56
+    },
+    "Brake": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 8
+    },
+    "Clutch In": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 10
+    },
+    "Decrement Regeneration": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 34
+    },
+    "Driver Overlay Next MFD": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 17
+    },
+    "Driver Overlay Previous MFD": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 19
+    },
+    "Headlights": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 38
+    },
+    "Headlights Pulse": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 42
+    },
+    "Increment Regeneration": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 32
+    },
+    "Pit Menu Dec": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 43
+    },
+    "Pit Menu Down": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 18
+    },
+    "Pit Menu Inc": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 39
+    },
+    "Pit Menu Up": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 16
+    },
+    "Pit Request": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 33
+    },
+    "Push To change camera view": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 40
+    },
+    "Shift Down": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 37
+    },
+    "Shift Up": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 36
+    },
+    "Speed Limiter": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 35
+    },
+    "Steer Left": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 1
+    },
+    "Steer Right": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 0
+    },
+    "Throttle": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 6
+    },
+    "Traction Control Down": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 54
+    },
+    "Traction Control Up": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 53
+    },
+    "Wipers": {
+      "device": "Logitech G HUB PRO Racing Wheel for Xbox and PC (USB)-3EE08BEB5A002A3",
+      "id": 61
+    }
+  },
+  "Type": "Direct Input"
+}

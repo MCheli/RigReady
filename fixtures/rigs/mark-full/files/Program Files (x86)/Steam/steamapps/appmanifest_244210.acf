@@ -1,0 +1,115 @@
+"AppState"
+{
+	"appid"		"244210"
+	"universe"		"1"
+	"LauncherPath"		"C:\\Program Files (x86)\\Steam\\steam.exe"
+	"name"		"Assetto Corsa"
+	"StateFlags"		"4"
+	"installdir"		"assettocorsa"
+	"LastUpdated"		"1776510305"
+	"LastPlayed"		"1778980708"
+	"SizeOnDisk"		"44949470831"
+	"StagingSize"		"0"
+	"buildid"		"14923034"
+	"LastOwner"		"76561197960265728"
+	"DownloadType"		"3"
+	"UpdateResult"		"0"
+	"BytesToDownload"		"848"
+	"BytesDownloaded"		"848"
+	"BytesToStage"		"752"
+	"BytesStaged"		"752"
+	"TargetBuildID"		"0"
+	"AutoUpdateBehavior"		"0"
+	"AllowOtherDownloadsWhileRunning"		"0"
+	"ScheduledAutoUpdate"		"0"
+	"InstalledDepots"
+	{
+		"244211"
+		{
+			"manifest"		"4950336537810395690"
+			"size"		"27514993499"
+		}
+		"347990"
+		{
+			"manifest"		"6791848099595238056"
+			"size"		"2822674518"
+			"dlcappid"		"347990"
+		}
+		"404430"
+		{
+			"manifest"		"3305068408340865881"
+			"size"		"1700478184"
+			"dlcappid"		"404430"
+		}
+		"423630"
+		{
+			"manifest"		"143182663462094843"
+			"size"		"1963485806"
+			"dlcappid"		"423630"
+		}
+		"467980"
+		{
+			"manifest"		"1919441460742340991"
+			"size"		"1503901576"
+			"dlcappid"		"467980"
+		}
+		"493190"
+		{
+			"manifest"		"6702276192559020176"
+			"size"		"1729205493"
+			"dlcappid"		"493190"
+		}
+		"509350"
+		{
+			"manifest"		"5232019972713022175"
+			"size"		"1441985575"
+			"dlcappid"		"509350"
+		}
+		"526060"
+		{
+			"manifest"		"1609580688491246185"
+			"size"		"1186303335"
+			"dlcappid"		"526060"
+		}
+		"540710"
+		{
+			"manifest"		"7212972613834439529"
+			"size"		"1102607557"
+			"dlcappid"		"540710"
+		}
+		"540711"
+		{
+			"manifest"		"5205419179365407728"
+			"size"		"1197023840"
+			"dlcappid"		"540711"
+		}
+		"619680"
+		{
+			"manifest"		"5396831645102266732"
+			"size"		"1618620198"
+			"dlcappid"		"619680"
+		}
+		"675590"
+		{
+			"manifest"		"4281175229020665840"
+			"size"		"1171644294"
+			"dlcappid"		"675590"
+		}
+	}
+	"SharedDepots"
+	{
+		"228983"		"228980"
+		"228984"		"228980"
+		"228985"		"228980"
+		"228990"		"228980"
+		"229006"		"228980"
+	}
+	"UserConfig"
+	{
+		"language"		"english"
+	}
+	"MountedConfig"
+	{
+		"language"		"english"
+	}
+}

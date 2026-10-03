@@ -1,6 +1,6 @@
 import type { AudioProvider } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
-import type { AudioDevice, AudioState } from '../../shared/models';
+import type { AudioDevice, AudioRole, AudioState } from '../../shared/models';
 import {
   CoCreateInstance,
   CoInitializeEx,
@@ -19,6 +19,12 @@ import {
 const CLSID_MMDeviceEnumerator = guidBuffer('{BCDE0395-E52F-467C-8E3D-C4579291692E}');
 const IID_IMMDeviceEnumerator = guidBuffer('{A95664D2-9614-4F35-A746-DE8DB63617E6}');
 const PKEY_Device_FriendlyName = propertyKey('{a45c254e-df1c-4efd-8020-67d146a850e0}', 14);
+// IPolicyConfig is the interface the Windows Sound panel itself uses to change the default
+// device. It is undocumented but unchanged since Windows 7, and needs no admin rights.
+const CLSID_PolicyConfigClient = guidBuffer('{870AF99C-171D-4F9E-AF0D-E63DF40C2BC9}');
+const IID_IPolicyConfig = guidBuffer('{F8679F50-850A-41CF-9C72-430F290290C8}');
+const POLICY_SET_DEFAULT_ENDPOINT = 13;
+const ROLE_VALUES: Record<AudioRole, number> = { console: 0, multimedia: 1, communications: 2 };
 const CLSCTX_ALL = 23;
 const DEVICE_STATE_ACTIVE = 1;
 const STGM_READ = 0;
@@ -142,7 +148,73 @@ export function readAudioState(): AudioState {
   }
 }
 
+/** The endpoint id that is the default for one flow and one role. Undefined when there is none. */
+export function defaultEndpointId(flow: AudioDevice['flow'], role: AudioRole): string | undefined {
+  CoInitializeEx(null, 0);
+  const out: [Pointer | null] = [null];
+  const hr = CoCreateInstance(
+    CLSID_MMDeviceEnumerator,
+    null,
+    CLSCTX_ALL,
+    IID_IMMDeviceEnumerator,
+    out
+  );
+  if (hr !== 0 || isNull(out[0]))
+    throw new Error(`CoCreateInstance(MMDeviceEnumerator) failed with ${hr}`);
+  try {
+    return defaultEndpoint(out[0]!, flow === 'playback' ? E_RENDER : E_CAPTURE, ROLE_VALUES[role])
+      ?.id;
+  } finally {
+    comRelease(out[0]!);
+  }
+}
+
+export function setDefaultEndpoint(id: string, roles: AudioRole[]): void {
+  CoInitializeEx(null, 0);
+  const out: [Pointer | null] = [null];
+  const hr = CoCreateInstance(CLSID_PolicyConfigClient, null, CLSCTX_ALL, IID_IPolicyConfig, out);
+  if (hr !== 0 || isNull(out[0])) {
+    throw new Error(`CoCreateInstance(PolicyConfigClient) failed with ${hr}`);
+  }
+  const policy = out[0]!;
+  try {
+    for (const role of roles) {
+      const result = comCall(
+        policy,
+        POLICY_SET_DEFAULT_ENDPOINT,
+        ['const char16_t *id', 'uint32_t role'],
+        id,
+        ROLE_VALUES[role]
+      );
+      if (result !== 0) throw new Error(`SetDefaultEndpoint(${role}) failed with ${result}`);
+    }
+  } finally {
+    comRelease(policy);
+  }
+}
+
 export class WindowsAudioProvider implements AudioProvider {
+  async setDefault(id: string, options: { roles?: AudioRole[] } = {}): Promise<Result<AudioState>> {
+    const roles = options.roles ?? (['console', 'multimedia', 'communications'] as AudioRole[]);
+    try {
+      const before = readAudioState();
+      const device = before.devices.find((d) => d.id === id);
+      if (!device) {
+        return err('audio.missing', 'That audio device is not connected or is disabled.', id);
+      }
+      setDefaultEndpoint(id, roles);
+      const after = readAudioState();
+      // Never report success for something that did not happen: read it back.
+      const now = device.flow === 'playback' ? after.defaultPlayback : after.defaultRecording;
+      if (roles.includes('console') && now?.id !== id) {
+        return err('audio.setDefault', `Windows did not make ${device.name} the default device.`);
+      }
+      return ok(after);
+    } catch (e) {
+      return err('audio.setDefault', 'Could not change the default audio device.', String(e));
+    }
+  }
+
   async read(): Promise<Result<AudioState>> {
     try {
       return ok(readAudioState());

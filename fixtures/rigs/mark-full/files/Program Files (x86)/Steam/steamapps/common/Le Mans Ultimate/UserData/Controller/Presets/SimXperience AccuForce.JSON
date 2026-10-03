@@ -1,0 +1,204 @@
+{
+  "Alternative Input": {},
+  "Devices": {
+    "SimXperience AccuForce": {
+      "Force Feedback": {
+        "Enabled": true,
+        "Invert Force Feedback": true,
+        "Jolt magnitude": 1.5,
+        "Rumble strip magnitude": 0,
+        "Rumble strip pull factor": 1.5,
+        "Rumble strip update thresh": 0.05,
+        "Steering effects strength": 10000,
+        "Steering resistance coefficient": 0.1,
+        "Steering resistance saturation": 0.1,
+        "Steering resistance type": 0,
+        "Steering torque capability": 14.5
+      },
+      "Type": "Wheel",
+      "input axis properties": {
+        "RX+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "RX-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "RY+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "RY-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "RZ+": {
+          "center": 1,
+          "max": 1,
+          "min": 1
+        },
+        "RZ-": {
+          "center": 1,
+          "max": 0,
+          "min": 1
+        },
+        "S0+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "S0-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "S1+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "S1-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "X+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "X-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "Y+": {
+          "center": 1,
+          "max": 1,
+          "min": 1
+        },
+        "Y-": {
+          "center": 1,
+          "max": 0,
+          "min": 1
+        },
+        "Z+": {
+          "center": 1,
+          "max": 1,
+          "min": 1
+        },
+        "Z-": {
+          "center": 1,
+          "max": 0,
+          "min": 1
+        }
+      },
+      "instance name": "SimXperience AccuForce",
+      "layout": null,
+      "options": {
+        "Brake Bias Axis": false,
+        "Brake Sensitivity": 1,
+        "Clutch Sensitivity": 1,
+        "Gear Select Button Hold": 1,
+        "Hardware 3Digit Display": 1,
+        "Keyboard Brake": 0.5,
+        "Keyboard Clutch": 0.2,
+        "Keyboard Throttle": 0.5,
+        "Sensitivity Type": 1,
+        "Steering Aggression": 0.5,
+        "Steering Rate Factor": 0.5,
+        "Steering Return Rate Multiplier": 1.0,
+        "Steering Sensitivity": 1,
+        "Steering Snap Factor": 0.5,
+        "Steering Speed Sensitivity": 0.9,
+        "Steering Wheel Maximum Rotation": 900,
+        "Steering Wheel Maximum Rotation From Driver": true,
+        "Steering Wheel Range": 900,
+        "Throttle Sensitivity": 1,
+        "use leds": true
+      },
+      "product guid": "804C1FC9-0-0-0000000000000000",
+      "product name": "SimXperience AccuForce"
+    }
+  },
+  "Input": {
+    "Bias Forward": {
+      "device": "SimXperience AccuForce",
+      "id": 44
+    },
+    "Bias Rearward": {
+      "device": "SimXperience AccuForce",
+      "id": 46
+    },
+    "Brake": {
+      "device": "SimXperience AccuForce",
+      "id": 5
+    },
+    "Clutch In": {
+      "device": "SimXperience AccuForce",
+      "id": 11
+    },
+    "Display Mode": {
+      "device": "SimXperience AccuForce",
+      "id": 41
+    },
+    "Front Flap": {
+      "device": "SimXperience AccuForce",
+      "id": 35
+    },
+    "Headlights": {
+      "device": "SimXperience AccuForce",
+      "id": 45
+    },
+    "Horn": {
+      "device": "SimXperience AccuForce",
+      "id": 47
+    },
+    "Look Left": {
+      "device": "SimXperience AccuForce",
+      "id": 39
+    },
+    "Look Right": {
+      "device": "SimXperience AccuForce",
+      "id": 40
+    },
+    "Pit Request": {
+      "device": "SimXperience AccuForce",
+      "id": 34
+    },
+    "Rear Flap": {
+      "device": "SimXperience AccuForce",
+      "id": 33
+    },
+    "Shift Down": {
+      "device": "SimXperience AccuForce",
+      "id": 37
+    },
+    "Shift Up": {
+      "device": "SimXperience AccuForce",
+      "id": 42
+    },
+    "Speed Limiter": {
+      "device": "SimXperience AccuForce",
+      "id": 38
+    },
+    "Steer Left": {
+      "device": "SimXperience AccuForce",
+      "id": 1
+    },
+    "Steer Right": {
+      "device": "SimXperience AccuForce",
+      "id": 0
+    },
+    "Throttle": {
+      "device": "SimXperience AccuForce",
+      "id": 3
+    }
+  },
+  "Type": "Direct Input"
+}

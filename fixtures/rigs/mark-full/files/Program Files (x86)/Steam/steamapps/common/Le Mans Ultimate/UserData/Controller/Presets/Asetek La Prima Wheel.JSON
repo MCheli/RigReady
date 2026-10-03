@@ -1,0 +1,239 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "La Prima Wheel-4360473AA25FA01F": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Invert Force Feedback": false,
+                "Jolt magnitude": 1,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 1.5,
+                "Rumble strip update thresh": 0.05,
+                "Steering bump stop degrees": 40,
+                "Steering effects strength": 10000,
+                "Steering resistance coefficient": 0.1,
+                "Steering resistance saturation": 0.1,
+                "Steering torque capability": 5,
+                "Steering torque minimum": 0,
+                "Steering torque sensitivity": 1,
+                "constant steering force": false
+            },
+            "Type": "Wheel",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RX-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RY+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RY-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RZ+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RZ-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Y-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Z+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Z-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                }
+            },
+            "instance name": "La Prima Wheel",
+            "layout": {
+                "axes": 2,
+                "buttons": 96,
+                "povs": 1
+            },
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": false,
+                "Hardware 3Digit Display": 0,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0,
+                "Steering Wheel Maximum Rotation": 900,
+                "Steering Wheel Maximum Rotation From Driver": true,
+                "Throttle Sensitivity": 1,
+                "device release": true,
+                "use leds": false
+            },
+            "product guid": "F2032433-0-0-4449564449500000",
+            "product name": "La Prima Wheel"
+        }
+    },
+    "Input": {
+        "Bias Forward": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 57
+        },
+        "Bias Rearward": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 56
+        },
+        "Decrement Motor Map": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 108
+        },
+        "Decrement Regeneration": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 76
+        },
+        "Driver Overlay Next MFD": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 123
+        },
+        "Driver Overlay Previous MFD": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 122
+        },
+        "Headlights": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 44
+        },
+        "Headlights Pulse": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 41
+        },
+        "Increment Motor Map": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 109
+        },
+        "Increment Regeneration": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 77
+        },
+        "Look Left": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 32
+        },
+        "Look Right": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 40
+        },
+        "Pit Menu Dec": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 19
+        },
+        "Pit Menu Down": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 18
+        },
+        "Pit Menu Inc": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 17
+        },
+        "Pit Menu Up": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 16
+        },
+        "Pit Request": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 43
+        },
+        "Shift Down": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 61
+        },
+        "Shift Up": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 63
+        },
+        "Speed Limiter": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 35
+        },
+        "Traction Control 2 Down": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 90
+        },
+        "Traction Control 2 Up": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 91
+        },
+        "Traction Control Down": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 50
+        },
+        "Traction Control Up": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 51
+        },
+        "Wipers": {
+            "device": "La Prima Wheel-4360473AA25FA01F",
+            "id": 45
+        }
+    },
+    "Type": "Direct Input"
+}

@@ -23,3 +23,16 @@ export function sanitizeDeep<T>(value: T, userName: string): T {
   }
   return value;
 }
+
+/** The SteamID64 that stands for "no account" (account number 0). */
+export const NEUTRAL_STEAM_ID = '76561197960265728';
+
+/**
+ * Removes account identifiers from recorded text: any SteamID64, and the player name
+ * and nickname that Le Mans Ultimate stores in its settings.
+ */
+export function sanitizeIdentifiers(text: string): string {
+  return text
+    .replace(/\b7656119\d{10}\b/g, NEUTRAL_STEAM_ID)
+    .replace(/("Player (?:Name|Nick)"\s*:\s*")[^"]*(")/g, '$1Player$2');
+}

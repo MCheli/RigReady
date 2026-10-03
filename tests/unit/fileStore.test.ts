@@ -53,7 +53,11 @@ describe('BackupFileStore', () => {
     expect(undone.ok && undone.value.undone).toBe(true);
     expect(await fs.readFile(file, 'utf8')).toBe('original');
     const after = await store.journal();
-    expect(after.ok && after.value[0]!.undone).toBe(true);
+    // The undo is itself a journaled change (newest first), and the original is marked undone.
+    expect(after.ok && after.value.map((e) => [e.reason, e.undone])).toEqual([
+      ['Undo: Set MFD viewports', false],
+      ['Set MFD viewports', true],
+    ]);
     expect(await store.undo(entry.id)).toMatchObject({
       ok: false,
       error: { code: 'journal.undone' },

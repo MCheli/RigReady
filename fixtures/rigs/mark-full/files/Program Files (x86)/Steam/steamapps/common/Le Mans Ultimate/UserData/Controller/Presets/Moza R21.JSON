@@ -1,0 +1,231 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "MOZA R21 Base-2F01BCC90E955CA3": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Invert Force Feedback": true,
+                "Jolt magnitude": 1,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 1.5,
+                "Rumble strip update thresh": 0.05,
+                "Steering bump stop degrees": 40,
+                "Steering effects strength": 10000,
+                "Steering resistance coefficient": 0.1,
+                "Steering resistance saturation": 0.1,
+                "Steering torque capability": 5,
+                "Steering torque minimum": 0,
+                "Steering torque sensitivity": 1,
+                "constant steering force": false
+            },
+            "Type": "Wheel",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RX-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RY+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RY-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RZ+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RZ-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Y-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Z+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "Z-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                }
+            },
+            "instance name": "MOZA R21 Base",
+            "layout": {
+                "axes": 8,
+                "buttons": 128,
+                "povs": 1
+            },
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": false,
+                "Hardware 3Digit Display": 0,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0,
+                "Steering Wheel Maximum Rotation": 1440,
+                "Steering Wheel Maximum Rotation From Driver": true,
+                "Throttle Sensitivity": 1,
+                "device release": true,
+                "use leds": false
+            },
+            "product guid": "346E-0-0-4449564449500000",
+            "product name": "MOZA R21 Base"
+        }
+    },
+    "Input": {
+        "Bias Forward": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 77
+        },
+        "Bias Rearward": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 76
+        },
+        "Decrement Motor Map": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 57
+        },
+        "Driving Cameras": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 66
+        },
+        "Headlights": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 51
+        },
+        "Headlights Pulse": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 52
+        },
+        "Increment Motor Map": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 58
+        },
+        "Look Left": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 43
+        },
+        "Look Right": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 41
+        },
+        "Pit Menu Dec": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 38
+        },
+        "Pit Menu Down": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 39
+        },
+        "Pit Menu Inc": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 36
+        },
+        "Pit Menu Up": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 37
+        },
+        "Pit Request": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 54
+        },
+        "Rear Look": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 42
+        },
+        "Shift Down": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 44
+        },
+        "Shift Up": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 45
+        },
+        "Speed Limiter": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 50
+        },
+        "Steer Left": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 1
+        },
+        "Steer Right": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 0
+        },
+        "Traction Control Down": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 74
+        },
+        "Traction Control Up": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 75
+        },
+        "Wipers": {
+            "device": "MOZA R21 Base-2F01BCC90E955CA3",
+            "id": 53
+        }
+    },
+    "Type": "Direct Input"
+}

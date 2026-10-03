@@ -1,0 +1,47 @@
+"AppState"
+{
+	"appid"		"3917090"
+	"universe"		"1"
+	"LauncherPath"		"C:\\Program Files (x86)\\Steam\\steam.exe"
+	"name"		"Assetto Corsa Rally"
+	"StateFlags"		"4"
+	"installdir"		"Assetto Corsa Rally"
+	"LastUpdated"		"1789943812"
+	"LastPlayed"		"1775259430"
+	"SizeOnDisk"		"25605434980"
+	"StagingSize"		"0"
+	"buildid"		"25170642"
+	"LastOwner"		"76561197960265728"
+	"DownloadType"		"1"
+	"UpdateResult"		"0"
+	"BytesToDownload"		"9187419328"
+	"BytesDownloaded"		"9187419328"
+	"BytesToStage"		"25438909343"
+	"BytesStaged"		"25438909343"
+	"TargetBuildID"		"25170642"
+	"AutoUpdateBehavior"		"0"
+	"AllowOtherDownloadsWhileRunning"		"0"
+	"ScheduledAutoUpdate"		"0"
+	"InstalledDepots"
+	{
+		"3917093"
+		{
+			"manifest"		"8347583511572866987"
+			"size"		"25605434980"
+		}
+	}
+	"SharedDepots"
+	{
+		"228989"		"228980"
+		"228990"		"228980"
+		"229000"		"228980"
+	}
+	"UserConfig"
+	{
+		"language"		"english"
+	}
+	"MountedConfig"
+	{
+		"language"		"english"
+	}
+}

@@ -1,0 +1,140 @@
+{
+  "Alternative Input": {},
+  "Devices": {
+    "Simucube 2 Ultimate": {
+      "Force Feedback": {
+        "Enabled": true,
+        "Invert Force Feedback": true,
+        "Jolt magnitude": 1.5,
+        "Rumble strip magnitude": 0,
+        "Rumble strip pull factor": 1.5,
+        "Rumble strip update thresh": 0.05,
+        "Steering effects strength": 10000,
+        "Steering resistance coefficient": 0.1,
+        "Steering resistance saturation": 0.1,
+        "Steering resistance type": 0,
+        "Steering torque capability": 32.0
+      },
+      "Type": "Wheel",
+      "input axis properties": {
+        "RX+": {
+          "center": 0,
+          "max": 1,
+          "min": 0
+        },
+        "RX-": {
+          "center": 0,
+          "max": 0,
+          "min": 0
+        },
+        "RY+": {
+          "center": 0,
+          "max": 1,
+          "min": 0
+        },
+        "RY-": {
+          "center": 0,
+          "max": 0,
+          "min": 0
+        },
+        "RZ+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "RZ-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "S0+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "S0-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "S1+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "S1-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "X+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "X-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "Y+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "Y-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        },
+        "Z+": {
+          "center": 0.5,
+          "max": 1,
+          "min": 0.5
+        },
+        "Z-": {
+          "center": 0.5,
+          "max": 0,
+          "min": 0.5
+        }
+      },
+      "instance name": "Simucube 2 Ultimate",
+      "layout": null,
+      "options": {
+        "Brake Bias Axis": false,
+        "Brake Sensitivity": 1,
+        "Clutch Sensitivity": 1,
+        "Gear Select Button Hold": 1,
+        "Hardware 3Digit Display": 1,
+        "Keyboard Brake": 0.5,
+        "Keyboard Clutch": 0.2,
+        "Keyboard Throttle": 0.5,
+        "Sensitivity Type": 1,
+        "Steering Aggression": 0.5,
+        "Steering Rate Factor": 0.5,
+        "Steering Return Rate Multiplier": 1.0,
+        "Steering Sensitivity": 1,
+        "Steering Snap Factor": 0.5,
+        "Steering Speed Sensitivity": 0.0,
+        "Steering Wheel Maximum Rotation": 900,
+        "Steering Wheel Maximum Rotation From Driver": false,
+        "Steering Wheel Range": 900,
+        "Throttle Sensitivity": 1,
+        "use leds": true
+      },
+      "product guid": "D5F16D0-0-0-0000000000000000",
+      "product name": "Simucube 2 Ultimate"
+    }
+  },
+  "Input": {
+    "Steer Left": {
+      "device": "Simucube 2 Ultimate",
+      "id": 1
+    },
+    "Steer Right": {
+      "device": "Simucube 2 Ultimate",
+      "id": 0
+    }
+  },
+  "Type": "Direct Input"
+}

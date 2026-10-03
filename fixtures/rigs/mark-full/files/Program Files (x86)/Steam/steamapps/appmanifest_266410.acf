@@ -1,0 +1,46 @@
+"AppState"
+{
+	"appid"		"266410"
+	"universe"		"1"
+	"LauncherPath"		"C:\\Program Files (x86)\\Steam\\steam.exe"
+	"name"		"iRacing"
+	"StateFlags"		"4"
+	"installdir"		"iRacing"
+	"LastUpdated"		"1775258028"
+	"LastPlayed"		"1777160474"
+	"SizeOnDisk"		"2018"
+	"StagingSize"		"0"
+	"buildid"		"22363345"
+	"LastOwner"		"76561197960265728"
+	"DownloadType"		"3"
+	"UpdateResult"		"0"
+	"BytesToDownload"		"62720"
+	"BytesDownloaded"		"62720"
+	"BytesToStage"		"432562"
+	"BytesStaged"		"432562"
+	"TargetBuildID"		"0"
+	"AutoUpdateBehavior"		"0"
+	"AllowOtherDownloadsWhileRunning"		"0"
+	"ScheduledAutoUpdate"		"0"
+	"InstalledDepots"
+	{
+		"266411"
+		{
+			"manifest"		"4602344135809957150"
+			"size"		"2018"
+		}
+	}
+	"SharedDepots"
+	{
+		"228985"		"228980"
+		"228990"		"228980"
+	}
+	"UserConfig"
+	{
+		"language"		"english"
+	}
+	"MountedConfig"
+	{
+		"language"		"english"
+	}
+}

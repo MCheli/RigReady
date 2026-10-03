@@ -1,5 +1,6 @@
 import type { Result } from '../result';
 import type {
+  AudioRole,
   AudioState,
   DeviceInfo,
   DisplayLayout,
@@ -8,6 +9,9 @@ import type {
   InputState,
   LaunchTarget,
   ProcessInfo,
+  RegistryHive,
+  RegistryValue,
+  ServiceInfo,
 } from '../../shared/models';
 
 /** Everything that touches the machine goes through one of these interfaces. */
@@ -15,6 +19,11 @@ import type {
 export interface DeviceProvider {
   /** Physical USB devices currently present, with identity and hub chain. */
   list(): Promise<Result<DeviceInfo[]>>;
+  /**
+   * Calls the listener when a device was plugged in or removed (it says only that
+   * something changed; call list() again). Returns the unsubscribe function.
+   */
+  subscribe(listener: () => void): () => void;
 }
 
 export interface InputProvider {
@@ -22,7 +31,10 @@ export interface InputProvider {
   start(): Promise<Result<InputDevice[]>>;
   stop(): Promise<void>;
   devices(): InputDevice[];
-  /** Live state changes. Returns an unsubscribe function. */
+  /**
+   * Live state changes. A new subscriber is first given the last known state of every
+   * device. Returns an unsubscribe function.
+   */
   subscribe(listener: (states: InputState[]) => void): () => void;
 }
 
@@ -45,15 +57,56 @@ export interface DisplayProvider {
   revert(): Promise<Result<DisplayLayout>>;
 }
 
+export interface CloseOptions {
+  /** How long to wait for the program to exit after asking it to close. Default 10 000. */
+  waitMs?: number;
+  /** Terminate the program when it has not exited in time. Default false. */
+  force?: boolean;
+}
+
 export interface ProcessProvider {
   list(): Promise<Result<ProcessInfo[]>>;
   /** Starts a program detached from RigReady. Never goes through a shell. */
   start(target: LaunchTarget): Promise<Result<{ pid: number | undefined }>>;
+  /** Terminates a program immediately. Prefer close(). */
   stop(pid: number): Promise<Result<void>>;
+  /**
+   * Asks a program to close the way its window's X button does, waits for it to exit,
+   * and only terminates it when `force` is set. Fails with `process.stillRunning` when
+   * it did not exit and force is off.
+   */
+  close(pid: number, options?: CloseOptions): Promise<Result<{ outcome: 'closed' | 'terminated' }>>;
+}
+
+export interface ServiceProvider {
+  /** Every Windows service with its current state. No admin rights needed. */
+  list(): Promise<Result<ServiceInfo[]>>;
+  /** One service by its short name (case-insensitive); undefined when it is not installed. */
+  get(name: string): Promise<Result<ServiceInfo | undefined>>;
 }
 
 export interface AudioProvider {
   read(): Promise<Result<AudioState>>;
+  /**
+   * Makes an endpoint the default for its flow (playback or recording). Without `roles`
+   * all three roles are set, which is what "Set as default device" does in Windows.
+   * Resolves with the state read back afterwards.
+   */
+  setDefault(id: string, options?: { roles?: AudioRole[] }): Promise<Result<AudioState>>;
+}
+
+/** Read-only access to the Windows registry. */
+export interface Registry {
+  /** One value; undefined when the key or the value does not exist. */
+  getValue(
+    hive: RegistryHive,
+    key: string,
+    name: string
+  ): Promise<Result<RegistryValue | undefined>>;
+  /** Names of the sub-keys of a key. Empty when the key does not exist. */
+  listKeys(hive: RegistryHive, key: string): Promise<Result<string[]>>;
+  /** Every value of a key by name. Empty when the key does not exist. */
+  listValues(hive: RegistryHive, key: string): Promise<Result<Record<string, RegistryValue>>>;
 }
 
 export interface KnownFolders {
@@ -62,6 +115,12 @@ export interface KnownFolders {
   savedGames(): string;
   appData(): string;
   localAppData(): string;
+  /** C:\Program Files */
+  programFiles(): string;
+  /** C:\Program Files (x86) */
+  programFilesX86(): string;
+  /** C:\ProgramData */
+  programData(): string;
   /** RigReady's own data folder. Honors RIGREADY_HOME. */
   dataRoot(): string;
   /** Every Steam library folder (from libraryfolders.vdf). Empty when Steam is absent. */
@@ -93,17 +152,148 @@ export interface Clock {
   now(): Date;
 }
 
+/** Small named secrets (the user's Anthropic API key), encrypted at rest for this Windows user. */
+export interface Secrets {
+  get(name: string): Promise<Result<string | undefined>>;
+  set(name: string, value: string): Promise<Result<void>>;
+  remove(name: string): Promise<Result<void>>;
+}
+
+export interface HttpRequest {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** https only. */
+  url: string;
+  headers?: Record<string, string>;
+  body?: string;
+  /** Default 60 000. */
+  timeoutMs?: number;
+}
+
+export interface HttpResponse {
+  status: number;
+  /** Header names in lower case. */
+  headers: Record<string, string>;
+  body: string;
+}
+
+/** A minimal fetch, so network calls (the AI features) can be scripted in tests. */
+export interface Http {
+  /** Resolves with the response for any HTTP status; fails only when no response arrived. */
+  request(request: HttpRequest): Promise<Result<HttpResponse>>;
+}
+
+export interface FileFilter {
+  name: string;
+  /** Without the dot, e.g. ['rigready', 'zip']. */
+  extensions: string[];
+}
+
+export interface OpenDialogOptions {
+  title?: string;
+  defaultPath?: string;
+  filters?: FileFilter[];
+  /** Pick a folder instead of a file. */
+  directory?: boolean;
+  multiple?: boolean;
+}
+
+export interface SaveDialogOptions {
+  title?: string;
+  /** Suggested folder and/or file name. */
+  defaultPath?: string;
+  filters?: FileFilter[];
+}
+
+/** Native file pickers. A path the user picked here is one RigReady may read or write. */
+export interface Dialogs {
+  /** The chosen paths; empty when the user cancelled. */
+  open(options?: OpenDialogOptions): Promise<Result<string[]>>;
+  /** The chosen path; null when the user cancelled. */
+  save(options?: SaveDialogOptions): Promise<Result<string | null>>;
+}
+
+/** Turns HTML into an image or a document (cheat sheets, kneeboard pages). No scripts run. */
+export interface Render {
+  /** A PNG of exactly width x height pixels. */
+  png(html: string, size: { width: number; height: number }): Promise<Result<Uint8Array>>;
+  pdf(
+    html: string,
+    options?: { pageSize?: 'A4' | 'Letter'; landscape?: boolean }
+  ): Promise<Result<Uint8Array>>;
+}
+
+export interface Notifications {
+  /** Shows an OS notification (tray balloon). */
+  notify(message: { title: string; body: string }): Promise<Result<void>>;
+}
+
+/** The per-user "start with Windows" entry. */
+export interface LoginItem {
+  isEnabled(): Promise<Result<boolean>>;
+  setEnabled(enabled: boolean): Promise<Result<void>>;
+}
+
+export interface RawStat {
+  isDirectory: boolean;
+  size: number;
+  mtimeMs: number;
+}
+
 /** Minimal file-system access. Only FileStore and platform code use it directly. */
 export interface RawFs {
   readText(path: string): Promise<string>;
+  readBytes(path: string): Promise<Uint8Array>;
   writeBytes(path: string, data: Uint8Array | string): Promise<void>;
   appendText(path: string, text: string): Promise<void>;
   exists(path: string): Promise<boolean>;
+  /** Undefined when the path does not exist. */
+  stat(path: string): Promise<RawStat | undefined>;
   mkdirp(path: string): Promise<void>;
   /** Names of the entries in a directory. Empty when it does not exist. */
   list(path: string): Promise<string[]>;
   copyFile(from: string, to: string): Promise<void>;
   remove(path: string): Promise<void>;
+  /** Removes a directory and everything in it. */
+  removeDir(path: string): Promise<void>;
+}
+
+export interface FileEntry {
+  name: string;
+  /** Absolute path. */
+  path: string;
+  isDirectory: boolean;
+  size: number;
+  mtimeMs: number;
+}
+
+export interface TreeEntry extends FileEntry {
+  /** Path below the listed folder, with forward slashes: "Config/Input/a.lua". */
+  relativePath: string;
+}
+
+export interface TreeOptions {
+  /**
+   * Glob patterns on the relative path (forward slashes, case-insensitive): `*` within
+   * a name, `**` across folders, `?` one character. A pattern without a slash matches
+   * the file name at any depth. Without `include` every file is included.
+   */
+  include?: string[];
+  exclude?: string[];
+  /** Stop with an error beyond this many files. Default 20 000. */
+  maxEntries?: number;
+}
+
+/** Several file changes that belong to one user action and are undone together. */
+export interface ChangeGroup {
+  id: string;
+  reason: string;
+}
+
+export interface ChangeOptions {
+  /** Why, in words the user can read. */
+  reason: string;
+  /** From beginGroup(): makes this change part of a multi-file action. */
+  group?: ChangeGroup;
 }
 
 export interface JournalEntry {
@@ -116,13 +306,45 @@ export interface JournalEntry {
   reason: string;
   /** Snapshot of the previous content. Null when the file did not exist before. */
   backupPath: string | null;
+  /** sha256 of the content this change left behind. Null for a removal. */
+  hashAfter?: string | null;
+  /** The action this change belongs to. Absent for a single change. */
+  groupId?: string;
+  groupReason?: string;
+  /** Set on an entry that was itself written by undoing another one. */
+  undoOf?: string;
   undone: boolean;
+}
+
+/** One user action in the journal: a single change, or everything done under beginGroup(). */
+export interface JournalGroup {
+  id: string;
+  time: string;
+  reason: string;
+  entries: JournalEntry[];
+  /** True when every entry has been undone. */
+  undone: boolean;
+}
+
+export interface UndoOptions {
+  /** Undo even when the file was changed again after the journaled change. */
+  force?: boolean;
 }
 
 export interface FileStore {
   readText(path: string): Promise<Result<string>>;
+  readBytes(path: string): Promise<Result<Uint8Array>>;
   exists(path: string): Promise<boolean>;
+  /** Undefined when the path does not exist. */
+  stat(path: string): Promise<Result<FileEntry | undefined>>;
+  /** Entry names of a folder. Empty when it does not exist. */
   list(dir: string): Promise<Result<string[]>>;
+  /** Entries of a folder with size, modified time and kind. Empty when it does not exist. */
+  listEntries(dir: string): Promise<Result<FileEntry[]>>;
+  /** Every file below a folder (no directory entries), filtered by glob patterns. */
+  listTree(dir: string, options?: TreeOptions): Promise<Result<TreeEntry[]>>;
+  /** Creates a folder and its parents. Not journaled: an empty folder changes nothing. */
+  mkdir(dir: string): Promise<Result<void>>;
   /**
    * Writes a file. Outside the data root the previous content is snapshotted first
    * and the change is journaled; the journal entry is returned. Inside the data
@@ -131,12 +353,42 @@ export interface FileStore {
   write(
     path: string,
     content: string | Uint8Array,
-    options: { reason: string }
+    options: ChangeOptions
   ): Promise<Result<JournalEntry | null>>;
-  remove(path: string, options: { reason: string }): Promise<Result<JournalEntry | null>>;
+  remove(path: string, options: ChangeOptions): Promise<Result<JournalEntry | null>>;
+  /** Copies one file; the destination is backed up and journaled like write(). */
+  copy(from: string, to: string, options: ChangeOptions): Promise<Result<JournalEntry | null>>;
+  /**
+   * Copies a folder tree (filtered like listTree). Every file written is one journal
+   * entry in one group, so the whole copy is undone together.
+   */
+  copyTree(
+    fromDir: string,
+    toDir: string,
+    options: ChangeOptions & TreeOptions
+  ): Promise<Result<{ group: ChangeGroup; files: string[] }>>;
+  /** Starts a multi-file action. Pass the group to every write, remove and copy that belongs to it. */
+  beginGroup(reason: string): ChangeGroup;
   journal(): Promise<Result<JournalEntry[]>>;
-  /** Puts back what a journaled change replaced. */
-  undo(entryId: string): Promise<Result<JournalEntry>>;
+  /** The journal by user action, newest first. */
+  journalGroups(): Promise<Result<JournalGroup[]>>;
+  /**
+   * Puts back what a journaled change replaced. The undo is itself journaled. Fails
+   * with `journal.changed` when the file was modified since, unless `force` is set.
+   */
+  undo(entryId: string, options?: UndoOptions): Promise<Result<JournalEntry>>;
+  /** Undoes every change of a group, newest first. */
+  undoGroup(groupId: string, options?: UndoOptions): Promise<Result<JournalGroup>>;
+  /**
+   * Deletes automatic backups that are both older than `days` and not among the newest
+   * `groups` actions, with their journal entries.
+   */
+  prune(keep: {
+    days: number;
+    groups: number;
+  }): Promise<Result<{ removedGroups: number; freedBytes: number }>>;
+  /** Bytes used by automatic backups. */
+  backupBytes(): Promise<Result<number>>;
 }
 
 export interface LogSink {
@@ -148,9 +400,17 @@ export interface Ports {
   input: InputProvider;
   displays: DisplayProvider;
   processes: ProcessProvider;
+  services: ServiceProvider;
   audio: AudioProvider;
+  registry: Registry;
   files: FileStore;
   folders: KnownFolders;
   shell: Shell;
   clock: Clock;
+  secrets: Secrets;
+  http: Http;
+  dialogs: Dialogs;
+  render: Render;
+  notifications: Notifications;
+  loginItem: LoginItem;
 }

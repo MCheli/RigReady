@@ -1,0 +1,151 @@
+{
+    "Alternative Input": {},
+    "Devices": {
+        "Huayra R Sim Racing Pedals-7AADE7FD6C9DB963": {
+            "Force Feedback": {
+                "Enabled": true,
+                "Invert Force Feedback": false,
+                "Jolt magnitude": 1,
+                "Rumble strip magnitude": 0,
+                "Rumble strip pull factor": 1.5,
+                "Rumble strip update thresh": 0.05,
+                "Steering bump stop degrees": 40,
+                "Steering effects strength": 10000,
+                "Steering resistance coefficient": 0.1,
+                "Steering resistance saturation": 0.1,
+                "Steering torque capability": 5,
+                "Steering torque minimum": 0,
+                "Steering torque sensitivity": 1,
+                "constant steering force": false
+            },
+            "Type": "Pedals",
+            "input axis properties": {
+                "RX+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RX-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RY+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RY-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "RZ+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "RZ-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S0+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S0-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "S1+": {
+                    "center": 0.5,
+                    "max": 1,
+                    "min": 0.5
+                },
+                "S1-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "X+": {
+                    "center": 0,
+                    "max": 1,
+                    "min": 0
+                },
+                "X-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Y+": {
+                    "center": 0,
+                    "max": 1,
+                    "min": 0
+                },
+                "Y-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                },
+                "Z+": {
+                    "center": 0,
+                    "max": 1,
+                    "min": 0
+                },
+                "Z-": {
+                    "center": 0.5,
+                    "max": 0,
+                    "min": 0.5
+                }
+            },
+            "instance name": "Huayra R Sim Racing Pedals",
+            "layout": {
+                "axes": 3,
+                "buttons": 0,
+                "povs": 0
+            },
+            "options": {
+                "Brake Bias Axis": false,
+                "Brake Sensitivity": 1,
+                "Clutch Sensitivity": 1,
+                "Gear Select Button Hold": false,
+                "Hardware 3Digit Display": 0,
+                "Keyboard Brake": 0.5,
+                "Keyboard Clutch": 0.2,
+                "Keyboard Throttle": 0.5,
+                "Sensitivity Type": 1,
+                "Steering Aggression": 0.5,
+                "Steering Rate Factor": 0.5,
+                "Steering Return Rate Multiplier": 1,
+                "Steering Sensitivity": 1,
+                "Steering Snap Factor": 0.5,
+                "Steering Speed Sensitivity": 0,
+                "Steering Wheel Maximum Rotation": 900,
+                "Steering Wheel Maximum Rotation From Driver": true,
+                "Throttle Sensitivity": 1,
+                "device release": true,
+                "use leds": false
+            },
+            "product guid": "F1022433-0-0-4449564449500000",
+            "product name": "Huayra R Sim Racing Pedals"
+        }
+    },
+    "Input": {
+        "Brake": {
+            "device": "Huayra R Sim Racing Pedals-7AADE7FD6C9DB963",
+            "id": 2
+        },
+        "Clutch In": {
+            "device": "Huayra R Sim Racing Pedals-7AADE7FD6C9DB963",
+            "id": 4
+        },
+        "Throttle": {
+            "device": "Huayra R Sim Racing Pedals-7AADE7FD6C9DB963",
+            "id": 0
+        }
+    },
+    "Type": "Direct Input"
+}

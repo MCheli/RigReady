@@ -1,0 +1,469 @@
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "c51d9d41-a1ec-4fbe-8c6f-fce582448d8c",
+          "LinkedTitle": true,
+          "Name": "Parent Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/K4SLIQS5ET31P2R3IN07C66B98Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.backtoparent"
+        },
+        "0,1": {
+          "ActionID": "4545e8d4-62df-4c1c-8f16-49ea34ab0002",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/FOQGJ1G9P93072FBQ0DJ11R6MKZ.png",
+              "Title": "Shift+V"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "0,2": {
+          "ActionID": "48caa170-c988-4bff-b797-fc9434dcc3c3",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/F12B7F7JOH3MN437TTV0ODE2SCZ.png",
+              "Title": "take picture"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "1,0": {
+          "ActionID": "8905553c-10da-440f-9778-864f1ab866d5",
+          "LinkedTitle": true,
+          "Name": "Create Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/LC64VSWMML4MF1OA77NK6H2T8OZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.openchild"
+        },
+        "1,1": {
+          "ActionID": "7ff417be-bfe9-43fa-9903-886abd1cea92",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/6R6T6CG68D7W17FJC2E6N4N860Z.png",
+              "Title": "Toggle Smart Camera"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "1,2": {
+          "ActionID": "62557860-64a6-49f8-b520-053e30fd8aeb",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/WRJMFNW98P7S5FTMW27QPGNH20Z.png",
+              "Title": "Load cam"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "1,3": {
+          "ActionID": "b338566b-06d1-43c8-899d-db59209a0edf",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/TJGD00LN4D0637TNDAOH18R6WCZ.png",
+              "Title": "Save Camera"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "2,0": {
+          "ActionID": "1d125c4b-e600-4629-ab12-8d3935594aa4",
+          "LinkedTitle": true,
+          "Name": "Create Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/1PDRWM52710W5ECBLRL1G890N0Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.openchild"
+        },
+        "2,1": {
+          "ActionID": "df62c48e-2c39-4232-9e96-a8c196826c94",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/1LR9AR49GD4359E2J72C6ND6WCZ.png",
+              "Title": "Smart cam Target"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "2,2": {
+          "ActionID": "45bad2a3-6213-405e-91c3-8c20b7615832",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/D8CG5IH2SL3ET77MTH27RDI8SCZ.png",
+              "Title": "Load Camera"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "2,3": {
+          "ActionID": "2a203f94-89ba-4897-8ae3-4f5c06b7e0fd",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/EEWWKQDV8L3A3C7HN4P480K79SZ.png",
+              "Title": "Save Camera"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "3,0": {
+          "ActionID": "3a2b5041-d290-4064-aac6-c6e931a3a4a2",
+          "LinkedTitle": true,
+          "Name": "Create Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/GWEMAI5AEP6R90C8BBL802J6DKZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.openchild"
+        },
+        "3,1": {
+          "ActionID": "df0b12ec-16b1-4fdf-b867-582024204cda",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/AI5J2NMTP52T97Q5I461VDF4V0Z.png",
+              "Title": "Smart cam Target"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "3,2": {
+          "ActionID": "86072cdd-2196-4c4f-9569-9b46197b6317",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/LM3G8I8LMH19H9ODMO2L5B7COGZ.png",
+              "Title": "Load Camera"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "3,3": {
+          "ActionID": "8e46b3fc-740b-4a3c-8675-6d773eb4b461",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/PLO73HGC3515J3IQ1LL823JLN8Z.png",
+              "Title": "Save Camera"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "4,0": {
+          "ActionID": "e02021b7-66bc-4e07-8087-c056dc4c1889",
+          "LinkedTitle": true,
+          "Name": "Create Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/HMHVBAG6QH2T57OOI7MK152C6GZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.openchild"
+        },
+        "4,1": {
+          "ActionID": "a6da799e-26e5-442f-a20a-1406b6ddd40c",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/893IFL4CL95ET1A9KGHI1AW1ISZ.png",
+              "Title": "Cockpit External View"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "4,2": {
+          "ActionID": "36855494-a669-4dff-aa24-2ffc1d6bf704",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/L7JFC4B6JT3EPDPB1E1RBJWWF4Z.png",
+              "Title": "Load Camera"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "4,3": {
+          "ActionID": "50776f22-970f-4109-b945-f020c589f5bb",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/PPOSLW787L7WJ12SA6IHVV3AOGZ.png",
+              "Title": "Save Camera"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "5,0": {
+          "ActionID": "634634e4-6018-40e7-b805-761a8ff5c856",
+          "LinkedTitle": true,
+          "Name": "Create Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/DV753FLP797DNCM1P14ACWRKB4Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.openchild"
+        },
+        "5,1": {
+          "ActionID": "d0fe5297-e59b-463a-ae71-0a2e718048b2",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/FM62C694L53SJE8QRP4V5PES7OZ.png",
+              "Title": "External Quickview Reset"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "5,2": {
+          "ActionID": "02dd975c-63d1-489e-8a1c-1be189de52d8",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/4IPDJIBTA55ORBM5FDLBNKN44OZ.png",
+              "Title": "External Quickview"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "5,3": {
+          "ActionID": "270ecbe3-cb73-442d-8c50-214026defb06",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/PC29OFBI414I918N8NW02OR594Z.png",
+              "Title": "External view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "6,0": {
+          "ActionID": "cd02b53c-621b-42a4-b705-311e467b50e7",
+          "LinkedTitle": true,
+          "Name": "Create Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/FJHIKSNJ917HF7D7IBQBH4OH58Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.openchild"
+        },
+        "6,1": {
+          "ActionID": "a5938e0d-f68d-4ef8-b1f5-fec31083aa5e",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/IIIDL9H64H68P997LH3I2IBJR0Z.png",
+              "Title": "Toggle Drone"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "6,2": {
+          "ActionID": "3edd9877-35a7-4ffe-a646-2e459ded4c97",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/3VFL91FLF520RBCFERG829CC94Z.png",
+              "Title": "External view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "6,3": {
+          "ActionID": "545e72da-924a-4e51-8f81-ab5fe4873902",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/NAVBNAWLPD47F3FA1NVJDG1CWKZ.png",
+              "Title": "External view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "7,0": {
+          "ActionID": "b509493a-dafe-4995-8190-48a02f8be5c4",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/N2VD543HK15OB6M3DWIM597T10Z.png",
+              "Title": "Prev Smartcam"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "7,1": {
+          "ActionID": "cd1961b7-4101-4085-92bd-f615174d872a",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/8OJJIH7IF91Q5F7C4OID85TSKCZ.png",
+              "Title": "Next Smartcam Target"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "7,2": {
+          "ActionID": "b7e1aabb-a7fc-46dd-bb53-ea047ba557a9",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/WMS3HVC7995DFAEHNMIF6524M0Z.png",
+              "Title": "External Quickview"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "7,3": {
+          "ActionID": "1320a5af-d717-448f-9c50-29e5167d3d8e",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/2VL6HVEI212TW64KL09LERD9OCZ.png",
+              "Title": "External view"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

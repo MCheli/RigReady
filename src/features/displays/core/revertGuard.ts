@@ -25,7 +25,8 @@ export class RevertGuard {
       /** The countdown ended, by keep, by revert or by timeout. */
       settled(outcome: 'kept' | 'reverted' | 'revertFailed'): void;
     },
-    readonly seconds = 15,
+    /** How long the user has to keep the new layout. Follows the app settings. */
+    public seconds = 15,
     private readonly schedule: Schedule = realSchedule
   ) {}
 

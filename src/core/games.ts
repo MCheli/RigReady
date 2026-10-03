@@ -10,6 +10,13 @@ export interface GameInstall {
   launch?: LaunchTarget;
 }
 
+export interface GameVersion {
+  /** Whatever identifies the build: "2.9.15.9408", a Steam build id, ... */
+  version: string;
+  /** True when the launcher has an update queued and the game may not start until it is applied. */
+  updatePending?: boolean;
+}
+
 export interface ConfigLocation {
   id: string;
   label: string;
@@ -40,6 +47,11 @@ export interface GameModule {
   configLocations(ctx: CheckContext): Promise<Result<ConfigLocation[]>>;
   /** Files worth tracking and backing up. */
   trackedFiles?(ctx: CheckContext): Promise<Result<TrackedFileSuggestion[]>>;
+  /**
+   * The installed version of one install (DCS: autoupdate.cfg; Steam games: the app
+   * manifest's build id via core/steam.ts), for "updated since you last verified".
+   */
+  installedVersion?(ctx: CheckContext, install: GameInstall): Promise<Result<GameVersion>>;
   bindings?: BindingManager;
 }
 
