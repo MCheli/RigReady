@@ -258,9 +258,11 @@ requirements:
     priority: p0
     done_means:
       - "A profile's launch target is an executable path plus an argument array plus an optional working directory, with path variables resolved at launch (e.g. {DCS_INSTALL}/bin/DCS.exe)."
-      - "A launch target can also be a Steam app id; launching it starts Steam's steam://rungameid/<id> via Shell.run with an argument array, never a command string."
+      - "A launch target can also be a Steam app id (or steam.exe with -applaunch <id>, which is what detection fills in for Steam games); launching hands the game to Steam with an argument array, never a command string, as a detached start that does not wait for Steam to exit."
       - "Unit test: a profile whose argument contains '&& del' is passed to Shell.run as one literal argv element (NFR-008)."
       - "Known games auto-fill the launch target from detection (DCS-001/002, RACE-*-001) and the user can override it."
+    notes:
+      - "2026-10-03: was 'via Shell.run'. Shell.run waits for the program to exit, and steam.exe stays running; the handoff is a detached start, and 'Launched' means Steam accepted it (FLY-016)."
     status: todo
     evidence: []
 
@@ -484,8 +486,10 @@ requirements:
     priority: p0
     done_means:
       - "A device check may also specify serial number or, when the device has none, the USB instance/port path; matching then requires that exact unit."
-      - "Fixture mark-flight has three WinWing MFD panels with the same VID/PID; checks 'MFD left', 'MFD centre', 'MFD right' each pass on their own unit, and mutation mfd-right-unplugged fails only 'MFD right'."
+      - "Fixture mark-full has identical devices (the three USB MFD screens, 17E9:FF00, told apart by serial, and two trackballs with the same VID/PID); a check per unit passes on its own unit, and unplugging one unit fails only that unit's check."
       - "When identity falls back to instance path, the check detail says 'identified by USB port' so the user knows moving ports breaks it."
+    notes:
+      - "2026-10-03: was 'three WinWing MFD panels with the same VID/PID'. The WinWing MFD frames have different product ids (BEE1, BEE0, BEE2); the identical devices on this rig are the three USB screens and two trackballs."
     status: done
     evidence:
       - "src/features/devices/core/deviceCheck.test.ts#checks identical devices unit by unit: one MFD screen unplugged fails only its own check"
@@ -549,8 +553,10 @@ requirements:
     priority: p0
     done_means:
       - "A display check compares the current layout to a named layout on: set of enabled monitors, each monitor's position, rotation, resolution and primary flag."
-      - "Scenario mark-flight with the flying layout passes; mutation mfd2-rotated fails with 'MFD 2: rotation 0°, expected 90°'; mutation desk-monitor-on fails with 'Dell U2719D: enabled, expected off'."
+      - "Scenario mark-flight with the flying layout passes; mutation mfd2-rotated fails with a line naming the screen and both rotations ('USB_Monitor (2 of 3) is rotated 0°, expected 90°', or the name the user gave it); the desk monitor being on fails with 'DELL G3223D is on, expected off'."
       - "Refresh rate is compared only when the layout specifies it."
+    notes:
+      - "2026-10-03: example texts corrected. The desk monitor is a Dell G3223D, and messages name a monitor by the user's name for it or by its EDID name with '(2 of 3)'."
     status: done
     evidence:
       - "src/features/displays/core/layoutCheck.test.ts#passes when the monitors are arranged as the setup expects"
@@ -675,9 +681,11 @@ requirements:
     priority: p1
     done_means:
       - "If HidHide is installed, each required device check also reads HidHide's hidden-device list and whitelist; a required device that is hidden from the game fails with 'Hidden by HidHide'."
-      - "Fixture provides HidHide registry data; mutation tpr-hidden fails the TPR check with that detail while the device is present."
+      - "HidHide is read through its own command line tool (HidHideCLI.exe, read-only, every query ending with --cancel), which needs no admin rights; the fixture records its answers and the fake shell replays them. Mutation tpr-hidden fails the TPR check with that detail while the device is present."
       - "If HidHide is not installed the check adds nothing and does not error."
       - "The fix is 'Show instructions' (how to unhide in HidHide's client); RigReady does not change HidHide settings."
+    notes:
+      - "2026-10-03: was 'fixture provides HidHide registry data'. HidHide's registry keys are readable only with admin rights; its CLI gives the same lists without them."
     status: done
     evidence:
       - "src/features/devices/core/deviceCheck.test.ts#fails a required device that HidHide hides from the game, and only that one"
@@ -1186,8 +1194,10 @@ requirements:
     priority: p1
     done_means:
       - "The devices page lists every connected game controller and HID device with friendly name, VID/PID, serial (or 'none'), instance path, DirectInput GUID where available, and connection state."
-      - "Fixture mark-flight lists nine WinWing devices, the Thrustmaster TPR, the Virpil panel, TrackIR, Stream Deck and the Fanatec DD2 when racing gear is connected."
+      - "Fixture mark-full lists the eight WinWing game controllers, the Thrustmaster TPR, the Virpil panel, TrackIR, Stream Deck and the Fanatec DD2 when racing gear is connected."
       - "Refresh re-enumerates within the NFR-002 budget; the packaged build enumerates real devices (PLAT-006)."
+    notes:
+      - "2026-10-03: was 'nine WinWing devices'. Windows sees eight WinWing game controllers on this rig; the combat panel is not visible to Windows as a device of its own, so it cannot be listed."
     status: todo
     evidence: []
 
@@ -1489,8 +1499,10 @@ requirements:
     priority: p0
     done_means:
       - "A tokenizer/parser in core reads the Lua table subset DCS uses (nested tables, string/number/boolean/nil keys and values, comments, trailing commas) and fails with a line number on anything else."
-      - "Every .lua file under the sanitised fixture Saved Games/DCS folder parses without error (fixture-sweep test)."
+      - "Every data file under the sanitised fixture Saved Games/DCS/Config folder (binding diffs, options.lua, appSettings.lua) parses without error (fixture-sweep test). Files under Scripts/ (Export.lua, wwt, DCS-BIOS) are programs, not table data: they are never parsed as data and, where they must be read, are evaluated by the sandbox in core/lua/sandbox.ts."
       - "The writer emits DCS's own formatting (tab-indented, ['key'] = value,) so a parse-write of an unmodified file produces identical semantics and minimal diff."
+    notes:
+      - "2026-10-03: was 'every .lua file under Saved Games/DCS'. Only the files under Config are table data; the scripts are Lua programs, which a table parser must refuse."
     status: todo
     evidence: []
 
@@ -2539,7 +2551,9 @@ requirements:
     done_means:
       - "joyCalib.yaml is parsed and lists each device iRacing knows with its InstanceGUID and calibrated axes, matched to connected devices."
       - "Devices in joyCalib with GUIDs not matching any connected device are flagged 'iRacing will ask to recalibrate'."
-      - "controls.cfg (binary) is not edited; if the format can be decoded read-only, bound actions are listed, otherwise the page says bindings are not viewable for iRacing."
+      - "controls.cfg (binary) is decoded read-only and its bound actions are listed per device. It is never edited as bindings; the only change RigReady makes to it is the previewed device-id repair of RACE-IRACING-005 (through FileStore, with a backup)."
+    notes:
+      - "2026-10-03: was 'controls.cfg is not edited ... otherwise the page says bindings are not viewable'. The format was decoded, so bindings are listed, and the id repair has to rewrite the stored instance GUID in this file too."
     status: done
     evidence:
       - "src/features/racing/core/iracing/iracing.test.ts#lists the calibrated device and its axes"
