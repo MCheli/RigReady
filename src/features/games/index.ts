@@ -11,5 +11,8 @@ export default defineFeature({
       section: 'Setup',
     },
   ],
-  routes: [{ path: '/configure/games', component: () => import('./renderer/GamesPage.vue') }],
+  routes: [
+    { path: '/configure/games', component: () => import('./renderer/GamesPage.vue') },
+    { path: '/configure/games/:id', component: () => import('./renderer/GamePage.vue') },
+  ],
 });

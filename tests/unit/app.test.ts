@@ -33,6 +33,7 @@ describe('feature discovery', () => {
       'games',
       'processes',
       'profiles',
+      'racing',
       'safety',
       'settings',
     ]);
@@ -40,6 +41,10 @@ describe('feature discovery', () => {
       'device.connected',
       'display.layout',
       'process.running',
+      'racing.iracingDevices',
+      'racing.iracingService',
+      'racing.wheelBase',
+      'racing.wheelSettings',
     ]);
     expect(app.wiring.context.checks.remediationTypes()).toEqual([
       'display.applyLayout',
@@ -304,7 +309,8 @@ describe('Devices and games', () => {
     // folder, and the Steam library (found through the recorded registry) with DCS in it.
     const savedGames = path.join(app.ports.folders.savedGames(), 'DCS');
     const recorded = path.join(app.home, 'Program Files (x86)', 'Steam', 'steamapps', 'common');
-    expect(await app.invoke<GameSummary[]>('games:list')).toEqual([
+    const listed = await app.invoke<GameSummary[]>('games:list');
+    expect(listed.filter((g) => g.id === 'dcs')).toMatchObject([
       {
         id: 'dcs',
         name: 'DCS World',
@@ -332,7 +338,7 @@ describe('Devices and games', () => {
     await fs.writeFile(path.join(installDir, 'bin', 'DCS.exe'), '');
     app.ports.folders.steamLibraries = async () =>
       ok([path.join(app.home, 'EmptyLibrary'), library]);
-    const [summary] = await app.invoke<GameSummary[]>('games:list');
+    const summary = (await app.invoke<GameSummary[]>('games:list')).find((g) => g.id === 'dcs');
     expect(summary!.installs).toEqual([
       {
         source: 'steam',

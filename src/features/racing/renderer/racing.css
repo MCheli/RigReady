@@ -1,0 +1,131 @@
+/* Racing pages: a few layout helpers on top of the rr-* design system. */
+.rc-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.rc-head .rr-page-sub {
+  margin-bottom: 0;
+}
+.rc-crumb {
+  font-size: 12.5px;
+  color: var(--rr-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+.rc-crumb:hover {
+  color: var(--rr-text);
+}
+.rc-section {
+  margin-bottom: 26px;
+}
+.rc-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.rc-section-head .rr-section-title {
+  margin: 0;
+}
+.rc-hint {
+  font-size: 12.5px;
+  color: var(--rr-muted);
+}
+.rc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0;
+}
+.rc-pair {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--rr-border);
+  font-size: 13px;
+}
+.rc-pair-label {
+  color: var(--rr-muted);
+}
+.rc-pair-value {
+  font-weight: 500;
+  text-align: right;
+}
+.rc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.rc-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+a.rc-card:hover {
+  border-color: var(--rr-accent);
+}
+.rc-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.rc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.rc-table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rr-muted);
+  padding: 10px 16px 6px;
+}
+.rc-table td {
+  padding: 7px 16px;
+  border-top: 1px solid var(--rr-border);
+  vertical-align: top;
+}
+.rc-table td.rc-input {
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 12px;
+}
+.rc-notice {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--rr-radius);
+  border: 1px solid var(--rr-border);
+  background: var(--rr-surface-2);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.rc-notice.warn {
+  border-color: color-mix(in srgb, var(--rr-warn) 45%, var(--rr-border));
+}
+.rc-notice.bad {
+  border-color: color-mix(in srgb, var(--rr-bad) 45%, var(--rr-border));
+}
+.rc-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.rc-filter {
+  max-width: 320px;
+}
