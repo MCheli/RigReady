@@ -13,7 +13,7 @@
 
 | State | Ultrawide | MFD screens | Dell | Notes |
 |---|---|---|---|---|
-| A — at session start, Dell off | primary, 5120x1440 at (0,0) | 768x1024 (portrait) at x = 5120, 5888, 6656 | not attached | Matches SimAppPro's : RIGHT_MFCD x=5128, LEFT_MFCD x=5896, CENTER_MFCD x=6664, each 752x762 at y=256 |
+| A — at session start, Dell off | primary, 5120x1440 at (0,0) | 768x1024 (portrait) at x = 5120, 5888, 6656 | not attached | Matches SimAppPro's `wwtMonitor.lua`: RIGHT_MFCD x=5128, LEFT_MFCD x=5896, CENTER_MFCD x=6664, each 752x762 at y=256 |
 | B — after the owner turned every screen on | 5120x1440 at (2560,0) | 1024x768 (landscape) at x = 7680, 8704, 9728 | primary, 2560x1440 at (0,0) | The owner looked at this state and said the taskbar is on the physical LEFT of each MFD screen, i.e. wrong |
 
 So the panels are physically mounted in portrait, and the known-good flying layout is state A: ultrawide primary at (0,0), three MFD screens in portrait 768x1024 immediately to its right, Dell disabled. Windows keeps separate remembered settings per set of attached monitors, which is why turning the Dell on flipped the MFDs to landscape — this is exactly the owner's number one display problem. Which of the two portrait orientations (90 or 270) is correct has not been read yet; the raw value from state A is the answer (disable the Dell inside a capture-and-restore test and read it, or ask the owner). An earlier version of this note guessed landscape; that was wrong.
