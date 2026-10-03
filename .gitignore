@@ -43,3 +43,6 @@ playwright-report/
 # Run artifacts. Scenario screenshots are tracked: they are requirement evidence.
 artifacts/*
 !artifacts/screens/
+
+# Fixtures are recordings: nothing in them is ignored (a recorded dcs.log is evidence, not noise).
+!fixtures/**

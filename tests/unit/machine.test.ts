@@ -951,3 +951,28 @@ describe('seeding the fake home', () => {
     }
   });
 });
+
+describe('the recorded rig in the repository', () => {
+  it('holds every file the recording wrote (none lost to .gitignore in a fresh checkout)', async () => {
+    const rigDir = path.join(fixturesDir, 'rigs', 'mark-full');
+    const meta = JSON.parse(await fs.readFile(path.join(rigDir, 'meta.json'), 'utf8')) as {
+      counts: { files: number };
+    };
+    const count = async (dir: string): Promise<number> => {
+      let total = 0;
+      for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+        total += entry.isDirectory() ? await count(path.join(dir, entry.name)) : 1;
+      }
+      return total;
+    };
+    expect(await count(path.join(rigDir, 'files'))).toBe(meta.counts.files);
+    for (const relative of JSON.parse(
+      await fs.readFile(path.join(rigDir, 'rehome.json'), 'utf8')
+    ) as string[]) {
+      await expect(
+        fs.access(path.join(rigDir, 'files', relative)),
+        relative
+      ).resolves.toBeUndefined();
+    }
+  });
+});
