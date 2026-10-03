@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
 import { sha256 } from '../../../core/files/fileStore';
+import type { GameModule } from '../../../core/games';
 import { JsonStore } from '../../../core/jsonStore';
 import { collapsePath } from '../../../core/pathVariables';
 import { ok, type Result } from '../../../core/result';
@@ -125,7 +126,9 @@ export class LaunchWatcher {
   private timer: ReturnType<typeof setInterval> | undefined;
   private busy = false;
   /** Lower-case process name -> as Windows reports it, for messages. */
-  private readonly names = new Map<string, string>();
+  private names = new Map<string, string>();
+  /** Programs each game module's installs start, looked up at most once a minute. */
+  private gameExes = new Map<string, { at: number; exes: string[] }>();
 
   constructor(
     private readonly ctx: Ctx,
@@ -150,7 +153,7 @@ export class LaunchWatcher {
       const list = await this.ctx.ports.processes.list();
       if (!list.ok) return [];
       const now = new Set(list.value.map((p) => p.name.toLowerCase()));
-      for (const p of list.value) this.names.set(p.name.toLowerCase(), p.name);
+      this.names = new Map(list.value.map((p) => [p.name.toLowerCase(), p.name]));
       const before = this.running;
       this.running = now;
       // The first look only learns what is already running.
@@ -163,6 +166,18 @@ export class LaunchWatcher {
     }
   }
 
+  private async exesOf(module: GameModule): Promise<string[]> {
+    const now = this.ctx.ports.clock.now().getTime();
+    const cached = this.gameExes.get(module.id);
+    if (cached && now - cached.at < 60_000) return cached.exes;
+    const installs = await module.detect(this.ctx);
+    const exes = installs.ok
+      ? installs.value.flatMap((i) => (i.launch ? [exeName(i.launch.exe)] : []))
+      : [];
+    this.gameExes.set(module.id, { at: now, exes });
+    return exes;
+  }
+
   private async record(started: string[]): Promise<string[]> {
     const profiles = await this.ctx.profiles.list();
     if (!profiles.ok) return [];
@@ -171,11 +186,7 @@ export class LaunchWatcher {
       const exes = new Set<string>();
       if (profile.launch) exes.add(exeName(profile.launch.exe));
       const module = profile.game ? this.ctx.games.get(profile.game) : undefined;
-      if (module) {
-        const installs = await module.detect(this.ctx);
-        if (installs.ok)
-          for (const i of installs.value) if (i.launch) exes.add(exeName(i.launch.exe));
-      }
+      if (module) for (const exe of await this.exesOf(module)) exes.add(exe);
       const hit = started.find((name) => exes.has(name));
       if (hit) matches.set(profile.id, hit);
     }

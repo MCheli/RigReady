@@ -322,6 +322,19 @@ describe('full and scoped backups', () => {
     expect(outcome.backup.fileCount).toBe(17 + 1 + 1);
   });
 
+  it('refuses, before reading anything, a backup larger than it can hold', async () => {
+    const app = await start();
+    await track(app, '@always', INPUT);
+    const listTree = app.ports.files.listTree.bind(app.ports.files);
+    app.ports.files.listTree = async (dir, options) => {
+      const real = await listTree(dir, options);
+      return real.ok ? ok(real.value.map((f) => ({ ...f, size: 200 * 1024 ** 2 }))) : real;
+    };
+    await expect(app.invoke('backup:backUp', { scope: { kind: 'full' } })).rejects.toThrow(
+      /3\.5 GB, more than one backup can hold \(2 GB\)\. The largest is "DCS bindings"/
+    );
+  });
+
   it('refuses to make an empty backup', async () => {
     const app = await start('flying-fresh', []);
     await expect(app.invoke('backup:backUp', { scope: { kind: 'full' } })).rejects.toThrow(

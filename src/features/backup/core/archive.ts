@@ -107,6 +107,9 @@ export interface BackupOutcome {
   pruned: string[];
 }
 
+/** A backup is built in memory: this keeps it well inside what the app can hold. */
+export const MAX_BACKUP_BYTES = 2 * 1024 ** 3;
+
 export type Progress = (p: { done: number; total: number; label: string }) => void;
 
 const BAD_NAME = /[\\/:*?"<>|\u0000-\u001f]/g;
@@ -235,6 +238,22 @@ async function collect(
     });
   }
   const total = resolved.reduce((sum, r) => sum + r.resolved.files.length, 0) + own.value.length;
+  // The archive is built in memory; refuse before reading anything rather than run out of it.
+  const planned = resolved.reduce(
+    (sum, r) => sum + r.resolved.files.reduce((s, f) => s + f.size, 0),
+    0
+  );
+  if (planned > MAX_BACKUP_BYTES) {
+    const biggest = [...resolved].sort(
+      (a, b) =>
+        b.resolved.files.reduce((s, f) => s + f.size, 0) -
+        a.resolved.files.reduce((s, f) => s + f.size, 0)
+    )[0]!;
+    return err(
+      'backup.tooBig',
+      `The tracked files add up to ${(planned / 1024 ** 3).toFixed(1)} GB, more than one backup can hold (${MAX_BACKUP_BYTES / 1024 ** 3} GB). The largest is "${biggest.ref.item.label}": leave its big folders out with patterns.`
+    );
+  }
   let done = 0;
   const entries: ZipEntry[] = [];
   const items: ManifestItem[] = [];
