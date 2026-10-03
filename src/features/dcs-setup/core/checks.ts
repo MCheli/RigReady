@@ -386,6 +386,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
       if (paths.value.install) {
         candidates.push({
           key: 'dcs:install',
+          game: 'dcs',
           group: 'other',
           title: 'DCS World installed',
           description: paths.value.install.installDir,
@@ -405,6 +406,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
       if (active.length > 0) {
         candidates.push({
           key: 'dcs:export',
+          game: 'dcs',
           group: 'files',
           title: 'Export.lua tools',
           description: `Export.lua loads ${names(active)}`,
@@ -430,6 +432,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
           state.screens !== undefined;
         candidates.push({
           key: 'dcs:monitor',
+          game: 'dcs',
           group: 'displays',
           title: 'DCS monitor setup',
           description: o.multiMonitorSetup
@@ -457,6 +460,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
         if (Object.keys(expected).length > 0) {
           candidates.push({
             key: 'dcs:options',
+            game: 'dcs',
             group: 'files',
             title: 'DCS graphics options',
             description: describeOptions(expected),
@@ -475,6 +479,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
       if (status.some((s) => s.status !== 'notManaged')) {
         candidates.push({
           key: 'dcs:managed',
+          game: 'dcs',
           group: 'files',
           title: 'DCS files RigReady manages',
           description: `Warn when ${status.map((s) => s.label).join(', ')} change outside RigReady`,

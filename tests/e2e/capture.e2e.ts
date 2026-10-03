@@ -25,7 +25,7 @@ test('a new rig: capture the current state into a setup, which is then Ready', a
     .fill('C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\bin\\DCS.exe');
 
   // Known sim helpers come first and are kept already; other apps are the user's choice.
-  const trackir = page.locator('[data-testid="capture-candidate"][data-title="TrackIR"]');
+  const trackir = page.locator('[data-testid="capture-candidate"][data-title="TrackIR software"]');
   await expect(trackir.getByRole('checkbox')).toBeChecked();
   await expect(page.getByTestId('capture-group-apps')).toContainText('3 of');
   await page.getByTestId('capture-app-filter').locator('input').fill('discord');

@@ -39,6 +39,9 @@ function chooseGame(id: string): void {
     if (candidate.key.startsWith('file:') || candidate.key.startsWith('game:')) {
       const own = candidate.key.startsWith(`file:${id}:`) || candidate.key === `game:${id}`;
       selected[candidate.key] = own;
+    } else if (candidate.game) {
+      // Checks that belong to one game are kept only in a setup for that game.
+      selected[candidate.key] = candidate.game === id && candidate.selectedByDefault;
     }
   }
 }
@@ -65,14 +68,20 @@ async function capture(): Promise<void> {
   candidates.value = result.value.candidates;
   problems.value = result.value.problems;
   for (const candidate of candidates.value) {
-    selected[candidate.key] ??= candidate.selectedByDefault;
+    selected[candidate.key] ??=
+      candidate.selectedByDefault && (!candidate.game || candidate.game === game.value);
     required[candidate.key] ??= candidate.check.required;
   }
 }
 
 const groups = computed(() =>
   CHECK_GROUPS.map((group) => {
-    const all = candidates.value.filter((c) => c.group === group);
+    // What a rig usually needs comes first; the long tail of running apps after it.
+    const inGroup = candidates.value.filter((c) => c.group === group);
+    const all = [
+      ...inGroup.filter((c) => c.selectedByDefault),
+      ...inGroup.filter((c) => !c.selectedByDefault),
+    ];
     const filter = group === 'apps' ? appFilter.value.trim().toLowerCase() : '';
     return {
       group,

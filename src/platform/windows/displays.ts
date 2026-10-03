@@ -1,8 +1,18 @@
 import type { DisplayApplyOutcome, DisplayProvider } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
-import type { DisplayInfo, DisplayLayout, DisplayTarget, Rotation } from '../../shared/models';
+import { connectorName, monitorInstanceId, parseEdid, usbIdentity } from '../../core/displays/edid';
+import type {
+  DisplayInfo,
+  DisplayLayout,
+  DisplayMode,
+  DisplayTarget,
+  Rotation,
+} from '../../shared/models';
+import { DevTree, KEY_PARENT } from './devices';
+import { readRegistryValue } from './registry';
 import {
   DisplayConfigGetDeviceInfo,
+  EnumDisplaySettingsExW,
   GetDisplayConfigBufferSizes,
   QueryDisplayConfig,
   SetDisplayConfig,
@@ -39,14 +49,19 @@ const P_TGT_MODE = 32;
 const P_TGT_ROTATION = 40;
 const P_TGT_REFRESH_NUM = 48;
 const P_TGT_REFRESH_DEN = 52;
+const P_TGT_SCANLINE = 56;
 const P_TGT_AVAILABLE = 60;
 const P_FLAGS = 68;
 // DISPLAYCONFIG_MODE_INFO offsets
 const M_TYPE = 0;
+const M_ID = 4;
+const M_ADAPTER = 8;
 const M_SRC_WIDTH = 16;
 const M_SRC_HEIGHT = 20;
+const M_SRC_FORMAT = 24;
 const M_SRC_X = 28;
 const M_SRC_Y = 32;
+const PIXELFORMAT_32BPP = 4;
 
 interface RawConfig {
   numPaths: number;
@@ -59,6 +74,8 @@ interface TargetName {
   name: string;
   devicePath: string;
   edid: string;
+  /** DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY. */
+  technology: number;
 }
 
 const ROTATION_FROM_RAW: Record<number, Rotation> = { 1: 0, 2: 90, 3: 180, 4: 270 };
@@ -110,7 +127,69 @@ function targetName(paths: Buffer, offset: number): TargetName {
     name: wstr(packet, 36, 128),
     devicePath: wstr(packet, 164, 256),
     edid,
+    technology: packet.readUInt32LE(24),
   };
+}
+
+type Identity = Pick<DisplayInfo, 'serial' | 'usbSerial' | 'usbId'>;
+
+/**
+ * What tells this monitor from another of the same model: the serial in its EDID (read
+ * from the copy Windows keeps in the registry) and, for a USB screen, the serial of the
+ * USB device above it in the device tree.
+ */
+function monitorIdentity(devicePath: string, tree: DevTree): Identity {
+  const identity: Identity = {};
+  const instanceId = monitorInstanceId(devicePath);
+  if (!instanceId) return identity;
+  const edid = readRegistryValue(
+    'HKLM',
+    'SYSTEM\\CurrentControlSet\\Enum\\' + instanceId + '\\Device Parameters',
+    'EDID'
+  );
+  if (edid?.type === 'binary') {
+    const serial = parseEdid(edid.value).serial;
+    if (serial) identity.serial = serial;
+  }
+  let current = tree.text(instanceId, KEY_PARENT);
+  for (let depth = 0; current && depth < 6; depth++) {
+    const usb = usbIdentity(current);
+    if (usb) {
+      Object.assign(identity, usb);
+      break;
+    }
+    // Past the first whole USB device there are only hubs: not this screen's identity.
+    if (/^USB\\VID_[0-9A-F]{4}&PID_[0-9A-F]{4}\\/i.test(current)) break;
+    current = tree.text(current, KEY_PARENT);
+  }
+  return identity;
+}
+
+const DEVMODE_SIZE = 220;
+const DM_SIZE = 68;
+const DM_WIDTH = 172;
+const DM_HEIGHT = 176;
+const DM_FREQUENCY = 184;
+
+/** Every mode Windows lists for an enabled display, unrotated, largest first. */
+function displayModes(gdiName: string): DisplayMode[] {
+  const seen = new Map<string, DisplayMode>();
+  const devMode = Buffer.alloc(DEVMODE_SIZE);
+  for (let index = 0; index < 4000; index++) {
+    devMode.fill(0);
+    devMode.writeUInt16LE(DEVMODE_SIZE, DM_SIZE);
+    if (EnumDisplaySettingsExW(gdiName, index, devMode, 0) === 0) break;
+    const mode: DisplayMode = {
+      width: devMode.readUInt32LE(DM_WIDTH),
+      height: devMode.readUInt32LE(DM_HEIGHT),
+      refreshHz: devMode.readUInt32LE(DM_FREQUENCY),
+    };
+    if (mode.width === 0 || mode.height === 0) continue;
+    seen.set(`${mode.width}x${mode.height}@${mode.refreshHz}`, mode);
+  }
+  return [...seen.values()].sort(
+    (a, b) => b.width * b.height - a.width * a.height || b.refreshHz - a.refreshHz
+  );
 }
 
 function sourceName(paths: Buffer, offset: number): string {
@@ -137,6 +216,7 @@ function readLayout(): DisplayLayout {
   const active = query(QDC_ONLY_ACTIVE_PATHS);
   const displays: DisplayInfo[] = [];
   const seen = new Set<string>();
+  const tree = new DevTree();
 
   for (let p = 0; p < active.numPaths; p++) {
     const o = p * PATH_SIZE;
@@ -175,8 +255,15 @@ function readLayout(): DisplayLayout {
       rawRotation,
     };
     if (name.edid) info.edid = name.edid;
+    Object.assign(info, monitorIdentity(name.devicePath, tree));
+    // A USB graphics adapter reports whatever its chip drives (often LVDS); to the user it is USB.
+    info.connector = info.usbId ? 'USB' : connectorName(name.technology);
     const gdi = sourceName(active.paths, o);
-    if (gdi) info.gdiName = gdi;
+    if (gdi) {
+      info.gdiName = gdi;
+      const modes = displayModes(gdi);
+      if (modes.length > 0) info.modes = modes;
+    }
     if (den > 0) info.refreshHz = Math.round((num / den) * 100) / 100;
     displays.push(info);
   }
@@ -211,6 +298,8 @@ function readLayout(): DisplayLayout {
       rotation: 0,
     };
     if (name.edid) info.edid = name.edid;
+    Object.assign(info, monitorIdentity(name.devicePath, tree));
+    info.connector = info.usbId ? 'USB' : connectorName(name.technology);
     displays.push(info);
   }
 
@@ -274,9 +363,81 @@ function enableTargets(ids: Set<string>): void {
   if (status !== 0) throw new Error(`SetDisplayConfig (enable) failed with ${status}`);
 }
 
-/** Rotation, position, primary and disable for monitors that are currently active. */
-function arrangeActive(targets: Map<string, DisplayTarget>): void {
-  const config = query(QDC_ONLY_ACTIVE_PATHS);
+/**
+ * The active paths plus one path for every monitor in `ids` that is connected but off,
+ * each with a new source mode of the size its target asks for. With it, turning monitors
+ * on, moving, rotating and turning others off is one SetDisplayConfig call instead of
+ * two. Undefined when a monitor to turn on has no size in its target or no free path:
+ * the caller then lets Windows turn it on first (enableTargets).
+ */
+function configWithEnabled(
+  targets: Map<string, DisplayTarget>,
+  ids: Set<string>
+): RawConfig | undefined {
+  const all = query(QDC_ALL_PATHS);
+  const usedSources = new Set<string>();
+  const activeTargets = new Set<string>();
+  const keep: number[] = [];
+  for (let p = 0; p < all.numPaths; p++) {
+    const o = p * PATH_SIZE;
+    if ((all.paths.readUInt32LE(o + P_FLAGS) & PATH_ACTIVE) !== 0) {
+      keep.push(p);
+      usedSources.add(sourceKey(all.paths, o));
+      activeTargets.add(targetKey(all.paths, o));
+    }
+  }
+  const added: Buffer[] = [];
+  const remaining = new Set(ids);
+  for (let p = 0; p < all.numPaths && remaining.size > 0; p++) {
+    const o = p * PATH_SIZE;
+    if ((all.paths.readUInt32LE(o + P_FLAGS) & PATH_ACTIVE) !== 0) continue;
+    if (all.paths.readUInt32LE(o + P_TGT_AVAILABLE) === 0) continue;
+    if (activeTargets.has(targetKey(all.paths, o))) continue;
+    if (usedSources.has(sourceKey(all.paths, o))) continue;
+    let id: string;
+    try {
+      id = targetName(all.paths, o).devicePath.toLowerCase();
+    } catch {
+      continue;
+    }
+    if (!remaining.has(id)) continue;
+    const target = targets.get(id)!;
+    if (target.width === undefined || target.height === undefined) return undefined;
+    remaining.delete(id);
+    usedSources.add(sourceKey(all.paths, o));
+    activeTargets.add(targetKey(all.paths, o));
+    // A source mode for the new path; arrange() fills in rotation and position.
+    const sideways = target.rotation === 90 || target.rotation === 270;
+    const mode = Buffer.alloc(MODE_SIZE);
+    mode.writeUInt32LE(MODE_SOURCE, M_TYPE);
+    mode.writeUInt32LE(all.paths.readUInt32LE(o + P_SRC_ID), M_ID);
+    all.paths.copy(mode, M_ADAPTER, o + P_SRC_ADAPTER, o + P_SRC_ADAPTER + 8);
+    mode.writeUInt32LE(sideways ? target.height : target.width, M_SRC_WIDTH);
+    mode.writeUInt32LE(sideways ? target.width : target.height, M_SRC_HEIGHT);
+    mode.writeUInt32LE(PIXELFORMAT_32BPP, M_SRC_FORMAT);
+    all.paths.writeUInt32LE(all.numModes + added.length, o + P_SRC_MODE);
+    all.paths.writeUInt32LE(IDX_INVALID, o + P_TGT_MODE);
+    all.paths.writeUInt32LE(all.paths.readUInt32LE(o + P_FLAGS) | PATH_ACTIVE, o + P_FLAGS);
+    added.push(mode);
+    keep.push(p);
+  }
+  if (remaining.size > 0) return undefined;
+  return {
+    numPaths: keep.length,
+    paths: Buffer.concat(keep.map((p) => all.paths.subarray(p * PATH_SIZE, (p + 1) * PATH_SIZE))),
+    numModes: all.numModes + added.length,
+    modes: Buffer.concat([all.modes, ...added]),
+  };
+}
+
+/**
+ * Rotation, position, size, refresh rate, primary and disable for the monitors of a
+ * configuration (the active ones, or configWithEnabled's), applied in one call.
+ */
+function arrange(
+  targets: Map<string, DisplayTarget>,
+  config: RawConfig = query(QDC_ONLY_ACTIVE_PATHS)
+): void {
   interface Entry {
     pathOffset: number;
     modeOffset: number;
@@ -315,6 +476,17 @@ function arrangeActive(targets: Map<string, DisplayTarget>): void {
         config.paths.writeUInt32LE(IDX_INVALID, o + P_TGT_MODE);
         width = wantWidth;
         height = wantHeight;
+      }
+    }
+    if (target.refreshHz !== undefined) {
+      const num = config.paths.readUInt32LE(o + P_TGT_REFRESH_NUM);
+      const den = config.paths.readUInt32LE(o + P_TGT_REFRESH_DEN);
+      if (den === 0 || Math.abs(num / den - target.refreshHz) >= 0.5) {
+        // Another refresh rate: say which, and let Windows pick the matching target mode.
+        config.paths.writeUInt32LE(Math.round(target.refreshHz * 1000), o + P_TGT_REFRESH_NUM);
+        config.paths.writeUInt32LE(1000, o + P_TGT_REFRESH_DEN);
+        config.paths.writeUInt32LE(0, o + P_TGT_SCANLINE);
+        config.paths.writeUInt32LE(IDX_INVALID, o + P_TGT_MODE);
       }
     }
     config.paths.writeUInt32LE(ROTATION_TO_RAW[target.rotation], o + P_TGT_ROTATION);
@@ -370,6 +542,8 @@ function arrangeActive(targets: Map<string, DisplayTarget>): void {
 
 export class WindowsDisplayProvider implements DisplayProvider {
   private undo: RawConfig[] = [];
+  /** How many SetDisplayConfig applies the last apply() took (1 = atomic). For the rig smoke test. */
+  lastApplyCalls = 0;
 
   async read(): Promise<Result<DisplayLayout>> {
     try {
@@ -407,8 +581,23 @@ export class WindowsDisplayProvider implements DisplayProvider {
       const toEnable = new Set(
         [...wanted.values()].filter((t) => t.enabled && !known.get(t.id)!.enabled).map((t) => t.id)
       );
-      if (toEnable.size > 0) enableTargets(toEnable);
-      arrangeActive(wanted);
+      // Turning monitors on is part of the same call when their size is known. Otherwise,
+      // or when Windows refuses that, Windows turns them on first and they are arranged after.
+      const combined = toEnable.size > 0 ? configWithEnabled(wanted, toEnable) : undefined;
+      let atomic = false;
+      if (combined) {
+        try {
+          arrange(wanted, combined);
+          atomic = true;
+        } catch {
+          atomic = false;
+        }
+      }
+      if (!atomic) {
+        if (toEnable.size > 0) enableTargets(toEnable);
+        arrange(wanted);
+      }
+      this.lastApplyCalls = atomic || toEnable.size === 0 ? 1 : 2;
       this.undo.push(captured);
       return ok({ previous, current: readLayout() });
     } catch (e) {

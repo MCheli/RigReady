@@ -463,9 +463,10 @@ test('bindings: Windows changed the device IDs; move the bindings back, and undo
   const check = checkRow(page, 'DCS bindings match devices (F/A-18C)');
   await expect(check).toHaveAttribute('data-status', 'warn');
   await expect(check).toContainText('Bindings for 10 devices belong to old device IDs');
-  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready with warnings');
   await shot('fly-warning');
-  await page.getByTestId('make-ready').click();
+  // The item's own button opens the screen where the move is previewed.
+  await check.getByTestId('check-fix').click();
   await expect(page.getByTestId('bind-device-ids')).toBeVisible();
 
   await expect(page.getByTestId('ids-orphan')).toHaveCount(10);

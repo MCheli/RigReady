@@ -13,7 +13,116 @@
       "rawRotation": 1,
       "edid": "DELD139",
       "gdiName": "\\\\.\\DISPLAY2",
-      "refreshHz": 59.95
+      "refreshHz": 59.95,
+      "serial": "12NFXG3",
+      "connector": "DisplayPort",
+      "modes": [
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 165
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 144
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 120
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 100
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 75
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 60
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 59
+        },
+        {
+          "width": 1920,
+          "height": 1440,
+          "refreshHz": 165
+        },
+        {
+          "width": 2560,
+          "height": 1080,
+          "refreshHz": 165
+        },
+        {
+          "width": 1920,
+          "height": 1440,
+          "refreshHz": 144
+        },
+        {
+          "width": 2560,
+          "height": 1080,
+          "refreshHz": 144
+        },
+        {
+          "width": 1920,
+          "height": 1440,
+          "refreshHz": 120
+        },
+        {
+          "width": 2560,
+          "height": 1080,
+          "refreshHz": 120
+        },
+        {
+          "width": 1920,
+          "height": 1440,
+          "refreshHz": 100
+        },
+        {
+          "width": 2560,
+          "height": 1080,
+          "refreshHz": 100
+        },
+        {
+          "width": 1920,
+          "height": 1440,
+          "refreshHz": 75
+        },
+        {
+          "width": 2560,
+          "height": 1080,
+          "refreshHz": 75
+        },
+        {
+          "width": 1920,
+          "height": 1440,
+          "refreshHz": 60
+        },
+        {
+          "width": 2560,
+          "height": 1080,
+          "refreshHz": 60
+        },
+        {
+          "width": 1920,
+          "height": 1440,
+          "refreshHz": 59
+        },
+        {
+          "width": 2560,
+          "height": 1080,
+          "refreshHz": 59
+        }
+      ]
     },
     {
       "id": "\\\\?\\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
@@ -28,7 +137,51 @@
       "rawRotation": 1,
       "edid": "SAM7053",
       "gdiName": "\\\\.\\DISPLAY1",
-      "refreshHz": 120
+      "refreshHz": 120,
+      "serial": "H4ZR900542",
+      "connector": "DisplayPort",
+      "modes": [
+        {
+          "width": 5120,
+          "height": 1440,
+          "refreshHz": 120
+        },
+        {
+          "width": 5120,
+          "height": 1440,
+          "refreshHz": 60
+        },
+        {
+          "width": 3840,
+          "height": 1080,
+          "refreshHz": 120
+        },
+        {
+          "width": 3840,
+          "height": 1080,
+          "refreshHz": 60
+        },
+        {
+          "width": 3840,
+          "height": 1080,
+          "refreshHz": 59
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 120
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 60
+        },
+        {
+          "width": 2560,
+          "height": 1440,
+          "refreshHz": 59
+        }
+      ]
     },
     {
       "id": "\\\\?\\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
@@ -43,7 +196,18 @@
       "rawRotation": 1,
       "edid": "REG0319",
       "gdiName": "\\\\.\\DISPLAY7",
-      "refreshHz": 60
+      "refreshHz": 60,
+      "serial": "1",
+      "usbSerial": "WWIN29320221210163532",
+      "usbId": "17E9:FF00",
+      "connector": "USB",
+      "modes": [
+        {
+          "width": 1024,
+          "height": 768,
+          "refreshHz": 60
+        }
+      ]
     },
     {
       "id": "\\\\?\\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
@@ -58,7 +222,18 @@
       "rawRotation": 1,
       "edid": "REG0319",
       "gdiName": "\\\\.\\DISPLAY6",
-      "refreshHz": 60
+      "refreshHz": 60,
+      "serial": "1",
+      "usbSerial": "WWIN29320221210092611",
+      "usbId": "17E9:FF00",
+      "connector": "USB",
+      "modes": [
+        {
+          "width": 1024,
+          "height": 768,
+          "refreshHz": 60
+        }
+      ]
     },
     {
       "id": "\\\\?\\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
@@ -73,7 +248,18 @@
       "rawRotation": 1,
       "edid": "REG0319",
       "gdiName": "\\\\.\\DISPLAY5",
-      "refreshHz": 60
+      "refreshHz": 60,
+      "serial": "1",
+      "usbSerial": "WWIN29320221210093818",
+      "usbId": "17E9:FF00",
+      "connector": "USB",
+      "modes": [
+        {
+          "width": 1024,
+          "height": 768,
+          "refreshHz": 60
+        }
+      ]
     }
   ]
 }

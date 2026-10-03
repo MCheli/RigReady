@@ -4,6 +4,7 @@ import { DisplayLayoutStore } from '../core/displays/layouts';
 import type { FeatureMain, IpcBinding, MainContext } from '../core/feature';
 import { GameRegistry } from '../core/games';
 import type { Logger } from '../core/logger';
+import { NameRegistry } from '../core/names';
 import type { Ports } from '../core/ports';
 import { ProfileStore } from '../core/profile/store';
 import { SettingsStore } from '../core/settings';
@@ -50,6 +51,7 @@ export function wireFeatures(options: {
     profiles: new ProfileStore(ports.files, ports.folders.dataRoot()),
     settings: new SettingsStore(ports.files, ports.folders.dataRoot(), ports.clock),
     layouts: new DisplayLayoutStore(ports.files, ports.folders.dataRoot(), ports.clock),
+    names: new NameRegistry(),
     backupSources: new BackupSourceRegistry(),
     emit(contract, event, payload) {
       const schema = contract.events[event];

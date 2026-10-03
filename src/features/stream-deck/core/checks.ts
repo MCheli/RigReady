@@ -94,8 +94,9 @@ export const streamDeckCapture: CaptureDefinition = {
         group: 'apps',
         title: 'Stream Deck app',
         description: 'Finds the Stream Deck app wherever it is installed, and can start it.',
-        // The generic "running apps" list offers StreamDeck.exe too; picking one is enough.
+        // Replaces the generic "StreamDeck.exe is running" candidate, and is kept when that was.
         selectedByDefault: false,
+        covers: ['StreamDeck.exe'],
         check: {
           type: SD_RUNNING,
           title: 'Stream Deck app',

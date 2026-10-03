@@ -152,6 +152,25 @@ export interface CaptureCandidate {
   description?: string;
   selectedByDefault: boolean;
   check: Omit<CheckItem, 'id'>;
+  /**
+   * Game module id, for a check that only makes sense in a setup for that game (DCS's
+   * Export.lua in a racing setup would be noise). The capture screen keeps such a
+   * candidate by default only when the setup is for that game.
+   */
+  game?: string;
+  /**
+   * The image name of the program this candidate is about ("StreamDeck.exe"), when it is
+   * about one program. Two candidates for the same program are one too many: the more
+   * specific one stays (see `generic`), kept by default when either was.
+   */
+  program?: string;
+  /** Set by the list of running apps: any other candidate for the same program replaces it. */
+  generic?: boolean;
+  /**
+   * Programs this candidate checks in a better way than a plain "is running" check (it
+   * finds the program wherever it is installed). Generic candidates for them are left out.
+   */
+  covers?: string[];
 }
 
 export interface CaptureDefinition {

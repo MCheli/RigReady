@@ -56,8 +56,47 @@ describe('real hardware (read-only)', () => {
     expect(again).toEqual(result);
     for (const d of displays) {
       console.log(
-        `  ${d.name || '(unnamed)'} ${d.enabled ? `${d.width}x${d.height} @${d.x},${d.y} rot ${d.rotation}` : 'off'}${d.primary ? ' primary' : ''}`
+        `  ${d.name || '(unnamed)'} ${d.enabled ? `${d.width}x${d.height} @${d.x},${d.y} rot ${d.rotation} (raw ${d.rawRotation}) ${d.refreshHz ?? '?'} Hz` : 'off'}${d.primary ? ' primary' : ''}` +
+          ` | ${d.connector ?? '?'} | serial ${d.serial ?? '-'} | usb ${d.usbId ?? '-'} ${d.usbSerial ?? '-'} | ${d.modes?.length ?? 0} modes`
       );
+    }
+  });
+
+  it('gives every monitor a connector, and identical monitors something that outlives a port change', async () => {
+    const result = await ports.displays.read();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { displays } = result.value;
+    for (const d of displays) expect(d.connector, d.name).toBeTruthy();
+    // An enabled monitor lists its modes, and its current mode is one of them.
+    for (const d of displays.filter((m) => m.enabled)) {
+      expect(d.modes?.length ?? 0, `${d.name} modes`).toBeGreaterThan(0);
+      const sideways = d.rotation === 90 || d.rotation === 270;
+      const width = sideways ? d.height : d.width;
+      const height = sideways ? d.width : d.height;
+      expect(
+        d.modes!.some((m) => m.width === width && m.height === height),
+        `${d.name} ${width}x${height} is a listed mode`
+      ).toBe(true);
+    }
+    // Monitors of the same model must differ in EDID serial or in USB device serial;
+    // otherwise only the connector tells them apart (allowed, but said here).
+    const byModel = new Map<string, typeof displays>();
+    for (const d of displays) {
+      const model = d.edid ?? d.name;
+      byModel.set(model, [...(byModel.get(model) ?? []), d]);
+    }
+    for (const [model, same] of byModel) {
+      if (same.length < 2) continue;
+      const keys = same.map((d) => d.usbSerial ?? d.serial ?? '');
+      const distinct = new Set(keys.filter(Boolean)).size === same.length;
+      console.log(
+        `  ${same.length} x ${model}: ${distinct ? 'told apart by serial' : 'told apart only by connector'} (${keys.join(', ')})`
+      );
+      // A USB screen always has a USB device above it.
+      for (const d of same.filter((m) => m.connector === 'USB')) {
+        expect(d.usbId, `${d.name} usb id`).toMatch(/^[0-9A-F]{4}:[0-9A-F]{4}$/);
+      }
     }
   });
 

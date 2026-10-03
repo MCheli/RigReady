@@ -583,7 +583,54 @@ export const CaptureCandidateSchema = z.object({
       .object({ type: z.string(), params: z.record(z.string(), z.unknown()) })
       .optional(),
   }),
+  game: z.string().optional(),
+  program: z.string().optional(),
+  generic: z.boolean().optional(),
+  covers: z.array(z.string()).optional(),
 });
+
+const processName = (candidate: CaptureCandidate): string | undefined =>
+  candidate.program?.toLowerCase();
+/** The list of running apps; every other capture knows more about its program. */
+const isGeneric = (candidate: CaptureCandidate): boolean => candidate.generic === true;
+
+/**
+ * Several captures can propose the same program: the generic list of running apps, a
+ * feature that knows the program by name ("Fanatec Service" for FanatecService.exe), and
+ * a feature with a check of its own for it (Stream Deck, TrackIR). One is enough: the
+ * most specific stays, and it is kept by default when any of them was.
+ */
+export function dedupeCandidates(candidates: CaptureCandidate[]): CaptureCandidate[] {
+  const dropped = new Set<CaptureCandidate>();
+  const keepSelected = (kept: CaptureCandidate, gone: CaptureCandidate): void => {
+    dropped.add(gone);
+    if (gone.selectedByDefault) kept.selectedByDefault = true;
+  };
+  for (const candidate of candidates) {
+    for (const covered of candidate.covers ?? []) {
+      for (const other of candidates) {
+        if (other === candidate || dropped.has(other) || !isGeneric(other)) continue;
+        if (processName(other) === covered.toLowerCase()) keepSelected(candidate, other);
+      }
+    }
+  }
+  const byProgram = new Map<string, CaptureCandidate>();
+  for (const candidate of candidates) {
+    if (dropped.has(candidate)) continue;
+    const name = processName(candidate);
+    if (!name) continue;
+    const first = byProgram.get(name);
+    if (!first) {
+      byProgram.set(name, candidate);
+    } else if (isGeneric(first) && !isGeneric(candidate)) {
+      keepSelected(candidate, first);
+      byProgram.set(name, candidate);
+    } else {
+      keepSelected(first, candidate);
+    }
+  }
+  return candidates.filter((c) => !dropped.has(c));
+}
 
 /** Asks every registered capture what it would check, given the machine as it is now. */
 export async function captureCandidates(
@@ -602,5 +649,5 @@ export async function captureCandidates(
       problems.push(`${capture.label}: ${errorText(e)}`);
     }
   }
-  return { candidates, problems };
+  return { candidates: dedupeCandidates(candidates), problems };
 }

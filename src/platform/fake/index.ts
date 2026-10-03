@@ -241,6 +241,32 @@ export class FakeDisplayProvider implements DisplayProvider {
           `No known mode for ${display.name}`
         );
       }
+      // As Windows: a mode the monitor does not list is refused, and nothing changes.
+      const refreshHz = target.refreshHz ?? display.refreshHz;
+      const modeChanges =
+        (display.enabled &&
+          (nativeW !== (sideways ? display.height : display.width) ||
+            nativeH !== (sideways ? display.width : display.height))) ||
+        (target.refreshHz !== undefined &&
+          Math.abs((display.refreshHz ?? 0) - target.refreshHz) >= 0.5);
+      if (
+        modeChanges &&
+        display.modes &&
+        display.modes.length > 0 &&
+        !display.modes.some(
+          (m) =>
+            m.width === nativeW &&
+            m.height === nativeH &&
+            (target.refreshHz === undefined || Math.abs(m.refreshHz - target.refreshHz) < 0.5)
+        )
+      ) {
+        return err(
+          'display.mode',
+          'Could not apply the monitor layout.',
+          `${display.name} does not offer ${nativeW}x${nativeH}${target.refreshHz !== undefined ? ` at ${target.refreshHz} Hz` : ''}`
+        );
+      }
+      if (refreshHz !== undefined) display.refreshHz = refreshHz;
       Object.assign(display, {
         enabled: true,
         x: target.x,

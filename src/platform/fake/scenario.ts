@@ -211,6 +211,11 @@ const StateMutationSchemas = [
       width: z.number().int().optional(),
       height: z.number().int().optional(),
       rotation: RotationSchema.optional(),
+      refreshHz: z.number().optional(),
+      /** A new id: the monitor was moved to another connector or USB port. */
+      id: z.string().optional(),
+      serial: z.string().optional(),
+      usbSerial: z.string().optional(),
     }),
   }),
   z.object({ op: z.literal('unplugDisplay'), match: DisplayMatchSchema }),
@@ -520,6 +525,7 @@ export function mutateState(state: RigState, mutation: StateMutation): void {
       }
       for (const display of found) {
         Object.assign(display, mutation.set);
+        if (mutation.set.id !== undefined) display.id = mutation.set.id.toLowerCase();
         if (!display.enabled)
           Object.assign(display, {
             primary: false,

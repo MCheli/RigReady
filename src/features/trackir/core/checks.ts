@@ -119,8 +119,9 @@ export const trackIrCapture: CaptureDefinition = {
         group: 'apps',
         title: 'TrackIR software',
         description: 'Finds TrackIR wherever it is installed, and can start it.',
-        // The generic "running apps" list offers TrackIR5.exe too; picking one is enough.
+        // Replaces the generic "TrackIR5.exe is running" candidate, and is kept when that was.
         selectedByDefault: false,
+        covers: ['TrackIR5.exe'],
         check: {
           type: TIR_RUNNING,
           title: 'TrackIR software',

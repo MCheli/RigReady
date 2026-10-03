@@ -109,6 +109,7 @@ export function createBindingsCapture(bindings: () => DcsBindings): CaptureDefin
             const title = `DCS bindings match devices (${a.name})`;
             return {
               key: `dcs-bindings:${a.id}`,
+              game: 'dcs',
               group: 'files' as const,
               title,
               description: `${a.userFiles} binding ${a.userFiles === 1 ? 'file' : 'files'}; warns when Windows has changed a device ID and DCS no longer finds them`,

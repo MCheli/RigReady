@@ -278,6 +278,8 @@ export function createProcessCapture(games: GameRegistry): CaptureDefinition {
           description: process.path,
           selectedByDefault: known !== undefined,
           known: known !== undefined,
+          program: process.name,
+          generic: true,
           check: {
             type: PROCESS_RUNNING,
             title,

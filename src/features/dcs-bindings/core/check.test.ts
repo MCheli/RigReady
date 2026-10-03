@@ -161,6 +161,7 @@ describe('the Fly check for bindings', () => {
     expect(mine).toEqual([
       {
         key: `dcs-bindings:${HORNET}`,
+        game: 'dcs',
         group: 'files',
         title: 'DCS bindings match devices (F/A-18C)',
         description:

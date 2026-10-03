@@ -119,6 +119,7 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
           description: `For ${app.purpose}${app.running ? ' · running now' : ' · not running now'}`,
           // Kept by default when it is running now: the rig is working, so it is part of the setup.
           selectedByDefault: racingRig && app.running,
+          program: app.process,
           check: {
             type: 'process.running',
             title: app.name,
@@ -134,6 +135,7 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
         if (service.ok && service.value) {
           candidates.push({
             key: 'racing:iracing-service',
+            game: 'iracing',
             group: 'apps',
             title: 'iRacing helper service',
             description: 'For an iRacing setup: iRacing needs it to start a session',
@@ -150,6 +152,7 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
         if (view.devices.length > 0) {
           candidates.push({
             key: 'racing:iracing-devices',
+            game: 'iracing',
             group: 'files',
             title: 'iRacing knows the wheel',
             description: 'For an iRacing setup: warns before iRacing asks you to calibrate again',
@@ -170,6 +173,7 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
         if (!(await installOf(ctx, game))) continue;
         candidates.push({
           key: `racing:wheel-settings:${game}`,
+          game,
           group: 'other',
           title: `${name} wheel settings as recommended`,
           description:

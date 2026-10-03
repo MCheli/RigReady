@@ -6,7 +6,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fixItem, runChecks } from '../../src/core/checks/engine';
+import { dedupeCandidates, fixItem, runChecks } from '../../src/core/checks/engine';
+import type { CaptureCandidate } from '../../src/core/checks/registry';
+import { NameRegistry } from '../../src/core/names';
 import type { CheckItem, Profile } from '../../src/core/profile/schema';
 import { Fly } from '../../src/features/fly/core/fly';
 import { applyMutations } from '../../src/platform/fake/scenario';
@@ -360,5 +362,91 @@ describe('Launch says what really happened', () => {
     expect(closed.ok && app.ports.processes.closed.map((c) => c.name)).toEqual(['DCS.exe']);
     const list = await app.ports.processes.list();
     expect(list.ok && list.value.filter((p) => p.name === 'steam.exe').length).toBeGreaterThan(0);
+  });
+});
+
+describe('capture: one candidate per program, and game checks only for that game', () => {
+  const candidate = (key: string, extra: Partial<CaptureCandidate> = {}): CaptureCandidate => ({
+    key,
+    group: 'apps',
+    title: key,
+    selectedByDefault: false,
+    check: { type: 'x.y', title: key, required: true, params: {} },
+    ...extra,
+  });
+
+  it('keeps the specific candidate for a program, selected when either one was', () => {
+    const kept = dedupeCandidates([
+      candidate('process:fanatecservice.exe', { program: 'FanatecService.exe', generic: true }),
+      candidate('process:streamdeck.exe', {
+        program: 'StreamDeck.exe',
+        generic: true,
+        selectedByDefault: true,
+      }),
+      candidate('process:other.exe', { program: 'Other.exe', generic: true }),
+      candidate('racing:app:fanatec', { program: 'fanatecservice.exe', selectedByDefault: true }),
+      candidate('stream-deck:running', { covers: ['streamdeck.exe'] }),
+      candidate('racing:app:again', { program: 'FanatecService.exe' }),
+      candidate('devices:stick'),
+    ]);
+    expect(kept.map((c) => [c.key, c.selectedByDefault])).toEqual([
+      ['process:other.exe', false],
+      ['racing:app:fanatec', true],
+      // Took over the tick of the generic candidate it replaces.
+      ['stream-deck:running', true],
+      ['devices:stick', false],
+    ]);
+  });
+
+  it('on the recorded rig: no program is offered twice, and DCS checks are marked as DCS', async () => {
+    app = await wiredApp('racing-fresh');
+    const { candidates } = await app.invoke<{ candidates: CaptureCandidate[] }>('profiles:capture');
+    const programs = candidates.filter((c) => c.program).map((c) => c.program!.toLowerCase());
+    expect(programs.length).toBe(new Set(programs).size);
+    const titles = candidates.map((c) => c.title);
+    expect(titles).toContain('Fanatec Service');
+    expect(titles).not.toContain('FanatecService');
+    expect(titles).toContain('Stream Deck app');
+    expect(titles).not.toContain('Stream Deck');
+    // The Stream Deck app was running and is a known helper: still kept by default.
+    expect(candidates.find((c) => c.title === 'Stream Deck app')?.selectedByDefault).toBe(true);
+    const dcs = candidates.filter((c) => c.key.startsWith('dcs'));
+    expect(dcs.length).toBeGreaterThan(2);
+    expect(dcs.every((c) => c.game === 'dcs')).toBe(true);
+  });
+});
+
+describe('names the owner gave things, through core', () => {
+  it('has no names without a source, survives a failing one, and refuses a second source', async () => {
+    const names = new NameRegistry();
+    expect(await names.monitors()).toEqual({});
+    expect((await names.devices()).nameOf({ vendorId: '4098', productId: 'BEA8' })).toBeUndefined();
+    names.provideMonitors(async () => ({ 'id-1': 'MFD left' }));
+    names.provideDevices(async () => ({
+      nameOf: (d) => (d.productId === 'BEA8' ? 'Stick' : undefined),
+    }));
+    expect(await names.monitors()).toEqual({ 'id-1': 'MFD left' });
+    expect((await names.devices()).nameOf({ vendorId: '4098', productId: 'BEA8' })).toBe('Stick');
+    expect(() => names.provideMonitors(async () => ({}))).toThrow(/already provided/);
+    expect(() => names.provideDevices(async () => ({ nameOf: () => undefined }))).toThrow(
+      /already provided/
+    );
+    const failing = new NameRegistry();
+    failing.provideMonitors(async () => {
+      throw new Error('disk');
+    });
+    failing.provideDevices(async () => {
+      throw new Error('disk');
+    });
+    expect(await failing.monitors()).toEqual({});
+    expect((await failing.devices()).nameOf({ vendorId: '1', productId: '2' })).toBeUndefined();
+  });
+
+  it('the name given on the Monitors page is what every feature gets', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const read = await app.ports.displays.read();
+    const mfd = read.ok ? read.value.displays.find((d) => d.name === 'USB_Monitor')! : undefined;
+    await app.invoke('displays:setName', { id: mfd!.id, name: 'MFD left' });
+    expect(await app.wiring.context.names.monitors()).toEqual({ [mfd!.id]: 'MFD left' });
   });
 });

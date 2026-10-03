@@ -5,6 +5,7 @@ import type { CheckRegistry } from './checks/registry';
 import type { DisplayLayoutStore } from './displays/layouts';
 import type { GameRegistry } from './games';
 import type { Logger } from './logger';
+import type { NameRegistry } from './names';
 import type { Ports } from './ports';
 import type { ProfileStore } from './profile/store';
 import type { SettingsStore } from './settings';
@@ -20,6 +21,8 @@ export interface MainContext {
   settings: SettingsStore;
   /** Named monitor layouts. */
   layouts: DisplayLayoutStore;
+  /** The names the owner gave monitors and devices, for every feature to show. */
+  names: NameRegistry;
   /** What features suggest backing up (tools that are not game modules register here). */
   backupSources: BackupSourceRegistry;
   /** Sends an event declared in a contract to the renderer. */

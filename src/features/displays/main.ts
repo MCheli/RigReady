@@ -30,6 +30,8 @@ export default defineFeatureMain({
     });
     const applier = new LayoutApplier(ctx.ports.displays, guard, recovery);
     const deps: LayoutDeps = { names: () => names.readOrEmpty(), layouts: ctx.layouts };
+    // Other features (DCS screen setup) call monitors by the names given here.
+    ctx.names.provideMonitors(() => names.readOrEmpty());
     const service = new DisplaysService(ctx, names, recovery, applier);
 
     // The countdown length comes from the settings and follows changes to them.

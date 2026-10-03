@@ -145,6 +145,39 @@ export function analyzeLayout(
     }
   }
 
+  // A size or refresh rate the monitor does not offer: said before anything is applied.
+  for (const p of placed) {
+    const want = p.match.expected;
+    const have = p.match.actual!;
+    if (!have.modes || have.modes.length === 0) continue;
+    const sizeGiven = want.width !== undefined && want.height !== undefined;
+    const turned = sideways(want.rotation);
+    const nativeWidth = sizeGiven ? (turned ? want.height! : want.width!) : undefined;
+    const nativeHeight = sizeGiven ? (turned ? want.width! : want.height!) : undefined;
+    const haveTurned = sideways(have.rotation);
+    const currentWidth = haveTurned ? have.height : have.width;
+    const currentHeight = haveTurned ? have.width : have.height;
+    const sizeChanges =
+      sizeGiven && have.enabled && (nativeWidth !== currentWidth || nativeHeight !== currentHeight);
+    const rateChanges =
+      want.refreshHz !== undefined &&
+      (have.refreshHz === undefined || Math.abs(have.refreshHz - want.refreshHz) >= 0.5);
+    if (!sizeChanges && !rateChanges) continue;
+    const width = nativeWidth ?? currentWidth;
+    const height = nativeHeight ?? currentHeight;
+    if (width === 0 || height === 0) continue;
+    const offered = have.modes.some(
+      (m) =>
+        m.width === width &&
+        m.height === height &&
+        (want.refreshHz === undefined || Math.abs(m.refreshHz - want.refreshHz) < 0.5)
+    );
+    if (!offered) {
+      const rate = want.refreshHz !== undefined ? ` at ${want.refreshHz} Hz` : '';
+      problems.push(`${labelOf(want)} does not offer ${width}x${height}${rate}.`);
+    }
+  }
+
   // Monitors must not cover each other.
   const boxes: Box[] = placed
     .filter((p) => p.width !== undefined && p.height !== undefined)
@@ -184,6 +217,7 @@ export function analyzeLayout(
         target.width = want.width;
         target.height = want.height;
       }
+      if (want.refreshHz !== undefined) target.refreshHz = want.refreshHz;
       return target;
     });
 
