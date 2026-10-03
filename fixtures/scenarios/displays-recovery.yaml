@@ -1,0 +1,7 @@
+description: RigReady was closed while a new monitor layout waited for Keep
+rig: mark-full
+extends: flying-fresh.yaml
+# The flying layout was applied from the desk state, then RigReady was killed before the
+# keep-or-revert countdown ended. The desk layout from before is still on disk.
+data:
+  displays/pending-revert.json: data/displays/pending-revert.json

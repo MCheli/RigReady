@@ -1,0 +1,4 @@
+description: Desk state as recorded, with saved Flying, Racing and Desk layouts (the TV of Racing is not connected)
+rig: mark-full
+data:
+  displays/layouts.json: data/displays/layouts.json

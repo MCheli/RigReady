@@ -434,8 +434,14 @@ requirements:
       - "A display check compares the current layout to a named layout on: set of enabled monitors, each monitor's position, rotation, resolution and primary flag."
       - "Scenario mark-flight with the flying layout passes; mutation mfd2-rotated fails with 'MFD 2: rotation 0°, expected 90°'; mutation desk-monitor-on fails with 'Dell U2719D: enabled, expected off'."
       - "Refresh rate is compared only when the layout specifies it."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/layoutCheck.test.ts#passes when the monitors are arranged as the setup expects"
+      - "src/features/displays/core/layoutCheck.test.ts#names the one MFD screen that is rotated wrong, telling identical monitors apart"
+      - "src/features/displays/core/layoutCheck.test.ts#lists every difference between the desk state and the flying layout"
+      - "src/features/displays/core/layoutCheck.test.ts#compares the refresh rate only when the layout gives one"
+      - "tests/e2e/displays.e2e.ts#fix-display: an MFD screen back in landscape fails by name, Fix then Keep makes it pass"
+      - "artifacts/screens/fix-display/01-rotated.png"
 
   - id: CHECK-007
     title: Display check tells identical monitors apart
@@ -833,8 +839,15 @@ requirements:
       - "'Identify' shows a large number overlay on each enabled monitor for 5 s matching the numbers in the diagram."
       - "Each monitor can be given a friendly name (e.g. 'MFD left') stored by its identity (CHECK-007), used in checks, layouts and messages."
       - "Names survive reboot and stay attached to the right physical screen in the mfd1-mfd2-swapped scenario."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/service.test.ts#Identify shows each number on its own monitor for five seconds"
+      - "src/features/displays/core/service.test.ts#names stay with the physical screen when Windows renumbers and the screens trade places"
+      - "src/features/displays/core/layoutCheck.test.ts#tells the identical MFD screens apart when two of them swapped places, naming both"
+      - "tests/e2e/displays.e2e.ts#monitors: map, Identify and names, then apply Flying, Racing without the TV, and manage layouts"
+      - "tests/e2e/displays.e2e.ts#identical MFD screens swapped: both are named in the check, Make ready swaps them back"
+      - "artifacts/screens/display-layouts/02-named.png"
+      - "artifacts/screens/display-mfd-swapped/01-swapped.png"
 
   - id: DISP-003
     title: Named layouts per activity
@@ -846,8 +859,14 @@ requirements:
       - "Fixtures provide three layouts matching the owner's rig: Flying (ultrawide + three MFD screens, Dell off), Racing (ultrawide + TV), Desk (Dell + ultrawide, MFD screens off)."
       - "Layouts can be renamed, deleted and set as the desk layout used by Stand down."
       - "Each layout shows a scaled diagram with rotation and names (screenshot artifacts/screens/display-layouts/)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/service.test.ts#shows each saved layout with whether the monitors match it now"
+      - "src/features/displays/core/service.test.ts#creates, renames, edits, updates, sets as desk layout and deletes layouts"
+      - "tests/e2e/displays.e2e.ts#monitors: map, Identify and names, then apply Flying, Racing without the TV, and manage layouts"
+      - "fixtures/scenarios/data/displays/layouts.json"
+      - "artifacts/screens/display-layouts/03-layouts.png"
+      - "artifacts/screens/display-layouts/08-managed.png"
 
   - id: DISP-004
     title: Read rotation correctly
@@ -904,8 +923,15 @@ requirements:
       - "Every apply captures the full prior layout first; 'Revert' in the displays page and in the timed prompt re-applies it exactly (rotation, position, enabled set, primary, mode)."
       - "If the app crashes or is killed during the timed revert window, on next start it offers to restore the captured prior layout (persisted before apply)."
       - "An apply that fails part-way (API error) automatically re-applies the prior layout and reports the error; it never reports success."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/layoutCheck.test.ts#turns the desk state into the flying layout, saving the old one first, and arms the timed revert"
+      - "src/features/displays/core/layoutCheck.test.ts#puts the old layout back when an apply fails part-way, and never reports success"
+      - "src/features/displays/core/service.test.ts#offers the layout from before it after a restart, and puts it back"
+      - "src/features/displays/core/service.test.ts#is written before every change and removed once the change is kept or reverted"
+      - "tests/e2e/displays.e2e.ts#monitors: map, Identify and names, then apply Flying, Racing without the TV, and manage layouts"
+      - "tests/e2e/displays.e2e.ts#closed during the countdown: the next start offers the earlier layout back"
+      - "artifacts/screens/display-recovery/01-offer.png"
 
   - id: DISP-009
     title: Missing monitors during apply
@@ -915,8 +941,13 @@ requirements:
     done_means:
       - "Applying a layout that references a monitor not currently connected applies the rest only if the user confirms 'Apply without MFD 3', otherwise applies nothing."
       - "The display check for that layout fails with 'MFD 3 not connected' rather than a rotation mismatch."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/service.test.ts#applies a layout whose TV is not connected only when told to go without it"
+      - "src/features/displays/core/layoutCheck.test.ts#applies nothing when a monitor of the layout is not connected"
+      - "src/features/displays/core/layoutCheck.test.ts#says a monitor is not connected rather than reporting a rotation mismatch"
+      - "tests/e2e/displays.e2e.ts#monitors: map, Identify and names, then apply Flying, Racing without the TV, and manage layouts"
+      - "artifacts/screens/display-layouts/07-racing-without-tv.png"
 
   # ---------------------------------------------------------------------------
   # DEVICES AND TROUBLESHOOTING

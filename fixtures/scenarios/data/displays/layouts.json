@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "layouts": [
+    {
+      "id": "flying",
+      "name": "Flying",
+      "createdAt": "2026-10-03T12:00:00.000Z",
+      "updatedAt": "2026-10-03T12:00:00.000Z",
+      "displays": [
+        { "id": "\\\\?\\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "LC49G95T", "enabled": true, "primary": true, "x": 0, "y": 0, "width": 5120, "height": 1440, "rotation": 0 },
+        { "id": "\\\\?\\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": true, "primary": false, "x": 5120, "y": 0, "width": 768, "height": 1024, "rotation": 90 },
+        { "id": "\\\\?\\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": true, "primary": false, "x": 5888, "y": 0, "width": 768, "height": 1024, "rotation": 90 },
+        { "id": "\\\\?\\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": true, "primary": false, "x": 6656, "y": 0, "width": 768, "height": 1024, "rotation": 90 },
+        { "id": "\\\\?\\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "DELL G3223D", "enabled": false, "primary": false, "x": 0, "y": 0, "rotation": 0 }
+      ]
+    },
+    {
+      "id": "racing",
+      "name": "Racing",
+      "createdAt": "2026-10-03T12:00:00.000Z",
+      "updatedAt": "2026-10-03T12:00:00.000Z",
+      "displays": [
+        { "id": "\\\\?\\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "LC49G95T", "enabled": true, "primary": true, "x": 0, "y": 0, "width": 5120, "height": 1440, "rotation": 0 },
+        { "id": "\\\\?\\display#tv00001#5&1509d400&0&uid4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "TV", "enabled": true, "primary": false, "x": 640, "y": -2160, "width": 3840, "height": 2160, "rotation": 0 },
+        { "id": "\\\\?\\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": false, "primary": false, "x": 0, "y": 0, "rotation": 0 },
+        { "id": "\\\\?\\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": false, "primary": false, "x": 0, "y": 0, "rotation": 0 },
+        { "id": "\\\\?\\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": false, "primary": false, "x": 0, "y": 0, "rotation": 0 },
+        { "id": "\\\\?\\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "DELL G3223D", "enabled": false, "primary": false, "x": 0, "y": 0, "rotation": 0 }
+      ]
+    },
+    {
+      "id": "desk",
+      "name": "Desk",
+      "createdAt": "2026-10-03T12:00:00.000Z",
+      "updatedAt": "2026-10-03T12:00:00.000Z",
+      "displays": [
+        { "id": "\\\\?\\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "DELL G3223D", "enabled": true, "primary": true, "x": 0, "y": 0, "width": 2560, "height": 1440, "rotation": 0 },
+        { "id": "\\\\?\\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "LC49G95T", "enabled": true, "primary": false, "x": 2560, "y": 0, "width": 5120, "height": 1440, "rotation": 0 },
+        { "id": "\\\\?\\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": false, "primary": false, "x": 0, "y": 0, "rotation": 0 },
+        { "id": "\\\\?\\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": false, "primary": false, "x": 0, "y": 0, "rotation": 0 },
+        { "id": "\\\\?\\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}", "name": "USB_Monitor", "enabled": false, "primary": false, "x": 0, "y": 0, "rotation": 0 }
+      ]
+    }
+  ]
+}

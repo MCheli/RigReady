@@ -1,0 +1,15 @@
+description: Flying, but the left and centre MFD screens have swapped places
+rig: mark-full
+extends: flying-all-good.yaml
+# The three USB MFD screens are identical (same EDID name and serial). The user named
+# them with Identify; Windows now has the first two in each other's place.
+data:
+  displays/names.json: data/displays/names.json
+  displays/layouts.json: data/displays/layouts.json
+mutations:
+  - op: setDisplay
+    match: { name: USB_Monitor, index: 0 }
+    set: { x: 5888 }
+  - op: setDisplay
+    match: { name: USB_Monitor, index: 1 }
+    set: { x: 5120 }
