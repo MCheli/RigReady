@@ -50,3 +50,16 @@ test('bindings: an MFD knob that is also bound to pitch is reported and fixed', 
   expect(text).not.toContain('a2001cdnil');
   expect(text).toContain('["a3012cd34"] = {');
 });
+
+test('bindings: a PC without DCS says so instead of showing empty lists', async ({ rig }) => {
+  const { page, shot } = await rig.launch('dcs-bindings-no-dcs', 'bindings-no-dcs');
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-dcs-bindings').click();
+  await expect(page.getByTestId('bind-not-found')).toContainText(
+    'DCS World was not found on this PC'
+  );
+  await expect(page.getByTestId('bind-not-found')).toContainText('Start DCS once');
+  await expect(page.getByTestId('bind-tabs')).toHaveCount(0);
+  await expect(page.getByTestId('bindings-aircraft')).toHaveCount(0);
+  await shot('not-found');
+});

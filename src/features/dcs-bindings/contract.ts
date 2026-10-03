@@ -1,11 +1,18 @@
 import { z } from 'zod';
 import { channel, defineContract, noInput } from '../../shared/ipc';
-import { AppliedSchema, ChangePlanSchema } from './core/model';
-import { CopyPreviewSchema } from './core/model';
-import { BindingOpSchema } from './core/model';
-import { MappingSchema, MigrationScanSchema } from './core/model';
-import { AircraftViewSchema, DeviceRoleSchema, OverviewSchema } from './core/model';
-import { ComparisonSchema, SnapshotSchema } from './core/model';
+import {
+  AircraftViewSchema,
+  AppliedSchema,
+  BindingOpSchema,
+  ChangePlanSchema,
+  ComparisonSchema,
+  CopyPreviewSchema,
+  DeviceRoleSchema,
+  MappingSchema,
+  MigrationScanSchema,
+  OverviewSchema,
+  SnapshotSchema,
+} from './core/model';
 
 export const PressedSchema = z.object({
   guid: z.string(),
