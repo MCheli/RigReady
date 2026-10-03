@@ -1,55 +1,51 @@
 import path from 'node:path';
-import type { ConfigLocation, GameInstall, GameModule } from '../../../core/games';
+import type { GameModule, TrackedFileSuggestion } from '../../../core/games';
 import { ok } from '../../../core/result';
+import { detectInstalls, installVersion, userLocations } from './detect';
 
 /**
- * DCS World. Detection and config locations only; bindings, monitor setup and the
- * rest are added by the DCS feature work (see docs/research/dcs.md).
+ * DCS World: installs (every Steam library and standalone), the Saved Games folder of
+ * each, versions and path variables. Monitor setup, Export.lua and options.lua are the
+ * dcs-setup feature; bindings are dcs-bindings. Both find DCS through this module.
  */
 const dcs: GameModule = {
   id: 'dcs',
   name: 'DCS World',
 
-  async detect(ctx) {
-    const installs: GameInstall[] = [];
-    const libraries = await ctx.ports.folders.steamLibraries();
-    if (!libraries.ok) return libraries;
-    for (const library of libraries.value) {
-      const installDir = path.join(library, 'steamapps', 'common', 'DCSWorld');
-      const exe = path.join(installDir, 'bin', 'DCS.exe');
-      if (await ctx.ports.files.exists(exe)) {
-        installs.push({
-          source: 'steam',
-          installDir,
-          launch: { exe, args: [], cwd: path.join(installDir, 'bin') },
-        });
-      }
-    }
-    return ok(installs);
-  },
+  detect: (ctx) => detectInstalls(ctx),
 
   async configLocations(ctx) {
-    const locations: ConfigLocation[] = [];
-    // Standalone stable and the old open beta use different Saved Games folders.
-    for (const [id, folder] of [
-      ['dcs', 'DCS'],
-      ['dcs-openbeta', 'DCS.openbeta'],
-    ] as const) {
-      const dir = path.join(ctx.ports.folders.savedGames(), folder);
-      if (await ctx.ports.files.exists(path.join(dir, 'Config'))) {
-        locations.push({ id, label: `Saved Games\\${folder}`, path: dir });
-      }
-    }
-    return ok(locations);
+    const installs = await detectInstalls(ctx);
+    return userLocations(ctx, installs.ok ? installs.value : []);
   },
 
-  /** {DCS_USER} is the Saved Games folder DCS writes to; {DCS_INSTALL} the first install found. */
+  async trackedFiles(ctx) {
+    const locations = await this.configLocations(ctx);
+    if (!locations.ok) return locations;
+    const user = locations.value[0];
+    if (!user) return ok([]);
+    const files: TrackedFileSuggestion[] = [
+      { label: 'DCS options', path: path.join(user.path, 'Config', 'options.lua') },
+      { label: 'DCS input bindings', path: path.join(user.path, 'Config', 'Input') },
+      { label: 'DCS monitor setups', path: path.join(user.path, 'Config', 'MonitorSetup') },
+      { label: 'DCS Export.lua', path: path.join(user.path, 'Scripts', 'Export.lua') },
+    ];
+    return ok(files);
+  },
+
+  installedVersion: (ctx, install) => installVersion(ctx, install),
+
+  /**
+   * {DCS_INSTALL} is the first install found (Steam first); {DCS_USER} is the Saved Games
+   * folder that install writes to, or the first DCS folder in Saved Games when it has none yet.
+   */
   async pathVariables(ctx) {
     const variables: Record<string, string> = {};
-    const locations = await this.configLocations(ctx);
+    const installs = await detectInstalls(ctx);
+    const first = installs.ok ? installs.value[0] : undefined;
+    if (first) variables['DCS_INSTALL'] = first.installDir;
+    const locations = await userLocations(ctx, installs.ok ? installs.value : []);
     if (locations.ok && locations.value[0]) variables['DCS_USER'] = locations.value[0].path;
-    const installs = await this.detect(ctx);
-    if (installs.ok && installs.value[0]) variables['DCS_INSTALL'] = installs.value[0].installDir;
     return ok(variables);
   },
 };

@@ -1,0 +1,6 @@
+description: DCS setup, flying layout, the F/A-18C and UH-1H setups
+rig: mark-full
+extends: flying-fresh.yaml
+profiles:
+  - profiles/dcs-setup-hornet.yaml
+  - profiles/dcs-setup-huey.yaml

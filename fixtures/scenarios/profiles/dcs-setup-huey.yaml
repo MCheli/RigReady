@@ -1,0 +1,29 @@
+schemaVersion: 1
+id: dcs-setup-huey
+name: DCS UH-1H
+game: dcs
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+launch:
+  exe: C:\Program Files (x86)\Steam\steamapps\common\DCSWorld\bin\DCS.exe
+  args: []
+# No WinWing runtime features: the Huey never asks for SimAppPro.
+checks:
+  - id: c1
+    type: dcs.exportLua
+    title: Export.lua tools
+    required: true
+    params: { tools: [dcs-bios] }
+    remediation: { type: dcs.repairExportLua, params: { tools: [dcs-bios] } }
+  - id: c2
+    type: dcs.options
+    title: DCS graphics options
+    required: false
+    params: { fullScreen: false, vr: false }
+    remediation: { type: dcs.setOptions, params: { fullScreen: false, vr: false } }
+  - id: c3
+    type: dcs.managedFiles
+    title: DCS files RigReady manages
+    required: false
+    params: {}
+    remediation: { type: dcs.restoreManaged, params: {} }
