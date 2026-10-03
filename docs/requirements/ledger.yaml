@@ -1,0 +1,2560 @@
+# RigReady requirements ledger.
+# Source of truth for scope: docs/PRODUCT.md. Schema: docs/ARCHITECTURE.md "Requirements ledger".
+# Every entry starts as status: todo with no evidence. An entry becomes done only with evidence:
+# an automated test id exercising the real code path and, for anything visible, a screenshot
+# under artifacts/screens/<flow>/ from a scenario run.
+#
+# Conventions used in done_means:
+#   fixture  = fixtures/rigs/<name>/ (mark-flight is recorded from the owner's rig; generic-rig is a
+#              second, non-WinWing rig used to prove nothing is hardcoded)
+#   scenario = RIGREADY_SCENARIO run on fake providers: <fixture> + <mutation>, e.g.
+#              mark-flight + pedals-unplugged
+#   Paths use path variables ({DCS_USER}, {DOCUMENTS}, {RIGREADY_HOME}, ...) and forward slashes.
+
+requirements:
+
+  # ---------------------------------------------------------------------------
+  # FLY MODE — the daily loop
+  # ---------------------------------------------------------------------------
+
+  - id: FLY-001
+    title: Open on the last-used profile
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "With profiles 'DCS F/A-18C' and 'DCS UH-1H' in the data root and 'DCS UH-1H' used last, starting the app shows the Fly screen with 'DCS UH-1H' as the active profile name (E2E, scenario mark-flight)."
+      - "The last-used profile id survives an app restart: launch, switch to 'DCS F/A-18C', quit, relaunch; the Fly screen shows 'DCS F/A-18C'."
+      - "If the last-used profile file was deleted or fails validation, the app opens on the most recently modified valid profile and shows a one-line notice naming the missing profile; it does not show an empty or crashed screen."
+      - "With zero profiles, the Fly screen shows an empty state with a single 'Create a setup from this rig' action (see CFG-PROFILE-001) instead of a checklist."
+    status: todo
+    evidence: []
+
+  - id: FLY-002
+    title: Quick profile switch from the Fly screen
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "The Fly screen has a profile switcher reachable in one click that lists every valid profile by name with its game and last-used time."
+      - "Selecting another profile replaces the checklist and re-runs all checks for that profile without navigating away from the Fly screen (E2E screenshot artifacts/screens/fly-switch/)."
+      - "Invalid profile files appear in the switcher as disabled entries with the validation error on hover, and cannot be selected."
+      - "Switching while checks are still running cancels the in-flight results of the previous profile; no result from the old profile is shown under the new one (unit test with a slow fake ProcessProvider)."
+    status: todo
+    evidence: []
+
+  - id: FLY-003
+    title: Checklist grouped by kind
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Checklist items are shown in groups in this fixed order: Devices, Apps and services, Displays, Audio, Config files, Other (scripts, game update); empty groups are hidden."
+      - "Each item shows its display name, its status icon and colour, and a one-line detail (e.g. 'Not connected', 'Running', 'MFD 2 rotated 0°, expected 90°')."
+      - "Scenario mark-flight produces a screenshot showing all five groups populated for the F/A-18C profile."
+      - "Groups with any failure are expanded; fully passing groups may be collapsed to a single 'n of n OK' line."
+    status: todo
+    evidence: []
+
+  - id: FLY-004
+    title: Check statuses
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Every item is in exactly one of: checking, passed, failed, warning, error (the check itself could not run, e.g. timeout or provider error)."
+      - "Each status has both a distinct icon and colour (passed green, failed red, warning yellow, checking grey spinner, error red outline); status is never conveyed by colour alone."
+      - "A check that throws or times out shows 'error' with the reason, not 'passed' and not 'failed' (unit test with a throwing fake provider)."
+      - "Each item shows when it was last evaluated; results older than the last refresh are not shown as current."
+    status: todo
+    evidence: []
+
+  - id: FLY-005
+    title: Required vs optional items and overall readiness
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Each checklist item has required: true|false in the profile; a failed required item shows red, a failed optional item shows yellow (warning)."
+      - "The overall banner reads 'Ready' when all required items pass, 'Ready with warnings (n)' when only optional items fail, and 'Not ready (n)' when any required item fails or errors."
+      - "Scenario mark-flight + streamdeck-not-running (Stream Deck marked optional) shows the Stream Deck item yellow and the banner 'Ready with warnings (1)', never 'Not ready'."
+      - "Scenario mark-flight + pedals-unplugged (pedals required) shows the banner 'Not ready (1)'."
+    status: todo
+    evidence: []
+
+  - id: FLY-006
+    title: Run all checks on open and on demand
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Opening the Fly screen or switching profile runs every check of the active profile automatically."
+      - "A 'Re-check all' control re-runs every check; items go to 'checking' and then to their new status."
+      - "Independent checks run concurrently; the total time for the mark-flight F/A-18C profile is bounded by NFR-001."
+      - "While checks run, the rest of the screen (switcher, Launch, per-item fixes for completed items) stays interactive."
+    status: todo
+    evidence: []
+
+  - id: FLY-007
+    title: Run a single check
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Every item has a re-check control that re-runs only that item; other items' statuses and timestamps do not change (E2E asserts other timestamps unchanged)."
+      - "Re-running an item that changed state on the machine (scenario mutation trackir-started applied mid-run) updates that item from failed to passed."
+    status: todo
+    evidence: []
+
+  - id: FLY-008
+    title: Per-check timeout so one hung check never blocks the list
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Each check has a timeout (default 5 s, overridable per item in the profile); on expiry the item shows 'error: timed out after 5 s'."
+      - "A fake provider that never resolves for one item does not delay the other items' results or the overall banner (unit test with fake Clock)."
+      - "A timed-out item offers 'Re-check' and, for required items, counts as not ready."
+    status: todo
+    evidence: []
+
+  - id: FLY-009
+    title: Fix button next to each failing item
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "A failed or warning item with a configured remediation shows a fix button whose label names the action (e.g. 'Start TrackIR', 'Apply flying layout', 'Restore options.lua')."
+      - "An item whose remediation type is not implemented or not registered shows no fix button (rule 2); an E2E with such a profile asserts the button is absent."
+      - "Items without a remediation show only the failure detail; devices additionally show 'Diagnose' linking to the device detail (DEV-006)."
+    status: todo
+    evidence: []
+
+  - id: FLY-010
+    title: Fix result is verified by re-running the check
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "After a fix completes, the app re-runs that item's check and shows the check's result; a fix is reported as successful only if the re-run check passes."
+      - "Scenario mark-flight + trackir-not-running where the fake ProcessProvider refuses to start the process: clicking 'Start TrackIR' leaves the item red with 'Started TrackIR5.exe but it is not running after 10 s'."
+      - "Fix progress is visible on the item (spinner and verb) while it runs; a second click while running is ignored."
+    status: todo
+    evidence: []
+
+  - id: FLY-011
+    title: Make ready runs every available fix in the right order
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Make ready runs fixes for all failing items in this order: apply display layout, set audio devices, restore config files, start services, start apps, scripts, then re-runs every check."
+      - "Within the apps step, order follows the profile's item order, so a profile can start SimAppPro before Stream Deck."
+      - "Scenario mark-flight + mfd2-rotated + trackir-not-running + options-lua-missing: one Make ready click ends with the banner 'Ready'; the E2E asserts the fake providers saw display apply before process start."
+      - "Items with no available fix are listed at the end as 'Needs you' with their instructions."
+    status: todo
+    evidence: []
+
+  - id: FLY-012
+    title: Make ready progress, partial failure and summary
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "During Make ready a progress list shows each fix as pending, running, done or failed."
+      - "A failing fix does not stop the remaining fixes; the final summary lists what succeeded, what failed with reason, and what needs manual action."
+      - "The display-layout step's timed revert prompt (FIX-002) is shown during Make ready and the run waits for Keep or Revert before continuing."
+      - "Make ready is disabled while it is running and while no failing item has a fix."
+    status: todo
+    evidence: []
+
+  - id: FLY-013
+    title: Make ready respects fixes that require confirmation
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "A remediation marked requiresConfirmation (e.g. script 'Power cycle hub') is not run by Make ready until the user confirms it in a dialog that shows the exact executable and arguments."
+      - "Declining the confirmation marks that fix 'skipped by you' in the summary and continues with the others."
+    status: todo
+    evidence: []
+
+  - id: FLY-014
+    title: Launch is never blocked, only warned
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "The Launch button is enabled in every readiness state, including 'Not ready' and while checks are still running."
+      - "Launching while not ready shows a warning listing the failing required items with 'Launch anyway' and 'Cancel'; 'Launch anyway' starts the game."
+      - "Launching while 'Ready with warnings' launches without a dialog and shows the warnings as a toast."
+      - "Scenario mark-flight + pedals-unplugged: E2E clicks Launch, confirms, and asserts the fake ProcessProvider received the DCS start call."
+    status: todo
+    evidence: []
+
+  - id: FLY-015
+    title: Launch target definition
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "A profile's launch target is an executable path plus an argument array plus an optional working directory, with path variables resolved at launch (e.g. {DCS_INSTALL}/bin/DCS.exe)."
+      - "A launch target can also be a Steam app id; launching it starts Steam's steam://rungameid/<id> via Shell.run with an argument array, never a command string."
+      - "Unit test: a profile whose argument contains '&& del' is passed to Shell.run as one literal argv element (NFR-008)."
+      - "Known games auto-fill the launch target from detection (DCS-001/002, RACE-*-001) and the user can override it."
+    status: todo
+    evidence: []
+
+  - id: FLY-016
+    title: Launch reports what actually happened
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "If the executable does not exist, Launch shows 'DCS.exe not found at <resolved path>' and no 'Launched' message."
+      - "'Launched' is shown only after the ProcessProvider reports the game process running (or the Steam handoff process started for Steam targets), within a 30 s window."
+      - "After a successful launch the window minimises to tray or stays open according to a setting (default: minimise)."
+    status: todo
+    evidence: []
+
+  - id: FLY-017
+    title: Pre-launch actions
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "A profile can list pre-launch actions (start program, run script, apply display layout, set audio device) that run in listed order before the game starts."
+      - "Each action shows in a launch progress panel as pending, running, done, failed or skipped."
+      - "Scenario run: a profile with pre-launch 'Start VoiceAttack' then 'run script warmup.cmd' results in the fake Shell receiving both calls in order before the DCS start call."
+    status: todo
+    evidence: []
+
+  - id: FLY-018
+    title: Post-launch actions
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Post-launch actions run after the game process is confirmed running, in listed order."
+      - "A post-launch action can have a delay in seconds (e.g. 20 s after DCS starts); the fake Clock test asserts it fires at the delay."
+      - "Post-launch failures are reported in the launch panel and log but never close or affect the game."
+    status: todo
+    evidence: []
+
+  - id: FLY-019
+    title: Action continue-on-error
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Each pre-launch action has continueOnError (default true). A failing action with continueOnError true is marked failed and the sequence continues."
+      - "A failing pre-launch action with continueOnError false pauses the launch and asks 'Launch anyway' / 'Cancel' with the failure output; it never silently aborts and never silently proceeds."
+      - "Unit test covers both values with a fake Shell returning exit code 1."
+    status: todo
+    evidence: []
+
+  - id: FLY-020
+    title: Action wait-for-completion and timeout
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Each action has waitForCompletion (default false for programs, true for scripts) and timeoutSeconds (default 30)."
+      - "With waitForCompletion true, the next action starts only after exit; a script exceeding its timeout is killed and marked 'timed out after 30 s'."
+      - "With waitForCompletion false, the next action starts as soon as the process has spawned."
+      - "Unit tests with fake Clock and fake Shell cover wait, no-wait and timeout."
+    status: todo
+    evidence: []
+
+  - id: FLY-021
+    title: Hidden actions
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "An action with hidden: true is spawned with windowsHide so no console window appears; the Windows Shell implementation passes windowsHide to spawn (unit test on the argument object)."
+      - "Rig smoke: running a hidden .cmd script on the real machine shows no console window (screenshot of desktop during run)."
+    status: todo
+    evidence: []
+
+  - id: FLY-022
+    title: Context passed to scripts and actions
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "Scripts and actions receive RIGREADY_PROFILE_NAME, RIGREADY_PROFILE_ID, RIGREADY_GAME, RIGREADY_GAME_PATH, RIGREADY_USER_DATA and RIGREADY_HOME as environment variables."
+      - "Profile values reach scripts only as environment variables or argv elements, never interpolated into a command string (unit test asserts the env object and argv)."
+      - "Captured stdout and stderr (last 200 lines) are viewable from the launch panel for each action."
+    status: todo
+    evidence: []
+
+  - id: FLY-023
+    title: Stand down closes helper apps
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Stand down closes every app the profile marks closeOnStandDown (default true for apps started by RigReady in this session, false otherwise)."
+      - "Apps are asked to close gracefully first and are force-terminated only after 10 s and only if the item allows force (default false); unclosed apps are listed."
+      - "Stand down never closes the game itself unless the game is still running and the user confirms."
+      - "Scenario mark-flight after a Make ready that started TrackIR and SimAppPro: Stand down results in the fake ProcessProvider receiving stop for both and the summary 'Closed 2 apps'."
+    status: todo
+    evidence: []
+
+  - id: FLY-024
+    title: Stand down restores the desk display layout
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "Settings name one display layout as the desk layout; Stand down applies it with the same timed-revert behaviour as FIX-002."
+      - "Scenario mark-flight with flying layout active: after Stand down the fake DisplayProvider holds the desk layout (Dell on, MFD screens off or as recorded) and the summary says 'Applied desk layout'."
+      - "If no desk layout is defined, Stand down skips this step and says so instead of reporting success."
+    status: todo
+    evidence: []
+
+  - id: FLY-025
+    title: Stand down extras and summary
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "A profile can list post-session actions (restore audio default, run script) that run during Stand down after apps close."
+      - "Stand down shows a summary of each step's real outcome and is reachable from the Fly screen and the tray menu."
+    status: todo
+    evidence: []
+
+  - id: FLY-026
+    title: Fly screen usable within 2 seconds
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "An E2E test measures from process start to the Fly screen showing the profile name, the grouped checklist skeleton and an enabled Launch button, and fails above 2000 ms on the packaged build (scenario mark-flight)."
+      - "Check results arrive progressively after first paint; the screen does not wait for all checks to render."
+      - "The measurement is recorded in the test output so regressions are visible."
+    status: todo
+    evidence: []
+
+  - id: FLY-027
+    title: Fly and Configure are distinct modes
+    job: fly
+    area: fly
+    priority: p0
+    done_means:
+      - "The Fly screen is a single page with profile switcher, banner, checklist, Make ready, Launch and Stand down, and no configure-mode navigation in its main area."
+      - "A single control switches to Configure mode (profiles, bindings, backups, devices, settings) and back; the app always starts in Fly mode."
+      - "Screenshots artifacts/screens/fly/ and artifacts/screens/configure/ show visibly different layouts."
+    status: todo
+    evidence: []
+
+  - id: FLY-028
+    title: Checklist reacts to device connect and disconnect
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "While the Fly screen is open, unplugging a required device turns its item red within 2 s without a manual re-check (scenario mutation applied live: pedals-unplugged)."
+      - "Plugging it back turns it green within 2 s and updates the banner."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # CHECK TYPES
+  # ---------------------------------------------------------------------------
+
+  - id: CHECK-001
+    title: Device check by vendor and product ID
+    job: fly
+    area: checks
+    priority: p0
+    done_means:
+      - "A device check matches on VID and PID (hex) and passes when at least the required count of matching devices is present (default 1)."
+      - "Scenario mark-flight passes 'TPR pedals' (Thrustmaster VID/PID from the fixture); mark-flight + pedals-unplugged fails it with 'Not connected'."
+      - "The schema rejects a device check that has only a display name and no VID/PID (rule 4); unit test on the zod schema."
+    status: todo
+    evidence: []
+
+  - id: CHECK-002
+    title: Device check tells identical devices apart
+    job: fly
+    area: checks
+    priority: p0
+    done_means:
+      - "A device check may also specify serial number or, when the device has none, the USB instance/port path; matching then requires that exact unit."
+      - "Fixture mark-flight has three WinWing MFD panels with the same VID/PID; checks 'MFD left', 'MFD centre', 'MFD right' each pass on their own unit, and mutation mfd-right-unplugged fails only 'MFD right'."
+      - "When identity falls back to instance path, the check detail says 'identified by USB port' so the user knows moving ports breaks it."
+    status: todo
+    evidence: []
+
+  - id: CHECK-003
+    title: Missing device detail helps find it
+    job: fly
+    area: checks
+    priority: p1
+    done_means:
+      - "A failed device check shows the last time and hub/port the device was seen (from DEV history) e.g. 'Last seen on USB hub 2, port 3, yesterday 21:14'."
+      - "If a device with the same VID/PID but a different serial is present, the detail says so ('a different TPR is connected') instead of plain 'Not connected'."
+    status: todo
+    evidence: []
+
+  - id: CHECK-004
+    title: Process check
+    job: fly
+    area: checks
+    priority: p0
+    done_means:
+      - "A process check passes when a process with the given image name (case-insensitive, e.g. TrackIR5.exe) is running; optionally it must also match a full executable path."
+      - "Scenario mark-flight passes TrackIR, SimAppPro and Stream Deck; mark-flight + trackir-not-running fails 'TrackIR' with 'Not running'."
+      - "Rig smoke: the check finds explorer.exe on the real machine without admin rights."
+    status: todo
+    evidence: []
+
+  - id: CHECK-005
+    title: Windows service check
+    job: fly
+    area: checks
+    priority: p1
+    done_means:
+      - "A service check passes when the named Windows service is in state Running and reports Stopped, Start pending or Not installed otherwise."
+      - "Fixture provides a service list; unit tests cover running, stopped and not installed."
+      - "Rig smoke reads the state of the 'Audiosrv' service without admin rights."
+    status: todo
+    evidence: []
+
+  - id: CHECK-006
+    title: Display layout check
+    job: fly
+    area: checks
+    priority: p0
+    done_means:
+      - "A display check compares the current layout to a named layout on: set of enabled monitors, each monitor's position, rotation, resolution and primary flag."
+      - "Scenario mark-flight with the flying layout passes; mutation mfd2-rotated fails with 'MFD 2: rotation 0°, expected 90°'; mutation desk-monitor-on fails with 'Dell U2719D: enabled, expected off'."
+      - "Refresh rate is compared only when the layout specifies it."
+    status: todo
+    evidence: []
+
+  - id: CHECK-007
+    title: Display check tells identical monitors apart
+    job: fly
+    area: checks
+    priority: p0
+    done_means:
+      - "Monitors are matched by EDID manufacturer, product code and serial; when serials are identical or empty, by the display target's connector path (adapter + target id)."
+      - "Fixture mark-flight has three identical USB MFD screens; swapping two of them between positions (mutation mfd1-mfd2-swapped) makes the check fail naming both screens."
+      - "Unit test: two monitors with identical EDID data and different target ids are matched to the right layout entries."
+    status: todo
+    evidence: []
+
+  - id: CHECK-008
+    title: Default audio playback device check
+    job: fly
+    area: checks
+    priority: p0
+    done_means:
+      - "An audio check passes when the Windows default playback device id matches the profile's device (matched by endpoint id, falling back to name)."
+      - "Scenario mark-flight + audio-default-speakers fails 'Headset is default output' with 'Default is Speakers (Realtek)'."
+      - "Rig smoke reads the real default playback device name without admin rights."
+    status: todo
+    evidence: []
+
+  - id: CHECK-009
+    title: Default audio recording device check
+    job: fly
+    area: checks
+    priority: p0
+    done_means:
+      - "An audio check with role recording passes when the Windows default recording device matches; the communications default is checked only when the profile asks for it."
+      - "Scenario mark-flight + mic-default-webcam fails 'Headset mic is default input' with the current default named."
+    status: todo
+    evidence: []
+
+  - id: CHECK-010
+    title: Config file exists check
+    job: fly
+    area: checks
+    priority: p0
+    done_means:
+      - "A file check with a path variable path (e.g. {DCS_USER}/Config/options.lua) passes when the file exists and fails 'Missing' otherwise."
+      - "A folder variant passes when the folder exists and contains at least one file matching an optional glob (e.g. {DCS_USER}/Config/Input/FA-18C_hornet/joystick/*.diff.lua)."
+      - "An unresolvable path variable (game not detected) shows 'error: DCS user folder not found' rather than 'Missing'."
+    status: todo
+    evidence: []
+
+  - id: CHECK-011
+    title: Config file content rule
+    job: fly
+    area: checks
+    priority: p1
+    done_means:
+      - "A file check can add a content rule: contains text, matches regex, or (for .lua, .ini, .json) a key path equals a value, e.g. options.lua graphics.multiMonitorSetup == 'RigReady MFDs'."
+      - "Failure detail shows the expected and actual value, e.g. 'multiMonitorSetup is wwtMonitor, expected RigReady MFDs'."
+      - "Unit tests run each rule kind against fixture copies of options.lua, an app.ini and a JSON file."
+    status: todo
+    evidence: []
+
+  - id: CHECK-012
+    title: Script check
+    job: fly
+    area: checks
+    priority: p1
+    done_means:
+      - "A script check runs an executable with an argument array and passes when the exit code is in successExitCodes (default [0])."
+      - "On failure the item shows the exit code and the captured stdout/stderr (last 50 lines) in an expandable panel."
+      - "A script exceeding its timeout (default 10 s) is killed and the item shows error 'timed out'."
+      - "A script whose executable is missing shows error 'script not found: <path>' rather than failed."
+    status: todo
+    evidence: []
+
+  - id: CHECK-013
+    title: Game updated since last verified
+    job: fly
+    area: checks
+    priority: p1
+    done_means:
+      - "For a detected game the check reads the installed version (DCS: autoupdate.cfg version; Steam: appmanifest buildid) and compares it to the version stored when the user last pressed 'Mark verified' on this profile."
+      - "When the version changed, the item is a warning 'DCS updated 2.9.x -> 2.9.y since you last verified' with a fix 'Back up bindings now' (BACKUP-004) and 'Mark verified'."
+      - "It is optional by default and never makes the rig 'Not ready'."
+    status: todo
+    evidence: []
+
+  - id: CHECK-014
+    title: HidHide hiding a required device
+    job: fly
+    area: checks
+    priority: p1
+    done_means:
+      - "If HidHide is installed, each required device check also reads HidHide's hidden-device list and whitelist; a required device that is hidden from the game fails with 'Hidden by HidHide'."
+      - "Fixture provides HidHide registry data; mutation tpr-hidden fails the TPR check with that detail while the device is present."
+      - "If HidHide is not installed the check adds nothing and does not error."
+      - "The fix is 'Show instructions' (how to unhide in HidHide's client); RigReady does not change HidHide settings."
+    status: todo
+    evidence: []
+
+  - id: CHECK-015
+    title: Check types register through features
+    job: fly
+    area: checks
+    priority: p1
+    done_means:
+      - "Every check type above is registered with registerCheck from its feature folder; there is no switch over check types in core (lint rule or unit test that greps for it)."
+      - "A profile item with an unknown check type loads, shows 'error: check type xyz is not available in this version', and does not break the rest of the checklist."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # REMEDIATIONS
+  # ---------------------------------------------------------------------------
+
+  - id: FIX-001
+    title: Start app remediation
+    job: fly
+    area: remediation
+    priority: p0
+    done_means:
+      - "A start-app fix launches an executable with an argument array and optional working directory via Shell.run, then waits up to 10 s for the checked process to appear."
+      - "Scenario mark-flight + simapppro-not-running: clicking 'Start SimAppPro' makes the item green."
+      - "When the executable path does not exist the fix reports 'SimAppPro.exe not found at <path>' and offers to browse for it in the profile editor."
+    status: todo
+    evidence: []
+
+  - id: FIX-002
+    title: Apply display layout remediation with timed revert
+    job: fly
+    area: remediation
+    priority: p0
+    done_means:
+      - "The display fix applies the expected named layout (DISP-011) and then shows a 'Keep this layout?' prompt with a 15 s countdown, Keep and Revert buttons."
+      - "If the countdown expires or Revert is pressed, the previous layout is re-applied and the item returns to its previous status (unit test with fake Clock and fake DisplayProvider)."
+      - "The prompt is placed on a monitor that is enabled in the new layout so it is always visible."
+      - "Scenario mark-flight + mfd2-rotated: Fix then Keep results in a passing display item and the screenshot artifacts/screens/fix-display/."
+    status: todo
+    evidence: []
+
+  - id: FIX-003
+    title: Restore file from backup remediation
+    job: fly
+    area: remediation
+    priority: p0
+    done_means:
+      - "A restore-file fix restores the newest backed-up copy of the missing or wrong file from RigReady's backups (BACKUP-*), showing the source backup name and date before writing."
+      - "If the target exists it is first snapshotted to the auto-backup journal (BACKUP-012) so the restore itself can be undone."
+      - "Scenario mark-flight + options-lua-missing: the fix restores options.lua and the file check turns green."
+      - "If no backup contains the file, the fix button is not shown and the item says 'No backup of this file yet'."
+    status: todo
+    evidence: []
+
+  - id: FIX-004
+    title: Set default audio device remediation
+    job: fly
+    area: remediation
+    priority: p0
+    done_means:
+      - "The audio fix sets the Windows default playback or recording device (and communications default if the check covers it) to the profile's device without admin rights."
+      - "Scenario mark-flight + audio-default-speakers: the fix makes the audio item green."
+      - "Rig smoke: switch default playback to another endpoint and back in a finally block; both changes are observed by reading the default."
+    status: todo
+    evidence: []
+
+  - id: FIX-005
+    title: Run script remediation with optional confirmation
+    job: fly
+    area: remediation
+    priority: p1
+    done_means:
+      - "A script fix runs an executable with an argument array and timeout; requiresConfirmation shows a dialog with the exact executable, arguments and working directory before running."
+      - "The fix shows exit code and captured output on failure and then re-runs the check (FLY-010)."
+      - "Scripts imported from a shared bundle cannot become fixes without the user re-entering the path (SHARE-004)."
+    status: todo
+    evidence: []
+
+  - id: FIX-006
+    title: Show instructions remediation
+    job: fly
+    area: remediation
+    priority: p0
+    done_means:
+      - "An instructions fix shows the profile's markdown text (sanitised: no HTML, no script, links open in the external browser only after a confirm) in a panel next to the item."
+      - "Instruction-only items are listed under 'Needs you' by Make ready and never reported as fixed."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # PROFILES
+  # ---------------------------------------------------------------------------
+
+  - id: CFG-PROFILE-001
+    title: Create a profile by capturing the current rig — devices
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "'New setup from this rig' lists every connected game controller and HID panel with name, VID/PID and serial/instance, pre-ticked for game controllers and unticked for keyboards, mice and hubs."
+      - "Identical devices (three WinWing MFD panels in mark-flight) are listed separately, each with a 'press a button to identify' affordance (DEV-003) and an editable name."
+      - "Saving creates device checks with VID/PID plus serial or instance (rule 4), verified by reading the written YAML."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-002
+    title: Capture running apps and services
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "The capture lists running user applications (excluding Windows system processes and RigReady itself) with known sim helpers (TrackIR, SimAppPro, Stream Deck, VoiceAttack, SimHub, SRS, Fanatec control panel) sorted first and pre-ticked."
+      - "Each ticked app becomes a process check with a start-app fix using the running process's full executable path."
+      - "Scenario mark-flight capture produces process checks for TrackIR5.exe, SimAppPro.exe and StreamDeck.exe."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-003
+    title: Capture monitor layout and audio devices
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "The capture shows the current monitor arrangement as a diagram and offers to save it as a named layout (e.g. 'Flying') plus a display check that uses it."
+      - "The capture shows the current default playback and recording devices and offers audio checks for each."
+      - "Scenario mark-flight capture produces a 'Flying' layout with the ultrawide and three MFD screens enabled and the Dell disabled."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-004
+    title: Capture game, launch target and config files
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "The capture asks for the game from the detected list plus 'Other'; for a detected game the launch target and the game module's suggested tracked files are pre-filled."
+      - "For DCS with aircraft F/A-18C chosen, suggested items include {DCS_USER}/Config/options.lua, {DCS_USER}/Config/Input/FA-18C_hornet/, {DCS_USER}/Config/MonitorSetup/ and {DCS_USER}/Scripts/Export.lua."
+      - "Every capture step can be skipped and the result is still a valid, saveable profile."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-005
+    title: Review before saving a captured profile
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "Before saving, a review lists every item that will be created, grouped as in Fly mode, each with a required/optional toggle and remove control."
+      - "Saving writes one YAML file under {RIGREADY_HOME}/profiles/ and opens the Fly screen on the new profile, which then passes all its checks on the unchanged rig (scenario mark-flight)."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-006
+    title: Edit profile basics and launch
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "The profile editor changes name, description, game, install choice, launch target (executable, arguments list, working directory) and the desk/flying layout used."
+      - "Changes are saved only on Save; Cancel leaves the file byte-identical (unit test compares file hashes)."
+      - "Renaming a profile keeps its id stable, so last-used and backups still reference it."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-007
+    title: Edit checklist items
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "In the editor the user can add an item of any registered check type, edit every field of an existing item, remove it and reorder it by drag or up/down."
+      - "Each item's required flag and timeout are editable."
+      - "Adding a device check offers 'pick from connected devices' and 'press a button on it' rather than typing VID/PID; typing is still allowed."
+      - "E2E: edit the TrackIR item to optional, save, return to Fly mode with mutation trackir-not-running, and see a yellow item."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-008
+    title: Edit remediations and launch actions
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "Each item's remediation can be set, changed or removed, choosing only from registered remediation types valid for that check type."
+      - "Pre-launch, post-launch and stand-down actions can be added, edited, reordered and removed with all options (continueOnError, waitForCompletion, hidden, timeoutSeconds, delay, closeOnStandDown)."
+      - "Every field that exists in the profile schema is editable in the UI; a test walks the zod schema and asserts each leaf field has an editor control."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-009
+    title: Clone a profile
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "Clone creates a new profile file with a new id and the name '<name> (copy)', then opens it in the editor for renaming."
+      - "The clone is deep: editing the clone's TrackIR item leaves the original file unchanged (unit test)."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-010
+    title: Copy items between profiles
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "'Copy from profile...' lists another profile's checklist items and actions with checkboxes; ticked items are appended to the current profile."
+      - "Items that already exist (same type and same target, e.g. same process name) are flagged and skipped unless the user chooses 'Add anyway'."
+      - "E2E: copy TrackIR and Stream Deck items from 'DCS F/A-18C' to 'DCS UH-1H' and see them in the UH-1H Fly checklist."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-011
+    title: Delete a profile
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "Delete asks for confirmation naming the profile; on confirm the file moves to {RIGREADY_HOME}/backups/auto/<timestamp>/ (journal entry, undoable) rather than being erased."
+      - "Deleting the last-used profile makes the app fall back as in FLY-001."
+      - "Named display layouts and backups referenced by the profile are not deleted."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-012
+    title: Profiles are YAML validated by a schema
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "Each profile is one human-readable YAML file in {RIGREADY_HOME}/profiles/ validated with a zod schema on load and before save."
+      - "A directory with one valid profile and one file containing a YAML syntax error and one with a schema error lists the valid profile normally and the other two as invalid with file name, line (if known) and message."
+      - "Saving never writes a file that fails the schema; the editor shows the field errors instead."
+      - "Profiles carry schemaVersion; a v1 fixture loads through a migration test when the version changes."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-013
+    title: Hand-edit a profile and reload
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "'Open in editor' opens the profile YAML in the system's default editor via Shell (argument array), and 'Show file' opens Explorer at it."
+      - "Changes saved on disk are picked up within 2 s by a file watcher; the Fly screen re-renders the active profile and re-runs checks."
+      - "A hand edit that breaks the schema keeps the last valid in-memory version active and shows a banner with the validation error until fixed."
+      - "Comments and key order in a hand-edited file survive a round trip only if RigReady did not edit that profile; when RigReady saves, it warns once that comments will be lost (or preserves them if the chosen YAML library supports it)."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-014
+    title: Generic and custom games
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "A profile can use game 'Other' with a user-given name, an executable launch target and user-chosen tracked files; checklist, launch, tracked files and backup all work for it."
+      - "E2E with fixture generic-rig: create an 'Other' profile for a fake game exe, run checks, launch, back up its tracked folder."
+    status: todo
+    evidence: []
+
+  - id: CFG-PROFILE-015
+    title: Path variables in profiles
+    job: configure
+    area: profiles
+    priority: p0
+    done_means:
+      - "Profile paths may use {USER}, {APPDATA}, {LOCALAPPDATA}, {DOCUMENTS}, {SAVED_GAMES}, {STEAM}, {RIGREADY_HOME} and game variables ({DCS_USER}, {DCS_INSTALL}, {IRACING_USER}, {LMU_USER}, {BEAMNG_USER})."
+      - "All variables are resolved only by KnownFolders and game modules; with USERPROFILE pointed at a temp dir, {USER} resolves there (unit test)."
+      - "Capture and editor write paths with variables where a prefix matches, e.g. C:/Users/Owner/Saved Games/DCS becomes {DCS_USER}."
+      - "An unknown variable fails schema validation with the variable name."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # DISPLAYS
+  # ---------------------------------------------------------------------------
+
+  - id: DISP-001
+    title: Enumerate monitors with stable identity
+    job: configure
+    area: displays
+    priority: p0
+    done_means:
+      - "The displays page lists every connected monitor with model name (from EDID), connector, EDID serial, current resolution, refresh rate, position, rotation, enabled and primary flags."
+      - "Disabled-but-connected monitors (the Dell while flying) are listed as 'off'."
+      - "Fixture mark-flight lists the Samsung 49-inch, three identical USB MFD screens, the Dell and (racing fixture) the TV."
+      - "Rig smoke reads the real layout without admin and matches the fixture's monitor count."
+    status: todo
+    evidence: []
+
+  - id: DISP-002
+    title: Identify and name monitors
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "'Identify' shows a large number overlay on each enabled monitor for 5 s matching the numbers in the diagram."
+      - "Each monitor can be given a friendly name (e.g. 'MFD left') stored by its identity (CHECK-007), used in checks, layouts and messages."
+      - "Names survive reboot and stay attached to the right physical screen in the mfd1-mfd2-swapped scenario."
+    status: todo
+    evidence: []
+
+  - id: DISP-003
+    title: Named layouts per activity
+    job: configure
+    area: displays
+    priority: p0
+    done_means:
+      - "'Save current as layout' stores the full arrangement under a name in {RIGREADY_HOME}/displays/layouts.json (validated)."
+      - "Fixtures provide three layouts matching the owner's rig: Flying (ultrawide + three MFD screens, Dell off), Racing (ultrawide + TV), Desk (Dell + ultrawide, MFD screens off)."
+      - "Layouts can be renamed, deleted and set as the desk layout used by Stand down."
+      - "Each layout shows a scaled diagram with rotation and names (screenshot artifacts/screens/display-layouts/)."
+    status: todo
+    evidence: []
+
+  - id: DISP-004
+    title: Read rotation correctly
+    job: configure
+    area: displays
+    priority: p0
+    done_means:
+      - "Rotation is read as 0, 90, 180 or 270 for each monitor from the display configuration API and reported in the diagram with the monitor drawn rotated."
+      - "Rig smoke on the owner's PC reports the MFD screens' actual rotation (recorded in fixture mark-flight)."
+    status: todo
+    evidence: []
+
+  - id: DISP-005
+    title: Apply rotation and position
+    job: configure
+    area: displays
+    priority: p0
+    done_means:
+      - "Applying a layout sets each monitor's rotation and desktop position in one atomic SetDisplayConfig call (or staged ChangeDisplaySettingsEx with a single commit)."
+      - "Rig smoke: rotate one MFD screen by 90 degrees, read it back as rotated, restore the original layout in a finally block, read it back as original."
+      - "Positions are normalised so the primary monitor is at 0,0 and no monitors overlap; an overlapping layout is rejected before applying with a message."
+    status: todo
+    evidence: []
+
+  - id: DISP-006
+    title: Enable and disable monitors, set primary
+    job: configure
+    area: displays
+    priority: p0
+    done_means:
+      - "Applying the Flying layout disables the Dell and enables the three MFD screens; applying Desk reverses it (scenario on fake DisplayProvider asserts the enabled set)."
+      - "The primary monitor is set as specified by the layout."
+      - "Rig smoke: disable and re-enable one non-primary monitor and restore the original layout in finally."
+    status: todo
+    evidence: []
+
+  - id: DISP-007
+    title: Apply resolution and refresh rate
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "A layout may specify resolution and refresh rate per monitor; apply sets them only if the mode is in the monitor's supported mode list, otherwise it reports which monitor/mode is unsupported and applies nothing."
+      - "Unit test with fake DisplayProvider modes covers supported and unsupported modes."
+    status: todo
+    evidence: []
+
+  - id: DISP-008
+    title: Capture prior layout and revert
+    job: configure
+    area: displays
+    priority: p0
+    done_means:
+      - "Every apply captures the full prior layout first; 'Revert' in the displays page and in the timed prompt re-applies it exactly (rotation, position, enabled set, primary, mode)."
+      - "If the app crashes or is killed during the timed revert window, on next start it offers to restore the captured prior layout (persisted before apply)."
+      - "An apply that fails part-way (API error) automatically re-applies the prior layout and reports the error; it never reports success."
+    status: todo
+    evidence: []
+
+  - id: DISP-009
+    title: Missing monitors during apply
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "Applying a layout that references a monitor not currently connected applies the rest only if the user confirms 'Apply without MFD 3', otherwise applies nothing."
+      - "The display check for that layout fails with 'MFD 3 not connected' rather than a rotation mismatch."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # DEVICES AND TROUBLESHOOTING
+  # ---------------------------------------------------------------------------
+
+  - id: DEV-001
+    title: Enumerate devices
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "The devices page lists every connected game controller and HID device with friendly name, VID/PID, serial (or 'none'), instance path, DirectInput GUID where available, and connection state."
+      - "Fixture mark-flight lists nine WinWing devices, the Thrustmaster TPR, the Virpil panel, TrackIR, Stream Deck and the Fanatec DD2 when racing gear is connected."
+      - "Refresh re-enumerates within the NFR-002 budget; the packaged build enumerates real devices (PLAT-006)."
+    status: todo
+    evidence: []
+
+  - id: DEV-002
+    title: Press a button to identify a device
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "'Identify' starts listening to all devices; the first button press or large axis move highlights the device that produced it and scrolls it into view."
+      - "Scenario with fake InputProvider emitting button 5 on 'MFD right' highlights that device row (E2E)."
+      - "Identify ignores axis noise below a threshold so a jittery axis does not win (unit test with noisy fake axis)."
+    status: todo
+    evidence: []
+
+  - id: DEV-003
+    title: Name a device
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "Each device can be given a friendly name stored by its identity (VID/PID plus serial or instance) in {RIGREADY_HOME}/devices.json."
+      - "The friendly name is used in the devices page, checklist items, binding views and cheat sheets."
+      - "The three identical MFD panels keep their names across app restarts in fixture mark-flight."
+    status: todo
+    evidence: []
+
+  - id: DEV-004
+    title: Device detail and expected-but-missing devices
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "A device detail view shows identity fields, the hub/port it is on (DEV-011), the profiles that require it, and links to its input tester and DCS bindings."
+      - "Below connected devices, a section lists devices required by any profile but not connected, with the profiles that need them (scenario mark-flight + pedals-unplugged shows the TPR there)."
+    status: todo
+    evidence: []
+
+  - id: DEV-005
+    title: Input tester for one device
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "The tester shows every button, axis and hat the device reports, the way DirectInput (as the game sees it) reports them, updating at least 30 times per second."
+      - "Pressing button 12 on the fake 'Throttle' highlights button 12 and shows 'Last input: Button 12 pressed'."
+      - "Axes show a bar and the value; hats show direction."
+      - "Rig smoke on the packaged build shows live input from one real device (screenshot)."
+    status: todo
+    evidence: []
+
+  - id: DEV-006
+    title: Raw input values
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "A raw toggle shows each axis's raw integer (e.g. 0-65535) alongside the normalised percent, and button numbers as the game numbers them (JOY_BTN1 based)."
+      - "Unit test: fake InputProvider value 32767 on a 16-bit axis displays 32767 and 50%."
+    status: todo
+    evidence: []
+
+  - id: DEV-007
+    title: Input tester for all devices at once
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "An all-devices view shows a compact row per device and lights up whichever device and input is active, so the user can press things on a full cockpit without choosing a device first."
+      - "It stays responsive with 16 devices at 60 Hz input from the fake provider (no frame takes over 50 ms in a performance test)."
+    status: todo
+    evidence: []
+
+  - id: DEV-008
+    title: Stuck button detection
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "A health scan reports any button held continuously for more than 5 s while the user is told not to touch anything, naming device and button."
+      - "Toggle-switch panels (startup panel switches that are legitimately on) are listed separately as 'held (switch?)' and can be marked as expected so they are not reported again."
+      - "Scenario mutation startup-panel-button3-stuck is reported."
+    status: todo
+    evidence: []
+
+  - id: DEV-009
+    title: Noisy axis and rogue input detection
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "The health scan samples all axes for 10 s untouched and reports axes whose value range exceeds 1% of full scale as noisy, with the measured spread."
+      - "Any device that produces input during the untouched window (e.g. a drifting MFD brightness knob) is reported as rogue input with the input name."
+      - "Scenario mutation throttle-axis-noisy is reported; the clean mark-flight fixture reports nothing."
+    status: todo
+    evidence: []
+
+  - id: DEV-010
+    title: Binding inspector from the tester
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "With a DCS aircraft selected, pressing an input in the tester shows the DCS action(s) bound to that input on that device (from BIND-DCS-001)."
+      - "An input bound to multiple actions shows all of them with a duplicate warning (BIND-DCS-011)."
+    status: todo
+    evidence: []
+
+  - id: DEV-011
+    title: USB hub map
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "A USB map shows the tree of host controllers, hubs and ports with each device placed on its port, using friendly names."
+      - "Fixture mark-flight renders the owner's tree with every device on the hub it was recorded on (screenshot artifacts/screens/usb-map/)."
+      - "Selecting a device in the map highlights it in the devices list and vice versa."
+    status: todo
+    evidence: []
+
+  - id: DEV-012
+    title: USB limits and what to unplug
+    job: troubleshoot
+    area: devices
+    priority: p2
+    done_means:
+      - "For each host controller the map shows device count and, where obtainable, endpoint usage against the controller's limit, and highlights controllers near or over the limit."
+      - "When over a limit it lists devices on that controller not required by the active profile as candidates to unplug or move."
+    status: todo
+    evidence: []
+
+  - id: DEV-013
+    title: Connect and disconnect notifications from the tray
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "While RigReady is in the tray, connecting or disconnecting a device shows a Windows notification with the device's friendly name within 2 s."
+      - "Notifications can be turned off, or limited to devices required by the last-used profile, in settings."
+      - "Rapid reconnects (USB flapping) of the same device within 3 s are merged into one notification."
+    status: todo
+    evidence: []
+
+  - id: DEV-014
+    title: HidHide visibility on the devices page
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "If HidHide is installed, the devices page marks each device hidden by HidHide with a badge and shows whether RigReady and the game executables are on HidHide's whitelist."
+      - "Fixture mutation tpr-hidden shows the badge on the TPR only."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # DCS WORLD — detection and files
+  # ---------------------------------------------------------------------------
+
+  - id: DCS-001
+    title: Detect DCS standalone installs
+    job: configure
+    area: dcs
+    priority: p0
+    done_means:
+      - "Detection reads the Eagle Dynamics registry keys (DCS World, DCS World OpenBeta) under HKCU and HKLM and reports each install path that contains bin/DCS.exe."
+      - "Fixture registry data with one standalone install is detected; a key pointing at a deleted folder is ignored."
+    status: todo
+    evidence: []
+
+  - id: DCS-002
+    title: Detect DCS in every Steam library
+    job: configure
+    area: dcs
+    priority: p0
+    done_means:
+      - "Detection parses Steam's libraryfolders.vdf and finds DCSWorld under any library's steamapps/common, not just the default Steam folder."
+      - "Fixture with three Steam libraries and DCS in the second one is detected (unit test)."
+    status: todo
+    evidence: []
+
+  - id: DCS-003
+    title: Resolve the right Saved Games folder for each install
+    job: configure
+    area: dcs
+    priority: p0
+    done_means:
+      - "For each install the user folder is resolved from the install's dcs_variant.txt (e.g. openbeta -> Saved Games/DCS.openbeta) and otherwise Saved Games/DCS, using the Saved Games known folder (which may be redirected)."
+      - "All existing Saved Games/DCS* folders are listed, and a folder with no matching install is shown as 'orphaned' (useful after reinstall)."
+      - "Unit tests cover DCS, DCS.openbeta and a redirected Saved Games folder."
+    status: todo
+    evidence: []
+
+  - id: DCS-004
+    title: Choose the DCS install per profile
+    job: configure
+    area: dcs
+    priority: p1
+    done_means:
+      - "When more than one DCS install is detected, the profile stores which one it uses, and {DCS_INSTALL}/{DCS_USER} resolve to that install's paths."
+      - "If the chosen install disappears, the Fly screen shows an error item 'DCS install not found' instead of launching the wrong one."
+    status: todo
+    evidence: []
+
+  - id: DCS-005
+    title: List installed aircraft modules
+    job: configure
+    area: dcs
+    priority: p1
+    done_means:
+      - "Installed aircraft are listed from the install's Mods/aircraft folders with display names, and aircraft that only have input folders in Saved Games are listed too."
+      - "Fixture mark-flight lists FA-18C_hornet and UH-1H among others."
+    status: todo
+    evidence: []
+
+  - id: DCS-006
+    title: options.lua awareness
+    job: configure
+    area: dcs
+    priority: p1
+    done_means:
+      - "options.lua is parsed with the shared Lua table reader; the DCS page shows resolution, multiMonitorSetup, fullscreen and the active MonitorSetup file name."
+      - "A built-in check 'DCS monitor setup matches layout' warns when multiMonitorSetup names a file that does not exist or when the DCS resolution does not equal the bounding box of the profile's display layout."
+      - "RigReady changes options.lua only through DCS-MON-004 (single key edit with backup), never by rewriting the file from a model."
+    status: todo
+    evidence: []
+
+  - id: DCS-007
+    title: Shared DCS Lua reader and writer
+    job: configure
+    area: dcs
+    priority: p0
+    done_means:
+      - "A tokenizer/parser in core reads the Lua table subset DCS uses (nested tables, string/number/boolean/nil keys and values, comments, trailing commas) and fails with a line number on anything else."
+      - "Every .lua file under the sanitised fixture Saved Games/DCS folder parses without error (fixture-sweep test)."
+      - "The writer emits DCS's own formatting (tab-indented, ['key'] = value,) so a parse-write of an unmodified file produces identical semantics and minimal diff."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # DCS — MonitorSetup and Export.lua (SimAppPro replacement for configuration)
+  # ---------------------------------------------------------------------------
+
+  - id: DCS-MON-001
+    title: Read MonitorSetup files
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "All files in {DCS_USER}/Config/MonitorSetup/ and the install's Config/MonitorSetup/ are listed with name, description and viewports (Center, LEFT_MFCD, RIGHT_MFCD, CENTER_MFCD and others)."
+      - "Viewports are drawn over the current display layout diagram so the user sees which screen each viewport lands on."
+      - "The fixture's wwtMonitor.lua (SimAppPro-generated) is read and drawn correctly."
+    status: todo
+    evidence: []
+
+  - id: DCS-MON-002
+    title: Generate a MonitorSetup for MFD viewports
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "From a display layout, the user assigns roles (main view, left MFCD, right MFCD, centre/AMPCD) to monitors and RigReady generates a MonitorSetup .lua with matching viewport coordinates relative to the DCS window origin."
+      - "For fixture mark-flight Flying layout, the generated file places the main view on the ultrawide and the three MFCD viewports on the three MFD screens; a unit test asserts the coordinates."
+      - "The generated file parses with DCS-007 and is shown as a preview diagram before writing."
+    status: todo
+    evidence: []
+
+  - id: DCS-MON-003
+    title: Never clobber user MonitorSetup edits
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "RigReady writes only to a file it owns (default name 'RigReady.lua'); if that file was edited outside RigReady since RigReady last wrote it (hash mismatch), RigReady shows a diff and asks before overwriting."
+      - "Other MonitorSetup files are never modified; writing goes through FileStore with backup and journal."
+      - "Unit test: hand-modified RigReady.lua triggers the diff prompt; unmodified one is updated silently with a journal entry."
+    status: todo
+    evidence: []
+
+  - id: DCS-MON-004
+    title: Select the monitor setup in options.lua
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "'Use in DCS' sets graphics.multiMonitorSetup (and resolution to the layout bounding box, if the user ticks it) in options.lua by changing only those keys, with a pre-write backup and a visible description of both changes."
+      - "Refuses while DCS.exe is running, explaining that DCS rewrites options.lua on exit."
+      - "Unit test: all other keys in a fixture options.lua are unchanged after the edit."
+    status: todo
+    evidence: []
+
+  - id: DCS-MON-005
+    title: Detect drift between MonitorSetup and the display layout
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "A check (optional by default) warns when any viewport of the active MonitorSetup lies outside an enabled monitor of the current layout, e.g. after an MFD screen was rotated."
+      - "Scenario mark-flight + mfd2-rotated shows this warning alongside the display check failure, and both clear after the display fix."
+    status: todo
+    evidence: []
+
+  - id: DCS-EXPORT-001
+    title: Read Export.lua and list each tool's lines
+    job: configure
+    area: dcs-export
+    priority: p1
+    done_means:
+      - "{DCS_USER}/Scripts/Export.lua is read and its dofile/loadfile/pcall lines are attributed to known tools: DCS-BIOS, WinWing (wwt), SRS, Tacview, plus 'unknown' for anything else."
+      - "The page lists each tool's lines in order and whether the referenced script file exists."
+      - "Fixture Export.lua with DCS-BIOS, wwt, SRS and Tacview lines lists all four."
+    status: todo
+    evidence: []
+
+  - id: DCS-EXPORT-002
+    title: Add or remove a tool's lines without losing others
+    job: configure
+    area: dcs-export
+    priority: p1
+    done_means:
+      - "Adding a known tool appends that tool's canonical line; removing one deletes only its lines; every other line, comment and order is preserved byte-for-byte (unit test on fixture)."
+      - "Writes go through FileStore with backup and a visible before/after diff."
+      - "Duplicate lines for the same tool are detected and offered for dedupe."
+    status: todo
+    evidence: []
+
+  - id: DCS-EXPORT-003
+    title: Export.lua integrity check and repair
+    job: configure
+    area: dcs-export
+    priority: p1
+    done_means:
+      - "A profile can require tools in Export.lua (e.g. DCS-BIOS and wwt); a check fails naming any missing tool line, as happens after SimAppPro or a DCS-BIOS installer rewrites the file."
+      - "The fix re-adds the missing lines using DCS-EXPORT-002, and the check turns green (scenario mark-flight + export-lua-overwritten)."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # DCS BINDINGS
+  # ---------------------------------------------------------------------------
+
+  - id: BIND-DCS-001
+    title: Parse real .diff.lua binding files
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "Every file in fixture Config/Input/*/{joystick,keyboard,mouse,trackir,headtracker}/*.diff.lua parses into a model of axisDiffs and keyDiffs with added/removed entries, keys, reformers and axis filters."
+      - "File names '<Device Name> {GUID}.diff.lua' are split into device name and GUID, including names with leading spaces or braces in the name (unit tests)."
+      - "A malformed file is reported with path and line and does not stop other files from loading."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-002
+    title: Load DCS default input definitions
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "For an aircraft, the install's default input files (Mods/aircraft/<module>/Input/<aircraft>/joystick/default.lua, keyboard/default.lua and any per-device <Device Name>.lua) are loaded to get every command with its id, name and category."
+      - "Command definitions that use Lua code DCS evaluates (e.g. join(), loops in default.lua) are handled by a restricted evaluator or a documented fallback; unsupported constructs are reported, not silently skipped."
+      - "For F/A-18C and UH-1H the loader yields the full command list (count asserted against a recorded fixture of the install's input files)."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-003
+    title: Effective bindings = defaults plus diff
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "For each aircraft and device, effective bindings are computed as the defaults that apply to that device plus 'added' minus 'removed' from its diff file."
+      - "A device with no diff file shows the full default set (this is why every new device gets pitch and roll)."
+      - "Unit test: fixture TPR diff that removes default JOY_X pitch results in no pitch on the TPR."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-004
+    title: Per-device binding view
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "Choosing an aircraft and a device lists every input on that device (buttons, axes, hats) with its bound action(s), plain-language label, and whether it comes from defaults or user changes."
+      - "Devices are matched to connected hardware by GUID and shown with the friendly name (DEV-003); diff files for devices not connected are listed separately."
+      - "Screenshot artifacts/screens/bindings-device/ for F/A-18C + UFC1+HUD1 from fixture mark-flight."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-005
+    title: Per-aircraft binding view
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "Choosing an aircraft lists every command by category with the inputs bound to it on every device, searchable by action name and filterable to 'bound only' or 'unbound only'."
+      - "Summary shows total bindings per device and counts of duplicates in both senses."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-006
+    title: Edit a button binding
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "On a device's view the user can bind an action to an input by pressing the input (listening via InputProvider) or picking it from a list, with optional modifiers (reformers)."
+      - "Removing a binding on an input that came from defaults writes a 'removed' entry; removing a user-added binding deletes its 'added' entry."
+      - "Changes are staged and listed, then written together on Save (BIND-DCS-008)."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-007
+    title: Edit an axis binding and its filter
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "An axis action can be bound to a device axis with deadzone, saturation X/Y, curvature, invert and slider settings."
+      - "A preview curve reflects the filter values."
+      - "Round-trip test: setting curvature 0.15 and invert on fixture pitch produces the same filter table DCS writes."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-008
+    title: Write .diff.lua files DCS accepts
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "Saving writes '<Device Name> {GUID}.diff.lua' in DCS's own format via FileStore (backup and journal first) and shows a description of the changes."
+      - "Parse-then-write of every fixture diff file without edits yields an equivalent model (round-trip test across the whole fixture)."
+      - "Manual rig verification recorded once: a binding edited in RigReady appears in DCS's controls screen for F/A-18C (screenshot from DCS stored as evidence)."
+      - "Saving is refused while DCS.exe is running, with an explanation that DCS may overwrite bindings."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-009
+    title: Modifiers awareness
+    job: configure
+    area: dcs-bindings
+    priority: p2
+    done_means:
+      - "modifiers.lua per aircraft is read; bindings using a device-button modifier show the modifier's friendly name and device."
+      - "A modifier referencing a device GUID that is not connected is flagged and included in GUID migration (BIND-DCS-016)."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-010
+    title: Duplicates — one input bound to many actions
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "For an aircraft, the duplicates view lists every device input (same key and same reformers) bound to more than one action, with each action shown."
+      - "Fixture mark-flight F/A-18C with a known MFD brightness knob also bound to pitch is reported."
+      - "Bindings that differ only by modifier are not reported as duplicates."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-011
+    title: Duplicates — one action bound to many inputs
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "The duplicates view lists every action bound on more than one device or input, e.g. 'Pitch' on the joystick Y axis and on the throttle, ICP and MFD panels."
+      - "Each occurrence has a Clear control; 'Keep only this one' clears the others for that action in one staged change."
+      - "Intentional multiples can be marked 'expected' per aircraft and are then hidden from the count."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-012
+    title: Find default bindings DCS applied to every device
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "Using the install's default input files, RigReady lists, per aircraft, the default bindings that are active on devices that are not meant for them (e.g. pitch/roll/thrust axes on MFD panels, UFC, startup panel, pedals' non-rudder axes)."
+      - "The user can mark each device's role (stick, throttle, pedals, panel, MFD bezel) and the list is computed from roles; default role suggestions come from device names and are editable."
+      - "Fixture: a fresh diff-less WinWing ICP for F/A-18C shows its default pitch and roll axes in the list."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-013
+    title: Clean up unwanted default bindings
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "'Clean up' writes 'removed' entries for every selected default binding into the right device's diff file, creating the file if missing, after a preview and with backup."
+      - "Cleanup can be applied to one aircraft or to all installed aircraft at once."
+      - "After cleanup on the fixture, BIND-DCS-011 reports no default axis duplicates on panel devices."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-014
+    title: Clear a device
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "'Clear all on this device' for an aircraft produces a diff that removes every default and every added binding on that device, after a confirmation stating the count."
+      - "The change is undoable through the journal (BACKUP-013)."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-015
+    title: Detect device GUID changes
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "RigReady compares diff file GUIDs per aircraft with the DirectInput GUIDs of connected devices and lists files whose device name matches a connected device but whose GUID does not ('orphaned bindings')."
+      - "Fixture recreating the owner's 2026-02 situation (backup GUIDs 4F6FD890-..., current 806DDF00-...) lists all ten affected devices with old and new GUIDs."
+      - "A Fly check (optional by default) warns 'Bindings for WINWING UFC1 + HUD1 belong to an old device ID' when this is detected for the profile's aircraft."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-016
+    title: Migrate bindings to new device GUIDs
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "Migration renames each orphaned diff file to the new GUID for every aircraft folder and updates GUID references in modifiers.lua, with a preview of every rename and backup first."
+      - "If a file for the new GUID already exists, the user chooses keep existing, replace, or merge (orphaned bindings added where not conflicting)."
+      - "After migration on the fixture, the per-device view shows the restored bindings on the connected devices."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-017
+    title: GUID migration for identical devices
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "When several orphaned files share a device name (MFD1 left, centre, right all named 'WINWING MFD1'), RigReady does not guess; it asks the user to press a button on the physical device intended for each old file."
+      - "Scenario with three identical MFD panels and fake InputProvider presses assigns each old file to the pressed device's GUID."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-018
+    title: Copy common controls between aircraft
+    job: configure
+    area: dcs-bindings
+    priority: p2
+    done_means:
+      - "The user chooses a source aircraft, target aircraft, and devices; RigReady proposes copies for actions that exist in both (matched by command id, then by normalised name for common controls such as pitch, roll, trim, view, comms, zoom)."
+      - "The preview shows each proposed copy, actions with no match in the target, and target inputs that would be overwritten; the user ticks what to apply."
+      - "Copying F/A-18C stick/throttle common controls to UH-1H produces bindings for trim, view center and zoom on the same inputs (fixture test)."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-019
+    title: Important but unbound
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "For F/A-18C and UH-1H, RigReady ships a curated list of important actions in priority tiers (e.g. flight controls, weapons/sensors, comms, systems) and shows which are not bound on any device."
+      - "For other aircraft a generic tier list (flight axes, trim, view, comms, wheel brakes, gear, flaps) is used."
+      - "Fixture F/A-18C with no Sensor Control binding shows 'Sensor Control Switch' in the top tier."
+      - "Works without an Anthropic key (AI-001)."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-020
+    title: Named binding snapshots
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "'Snapshot' copies the Input folder for chosen aircraft (or all) plus modifiers into {RIGREADY_HOME}/snapshots/dcs/<name>/ with metadata (date, DCS version, device names and GUIDs)."
+      - "Snapshots are listed with name, date, aircraft and size, and can be renamed and deleted."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-021
+    title: Restore a binding snapshot
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "Restoring a snapshot previews files to be written; if snapshot GUIDs differ from connected devices, the restore offers GUID migration (BIND-DCS-016) instead of writing orphaned files."
+      - "Restore uses FileStore with backup, and the per-device view matches the snapshot afterwards (fixture test)."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-022
+    title: Compare two binding snapshots
+    job: configure
+    area: dcs-bindings
+    priority: p3
+    done_means:
+      - "Two snapshots (or a snapshot and current) can be compared per aircraft and device, listing added, removed and changed bindings."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-023
+    title: F/A-18C end-to-end binding coverage
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "Using the sanitised copy of the owner's FA-18C_hornet Input folder, every BIND-DCS view loads with names for all bound commands (no raw ids shown where the default files define a name)."
+      - "The fixture's known bindings from docs/archive/dcs-setup-requirements.md (UFC keypad, MFD 20 OSBs, split throttle, TPR rudder and toe brakes) are asserted present."
+    status: todo
+    evidence: []
+
+  - id: BIND-DCS-024
+    title: UH-1H binding coverage
+    job: configure
+    area: dcs-bindings
+    priority: p2
+    done_means:
+      - "With a UH-1H fixture, views, duplicates, default cleanup and important-but-unbound work, including collective and cyclic axis naming."
+      - "A UH-1H curated priority list exists (BIND-DCS-019)."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # CHEAT SHEETS
+  # ---------------------------------------------------------------------------
+
+  - id: SHEET-001
+    title: Per-aircraft, per-device cheat sheet
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "For an aircraft and a device, a cheat sheet shows a picture of the device with every control labelled with its bound action in plain language (AI-001 labels or DCS names)."
+      - "Unbound controls are shown as blank, modifiers are shown as a second line ('LCtrl: ...')."
+      - "It reflects the current effective bindings (BIND-DCS-003); after editing a binding the sheet updates."
+    status: todo
+    evidence: []
+
+  - id: SHEET-002
+    title: Device layout templates
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "Device pictures come from template files (image plus control coordinates) keyed by VID/PID, shipped for the owner's devices: WinWing UFC1+HUD1, ICP, MFD1 (x3), startup panel, takeoff panel, throttle base + F15EX handles, Orion stick + grip, TPR pedals, Virpil panel."
+      - "A device with no template gets a generated grid of its buttons, axes and hats, so every device has a sheet."
+      - "Templates are data files validated by zod; a broken template falls back to the grid and logs why."
+    status: todo
+    evidence: []
+
+  - id: SHEET-003
+    title: Printable cheat sheets
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "'Print' produces a print layout fitting A4 and US Letter, one device per page, with aircraft and device names in the header."
+      - "'Save as PDF' writes a PDF via Electron printToPDF to a user-chosen location; a test asserts page count equals the number of selected devices."
+    status: todo
+    evidence: []
+
+  - id: SHEET-004
+    title: Export cheat sheets as DCS kneeboard pages
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "'Export to kneeboard' writes one PNG per device at kneeboard aspect (portrait, default 768x1024) into {DCS_USER}/Kneeboard/<aircraft>/ with names prefixed 'RigReady -' so they sort together and are recognisable."
+      - "Previously exported RigReady pages for that aircraft are replaced; other kneeboard files are never touched."
+      - "Writes go through FileStore with backup and a description; test asserts PNG dimensions and file names."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # AI-ASSISTED BINDING GUIDANCE
+  # ---------------------------------------------------------------------------
+
+  - id: AI-001
+    title: Plain-language labels without a key
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Binding views and cheat sheets show plain-language labels for DCS commands (e.g. 'Sensor Control Switch - Fwd' -> 'Sensor select: HUD') from a shipped label file for F/A-18C and UH-1H, with the DCS name always available."
+      - "With no API key configured, all labels and priority lists work and no AI controls are shown except a 'Set up AI help' link."
+    status: todo
+    evidence: []
+
+  - id: AI-002
+    title: Store the Anthropic API key safely
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "The key is entered in Settings, encrypted with Electron safeStorage (DPAPI) and stored under the data root; it is never written to profiles, logs, backups, exports or crash reports (test greps all written files for the key)."
+      - "The key is never sent to the renderer after entry; the UI shows only the last 4 characters."
+      - "'Test key' makes one minimal API call and reports valid/invalid; 'Remove key' deletes it."
+    status: todo
+    evidence: []
+
+  - id: AI-003
+    title: Suggest what to bind
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "With a key, 'Suggest bindings' for an aircraft sends the device list (names, control counts, current bindings) and the aircraft's command list, and receives suggestions of action -> device input with a short reason, in priority order."
+      - "Before sending, the user sees exactly what will be sent (no paths, serials or user names) and confirms."
+      - "Responses are validated with zod; suggestions referencing unknown commands or inputs are dropped and counted."
+      - "Unit test uses a recorded API response fixture; no network in CI."
+    status: todo
+    evidence: []
+
+  - id: AI-004
+    title: User approves each AI change
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Each suggestion has Accept and Reject; accepted suggestions become staged binding edits (BIND-DCS-006) and nothing is written until the normal Save with backup."
+      - "Suggestions that conflict with existing bindings are labelled with the conflict before acceptance."
+      - "API errors, timeouts and rate limits show a clear message and leave existing bindings untouched."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # BACKUP AND RESTORE
+  # ---------------------------------------------------------------------------
+
+  - id: BACKUP-001
+    title: Tracked files and folders
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "A profile (and a global 'Always back up' list) can track files and folders by path-variable path, each with a label and game."
+      - "The tracked list shows each entry's resolved path, file count and total size, and flags entries that do not exist on this machine."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-002
+    title: Include and exclude patterns
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "Each tracked folder can have include and exclude glob patterns (e.g. include **/*.lua, exclude Logs/**, Tracks/**, Temp/**)."
+      - "The editor previews which files match before saving the entry."
+      - "Default DCS tracked items exclude Logs, Tracks, Temp and fxo/metashaders2 (unit test on matched file list in fixture)."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-003
+    title: Game-suggested tracked items
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "Each game module suggests tracked items: DCS (Config/Input, options.lua, MonitorSetup, Scripts/Export.lua and tool folders, Kneeboard), iRacing, LMU, BeamNG, Stream Deck and Fanatec as defined in their entries."
+      - "Suggestions appear in profile capture (CFG-PROFILE-004) and on the backup page with one-click add."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-004
+    title: One-click full backup
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "'Back up now' creates one backup of all profiles, RigReady settings, display layouts and every tracked item, with progress, and reports file count and size."
+      - "The backup is a zip under {RIGREADY_HOME}/backups/ named with date and time; a test unpacks it and finds every tracked file from the fixture."
+      - "Files that could not be read (locked, permission) are listed in the result; the backup is not reported as complete if any were skipped, but as 'completed with n skipped'."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-005
+    title: Scoped backups
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "A backup can be scoped to one profile's tracked items or a custom selection of tracked items, from the backup page or the profile."
+      - "Each backup carries a manifest: date, machine name, RigReady version, scope, list of entries with original path-variable paths and hashes."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-006
+    title: Manage backups
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "The backups list shows each backup's name, date, scope, size and source machine; backups can be renamed, deleted (with confirm), exported to a chosen folder and opened in Explorer."
+      - "A backup file copied in from elsewhere (e.g. a USB stick) can be added to the list via 'Open backup file'."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-007
+    title: Restore wizard with preview
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "Restore lets the user pick a backup, shows its manifest, and lists every entry with its resolved target path on this machine and whether the target exists, is identical, or differs."
+      - "The user can tick entries (whole tracked item or individual files) to restore."
+      - "Entries whose path variable cannot be resolved here (game not installed) are shown as not restorable with the reason."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-008
+    title: Restore conflict choices
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "For each differing target, the user chooses overwrite, skip, or keep both (restored copy written next to it with suffix ' (restored YYYY-MM-DD)'), with an 'apply to all' option."
+      - "Overwrite snapshots the existing file first (BACKUP-010) so the restore can be undone."
+      - "Profiles in the backup that already exist get the same three choices, with keep both creating '<name> (restored)'."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-009
+    title: Restore result report
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "After restore, a report lists restored, skipped, kept-both and failed entries with reasons; success is claimed only for files whose hash matches the backup after writing."
+      - "The report offers 'Run checks now' which opens the Fly screen."
+      - "E2E: restore the fixture backup into an empty temp profile and assert files and report (screenshot artifacts/screens/restore/)."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-010
+    title: Automatic backup before every write
+    job: configure
+    area: backup
+    priority: p0
+    done_means:
+      - "Every FileStore.write, rename or delete outside the data root first copies the previous content (if any) to {RIGREADY_HOME}/backups/auto/<timestamp>/ and appends a journal entry with path, action, reason and hashes."
+      - "A unit test writes through FileStore with a failing backup step and asserts the target was not modified."
+      - "There is no code path that writes outside the data root without FileStore (lint rule forbidding fs write imports outside src/platform)."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-011
+    title: Visible description of every change
+    job: configure
+    area: backup
+    priority: p0
+    done_means:
+      - "Before any write outside the data root triggered by the user, the UI shows which files will change and how (created, modified with summary, renamed, deleted)."
+      - "Background writes (none expected) are forbidden; the journal shows no entries without a user-initiated action id (unit test on journal schema)."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-012
+    title: Undo journal
+    job: configure
+    area: backup
+    priority: p0
+    done_means:
+      - "A Changes page lists journal entries newest first, grouped by user action (e.g. 'Migrated 10 device GUIDs'), with files affected."
+      - "Undo restores every file in the group to its pre-change content; if a file changed since, the user is told and asked before overwriting it."
+      - "Undo itself is journalled and can be undone."
+      - "Unit test: write, modify externally, undo -> prompt; write, undo -> original bytes."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-013
+    title: Auto-backup retention
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "Auto-backups are kept for at least 30 days and the newest 50 action groups regardless of age; older ones are pruned on startup."
+      - "The retention limits are visible and changeable in settings; the Changes page shows total size used."
+    status: todo
+    evidence: []
+
+  - id: BACKUP-014
+    title: Path variables resolve on another machine
+    job: configure
+    area: backup
+    priority: p1
+    done_means:
+      - "Backups store paths with variables; restoring a backup made under user 'Owner' to a temp machine (USERPROFILE=temp/Bob, DCS in a different Steam library) writes files to Bob's resolved paths (E2E with env overrides)."
+      - "A path that was not under any known variable at backup time is stored absolute and flagged in the restore preview."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # SHARING
+  # ---------------------------------------------------------------------------
+
+  - id: SHARE-001
+    title: Export a profile as a .rigready file
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "'Share' on a profile produces a .rigready file (zip) containing a manifest, the profile, its display layouts and, optionally ticked, its tracked config files (e.g. DCS bindings for the aircraft)."
+      - "The manifest records RigReady version, schema version, game, and the generated compatibility notes (SHARE-003)."
+    status: todo
+    evidence: []
+
+  - id: SHARE-002
+    title: Privacy review before export
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "Before writing the file, a review lists every personal item found: absolute paths (normalised to variables), Windows user name, machine name, device serials and instance paths, DCS GUIDs in file names, and audio device ids."
+      - "Each item can be removed or kept; defaults remove serials, instance paths and user/machine names."
+      - "The export is blocked until the user ticks 'I reviewed this'; a test greps the exported zip for the fixture user name and machine name and finds none with defaults."
+    status: todo
+    evidence: []
+
+  - id: SHARE-003
+    title: Scripts and launch commands stripped and listed
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "Script checks, script fixes, script actions and the launch target's executable path are removed from the exported profile and replaced by a list of names and descriptions in the manifest."
+      - "No script file is ever included, even if inside a tracked folder (files with executable extensions .exe .bat .cmd .ps1 .py .vbs .js are excluded and listed)."
+      - "The review step shows the stripped list (e.g. 'check_vpn.py - Checks squadron VPN')."
+    status: todo
+    evidence: []
+
+  - id: SHARE-004
+    title: Compatibility notes
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "Export auto-generates required hardware (devices by name and VID/PID, required vs optional), required software (games, helper apps) and display layout summary; the user can edit the free-text notes."
+    status: todo
+    evidence: []
+
+  - id: SHARE-005
+    title: Import with validation
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "Importing a .rigready file validates manifest and every contained file with zod before anything is written; invalid bundles are rejected with the reason."
+      - "Zip entries with absolute paths, '..', drive letters, symlinks, or total uncompressed size over 200 MB are rejected (unit tests with crafted zips)."
+      - "Imported profiles contain no runnable content: any script or launch command present despite SHARE-003 is dropped and listed."
+    status: todo
+    evidence: []
+
+  - id: SHARE-006
+    title: Compatibility report on import
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "Before import, a report compares the bundle's requirements with this machine: devices present or missing (matched by VID/PID), games installed or missing, helper apps found or not, monitors count vs layout."
+      - "Fixture generic-rig importing mark-flight's F/A-18C bundle reports the WinWing devices as missing and DCS as found."
+    status: todo
+    evidence: []
+
+  - id: SHARE-007
+    title: Selective import
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "The user ticks which parts to import (profile, display layouts, each config file group); unticked parts are not written."
+      - "Imported device checks that have no match here are imported as disabled items flagged 'device not found' rather than dropped."
+      - "Imported DCS binding files whose GUIDs do not match local devices are routed through GUID mapping (BIND-DCS-016/017)."
+    status: todo
+    evidence: []
+
+  - id: SHARE-008
+    title: Import never writes outside known folders
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "Every target path of an import resolves under a KnownFolders root (data root, a detected game user folder, Documents, Saved Games); anything else is rejected and listed."
+      - "All writes go through FileStore with backup and the import is one undo group in the journal."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # RACING — iRacing
+  # ---------------------------------------------------------------------------
+
+  - id: RACE-IRACING-001
+    title: Detect iRacing
+    job: configure
+    area: racing-iracing
+    priority: p2
+    done_means:
+      - "Detection finds the iRacing install from the iRacing registry key or default Program Files path and the user folder {DOCUMENTS}/iRacing (respecting a redirected Documents folder)."
+      - "Fixture with iRacing installed is detected; generic-rig without it shows 'not installed' and offers manual path."
+    status: todo
+    evidence: []
+
+  - id: RACE-IRACING-002
+    title: iRacing config locations and tracked defaults
+    job: configure
+    area: racing-iracing
+    priority: p2
+    done_means:
+      - "The iRacing module suggests tracking app.ini, controls.cfg, joyCalib.yaml, rendererDX11*.ini and setups/*/controls.cfg and joyCalib.yaml (per-car controls)."
+      - "The iRacing page shows which per-car control sets exist."
+    status: todo
+    evidence: []
+
+  - id: RACE-IRACING-003
+    title: iRacing backup and restore
+    job: configure
+    area: racing-iracing
+    priority: p2
+    done_means:
+      - "Backup and restore of the iRacing tracked items work through BACKUP-* with a fixture user folder."
+      - "Restore is refused while iRacingSim64DX11.exe is running, explaining iRacing writes these files on exit."
+    status: todo
+    evidence: []
+
+  - id: RACE-IRACING-004
+    title: iRacing devices and calibration view
+    job: configure
+    area: racing-iracing
+    priority: p2
+    done_means:
+      - "joyCalib.yaml is parsed and lists each device iRacing knows with its InstanceGUID and calibrated axes, matched to connected devices."
+      - "Devices in joyCalib with GUIDs not matching any connected device are flagged 'iRacing will ask to recalibrate'."
+      - "controls.cfg (binary) is not edited; if the format can be decoded read-only, bound actions are listed, otherwise the page says bindings are not viewable for iRacing."
+    status: todo
+    evidence: []
+
+  - id: RACE-IRACING-005
+    title: iRacing device-ID repair where the format allows
+    job: configure
+    area: racing-iracing
+    priority: p3
+    done_means:
+      - "Research note in docs/research/ records whether iRacing's controls.cfg and joyCalib.yaml reference device instance GUIDs and whether rewriting them restores bindings."
+      - "If yes, a repair rewrites the GUIDs in joyCalib.yaml (and controls.cfg if safe) with preview and backup; if no, the UI does not offer repair (rule 2)."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # RACING — Le Mans Ultimate
+  # ---------------------------------------------------------------------------
+
+  - id: RACE-LMU-001
+    title: Detect Le Mans Ultimate
+    job: configure
+    area: racing-lmu
+    priority: p2
+    done_means:
+      - "Detection finds 'Le Mans Ultimate' in any Steam library (libraryfolders.vdf) and its UserData folder."
+      - "Fixture with LMU in a non-default library is detected."
+    status: todo
+    evidence: []
+
+  - id: RACE-LMU-002
+    title: LMU config locations, backup and restore
+    job: configure
+    area: racing-lmu
+    priority: p2
+    done_means:
+      - "Suggested tracked items: UserData/player/*.json (Settings.JSON, 'direct input.json' with its space, keyboard.json, current controller file), Config_DX11*.ini; excluded: UserData/Log."
+      - "Backup and restore work through BACKUP-* and restore is refused while LMU is running."
+    status: todo
+    evidence: []
+
+  - id: RACE-LMU-003
+    title: LMU binding view
+    job: configure
+    area: racing-lmu
+    priority: p2
+    done_means:
+      - "The controller JSON is parsed and the page lists each control with its device and input, matched to connected devices by the name=#VIDPID identifier."
+      - "Devices referenced but not connected are flagged."
+    status: todo
+    evidence: []
+
+  - id: RACE-LMU-004
+    title: LMU device-ID repair where the format allows
+    job: configure
+    area: racing-lmu
+    priority: p3
+    done_means:
+      - "If a referenced device's VID/PID matches a connected device under a different name string, RigReady offers to update the identifier, with preview and backup."
+      - "Unit test with fixture JSON where the wheel's name changed after a driver update."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # RACING — BeamNG.drive
+  # ---------------------------------------------------------------------------
+
+  - id: RACE-BEAMNG-001
+    title: Detect BeamNG.drive and its versioned user folder
+    job: configure
+    area: racing-beamng
+    priority: p2
+    done_means:
+      - "Detection finds BeamNG.drive in any Steam library and the user folder from the userpath_override registry value or {LOCALAPPDATA}/BeamNG.drive, choosing the newest version subfolder (e.g. 0.32) and listing older ones."
+      - "Unit tests cover override present, absent, and multiple version folders."
+    status: todo
+    evidence: []
+
+  - id: RACE-BEAMNG-002
+    title: BeamNG backup and restore
+    job: configure
+    area: racing-beamng
+    priority: p2
+    done_means:
+      - "Suggested tracked items: settings/inputmaps/** (including per-vehicle folders), settings/*.ini and *.json; excluded: mods, replays, cache."
+      - "Restoring a backup from an older version folder into the current one is offered explicitly ('restore 0.31 bindings into 0.32')."
+    status: todo
+    evidence: []
+
+  - id: RACE-BEAMNG-003
+    title: BeamNG binding view
+    job: configure
+    area: racing-beamng
+    priority: p2
+    done_means:
+      - "inputmaps/*.diff files are parsed; with the game's default .json maps loaded from the install, the effective bindings per device (by VID/PID file name) are listed."
+      - "Per-vehicle diff folders are shown under the vehicle name."
+    status: todo
+    evidence: []
+
+  - id: RACE-BEAMNG-004
+    title: BeamNG device-ID repair where the format allows
+    job: configure
+    area: racing-beamng
+    priority: p3
+    done_means:
+      - "If a .diff file's VID/PID name matches no connected device but a connected device of the same kind exists (e.g. wheel base replaced), RigReady offers to copy the bindings to the new device's file name with preview and backup."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # RACING — Fanatec and racing profile
+  # ---------------------------------------------------------------------------
+
+  - id: RACE-001
+    title: Racing profile on the owner's rig
+    job: fly
+    area: racing
+    priority: p2
+    done_means:
+      - "Fixture mark-racing (Fanatec DD2, racing layout ultrawide + TV, Fanatec control panel and SimHub running) supports capturing an 'iRacing' profile whose checks all pass on the unchanged fixture."
+      - "Make ready applies the Racing layout and starts missing apps; Stand down returns to Desk (E2E)."
+    status: todo
+    evidence: []
+
+  - id: RACE-FANATEC-001
+    title: Detect the Fanatec wheel base, rim and software
+    job: troubleshoot
+    area: fanatec
+    priority: p2
+    done_means:
+      - "The Fanatec wheel base (Podium DD2) is detected by VID/PID, and the Fanatec driver/control panel install and version are detected."
+      - "Research note in docs/research/ records whether the attached rim is detectable (separate HID, driver API, or not); if detectable the devices page shows the rim."
+    status: todo
+    evidence: []
+
+  - id: RACE-FANATEC-002
+    title: Locate what the Fanatec software stores
+    job: configure
+    area: fanatec
+    priority: p2
+    done_means:
+      - "Research note documents where Fanatec Control Panel / Fanatec App store tuning profiles and settings (files, registry, or only on the base), verified on the owner's PC."
+      - "The Fanatec module suggests those locations as tracked items; if settings live only on the wheel base, the UI says backup is not possible rather than offering it."
+    status: todo
+    evidence: []
+
+  - id: RACE-FANATEC-003
+    title: Back up and restore Fanatec settings
+    job: configure
+    area: fanatec
+    priority: p2
+    done_means:
+      - "Fanatec tracked items are included in full backup and can be restored via the restore wizard, with the Fanatec software closed (the restore offers to close and restart it)."
+      - "Fixture test with sample Fanatec settings files round-trips through backup and restore."
+    status: todo
+    evidence: []
+
+  - id: RACE-FANATEC-004
+    title: Per-game recommended vs current wheel settings
+    job: configure
+    area: fanatec
+    priority: p2
+    done_means:
+      - "For iRacing, LMU and BeamNG, a table shows recommended wheel settings (from a shipped, sourced data file citing where each recommendation comes from) next to the current values where readable."
+      - "Values that are not readable are shown as 'set on the wheel' with the recommended value, not as matching."
+      - "A profile can include a 'wheel settings match' check (optional) using readable values only."
+    status: todo
+    evidence: []
+
+  - id: RACE-FANATEC-005
+    title: Rim variants via separate profiles
+    job: configure
+    area: fanatec
+    priority: p3
+    done_means:
+      - "Cloning a racing profile into a rim variant (e.g. 'iRacing GT3 - Formula rim') with a different binding backup works end-to-end; if the rim is detectable (RACE-FANATEC-001) the rim becomes a device check."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # STREAM DECK
+  # ---------------------------------------------------------------------------
+
+  - id: SDECK-001
+    title: Stream Deck install detection and guidance
+    job: configure
+    area: stream-deck
+    priority: p2
+    done_means:
+      - "RigReady detects the Elgato Stream Deck app install, version and running state, and connected Stream Deck hardware by VID/PID."
+      - "If not installed, the Stream Deck page shows install guidance (official download link opened only after confirm) and for DCS mentions the DCS-BIOS / Streamdeck-DCS plugin requirement."
+    status: todo
+    evidence: []
+
+  - id: SDECK-002
+    title: Back up Stream Deck profiles and plugins
+    job: configure
+    area: stream-deck
+    priority: p2
+    done_means:
+      - "'Back up Stream Deck' copies the app's profile folder (ProfilesV2 or current equivalent) and the plugin list (with plugin folders optional) from {APPDATA}/Elgato/StreamDeck into a RigReady backup with a manifest of profile names."
+      - "Backup works while the Stream Deck app is running (read-only copy), and is included in the full backup."
+    status: todo
+    evidence: []
+
+  - id: SDECK-003
+    title: Restore Stream Deck backups
+    job: configure
+    area: stream-deck
+    priority: p2
+    done_means:
+      - "Restore requires the Stream Deck app to be closed; RigReady offers to close it, restores with pre-write backup, then offers to start it again."
+      - "Restore preview lists profiles that will be added or replaced."
+      - "Importing an Elgato .streamDeckProfilesBackup file (like the owner's Feb 2024 backup) is supported if its format is readable; otherwise the page explains how to import it in the Stream Deck app."
+    status: todo
+    evidence: []
+
+  - id: SDECK-004
+    title: Manage Stream Deck backups
+    job: configure
+    area: stream-deck
+    priority: p2
+    done_means:
+      - "The Stream Deck page lists its backups with date, profile count and size; each can be renamed, deleted and exported."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # SIMAPPPRO REPLACEMENT
+  # ---------------------------------------------------------------------------
+
+  - id: SAP-001
+    title: Configure MFD screens without SimAppPro
+    job: configure
+    area: simapppro
+    priority: p1
+    done_means:
+      - "On a fixture where SimAppPro is not installed, the user can go from three connected MFD screens to a working DCS MFD export: apply rotation/position (DISP-005), generate MonitorSetup (DCS-MON-002), select it in options.lua (DCS-MON-004)."
+      - "Manual rig verification recorded once: with SimAppPro closed, DCS F/A-18C shows the left, right and AMPCD displays on the three MFD screens (photo/screenshot evidence)."
+    status: todo
+    evidence: []
+
+  - id: SAP-002
+    title: Export scripts and binding backup without SimAppPro
+    job: configure
+    area: simapppro
+    priority: p1
+    done_means:
+      - "Export.lua entries needed by WinWing devices (wwt) are managed by DCS-EXPORT-002 without SimAppPro installed."
+      - "WinWing binding backup/restore is covered by BIND-DCS-020/021 and full backup; no feature requires SimAppPro's cloud or profile format."
+    status: todo
+    evidence: []
+
+  - id: SAP-003
+    title: SimAppPro running check only when runtime features are needed
+    job: fly
+    area: simapppro
+    priority: p0
+    done_means:
+      - "A profile declares which WinWing runtime features it uses (backlight sync, UFC/ICP displays, vibration); a 'SimAppPro running' check is added (required) only if at least one is declared."
+      - "Scenario mark-flight F/A-18C (UFC display declared) + simapppro-not-running fails the check with fix 'Start SimAppPro'; the UH-1H profile (none declared) has no SimAppPro item."
+    status: todo
+    evidence: []
+
+  - id: SAP-004
+    title: Notice when SimAppPro rewrites DCS files
+    job: configure
+    area: simapppro
+    priority: p2
+    done_means:
+      - "When MonitorSetup files, options.lua multiMonitorSetup or Export.lua change outside RigReady since the last check, the Fly screen shows a warning naming the file and offering the journal-style diff and 'Restore RigReady version'."
+      - "Scenario mutation simapppro-rewrote-monitorsetup triggers the warning."
+    status: todo
+    evidence: []
+
+  - id: SAP-005
+    title: Research driving WinWing displays and backlights directly
+    job: configure
+    area: simapppro
+    priority: p3
+    done_means:
+      - "docs/research/winwing-protocol.md records the HID reports used for backlight brightness, UFC/ICP text and vibration on the owner's devices, captured from SimAppPro traffic, with sources and legal notes."
+      - "A read-only or reversible prototype sets one backlight level on one device on the owner's rig, demonstrated by rig smoke; or the note concludes it is not feasible and why."
+      - "No product UI is added until the research concludes feasible (rule 2)."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # PLATFORM
+  # ---------------------------------------------------------------------------
+
+  - id: PLAT-001
+    title: Optional start with Windows
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "A setting 'Start with Windows' (default off) registers a per-user login item (HKCU Run or Electron setLoginItemSettings) without admin; turning it off removes it."
+      - "When started at login, the app starts minimised to tray and does not show the window."
+      - "Unit test on the login-item call; rig smoke reads the registry value after toggling."
+    status: todo
+    evidence: []
+
+  - id: PLAT-002
+    title: Lives in the tray
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "Closing the window hides it to the tray (setting, default on); the tray icon reflects readiness of the last-used profile (green, yellow, red) when checks have run."
+      - "Tray menu offers: Open, profile list with quick switch, Make ready, Launch, Stand down, Quit."
+      - "Only one instance runs; starting a second focuses the first."
+    status: todo
+    evidence: []
+
+  - id: PLAT-003
+    title: Auto-update with channels
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "The app checks GitHub Releases on start and daily for updates on the chosen channel (stable or beta), downloads in background, and installs on user confirmation or next quit."
+      - "Update checks can be turned off; the current version and channel are shown in About."
+      - "An update is never installed while a game launched by RigReady is running."
+      - "Integration test against a local update feed fixture."
+    status: todo
+    evidence: []
+
+  - id: PLAT-004
+    title: Per-user installer without admin
+    job: platform
+    area: platform
+    priority: p0
+    done_means:
+      - "The installer installs per-user (no UAC prompt) and creates Start menu entries; uninstall leaves {RIGREADY_HOME} unless the user ticks 'remove my data'."
+      - "Rig smoke on a standard user account installs and starts the app without elevation."
+    status: todo
+    evidence: []
+
+  - id: PLAT-005
+    title: Packaged build enumerates devices and displays
+    job: platform
+    area: platform
+    priority: p0
+    done_means:
+      - "The packaged smoke test builds the unpacked app and, against the real machine, enumerates devices and displays with non-empty results and no missing-module errors (asar, native modules, Python sidecar)."
+      - "The same smoke runs a scenario (mark-flight) against the packaged app and reaches the Fly screen."
+      - "CI fails if the packaged smoke fails."
+    status: todo
+    evidence: []
+
+  - id: PLAT-006
+    title: Packaged build reads live input
+    job: platform
+    area: platform
+    priority: p0
+    done_means:
+      - "In the installed app, the input tester shows live values from a real controller on the owner's rig (rig smoke screenshot)."
+      - "If the input sidecar fails to start, the tester shows the error and the log has the reason; the rest of the app keeps working."
+    status: todo
+    evidence: []
+
+  - id: PLAT-007
+    title: No admin rights for normal use
+    job: platform
+    area: platform
+    priority: p0
+    done_means:
+      - "Every feature (checks, fixes, display apply, audio default, file writes in user folders, device enumeration, input, backups) works under a standard user; rig smoke runs as a non-admin user."
+      - "The app manifest requests asInvoker; no feature calls elevation."
+      - "Writes to Program Files (e.g. a DCS install folder) are not attempted; features that would need it are not offered."
+    status: todo
+    evidence: []
+
+  - id: PLAT-008
+    title: Isolated data root override
+    job: platform
+    area: platform
+    priority: p0
+    done_means:
+      - "RIGREADY_HOME overrides the data root; with it set to a temp dir, no file is created or modified under the real ~/.rigready (E2E asserts the real folder's mtime/listing unchanged)."
+      - "With USERPROFILE, APPDATA and LOCALAPPDATA pointed at temp dirs, every KnownFolders value resolves under them."
+      - "KnownFolders is the only module that computes user paths (lint rule forbidding os.homedir and process.env path reads outside it)."
+    status: todo
+    evidence: []
+
+  - id: PLAT-009
+    title: Logging
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "One async logger with levels writes rotating files under {RIGREADY_HOME}/logs/ (e.g. 5 files x 5 MB)."
+      - "Logs never contain the Anthropic key or file contents; paths are logged."
+      - "A Diagnostics page shows the recent log, app/OS versions, data root, detected games and devices, and 'Export diagnostics' writes a zip that passes the SHARE-002 privacy scrub."
+    status: todo
+    evidence: []
+
+  - id: PLAT-010
+    title: Errors are visible, not swallowed
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "Unhandled errors in main or renderer are logged and shown as a non-blocking error notice with 'Copy details'; the app keeps running where possible."
+      - "Expected failures return Result errors that the UI renders with a message; a test forces a provider error and asserts the message appears."
+    status: todo
+    evidence: []
+
+  - id: PLAT-011
+    title: Settings
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "Settings (start with Windows, close to tray, minimise on launch, desk layout, notifications, update channel, retention, AI key) are stored as JSON under the data root, validated by zod, with defaults for missing fields."
+      - "A corrupted settings file is backed up and replaced by defaults with a notice; the app still starts."
+    status: todo
+    evidence: []
+
+  - id: PLAT-012
+    title: Windows 10 and 11
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "CI runs unit and E2E tests on windows-latest; a release checklist records a smoke run on Windows 10 22H2 and Windows 11."
+      - "On a non-Windows platform the app refuses to start with a clear message (or the build is not produced)."
+    status: todo
+    evidence: []
+
+  - id: PLAT-013
+    title: Scenario mode for tests and demos
+    job: platform
+    area: platform
+    priority: p0
+    done_means:
+      - "RIGREADY_SCENARIO=<file> starts the app on fake providers built from a fixture rig plus listed mutations, and shows a visible 'Scenario: <name>' badge."
+      - "Fixtures mark-flight, mark-racing and generic-rig exist, and every mutation named in this ledger exists as a scenario file."
+      - "Mutations can be applied live during a run (for FLY-028, DEV-013)."
+    status: todo
+    evidence: []
+
+  - id: PLAT-014
+    title: First-run experience
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "On first run (empty data root) the app explains in one screen what it does and offers 'Create a setup from this rig' (CFG-PROFILE-001) and 'Restore from a backup' (BACKUP-007)."
+      - "E2E with an empty RIGREADY_HOME reaches the Fly screen with a new profile in under 10 user actions."
+    status: todo
+    evidence: []
+
+  - id: PLAT-015
+    title: Features self-register
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "Features are discovered with import.meta.glob; adding a feature folder adds its routes, nav entries, IPC handlers, check and remediation types without editing a shared registry (test adds a fixture feature)."
+      - "A lint or test check fails if a feature imports another feature's internals."
+    status: todo
+    evidence: []
+
+  - id: PLAT-016
+    title: Ledger check gate
+    job: platform
+    area: platform
+    priority: p0
+    done_means:
+      - "npm run ledger:check validates this file's schema and fails if any 'done' entry has no evidence or references a test id or screenshot path that does not exist."
+      - "npm run check (typecheck, lint, unit tests with coverage threshold, ledger check) runs in CI on every push."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
+  # NON-FUNCTIONAL AND SAFETY
+  # ---------------------------------------------------------------------------
+
+  - id: NFR-001
+    title: Checks complete in under 5 seconds
+    job: platform
+    area: nfr
+    priority: p0
+    done_means:
+      - "A performance test runs the full F/A-18C checklist from fixture mark-flight (about 25 items) on the Windows providers' parsing paths with recorded inputs and fails above 5000 ms."
+      - "Rig smoke measures the same profile on the real rig and records the time in its output; above 5 s fails."
+    status: todo
+    evidence: []
+
+  - id: NFR-002
+    title: Device enumeration in under 2 seconds
+    job: platform
+    area: nfr
+    priority: p0
+    done_means:
+      - "Rig smoke measures full device enumeration (HID + DirectInput identities) on the owner's rig with about 16 devices and fails above 2000 ms; the time is printed."
+      - "Enumeration results are cached and refreshed on device change events so the Fly screen does not re-enumerate per check (unit test counts provider calls)."
+    status: todo
+    evidence: []
+
+  - id: NFR-003
+    title: UI stays responsive during long operations
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "Backups, restores, binding loads and checks run off the renderer thread; a test with a 10 s fake backup asserts the renderer still responds to navigation within 100 ms."
+      - "Long operations show progress and can be cancelled where cancellation is safe (backup yes, file writes mid-group no)."
+    status: todo
+    evidence: []
+
+  - id: NFR-004
+    title: No shell command strings
+    job: platform
+    area: nfr
+    priority: p0
+    done_means:
+      - "Shell.run takes an executable and an argv array and uses spawn with shell: false; a lint rule forbids exec, execSync and spawn with shell: true across src/."
+      - "Unit test: a profile with process name 'x & calc.exe' and argument '$(whoami)' passes them literally to the fake Shell and nothing else is spawned."
+    status: todo
+    evidence: []
+
+  - id: NFR-005
+    title: IPC inputs validated and paths confined
+    job: platform
+    area: nfr
+    priority: p0
+    done_means:
+      - "Every IPC handler validates its input with the feature's zod contract; a contract test sends malformed input to each channel and expects a validation error, not a crash."
+      - "Paths received from the renderer are accepted only under allowed roots (data root, KnownFolders game/user folders, or a path the user just picked in a native dialog); a test sends C:/Windows/System32/x and is rejected."
+      - "The renderer has contextIsolation on, nodeIntegration off, sandbox on, and a CSP without remote script sources."
+    status: todo
+    evidence: []
+
+  - id: NFR-006
+    title: No success message for something that did not happen
+    job: platform
+    area: nfr
+    priority: p0
+    done_means:
+      - "Every success toast or summary is produced from a verified result (check re-run, file hash read back, process observed); a code review checklist item and tests for FLY-010, FLY-016, BACKUP-009 cover it."
+      - "No UI control is shown for an action without a registered implementation; an E2E crawls every route in scenario mark-flight and asserts no control returns 'not implemented'."
+    status: todo
+    evidence: []
+
+  - id: NFR-007
+    title: Devices never identified by display name alone
+    job: platform
+    area: nfr
+    priority: p0
+    done_means:
+      - "Profile, device-name and layout schemas require VID/PID (devices) or EDID/target identity (monitors); a schema test rejects name-only identities."
+      - "Matching code paths have unit tests proving two devices with the same name but different VID/PID or serial are not confused."
+    status: todo
+    evidence: []
+
+  - id: NFR-008
+    title: Missing and odd files handled gracefully
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "Every reader (profiles, Lua, JSON, INI, YAML, VDF) returns a Result error for missing, empty, locked, non-UTF-8 and BOM-prefixed files; fuzz-style tests feed each reader these cases and none throws."
+      - "A game whose folders were deleted shows 'not found' in the UI rather than crashing the page."
+    status: todo
+    evidence: []
+
+  - id: NFR-009
+    title: Nothing hardcoded to the owner's rig
+    job: platform
+    area: nfr
+    priority: p0
+    done_means:
+      - "The full E2E suite also runs against fixture generic-rig (different devices, two monitors, DCS in a non-default Steam library, Saved Games redirected) and passes."
+      - "A test greps src/ for the owner's user name, machine name, device serials and GUIDs from fixture mark-flight and finds none."
+    status: todo
+    evidence: []
+
+  - id: NFR-010
+    title: Memory footprint
+    job: platform
+    area: nfr
+    priority: p3
+    done_means:
+      - "With the app idle in the tray for 10 minutes on scenario mark-flight, total working set across Electron processes stays under 250 MB (measured and printed by a test)."
+    status: todo
+    evidence: []
+
+  - id: NFR-011
+    title: Status is never conveyed by colour alone
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "All statuses, health results and duplicate markers use icon plus text plus colour; an automated accessibility scan (axe) on the Fly and Configure screens reports no colour-contrast or name violations."
+    status: todo
+    evidence: []
