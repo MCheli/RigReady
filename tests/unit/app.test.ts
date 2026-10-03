@@ -26,16 +26,22 @@ const statusOf = (report: ChecklistReport, title: string) =>
 describe('feature discovery', () => {
   it('finds every feature folder and registers its checks, fixes and channels', async () => {
     app = await wiredApp('flying-all-good');
-    expect(app.wiring.features.map((f) => f.id)).toEqual([
-      'devices',
-      'displays',
-      'fly',
-      'games',
-      'processes',
-      'profiles',
-      'safety',
-      'settings',
-    ]);
+    // Features are discovered in folder order; others are added in parallel, so only the
+    // foundation's own are listed here.
+    const ids = app.wiring.features.map((f) => f.id);
+    expect(ids).toEqual([...ids].sort());
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        'devices',
+        'displays',
+        'fly',
+        'games',
+        'processes',
+        'profiles',
+        'safety',
+        'settings',
+      ])
+    );
     expect(app.wiring.context.checks.checkTypes()).toEqual([
       'device.connected',
       'display.layout',

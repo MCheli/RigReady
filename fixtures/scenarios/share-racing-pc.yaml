@@ -1,0 +1,3 @@
+description: Sharing - a friend's racing PC with DCS installed but no flight gear
+rig: mark-full
+extends: racing-fresh.yaml

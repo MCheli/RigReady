@@ -1,0 +1,12 @@
+description: Backups - a freshly installed PC, DCS bindings gone, options.lua changed
+rig: mark-full
+extends: flying-fresh.yaml
+mutations:
+  - op: removeFile
+    path: Saved Games/DCS/Config/Input
+  - op: writeFile
+    path: Saved Games/DCS/Config/options.lua
+    content: |
+      options = {
+        ["graphics"] = { ["width"] = 1920, ["height"] = 1080 },
+      }

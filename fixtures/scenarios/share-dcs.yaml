@@ -1,0 +1,5 @@
+description: Sharing - a squadron F/A-18C setup with a script check and tracked bindings
+rig: mark-full
+extends: flying-fresh.yaml
+profiles:
+  - profiles/squadron-f-a-18c.yaml

@@ -25,7 +25,13 @@ export interface ConfigLocation {
 
 export interface TrackedFileSuggestion {
   label: string;
+  /** Absolute, or stored form with a path variable ("{DCS_USER}/Config/Input"). */
   path: string;
+  /** Optional, for the backup feature: a folder's include/exclude globs (see FileStore.listTree). */
+  kind?: 'file' | 'folder';
+  include?: string[];
+  exclude?: string[];
+  description?: string;
 }
 
 /** Marker for the binding feature to extend; game modules that manage bindings provide one. */

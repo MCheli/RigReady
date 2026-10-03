@@ -1666,8 +1666,12 @@ requirements:
     done_means:
       - "A profile (and a global 'Always back up' list) can track files and folders by path-variable path, each with a label and game."
       - "The tracked list shows each entry's resolved path, file count and total size, and flags entries that do not exist on this machine."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#tracks files and folders per setup and in the always list, with resolved path, count and size"
+      - "src/features/backup/core/backup.test.ts#stores typed full paths with a variable, and refuses unknown variables, relative paths and the data folder"
+      - "tests/e2e/backup.e2e.ts#backup: choose what to track, back up everything in one click, see what is inside, export it"
+      - "artifacts/screens/backup-full/03-tracked.png"
 
   - id: BACKUP-002
     title: Include and exclude patterns
@@ -1678,8 +1682,12 @@ requirements:
       - "Each tracked folder can have include and exclude glob patterns (e.g. include **/*.lua, exclude Logs/**, Tracks/**, Temp/**)."
       - "The editor previews which files match before saving the entry."
       - "Default DCS tracked items exclude Logs, Tracks, Temp and fxo/metashaders2 (unit test on matched file list in fixture)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#previews exactly which files match before the item is saved"
+      - "src/features/backup/core/backup.test.ts#the default DCS item leaves out Logs, Tracks, Temp and the shader caches"
+      - "tests/e2e/backup.e2e.ts#backup: choose what to track, back up everything in one click, see what is inside, export it"
+      - "artifacts/screens/backup-full/02-editor-preview.png"
 
   - id: BACKUP-003
     title: Game-suggested tracked items
@@ -1701,8 +1709,12 @@ requirements:
       - "'Back up now' creates one backup of all profiles, RigReady settings, display layouts and every tracked item, with progress, and reports file count and size."
       - "The backup is a zip under {RIGREADY_HOME}/backups/ named with date and time; a test unpacks it and finds every tracked file from the fixture."
       - "Files that could not be read (locked, permission) are listed in the result; the backup is not reported as complete if any were skipped, but as 'completed with n skipped'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#backs up everything into one zip named by date, and every tracked file is inside"
+      - "src/features/backup/core/backup.test.ts#reports files it could not read and says the backup completed with them skipped"
+      - "tests/e2e/backup.e2e.ts#backup: choose what to track, back up everything in one click, see what is inside, export it"
+      - "artifacts/screens/backup-full/04-backed-up.png"
 
   - id: BACKUP-005
     title: Scoped backups
@@ -1712,8 +1724,11 @@ requirements:
     done_means:
       - "A backup can be scoped to one profile's tracked items or a custom selection of tracked items, from the backup page or the profile."
       - "Each backup carries a manifest: date, machine name, RigReady version, scope, list of entries with original path-variable paths and hashes."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#backs up one setup or a chosen set of items, with the scope in the manifest"
+      - "tests/e2e/backup.e2e.ts#backup: choose what to track, back up everything in one click, see what is inside, export it"
+      - "artifacts/screens/backup-full/06-two-backups.png"
 
   - id: BACKUP-006
     title: Manage backups
@@ -1723,8 +1738,16 @@ requirements:
     done_means:
       - "The backups list shows each backup's name, date, scope, size and source machine; backups can be renamed, deleted (with confirm), exported to a chosen folder and opened in Explorer."
       - "A backup file copied in from elsewhere (e.g. a USB stick) can be added to the list via 'Open backup file'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#lists, renames, exports, reveals and deletes backups"
+      - "src/features/backup/core/backup.test.ts#adds a backup file from elsewhere, and keeps only the newest of its own"
+      - "tests/e2e/backup.e2e.ts#backup: choose what to track, back up everything in one click, see what is inside, export it"
+      - "tests/e2e/backup.e2e.ts#restore: a backup from this rig onto a freshly installed PC, with a preview, choices and a report"
+      - "artifacts/screens/backup-full/05-exported.png"
+      - "artifacts/screens/backup-full/06-two-backups.png"
+      - "artifacts/screens/backup-full/07-delete-confirm.png"
+      - "artifacts/screens/restore/01-opened.png"
 
   - id: BACKUP-007
     title: Restore wizard with preview
@@ -1735,8 +1758,13 @@ requirements:
       - "Restore lets the user pick a backup, shows its manifest, and lists every entry with its resolved target path on this machine and whether the target exists, is identical, or differs."
       - "The user can tick entries (whole tracked item or individual files) to restore."
       - "Entries whose path variable cannot be resolved here (game not installed) are shown as not restorable with the reason."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#previews every entry with its target here and whether it is new, identical or different"
+      - "src/features/backup/core/backup.test.ts#marks entries whose path variable does not exist here as not restorable, with the reason"
+      - "tests/e2e/backup.e2e.ts#restore: a backup from this rig onto a freshly installed PC, with a preview, choices and a report"
+      - "artifacts/screens/restore/02-preview.png"
+      - "artifacts/screens/restore-no-dcs/01-not-restorable.png"
 
   - id: BACKUP-008
     title: Restore conflict choices
@@ -1747,8 +1775,12 @@ requirements:
       - "For each differing target, the user chooses overwrite, skip, or keep both (restored copy written next to it with suffix ' (restored YYYY-MM-DD)'), with an 'apply to all' option."
       - "Overwrite snapshots the existing file first (BACKUP-010) so the restore can be undone."
       - "Profiles in the backup that already exist get the same three choices, with keep both creating '<name> (restored)'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#overwrite, skip and keep both per file; replaced files are saved first and the restore is one undo"
+      - "src/features/backup/core/backup.test.ts#restores setups with overwrite or keep both, settings and the always list"
+      - "tests/e2e/backup.e2e.ts#restore: a backup from this rig onto a freshly installed PC, with a preview, choices and a report"
+      - "artifacts/screens/restore/02-preview.png"
 
   - id: BACKUP-009
     title: Restore result report
@@ -1759,8 +1791,13 @@ requirements:
       - "After restore, a report lists restored, skipped, kept-both and failed entries with reasons; success is claimed only for files whose hash matches the backup after writing."
       - "The report offers 'Run checks now' which opens the Fly screen."
       - "E2E: restore the fixture backup into an empty temp profile and assert files and report (screenshot artifacts/screens/restore/)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#claims success only for files that match the backup after writing"
+      - "src/features/backup/core/backup.test.ts#overwrite, skip and keep both per file; replaced files are saved first and the restore is one undo"
+      - "tests/e2e/backup.e2e.ts#restore: a backup from this rig onto a freshly installed PC, with a preview, choices and a report"
+      - "artifacts/screens/restore/03-report.png"
+      - "artifacts/screens/restore/04-safety.png"
 
   - id: BACKUP-010
     title: Automatic backup before every write
@@ -1837,8 +1874,12 @@ requirements:
     done_means:
       - "Backups store paths with variables; restoring a backup made under user 'Owner' to a temp machine (USERPROFILE=temp/Bob, DCS in a different Steam library) writes files to Bob's resolved paths (E2E with env overrides)."
       - "A path that was not under any known variable at backup time is stored absolute and flagged in the restore preview."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/backup.test.ts#writes to the new user folder and Steam library, and flags paths stored without a variable"
+      - "tests/e2e/backup.e2e.ts#restore: a backup from this rig onto a freshly installed PC, with a preview, choices and a report"
+      - "artifacts/screens/restore/02-preview.png"
+      - "artifacts/screens/restore-no-dcs/01-not-restorable.png"
 
   # ---------------------------------------------------------------------------
   # SHARING
@@ -1852,8 +1893,12 @@ requirements:
     done_means:
       - "'Share' on a profile produces a .rigready file (zip) containing a manifest, the profile, its display layouts and, optionally ticked, its tracked config files (e.g. DCS bindings for the aircraft)."
       - "The manifest records RigReady version, schema version, game, and the generated compatibility notes (SHARE-003)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/sharing/core/sharing.test.ts#with the defaults the file holds no user name, machine name, serial or personal path"
+      - "src/features/sharing/core/sharing.test.ts#imports only the ticked parts, into this PC's folders, as one undoable action"
+      - "tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC"
+      - "artifacts/screens/share-export/03-saved.png"
 
   - id: SHARE-002
     title: Privacy review before export
@@ -1864,8 +1909,16 @@ requirements:
       - "Before writing the file, a review lists every personal item found: absolute paths (normalised to variables), Windows user name, machine name, device serials and instance paths, DCS GUIDs in file names, and audio device ids."
       - "Each item can be removed or kept; defaults remove serials, instance paths and user/machine names."
       - "The export is blocked until the user ticks 'I reviewed this'; a test greps the exported zip for the fixture user name and machine name and finds none with defaults."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/sharing/core/sharing.test.ts#reviews every personal detail, what runs and what is left out, before anything is written"
+      - "src/features/sharing/core/sharing.test.ts#refuses to export until the review was ticked"
+      - "src/features/sharing/core/sharing.test.ts#with the defaults the file holds no user name, machine name, serial or personal path"
+      - "src/features/sharing/core/sharing.test.ts#keeps what the user chose to keep, and leaves out files whose finding is removed"
+      - "src/features/sharing/core/sharing.test.ts#a user name inside a kept path is part of the path, and tokens expand per spelling"
+      - "tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC"
+      - "artifacts/screens/share-export/01-review.png"
+      - "artifacts/screens/share-export/03-saved.png"
 
   - id: SHARE-003
     title: Scripts and launch commands stripped and listed
@@ -1876,8 +1929,13 @@ requirements:
       - "Script checks, script fixes, script actions and the launch target's executable path are removed from the exported profile and replaced by a list of names and descriptions in the manifest."
       - "No script file is ever included, even if inside a tracked folder (files with executable extensions .exe .bat .cmd .ps1 .py .vbs .js are excluded and listed)."
       - "The review step shows the stripped list (e.g. 'check_vpn.py - Checks squadron VPN')."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/sharing/core/sharing.test.ts#reviews every personal detail, what runs and what is left out, before anything is written"
+      - "src/features/sharing/core/sharing.test.ts#with the defaults the file holds no user name, machine name, serial or personal path"
+      - "src/features/sharing/core/sharing.test.ts#strips launch, script checks and program-starting fixes, and keeps everything else"
+      - "tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC"
+      - "artifacts/screens/share-export/02-never-shared.png"
 
   - id: SHARE-004
     title: Compatibility notes
@@ -1886,8 +1944,11 @@ requirements:
     priority: p2
     done_means:
       - "Export auto-generates required hardware (devices by name and VID/PID, required vs optional), required software (games, helper apps) and display layout summary; the user can edit the free-text notes."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/sharing/core/sharing.test.ts#reviews every personal detail, what runs and what is left out, before anything is written"
+      - "tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC"
+      - "artifacts/screens/share-export/02-never-shared.png"
 
   - id: SHARE-005
     title: Import with validation
@@ -1898,8 +1959,16 @@ requirements:
       - "Importing a .rigready file validates manifest and every contained file with zod before anything is written; invalid bundles are rejected with the reason."
       - "Zip entries with absolute paths, '..', drive letters, symlinks, or total uncompressed size over 200 MB are rejected (unit tests with crafted zips)."
       - "Imported profiles contain no runnable content: any script or launch command present despite SHARE-003 is dropped and listed."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/sharing/core/sharing.test.ts#rejects path traversal, links, oversized archives and unlisted files before anything is shown"
+      - "src/features/sharing/core/sharing.test.ts#rejects an archive that claims to unpack to more than 200 MB, without unpacking it"
+      - "src/features/sharing/core/sharing.test.ts#rejects malformed manifests and setups, damaged files and programs"
+      - "src/features/sharing/core/sharing.test.ts#never writes outside known folders and drops runnable parts that were left in the file"
+      - "tests/unit/protection.test.ts#refuses links, encrypted entries, unsafe names, too many or too big, and non-zips"
+      - "tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC"
+      - "artifacts/screens/share-import/01-rejected.png"
+      - "artifacts/screens/share-import/02-report.png"
 
   - id: SHARE-006
     title: Compatibility report on import
@@ -1932,8 +2001,13 @@ requirements:
     done_means:
       - "Every target path of an import resolves under a KnownFolders root (data root, a detected game user folder, Documents, Saved Games); anything else is rejected and listed."
       - "All writes go through FileStore with backup and the import is one undo group in the journal."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/sharing/core/sharing.test.ts#never writes outside known folders and drops runnable parts that were left in the file"
+      - "src/features/sharing/core/sharing.test.ts#imports only the ticked parts, into this PC's folders, as one undoable action"
+      - "tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC"
+      - "artifacts/screens/share-import/03-choose.png"
+      - "artifacts/screens/share-import/04-imported.png"
 
   # ---------------------------------------------------------------------------
   # RACING — iRacing
