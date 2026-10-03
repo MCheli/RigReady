@@ -1,0 +1,13 @@
+description: A new PC - Stream Deck not installed, not connected, no profiles; a backup file in Documents
+rig: mark-full
+mutations:
+  - { op: stopProcess, name: StreamDeck.exe }
+  - { op: stopProcess, name: dcs_interface.exe }
+  - { op: stopProcess, name: ESDDiscord.exe }
+  - { op: removeRegistryKey, hive: HKLM, key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{491D46E4-BEEC-42DF-BE42-53645983E01C}' }
+  - { op: unplugDevice, match: { vendorId: 0FD9 } }
+  - { op: removeFile, path: 'Program Files/Elgato' }
+  - { op: removeFile, path: 'AppData/Roaming/Elgato' }
+  - op: writeFile
+    path: 'Documents/DCS Backup/Stream Deck - 02-03-2024 - 19-16.streamDeckProfilesBackup'
+    from: 'data/stream-deck/Stream Deck - 02-03-2024 - 19-16.streamDeckProfilesBackup'

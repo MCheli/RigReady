@@ -2218,8 +2218,14 @@ requirements:
     done_means:
       - "RigReady detects the Elgato Stream Deck app install, version and running state, and connected Stream Deck hardware by VID/PID."
       - "If not installed, the Stream Deck page shows install guidance (official download link opened only after confirm) and for DCS mentions the DCS-BIOS / Streamdeck-DCS plugin requirement."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/stream-deck/core/inventory.test.ts#finds the app, its version, the running process and the Stream Deck XL on the recorded rig"
+      - "src/features/stream-deck/core/inventory.test.ts#reports a PC without the app, the hardware or any profiles"
+      - "src/features/stream-deck/core/inventory.test.ts#only treats Elgato devices that are Stream Decks as Stream Decks"
+      - "tests/e2e/stream-deck.e2e.ts#stream deck: a new PC gets install guidance, a guided setup and can import an old backup"
+      - "artifacts/screens/stream-deck-health/01-health.png"
+      - "artifacts/screens/stream-deck-new-pc/01-not-installed.png"
 
   - id: SDECK-002
     title: Back up Stream Deck profiles and plugins
@@ -2241,8 +2247,19 @@ requirements:
       - "Restore requires the Stream Deck app to be closed; RigReady offers to close it, restores with pre-write backup, then offers to start it again."
       - "Restore preview lists profiles that will be added or replaced."
       - "Importing an Elgato .streamDeckProfilesBackup file (like the owner's Feb 2024 backup) is supported if its format is readable; otherwise the page explains how to import it in the Stream Deck app."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/stream-deck/core/backups.test.ts#previews which profiles are added, replaced and kept"
+      - "src/features/stream-deck/core/backups.test.ts#refuses while Stream Deck runs, then closes it, restores with a backup first, verifies and can be undone"
+      - "src/features/stream-deck/core/backups.test.ts#asks before ending a Stream Deck that will not quit"
+      - "src/features/stream-deck/core/backups.test.ts#imports an older-format file like the owner's February 2024 backup"
+      - "src/features/stream-deck/core/backups.test.ts#hands an older-format backup to the Stream Deck app and checks the result by name"
+      - "tests/e2e/stream-deck.e2e.ts#stream deck: restore closes the app, restores with a backup first, and starts it again"
+      - "tests/e2e/stream-deck.e2e.ts#stream deck: a new PC gets install guidance, a guided setup and can import an old backup"
+      - "artifacts/screens/stream-deck-restore/01-preview.png"
+      - "artifacts/screens/stream-deck-restore/02-restored.png"
+      - "artifacts/screens/stream-deck-restore/03-started-again.png"
+      - "artifacts/screens/stream-deck-new-pc/04-restore-needs-app.png"
 
   - id: SDECK-004
     title: Manage Stream Deck backups
@@ -2251,6 +2268,134 @@ requirements:
     priority: p2
     done_means:
       - "The Stream Deck page lists its backups with date, profile count and size; each can be renamed, deleted and exported."
+    status: done
+    evidence:
+      - "src/features/stream-deck/core/backups.test.ts#renames, exports and deletes a backup"
+      - "src/features/stream-deck/core/backups.test.ts#skips a damaged manifest or a manifest without its archive"
+      - "tests/e2e/stream-deck.e2e.ts#stream deck: back up while the app runs, then rename, export and delete backups"
+      - "artifacts/screens/stream-deck-backups/03-two-backups.png"
+      - "artifacts/screens/stream-deck-backups/04-exported.png"
+      - "artifacts/screens/stream-deck-backups/05-delete-confirm.png"
+
+  - id: SDECK-005
+    title: Stream Deck profile and plugin inventory with health findings
+    job: configure
+    area: stream-deck
+    priority: p2
+    done_means:
+      - "The Stream Deck page lists every profile (device, pages, actions, actions per plugin) and every plugin (installed or not, version, actions, which profiles use it)."
+      - "Actions whose plugin is not installed are reported in plain language with counts and profiles (the owner's rig: 66 actions use 2 plugins that are not installed), with where to get the plugin."
+      - "An installed plugin whose own dependency is missing is reported with what to do: DCS Interface actions when Export.lua does not load DCS-ExportScript (or the script folder is missing, or IkarusPort differs from 1725), linking to /configure/dcs-setup when that screen exists; a DCS-BIOS plugin when Export.lua does not load DCS-BIOS."
+    status: done
+    evidence:
+      - "src/features/stream-deck/core/inventory.test.ts#counts the actions of each plugin per profile and flags plugins that are not installed"
+      - "src/features/stream-deck/core/health.test.ts#says which actions use plugins that are not installed and that DCS-ExportScript is missing"
+      - "src/features/stream-deck/core/health.test.ts#notices a commented-out line, a missing script folder and a wrong port"
+      - "src/features/stream-deck/core/health.test.ts#checks DCS-BIOS for a DCS-BIOS plugin that is installed"
+      - "tests/e2e/stream-deck.e2e.ts#stream deck: health names the missing plugins and the missing DCS-ExportScript"
+      - "artifacts/screens/stream-deck-health/01-health.png"
+      - "artifacts/screens/stream-deck-health/02-health-dcs.png"
+      - "artifacts/screens/stream-deck-health/04-inventory.png"
+
+  - id: SDECK-006
+    title: Guided Stream Deck setup on a new PC
+    job: configure
+    area: stream-deck
+    priority: p2
+    done_means:
+      - "A setup page walks through install, connect, bring profiles back (import and restore), install the plugins the profiles (or the imported backup) use, DCS export setup when DCS plugins are used, start the app and back up; each step's done state is read from the PC."
+    status: done
+    evidence:
+      - "src/features/stream-deck/core/setup.test.ts#starts with nothing done on a new PC, and knows the plugins an imported backup needs"
+      - "src/features/stream-deck/core/setup.test.ts#on the owner's rig: installed, connected, running, profiles back, but plugins and DCS still to do"
+      - "tests/e2e/stream-deck.e2e.ts#stream deck: a new PC gets install guidance, a guided setup and can import an old backup"
+      - "artifacts/screens/stream-deck-new-pc/02-setup.png"
+      - "artifacts/screens/stream-deck-new-pc/03-setup-after-import.png"
+
+  - id: SDECK-007
+    title: Stream Deck app running and hardware connected checks
+    job: fly
+    area: stream-deck
+    priority: p2
+    done_means:
+      - "Check types stream-deck.running (fix: start the app, verified by reading the process list back) and stream-deck.connected (any Stream Deck, or one by serial) are offered on the capture screen and work in Fly and Make ready."
+    status: done
+    evidence:
+      - "src/features/stream-deck/core/checks.test.ts#is started by its fix, which waits until the app is running"
+      - "src/features/stream-deck/core/checks.test.ts#does not claim a start that did not happen"
+      - "src/features/stream-deck/core/checks.test.ts#passes for any Stream Deck, or for the one with a given serial"
+      - "src/features/stream-deck/core/checks.test.ts#offers the app and the hardware as checks that work on any PC"
+      - "tests/e2e/stream-deck.e2e.ts#stream deck: the app and hardware checks are captured into a setup and fixed by Make ready"
+      - "artifacts/screens/stream-deck-checks/01-not-running.png"
+      - "artifacts/screens/stream-deck-checks/02-fixed.png"
+
+  # ---------------------------------------------------------------------------
+  # TRACKIR
+  # ---------------------------------------------------------------------------
+
+  - id: TRACKIR-001
+    title: TrackIR detection
+    job: configure
+    area: trackir
+    priority: p2
+    done_means:
+      - "The TrackIR page shows whether TrackIR is installed (and its version), running, whether the camera is connected (NaturalPoint VID), and whether games can find it (HKCU NPClient Location points at a folder with NPClient64.dll), with a plain reason when not."
+      - "Without TrackIR the page shows install guidance (download page opened only after confirm) and empty states."
+    status: done
+    evidence:
+      - "src/features/trackir/core/trackir.test.ts#finds the software, its version, the camera and the NPClient registration games use"
+      - "src/features/trackir/core/trackir.test.ts#explains why games cannot find TrackIR"
+      - "src/features/trackir/core/trackir.test.ts#reports a PC without TrackIR"
+      - "tests/e2e/trackir.e2e.ts#trackir: running, visible to games, with its profiles and the game map shown read-only"
+      - "tests/e2e/trackir.e2e.ts#trackir: a PC without TrackIR gets install guidance and empty states"
+      - "artifacts/screens/trackir-ready/01-ready.png"
+      - "artifacts/screens/trackir-not-installed/01-not-installed.png"
+
+  - id: TRACKIR-002
+    title: TrackIR running and camera connected checks with a start fix
+    job: fly
+    area: trackir
+    priority: p2
+    done_means:
+      - "Check types trackir.running (fix: start TrackIR from wherever it is installed, verified by reading the process list back; optional close on Stand down) and trackir.connected are offered on the capture screen and work in Fly and Make ready; the TrackIR page has a Start TrackIR button when it is not running."
+    status: done
+    evidence:
+      - "src/features/trackir/core/trackir.test.ts#trackir.running passes, fails and is fixed by starting TrackIR"
+      - "src/features/trackir/core/trackir.test.ts#does not claim a start that did not happen, nor start what is not installed"
+      - "src/features/trackir/core/trackir.test.ts#closes TrackIR on Stand down only when asked to"
+      - "src/features/trackir/core/trackir.test.ts#trackir.connected follows the camera"
+      - "src/features/trackir/core/trackir.test.ts#capture offers the software and the camera, and nothing without TrackIR"
+      - "tests/e2e/trackir.e2e.ts#trackir: not running and not registered for games; Start TrackIR fixes it"
+      - "tests/e2e/trackir.e2e.ts#trackir: the software and camera checks are captured and Make ready starts TrackIR"
+      - "artifacts/screens/trackir-not-running/01-not-running.png"
+      - "artifacts/screens/trackir-not-running/02-started.png"
+      - "artifacts/screens/trackir-checks/01-not-running.png"
+      - "artifacts/screens/trackir-checks/02-fixed.png"
+
+  - id: TRACKIR-003
+    title: TrackIR profiles and game-to-profile map, read-only
+    job: configure
+    area: trackir
+    priority: p3
+    done_means:
+      - "The TrackIR page lists the profiles (name, file, description; UTF-16 or not), the last and exclusive profile from Settings.xml labelled \"as last saved by TrackIR\", and the ProfileMap.dat game-to-profile map grouped by profile (missing profile files flagged)."
+      - "The page says plainly that the active profile cannot be switched from outside TrackIR and how to do it in TrackIR."
+    status: done
+    evidence:
+      - "src/features/trackir/core/trackir.test.ts#reads the profiles (UTF-16 or not), the last and exclusive profile, and the recorded map"
+      - "src/features/trackir/core/trackir.test.ts#flags a mapped profile file that does not exist and reads an exclusive profile"
+      - "src/features/trackir/core/trackir.test.ts#decodes the text encodings TrackIR uses"
+      - "tests/e2e/trackir.e2e.ts#trackir: running, visible to games, with its profiles and the game map shown read-only"
+      - "artifacts/screens/trackir-ready/01-ready.png"
+      - "artifacts/screens/trackir-ready/02-map.png"
+
+  - id: TRACKIR-004
+    title: TrackIR files in the full backup
+    job: configure
+    area: trackir
+    priority: p2
+    done_means:
+      - "The full backup includes TrackIR's Settings.xml, ProfileMap.dat and Profiles/*.xml, taken from trackIrTrackedFiles() in src/features/trackir/core/trackir.ts, and restores them through FileStore."
     status: todo
     evidence: []
 

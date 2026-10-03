@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<Profile>
+  <Name>Smooth</Name>
+  <Description>Smooth, slower response</Description>
+  <ExclusiveLoad>0</ExclusiveLoad>
+</Profile>

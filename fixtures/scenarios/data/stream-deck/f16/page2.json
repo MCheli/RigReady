@@ -1,0 +1,459 @@
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000033",
+          "LinkedTitle": true,
+          "Name": "ICP 32",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 32"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "1,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000034",
+          "LinkedTitle": true,
+          "Name": "ICP 33",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 33"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "2,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000035",
+          "LinkedTitle": true,
+          "Name": "ICP 34",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 34"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "3,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000036",
+          "LinkedTitle": true,
+          "Name": "ICP 35",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 35"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "4,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000037",
+          "LinkedTitle": true,
+          "Name": "ICP 36",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 36"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "5,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000038",
+          "LinkedTitle": true,
+          "Name": "ICP 37",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 37"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "6,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000039",
+          "LinkedTitle": true,
+          "Name": "ICP 38",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 38"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "7,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000040",
+          "LinkedTitle": true,
+          "Name": "ICP 39",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 39"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "0,1": {
+          "ActionID": "00000000-0000-4000-8000-000000000041",
+          "LinkedTitle": true,
+          "Name": "ICP 40",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 40"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "1,1": {
+          "ActionID": "00000000-0000-4000-8000-000000000042",
+          "LinkedTitle": true,
+          "Name": "ICP 41",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 41"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "2,1": {
+          "ActionID": "00000000-0000-4000-8000-000000000043",
+          "LinkedTitle": true,
+          "Name": "ICP 42",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 42"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "3,1": {
+          "ActionID": "00000000-0000-4000-8000-000000000044",
+          "LinkedTitle": true,
+          "Name": "ICP 43",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 43"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "4,1": {
+          "ActionID": "00000000-0000-4000-8000-000000000045",
+          "LinkedTitle": true,
+          "Name": "ICP 44",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 44"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "5,1": {
+          "ActionID": "00000000-0000-4000-8000-000000000046",
+          "LinkedTitle": true,
+          "Name": "ICP 45",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 45"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "6,1": {
+          "ActionID": "00000000-0000-4000-8000-000000000047",
+          "LinkedTitle": true,
+          "Name": "ICP 46",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 46"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "7,1": {
+          "ActionID": "00000000-0000-4000-8000-000000000048",
+          "LinkedTitle": true,
+          "Name": "ICP 47",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 47"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "0,2": {
+          "ActionID": "00000000-0000-4000-8000-000000000049",
+          "LinkedTitle": true,
+          "Name": "ICP 48",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 48"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "1,2": {
+          "ActionID": "00000000-0000-4000-8000-000000000050",
+          "LinkedTitle": true,
+          "Name": "ICP 49",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 49"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "2,2": {
+          "ActionID": "00000000-0000-4000-8000-000000000051",
+          "LinkedTitle": true,
+          "Name": "ICP 50",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 50"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "3,2": {
+          "ActionID": "00000000-0000-4000-8000-000000000052",
+          "LinkedTitle": true,
+          "Name": "ICP 51",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 51"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "4,2": {
+          "ActionID": "00000000-0000-4000-8000-000000000053",
+          "LinkedTitle": true,
+          "Name": "ICP 52",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 52"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "5,2": {
+          "ActionID": "00000000-0000-4000-8000-000000000054",
+          "LinkedTitle": true,
+          "Name": "ICP 53",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 53"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "6,2": {
+          "ActionID": "00000000-0000-4000-8000-000000000055",
+          "LinkedTitle": true,
+          "Name": "ICP 54",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 54"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "7,2": {
+          "ActionID": "00000000-0000-4000-8000-000000000056",
+          "LinkedTitle": true,
+          "Name": "ICP 55",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 55"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "0,3": {
+          "ActionID": "00000000-0000-4000-8000-000000000057",
+          "LinkedTitle": true,
+          "Name": "ICP 56",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 56"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "1,3": {
+          "ActionID": "00000000-0000-4000-8000-000000000058",
+          "LinkedTitle": true,
+          "Name": "ICP 57",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 57"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "2,3": {
+          "ActionID": "00000000-0000-4000-8000-000000000059",
+          "LinkedTitle": true,
+          "Name": "ICP 58",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 58"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "3,3": {
+          "ActionID": "00000000-0000-4000-8000-000000000060",
+          "LinkedTitle": true,
+          "Name": "ICP 59",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 59"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "4,3": {
+          "ActionID": "00000000-0000-4000-8000-000000000061",
+          "LinkedTitle": true,
+          "Name": "ICP 60",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 60"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "5,3": {
+          "ActionID": "00000000-0000-4000-8000-000000000062",
+          "LinkedTitle": true,
+          "Name": "ICP 61",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 61"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "6,3": {
+          "ActionID": "00000000-0000-4000-8000-000000000063",
+          "LinkedTitle": true,
+          "Name": "ICP 62",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 62"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "7,3": {
+          "ActionID": "00000000-0000-4000-8000-000000000064",
+          "LinkedTitle": true,
+          "Name": "ICP 63",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 63"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

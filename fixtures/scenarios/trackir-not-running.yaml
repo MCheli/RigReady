@@ -1,0 +1,10 @@
+description: TrackIR installed but not running, and not registered for games
+rig: mark-full
+extends: trackir-ready.yaml
+mutations:
+  - { op: stopProcess, name: TrackIR5.exe }
+  - op: setRegistryValue
+    hive: HKCU
+    key: 'Software\NaturalPoint\NATURALPOINT\NPClient Location'
+    name: Path
+    value: null

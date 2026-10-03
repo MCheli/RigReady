@@ -1,0 +1,53 @@
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000065",
+          "LinkedTitle": true,
+          "Name": "ICP 64",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "ICP 64"
+            }
+          ],
+          "UUID": "avionics.madjack.dcs.set"
+        },
+        "1,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000066",
+          "LinkedTitle": true,
+          "Name": "Macro",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "Macro"
+            }
+          ],
+          "UUID": "com.barraider.supermacro.supermacro"
+        },
+        "2,0": {
+          "ActionID": "00000000-0000-4000-8000-000000000067",
+          "LinkedTitle": true,
+          "Name": "VR",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Title": "VR"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}
