@@ -1,0 +1,6 @@
+description: Flying, TrackIR software not running
+rig: mark-full
+extends: flying-all-good.yaml
+mutations:
+  - op: stopProcess
+    name: TrackIR5.exe

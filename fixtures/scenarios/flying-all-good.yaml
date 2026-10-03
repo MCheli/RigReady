@@ -1,0 +1,5 @@
+description: Flying, everything ready
+rig: mark-full
+extends: flying-fresh.yaml
+profiles:
+  - profiles/dcs-f-a-18c.yaml

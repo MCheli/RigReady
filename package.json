@@ -1,40 +1,31 @@
 {
   "name": "rigready",
-  "version": "1.1.0",
-  "description": "Desktop tool for managing simulation rig software, hardware, and configurations",
+  "version": "2.0.0-dev.0",
+  "description": "Verifies a sim rig is ready, fixes what is not, and launches the game",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build && npm run copy-ps1",
-    "copy-ps1": "powershell -Command \"Copy-Item -Path 'src/main/devices/*.ps1' -Destination 'dist/main/' -Force\"",
-    "start": "npm run build && electron .",
-    "preview": "electron-vite preview",
-    "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\"",
-    "rebuild": "npm run clean && npm run build",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder",
-    "dist:unsigned": "npm run build && electron-builder --win --publish never",
-    "dist:publish": "npm run build && electron-builder --win --publish always",
-    "version:patch": "npm version patch && git push && git push --tags",
-    "version:minor": "npm version minor && git push && git push --tags",
-    "version:major": "npm version major && git push && git push --tags",
-    "kill": "powershell -Command \"Get-Process -Name 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force\"",
-    "logs": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.rigready\\app.log' -Tail 50\"",
-    "logs:watch": "powershell -Command \"Get-Content -Path '$env:USERPROFILE\\.rigready\\app.log' -Wait -Tail 20\"",
-    "setup:python": "powershell -ExecutionPolicy Bypass -File scripts/setup-python.ps1",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:e2e": "npm run build && npx playwright test",
-    "test:e2e:headed": "npm run build && npx playwright test --headed",
-    "test:e2e:debug": "npm run build && npx playwright test --debug",
-    "lint": "eslint src __tests__ --ext .ts,.js,.vue",
-    "lint:fix": "eslint src __tests__ --ext .ts,.js,.vue --fix",
-    "format": "prettier --write \"src/**/*.{ts,js,vue,json,css,html}\" \"__tests__/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.{ts,js,vue,json,css,html}\" \"__tests__/**/*.ts\"",
-    "typecheck": "vue-tsc --noEmit",
-    "generate-icons": "node scripts/generate-icons.js",
-    "prepare": "husky"
+    "dev:scenario": "node scripts/dev-scenario.mjs",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && vue-tsc --noEmit -p tsconfig.web.json",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,vue,css,html}\" \"tests/**/*.ts\" \"scripts/**/*.{ts,mjs}\" \"*.{ts,mjs}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "ledger:check": "tsx scripts/ledger-check.ts",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test:coverage && npm run ledger:check",
+    "test:e2e": "npm run build && playwright test",
+    "rig:record": "tsx scripts/rig-record.ts",
+    "rig:smoke": "vitest run --config vitest.rig.config.ts",
+    "rig:smoke:apply": "cross-env RIGREADY_RIG_APPLY=1 vitest run --config vitest.rig.config.ts",
+    "setup:python": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-python.ps1",
+    "pack": "npm run build && node scripts/check-sidecar.mjs && electron-builder --dir",
+    "smoke:packaged": "npm run pack && playwright test --config playwright.packaged.config.ts",
+    "dist": "npm run build && node scripts/check-sidecar.mjs && electron-builder --win --publish never",
+    "prepare": "husky",
+    "format:check": "prettier --check \"src/**/*.{ts,vue,css,html}\" \"tests/**/*.ts\" \"scripts/**/*.{ts,mjs}\" \"*.{ts,mjs}\""
   },
   "repository": {
     "type": "git",
@@ -43,9 +34,9 @@
   "keywords": [
     "simulation",
     "flight-sim",
+    "sim-racing",
     "dcs",
-    "hotas",
-    "controller"
+    "hotas"
   ],
   "author": {
     "name": "Mark Cheli",
@@ -56,43 +47,8 @@
     "url": "https://github.com/MCheli/rigready/issues"
   },
   "homepage": "https://rigready.io",
-  "devDependencies": {
-    "@electron/rebuild": "^4.0.3",
-    "@playwright/test": "^1.58.1",
-    "@types/archiver": "^7.0.0",
-    "@types/jest": "^30.0.0",
-    "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.1.0",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
-    "@vitejs/plugin-vue": "^6.0.3",
-    "electron": "^40.1.0",
-    "electron-builder": "^26.4.0",
-    "electron-vite": "^5.0.0",
-    "eslint": "^9.39.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-vue": "^10.7.0",
-    "husky": "^9.1.7",
-    "jest": "^30.2.0",
-    "lint-staged": "^16.2.7",
-    "png-to-ico": "^3.0.1",
-    "prettier": "^3.8.1",
-    "sharp": "^0.34.5",
-    "ts-jest": "^29.4.6",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1",
-    "vue-eslint-parser": "^10.2.0",
-    "vue-tsc": "^3.2.4"
-  },
-  "lint-staged": {
-    "*.{ts,js,vue}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,css,html,md}": [
-      "prettier --write"
-    ]
+  "engines": {
+    "node": ">=22.12.0"
   },
   "build": {
     "appId": "io.rigready.app",
@@ -118,9 +74,6 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "allowElevation": true,
-      "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "RigReady",
@@ -131,30 +84,65 @@
       "dist/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "node_modules/koffi/**",
+      "node_modules/@koromix/**"
+    ],
     "extraResources": [
       {
-        "from": "python",
+        "from": "resources/python",
         "to": "python",
         "filter": [
-          "**/*"
+          "**/*",
+          "!Scripts/**",
+          "!Lib/site-packages/pip/**",
+          "!Lib/site-packages/pip-*/**",
+          "!Lib/site-packages/pygame/examples/**",
+          "!Lib/site-packages/pygame/tests/**",
+          "!Lib/site-packages/pygame/docs/**",
+          "!**/__pycache__/**"
+        ]
+      },
+      {
+        "from": "python",
+        "to": "sidecar",
+        "filter": [
+          "*.py"
         ]
       }
-    ],
-    "publish": {
-      "provider": "github",
-      "owner": "MCheli",
-      "repo": "RigReady",
-      "releaseType": "release"
-    }
+    ]
   },
   "dependencies": {
+    "koffi": "^3.3.2"
+  },
+  "devDependencies": {
     "@mdi/font": "^7.4.47",
-    "archiver": "^7.0.1",
-    "electron-updater": "^6.7.3",
-    "extract-zip": "^2.0.1",
-    "js-yaml": "^4.1.1",
-    "node-hid": "^3.3.0",
-    "vue": "^3.5.27",
-    "vuetify": "^3.11.8"
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vitest/coverage-v8": "^5.0.3",
+    "cross-env": "^10.0.0",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.11.1",
+    "husky": "^9.1.7",
+    "js-yaml": "^5.4.2",
+    "pinia": "^4.0.3",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.71.0",
+    "vite": "^7.3.0",
+    "vite-plugin-vuetify": "^2.1.3",
+    "vitest": "^5.0.3",
+    "vue": "^3.5.43",
+    "vue-eslint-parser": "^10.3.0",
+    "vue-router": "^5.3.1",
+    "vue-tsc": "^3.3.12",
+    "vuetify": "^4.2.3",
+    "zod": "^4.6.5"
   }
 }

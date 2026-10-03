@@ -1,0 +1,74 @@
+{
+  "devices": [
+    {
+      "id": "{0.0.0.00000000}.{013ae275-fdfc-4996-ad90-a9a1be3385cb}",
+      "name": "Realtek Digital Output (Realtek(R) Audio)",
+      "flow": "playback"
+    },
+    {
+      "id": "{0.0.0.00000000}.{20371bcb-936f-47c7-875c-df702dd32e05}",
+      "name": "Headset Earphone (Arctis Pro Wireless Chat)",
+      "flow": "playback"
+    },
+    {
+      "id": "{0.0.0.00000000}.{20e0482c-9de0-4efc-bcac-f2b35cff7d43}",
+      "name": "Headphones (Arctis Pro Wireless Game)",
+      "flow": "playback"
+    },
+    {
+      "id": "{0.0.0.00000000}.{2c973db7-89ba-4300-bbed-5d366912cfb6}",
+      "name": "DELL G3223D (NVIDIA High Definition Audio)",
+      "flow": "playback"
+    },
+    {
+      "id": "{0.0.0.00000000}.{5b14908e-d9a8-4e31-a5e6-9d272469e892}",
+      "name": "Speakers (Realtek(R) Audio)",
+      "flow": "playback"
+    },
+    {
+      "id": "{0.0.0.00000000}.{6d70e5b7-5dc7-4d06-bc04-0c91e1697cb2}",
+      "name": "Speakers (Steam Streaming Speakers)",
+      "flow": "playback"
+    },
+    {
+      "id": "{0.0.0.00000000}.{9703601d-60c6-479b-aaca-5d16703303d4}",
+      "name": "LC49G95T (NVIDIA High Definition Audio)",
+      "flow": "playback"
+    },
+    {
+      "id": "{0.0.0.00000000}.{cd09dccb-6ab7-4e27-b7bf-69ef9f008e77}",
+      "name": "Speakers (Steam Streaming Microphone)",
+      "flow": "playback"
+    },
+    {
+      "id": "{0.0.1.00000000}.{2255b204-0d8f-4fb5-8c8a-10ee65d5a884}",
+      "name": "Headset Microphone (Arctis Pro Wireless Chat)",
+      "flow": "recording"
+    },
+    {
+      "id": "{0.0.1.00000000}.{ff70a7dc-8b55-4b05-9964-6b189caac7fa}",
+      "name": "Microphone (Steam Streaming Microphone)",
+      "flow": "recording"
+    }
+  ],
+  "defaultPlayback": {
+    "id": "{0.0.0.00000000}.{5b14908e-d9a8-4e31-a5e6-9d272469e892}",
+    "name": "Speakers (Realtek(R) Audio)",
+    "flow": "playback"
+  },
+  "defaultRecording": {
+    "id": "{0.0.1.00000000}.{2255b204-0d8f-4fb5-8c8a-10ee65d5a884}",
+    "name": "Headset Microphone (Arctis Pro Wireless Chat)",
+    "flow": "recording"
+  },
+  "defaultCommsPlayback": {
+    "id": "{0.0.0.00000000}.{2c973db7-89ba-4300-bbed-5d366912cfb6}",
+    "name": "DELL G3223D (NVIDIA High Definition Audio)",
+    "flow": "playback"
+  },
+  "defaultCommsRecording": {
+    "id": "{0.0.1.00000000}.{2255b204-0d8f-4fb5-8c8a-10ee65d5a884}",
+    "name": "Headset Microphone (Arctis Pro Wireless Chat)",
+    "flow": "recording"
+  }
+}

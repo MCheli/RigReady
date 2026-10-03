@@ -1,0 +1,1444 @@
+[
+  {
+    "instanceId": "USB\\VID_1038&PID_1290\\7&1aab5430&0&2",
+    "vendorId": "1038",
+    "productId": "1290",
+    "name": "Arctis Pro Wireless",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_0451&PID_2036\\6&10c71c98&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_1038&PID_1294\\7&1aab5430&0&3",
+    "vendorId": "1038",
+    "productId": "1294",
+    "name": "Arctis Pro Wireless",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_0451&PID_2036\\6&10c71c98&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+    "vendorId": "174C",
+    "productId": "2074",
+    "name": "ASM107x",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+    "vendorId": "174C",
+    "productId": "3074",
+    "name": "ASM107x",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_0B05&PID_19AF\\9876543210",
+    "vendorId": "0B05",
+    "productId": "19AF",
+    "name": "AURA LED Controller",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)",
+    "serial": "9876543210"
+  },
+  {
+    "instanceId": "USB\\VID_1189&PID_8890\\8&348856f8&0&1",
+    "vendorId": "1189",
+    "productId": "8890",
+    "name": "CH57x",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_0EB7&PID_0007\\6&3a944ce5&0&4",
+    "vendorId": "0EB7",
+    "productId": "0007",
+    "name": "FANATEC Podium Wheel Base DD2",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)"
+  },
+  {
+    "instanceId": "USB\\VID_0451&PID_2036\\6&10c71c98&0&2",
+    "vendorId": "0451",
+    "productId": "2036",
+    "name": "General Purpose USB Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_8087&PID_0033\\5&cc3f949&0&14",
+    "vendorId": "8087",
+    "productId": "0033",
+    "name": "Intel(R) Wireless Bluetooth(R)",
+    "isHid": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "Intel Corporation"
+  },
+  {
+    "instanceId": "USB\\VID_3434&PID_0220\\8&7dc614f&0&3",
+    "vendorId": "3434",
+    "productId": "0220",
+    "name": "Keychron K2 Pro",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_05AC&PID_024F\\8&90afe43&0&3",
+    "vendorId": "05AC",
+    "productId": "024F",
+    "name": "Keychron K3",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2813\\7&9a60daa&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\6&3a944ce5&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_258A&PID_2013\\000000000000",
+    "vendorId": "258A",
+    "productId": "2013",
+    "name": "Model O- Wireless",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)",
+    "serial": "000000000000"
+  },
+  {
+    "instanceId": "USB\\VID_258A&PID_2024\\000000000000",
+    "vendorId": "258A",
+    "productId": "2024",
+    "name": "Model O- Wireless",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\7&9a60daa&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\6&3a944ce5&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)",
+    "serial": "000000000000"
+  },
+  {
+    "instanceId": "USB\\VID_047D&PID_80A6\\8&66de2c5&0&1",
+    "vendorId": "047D",
+    "productId": "80A6",
+    "name": "ORBIT WIRELESS TB",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\7&9a60daa&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\6&3a944ce5&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_047D&PID_80A6\\8&66de2c5&0&2",
+    "vendorId": "047D",
+    "productId": "80A6",
+    "name": "ORBIT WIRELESS TB",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\7&9a60daa&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\6&3a944ce5&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_3344&PID_C259\\FF",
+    "vendorId": "3344",
+    "productId": "C259",
+    "name": "R-VPC Panel #1",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "FF"
+  },
+  {
+    "instanceId": "USB\\VID_1038&PID_1610\\6&3a944ce5&0&3",
+    "vendorId": "1038",
+    "productId": "1610",
+    "name": "SteelSeries Apex Pro",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_0FD9&PID_008F\\A00NA33331P1UB",
+    "vendorId": "0FD9",
+    "productId": "008F",
+    "name": "Stream Deck XL",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "A00NA33331P1UB"
+  },
+  {
+    "instanceId": "USB\\VID_044F&PID_B68F\\8&348856f8&0&2",
+    "vendorId": "044F",
+    "productId": "B68F",
+    "name": "T-Pendular-Rudder",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)"
+  },
+  {
+    "instanceId": "USB\\VID_2357&PID_0604\\E848B8C82000",
+    "vendorId": "2357",
+    "productId": "0604",
+    "name": "TP-Link UB500 Adapter",
+    "isHid": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "TP-Link Systems Inc.",
+    "serial": "E848B8C82000"
+  },
+  {
+    "instanceId": "USB\\VID_131D&PID_0159\\6&10c71c98&0&1",
+    "vendorId": "131D",
+    "productId": "0159",
+    "name": "TrackIR 5",
+    "isHid": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "NaturalPoint"
+  },
+  {
+    "instanceId": "USB\\VID_0000&PID_0002\\7&9a60daa&0&4",
+    "vendorId": "0000",
+    "productId": "0002",
+    "name": "Unknown USB Device (Device Descriptor Request Failed)",
+    "isHid": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\6&3a944ce5&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)"
+  },
+  {
+    "instanceId": "USB\\VID_2109&PID_2813\\7&9a60daa&0&2",
+    "vendorId": "2109",
+    "productId": "2813",
+    "name": "USB2.0 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\6&3a944ce5&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_2109&PID_2817\\6&3a944ce5&0&1",
+    "vendorId": "2109",
+    "productId": "2817",
+    "name": "USB2.0 Hub             ",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_2109&PID_2817\\7&9a60daa&0&1",
+    "vendorId": "2109",
+    "productId": "2817",
+    "name": "USB2.0 Hub             ",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\6&3a944ce5&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+    "vendorId": "2109",
+    "productId": "2817",
+    "name": "USB2.0 Hub             ",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)",
+    "serial": "MSFT20000000000"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&1",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&2",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&3",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&4",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&1",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&2",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&3",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&4",
+    "vendorId": "05E3",
+    "productId": "0610",
+    "name": "USB2.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_2109&PID_0813\\7&be9aec5&0&2",
+    "vendorId": "2109",
+    "productId": "0813",
+    "name": "USB3.0 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_0817\\6&24e9d98a&0&1",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_2109&PID_0817\\6&24e9d98a&0&1",
+    "vendorId": "2109",
+    "productId": "0817",
+    "name": "USB3.0 Hub             ",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_2109&PID_0817\\7&be9aec5&0&1",
+    "vendorId": "2109",
+    "productId": "0817",
+    "name": "USB3.0 Hub             ",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_2109&PID_0817\\6&24e9d98a&0&1",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+    "vendorId": "2109",
+    "productId": "0817",
+    "name": "USB3.0 Hub             ",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)",
+    "serial": "MSFT30000000000"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&3",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&4",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\7&277bbe51&0&1",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&4",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\7&277bbe51&0&2",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&4",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\7&277bbe51&0&3",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&4",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\7&277bbe51&0&4",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&4",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\7&3a356ef6&0&1",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&3",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\7&3a356ef6&0&2",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&3",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\7&3a356ef6&0&3",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&3",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_05E3&PID_0626\\7&3a356ef6&0&4",
+    "vendorId": "05E3",
+    "productId": "0626",
+    "name": "USB3.1 Hub",
+    "isHid": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&3",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BE03\\0FA12062F4362231C4766072",
+    "vendorId": "4098",
+    "productId": "BE03",
+    "name": "WINWING F18 STARTUP PANEL",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "0FA12062F4362231C4766072"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BF05\\B167D012E4465321A2E63072",
+    "vendorId": "4098",
+    "productId": "BF05",
+    "name": "WINWING F18 TAKEOFF PANEL 2",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "B167D012E4465321A2E63072"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BF06\\8E3C6012D4664221F33630B2",
+    "vendorId": "4098",
+    "productId": "BF06",
+    "name": "WINWING ICP",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "8E3C6012D4664221F33630B2"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BEE0\\53BD7012E446232143263042",
+    "vendorId": "4098",
+    "productId": "BEE0",
+    "name": "WINWING MFD1-C",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "53BD7012E446232143263042"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BEE1\\6EFA7012E446232143263042",
+    "vendorId": "4098",
+    "productId": "BEE1",
+    "name": "WINWING MFD1-L",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&1",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "6EFA7012E446232143263042"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BEE2\\80E62062A4E6D221B2465002",
+    "vendorId": "4098",
+    "productId": "BEE2",
+    "name": "WINWING MFD1-R",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "80E62062A4E6D221B2465002"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BEA8\\82E72012C416422192F650B2",
+    "vendorId": "4098",
+    "productId": "BEA8",
+    "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "82E72012C416422192F650B2"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BD26\\14067062F4E6C33163562052",
+    "vendorId": "4098",
+    "productId": "BD26",
+    "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&2877fc43&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "14067062F4E6C33163562052"
+  },
+  {
+    "instanceId": "USB\\VID_4098&PID_BEDE\\AE372062A4E6D221B2465002",
+    "vendorId": "4098",
+    "productId": "BEDE",
+    "name": "WINWING UFC1 + HUD1",
+    "isHid": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\7&3b31ace8&0&4",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0610\\6&10c71c98&0&3",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_2074\\5&cc3f949&0&6",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard system devices)",
+    "serial": "AE372062A4E6D221B2465002"
+  },
+  {
+    "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210092611",
+    "vendorId": "17E9",
+    "productId": "FF00",
+    "name": "WINWING USB 3.0 Display1",
+    "isHid": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\7&3a356ef6&0&3",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&3",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)",
+    "serial": "WWIN29320221210092611"
+  },
+  {
+    "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210093818",
+    "vendorId": "17E9",
+    "productId": "FF00",
+    "name": "WINWING USB 3.0 Display1",
+    "isHid": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\7&277bbe51&0&1",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&4",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)",
+    "serial": "WWIN29320221210093818"
+  },
+  {
+    "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210163532",
+    "vendorId": "17E9",
+    "productId": "FF00",
+    "name": "WINWING USB 3.0 Display1",
+    "isHid": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\7&277bbe51&0&4",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_05E3&PID_0626\\6&3969141f&0&4",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\VID_174C&PID_3074\\5&cc3f949&0&25",
+        "name": "Generic SuperSpeed USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&2fd48294&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB Host Controller)",
+    "serial": "WWIN29320221210163532"
+  }
+]

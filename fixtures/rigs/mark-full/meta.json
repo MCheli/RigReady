@@ -1,0 +1,14 @@
+{
+  "name": "mark-full",
+  "recordedAt": "2026-10-03T20:07:31.853Z",
+  "os": "Windows_NT 10.0.26200",
+  "counts": {
+    "devices": 62,
+    "displays": 5,
+    "processes": 342,
+    "audioEndpoints": 10,
+    "inputDevices": 10,
+    "dcsFiles": 18
+  },
+  "notes": []
+}

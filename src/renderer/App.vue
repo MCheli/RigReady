@@ -1,365 +1,114 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import HomeView from './views/HomeView.vue';
-import ProfilesView from './views/ProfilesView.vue';
-import ProfileWizardView from './views/ProfileWizardView.vue';
-import DevicesView from './views/DevicesView.vue';
-import InputTesterView from './views/InputTesterView.vue';
-import DisplaysView from './views/DisplaysView.vue';
-import KeybindingsView from './views/KeybindingsView.vue';
-import StreamDeckView from './views/StreamDeckView.vue';
-import SettingsView from './views/SettingsView.vue';
-import DebugView from './views/DebugView.vue';
-import { useToast } from './composables/useToast';
-import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts';
-import { createNavigation } from './composables/useNavigation';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { appContract } from '../shared/appContract';
+import { manifests } from './features';
+import { useClient } from './ipc';
 
-const { toastState, hide: hideToast } = useToast();
-const { shortcuts, showShortcutsHelp, registerShortcuts, formatShortcut, hideHelp } =
-  useKeyboardShortcuts();
-
-const currentSection = ref('home');
-
-// Create navigation provider for child components
-const _navigation = createNavigation((section) => {
-  currentSection.value = section;
-});
-
-// Toast icon based on type
-const toastIcon = computed(() => {
-  switch (toastState.value.type) {
-    case 'success':
-      return 'mdi-check-circle';
-    case 'error':
-      return 'mdi-alert-circle';
-    case 'warning':
-      return 'mdi-alert';
-    case 'info':
-    default:
-      return 'mdi-information';
-  }
-});
-const appStatus = ref<'scanning' | 'ready' | 'error'>('scanning');
-const appVersion = ref('v1.0.0');
-
-const primaryNav = [
-  { id: 'home', title: 'Home', icon: 'mdi-home', shortcut: '1' },
-  { id: 'profiles', title: 'Profiles', icon: 'mdi-account-box', shortcut: '2' },
-];
-
-const toolsNav = [
-  { id: 'devices', title: 'Devices', icon: 'mdi-controller', shortcut: '3' },
-  { id: 'input-test', title: 'Input Tester', icon: 'mdi-gamepad-variant', shortcut: '4' },
-  { id: 'displays', title: 'Displays', icon: 'mdi-monitor', shortcut: '5' },
-  { id: 'keybindings', title: 'Keybindings', icon: 'mdi-keyboard', shortcut: '6' },
-  { id: 'streamdeck', title: 'Stream Deck', icon: 'mdi-grid', shortcut: '7' },
-];
-
-const systemNav = [
-  { id: 'settings', title: 'Settings', icon: 'mdi-cog', shortcut: '8' },
-  { id: 'debug', title: 'Debug', icon: 'mdi-wrench', shortcut: '9' },
-];
+const route = useRoute();
+const mode = computed(() => (route.path.startsWith('/configure') ? 'configure' : 'fly'));
+const scenario = ref<string>();
+const version = ref('');
+const overlays = manifests.flatMap((m) => m.overlays ?? []);
 
 onMounted(async () => {
-  // Register keyboard shortcuts
-  registerShortcuts([
-    {
-      key: '1',
-      ctrl: true,
-      description: 'Go to Home',
-      action: () => (currentSection.value = 'home'),
-    },
-    {
-      key: '2',
-      ctrl: true,
-      description: 'Go to Profiles',
-      action: () => (currentSection.value = 'profiles'),
-    },
-    {
-      key: '3',
-      ctrl: true,
-      description: 'Go to Devices',
-      action: () => (currentSection.value = 'devices'),
-    },
-    {
-      key: '4',
-      ctrl: true,
-      description: 'Go to Input Tester',
-      action: () => (currentSection.value = 'input-test'),
-    },
-    {
-      key: '5',
-      ctrl: true,
-      description: 'Go to Displays',
-      action: () => (currentSection.value = 'displays'),
-    },
-    {
-      key: '6',
-      ctrl: true,
-      description: 'Go to Keybindings',
-      action: () => (currentSection.value = 'keybindings'),
-    },
-    {
-      key: '7',
-      ctrl: true,
-      description: 'Go to Stream Deck',
-      action: () => (currentSection.value = 'streamdeck'),
-    },
-    {
-      key: '8',
-      ctrl: true,
-      description: 'Go to Settings',
-      action: () => (currentSection.value = 'settings'),
-    },
-    {
-      key: '9',
-      ctrl: true,
-      description: 'Go to Debug',
-      action: () => (currentSection.value = 'debug'),
-    },
-    {
-      key: ',',
-      ctrl: true,
-      description: 'Go to Settings',
-      action: () => (currentSection.value = 'settings'),
-    },
-  ]);
-
-  // Simulate initial scan
-  setTimeout(() => {
-    appStatus.value = 'ready';
-  }, 1000);
-
-  // Get app version
-  try {
-    const version = await window.rigReady.updates.getVersion();
-    appVersion.value = `v${version}`;
-  } catch {
-    // Keep default version if failed
+  const info = await useClient(appContract).info();
+  if (info.ok) {
+    scenario.value = info.value.scenario;
+    version.value = info.value.version;
   }
 });
 </script>
 
 <template>
   <v-app>
-    <!-- Navigation Drawer (Sidebar) -->
-    <v-navigation-drawer permanent width="220">
-      <v-list-item prepend-icon="mdi-airplane" title="RigReady" class="py-4" />
-
-      <v-divider />
-
-      <v-list density="compact" nav>
-        <v-list-item
-          v-for="item in primaryNav"
-          :key="item.id"
-          :prepend-icon="item.icon"
-          :active="currentSection === item.id"
-          @click="currentSection = item.id"
-          rounded="lg"
-        >
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-          <template #append>
-            <span class="text-caption text-medium-emphasis shortcut-hint">
-              Ctrl+{{ item.shortcut }}
-            </span>
-          </template>
-        </v-list-item>
-
-        <v-divider class="my-1" />
-        <v-list-subheader>Tools</v-list-subheader>
-
-        <v-list-item
-          v-for="item in toolsNav"
-          :key="item.id"
-          :prepend-icon="item.icon"
-          :active="currentSection === item.id"
-          @click="currentSection = item.id"
-          rounded="lg"
-        >
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-          <template #append>
-            <span class="text-caption text-medium-emphasis shortcut-hint">
-              Ctrl+{{ item.shortcut }}
-            </span>
-          </template>
-        </v-list-item>
-
-        <v-divider class="my-1" />
-        <v-list-subheader>System</v-list-subheader>
-
-        <v-list-item
-          v-for="item in systemNav"
-          :key="item.id"
-          :prepend-icon="item.icon"
-          :active="currentSection === item.id"
-          @click="currentSection = item.id"
-          rounded="lg"
-        >
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-          <template #append>
-            <span class="text-caption text-medium-emphasis shortcut-hint">
-              Ctrl+{{ item.shortcut }}
-            </span>
-          </template>
-        </v-list-item>
-      </v-list>
-
-      <template #append>
-        <v-divider />
-
-        <!-- Status Indicator -->
-        <v-list-item density="compact" class="py-2">
-          <template #prepend>
-            <v-icon
-              :color="
-                appStatus === 'ready' ? 'success' : appStatus === 'error' ? 'error' : 'warning'
-              "
-              size="small"
-            >
-              mdi-circle
-            </v-icon>
-          </template>
-          <v-list-item-title class="text-caption">
-            {{ appStatus === 'ready' ? 'Ready' : appStatus === 'error' ? 'Error' : 'Scanning...' }}
-          </v-list-item-title>
-        </v-list-item>
-
-        <v-divider />
-
-        <!-- Footer -->
-        <div class="pa-3 text-center text-caption text-medium-emphasis">
-          <div>{{ appVersion }}</div>
-          <a
-            href="https://www.markcheli.com"
-            target="_blank"
-            class="text-decoration-none text-high-emphasis"
-          >
-            Mark Cheli
-          </a>
-          <div class="mt-1">
-            <a
-              href="https://rigready.io"
-              target="_blank"
-              class="text-decoration-none text-medium-emphasis"
-            >
-              rigready.io
-            </a>
-            <span class="mx-1">·</span>
-            <a
-              href="https://github.com/MCheli/rigready"
-              target="_blank"
-              class="text-decoration-none text-medium-emphasis"
-            >
-              GitHub
-            </a>
-          </div>
-        </div>
-      </template>
-    </v-navigation-drawer>
-
-    <!-- Main Content -->
-    <v-main>
-      <v-container fluid class="main-content pa-6">
-        <transition name="fade" mode="out-in">
-          <HomeView v-if="currentSection === 'home'" />
-          <ProfilesView v-else-if="currentSection === 'profiles'" />
-          <ProfileWizardView v-else-if="currentSection === 'profile-wizard'" />
-          <DevicesView v-else-if="currentSection === 'devices'" />
-          <InputTesterView v-else-if="currentSection === 'input-test'" />
-          <DisplaysView v-else-if="currentSection === 'displays'" />
-          <KeybindingsView v-else-if="currentSection === 'keybindings'" />
-          <StreamDeckView v-else-if="currentSection === 'streamdeck'" />
-          <SettingsView v-else-if="currentSection === 'settings'" />
-          <DebugView v-else-if="currentSection === 'debug'" />
-        </transition>
-      </v-container>
-    </v-main>
-
-    <!-- Global Toast Notifications -->
-    <v-snackbar
-      v-model="toastState.visible"
-      :color="toastState.type"
-      :timeout="toastState.timeout"
-      location="bottom right"
-      rounded="lg"
-    >
-      <div class="d-flex align-center">
-        <v-icon :icon="toastIcon" class="mr-2" />
-        {{ toastState.message }}
+    <v-app-bar flat density="comfortable" class="shell-bar">
+      <div class="shell-brand">
+        <v-icon icon="mdi-check-decagram" color="primary" size="22" />
+        <span>RigReady</span>
       </div>
-      <template #actions>
-        <v-btn variant="text" icon="mdi-close" size="small" @click="hideToast" />
-      </template>
-    </v-snackbar>
-
-    <!-- Keyboard Shortcuts Help Dialog -->
-    <v-dialog v-model="showShortcutsHelp" max-width="500">
-      <v-card>
-        <v-card-title class="d-flex justify-space-between align-center">
-          <span>Keyboard Shortcuts</span>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="hideHelp" />
-        </v-card-title>
-        <v-card-text>
-          <v-list density="compact" class="bg-transparent">
-            <v-list-subheader>Navigation</v-list-subheader>
-            <v-list-item v-for="shortcut in shortcuts" :key="shortcut.key">
-              <template #prepend>
-                <v-chip size="small" variant="outlined" class="shortcut-chip font-mono">
-                  {{ formatShortcut(shortcut) }}
-                </v-chip>
-              </template>
-              <v-list-item-title>{{ shortcut.description }}</v-list-item-title>
-            </v-list-item>
-            <v-divider class="my-2" />
-            <v-list-subheader>Help</v-list-subheader>
-            <v-list-item>
-              <template #prepend>
-                <v-chip size="small" variant="outlined" class="shortcut-chip font-mono">?</v-chip>
-              </template>
-              <v-list-item-title>Show/hide this dialog</v-list-item-title>
-            </v-list-item>
-            <v-list-item>
-              <template #prepend>
-                <v-chip size="small" variant="outlined" class="shortcut-chip font-mono">ESC</v-chip>
-              </template>
-              <v-list-item-title>Close dialogs</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+      <nav class="shell-modes" aria-label="Mode">
+        <router-link
+          to="/"
+          class="shell-mode"
+          :class="{ active: mode === 'fly' }"
+          data-testid="mode-fly"
+        >
+          Fly
+        </router-link>
+        <router-link
+          to="/configure"
+          class="shell-mode"
+          :class="{ active: mode === 'configure' }"
+          data-testid="mode-configure"
+        >
+          Configure
+        </router-link>
+      </nav>
+      <v-spacer />
+      <span v-if="scenario" class="shell-scenario" data-testid="scenario-banner" :title="scenario">
+        <v-icon icon="mdi-flask-outline" size="16" /> Scenario: {{ scenario }}
+      </span>
+      <span class="shell-version">{{ version }}</span>
+    </v-app-bar>
+    <v-main>
+      <router-view />
+    </v-main>
+    <component :is="overlay" v-for="(overlay, index) in overlays" :key="index" />
   </v-app>
 </template>
 
 <style scoped>
-.v-navigation-drawer {
-  border-right: 1px solid rgb(var(--v-theme-surface-variant)) !important;
+.shell-bar {
+  background: var(--rr-surface) !important;
+  border-bottom: 1px solid var(--rr-border);
+  padding: 0 16px;
 }
-
-.main-content {
-  height: 100%;
-  max-height: 100vh;
-  overflow-y: auto;
-  align-items: flex-start;
-  align-content: flex-start;
+.shell-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  margin-right: 28px;
 }
-
-.main-content > * {
-  width: 100%;
+.shell-modes {
+  display: flex;
+  gap: 4px;
+  background: var(--rr-bg);
+  border: 1px solid var(--rr-border);
+  border-radius: 8px;
+  padding: 3px;
 }
-
-.shortcut-hint {
-  font-family: 'Consolas', monospace;
-  font-size: 0.65rem;
-  opacity: 0.5;
+.shell-mode {
+  padding: 5px 18px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--rr-muted);
+  text-decoration: none;
 }
-
-.shortcut-chip {
-  min-width: 60px;
-  justify-content: center;
+.shell-mode.active {
+  background: var(--rr-surface-2);
+  color: var(--rr-text);
 }
-
-.font-mono {
-  font-family: 'Consolas', monospace;
+.shell-scenario {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 420px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  color: var(--rr-warn);
+  border: 1px solid color-mix(in srgb, var(--rr-warn) 40%, transparent);
+  border-radius: 6px;
+  padding: 3px 10px;
+  margin-right: 12px;
+}
+.shell-version {
+  font-size: 12px;
+  color: var(--rr-muted);
 }
 </style>

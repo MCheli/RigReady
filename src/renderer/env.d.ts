@@ -1,16 +1,18 @@
 /// <reference types="vite/client" />
+import type { Bridge } from '../shared/ipc';
 
-declare module '*.vue' {
-  import type { DefineComponent } from 'vue';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const component: DefineComponent<object, object, any>;
-  export default component;
+declare global {
+  interface Window {
+    rigready: Bridge;
+  }
 }
 
-interface ImportMetaEnv {
-  readonly VITE_APP_TITLE: string;
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** 'fly' renders full-width without the Configure navigation. */
+    mode?: 'fly' | 'configure';
+    title?: string;
+  }
 }
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
+export {};

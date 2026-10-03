@@ -1,0 +1,109 @@
+/* RigReady design system: tokens and the few shared primitives. */
+:root {
+  --rr-bg: #0f1317;
+  --rr-surface: #171c22;
+  --rr-surface-2: #1e252d;
+  --rr-border: #262d36;
+  --rr-text: #e6e9ed;
+  --rr-muted: #8b95a3;
+  --rr-ok: #3fb97f;
+  --rr-warn: #e2b23c;
+  --rr-bad: #e5534b;
+  --rr-accent: #5aa9e6;
+  --rr-radius: 10px;
+}
+
+html {
+  overflow-y: auto !important;
+}
+
+body {
+  background: var(--rr-bg);
+  color: var(--rr-text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.rr-page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+}
+
+.rr-page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.rr-page-sub {
+  color: var(--rr-muted);
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+.rr-panel {
+  background: var(--rr-surface);
+  border: 1px solid var(--rr-border);
+  border-radius: var(--rr-radius);
+}
+
+.rr-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rr-muted);
+  margin: 0 0 8px;
+}
+
+.rr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--rr-border);
+}
+
+.rr-row:first-child {
+  border-top: none;
+}
+
+.rr-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.rr-row-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rr-row-sub {
+  font-size: 12.5px;
+  color: var(--rr-muted);
+  overflow-wrap: anywhere;
+}
+
+.rr-mono {
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 12px;
+}
+
+.rr-ok {
+  color: var(--rr-ok);
+}
+.rr-warn {
+  color: var(--rr-warn);
+}
+.rr-bad {
+  color: var(--rr-bad);
+}
+.rr-muted {
+  color: var(--rr-muted);
+}
+
+.rr-empty {
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--rr-muted);
+}

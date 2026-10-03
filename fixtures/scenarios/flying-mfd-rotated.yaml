@@ -1,0 +1,7 @@
+description: Flying, middle MFD screen rotated back to landscape
+rig: mark-full
+extends: flying-all-good.yaml
+mutations:
+  - op: setDisplay
+    match: { name: USB_Monitor, index: 1 }
+    set: { width: 1024, height: 768, rotation: 0 }

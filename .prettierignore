@@ -2,5 +2,9 @@ dist/
 release/
 node_modules/
 resources/
+coverage/
+artifacts/
+fixtures/
+src/legacy/
 package-lock.json
 *.md

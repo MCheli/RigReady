@@ -1,19 +1,18 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022"],
-    "outDir": "./dist",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "sourceMap": true,
-    "noEmit": true
+    "lib": ["ES2023"],
+    "types": ["node", "vite/client"]
   },
-  "include": ["src/main/**/*", "src/shared/**/*", "electron.vite.config.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/core/**/*.ts",
+    "src/platform/**/*.ts",
+    "src/main/**/*.ts",
+    "src/shared/**/*.ts",
+    "src/features/**/*.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.ts",
+    "*.config.ts"
+  ],
+  "exclude": ["node_modules", "dist", "src/legacy", "src/features/**/renderer/**", "src/features/*/index.ts"]
 }

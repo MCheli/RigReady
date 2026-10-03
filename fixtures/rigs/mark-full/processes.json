@@ -1,0 +1,1584 @@
+[
+  {
+    "pid": 0,
+    "name": "[System Process]"
+  },
+  {
+    "pid": 4,
+    "name": "System"
+  },
+  {
+    "pid": 428,
+    "name": "Secure System"
+  },
+  {
+    "pid": 468,
+    "name": "Registry"
+  },
+  {
+    "pid": 1308,
+    "name": "smss.exe"
+  },
+  {
+    "pid": 1788,
+    "name": "csrss.exe"
+  },
+  {
+    "pid": 1876,
+    "name": "wininit.exe"
+  },
+  {
+    "pid": 1884,
+    "name": "csrss.exe"
+  },
+  {
+    "pid": 1956,
+    "name": "services.exe"
+  },
+  {
+    "pid": 1984,
+    "name": "winlogon.exe"
+  },
+  {
+    "pid": 2036,
+    "name": "LsaIso.exe"
+  },
+  {
+    "pid": 1232,
+    "name": "lsass.exe"
+  },
+  {
+    "pid": 1280,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2064,
+    "name": "fontdrvhost.exe"
+  },
+  {
+    "pid": 2072,
+    "name": "fontdrvhost.exe"
+  },
+  {
+    "pid": 2164,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2216,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2304,
+    "name": "dwm.exe"
+  },
+  {
+    "pid": 2336,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2432,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2440,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2448,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2456,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2652,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2660,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2780,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2852,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2896,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3016,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3052,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2748,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 2744,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3192,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3392,
+    "name": "NVDisplay.Container.exe"
+  },
+  {
+    "pid": 3400,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3464,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3628,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3636,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3696,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3704,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3712,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3808,
+    "name": "Memory Compression"
+  },
+  {
+    "pid": 3852,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3864,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3916,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3940,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3952,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 3568,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4116,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4184,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4196,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4324,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4452,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4484,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4532,
+    "name": "audiodg.exe",
+    "path": "C:\\Windows\\System32\\audiodg.exe"
+  },
+  {
+    "pid": 4608,
+    "name": "spoolsv.exe"
+  },
+  {
+    "pid": 4640,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4756,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 4792,
+    "name": "NVDisplay.Container.exe"
+  },
+  {
+    "pid": 5036,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 5044,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 5052,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 5060,
+    "name": "DtsApo4Service.exe"
+  },
+  {
+    "pid": 5072,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 5080,
+    "name": "FWPnpService.exe"
+  },
+  {
+    "pid": 5092,
+    "name": "RtkAudUService64.exe"
+  },
+  {
+    "pid": 5100,
+    "name": "iRacingService64.exe"
+  },
+  {
+    "pid": 5108,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 5116,
+    "name": "GameInputRedistService.exe"
+  },
+  {
+    "pid": 4804,
+    "name": "HidHideWatchdog.exe"
+  },
+  {
+    "pid": 5124,
+    "name": "mosquitto.exe"
+  },
+  {
+    "pid": 5132,
+    "name": "jhi_service.exe"
+  },
+  {
+    "pid": 5144,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 5168,
+    "name": "RstMwService.exe"
+  },
+  {
+    "pid": 5176,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 5192,
+    "name": "WMIRegistrationService.exe"
+  },
+  {
+    "pid": 5236,
+    "name": "MsMpEng.exe"
+  },
+  {
+    "pid": 5252,
+    "name": "MpDefenderCoreService.exe"
+  },
+  {
+    "pid": 5920,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 6252,
+    "name": "dasHost.exe"
+  },
+  {
+    "pid": 6328,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 6376,
+    "name": "WUDFHost.exe"
+  },
+  {
+    "pid": 6628,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 6700,
+    "name": "WmiPrvSE.exe"
+  },
+  {
+    "pid": 6728,
+    "name": "WmiPrvSE.exe"
+  },
+  {
+    "pid": 6584,
+    "name": "AggregatorHost.exe"
+  },
+  {
+    "pid": 7488,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 7740,
+    "name": "GameInputRedistService.exe",
+    "path": "C:\\Program Files\\Microsoft GameInput\\x64\\GameInputRedistService.exe"
+  },
+  {
+    "pid": 7828,
+    "name": "DefenderSessionHelper.exe",
+    "path": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26080.4-0\\DefenderSessionHelper.exe"
+  },
+  {
+    "pid": 7836,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 7968,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 7964,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 8060,
+    "name": "cowork-svc.exe"
+  },
+  {
+    "pid": 7252,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 7988,
+    "name": "gamingservicesnet.exe"
+  },
+  {
+    "pid": 3408,
+    "name": "gamingservices.exe"
+  },
+  {
+    "pid": 7908,
+    "name": "sihost.exe",
+    "path": "C:\\Windows\\System32\\sihost.exe"
+  },
+  {
+    "pid": 7692,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 7464,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 8220,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 8392,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 8664,
+    "name": "wlanext.exe"
+  },
+  {
+    "pid": 8720,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 8728,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 8824,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 8900,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 7644,
+    "name": "Intel_PIE_Service.exe"
+  },
+  {
+    "pid": 4984,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 5556,
+    "name": "taskhostw.exe",
+    "path": "C:\\Windows\\System32\\taskhostw.exe"
+  },
+  {
+    "pid": 9588,
+    "name": "explorer.exe",
+    "path": "C:\\Windows\\explorer.exe"
+  },
+  {
+    "pid": 9616,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 9744,
+    "name": "ShellHost.exe",
+    "path": "C:\\Windows\\System32\\ShellHost.exe"
+  },
+  {
+    "pid": 9980,
+    "name": "CrossDeviceResume.exe",
+    "path": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+  },
+  {
+    "pid": 10292,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 10420,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 10488,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 10636,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 10756,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 10772,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 11036,
+    "name": "CrossDeviceService.exe",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.CrossDevice_1.26072.116.0_x64__cw5n1h2txyewy\\CrossDeviceService.exe"
+  },
+  {
+    "pid": 10264,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 11388,
+    "name": "SearchHost.exe",
+    "path": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\SearchHost.exe"
+  },
+  {
+    "pid": 11412,
+    "name": "StartMenuExperienceHost.exe",
+    "path": "C:\\Windows\\SystemApps\\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\\StartMenuExperienceHost.exe"
+  },
+  {
+    "pid": 11556,
+    "name": "WidgetBoard.exe",
+    "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.21100.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+  },
+  {
+    "pid": 11932,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 12040,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 12252,
+    "name": "WidgetService.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WidgetsPlatformRuntime_1.6.19.0_x64__8wekyb3d8bbwe\\WidgetService\\WidgetService.exe"
+  },
+  {
+    "pid": 12352,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 12380,
+    "name": "NgcIso.exe"
+  },
+  {
+    "pid": 13032,
+    "name": "MicrosoftStartFeedProvider.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.StartExperiencesApp_1.380.2.0_x64__8wekyb3d8bbwe\\MicrosoftStartFeedProvider\\MicrosoftStartFeedProvider.exe"
+  },
+  {
+    "pid": 13144,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 12996,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 13548,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 13624,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 14216,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 14240,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 11916,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 14156,
+    "name": "ctfmon.exe",
+    "path": "C:\\Windows\\System32\\ctfmon.exe"
+  },
+  {
+    "pid": 11864,
+    "name": "TabTip.exe",
+    "path": "C:\\Program Files\\Common Files\\microsoft shared\\ink\\TabTip.exe"
+  },
+  {
+    "pid": 14304,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 14820,
+    "name": "LockApp.exe",
+    "path": "C:\\Windows\\SystemApps\\Microsoft.LockApp_cw5n1h2txyewy\\LockApp.exe"
+  },
+  {
+    "pid": 15492,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 15732,
+    "name": "SearchIndexer.exe"
+  },
+  {
+    "pid": 15876,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 16128,
+    "name": "GameInputSvc.exe"
+  },
+  {
+    "pid": 16156,
+    "name": "GameInputSvc.exe"
+  },
+  {
+    "pid": 15592,
+    "name": "NisSrv.exe"
+  },
+  {
+    "pid": 14880,
+    "name": "PhoneExperienceHost.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.YourPhone_1.26072.255.0_x64__8wekyb3d8bbwe\\PhoneExperienceHost.exe"
+  },
+  {
+    "pid": 16284,
+    "name": "SecurityHealthSystray.exe",
+    "path": "C:\\Windows\\System32\\SecurityHealthSystray.exe"
+  },
+  {
+    "pid": 7616,
+    "name": "SecurityHealthService.exe"
+  },
+  {
+    "pid": 16700,
+    "name": "RtkAudUService64.exe",
+    "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\realtekservice.inf_amd64_2c6939fa3ca49312\\RtkAudUService64.exe"
+  },
+  {
+    "pid": 14608,
+    "name": "steam.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\steam.exe"
+  },
+  {
+    "pid": 2292,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 9276,
+    "name": "steamservice.exe"
+  },
+  {
+    "pid": 14708,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 15772,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 16892,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 16772,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 6608,
+    "name": "OneDrive.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe"
+  },
+  {
+    "pid": 17628,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 17756,
+    "name": "TextInputHost.exe",
+    "path": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+  },
+  {
+    "pid": 18356,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 18460,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 18548,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 18744,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 18776,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 19020,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 19320,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 19796,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 19804,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 20476,
+    "name": "Discord.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\Discord.exe"
+  },
+  {
+    "pid": 19100,
+    "name": "Discord.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\Discord.exe"
+  },
+  {
+    "pid": 20292,
+    "name": "Discord.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\Discord.exe"
+  },
+  {
+    "pid": 20280,
+    "name": "Discord.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\Discord.exe"
+  },
+  {
+    "pid": 21012,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 20456,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21472,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21264,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21188,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21132,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21564,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21620,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21672,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21848,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21920,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 21960,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22024,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22076,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22128,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22180,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22284,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22492,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22544,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22596,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22648,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22700,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22752,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22912,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22976,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23028,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23064,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23116,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23172,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23300,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23504,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23688,
+    "name": "Discord.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\Discord.exe"
+  },
+  {
+    "pid": 23780,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 23804,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23880,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23980,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 24300,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 23652,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 22420,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 25168,
+    "name": "Discord.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\Discord.exe"
+  },
+  {
+    "pid": 25748,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 26124,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 17620,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 26012,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 25744,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 17612,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 26860,
+    "name": "ShellExperienceHost.exe",
+    "path": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+  },
+  {
+    "pid": 27168,
+    "name": "DiscordSystemHelper.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\modules\\discord_utils-1\\discord_utils\\DiscordSystemHelper.exe"
+  },
+  {
+    "pid": 27432,
+    "name": "DiscordSystemHelper.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\modules\\discord_utils-1\\discord_utils\\DiscordSystemHelper.exe"
+  },
+  {
+    "pid": 27496,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 2084,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 2484,
+    "name": "cmd.exe",
+    "path": "C:\\Windows\\System32\\cmd.exe"
+  },
+  {
+    "pid": 2692,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 3088,
+    "name": "1Password-BrowserSupport.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.38.34_x64__amwd9z03whsfe\\1Password-BrowserSupport.exe"
+  },
+  {
+    "pid": 5248,
+    "name": "1Password.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.38.34_x64__amwd9z03whsfe\\1Password.exe"
+  },
+  {
+    "pid": 29168,
+    "name": "1Password.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.38.34_x64__amwd9z03whsfe\\1Password.exe"
+  },
+  {
+    "pid": 29176,
+    "name": "1Password.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.38.34_x64__amwd9z03whsfe\\1Password.exe"
+  },
+  {
+    "pid": 29592,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 29088,
+    "name": "1Password-Crash-Handler.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.38.34_x64__amwd9z03whsfe\\1Password-Crash-Handler.exe"
+  },
+  {
+    "pid": 29096,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 15968,
+    "name": "StreamDeck.exe",
+    "path": "C:\\Program Files\\Elgato\\StreamDeck\\StreamDeck.exe"
+  },
+  {
+    "pid": 26312,
+    "name": "ElgatoAudioControlServerWatcher.exe",
+    "path": "C:\\Program Files\\Elgato\\Volume Controller\\ElgatoAudioControlServerWatcher.exe"
+  },
+  {
+    "pid": 26288,
+    "name": "crashpad_handler.exe",
+    "path": "C:\\Program Files\\Elgato\\StreamDeck\\crashpad_handler.exe"
+  },
+  {
+    "pid": 29028,
+    "name": "unsecapp.exe",
+    "path": "C:\\Windows\\System32\\wbem\\unsecapp.exe"
+  },
+  {
+    "pid": 29748,
+    "name": "dcs_interface.exe",
+    "path": "C:\\Users\\User\\AppData\\Roaming\\Elgato\\StreamDeck\\Plugins\\com.ctytler.dcs.sdPlugin\\dcs_interface.exe"
+  },
+  {
+    "pid": 29756,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 29836,
+    "name": "ElgatoAudioControlServer.exe",
+    "path": "C:\\Program Files\\Elgato\\Volume Controller\\ElgatoAudioControlServer.exe"
+  },
+  {
+    "pid": 30196,
+    "name": "1Password.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.38.34_x64__amwd9z03whsfe\\1Password.exe"
+  },
+  {
+    "pid": 30420,
+    "name": "ESDDiscord.exe",
+    "path": "C:\\Users\\User\\AppData\\Roaming\\Elgato\\StreamDeck\\Plugins\\com.elgato.discord.sdPlugin\\ESDDiscord.exe"
+  },
+  {
+    "pid": 30428,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 30176,
+    "name": "QtWebEngineProcess.exe",
+    "path": "C:\\Program Files\\Elgato\\StreamDeck\\QtWebEngineProcess.exe"
+  },
+  {
+    "pid": 31116,
+    "name": "LGMonitorAppManager.exe",
+    "path": "C:\\Program Files\\WindowsApps\\LGElectronics.LGMonitorApp_1.2606.1601.0_x86__cfnzzhwkr8z5w\\LGMonitorAppManager\\LGMonitorAppManager.exe"
+  },
+  {
+    "pid": 31228,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 17468,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 26476,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 20128,
+    "name": "M365Copilot.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftOfficeHub_19.2609.52011.0_x64__8wekyb3d8bbwe\\M365Copilot.exe"
+  },
+  {
+    "pid": 6724,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 31036,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 31408,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 31896,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 31904,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 32016,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 32332,
+    "name": "msedgewebview2.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.53\\msedgewebview2.exe"
+  },
+  {
+    "pid": 11576,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 29108,
+    "name": "claude.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Claude_2.19675.0.0_x64__pzs8sxrjxfjjc\\app\\claude.exe"
+  },
+  {
+    "pid": 33328,
+    "name": "WindowsTerminal.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.11911.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+  },
+  {
+    "pid": 33524,
+    "name": "OpenConsole.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.11911.0_x64__8wekyb3d8bbwe\\OpenConsole.exe"
+  },
+  {
+    "pid": 33532,
+    "name": "powershell.exe",
+    "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  },
+  {
+    "pid": 5372,
+    "name": "XboxPcTray.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2609.1001.16.0_x64__8wekyb3d8bbwe\\XboxPcTray.exe"
+  },
+  {
+    "pid": 4832,
+    "name": "XboxPcAppFT.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2609.1001.16.0_x64__8wekyb3d8bbwe\\XboxPcAppFT.exe"
+  },
+  {
+    "pid": 32864,
+    "name": "ApplicationFrameHost.exe",
+    "path": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+  },
+  {
+    "pid": 12588,
+    "name": "XboxPcApp.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingApp_2609.1001.16.0_x64__8wekyb3d8bbwe\\XboxPcApp.exe"
+  },
+  {
+    "pid": 2920,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 34300,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 34372,
+    "name": "trophi.ai.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\trophi.ai.exe"
+  },
+  {
+    "pid": 34408,
+    "name": "OpenConsole.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.11911.0_x64__8wekyb3d8bbwe\\OpenConsole.exe"
+  },
+  {
+    "pid": 34564,
+    "name": "UnityCrashHandler64.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\UnityCrashHandler64.exe"
+  },
+  {
+    "pid": 34732,
+    "name": "OpenConsole.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.11911.0_x64__8wekyb3d8bbwe\\OpenConsole.exe"
+  },
+  {
+    "pid": 34740,
+    "name": "powershell.exe",
+    "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  },
+  {
+    "pid": 35608,
+    "name": "1Password.exe",
+    "path": "C:\\Program Files\\WindowsApps\\Agilebits.1Password_8.12.38.34_x64__amwd9z03whsfe\\1Password.exe"
+  },
+  {
+    "pid": 18424,
+    "name": "SimAppPro.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\SimAppPro.exe"
+  },
+  {
+    "pid": 13864,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 2984,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 36500,
+    "name": "crashpad_handler.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\crashpad_handler.exe"
+  },
+  {
+    "pid": 36652,
+    "name": "SimAppPro.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\SimAppPro.exe"
+  },
+  {
+    "pid": 36756,
+    "name": "cmd.exe",
+    "path": "C:\\Windows\\SysWOW64\\cmd.exe"
+  },
+  {
+    "pid": 36676,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 25156,
+    "name": "SimAppPro.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\SimAppPro.exe"
+  },
+  {
+    "pid": 36884,
+    "name": "SimAppPro.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\SimAppPro.exe"
+  },
+  {
+    "pid": 37300,
+    "name": "SimLogic.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Programs\\SimAppPro\\resources\\app.asar.unpacked\\SimLogic.exe"
+  },
+  {
+    "pid": 37880,
+    "name": "crashpad_handler.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\crashpad_handler.exe"
+  },
+  {
+    "pid": 19816,
+    "name": "Vuplex WebView.vuplex",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\trophi.ai_Data\\Plugins\\x86_64\\VuplexWebViewChromium\\Vuplex WebView.vuplex"
+  },
+  {
+    "pid": 38112,
+    "name": "trophi.ai.messagebroker.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\trophi.ai_Data\\StreamingAssets\\IpcService\\trophi.ai.messagebroker.exe"
+  },
+  {
+    "pid": 38172,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 38504,
+    "name": "trophi.ai.profiler.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\trophi.ai_Data\\StreamingAssets\\Profiler\\trophi.ai.profiler.exe"
+  },
+  {
+    "pid": 38500,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 38852,
+    "name": "rlpulse.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\trophi.ai_Data\\StreamingAssets\\RocketLeague\\rlpulse\\rlpulse.exe"
+  },
+  {
+    "pid": 38844,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 38572,
+    "name": "SimLogic.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\3AmxYDKmNOiBg2XlD7dsrmpwfmK\\SimLogic.exe"
+  },
+  {
+    "pid": 37884,
+    "name": "SimLogic.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\3AmxYDKmNOiBg2XlD7dsrmpwfmK\\SimLogic.exe"
+  },
+  {
+    "pid": 8200,
+    "name": "FanatecService.exe",
+    "path": "C:\\Program Files\\Fanatec\\FanatecService\\Service\\FanatecService.exe"
+  },
+  {
+    "pid": 37140,
+    "name": "SimLogic.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\3AmxYDKmNOiBg2XlD7dsrmpwfmK\\SimLogic.exe"
+  },
+  {
+    "pid": 35024,
+    "name": "Vuplex WebView.vuplex",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\trophi.ai_Data\\Plugins\\x86_64\\VuplexWebViewChromium\\Vuplex WebView.vuplex"
+  },
+  {
+    "pid": 37604,
+    "name": "Vuplex WebView.vuplex",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\trophi.ai_Data\\Plugins\\x86_64\\VuplexWebViewChromium\\Vuplex WebView.vuplex"
+  },
+  {
+    "pid": 38404,
+    "name": "Vuplex WebView.vuplex",
+    "path": "C:\\Users\\User\\AppData\\Local\\trophi.ai\\Game\\trophi.ai_Data\\Plugins\\x86_64\\VuplexWebViewChromium\\Vuplex WebView.vuplex"
+  },
+  {
+    "pid": 39352,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 39500,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 40260,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 40496,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 39968,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 41104,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 35812,
+    "name": "MoNotificationUx.exe",
+    "path": "C:\\Windows\\UUS\\amd64\\MoNotificationUx.exe"
+  },
+  {
+    "pid": 35464,
+    "name": "claude.exe",
+    "path": "C:\\Users\\User\\.local\\bin\\claude.exe"
+  },
+  {
+    "pid": 7156,
+    "name": "claude.exe",
+    "path": "C:\\Users\\User\\.local\\bin\\claude.exe"
+  },
+  {
+    "pid": 40588,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 17832,
+    "name": "SystemSettings.exe",
+    "path": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+  },
+  {
+    "pid": 34992,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 15184,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 8408,
+    "name": "UserOOBEBroker.exe",
+    "path": "C:\\Windows\\System32\\oobe\\UserOOBEBroker.exe"
+  },
+  {
+    "pid": 40680,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 464,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 35720,
+    "name": "backgroundTaskHost.exe",
+    "path": "C:\\Windows\\System32\\backgroundTaskHost.exe"
+  },
+  {
+    "pid": 7748,
+    "name": "RuntimeBroker.exe",
+    "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+  },
+  {
+    "pid": 12876,
+    "name": "caffeine64.exe",
+    "path": "C:\\Users\\User\\Downloads\\caffeine\\caffeine64.exe"
+  },
+  {
+    "pid": 17008,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 20384,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 17848,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 29620,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 4288,
+    "name": "TrackIR5.exe",
+    "path": "C:\\Program Files (x86)\\TrackIR5\\TrackIR5.exe"
+  },
+  {
+    "pid": 41960,
+    "name": "dllhost.exe",
+    "path": "C:\\Windows\\System32\\dllhost.exe"
+  },
+  {
+    "pid": 38148,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 12692,
+    "name": "msedge.exe",
+    "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "pid": 39912,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 9788,
+    "name": "smartscreen.exe",
+    "path": "C:\\Windows\\System32\\smartscreen.exe"
+  },
+  {
+    "pid": 29880,
+    "name": "steamwebhelper.exe",
+    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+  },
+  {
+    "pid": 38300,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 35848,
+    "name": "taskhostw.exe",
+    "path": "C:\\Windows\\System32\\taskhostw.exe"
+  },
+  {
+    "pid": 17508,
+    "name": "bash.exe",
+    "path": "C:\\Program Files\\Git\\bin\\bash.exe"
+  },
+  {
+    "pid": 15264,
+    "name": "bash.exe",
+    "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+  },
+  {
+    "pid": 7780,
+    "name": "conhost.exe",
+    "path": "C:\\Windows\\System32\\conhost.exe"
+  },
+  {
+    "pid": 11288,
+    "name": "tail.exe",
+    "path": "C:\\Program Files\\Git\\usr\\bin\\tail.exe"
+  },
+  {
+    "pid": 35100,
+    "name": "bash.exe",
+    "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+  },
+  {
+    "pid": 22940,
+    "name": "bash.exe",
+    "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+  },
+  {
+    "pid": 36740,
+    "name": "node.exe",
+    "path": "C:\\Program Files\\nodejs\\node.exe"
+  },
+  {
+    "pid": 41060,
+    "name": "cmd.exe",
+    "path": "C:\\Windows\\System32\\cmd.exe"
+  },
+  {
+    "pid": 35268,
+    "name": "node.exe",
+    "path": "C:\\Program Files\\nodejs\\node.exe"
+  },
+  {
+    "pid": 13664,
+    "name": "node.exe",
+    "path": "C:\\Program Files\\nodejs\\node.exe"
+  },
+  {
+    "pid": 13064,
+    "name": "esbuild.exe",
+    "path": "C:\\Users\\User\\repos\\sim-manager\\node_modules\\tsx\\node_modules\\@esbuild\\win32-x64\\esbuild.exe"
+  }
+]

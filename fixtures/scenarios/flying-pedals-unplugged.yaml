@@ -1,0 +1,6 @@
+description: Flying, pedals unplugged
+rig: mark-full
+extends: flying-all-good.yaml
+mutations:
+  - op: unplugDevice
+    match: { vendorId: 044F, productId: B68F }

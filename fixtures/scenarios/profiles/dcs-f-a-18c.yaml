@@ -1,0 +1,60 @@
+schemaVersion: 1
+id: dcs-f-a-18c
+name: DCS F/A-18C
+game: dcs
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+launch:
+  exe: C:\Program Files (x86)\Steam\steamapps\common\DCSWorld\bin\DCS.exe
+  args: []
+checks:
+  - { id: c1, type: device.connected, title: WINWING Orion Joystick Base 2 + JGRIP-F16, required: true, params: { vendorId: '4098', productId: BEA8 } }
+  - { id: c2, type: device.connected, title: WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R, required: true, params: { vendorId: '4098', productId: BD26 } }
+  - { id: c3, type: device.connected, title: T-Pendular-Rudder, required: true, params: { vendorId: 044F, productId: B68F } }
+  - { id: c4, type: device.connected, title: WINWING MFD1-L, required: true, params: { vendorId: '4098', productId: BEE1 } }
+  - { id: c5, type: device.connected, title: WINWING MFD1-C, required: true, params: { vendorId: '4098', productId: BEE0 } }
+  - { id: c6, type: device.connected, title: WINWING MFD1-R, required: true, params: { vendorId: '4098', productId: BEE2 } }
+  - { id: c7, type: device.connected, title: WINWING UFC1 + HUD1, required: true, params: { vendorId: '4098', productId: BEDE } }
+  - { id: c8, type: device.connected, title: WINWING F18 STARTUP PANEL, required: true, params: { vendorId: '4098', productId: BE03 } }
+  - { id: c9, type: device.connected, title: WINWING F18 TAKEOFF PANEL 2, required: true, params: { vendorId: '4098', productId: BF05 } }
+  - { id: c10, type: device.connected, title: 'R-VPC Panel #1', required: true, params: { vendorId: '3344', productId: C259 } }
+  - { id: c11, type: device.connected, title: TrackIR 5, required: true, params: { vendorId: 131D, productId: '0159' } }
+  - { id: c12, type: device.connected, title: Stream Deck XL, required: false, params: { vendorId: 0FD9, productId: 008F } }
+  - id: c13
+    type: process.running
+    title: TrackIR5
+    required: true
+    params: { name: TrackIR5.exe, stopOnStandDown: true }
+    remediation:
+      type: process.launch
+      params: { exe: 'C:\Program Files (x86)\TrackIR5\TrackIR5.exe', args: [] }
+  - id: c14
+    type: process.running
+    title: SimAppPro
+    required: true
+    params: { name: SimAppPro.exe, stopOnStandDown: false }
+    remediation:
+      type: process.launch
+      params: { exe: 'C:\Users\User\AppData\Local\Programs\SimAppPro\SimAppPro.exe', args: [] }
+  - id: c15
+    type: process.running
+    title: Stream Deck
+    required: false
+    params: { name: StreamDeck.exe, stopOnStandDown: false }
+    remediation:
+      type: process.launch
+      params: { exe: 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe', args: [] }
+  - id: c16
+    type: display.layout
+    title: Monitor layout
+    required: true
+    params: &layout
+      displays:
+        - { id: '\\?\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: LC49G95T, enabled: true, primary: true, x: 0, y: 0, width: 5120, height: 1440, rotation: 0 }
+        - { id: '\\?\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 5120, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 5888, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: USB_Monitor, enabled: true, primary: false, x: 6656, y: 0, width: 768, height: 1024, rotation: 90 }
+        - { id: '\\?\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: DELL G3223D, enabled: false, primary: false, x: 0, y: 0, rotation: 0 }
+    remediation:
+      type: display.applyLayout
+      params: *layout

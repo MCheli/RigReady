@@ -1,0 +1,6 @@
+description: Desk state as recorded - Dell primary, MFD screens landscape
+rig: mark-full
+# No mutations: this is the live state of the owner's rig on 2026-10-03, which is the
+# wrong one for flying (Windows switched to it when the Dell was turned on).
+profiles:
+  - profiles/dcs-f-a-18c.yaml

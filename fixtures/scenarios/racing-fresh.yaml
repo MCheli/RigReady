@@ -1,0 +1,23 @@
+description: Racing rig - wheel only, no flight gear, no setups yet
+rig: mark-full
+mutations:
+  - op: unplugDevice
+    match: { vendorId: '4098' }
+  - op: unplugDevice
+    match: { vendorId: 044F, productId: B68F }
+  - op: unplugDevice
+    match: { vendorId: '3344', productId: C259 }
+  - op: unplugDevice
+    match: { vendorId: '17E9', productId: FF00 }
+  - op: unplugDisplay
+    match: { name: USB_Monitor }
+  - op: stopProcess
+    name: TrackIR5.exe
+  - op: stopProcess
+    name: SimAppPro.exe
+  - op: setDisplay
+    match: { name: DELL G3223D }
+    set: { enabled: false }
+  - op: setDisplay
+    match: { name: LC49G95T }
+    set: { primary: true, x: 0, y: 0 }

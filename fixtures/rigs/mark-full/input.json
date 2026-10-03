@@ -1,0 +1,82 @@
+[
+  {
+    "index": 0,
+    "name": "FANATEC Podium Wheel Base DD2",
+    "guid": "0300fbe3b70e00000700000000000000",
+    "numAxes": 8,
+    "numButtons": 108,
+    "numHats": 1
+  },
+  {
+    "index": 1,
+    "name": "R-VPC Panel #1",
+    "guid": "0300686e4433000059c2000000000000",
+    "numAxes": 2,
+    "numButtons": 41,
+    "numHats": 0
+  },
+  {
+    "index": 2,
+    "name": "WINWING MFD1-C",
+    "guid": "030012c398400000e0be000000000000",
+    "numAxes": 1,
+    "numButtons": 50,
+    "numHats": 0
+  },
+  {
+    "index": 3,
+    "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+    "guid": "0300e98998400000a8be000000000000",
+    "numAxes": 6,
+    "numButtons": 42,
+    "numHats": 1
+  },
+  {
+    "index": 4,
+    "name": "WINWING UFC1 + HUD1",
+    "guid": "03007c5c98400000debe000000000000",
+    "numAxes": 8,
+    "numButtons": 128,
+    "numHats": 0
+  },
+  {
+    "index": 5,
+    "name": "WINWING MFD1-L",
+    "guid": "030052c798400000e1be000000000000",
+    "numAxes": 1,
+    "numButtons": 50,
+    "numHats": 0
+  },
+  {
+    "index": 6,
+    "name": "WINWING ICP",
+    "guid": "030078c89840000006bf000000000000",
+    "numAxes": 4,
+    "numButtons": 34,
+    "numHats": 0
+  },
+  {
+    "index": 7,
+    "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
+    "guid": "03003fc19840000026bd000000000000",
+    "numAxes": 7,
+    "numButtons": 62,
+    "numHats": 0
+  },
+  {
+    "index": 8,
+    "name": "WINWING F18 STARTUP PANEL",
+    "guid": "030062449840000003be000000000000",
+    "numAxes": 2,
+    "numButtons": 57,
+    "numHats": 0
+  },
+  {
+    "index": 9,
+    "name": "WINWING MFD1-R",
+    "guid": "0300d2cf98400000e2be000000000000",
+    "numAxes": 1,
+    "numButtons": 50,
+    "numHats": 0
+  }
+]

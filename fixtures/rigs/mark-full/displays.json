@@ -1,0 +1,79 @@
+{
+  "displays": [
+    {
+      "id": "\\\\?\\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "name": "DELL G3223D",
+      "enabled": true,
+      "primary": true,
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "rotation": 0,
+      "rawRotation": 1,
+      "edid": "DELD139",
+      "gdiName": "\\\\.\\DISPLAY2",
+      "refreshHz": 59.95
+    },
+    {
+      "id": "\\\\?\\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "name": "LC49G95T",
+      "enabled": true,
+      "primary": false,
+      "x": 2560,
+      "y": 0,
+      "width": 5120,
+      "height": 1440,
+      "rotation": 0,
+      "rawRotation": 1,
+      "edid": "SAM7053",
+      "gdiName": "\\\\.\\DISPLAY1",
+      "refreshHz": 120
+    },
+    {
+      "id": "\\\\?\\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "name": "USB_Monitor",
+      "enabled": true,
+      "primary": false,
+      "x": 7680,
+      "y": 0,
+      "width": 1024,
+      "height": 768,
+      "rotation": 0,
+      "rawRotation": 1,
+      "edid": "REG0319",
+      "gdiName": "\\\\.\\DISPLAY7",
+      "refreshHz": 60
+    },
+    {
+      "id": "\\\\?\\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "name": "USB_Monitor",
+      "enabled": true,
+      "primary": false,
+      "x": 8704,
+      "y": 0,
+      "width": 1024,
+      "height": 768,
+      "rotation": 0,
+      "rawRotation": 1,
+      "edid": "REG0319",
+      "gdiName": "\\\\.\\DISPLAY6",
+      "refreshHz": 60
+    },
+    {
+      "id": "\\\\?\\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "name": "USB_Monitor",
+      "enabled": true,
+      "primary": false,
+      "x": 9728,
+      "y": 0,
+      "width": 1024,
+      "height": 768,
+      "rotation": 0,
+      "rawRotation": 1,
+      "edid": "REG0319",
+      "gdiName": "\\\\.\\DISPLAY5",
+      "refreshHz": 60
+    }
+  ]
+}

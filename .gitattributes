@@ -1,0 +1,2 @@
+# Fixture files are recordings: keep their bytes exactly as recorded.
+fixtures/** -text

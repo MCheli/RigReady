@@ -1,0 +1,22 @@
+description: Flying layout, no setups yet
+rig: mark-full
+# The recorded rig (fixtures/rigs/mark-full) is the desk state: Dell primary, MFD screens landscape.
+# These mutations produce the known-good flying layout described in docs/research/owner-rig.md:
+# ultrawide primary at 0,0, three MFD screens in portrait to its right, Dell off.
+# NOTE: whether portrait is rotation 90 or 270 on the real panels is not confirmed; 90 is assumed here.
+mutations:
+  - op: setDisplay
+    match: { name: DELL G3223D }
+    set: { enabled: false }
+  - op: setDisplay
+    match: { name: LC49G95T }
+    set: { primary: true, x: 0, y: 0 }
+  - op: setDisplay
+    match: { name: USB_Monitor, index: 0 }
+    set: { x: 5120, y: 0, width: 768, height: 1024, rotation: 90 }
+  - op: setDisplay
+    match: { name: USB_Monitor, index: 1 }
+    set: { x: 5888, y: 0, width: 768, height: 1024, rotation: 90 }
+  - op: setDisplay
+    match: { name: USB_Monitor, index: 2 }
+    set: { x: 6656, y: 0, width: 768, height: 1024, rotation: 90 }

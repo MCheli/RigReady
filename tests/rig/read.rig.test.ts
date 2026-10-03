@@ -1,0 +1,139 @@
+/**
+ * Read-only checks against the real hardware of the PC this runs on.
+ * They assert what must be true of any working rig, not what Mark's rig contains.
+ */
+import path from 'node:path';
+import { afterAll, describe, expect, it } from 'vitest';
+import { nullLogger } from '../../src/core/logger';
+import { buildUsbTree } from '../../src/core/usb';
+import { createWindowsPorts } from '../../src/platform/windows';
+import {
+  AudioStateSchema,
+  DeviceInfoSchema,
+  DisplayLayoutSchema,
+  ProcessInfoSchema,
+} from '../../src/shared/models';
+
+const projectRoot = path.resolve(__dirname, '../..');
+const ports = createWindowsPorts({ log: nullLogger, projectRoot });
+
+afterAll(() => ports.input.stop());
+
+describe('real hardware (read-only)', () => {
+  it('lists USB devices with identity and a hub chain', async () => {
+    const result = await ports.devices.list();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.length).toBeGreaterThan(0);
+    for (const device of result.value) DeviceInfoSchema.parse(device);
+    const peripherals = result.value.filter((d) => !d.isHub);
+    expect(peripherals.some((d) => d.isHid)).toBe(true);
+    expect(peripherals.every((d) => d.hubChain.length > 0)).toBe(true);
+    expect(new Set(result.value.map((d) => d.instanceId)).size).toBe(result.value.length);
+    const tree = buildUsbTree(result.value);
+    expect(tree.length).toBeGreaterThan(0);
+    console.log(
+      `  ${result.value.length} USB devices, ${peripherals.filter((d) => d.isHid).length} HID, ${tree.length} root hubs`
+    );
+  });
+
+  it('reads every monitor with a unique stable id and exactly one primary', async () => {
+    const result = await ports.displays.read();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { displays } = DisplayLayoutSchema.parse(result.value);
+    const enabled = displays.filter((d) => d.enabled);
+    expect(enabled.length).toBeGreaterThan(0);
+    expect(enabled.filter((d) => d.primary)).toHaveLength(1);
+    expect(new Set(displays.map((d) => d.id)).size).toBe(displays.length);
+    for (const display of enabled) {
+      expect(display.id.startsWith('\\\\?\\display#')).toBe(true);
+      expect(display.width).toBeGreaterThan(0);
+      expect(display.height).toBeGreaterThan(0);
+    }
+    // Reading twice gives the same answer: the ids are not session-dependent handles.
+    const again = await ports.displays.read();
+    expect(again).toEqual(result);
+    for (const d of displays) {
+      console.log(
+        `  ${d.name || '(unnamed)'} ${d.enabled ? `${d.width}x${d.height} @${d.x},${d.y} rot ${d.rotation}` : 'off'}${d.primary ? ' primary' : ''}`
+      );
+    }
+  });
+
+  it('lists processes including this one, with image paths', async () => {
+    const result = await ports.processes.list();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    for (const p of result.value.slice(0, 50)) ProcessInfoSchema.parse(p);
+    const self = result.value.find((p) => p.pid === process.pid);
+    expect(self?.path?.toLowerCase()).toBe(process.execPath.toLowerCase());
+  });
+
+  it('reads the default audio devices', async () => {
+    const result = await ports.audio.read();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const state = AudioStateSchema.parse(result.value);
+    if (state.devices.some((d) => d.flow === 'playback')) {
+      expect(state.defaultPlayback).toBeDefined();
+      expect(state.devices.map((d) => d.id)).toContain(state.defaultPlayback!.id);
+    }
+    console.log(
+      `  playback: ${state.defaultPlayback?.name ?? 'none'}; recording: ${state.defaultRecording?.name ?? 'none'}`
+    );
+  });
+
+  it('resolves known folders and Steam libraries', async () => {
+    const folders = ports.folders;
+    for (const dir of [
+      folders.home(),
+      folders.documents(),
+      folders.savedGames(),
+      folders.appData(),
+      folders.localAppData(),
+    ]) {
+      expect(path.isAbsolute(dir)).toBe(true);
+    }
+    const libraries = await folders.steamLibraries();
+    expect(libraries.ok).toBe(true);
+    if (libraries.ok) console.log(`  Steam libraries: ${libraries.value.join(', ') || 'none'}`);
+  });
+
+  it('honors RIGREADY_HOME and never leaves a redirected profile', async () => {
+    const { WindowsKnownFolders } = await import('../../src/platform/windows/knownFolders');
+    const redirected = new WindowsKnownFolders({
+      USERPROFILE: 'C:\\Temp\\fake-user',
+      APPDATA: 'C:\\Temp\\fake-user\\AppData\\Roaming',
+      LOCALAPPDATA: 'C:\\Temp\\fake-user\\AppData\\Local',
+      RIGREADY_HOME: 'C:\\Temp\\fake-user\\rr',
+    });
+    expect(redirected.dataRoot()).toBe('C:\\Temp\\fake-user\\rr');
+    expect(redirected.savedGames()).toBe('C:\\Temp\\fake-user\\Saved Games');
+    expect(redirected.documents()).toBe('C:\\Temp\\fake-user\\Documents');
+    expect(redirected.appData()).toBe('C:\\Temp\\fake-user\\AppData\\Roaming');
+  });
+
+  it('runs a program through Shell with an argument array and no shell', async () => {
+    const result = await ports.shell.run(process.execPath, [
+      '-e',
+      'console.log(process.argv[1])',
+      'a b & echo injected',
+    ]);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.stdout.trim()).toBe('a b & echo injected');
+  });
+
+  it('starts the DirectInput sidecar and lists game controllers', async () => {
+    const started = await ports.input.start();
+    expect(
+      started.ok,
+      started.ok ? '' : `${started.error.message} ${started.error.detail ?? ''}`
+    ).toBe(true);
+    if (!started.ok) return;
+    console.log(`  ${started.value.length} DirectInput devices`);
+    const unsubscribe = ports.input.subscribe(() => {});
+    unsubscribe();
+    await ports.input.stop();
+  });
+});

@@ -1,0 +1,6 @@
+description: Flying, Stream Deck unplugged (optional)
+rig: mark-full
+extends: flying-all-good.yaml
+mutations:
+  - op: unplugDevice
+    match: { vendorId: 0FD9, productId: 008F }
