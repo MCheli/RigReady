@@ -218,7 +218,7 @@ describe('Profiles: create by capturing the current state', () => {
 
     // What the capture screen does: keep the defaults plus the apps the user ticks.
     const chosen = capture.candidates.filter(
-      (c) => c.selectedByDefault || ['TrackIR5', 'SimAppPro'].includes(c.title)
+      (c) => c.selectedByDefault || ['TrackIR5', 'SimAppPro', 'Stream Deck XL'].includes(c.title)
     );
     const created = await app.invoke<Profile>('profiles:create', {
       name: 'DCS F/A-18C',

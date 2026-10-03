@@ -1,12 +1,14 @@
 import { defineConfig } from '@playwright/test';
 
+/** Scenario end-to-end tests against the built app (npm run test:e2e). */
 export default defineConfig({
-  testDir: './__tests__/e2e',
-  timeout: 30000,
+  testDir: './tests/e2e',
+  testMatch: '**/*.e2e.ts',
+  globalSetup: './tests/e2e/globalSetup.ts',
+  outputDir: './artifacts/playwright',
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   retries: 0,
-  use: {
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-  },
-  reporter: [['html', { open: 'never' }], ['list']],
+  workers: 2,
+  reporter: [['list']],
 });

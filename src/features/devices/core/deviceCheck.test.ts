@@ -13,6 +13,7 @@ const device = (overrides: Partial<DeviceInfo>): DeviceInfo => ({
   productId: '0001',
   name: 'Button Box',
   isHid: true,
+  isGameController: true,
   isHub: false,
   hubChain: [],
   ...overrides,
@@ -87,7 +88,7 @@ describe('device capture', () => {
     expect(identityFor(dup1, [dup1, dup2]).instanceId).toBe(dup1.instanceId);
   });
 
-  it('proposes every peripheral on the rig, input devices pre-selected, hubs left out', async () => {
+  it('proposes every peripheral on the rig, game controllers pre-selected, hubs left out', async () => {
     rig = await scenarioRig('flying-fresh');
     const result = await deviceCapture.capture(rig.ctx);
     if (!result.ok) throw new Error('capture failed');
@@ -97,6 +98,12 @@ describe('device capture', () => {
     expect(titles.some((t) => /hub/i.test(t))).toBe(false);
     expect(result.value.find((c) => c.title === 'T-Pendular-Rudder')!.selectedByDefault).toBe(true);
     expect(result.value.find((c) => c.title === 'TrackIR 5')!.selectedByDefault).toBe(false);
+    expect(result.value.find((c) => c.title === 'SteelSeries Apex Pro')!.selectedByDefault).toBe(
+      false
+    );
+    expect(
+      result.value.find((c) => c.title === 'FANATEC Podium Wheel Base DD2')!.selectedByDefault
+    ).toBe(true);
     // The three identical USB display adapters are told apart by serial.
     const adapters = result.value.filter((c) => c.title === 'WINWING USB 3.0 Display1');
     expect(new Set(adapters.map((c) => c.check.params['serial'])).size).toBe(3);

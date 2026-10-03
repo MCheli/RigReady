@@ -5,6 +5,7 @@
     "productId": "1290",
     "name": "Arctis Pro Wireless",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -28,6 +29,7 @@
     "productId": "1294",
     "name": "Arctis Pro Wireless",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -51,6 +53,7 @@
     "productId": "2074",
     "name": "ASM107x",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -66,6 +69,7 @@
     "productId": "3074",
     "name": "ASM107x",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -81,6 +85,7 @@
     "productId": "19AF",
     "name": "AURA LED Controller",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -97,6 +102,7 @@
     "productId": "8890",
     "name": "CH57x",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -124,6 +130,7 @@
     "productId": "0007",
     "name": "FANATEC Podium Wheel Base DD2",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -143,6 +150,7 @@
     "productId": "2036",
     "name": "General Purpose USB Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -162,6 +170,7 @@
     "productId": "0033",
     "name": "Intel(R) Wireless Bluetooth(R)",
     "isHid": false,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -177,6 +186,7 @@
     "productId": "0220",
     "name": "Keychron K2 Pro",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -204,6 +214,7 @@
     "productId": "024F",
     "name": "Keychron K3",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -231,6 +242,7 @@
     "productId": "2013",
     "name": "Model O- Wireless",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -251,6 +263,7 @@
     "productId": "2024",
     "name": "Model O- Wireless",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -279,6 +292,7 @@
     "productId": "80A6",
     "name": "ORBIT WIRELESS TB",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -306,6 +320,7 @@
     "productId": "80A6",
     "name": "ORBIT WIRELESS TB",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -333,6 +348,7 @@
     "productId": "C259",
     "name": "R-VPC Panel #1",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -361,6 +377,7 @@
     "productId": "1610",
     "name": "SteelSeries Apex Pro",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -380,6 +397,7 @@
     "productId": "008F",
     "name": "Stream Deck XL",
     "isHid": true,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -408,6 +426,7 @@
     "productId": "B68F",
     "name": "T-Pendular-Rudder",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -435,6 +454,7 @@
     "productId": "0604",
     "name": "TP-Link UB500 Adapter",
     "isHid": false,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -463,6 +483,7 @@
     "productId": "0159",
     "name": "TrackIR 5",
     "isHid": false,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -482,6 +503,7 @@
     "productId": "0002",
     "name": "Unknown USB Device (Device Descriptor Request Failed)",
     "isHid": false,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -505,6 +527,7 @@
     "productId": "2813",
     "name": "USB2.0 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -528,6 +551,7 @@
     "productId": "2817",
     "name": "USB2.0 Hub             ",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -547,6 +571,7 @@
     "productId": "2817",
     "name": "USB2.0 Hub             ",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -570,6 +595,7 @@
     "productId": "2817",
     "name": "USB2.0 Hub             ",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -586,6 +612,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -605,6 +632,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -624,6 +652,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -647,6 +676,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -670,6 +700,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -693,6 +724,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -716,6 +748,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -739,6 +772,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -762,6 +796,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -785,6 +820,7 @@
     "productId": "0610",
     "name": "USB2.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -808,6 +844,7 @@
     "productId": "0813",
     "name": "USB3.0 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -831,6 +868,7 @@
     "productId": "0817",
     "name": "USB3.0 Hub             ",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -850,6 +888,7 @@
     "productId": "0817",
     "name": "USB3.0 Hub             ",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -873,6 +912,7 @@
     "productId": "0817",
     "name": "USB3.0 Hub             ",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -889,6 +929,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -908,6 +949,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -927,6 +969,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -950,6 +993,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -973,6 +1017,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -996,6 +1041,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -1019,6 +1065,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -1042,6 +1089,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -1065,6 +1113,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -1088,6 +1137,7 @@
     "productId": "0626",
     "name": "USB3.1 Hub",
     "isHid": false,
+    "isGameController": false,
     "isHub": true,
     "hubChain": [
       {
@@ -1111,6 +1161,7 @@
     "productId": "BE03",
     "name": "WINWING F18 STARTUP PANEL",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1139,6 +1190,7 @@
     "productId": "BF05",
     "name": "WINWING F18 TAKEOFF PANEL 2",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1167,6 +1219,7 @@
     "productId": "BF06",
     "name": "WINWING ICP",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1195,6 +1248,7 @@
     "productId": "BEE0",
     "name": "WINWING MFD1-C",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1223,6 +1277,7 @@
     "productId": "BEE1",
     "name": "WINWING MFD1-L",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1251,6 +1306,7 @@
     "productId": "BEE2",
     "name": "WINWING MFD1-R",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1279,6 +1335,7 @@
     "productId": "BEA8",
     "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1307,6 +1364,7 @@
     "productId": "BD26",
     "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1335,6 +1393,7 @@
     "productId": "BEDE",
     "name": "WINWING UFC1 + HUD1",
     "isHid": true,
+    "isGameController": true,
     "isHub": false,
     "hubChain": [
       {
@@ -1363,6 +1422,7 @@
     "productId": "FF00",
     "name": "WINWING USB 3.0 Display1",
     "isHid": false,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -1391,6 +1451,7 @@
     "productId": "FF00",
     "name": "WINWING USB 3.0 Display1",
     "isHid": false,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {
@@ -1419,6 +1480,7 @@
     "productId": "FF00",
     "name": "WINWING USB 3.0 Display1",
     "isHid": false,
+    "isGameController": false,
     "isHub": false,
     "hubChain": [
       {

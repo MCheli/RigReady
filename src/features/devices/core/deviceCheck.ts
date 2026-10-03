@@ -74,8 +74,8 @@ export const deviceCapture: CaptureDefinition = {
           group: 'devices' as const,
           title: device.name,
           description: device.serial ? `${id} · serial ${device.serial}` : id,
-          // Game controllers are HID; storage, Bluetooth radios and the like are not.
-          selectedByDefault: device.isHid,
+          // Sim gear is pre-selected; keyboards, mice, headsets and the rest are the user's call.
+          selectedByDefault: device.isGameController,
           check: { type: DEVICE_CONNECTED, title: device.name, required: true, params },
         };
       })

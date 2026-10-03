@@ -42,7 +42,7 @@ async function save(): Promise<void> {
   const next: Profile = exe
     ? { ...rest, launch: { ...previous, exe, args: splitArgs(launchArgs.value) } }
     : rest;
-  const result = await api.save(JSON.parse(JSON.stringify(next)) as Profile);
+  const result = await api.save(next);
   saving.value = false;
   if (!result.ok) {
     error.value = errorText(result.error);

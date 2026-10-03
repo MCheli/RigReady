@@ -21,6 +21,8 @@ export const DeviceInfoSchema = z.object({
   serial: z.string().optional(),
   /** True when the device exposes at least one HID interface. */
   isHid: z.boolean(),
+  /** True when Windows classes it as a game controller (joystick, wheel, pedals, button box). */
+  isGameController: z.boolean().default(false),
   isHub: z.boolean(),
   /** Parent chain, nearest first, ending at the root hub. */
   hubChain: z.array(HubNodeSchema),

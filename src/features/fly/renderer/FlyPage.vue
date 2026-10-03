@@ -6,15 +6,27 @@ import { useFlyStore } from './store';
 
 const fly = useFlyStore();
 const confirmLaunch = ref(false);
+/** Groups opened or closed by hand; otherwise a group is open only while something in it needs attention. */
+const toggled = ref<Record<string, boolean>>({});
 
 const groups = computed(() => {
   const results = fly.report?.results ?? [];
-  return CHECK_GROUPS.map((group) => ({
-    group,
-    title: GROUP_TITLES[group],
-    results: results.filter((r) => r.group === group),
-  })).filter((g) => g.results.length > 0);
+  return CHECK_GROUPS.map((group) => {
+    const own = results.filter((r) => r.group === group);
+    const passed = own.filter((r) => r.status === 'pass').length;
+    return {
+      group,
+      title: GROUP_TITLES[group],
+      results: own,
+      passed,
+      open: toggled.value[group] ?? passed < own.length,
+    };
+  }).filter((g) => g.results.length > 0);
 });
+
+function toggle(group: string, open: boolean): void {
+  toggled.value = { ...toggled.value, [group]: !open };
+}
 
 const headline = computed(() => {
   const report = fly.report;
@@ -120,6 +132,7 @@ onBeforeUnmount(() => {
       <div class="fly-actions">
         <v-btn
           color="primary"
+          :variant="fly.report && fly.report.fixable > 0 ? 'flat' : 'tonal'"
           prepend-icon="mdi-wrench-check"
           :disabled="!fly.report || fly.report.fixable === 0 || fly.busy !== null"
           :loading="fly.busy === 'makeReady'"
@@ -204,14 +217,20 @@ onBeforeUnmount(() => {
         class="fly-group"
         :data-testid="`group-${group.group}`"
       >
-        <div class="fly-group-head">
+        <button
+          type="button"
+          class="fly-group-head"
+          :aria-expanded="group.open"
+          :data-testid="`group-toggle-${group.group}`"
+          @click="toggle(group.group, group.open)"
+        >
+          <v-icon :icon="group.open ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="18" />
           <h2 class="rr-section-title">{{ group.title }}</h2>
-          <span class="rr-row-sub">
-            {{ group.results.filter((r) => r.status === 'pass').length }} of
-            {{ group.results.length }} OK
+          <span class="fly-group-count" :class="{ 'rr-ok': group.passed === group.results.length }">
+            {{ group.passed }} of {{ group.results.length }} OK
           </span>
-        </div>
-        <div class="rr-panel">
+        </button>
+        <div v-if="group.open" class="rr-panel">
           <div
             v-for="result in group.results"
             :key="result.itemId"
@@ -319,8 +338,32 @@ onBeforeUnmount(() => {
 }
 .fly-group-head {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 0;
+  margin-bottom: 4px;
+  color: var(--rr-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+}
+.fly-group-head .rr-section-title {
+  margin: 0;
+}
+.fly-group-count {
+  margin-left: auto;
+  font-size: 12.5px;
+}
+.fly-group .rr-row {
+  align-items: flex-start;
+}
+.fly-group .rr-row > .v-icon {
+  margin-top: 2px;
+}
+.fly-fix {
+  margin-top: 2px;
 }
 .fly-optional {
   margin-left: 8px;
@@ -331,7 +374,8 @@ onBeforeUnmount(() => {
   padding: 0 5px;
 }
 .fly-details {
-  margin: 4px 0 0 16px;
+  margin: 4px 0 0;
+  padding-left: 18px;
   font-size: 12.5px;
   color: var(--rr-muted);
 }

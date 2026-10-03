@@ -37,6 +37,11 @@ import { navSections } from '../features';
   border-right: 1px solid var(--rr-border);
   background: var(--rr-surface);
   padding: 20px 10px;
+  position: sticky;
+  top: 56px;
+  align-self: flex-start;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
 }
 .configure-group {
   margin-bottom: 20px;

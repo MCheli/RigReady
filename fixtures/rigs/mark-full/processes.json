@@ -367,10 +367,6 @@
     "name": "svchost.exe"
   },
   {
-    "pid": 7964,
-    "name": "svchost.exe"
-  },
-  {
     "pid": 8060,
     "name": "cowork-svc.exe"
   },
@@ -912,11 +908,6 @@
     "pid": 23688,
     "name": "Discord.exe",
     "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9260\\Discord.exe"
-  },
-  {
-    "pid": 23780,
-    "name": "steamwebhelper.exe",
-    "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
   },
   {
     "pid": 23804,
@@ -1504,15 +1495,6 @@
     "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
   },
   {
-    "pid": 39912,
-    "name": "svchost.exe"
-  },
-  {
-    "pid": 9788,
-    "name": "smartscreen.exe",
-    "path": "C:\\Windows\\System32\\smartscreen.exe"
-  },
-  {
     "pid": 29880,
     "name": "steamwebhelper.exe",
     "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
@@ -1527,58 +1509,83 @@
     "path": "C:\\Windows\\System32\\taskhostw.exe"
   },
   {
-    "pid": 17508,
+    "pid": 33872,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 34928,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 31620,
+    "name": "WmiApSrv.exe"
+  },
+  {
+    "pid": 3620,
+    "name": "svchost.exe"
+  },
+  {
+    "pid": 13768,
+    "name": "SearchProtocolHost.exe"
+  },
+  {
+    "pid": 30344,
     "name": "bash.exe",
     "path": "C:\\Program Files\\Git\\bin\\bash.exe"
   },
   {
-    "pid": 15264,
+    "pid": 40580,
     "name": "bash.exe",
     "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
   },
   {
-    "pid": 7780,
+    "pid": 39880,
     "name": "conhost.exe",
     "path": "C:\\Windows\\System32\\conhost.exe"
   },
   {
-    "pid": 11288,
+    "pid": 33892,
     "name": "tail.exe",
     "path": "C:\\Program Files\\Git\\usr\\bin\\tail.exe"
   },
   {
-    "pid": 35100,
+    "pid": 8128,
     "name": "bash.exe",
     "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
   },
   {
-    "pid": 22940,
+    "pid": 9564,
     "name": "bash.exe",
     "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
   },
   {
-    "pid": 36740,
+    "pid": 40512,
     "name": "node.exe",
     "path": "C:\\Program Files\\nodejs\\node.exe"
   },
   {
-    "pid": 41060,
+    "pid": 10764,
     "name": "cmd.exe",
     "path": "C:\\Windows\\System32\\cmd.exe"
   },
   {
-    "pid": 35268,
+    "pid": 35252,
     "name": "node.exe",
     "path": "C:\\Program Files\\nodejs\\node.exe"
   },
   {
-    "pid": 13664,
+    "pid": 34976,
     "name": "node.exe",
     "path": "C:\\Program Files\\nodejs\\node.exe"
   },
   {
-    "pid": 13064,
+    "pid": 41264,
     "name": "esbuild.exe",
     "path": "C:\\Users\\User\\repos\\sim-manager\\node_modules\\tsx\\node_modules\\@esbuild\\win32-x64\\esbuild.exe"
+  },
+  {
+    "pid": 7324,
+    "name": "powershell.exe",
+    "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
   }
 ]

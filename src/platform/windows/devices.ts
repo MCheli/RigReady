@@ -15,6 +15,7 @@ import {
 const CM_GETIDLIST_FILTER_PRESENT = 0x100;
 const DEVICE_GUID = '{a45c254e-df1c-4efd-8020-67d146a850e0}';
 const KEY_DEVICE_DESC = propertyKey(DEVICE_GUID, 2);
+const KEY_HARDWARE_IDS = propertyKey(DEVICE_GUID, 3);
 const KEY_SERVICE = propertyKey(DEVICE_GUID, 6);
 const KEY_MANUFACTURER = propertyKey(DEVICE_GUID, 13);
 const KEY_FRIENDLY_NAME = propertyKey(DEVICE_GUID, 14);
@@ -64,6 +65,20 @@ class DevTree {
     return value.length > 0 ? value : undefined;
   }
 
+  /** A REG_MULTI_SZ property as its list of strings. */
+  list(instanceId: string, key: Buffer): string[] {
+    const inst = this.devInst(instanceId);
+    if (inst === null) return [];
+    const type = [0];
+    const size = [this.scratch.length];
+    const status = CM_Get_DevNode_PropertyW(inst, key, type, this.scratch, size, 0);
+    if (status !== 0) return [];
+    return this.scratch
+      .toString('utf16le', 0, size[0]!)
+      .split('\0')
+      .filter((entry) => entry.length > 0);
+  }
+
   name(instanceId: string): string {
     return (
       this.text(instanceId, KEY_BUS_REPORTED_DESC) ??
@@ -92,12 +107,19 @@ export function enumerateUsbDevices(): DeviceInfo[] {
 
   // A USB device "is HID" when any HID node descends from it.
   const hidOwners = new Set<string>();
+  // ...and "is a game controller" when Windows classes one of those nodes as a game device.
+  const gameOwners = new Set<string>();
   for (const id of ids) {
     if (!/^HID\\/i.test(id)) continue;
     let current: string | undefined = id;
     for (let depth = 0; current && depth < 8; depth++) {
       if (USB_DEVICE.test(current)) {
         hidOwners.add(current.toUpperCase());
+        if (
+          tree.list(id, KEY_HARDWARE_IDS).some((h) => h.toUpperCase() === 'HID_DEVICE_SYSTEM_GAME')
+        ) {
+          gameOwners.add(current.toUpperCase());
+        }
         break;
       }
       current = tree.parent(current);
@@ -125,6 +147,7 @@ export function enumerateUsbDevices(): DeviceInfo[] {
       // Not trimmed: some vendors report names with a trailing space and games key files on the exact name.
       name: tree.name(id),
       isHid: hidOwners.has(id.toUpperCase()),
+      isGameController: gameOwners.has(id.toUpperCase()),
       isHub: service.startsWith('usbhub'),
       hubChain,
     };
