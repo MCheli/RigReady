@@ -1,0 +1,5 @@
+description: DCS bindings, the owner's F/A-18C as recorded
+rig: mark-full
+extends: flying-fresh.yaml
+profiles:
+  - profiles/dcs-bindings-hornet.yaml

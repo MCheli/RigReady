@@ -1,0 +1,74 @@
+description: DCS bindings under old device IDs (the owner's February 2026 backup)
+rig: mark-full
+extends: flying-fresh.yaml
+# The binding files of the older backup (fixtures/scenarios/data/dcs-bindings/old-ids, copied from
+# "Documents, DCS Backup") carry the device IDs of the previous Windows installation. Every device is
+# attached, under a new ID, so DCS finds none of these files: the "my bindings are gone" situation.
+mutations:
+  - { op: removeFile, path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick" }
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/R-VPC Panel #1 {4BB05F90-9AA7-11ee-8021-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/R-VPC Panel #1 {4BB05F90-9AA7-11ee-8021-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/T-Pendular-Rudder {4770BA10-9AA7-11ee-801C-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/T-Pendular-Rudder {4770BA10-9AA7-11ee-801C-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING F18 STARTUP PANEL {4B36E9D0-9AA7-11ee-801D-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING F18 STARTUP PANEL {4B36E9D0-9AA7-11ee-801D-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING F18 TAKEOFF PANEL 2 {4F222DC0-9AA7-11EE-8024-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING F18 TAKEOFF PANEL 2 {4F222DC0-9AA7-11EE-8024-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-C {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-C {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-L {4B3710E0-9AA7-11EE-801E-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-L {4B3710E0-9AA7-11EE-801E-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-R {5206D720-9AA7-11EE-8028-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-R {5206D720-9AA7-11EE-8028-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING Orion Joystick Base 2 + JGRIP-F16 {D3437B70-A035-11EE-8001-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING Orion Joystick Base 2 + JGRIP-F16 {D3437B70-A035-11EE-8001-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R {4F6FD890-9AA7-11EE-8026-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R {4F6FD890-9AA7-11EE-8026-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING UFC1 + HUD1 {4F2206B0-9AA7-11ee-8023-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING UFC1 + HUD1 {4F2206B0-9AA7-11ee-8023-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/R-VPC Panel #1 {4BB05F90-9AA7-11ee-8021-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/R-VPC Panel #1 {4BB05F90-9AA7-11ee-8021-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/T-Pendular-Rudder {4770BA10-9AA7-11ee-801C-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/T-Pendular-Rudder {4770BA10-9AA7-11ee-801C-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING F18 STARTUP PANEL {4B36E9D0-9AA7-11ee-801D-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING F18 STARTUP PANEL {4B36E9D0-9AA7-11ee-801D-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING F18 TAKEOFF PANEL 2 {4F222DC0-9AA7-11ee-8024-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING F18 TAKEOFF PANEL 2 {4F222DC0-9AA7-11ee-8024-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1-C {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-C {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1-L {4B3710E0-9AA7-11ee-801E-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-L {4B3710E0-9AA7-11ee-801E-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1-R {5206D720-9AA7-11ee-8028-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-R {5206D720-9AA7-11ee-8028-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING Orion Joystick Base 2 + JGRIP-F16 {D3437B70-A035-11EE-8001-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING Orion Joystick Base 2 + JGRIP-F16 {D3437B70-A035-11EE-8001-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R {4F6FD890-9AA7-11ee-8026-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R {4F6FD890-9AA7-11ee-8026-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING UFC1 + HUD1 {4F2206B0-9AA7-11ee-8023-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING UFC1 + HUD1 {4F2206B0-9AA7-11ee-8023-444553540000}.diff.lua"
+  # A stick button used as a modifier ties modifiers.lua to the old ID as well.
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/modifiers.lua"
+    from: "data/dcs-bindings/old-ids/modifiers.lua"
+profiles:
+  - profiles/dcs-bindings-hornet.yaml

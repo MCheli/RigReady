@@ -1,0 +1,7 @@
+description: DCS bindings while DCS is running
+rig: mark-full
+extends: dcs-bindings-hornet.yaml
+mutations:
+  - op: startProcess
+    name: DCS.exe
+    path: 'C:\Program Files (x86)\Steam\steamapps\common\DCSWorld\bin\DCS.exe'
