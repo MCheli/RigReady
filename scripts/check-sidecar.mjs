@@ -16,9 +16,13 @@ const fail = (message) => {
 
 if (!existsSync(script)) fail(`${script} is missing`);
 if (!existsSync(python)) fail(`${python} is missing`);
-const probe = spawnSync(python, ['-c', 'import pygame; print(pygame.version.ver)'], {
-  encoding: 'utf8',
-  env: { ...process.env, PYGAME_HIDE_SUPPORT_PROMPT: '1' },
-});
-if (probe.status !== 0) fail(`pygame does not import: ${probe.stderr.trim()}`);
-console.log(`sidecar check: python runtime with pygame ${probe.stdout.trim()} is in place`);
+// The sidecar uses only the standard library; ctypes is what reaches DirectInput.
+const probe = spawnSync(
+  python,
+  ['-c', 'import ctypes, json, uuid, sys; print(sys.version.split()[0])'],
+  {
+    encoding: 'utf8',
+  }
+);
+if (probe.status !== 0) fail(`the Python runtime does not start: ${probe.stderr.trim()}`);
+console.log(`sidecar check: Python ${probe.stdout.trim()} runtime is in place`);

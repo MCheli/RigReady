@@ -132,7 +132,27 @@ describe('real hardware (read-only)', () => {
     ).toBe(true);
     if (!started.ok) return;
     console.log(`  ${started.value.length} DirectInput devices`);
-    const unsubscribe = ports.input.subscribe(() => {});
+    // Everything Windows classes as a game controller must be listed, including pedals
+    // with no buttons and button boxes with no axes (SDL/pygame dropped those).
+    const usb = await ports.devices.list();
+    if (usb.ok) {
+      const seen = new Set(started.value.map((d) => `${d.vendorId}:${d.productId}`));
+      const missing = usb.value
+        .filter((d) => d.isGameController)
+        .filter((d) => !seen.has(`${d.vendorId}:${d.productId}`))
+        .map((d) => `${d.name} ${d.vendorId}:${d.productId}`);
+      expect(missing).toEqual([]);
+    }
+    for (const device of started.value) {
+      expect(device.guid).toMatch(/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/);
+      expect(device.axisNames).toHaveLength(device.numAxes);
+    }
+    // Live state arrives for every device shortly after start.
+    const reported = new Set<number>();
+    const unsubscribe = ports.input.subscribe((states) => {
+      for (const state of states) reported.add(state.index);
+    });
+    await expect.poll(() => reported.size, { timeout: 5000 }).toBe(started.value.length);
     unsubscribe();
     await ports.input.stop();
   });

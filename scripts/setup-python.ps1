@@ -1,6 +1,7 @@
-# Creates resources/python: an embeddable Python with pygame, used by the DirectInput
-# sidecar (python/input_server.py). electron-builder ships this folder with the app
-# (extraResources -> <app>/resources/python), so users never need Python installed.
+# Creates resources/python: an embeddable Python used by the DirectInput sidecar
+# (python/input_server.py, standard library only). electron-builder ships this folder
+# with the app (extraResources -> <app>/resources/python), so users never need Python
+# installed.
 #
 #   npm run setup:python
 
@@ -8,18 +9,19 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 $pythonVersion = "3.12.10"
-$pygameVersion = "2.6.1"
 $pythonDir = Join-Path $PSScriptRoot "..\resources\python"
 $pythonExe = Join-Path $pythonDir "python.exe"
 
-function Test-Pygame {
+function Test-Runtime {
     if (-not (Test-Path $pythonExe)) { return $false }
-    & $pythonExe -c "import pygame" 2>$null | Out-Null
+    # An older setup installed pip and pygame here; rebuild so the package stays small.
+    if (Test-Path (Join-Path $pythonDir "Lib")) { return $false }
+    & $pythonExe -c "import ctypes, json, uuid" 2>$null | Out-Null
     return $LASTEXITCODE -eq 0
 }
 
-if (Test-Pygame) {
-    Write-Host "resources/python is ready (pygame imports)."
+if (Test-Runtime) {
+    Write-Host "resources/python is ready."
     exit 0
 }
 
@@ -31,20 +33,5 @@ New-Item -ItemType Directory -Force -Path $pythonDir | Out-Null
 Expand-Archive -Path $zip -DestinationPath $pythonDir -Force
 Remove-Item $zip -Force
 
-# The embeddable build ignores site-packages until its ._pth file says otherwise.
-$pth = Get-ChildItem -Path $pythonDir -Filter "python*._pth" | Select-Object -First 1
-$lines = (Get-Content $pth.FullName) -replace "^#\s*import site", "import site"
-$lines += "Lib\site-packages"
-Set-Content -Path $pth.FullName -Value $lines -Encoding ascii
-
-Write-Host "Installing pip and pygame $pygameVersion..."
-$getPip = Join-Path $env:TEMP "rigready-get-pip.py"
-Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile $getPip -UseBasicParsing
-& $pythonExe $getPip --no-warn-script-location | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "pip installation failed" }
-Remove-Item $getPip -Force
-& $pythonExe -m pip install "pygame==$pygameVersion" --no-warn-script-location --disable-pip-version-check | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "pygame installation failed" }
-
-if (-not (Test-Pygame)) { throw "pygame does not import from $pythonDir" }
+if (-not (Test-Runtime)) { throw "The Python runtime in $pythonDir does not start" }
 Write-Host "resources/python is ready."

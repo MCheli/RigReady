@@ -105,13 +105,26 @@ export const AudioStateSchema = z.object({
 });
 export type AudioState = z.infer<typeof AudioStateSchema>;
 
+/** A game controller as DirectInput (and therefore DCS, iRacing, ...) lists it. */
 export const InputDeviceSchema = z.object({
   index: z.number().int(),
+  /** DirectInput product name, untrimmed: games key files on the exact text. */
   name: z.string(),
+  /**
+   * DirectInput instance GUID, upper-case without braces, e.g.
+   * "806E0610-B756-11F0-8024-444553540000". DCS binding file names and iRacing use it.
+   */
   guid: z.string(),
+  /** DirectInput product GUID ({PPPPVVVV-0000-0000-0000-504944564944} for HID devices). */
+  productGuid: z.string().default(''),
+  /** Four upper-case hex digits each; empty when the product GUID does not encode them. */
+  vendorId: z.string().default(''),
+  productId: z.string().default(''),
   numAxes: z.number().int(),
   numButtons: z.number().int(),
   numHats: z.number().int(),
+  /** One DirectInput axis name per entry of InputState.axes: X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2. */
+  axisNames: z.array(z.string()).default([]),
 });
 export type InputDevice = z.infer<typeof InputDeviceSchema>;
 

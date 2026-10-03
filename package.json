@@ -94,12 +94,6 @@
         "to": "python",
         "filter": [
           "**/*",
-          "!Scripts/**",
-          "!Lib/site-packages/pip/**",
-          "!Lib/site-packages/pip-*/**",
-          "!Lib/site-packages/pygame/examples/**",
-          "!Lib/site-packages/pygame/tests/**",
-          "!Lib/site-packages/pygame/docs/**",
           "!**/__pycache__/**"
         ]
       },

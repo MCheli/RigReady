@@ -14,9 +14,9 @@ import {
 import { z } from 'zod';
 
 /**
- * Live DirectInput state through the Python/pygame sidecar (python/input_server.py),
- * which sees devices the way a game does. The sidecar speaks newline-delimited JSON
- * on stdin/stdout.
+ * Live DirectInput state through the Python sidecar (python/input_server.py), which
+ * calls DirectInput 8 itself and so lists exactly the controllers a game lists, with
+ * their instance GUIDs. The sidecar speaks newline-delimited JSON on stdin/stdout.
  */
 
 export interface SidecarLocation {
@@ -68,6 +68,8 @@ export class SidecarInputProvider implements InputProvider {
   private child: ChildProcess | undefined;
   private current: InputDevice[] = [];
   private listeners = new Set<(states: InputState[]) => void>();
+  /** Last known state per device index, so a new subscriber starts with the full picture. */
+  private latest = new Map<number, InputState>();
   private starting: Promise<Result<InputDevice[]>> | undefined;
 
   constructor(
@@ -99,7 +101,7 @@ export class SidecarInputProvider implements InputProvider {
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
         shell: false,
-        env: { ...process.env, PYTHONUNBUFFERED: '1', PYGAME_HIDE_SUPPORT_PROMPT: '1' },
+        env: { ...process.env, PYTHONUNBUFFERED: '1' },
       });
       const timer = setTimeout(() => {
         child.kill();
@@ -116,6 +118,7 @@ export class SidecarInputProvider implements InputProvider {
       child.once('exit', (code) => {
         this.child = undefined;
         this.current = [];
+        this.latest.clear();
         if (!settled) {
           settle(
             err(
@@ -134,7 +137,7 @@ export class SidecarInputProvider implements InputProvider {
         try {
           parsed = MessageSchema.safeParse(JSON.parse(line));
         } catch {
-          return; // pygame can print banner text; ignore anything that is not JSON
+          return; // ignore anything that is not JSON
         }
         if (!parsed.success) return;
         const message = parsed.data;
@@ -143,15 +146,17 @@ export class SidecarInputProvider implements InputProvider {
             this.child = child;
             this.current = message.devices;
             this.log.info(
-              `input sidecar ready: pygame ${message.version}, ${message.devices.length} devices`
+              `input sidecar ready: ${message.version}, ${message.devices.length} devices`
             );
             settle(ok(message.devices));
             break;
           case 'devices':
           case 'devicesChanged':
             this.current = message.devices;
+            this.latest.clear();
             break;
           case 'inputStates':
+            for (const state of message.states) this.latest.set(state.index, state);
             for (const listener of this.listeners) listener(message.states);
             break;
           default:
@@ -184,6 +189,7 @@ export class SidecarInputProvider implements InputProvider {
 
   subscribe(listener: (states: InputState[]) => void): () => void {
     this.listeners.add(listener);
+    if (this.latest.size > 0) listener([...this.latest.values()]);
     return () => {
       this.listeners.delete(listener);
     };

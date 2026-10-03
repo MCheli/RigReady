@@ -22,7 +22,6 @@ test('the package contains the native module outside the asar and the Python sid
     existsSync(path.join(unpacked, '@koromix', 'koffi-win32-x64', 'win32_x64', 'koffi.node'))
   ).toBe(true);
   expect(existsSync(path.join(resources, 'python', 'python.exe'))).toBe(true);
-  expect(existsSync(path.join(resources, 'python', 'Lib', 'site-packages', 'pygame'))).toBe(true);
   expect(existsSync(path.join(resources, 'sidecar', 'input_server.py'))).toBe(true);
 });
 
