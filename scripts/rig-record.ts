@@ -435,7 +435,7 @@ async function main(): Promise<void> {
   );
   for (const skipped of rec.skipped) notes.push(`Skipped as too large: ${skipped}`);
 
-  let previous: { parts?: Record<string, string> } = {};
+  let previous: { parts?: Record<string, string>; counts?: Record<string, number> } = {};
   try {
     previous = JSON.parse(await fs.readFile(path.join(outDir, 'meta.json'), 'utf8'));
   } catch {
@@ -462,14 +462,16 @@ async function main(): Promise<void> {
     parts,
     recordedAt: now,
     os: `${os.type()} ${os.release()}`,
+    // A part that was not re-recorded keeps the count it had.
     counts: {
-      devices: devices.length,
-      displays: displays.displays.length,
-      processes: processes.length,
-      services: services.length,
-      audioEndpoints: audio.devices.length,
-      inputDevices: input.length,
-      registryKeys: Object.keys(registry).length,
+      ...(previous.counts ?? {}),
+      ...(want('devices') ? { devices: devices.length } : {}),
+      ...(want('displays') ? { displays: displays.displays.length } : {}),
+      ...(want('processes') ? { processes: processes.length } : {}),
+      ...(want('services') ? { services: services.length } : {}),
+      ...(want('audio') ? { audioEndpoints: audio.devices.length } : {}),
+      ...(want('input') ? { inputDevices: input.length } : {}),
+      ...(want('registry') ? { registryKeys: Object.keys(registry).length } : {}),
       files: rec.count,
       fileBytes: rec.bytes,
       placeholders: placeholders.size,

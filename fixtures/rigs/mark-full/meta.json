@@ -9,9 +9,9 @@
     "input": "2026-10-03T21:00:03.100Z",
     "registry": "2026-10-03T21:00:03.100Z",
     "hidhide": "2026-10-03T21:00:03.100Z",
-    "files": "2026-10-03T21:00:03.100Z"
+    "files": "2026-10-03T21:33:07.702Z"
   },
-  "recordedAt": "2026-10-03T21:00:03.100Z",
+  "recordedAt": "2026-10-03T21:33:07.702Z",
   "os": "Windows_NT 10.0.26200",
   "counts": {
     "devices": 62,
@@ -21,8 +21,8 @@
     "audioEndpoints": 10,
     "inputDevices": 12,
     "registryKeys": 252,
-    "files": 359,
-    "fileBytes": 2851224,
+    "files": 363,
+    "fileBytes": 2880711,
     "placeholders": 20
   },
   "notes": [

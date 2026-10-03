@@ -62,6 +62,17 @@ export const FILE_SOURCES: FileSource[] = [
   { root: 'steamLibrary', dir: `${DCS}\\Mods\\aircraft\\FA-18C\\Input`, include: ['**/*.lua'] },
   { root: 'steamLibrary', dir: `${DCS}\\Mods\\aircraft\\Uh-1H\\Input`, include: ['**/*.lua'] },
   { root: 'steamLibrary', dir: `${DCS}\\Mods\\aircraft`, include: ['*/entry.lua'] },
+  // The input defaults dofile() these to get the cockpit device and command numbers.
+  {
+    root: 'steamLibrary',
+    dir: `${DCS}\\Mods\\aircraft\\FA-18C\\Cockpit\\Scripts`,
+    include: ['devices.lua', 'command_defs.lua'],
+  },
+  {
+    root: 'steamLibrary',
+    dir: `${DCS}\\Mods\\aircraft\\Uh-1H\\Cockpit\\Scripts`,
+    include: ['devices.lua', 'command_defs.lua'],
+  },
   { root: 'steamLibrary', dir: DCS, include: ['autoupdate.cfg', 'dcs_variant.txt', '_DCS_Steam'] },
   // ---- SimAppPro: the MFD plan only ----
   {
