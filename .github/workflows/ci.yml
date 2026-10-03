@@ -7,95 +7,44 @@ on:
     branches: [main]
 
 jobs:
-  lint:
-    name: Lint
+  check:
+    name: Check (typecheck, lint, format, unit tests, ledger)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Run ESLint
-        run: npm run lint
+      - run: npm run check
 
-      - name: Check formatting
-        run: npm run format:check
-
-  typecheck:
-    name: Type Check
+  e2e:
+    name: Scenario end-to-end
     runs-on: windows-latest
+    needs: check
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Run type check
-        run: npm run typecheck
+      # Builds the app, then drives it on fixture-backed providers. No real hardware is needed.
+      - run: npm run test:e2e
 
-  test:
-    name: Test
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        node-version: ['18', '20']
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-      - name: Upload coverage
-        if: matrix.node-version == '20'
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage/lcov.info
-          fail_ci_if_error: false
-
-  build:
-    name: Build
-    runs-on: windows-latest
-    needs: [lint, typecheck, test]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Upload build artifacts
+      - name: Upload screenshots and failure output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-output
-          path: dist/
-          retention-days: 7
+          name: e2e-artifacts
+          path: |
+            artifacts/screens/
+            artifacts/playwright/
+          retention-days: 14
