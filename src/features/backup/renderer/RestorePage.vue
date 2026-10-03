@@ -1,0 +1,579 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
+import { errorText, useClient } from '../../../renderer/ipc';
+import { notifyMachineChanged } from '../../../renderer/machine';
+import { backupContract, type RestorePreviewView, type RestoreReportView } from '../contract';
+import { plural, SCOPE_KIND_LABEL, size, when } from './format';
+
+const props = defineProps<{ id: string }>();
+const api = useClient(backupContract);
+
+type Action = 'overwrite' | 'keepBoth';
+const preview = ref<RestorePreviewView>();
+const error = ref<string>();
+const selected = ref<Record<string, boolean>>({});
+const actions = ref<Record<string, Action>>({});
+const open = ref(new Set<string>());
+const restoring = ref(false);
+const report = ref<RestoreReportView>();
+/** Report sections longer than FOLD rows start folded. */
+const FOLD = 6;
+const shown = ref(new Set<string>());
+
+interface Row {
+  ref: string;
+  status: 'new' | 'same' | 'different';
+}
+
+onMounted(async () => {
+  const result = await api.previewRestore({ id: props.id });
+  if (!result.ok) {
+    error.value = errorText(result.error);
+    return;
+  }
+  preview.value = result.value;
+  const sel: Record<string, boolean> = {};
+  const act: Record<string, Action> = {};
+  for (const item of result.value.items) {
+    for (const f of item.files) {
+      // Full paths from another PC and programs are opt-in; everything else that differs is ticked.
+      sel[f.ref] = item.restorable && f.status !== 'same' && !item.absolute && !f.program;
+      act[f.ref] = 'overwrite';
+    }
+    if (item.files.length <= 6) open.value.add(item.key);
+  }
+  for (const own of result.value.own) {
+    sel[own.ref] = own.status !== 'same';
+    act[own.ref] = 'overwrite';
+  }
+  selected.value = sel;
+  actions.value = act;
+});
+
+const allRows = computed<Row[]>(() => [
+  ...(preview.value?.items ?? []).flatMap((i) => (i.restorable ? i.files : [])),
+  ...(preview.value?.own ?? []),
+]);
+const conflicts = computed(() => allRows.value.filter((r) => r.status === 'different'));
+
+const plan = computed(() => {
+  const rows = allRows.value.filter((r) => selected.value[r.ref] && r.status !== 'same');
+  return {
+    total: rows.length,
+    fresh: rows.filter((r) => r.status === 'new').length,
+    replace: rows.filter((r) => r.status === 'different' && actions.value[r.ref] === 'overwrite')
+      .length,
+    both: rows.filter((r) => r.status === 'different' && actions.value[r.ref] === 'keepBoth')
+      .length,
+  };
+});
+
+function applyToAll(choice: Action | 'skip'): void {
+  const sel = { ...selected.value };
+  const act = { ...actions.value };
+  for (const row of conflicts.value) {
+    if (choice === 'skip') sel[row.ref] = false;
+    else {
+      sel[row.ref] = true;
+      act[row.ref] = choice;
+    }
+  }
+  selected.value = sel;
+  actions.value = act;
+}
+
+function itemState(key: string): { all: boolean; some: boolean } {
+  const item = preview.value?.items.find((i) => i.key === key);
+  const rows = (item?.files ?? []).filter((f) => f.status !== 'same');
+  const on = rows.filter((f) => selected.value[f.ref]).length;
+  return { all: rows.length > 0 && on === rows.length, some: on > 0 && on < rows.length };
+}
+
+function setItem(key: string, value: boolean): void {
+  const item = preview.value?.items.find((i) => i.key === key);
+  const sel = { ...selected.value };
+  for (const f of item?.files ?? []) if (f.status !== 'same') sel[f.ref] = value;
+  selected.value = sel;
+}
+
+function toggle(key: string): void {
+  const next = new Set(open.value);
+  if (next.has(key)) next.delete(key);
+  else next.add(key);
+  open.value = next;
+}
+
+async function restore(): Promise<void> {
+  error.value = undefined;
+  const choices: Record<string, Action> = {};
+  for (const row of allRows.value) {
+    if (selected.value[row.ref]) choices[row.ref] = actions.value[row.ref] ?? 'overwrite';
+  }
+  restoring.value = true;
+  const result = await api.restore({ id: props.id, choices });
+  restoring.value = false;
+  if (!result.ok) {
+    error.value = errorText(result.error);
+    return;
+  }
+  report.value = result.value;
+  notifyMachineChanged();
+  window.scrollTo({ top: 0 });
+}
+
+const STATUS = { new: 'New here', same: 'Same as now', different: 'Differs' } as const;
+const ACTIONS = [
+  { title: 'Replace', value: 'overwrite' },
+  { title: 'Keep both', value: 'keepBoth' },
+];
+</script>
+
+<template>
+  <div class="rr-page" data-testid="restore-page">
+    <div class="back">
+      <v-btn variant="text" size="small" prepend-icon="mdi-arrow-left" to="/configure/backups">
+        Backups
+      </v-btn>
+    </div>
+    <h1 class="rr-page-title">{{ report ? 'Restore finished' : 'Restore a backup' }}</h1>
+
+    <v-alert v-if="error" type="error" variant="tonal" class="mb-4" data-testid="restore-error">
+      {{ error }}
+    </v-alert>
+
+    <!-- The result -->
+    <template v-if="report">
+      <div class="rr-panel result" data-testid="restore-report">
+        <div
+          class="result-title"
+          :class="report.failed.length ? 'rr-bad' : 'rr-ok'"
+          data-testid="restore-report-title"
+        >
+          <v-icon
+            :icon="report.failed.length ? 'mdi-alert-circle-outline' : 'mdi-check-circle-outline'"
+            size="20"
+          />
+          <template v-if="report.failed.length">
+            {{ plural(report.failed.length, 'item') }} could not be restored
+          </template>
+          <template v-else>
+            Restored {{ plural(report.restored.length + report.keptBoth.length, 'item') }}
+          </template>
+        </div>
+        <div class="rr-row-sub">
+          Every restored file was read back and matches the backup.
+          <template v-if="report.safetyBackup">
+            What it replaced is saved as the backup "{{ report.safetyBackup }}".
+          </template>
+          <template v-if="report.groupId">
+            The Safety page can undo the file changes in one step.
+          </template>
+        </div>
+        <div class="result-actions">
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-airplane-takeoff"
+            data-testid="restore-run-checks"
+            to="/fly"
+          >
+            Run checks now
+          </v-btn>
+          <v-btn
+            v-if="report.groupId"
+            variant="tonal"
+            to="/configure/safety"
+            data-testid="restore-safety"
+          >
+            Safety page
+          </v-btn>
+        </div>
+      </div>
+
+      <v-alert
+        v-if="report.deviceIds"
+        type="warning"
+        variant="tonal"
+        class="mb-4"
+        title="Controllers have different IDs on this PC"
+        data-testid="restore-device-ids"
+      >
+        {{ report.deviceIds.message }}
+        <div v-for="f in report.deviceIds.files" :key="f" class="rr-mono mt-1">{{ f }}</div>
+      </v-alert>
+
+      <template
+        v-for="group in [
+          { key: 'failed', title: 'Failed', rows: report.failed },
+          { key: 'keptBoth', title: 'Kept both', rows: report.keptBoth },
+          { key: 'restored', title: 'Restored', rows: report.restored },
+          { key: 'unchanged', title: 'Already the same', rows: report.unchanged },
+          { key: 'skipped', title: 'Skipped', rows: report.skipped },
+        ]"
+        :key="group.key"
+      >
+        <template v-if="group.rows.length">
+          <h2 class="rr-section-title section-gap">{{ group.title }} ({{ group.rows.length }})</h2>
+          <div class="rr-panel" :data-testid="`restore-${group.key}`">
+            <div
+              v-for="row in shown.has(group.key) ? group.rows : group.rows.slice(0, FOLD)"
+              :key="row.ref"
+              class="rr-row report-row"
+            >
+              <div class="rr-row-main">
+                <div class="rr-mono report-label">{{ row.label }}</div>
+                <div v-if="row.detail" class="rr-row-sub">{{ row.detail }}</div>
+              </div>
+            </div>
+            <div v-if="group.rows.length > FOLD && !shown.has(group.key)" class="rr-row">
+              <v-btn
+                variant="text"
+                size="small"
+                :data-testid="`restore-show-${group.key}`"
+                @click="shown = new Set([...shown, group.key])"
+              >
+                Show all {{ group.rows.length }}
+              </v-btn>
+            </div>
+          </div>
+        </template>
+      </template>
+    </template>
+
+    <!-- The preview -->
+    <template v-else-if="preview">
+      <p class="rr-page-sub">
+        Nothing is written until you press Restore. Files that would be replaced are saved first,
+        and the Safety page can undo the restore.
+      </p>
+      <div class="rr-panel manifest" data-testid="restore-manifest">
+        <v-icon icon="mdi-archive-outline" size="22" />
+        <div class="rr-row-main">
+          <div class="rr-row-title">{{ preview.backup.name }}</div>
+          <div class="rr-row-sub">
+            {{ when(preview.backup.createdAt) }} ·
+            {{ SCOPE_KIND_LABEL[preview.backup.scopeKind] }} ·
+            {{ plural(preview.backup.fileCount, 'file') }}, {{ size(preview.backup.totalBytes) }} ·
+            made on {{ preview.backup.machine || 'an unknown PC' }} with RigReady
+            {{ preview.backup.appVersion }}
+          </div>
+        </div>
+      </div>
+      <v-alert
+        v-if="preview.otherMachine"
+        type="info"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+        data-testid="restore-other-pc"
+      >
+        This backup comes from another PC or Windows user. Paths are worked out for this PC, as
+        shown under each item.
+      </v-alert>
+
+      <div v-if="conflicts.length" class="conflicts" data-testid="restore-conflicts">
+        <span
+          >{{ plural(conflicts.length, 'item differs', 'items differ') }} from what is here. For all
+          of them:</span
+        >
+        <v-btn
+          size="small"
+          variant="tonal"
+          data-testid="restore-all-overwrite"
+          @click="applyToAll('overwrite')"
+        >
+          Replace
+        </v-btn>
+        <v-btn
+          size="small"
+          variant="tonal"
+          data-testid="restore-all-skip"
+          @click="applyToAll('skip')"
+        >
+          Skip
+        </v-btn>
+        <v-btn
+          size="small"
+          variant="tonal"
+          data-testid="restore-all-keepboth"
+          @click="applyToAll('keepBoth')"
+        >
+          Keep both
+        </v-btn>
+      </div>
+
+      <template v-if="preview.own.length">
+        <h2 class="rr-section-title section-gap">Setups and RigReady settings</h2>
+        <div class="rr-panel">
+          <div
+            v-for="own in preview.own"
+            :key="own.ref"
+            class="rr-row"
+            data-testid="restore-own"
+            :data-ref="own.ref"
+            :data-status="own.status"
+          >
+            <v-checkbox-btn
+              v-model="selected[own.ref]"
+              :disabled="own.status === 'same'"
+              density="compact"
+              :aria-label="`Restore ${own.label}`"
+              data-testid="restore-own-check"
+            />
+            <div class="rr-row-main">
+              <div class="rr-row-title">{{ own.label }}</div>
+              <div v-if="own.detail" class="rr-row-sub">{{ own.detail }}</div>
+            </div>
+            <span class="status" :class="`status-${own.status}`">{{ STATUS[own.status] }}</span>
+            <v-select
+              v-if="own.status === 'different' && (own.kind === 'profile' || own.kind === 'layout')"
+              v-model="actions[own.ref]"
+              :items="ACTIONS"
+              :disabled="!selected[own.ref]"
+              density="compact"
+              variant="outlined"
+              hide-details
+              class="action-select"
+              data-testid="restore-own-action"
+            />
+          </div>
+        </div>
+      </template>
+
+      <template v-if="preview.items.length">
+        <h2 class="rr-section-title section-gap">Game and tool files</h2>
+        <div
+          v-for="item in preview.items"
+          :key="item.key"
+          class="rr-panel item"
+          data-testid="restore-item"
+          :data-label="item.label"
+          :data-restorable="item.restorable"
+        >
+          <div class="rr-row item-head">
+            <v-checkbox-btn
+              :model-value="itemState(item.key).all"
+              :indeterminate="itemState(item.key).some"
+              :disabled="!item.restorable || !item.files.some((f) => f.status !== 'same')"
+              density="compact"
+              :aria-label="`Restore all of ${item.label}`"
+              data-testid="restore-item-check"
+              @update:model-value="(v: boolean | null) => setItem(item.key, !!v)"
+            />
+            <div class="rr-row-main">
+              <div class="rr-row-title">
+                {{ item.label }} <span class="rr-muted source">{{ item.sourceName }}</span>
+              </div>
+              <div class="rr-row-sub">
+                <span class="rr-mono">{{ item.stored }}</span>
+                <template v-if="item.target">
+                  → <span class="rr-mono" data-testid="restore-item-target">{{ item.target }}</span>
+                </template>
+              </div>
+              <div
+                v-if="item.absolute"
+                class="rr-row-sub rr-warn"
+                data-testid="restore-item-absolute"
+              >
+                Stored as a full path, not relative to a known folder: check it is the right place
+                on this PC before ticking it.
+              </div>
+              <div
+                v-if="!item.restorable"
+                class="rr-row-sub rr-warn"
+                data-testid="restore-item-problem"
+              >
+                Cannot be restored here: {{ item.problem }}
+              </div>
+            </div>
+            <span class="rr-row-sub">{{ plural(item.fileCount, 'file') }}</span>
+            <v-btn
+              v-if="item.files.length"
+              :icon="open.has(item.key) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+              variant="text"
+              size="small"
+              :aria-label="open.has(item.key) ? 'Hide files' : 'Show files'"
+              data-testid="restore-item-toggle"
+              @click="toggle(item.key)"
+            />
+          </div>
+          <div v-if="open.has(item.key) && item.restorable" class="files">
+            <div
+              v-for="f in item.files"
+              :key="f.ref"
+              class="file"
+              data-testid="restore-file"
+              :data-path="f.relativePath"
+              :data-status="f.status"
+            >
+              <v-checkbox-btn
+                v-model="selected[f.ref]"
+                :disabled="f.status === 'same'"
+                density="compact"
+                :aria-label="`Restore ${f.relativePath}`"
+                data-testid="restore-file-check"
+              />
+              <div class="rr-row-main">
+                <span class="rr-mono">{{ f.relativePath }}</span>
+                <span v-if="f.program" class="rr-warn program"> · program or script</span>
+              </div>
+              <span class="rr-muted file-size">{{ size(f.size) }}</span>
+              <span class="status" :class="`status-${f.status}`">{{ STATUS[f.status] }}</span>
+              <v-select
+                v-if="f.status === 'different'"
+                v-model="actions[f.ref]"
+                :items="ACTIONS"
+                :disabled="!selected[f.ref]"
+                density="compact"
+                variant="outlined"
+                hide-details
+                class="action-select"
+                data-testid="restore-file-action"
+              />
+              <span v-else class="action-select" />
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <div
+        v-if="preview.notInBackup.length"
+        class="rr-row-sub mt-4"
+        data-testid="restore-not-in-backup"
+      >
+        Not in this backup:
+        {{ preview.notInBackup.map((n) => `${n.path} (${n.reason})`).join('; ') }}
+      </div>
+
+      <div class="footer rr-panel" data-testid="restore-footer">
+        <div class="rr-row-main" data-testid="restore-plan">
+          <template v-if="plan.total === 0">Nothing selected.</template>
+          <template v-else>
+            Restores {{ plural(plan.total, 'item') }}: {{ plan.fresh }} new,
+            {{ plan.replace }} replaced, {{ plan.both }} kept side by side.
+          </template>
+        </div>
+        <v-btn variant="text" to="/configure/backups">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-restore"
+          :disabled="plan.total === 0"
+          :loading="restoring"
+          data-testid="restore-apply"
+          @click="restore"
+        >
+          Restore
+        </v-btn>
+      </div>
+    </template>
+    <div v-else-if="!error" class="rr-panel rr-empty">Reading the backup…</div>
+  </div>
+</template>
+
+<style scoped>
+.back {
+  margin: -12px 0 4px -12px;
+}
+.manifest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.conflicts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 8px 0 4px;
+  flex-wrap: wrap;
+}
+.item {
+  margin-bottom: 10px;
+}
+.item-head {
+  border-top: none;
+}
+.source {
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 6px;
+}
+.files {
+  border-top: 1px solid var(--rr-border);
+  padding: 6px 16px 8px 48px;
+}
+.file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  min-height: 36px;
+}
+.file .rr-row-main {
+  overflow-wrap: anywhere;
+}
+.file-size {
+  font-size: 12px;
+  width: 64px;
+  text-align: right;
+}
+.program {
+  font-size: 12px;
+}
+.status {
+  font-size: 12px;
+  width: 84px;
+  flex-shrink: 0;
+  color: var(--rr-muted);
+}
+.status-different {
+  color: var(--rr-accent);
+}
+.action-select {
+  width: 140px;
+  flex: 0 0 140px;
+}
+.footer {
+  position: sticky;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-top: 20px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+.result {
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.result-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.report-label {
+  overflow-wrap: anywhere;
+}
+</style>
+
+<style>
+/* Shared by the backup and sharing screens (not scoped: child components use them). */
+.rr-section-title.section-gap {
+  margin-top: 24px;
+}
+[data-testid='backups-page'] .v-checkbox-btn,
+[data-testid='restore-page'] .v-checkbox-btn,
+[data-testid='share-page'] .v-checkbox-btn {
+  flex: 0 0 auto;
+}
+</style>

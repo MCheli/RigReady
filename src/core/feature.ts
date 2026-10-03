@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import type { ChannelMap, Contract, EventMap, Handlers } from '../shared/ipc';
+import type { BackupSourceRegistry } from './backupSources';
 import type { CheckRegistry } from './checks/registry';
 import type { DisplayLayoutStore } from './displays/layouts';
 import type { GameRegistry } from './games';
@@ -19,6 +20,8 @@ export interface MainContext {
   settings: SettingsStore;
   /** Named monitor layouts. */
   layouts: DisplayLayoutStore;
+  /** What features suggest backing up (tools that are not game modules register here). */
+  backupSources: BackupSourceRegistry;
   /** Sends an event declared in a contract to the renderer. */
   emit<E extends EventMap, K extends keyof E & string>(
     contract: Contract<ChannelMap, E>,

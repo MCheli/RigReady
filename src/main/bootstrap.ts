@@ -1,3 +1,4 @@
+import { BackupSourceRegistry } from '../core/backupSources';
 import { CheckRegistry } from '../core/checks/registry';
 import { DisplayLayoutStore } from '../core/displays/layouts';
 import type { FeatureMain, IpcBinding, MainContext } from '../core/feature';
@@ -49,6 +50,7 @@ export function wireFeatures(options: {
     profiles: new ProfileStore(ports.files, ports.folders.dataRoot()),
     settings: new SettingsStore(ports.files, ports.folders.dataRoot(), ports.clock),
     layouts: new DisplayLayoutStore(ports.files, ports.folders.dataRoot(), ports.clock),
+    backupSources: new BackupSourceRegistry(),
     emit(contract, event, payload) {
       const schema = contract.events[event];
       if (!schema) throw new Error(`Unknown event ${contract.feature}:${event}`);

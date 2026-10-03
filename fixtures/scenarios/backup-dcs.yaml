@@ -1,0 +1,3 @@
+description: Backups - DCS F/A-18C setup, nothing tracked yet
+rig: mark-full
+extends: flying-all-good.yaml
