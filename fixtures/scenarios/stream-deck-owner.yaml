@@ -1,0 +1,15 @@
+description: Stream Deck as on the owner's PC, plus a profile that uses two plugins that are not installed
+rig: mark-full
+mutations:
+  # A third profile whose keys need Mad Jack's DCS-BIOS plugin (65) and BarRaider's Super Macro (1).
+  - { op: writeFile, path: 'AppData/Roaming/Elgato/StreamDeck/ProfilesV3/7D3A1C55-2B64-4E2F-9C0E-5F1A9E6B2D10.sdProfile/manifest.json', from: data/stream-deck/f16/manifest.json }
+  - { op: writeFile, path: 'AppData/Roaming/Elgato/StreamDeck/ProfilesV3/7D3A1C55-2B64-4E2F-9C0E-5F1A9E6B2D10.sdProfile/Profiles/A1B2C3D4-0001-4000-8000-000000000001/manifest.json', from: data/stream-deck/f16/page1.json }
+  - { op: writeFile, path: 'AppData/Roaming/Elgato/StreamDeck/ProfilesV3/7D3A1C55-2B64-4E2F-9C0E-5F1A9E6B2D10.sdProfile/Profiles/A1B2C3D4-0002-4000-8000-000000000002/manifest.json', from: data/stream-deck/f16/page2.json }
+  - { op: writeFile, path: 'AppData/Roaming/Elgato/StreamDeck/ProfilesV3/7D3A1C55-2B64-4E2F-9C0E-5F1A9E6B2D10.sdProfile/Profiles/A1B2C3D4-0003-4000-8000-000000000003/manifest.json', from: data/stream-deck/f16/page3.json }
+  # One of Stream Deck's own automatic backups, and an older-format backup in Documents.
+  - op: writeFile
+    path: 'AppData/Roaming/Elgato/StreamDeck/BackupV3/Stream Deck - 2026-10-01-09-12-44.streamDeckProfilesBackup'
+    from: 'data/stream-deck/Stream Deck - 2026-10-01-09-12-44.streamDeckProfilesBackup'
+  - op: writeFile
+    path: 'Documents/DCS Backup/Stream Deck - 02-03-2024 - 19-16.streamDeckProfilesBackup'
+    from: 'data/stream-deck/Stream Deck - 02-03-2024 - 19-16.streamDeckProfilesBackup'

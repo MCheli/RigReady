@@ -1,0 +1,9 @@
+description: TrackIR not installed and the camera not connected
+rig: mark-full
+mutations:
+  - { op: stopProcess, name: TrackIR5.exe }
+  - { op: removeRegistryKey, hive: HKLM, key: 'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{84234F8F-74EF-42E6-A35C-CAC758645015}' }
+  - { op: removeRegistryKey, hive: HKLM, key: 'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{B8793D4E-B2C7-475A-BA2D-14099BBDC95F}' }
+  - { op: unplugDevice, match: { vendorId: 131D } }
+  - { op: removeFile, path: 'Program Files (x86)/TrackIR5' }
+  - { op: removeFile, path: 'AppData/Roaming/NaturalPoint' }

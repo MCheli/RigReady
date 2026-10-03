@@ -35,15 +35,23 @@ describe('feature discovery', () => {
       'profiles',
       'safety',
       'settings',
+      'stream-deck',
+      'trackir',
     ]);
     expect(app.wiring.context.checks.checkTypes()).toEqual([
       'device.connected',
       'display.layout',
       'process.running',
+      'stream-deck.connected',
+      'stream-deck.running',
+      'trackir.connected',
+      'trackir.running',
     ]);
     expect(app.wiring.context.checks.remediationTypes()).toEqual([
       'display.applyLayout',
       'process.launch',
+      'stream-deck.start',
+      'trackir.start',
     ]);
     expect([...app.wiring.handlers.keys()]).toContain('fly:makeReady');
     expect(app.wiring.context.games.get('dcs')?.name).toBe('DCS World');

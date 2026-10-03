@@ -1,0 +1,14 @@
+description: TrackIR installed, running and registered for games, with its profiles
+rig: mark-full
+mutations:
+  - { op: writeFile, path: 'AppData/Roaming/NaturalPoint/TrackIR 5/Settings.xml', from: data/trackir/Settings.xml }
+  - { op: writeFile, path: 'AppData/Roaming/NaturalPoint/TrackIR 5/Profiles/default.xml', from: data/trackir/Profiles/default.xml }
+  - { op: writeFile, path: 'AppData/Roaming/NaturalPoint/TrackIR 5/Profiles/flying.xml', from: data/trackir/Profiles/flying.xml }
+  - { op: writeFile, path: 'AppData/Roaming/NaturalPoint/TrackIR 5/Profiles/driving.xml', from: data/trackir/Profiles/driving.xml }
+  - { op: writeFile, path: 'AppData/Roaming/NaturalPoint/TrackIR 5/Profiles/smooth.xml', from: data/trackir/Profiles/smooth.xml }
+  - { op: writeFile, path: 'Program Files (x86)/TrackIR5/NPClient64.dll', content: '' }
+  - op: setRegistryValue
+    hive: HKCU
+    key: 'Software\NaturalPoint\NATURALPOINT\NPClient Location'
+    name: Path
+    value: { type: string, value: 'C:\Program Files (x86)\TrackIR5\' }
