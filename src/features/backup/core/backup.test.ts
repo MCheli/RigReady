@@ -242,14 +242,17 @@ describe('suggestions', () => {
         ok([{ label: 'Tool profiles', path: '{DOCUMENTS}/Tool', kind: 'folder' as const }]),
     });
     const suggestions = await app.invoke<Suggestion[]>('backup:suggestions');
-    expect(suggestions.map((s) => s.label)).toEqual([
-      'DCS settings and bindings',
-      'DCS bindings',
-      'DCS options',
-      'DCS export scripts',
-      'DCS kneeboard',
-      'Test settings',
-    ]);
+    // Other game modules add their own; only the ones this test relies on are named.
+    expect(suggestions.map((s) => s.label)).toEqual(
+      expect.arrayContaining([
+        'DCS settings and bindings',
+        'DCS bindings',
+        'DCS options',
+        'DCS export scripts',
+        'DCS kneeboard',
+        'Test settings',
+      ])
+    );
     // MonitorSetup does not exist in the fixture, the tool's folder neither: not suggested.
     const test = suggestions.find((s) => s.label === 'Test settings')!;
     expect(test).toMatchObject({ path: '{DCS_USER}/Config', kind: 'folder', game: 'testgame' });
