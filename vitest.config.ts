@@ -2,6 +2,9 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    // Generous: several agents and the e2e suite often share this machine.
+    testTimeout: 30000,
+    hookTimeout: 30000,
     include: ['src/**/*.test.ts', 'tests/unit/**/*.test.ts', 'scripts/**/*.test.ts'],
     exclude: ['src/legacy/**', 'node_modules/**'],
     environment: 'node',

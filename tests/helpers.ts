@@ -26,7 +26,10 @@ export async function tempDir(
   prefix = 'rigready-test-'
 ): Promise<{ dir: string; cleanup: () => Promise<void> }> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
-  return { dir, cleanup: () => fs.rm(dir, { recursive: true, force: true }) };
+  return {
+    dir,
+    cleanup: () => fs.rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }),
+  };
 }
 
 /** A clock that only moves when told to. */
