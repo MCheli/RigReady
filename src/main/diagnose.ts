@@ -1,5 +1,6 @@
 import { readDirectInputIdentities } from '../core/directInput';
 import { nullLogger } from '../core/logger';
+import { runLua } from '../core/lua/sandbox';
 import { createWindowsPorts } from '../platform/windows';
 
 /**
@@ -35,12 +36,14 @@ export async function runDiagnose(
       await ports.input.stop();
       return started;
     });
+    // The Lua VM is bundled JavaScript; this proves it survived packaging.
+    await section('lua', async () => runLua('return 6 * 7'));
     report['folders'] = {
       home: ports.folders.home(),
       savedGames: ports.folders.savedGames(),
       dataRoot: ports.folders.dataRoot(),
     };
-    report['ok'] = ['devices', 'displays', 'processes', 'audio', 'input'].every(
+    report['ok'] = ['devices', 'displays', 'processes', 'audio', 'input', 'services', 'lua'].every(
       (name) => (report[name] as { ok?: boolean } | undefined)?.ok === true
     );
   } catch (e) {

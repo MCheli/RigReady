@@ -1,133 +1,38 @@
 # RigReady
 
-A desktop tool for managing simulation rig software, hardware, and configurations. Built with Electron for Windows.
+A Windows desktop app for flight and racing sim rigs. It checks that the rig is ready (devices plugged in, helper apps running, monitors arranged, audio and config files right), fixes what it can, and launches the game. It also manages bindings, backups and hardware troubleshooting.
 
-**Website**: [rigready.io](https://rigready.io)
+Website: [rigready.io](https://rigready.io) · License: MIT
 
-## Features
+**Status:** version 2 is being rebuilt from the ground up. The Fly screen, setup capture, monitor layouts with timed revert, settings and the safety journal work; most of the rest is in progress. `docs/requirements/ledger.yaml` lists every requirement with its status and evidence.
 
-- **Device Management**: Monitor and test connected input devices (joysticks, throttles, pedals, panels)
-- **Input Testing**: Real-time visualization of axes, buttons, and hat switches
-- **Display Configuration**: Save and restore multi-monitor setups
-- **Keybinding Management**: Backup and restore simulator keybindings
-- **Pre-Flight Checklist**: Verify everything is ready before launching your sim
+## What it does
 
-## Supported Hardware
+- **Fly:** one screen with a checklist for the setup you used last. **Make ready** runs every fix in order, **Launch** starts the game, **Stand down** closes the helper apps and puts the monitors back.
+- **Configure:** create setups by capturing the rig while it works; manage bindings, backups, monitor layouts and devices.
+- **Safety:** every file RigReady changes outside its own folder is backed up first and can be undone.
 
-- WinWing HOTAS and panels
-- Thrustmaster controllers
-- Virpil panels
-- VKB controllers
-- TrackIR head tracking
-- Stream Deck
-- Any DirectInput compatible device
+DCS World comes first (F/A-18C, UH-1H), then iRacing, Le Mans Ultimate, BeamNG.drive and others. See `docs/PRODUCT.md`.
 
-## Quick Start
+## Develop
 
-### Prerequisites
-
-- Node.js 18+
-- Windows 10/11
-- Git
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/MCheli/rigready.git
-cd rigready
-
-# Install dependencies
-npm install
-
-# Set up Python environment (for DirectInput support)
-npm run setup:python
-
-# Start the app in development mode
-npm run dev
-```
-
-### Development Commands
-
-```bash
-# Run in development mode
-npm run dev
-
-# Build the application
-npm run build
-
-# Run unit tests
-npm test
-
-# Run unit tests with coverage
-npm run test:coverage
-
-# Run E2E tests (includes screenshot capture)
-npm run test:e2e
-
-# Lint code
-npm run lint
-
-# Format code
-npm run format
-
-# Type check
-npm run typecheck
-```
-
-## Project Structure
+Windows 10 or 11, Node.js 22.12 or newer.
 
 ```
-rigready/
-├── src/
-│   ├── main/                    # Electron main process
-│   │   ├── main.ts              # App entry point & IPC handlers
-│   │   ├── preload.ts           # Preload script for IPC bridge
-│   │   └── devices/             # Device management modules
-│   ├── renderer/                # Vue 3 + Vuetify UI
-│   │   ├── App.vue              # Root Vue component
-│   │   ├── main.ts              # Vue app entry point
-│   │   ├── views/               # Page components
-│   │   │   ├── LaunchView.vue   # Game launcher & pre-flight checks
-│   │   │   ├── DevicesView.vue  # Connected device status
-│   │   │   ├── InputTesterView.vue  # Real-time input visualization
-│   │   │   ├── DisplaysView.vue # Monitor configuration
-│   │   │   ├── KeybindingsView.vue  # Keybinding profiles & backups
-│   │   │   ├── SettingsView.vue # App settings
-│   │   │   └── DebugView.vue    # System info & logs
-│   │   ├── composables/         # Vue composables for state/API
-│   │   └── plugins/             # Vuetify theme configuration
-│   └── shared/                  # Shared types between main/renderer
-├── __tests__/                   # Test files
-│   ├── unit/                    # Jest unit tests
-│   └── e2e/                     # Playwright E2E tests
-├── docs/                        # Documentation
-├── scripts/                     # Build and utility scripts
-└── resources/                   # Runtime resources (Python env)
+npm ci
+npm run check                           # typecheck, lint, format, unit tests, ledger
+npm run test:e2e                        # build, then drive the app on recorded scenarios
+npm run dev:scenario -- flying-all-good # the app on a recorded rig; touches nothing real
 ```
 
-## Architecture
+`npm run dev` runs against the real machine and the real `~/.rigready`; use a scenario unless you mean that. `npm run setup:python` installs the small Python runtime the controller reader needs (for `npm run dev`, `rig:smoke` and packaging); `npm run dist` builds the installer.
 
-The app uses Electron with:
-- **Main Process**: Node.js backend handling device communication, file system operations
-- **Renderer Process**: Vue 3 + Vuetify 3 with Composition API and TypeScript
-- **IPC Bridge**: Type-safe communication between processes via preload script
-- **Build System**: Vite via electron-vite for fast development and optimized builds
+## Documents
 
-### Key Modules
-
-| Module | Purpose |
-|--------|---------|
-| `HIDManager` | Raw HID device access via node-hid |
-| `PygameManager` | DirectInput access via Python/pygame |
-| `DeviceManager` | USB device enumeration |
-| `DisplayManager` | Monitor configuration |
-| `KeybindingManager` | Sim keybinding backup/restore |
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
+| | |
+|---|---|
+| `docs/PRODUCT.md` | What the product is. |
+| `docs/ARCHITECTURE.md` | Layers, ports, test harness, safety rules. |
+| `docs/CONTRIBUTING-FEATURES.md` | How to add a feature, and everything the shared foundation provides. |
+| `docs/requirements/ledger.yaml` | Requirements, status, evidence. |
+| `docs/research/` | Findings on game file formats and hardware. |

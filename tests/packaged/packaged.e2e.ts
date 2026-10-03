@@ -39,6 +39,9 @@ test('the packaged app enumerates the real machine: devices, displays, processes
     expect(report.audio.ok).toBe(true);
     // The sidecar started from the bundled runtime, not from a Python on this PC.
     expect(report.input.ok).toBe(true);
+    expect(report.services.value.length).toBeGreaterThan(50);
+    expect(report.directInputRegistry.ok).toBe(true);
+    expect(report.lua.value.returned).toEqual([42]);
     // The redirected profile is honored: nothing points at the real one.
     expect(report.folders.dataRoot).toBe(isolated.dataRoot);
     expect(report.folders.savedGames.startsWith(isolated.root)).toBe(true);

@@ -1,199 +1,36 @@
 # Contributing to RigReady
 
-Thank you for your interest in contributing! This guide will help you get started.
+Thank you for helping. RigReady changes files that take people many hours to recreate, so the rules below are strict on purpose.
 
-## Development Setup
+## Before you start
 
-### Prerequisites
+Read `docs/PRODUCT.md` (what the app is), `docs/ARCHITECTURE.md` (how it is put together) and `docs/CONTRIBUTING-FEATURES.md` (how to add a feature, step by step, and what the shared code already provides).
 
-- Node.js 18 or higher
-- Git
-- Windows 10/11 (primary platform)
-- Python 3.10+ (for DirectInput support)
+## Setup
 
-### Getting Started
+Windows 10 or 11 and Node.js 22.12 or newer.
 
-1. **Fork and clone the repository**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/rigready.git
-   cd rigready
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up Python environment** (optional, for DirectInput)
-   ```bash
-   npm run setup:python
-   ```
-
-4. **Run the app**
-   ```bash
-   npm run dev
-   ```
-
-## Code Style
-
-We use ESLint and Prettier to maintain consistent code style.
-
-### Formatting
-
-```bash
-# Check formatting
-npm run format:check
-
-# Auto-fix formatting
-npm run format
+```
+npm ci
+npm run check       # must pass before every commit
+npm run test:e2e    # the app driven on recorded rigs; no real hardware needed
 ```
 
-### Linting
+Use `npm run dev:scenario -- <scenario>` to run the app while developing. It runs on a recorded rig in a temp folder. `npm run dev` uses your real machine and your real `~/.rigready`.
 
-```bash
-# Check for issues
-npm run lint
+## Rules
 
-# Auto-fix issues
-npm run lint:fix
-```
+- A feature lives in `src/features/<name>/` and touches the machine only through the ports in `src/core/ports`. Only `src/platform` imports `fs`, `child_process` or native bindings.
+- Files outside RigReady's data folder are changed only through `FileStore`, which backs them up and journals the change first.
+- Programs are started with an executable and an argument array. Never a command string.
+- No success message for something that did not happen, and no button for something that is not built.
+- A requirement is done only with evidence in `docs/requirements/ledger.yaml`: a test that exercises the real code path, plus a scenario screenshot for anything visible.
+- Tests use the fake ports and real files in a temp folder. Do not mock `fs`. E2E tests do not sleep and do not branch on visibility.
 
-### Pre-commit Hooks
+## Pull requests
 
-We use Husky to run lint-staged on commit. This automatically:
-- Runs ESLint on staged `.ts` and `.js` files
-- Formats code with Prettier
+Keep them small. `npm run check` and `npm run test:e2e` must pass (CI runs both on Windows). Say what you tested and, for anything on screen, attach the screenshot the scenario run produced.
 
-If a commit fails, fix the issues and try again.
+## Reporting a problem
 
-## Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-```
-
-### Writing Tests
-
-- Place unit tests in `__tests__/unit/`
-- Place integration tests in `__tests__/integration/`
-- Place E2E tests in `__tests__/e2e/`
-- Name test files as `*.test.ts` or `*.spec.ts`
-
-### Test Guidelines
-
-1. **Mock external dependencies** - Use Jest mocks for `node-hid`, `electron`, file system
-2. **Test behavior, not implementation** - Focus on what the code does, not how
-3. **One assertion per test** (when practical) - Makes failures easier to diagnose
-4. **Use descriptive test names** - `it('should return empty array when no devices connected')`
-
-## Pull Request Process
-
-1. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make your changes**
-   - Write tests for new functionality
-   - Update documentation if needed
-   - Ensure all tests pass
-
-3. **Commit your changes**
-   ```bash
-   git add .
-   git commit -m "feat: add your feature description"
-   ```
-
-   We follow [Conventional Commits](https://www.conventionalcommits.org/):
-   - `feat:` - New feature
-   - `fix:` - Bug fix
-   - `docs:` - Documentation changes
-   - `test:` - Adding or updating tests
-   - `refactor:` - Code refactoring
-   - `chore:` - Maintenance tasks
-
-4. **Push and create PR**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-   Then create a Pull Request on GitHub.
-
-5. **PR Requirements**
-   - All tests pass
-   - No linting errors
-   - Code is formatted
-   - Description explains the changes
-   - Screenshots for UI changes
-
-## Project Architecture
-
-### Main Process (`src/main/`)
-
-The Electron main process handles:
-- Device communication (HID, DirectInput)
-- File system operations
-- System integration (displays, processes)
-
-Key files:
-- `main.ts` - App entry point and IPC handlers
-- `preload.ts` - Bridge between main and renderer
-- `devices/*.ts` - Device management modules
-
-### Renderer Process (`src/renderer/`)
-
-The UI runs in a Chromium renderer:
-- `index.html` - Main HTML structure
-- `renderer.js` - UI logic and state management
-- `styles.css` - Styling
-
-### Shared Types (`src/shared/`)
-
-Types used by both processes (when converting to TypeScript):
-- Device interfaces
-- IPC message types
-- Configuration schemas
-
-## Adding New Features
-
-### Adding a New IPC Handler
-
-1. Add handler in `src/main/main.ts`:
-   ```typescript
-   ipcMain.handle('feature:action', async (_, arg) => {
-     return someService.doAction(arg);
-   });
-   ```
-
-2. Expose in `src/main/preload.ts`:
-   ```typescript
-   feature: {
-     action: (arg: string) => ipcRenderer.invoke('feature:action', arg),
-   }
-   ```
-
-3. Use in renderer:
-   ```javascript
-   const result = await window.rigReady.feature.action('value');
-   ```
-
-### Adding a New Device Manager
-
-1. Create `src/main/devices/yourManager.ts`
-2. Follow the pattern of existing managers
-3. Add IPC handlers in `main.ts`
-4. Expose API in `preload.ts`
-5. Write unit tests in `__tests__/unit/yourManager.test.ts`
-
-## Questions?
-
-- Open an issue for bugs or feature requests
-- Start a discussion for questions
+Open an issue at <https://github.com/MCheli/rigready/issues> with what you did, what you expected, what happened, and the log from `%USERPROFILE%\.rigready\logs\rigready.log`. Remove anything personal first.

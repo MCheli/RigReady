@@ -6,6 +6,7 @@ Windows desktop app that verifies a flight/racing sim rig is ready, fixes what i
 
 - `docs/PRODUCT.md` — what the product is. Source of truth.
 - `docs/ARCHITECTURE.md` — binding structure, ports, feature folders, test harness, safety rules.
+- `docs/CONTRIBUTING-FEATURES.md` — how to add a feature without touching shared code, and the inventory of what the shared foundation provides (ports, fakes, scenario mutations, e2e harness, the recorded rig). Read it before writing any feature code.
 - `docs/requirements/ledger.yaml` — every requirement, its acceptance criteria, status and evidence.
 - `docs/research/` — findings on game file formats and hardware.
 - `docs/archive/` — the early-2026 documents. Background only; not binding.
@@ -17,6 +18,7 @@ Windows desktop app that verifies a flight/racing sim rig is ready, fixes what i
 - Nothing outside RigReady's data folder is written without going through `FileStore` (automatic backup first).
 - Never build shell command strings from data. `Shell.run(exe, args[])` only.
 - Stay inside your feature folder; shared changes go through `src/core` or `src/shared` deliberately.
+- Only `src/platform` imports `fs`, `child_process` or `koffi`; everything else uses the ports.
 - `npm run check` must pass before every commit.
 
 ## This machine
