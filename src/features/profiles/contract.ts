@@ -47,7 +47,7 @@ export type CheckTypeInfo = z.infer<typeof CheckTypeInfoSchema>;
 export const RemediationTypeInfoSchema = z.object({
   type: z.string(),
   label: z.string(),
-  kind: z.enum(['action', 'instructions']),
+  kind: z.enum(['action', 'instructions', 'navigate']),
   order: z.number(),
   schema: JsonSchema,
   /** Label of the editor's helper action ("Keep a copy of the file as it is now"). */

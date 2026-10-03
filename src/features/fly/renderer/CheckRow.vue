@@ -54,7 +54,10 @@ const checkedAt = computed(() => {
 
 const failing = computed(() => props.result && props.result.status !== 'pass');
 const canFix = computed(
-  () => failing.value && props.result?.fix && props.result.fixKind === 'action'
+  () =>
+    failing.value &&
+    props.result?.fix &&
+    (props.result.fixKind === 'action' || props.result.fixKind === 'navigate')
 );
 const hasInstructions = computed(
   () => failing.value && props.result?.fixKind === 'instructions' && props.result.instructions

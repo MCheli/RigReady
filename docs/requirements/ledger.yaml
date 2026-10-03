@@ -1641,8 +1641,11 @@ requirements:
       - "Every file in fixture Config/Input/*/{joystick,keyboard,mouse,trackir,headtracker}/*.diff.lua parses into a model of axisDiffs and keyDiffs with added/removed entries, keys, reformers and axis filters."
       - "File names '<Device Name> {GUID}.diff.lua' are split into device name and GUID, including names with leading spaces or braces in the name (unit tests)."
       - "A malformed file is reported with path and line and does not stop other files from loading."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/bindings.test.ts#parses every diff file of the recorded rig and of the older backup into added, removed and changed entries"
+      - "src/features/dcs-bindings/core/bindings.test.ts#splits file names into device name and GUID, also with spaces and braces in the name"
+      - "src/features/dcs-bindings/core/bindings.test.ts#reports a malformed file with its path and line and still loads the others"
 
   - id: BIND-DCS-002
     title: Load DCS default input definitions
@@ -1653,8 +1656,11 @@ requirements:
       - "For an aircraft, the install's default input files (Mods/aircraft/<module>/Input/<aircraft>/joystick/default.lua, keyboard/default.lua and any per-device <Device Name>.lua) are loaded to get every command with its id, name and category."
       - "Command definitions that use Lua code DCS evaluates (e.g. join(), loops in default.lua) are handled by a restricted evaluator or a documented fallback; unsupported constructs are reported, not silently skipped."
       - "For F/A-18C and UH-1H the loader yields the full command list (count asserted against a recorded fixture of the install's input files)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/bindings.test.ts#loads the full F/A-18C and UH-1H command lists from the install, names and categories included"
+      - "src/features/dcs-bindings/core/bindings.test.ts#a file DCS evaluates with code that is missing or broken is reported, not skipped silently"
+      - "src/features/dcs-bindings/core/units.test.ts#discovers the recorded install, and says so when DCS is not on the PC"
 
   - id: BIND-DCS-003
     title: Effective bindings = defaults plus diff
@@ -1665,8 +1671,11 @@ requirements:
       - "For each aircraft and device, effective bindings are computed as the defaults that apply to that device plus 'added' minus 'removed' from its diff file."
       - "A device with no diff file shows the full default set (this is why every new device gets pitch and roll)."
       - "Unit test: fixture TPR diff that removes default JOY_X pitch results in no pitch on the TPR."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/bindings.test.ts#are the defaults that apply to the device plus added minus removed from its diff"
+      - "src/features/dcs-bindings/core/bindings.test.ts#a device with no diff file gets the full default set: this is why every new device has pitch and roll"
+      - "src/features/dcs-bindings/core/units.test.ts#keeps a default that the diff gives to another action without taking it away here"
 
   - id: BIND-DCS-004
     title: Per-device binding view
@@ -1677,8 +1686,12 @@ requirements:
       - "Choosing an aircraft and a device lists every input on that device (buttons, axes, hats) with its bound action(s), plain-language label, and whether it comes from defaults or user changes."
       - "Devices are matched to connected hardware by GUID and shown with the friendly name (DEV-003); diff files for devices not connected are listed separately."
       - "Screenshot artifacts/screens/bindings-device/ for F/A-18C + UFC1+HUD1 from fixture mark-flight."
-    status: todo
-    evidence: []
+    status: in_progress
+    evidence:
+      - "src/features/dcs-bindings/core/bindings.test.ts#matches files to attached devices by GUID and lists files of devices that are not attached separately"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: every control of a device and what it does (UFC1 + HUD1)"
+      - "artifacts/screens/bindings-device/01-ufc.png"
+      - "artifacts/screens/bindings-device/03-stick.png"
 
   - id: BIND-DCS-005
     title: Per-aircraft binding view
@@ -1688,8 +1701,13 @@ requirements:
     done_means:
       - "Choosing an aircraft lists every command by category with the inputs bound to it on every device, searchable by action name and filterable to 'bound only' or 'unbound only'."
       - "Summary shows total bindings per device and counts of duplicates in both senses."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/hornet.test.ts#every bound action has its name from DCS, and the known bindings are there"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: overview of an aircraft, per device and per action"
+      - "artifacts/screens/bindings-overview/01-overview.png"
+      - "artifacts/screens/bindings-overview/02-actions-search.png"
+      - "artifacts/screens/bindings-overview/03-actions-unbound.png"
 
   - id: BIND-DCS-006
     title: Edit a button binding
@@ -1700,8 +1718,15 @@ requirements:
       - "On a device's view the user can bind an action to an input by pressing the input (listening via InputProvider) or picking it from a list, with optional modifiers (reformers)."
       - "Removing a binding on an input that came from defaults writes a 'removed' entry; removing a user-added binding deletes its 'added' entry."
       - "Changes are staged and listed, then written together on Save (BIND-DCS-008)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/edits.test.ts#removing a user binding deletes its added entry; removing a default writes a removed entry"
+      - "src/features/dcs-bindings/core/edits.test.ts#binding an input moves it: added on the new action and removed from the default it had"
+      - "src/features/dcs-bindings/core/units.test.ts#reports new presses, hat directions and axes that travel from where they rested"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: edit by pressing the control, stage, review, save and undo"
+      - "artifacts/screens/bindings-edit/01-press-the-control.png"
+      - "artifacts/screens/bindings-edit/02-bind-dialog.png"
+      - "artifacts/screens/bindings-edit/03-staged.png"
 
   - id: BIND-DCS-007
     title: Edit an axis binding and its filter
@@ -1712,8 +1737,14 @@ requirements:
       - "An axis action can be bound to a device axis with deadzone, saturation X/Y, curvature, invert and slider settings."
       - "A preview curve reflects the filter values."
       - "Round-trip test: setting curvature 0.15 and invert on fixture pitch produces the same filter table DCS writes."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/edits.test.ts#setting curvature 0.15 and invert on pitch produces the filter table DCS writes"
+      - "src/features/dcs-bindings/core/edits.test.ts#binds an axis with deadzone, saturation, curve, invert and slider, and changes it later"
+      - "src/features/dcs-bindings/core/curve.test.ts#reflects deadzone, saturation, curvature, invert and slider"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: an axis with curve, deadzone, saturation, invert and slider"
+      - "artifacts/screens/bindings-axis/01-curve.png"
+      - "artifacts/screens/bindings-axis/02-axis-by-moving.png"
 
   - id: BIND-DCS-008
     title: Write .diff.lua files DCS accepts
@@ -1725,8 +1756,16 @@ requirements:
       - "Parse-then-write of every fixture diff file without edits yields an equivalent model (round-trip test across the whole fixture)."
       - "Manual rig verification recorded once: a binding edited in RigReady appears in DCS's controls screen for F/A-18C (screenshot from DCS stored as evidence)."
       - "Saving is refused while DCS.exe is running, with an explanation that DCS may overwrite bindings."
-    status: todo
-    evidence: []
+    status: in_progress
+    evidence:
+      - "src/features/dcs-bindings/core/edits.test.ts#goes through FileStore with a backup and a readable journal entry, and can be undone"
+      - "src/features/dcs-bindings/core/edits.test.ts#is refused while DCS is running, with the reason, and nothing is written"
+      - "src/features/dcs-bindings/core/edits.test.ts#creates the file when a device has none, starting from the template DCS ships for it"
+      - "src/features/dcs-bindings/core/bindings.test.ts#parses every diff file of the recorded rig and of the older backup into added, removed and changed entries"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: edit by pressing the control, stage, review, save and undo"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: nothing is saved while DCS is running"
+      - "artifacts/screens/bindings-edit/04-review.png"
+      - "artifacts/screens/bindings-dcs-running/01-blocked.png"
 
   - id: BIND-DCS-009
     title: Modifiers awareness
@@ -1736,8 +1775,12 @@ requirements:
     done_means:
       - "modifiers.lua per aircraft is read; bindings using a device-button modifier show the modifier's friendly name and device."
       - "A modifier referencing a device GUID that is not connected is flagged and included in GUID migration (BIND-DCS-016)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/migration.test.ts#flags a modifier that is a button on a device id that is not attached"
+      - "src/features/dcs-bindings/core/migration.test.ts#renames every file in every aircraft folder and rewrites the ids in modifiers, disabled and wizard files, as one undoable change"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: Windows changed the device IDs; move the bindings back, and undo"
+      - "artifacts/screens/bindings-migration/04-modifier-on-old-id.png"
 
   - id: BIND-DCS-010
     title: Duplicates — one input bound to many actions
@@ -1748,8 +1791,12 @@ requirements:
       - "For an aircraft, the duplicates view lists every device input (same key and same reformers) bound to more than one action, with each action shown."
       - "Fixture mark-flight F/A-18C with a known MFD brightness knob also bound to pitch is reported."
       - "Bindings that differ only by modifier are not reported as duplicates."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/problems.test.ts#reports an MFD brightness knob that is also bound to pitch, and not bindings that differ by modifier"
+      - "tests/e2e/dcs-bindings-conflict.e2e.ts#bindings: an MFD knob that is also bound to pitch is reported and fixed"
+      - "artifacts/screens/bindings-conflict/02-conflict.png"
+      - "artifacts/screens/bindings-conflict/03-fix-preview.png"
 
   - id: BIND-DCS-011
     title: Duplicates — one action bound to many inputs
@@ -1760,8 +1807,13 @@ requirements:
       - "The duplicates view lists every action bound on more than one device or input, e.g. 'Pitch' on the joystick Y axis and on the throttle, ICP and MFD panels."
       - "Each occurrence has a Clear control; 'Keep only this one' clears the others for that action in one staged change."
       - "Intentional multiples can be marked 'expected' per aircraft and are then hidden from the count."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/problems.test.ts#lists pitch on the stick and on other devices, clears the others in one change, and hides what is marked expected"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: problems found and fixed with a preview"
+      - "artifacts/screens/bindings-problems/01-problems.png"
+      - "artifacts/screens/bindings-problems/03-after-fixes.png"
+      - "artifacts/screens/bindings-conflict/02-conflict.png"
 
   - id: BIND-DCS-012
     title: Find default bindings DCS applied to every device
@@ -1772,8 +1824,13 @@ requirements:
       - "Using the install's default input files, RigReady lists, per aircraft, the default bindings that are active on devices that are not meant for them (e.g. pitch/roll/thrust axes on MFD panels, UFC, startup panel, pedals' non-rudder axes)."
       - "The user can mark each device's role (stick, throttle, pedals, panel, MFD bezel) and the list is computed from roles; default role suggestions come from device names and are editable."
       - "Fixture: a fresh diff-less WinWing ICP for F/A-18C shows its default pitch and roll axes in the list."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/problems.test.ts#suggests a role from the device name, and the user can change it"
+      - "src/features/dcs-bindings/core/problems.test.ts#a fresh WinWing ICP without a file shows its default pitch and roll when DCS does not list it as a panel"
+      - "src/features/dcs-bindings/core/problems.test.ts#pedals keep rudder and brakes; their other axes are flagged"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: problems found and fixed with a preview"
+      - "artifacts/screens/bindings-problems/01-problems.png"
 
   - id: BIND-DCS-013
     title: Clean up unwanted default bindings
@@ -1784,8 +1841,12 @@ requirements:
       - "'Clean up' writes 'removed' entries for every selected default binding into the right device's diff file, creating the file if missing, after a preview and with backup."
       - "Cleanup can be applied to one aircraft or to all installed aircraft at once."
       - "After cleanup on the fixture, BIND-DCS-011 reports no default axis duplicates on panel devices."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/edits.test.ts#writes removed entries into the right files for one aircraft or for all, creating files where missing"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: problems found and fixed with a preview"
+      - "artifacts/screens/bindings-problems/02-cleanup-preview.png"
+      - "artifacts/screens/bindings-problems/05-cleanup-all-preview.png"
 
   - id: BIND-DCS-014
     title: Clear a device
@@ -1795,8 +1856,12 @@ requirements:
     done_means:
       - "'Clear all on this device' for an aircraft produces a diff that removes every default and every added binding on that device, after a confirmation stating the count."
       - "The change is undoable through the journal (BACKUP-013)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/edits.test.ts#removes every default and every added binding, and the journal can undo it"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: clear a whole device, with the count stated first"
+      - "artifacts/screens/bindings-clear-device/01-confirm.png"
+      - "artifacts/screens/bindings-clear-device/02-cleared.png"
 
   - id: BIND-DCS-015
     title: Detect device GUID changes
@@ -1807,8 +1872,14 @@ requirements:
       - "RigReady compares diff file GUIDs per aircraft with the DirectInput GUIDs of connected devices and lists files whose device name matches a connected device but whose GUID does not ('orphaned bindings')."
       - "Fixture recreating the owner's 2026-02 situation (backup GUIDs 4F6FD890-..., current 806DDF00-...) lists all ten affected devices with old and new GUIDs."
       - "A Fly check (optional by default) warns 'Bindings for WINWING UFC1 + HUD1 belong to an old device ID' when this is detected for the profile's aircraft."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/migration.test.ts#lists all ten devices of the owner's older backup with their old and new ids"
+      - "src/features/dcs-bindings/core/migration.test.ts#finds nothing on the rig as recorded, and does not call an unplugged device a changed id"
+      - "src/features/dcs-bindings/core/check.test.ts#warns that bindings belong to an old device ID, and its fix opens the Device IDs screen"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: Windows changed the device IDs; move the bindings back, and undo"
+      - "artifacts/screens/bindings-migration/01-fly-warning.png"
+      - "artifacts/screens/bindings-migration/02-device-ids.png"
 
   - id: BIND-DCS-016
     title: Migrate bindings to new device GUIDs
@@ -1819,8 +1890,14 @@ requirements:
       - "Migration renames each orphaned diff file to the new GUID for every aircraft folder and updates GUID references in modifiers.lua, with a preview of every rename and backup first."
       - "If a file for the new GUID already exists, the user chooses keep existing, replace, or merge (orphaned bindings added where not conflicting)."
       - "After migration on the fixture, the per-device view shows the restored bindings on the connected devices."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/migration.test.ts#renames every file in every aircraft folder and rewrites the ids in modifiers, disabled and wizard files, as one undoable change"
+      - "src/features/dcs-bindings/core/migration.test.ts#when a file for the new id already exists the user chooses keep, replace or merge"
+      - "src/features/dcs-bindings/core/migration.test.ts#refuses while DCS is running, and refuses a target that is not that kind of device"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: Windows changed the device IDs; move the bindings back, and undo"
+      - "artifacts/screens/bindings-migration/06-preview.png"
+      - "artifacts/screens/bindings-migration/08-overview-after.png"
 
   - id: BIND-DCS-017
     title: GUID migration for identical devices
@@ -1830,8 +1907,12 @@ requirements:
     done_means:
       - "When several orphaned files share a device name (MFD1 left, centre, right all named 'WINWING MFD1'), RigReady does not guess; it asks the user to press a button on the physical device intended for each old file."
       - "Scenario with three identical MFD panels and fake InputProvider presses assigns each old file to the pressed device's GUID."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/migration.test.ts#never guesses between three identical MFD panels: each old file goes to the device whose button was pressed"
+      - "src/features/dcs-bindings/core/migration.test.ts#two old ids for one device are not both moved onto it without the user choosing"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: Windows changed the device IDs; move the bindings back, and undo"
+      - "artifacts/screens/bindings-migration/05-press-a-button-on-it.png"
 
   - id: BIND-DCS-018
     title: Copy common controls between aircraft
@@ -1842,8 +1923,13 @@ requirements:
       - "The user chooses a source aircraft, target aircraft, and devices; RigReady proposes copies for actions that exist in both (matched by command id, then by normalised name for common controls such as pitch, roll, trim, view, comms, zoom)."
       - "The preview shows each proposed copy, actions with no match in the target, and target inputs that would be overwritten; the user ticks what to apply."
       - "Copying F/A-18C stick/throttle common controls to UH-1H produces bindings for trim, view center and zoom on the same inputs (fixture test)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/copy.test.ts#proposes F/A-18C stick and throttle controls for the UH-1H, and the ticked ones are bound on the same inputs"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: copy common controls from the F/A-18C to the UH-1H"
+      - "artifacts/screens/bindings-copy/01-proposals.png"
+      - "artifacts/screens/bindings-copy/02-preview.png"
+      - "artifacts/screens/bindings-copy/03-huey-throttle.png"
 
   - id: BIND-DCS-019
     title: Important but unbound
@@ -1855,8 +1941,13 @@ requirements:
       - "For other aircraft a generic tier list (flight axes, trim, view, comms, wheel brakes, gear, flaps) is used."
       - "Fixture F/A-18C with no Sensor Control binding shows 'Sensor Control Switch' in the top tier."
       - "Works without an Anthropic key (AI-001)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/problems.test.ts#every curated item matches a real action of its aircraft"
+      - "src/features/dcs-bindings/core/problems.test.ts#F/A-18C without a Sensor Control binding shows Sensor Control Switch in the top tier"
+      - "src/features/dcs-bindings/core/problems.test.ts#uses a generic list for aircraft without a curated one"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: problems found and fixed with a preview"
+      - "artifacts/screens/bindings-problems/04-huey-problems.png"
 
   - id: BIND-DCS-020
     title: Named binding snapshots
@@ -1866,8 +1957,11 @@ requirements:
     done_means:
       - "'Snapshot' copies the Input folder for chosen aircraft (or all) plus modifiers into {RIGREADY_HOME}/snapshots/dcs/<name>/ with metadata (date, DCS version, device names and GUIDs)."
       - "Snapshots are listed with name, date, aircraft and size, and can be renamed and deleted."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/snapshots.test.ts#copies the chosen aircraft into RigReady with date, DCS version and device ids; lists, renames and deletes"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: snapshots, compare with now, and restore"
+      - "artifacts/screens/bindings-snapshots/01-compare.png"
 
   - id: BIND-DCS-021
     title: Restore a binding snapshot
@@ -1877,8 +1971,13 @@ requirements:
     done_means:
       - "Restoring a snapshot previews files to be written; if snapshot GUIDs differ from connected devices, the restore offers GUID migration (BIND-DCS-016) instead of writing orphaned files."
       - "Restore uses FileStore with backup, and the per-device view matches the snapshot afterwards (fixture test)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/snapshots.test.ts#restores a snapshot through a preview and FileStore, and the per-device view matches it afterwards"
+      - "src/features/dcs-bindings/core/snapshots.test.ts#a snapshot made under old device ids is restored under the attached devices ids instead of as orphaned files"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: snapshots, compare with now, and restore"
+      - "artifacts/screens/bindings-snapshots/02-restore-dialog.png"
+      - "artifacts/screens/bindings-snapshots/03-restore-preview.png"
 
   - id: BIND-DCS-022
     title: Compare two binding snapshots
@@ -1887,8 +1986,12 @@ requirements:
     priority: p3
     done_means:
       - "Two snapshots (or a snapshot and current) can be compared per aircraft and device, listing added, removed and changed bindings."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/snapshots.test.ts#compares two snapshots"
+      - "src/features/dcs-bindings/core/snapshots.test.ts#restores a snapshot through a preview and FileStore, and the per-device view matches it afterwards"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: snapshots, compare with now, and restore"
+      - "artifacts/screens/bindings-snapshots/01-compare.png"
 
   - id: BIND-DCS-023
     title: F/A-18C end-to-end binding coverage
@@ -1898,8 +2001,11 @@ requirements:
     done_means:
       - "Using the sanitised copy of the owner's FA-18C_hornet Input folder, every BIND-DCS view loads with names for all bound commands (no raw ids shown where the default files define a name)."
       - "The fixture's known bindings from docs/archive/dcs-setup-requirements.md (UFC keypad, MFD 20 OSBs, split throttle, TPR rudder and toe brakes) are asserted present."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/hornet.test.ts#every bound action has its name from DCS, and the known bindings are there"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: every control of a device and what it does (UFC1 + HUD1)"
+      - "artifacts/screens/bindings-device/01-ufc.png"
 
   - id: BIND-DCS-024
     title: UH-1H binding coverage
@@ -1909,8 +2015,14 @@ requirements:
     done_means:
       - "With a UH-1H fixture, views, duplicates, default cleanup and important-but-unbound work, including collective and cyclic axis naming."
       - "A UH-1H curated priority list exists (BIND-DCS-019)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/problems.test.ts#names cyclic and collective, finds the defaults DCS puts on every device, and lists what matters"
+      - "src/features/dcs-bindings/core/problems.test.ts#every curated item matches a real action of its aircraft"
+      - "src/features/dcs-bindings/core/edits.test.ts#writes removed entries into the right files for one aircraft or for all, creating files where missing"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: problems found and fixed with a preview"
+      - "artifacts/screens/bindings-overview/04-overview-huey.png"
+      - "artifacts/screens/bindings-problems/04-huey-problems.png"
 
   # ---------------------------------------------------------------------------
   # CHEAT SHEETS

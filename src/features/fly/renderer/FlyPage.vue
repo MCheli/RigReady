@@ -523,6 +523,15 @@ onBeforeUnmount(() => {
                 <SafeMarkdown :source="need.instructions" />
               </div>
             </div>
+            <v-btn
+              v-if="need.open"
+              size="small"
+              variant="tonal"
+              data-testid="needs-you-open"
+              @click="fly.fix(need.itemId)"
+            >
+              {{ need.open }}
+            </v-btn>
           </div>
         </template>
       </div>

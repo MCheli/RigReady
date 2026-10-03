@@ -34,8 +34,11 @@ export const CheckResultSchema = z.object({
   details: z.array(z.string()),
   /** What the fix does ("Start TrackIR5.exe"). Absent when there is no usable fix. */
   fix: z.string().optional(),
-  /** "action": Make ready runs it. "instructions": it only says what to do. */
-  fixKind: z.enum(['action', 'instructions']).optional(),
+  /**
+   * "action": Make ready runs it. "instructions": it only says what to do. "navigate": it
+   * opens the screen where the user makes the change.
+   */
+  fixKind: z.enum(['action', 'instructions', 'navigate']).optional(),
   /** For an instructions fix: the text to show (Markdown subset). */
   instructions: z.string().optional(),
   /** Set when the fix runs a program the user must confirm first. */
@@ -83,6 +86,8 @@ export const NeedsYouSchema = z.object({
   summary: z.string(),
   /** What to do, when the item has instructions. */
   instructions: z.string().optional(),
+  /** The item's own button ("Open Bindings → Device IDs ..."), when its fix opens a screen. */
+  open: z.string().optional(),
 });
 export type NeedsYou = z.infer<typeof NeedsYouSchema>;
 
@@ -424,6 +429,9 @@ export async function fixItem(
     step = await runRemediation(item, definition, ctx, options);
   }
   const result = await runCheckItem(item, registry, ctx, options);
+  // A fix that opens a screen has done its part when the screen is open: the check
+  // changes only once the user has finished there.
+  if (definition?.kind === 'navigate') return { step, result };
   return { step: verify(step, result), result };
 }
 
@@ -456,6 +464,7 @@ function needsYouOf(profile: Profile, report: ChecklistReport, steps: StepResult
       title: r.title,
       summary: r.summary,
       ...(r.instructions ? { instructions: r.instructions } : {}),
+      ...(r.fixKind === 'navigate' && r.fix ? { open: r.fix } : {}),
     }));
 }
 

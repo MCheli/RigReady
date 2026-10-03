@@ -111,9 +111,14 @@ export interface RemediationDefinition<P = unknown> {
   run(params: P, ctx: CheckContext): Promise<Result<string>>;
   /**
    * "instructions": the fix only tells the user what to do. Make ready never runs it and
-   * never reports it as fixed; it lists it under "Needs you". Default "action".
+   * never reports it as fixed; it lists it under "Needs you".
+   * "navigate": the fix opens a screen where the user reviews and applies the change (a
+   * previewed flow). Its button works on the item, the check is expected to stay as it is
+   * until the user finishes there, and Make ready lists it under "Needs you" instead of
+   * leaving the Fly screen in the middle of its run.
+   * Default "action".
    */
-  kind?: 'action' | 'instructions';
+  kind?: 'action' | 'instructions' | 'navigate';
   /** For kind "instructions": the text (Markdown subset) shown next to the item. */
   instructions?(params: P): string;
   /**

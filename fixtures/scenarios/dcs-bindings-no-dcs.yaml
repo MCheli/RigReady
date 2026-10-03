@@ -1,0 +1,6 @@
+description: DCS bindings on a PC without DCS
+rig: mark-full
+extends: flying-fresh.yaml
+mutations:
+  - { op: removeFile, path: "Saved Games/DCS" }
+  - { op: removeFile, path: "Program Files (x86)/Steam/steamapps/common/DCSWorld" }
