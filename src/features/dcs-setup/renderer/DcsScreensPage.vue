@@ -252,22 +252,31 @@ function removeAircraft(index: number): void {
 
 // The server preview says what writing would change on disk; it follows every edit.
 let timer: ReturnType<typeof setTimeout> | undefined;
+/** True from an edit until the preview for it has arrived: the button must not act on an old one. */
+const previewPending = ref(true);
 watch(
   [setup, setResolution],
   () => {
+    previewPending.value = true;
     clearTimeout(timer);
     timer = setTimeout(() => void refreshPreview(), 200);
   },
   { deep: true }
 );
 
+/** Only the answer to the latest request is shown; an older one arriving late is dropped. */
+let previewRequest = 0;
 async function refreshPreview(): Promise<void> {
   if (!setup.value) return;
+  const request = ++previewRequest;
   const result = await api.previewScreens({
     setup: setup.value,
     setResolution: setResolution.value,
   });
+  if (request !== previewRequest) return;
+  previewPending.value = false;
   if (result.ok) preview.value = result.value;
+  else error.value = errorText(result.error);
 }
 
 async function apply(overwriteEdited = false): Promise<void> {
@@ -299,7 +308,7 @@ async function apply(overwriteEdited = false): Promise<void> {
 }
 
 const blocked = computed(() => {
-  if (!preview.value) return 'Checking…';
+  if (!preview.value || previewPending.value) return 'Checking…';
   if (preview.value.dcsRunning) return 'Close DCS first: it rewrites options.lua when it exits.';
   if (preview.value.errors.length) return 'Fix the problems above first.';
   return undefined;

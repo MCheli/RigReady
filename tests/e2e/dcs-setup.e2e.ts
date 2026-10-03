@@ -158,6 +158,31 @@ test('dcs-setup: screens are imported from SimAppPro, written as RigReady.lua an
   expect(
     await fs.readFile(dcsFile(home, 'Config', 'MonitorSetup', 'RigReady.lua'), 'utf8')
   ).toContain('x = 6664;');
+
+  // Drag the AMPCD onto the ultrawide: it moves there, and RigReady points out it covers the main view.
+  const ampcd = page.locator('[data-testid="screen-map-box"][data-name="CENTER_MFCD"]');
+  await expect(page.getByTestId('screens-overwrite')).toHaveCount(0);
+  await expect(page.locator('.v-overlay__scrim')).toHaveCount(0);
+  await page.getByTestId('screen-map').scrollIntoViewIfNeeded();
+  const from = (await ampcd.boundingBox())!;
+  const ultrawide = (await page
+    .locator('[data-testid="screen-map-display"][data-name="LC49G95T"]')
+    .boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(ultrawide.x + ultrawide.width / 2, ultrawide.y + ultrawide.height / 2, {
+    steps: 8,
+  });
+  await page.mouse.up();
+  await expect(page.getByTestId('screens-monitor-CENTER_MFCD')).toContainText('LC49G95T');
+  await expect(page.getByTestId('screens-warnings')).toContainText(
+    'AMPCD is drawn over the main view on LC49G95T'
+  );
+  // What writing would do follows the edit: the file changes and the window shrinks.
+  await expect(page.getByTestId('screens-changes')).toContainText('Update');
+  await expect(page.getByTestId('screens-changes')).toContainText('width 7424 → 6656');
+  await expect(page.getByTestId('screens-apply')).toHaveText('Use in DCS');
+  await shot('moved-to-main');
 });
 
 test('dcs-setup: Export.lua gets the DCS-ExportScript line the Stream Deck plugin needs; a rewrite is noticed and put right', async ({
