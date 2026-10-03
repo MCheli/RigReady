@@ -90,6 +90,44 @@ function pickDevice(device: Pickers['devices'][number]): void {
   });
 }
 
+const waiting = ref(false);
+const pressed = ref<{ ok: boolean; message: string }>();
+
+/** "Press a button on it": the device is found by the button pressed on it. */
+async function pressButton(): Promise<void> {
+  waiting.value = true;
+  pressed.value = undefined;
+  const result = await api.waitForPress({ timeoutSeconds: 15 });
+  waiting.value = false;
+  if (!result.ok) {
+    pressed.value = { ok: false, message: errorText(result.error) };
+    return;
+  }
+  const found = result.value.device;
+  if (!found) {
+    pressed.value = { ok: false, message: 'Nothing was pressed in 15 seconds. Try again.' };
+    return;
+  }
+  const match = props.pickers?.devices.find(
+    (d) => d.vendorId === found.vendorId && d.productId === found.productId
+  );
+  if (match) {
+    pickDevice(match);
+    pressed.value = { ok: true, message: `Found ${match.name}` };
+  } else if (found.vendorId) {
+    update({
+      title: props.item.title === 'New check' ? found.name : props.item.title,
+      params: { vendorId: found.vendorId, productId: found.productId },
+    });
+    pressed.value = { ok: true, message: `Found ${found.name}` };
+  } else {
+    pressed.value = {
+      ok: false,
+      message: `${found.name} does not say its vendor and product id; pick it from the list instead.`,
+    };
+  }
+}
+
 function pickProcess(process: Pickers['processes'][number]): void {
   update({
     title:
@@ -220,6 +258,27 @@ function pickService(service: Pickers['services'][number]): void {
               />
             </v-list>
           </v-menu>
+          <template v-if="item.type === 'device.connected'">
+            <v-btn
+              size="small"
+              variant="tonal"
+              prepend-icon="mdi-gesture-tap-button"
+              :loading="waiting"
+              data-testid="press-button"
+              @click="pressButton"
+              >Press a button on it</v-btn
+            >
+            <span v-if="waiting" class="rr-row-sub item-press" data-testid="press-waiting"
+              >Press any button on the device now…</span
+            >
+            <span
+              v-else-if="pressed"
+              class="rr-row-sub item-press"
+              :class="pressed.ok ? 'rr-ok' : 'rr-warn'"
+              data-testid="press-result"
+              >{{ pressed.message }}</span
+            >
+          </template>
           <v-menu v-if="item.type === 'process.running'" max-height="360">
             <template #activator="{ props: menu }">
               <v-btn
@@ -354,6 +413,12 @@ function pickService(service: Pickers['services'][number]): void {
   display: flex;
   gap: 8px;
   margin: 4px 0 14px;
+}
+.item-pickers {
+  align-items: center;
+}
+.item-press {
+  margin-left: 4px;
 }
 .item-prepare {
   display: flex;

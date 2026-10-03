@@ -854,8 +854,16 @@ requirements:
       - "Each item's required flag and timeout are editable."
       - "Adding a device check offers 'pick from connected devices' and 'press a button on it' rather than typing VID/PID; typing is still allowed."
       - "E2E: edit the TrackIR item to optional, save, return to Fly mode with mutation trackir-not-running, and see a yellow item."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#names the device a button was pressed on; buttons already held do not count'
+      - 'src/features/profiles/core/profiles.test.ts#every field of every registered check and fix type has a control'
+      - 'tests/e2e/profiles.e2e.ts#setups: an item made optional is yellow on the Fly screen'
+      - 'tests/e2e/profiles.e2e.ts#setups: a device is added by pressing a button on it'
+      - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
+      - 'artifacts/screens/profile-edit-item/01-editing-trackir.png'
+      - 'artifacts/screens/profile-edit-item/02-yellow-on-fly.png'
+      - 'artifacts/screens/profile-press-button/02-found.png'
 
   - id: CFG-PROFILE-008
     title: Edit remediations and launch actions

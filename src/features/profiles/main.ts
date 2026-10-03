@@ -2,6 +2,7 @@ import { captureCandidates } from '../../core/checks/engine';
 import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { profilesContract } from './contract';
+import { waitForPress } from './core/identify';
 import {
   browse,
   cloneProfile,
@@ -50,6 +51,7 @@ export default defineFeatureMain({
         types: async () => ok(describeTypes(ctx)),
         pickers: () => pickers(ctx),
         games: async () => ok(await detectedGames(ctx)),
+        waitForPress: ({ timeoutSeconds }) => waitForPress(ctx.ports, timeoutSeconds * 1000),
         browse: ({ kind, title }) => browse(ctx, kind, title),
         prepareFix: ({ type, params }) => prepareFix(ctx, type, params),
         openFile: ({ id }) => openProfileFile(ctx, id, 'open'),

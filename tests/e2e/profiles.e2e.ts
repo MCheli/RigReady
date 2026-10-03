@@ -21,7 +21,10 @@ async function openEditor(page: Page, name: string): Promise<void> {
 }
 
 test('setups: an item made optional is yellow on the Fly screen', async ({ rig }) => {
-  const { page, shot } = await rig.launch('flying-trackir-not-running', 'profile-edit-item');
+  const { page, shot, dataRoot } = await rig.launch(
+    'flying-trackir-not-running',
+    'profile-edit-item'
+  );
   await expect(page.getByTestId('fly-status-title')).toHaveText('Not ready');
   await openEditor(page, 'DCS F/A-18C');
   const trackir = editRow(page, 'TrackIR5');
@@ -31,9 +34,13 @@ test('setups: an item made optional is yellow on the Fly screen', async ({ rig }
   );
   await expect(trackir.getByTestId('edit-fix-type')).toContainText('Start the app');
   await trackir.getByTestId('edit-optional').click();
+  // Up one: TrackIR now comes before the Stream Deck.
+  await trackir.getByTestId('edit-check-up').click();
   await shot('editing-trackir');
   await page.getByTestId('edit-save').click();
   await expect(page.getByTestId('profiles-page')).toBeVisible();
+  const yaml = await fs.readFile(path.join(dataRoot, 'profiles', 'dcs-f-a-18c.yaml'), 'utf8');
+  expect(yaml.indexOf('title: TrackIR5')).toBeLessThan(yaml.indexOf('title: Stream Deck XL'));
 
   await page.getByTestId('mode-fly').click();
   await expect(checkRow(page, 'TrackIR5')).toHaveAttribute('data-status', 'warn');
@@ -278,4 +285,32 @@ test('setups: choosing a detected game fills in what Launch starts, and the setu
   );
   await expect(page.getByTestId('launch')).toBeEnabled();
   await shot('on-fly');
+});
+
+test('setups: a device is added by pressing a button on it', async ({ rig }) => {
+  const { page, shot, sendInput } = await rig.launch('flying-all-good', 'profile-press-button');
+  await openEditor(page, 'DCS F/A-18C');
+  await page.getByTestId('edit-add-check').click();
+  await menuItem(page, 'Device connected').click();
+  const item = editRow(page, 'New check');
+  await item.getByTestId('press-button').click();
+  await expect(item.getByTestId('press-waiting')).toContainText(
+    'Press any button on the device now'
+  );
+  await shot('waiting');
+  await sendInput([
+    {
+      index: 1,
+      name: 'R-VPC Panel #1',
+      axes: [],
+      buttons: [false, false, true],
+      hats: [],
+      timestamp: 1,
+    },
+  ]);
+  const found = page.locator('[data-testid="edit-check"][data-type="device.connected"]').last();
+  await expect(found.getByTestId('press-result')).toContainText('Found');
+  await expect(found.getByTestId('edit-params-vendorId').locator('input')).toHaveValue('3344');
+  await expect(found.getByTestId('edit-params-productId').locator('input')).toHaveValue('C259');
+  await shot('found');
 });

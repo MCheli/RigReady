@@ -142,6 +142,15 @@ export const profilesContract = defineContract('profiles', {
   ),
   /** What is connected and running now, for "pick from this PC" in the editor. */
   pickers: channel(noInput, PickersSchema),
+  /** Waits for a button press on any game controller and names the device ("press a button on it"). */
+  waitForPress: channel(
+    z.object({ timeoutSeconds: z.number().int().min(1).max(60).default(15) }),
+    z.object({
+      device: z
+        .object({ name: z.string(), vendorId: z.string(), productId: z.string() })
+        .optional(),
+    })
+  ),
   /** Detected games and their installs, for the game choice and the launch target. */
   games: channel(noInput, z.array(DetectedGameSchema)),
   /** A file or folder picker; the answer uses path variables where one applies. */

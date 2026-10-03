@@ -10,6 +10,7 @@ import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { CheckTypeInfo, ProfileOverview, RemediationTypeInfo } from '../contract';
 import { fieldsOf } from '../renderer/schemaForm';
 import { isDuplicate, nextId, targetOf } from './duplicates';
+import { waitForPress } from './identify';
 
 let app: WiredApp;
 afterEach(() => app?.cleanup());
@@ -368,6 +369,40 @@ describe('the generic editor form', () => {
     for (const control of Object.values(CONTROLS)) {
       if (control.startsWith('edit-')) expect(sources, control).toContain(`"${control}`);
     }
+  });
+});
+
+describe('press a button on it', () => {
+  const state = (index: number, buttons: boolean[]) => ({
+    index,
+    name: 'x',
+    axes: [],
+    buttons,
+    hats: [],
+    timestamp: 1,
+  });
+
+  it('names the device a button was pressed on; buttons already held do not count', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    // The startup panel has a switch that stays on.
+    app.ports.input.emit([state(3, [false, true])]);
+    const pending = app.invoke('profiles:waitForPress', { timeoutSeconds: 5 });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    app.ports.input.emit([state(3, [false, true])]);
+    app.ports.input.emit([state(1, [false, false, true])]);
+    expect(await pending).toEqual({
+      device: { name: 'R-VPC Panel #1', vendorId: '3344', productId: 'C259' },
+    });
+  });
+
+  it('says nothing was pressed when time runs out, and passes a reader failure on', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    expect(await waitForPress(app.ports, 20)).toEqual({ ok: true, value: {} });
+    app.ports.input.start = async () => ({
+      ok: false,
+      error: { code: 'input.start', message: 'No reader.' },
+    });
+    expect(await waitForPress(app.ports, 20)).toMatchObject({ ok: false });
   });
 });
 
