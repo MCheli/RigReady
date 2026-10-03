@@ -1,0 +1,6 @@
+description: Devices - HidHide hides the TPR pedals from games
+rig: mark-full
+extends: flying-all-good.yaml
+mutations:
+  - op: hideDevice
+    match: { vendorId: 044F, productId: B68F }

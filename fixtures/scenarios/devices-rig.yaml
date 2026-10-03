@@ -1,0 +1,3 @@
+description: Devices - the full rig with the F/A-18C setup
+rig: mark-full
+extends: flying-all-good.yaml
