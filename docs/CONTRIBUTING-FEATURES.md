@@ -283,6 +283,7 @@ await rig.cleanup();                                 // in afterEach
 - `rig.home` is the fake user folder; every `ports.folders.*` path is under it, Program Files included. A scenario copies the rig's recorded files there (section 10). Copying all of them takes about a tenth of a second per test, so pass `files` with the globs you need (or `[]`) when a test does not need everything.
 - To make a provider fail, replace the method: `rig.ports.devices.list = async () => err('x', 'nope')`.
 - Do not mock `fs`. Test code may use `node:fs` to arrange and inspect the temp folder.
+- Temp folders (`rigready-test-*`, `rigready-e2e-*`, `rigready-scenario-*` in `%TEMP%`) are removed when a test ends; what a killed run leaves behind is cleared by the next run once it is an hour old.
 - Coverage thresholds (80% lines/functions/statements, 70% branches) apply to `src/core`, `src/shared`, `src/platform/fake`, `src/platform/node` and every feature's `core/`.
 
 ## 9. Scenarios

@@ -5,6 +5,7 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'tests/unit/**/*.test.ts', 'scripts/**/*.test.ts'],
     exclude: ['src/legacy/**', 'node_modules/**'],
     environment: 'node',
+    globalSetup: ['tests/cleanTemp.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],

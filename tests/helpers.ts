@@ -58,7 +58,13 @@ export async function scenarioRig(name: string, options: SeedOptions = {}): Prom
     fixturesDir
   );
   const rig = await rigFromState(loaded.state, loaded.scripts);
-  await seedScenario(loaded, rig.ports, options);
+  try {
+    await seedScenario(loaded, rig.ports, options);
+  } catch (e) {
+    // Do not leave the temp folder behind when the scenario cannot be set up.
+    await rig.cleanup();
+    throw e;
+  }
   return rig;
 }
 

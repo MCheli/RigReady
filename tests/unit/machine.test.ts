@@ -946,6 +946,8 @@ describe('seeding the fake home', () => {
         'something-else',
       ]);
       expect(await cleanupScenarioTemp(path.join(dir, 'missing'), now)).toEqual([]);
+      // The test harnesses also clear their own leftovers.
+      expect(await cleanupScenarioTemp(dir, now, 60 * 60 * 1000, ['something-'])).toEqual([other]);
     } finally {
       await cleanup();
     }

@@ -1001,13 +1001,15 @@ export async function applyLiveMutations(ports: FakePorts, mutations: Mutation[]
 }
 
 /**
- * Removes rigready-scenario-* folders that earlier runs left in the temp folder. Only
- * folders older than `olderThanMs` go, so a scenario that is running right now is safe.
+ * Removes rigready-scenario-* folders that earlier runs left in the temp folder (and,
+ * for the test harnesses, the rigready-e2e-* and rigready-test-* folders of runs that
+ * were killed). Only folders older than `olderThanMs` go, so a run in progress is safe.
  */
 export async function cleanupScenarioTemp(
   tempDir: string,
   now: number,
-  olderThanMs = 60 * 60 * 1000
+  olderThanMs = 60 * 60 * 1000,
+  prefixes: string[] = ['rigready-scenario-']
 ): Promise<string[]> {
   const removed: string[] = [];
   let names: string[];
@@ -1017,7 +1019,7 @@ export async function cleanupScenarioTemp(
     return removed;
   }
   for (const name of names) {
-    if (!name.startsWith('rigready-scenario-')) continue;
+    if (!prefixes.some((prefix) => name.startsWith(prefix))) continue;
     const full = path.join(tempDir, name);
     try {
       const stat = await fs.stat(full);
