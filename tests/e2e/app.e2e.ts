@@ -171,6 +171,18 @@ test('harness: live changes reach the screen, dialogs are scripted, HTML renders
   const tmp = await fs.readdir(path.join(run.dataRoot, 'tmp')).catch(() => []);
   expect(tmp).toEqual([]);
 
+  // The real Identify overlay: one label window per monitor, gone again after the time given.
+  const windowsBefore = run.app.windows().length;
+  await run.showLabels(
+    [
+      { x: 0, y: 0, width: 1280, height: 720, text: '1', caption: 'Main' },
+      { x: 100000, y: 0, width: 800, height: 600, text: '2' },
+    ],
+    700
+  );
+  expect(run.app.windows().length).toBe(windowsBefore + 2);
+  await expect.poll(() => run.app.windows().length, { timeout: 5000 }).toBe(windowsBefore);
+
   // The recorded rig's files are in the fake user folder, install files included.
   await expect(
     fs.access(

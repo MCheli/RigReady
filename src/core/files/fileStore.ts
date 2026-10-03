@@ -172,6 +172,16 @@ export class BackupFileStore implements FileStore {
     return this.write(to, bytes.value, options);
   }
 
+  async move(from: string, to: string, options: ChangeOptions): Promise<Result<ChangeGroup>> {
+    const group = options.group ?? this.beginGroup(options.reason);
+    if (path.resolve(from).toLowerCase() === path.resolve(to).toLowerCase()) return ok(group);
+    const copied = await this.copy(from, to, { reason: options.reason, group });
+    if (!copied.ok) return copied;
+    const removed = await this.remove(from, { reason: options.reason, group });
+    if (!removed.ok) return removed;
+    return ok(group);
+  }
+
   async copyTree(
     fromDir: string,
     toDir: string,

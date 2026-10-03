@@ -55,10 +55,18 @@ function describeFix(item: CheckItem, registry: CheckRegistry): string | undefin
   return params.success ? definition.describe(params.data) : undefined;
 }
 
+export interface RunOptions {
+  /** A check still running after this long is reported as not met ("Timed out"). Default: no limit. */
+  timeoutMs?: number;
+}
+
+const TIMED_OUT = Symbol('timed out');
+
 async function runOne(
   item: CheckItem,
   registry: CheckRegistry,
-  ctx: CheckContext
+  ctx: CheckContext,
+  options: RunOptions = {}
 ): Promise<CheckResult> {
   const base = { itemId: item.id, type: item.type, title: item.title, required: item.required };
   const definition = registry.check(item.type);
@@ -82,7 +90,28 @@ async function runOne(
     };
   }
   try {
-    const outcome = await definition.run(params.data, ctx);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const raced = await Promise.race([
+      definition.run(params.data, ctx),
+      ...(options.timeoutMs !== undefined
+        ? [
+            new Promise<typeof TIMED_OUT>((resolve) => {
+              timer = setTimeout(() => resolve(TIMED_OUT), options.timeoutMs);
+            }),
+          ]
+        : []),
+    ]).finally(() => clearTimeout(timer));
+    if (raced === TIMED_OUT) {
+      const seconds = Math.round((options.timeoutMs ?? 0) / 100) / 10;
+      return {
+        ...base,
+        group: definition.group,
+        status: notMet(item),
+        summary: `Timed out after ${seconds} s`,
+        details: [],
+      };
+    }
+    const outcome = raced;
     const result: CheckResult = {
       ...base,
       group: definition.group,
@@ -110,9 +139,12 @@ async function runOne(
 export async function runChecks(
   profile: Profile,
   registry: CheckRegistry,
-  ctx: CheckContext
+  ctx: CheckContext,
+  options: RunOptions = {}
 ): Promise<ChecklistReport> {
-  const results = await Promise.all(profile.checks.map((item) => runOne(item, registry, ctx)));
+  const results = await Promise.all(
+    profile.checks.map((item) => runOne(item, registry, ctx, options))
+  );
   return {
     profileId: profile.id,
     ready: results.every((r) => r.status !== 'fail'),

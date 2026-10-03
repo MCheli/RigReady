@@ -36,6 +36,22 @@ export const appContract = defineContract(
             files: z.array(z.object({ path: z.string(), content: z.string() })),
           })
           .optional(),
+        /** Shows real on-screen labels (the Identify overlay) for a moment. */
+        labels: z
+          .object({
+            durationMs: z.number().int(),
+            items: z.array(
+              z.object({
+                x: z.number(),
+                y: z.number(),
+                width: z.number(),
+                height: z.number(),
+                text: z.string(),
+                caption: z.string().optional(),
+              })
+            ),
+          })
+          .optional(),
         /** Renders HTML through the Render port and reports what came back. */
         render: z
           .object({ html: z.string(), width: z.number().int(), height: z.number().int() })

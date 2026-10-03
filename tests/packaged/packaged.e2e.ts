@@ -7,6 +7,7 @@ import { execFile } from 'node:child_process';
 import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { _electron } from '@playwright/test';
 import { expect, isolatedEnv, repoRoot, test } from '../e2e/harness';
 
 const exe = path.join(repoRoot, 'release', 'win-unpacked', 'RigReady.exe');
@@ -59,4 +60,35 @@ test('the packaged app runs a scenario: TrackIR not running, Make ready, Ready',
   await expect(page.getByTestId('fly-activity')).toContainText('Started TrackIR5.exe');
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
   await shot('made-ready');
+});
+
+test('the packaged app starts on the real machine with an isolated profile: window, tray icon, settings', async () => {
+  const isolated = await isolatedEnv();
+  const app = await _electron.launch({ executablePath: exe, args: [], env: isolated.env });
+  try {
+    const page = await app.firstWindow();
+    await expect(page.getByTestId('mode-configure')).toBeVisible();
+    // Real providers, so no scenario banner; and nothing from the real profile: no setups.
+    await expect(page.getByTestId('scenario-banner')).toHaveCount(0);
+    await page.getByTestId('mode-configure').click();
+    await page.getByTestId('nav-devices').click();
+    await expect(page.getByTestId('devices-page')).toBeVisible();
+    await page.getByTestId('nav-settings').click();
+    await expect(page.getByTestId('settings-page')).toBeVisible();
+    // The login item is read from Windows (and never changed by this test).
+    await expect(page.getByTestId('setting-start-with-windows').locator('input')).not.toBeChecked();
+    await expect(page.getByTestId('login-problem')).toHaveCount(0);
+    await page.getByTestId('nav-safety').click();
+    await expect(page.getByTestId('safety-empty')).toBeVisible();
+  } finally {
+    await app.close().catch(() => undefined);
+    const log = await fs
+      .readFile(path.join(isolated.dataRoot, 'logs', 'rigready.log'), 'utf8')
+      .catch(() => '');
+    await isolated.cleanup();
+    // The tray icon comes from a file inside app.asar: this is where a packaging mistake shows.
+    expect(log).toContain('starting');
+    expect(log).not.toContain('could not create the tray icon');
+    expect(log).not.toContain('ERROR');
+  }
 });

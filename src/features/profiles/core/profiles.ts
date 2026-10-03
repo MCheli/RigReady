@@ -20,6 +20,7 @@ export async function createProfile(ctx: Ctx, input: NewProfile): Promise<Result
     createdAt: now,
     updatedAt: now,
     checks,
+    extensions: {},
     ...(input.game ? { game: input.game } : {}),
     ...(input.launch ? { launch: input.launch } : {}),
   };

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, Notification, safeStorage } from 'electron';
+import { app, BrowserWindow, dialog, Notification, safeStorage, screen } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
@@ -6,8 +6,10 @@ import type {
   LoginItem,
   Notifications,
   OpenDialogOptions,
+  Overlays,
   Render,
   SaveDialogOptions,
+  ScreenLabel,
   Secrets,
 } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
@@ -273,6 +275,75 @@ export class ElectronLoginItem implements LoginItem {
       return ok(undefined);
     } catch (e) {
       return err('login.write', 'Could not change the Start with Windows setting.', String(e));
+    }
+  }
+}
+
+const escapeHtml = (text: string): string =>
+  text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/**
+ * Labels as frameless, click-through windows that stay on top, one per monitor. The
+ * coordinates are desktop pixels (what DisplayProvider reports); Electron wants its own
+ * scaled units, so each label is placed through the matching Electron display.
+ */
+export class ElectronOverlays implements Overlays {
+  private windows: BrowserWindow[] = [];
+  private timer: ReturnType<typeof setTimeout> | undefined;
+
+  private clear(): void {
+    clearTimeout(this.timer);
+    for (const window of this.windows) if (!window.isDestroyed()) window.destroy();
+    this.windows = [];
+  }
+
+  async showLabels(labels: ScreenLabel[], durationMs: number): Promise<Result<void>> {
+    this.clear();
+    try {
+      for (const label of labels) {
+        // The middle of the monitor, converted from physical pixels to Electron's coordinates.
+        const centre = screen.screenToDipPoint({
+          x: label.x + Math.round(label.width / 2),
+          y: label.y + Math.round(label.height / 2),
+        });
+        const area = screen.getDisplayNearestPoint(centre).bounds;
+        const width = Math.min(360, area.width);
+        const height = Math.min(260, area.height);
+        const window = new BrowserWindow({
+          x: Math.round(area.x + (area.width - width) / 2),
+          y: Math.round(area.y + (area.height - height) / 2),
+          width,
+          height,
+          frame: false,
+          transparent: true,
+          resizable: false,
+          movable: false,
+          focusable: false,
+          skipTaskbar: true,
+          alwaysOnTop: true,
+          show: false,
+          webPreferences: { javascript: false, sandbox: true, contextIsolation: true },
+        });
+        window.setIgnoreMouseEvents(true);
+        window.setAlwaysOnTop(true, 'screen-saver');
+        const html =
+          '<body style="margin:0;height:100vh;display:flex;flex-direction:column;align-items:center;' +
+          'justify-content:center;background:rgba(15,19,23,0.92);color:#e6e9ed;border-radius:18px;' +
+          'font-family:Segoe UI,sans-serif;overflow:hidden">' +
+          `<div style="font-size:150px;font-weight:700;line-height:1">${escapeHtml(label.text)}</div>` +
+          (label.caption
+            ? `<div style="font-size:20px;margin-top:8px;color:#8b95a3">${escapeHtml(label.caption)}</div>`
+            : '') +
+          '</body>';
+        this.windows.push(window);
+        await window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+        window.showInactive();
+      }
+      this.timer = setTimeout(() => this.clear(), durationMs);
+      return ok(undefined);
+    } catch (e) {
+      this.clear();
+      return err('overlay.show', 'Could not show the labels on the monitors.', String(e));
     }
   }
 }

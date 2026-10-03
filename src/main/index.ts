@@ -13,6 +13,7 @@ import {
   ElectronDialogs,
   ElectronLoginItem,
   ElectronNotifications,
+  ElectronOverlays,
   ElectronRender,
   ElectronSecrets,
   HIDDEN_ARG,
@@ -76,6 +77,7 @@ async function createPlatform(): Promise<Platform> {
           render: new ElectronRender(dataRoot),
           notifications: new ElectronNotifications(),
           loginItem: new ElectronLoginItem(),
+          overlays: new ElectronOverlays(),
         }),
       }),
     };
@@ -231,6 +233,13 @@ async function start(): Promise<void> {
   const machineChanged = (reason: string): void =>
     send(eventName(appContract.feature, 'machineChanged'), { reason });
 
+  // A device was plugged in or removed: every screen that shows machine state refreshes.
+  let deviceTimer: ReturnType<typeof setTimeout> | undefined;
+  ports.devices.subscribe(() => {
+    clearTimeout(deviceTimer);
+    deviceTimer = setTimeout(() => machineChanged('devices'), 400);
+  });
+
   const wiring = wireFeatures({ features: discoverFeatures(), ports, log, send });
   const { settings } = wiring.context;
 
@@ -252,6 +261,8 @@ async function start(): Promise<void> {
     }
   }
 
+  // Scenario runs keep a fake overlay port; this one lets a test show the real labels.
+  const realOverlays = new ElectronOverlays();
   const appBinding = bind(appContract, {
     info: async () =>
       ok({
@@ -261,7 +272,7 @@ async function start(): Promise<void> {
         notices,
         ...(scenario ? { scenario } : {}),
       }),
-    scenario: async ({ mutations, input, change, render }) => {
+    scenario: async ({ mutations, input, change, render, labels }) => {
       if (!fake) return err('scenario.off', 'This only works in a scenario run.');
       const parsed = z.array(MutationSchema).safeParse(mutations);
       if (!parsed.success) {
@@ -286,6 +297,16 @@ async function start(): Promise<void> {
           });
           if (!written.ok) return written;
         }
+      }
+      if (labels) {
+        const shown = await realOverlays.showLabels(
+          labels.items.map(({ caption, ...label }) => ({
+            ...label,
+            ...(caption ? { caption } : {}),
+          })),
+          labels.durationMs
+        );
+        if (!shown.ok) return shown;
       }
       if (parsed.data.length > 0 || change) machineChanged('scenario');
       if (!render) return ok({ applied: parsed.data.length });

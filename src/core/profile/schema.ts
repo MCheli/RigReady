@@ -45,8 +45,32 @@ export const ProfileSchema = z.object({
   updatedAt: z.string(),
   checks: z.array(CheckItemSchema).default([]),
   launch: LaunchTargetSchema.optional(),
+  /**
+   * Data a feature keeps with the profile, keyed by feature id (e.g. "backup", "dcs").
+   * Each feature validates its own entry with profileExtension(); the profile schema
+   * itself never needs to change for it.
+   */
+  extensions: z.record(z.string(), z.unknown()).default({}),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
+
+/**
+ * A feature's own data inside a profile, validated by the feature's schema. A missing
+ * entry is parsed from {} so schema defaults apply; an invalid one gives undefined.
+ */
+export function profileExtension<S extends z.ZodType>(
+  profile: Pick<Profile, 'extensions'>,
+  featureId: string,
+  schema: S
+): z.output<S> | undefined {
+  const parsed = schema.safeParse(profile.extensions[featureId] ?? {});
+  return parsed.success ? parsed.data : undefined;
+}
+
+/** A copy of the profile with one feature's data replaced. */
+export function withProfileExtension(profile: Profile, featureId: string, value: unknown): Profile {
+  return { ...profile, extensions: { ...profile.extensions, [featureId]: value } };
+}
 
 /** Turns a display name into a profile id: "DCS F/A-18C" -> "dcs-f-a-18c". */
 export function slugify(name: string): string {

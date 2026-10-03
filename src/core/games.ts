@@ -52,6 +52,11 @@ export interface GameModule {
    * manifest's build id via core/steam.ts), for "updated since you last verified".
    */
   installedVersion?(ctx: CheckContext, install: GameInstall): Promise<Result<GameVersion>>;
+  /**
+   * Path variables this game adds, e.g. { DCS_USER: <Saved Games>\\DCS, DCS_INSTALL: ... }.
+   * Only variables whose folder exists on this PC. See core/pathVariables.ts.
+   */
+  pathVariables?(ctx: CheckContext): Promise<Result<Record<string, string>>>;
   bindings?: BindingManager;
 }
 

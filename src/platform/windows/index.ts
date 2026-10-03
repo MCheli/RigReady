@@ -1,6 +1,14 @@
 import { BackupFileStore } from '../../core/files/fileStore';
 import type { Logger } from '../../core/logger';
-import type { Dialogs, LoginItem, Notifications, Ports, Render, Secrets } from '../../core/ports';
+import type {
+  Dialogs,
+  LoginItem,
+  Notifications,
+  Overlays,
+  Ports,
+  Render,
+  Secrets,
+} from '../../core/ports';
 import { NodeHttp, NodeRawFs, NodeShell, headlessPorts, systemClock } from '../node';
 import { WindowsAudioProvider } from './audio';
 import { WindowsDeviceProvider } from './devices';
@@ -18,6 +26,7 @@ export interface AppPorts {
   render: Render;
   notifications: Notifications;
   loginItem: LoginItem;
+  overlays: Overlays;
 }
 
 export interface WindowsPlatformOptions {

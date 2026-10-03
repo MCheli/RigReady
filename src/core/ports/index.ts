@@ -227,6 +227,24 @@ export interface Notifications {
   notify(message: { title: string; body: string }): Promise<Result<void>>;
 }
 
+export interface ScreenLabel {
+  /** Desktop coordinates of the monitor the label is shown on. */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Large text, e.g. "2". */
+  text: string;
+  /** Smaller line below it, e.g. the monitor's name. */
+  caption?: string;
+}
+
+/** Short-lived labels drawn on top of everything, one per monitor ("Identify"). */
+export interface Overlays {
+  /** Shows the labels and removes them after durationMs. Showing new labels replaces the old ones. */
+  showLabels(labels: ScreenLabel[], durationMs: number): Promise<Result<void>>;
+}
+
 /** The per-user "start with Windows" entry. */
 export interface LoginItem {
   isEnabled(): Promise<Result<boolean>>;
@@ -359,6 +377,11 @@ export interface FileStore {
   /** Copies one file; the destination is backed up and journaled like write(). */
   copy(from: string, to: string, options: ChangeOptions): Promise<Result<JournalEntry | null>>;
   /**
+   * Moves or renames one file: the destination is written and the source removed, as
+   * two journal entries of one group (the given one, or a new one).
+   */
+  move(from: string, to: string, options: ChangeOptions): Promise<Result<ChangeGroup>>;
+  /**
    * Copies a folder tree (filtered like listTree). Every file written is one journal
    * entry in one group, so the whole copy is undone together.
    */
@@ -413,4 +436,5 @@ export interface Ports {
   render: Render;
   notifications: Notifications;
   loginItem: LoginItem;
+  overlays: Overlays;
 }

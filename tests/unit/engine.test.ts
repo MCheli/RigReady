@@ -28,6 +28,7 @@ const profile = (checks: CheckItem[]): Profile => ({
   createdAt: '',
   updatedAt: '',
   checks,
+  extensions: {},
 });
 
 beforeEach(async () => {

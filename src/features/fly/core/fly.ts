@@ -9,7 +9,7 @@ import {
 import type { MainContext } from '../../../core/feature';
 import { err, ok, type Result } from '../../../core/result';
 
-type Ctx = Pick<MainContext, 'ports' | 'log' | 'checks' | 'profiles'>;
+type Ctx = Pick<MainContext, 'ports' | 'log' | 'checks' | 'profiles' | 'settings'>;
 
 export interface FlyState {
   profiles: { id: string; name: string; canLaunch: boolean }[];
@@ -36,7 +36,9 @@ export async function checkProfile(ctx: Ctx, profileId: string): Promise<Result<
   const profile = await ctx.profiles.get(profileId);
   if (!profile.ok) return profile;
   await ctx.profiles.setLastProfileId(profileId);
-  return ok(await runChecks(profile.value, ctx.checks, ctx));
+  const settings = await ctx.settings.get();
+  const timeoutMs = (settings.ok ? settings.value.checkTimeoutSeconds : 5) * 1000;
+  return ok(await runChecks(profile.value, ctx.checks, ctx, { timeoutMs }));
 }
 
 export async function makeProfileReady(ctx: Ctx, profileId: string): Promise<Result<ActionReport>> {

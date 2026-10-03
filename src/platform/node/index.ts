@@ -10,6 +10,7 @@ import type {
   LogSink,
   LoginItem,
   Notifications,
+  Overlays,
   RawFs,
   RawStat,
   Render,
@@ -182,6 +183,7 @@ export const headlessPorts: {
   render: Render;
   notifications: Notifications;
   loginItem: LoginItem;
+  overlays: Overlays;
 } = {
   secrets: {
     get: async () => unavailable('The secret store'),
@@ -201,6 +203,7 @@ export const headlessPorts: {
     isEnabled: async () => unavailable('Start with Windows'),
     setEnabled: async () => unavailable('Start with Windows'),
   },
+  overlays: { showLabels: async () => unavailable('Screen labels') },
 };
 
 /** Appends to a log file without blocking the caller; rotates at maxBytes keeping `keep` older files. */

@@ -20,11 +20,13 @@ import type {
   LoginItem,
   Notifications,
   OpenDialogOptions,
+  Overlays,
   Ports,
   ProcessProvider,
   Registry,
   Render,
   SaveDialogOptions,
+  ScreenLabel,
   Secrets,
   ServiceProvider,
   Shell,
@@ -598,6 +600,15 @@ export class FakeLoginItem implements LoginItem {
   }
 }
 
+export class FakeOverlays implements Overlays {
+  /** Every showLabels() call, for assertions. */
+  readonly shown: { labels: ScreenLabel[]; durationMs: number }[] = [];
+  async showLabels(labels: ScreenLabel[], durationMs: number): Promise<Result<void>> {
+    this.shown.push({ labels: structuredClone(labels), durationMs });
+    return ok(undefined);
+  }
+}
+
 export interface FakePorts extends Ports {
   devices: FakeDeviceProvider;
   processes: FakeProcessProvider;
@@ -611,6 +622,7 @@ export interface FakePorts extends Ports {
   dialogs: FakeDialogs;
   notifications: FakeNotifications;
   loginItem: FakeLoginItem;
+  overlays: FakeOverlays;
   /** The mutable machine state behind the providers. */
   state: RigState;
 }
@@ -663,6 +675,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     render: new FakeRender(),
     notifications: new FakeNotifications(),
     loginItem: new FakeLoginItem(),
+    overlays: new FakeOverlays(),
   };
 }
 

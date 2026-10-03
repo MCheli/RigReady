@@ -89,6 +89,18 @@ export interface RunningApp {
    * the way a feature would, so the change shows up on the Safety page.
    */
   changeFiles(reason: string, files: { path: string; content: string }[]): Promise<void>;
+  /** Shows the real Identify labels on the monitors for a moment. */
+  showLabels(
+    items: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      text: string;
+      caption?: string;
+    }[],
+    durationMs: number
+  ): Promise<void>;
   /** Renders HTML with the real Render port and reports the size of what came back. */
   render(
     html: string,
@@ -207,6 +219,8 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
             sendInput: async (states) => void (await scenarioCall({ input: states })),
             changeFiles: async (reason, files) =>
               void (await scenarioCall({ change: { reason, files } })),
+            showLabels: async (items, durationMs) =>
+              void (await scenarioCall({ labels: { items, durationMs } })),
             render: async (html, size) =>
               (await scenarioCall({ render: { html, ...size } }))['render'] as never,
             async restart() {

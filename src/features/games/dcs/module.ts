@@ -42,6 +42,16 @@ const dcs: GameModule = {
     }
     return ok(locations);
   },
+
+  /** {DCS_USER} is the Saved Games folder DCS writes to; {DCS_INSTALL} the first install found. */
+  async pathVariables(ctx) {
+    const variables: Record<string, string> = {};
+    const locations = await this.configLocations(ctx);
+    if (locations.ok && locations.value[0]) variables['DCS_USER'] = locations.value[0].path;
+    const installs = await this.detect(ctx);
+    if (installs.ok && installs.value[0]) variables['DCS_INSTALL'] = installs.value[0].installDir;
+    return ok(variables);
+  },
 };
 
 export default dcs;

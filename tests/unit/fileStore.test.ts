@@ -144,6 +144,7 @@ describe('ProfileStore', () => {
         params: { vendorId: '4098', productId: 'BEA8' },
       },
     ],
+    extensions: {},
   });
 
   it('round-trips profiles as YAML and remembers the last used one', async () => {
