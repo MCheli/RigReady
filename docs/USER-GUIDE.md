@@ -40,7 +40,7 @@ The same actions are in the tray menu, and the tray icon shows whether the rig i
 **Configure > Monitors** shows the arrangement to scale and your saved layouts.
 
 - **Save current as layout** stores the arrangement under a name, for example Flying, Racing and Desk.
-- **Apply** shows exactly what is different now, changes it, and gives you 15 seconds to keep the result.
+- **Apply** shows exactly what is different now, on a map that moves from how the monitors are to how they will be (Before and After flip it by hand), changes it, and gives you 15 seconds to keep the result.
 - **Identify** puts a number and an arrow on every physical screen. Use it to name identical screens (left, centre and right MFD), and to say which way is up on a screen that is mounted sideways.
 - Mark one layout as the **desk layout**. Stand down returns to it.
 
@@ -80,6 +80,7 @@ Some actions can only be bound inside DCS for now. They are shown and marked, ne
 - Press a control on the device and its label lights up.
 - **By action** answers "which control does this?".
 - **Quick look** is a small window that stays on top, for a second monitor.
+- **Learn** names an action and you press the control for it on the device. It says right or wrong at once with the control lit on the picture, brings missed ones back, and remembers what you know, per aircraft and per racing game.
 - **Edit layout** lets you rearrange a device's picture, or put a photo behind it.
 - **Print / PDF** makes one page per device plus a summary page.
 - **Kneeboard** writes pages into the aircraft's DCS kneeboard folder, in a day or a night style. RigReady only ever replaces or removes pages it wrote itself.
@@ -110,14 +111,18 @@ On a new PC: install the games, restore a backup, then use **DCS bindings > Devi
 
 **Configure > Share** exports a setup as a `.rigready` file. A review lists every personal detail it found (user name, PC name, serial numbers, paths) and what will be done about each. Scripts and launch commands are never included; they are listed so the other person knows what to add. Importing shows what the setup needs that this PC does not have, and what it wanted to run.
 
+**Save a picture of this setup** draws the rig as one image to show people, 16:9 or square: the monitors to scale, every controller with the name you gave it, and the helper apps. No serial number, user name, PC name or path is in it. The page shows the picture before you save it, and after saving it shows the file that was written.
+
+![A picture of a setup](../artifacts/screens/share-picture/rig-wide.png)
+
 ## 10. Hardware
 
 **Configure > Devices** has four tools.
 
 - **Devices**: every game controller, with your own names. **Find a device** highlights whatever you press.
-- **Input tester**: buttons, axes and hats as a game sees them, for one controller or all at once.
-- **Health check**: take your hands off for ten seconds. It reports stuck buttons, inputs that fire by themselves and noisy axes.
-- **USB map**: which hub each device is on, and what can be unplugged for the current setup.
+- **Input tester**: buttons, axes and hats as a game sees them, for one controller or all at once. Each axis draws a trace of the last few seconds with the range it has reached, two axes can be plotted against each other, and a button keeps a mark once it has been pressed.
+- **Health check**: take your hands off for ten seconds. It reports stuck buttons, inputs that fire by themselves and noisy axes, each with what was recorded, how bad it is and what to do about it. **Copy as text** puts the findings on the clipboard.
+- **USB map**: a drawing of what is plugged into what, from each USB controller of the computer through the hubs to every device. Click a device and the way to it is drawn through and said in words. It also says what can be unplugged for the current setup.
 
 ![Health check findings](../artifacts/screens/devices-health/04-findings.png)
 
