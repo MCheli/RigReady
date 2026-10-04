@@ -150,15 +150,17 @@ export async function readHidHide(ports: Ports): Promise<HidHideInfo> {
 }
 
 /** Short-lived cache: one check run asks for every device at once. */
-const cache = new WeakMap<Ports, { at: number; value: Promise<HidHideInfo> }>();
+// Keyed by the shell the query runs through: the same object for the app and for a check
+// run, whose ports are a wrapper of their own (core/checks/readCache.ts).
+const cache = new WeakMap<object, { at: number; value: Promise<HidHideInfo> }>();
 const CACHE_MS = 3000;
 
 export function hidHideCached(ports: Ports): Promise<HidHideInfo> {
   const now = ports.clock.now().getTime();
-  const hit = cache.get(ports);
+  const hit = cache.get(ports.shell);
   if (hit && now - hit.at < CACHE_MS && now >= hit.at) return hit.value;
   const value = readHidHide(ports);
-  cache.set(ports, { at: now, value });
+  cache.set(ports.shell, { at: now, value });
   return value;
 }
 

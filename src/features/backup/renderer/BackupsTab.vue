@@ -43,9 +43,10 @@ onMounted(() => {
     running.value = true;
   });
   // A backup that was started before this screen was left and opened again ends here too.
-  offEnded = api.on('ended', () => {
+  offEnded = api.on('ended', (ended) => {
     running.value = false;
     cancelling.value = false;
+    if (ended.cancelled) notice.value = 'The backup was cancelled. Nothing was written.';
     void load();
   });
   offMachine = onMachineChanged(() => void load());

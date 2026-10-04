@@ -3472,8 +3472,17 @@ requirements:
       - "RIGREADY_HOME overrides the data root; with it set to a temp dir, no file is created or modified under the real ~/.rigready (E2E asserts the real folder's mtime/listing unchanged)."
       - "With USERPROFILE, APPDATA and LOCALAPPDATA pointed at temp dirs, every KnownFolders value resolves under them."
       - "KnownFolders is the only module that computes user paths (lint rule forbidding os.homedir and process.env path reads outside it)."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: two features read SystemRoot from the environment to find explorer.exe; KnownFolders has windows() for that now. The lint rule is no-restricted-syntax in eslint.config.mjs, proven to fire by tests/unit/lintRules.test.ts. Not a path, so left as it is: os.userInfo().username in backup and sharing, used only to keep the user's name out of shared files."
+    status: done
+    evidence:
+      - "tests/e2e/nfr.e2e.ts#nfr: a scenario run shows its badge and never touches the real ~/.rigready"
+      - "tests/unit/knownFolders.test.ts#RIGREADY_HOME overrides the data root, redirected profile or not"
+      - "tests/unit/knownFolders.test.ts#with USERPROFILE, APPDATA and LOCALAPPDATA in temp folders every user folder is under them"
+      - "tests/unit/knownFolders.test.ts#every folder is under the temp home, Program Files and the Steam libraries included"
+      - "tests/unit/knownFolders.test.ts#no other source reads a path variable from the environment, os.homedir or os.tmpdir"
+      - "tests/unit/lintRules.test.ts#KnownFolders itself may read them, and other variables are not path reads"
+      - "artifacts/screens/nfr-isolation/02-after-writes.png"
 
   - id: PLAT-009
     title: Logging
@@ -3529,8 +3538,16 @@ requirements:
       - "RIGREADY_SCENARIO=<file> starts the app on fake providers built from a fixture rig plus listed mutations, and shows a visible 'Scenario: <name>' badge."
       - "Fixtures mark-flight, mark-racing and generic-rig exist, and every mutation named in this ledger exists as a scenario file."
       - "Mutations can be applied live during a run (for FLY-028, DEV-013)."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: mark-flight and mark-racing are scenarios on the mark-full fixture (see the header). Two mutations the ledger names had no file of their own and got one: flying-streamdeck-not-running.yaml and flying-options-lua-missing.yaml. 'mic-default-webcam' is audio-mic-wrong.yaml: the recorded rig has no webcam, the wrong microphone is the other one it has."
+    status: done
+    evidence:
+      - "tests/unit/scenarioMode.test.ts#the recorded rig and the generic rig load, and the scenarios the ledger calls mark-flight, mark-racing and generic-rig exist"
+      - "tests/unit/scenarioMode.test.ts#every scenario file starts: its rig exists, every mutation matches something, every profile and data file is there"
+      - "tests/unit/scenarioMode.test.ts#every mutation the ledger names is a scenario file, and that scenario has the effect"
+      - "tests/unit/scenarioMode.test.ts#a live mutation changes the fake machine, notifies device subscribers and the next check sees it"
+      - "tests/e2e/nfr.e2e.ts#nfr: a scenario run shows its badge and never touches the real ~/.rigready"
+      - "artifacts/screens/nfr-isolation/01-scenario-badge.png"
 
   - id: PLAT-014
     title: First-run experience
@@ -3551,8 +3568,17 @@ requirements:
     done_means:
       - "Features are discovered with import.meta.glob; adding a feature folder adds its routes, nav entries, IPC handlers, check and remediation types without editing a shared registry (test adds a fixture feature)."
       - "A lint or test check fails if a feature imports another feature's internals."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the fixture feature is tests/fixtures/features/zz-example, handed to the same two discovery functions the app uses (their only input is what the glob found), so the test does not write into src/features while other tests run."
+    status: done
+    evidence:
+      - "tests/unit/selfRegistration.test.ts#adding the example feature adds its IPC handlers, check, fix, capture and stand-down step"
+      - "tests/unit/selfRegistration.test.ts#its routes and its navigation entry appear, sorted into the section it names"
+      - "tests/unit/selfRegistration.test.ts#the real features are found by glob, each with the id of its folder"
+      - "tests/unit/selfRegistration.test.ts#the app finds features in exactly two places, both globs over the features folder"
+      - "tests/unit/selfRegistration.test.ts#no shared source imports a feature by name: core, main, renderer, shared and platform never mention a feature folder"
+      - "tests/unit/architecture.test.ts#features do not import each other, main or platform"
+      - "tests/unit/lintRules.test.ts#a feature may not import main, platform, legacy, fs, child_process, koffi or electron"
 
   - id: PLAT-016
     title: Ledger check gate
@@ -3562,8 +3588,16 @@ requirements:
     done_means:
       - "npm run ledger:check validates this file's schema and fails if any 'done' entry has no evidence or references a test id or screenshot path that does not exist."
       - "npm run check (typecheck, lint, unit tests with coverage threshold, ledger check) runs in CI on every push."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: CI ran the check only for pushes to main; .github/workflows/ci.yml now runs it for a push to any branch. The check also includes the format check."
+    status: done
+    evidence:
+      - "tests/unit/gates.test.ts#the command exits 0 on a valid ledger and 1, naming the entry, on each kind of broken one"
+      - "tests/unit/gates.test.ts#the ledger in the repository is valid, and every done entry has a test that exists"
+      - "tests/unit/gates.test.ts#check is typecheck, lint, format, unit tests with coverage and the ledger check, in that order"
+      - "tests/unit/gates.test.ts#CI runs npm run check on every push to every branch, and on pull requests"
+      - "scripts/lib/lib.test.ts#fails done without evidence, with missing evidence, or with screenshots only"
+      - ".github/workflows/ci.yml"
 
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY
@@ -3577,8 +3611,12 @@ requirements:
     done_means:
       - "A performance test runs the full F/A-18C checklist from fixture mark-flight (about 25 items) on the Windows providers' parsing paths with recorded inputs and fails above 5000 ms."
       - "Rig smoke measures the same profile on the real rig and records the time in its output; above 5 s fails."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the checklist is the two Hornet setups of the fixtures plus what capture adds (29 items on the fake rig, 30 on the real one). Measured: fake platform best 65 ms, worst 500 ms of 5 runs; real providers 1607 ms cold, then 551, 485, 449 ms (npm run rig:smoke, tests/rig/performance.rig.test.ts)."
+    status: done
+    evidence:
+      - "tests/unit/performance.test.ts#the full F/A-18C checklist (25+ items) runs in under 5000 ms on the recorded rig"
+      - "tests/rig/performance.rig.test.ts#runs in under 5 s against the real providers"
 
   - id: NFR-002
     title: Device enumeration in under 2 seconds
@@ -3588,8 +3626,14 @@ requirements:
     done_means:
       - "Rig smoke measures full device enumeration (HID + DirectInput identities) on the owner's rig with about 16 devices and fails above 2000 ms; the time is printed."
       - "Enumeration results are cached and refreshed on device change events so the Fly screen does not re-enumerate per check (unit test counts provider calls)."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the rig has 62 USB devices (hubs included) and 25 DirectInput identities, not about 16; a full enumeration takes 56-62 ms. The cache lives for one check run (src/core/checks/readCache.ts): every check of the run shares one device list, one process list, one audio read; the next run, which a device change event starts, enumerates again, so nothing stale is shown. The DCS bindings check reads through its own service (one more enumeration and two process lists per run, whatever the number of checks)."
+    status: done
+    evidence:
+      - "tests/rig/performance.rig.test.ts#a full enumeration (USB/HID devices and DirectInput identities) takes under 2000 ms"
+      - "tests/unit/performance.test.ts#the device checks of a run share one USB enumeration, however many there are, and the app checks one process list"
+      - "tests/unit/performance.test.ts#the next run enumerates again, so a device change is seen at once"
+      - "tests/unit/performance.test.ts#cachedReads shares reads within a run, hands out copies, and passes changes straight through"
 
   - id: NFR-003
     title: UI stays responsive during long operations
@@ -3599,8 +3643,18 @@ requirements:
     done_means:
       - "Backups, restores, binding loads and checks run off the renderer thread; a test with a 10 s fake backup asserts the renderer still responds to navigation within 100 ms."
       - "Long operations show progress and can be cancelled where cancellation is safe (backup yes, file writes mid-group no)."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: measured on the rig (tests/rig/performance.rig.test.ts): the synchronous native reads hold the main process 35-40 ms (USB devices), 25 ms (monitors), under 20 ms (audio, processes, services, registry), so they stay on the main thread. Compressing a backup in one go held it 1170 ms for the real DCS Config and Scripts (285 files, 115 MB); the backup now compresses file by file (createZipInSteps), longest stall 23 ms for the same data. Navigation while a 10 s fake backup runs: median 15 ms. Backup has progress and Cancel (nothing is written before the last step). Not done: restore and the reading of a large archive are still one synchronous step each (156 ms for the same 115 MB), and they have no cancel, which is the 'file writes mid-group no' case."
+    status: done
+    evidence:
+      - "tests/e2e/nfr.e2e.ts#nfr: the window answers within 100 ms while a 10 s backup runs; the backup shows progress and can be cancelled"
+      - "tests/unit/longOperations.test.ts#reports progress, refuses a second backup, and Cancel stops it with nothing written"
+      - "tests/unit/longOperations.test.ts#cancelled while the archive is being compressed: still nothing is written"
+      - "tests/unit/longOperations.test.ts#gives the thread back between files and between the slices of a big file, and reports each file"
+      - "tests/rig/performance.rig.test.ts#measures the longest event-loop stall of each real provider read"
+      - "tests/rig/performance.rig.test.ts#measures the stall of building a backup archive of the real DCS settings (read-only, nothing written)"
+      - "artifacts/screens/nfr-long-backup/02-still-running.png"
+      - "artifacts/screens/nfr-long-backup/03-cancelled.png"
 
   - id: NFR-004
     title: No shell command strings
@@ -3633,8 +3687,21 @@ requirements:
       - "Every IPC handler validates its input with the feature's zod contract; a contract test sends malformed input to each channel and expects a validation error, not a crash."
       - "Paths received from the renderer are accepted only under allowed roots (data root, KnownFolders game/user folders, or a path the user just picked in a native dialog); a test sends C:/Windows/System32/x and is rejected."
       - "The renderer has contextIsolation on, nodeIntegration off, sandbox on, and a CSP without remote script sources."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the audit enumerates contracts by glob and reads each channel's fields from its zod schema (175 channels; 18 path-like fields). It found that a tracked item (backup:previewItem, backup:saveItem) took any path; such a path is now accepted only under the allowed roots, a game's own folders, a path main itself handed out (a suggestion, an item already tracked) or one picked in the native dialog this session (src/features/backup/core/items.ts). The launch target of a setup (profiles:save, profiles:create launch.exe and launch.cwd) is stored as data and is the audit's only allowlist. Not confined, by design: what a setup's own file checks and fixes name (a generic game may be anywhere); they go through FileStore with backup and journal."
+    status: done
+    evidence:
+      - "tests/unit/ipcAudit.test.ts#every channel answers every malformed shape with a validation error and never throws"
+      - "tests/unit/ipcAudit.test.ts#a field of the wrong type is refused, field by field"
+      - "tests/unit/ipcAudit.test.ts#valid shapes with hostile content (huge strings, deep objects, prototype keys) get an answer, not a crash"
+      - "tests/unit/ipcAudit.test.ts#each contract channel has exactly one handler and each handler has a contract"
+      - "tests/unit/ipcAudit.test.ts#C:/Windows/System32/x, a traversal, a UNC path and a device path are refused by every path-taking channel"
+      - "tests/unit/ipcAudit.test.ts#no string field of any channel, path-like or not, makes main touch a file outside the allowed folders"
+      - "tests/unit/ipcAudit.test.ts#a path picked in the native dialog is accepted where the same path typed is refused"
+      - "tests/unit/ipcAudit.test.ts#every window is created with contextIsolation on, nodeIntegration off and the sandbox on"
+      - "tests/unit/ipcAudit.test.ts#the page’s Content-Security-Policy allows scripts from the app only: nothing remote, inline or evaluated"
+      - "tests/unit/ipcAudit.test.ts#the preload script exposes only invoke and on, each checking the channel name first"
+      - "tests/e2e/nfr.e2e.ts#nfr: the renderer is isolated and sandboxed, held by its CSP, and reaches main only through validated channels"
 
   - id: NFR-006
     title: No success message for something that did not happen
@@ -3644,8 +3711,23 @@ requirements:
     done_means:
       - "Every success toast or summary is produced from a verified result (check re-run, file hash read back, process observed); a code review checklist item and tests for FLY-010, FLY-016, BACKUP-009 cover it."
       - "No UI control is shown for an action without a registered implementation; an E2E crawls every route in scenario mark-flight and asserts no control returns 'not implemented'."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the 'code review checklist item' is an audit instead: tests/sabotage.ts makes the fake machine accept every change and carry out none, and every registered fix, Stand down, Launch and every IPC channel is run against it. It found and fixed: the monitor layout fix and the desk-layout step said 'Applied' without reading back; Stand down said 'Closed X' for a program still running (closes are now verified for every feature in src/core/processes.ts); Monitors > flip corrected saved layouts for a screen that did not turn; a script started without waiting said 'Started' without a process; Games > Launch said 'Asked Steam' with no Steam running. Whether a button has a handler cannot be read from a production page (Vuetify takes it as a prop), so that part is proven from the source (tests/unit/noStubs.test.ts: 495 handlers, 363 buttons) and the E2E crawls every route for errors, unnamed controls, stub words and unexplained disabled controls (two Save buttons are listed there as findings)."
+    status: done
+    evidence:
+      - "tests/unit/verifiedActions.test.ts#no fix reports success when the change it asked for did not happen"
+      - "tests/unit/verifiedActions.test.ts#the audit met every fix type that changes the machine, and none of them hung"
+      - "tests/unit/verifiedActions.test.ts#starting a program, applying a layout, setting an audio device and restoring a file were each caught"
+      - 'tests/unit/verifiedActions.test.ts#no answer contains a step that says "done" for a change that did not happen'
+      - "tests/unit/verifiedActions.test.ts#every answer after a failed change is an error or says what failed, except the hand-offs to Explorer"
+      - 'tests/unit/verifiedActions.test.ts#Launch never says "launched" and Stand down never says "closed" under sabotage'
+      - 'tests/unit/verifiedActions.test.ts#turns "closed" into process.stillRunning when the process is still in the list'
+      - "tests/unit/verifiedActions.test.ts#exit code 0 is success; another exit code, a missing script and a start without a process are errors"
+      - "tests/unit/noStubs.test.ts#no handler in any template is empty, and every handler named exists in its component and does something"
+      - "tests/unit/noStubs.test.ts#every button in every template does something: a click handler, a link, a form, or the menu or dialog it opens"
+      - 'tests/unit/noStubs.test.ts#nothing shipped says "not implemented", "coming soon", TODO or FIXME, in code, comments or text'
+      - "tests/e2e/nfr.e2e.ts#nfr: every route of every feature renders, and no visible control is a stub"
+      - "artifacts/screens/nfr-crawl/01-last-route.png"
 
   - id: NFR-007
     title: Devices never identified by display name alone
@@ -3655,8 +3737,19 @@ requirements:
     done_means:
       - "Profile, device-name and layout schemas require VID/PID (devices) or EDID/target identity (monitors); a schema test rejects name-only identities."
       - "Matching code paths have unit tests proving two devices with the same name but different VID/PID or serial are not confused."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: proven on an 'impostor rig' where every device, controller and monitor keeps its name and gets other ids: no check type a feature registers for devices or monitors (device.connected, display.layout, racing.wheelBase, stream-deck.connected, trackir.connected) still passes, the owner's device names do not follow, and DCS binding files are not attached. A monitor target with an empty id was accepted by the schema; it is refused now (src/shared/models.ts). One name match remains on purpose and says so on the item: an audio endpoint whose id changed is found by its name when exactly one endpoint has it (audio endpoints have no VID/PID)."
+    status: done
+    evidence:
+      - "tests/unit/deviceIdentity.test.ts#a device check needs vendor and product id; a name, a title or a serial alone is refused"
+      - "tests/unit/deviceIdentity.test.ts#the device-name store keeps a name only next to the ids it belongs to"
+      - "tests/unit/deviceIdentity.test.ts#a saved monitor layout needs each monitor’s id; a monitor known only by name is refused"
+      - "tests/unit/deviceIdentity.test.ts#every registered check type for devices and monitors refuses its own parameters once only names are left"
+      - "tests/unit/deviceIdentity.test.ts#no device or monitor check that passed before passes now, in any feature"
+      - "tests/unit/deviceIdentity.test.ts#a name the owner gave stays with the ids it was given to, not with the product name"
+      - "tests/unit/deviceIdentity.test.ts#DCS binding files are not attached to a controller that only has the same name"
+      - "tests/unit/deviceIdentity.test.ts#two devices with one name and one vendor/product id: a check with a serial follows that one device"
+      - "tests/unit/deviceIdentity.test.ts#monitors: three screens with one name are matched by USB serial, and a same-named screen of another model is no match"
 
   - id: NFR-008
     title: Missing and odd files handled gracefully
@@ -3677,8 +3770,26 @@ requirements:
     done_means:
       - "The full E2E suite also runs against fixture generic-rig (different devices, two monitors, DCS in a non-default Steam library, Saved Games redirected) and passes."
       - "A test greps src/ for the owner's user name, machine name, device serials and GUIDs from fixture mark-flight and finds none."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: 'the full E2E suite also runs against generic-rig' is met by the core flows, not by running every spec twice (most specs assert the owner's hardware by name). The generic rig now has the scenario the criterion describes, built from mutations (fixtures/scenarios/generic-second-pc.yaml: two monitors, two sticks of other makes, DCS in a second Steam library, Saved Games moved), and capture, Ready, Make ready, Launch, Stand down, every Configure page, backup and restore, share and import, and the bindings page run on it and on the three older generic scenarios. In the E2E the restore and the share/import steps of the second PC go through the app's IPC from the page; their screens are driven on the owner's rig by backup.e2e.ts and sharing.e2e.ts. The grep covers src/, python/ and scripts/ and also looks for monitor model codes."
+    status: done
+    evidence:
+      - "tests/e2e/generic-second-pc.e2e.ts#second generic PC: capture, Ready, Make ready, Launch from the second Steam library, Stand down"
+      - "tests/e2e/generic-second-pc.e2e.ts#second generic PC: every Configure page renders; DCS, monitors and devices are this PC’s own"
+      - "tests/e2e/generic-second-pc.e2e.ts#second generic PC: backup and restore in the moved Saved Games folder; a setup shared and imported"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: capture proposes the stick, the monitor and the audio devices; the setup is Ready"
+      - 'tests/e2e/generic-rig.e2e.ts#generic rig: an "Other" game is set up, checked, launched and its tracked folder backed up'
+      - "tests/unit/genericSecondPc.test.ts#Saved Games is the moved folder, and DCS is found in the second Steam library"
+      - "tests/unit/genericSecondPc.test.ts#capture → Ready → something breaks → Make ready → Launch → Stand down"
+      - "tests/unit/genericSecondPc.test.ts#backup and restore work on the moved Saved Games folder"
+      - "tests/unit/genericSecondPc.test.ts#a setup shared from this PC is imported on another generic PC, bindings into its own DCS folder"
+      - "tests/unit/genericSecondPc.test.ts#shares no device, monitor, controller or audio endpoint with the owner’s rig"
+      - "tests/unit/notHardcoded.test.ts#no source file names the owner, this PC, or a serial, instance, monitor or GUID of the recorded rig"
+      - "artifacts/screens/generic-second-pc/01-capture.png"
+      - "artifacts/screens/generic-second-pc/05-launched.png"
+      - "artifacts/screens/generic-second-pc-pages/01-dcs-found.png"
+      - "artifacts/screens/generic-second-pc-backup/03-restored.png"
 
   - id: NFR-010
     title: Memory footprint

@@ -403,6 +403,7 @@ onBeforeUnmount(() => {
           prepend-icon="mdi-wrench-check"
           :disabled="fly.counts.fixable === 0 || fly.busy !== null"
           :loading="fly.busy === 'makeReady'"
+          :title="fly.counts.fixable === 0 ? 'Nothing for Make ready to fix right now' : undefined"
           data-testid="make-ready"
           @click="makeReady"
         >

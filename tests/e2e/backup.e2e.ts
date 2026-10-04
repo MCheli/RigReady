@@ -162,7 +162,8 @@ test('restore: a backup from this rig onto a freshly installed PC, with a previe
 }) => {
   // The old PC: track the bindings, the options and the MFD viewports, back up, export.
   const old = await rig.launch('backup-dcs', 'restore-source', {
-    dialogs: { save: ['Documents/rig.zip'] },
+    // open: what the file picker answers for the tool file below (relative to the fake user folder).
+    dialogs: { save: ['Documents/rig.zip'], open: [['../tools/tool.ini']] },
   });
   await track(old.page, 'dcs-f-a-18c', {
     label: 'DCS bindings',
@@ -183,6 +184,8 @@ test('restore: a backup from this rig onto a freshly installed PC, with a previe
   const loose = path.join(old.home, '..', 'tools', 'tool.ini');
   await fs.mkdir(path.dirname(loose), { recursive: true });
   await fs.writeFile(loose, 'volume=3\n');
+  // Outside the folders RigReady may use, so it is chosen in the file picker (NFR-005).
+  await invoke(old.page, 'backup:browse', { kind: 'file' });
   await track(old.page, '@always', { label: 'Tool settings', path: loose, kind: 'file' });
   await openBackups(old.page);
   await old.page.getByTestId('backup-all').click();
