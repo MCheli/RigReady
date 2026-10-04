@@ -82,14 +82,32 @@ export class NodeRawFs implements RawFs {
   }
 }
 
-// Everything cmd.exe gives a meaning to.
-const CMD_META = /([()\][%!^"`<>&|;, *?])/g;
+// Everything cmd.exe gives a meaning to, the percent sign aside (see cmdEscape).
+const CMD_META = /([()\][!^"`<>&|;, *?])/g;
+
+/**
+ * The variable a percent sign is written as on a cmd.exe line. Its value is a percent
+ * sign, set for that one cmd.exe (see programStart).
+ */
+export const CMD_PERCENT_VARIABLE = '__RIGREADY_PERCENT';
+
+/**
+ * Escapes text for a cmd.exe command line. A caret takes the meaning from every special
+ * character but one: cmd.exe expands `%NAME%` before it looks at carets, and although
+ * `^%NAME^%` stops a plain `%NAME%`, it does not stop the replacing form `%NAME:a=b%`,
+ * which would put a variable's value (and any `&` in it) into the line. So a percent sign
+ * is never written: `%__RIGREADY_PERCENT%` stands for it, and what a variable expands to
+ * is not read again.
+ */
+function cmdEscape(text: string): string {
+  return text.replace(CMD_META, '^$1').replace(/%/g, `%${CMD_PERCENT_VARIABLE}%`);
+}
 
 /** One argument, quoted and escaped so cmd.exe hands it to a batch file as one literal value. */
 function cmdArgument(arg: string): string {
   // Backslashes before a quote, and at the end (before the closing quote), are doubled.
   const quoted = `"${arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1')}"`;
-  return quoted.replace(CMD_META, '^$1');
+  return cmdEscape(quoted);
 }
 
 /**
@@ -111,6 +129,8 @@ export interface ProgramStart {
   args: string[];
   /** The arguments are already one finished command line for cmd.exe. */
   verbatim?: true;
+  /** Variables the started program must be given for the line to mean what it says. */
+  env?: Record<string, string>;
 }
 
 /**
@@ -127,11 +147,13 @@ export function programStart(
 ): ProgramStart {
   const extension = path.extname(exe).toLowerCase();
   if (extension === '.cmd' || extension === '.bat') {
-    const line = [exe.replace(CMD_META, '^$1'), ...args.map(cmdArgument)].join(' ');
+    const line = [cmdEscape(exe), ...args.map(cmdArgument)].join(' ');
     return {
       exe: env['ComSpec'] ?? env['COMSPEC'] ?? 'cmd.exe',
-      args: ['/d', '/s', '/c', `"${line}"`],
+      // /d: no AutoRun commands. /v:off: `!NAME!` is never expanded, whatever the registry says.
+      args: ['/d', '/v:off', '/s', '/c', `"${line}"`],
       verbatim: true,
+      env: { [CMD_PERCENT_VARIABLE]: '%' },
     };
   }
   if (extension === '.ps1') {
@@ -173,6 +195,11 @@ export function launchSpawnOptions(
   };
 }
 
+/** The caller's options plus what the start itself needs in the environment. */
+function withStartEnv<T extends ShellOptions>(options: T, start: ProgramStart): T {
+  return start.env ? { ...options, env: { ...options.env, ...start.env } } : options;
+}
+
 export class NodeShell implements Shell {
   run(
     exe: string,
@@ -193,7 +220,7 @@ export class NodeShell implements Shell {
       try {
         const start = programStart(exe, args);
         const child = spawn(start.exe, start.args, {
-          ...runSpawnOptions(options),
+          ...runSpawnOptions(withStartEnv(options, start)),
           ...(start.verbatim ? { windowsVerbatimArguments: true } : {}),
         });
         child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
@@ -217,7 +244,7 @@ export class NodeShell implements Shell {
       try {
         const start = programStart(exe, args);
         const child = spawn(start.exe, start.args, {
-          ...launchSpawnOptions(exe, options),
+          ...launchSpawnOptions(exe, withStartEnv(options, start)),
           ...(start.verbatim ? { windowsVerbatimArguments: true } : {}),
         });
         child.once('error', (e) =>

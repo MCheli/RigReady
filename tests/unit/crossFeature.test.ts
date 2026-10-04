@@ -122,9 +122,9 @@ describe('Shell: batch files and PowerShell scripts', () => {
     });
     const batch = programStart('C:\\My Scripts\\go.CMD', ['a & b'], { ComSpec: 'C:\\cmd.exe' });
     expect(batch).toMatchObject({ exe: 'C:\\cmd.exe', verbatim: true });
-    expect(batch.args.slice(0, 3)).toEqual(['/d', '/s', '/c']);
+    expect(batch.args.slice(0, 4)).toEqual(['/d', '/v:off', '/s', '/c']);
     // Everything cmd.exe would act on is escaped; the whole line is one quoted argument.
-    expect(batch.args[3]).toBe('"C:\\My^ Scripts\\go.CMD ^"a^ ^&^ b^""');
+    expect(batch.args[4]).toBe('"C:\\My^ Scripts\\go.CMD ^"a^ ^&^ b^""');
     expect(batchArgumentProblem('go.cmd', ['fine', 'a "quoted" b'])).toContain('double quote');
     expect(batchArgumentProblem('go.bat', ['two\nlines'])).toContain('line break');
     expect(batchArgumentProblem('go.exe', ['a "quoted" b'])).toBeUndefined();

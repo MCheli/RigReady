@@ -20,6 +20,53 @@ const viaPorts = (name) => ({
   message: 'only src/platform touches the machine; use the ports in src/core/ports',
 });
 
+/**
+ * NFR-004: a program is started with an executable and an argument array (Shell.run,
+ * spawn without a shell). Nothing may run a command line.
+ */
+const commandLine = 'never run a command string: ports.shell.run(exe, args[]) only (NFR-004)';
+const noShell = [
+  {
+    selector: 'CallExpression[callee.name=/^(exec|execSync|execFile|execFileSync)$/]',
+    message: commandLine,
+  },
+  {
+    selector: 'CallExpression[callee.property.name=/^(execSync|execFile|execFileSync)$/]',
+    message: commandLine,
+  },
+  {
+    selector:
+      'ImportDeclaration[source.value=/^(node:)?child_process$/] ImportSpecifier[imported.name=/^(exec|execSync|execFile|execFileSync)$/]',
+    message: commandLine,
+  },
+  { selector: 'Property[key.name="shell"][value.value=true]', message: commandLine },
+  {
+    selector:
+      'CallExpression[callee.name=/^spawn(Sync)?$/] > ObjectExpression > Property[key.name="shell"]:not([value.value=false])',
+    message: 'spawn never gets a shell (NFR-004)',
+  },
+];
+
+/**
+ * PLAT-008: KnownFolders (src/platform/windows/knownFolders.ts) is the only module that
+ * computes a user or system path. Everything else asks ctx.ports.folders, so a redirected
+ * run (tests, scenarios, RIGREADY_HOME) can never reach the real profile.
+ */
+const PATH_VARIABLES =
+  '/^(USERPROFILE|HOME|HOMEDRIVE|HOMEPATH|APPDATA|LOCALAPPDATA|ProgramFiles|ProgramFiles\\(x86\\)|ProgramW6432|ProgramData|PUBLIC|ALLUSERSPROFILE|OneDrive|SystemRoot|windir|TEMP|TMP|RIGREADY_HOME)$/i';
+const viaFolders = 'user and system folders come from ctx.ports.folders (KnownFolders), PLAT-008';
+const noUserPaths = [
+  { selector: 'CallExpression[callee.property.name=/^(homedir|tmpdir)$/]', message: viaFolders },
+  {
+    selector: `MemberExpression[object.object.name="process"][object.property.name="env"][property.name=${PATH_VARIABLES}]`,
+    message: viaFolders,
+  },
+  {
+    selector: `MemberExpression[object.object.name="process"][object.property.name="env"][property.value=${PATH_VARIABLES}]`,
+    message: viaFolders,
+  },
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -110,6 +157,19 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': ['error', { paths: machineModules.map(viaPorts) }],
     },
+  },
+  {
+    // NFR-004 and PLAT-008, for everything that ships (tests may read the environment and
+    // build fixtures as they like; tests/unit/shellAudit.test.ts and knownFolders.test.ts
+    // scan the same sources as text).
+    files: ['src/**/*.{ts,vue}', 'scripts/**/*.{ts,mjs}'],
+    ignores: ['**/*.test.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...noShell, ...noUserPaths] },
+  },
+  {
+    // The one module that computes user paths.
+    files: ['src/platform/windows/knownFolders.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...noShell] },
   },
   prettier
 );

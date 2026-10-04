@@ -439,6 +439,10 @@ export class FakeKnownFolders implements KnownFolders {
   programData(): string {
     return path.join(this.root, 'ProgramData');
   }
+  /** Outside the fake home on purpose: it only names Windows' own programs, nothing is read or written there. */
+  windows(): string {
+    return 'C:\\Windows';
+  }
   dataRoot(): string {
     return this.data;
   }

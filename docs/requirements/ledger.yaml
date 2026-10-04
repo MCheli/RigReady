@@ -3610,8 +3610,19 @@ requirements:
     done_means:
       - "Shell.run takes an executable and an argv array and uses spawn with shell: false; a lint rule forbids exec, execSync and spawn with shell: true across src/."
       - "Unit test: a profile with process name 'x & calc.exe' and argument '$(whoami)' passes them literally to the fake Shell and nothing else is spawned."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/shellAudit.test.ts#no shipped source builds or runs a shell command string (src, scripts, Python sidecar)"
+      - "tests/unit/shellAudit.test.ts#child_process is imported only by src/platform, and only for spawn"
+      - "tests/unit/shellAudit.test.ts#process name 'x & calc.exe' and argument '$(whoami)' reach the fake Shell literally and nothing else is spawned"
+      - "tests/unit/shellAudit.test.ts#a program receives every argument unchanged, a double quote and a line break included"
+      - "tests/unit/shellAudit.test.ts#a batch file (through cmd.exe) receives every argument unchanged and nothing in them runs"
+      - "tests/unit/shellAudit.test.ts#a batch file is refused an argument it cannot receive literally: a double quote or a line break"
+      - "tests/unit/shellAudit.test.ts#a PowerShell script receives every argument unchanged and nothing in them is evaluated"
+      - "tests/unit/lintRules.test.ts#spawn without a shell, and RegExp.exec, are fine"
+      - "tests/unit/crossFeature.test.ts#run() never uses a shell, hides the console window by default and adds the given variables"
+    notes:
+      - "2026-10-03: the real-shell test found that the batch-file path expanded %NAME:a=b% in an argument (the caret does not stop the replacing form), which put a variable's value, RIGREADY_PROFILE_NAME included, into the cmd.exe line. Fixed in src/platform/node/index.ts: a percent sign is never written on the line (%__RIGREADY_PERCENT% stands for it) and cmd.exe gets /v:off. The lint rule is no-restricted-syntax in eslint.config.mjs (exec, execSync, execFile, execFileSync, shell: true, spawn with any shell option but false), proven to fire by tests/unit/lintRules.test.ts."
 
   - id: NFR-005
     title: IPC inputs validated and paths confined

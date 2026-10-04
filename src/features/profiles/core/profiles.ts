@@ -337,8 +337,8 @@ export async function prepareFix(
 }
 
 /** Windows' own Explorer: opens a file with its default program, or shows it selected. */
-function explorer(): string {
-  return path.join(process.env['SystemRoot'] ?? 'C:\\Windows', 'explorer.exe');
+function explorer(ctx: Pick<Ctx, 'ports'>): string {
+  return path.join(ctx.ports.folders.windows(), 'explorer.exe');
 }
 
 export async function openProfileFile(
@@ -352,7 +352,7 @@ export async function openProfileFile(
     return err('profile.missing', `There is no profile "${id}".`);
   // An argument array: the path is never part of a command line.
   const started = await ctx.ports.shell.launch(
-    explorer(),
+    explorer(ctx),
     mode === 'open' ? [file] : [`/select,${file}`]
   );
   return started.ok ? ok({ opened: true }) : started;

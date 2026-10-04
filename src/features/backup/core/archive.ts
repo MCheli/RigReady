@@ -805,7 +805,7 @@ export async function revealBackup(ctx: Ctx, id: string): Promise<Result<void>> 
   if (!file.ok) return file;
   if (!(await ctx.ports.files.exists(file.value)))
     return err('backup.missing', `There is no backup "${id}".`);
-  const windows = process.env['SystemRoot'] ?? process.env['windir'] ?? 'C:\\Windows';
+  const windows = ctx.ports.folders.windows();
   const shown = await ctx.ports.shell.launch(path.join(windows, 'explorer.exe'), [
     '/select,',
     file.value,

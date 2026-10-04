@@ -90,6 +90,10 @@ export class WindowsKnownFolders implements KnownFolders {
     return this.env['ProgramData'] ?? 'C:\\ProgramData';
   }
 
+  windows(): string {
+    return this.env['SystemRoot'] ?? this.env['windir'] ?? 'C:\\Windows';
+  }
+
   steamLibraries(): Promise<Result<string[]>> {
     return findSteamLibraries(this.registry, (file) => fs.readFile(file, 'utf8'));
   }
