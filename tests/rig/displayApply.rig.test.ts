@@ -238,8 +238,12 @@ describe.runIf(enabled)('real display apply: another resolution (capture and res
         height,
         rotation: display.rotation,
       });
-      // Nothing else moved, turned or changed size.
+      // Nothing else turned or changed size, and nothing moved, except that Windows allows
+      // no gap in the desktop: monitors to the right of the one that got narrower close up
+      // by exactly the width it lost (the ultrawide with the MFD screens beside it).
+      const lost = display.width - width;
       for (const other of on.filter((d) => d.id !== display.id)) {
+        const toTheRight = other.x >= display.x + display.width;
         const actual = during.value.displays.find((d) => d.id === other.id)!;
         expect(
           {
@@ -251,7 +255,7 @@ describe.runIf(enabled)('real display apply: another resolution (capture and res
           },
           other.name
         ).toEqual({
-          x: other.x,
+          x: toTheRight ? other.x - lost : other.x,
           y: other.y,
           width: other.width,
           height: other.height,
