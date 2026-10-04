@@ -188,9 +188,32 @@ describe('what the final pass added', () => {
     )![1]!;
     expect(reduced).toMatch(/--rr-motion-fast:\s*0ms/);
     expect(reduced).toMatch(/--rr-motion-base:\s*0ms/);
-    expect(reduced).toMatch(/animation-duration:\s*0\.01ms\s*!important/);
-    expect(reduced).toMatch(/animation-iteration-count:\s*1\s*!important/);
-    expect(reduced).toMatch(/transition-duration:\s*0\.01ms\s*!important/);
+    // Everything else that would move takes no time at all: a component that switches its
+    // own motion off, and checks that it is off, finds "0s" and not "nearly".
+    const everything = /\*,\s*\*::before,\s*\*::after\s*\{([^}]*)\}/.exec(reduced)![1]!;
+    expect(everything).toMatch(/animation-duration:\s*0s\s*!important/);
+    expect(everything).toMatch(/transition-duration:\s*0s\s*!important/);
+  });
+
+  it('less motion takes away the time only: how often an animation repeats and whether it is held stay as they were', () => {
+    // Every field carries a loading bar whose animation never ends and is paused until it
+    // is needed. Made to run once, it would be an animation that is held and can never
+    // finish, and whatever waits for the page to stand still (a screenshot) would wait
+    // for ever. On the tree of all the branches of the final pass that stopped two flows.
+    const reduced = /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*)\}\s*$/.exec(
+      plain
+    )![1]!;
+    expect(reduced).not.toMatch(/animation-iteration-count/);
+    expect(reduced).not.toMatch(/animation-play-state/);
+    expect(reduced).not.toMatch(/animation:\s*none/);
+    // One thing is drawn differently instead of not at all: a busy bar, whole and dimmed.
+    const busy =
+      /\.v-progress-linear--active \.v-progress-linear__indeterminate\s*\{([^}]*)\}/.exec(
+        reduced
+      )![1]!;
+    expect(busy).toMatch(/animation-name:\s*none\s*!important/);
+    expect(busy).toMatch(/--v-progress-indeterminate-long-left:\s*0%/);
+    expect(busy).toMatch(/--v-progress-indeterminate-long-right:\s*0%/);
   });
 
   it('no component of the shell animates on a number of its own', async () => {

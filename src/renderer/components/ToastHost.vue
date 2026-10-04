@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { toasts, type Toast, type ToastTone } from '../shell/toast';
 
@@ -8,6 +9,27 @@ import { toasts, type Toast, type ToastTone } from '../shell/toast';
  * alone, and is announced politely to a screen reader.
  */
 const router = useRouter();
+
+/**
+ * Something else may be reporting in the same place: the strip of a command RigReady was
+ * started with (a desktop shortcut, the hotkey) is docked at the bottom of the window.
+ * Toasts then stand above it, not over it. Measured when a toast comes or goes, which is
+ * when it matters; 0 while nothing is docked there.
+ */
+const DOCKED = '[data-testid="command-strip"]';
+const GAP = 8;
+const above = ref(0);
+watch(
+  () => toasts.list.value.length,
+  (shown) => {
+    const docked = shown > 0 ? document.querySelector(DOCKED) : null;
+    above.value = docked
+      ? Math.max(0, Math.round(window.innerHeight - docked.getBoundingClientRect().top) + GAP)
+      : 0;
+  },
+  // Before the toast is drawn, so it never appears in one place and moves to another.
+  { flush: 'pre' }
+);
 
 const LOOK: Record<ToastTone, { icon: string; tone: string; word: string }> = {
   ok: { icon: 'mdi-check-circle', tone: 'rr-ok', word: 'Done' },
@@ -25,7 +47,11 @@ function follow(toast: Toast): void {
 </script>
 
 <template>
-  <div class="rr-toasts" data-testid="toasts">
+  <div
+    class="rr-toasts"
+    data-testid="toasts"
+    :style="above > 0 ? { bottom: `${above}px` } : undefined"
+  >
     <transition-group name="rr-toast">
       <div
         v-for="toast in toasts.list.value"

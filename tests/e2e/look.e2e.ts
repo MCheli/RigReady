@@ -146,23 +146,63 @@ test('look: depth, type and motion come from the tokens, and "reduce motion" swi
   }
   expect([...rings]).toEqual(['solid 2px rgb(168, 209, 245)']);
 
+  // ---- A loading bar that is not needed yet, as a dialog of a feature keeps one in hand:
+  // an animation that never ends, held still. (Put here by the test: no page of the shell
+  // has one of its own.)
+  await page.evaluate(`(() => {
+    const bar = document.createElement('div');
+    bar.className = 'v-progress-linear';
+    bar.setAttribute('data-testid', 'held-bar');
+    bar.style.cssText = 'position:fixed;left:8px;bottom:8px;width:40px;height:2px;opacity:0';
+    bar.innerHTML = '<div class="v-progress-linear__indeterminate"></div>';
+    document.body.append(bar);
+  })()`);
+  /** What is animating in the window, or held ready to: its state, whether it ever ends, how long a round takes. */
+  const animations = (): Promise<string[]> =>
+    page.evaluate(`document.getAnimations().map((a) => {
+      const timing = a.effect.getComputedTiming();
+      return a.playState + (timing.iterations === Infinity ? ', never ends, ' : ', ends, ') + timing.duration + ' ms';
+    })`);
+  await expect.poll(animations).toEqual(['paused, never ends, 2200 ms']);
+
   // ---- Asked for less motion: the tokens are zero, a page does not move, a dialog does not fade.
   await page.emulateMedia({ reducedMotion: 'reduce' });
   expect(await tokenOf(page, '--rr-motion-fast')).toBe('0ms');
   expect(await tokenOf(page, '--rr-motion-base')).toBe('0ms');
   await go(page, '/configure/audio');
   await expect(page.getByTestId('audio-page')).toBeVisible();
-  expect(parseFloat(await style(page, '.rr-page', 'animation-duration'))).toBeLessThan(0.001);
+  // No time at all, exactly: a component that switches its own motion off finds it off.
+  expect(await style(page, '.rr-page', 'animation-duration')).toBe('0s');
   await expect.poll(() => style(page, '.rr-page', 'opacity')).toBe('1');
   await page.keyboard.press('Control+k');
   await expect(page.getByTestId('palette')).toBeVisible();
-  expect(
-    parseFloat(await style(page, '.v-dialog .v-overlay__content', 'transition-duration'))
-  ).toBeLessThan(0.001);
+  expect(await style(page, '.v-dialog .v-overlay__content', 'transition-duration')).toBe('0s');
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('palette')).toBeHidden();
+  // Only the time is taken away: the bar held in hand is not turned into an animation that
+  // runs once, which, held, could never finish. Nothing is left that ends and has not, so
+  // whatever waits for the window to stand still (the screenshot) does not wait for ever.
+  expect(await style(page, '[data-testid="held-bar"] > div', 'animation-iteration-count')).toBe(
+    'infinite'
+  );
+  expect(await style(page, '[data-testid="held-bar"] > div', 'animation-play-state')).toBe(
+    'paused'
+  );
+  expect((await animations()).filter((a) => a.includes(', ends, '))).toEqual([]);
+  await shot('less-motion');
+  // Needed, and not allowed to travel: it is drawn whole and dimmed instead of not at all.
+  await page.evaluate(
+    `document.querySelector('[data-testid="held-bar"]').classList.add('v-progress-linear--active')`
+  );
+  await expect
+    .poll(() => style(page, '[data-testid="held-bar"] > div', 'animation-name'))
+    .toBe('none');
+  expect(await style(page, '[data-testid="held-bar"] > div', 'opacity')).toBe('0.6');
+  expect(await animations()).toEqual([]);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   expect(await tokenOf(page, '--rr-motion-base')).toBe('180ms');
+  // With motion allowed it is what it was: travelling, without end.
+  await expect.poll(animations).toEqual(['running, never ends, 2200 ms']);
 });
 
 test('look: an empty state has a drawing, says what is missing, and leads somewhere', async ({

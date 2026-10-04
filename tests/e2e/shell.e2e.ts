@@ -672,6 +672,52 @@ test('palette: a first run and a PC without any sim still get a palette that wor
   await generic.shot('palette');
 });
 
+test('toasts: where a strip of the app is docked at the bottom of the window, a toast stands above it', async ({
+  rig,
+}) => {
+  const { page } = await rig.launch('flying-all-good', 'shell-toast-dock');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  const windowHeight = await page.evaluate(
+    () => (globalThis as unknown as { innerHeight: number }).innerHeight
+  );
+  /** How far the bottom edge of the newest toast is from the bottom of the window. */
+  const fromBottom = async (): Promise<number> => {
+    const box = (await toasts(page).last().boundingBox())!;
+    return Math.round(windowHeight - (box.y + box.height));
+  };
+  const recheck = async (): Promise<void> => {
+    await openPalette(page);
+    await choose(page, 'recheck', 'Re-check');
+    await expect(toast(page, 'ok')).toBeVisible();
+  };
+
+  // With nothing docked there, a toast sits at the bottom of the window.
+  await recheck();
+  await expect.poll(fromBottom).toBe(22);
+  await page.getByTestId('toast-close').click();
+  await expect(toasts(page)).toHaveCount(0);
+
+  // The strip of a command RigReady was started with reports in the same place. (It comes
+  // with the one-click feature; this is a stand-in of its place and size, under its name.)
+  await page.evaluate(`(() => {
+    const strip = document.createElement('section');
+    strip.setAttribute('data-testid', 'command-strip');
+    strip.style.cssText =
+      'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);width:600px;height:96px;z-index:1000';
+    document.body.append(strip);
+  })()`);
+  await recheck();
+  // Above it with a small gap: neither over it nor far away.
+  await expect.poll(fromBottom).toBe(20 + 96 + 8);
+  await page.getByTestId('toast-close').click();
+  await expect(toasts(page)).toHaveCount(0);
+
+  // The strip gone, the next toast is back where toasts are.
+  await page.evaluate(`document.querySelector('[data-testid="command-strip"]').remove()`);
+  await recheck();
+  await expect.poll(fromBottom).toBe(22);
+});
+
 test('a11y: the palette, the shortcut list, About and the toasts pass axe and never say it by colour alone', async ({
   rig,
 }) => {

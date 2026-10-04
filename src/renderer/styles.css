@@ -474,7 +474,14 @@ body {
   }
 }
 
-/* Motion is switched off for those who ask Windows for less of it. */
+/*
+ * Motion is switched off for those who ask Windows for less of it: the tokens are zero, and
+ * whatever else would move takes no time to get where it is going. Only the time is taken
+ * away. How often an animation repeats, and whether it is held, are left as they are: a
+ * component that keeps an animation of its own in hand (the loading bar every field
+ * carries, paused until it is needed) must stay what it was, one that never ends, and a
+ * component that switches its own motion off must find it off, not nearly off.
+ */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --rr-motion-fast: 0ms;
@@ -483,9 +490,17 @@ body {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
     scroll-behavior: auto !important;
+  }
+  /* A busy bar that may not travel is drawn whole instead, so it is still seen. */
+  .v-progress-linear--active .v-progress-linear__indeterminate {
+    animation-name: none !important;
+    --v-progress-indeterminate-long-left: 0%;
+    --v-progress-indeterminate-long-right: 0%;
+    --v-progress-indeterminate-short-left: 100%;
+    --v-progress-indeterminate-short-right: 0%;
+    opacity: 0.6;
   }
 }

@@ -4410,7 +4410,7 @@ requirements:
       - "Play: Make ready, Launch, Stand down and Re-check for the setup in use, and a switch to every other setup, each through the Play screen's own channel. Nobody can be asked from the palette, so a fix or step that runs a program is not run and is reported as not run; Launch on a rig that is not ready launches and says so; Stand down never closes the game unasked and says it is still running."
       - "Monitors: one command per saved layout, with how it differs from the monitors now; applying reports the answer to 'Keep this layout?' (kept, or gone back), never 'applied' for a layout that went back; a layout that needs a monitor that is not connected is refused and nothing changes. Identify says how many monitors show their number."
       - "Backups: 'Back up now' writes the full backup, shows how far it is, and names the backup that was written. Diagnostics: 'Copy the diagnostics report' says how many characters are on the clipboard. Devices: 'Find a device' listens from any page and opens the device whose button was pressed, and says so when nothing was pressed or no controller is connected. DCS bindings and Cheat sheets: one command per aircraft, the ones with bindings of the owner's own first, that opens the page on that aircraft; a game that has one sheet for everything is offered under the game's own name."
-      - "Every outcome is a toast with a tone of its own shape and words (done, attention, not done, note, still working), announced politely to a screen reader; it stays while the pointer or focus is on it, and may carry one button to the page it is about. A command that takes more than a moment shows that it is running, with its progress."
+      - "Every outcome is a toast with a tone of its own shape and words (done, attention, not done, note, still working), announced politely to a screen reader; it stays while the pointer or focus is on it, and may carry one button to the page it is about. A command that takes more than a moment shows that it is running, with its progress. Where the strip of a command RigReady was started with is docked at the bottom of the window, a toast stands above it, not over it."
       - "With the fake machine made to accept every change and carry out none, no command reports success. A feature whose commands cannot be listed is named in the palette with the reason, and the rest still works."
     status: done
     evidence:
@@ -4433,6 +4433,7 @@ requirements:
       - "src/renderer/shell/toast.test.ts#stays while the pointer or the focus is on it, and its time starts again afterwards"
       - "tests/e2e/shell.e2e.ts#palette commands: each calls its feature and the toast reports what really happened"
       - "tests/e2e/shell.e2e.ts#palette commands: bindings and cheat sheets open on the aircraft, setups switch, and a failing feature is named"
+      - "tests/e2e/shell.e2e.ts#toasts: where a strip of the app is docked at the bottom of the window, a toast stands above it"
       - "artifacts/screens/shell-palette/03-made-ready.png"
       - "artifacts/screens/shell-commands/01-layout-applied-waiting.png"
       - "artifacts/screens/shell-commands/05-found-device.png"
@@ -4475,6 +4476,7 @@ requirements:
       - "Type: Windows' own interface font, a scale of five sizes, and digits of one width everywhere, so counts, times and ids line up. Text for running explanation has its own token, readable on every surface (WCAG AA)."
       - "One focus ring: two pixels of the focus colour on every kind of control, the same on the shell's links, the navigation and a page's buttons (E2E reads it on each)."
       - "Motion is two durations (120 ms, 180 ms) and one easing without overshoot, used for a page arriving, a dialog arriving and leaving, and the shell's own panels and toasts; no component of the shell animates on a number of its own. With 'reduce motion' the tokens are zero and nothing animates (E2E emulates the setting)."
+      - "Less motion takes away the time only (0 s, exactly): how often an animation repeats and whether it is held are left as they were, so a component that switches its own motion off finds it off, and a loading bar a dialog keeps in hand stays an animation that never ends instead of one that is held and can never finish. A busy bar that may not travel is drawn whole and dimmed instead of not at all."
       - "The window is dark to its edges: the scrollbar is a thin dark bar, the strip kept free for it continues the header, and a snackbar a feature shows itself looks like the shell's toasts, with its tone as an icon."
     status: done
     evidence:
@@ -4487,10 +4489,12 @@ requirements:
       - "tests/unit/designSystem.test.ts#there is one focus ring: two pixels of the focus colour, on every kind of control"
       - "tests/unit/designSystem.test.ts#motion is short and eased out, with no bounce"
       - "tests/unit/designSystem.test.ts#asking Windows for less motion switches it off: the tokens are zero and nothing animates"
+      - "tests/unit/designSystem.test.ts#less motion takes away the time only: how often an animation repeats and whether it is held stay as they were"
       - "tests/unit/designSystem.test.ts#no component of the shell animates on a number of its own"
       - "tests/e2e/look.e2e.ts#look: depth, type and motion come from the tokens, and \"reduce motion\" switches motion off"
       - "tests/e2e/look.e2e.ts#look: a snackbar of a feature looks like the shell’s toasts, with its tone as an icon"
       - "artifacts/screens/look-system/01-monitors.png"
+      - "artifacts/screens/look-system/02-less-motion.png"
       - "artifacts/screens/look-toast/01-snackbar.png"
 
   - id: WOW-UI-005
