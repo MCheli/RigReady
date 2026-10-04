@@ -233,6 +233,8 @@ export const PreferencesSchema = z.object({
   minimizeOnLaunch: z.boolean().default(true),
   /** When the game closes, run Stand down without being asked. */
   autoStandDown: z.boolean().default(false),
+  /** Two quiet notes when the rig becomes ready. */
+  readyTone: z.boolean().default(false),
 });
 export type Preferences = z.infer<typeof PreferencesSchema>;
 
@@ -243,6 +245,7 @@ export type Preferences = z.infer<typeof PreferencesSchema>;
 export const PreferencesPatchSchema = z.object({
   minimizeOnLaunch: z.boolean().optional(),
   autoStandDown: z.boolean().optional(),
+  readyTone: z.boolean().optional(),
 });
 export type PreferencesPatch = z.infer<typeof PreferencesPatchSchema>;
 

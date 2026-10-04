@@ -17,6 +17,7 @@ import SuggestionBar from './SuggestionBar.vue';
 import WelcomePanel from './WelcomePanel.vue';
 import { listenForEnter, useHeadline, usePrimary, type ActionId } from './primary';
 import { useFlyStore } from './store';
+import { becameReady, playReadyTone } from './tone';
 
 const fly = useFlyStore();
 
@@ -42,6 +43,29 @@ function answer(ok: boolean): void {
 const launchWarning = ref(false);
 const paused = ref<{ at: number; message: string; output?: string; approved: string[] }>();
 const gameRunning = ref<string>();
+
+// ---- the ready tone ----
+/** Why the tone could not be played, when it could not. */
+const toneNote = ref<string>();
+async function sound(): Promise<void> {
+  const tone = await playReadyTone();
+  toneNote.value = tone.played
+    ? undefined
+    : `The ready tone could not be played: ${tone.reason ?? 'no reason was given'}`;
+}
+/** Switched on, it is played once: what was switched on is heard. */
+async function toggleReadyTone(): Promise<void> {
+  const on = !fly.readyTone;
+  await fly.setReadyTone(on);
+  if (on && fly.readyTone) await sound();
+  else toneNote.value = undefined;
+}
+watch(
+  () => fly.readiness,
+  (now, before) => {
+    if (fly.readyTone && becameReady(now, before)) void sound();
+  }
+);
 
 const groups = computed(() =>
   CHECK_GROUPS.map((group) => {
@@ -427,6 +451,25 @@ onBeforeUnmount(() => {
       {{ fly.notice }}
     </v-alert>
     <v-alert
+      v-if="toneNote"
+      type="warning"
+      variant="tonal"
+      class="mb-4"
+      data-testid="fly-tone-note"
+    >
+      {{ toneNote }}
+      <template #append>
+        <v-btn
+          variant="text"
+          size="small"
+          data-testid="fly-tone-note-dismiss"
+          @click="toneNote = undefined"
+        >
+          Dismiss
+        </v-btn>
+      </template>
+    </v-alert>
+    <v-alert
       v-if="fly.view?.problem"
       type="warning"
       variant="tonal"
@@ -554,6 +597,15 @@ onBeforeUnmount(() => {
                     title="Stand down when the game closes"
                     data-testid="fly-auto-stand-down"
                     @click="fly.setAutoStandDown(!fly.autoStandDown)"
+                  />
+                  <v-list-item
+                    :prepend-icon="
+                      fly.readyTone ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'
+                    "
+                    title="Ready tone"
+                    subtitle="Two quiet notes when the rig becomes ready"
+                    data-testid="fly-ready-tone"
+                    @click="toggleReadyTone"
                   />
                   <v-divider class="my-1" />
                   <v-list-item

@@ -687,7 +687,7 @@ requirements:
     done_means:
       - "'Compact view' in the Fly menu opens one small window that stays on top of the others (asked for again, the same window comes forward). It shows the readiness dial, the setup switcher, the state in words and the one action of the Fly screen, with Re-check and Stand down at the foot; nothing in it needs scrolling."
       - "The one action is the Fly screen's: Make ready and launch, Launch, or Stand down after a session, on Enter as well. The 'Keep this layout?' question is answered in the small window too. Launching hides the main window as the user's setting says; the small window stays, with the session and its clock, then 'Welcome back' and Stand down."
-      - "Launch on a rig that is not ready launches nothing: the button becomes 'Launch anyway', with what is not met in words and a Cancel. When Make ready and launch stops on something required, the same is offered."
+      - "Launch on a rig that is not ready launches nothing: the button becomes 'Launch anyway', with what is not met in words and a Cancel. When Make ready and launch stops on something required, the same is offered. 'Launch anyway' is a click (or the button focused and pressed): Enter with nothing focused does not run it, and the Enter hint is not shown on it."
       - "A fix or a launch step that runs a program has to be shown to the user before it runs, and the small window has no room for that: the action is then disabled there, with the reason in words, and one button brings the full window back (on a monitor that is on; where it is when the monitors cannot be read)."
       - "A setup chosen in one window is the setup in every window of RigReady: the main process says when the setup in use changes, and only then."
     status: done
@@ -738,6 +738,35 @@ requirements:
       - "tests/e2e/fly-suggest.e2e.ts#suggestion: a rig whose gear is the setup on screen is offered nothing"
       - "artifacts/screens/fly-suggest/01-the-offer.png"
       - "artifacts/screens/fly-suggest/02-switched.png"
+
+  - id: WOW-FLY-007
+    title: An optional ready tone
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "'Ready tone' in the Fly menu, off as installed, switches on two short, quiet notes (a rising fifth, E5 then B5, made on the spot with Web Audio: there is no sound file) that play when the rig becomes ready: from not ready, or from not yet known, to Ready or Ready with warnings. Staying ready, a re-check and becoming not ready are silent."
+      - "Switched on, it is played once, so that what was switched on is heard; switching it off is silent. The choice is stored with the other Fly preferences (fly/preferences.json), validated, and kept across restarts; changing it does not undo the other preferences."
+      - "A note is a sine that never gets louder than a small part of full volume, fades in over a few milliseconds so it does not click, and fades out to silence. One audio context is used however often it plays."
+      - "When the sound system does not start or there is none, nothing is scheduled to sound later, and the Fly screen says that the tone could not be played and why."
+    status: done
+    evidence:
+      - "src/features/fly/renderer/tone.test.ts#is two short notes, the second a fifth above the first, over in under half a second"
+      - "src/features/fly/renderer/tone.test.ts#is quiet: a note never gets louder than a small part of full volume"
+      - "src/features/fly/renderer/tone.test.ts#plays each note as a sine that fades in without a click and out to silence, then stops"
+      - "src/features/fly/renderer/tone.test.ts#is for the moment the rig becomes ready, not for staying ready"
+      - "src/features/fly/renderer/tone.test.ts#plays on one audio context, however often it is asked"
+      - "src/features/fly/renderer/tone.test.ts#wakes a sound system that is asleep first"
+      - "src/features/fly/renderer/tone.test.ts#says so, and schedules nothing for later, when the sound system does not start"
+      - "src/features/fly/renderer/tone.test.ts#says why when there is no sound system at all"
+      - "src/features/fly/core/fly.test.ts#remembers whether to hide after Launch"
+      - "tests/unit/settingsInventory.test.ts#each has a default before anything is saved"
+      - "tests/unit/settingsInventory.test.ts#each is stored as JSON under the data root and read back after a restart"
+      - "tests/unit/settingsInventory.test.ts#each is validated: a value that is not allowed is refused and nothing changes"
+      - "tests/e2e/fly-tone.e2e.ts#ready tone: silent until switched on in the Fly menu; then two quiet notes each time the rig becomes ready"
+      - "tests/e2e/fly-tone.e2e.ts#ready tone: on a PC whose sound system does not start, the Fly screen says the tone could not be played"
+      - "artifacts/screens/fly-tone/01-the-setting.png"
+      - "artifacts/screens/fly-tone-no-sound/01-could-not-be-played.png"
 
   # ---------------------------------------------------------------------------
   # CHECK TYPES

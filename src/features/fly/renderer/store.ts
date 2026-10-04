@@ -90,6 +90,8 @@ export const useFlyStore = defineStore('fly', () => {
   const minimizeOnLaunch = ref(true);
   /** Stand down by itself when the game closes. */
   const autoStandDown = ref(false);
+  /** Two quiet notes when the rig becomes ready. */
+  const readyTone = ref(false);
   /** The session of the moment: none, a game running, or one that just closed. */
   const session = ref<SessionState>({ phase: 'idle' });
   /** The rig at a glance: the monitors as they are. Undefined until read. */
@@ -284,6 +286,7 @@ export const useFlyStore = defineStore('fly', () => {
       if (!prefs.ok) return;
       minimizeOnLaunch.value = prefs.value.minimizeOnLaunch;
       autoStandDown.value = prefs.value.autoStandDown;
+      readyTone.value = prefs.value.readyTone;
     });
     void api.session().then((current) => {
       if (current.ok) session.value = current.value;
@@ -644,6 +647,12 @@ export const useFlyStore = defineStore('fly', () => {
     else error.value = errorText(saved.error);
   }
 
+  async function setReadyTone(value: boolean): Promise<void> {
+    const saved = await api.setPreferences({ readyTone: value });
+    if (saved.ok) readyTone.value = saved.value.readyTone;
+    else error.value = errorText(saved.error);
+  }
+
   /** "Welcome back" was read: back to normal without standing down. */
   async function dismissSession(): Promise<void> {
     const next = await api.dismissSession();
@@ -686,6 +695,7 @@ export const useFlyStore = defineStore('fly', () => {
     steps,
     minimizeOnLaunch,
     autoStandDown,
+    readyTone,
     session,
     rig,
     suggestion,
@@ -709,6 +719,7 @@ export const useFlyStore = defineStore('fly', () => {
     readyAndLaunch,
     setMinimizeOnLaunch,
     setAutoStandDown,
+    setReadyTone,
     dismissSession,
     declineSuggestion,
     takeSuggestion,

@@ -41,6 +41,8 @@ const windows = (app: ElectronApplication): Promise<WindowFacts[]> =>
 
 /** A picture of the small window, once whatever is fading or sliding in it has arrived. */
 async function snap(popup: Page, flow: string, name: string): Promise<void> {
+  // The pointer is not part of the picture: wherever the last click left it, it is put aside.
+  await popup.mouse.move(2, 2);
   await popup.evaluate('document.fonts.ready');
   await popup.evaluate(`(async () => {
     const frame = () => new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
@@ -193,20 +195,34 @@ test('compact: Launch on a rig that is not ready asks once more before it launch
   await expect(primary).toContainText('Launch');
   await expect(popup.getByTestId('compact-line')).toHaveCount(0);
 
-  await primary.click();
-  // Nothing was launched: the button says what pressing it again means, with what is missing.
+  await expect(primary.locator('kbd')).toHaveText('Enter');
+  await popup.keyboard.press('Enter');
+  // Nothing was launched: the button says what pressing it means, with what is missing.
   await expect(primary).toContainText('Launch anyway');
   await expect(popup.getByTestId('compact-line')).toHaveText(
     'Not ready: T-Pendular-Rudder — Not connected'
   );
   await expect(popup.getByTestId('fly-session')).toHaveCount(0);
+  // Launching past something required is never one Enter after another: the hint is gone,
+  // and a second Enter does nothing.
+  await expect(primary.locator('kbd')).toHaveCount(0);
+  await expect(primary).not.toHaveAttribute('aria-keyshortcuts', 'Enter');
+  await popup.keyboard.press('Enter');
+  await popup.getByTestId('compact-recheck').click();
+  await expect(popup.getByTestId('compact-status')).toHaveText('Not ready(1)');
+  await expect(primary).toContainText('Launch anyway');
+  await expect(popup.getByTestId('fly-session')).toHaveCount(0);
   expect(await accessible(popup)).toEqual([]);
   await snap(popup, 'fly-compact-not-ready', '01-launch-anyway.png');
   await popup.getByTestId('compact-cancel').click();
   await expect(primary).not.toContainText('anyway');
+  await expect(primary.locator('kbd')).toHaveText('Enter');
   await expect(popup.getByTestId('compact-line')).toHaveCount(0);
 
+  // Asked again and answered with a click: now it launches.
   await primary.click();
+  await expect(primary).toContainText('Launch anyway');
+  await expect(popup.getByTestId('fly-session')).toHaveCount(0);
   await primary.click();
   await expect(popup.getByTestId('compact-line')).toHaveText('Launched DCS.exe');
   await expect(popup.getByTestId('fly-session')).toHaveAttribute('data-phase', 'running');
@@ -264,7 +280,10 @@ test('compact: a program that has to be shown first is left to the full window, 
   await expect(popup.getByTestId('compact-line')).toHaveText(
     'This setup runs a program that is shown to you first. That is done in the full window.'
   );
-  // Enter does not get round it: nothing runs.
+  // Enter does not get round it, and the button does not say it would: nothing runs.
+  await expect(primary.locator('kbd')).toHaveCount(0);
+  await expect(primary).not.toHaveAttribute('aria-keyshortcuts', 'Enter');
+  await popup.evaluate('document.activeElement && document.activeElement.blur()');
   await popup.keyboard.press('Enter');
   await expect(primary).toBeDisabled();
   await expect(popup.getByTestId('fly-session')).toHaveCount(0);

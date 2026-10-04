@@ -127,6 +127,13 @@ const button = computed<ButtonLook | undefined>(() => {
   };
 });
 
+/**
+ * Whether Enter, with nothing focused, presses the button. Never "Launch anyway":
+ * launching past something required is a click (or the button focused and pressed), as in
+ * the full window, not one Enter after another. And not what is left to the full window.
+ */
+const onEnter = computed(() => button.value !== undefined && !anyway.value && !needsOk.value);
+
 function took(outcome: LaunchOutcome): void {
   if (outcome.paused) paused.value = { at: outcome.paused.at, message: outcome.paused.message };
 }
@@ -187,7 +194,7 @@ onMounted(async () => {
     onMachineChanged(refresh),
     listenForEnter(
       () => void run(),
-      () => button.value !== undefined
+      () => onEnter.value
     )
   );
   await fly.load();
@@ -311,12 +318,12 @@ onBeforeUnmount(() => {
         :disabled="fly.busy !== null || needsOk"
         :loading="fly.busy !== null"
         :title="needsOk ? 'A program has to be shown to you first: use the full window' : undefined"
-        aria-keyshortcuts="Enter"
+        :aria-keyshortcuts="onEnter ? 'Enter' : undefined"
         data-testid="compact-primary"
         @click="run"
       >
         {{ button.label }}
-        <kbd class="compact-key" aria-hidden="true">Enter</kbd>
+        <kbd v-if="onEnter" class="compact-key" aria-hidden="true">Enter</kbd>
       </v-btn>
 
       <div class="compact-links">

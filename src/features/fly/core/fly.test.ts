@@ -777,22 +777,36 @@ describe('the rest', () => {
 
   it('remembers whether to hide after Launch', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
-    // Hiding after Launch is on, standing down by itself is off, until the user says otherwise.
+    // Hiding after Launch is on; standing down by itself and the ready tone are off, until
+    // the user says otherwise.
     expect(await app.invoke('fly:preferences')).toEqual({
       minimizeOnLaunch: true,
       autoStandDown: false,
+      readyTone: false,
     });
     expect(await app.invoke('fly:setPreferences', { minimizeOnLaunch: false })).toEqual({
       minimizeOnLaunch: false,
       autoStandDown: false,
+      readyTone: false,
     });
     expect(await app.invoke('fly:launch', { profileId: 'dcs-f-a-18c' })).toMatchObject({
       minimize: false,
     });
-    // One choice does not undo the other.
+    // One choice does not undo the others.
     expect(await app.invoke('fly:setPreferences', { autoStandDown: true })).toEqual({
       minimizeOnLaunch: false,
       autoStandDown: true,
+      readyTone: false,
+    });
+    expect(await app.invoke('fly:setPreferences', { readyTone: true })).toEqual({
+      minimizeOnLaunch: false,
+      autoStandDown: true,
+      readyTone: true,
+    });
+    expect(await app.invoke('fly:preferences')).toEqual({
+      minimizeOnLaunch: false,
+      autoStandDown: true,
+      readyTone: true,
     });
   });
 
