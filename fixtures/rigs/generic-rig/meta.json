@@ -1,0 +1,21 @@
+{
+  "name": "generic-rig",
+  "synthetic": true,
+  "recordedAt": "2026-10-03T00:00:00.000Z",
+  "os": "Windows_NT 10.0.19045",
+  "counts": {
+    "devices": 4,
+    "displays": 1,
+    "processes": 14,
+    "services": 6,
+    "audioEndpoints": 2,
+    "inputDevices": 1,
+    "registryKeys": 6,
+    "files": 4,
+    "fileBytes": 40,
+    "placeholders": 3
+  },
+  "notes": [
+    "Written by hand, not recorded from a PC. See NOTES.md."
+  ]
+}

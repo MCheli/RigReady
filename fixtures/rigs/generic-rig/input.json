@@ -1,0 +1,19 @@
+[
+  {
+    "index": 0,
+    "name": "Logitech Extreme 3D",
+    "guid": "5C3A9E40-6D21-11EF-8001-444553540000",
+    "productGuid": "C215046D-0000-0000-0000-504944564944",
+    "vendorId": "046D",
+    "productId": "C215",
+    "numAxes": 4,
+    "numButtons": 12,
+    "numHats": 1,
+    "axisNames": [
+      "X",
+      "Y",
+      "RZ",
+      "SLIDER1"
+    ]
+  }
+]

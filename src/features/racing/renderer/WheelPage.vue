@@ -64,6 +64,15 @@ async function save(): Promise<void> {
   await load();
 }
 
+/** A PC that never had a Fanatec base: none connected, no Fanatec software, no trace of one. */
+const neverHere = computed(
+  () =>
+    view.value !== undefined &&
+    !view.value.status.connected &&
+    view.value.status.lastSeen.length === 0 &&
+    view.value.status.software.every((s) => !s.ok)
+);
+
 const comparison = computed(() => view.value?.comparisons.find((c) => c.game === game.value));
 const paramName = (id: string): string =>
   view.value?.parameters.find((p) => p.id === id)?.name ?? id;
@@ -104,16 +113,29 @@ const STATUS = {
                   ? view.status.mode === 'pc'
                     ? 'mdi-check-circle'
                     : 'mdi-alert'
-                  : 'mdi-close-circle'
+                  : neverHere
+                    ? 'mdi-minus-circle-outline'
+                    : 'mdi-close-circle'
               "
               :class="
-                view.status.connected ? (view.status.mode === 'pc' ? 'rr-ok' : 'rr-warn') : 'rr-bad'
+                view.status.connected
+                  ? view.status.mode === 'pc'
+                    ? 'rr-ok'
+                    : 'rr-warn'
+                  : neverHere
+                    ? 'rr-muted'
+                    : 'rr-bad'
               "
               size="28"
             />
             <div class="rr-row-main">
               <div class="rr-row-title" data-testid="wheel-name">
-                {{ view.status.name ?? 'No Fanatec wheel base connected' }}
+                {{
+                  view.status.name ??
+                  (neverHere
+                    ? 'No Fanatec wheel base on this PC'
+                    : 'No Fanatec wheel base connected')
+                }}
               </div>
               <div class="rr-row-sub" data-testid="wheel-mode">
                 <template v-if="view.status.connected">
@@ -124,6 +146,10 @@ const STATUS = {
                   >
                   <template v-if="view.status.connection"> · {{ view.status.connection }}</template>
                 </template>
+                <template v-else-if="neverHere"
+                  >Nothing to set up unless you have one. Plug a base in and this page fills in by
+                  itself.</template
+                >
                 <template v-else
                   >Plug it in and switch it on; this page updates by itself.</template
                 >

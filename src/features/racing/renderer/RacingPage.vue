@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { racingContract, type RacingOverview } from '../contract';
@@ -23,6 +23,15 @@ onMounted(() => {
   off = onMachineChanged(() => void load());
 });
 onBeforeUnmount(() => off?.());
+
+/** A PC that never had a Fanatec base: none connected, no Fanatec software, no trace of one. */
+const neverHere = computed(
+  () =>
+    view.value !== undefined &&
+    !view.value.wheel.connected &&
+    view.value.wheel.lastSeen.length === 0 &&
+    view.value.wheel.software.every((s) => !s.ok)
+);
 
 const ICONS: Record<string, string> = {
   iracing: 'mdi-flag-checkered',
@@ -62,13 +71,24 @@ const ICONS: Record<string, string> = {
                   ? view.wheel.mode === 'pc'
                     ? 'mdi-check-circle'
                     : 'mdi-alert'
-                  : 'mdi-close-circle'
+                  : neverHere
+                    ? 'mdi-minus-circle-outline'
+                    : 'mdi-close-circle'
               "
               :class="
-                view.wheel.connected ? (view.wheel.mode === 'pc' ? 'rr-ok' : 'rr-warn') : 'rr-bad'
+                view.wheel.connected
+                  ? view.wheel.mode === 'pc'
+                    ? 'rr-ok'
+                    : 'rr-warn'
+                  : neverHere
+                    ? 'rr-muted'
+                    : 'rr-bad'
               "
             />
-            {{ view.wheel.name ?? 'No Fanatec wheel base connected' }}
+            {{
+              view.wheel.name ??
+              (neverHere ? 'No Fanatec wheel base on this PC' : 'No Fanatec wheel base connected')
+            }}
             <v-spacer />
             <v-icon icon="mdi-chevron-right" class="rr-muted" />
           </div>
@@ -84,6 +104,10 @@ const ICONS: Record<string, string> = {
               }}
               <template v-if="view.wheel.connection"> · {{ view.wheel.connection }}</template>
             </template>
+            <template v-else-if="neverHere"
+              >Nothing to set up unless you have one. Plug a base in and its page fills in by
+              itself.</template
+            >
             <template v-else
               >Plug the base in and switch it on. Its settings page has the presets you
               recorded.</template

@@ -1026,8 +1026,13 @@ requirements:
     done_means:
       - "A profile can use game 'Other' with a user-given name, an executable launch target and user-chosen tracked files; checklist, launch, tracked files and backup all work for it."
       - "E2E with fixture generic-rig: create an 'Other' profile for a fake game exe, run checks, launch, back up its tracked folder."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/unit/genericRig.test.ts#"Other" with a name, a program, checks, launch, tracked files and a backup'
+      - 'tests/e2e/generic-rig.e2e.ts#generic rig: an "Other" game is set up, checked, launched and its tracked folder backed up'
+      - 'artifacts/screens/generic-custom-game/01-other-game.png'
+      - 'artifacts/screens/generic-custom-game/03-launched.png'
+      - 'artifacts/screens/generic-custom-game/07-backed-up.png'
 
   - id: CFG-PROFILE-015
     title: Path variables in profiles
@@ -2515,6 +2520,10 @@ requirements:
       - "artifacts/screens/racing-game-pages/02-iracing.png"
       - "artifacts/screens/racing-game-pages/03-not-found.png"
       - "artifacts/screens/racing-game-pages/04-folder-chosen.png"
+      - "tests/unit/genericRig.test.ts#every Configure page gets an answer it can draw as an empty state, never an error"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "artifacts/screens/generic-configure/06-game-iracing.png"
+      - "artifacts/screens/generic-configure/15-racing-iracing.png"
 
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults

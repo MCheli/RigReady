@@ -1,0 +1,74 @@
+[
+  {
+    "instanceId": "USB\\VID_05E3&PID_0608\\5&2b7c91d0&0&2",
+    "vendorId": "05E3",
+    "productId": "0608",
+    "name": "Generic USB Hub",
+    "isHid": false,
+    "isGameController": false,
+    "isHub": true,
+    "hubChain": [
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&1f2e3d4c&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "(Standard USB HUBs)"
+  },
+  {
+    "instanceId": "USB\\VID_046D&PID_C215\\5&2b7c91d0&0&1",
+    "vendorId": "046D",
+    "productId": "C215",
+    "name": "Logitech Extreme 3D",
+    "isHid": true,
+    "isGameController": true,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&1f2e3d4c&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "Logitech"
+  },
+  {
+    "instanceId": "USB\\VID_046D&PID_C31C\\6&3a5d17e2&0&1",
+    "vendorId": "046D",
+    "productId": "C31C",
+    "name": "USB Keyboard",
+    "isHid": true,
+    "isGameController": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0608\\5&2b7c91d0&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&1f2e3d4c&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "Logitech"
+  },
+  {
+    "instanceId": "USB\\VID_046D&PID_C077\\6&3a5d17e2&0&2",
+    "vendorId": "046D",
+    "productId": "C077",
+    "name": "USB Optical Mouse",
+    "isHid": true,
+    "isGameController": false,
+    "isHub": false,
+    "hubChain": [
+      {
+        "instanceId": "USB\\VID_05E3&PID_0608\\5&2b7c91d0&0&2",
+        "name": "Generic USB Hub"
+      },
+      {
+        "instanceId": "USB\\ROOT_HUB30\\4&1f2e3d4c&0&0",
+        "name": "USB Root Hub (USB 3.0)"
+      }
+    ],
+    "manufacturer": "Logitech"
+  }
+]

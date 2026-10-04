@@ -1,0 +1,20 @@
+description: A generic PC with the standalone DCS World installed, no flight gear
+rig: generic-rig
+extends: generic-fresh.yaml
+# The standalone edition (not Steam): the installer's registry key, the program, and a
+# Saved Games folder DCS has written once. Nothing else of DCS is on this PC.
+mutations:
+  - op: setRegistryValue
+    hive: HKCU
+    key: Software\Eagle Dynamics\DCS World
+    name: Path
+    value: { type: string, value: 'C:\Program Files\Eagle Dynamics\DCS World' }
+  - op: writeFile
+    path: Program Files/Eagle Dynamics/DCS World/bin/DCS.exe
+    content: ''
+  - op: writeFile
+    path: Saved Games/DCS/Config/options.lua
+    content: |
+      options = {
+        ["graphics"] = { ["width"] = 1920, ["height"] = 1080, ["multiMonitorSetup"] = "1camera" },
+      }

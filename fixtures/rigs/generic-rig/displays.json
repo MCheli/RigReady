@@ -1,0 +1,38 @@
+{
+  "displays": [
+    {
+      "id": "\\\\?\\display#bnq78e7#4&2d9a6f1b&0&uid4352#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "name": "BenQ GW2480",
+      "enabled": true,
+      "primary": true,
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "rotation": 0,
+      "rawRotation": 1,
+      "edid": "BNQ78E7",
+      "gdiName": "\\\\.\\DISPLAY1",
+      "refreshHz": 60,
+      "serial": "GENERIC0001",
+      "connector": "HDMI",
+      "modes": [
+        {
+          "width": 1920,
+          "height": 1080,
+          "refreshHz": 60
+        },
+        {
+          "width": 1680,
+          "height": 1050,
+          "refreshHz": 60
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "refreshHz": 60
+        }
+      ]
+    }
+  ]
+}
