@@ -64,6 +64,9 @@ export const DesktopDisplaySchema = z.object({
   height: z.number().int().positive(),
   rotation: z.number().int().default(0),
   primary: z.boolean().default(false),
+  /** What finds the monitor again on another connector or USB port (core/displays/identity.ts). */
+  serial: z.string().optional(),
+  usbSerial: z.string().optional(),
 });
 export type DesktopDisplay = z.infer<typeof DesktopDisplaySchema>;
 

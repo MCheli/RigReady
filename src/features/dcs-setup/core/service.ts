@@ -2,6 +2,7 @@ import path from 'node:path';
 import type { CheckContext, RunProfile } from '../../../core/checks/registry';
 import type { MainContext } from '../../../core/feature';
 import { profileExtension, withProfileExtension, type Profile } from '../../../core/profile/schema';
+import { matchMonitors } from '../../../core/displays/identity';
 import { err, ok, type Result } from '../../../core/result';
 import type {
   DesktopChoice,
@@ -48,7 +49,8 @@ import { findSimAppPro, readSimAppProPlan } from './simAppPro';
 import { DcsProfileExtensionSchema, type RuntimeFeature } from './simAppProShared';
 import { createStateStore, type DcsSetupState, type StateStore } from './state';
 
-export type ServiceContext = Pick<MainContext, 'ports' | 'log' | 'games' | 'profiles' | 'layouts'>;
+export type ServiceContext = Pick<MainContext, 'ports' | 'log' | 'games' | 'profiles' | 'layouts'> &
+  Partial<Pick<MainContext, 'names'>>;
 
 export const FEATURE_ID = 'dcs-setup';
 export const SIMAPPPRO_CHECK = 'dcs.simAppProRunning';
@@ -111,9 +113,17 @@ export function desktopDrift(setup: ScreenSetup, current: DesktopDisplay[]): str
     ...setup.aircraft.flatMap((a) => a.placements.map((p) => p.displayId)),
   ]);
   const problems: string[] = [];
-  for (const want of setup.desktop.filter((d) => used.has(d.id))) {
-    const have = current.find((d) => d.id === want.id);
-    const label = want.name || 'A monitor';
+  // The same identity rules as the monitor layouts: a USB screen is the same screen on
+  // any USB port.
+  const wanted = setup.desktop.filter((d) => used.has(d.id));
+  const matches = matchMonitors(
+    wanted,
+    current.map((d) => ({ ...d, enabled: true, rotation: 0 as const }))
+  );
+  for (const [index, want] of wanted.entries()) {
+    const found = matches[index]?.actual;
+    const have = found ? current.find((d) => d.id === found.id) : undefined;
+    const label = have?.name || want.name || 'A monitor';
     if (!have) problems.push(`${label} is off or not connected`);
     else if (
       have.x !== want.x ||
@@ -186,11 +196,15 @@ export class DcsSetupService {
   async currentDesktop(): Promise<DesktopDisplay[]> {
     const layout = await this.ctx.ports.displays.read();
     if (!layout.ok) return [];
+    // Called what the owner calls them on the Monitors page ("MFD left").
+    const names = (await this.ctx.names?.monitors()) ?? {};
     return layout.value.displays
       .filter((d) => d.enabled && d.width > 0 && d.height > 0)
       .map((d) => ({
         id: d.id,
-        name: d.name,
+        name: names[d.id.toLowerCase()] ?? d.name,
+        ...(d.serial ? { serial: d.serial } : {}),
+        ...(d.usbSerial ? { usbSerial: d.usbSerial } : {}),
         x: d.x,
         y: d.y,
         width: d.width,

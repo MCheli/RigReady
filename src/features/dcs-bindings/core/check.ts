@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type {
   CaptureDefinition,
+  CheckContext,
   CheckDefinition,
   RemediationDefinition,
 } from '../../../core/checks/registry';
@@ -28,15 +29,24 @@ export const BindingsCheckParamsSchema = z.object({
 export type BindingsCheckParams = z.infer<typeof BindingsCheckParamsSchema>;
 
 export function createBindingsCheck(
-  bindings: () => DcsBindings
+  bindings: (ctx?: CheckContext) => DcsBindings
 ): CheckDefinition<BindingsCheckParams> {
   return {
     type: BINDINGS_CHECK,
     group: 'files',
     label: 'DCS bindings match the connected devices',
     params: BindingsCheckParamsSchema,
-    async run(params) {
-      const service = bindings();
+    async run(params, ctx) {
+      // A setup that names its DCS install has its bindings checked in that install's folder.
+      const service = bindings(ctx);
+      if (service.ctx.install && !(await service.locations()).installDir) {
+        return {
+          pass: false,
+          error: true,
+          summary: 'DCS install not found',
+          details: [`This setup uses the DCS install at ${service.ctx.install}, which is gone.`],
+        };
+      }
       const label = params.aircraftName ?? params.aircraft;
       const scan = await scanMigration(service);
       if (!scan.ok) return { pass: false, summary: scan.error.message };

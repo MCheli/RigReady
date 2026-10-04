@@ -1,3 +1,4 @@
+import type { CheckContext } from '../../core/checks/registry';
 import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { dcsBindingsContract } from './contract';
@@ -29,7 +30,25 @@ export default defineFeatureMain({
       games: ctx.games,
       names: () => ctx.names.devices(),
     });
-    const service = (): DcsBindings => bindings;
+    // One service per DCS install a setup names; the pages use the first install found.
+    const perInstall = new Map<string, DcsBindings>();
+    const service = (checkCtx?: CheckContext): DcsBindings => {
+      const install = checkCtx?.profile?.game === 'dcs' ? checkCtx.profile.install : undefined;
+      if (!install) return bindings;
+      const key = install.toLowerCase();
+      let scoped = perInstall.get(key);
+      if (!scoped) {
+        scoped = new DcsBindings({
+          ports: ctx.ports,
+          log: ctx.log,
+          games: ctx.games,
+          names: () => ctx.names.devices(),
+          install,
+        });
+        perInstall.set(key, scoped);
+      }
+      return scoped;
+    };
 
     ctx.bindings.register(createBindingReader(bindings));
     ctx.checks.registerCheck(createBindingsCheck(service));

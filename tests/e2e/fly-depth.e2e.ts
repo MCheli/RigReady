@@ -130,6 +130,17 @@ test('fly: Make ready fixes monitors, files and apps in that order, and ends Rea
   await expect(checkRow(page, 'DCS options').getByTestId('check-fix')).toHaveText(
     /Restore options.lua from the copy you saved of 2026-10-01 \d\d:00/
   );
+  // The full Hornet setup has a check of every kind: all five groups are on the screen,
+  // in their fixed order, the passing ones folded to one line.
+  await expect(page.locator('section.fly-group h2')).toHaveText([
+    'Devices connected',
+    'Apps and services',
+    'Monitors',
+    'Audio',
+    'Config files',
+  ]);
+  await expect(page.getByTestId('group-audio')).toContainText('1 of 1 OK');
+  await expect(page.getByTestId('group-devices')).toContainText('3 of 3 OK');
   await shot('four-problems');
 
   await page.getByTestId('make-ready').click();

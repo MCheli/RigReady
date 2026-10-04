@@ -627,6 +627,17 @@ describe('a setup that names the DCS install it uses', () => {
       ['install', 'error', 'DCS install not found'],
       ['dcs', 'fail', 'DCS install not found'],
     ]);
+    // The bindings check looks in that install's folder too, and says the same when it is gone.
+    const bindings: CheckItem = {
+      id: 'bindings',
+      type: 'dcs-bindings.deviceIds',
+      title: 'DCS bindings',
+      required: false,
+      params: { aircraft: 'FA-18C_hornet' },
+    };
+    const bound = await runChecks({ ...profile, checks: [bindings] }, checks, app.ctx);
+    expect(bound.results[0]).toMatchObject({ status: 'error', summary: 'DCS install not found' });
+
     const started = app.ports.processes.started.length;
     expect(await fly().launch('p')).toMatchObject({
       value: { outcome: 'failed', message: `DCS World install not found at ${beta}` },
@@ -700,5 +711,43 @@ describe('what a script printed is kept with its step', () => {
     };
     const fixed = await fixItem(profileOf([item]), 's', app.wiring.context.checks, app.ctx);
     expect(fixed!.step.output!.split('\n')).toHaveLength(200);
+  });
+});
+
+describe('DCS screen setup and the monitors', () => {
+  it("calls monitors by the owner's names, and a USB screen moved to another port is still the same screen", async () => {
+    app = await wiredApp('flying-fresh', {
+      files: [
+        'Saved Games/DCS/**',
+        'Program Files (x86)/Steam/**',
+        'AppData/Roaming/SimAppPro/**',
+        'AppData/Local/Programs/SimAppPro/**',
+      ],
+    });
+    const mfds = app.ports.state.displays.filter((d) => d.name === 'USB_Monitor');
+    await app.invoke('displays:setName', { id: mfds[0]!.id, name: 'MFD left' });
+    type Desktop = { id: string; name: string; usbSerial?: string }[];
+    const { setup } = await app.invoke<{ setup: { desktop: Desktop } }>(
+      'dcs-setup:importSimAppPro',
+      { desktopId: 'current' }
+    );
+    // The name given on the Monitors page, and what follows the screen to another port.
+    expect(setup.desktop.find((d) => d.id === mfds[0]!.id)).toMatchObject({
+      name: 'MFD left',
+      usbSerial: 'WWIN29320221210163532',
+    });
+    await app.invoke('dcs-setup:applyScreens', { setup });
+    type Overview = { monitorSetup: { problems: string[] } };
+    expect((await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems).toEqual([]);
+
+    // Plugged into another USB port: a new id, the same screen, nothing to complain about.
+    mfds[0]!.id = mfds[0]!.id.replace('2c1ac5a9', '77777777');
+    expect((await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems).toEqual([]);
+    // Turned off, it is missed by the owner's name for it.
+    await mutate(app, [
+      { op: 'setDisplay', match: { name: 'USB_Monitor', index: 0 }, set: { enabled: false } },
+    ]);
+    const problems = (await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems;
+    expect(problems.some((p) => p.includes('MFD left is off or not connected'))).toBe(true);
   });
 });

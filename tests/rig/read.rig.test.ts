@@ -2,8 +2,11 @@
  * Read-only checks against the real hardware of the PC this runs on.
  * They assert what must be true of any working rig, not what Mark's rig contains.
  */
+import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { matchMonitors } from '../../src/core/displays/identity';
+import { layoutToTargets } from '../../src/core/displays/layouts';
 import { nullLogger } from '../../src/core/logger';
 import { buildUsbTree } from '../../src/core/usb';
 import { createWindowsPorts } from '../../src/platform/windows';
@@ -98,6 +101,30 @@ describe('real hardware (read-only)', () => {
         expect(d.usbId, `${d.name} usb id`).toMatch(/^[0-9A-F]{4}:[0-9A-F]{4}$/);
       }
     }
+  });
+
+  it('finds every monitor of the recorded fixture on this PC, by the identity that follows the monitor', async () => {
+    const result = await ports.displays.read();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const fixture = DisplayLayoutSchema.parse(
+      JSON.parse(
+        await fs.readFile(
+          path.join(projectRoot, 'fixtures', 'rigs', 'mark-full', 'displays.json'),
+          'utf8'
+        )
+      )
+    );
+    const matches = matchMonitors(layoutToTargets(fixture), result.value.displays);
+    const missing = matches.filter((m) => !m.actual).map((m) => m.expected.name);
+    console.log(
+      `  fixture mark-full: ${fixture.displays.length} monitors, this PC: ${result.value.displays.length}; matched by ${matches.map((m) => m.how ?? 'nothing').join(', ')}`
+    );
+    // A monitor that is gone, or a new one (the TV), means the fixture should be recorded again.
+    expect(missing, 'fixture monitors not connected now').toEqual([]);
+    expect(result.value.displays.length, 'monitor count as recorded in the fixture').toBe(
+      fixture.displays.length
+    );
   });
 
   it('lists processes including this one, with image paths', async () => {

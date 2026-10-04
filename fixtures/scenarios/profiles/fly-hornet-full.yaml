@@ -49,3 +49,15 @@ checks:
     remediation:
       type: display.applyLayout
       params: *layout
+  - id: c8
+    type: audio.defaultDevice
+    title: Headset microphone
+    required: true
+    params: &microphone
+      flow: recording
+      id: '{0.0.1.00000000}.{2255b204-0d8f-4fb5-8c8a-10ee65d5a884}'
+      name: Headset Microphone (Arctis Pro Wireless Chat)
+      role: default
+    remediation:
+      type: audio.setDefault
+      params: *microphone

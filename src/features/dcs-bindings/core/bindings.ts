@@ -59,6 +59,8 @@ export interface BindingsContext extends CheckContext {
   games: GameRegistry;
   /** The names the owner gave devices (ctx.names.devices); without it devices have no given name. */
   names?: () => Promise<DeviceNames>;
+  /** The DCS install a setup names (Profile.gameInstall). Absent: the first install found. */
+  install?: string;
 }
 
 export interface Locations {
@@ -190,7 +192,20 @@ export class DcsBindings {
     const dcs = this.ctx.games.get('dcs');
     let userDir: string | undefined;
     let installDir: string | undefined;
-    if (dcs) {
+    const chosen = this.ctx.install;
+    if (dcs && chosen) {
+      // The install a setup names: its folders, or none. Never another install's.
+      const installs = await dcs.detect(this.ctx);
+      const install = (installs.ok ? installs.value : []).find(
+        (i) => path.resolve(i.installDir).toLowerCase() === path.resolve(chosen).toLowerCase()
+      );
+      installDir = install?.installDir;
+      userDir = install?.userDir;
+      if (!install) {
+        const missing = path.join(ports.folders.savedGames(), 'DCS (install not found)');
+        return { userDir: missing, inputDir: path.join(missing, 'Config', 'Input'), found: false };
+      }
+    } else if (dcs) {
       const locations = await dcs.configLocations(this.ctx);
       if (locations.ok) userDir = locations.value[0]?.path;
       const installs = await dcs.detect(this.ctx);
