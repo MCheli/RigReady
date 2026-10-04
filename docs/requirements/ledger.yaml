@@ -3159,8 +3159,19 @@ requirements:
     done_means:
       - "If a referenced device's VID/PID matches a connected device under a different name string, RigReady offers to update the identifier, with preview and backup."
       - "Unit test with fixture JSON where the wheel's name changed after a driver update."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-04: built. A controller entry in direct input.json is matched to a connected controller by its product guid (VID/PID); when the name differs, the Le Mans Ultimate page offers 'Update Le Mans Ultimate…' (preview first, one journaled action with backup, refused while the game runs, read back before it reports). Either the bindings are pointed at the entry the game already made under the new name, or the name is replaced in the key, 'product name', 'instance name' and every binding. The 16-hex suffix of LMU's id is kept: what it is made from is still unknown (docs/research/racing.md 3.3), so the dialog says 'Not yet verified in the game' for that case. Not offered when nothing needs it, when the key is not built from the product name, or when two connected controllers of the model have different names. Left for the owner: after a real driver update that renames the base, run the repair, start LMU and confirm the bindings are still bound (or compare the 'Controller unique name' trace line with the key); a suffix change on its own (USB port move) stays unrepaired."
+    status: done
+    evidence:
+      - "src/features/racing/core/lmu/lmu.test.ts#offers to update the name, shows the change first, writes only the name, and can be undone"
+      - "src/features/racing/core/lmu/lmu.test.ts#is refused while the game runs, and never reports a change the file did not keep"
+      - "src/features/racing/core/lmu/lmu.test.ts#moves the bindings to the entry the game already made under the new name"
+      - "src/features/racing/core/lmu/lmu.test.ts#offers nothing where there is nothing to repair or the file is not as expected"
+      - "tests/unit/writeAudit.test.ts#Le Mans Ultimate: putting the new name of a renamed wheel base into the bindings"
+      - "tests/e2e/racing.e2e.ts#racing: Le Mans Ultimate bindings are pointed at a wheel base Windows renamed"
+      - "artifacts/screens/racing-lmu-renamed/02-renamed.png"
+      - "artifacts/screens/racing-lmu-renamed/03-confirm.png"
+      - "artifacts/screens/racing-lmu-renamed/04-repaired.png"
 
   # ---------------------------------------------------------------------------
   # RACING — BeamNG.drive

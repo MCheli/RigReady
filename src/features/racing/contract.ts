@@ -67,11 +67,19 @@ export const LmuDeviceViewSchema = z.object({
   vendorId: z.string().optional(),
   productId: z.string().optional(),
   type: z.string(),
-  /** other-mode: a Fanatec base is attached, but in compatibility (yellow) mode. */
-  state: z.enum(['connected', 'missing', 'other-mode', 'unknown']),
+  /**
+   * other-mode: a Fanatec base is attached, but in compatibility (yellow) mode. renamed: the
+   * controller is attached, but Windows now gives it another name than the game stored.
+   */
+  state: z.enum(['connected', 'renamed', 'missing', 'other-mode', 'unknown']),
   forceFeedback: z.array(Pair),
   options: z.array(Pair),
   bindingCount: z.number(),
+  /**
+   * For "renamed", and only when RigReady can repair it: the name the controller has now.
+   * `exact`: the game already lists it under that name, so the id written is the game's own.
+   */
+  rename: z.object({ name: z.string(), exact: z.boolean(), bindings: z.number() }).optional(),
 });
 export type LmuDeviceView = z.infer<typeof LmuDeviceViewSchema>;
 
@@ -324,6 +332,10 @@ export const racingContract = defineContract('racing', {
     WritePreviewSchema
   ),
   lmu: channel(noInput, LmuViewSchema),
+  /** Puts the new name of every renamed controller into Le Mans Ultimate's bindings file. */
+  lmuRepair: channel(noInput, Message),
+  /** What that repair would change in direct input.json. Reads only. */
+  lmuRepairPreview: channel(noInput, WritePreviewSchema),
   beamng: channel(noInput, BeamngViewSchema),
   beamngCopyOlder: channel(z.object({ version: z.string().regex(/^[\d.]+$/) }), Message),
   /** Which binding files that copy would create and replace. Reads only. */
