@@ -26,9 +26,24 @@ export interface DeviceProvider {
   subscribe(listener: () => void): () => void;
 }
 
+/**
+ * The DirectInput controllers a game sees and their live state. One reader serves the
+ * whole app.
+ *
+ * Lifetime rule: a feature calls start() every time it needs controllers and never calls
+ * stop(). start() is idempotent: when the reader is running it answers at once with the
+ * current controllers, calls made while it is starting share that one start, and after a
+ * failed start the next call tries again. Only the app shell stops the reader, on quit
+ * (src/main/index.ts). A feature that listens to live input unsubscribes when it is done;
+ * that is all the cleaning up it does.
+ */
 export interface InputProvider {
-  /** Starts the DirectInput reader. Resolves with the devices a game would see. */
+  /**
+   * Makes sure the DirectInput reader runs. Resolves with the controllers a game would see
+   * right now. Cheap when it is already running; safe to call from several features at once.
+   */
   start(): Promise<Result<InputDevice[]>>;
+  /** Ends the reader. For the app shell on quit only; a start() after it starts a new reader. */
   stop(): Promise<void>;
   devices(): InputDevice[];
   /**
