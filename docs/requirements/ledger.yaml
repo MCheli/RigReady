@@ -2468,8 +2468,17 @@ requirements:
     done_means:
       - "Before import, a report compares the bundle's requirements with this machine: devices present or missing (matched by VID/PID), games installed or missing, helper apps found or not, monitors count vs layout."
       - "Fixture generic-rig importing mark-flight's F/A-18C bundle reports the WinWing devices as missing and DCS as found."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/sharing/core/sharing.test.ts#reports what it needs against this PC: missing devices, the game, helper apps, monitors'
+      - 'tests/unit/shareCompat.test.ts#generic-rig with DCS installed: the WinWing devices are missing and DCS is found'
+      - 'tests/unit/shareCompat.test.ts#generic-rig: every device of the flight rig is missing, DCS and the helper apps are not found, one monitor for four'
+      - 'tests/unit/shareCompat.test.ts#$scenario: the flight gear is missing, what stayed on the rig is found, $monitors monitors for four'
+      - 'tests/unit/shareCompat.test.ts#on the rig it was made on, everything it needs is there'
+      - 'tests/e2e/share-compat.e2e.ts#share: the F/A-18C setup of the flight rig, opened on a generic PC and on the racing rig, reports what is missing'
+      - 'artifacts/screens/share-compat-generic/01-report.png'
+      - 'artifacts/screens/share-compat-generic/02-report-software.png'
+      - 'artifacts/screens/share-compat-racing/01-report.png'
 
   - id: SHARE-007
     title: Selective import
