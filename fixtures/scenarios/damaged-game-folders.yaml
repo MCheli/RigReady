@@ -1,0 +1,10 @@
+description: Flying, but the folders of DCS and iRacing were deleted
+rig: mark-full
+extends: flying-all-good.yaml
+# NFR-008: a game whose folders are gone (uninstalled by hand, a drive that is not there).
+# Steam still lists DCS (its manifest is left), the registry still names iRacing.
+mutations:
+  - { op: removeFile, path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld' }
+  - { op: removeFile, path: 'Saved Games/DCS' }
+  - { op: removeFile, path: 'Program Files (x86)/iRacing' }
+  - { op: removeFile, path: 'Documents/iRacing' }

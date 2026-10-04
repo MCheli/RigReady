@@ -185,6 +185,7 @@ function safeJson(body: string): unknown {
   try {
     return JSON.parse(body);
   } catch {
+    // Not JSON: the caller reports the status and the raw body instead.
     return undefined;
   }
 }

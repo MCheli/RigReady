@@ -3642,8 +3642,30 @@ requirements:
       - "One async logger with levels writes rotating files under {RIGREADY_HOME}/logs/ (e.g. 5 files x 5 MB)."
       - "Logs never contain the Anthropic key or file contents; paths are logged."
       - "A Diagnostics page shows the recent log, app/OS versions, data root, detected games and devices, and 'Export diagnostics' writes a zip that passes the SHARE-002 privacy scrub."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: 'paths are logged' holds with one rule: the user's home folder is written as ~, and the name in any other user folder (C:/Users/<name>) as ~, so the Windows user name is not in the log. Secrets (sk-ant-..., authorization headers, passwords) are masked whatever the caller passes, and any single text longer than 600 characters is cut, which is what keeps file contents out. Level: RIGREADY_LOG_LEVEL, else the 'Detailed log' switch on the Diagnostics page (settings.logLevel), else info. Five files of 5 MB."
+    status: done
+    evidence:
+      - "tests/unit/logging.test.ts#has four levels, and the level can change while the app runs"
+      - "tests/unit/logging.test.ts#rotates at the size limit and never keeps more than the configured number of files"
+      - "tests/unit/logging.test.ts#does not block or throw when the log cannot be written; it counts what was lost"
+      - "tests/unit/logging.test.ts#the level comes from RIGREADY_LOG_LEVEL, else from the setting, else it is info"
+      - "tests/unit/logging.test.ts#never writes the Anthropic key, whatever the caller passes"
+      - "tests/unit/logging.test.ts#writes paths, but with the home folder as ~ and no Windows user name"
+      - "tests/unit/logging.test.ts#does not write file contents: long texts are cut and binary data is only counted"
+      - "tests/unit/logging.test.ts#at the most detailed level: no API key, no file contents, no home folder"
+      - "src/features/diagnostics/core/diagnostics.test.ts#shows versions, the data root, the games found and the devices of this PC"
+      - "src/features/diagnostics/core/diagnostics.test.ts#reads the newest entries back, and says so when nothing was logged yet"
+      - "src/features/diagnostics/core/diagnostics.test.ts#Copy diagnostics puts the scrubbed text on the clipboard"
+      - "src/features/diagnostics/core/diagnostics.test.ts#Open log folder starts Explorer with the folder as one argument"
+      - "src/features/diagnostics/core/diagnostics.test.ts#Export diagnostics writes a zip that passes the privacy scrub of a shared setup"
+      - "tests/e2e/diagnostics.e2e.ts#diagnostics: versions, games, devices and the recent log; copy, open the log folder, export"
+      - "artifacts/screens/diagnostics/01-this-pc.png"
+      - "artifacts/screens/diagnostics/02-log.png"
+      - "artifacts/screens/diagnostics/03-log-no-warnings.png"
+      - "artifacts/screens/diagnostics/04-copied.png"
+      - "artifacts/screens/diagnostics/05-exported.png"
+      - "artifacts/screens/generic-configure/31-diagnostics.png"
 
   - id: PLAT-010
     title: Errors are visible, not swallowed
@@ -3653,8 +3675,36 @@ requirements:
     done_means:
       - "Unhandled errors in main or renderer are logged and shown as a non-blocking error notice with 'Copy details'; the app keeps running where possible."
       - "Expected failures return Result errors that the UI renders with a message; a test forces a provider error and asserts the message appears."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: covered: uncaughtException and unhandledRejection in main, error and unhandledrejection events and Vue's errorHandler in the window, a crashed window (it is loaded again and says so), a helper process that died. A failure to start at all shows a Windows message box. Every catch in src/ that drops the error either reports it or says why in a comment (audit test). The failProvider scenario mutation forces a failing read of devices, displays, audio, processes or services."
+    status: done
+    evidence:
+      - "tests/unit/errorCenter.test.ts#keeps reports, counts repeats, tells listeners and survives a listener that throws"
+      - "tests/unit/errorCenter.test.ts#masks secrets and user folders, bounds what it keeps, and can be reset"
+      - "src/features/diagnostics/core/diagnostics.test.ts#reach the window as an event, can be copied with details, and are dismissed"
+      - "src/features/diagnostics/core/diagnostics.test.ts#a provider that does not answer or fails is reported in its section; the rest still shows"
+      - "tests/unit/swallowedErrors.test.ts#every catch in src/ that drops the error says why"
+      - "tests/unit/providerFailure.test.ts#every check of a setup reports the failure as not met, with the message"
+      - "tests/unit/providerFailure.test.ts#a game is not written to when RigReady cannot see whether it is running"
+      - "tests/unit/providerFailure.test.ts#a folder that exists but cannot be listed is an error, not an empty folder"
+      - "tests/unit/providerFailure.test.ts#an error answer of any request is in the detailed log; a handler that throws is an error entry"
+      - "tests/e2e/diagnostics.e2e.ts#diagnostics: an unexpected error in main or in the window is logged and shown with Copy details; the app keeps running"
+      - "tests/e2e/diagnostics.e2e.ts#diagnostics: a window whose page crashed is loaded again and says what happened"
+      - "tests/e2e/errors.e2e.ts#errors: a provider that fails is shown as a message on Fly, Devices, Monitors, Audio and Backups, and the pages recover"
+      - "tests/e2e/errors.e2e.ts#errors: a driver call that never answers does not freeze Diagnostics"
+      - "artifacts/screens/errors-unexpected/01-main-error.png"
+      - "artifacts/screens/errors-unexpected/02-copied-details.png"
+      - "artifacts/screens/errors-unexpected/03-window-errors.png"
+      - "artifacts/screens/errors-unexpected/04-errors-in-log.png"
+      - "artifacts/screens/errors-window-crash/01-reloaded.png"
+      - "artifacts/screens/errors-provider/01-fly.png"
+      - "artifacts/screens/errors-provider/02-devices.png"
+      - "artifacts/screens/errors-provider/03-monitors.png"
+      - "artifacts/screens/errors-provider/04-audio.png"
+      - "artifacts/screens/errors-provider/05-diagnostics.png"
+      - "artifacts/screens/errors-provider/06-backups.png"
+      - "artifacts/screens/errors-provider/07-recovered.png"
+      - "artifacts/screens/errors-hung-provider/01-devices-silent.png"
 
   - id: PLAT-011
     title: Settings
@@ -3664,8 +3714,20 @@ requirements:
     done_means:
       - "Settings (start with Windows, close to tray, minimise on launch, desk layout, notifications, update channel, retention, AI key) are stored as JSON under the data root, validated by zod, with defaults for missing fields."
       - "A corrupted settings file is backed up and replaced by defaults with a notice; the app still starts."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: where each lives, all JSON under the data root and validated by zod with defaults: settings.json holds start with Windows, close to tray (minimizeToTray), desk layout, retention, the AI key's presence flag (the key itself is in the encrypted secret store) and the log level; fly/preferences.json holds minimise on launch; devices.json holds the notification choice. The update channel is the updater's own block in settings.json and its evidence is with the updater's entries, not listed here."
+    status: done
+    evidence:
+      - "tests/unit/settingsInventory.test.ts#each has a default before anything is saved"
+      - "tests/unit/settingsInventory.test.ts#each is stored as JSON under the data root and read back after a restart"
+      - "tests/unit/settingsInventory.test.ts#each is validated: a value that is not allowed is refused and nothing changes"
+      - "tests/unit/settingsInventory.test.ts#a settings file from an older version gets defaults for what it lacks, and unknown fields do no harm"
+      - "tests/unit/settings.test.ts#fills in defaults for missing fields, and sets an unreadable file aside with a notice"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: the app gets settings, and the old file is kept byte for byte"
+      - "tests/unit/fuzzStores.test.ts#locked: an error that says so; the file is neither replaced nor set aside"
+      - "tests/e2e/damaged-files.e2e.ts#damaged files: the app starts with a damaged settings file, setups, monitor layouts and journal, says so, and keeps every file"
+      - "artifacts/screens/damaged-data-files/01-started-with-notices.png"
+      - "artifacts/screens/damaged-data-files/06-second-start.png"
 
   - id: PLAT-012
     title: Windows 10 and 11
@@ -3818,8 +3880,40 @@ requirements:
     done_means:
       - "Every reader (profiles, Lua, JSON, INI, YAML, VDF) returns a Result error for missing, empty, locked, non-UTF-8 and BOM-prefixed files; fuzz-style tests feed each reader these cases and none throws."
       - "A game whose folders were deleted shows 'not found' in the UI rather than crashing the page."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: 'locked' is simulated at the file port (reads or writes fail with EBUSY), because Node always opens files shared on Windows and cannot hold one exclusively. Beyond the criterion: a damaged store is never overwritten without the old file being kept (settings and monitor layouts are set aside byte for byte, everything else is left in place and reported), the journal survives a cut-off line, readers have size caps, and a file that is not UTF-8 is never rewritten from its lossy text. Two parsers (VDF, BeamNG's relaxed JSON) report damage by throwing an Error that their callers turn into a Result; the fuzz tests hold them to that. Steam games detected only by their app manifest (Assetto Corsa EVO and Rally, MSFS 2024) are still listed when their folder is deleted by hand while Steam's manifest remains, as Steam itself does."
+    status: done
+    evidence:
+      - "tests/unit/fuzzParsers.test.ts#huge and deeply nested content is refused or read quickly, never a stack overflow or a hang"
+      - "tests/unit/fuzzParsers.test.ts#profile YAML: every damaged form is a parse error or a value, never a crash of the YAML reader"
+      - "tests/unit/fuzzParsers.test.ts#a zip is checked before it is unpacked: a bomb, a path outside the folder and a cut-off archive are refused"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: the app gets settings, and the old file is kept byte for byte"
+      - "tests/unit/fuzzStores.test.ts#every damaged form of one setup: it is listed as unreadable, the others still load, and its file is untouched"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: reading says so and changes nothing; recovery keeps the file aside and starts empty"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: an error result, and an update never overwrites the damaged file"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: the readable entries are listed, new changes are recorded, and no line is lost"
+      - "tests/unit/fuzzStores.test.ts#a line cut off by a crash: the entries before it survive and the next entry is not glued to it"
+      - "tests/unit/fuzzStores.test.ts#locked: reading says so, and a file is not changed when the change cannot be journaled"
+      - "tests/unit/fuzzStores.test.ts#a file that is not UTF-8 is never rewritten from its lossy text"
+      - "tests/unit/fuzzStores.test.ts#garbage in every data file: each is named, kept, and the app has something to work with"
+      - "tests/unit/fuzzApp.test.ts#every file locked (reads fail with EBUSY at the file port): every request still comes back as a value"
+      - "tests/unit/fuzzApp.test.ts#every file gone, and then every folder: \"not found\" answers, never a crash"
+      - "tests/unit/fuzzApp.test.ts#every JSON store of RigReady is garbage: no request overwrites one without keeping it aside"
+      - "tests/unit/fuzzApp.test.ts#files changing under a running app: damaged after the first read, the next read copes"
+      - "tests/e2e/damaged-files.e2e.ts#damaged files: the app starts with a damaged settings file, setups, monitor layouts and journal, says so, and keeps every file"
+      - "tests/e2e/damaged-files.e2e.ts#damaged files: a game whose folders were deleted shows \"not found\" on every page about it, never a crash"
+      - "tests/e2e/damaged-files.e2e.ts#damaged files: a game folder that disappears while the app is open turns into \"not found\""
+      - "artifacts/screens/damaged-data-files/01-started-with-notices.png"
+      - "artifacts/screens/damaged-data-files/02-setups.png"
+      - "artifacts/screens/damaged-data-files/03-monitors.png"
+      - "artifacts/screens/damaged-data-files/04-safety.png"
+      - "artifacts/screens/damaged-data-files/05-diagnostics.png"
+      - "artifacts/screens/damaged-game-folders/02-games.png"
+      - "artifacts/screens/damaged-game-folders/03-game-dcs.png"
+      - "artifacts/screens/damaged-game-folders/04-dcs.png"
+      - "artifacts/screens/damaged-game-folders/05-dcs-bindings.png"
+      - "artifacts/screens/damaged-game-folders/06-iracing.png"
+      - "artifacts/screens/damaged-game-vanishes/02-after.png"
 
   - id: NFR-009
     title: Nothing hardcoded to the owner's rig

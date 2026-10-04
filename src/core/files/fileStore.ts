@@ -16,12 +16,57 @@ import type {
 } from '../ports';
 import { err, fromThrown, ok, type Result } from '../result';
 import { createMatcher } from './glob';
+import { stripBom } from './text';
 
 export function sha256(data: Uint8Array | string): string {
   return createHash('sha256').update(data).digest('hex');
 }
 
 type JournalLine = JournalEntry | { undo: string };
+
+/** One line of journal.jsonl: what it says, or only its text when it cannot be read. */
+export interface JournalFileLine {
+  raw: string;
+  record?: JournalLine;
+}
+
+const isText = (value: unknown): value is string => typeof value === 'string';
+
+/**
+ * Reads the journal file line by line. A line that is not a journal record (cut off by
+ * a crash while it was being written, or damaged later) is kept as text and does not
+ * stop the others from being read: one bad line must not take Undo away for every change.
+ */
+export function parseJournal(text: string): JournalFileLine[] {
+  const lines: JournalFileLine[] = [];
+  for (const raw of stripBom(text).split(/\r?\n/)) {
+    if (raw.trim().length === 0) continue;
+    let record: JournalLine | undefined;
+    try {
+      // Only a JSON object can be a record; looking first keeps a large damaged file quick.
+      const value = raw.trimStart().startsWith('{')
+        ? (JSON.parse(raw) as Record<string, unknown> | null)
+        : null;
+      if (value && typeof value === 'object') {
+        if (isText(value['undo'])) record = { undo: value['undo'] };
+        else if (
+          isText(value['id']) &&
+          isText(value['path']) &&
+          isText(value['time']) &&
+          isText(value['reason']) &&
+          (value['action'] === 'write' || value['action'] === 'remove') &&
+          (value['backupPath'] === null || isText(value['backupPath']))
+        ) {
+          record = value as unknown as JournalEntry;
+        }
+      }
+    } catch {
+      // Not JSON: kept as a damaged line below.
+    }
+    lines.push(record ? { raw, record } : { raw });
+  }
+  return lines;
+}
 
 /**
  * The one way RigReady changes files. A write, copy or remove outside the data root
@@ -152,8 +197,39 @@ export class BackupFileStore implements FileStore {
     content: string | Uint8Array,
     options: ChangeOptions
   ): Promise<Result<JournalEntry | null>> {
+    const lossy = await this.lossyRewrite(file, content);
+    if (lossy) return lossy;
     return this.change(file, 'write', options, sha256(content), () =>
       this.raw.writeBytes(file, content)
+    );
+  }
+
+  /**
+   * A file that is not UTF-8 (a game file in a Windows code page, UTF-16) reads as text
+   * with U+FFFD where its bytes meant something else. Writing such text back would
+   * destroy those characters for good, so it is refused: the text has the replacement
+   * character and the file on disk does not.
+   */
+  private async lossyRewrite(
+    file: string,
+    content: string | Uint8Array
+  ): Promise<Result<never> | undefined> {
+    if (typeof content !== 'string' || !content.includes('�')) return undefined;
+    if (!path.isAbsolute(file) || isWithin(this.dataRoot, path.resolve(file))) return undefined;
+    try {
+      if (!(await this.raw.exists(file))) return undefined;
+      const current = await this.raw.readBytes(file);
+      for (let i = 0; i + 2 < current.length; i++) {
+        if (current[i] === 0xef && current[i + 1] === 0xbf && current[i + 2] === 0xbd) {
+          return undefined;
+        }
+      }
+    } catch (e) {
+      return fromThrown('file.write', `Could not write ${file}.`, e);
+    }
+    return err(
+      'file.encoding',
+      `${file} is not UTF-8 text, so RigReady cannot change it without damaging characters in it. It was left as it is.`
     );
   }
 
@@ -244,7 +320,7 @@ export class BackupFileStore implements FileStore {
         ...(createdDirs.length > 0 ? { createdDirs } : {}),
         undone: false,
       };
-      await this.raw.appendText(this.journalPath, JSON.stringify(entry) + '\n');
+      await this.appendJournal(entry);
       await perform();
       return ok(entry);
     } catch (e) {
@@ -281,13 +357,29 @@ export class BackupFileStore implements FileStore {
     }
   }
 
-  private async lines(): Promise<JournalLine[]> {
+  private journalChecked = false;
+
+  private async appendJournal(record: JournalLine): Promise<void> {
+    let lead = '';
+    if (!this.journalChecked) {
+      // A crash while a line was being written leaves it without its line break; the
+      // next record must not be glued onto that damaged line.
+      if (await this.raw.exists(this.journalPath)) {
+        const text = await this.raw.readText(this.journalPath);
+        if (text.length > 0 && !text.endsWith('\n')) lead = '\n';
+      }
+      this.journalChecked = true;
+    }
+    await this.raw.appendText(this.journalPath, lead + JSON.stringify(record) + '\n');
+  }
+
+  private async fileLines(): Promise<JournalFileLine[]> {
     if (!(await this.raw.exists(this.journalPath))) return [];
-    const text = await this.raw.readText(this.journalPath);
-    return text
-      .split('\n')
-      .filter((line) => line.trim().length > 0)
-      .map((line) => JSON.parse(line) as JournalLine);
+    return parseJournal(await this.raw.readText(this.journalPath));
+  }
+
+  private async lines(): Promise<JournalLine[]> {
+    return (await this.fileLines()).flatMap((line) => (line.record ? [line.record] : []));
   }
 
   async journal(): Promise<Result<JournalEntry[]>> {
@@ -381,7 +473,7 @@ export class BackupFileStore implements FileStore {
       }
       if (!undone.ok) return undone;
       if (!entry.backupPath) await this.removeCreatedDirs(entry);
-      await this.raw.appendText(this.journalPath, JSON.stringify({ undo: entry.id }) + '\n');
+      await this.appendJournal({ undo: entry.id });
       return ok({ ...entry, undone: true });
     } catch (e) {
       return fromThrown('journal.undo', `Could not undo the change to ${entry.path}.`, e);
@@ -400,9 +492,15 @@ export class BackupFileStore implements FileStore {
       const changed: string[] = [];
       for (const entry of pending) {
         if (entry.hashAfter === undefined) continue;
-        const current = (await this.raw.exists(entry.path))
-          ? sha256(await this.raw.readBytes(entry.path).catch(() => ''))
-          : null;
+        let current: string | null = null;
+        if (await this.raw.exists(entry.path)) {
+          try {
+            current = sha256(await this.raw.readBytes(entry.path));
+          } catch {
+            // A file that cannot be read (locked) is not known to be unchanged: it counts as changed.
+            current = 'unreadable';
+          }
+        }
         // Only the newest change of a file in the group is comparable with the file on disk.
         const newest = pending.find((e) => e.path === entry.path);
         if (newest === entry && current !== entry.hashAfter) changed.push(entry.path);
@@ -470,13 +568,11 @@ export class BackupFileStore implements FileStore {
           await this.raw.removeDir(dir);
         }
       }
-      const kept = (await this.lines()).filter(
-        (line) => !gone.has('undo' in line ? line.undo : line.id)
+      // Lines that could not be read are written back as they are: pruning never drops them.
+      const kept = (await this.fileLines()).filter(
+        ({ record }) => !record || !gone.has('undo' in record ? record.undo : record.id)
       );
-      await this.raw.writeBytes(
-        this.journalPath,
-        kept.map((line) => JSON.stringify(line) + '\n').join('')
-      );
+      await this.raw.writeBytes(this.journalPath, kept.map((line) => line.raw + '\n').join(''));
       return ok({ removedGroups: expired.length, freedBytes });
     } catch (e) {
       return fromThrown('journal.prune', 'Could not remove old automatic backups.', e);

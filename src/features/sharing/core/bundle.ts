@@ -1,10 +1,7 @@
-import os from 'node:os';
-import path from 'node:path';
 import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
-import { allPathVariables } from '../../../core/pathVariables';
 import { CompatibilitySchema } from './compat';
-import type { PrivacyContext } from './privacy';
+import { privacyContext as corePrivacyContext, type PrivacyContext } from './privacy';
 
 export type Ctx = Pick<
   MainContext,
@@ -67,23 +64,7 @@ export async function privacyContext(
   ctx: Ctx,
   extraSerials: string[] = []
 ): Promise<PrivacyContext> {
-  const variables = await allPathVariables(ctx, ctx.games);
-  const users = new Set<string>([path.basename(ctx.ports.folders.home())]);
-  try {
-    users.add(os.userInfo().username);
-  } catch {
-    // No user name: the home folder's name still counts.
-  }
-  const devices = await ctx.ports.devices.list();
-  const serials = devices.ok
-    ? devices.value.map((d) => d.serial).filter((s): s is string => !!s)
-    : [];
-  return {
-    variables,
-    users: [...users],
-    machine: ctx.ports.folders.machineName(),
-    serials: [...serials, ...extraSerials],
-  };
+  return corePrivacyContext(ctx, ctx.games, extraSerials);
 }
 
 /** Folders an import may write to: Documents, Saved Games and every game's own config folder. */

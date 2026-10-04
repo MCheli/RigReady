@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
   AppWindow,
+  Clipboard,
   Clock,
   Dialogs,
   Http,
@@ -20,6 +21,7 @@ import type {
   ShellOptions,
   ShellResult,
 } from '../../core/ports';
+import { LOG_KEEP_OLDER, LOG_MAX_BYTES } from '../../core/logger';
 import { err, ok, type Result } from '../../core/result';
 
 /** Real implementations that are not Windows-specific. Shared by the windows and fake platforms. */
@@ -38,6 +40,7 @@ export class NodeRawFs implements RawFs {
       const stat = await fs.stat(file);
       return { isDirectory: stat.isDirectory(), size: stat.size, mtimeMs: stat.mtimeMs };
     } catch {
+      // The port says undefined for a path that is not there; one that cannot be looked at is treated the same, and reading it then fails with the real reason.
       return undefined;
     }
   }
@@ -50,6 +53,7 @@ export class NodeRawFs implements RawFs {
       await fs.rmdir(dir);
       return true;
     } catch {
+      // Not empty, or already gone: either way the folder is not ours to remove.
       return false;
     }
   }
@@ -69,6 +73,7 @@ export class NodeRawFs implements RawFs {
       await fs.access(file);
       return true;
     } catch {
+      // Not there.
       return false;
     }
   }
@@ -78,8 +83,11 @@ export class NodeRawFs implements RawFs {
   async list(dir: string): Promise<string[]> {
     try {
       return (await fs.readdir(dir)).sort();
-    } catch {
-      return [];
+    } catch (e) {
+      // The port says a folder that does not exist is empty. One that exists and cannot be
+      // listed (no access, not a folder) is an error: "empty" would be a wrong answer.
+      if ((e as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw e;
     }
   }
   async copyFile(from: string, to: string): Promise<void> {
@@ -286,6 +294,7 @@ export const headlessPorts: {
   dialogs: Dialogs;
   render: Render;
   notifications: Notifications;
+  clipboard: Clipboard;
   loginItem: LoginItem;
   overlays: Overlays;
   window: AppWindow;
@@ -304,6 +313,7 @@ export const headlessPorts: {
     pdf: async () => unavailable('Rendering'),
   },
   notifications: { notify: async () => unavailable('Notifications') },
+  clipboard: { writeText: async () => unavailable('The clipboard') },
   loginItem: {
     isEnabled: async () => unavailable('Start with Windows'),
     setEnabled: async () => unavailable('Start with Windows'),
@@ -313,20 +323,32 @@ export const headlessPorts: {
   window: { showOn: async () => ok({ moved: false }) },
 };
 
-/** Appends to a log file without blocking the caller; rotates at maxBytes keeping `keep` older files. */
+/**
+ * Appends to a log file without blocking the caller; rotates at maxBytes keeping `keep`
+ * older files (rigready.log.1 is the newest of them). By default 5 MB and four older
+ * files: five files, 25 MB at most.
+ */
 export class RotatingFileSink implements LogSink {
   private tail: Promise<void> = Promise.resolve();
   private written: number | undefined;
+  /** Lines that could not be written (disk full, folder not writable). Logging never throws. */
+  dropped = 0;
 
   constructor(
     private readonly file: string,
-    private readonly maxBytes = 1_000_000,
-    private readonly keep = 3
+    private readonly maxBytes = LOG_MAX_BYTES,
+    private readonly keep = LOG_KEEP_OLDER
   ) {}
 
   write(line: string): void {
     // Writes are chained so lines stay in order; a failed write never breaks the chain.
-    this.tail = this.tail.then(() => this.append(line)).catch(() => {});
+    this.tail = this.tail
+      .then(() => this.append(line))
+      .catch(() => {
+        // Nowhere to report it but here: the log is where failures are reported.
+        this.dropped++;
+        this.written = undefined;
+      });
   }
 
   /** Resolves when everything written so far is on disk. */
@@ -344,11 +366,18 @@ export class RotatingFileSink implements LogSink {
     }
     const size = Buffer.byteLength(line);
     if (this.written > 0 && this.written + size > this.maxBytes) {
+      // A missing older file is normal (the log has not rotated that often yet).
+      const quiet = (): void => {};
+      await fs.rm(`${this.file}.${this.keep}`, { force: true }).catch(quiet);
       for (let i = this.keep - 1; i >= 1; i--) {
-        await fs.rename(`${this.file}.${i}`, `${this.file}.${i + 1}`).catch(() => {});
+        await fs.rename(`${this.file}.${i}`, `${this.file}.${i + 1}`).catch(quiet);
       }
-      await fs.rename(this.file, `${this.file}.1`).catch(() => {});
-      this.written = 0;
+      if (this.keep >= 1) await fs.rename(this.file, `${this.file}.1`).catch(quiet);
+      else await fs.rm(this.file, { force: true }).catch(quiet);
+      this.written = await fs.stat(this.file).then(
+        (s) => s.size,
+        () => 0
+      );
     }
     await fs.appendFile(this.file, line, 'utf8');
     this.written += size;

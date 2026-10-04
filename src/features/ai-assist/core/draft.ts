@@ -90,6 +90,7 @@ export function validateDraft(
   try {
     json = JSON.parse(text.trim());
   } catch {
+    // Not JSON: reported to the user as an answer RigReady cannot use.
     return { ok: false, why: 'The answer was not the structured guide RigReady asked for.' };
   }
   const raw = RawDraftSchema.safeParse(json);

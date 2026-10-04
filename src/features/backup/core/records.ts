@@ -129,6 +129,7 @@ export function recordRows(values: BackupRecordValue[] | undefined, text: string
   try {
     return rowsFromData(JSON.parse(text));
   } catch {
+    // A record that is not JSON has no rows to show; the record itself is still listed.
     return [];
   }
 }

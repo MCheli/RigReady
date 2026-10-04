@@ -188,6 +188,9 @@ const REASONED: Record<string, { why: string; previews?: Record<string, string> 
       snapshotRestore: 'snapshotRestorePlan',
     },
   },
+  diagnostics: {
+    why: 'Its one write is the diagnostics zip, a new file at the place the user names in a Save dialog (the page lists what goes into it, with the redacted text shown, before Export). It changes no existing game or tool file.',
+  },
   displays: {
     why: 'Writes only inside the data folder (monitor names, the pending-revert note, upright answers).',
   },

@@ -1,8 +1,9 @@
-import { app, BrowserWindow, dialog, Notification, safeStorage, screen } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, Notification, safeStorage, screen } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
   AppWindow,
+  Clipboard,
   Dialogs,
   LoginItem,
   Notifications,
@@ -139,6 +140,7 @@ export class ElectronRender implements Render {
 
   private run<T>(job: () => Promise<Result<T>>): Promise<Result<T>> {
     const next = this.queue.then(job, job);
+    // The queue only orders the jobs; each caller gets its own job's result, or failure, from next.
     this.queue = next.catch(() => undefined);
     return next;
   }
@@ -239,6 +241,17 @@ export class ElectronNotifications implements Notifications {
       return ok(undefined);
     } catch (e) {
       return err('notify.show', 'Could not show the notification.', String(e));
+    }
+  }
+}
+
+export class ElectronClipboard implements Clipboard {
+  async writeText(text: string): Promise<Result<void>> {
+    try {
+      clipboard.writeText(text);
+      return ok(undefined);
+    } catch (e) {
+      return err('clipboard.write', 'Could not copy to the clipboard.', String(e));
     }
   }
 }

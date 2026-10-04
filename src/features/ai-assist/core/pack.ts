@@ -122,6 +122,7 @@ function safeRegExp(source: string): RegExp | undefined {
   try {
     return new RegExp(source);
   } catch {
+    // Not a valid pattern: the caller reports the pack line as wrong.
     return undefined;
   }
 }

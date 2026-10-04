@@ -1,5 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
+import { readDataText } from './files/text';
+import { LOG_LEVELS } from './logger';
 import type { Clock, FileStore } from './ports';
 import { err, ok, type Result } from './result';
 
@@ -29,6 +31,8 @@ export const AppSettingsSchema = z.object({
   checkTimeoutSeconds: z.number().int().min(1).max(60).default(5),
   /** Largest import (a .rigready bundle or backup archive, unpacked) that is accepted. */
   importMaxMegabytes: z.number().int().min(1).max(4096).default(200),
+  /** How much is written to the log. RIGREADY_LOG_LEVEL in the environment wins over this. */
+  logLevel: z.enum(LOG_LEVELS).default('info'),
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
 
@@ -47,6 +51,7 @@ export const AppSettingsPatchSchema = z.object({
   displayRevertSeconds: z.number().int().optional(),
   checkTimeoutSeconds: z.number().int().optional(),
   importMaxMegabytes: z.number().int().optional(),
+  logLevel: z.enum(LOG_LEVELS).optional(),
 });
 export type AppSettingsPatch = z.infer<typeof AppSettingsPatchSchema>;
 
@@ -78,12 +83,15 @@ export class SettingsStore {
       this.cached = defaultSettings();
       return ok(structuredClone(this.cached));
     }
-    const text = await this.files.readText(this.file);
+    // A file that cannot be read at all (locked, too large) is left alone and reported:
+    // only content that is not settings is set aside.
+    const text = await readDataText(this.files, this.file);
     if (!text.ok) return text;
     let parsed: ReturnType<typeof AppSettingsSchema.safeParse> | undefined;
     try {
       parsed = AppSettingsSchema.safeParse(JSON.parse(text.value));
     } catch {
+      // Not JSON: handled below like any content that is not settings (set aside, defaults, notice).
       parsed = undefined;
     }
     if (parsed?.success) {
@@ -92,7 +100,12 @@ export class SettingsStore {
     }
     const stamp = this.clock.now().toISOString().replace(/[:.]/g, '-');
     const aside = path.join(this.dataRoot, `settings.corrupt-${stamp}.json`);
-    const kept = await this.files.write(aside, text.value, { reason: 'Unreadable settings file' });
+    // Byte for byte: the text above lost its byte order mark and anything that was not UTF-8.
+    const original = await this.files.readBytes(this.file);
+    if (!original.ok) return original;
+    const kept = await this.files.write(aside, original.value, {
+      reason: 'Unreadable settings file',
+    });
     if (!kept.ok) return kept;
     this.cached = defaultSettings();
     this.notice = `The settings file could not be read, so defaults are in use. The old file was kept as ${aside}.`;

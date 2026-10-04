@@ -300,6 +300,7 @@ function readLayout(): DisplayLayout {
     try {
       name = targetName(all.paths, o);
     } catch {
+      // A target Windows cannot name is not a monitor that can be addressed: skip it.
       continue;
     }
     const id = name.devicePath.toLowerCase();
@@ -358,6 +359,7 @@ function enableTargets(ids: Set<string>): void {
     try {
       id = targetName(all.paths, o).devicePath.toLowerCase();
     } catch {
+      // A target Windows cannot name is not a monitor that can be addressed: skip it.
       continue;
     }
     if (!remaining.has(id)) continue;
@@ -442,6 +444,7 @@ function configWithEnabled(
     try {
       id = targetName(all.paths, o).devicePath.toLowerCase();
     } catch {
+      // A target Windows cannot name is not a monitor that can be addressed: skip it.
       continue;
     }
     if (!remaining.has(id)) continue;

@@ -36,7 +36,7 @@ export async function findSteamLibraries(
       found.set(resolved.toLowerCase(), resolved);
     }
   } catch {
-    // No library file: the install folder itself is the only library.
+    // No library file, or one that cannot be read: the install folder itself is the only library.
   }
   return ok([...found.values()]);
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { err, type Result } from '../../core/result';
 import {
   AudioStateSchema,
   DeviceInfoSchema,
@@ -83,6 +84,8 @@ export interface RigState {
     hang: HangablePort[];
     /** Program names (lower case) that do not start. */
     startFails: Record<string, 'error' | 'neverRuns'>;
+    /** Ports whose reads fail, with the message they fail with. */
+    fail?: Partial<Record<HangablePort, string>>;
   };
 }
 
@@ -92,6 +95,14 @@ export type HangablePort = z.infer<typeof HangablePortSchema>;
 /** True when a test or scenario made this port hang. */
 export const isHung = (state: RigState, port: HangablePort): boolean =>
   state.faults?.hang.includes(port) === true;
+
+/** The error a test or scenario made this port answer with, if any (the failProvider mutation). */
+export function providerFailure(state: RigState, port: HangablePort): Result<never> | undefined {
+  const message = state.faults?.fail?.[port];
+  return message === undefined
+    ? undefined
+    : err(`${port}.read`, message, 'The driver call failed (0x80004005).');
+}
 
 /** A promise that never settles: what a hung driver call looks like to the caller. */
 export const never = <T>(): Promise<T> => new Promise<T>(() => {});
@@ -188,6 +199,16 @@ const StateMutationSchemas = [
     op: z.literal('hangProvider'),
     port: HangablePortSchema,
     hang: z.boolean().default(true),
+  }),
+  /**
+   * Makes every read of a port fail with an error result (a driver or Windows API that
+   * answers with a failure), or stops doing so with `fail: false`.
+   */
+  z.object({
+    op: z.literal('failProvider'),
+    port: HangablePortSchema,
+    message: z.string().optional(),
+    fail: z.boolean().default(true),
   }),
   /**
    * Makes starting a program fail: `error` (Windows refuses to start it) or `neverRuns`
@@ -500,6 +521,17 @@ export function mutateState(state: RigState, mutation: StateMutation): void {
       const faults = (state.faults ??= { hang: [], startFails: {} });
       faults.hang = faults.hang.filter((p) => p !== mutation.port);
       if (mutation.hang) faults.hang.push(mutation.port);
+      break;
+    }
+    case 'failProvider': {
+      const faults = (state.faults ??= { hang: [], startFails: {} });
+      const fail = (faults.fail ??= {});
+      if (mutation.fail) {
+        fail[mutation.port] =
+          mutation.message ?? `Windows did not answer the request for ${mutation.port}.`;
+      } else {
+        delete fail[mutation.port];
+      }
       break;
     }
     case 'failProcessStart': {

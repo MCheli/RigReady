@@ -132,6 +132,7 @@ function parseJson(text: string): Parsed<unknown> {
   try {
     return { ok: true, value: JSON.parse(text) };
   } catch {
+    // Not JSON: reported to the user as an answer RigReady cannot use.
     return { ok: false, why: 'The answer was not the structured list RigReady asked for.' };
   }
 }

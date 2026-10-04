@@ -1,0 +1,6 @@
+schemaVersion: 1
+id: dcs-uh-1h
+name: "DCS UH-1H Huey
+game: dcs
+checks:
+  - id: [unclosed

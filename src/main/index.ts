@@ -2,13 +2,15 @@ import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } f
 import path from 'node:path';
 import { z } from 'zod';
 import trayIconPath from '../../assets/icon.ico?asset';
+import { startupNotices } from '../core/dataHealth';
 import { bind } from '../core/feature';
-import { createLogger, type Logger } from '../core/logger';
+import type { Logger } from '../core/logger';
 import { isWithin } from '../core/paths';
 import type { FileStore, Ports } from '../core/ports';
 import { err, ok } from '../core/result';
 import {
   ElectronAppWindow,
+  ElectronClipboard,
   ElectronDialogs,
   ElectronLoginItem,
   ElectronNotifications,
@@ -20,13 +22,20 @@ import {
 import { applyLiveMutations, startScenario, type FakePorts } from '../platform/fake';
 import { pngSize } from '../platform/fake/png';
 import { MutationSchema } from '../platform/fake/scenario';
-import { RotatingFileSink, systemClock } from '../platform/node';
+import { systemClock } from '../platform/node';
 import { createWindowsPorts } from '../platform/windows';
 import { appContract } from '../shared/appContract';
 import { eventName } from '../shared/channels';
 import type { Envelope } from '../shared/ipc';
 import { discoverFeatures, wireFeatures } from './bootstrap';
 import { runDiagnose } from './diagnose';
+import {
+  installProcessErrorHooks,
+  logReportedErrors,
+  reportStartFailure,
+  watchWindow,
+} from './errorHooks';
+import { startLogging } from './logging';
 import {
   paintBadge,
   statusFromFlyResponse,
@@ -49,6 +58,8 @@ let mainWindow: BrowserWindow | undefined;
 // Module-level so the tray icon is not garbage collected.
 let tray: Tray | undefined;
 let quitting = false;
+// Exists before the data root is known; what is logged until then is written once the file opens.
+const logging = startLogging(systemClock);
 
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -65,10 +76,9 @@ interface Platform {
 async function createPlatform(): Promise<Platform> {
   const scenarioFile = process.env['RIGREADY_SCENARIO'];
   if (!scenarioFile) {
-    const bootLog = createLogger({ write: () => {} }, systemClock);
     return {
       ports: createWindowsPorts({
-        log: bootLog,
+        log: logging.log,
         projectRoot,
         ...(resourcesPath ? { resourcesPath } : {}),
         app: (dataRoot) => ({
@@ -76,6 +86,7 @@ async function createPlatform(): Promise<Platform> {
           dialogs: new ElectronDialogs(() => mainWindow),
           render: new ElectronRender(dataRoot),
           notifications: new ElectronNotifications(),
+          clipboard: new ElectronClipboard(),
           loginItem: new ElectronLoginItem(),
           overlays: new ElectronOverlays(),
           window: new ElectronAppWindow(() => mainWindow),
@@ -127,6 +138,7 @@ async function readWindowState(files: FileStore, file: string): Promise<WindowSt
       ? state
       : { width: state.width, height: state.height, maximized: state.maximized };
   } catch {
+    // A damaged window.json: the window opens at its default size and the file is rewritten on the next move.
     return fallback;
   }
 }
@@ -207,12 +219,9 @@ async function start(): Promise<void> {
   app.setAppUserModelId('io.rigready.app');
   const { ports, scenario, fake } = await createPlatform();
   const dataRoot = ports.folders.dataRoot();
-  const sink = new RotatingFileSink(path.join(dataRoot, 'logs', 'rigready.log'));
-  const log: Logger = createLogger(
-    sink,
-    ports.clock,
-    process.env['RIGREADY_LOG_LEVEL'] === 'debug' ? 'debug' : 'info'
-  );
+  logging.open(dataRoot, [ports.folders.home()]);
+  const log: Logger = logging.log;
+  logReportedErrors(log);
   log.info(`RigReady ${app.getVersion()} starting`, { scenario: scenario ?? null, dataRoot });
 
   const send = (channel: string, payload: unknown): void => {
@@ -236,7 +245,12 @@ async function start(): Promise<void> {
   const current = loaded.ok ? loaded.value : undefined;
   if (!loaded.ok) notices.push(`${loaded.error.message} ${loaded.error.detail ?? ''}`.trim());
   const settingsNotice = settings.takeNotice();
-  if (settingsNotice) notices.push(settingsNotice);
+  if (settingsNotice) {
+    notices.push(settingsNotice);
+    log.warn(settingsNotice);
+  }
+  await logging.follow(settings);
+  notices.push(...(await startupNotices({ ...wiring.context, log })));
   if (current) {
     const pruned = await ports.files.prune({
       days: current.retention.autoBackupDays,
@@ -490,6 +504,7 @@ async function start(): Promise<void> {
       menu: trayMenu(trayStatus, trayBusy),
       notifications: fake.notifications.sent,
     });
+    hooks['__rigreadyClipboard'] = () => fake.clipboard.copied;
     hooks['__rigreadyTrayClick'] = async (id: string) => {
       if (id.startsWith('profile:')) await switchFromTray(id.slice('profile:'.length));
       else await trayActions[id]?.();
@@ -521,6 +536,7 @@ async function start(): Promise<void> {
     stateFile,
     !startHidden
   );
+  watchWindow(mainWindow, log);
   mainWindow.on('close', (event) => {
     if (quitting || !tray) return;
     // Decided from the cached settings: the close event cannot wait for a file read.
@@ -557,15 +573,13 @@ async function start(): Promise<void> {
       await within(ports.input.stop(), 3000);
       tray?.destroy();
       tray = undefined;
-      await sink.close();
+      await logging.flush();
       app.quit();
     })();
   });
 }
 
-process.on('uncaughtException', (error) => {
-  console.error('uncaughtException', error);
-});
+installProcessErrorHooks();
 
 if (!app.requestSingleInstanceLock() && !argValue('--diagnose')) {
   app.quit();
@@ -575,7 +589,7 @@ if (!app.requestSingleInstanceLock() && !argValue('--diagnose')) {
     .whenReady()
     .then(start)
     .catch((error) => {
-      console.error('RigReady failed to start', error);
-      app.exit(1);
+      reportStartFailure(error, logging.log);
+      void logging.flush().then(() => app.exit(1));
     });
 }

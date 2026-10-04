@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { z } from 'zod';
+import { readDataText } from '../files/text';
 import type { Clock, DisplayProvider, FileStore } from '../ports';
 import { slugify } from '../profile/schema';
 import { err, ok, type Result } from '../result';
@@ -68,7 +69,7 @@ export class DisplayLayoutStore {
 
   async list(): Promise<Result<NamedLayout[]>> {
     if (!(await this.files.exists(this.file))) return ok([]);
-    const text = await this.files.readText(this.file);
+    const text = await readDataText(this.files, this.file);
     if (!text.ok) return text;
     try {
       const parsed = FileSchema.safeParse(JSON.parse(text.value));
@@ -87,6 +88,30 @@ export class DisplayLayoutStore {
         String(e)
       );
     }
+  }
+
+  /**
+   * For startup: when the file exists but is not a list of layouts, it is set aside
+   * (never deleted) and the list starts empty, so layouts can be saved again. Returns
+   * what to tell the user, or undefined when there was nothing to do. A file that cannot
+   * be read at all (locked) is left alone.
+   */
+  async recover(): Promise<Result<string | undefined>> {
+    const current = await this.list();
+    if (current.ok || current.error.code !== 'layouts.invalid') return ok(undefined);
+    const text = await this.files.readBytes(this.file);
+    if (!text.ok) return text;
+    const stamp = this.clock.now().toISOString().replace(/[:.]/g, '-');
+    const aside = path.join(path.dirname(this.file), `layouts.corrupt-${stamp}.json`);
+    const kept = await this.files.write(aside, text.value, {
+      reason: 'Unreadable monitor layouts file',
+    });
+    if (!kept.ok) return kept;
+    const saved = await this.saveAll([]);
+    if (!saved.ok) return saved;
+    return ok(
+      `The saved monitor layouts could not be read, so the list of layouts starts empty. The old file was kept as ${aside}.`
+    );
   }
 
   async get(id: string): Promise<Result<NamedLayout>> {

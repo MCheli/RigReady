@@ -17,6 +17,8 @@ const remaining = ref(0);
 const recovery = ref<RecoveryView>();
 const recoveryError = ref<string>();
 const recovering = ref(false);
+/** Why Keep or Go back did not work, when it did not. */
+const answerError = ref<string>();
 let ticker: ReturnType<typeof setInterval> | undefined;
 const unsubscribe: (() => void)[] = [];
 
@@ -31,7 +33,15 @@ function start(seconds: number): void {
 
 function close(): void {
   open.value = false;
+  answerError.value = undefined;
   clearInterval(ticker);
+}
+
+/** Sends the decision. Main closes the question (the settled event); a failure is shown here. */
+async function answer(keep: boolean): Promise<void> {
+  answerError.value = undefined;
+  const result = keep ? await api.keep() : await api.revert();
+  if (!result.ok) answerError.value = errorText(result.error);
 }
 
 async function answerRecovery(restore: boolean): Promise<void> {
@@ -81,13 +91,23 @@ onBeforeUnmount(() => {
       <v-card-text>
         The monitors were rearranged. If you do nothing, the previous layout comes back in
         <strong data-testid="keep-layout-seconds">{{ remaining }}</strong> seconds.
+        <v-alert
+          v-if="answerError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mt-3"
+          data-testid="keep-layout-error"
+        >
+          {{ answerError }}
+        </v-alert>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" autofocus data-testid="keep-layout-revert" @click="api.revert()"
+        <v-btn variant="text" autofocus data-testid="keep-layout-revert" @click="answer(false)"
           >Go back</v-btn
         >
-        <v-btn color="primary" data-testid="keep-layout-keep" @click="api.keep()">Keep it</v-btn>
+        <v-btn color="primary" data-testid="keep-layout-keep" @click="answer(true)">Keep it</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

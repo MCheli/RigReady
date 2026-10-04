@@ -61,6 +61,7 @@ export function readRegistryValue(
   try {
     return withKey(hive, key, (handle) => queryValue(handle, name));
   } catch {
+    // Missing and unreadable are the same to the callers: there is no value.
     return undefined;
   }
 }

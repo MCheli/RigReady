@@ -7,6 +7,7 @@ import { createMatcher } from '../../core/files/glob';
 import type {
   AppWindow,
   AudioProvider,
+  Clipboard,
   Clock,
   CloseOptions,
   DeviceProvider,
@@ -64,6 +65,7 @@ import {
   isHung,
   mutateState,
   never,
+  providerFailure,
   registryKeyPath,
   type DialogScript,
   type FileMutation,
@@ -108,6 +110,8 @@ export class FakeDeviceProvider implements DeviceProvider {
   constructor(private readonly state: RigState) {}
   async list(): Promise<Result<DeviceInfo[]>> {
     if (isHung(this.state, 'devices')) return never();
+    const failed = providerFailure(this.state, 'devices');
+    if (failed) return failed;
     return ok(structuredClone(this.state.devices));
   }
   subscribe(listener: () => void): () => void {
@@ -133,6 +137,8 @@ export class FakeProcessProvider implements ProcessProvider {
 
   async list(): Promise<Result<ProcessInfo[]>> {
     if (isHung(this.state, 'processes')) return never();
+    const failed = providerFailure(this.state, 'processes');
+    if (failed) return failed;
     return ok(structuredClone(this.state.processes));
   }
 
@@ -190,10 +196,14 @@ export class FakeServiceProvider implements ServiceProvider {
   constructor(private readonly state: RigState) {}
   async list(): Promise<Result<ServiceInfo[]>> {
     if (isHung(this.state, 'services')) return never();
+    const failed = providerFailure(this.state, 'services');
+    if (failed) return failed;
     return ok(structuredClone(this.state.services));
   }
   async get(name: string): Promise<Result<ServiceInfo | undefined>> {
     if (isHung(this.state, 'services')) return never();
+    const failed = providerFailure(this.state, 'services');
+    if (failed) return failed;
     const found = this.state.services.find((s) => s.name.toLowerCase() === name.toLowerCase());
     return ok(found ? structuredClone(found) : undefined);
   }
@@ -205,6 +215,8 @@ export class FakeDisplayProvider implements DisplayProvider {
 
   async read(): Promise<Result<DisplayLayout>> {
     if (isHung(this.state, 'displays')) return never();
+    const failed = providerFailure(this.state, 'displays');
+    if (failed) return failed;
     return ok({ displays: structuredClone(this.state.displays) });
   }
 
@@ -320,6 +332,8 @@ export class FakeAudioProvider implements AudioProvider {
   constructor(private readonly state: RigState) {}
   async read(): Promise<Result<AudioState>> {
     if (isHung(this.state, 'audio')) return never();
+    const failed = providerFailure(this.state, 'audio');
+    if (failed) return failed;
     return ok(structuredClone(this.state.audio));
   }
   async setDefault(id: string, options: { roles?: AudioRole[] } = {}): Promise<Result<AudioState>> {
@@ -638,6 +652,15 @@ export class FakeNotifications implements Notifications {
   }
 }
 
+export class FakeClipboard implements Clipboard {
+  /** Every text that was copied, oldest first. */
+  readonly copied: string[] = [];
+  async writeText(text: string): Promise<Result<void>> {
+    this.copied.push(text);
+    return ok(undefined);
+  }
+}
+
 export class FakeLoginItem implements LoginItem {
   enabled = false;
   async isEnabled(): Promise<Result<boolean>> {
@@ -679,6 +702,7 @@ export interface FakePorts extends Ports {
   http: FakeHttp;
   dialogs: FakeDialogs;
   notifications: FakeNotifications;
+  clipboard: FakeClipboard;
   loginItem: FakeLoginItem;
   overlays: FakeOverlays;
   window: FakeAppWindow;
@@ -733,6 +757,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     dialogs,
     render: new FakeRender(),
     notifications: new FakeNotifications(),
+    clipboard: new FakeClipboard(),
     loginItem: new FakeLoginItem(),
     overlays: new FakeOverlays(),
     window: new FakeAppWindow(),
@@ -902,6 +927,7 @@ async function walkFiles(dir: string, visit: (file: string) => Promise<void>): P
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });
   } catch {
+    // The folder does not exist: nothing to walk.
     return;
   }
   for (const entry of entries) {
@@ -1016,6 +1042,7 @@ export async function seedScenario(
           .array(z.string())
           .parse(await readJson(path.join(loaded.filesDir, '..', 'rehome.json')));
       } catch {
+        // This rig recorded no list of files to re-point.
         list = undefined;
       }
       if (list) {
@@ -1076,6 +1103,7 @@ export async function cleanupScenarioTemp(
   try {
     names = await fs.readdir(tempDir);
   } catch {
+    // No temp folder to clean.
     return removed;
   }
   for (const name of names) {

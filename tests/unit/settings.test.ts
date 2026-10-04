@@ -34,6 +34,7 @@ describe('SettingsStore', () => {
       ok: true,
       value: {
         schemaVersion: 1,
+        logLevel: 'info',
         startWithWindows: false,
         minimizeToTray: true,
         aiKeyPresent: false,
