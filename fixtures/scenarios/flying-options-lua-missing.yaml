@@ -1,0 +1,13 @@
+description: Flying, options.lua missing (a kept copy can be restored)
+rig: mark-full
+extends: flying-fresh.yaml
+# The ledger's "mark-flight + options-lua-missing" on its own: everything else of the full
+# Hornet setup is in place, and the copy RigReady kept of options.lua is there to restore.
+mutations:
+  - { op: removeFile, path: Saved Games/DCS/Config/options.lua }
+profiles:
+  - profiles/fly-hornet-full.yaml
+data:
+  state.json: data/fly/state-hornet-full.json
+  checks-generic/copies/index.json: data/fly/copies-index.json
+  checks-generic/copies/2026-10-01T18-00-00-000Z-known/options.lua: data/fly/options-known-good.lua
