@@ -1,17 +1,17 @@
 import type { MainContext } from '../../core/feature';
 import { ok, type Result } from '../../core/result';
-import type { Sheet } from './core/sheet';
+import { sheetTitle, type Sheet } from './core/sheet';
 import { trainerCards, type AircraftProgress } from './core/trainer';
 import { TrainerStore } from './core/trainerStore';
 import type { TrainerDeck } from './trainerContract';
 
 /**
  * The main side of "Learn your controls": builds the cards from the same sheet the cheat
- * sheets show (so it asks exactly what the game has bound), with plain-language labels where
- * a feature registered them, and keeps the progress per aircraft under the data root.
+ * sheets show (so it asks exactly what the game has bound, by the names the sheet uses),
+ * and keeps the progress per aircraft or car under the data root.
  */
 export function trainerHandlers(
-  ctx: Pick<MainContext, 'ports' | 'bindings'>,
+  ctx: Pick<MainContext, 'ports'>,
   service: { sheet(game: string, aircraftId: string): Promise<Result<Sheet>> }
 ) {
   const store = new TrainerStore(ctx.ports.files, ctx.ports.folders);
@@ -21,10 +21,7 @@ export function trainerHandlers(
       if (!sheet.ok) return sheet;
       const progress = await store.progress(input.game, input.aircraftId);
       if (!progress.ok) return progress;
-      const cards = trainerCards(
-        sheet.value,
-        await ctx.bindings.labels(input.game, input.aircraftId)
-      );
+      const cards = trainerCards(sheet.value);
       const devices = sheet.value.devices
         .map((d) => ({
           key: d.key,
@@ -34,6 +31,8 @@ export function trainerHandlers(
         .filter((d) => d.cards > 0);
       return ok({
         aircraft: { id: sheet.value.aircraft.id, name: sheet.value.aircraft.name },
+        // "F/A-18C", or "iRacing" for a game with one set of bindings for every car.
+        title: sheetTitle(sheet.value),
         gameName: sheet.value.gameName,
         cards,
         devices,

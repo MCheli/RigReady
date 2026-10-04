@@ -191,7 +191,8 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await hold(mistake);
   await expect(verdict).toHaveAttribute('data-phase', 'wrong');
   await expect(verdict).toContainText(`Not that one. You pressed ${mistake.name} on Stick`);
-  await expect(verdict).toContainText(other.action);
+  // What the wrong control does is named as its own card would name it.
+  await expect(verdict).toContainText(`which is ${other.plain ?? other.action}`);
   await expect(verdict).toContainText(`It is ${second.answer.name} on Stick`);
   await lit(mistake.control, 'wrong');
   await lit(second.answer.control, 'target');
@@ -308,6 +309,78 @@ test('trainer: an action is named, the control is pressed on the device, right o
   );
   await expect(back.getByTestId('trainer-progress')).toContainText('4 rounds played');
   await restarted.shot('after-restart');
+});
+
+test('trainer: a racing game is asked the same way, on the buttons of the wheel', async ({
+  rig,
+}) => {
+  const run = await rig.launch('mark-racing', 'cheat-sheets-trainer-racing');
+  const { page, shot } = run;
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-cheat-sheets').click();
+  // The page opens on the game it suggests; once that sheet is drawn, another is chosen.
+  await expect(page.getByTestId('sheet-view').first()).toBeVisible();
+  await page.getByTestId('sheet-aircraft').click();
+  await page.getByRole('option', { name: 'iRacing · All cars' }).click();
+  await expect(page.getByTestId('sheet-name')).toHaveText('iRacing');
+
+  // From the sheet of the game to its trainer: the one set a racing game keeps for every
+  // car is called by the game, "in iRacing" and not "in All cars".
+  await page.getByTestId('sheet-learn').click();
+  const trainer = page.getByTestId('trainer-page');
+  await expect(trainer.getByTestId('trainer-aircraft')).toContainText('iRacing · All cars');
+  const wheel = 'FANATEC Podium Wheel Base DD2';
+  const car = { game: 'iracing', aircraftId: 'all' };
+  const deck = await invoke<{ cards: Card[] }>(page, 'cheat-sheets:trainerDeck', car);
+  expect(deck.cards.map((c) => c.plain ?? c.action)).toContain('Shift up');
+  await expect(trainer.getByTestId('trainer-intro')).toContainText(
+    `${deck.cards.length} controls to know in iRacing`
+  );
+  await expect(trainer.getByTestId('trainer-intro')).not.toContainText('All cars');
+
+  const controllers = await invoke<Controller[]>(page, 'devices:inputDevices');
+  const base = controllers.find((c) => c.guid.toUpperCase() === deck.cards[0]!.answers[0]!.guid)!;
+  await run.sendInput([stateOf(base)]);
+  await expect(trainer).toHaveAttribute('data-live', 'true');
+  await trainer.getByTestId('trainer-start').click();
+
+  // Whatever is asked first: the button for it on the wheel is right at once, and lit on
+  // the picture of the wheel.
+  const card = trainer.getByTestId('trainer-card');
+  const verdict = trainer.getByTestId('trainer-verdict');
+  const picture = trainer.getByTestId('trainer-picture');
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+  await expect(verdict).toContainText(`Press the control for it on ${wheel}`);
+  const id = await card.getAttribute('data-card-id');
+  const ask = await card.getAttribute('data-ask');
+  const asked = deck.cards.find((c) => c.id === id)!;
+  const answer = asked.answers[0]!;
+  await expect(card.getByTestId('trainer-action')).toHaveText(asked.plain ?? asked.action);
+  // The kinds are a car's: driving and looking about, no weapons.
+  await expect(card.locator('.trainer-kind')).toHaveText(/^\s*(Driving|View)\s*$/);
+  await expect(picture.locator('.cs-ctl.cs-bound')).toHaveCount(0);
+  await shot('asking');
+  await run.sendInput([stateOf(base, [answer.control])]);
+  await expect(verdict).toHaveAttribute('data-phase', 'right');
+  await expect(verdict).toContainText(`Right. ${answer.name} on ${wheel}`);
+  await expect(picture).toHaveAttribute('data-right', answer.control);
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('right');
+  await run.sendInput([stateOf(base)]);
+  await expect(
+    trainer.locator(`[data-testid="trainer-card"]:not([data-ask="${ask}"])`)
+  ).toBeVisible();
+
+  // What was answered is kept for the game's one set, beside any aircraft.
+  const file = path.join(run.dataRoot, 'cheat-sheets', 'trainer.json');
+  await expect
+    .poll(async () => {
+      const all = JSON.parse(await fs.readFile(file, 'utf8')) as {
+        aircraft: Record<string, Progress>;
+      };
+      return all.aircraft['iracing/all']?.cards[asked.id];
+    })
+    .toMatchObject({ right: 1, wrong: 0, streak: 1 });
 });
 
 test('trainer: a round can be stopped, and a PC without a game to read says what is missing', async ({

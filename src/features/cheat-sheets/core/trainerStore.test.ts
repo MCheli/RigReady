@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
+import type { Overview } from '../contract';
 import type { TrainerDeck } from '../trainerContract';
 import type { AircraftProgress } from './trainer';
 
@@ -67,6 +68,54 @@ describe('the cards of an aircraft', () => {
     expect(after.devices.map((d) => d.title)).not.toContain('Stick');
     expect(after.cards.length).toBeLessThan(before.cards.length);
     expect(after.cards.some((c) => c.answers.some((a) => a.device === 'Stick'))).toBe(false);
+  });
+
+  it('asks a racing game too, and calls a game with one set of bindings for every car by its name', async () => {
+    app = await wiredApp('mark-racing', {
+      files: [
+        'Documents/iRacing/**',
+        'Documents/Assetto Corsa/**',
+        'AppData/Local/BeamNG/**',
+        'Program Files (x86)/Steam/steamapps/**',
+      ],
+    });
+    const overview = await app.invoke<Overview>('cheat-sheets:overview');
+    const iracing = overview.games.find((g) => g.game === 'iracing')!;
+    const set = iracing.aircraft[0]!;
+    expect(set.general).toBe(true);
+    const deck = await app.invoke<TrainerDeck>('cheat-sheets:trainerDeck', {
+      game: 'iracing',
+      aircraftId: set.id,
+    });
+    // "to know in iRacing", not "in All cars".
+    expect(deck).toMatchObject({
+      title: 'iRacing',
+      aircraft: { id: set.id, name: 'All cars' },
+      gameName: 'iRacing',
+      unplugged: [],
+    });
+    // What the wheel's buttons do, under the kinds a car has; the pedals' axes are not asked.
+    const wheel = 'FANATEC Podium Wheel Base DD2';
+    expect(deck.devices).toEqual([{ key: expect.any(String), title: wheel, cards: 12 }]);
+    const asked = deck.cards.map((c) => [
+      c.plain ?? c.action,
+      c.kind,
+      c.answers.map((a) => `${a.name} on ${a.device}`).join(' or '),
+    ]);
+    expect(asked).toContainEqual(['Shift up', 'driving', `Button 5 on ${wheel}`]);
+    expect(asked).toContainEqual(['Look left', 'view', `Button 4 on ${wheel}`]);
+    expect(deck.cards.every((c) => c.answers.every((a) => /^button:\d+$/.test(a.control)))).toBe(
+      true
+    );
+    // What is learned is kept for the game's one set, apart from any aircraft.
+    const car = { game: 'iracing', aircraftId: set.id };
+    const shiftUp = deck.cards.find((c) => (c.plain ?? c.action) === 'Shift up')!;
+    await app.invoke('cheat-sheets:trainerRecord', {
+      ...car,
+      answers: [{ cardId: shiftUp.id, right: true }],
+    });
+    const again = await app.invoke<TrainerDeck>('cheat-sheets:trainerDeck', car);
+    expect(again.progress.cards[shiftUp.id]).toMatchObject({ right: 1, wrong: 0, streak: 1 });
   });
 
   it('says so for a game whose bindings cannot be read', async () => {

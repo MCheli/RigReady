@@ -110,15 +110,39 @@ describe('which actions make cards', () => {
     expect(trainerCards(sheetOf())).toEqual([]);
   });
 
-  it('shows a plainer wording first when one is known, and never the same words twice', () => {
-    const cards = trainerCards(sheetOf(stick), {
-      'Sensor Control Switch - Fwd': 'Sensor select: HUD',
-      'Trim Up': 'Trim Up',
-    });
+  it('shows the plain name the sheet has for an action first, and never the same words twice', () => {
+    const named = device('Stick', 'aaaa-1', [
+      control(
+        'hat:1:U',
+        binding('Sensor Control Switch - Fwd', { kind: 'sensors', plain: 'Sensor select: HUD' })
+      ),
+      control('button:5', binding('Trim Up', { kind: 'flight', plain: 'Trim Up' })),
+      control('button:20', binding('Weapon Release')),
+    ]);
+    const cards = trainerCards(sheetOf(named));
     expect(cards.find((c) => c.action === 'Sensor Control Switch - Fwd')!.plain).toBe(
       'Sensor select: HUD'
     );
     expect(cards.find((c) => c.action === 'Trim Up')!.plain).toBeUndefined();
+    expect(cards.find((c) => c.action === 'Weapon Release')!.plain).toBeUndefined();
+  });
+
+  it('asks a racing game the same way: the buttons of the wheel, under the kinds a car has', () => {
+    const wheel = device('Wheel', 'cccc-3', [
+      control('button:4', binding('Pit Speed Limiter', { kind: 'pit' })),
+      control('button:6', binding('Brake Bias +', { kind: 'car', plain: 'Brake bias forward' })),
+      control('axis:X', binding('Steering', { kind: 'driving' })),
+    ]);
+    const cards = trainerCards({
+      game: 'iracing',
+      gameName: 'iRacing',
+      aircraft: { id: 'general', name: 'All cars', hasUserBindings: true, general: true },
+      devices: [wheel],
+    });
+    expect(cards.map((c) => [c.plain ?? c.action, c.kind])).toEqual([
+      ['Pit Speed Limiter', 'pit'],
+      ['Brake bias forward', 'car'],
+    ]);
   });
 });
 

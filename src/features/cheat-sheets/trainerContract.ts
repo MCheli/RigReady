@@ -14,6 +14,8 @@ const aircraft = z.object({
 
 export const TrainerDeckSchema = z.object({
   aircraft: z.object({ id: z.string(), name: z.string() }),
+  /** What the cards are of, for a sentence: the aircraft or car, or the game when it has one set for all. */
+  title: z.string(),
   gameName: z.string(),
   /** Every action there is to learn on the controllers that are attached. */
   cards: z.array(TrainerCardSchema),

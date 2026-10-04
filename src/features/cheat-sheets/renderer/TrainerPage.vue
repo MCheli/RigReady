@@ -242,7 +242,10 @@ const wrong = computed(() => {
     deviceKey: device?.key,
     control: press.control,
     where: `${controlName(press.control)} on ${device?.title ?? 'another controller'}`,
-    does: (control?.bindings ?? []).filter((b) => b.modifiers.length === 0).map((b) => b.action),
+    // Named as a card names it: the plain name where the sheet has one.
+    does: (control?.bindings ?? [])
+      .filter((b) => b.modifiers.length === 0)
+      .map((b) => b.plain ?? b.action),
   };
 });
 
@@ -374,7 +377,7 @@ onBeforeUnmount(() => {
       <div class="rr-panel trainer-bar">
         <v-select
           class="trainer-aircraft"
-          label="Aircraft"
+          label="Aircraft or car"
           :items="store.aircraftItems"
           :model-value="store.choice"
           density="compact"
@@ -431,8 +434,8 @@ onBeforeUnmount(() => {
       >
         <v-icon icon="mdi-gesture-tap-button" size="34" class="mb-2" />
         <div>
-          There is nothing to practise in {{ deck.aircraft.name }} yet: no button or hat of a
-          connected controller is bound to anything.
+          There is nothing to practise in {{ deck.title }} yet: no button or hat of a connected
+          controller is bound to anything.
         </div>
         <div v-if="deck.unplugged.length" class="rr-row-sub">
           {{ deck.unplugged.join(', ') }}
@@ -461,7 +464,7 @@ onBeforeUnmount(() => {
         <div class="rr-row-main">
           <div class="rr-row-title">
             {{ pool.length }} {{ pool.length === 1 ? 'control' : 'controls' }} to know in
-            {{ deck.aircraft.name }}
+            {{ deck.title }}
           </div>
           <div class="rr-row-sub">
             A round asks {{ Math.min(ROUND, pool.length) }} of them, the ones you know least first.

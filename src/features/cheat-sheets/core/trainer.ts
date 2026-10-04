@@ -44,9 +44,10 @@ const pressable = (control: string): boolean =>
  * does when pressed by itself. Axes are not "pressed", a control that needs a modifier is
  * two things to learn at once, and a device that is not attached cannot be answered on. With
  * bindings of the user's own, only those are asked: what the game binds by default on every
- * device is not what anyone flies with.
+ * device is not what anyone flies with. A card says what the sheet says: the binding guide's
+ * plain name where the sheet has one, with the game's own name kept beside it.
  */
-export function trainerCards(sheet: Sheet, labels: Record<string, string> = {}): TrainerCard[] {
+export function trainerCards(sheet: Sheet): TrainerCard[] {
   const own = sheet.devices.some((d) =>
     d.controls.some((c) => c.bindings.some((b) => b.source === 'user'))
   );
@@ -70,11 +71,10 @@ export function trainerCards(sheet: Sheet, labels: Record<string, string> = {}):
           card.answers.push(answer);
           continue;
         }
-        const plain = labels[binding.action];
         cards.set(binding.actionId, {
           id: binding.actionId,
           action: binding.action,
-          ...(plain && plain !== binding.action ? { plain } : {}),
+          ...(binding.plain && binding.plain !== binding.action ? { plain: binding.plain } : {}),
           kind: binding.kind,
           answers: [answer],
         });
