@@ -306,6 +306,34 @@ export interface LoginItem {
   setEnabled(enabled: boolean): Promise<Result<void>>;
 }
 
+/** The update channels a user can follow. */
+export type UpdateChannel = 'stable' | 'beta';
+
+/** A version the update feed offers. */
+export interface UpdateOffer {
+  version: string;
+  notes?: string;
+}
+
+/**
+ * Where new versions of RigReady come from (GitHub Releases in the installed app). The
+ * port only fetches and installs; when to do either is decided by the updates feature.
+ */
+export interface UpdateFeed {
+  /** The version that is running. */
+  currentVersion(): string;
+  /** Why updating cannot work in this run (a development run), or undefined when it can. */
+  unavailable(): string | undefined;
+  /** The newest version published on the channel, newer than this one or not; null when nothing is published. */
+  check(channel: UpdateChannel): Promise<Result<UpdateOffer | null>>;
+  /** Downloads what the last check found. Installs nothing. */
+  download(onProgress: (percent: number) => void): Promise<Result<void>>;
+  /** Whether the downloaded update is installed when RigReady quits. Off until told otherwise. */
+  setInstallOnQuit(on: boolean): void;
+  /** Quits RigReady, installs the downloaded update and starts the new version. */
+  quitAndInstall(): Promise<Result<void>>;
+}
+
 export interface RawStat {
   isDirectory: boolean;
   size: number;
@@ -500,4 +528,5 @@ export interface Ports {
   loginItem: LoginItem;
   overlays: Overlays;
   window: AppWindow;
+  updates: UpdateFeed;
 }

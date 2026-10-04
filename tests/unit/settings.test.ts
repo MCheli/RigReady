@@ -41,6 +41,7 @@ describe('SettingsStore', () => {
         displayRevertSeconds: 15,
         checkTimeoutSeconds: 5,
         importMaxMegabytes: 200,
+        updates: { check: true, channel: 'stable' },
       },
     });
     expect(defaultSettings().deskLayoutId).toBeUndefined();

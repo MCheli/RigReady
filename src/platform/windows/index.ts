@@ -9,11 +9,13 @@ import type {
   Ports,
   Render,
   Secrets,
+  UpdateFeed,
 } from '../../core/ports';
 import { NodeHttp, NodeRawFs, NodeShell, headlessPorts, systemClock } from '../node';
 import { WindowsAudioProvider } from './audio';
 import { WindowsDeviceProvider } from './devices';
 import { WindowsDisplayProvider } from './displays';
+import { launchHidden } from './hiddenLaunch';
 import { SidecarInputProvider, locateSidecar } from './input';
 import { WindowsKnownFolders } from './knownFolders';
 import { WindowsProcessProvider } from './processes';
@@ -29,6 +31,7 @@ export interface AppPorts {
   loginItem: LoginItem;
   overlays: Overlays;
   window: AppWindow;
+  updates: UpdateFeed;
 }
 
 export interface WindowsPlatformOptions {
@@ -49,7 +52,7 @@ export interface WindowsPlatformOptions {
 export function createWindowsPorts(options: WindowsPlatformOptions): Ports {
   const registry = new WindowsRegistry();
   const folders = new WindowsKnownFolders(options.env ?? process.env, registry);
-  const shell = new NodeShell();
+  const shell = new NodeShell(launchHidden);
   const location: { resourcesPath?: string; projectRoot: string } = {
     projectRoot: options.projectRoot,
   };

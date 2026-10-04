@@ -22,6 +22,17 @@ jobs:
 
       - run: npm ci
 
+      # The tag and the version in package.json must be the same version, or the update
+      # feed would describe a version that is not the one inside the installer.
+      - name: Tag matches package version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ("v$version" -ne "${{ github.ref_name }}") {
+            Write-Error "Tag ${{ github.ref_name }} does not match package.json version $version"
+            exit 1
+          }
+
       - run: npm run check
 
       - run: npm run test:e2e
@@ -29,16 +40,27 @@ jobs:
       # The DirectInput sidecar needs its Python runtime inside the installer.
       - run: npm run setup:python
 
+      # The unpacked app is started for real before anything is released.
+      - run: npm run smoke:packaged
+
+      # electron-builder never publishes (--publish never); the step below does.
       - name: Build installer
         run: npm run dist
 
-      - name: Create GitHub release
+      # The installer plus the update feed the installed app reads: latest.yml for a
+      # release, beta.yml for a version tagged x.y.z-beta.n, and the block map for
+      # partial downloads. A draft: the release checklist (docs/RELEASING.md) is worked
+      # through before a person publishes it.
+      - name: Create GitHub release (draft)
         uses: softprops/action-gh-release@v2
         with:
           files: |
             release/*.exe
+            release/*.exe.blockmap
+            release/latest.yml
+            release/beta.yml
           draft: true
-          prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          prerelease: ${{ contains(github.ref, '-') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

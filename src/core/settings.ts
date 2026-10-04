@@ -29,6 +29,15 @@ export const AppSettingsSchema = z.object({
   checkTimeoutSeconds: z.number().int().min(1).max(60).default(5),
   /** Largest import (a .rigready bundle or backup archive, unpacked) that is accepted. */
   importMaxMegabytes: z.number().int().min(1).max(4096).default(200),
+  /** Updates of RigReady itself. */
+  updates: z
+    .object({
+      /** Check for a new version at start and once a day. Off: only when the user asks. */
+      check: z.boolean().default(true),
+      /** stable: released versions only. beta: also versions tagged x.y.z-beta.n. */
+      channel: z.enum(['stable', 'beta']).default('stable'),
+    })
+    .prefault({}),
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
 
@@ -47,6 +56,12 @@ export const AppSettingsPatchSchema = z.object({
   displayRevertSeconds: z.number().int().optional(),
   checkTimeoutSeconds: z.number().int().optional(),
   importMaxMegabytes: z.number().int().optional(),
+  updates: z
+    .object({
+      check: z.boolean().optional(),
+      channel: z.enum(['stable', 'beta']).optional(),
+    })
+    .optional(),
 });
 export type AppSettingsPatch = z.infer<typeof AppSettingsPatchSchema>;
 
@@ -119,12 +134,18 @@ export class SettingsStore {
   async update(patch: AppSettingsPatch): Promise<Result<AppSettings>> {
     const current = await this.get();
     if (!current.ok) return current;
-    const { deskLayoutId, retention, ...rest } = patch;
+    const { deskLayoutId, retention, updates, ...rest } = patch;
     const merged: Record<string, unknown> = { ...current.value };
     for (const [key, value] of Object.entries(rest)) {
       if (value !== undefined) merged[key] = value;
     }
     if (retention) merged['retention'] = { ...current.value.retention, ...retention };
+    if (updates) {
+      const changed = Object.fromEntries(
+        Object.entries(updates).filter(([, value]) => value !== undefined)
+      );
+      merged['updates'] = { ...current.value.updates, ...changed };
+    }
     if (deskLayoutId === null) delete merged['deskLayoutId'];
     else if (deskLayoutId !== undefined) merged['deskLayoutId'] = deskLayoutId;
     const next = AppSettingsSchema.safeParse(merged);

@@ -84,7 +84,18 @@ export class SidecarInputProvider implements InputProvider {
    */
   start(): Promise<Result<InputDevice[]>> {
     if (this.child) return Promise.resolve(ok(this.current));
-    this.starting ??= this.spawnSidecar().finally(() => (this.starting = undefined));
+    this.starting ??= this.spawnSidecar()
+      .then((result) => {
+        // The tester shows this to the user; the log keeps the reason for support.
+        if (!result.ok) {
+          this.log.warn(
+            `input reader did not start: ${result.error.message}`,
+            result.error.detail ?? result.error.code
+          );
+        }
+        return result;
+      })
+      .finally(() => (this.starting = undefined));
     return this.starting;
   }
 

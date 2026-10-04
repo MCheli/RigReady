@@ -19,6 +19,7 @@ import type {
   Shell,
   ShellOptions,
   ShellResult,
+  UpdateFeed,
 } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
 
@@ -173,7 +174,19 @@ export function launchSpawnOptions(
   };
 }
 
+/** Starts a program that lives on by itself with no window at all (platform/windows/hiddenLaunch). */
+export type HiddenLauncher = (
+  start: ProgramStart,
+  options: { cwd: string; env: NodeJS.ProcessEnv }
+) => Result<{ pid: number | undefined }>;
+
 export class NodeShell implements Shell {
+  /**
+   * @param hiddenLauncher How launch() starts a hidden program. Node's own detached start
+   * leaves a batch file without a console, so the console programs it runs open windows.
+   */
+  constructor(private readonly hiddenLauncher?: HiddenLauncher) {}
+
   run(
     exe: string,
     args: string[],
@@ -216,6 +229,14 @@ export class NodeShell implements Shell {
       if (problem) return resolve(err('shell.argument', `Could not start ${exe}.`, problem));
       try {
         const start = programStart(exe, args);
+        if (options.hidden && this.hiddenLauncher) {
+          return resolve(
+            this.hiddenLauncher(start, {
+              cwd: options.cwd ?? path.dirname(exe),
+              env: { ...process.env, ...options.env },
+            })
+          );
+        }
         const child = spawn(start.exe, start.args, {
           ...launchSpawnOptions(exe, options),
           ...(start.verbatim ? { windowsVerbatimArguments: true } : {}),
@@ -280,7 +301,16 @@ export const headlessPorts: {
   loginItem: LoginItem;
   overlays: Overlays;
   window: AppWindow;
+  updates: UpdateFeed;
 } = {
+  updates: {
+    currentVersion: () => '0.0.0',
+    unavailable: () => 'Updates are only available inside the RigReady app.',
+    check: async () => unavailable('Updating'),
+    download: async () => unavailable('Updating'),
+    setInstallOnQuit: () => {},
+    quitAndInstall: async () => unavailable('Updating'),
+  },
   secrets: {
     get: async () => unavailable('The secret store'),
     set: async () => unavailable('The secret store'),
