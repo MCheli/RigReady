@@ -513,7 +513,7 @@ onMounted(capture);
                   :color="variant === v.id ? 'primary' : undefined"
                   size="small"
                   :data-testid="`capture-variant-${v.id}`"
-                  :aria-pressed="variant === v.id"
+                  :aria-current="variant === v.id ? 'true' : undefined"
                   @click="chooseVariant(v.id)"
                   >{{ v.name }}</v-chip
                 >
