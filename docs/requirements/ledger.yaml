@@ -4126,10 +4126,10 @@ requirements:
       - "tests/unit/rigCommand.test.ts#--make-ready runs the fixes and stops before launching"
       - "tests/unit/rigCommand.test.ts#--setup only makes it the setup in use"
       - "tests/unit/rigCommand.test.ts#an unknown setup opens the window and says so, with the setups there are"
-      - "tests/e2e/one-click.e2e.ts#one click: --fly on a cold start arranges the monitors, starts TrackIR and launches"
-      - "tests/e2e/one-click.e2e.ts#one click: --fly stops in front of a required item that is not met, and says why"
-      - "tests/e2e/one-click.e2e.ts#one click: an unknown setup opens the window and names the setups there are"
-      - 'tests/e2e/one-click.e2e.ts#one click: "Do not launch" while Make ready is still working keeps the game from starting'
+      - test: "tests/e2e/one-click.e2e.ts#one click: --fly on a cold start arranges the monitors, starts TrackIR and launches"
+      - test: "tests/e2e/one-click.e2e.ts#one click: --fly stops in front of a required item that is not met, and says why"
+      - test: "tests/e2e/one-click.e2e.ts#one click: an unknown setup opens the window and names the setups there are"
+      - test: 'tests/e2e/one-click.e2e.ts#one click: "Do not launch" while Make ready is still working keeps the game from starting'
       - "artifacts/screens/one-click-fly/01-keep-layout-asks.png"
       - "artifacts/screens/one-click-fly/02-launched.png"
       - "artifacts/screens/one-click-stopped/01-not-launched.png"
@@ -4148,7 +4148,7 @@ requirements:
       - "While a command, the tray or the window is already making ready, launching or standing down, a new command is refused: the window comes forward and shows what is running."
     status: done
     evidence:
-      - "tests/e2e/one-click.e2e.ts#one click: a second start hands over to the running RigReady, which comes forward and does it"
+      - test: "tests/e2e/one-click.e2e.ts#one click: a second start hands over to the running RigReady, which comes forward and does it"
       - 'tests/unit/rigCommand.test.ts#"Do not launch" while it waits for the layout answer: made ready, not launched'
       - "tests/unit/rigCommand.test.ts#is refused while the tray or the window is already working, and only brings the window forward"
       - "artifacts/screens/one-click-second-start/01-made-ready-from-a-second-start.png"
@@ -4183,12 +4183,12 @@ requirements:
       - "src/core/windowsArgs.test.ts#a real program started with the written text gets the same values"
       - "tests/unit/writeAudit.test.ts#Setups: putting a shortcut on the desktop, replacing one under an earlier name, and removing it"
       - "tests/unit/knownFolders.test.ts#with USERPROFILE, APPDATA and LOCALAPPDATA in temp folders every user folder is under them"
-      - "tests/e2e/one-click.e2e.ts#one click: a desktop shortcut is made in the setup editor, flies when it is started, and is removed again"
+      - test: "tests/e2e/one-click.e2e.ts#one click: a desktop shortcut is made in the setup editor, flies when it is started, and is removed again"
       - "artifacts/screens/one-click-shortcut/01-not-on-the-desktop-yet.png"
       - "artifacts/screens/one-click-shortcut/02-shown-first.png"
       - "artifacts/screens/one-click-shortcut/03-on-the-desktop.png"
       - "artifacts/screens/one-click-shortcut/04-on-the-safety-page.png"
-      - "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the desktop shortcut the app makes is a .lnk Windows reads, and starting it flies the setup"
+      - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the desktop shortcut the app makes is a .lnk Windows reads, and starting it flies the setup"
 
   - id: WOW-WIN-004
     title: Jump List tasks "Fly <setup>"
@@ -4205,9 +4205,9 @@ requirements:
       - 'tests/unit/taskbar.test.ts#offers "Fly <setup>" for the setups used most recently, then the others by name'
       - "tests/unit/taskbar.test.ts#is empty without setups and never longer than a list anybody reads"
       - "tests/unit/taskbar.test.ts#is told again only when it is a different thing: nothing is rewritten on every check"
-      - 'tests/e2e/taskbar.e2e.ts#taskbar: the Jump List offers "Fly <setup>" for the setups used most recently and follows setups used, renamed, cloned and deleted'
-      - "tests/e2e/taskbar.e2e.ts#taskbar: on a PC without setups the Jump List is empty, there is no badge, and the buttons are off"
-      - "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the Jump List is written for the setups used most recently, inside the profile RigReady runs in"
+      - test: 'tests/e2e/taskbar.e2e.ts#taskbar: the Jump List offers "Fly <setup>" for the setups used most recently and follows setups used, renamed, cloned and deleted'
+      - test: "tests/e2e/taskbar.e2e.ts#taskbar: on a PC without setups the Jump List is empty, there is no badge, and the buttons are off"
+      - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the Jump List is written for the setups used most recently, inside the profile RigReady runs in"
       - "artifacts/screens/taskbar-jump-list/01-three-setups.png"
 
   - id: WOW-WIN-005
@@ -4231,7 +4231,7 @@ requirements:
       - "tests/unit/taskbar.test.ts#progress: Make ready fills as its fixes end, and is gone when it is over"
       - "tests/unit/taskbar.test.ts#progress: Launch counts the steps before the game and the game, not the ones after"
       - "tests/unit/machine.test.ts#the fake taskbar button remembers what it was told, and a press reaches whoever listens"
-      - "tests/e2e/taskbar.e2e.ts#taskbar: the button carries the status as a badge with words, fills while Make ready runs, and its three buttons do what they say"
+      - test: "tests/e2e/taskbar.e2e.ts#taskbar: the button carries the status as a badge with words, fills while Make ready runs, and its three buttons do what they say"
       - "artifacts/screens/taskbar-button/02-pictures.png"
       - "artifacts/screens/taskbar-button/01-not-ready.png"
 
@@ -4251,8 +4251,8 @@ requirements:
       - "tests/unit/tray.test.ts#the tooltip names the setup, its state and what is wrong, within what Windows shows"
       - "tests/unit/tray.test.ts#what is not met is read from the checklist report, by title"
       - "tests/unit/tray.test.ts#a double-click on the icon always opens the window; one click brings it out or puts it away"
-      - "tests/e2e/tray.e2e.ts#tray: a double-click on the icon opens the window; one click brings it out, or puts it away when it is in front"
-      - "tests/e2e/tray.e2e.ts#tray: shows readiness as a colour, switches setup, and runs Make ready, Launch and Stand down"
+      - test: "tests/e2e/tray.e2e.ts#tray: a double-click on the icon opens the window; one click brings it out, or puts it away when it is in front"
+      - test: "tests/e2e/tray.e2e.ts#tray: shows readiness as a colour, switches setup, and runs Make ready, Launch and Stand down"
       - "artifacts/screens/tray-icon/01-ready-with-a-warning.png"
 
   - id: WOW-WIN-007
@@ -4280,13 +4280,13 @@ requirements:
       - "src/features/one-click/core/hotkey.test.ts#never says a hotkey is on, or off, when Windows did not do it"
       - "src/features/one-click/core/hotkey.test.ts#a damaged settings file is reported and left as it is"
       - "tests/unit/machine.test.ts#the fake hotkeys are what \"Windows\" has registered: one per name, none that another program has"
-      - "tests/e2e/one-click.e2e.ts#one click: a hotkey chosen in Settings brings RigReady forward and runs Make ready, from the tray"
+      - test: "tests/e2e/one-click.e2e.ts#one click: a hotkey chosen in Settings brings RigReady forward and runs Make ready, from the tray"
       - "artifacts/screens/one-click-hotkey/01-off.png"
       - "artifacts/screens/one-click-hotkey/02-choosing.png"
       - "artifacts/screens/one-click-hotkey/03-active.png"
       - "artifacts/screens/one-click-hotkey/04-refused.png"
       - "artifacts/screens/one-click-hotkey/05-made-ready-by-the-hotkey.png"
-      - "tests/packaged/oneClick.e2e.ts#packaged, real Windows: a hotkey chosen in Settings is registered with Windows and given back when it is turned off"
+      - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: a hotkey chosen in Settings is registered with Windows and given back when it is turned off"
 
   - id: WOW-WIN-008
     title: One click proven in the packaged app, on a scenario and on the real Windows
@@ -4314,6 +4314,25 @@ requirements:
       - "artifacts/screens/packaged-one-click-shortcut/01-on-the-desktop.png"
       - "artifacts/screens/packaged-one-click-shortcut/02-flown-from-the-shortcut.png"
       - "artifacts/screens/packaged-one-click-hotkey/01-active.png"
+
+  - id: WOW-WIN-009
+    title: "No menu of Electron's: no menu bar, and no key that throws work away"
+    job: platform
+    area: platform
+    priority: p2
+    done_means:
+      - "No window of RigReady has a menu bar, the main one and any window made later the way a feature's extra window is made, and Alt does not bring one up."
+      - "In the packaged app the only keys a menu gives are zoom (Ctrl and +, with or without Shift; Ctrl and -; Ctrl+0) and full screen (F11). Ctrl+R and Ctrl+Shift+R do not load the window again, so a setup that is being edited is not thrown away by a slip of the hand; Ctrl+Shift+I does not open the developer tools."
+      - "A run from source keeps Reload and the developer tools."
+    notes:
+      - "2026-10-04: measured in the packaged app before the change, which had Electron's own menu (File, Edit, View, Window): a sent Ctrl+R loaded the window again, Ctrl+Shift+I opened the developer tools, Alt brought up the menu bar, and Ctrl+= did not zoom (only Ctrl+Shift+= did). The key presses of the test driver never reach a menu (the same Ctrl+R sent through it did nothing even then), so the packaged test sends the keys with Electron itself while RigReady's window is the active one, and takes the zoom from Ctrl+= in the same go as the sign that they arrived. A go in which another program took the foreground says nothing and is made again; if the window never stays the active one the test is skipped and says so. The window was looked at zoomed in and out (Electron's own capture, not kept): the pages flow to the new size."
+    status: done
+    evidence:
+      - "tests/unit/appMenu.test.ts#in the packaged app holds zoom and full screen, and nothing that reloads the window or opens the developer tools"
+      - "tests/unit/appMenu.test.ts#in a run from source keeps Reload and the developer tools"
+      - "tests/unit/appMenu.test.ts#has no label with a marked letter, so Alt and a letter cannot bring up the menu bar"
+      - test: "tests/packaged/window.e2e.ts#packaged window: the menu is RigReady’s own (zoom and full screen, nothing that reloads or opens the developer tools) and no window has a menu bar, nor one made later"
+      - test: "tests/packaged/window.e2e.ts#packaged window, keys pressed for real: Ctrl+R does not reload it, Ctrl+Shift+I does not open the developer tools, Alt brings up no menu bar, and the zoom and full screen keys work"
 
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY

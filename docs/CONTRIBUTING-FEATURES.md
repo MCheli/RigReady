@@ -48,7 +48,7 @@ Nothing else is needed for unit and e2e work: both run on fake providers. `npm r
 | `npm run rig:smoke` | Read-only checks against the real hardware. Not for CI. |
 | `npm run rig:smoke:apply` | Also changes and restores the real monitor layout and default audio devices. Owner's PC only. |
 | `npm run pack` | Build the unpacked app into `release/win-unpacked` (never publishes). |
-| `npm run smoke:packaged` | `pack`, then against the unpacked app: enumeration, a scenario, live input, the input reader failing, the updater on a local feed, start with Windows, startup time, and one click (`--fly`, a second start, a real desktop shortcut, the Jump List, a hotkey). |
+| `npm run smoke:packaged` | `pack`, then against the unpacked app: enumeration, a scenario, live input, the input reader failing, the updater on a local feed, start with Windows, startup time, one click (`--fly`, a second start, a real desktop shortcut, the Jump List, a hotkey), and the window's menu and keys. |
 | `npm run smoke:installer` | Builds a test variant of the installer ("RigReady Test": its own app id, install folder and data folder), installs it without elevation, starts it, updates it on quit, uninstalls it, and checks that a real RigReady install on the PC is untouched. |
 | `npm run dist` | Build the installer into `release/` (never publishes). `docs/RELEASING.md` has the release steps. |
 | `npm run rig:record -- <name> [--only=files,registry,...]` | Record this PC into `fixtures/rigs/<name>/` (coordinator only). |

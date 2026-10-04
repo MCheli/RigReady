@@ -98,6 +98,8 @@ Every window (the main one and panels opened with `openPanel`) is created with c
 
 **The hotkey.** A system-wide key combination, off until one is chosen on the Settings page (the `one-click` feature keeps it and registers it through the `Hotkeys` port). When it is pressed the shell brings the window forward and runs the `--make-ready` command for the setup in use. It never launches.
 
+**The menu.** RigReady has no menu bar. Its application menu (`src/main/appMenu.ts`, a pure model) exists only for the keys a menu gives a window: zoom (Ctrl and +, with or without Shift; Ctrl and -; Ctrl+0) and full screen (F11). Without a menu of its own a program is handed Electron's, whose Ctrl+R loads the window again in the middle of an edit and whose Ctrl+Shift+I opens the developer tools; a run from source keeps those two. Every window, the main one and the ones a feature opens, is without a menu bar, and Alt does not bring one up.
+
 ## Test harness
 
 | Layer | What it is |

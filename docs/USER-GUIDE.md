@@ -146,6 +146,7 @@ Tuning values of a Fanatec wheel base are stored on the base. RigReady cannot re
 - **Settings**: start with Windows, close to tray, update channel, AI key, notifications, retention of automatic backups.
 - **Safety**: every change RigReady made to files outside its own folder, with Undo.
 - **Diagnostics**: the log, and a button that copies a report with personal details removed.
+- **Text size**: Ctrl and + makes everything in the window larger, Ctrl and - smaller, Ctrl+0 puts it back. F11 fills the screen.
 
 ## Things to know
 

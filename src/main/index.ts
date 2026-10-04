@@ -45,6 +45,7 @@ import { trimWorkingSets } from '../platform/windows/memory';
 import { appContract, type CommandRun } from '../shared/appContract';
 import { eventName } from '../shared/channels';
 import type { Envelope } from '../shared/ipc';
+import { appMenu } from './appMenu';
 import { discoverFeatures, wireFeatures } from './bootstrap';
 import { runDiagnose } from './diagnose';
 import { unsupportedPlatformMessage } from './platformGuard';
@@ -317,6 +318,13 @@ async function start(): Promise<void> {
   }
 
   app.setAppUserModelId(APP_USER_MODEL_ID);
+  // RigReady's own keys in place of Electron's menu, and no menu bar in any window (appMenu.ts).
+  Menu.setApplicationMenu(Menu.buildFromTemplate(appMenu(app.isPackaged)));
+  app.on('browser-window-created', (_event, window) => {
+    // Windows are made with the bar hidden; this stops Alt from bringing it up.
+    window.setAutoHideMenuBar(false);
+    window.setMenuBarVisibility(false);
+  });
   const { ports, scenario, fake } = await createPlatform();
   const dataRoot = ports.folders.dataRoot();
   logging.open(dataRoot, [ports.folders.home()]);
