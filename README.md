@@ -16,22 +16,25 @@ Version 2.0.0 is a rebuild from the ground up. It is **pre-release**: nothing ha
 
 ## What it does
 
-- **Play.** One screen with a checklist for the setup you used last. **Make ready** runs every fix in order (starts apps, applies the monitor layout, restores files). **Launch** starts the game and is never blocked, only warned. **Stand down** closes the helper apps and puts the monitors back to the desk layout. The same actions are in the tray menu.
+- **Play.** One screen for the setup you used last: a readiness dial, the rig drawn with its monitors and devices, and a checklist with a fix beside every failing item. **Make ready and launch** runs every fix in order (starts apps, applies the monitor layout, restores files) and starts the game once everything required is met. **Launch** on its own is never blocked, only warned. **Stand down** closes the helper apps and puts the monitors back to the desk layout. The same actions are in the tray menu, on the taskbar button, behind a hotkey, and on a desktop shortcut per setup, so a session can start with one double-click.
 - **Setups.** One per aircraft or car, created by capturing the rig while it works, then edited. Back up and restore bindings and settings; share a setup as a file with personal details reviewed and removed.
-- **Controls.** See and edit DCS bindings, clean up the defaults DCS binds on every device, recover when Windows changes device IDs, copy common controls between aircraft. Cheat sheets with a picture of each device, printable and exportable as DCS kneeboard pages. A binding guide with a walkthrough, and optional AI help with your own Anthropic API key.
-- **Hardware.** Every device, found by pressing a button on it; an input tester; a health check for stuck buttons and noisy axes; a USB map. Monitor layouts with identify and a timed revert. Default audio devices. Stream Deck, TrackIR and Fanatec wheel pages.
+- **Controls.** See and edit DCS bindings, clean up the defaults DCS binds on every device, recover when Windows changes device IDs, copy common controls between aircraft. Cheat sheets with a picture of each device for DCS aircraft and for the racing games, printable and exportable as DCS kneeboard pages, with a trainer that names an action and has you press the control. A binding guide with a walkthrough, and optional AI help with your own Anthropic API key.
+- **Hardware.** Every device, found by pressing a button on it; an input tester with a live trace per axis; a health check for stuck buttons and noisy axes; a USB map drawn as a tree. Monitor layouts with identify and a timed revert. Default audio devices. Stream Deck, TrackIR and Fanatec wheel pages.
+- **Everywhere.** Ctrl+K finds every page and runs the common actions from wherever you are.
 
 | | |
 |---|---|
 | ![Monitors page](artifacts/screens/tour-flying/12-displays.png) | ![Cheat sheet for a stick](artifacts/screens/tour-flying/10-cheat-sheets.png) |
 | Monitors: the arrangement now, and saved layouts | Cheat sheets: what every control does |
+| ![The command palette](artifacts/screens/shell-palette/01-open.png) | ![A picture of a setup](artifacts/screens/share-picture/rig-wide.png) |
+| Ctrl+K: every page and action from one field | A picture of a setup to show people, with no personal details |
 
 ## Games and hardware
 
 | | Support |
 |---|---|
 | DCS World | The deepest: installs (Steam and standalone), MFD screen setup (MonitorSetup), Export.lua, options, bindings (view, edit, clean up, device ID repair, copy between aircraft, snapshots), cheat sheets, kneeboard pages, binding guides for the F/A-18C and UH-1H. |
-| iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | Detection, a page per game with bindings and controllers as the game's files have them, backup and restore, checks for a racing setup. |
+| iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | Detection, a page per game with bindings and controllers as the game's files have them, cheat sheets and the trainer, backup and restore, checks for a racing setup. |
 | Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally | A game module: detection, config locations, backup suggestions, launch. |
 | Any other game | Works generically: a checklist, launch, tracked files, backup. |
 | Hardware | Any USB game controller, monitor and audio device Windows sees. Dedicated pages for a Fanatec wheel base, Stream Deck and TrackIR; HidHide is noticed when it hides a device. WinWing devices work as controllers; features that need WinWing's own protocol (backlight sync, UFC/ICP displays, vibration) still need SimAppPro, and RigReady checks that it is running when a setup uses them. |
