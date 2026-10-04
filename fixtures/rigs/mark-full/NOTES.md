@@ -40,7 +40,13 @@ Default audio when recorded: playback Speakers (Realtek), communications playbac
 
 Paths have the Windows user name replaced with `User`. Steam account ids are replaced with the neutral id `76561197960265728`, and the player name and nickname in LMU's `Settings.JSON` with `Player`. Never recorded: `%APPDATA%\SimAppPro\config.json` (account credentials), DCS `network.vault` and `steam_authdata.bin`. The recording still contains real device serial numbers and the full list of running programs and services.
 
+## Monitor identity (added 2026-10-03, evening)
+
+`displays.json` also carries, per monitor: `serial` (from the EDID Windows keeps in the registry: `12NFXG3` for the Dell, `H4ZR900542` for the ultrawide, `1` on all three MFD screens, which therefore identifies none of them), `usbSerial` and `usbId` for the three MFD screens (the DisplayLink USB device each hangs off, `17E9:FF00`, serials `WWIN29320221210163532`, `WWIN29320221210092611`, `WWIN29320221210093818`), `connector` (`DisplayPort`, `USB`), and `modes`: the three largest resolutions each monitor offers with every refresh rate (the full lists are 100 to 190 modes; the MFD screens have exactly one, 1024x768 at 60 Hz). These fields were merged into the existing recording from a read of the same desk state; nothing else in the file changed.
+
 ## MFD screen orientation: 90 is likely, still not seen on the panels
+
+Measured since this section was written: Windows accepts both 90 (its "Portrait", DISPLAYCONFIG rotation 2, GDI DMDO_90) and 270 ("Portrait (flipped)") on the MFD screens; see `docs/research/owner-rig.md`. The app now asks "Which way is up?" on the Monitors page instead of guessing.
 
 Whether portrait on these panels is rotation **90 or 270** has not been read from the machine:
 
