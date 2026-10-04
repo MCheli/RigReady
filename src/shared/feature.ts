@@ -64,6 +64,15 @@ export function defineFeature(manifest: FeatureManifest): FeatureManifest {
 }
 
 /**
+ * What the two modes of the app are called on screen: one table for the shell and for any
+ * feature that names a mode in its copy, so the word is the same everywhere. "Play" reads
+ * the same to someone who flies and to someone who only races. The names inside the
+ * program are not these: the mode a route sets with meta.mode is still 'fly', and so are
+ * the folder, the routes, the channels and the test ids.
+ */
+export const MODE_NAMES = { fly: 'Play', configure: 'Configure' } as const;
+
+/**
  * The manifests of a set of discovered modules (what import.meta.glob over every feature
  * folder's index.ts returns), in a stable order. This is the whole registry: a feature is
  * its folder.

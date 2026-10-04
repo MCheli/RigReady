@@ -1,3 +1,5 @@
+import { MODE_NAMES } from '../../shared/feature';
+
 /**
  * The keyboard shortcuts of the app shell: one table, used by the key handler and by the
  * overlay that lists them ("?"), so the list can never promise a key that does nothing.
@@ -22,8 +24,13 @@ export const SHORTCUTS: Shortcut[] = [
     label: 'Find a page or run a command',
     aria: 'Control+K',
   },
-  { id: 'fly', keys: ['Ctrl', '1'], label: 'Go to Fly', aria: 'Control+1' },
-  { id: 'configure', keys: ['Ctrl', '2'], label: 'Go to Configure', aria: 'Control+2' },
+  { id: 'fly', keys: ['Ctrl', '1'], label: `Go to ${MODE_NAMES.fly}`, aria: 'Control+1' },
+  {
+    id: 'configure',
+    keys: ['Ctrl', '2'],
+    label: `Go to ${MODE_NAMES.configure}`,
+    aria: 'Control+2',
+  },
   { id: 'help', keys: ['?'], label: 'Show the keyboard shortcuts', aria: '?' },
 ];
 
@@ -34,7 +41,34 @@ export const PALETTE_KEYS: { keys: string[]; label: string }[] = [
   { keys: ['Esc'], label: 'Close, and go back to where you were' },
 ];
 
+/**
+ * What the window itself answers to, through its menu (which is never shown): the keys of
+ * any Windows program for the size of the text and for the full screen. The shell does not
+ * handle them; it lists them, and tests/e2e/shell.e2e.ts proves the menu holds each one
+ * under the key printed here. `role` is the menu's own name for it.
+ */
+export const WINDOW_KEYS: { keys: string[]; label: string; role: string }[] = [
+  { keys: ['Ctrl', '+'], label: 'Larger text', role: 'zoomin' },
+  { keys: ['Ctrl', '−'], label: 'Smaller text', role: 'zoomout' },
+  { keys: ['Ctrl', '0'], label: 'Text back to its normal size', role: 'resetzoom' },
+  { keys: ['F11'], label: 'Full screen, and back', role: 'togglefullscreen' },
+];
+
 export const shortcut = (id: ShortcutId): Shortcut => SHORTCUTS.find((s) => s.id === id)!;
+
+/** A window narrower than this on screen is a pop-out panel, not the app's own window. */
+export const PANEL_MAX_WIDTH = 720;
+
+/**
+ * Whether this window is a pop-out panel (the quick look in a small window that stays on
+ * top): one tool, where the shell's keys have nothing to act on. The address it was opened
+ * with says so, and so does its width on screen. That is the width of the window, not of
+ * the page: the page gets narrower as the text gets larger (Ctrl and +), and the shell's
+ * keys must work at every text size.
+ */
+export function isPanelWindow(outerWidth: number, query: Record<string, unknown>): boolean {
+  return query['popped'] === '1' || outerWidth < PANEL_MAX_WIDTH;
+}
 
 export interface KeyPress {
   key: string;

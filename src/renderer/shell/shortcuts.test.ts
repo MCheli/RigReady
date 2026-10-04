@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isPanelWindow,
   isTyping,
   PALETTE_KEYS,
+  PANEL_MAX_WIDTH,
   shortcut,
   shortcutFor,
   SHORTCUTS,
+  WINDOW_KEYS,
   type KeyPress,
 } from './shortcuts';
 
@@ -56,6 +59,41 @@ describe('keyboard shortcuts of the shell', () => {
       expect(shortcut(entry.id)).toBe(entry);
     }
     expect(PALETTE_KEYS.map((k) => k.keys.join(' '))).toEqual(['↑ ↓', 'Enter', 'Esc']);
+  });
+
+  it('the keys of the window are listed beside them, and none of them is a key the shell takes', () => {
+    expect(WINDOW_KEYS.map((k) => `${k.keys.join(' ')}: ${k.role}`)).toEqual([
+      'Ctrl +: zoomin',
+      'Ctrl −: zoomout',
+      'Ctrl 0: resetzoom',
+      'F11: togglefullscreen',
+    ]);
+    for (const entry of WINDOW_KEYS) {
+      expect(entry.label.length).toBeGreaterThan(8);
+      // Typed as the keyboard has them ("-" for the minus that is printed here).
+      const key = entry.keys[entry.keys.length - 1]!.replace('−', '-');
+      const held = { ctrlKey: entry.keys.includes('Ctrl') };
+      expect(shortcutFor(press(key, held), false), entry.label).toBeUndefined();
+      expect(shortcutFor(press(key, { ...held, shiftKey: true }), false)).toBeUndefined();
+    }
+  });
+});
+
+describe('whether a window is the app’s own or a pop-out panel', () => {
+  it('the app’s own window has the shell’s keys at every text size: its width on screen counts, not the page’s', () => {
+    // 1280 on screen; at twice the text size the page inside it is 632 wide.
+    expect(isPanelWindow(1280, {})).toBe(false);
+    expect(isPanelWindow(PANEL_MAX_WIDTH, {})).toBe(false);
+    expect(isPanelWindow(1280, { game: 'dcs', aircraft: 'FA-18C_hornet' })).toBe(false);
+  });
+
+  it('a small window is a panel, and so is one opened as a pop-out, however wide it was made', () => {
+    expect(isPanelWindow(560, {})).toBe(true);
+    expect(isPanelWindow(PANEL_MAX_WIDTH - 1, {})).toBe(true);
+    expect(isPanelWindow(1600, { popped: '1' })).toBe(true);
+    // Only the pop-out's own mark counts, as the page that reads it has it.
+    expect(isPanelWindow(1600, { popped: '0' })).toBe(false);
+    expect(isPanelWindow(1600, { popped: ['1', '1'] })).toBe(false);
   });
 });
 

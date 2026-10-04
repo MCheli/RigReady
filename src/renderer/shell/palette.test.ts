@@ -35,15 +35,15 @@ const page = (to: string, title: string, order: number, hint?: string): ListedCo
 });
 
 const COMMANDS = sortCommands([
-  page('/fly', 'Fly', -1),
+  { ...page('/fly', 'Play', -1), keywords: ['fly', 'race', 'ready'] },
   page('/configure/profiles', 'Setups', 1),
   page('/configure/backups', 'Backups', 2),
   page('/configure/displays', 'Monitors', 3, 'Hardware'),
   page('/configure/devices', 'Devices', 4, 'Hardware'),
   page('/configure/devices/test', 'Input tester', 5, 'Devices'),
-  action('fly.makeReady', 'Make ready', 'Fly', -1),
-  action('fly.launch', 'Launch', 'Fly', -1),
-  action('fly.standDown', 'Stand down', 'Fly', -1),
+  action('fly.makeReady', 'Make ready', 'Play', -1),
+  action('fly.launch', 'Launch', 'Play', -1),
+  action('fly.standDown', 'Stand down', 'Play', -1),
   action('displays.identify', 'Identify monitors', 'Monitors', 30_410),
   action('displays.apply.flying', 'Apply layout: Flying', 'Monitors', 30_410),
   action('backup.now', 'Back up now', 'Backups', 120),
@@ -55,14 +55,14 @@ const titles = (query: string, recent: string[] = []): string[] =>
 describe('what the palette shows', () => {
   it('with nothing typed: every command under its heading, in the order the registry gave', () => {
     const sections = searchCommands(COMMANDS, '');
-    expect(sections.map((s) => s.title)).toEqual(['Fly', 'Backups', 'Monitors', GO_TO]);
+    expect(sections.map((s) => s.title)).toEqual(['Play', 'Backups', 'Monitors', GO_TO]);
     expect(sections[0]!.rows.map((r) => r.command.title)).toEqual([
       'Make ready',
       'Launch',
       'Stand down',
     ]);
     expect(sections[3]!.rows.map((r) => r.command.title)).toEqual([
-      'Fly',
+      'Play',
       'Setups',
       'Backups',
       'Monitors',
@@ -85,7 +85,7 @@ describe('what the palette shows', () => {
     ]);
     // Each command is listed once: what leads the list is not repeated under its heading,
     // and a heading with nothing left under it is not shown.
-    expect(sections.slice(1).map((s) => s.title)).toEqual(['Fly', 'Monitors', GO_TO]);
+    expect(sections.slice(1).map((s) => s.title)).toEqual(['Play', 'Monitors', GO_TO]);
     expect(sections[1]!.rows.map((r) => r.command.title)).toEqual(['Make ready', 'Stand down']);
     const all = sections.flatMap((s) => s.rows.map((r) => r.command.id));
     expect(new Set(all).size).toBe(all.length);
@@ -98,7 +98,11 @@ describe('what the palette shows', () => {
     expect(titles('mr')[0]).toBe('Make ready');
     expect(titles('launch')[0]).toBe('Launch');
     expect(titles('stand')[0]).toBe('Stand down');
-    expect(titles('fly')[0]).toBe('Fly');
+    // The mode by its name, with the commands that stand under it; and by what is done there.
+    expect(titles('play').slice(0, 4)).toEqual(['Play', 'Make ready', 'Launch', 'Stand down']);
+    expect(titles('play launch')).toEqual(['Launch']);
+    expect(titles('fly')).toContain('Play');
+    expect(titles('race')).toEqual(['Play']);
     // The page called Monitors, then the commands under Monitors.
     expect(titles('monitors').slice(0, 3)).toEqual([
       'Monitors',

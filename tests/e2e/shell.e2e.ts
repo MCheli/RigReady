@@ -1,6 +1,8 @@
-import type { Page } from '@playwright/test';
+import type { ElectronApplication, Page } from '@playwright/test';
+import { WINDOW_KEYS } from '../../src/renderer/shell/shortcuts';
 import { axeViolations, colourOnlyStatus, type Dom } from './a11y';
 import { expect, test } from './harness';
+import { captureWindow } from './textSize';
 
 /**
  * The app shell (WOW-UI): the command palette with the commands the features contribute,
@@ -78,6 +80,87 @@ async function choose(page: Page, typed: string, title: string | RegExp): Promis
   await expect(page.getByTestId('palette')).toBeHidden();
 }
 
+/** What the window's menu holds: every item that has a role, with the key it answers to. */
+const menuKeys = (app: ElectronApplication): Promise<{ role: string; accelerator: string }[]> =>
+  app.evaluate(({ Menu }) => {
+    type Item = NonNullable<ReturnType<typeof Menu.getApplicationMenu>>['items'][number];
+    const held: { role: string; accelerator: string }[] = [];
+    const walk = (items: Item[]): void => {
+      for (const item of items) {
+        if (item.role) {
+          held.push({
+            role: String(item.role).toLowerCase(),
+            accelerator: String(item.accelerator ?? ''),
+          });
+        }
+        if (item.submenu) walk(item.submenu.items);
+      }
+    };
+    walk(Menu.getApplicationMenu()?.items ?? []);
+    return held;
+  });
+
+/** The key an accelerator ends in, as the list of shortcuts prints it. */
+function printedKey(accelerator: string): string {
+  const key = accelerator.split('+').filter(Boolean).pop() ?? '';
+  // "Plus", and "=" (the same key without Shift), are the plus key; the minus is printed as one.
+  return key === 'Plus' || key === '=' ? '+' : key === '-' ? '−' : key;
+}
+
+/**
+ * Does what the key does: the action of the menu item that holds it, on the app's own
+ * window. (A key pressed through the test driver goes to the page and never reaches the
+ * menu.) Answers the size of the text afterwards, 1 being normal.
+ */
+const menuAction = (app: ElectronApplication, role: string): Promise<number> =>
+  app.evaluate(({ Menu, BrowserWindow }, wanted) => {
+    type Item = NonNullable<ReturnType<typeof Menu.getApplicationMenu>>['items'][number];
+    const find = (items: Item[]): Item | undefined => {
+      for (const item of items) {
+        if (String(item.role ?? '').toLowerCase() === wanted) return item;
+        const below = item.submenu ? find(item.submenu.items) : undefined;
+        if (below) return below;
+      }
+      return undefined;
+    };
+    const window = BrowserWindow.getAllWindows()[0]!;
+    const item = find(Menu.getApplicationMenu()?.items ?? []);
+    if (!item) throw new Error(`The window's menu has nothing for "${wanted}".`);
+    item.click({} as never, window, window.webContents);
+    return window.webContents.getZoomFactor();
+  }, role);
+
+/**
+ * Where the page stands in its window: the width of the page, the width of the window on
+ * screen, and by how much the header's own row is wider than the header (0: it fits).
+ */
+const pageWidth = (page: Page): Promise<{ inner: number; outer: number; header: number }> =>
+  page.evaluate(() => {
+    const scope = globalThis as unknown as {
+      innerWidth: number;
+      outerWidth: number;
+      document: { querySelector(selector: string): { scrollWidth: number; clientWidth: number } };
+    };
+    const row = scope.document.querySelector('.shell-bar .v-toolbar__content');
+    return {
+      inner: scope.innerWidth,
+      outer: scope.outerWidth,
+      header: row.scrollWidth - row.clientWidth,
+    };
+  });
+
+/** The part of an element that is outside the page, sideways, in pixels (0: all of it is inside). */
+const outside = (page: Page, testId: string): Promise<number> =>
+  page.getByTestId(testId).evaluate((el) => {
+    const scope = globalThis as unknown as {
+      document: { documentElement: { clientWidth: number } };
+    };
+    const box = el.getBoundingClientRect();
+    // Half a pixel is how a fraction of one is drawn, not something sticking out.
+    const over = Math.max(-box.left, box.right - scope.document.documentElement.clientWidth);
+    return over > 0.5 ? over : 0;
+  });
+
 test('palette: Ctrl+K finds every page and the commands of the features, by keyboard alone', async ({
   rig,
 }) => {
@@ -93,9 +176,9 @@ test('palette: Ctrl+K finds every page and the commands of the features, by keyb
   await expect(input).toHaveAttribute('aria-expanded', 'true');
   await expect(input).toHaveAttribute('aria-controls', 'rr-palette-list');
   await expect(page.getByTestId('palette-list')).toHaveAttribute('role', 'listbox');
-  // The commands that depend on the setup arrive: the Fly actions lead the list.
+  // The commands that depend on the setup arrive: the actions of Play lead the list.
   await expect(rows(page).first()).toHaveAttribute('data-command', 'fly.makeReady');
-  await expect(page.getByTestId('palette-heading').first()).toHaveText('Fly');
+  await expect(page.getByTestId('palette-heading').first()).toHaveText('Play');
   await expect(rows(page).first()).toContainText('DCS F/A-18C');
   // The marked row is the one the field points a screen reader at.
   await expect(input).toHaveAttribute('aria-activedescendant', 'rr-palette-option-0');
@@ -119,6 +202,11 @@ test('palette: Ctrl+K finds every page and the commands of the features, by keyb
   );
   expect(targets.length).toBeGreaterThan(all.length);
   expect(await strays(page, targets)).toEqual([]);
+  // The mode the header calls Play is called Play here as well: its page among the pages,
+  // like the heading over its commands.
+  const playPage = page.locator('[data-testid="palette-row"][data-to="/fly"]');
+  await expect(playPage).toHaveCount(1);
+  await expect(playPage.locator('.rr-palette-title')).toHaveText('Play');
 
   // ---- Arrow keys move the mark, round at the ends; the field keeps the focus.
   await page.keyboard.press('ArrowDown');
@@ -140,6 +228,11 @@ test('palette: Ctrl+K finds every page and the commands of the features, by keyb
   await expect(rows(page).nth(1)).toContainText('monitor');
   await expect(page.getByTestId('palette-count')).toHaveText(/^\d+ matches$/);
   await shot('typed');
+  // The page of Play mode is found by what is done there, whether that is flying or racing.
+  for (const word of ['fly', 'race']) {
+    await input.fill(word);
+    await expect(playPage).toHaveCount(1);
+  }
   await input.fill('zzzz');
   await expect(page.getByTestId('palette-none')).toContainText('Nothing matches “zzzz”');
   await expect(input).toHaveAttribute('aria-expanded', 'false');
@@ -154,13 +247,13 @@ test('palette: Ctrl+K finds every page and the commands of the features, by keyb
   await expect(page.getByTestId('palette')).toBeHidden();
   await expect.poll(() => focused(page)).toBe('recheck');
 
-  // ---- A command: Make ready, from the keyboard. The toast says what the Fly channel answered.
+  // ---- A command: Make ready, from the keyboard. The toast says what the feature's channel answered.
   await openPalette(page);
   await choose(page, 'mr', 'Make ready');
   await expect(toast(page, 'ok')).toBeVisible();
   await expect(toast(page, 'ok').getByTestId('toast-text')).toHaveText('DCS F/A-18C is ready');
   await expect(toast(page, 'ok').getByTestId('toast-detail')).toHaveText('1 of 1 fix worked.');
-  // The Fly screen behind it has looked again by itself.
+  // The Play screen behind it has looked again by itself.
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
   // The focus went back to where it was: the page did not change.
   await expect.poll(() => focused(page)).toBe('recheck');
@@ -190,12 +283,26 @@ test('palette: Ctrl+K finds every page and the commands of the features, by keyb
   await expect.poll(() => hash(page)).toBe('#/configure/devices/usb');
   await shot('opened-usb-map');
 
+  // ---- The mode by its name: its page first, then the commands that stand under it.
+  await openPalette(page);
+  await page.keyboard.type('play');
+  await expect(marked(page).locator('.rr-palette-title')).toHaveText('Play');
+  await expect(marked(page)).toHaveAttribute('data-to', '/fly');
+  await expect(marked(page)).toContainText('Is the rig ready, fix what is not, launch');
+  await expect(rows(page).nth(1)).toHaveAttribute('data-command', 'fly.makeReady');
+  await shot('play');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('palette')).toBeHidden();
+  await expect.poll(() => hash(page)).toBe('#/fly');
+  await expect(page.getByTestId('fly-page')).toBeVisible();
+
   // ---- What was used last is remembered when RigReady is started again.
   const again = await run.restart();
   await expect(again.page.getByTestId('fly-page')).toBeVisible();
   await openPalette(again.page);
   await expect(again.page.getByTestId('palette-heading').first()).toHaveText('Recent');
   await expect(again.page.locator('[role="group"]').first().getByTestId('palette-row')).toHaveText([
+    /^Play/,
     /^USB map/,
     /^Safety/,
     /^Make ready/,
@@ -205,8 +312,14 @@ test('palette: Ctrl+K finds every page and the commands of the features, by keyb
 test('shortcuts: "?" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting dialog keeps the keyboard', async ({
   rig,
 }) => {
-  const { page, shot } = await rig.launch('flying-trackir-not-running', 'shell-shortcuts');
+  const { page, shot, app } = await rig.launch('flying-trackir-not-running', 'shell-shortcuts');
   await expect(page.getByTestId('fly-status-title')).toHaveText('Not ready');
+
+  // The two modes as the header names them, each with its key.
+  await expect(page.getByTestId('mode-fly')).toHaveText('Play');
+  await expect(page.getByTestId('mode-fly')).toHaveAttribute('title', 'Play (Ctrl+1)');
+  await expect(page.getByTestId('mode-configure')).toHaveText('Configure');
+  await expect(page.getByTestId('mode-configure')).toHaveAttribute('title', 'Configure (Ctrl+2)');
 
   await page.keyboard.press('Control+2');
   await expect.poll(() => hash(page)).toMatch(/^#\/configure\//);
@@ -224,11 +337,29 @@ test('shortcuts: "?" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting di
   await expect(
     listed.filter({ hasText: 'Find a page or run a command' }).locator('kbd')
   ).toHaveText(['Ctrl', 'K']);
-  await expect(listed.filter({ hasText: 'Go to Fly' }).locator('kbd')).toHaveText(['Ctrl', '1']);
+  await expect(listed.filter({ hasText: 'Go to Play' }).locator('kbd')).toHaveText(['Ctrl', '1']);
   await expect(listed.filter({ hasText: 'Go to Configure' }).locator('kbd')).toHaveText([
     'Ctrl',
     '2',
   ]);
+  // The keys of the window itself are listed too, and the window's menu really holds each
+  // one under the key that is printed.
+  await expect(page.getByTestId('window-key-row')).toHaveCount(WINDOW_KEYS.length);
+  const menu = await menuKeys(app);
+  for (const entry of WINDOW_KEYS) {
+    const row = page.locator(`[data-testid="window-key-row"][data-role="${entry.role}"]`);
+    await expect(row.locator('kbd')).toHaveText(entry.keys);
+    await expect(row).toContainText(entry.label);
+    const key = entry.keys[entry.keys.length - 1]!;
+    const withCtrl = entry.keys.includes('Ctrl');
+    const held = menu.filter(
+      (item) =>
+        item.role === entry.role &&
+        printedKey(item.accelerator) === key &&
+        /^(CommandOrControl|CmdOrCtrl|Control|Ctrl)\+/.test(item.accelerator) === withCtrl
+    );
+    expect(held.length, `${entry.keys.join(' ')}: ${entry.label}`).toBeGreaterThan(0);
+  }
   await shot('shortcuts');
   // From the list straight into the palette.
   await page.getByTestId('shortcuts-palette').click();
@@ -246,6 +377,41 @@ test('shortcuts: "?" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting di
   await expect(page.getByTestId('palette')).toBeHidden();
   await expect.poll(() => focused(page)).toBe('palette-open');
 
+  // ---- The size of the text: what the window's keys do. Larger text makes the page
+  // narrower inside the same window; the header still fits and the shell's keys still work.
+  expect(await menuAction(app, 'zoomout')).toBeLessThan(1);
+  expect(await menuAction(app, 'resetzoom')).toBe(1);
+  let size = 1;
+  for (let step = 0; step < 12 && size < 2; step++) size = await menuAction(app, 'zoomin');
+  expect(size).toBeGreaterThanOrEqual(2);
+  await expect.poll(async () => (await pageWidth(page)).inner).toBeLessThan(720);
+  const large = await pageWidth(page);
+  // The window is as wide as it was, and the header's row is no wider than the header.
+  expect(large.outer).toBeGreaterThan(1000);
+  expect(large.header).toBe(0);
+  for (const id of ['shell-brand', 'mode-fly', 'mode-configure', 'palette-open', 'about-open']) {
+    await expect(page.getByTestId(id)).toBeVisible();
+    expect(await outside(page, id), id).toBe(0);
+  }
+  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('palette')).toBeVisible();
+  await expect(page.getByTestId('palette-input')).toBeFocused();
+  expect(await outside(page, 'palette')).toBe(0);
+  await captureWindow(app, await shot('twice-the-text-size'));
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('palette')).toBeHidden();
+  await page.keyboard.press('Control+2');
+  await expect.poll(() => hash(page)).toMatch(/^#\/configure\//);
+  await page.keyboard.press('Control+1');
+  await expect.poll(() => hash(page)).toBe('#/fly');
+  await page.keyboard.press('?');
+  await expect(overlay).toBeVisible();
+  expect(await outside(page, 'shortcuts')).toBe(0);
+  await page.keyboard.press('Escape');
+  await expect(overlay).toBeHidden();
+  expect(await menuAction(app, 'resetzoom')).toBe(1);
+  await expect.poll(async () => (await pageWidth(page)).inner).toBeGreaterThan(1000);
+
   // A dialog of a feature that waits for an answer keeps the keyboard: no palette over it.
   await page.getByTestId('launch').click();
   await expect(page.getByTestId('launch-warning')).toBeVisible();
@@ -256,6 +422,65 @@ test('shortcuts: "?" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting di
   expect(await hash(page)).toBe('#/fly');
   await page.getByTestId('launch-cancel').click();
   await expect(page.getByTestId('launch-warning')).toBeHidden();
+});
+
+test('shortcuts: a pop-out panel keeps to itself, the shell’s keys belong to the app’s own window', async ({
+  rig,
+}) => {
+  const { page, app, shot } = await rig.launch('cheat-sheets-hornet', 'shell-popout');
+  const settled = (window: Page): Promise<unknown> =>
+    window.evaluate(
+      `new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(null))))`
+    );
+
+  // In the app's own window the quick look is a page like any other: the palette opens over it.
+  await openPalette(page);
+  await choose(page, 'quick', 'Quick look');
+  await expect(page.getByTestId('quick-look')).toHaveAttribute('data-ready', 'true');
+  await openPalette(page);
+  await shot('palette-over-the-quick-look');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('palette')).toBeHidden();
+
+  // Popped out, it is one tool in a small window that stays on top: no palette, no list of
+  // shortcuts, and Ctrl+1 does not turn it into a second RigReady.
+  const [popup] = await Promise.all([
+    app.waitForEvent('window'),
+    page.getByTestId('quick-popout').click(),
+  ]);
+  await popup.waitForLoadState('domcontentloaded');
+  const popped = popup.getByTestId('quick-look');
+  await expect(popped).toHaveAttribute('data-popped', 'true');
+  await expect(popped).toHaveAttribute('data-ready', 'true');
+  const address = await hash(popup);
+  expect(address).toMatch(/^#\/configure\/cheat-sheets\/quick\?.*popped=1/);
+  const tryTheKeys = async (): Promise<void> => {
+    // From the page itself, not from its search field, where "?" would be a question mark.
+    await popup.locator('body').press('?');
+    for (const key of ['Control+k', 'Control+1', 'Control+2']) await popup.keyboard.press(key);
+    await settled(popup);
+    await expect(popup.getByTestId('palette')).toHaveCount(0);
+    await expect(popup.getByTestId('shortcuts')).toHaveCount(0);
+    expect(await hash(popup)).toBe(address);
+    await expect(popped.getByTestId('sheet-view')).toBeVisible();
+  };
+  expect((await pageWidth(popup)).outer).toBeLessThan(720);
+  await tryTheKeys();
+
+  // However wide it is made: what it was opened as counts, not its size.
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()
+      .find((window) => window.isAlwaysOnTop())!
+      .setSize(1100, 700);
+  });
+  await expect.poll(async () => (await pageWidth(popup)).outer).toBeGreaterThanOrEqual(1100);
+  await tryTheKeys();
+
+  // The app's own window still answers while the panel is open.
+  await openPalette(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('palette')).toBeHidden();
+  await popup.close();
 });
 
 test('palette commands: each calls its feature and the toast reports what really happened', async ({
@@ -371,7 +596,7 @@ test('palette commands: bindings and cheat sheets open on the aircraft, setups s
   await expect(page.getByTestId('fly-status-title')).not.toHaveText('Checking…');
   const before = (await page.getByTestId('profile-switcher').innerText()).trim();
 
-  // ---- Switch to the other setup: it becomes the one on the Fly screen.
+  // ---- Switch to the other setup: it becomes the one on the Play screen.
   await openPalette(page);
   const switches = rows(page).filter({ hasText: 'Switch to ' });
   await expect(switches).toHaveCount(1);
@@ -382,7 +607,7 @@ test('palette commands: bindings and cheat sheets open on the aircraft, setups s
   expect(before).not.toContain(target);
   await choose(page, 'switch', `Switch to ${target}`);
   await expect(toasts(page).getByTestId('toast-text')).toHaveText(
-    new RegExp(`^Now on the Fly screen: ${target.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')} is `)
+    new RegExp(`^Now on the Play screen: ${target.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')} is `)
   );
   await expect(page.getByTestId('profile-switcher')).toContainText(target);
   await shot('switched');

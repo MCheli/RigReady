@@ -48,7 +48,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **The app**
 - Per-user installer without administrator rights, updates through GitHub Releases with stable and beta channels, logging with personal details removed, a Diagnostics page.
-- A command palette (Ctrl+K) over every page and the common actions, with what an action did reported in a toast; Ctrl+1 and Ctrl+2 for Fly and Configure; `?` for the list of keys; an About panel.
+- A command palette (Ctrl+K) over every page and the common actions, with what an action did reported in a toast; Ctrl+1 and Ctrl+2 for Play and Configure; `?` for the list of keys; an About panel.
 - Motion is short and switched off when Windows is asked to reduce it. A page that is still reading shows its outline.
 
 ### Known limitations

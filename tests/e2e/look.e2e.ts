@@ -238,7 +238,7 @@ test('look: an empty state has a drawing, says what is missing, and leads somewh
   await nowhere.getByRole('button', { name: 'Find a page' }).click();
   await expect(page.getByTestId('palette-input')).toBeFocused();
   await page.keyboard.press('Escape');
-  await nowhere.getByRole('link', { name: 'Back to Fly' }).click();
+  await nowhere.getByRole('link', { name: 'Back to Play' }).click();
   await expect(page.getByTestId('fly-empty')).toBeVisible();
 
   const problems = [...(await axeViolations(page)), ...(await colourOnlyStatus(page))];
@@ -257,7 +257,7 @@ test('look: a snackbar of a feature looks like the shell’s toasts, with its to
     ).rigready.invoke('fly:setPreferences', { minimizeOnLaunch: false })
   );
   expect(stays).toMatchObject({ ok: true, value: { minimizeOnLaunch: false } });
-  // Launching with an optional item missing: the Fly screen's own snackbar says so.
+  // Launching with an optional item missing: the Play screen's own snackbar says so.
   await page.getByTestId('launch').click();
   const snackbar = page.locator('.v-snackbar__wrapper');
   await expect(snackbar).toBeVisible();

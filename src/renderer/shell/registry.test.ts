@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  CommandShell,
-  FeatureCommands,
-  FeatureManifest,
-  PaletteCommand,
+import {
+  MODE_NAMES,
+  type CommandShell,
+  type FeatureCommands,
+  type FeatureManifest,
+  type PaletteCommand,
 } from '../../shared/feature';
 import {
   areaOf,
@@ -19,8 +20,12 @@ const blank = { render: () => null };
 
 const MANIFESTS: FeatureManifest[] = [
   {
+    // The feature behind Play mode: the folder and its routes keep the name they had.
     id: 'fly',
-    routes: [{ path: '/fly', component: blank, meta: { mode: 'fly', title: 'Fly' } }],
+    routes: [
+      { path: '/fly', component: blank, meta: { mode: 'fly', title: 'Fly' } },
+      { path: '/fly/compact', component: blank, meta: { mode: 'fly', title: 'Compact view' } },
+    ],
   },
   {
     id: 'profiles',
@@ -124,8 +129,29 @@ describe('pages for the palette, from the manifests alone', () => {
       title: 'Racing: Assetto corsa',
       hint: 'Racing',
     });
-    // A route with a title of its own keeps it; one without a parent page gets its segment.
-    expect(byRoute('/fly')).toMatchObject({ title: 'Fly', icon: 'mdi-airplane-takeoff' });
+  });
+
+  it('the page the mode switch opens is called what the switch calls it: Play', () => {
+    // Whatever its feature calls the route, and found by what is done there.
+    const play = byRoute('/fly')!;
+    expect(play).toMatchObject({
+      id: 'page:/fly',
+      title: MODE_NAMES.fly,
+      hint: 'Is the rig ready, fix what is not, launch',
+      feature: 'fly',
+      group: GO_TO,
+    });
+    expect(play.title).toBe('Play');
+    expect(play.keywords).toEqual(expect.arrayContaining(['fly', 'race']));
+    // Nothing about it says flying to someone who only races.
+    expect(`${play.title} ${play.hint} ${play.icon}`).not.toMatch(/fly|flight|airplane/i);
+    // Another page of that mode keeps the title its route has, and says where it belongs.
+    expect(byRoute('/fly/compact')).toMatchObject({
+      title: 'Compact view',
+      hint: 'Play',
+      icon: play.icon,
+    });
+    expect(byRoute('/fly/compact')!.keywords).toBeUndefined();
   });
 
   it('leaves out what a link cannot open: a route with a required parameter', () => {
@@ -136,9 +162,10 @@ describe('pages for the palette, from the manifests alone', () => {
     expect(pages.filter((p) => p.to === '/configure/devices')).toHaveLength(1);
   });
 
-  it('orders them as the navigation does, each sub-page right after its page, Fly first', () => {
+  it('orders them as the navigation does, each sub-page right after its page, Play first', () => {
     expect(pages.map((p) => p.to)).toEqual([
       '/fly',
+      '/fly/compact',
       '/configure/profiles',
       '/configure/profiles/capture',
       '/configure/racing',
@@ -167,11 +194,19 @@ describe('where a feature’s commands stand', () => {
   });
 
   it('a feature without a navigation entry comes first, under its route’s title or its own name', () => {
-    expect(areaOf(MANIFESTS[0], 'fly')).toMatchObject({ title: 'Fly', order: -1 });
+    const about: FeatureManifest = {
+      id: 'about',
+      routes: [{ path: '/configure/about', component: blank, meta: { title: 'About this PC' } }],
+    };
+    expect(areaOf(about, 'about')).toMatchObject({ title: 'About this PC', order: -1 });
     expect(areaOf(undefined, 'checks-generic')).toMatchObject({
       title: 'Checks generic',
       order: -1,
     });
+  });
+
+  it('the feature whose pages are those of Play mode stands under the mode’s name', () => {
+    expect(areaOf(MANIFESTS[0], 'fly')).toMatchObject({ title: 'Play', order: -1 });
   });
 
   it('an action stands under its feature; a page goes with the pages unless it names a heading', () => {
@@ -236,7 +271,7 @@ describe('pages and commands together', () => {
         { id: 'devices.tab', title: 'Devices: Health', to: '/configure/devices?tab=health' },
       ],
     },
-    { feature: 'fly', commands: [{ id: 'fly.about', title: 'About flying', run }] },
+    { feature: 'fly', commands: [{ id: 'fly.recheck', title: 'Re-check', run }] },
   ];
   const all = staticCommands(MANIFESTS, modules);
   const byRoute = (to: string) => all.filter((c) => c.to === to);
@@ -271,10 +306,13 @@ describe('pages and commands together', () => {
     expect(byRoute('/configure/devices?tab=health')).toHaveLength(1);
   });
 
-  it('headings come in navigation order with Fly first and the pages last', () => {
+  it('headings come in navigation order with Play first and the pages last', () => {
     const groups = [...new Set(all.map((c) => c.group))];
-    expect(groups).toEqual(['Fly', 'Devices', GO_TO]);
-    expect(all.find((c) => c.id === 'fly.about')).toMatchObject({ group: 'Fly', kind: 'action' });
+    expect(groups).toEqual(['Play', 'Devices', GO_TO]);
+    expect(all.find((c) => c.id === 'fly.recheck')).toMatchObject({
+      group: 'Play',
+      kind: 'action',
+    });
   });
 
   it('works with no command modules at all: the pages are still there', () => {

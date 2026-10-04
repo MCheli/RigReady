@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { paletteOpen, returnFocus, shortcutsOpen } from '../shell/shell';
-import { PALETTE_KEYS, SHORTCUTS } from '../shell/shortcuts';
+import { PALETTE_KEYS, SHORTCUTS, WINDOW_KEYS } from '../shell/shortcuts';
 
 returnFocus(shortcutsOpen);
 
 /**
  * The keyboard shortcuts, shown by "?". The list is the table the key handler reads
- * (shell/shortcuts.ts), so every key shown here does what it says.
+ * (shell/shortcuts.ts), so every key shown here does what it says; the keys of the window
+ * itself are the ones its menu holds.
  */
 function openPalette(): void {
   shortcutsOpen.value = false;
@@ -42,6 +43,24 @@ function openPalette(): void {
           <div v-for="entry in PALETTE_KEYS" :key="entry.label" class="rr-keys-row">
             <dt>
               <kbd v-for="key in entry.keys" :key="key" class="rr-kbd">{{ key }}</kbd>
+            </dt>
+            <dd>{{ entry.label }}</dd>
+          </div>
+        </dl>
+        <div class="rr-section-title rr-keys-gap">The window</div>
+        <dl class="rr-keys">
+          <div
+            v-for="entry in WINDOW_KEYS"
+            :key="entry.role"
+            class="rr-keys-row"
+            :data-role="entry.role"
+            data-testid="window-key-row"
+          >
+            <dt>
+              <template v-for="(key, at) in entry.keys" :key="at">
+                <span v-if="at > 0" class="rr-keys-plus" aria-hidden="true">+</span>
+                <kbd class="rr-kbd">{{ key }}</kbd>
+              </template>
             </dt>
             <dd>{{ entry.label }}</dd>
           </div>

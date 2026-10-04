@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 import {
   commandProblem,
+  MODE_NAMES,
   type CommandShell,
   type FeatureCommands,
   type FeatureManifest,
@@ -69,13 +70,27 @@ function flatten(routes: RouteRecordRaw[], parent = ''): FlatRoute[] {
   return out;
 }
 
+/**
+ * The page the header's switch opens in Play mode, as the palette lists it. The shell names
+ * its modes (MODE_NAMES), so the page is called what the switch calls it, whatever its
+ * feature calls the route. It is found by the words for what is done there, too.
+ */
+const PLAY_PAGE = {
+  title: MODE_NAMES.fly,
+  hint: 'Is the rig ready, fix what is not, launch',
+  icon: 'mdi-play-circle-outline',
+  keywords: ['fly', 'race', 'ready', 'checklist', 'home'],
+};
+
 /** The heading a feature's commands stand under, and where it stands. */
 export function areaOf(manifest: FeatureManifest | undefined, feature: string) {
   const first = [...(manifest?.nav ?? [])].sort((a, b) => navRank(a) - navRank(b))[0];
   if (first) return { title: first.title, order: navRank(first), icon: first.icon };
   const titled = flatten(manifest?.routes ?? []).find((r) => r.title);
-  // A feature without a navigation entry of its own (the Fly screen) comes first.
-  return { title: titled?.title ?? humanize(feature), order: -1, icon: undefined };
+  // A feature without a navigation entry of its own comes first. Where its pages are those
+  // of Play mode, it stands under the name of the mode.
+  const title = titled?.mode === 'fly' ? MODE_NAMES.fly : (titled?.title ?? humanize(feature));
+  return { title, order: -1, icon: undefined };
 }
 
 /**
@@ -98,6 +113,8 @@ export function pageCommands(manifests: FeatureManifest[]): ListedCommand[] {
     kind: 'page',
   }));
   const known = new Set(pages.map((p) => p.to));
+  // The first page of Play mode is the one the switch opens (the router's rule, too).
+  let playPage: string | undefined;
   for (const manifest of manifests) {
     let position = 0;
     for (const route of flatten(manifest.routes ?? [])) {
@@ -109,12 +126,22 @@ export function pageCommands(manifests: FeatureManifest[]): ListedCommand[] {
         .filter(({ entry }) => route.path.startsWith(`${entry.to}/`))
         .sort((a, b) => b.entry.to.length - a.entry.to.length)[0]?.entry;
       const last = route.path.split('/').pop() ?? '';
+      const play = route.mode === 'fly';
+      if (play) playPage ??= route.path;
+      const named =
+        route.path === playPage
+          ? PLAY_PAGE
+          : {
+              title:
+                route.title ?? (parent ? `${parent.title}: ${humanize(last)}` : humanize(last)),
+              // Another page of Play mode says so, as a page of Configure names its own.
+              ...(parent ? { hint: parent.title } : play ? { hint: MODE_NAMES.fly } : {}),
+              icon: parent?.icon ?? (play ? PLAY_PAGE.icon : 'mdi-arrow-right'),
+            };
       pages.push({
         id: `page:${route.path}`,
         feature: manifest.id,
-        title: route.title ?? (parent ? `${parent.title}: ${humanize(last)}` : humanize(last)),
-        ...(parent ? { hint: parent.title } : {}),
-        icon: parent?.icon ?? (route.mode === 'fly' ? 'mdi-airplane-takeoff' : 'mdi-arrow-right'),
+        ...named,
         to: route.path,
         group: GO_TO,
         groupOrder: GO_TO_ORDER,

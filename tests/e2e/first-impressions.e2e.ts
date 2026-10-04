@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { axeViolations, colourOnlyStatus, type Dom } from './a11y';
 import { expect, test } from './harness';
+import { captureWindow, columnsOf, textSize } from './textSize';
 
 /**
  * First impressions (WOW-UI-008 to 010): the welcome a new user sees before any setup
@@ -109,12 +110,35 @@ test('welcome: a first run says what RigReady does, what it found on this PC, an
       })
     )
     .toBe('1');
+  // The outline is of what will be there: three readings side by side.
+  expect(await columnsOf(outline.locator('.rr-skeleton-grid'))).toBe(3);
   await shot('looking');
   await run.mutate([{ op: 'hangProvider', port: 'devices', hang: false }]);
   await go(page, '/configure/settings');
   await go(page, '/fly');
   await expect(page.getByTestId('welcome-controllers')).toContainText('12 game controllers');
   await expect(outline).toHaveCount(0);
+  expect(await columnsOf(page.locator('.welcome-facts'))).toBe(3);
+
+  // ---- At twice the text size the page is half as wide: one thing under the other, with
+  // nothing cut off and the first step still there.
+  await textSize(run.app, 2);
+  await expect.poll(() => columnsOf(page.getByTestId('welcome-what'))).toBe(1);
+  expect(await columnsOf(page.locator('.welcome-facts'))).toBe(1);
+  const sticksOut = await welcome.evaluate((el) => {
+    const scope = globalThis as unknown as {
+      document: { documentElement: { clientWidth: number } };
+    };
+    const width = scope.document.documentElement.clientWidth;
+    return [...el.querySelectorAll('li, .welcome-fact, a, h1, p')]
+      .map((part) => part.getBoundingClientRect())
+      .filter((box) => box.width > 0 && (box.left < -0.5 || box.right > width + 0.5)).length;
+  });
+  expect(sticksOut).toBe(0);
+  await expect(page.getByTestId('fly-create')).toBeVisible();
+  await captureWindow(run.app, await shot('large-text'));
+  await textSize(run.app, 1);
+  await expect.poll(() => columnsOf(page.getByTestId('welcome-what'))).toBe(3);
 
   // The first step leads into capture.
   await page.getByTestId('fly-create').click();
@@ -247,7 +271,7 @@ test('accent: the mark and the lines that say where you are follow the kind of g
   expect(await colourOf(page, '.shell-bar', '::before')).toBe(BLUE);
   await shot('flight');
 
-  // ---- Switched to the racing setup on the Fly screen: the shell follows by itself.
+  // ---- Switched to the racing setup on the Play screen: the shell follows by itself.
   await pick('iRacing');
   await expect.poll(() => kindOf(page)).toBe('racing');
   await expect(brand).toHaveAttribute('data-kind', 'racing');

@@ -273,6 +273,21 @@ const facts = computed(() => {
   border-radius: 8px;
   background: var(--rr-surface-2);
 }
+/* While the PC is being looked at: the outline of the three readings, where they will be. */
+.welcome-found :deep(.rr-skeleton-grid) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.welcome-found :deep(.rr-skeleton-card) {
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--rr-surface-2);
+  box-shadow: none;
+}
+.welcome-found :deep(.rr-skeleton-block) {
+  height: 46px;
+}
 .welcome-fact-head {
   display: flex;
   align-items: center;
@@ -323,5 +338,26 @@ const facts = computed(() => {
 }
 .welcome-keys .rr-kbd + .rr-kbd {
   margin-right: 6px;
+}
+/* A narrow window, or large text: one thing under the other. */
+@media (max-width: 760px) {
+  .welcome {
+    padding: 0 20px 22px;
+  }
+  .welcome-hud {
+    margin: 0 -20px;
+  }
+  .welcome-what,
+  .welcome-facts,
+  .welcome-found :deep(.rr-skeleton-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .welcome-what {
+    gap: 12px;
+  }
+  .welcome-keys {
+    margin: 18px -20px 0;
+    padding: 14px 20px 0;
+  }
 }
 </style>

@@ -7,7 +7,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { err } from '../../src/core/result';
+import { err, ok } from '../../src/core/result';
 import { listDynamic, staticCommands } from '../../src/renderer/shell/registry';
 import {
   collectCommands,
@@ -199,8 +199,8 @@ describe('command discovery', () => {
 /** Enough of the recorded files for the game modules to find the games: the programs, not their data. */
 const INSTALLS = ['Program Files (x86)/**/*.exe', 'Program Files (x86)/Steam/steamapps/*'];
 
-describe('Fly commands', () => {
-  it('Re-check, Make ready, Launch and Stand down report what the Fly channels answered', async () => {
+describe('Play commands (the fly feature)', () => {
+  it('Re-check, Make ready, Launch and Stand down report what the channels of the Play screen answered', async () => {
     const { shell, went, refreshed, progress } = await open('flying-trackir-not-running');
     const offered = (await commandsOf('fly', shell)).map((c) => c.title);
     expect(offered).toEqual(['Make ready', 'Launch', 'Stand down', 'Re-check']);
@@ -209,7 +209,7 @@ describe('Fly commands', () => {
     expect(before).toMatchObject({
       tone: 'bad',
       text: 'DCS F/A-18C is not ready',
-      action: { label: 'Open Fly', to: '/fly' },
+      action: { label: 'Open Play', to: '/fly' },
     });
     expect(before.detail).toMatch(/^1 required item is not met: TrackIR/);
 
@@ -247,7 +247,7 @@ describe('Fly commands', () => {
     expect(launched).toMatchObject({
       tone: 'warn',
       text: 'Launched DCS.exe',
-      action: { label: 'Open Fly', to: '/fly' },
+      action: { label: 'Open Play', to: '/fly' },
     });
     expect(launched.detail).toMatch(/^It was not ready: 1 required item not met \(TrackIR/);
   });
@@ -267,7 +267,7 @@ describe('Fly commands', () => {
     }
   });
 
-  it('a switch to another setup makes it the one in use, opens Fly, and says how it stands', async () => {
+  it('a switch to another setup makes it the one in use, opens Play, and says how it stands', async () => {
     const { shell, went } = await open('fly-two-setups');
     const state = async () =>
       (await app!.invoke<{ activeProfileId: string; profiles: { id: string; name: string }[] }>(
@@ -279,7 +279,7 @@ describe('Fly commands', () => {
     expect(switchTo.id).toBe(`fly.switch.${other.id}`);
     expect(switchTo.hint).toMatch(/·/);
     const outcome = await run(switchTo, shell);
-    expect(outcome.text).toMatch(new RegExp(`^Now on the Fly screen: ${other.name} is `));
+    expect(outcome.text).toMatch(new RegExp(`^Now on the Play screen: ${other.name} is `));
     expect((await state()).activeProfileId).toBe(other.id);
     expect(went).toEqual(['/fly']);
     // The setup that was in use is now the one that can be switched to.
@@ -531,18 +531,64 @@ describe('DCS bindings and cheat sheet commands', () => {
       'Saved Games/DCS/**',
       'Program Files (x86)/Steam/**',
     ]);
+    // The aircraft of DCS, whatever other games have sheets on this rig.
     const sheets = (await commandsOf('cheat-sheets', shell)).filter((c) =>
-      c.id.startsWith('cheat-sheets.sheet.')
+      c.id.startsWith('cheat-sheets.sheet.dcs.')
     );
     expect(sheets[0]).toMatchObject({
       id: 'cheat-sheets.sheet.dcs.FA-18C_hornet',
       group: 'Cheat sheets',
-      hint: 'Your bindings',
       to: '/configure/cheat-sheets?game=dcs&aircraft=FA-18C_hornet',
     });
     expect(sheets[0]!.title).toMatch(/^Cheat sheet: F\/A-18C/);
+    // With one game the hint is only whose bindings they are; with several it names the game too.
+    expect(sheets[0]!.hint).toMatch(/^(DCS World · )?Your bindings$/);
     const quick = await find('cheat-sheets', shell, 'Quick look');
     expect(quick.to).toBe('/configure/cheat-sheets/quick');
+  });
+
+  it('a game with one set of bindings for everything is offered under the game’s own name', async () => {
+    // What the cheat sheets answer for a rig with DCS and a racing game: the racing game
+    // has one sheet for all cars, and says so.
+    const overview = {
+      games: [
+        {
+          game: 'dcs',
+          gameName: 'DCS World',
+          kneeboard: true,
+          aircraft: [
+            { id: 'UH-1H', name: 'UH-1H', hasUserBindings: false },
+            { id: 'FA-18C_hornet', name: 'F/A-18C', hasUserBindings: true },
+          ],
+        },
+        {
+          game: 'iracing',
+          gameName: 'iRacing',
+          kneeboard: false,
+          aircraft: [{ id: 'all', name: 'All cars', hasUserBindings: true, general: true }],
+        },
+      ],
+    };
+    const shell: CommandShell = {
+      client: () => ({ overview: async () => ok(overview) }) as never,
+      go: async () => undefined,
+      route: () => '/fly',
+      machineChanged: () => undefined,
+      progress: () => undefined,
+    };
+    const sheets = await moduleOf('cheat-sheets').list!(shell);
+    expect(sheets.map((c) => [c.title, c.hint])).toEqual([
+      ['Cheat sheet: F/A-18C', 'DCS World · Your bindings'],
+      ['Cheat sheet: UH-1H', 'DCS World · Defaults only'],
+      ['Cheat sheet: iRacing', 'Your bindings'],
+    ]);
+    expect(sheets[2]).toMatchObject({
+      id: 'cheat-sheets.sheet.iracing.all',
+      to: '/configure/cheat-sheets?game=iracing&aircraft=all',
+    });
+    // Still found by what the game calls it.
+    expect(sheets[2]!.keywords).toContain('All cars');
+    expect(sheets[0]!.keywords).not.toContain('F/A-18C');
   });
 
   it('on a PC without DCS there is no aircraft to open, and nothing fails', async () => {

@@ -4136,17 +4136,17 @@ requirements:
     area: shell
     priority: p2
     done_means:
-      - "Fly: Make ready, Launch, Stand down and Re-check for the setup in use, and a switch to every other setup, each through the Fly screen's own channel. Nobody can be asked from the palette, so a fix or step that runs a program is not run and is reported as not run; Launch on a rig that is not ready launches and says so; Stand down never closes the game unasked and says it is still running."
+      - "Play: Make ready, Launch, Stand down and Re-check for the setup in use, and a switch to every other setup, each through the Play screen's own channel. Nobody can be asked from the palette, so a fix or step that runs a program is not run and is reported as not run; Launch on a rig that is not ready launches and says so; Stand down never closes the game unasked and says it is still running."
       - "Monitors: one command per saved layout, with how it differs from the monitors now; applying reports the answer to 'Keep this layout?' (kept, or gone back), never 'applied' for a layout that went back; a layout that needs a monitor that is not connected is refused and nothing changes. Identify says how many monitors show their number."
-      - "Backups: 'Back up now' writes the full backup, shows how far it is, and names the backup that was written. Diagnostics: 'Copy the diagnostics report' says how many characters are on the clipboard. Devices: 'Find a device' listens from any page and opens the device whose button was pressed, and says so when nothing was pressed or no controller is connected. DCS bindings and Cheat sheets: one command per aircraft, the ones with bindings of the owner's own first, that opens the page on that aircraft."
+      - "Backups: 'Back up now' writes the full backup, shows how far it is, and names the backup that was written. Diagnostics: 'Copy the diagnostics report' says how many characters are on the clipboard. Devices: 'Find a device' listens from any page and opens the device whose button was pressed, and says so when nothing was pressed or no controller is connected. DCS bindings and Cheat sheets: one command per aircraft, the ones with bindings of the owner's own first, that opens the page on that aircraft; a game that has one sheet for everything is offered under the game's own name."
       - "Every outcome is a toast with a tone of its own shape and words (done, attention, not done, note, still working), announced politely to a screen reader; it stays while the pointer or focus is on it, and may carry one button to the page it is about. A command that takes more than a moment shows that it is running, with its progress."
       - "With the fake machine made to accept every change and carry out none, no command reports success. A feature whose commands cannot be listed is named in the palette with the reason, and the rest still works."
     status: done
     evidence:
-      - "tests/unit/paletteCommands.test.ts#Re-check, Make ready, Launch and Stand down report what the Fly channels answered"
+      - "tests/unit/paletteCommands.test.ts#Re-check, Make ready, Launch and Stand down report what the channels of the Play screen answered"
       - "tests/unit/paletteCommands.test.ts#Launch on a rig that is not ready launches, and says it was not ready"
       - "tests/unit/paletteCommands.test.ts#nothing is reported as done when the machine accepts a change and does not carry it out"
-      - "tests/unit/paletteCommands.test.ts#a switch to another setup makes it the one in use, opens Fly, and says how it stands"
+      - "tests/unit/paletteCommands.test.ts#a switch to another setup makes it the one in use, opens Play, and says how it stands"
       - "tests/unit/paletteCommands.test.ts#applying a layout reports the answer to \"Keep this layout?\": kept, or gone back"
       - "tests/unit/paletteCommands.test.ts#a layout that needs a monitor that is not connected is refused, and nothing changes"
       - "tests/unit/paletteCommands.test.ts#a layout the machine accepts and does not apply is not reported as applied"
@@ -4154,6 +4154,7 @@ requirements:
       - "tests/unit/paletteCommands.test.ts#\"Find a device\" names the device whose button was pressed and opens it on the Devices page"
       - "tests/unit/paletteCommands.test.ts#\"Find a device\" stops listening after a while and says that nothing was pressed"
       - "tests/unit/paletteCommands.test.ts#open the bindings page on an aircraft: the ones with bindings of your own first"
+      - "tests/unit/paletteCommands.test.ts#a game with one set of bindings for everything is offered under the game’s own name"
       - "tests/unit/paletteCommands.test.ts#\"Copy the diagnostics report\" puts the report on the clipboard and says how much it was"
       - "tests/unit/paletteCommands.test.ts#every icon a command names exists in the icon font"
       - "src/renderer/shell/runner.test.ts#an action that takes a moment shows that it is running, with its progress, then becomes the outcome"
@@ -4172,16 +4173,25 @@ requirements:
     area: shell
     priority: p2
     done_means:
-      - "Ctrl+1 goes to Fly and Ctrl+2 to Configure, from anywhere, also while typing in a field."
+      - "Ctrl+1 goes to Play and Ctrl+2 to Configure, from anywhere, also while typing in a field."
       - "'?' shows the keyboard shortcuts; typed into a text field it is a question mark. The list is the table the key handler reads, so it cannot promise a key that does nothing."
+      - "The keys of the window itself are listed with them (Ctrl and + or - for the size of the text, Ctrl+0 for the normal size, F11 for the full screen). E2E reads the window's menu and finds each one under the key printed, and runs the menu's own actions: the text gets larger, smaller, and normal again."
+      - "At twice the text size the page inside the window is half as wide: the header still fits (nothing of it is outside the window), and Ctrl+K, Ctrl+1, Ctrl+2 and '?' still work, because a window is told from a pop-out by its width on screen, not by the width of its page."
+      - "A pop-out panel (the quick look in its own small window) keeps to itself: no palette, no list of shortcuts and no change of mode there, however wide it is made. In the app's own window the quick look is a page like any other, and the palette opens over it."
       - "While a dialog of a feature waits for an answer, the shell's shortcuts leave the keyboard to it: no palette opens over it and the page does not change."
     status: done
     evidence:
       - "src/renderer/shell/shortcuts.test.ts#Ctrl+K opens the palette, Ctrl+1 and Ctrl+2 change mode, with either case of the letter"
       - "src/renderer/shell/shortcuts.test.ts#the Ctrl shortcuts work while typing in a field; \"?\" there is a question mark"
       - "src/renderer/shell/shortcuts.test.ts#the list shown by \"?\" is the table the key handler reads: every entry answers to its keys"
+      - "src/renderer/shell/shortcuts.test.ts#the keys of the window are listed beside them, and none of them is a key the shell takes"
+      - "src/renderer/shell/shortcuts.test.ts#the app’s own window has the shell’s keys at every text size: its width on screen counts, not the page’s"
+      - "src/renderer/shell/shortcuts.test.ts#a small window is a panel, and so is one opened as a pop-out, however wide it was made"
       - "tests/e2e/shell.e2e.ts#shortcuts: \"?\" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting dialog keeps the keyboard"
+      - "tests/e2e/shell.e2e.ts#shortcuts: a pop-out panel keeps to itself, the shell’s keys belong to the app’s own window"
       - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
+      - "artifacts/screens/shell-shortcuts/02-twice-the-text-size.png"
+      - "artifacts/screens/shell-popout/01-palette-over-the-quick-look.png"
 
   - id: WOW-UI-004
     title: The visual system, refined - depth, type, one focus ring, motion that can be switched off
@@ -4225,6 +4235,7 @@ requirements:
     status: done
     evidence:
       - "tests/unit/shellComponents.test.ts#no page says it is loading with a line of text in an empty box"
+      - "tests/unit/shellComponents.test.ts#the scan sees such a line when there is one, and leaves an empty state alone"
       - "tests/unit/shellComponents.test.ts#every outline says what is being read, in words that end with an ellipsis"
       - "tests/unit/shellComponents.test.ts#the outline is a status region marked busy, with its words on the page and its bars hidden"
       - "tests/e2e/look.e2e.ts#look: a page that is still reading shows its outline, says so to a screen reader, and counts as loading"
@@ -4277,9 +4288,10 @@ requirements:
     area: shell
     priority: p2
     done_means:
-      - "With no setups (scenario flying-fresh), the Fly screen greets with one panel: a simplified head-up display (the horizon and the flight path marker, drawn and not read out), what RigReady does in three lines, and what it found on this PC as three readings (games, game controllers, monitors), each a number with its unit and what is behind it."
+      - "With no setups (scenario flying-fresh), the Play screen greets with one panel: a simplified head-up display (the horizon and the flight path marker, drawn and not read out), what RigReady does in three lines, and what it found on this PC as three readings (games, game controllers, monitors), each a number with its unit and what is behind it."
       - "One clear first step ('Create a setup from this rig') leads into capture; restoring from a backup and importing a shared setup are one click away; a line says where the keyboard leads (Ctrl+K, '?')."
-      - "While the PC is still being looked at the readings show their outline, and when it cannot be looked at the panel says so instead of showing nothing."
+      - "While the PC is still being looked at the readings show their outline, three side by side where the readings will be, and when it cannot be looked at the panel says so instead of showing nothing."
+      - "At twice the text size, where the page is half as wide, the panel puts one thing under the other: nothing sticks out of the window and the first step is still there."
       - "A PC whose only game is a racing one is greeted with the wheel for a mark; one without any sim says that any other game still works. The panel passes the axe and colour-only scans on each."
     status: done
     evidence:
@@ -4290,6 +4302,7 @@ requirements:
       - "tests/e2e/capture.e2e.ts#first run: welcome, what was found on this PC, and two clicks to a Ready DCS F/A-18C setup"
       - "artifacts/screens/welcome/01-welcome.png"
       - "artifacts/screens/welcome/02-looking.png"
+      - "artifacts/screens/welcome/03-large-text.png"
       - "artifacts/screens/welcome-racing/01-welcome.png"
       - "artifacts/screens/welcome-generic/01-welcome.png"
 
@@ -4319,7 +4332,7 @@ requirements:
       - "The shell does not know what a setup is: a feature says the kind (flight or racing) of the setup in use from its commands.ts, and when to ask again; an answer overtaken by a later question is dropped, and a feature that cannot say leaves the plain accent."
       - "With a flight setup or no setup nothing changes: the accent is the blue it was. With a racing setup the brand mark becomes a wheel and the mark, the header's index, the line that says where you are in Configure and the small mark in an empty state's drawing turn violet."
       - "It is decoration only: controls stay blue, status keeps green, amber and red, and the violet is far from all three around the colour wheel and seen on every surface (3:1)."
-      - "On scenario shell-flight-and-racing, switching the setup on the Fly screen, or from the palette, changes it within the same window without a restart."
+      - "On scenario shell-flight-and-racing, switching the setup on the Play screen, or from the palette, changes it within the same window without a restart."
     status: done
     evidence:
       - "src/renderer/shell/kind.test.ts#asks at once, again when the feature says the setup changed, and again when the machine did"
@@ -4331,6 +4344,29 @@ requirements:
       - "artifacts/screens/kind-accent/01-flight.png"
       - "artifacts/screens/kind-accent/02-racing.png"
       - "artifacts/screens/kind-accent/03-racing-configure.png"
+
+  - id: WOW-UI-011
+    title: The first mode is called Play, and the shell has the names of its modes in one place
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The mode that checks the rig and launches the game is called Play on screen, so the app reads the same to someone who flies and to someone who only races. In the shell the word comes from one table (MODE_NAMES in src/shared/feature.ts): the switch in the header and its tooltip, the list of keyboard shortcuts (Ctrl+1, Go to Play), the way back from an address that is not a page, and the command palette."
+      - "The palette calls the page the switch opens Play whatever its feature calls the route, lists that feature's commands under the heading Play, and still finds the page by 'fly' and by 'race'. Its icon and its hint say nothing of flying. A toast of those commands names the Play screen."
+      - "Only the word on screen changed: the folder, the routes, the IPC channels, meta.mode and the test ids are what they were (mode-fly, /fly, fly:check)."
+    notes:
+      - "2026-10-04: this entry is the shell and the palette's commands. Copy in other places that still says Fly (the capture page, the tray, the user guide) is not covered by it."
+    status: done
+    evidence:
+      - "src/renderer/shell/registry.test.ts#the page the mode switch opens is called what the switch calls it: Play"
+      - "src/renderer/shell/registry.test.ts#the feature whose pages are those of Play mode stands under the mode’s name"
+      - "src/renderer/shell/palette.test.ts#with something typed: one list, the best answer first"
+      - "tests/unit/paletteCommands.test.ts#a switch to another setup makes it the one in use, opens Play, and says how it stands"
+      - "tests/e2e/shell.e2e.ts#palette: Ctrl+K finds every page and the commands of the features, by keyboard alone"
+      - "tests/e2e/shell.e2e.ts#shortcuts: \"?\" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting dialog keeps the keyboard"
+      - "tests/e2e/look.e2e.ts#look: an empty state has a drawing, says what is missing, and leads somewhere"
+      - "artifacts/screens/shell-palette/01-open.png"
+      - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
 
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY

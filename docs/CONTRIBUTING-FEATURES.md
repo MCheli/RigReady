@@ -269,6 +269,7 @@ export default defineCommands({
 - What `run` returns is shown as a toast: `tone` (`ok`, `warn`, `bad`, `info`), `text`, an optional `detail` line and an optional `action` (`{ label, to }`). Report what the channel answered, never a "done" of your own: under the sabotage of section 15 no command may come back `ok`. Nobody can be asked from the palette, so a step that needs a confirmation is reported as not run, with the way to the page where it can be confirmed.
 - A `to` command for a route that already has a page takes its place when that page is reached from inside another; for a navigation entry, which keeps its name, the command's title and `keywords` become words the entry is found by.
 - `list` is asked each time the palette opens. When the list cannot be read, throw with the error result's message: the palette names your feature with that reason, and everything else in it still works.
+- The two modes have their names in one place: `MODE_NAMES` in `src/shared/feature.ts` (`fly: 'Play'`, `configure: 'Configure'`). Copy that names a mode reads it from there (`` `Open ${MODE_NAMES.fly}` ``), so the word is the same in the header, the shortcuts, the palette and a toast. Only the word on screen is "Play": the folder, the routes, the IPC channels, `meta.mode` and the test ids keep `fly`. The palette calls the page the mode switch opens "Play" whatever its route's title says, and lists that feature's commands under "Play".
 
 ### Toasts, motion and the tokens
 

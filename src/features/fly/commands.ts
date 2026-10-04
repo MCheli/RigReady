@@ -2,6 +2,7 @@ import type { ChecklistReport, StepResult } from '../../core/checks/engine';
 import {
   commandFailed,
   defineCommands,
+  MODE_NAMES,
   type CommandOutcome,
   type CommandShell,
   type PaletteCommand,
@@ -10,16 +11,18 @@ import type { GameKind } from '../../shared/models';
 import { flyContract, type ProfileSummary } from './contract';
 
 /**
- * The Fly screen's actions for the command palette: Make ready, Launch, Stand down and
- * Re-check for the setup in use, and a switch to every other setup. Each calls the same
- * channel the Fly screen calls and reports what that channel answered. Nobody can be asked
- * here, so, as from the tray, a fix or a step that runs a program is not run and is
- * reported as not run.
+ * The actions of the Play screen (this feature; the mode is called "Play" on screen) for
+ * the command palette: Make ready, Launch, Stand down and Re-check for the setup in use,
+ * and a switch to every other setup. Each calls the same channel the screen calls and
+ * reports what that channel answered. Nobody can be asked here, so, as from the tray, a fix
+ * or a step that runs a program is not run and is reported as not run.
  */
 
 const FLY = '/fly';
-const GROUP = 'Fly';
-const openFly = { label: 'Open Fly', to: FLY };
+/** The mode's name as it is on screen: the heading of these commands, and in what they say. */
+const PLAY = MODE_NAMES.fly;
+const GROUP = PLAY;
+const openFly = { label: `Open ${PLAY}`, to: FLY };
 
 const count = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
 
@@ -39,7 +42,7 @@ const optionalNotMet = (report: ChecklistReport): string[] =>
     .filter((r) => !r.required && !r.disabled && r.status !== 'pass')
     .map((r) => r.title);
 
-/** The state of a setup as one line with its tone, in the Fly screen's own words. */
+/** The state of a setup as one line with its tone, in the screen's own words. */
 export function readiness(
   name: string,
   report: ChecklistReport
@@ -132,7 +135,7 @@ async function launch(shell: CommandShell, setup: ProfileSummary): Promise<Comma
     return {
       tone: 'warn',
       text: 'The game was not started',
-      detail: `${message} That step is set to stop the launch. Launch anyway from the Fly screen.`,
+      detail: `${message} That step is set to stop the launch. Launch anyway from the ${PLAY} screen.`,
       action: openFly,
     };
   }
@@ -165,7 +168,7 @@ async function standDown(shell: CommandShell, setup: ProfileSummary): Promise<Co
   const api = shell.client(flyContract);
   const game = await api.gameStatus({ profileId: setup.id });
   shell.progress(`Standing ${setup.name} down…`);
-  // The game is never closed without being asked for: that question is the Fly screen's.
+  // The game is never closed without being asked for: that question is the screen's own.
   const result = await api.standDown({ profileId: setup.id, closeGame: false });
   shell.machineChanged();
   if (!result.ok) return commandFailed(result.error, openFly);
@@ -176,7 +179,7 @@ async function standDown(shell: CommandShell, setup: ProfileSummary): Promise<Co
       ? `Needs attention: ${failed.map((s) => `${s.title} (${s.message})`).join('; ')}.`
       : '',
     stillRunning
-      ? `${game.value.name ?? 'The game'} is still running and was left open; Stand down on the Fly screen can close it too.`
+      ? `${game.value.name ?? 'The game'} is still running and was left open; Stand down on the ${PLAY} screen can close it too.`
       : '',
   ]);
   return {
@@ -189,7 +192,7 @@ async function standDown(shell: CommandShell, setup: ProfileSummary): Promise<Co
 
 async function switchTo(shell: CommandShell, setup: ProfileSummary): Promise<CommandOutcome> {
   shell.progress(`Switching to ${setup.name}…`);
-  // Checking a setup makes it the one in use, as on the Fly screen and from the tray.
+  // Checking a setup makes it the one in use, as on the screen itself and from the tray.
   const result = await shell.client(flyContract).check({ profileId: setup.id });
   if (!result.ok) return commandFailed(result.error, openFly);
   await shell.go(FLY);
@@ -197,7 +200,7 @@ async function switchTo(shell: CommandShell, setup: ProfileSummary): Promise<Com
   const state = readiness(setup.name, result.value);
   return {
     tone: state.tone,
-    text: `Now on the Fly screen: ${state.text}`,
+    text: `Now on the ${PLAY} screen: ${state.text}`,
     ...(state.detail ? { detail: state.detail } : {}),
   };
 }
@@ -298,8 +301,8 @@ export default defineCommands({
 
   onSetupChanged(shell, changed) {
     const api = shell.client(flyContract);
-    // The Fly screen checks the setup it shows: a result for another setup than the last
-    // one means it switched. A changed setup file may have changed the game too.
+    // The screen checks the setup it shows: a result for another setup than the last one
+    // means it switched. A changed setup file may have changed the game too.
     let shown: string | undefined;
     const offs = [
       api.on('result', ({ profileId }) => {

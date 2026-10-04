@@ -59,16 +59,23 @@ const ownText = (node: AstNode): string =>
     .replace(/\s+/g, ' ')
     .trim();
 
+/** Every element of one component's template. */
+function elementsOf(source: string, file: string): { file: string; node: AstNode }[] {
+  const found: { file: string; node: AstNode }[] = [];
+  const { descriptor } = parse(source, { filename: file });
+  const walk = (node: AstNode): void => {
+    if (node.type === ELEMENT) found.push({ file, node });
+    for (const child of node.children ?? []) walk(child);
+  };
+  if (descriptor.template?.ast) walk(descriptor.template.ast as unknown as AstNode);
+  return found;
+}
+
 /** Every element of every template under src, with the file it is in. */
 async function elements(): Promise<{ file: string; node: AstNode }[]> {
   const found: { file: string; node: AstNode }[] = [];
   for (const full of await vueFiles(src)) {
-    const { descriptor } = parse(await fs.readFile(full, 'utf8'), { filename: full });
-    const walk = (node: AstNode): void => {
-      if (node.type === ELEMENT) found.push({ file: relative(full), node });
-      for (const child of node.children ?? []) walk(child);
-    };
-    if (descriptor.template?.ast) walk(descriptor.template.ast as unknown as AstNode);
+    found.push(...elementsOf(await fs.readFile(full, 'utf8'), relative(full)));
   }
   return found;
 }
@@ -77,29 +84,56 @@ async function elements(): Promise<{ file: string; node: AstNode }[]> {
 const LOADING = /^(Reading|Looking|Loading|Checking)[^.\n]*(…|\.\.\.)$/;
 
 /**
- * Loading lines in an empty box that are left as they are, each with its reason. The Fly
- * screen and the setup capture are being reworked by their own owners in this pass.
+ * Folders whose loading states are their own, each with its reason.
  */
-const TEXT_ONLY: Record<string, string> = {
-  'features/fly/renderer/FlyPage.vue':
-    'The Fly screen: one word for the moment before the setup is read; its checklist then draws itself item by item.',
+const OWN_DESIGN: Record<string, string> = {
+  'features/fly/':
+    'The Fly screen is one design of its own: it says one word for the moment before the setup is read, and its checklist then draws itself item by item.',
 };
+
+/** The loading lines that stand as text in an empty box, each with what to do about it. */
+function loadingLines(found: { file: string; node: AstNode }[]): string[] {
+  const lines: string[] = [];
+  for (const { file, node } of found) {
+    if (!/\brr-empty\b/.test(attr(node, 'class') ?? '')) continue;
+    if (!LOADING.test(ownText(node))) continue;
+    if (Object.keys(OWN_DESIGN).some((folder) => file.startsWith(folder))) continue;
+    lines.push(`${file}: "${ownText(node)}" (use <PageSkeleton label="${ownText(node)}" />)`);
+  }
+  return lines;
+}
 
 describe('WOW-UI-005 a page that is still reading shows its outline', () => {
   it('no page says it is loading with a line of text in an empty box', async () => {
-    const offenders: string[] = [];
-    for (const { file, node } of await elements()) {
-      if (!/\brr-empty\b/.test(attr(node, 'class') ?? '')) continue;
-      if (!LOADING.test(ownText(node))) continue;
-      if (TEXT_ONLY[file]) continue;
-      offenders.push(`${file}: "${ownText(node)}" (use <PageSkeleton label="…" />)`);
-    }
-    expect(offenders).toEqual([]);
-    // The exceptions are still true.
-    for (const [file, why] of Object.entries(TEXT_ONLY)) {
-      expect(readFileSync(path.join(src, file), 'utf8'), file).toMatch(/class="rr-empty">Loading…/);
-      expect(why.length).toBeGreaterThan(40);
-    }
+    expect(loadingLines(await elements())).toEqual([]);
+    for (const why of Object.values(OWN_DESIGN)) expect(why.length).toBeGreaterThan(40);
+  });
+
+  it('the scan sees such a line when there is one, and leaves an empty state alone', () => {
+    const page = (inner: string): { file: string; node: AstNode }[] =>
+      elementsOf(`<template><div class="rr-page">${inner}</div></template>`, 'features/x/X.vue');
+    expect(loadingLines(page('<div class="rr-panel rr-empty">Reading the files…</div>'))).toEqual([
+      'features/x/X.vue: "Reading the files…" (use <PageSkeleton label="Reading the files…" />)',
+    ]);
+    expect(
+      loadingLines(page('<p v-if="!view" class="rr-empty">Looking for DCS...</p>'))
+    ).toHaveLength(1);
+    // Nothing there yet is not loading, and a sentence about reading is not a loading line.
+    expect(loadingLines(page('<div class="rr-panel rr-empty">No backups yet.</div>'))).toEqual([]);
+    expect(
+      loadingLines(page('<div class="rr-empty">Reading a file takes a moment. Try again.</div>'))
+    ).toEqual([]);
+    // Progress said inside a row or a button is not a page waiting to be read.
+    expect(loadingLines(page('<span class="rr-muted">Checking…</span>'))).toEqual([]);
+    // A folder with a design of its own is left to it.
+    expect(
+      loadingLines(
+        elementsOf(
+          '<template><div class="rr-empty">Loading…</div></template>',
+          'features/fly/renderer/FlyPage.vue'
+        )
+      )
+    ).toEqual([]);
   });
 
   it('every outline says what is being read, in words that end with an ellipsis', async () => {

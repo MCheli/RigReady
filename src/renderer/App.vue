@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter, type RouteLocationNormalizedLoaded } from 'vue-router';
 import { appContract } from '../shared/appContract';
+import { MODE_NAMES } from '../shared/feature';
 import AboutDialog from './components/AboutDialog.vue';
 import BrandMark from './components/BrandMark.vue';
 import CommandPalette from './components/CommandPalette.vue';
@@ -18,7 +19,13 @@ import {
   rigKind,
   shortcutsOpen,
 } from './shell/shell';
-import { isTyping, shortcut, shortcutFor, type FocusTarget } from './shell/shortcuts';
+import {
+  isPanelWindow,
+  isTyping,
+  shortcut,
+  shortcutFor,
+  type FocusTarget,
+} from './shell/shortcuts';
 
 const route = useRoute();
 const router = useRouter();
@@ -46,9 +53,6 @@ function viewKey(shown: RouteLocationNormalizedLoaded): string {
 const dialogWaiting = (): boolean =>
   document.querySelector('.v-dialog.v-overlay--active:not(.rr-shell-dialog)') !== null;
 
-/** A pop-out panel (the quick look) is one tool in a small window: the shell's keys are not for it. */
-const SHELL_MIN_WIDTH = 720;
-
 function closePanels(): void {
   paletteOpen.value = false;
   shortcutsOpen.value = false;
@@ -64,7 +68,8 @@ function onKey(event: KeyboardEvent): void {
     return;
   }
   const wanted = shortcutFor(event, isTyping(event.target as FocusTarget | null));
-  if (!wanted || window.innerWidth < SHELL_MIN_WIDTH) return;
+  // A pop-out panel (the quick look) is one tool in a small window: these keys are not for it.
+  if (!wanted || isPanelWindow(window.outerWidth, route.query)) return;
   if (dialogWaiting()) return;
   event.preventDefault();
   if (wanted === 'palette') {
@@ -126,20 +131,20 @@ watch(
           class="shell-mode"
           :class="{ active: mode === 'fly' }"
           :aria-keyshortcuts="shortcut('fly').aria"
-          title="Fly (Ctrl+1)"
+          :title="`${MODE_NAMES.fly} (Ctrl+1)`"
           data-testid="mode-fly"
         >
-          Fly
+          {{ MODE_NAMES.fly }}
         </router-link>
         <router-link
           to="/configure"
           class="shell-mode"
           :class="{ active: mode === 'configure' }"
           :aria-keyshortcuts="shortcut('configure').aria"
-          title="Configure (Ctrl+2)"
+          :title="`${MODE_NAMES.configure} (Ctrl+2)`"
           data-testid="mode-configure"
         >
-          Configure
+          {{ MODE_NAMES.configure }}
         </router-link>
       </nav>
       <v-spacer />
@@ -276,7 +281,8 @@ watch(
   gap: 8px;
   height: 32px;
   padding: 0 6px 0 10px;
-  margin-right: 12px;
+  /* Left too: at a large text size nothing else keeps it off the mode switch. */
+  margin: 0 12px;
   border: 1px solid var(--rr-border);
   border-radius: 8px;
   background: var(--rr-bg);
