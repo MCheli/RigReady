@@ -112,6 +112,16 @@ async function identify(orphan: Orphan): Promise<void> {
       identifyNote.value = `That was ${pressed.deviceName}, which is not a "${orphan.name}". Press a button on the right device.`;
       return;
     }
+    // Identical devices: one device cannot take the bindings of two old IDs by a slip of the hand.
+    const taken = movable.value.find(
+      (o) =>
+        o.id !== orphan.id &&
+        choice.value[o.id]?.toGuid.toUpperCase() === candidate.guid.toUpperCase()
+    );
+    if (taken && orphan.candidates.length > 1) {
+      identifyNote.value = `That device is already chosen for the bindings under ${taken.oldGuid}. Press a button on another one.`;
+      return;
+    }
     choice.value = {
       ...choice.value,
       [orphan.id]: {

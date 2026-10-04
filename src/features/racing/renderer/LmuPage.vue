@@ -106,7 +106,10 @@ const offline = computed(
                 class="rr-muted"
               />
               <div class="rr-row-main">
-                <div class="rr-row-title">{{ d.name }}</div>
+                <div class="rr-row-title">
+                  {{ d.givenName ?? d.name }}
+                  <span v-if="d.givenName" class="rr-muted racing-hardware"> {{ d.name }}</span>
+                </div>
                 <div class="rr-row-sub">
                   {{ d.type || 'Controller' }} · {{ d.bindingCount }} binding{{
                     d.bindingCount === 1 ? '' : 's'

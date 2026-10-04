@@ -279,6 +279,15 @@ function test(): void {
           @click="router.push({ path: '/configure/devices/usb', query: { select: device.key } })"
           >Show on USB map</v-btn
         >
+        <v-btn
+          v-for="link in device.bindingLinks"
+          :key="link.to"
+          variant="tonal"
+          prepend-icon="mdi-controller"
+          :to="link.to"
+          data-testid="device-bindings"
+          >{{ link.label }}</v-btn
+        >
       </div>
     </div>
   </div>

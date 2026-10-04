@@ -4,8 +4,10 @@ import { useRoute } from 'vue-router';
 import { onMachineChanged } from '../../../renderer/machine';
 import type { InputState } from '../../../shared/models';
 import { detectIdentify } from '../core/input';
-import type { NotificationMode, RigDevice } from '../core/model';
+import type { DeviceIdentity } from '../core/identity';
+import type { MissingDevice, RigDevice } from '../core/model';
 import DeviceRow from './DeviceRow.vue';
+import NotificationSettings from './NotificationSettings.vue';
 import { useDevicesStore, useInputStore } from './store';
 
 const store = useDevicesStore();
@@ -16,7 +18,6 @@ const expanded = ref<string>();
 const highlighted = ref<string>();
 const renameKey = ref<string>();
 const showOthers = ref(false);
-const notifyError = ref<string>();
 
 const devices = computed(() => store.overview?.devices ?? []);
 const controllers = computed(() => devices.value.filter((d) => d.kind === 'controller'));
@@ -86,24 +87,69 @@ function toggle(device: RigDevice): void {
   if (highlighted.value !== device.key) highlighted.value = undefined;
 }
 
-// ---- notifications ----
-const notifyOptions: { value: NotificationMode; title: string; sub: string }[] = [
-  {
-    value: 'controllers',
-    title: 'Game controllers',
-    sub: 'Sticks, throttles, pedals, panels, wheels, and anything a setup needs',
-  },
-  {
-    value: 'required',
-    title: 'Only what the current setup needs',
-    sub: 'The devices on the checklist of the setup you used last',
-  },
-  { value: 'all', title: 'Every USB device', sub: 'Keyboards, mice, headsets and the rest too' },
-  { value: 'off', title: 'Off', sub: 'No notifications about devices' },
-];
-async function setMode(mode: NotificationMode | null): Promise<void> {
-  if (!mode) return;
-  notifyError.value = await store.setNotifications(mode);
+// ---- devices a setup needs that are not connected ----
+const identityKey = (identity: DeviceIdentity): string =>
+  [
+    identity.vendorId.toUpperCase(),
+    identity.productId.toUpperCase(),
+    identity.serial ?? '',
+    (identity.instanceId ?? '').toUpperCase(),
+  ].join('|');
+const openMissing = ref<string>();
+const highlightedMissing = ref<string>();
+function toggleMissing(m: MissingDevice): void {
+  const key = identityKey(m.identity);
+  openMissing.value = openMissing.value === key ? undefined : key;
+  if (highlightedMissing.value !== key) highlightedMissing.value = undefined;
+}
+const recognisedBy = (identity: DeviceIdentity): string =>
+  identity.serial !== undefined
+    ? 'Vendor and product ID, and its serial number'
+    : identity.instanceId !== undefined
+      ? 'Vendor and product ID, and the USB port it was on when the setup was captured'
+      : 'Vendor and product ID';
+
+// ---- "Diagnose" on the Fly screen: open the device a checklist item is about ----
+const diagnosis = ref<{ title: string; profile: string; found: boolean } | { error: string }>();
+async function diagnose(profileId: string, itemId: string): Promise<void> {
+  const result = await store.forCheck(profileId, itemId);
+  if (!result.ok) {
+    diagnosis.value = { error: result.message };
+    return;
+  }
+  const device = devices.value.find((d) => result.keys.includes(d.key));
+  diagnosis.value = { title: result.title, profile: result.profile, found: device !== undefined };
+  if (device) {
+    if (device.kind === 'other') showOthers.value = true;
+    await focus(device.key);
+    return;
+  }
+  const key = identityKey(result.identity);
+  // The same model, when the setup asks for more of them than are here.
+  const row =
+    missing.value.find((m) => identityKey(m.identity) === key) ??
+    missing.value.find(
+      (m) =>
+        m.identity.vendorId.toUpperCase() === result.identity.vendorId.toUpperCase() &&
+        m.identity.productId.toUpperCase() === result.identity.productId.toUpperCase()
+    );
+  if (!row) return;
+  openMissing.value = identityKey(row.identity);
+  highlightedMissing.value = openMissing.value;
+  await nextTick();
+  document
+    .querySelector('[data-testid="missing-row"][data-open="true"]')
+    ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+/** The route's own words are checked before use: ids of a setup and one of its items. */
+function diagnoseFromRoute(): void {
+  const { profile, item } = route.query;
+  if (typeof profile !== 'string' || typeof item !== 'string') return;
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(profile) || item.length === 0 || item.length > 200) {
+    diagnosis.value = { error: 'That link does not name a checklist item.' };
+    return;
+  }
+  void diagnose(profile, item);
 }
 
 let off: (() => void) | undefined;
@@ -117,6 +163,7 @@ onMounted(async () => {
     if (target.kind === 'other') showOthers.value = true;
     await focus(select);
   }
+  diagnoseFromRoute();
 });
 onBeforeUnmount(() => {
   off?.();
@@ -127,6 +174,10 @@ watch(
   (select) => {
     if (typeof select === 'string') void focus(select);
   }
+);
+watch(
+  () => [route.query['profile'], route.query['item']],
+  () => diagnoseFromRoute()
 );
 </script>
 
@@ -208,6 +259,26 @@ watch(
     </div>
 
     <v-alert
+      v-if="diagnosis"
+      :type="'error' in diagnosis ? 'warning' : 'info'"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+      closable
+      data-testid="devices-diagnosis"
+      @click:close="diagnosis = undefined"
+    >
+      <template v-if="'error' in diagnosis">{{ diagnosis.error }}</template>
+      <template v-else-if="diagnosis.found">
+        "{{ diagnosis.title }}" on the checklist of {{ diagnosis.profile }} is this device. It is
+        connected: its details are open below.
+      </template>
+      <template v-else>
+        "{{ diagnosis.title }}" on the checklist of {{ diagnosis.profile }} is not connected. What
+        RigReady knows about it is open below.
+      </template>
+    </v-alert>
+    <v-alert
       v-if="store.error"
       type="error"
       variant="tonal"
@@ -264,34 +335,107 @@ watch(
           <div
             v-for="m in missing"
             :key="JSON.stringify(m.identity)"
-            class="rr-row"
+            class="missing"
+            :class="{ highlighted: highlightedMissing === identityKey(m.identity) }"
             data-testid="missing-row"
             :data-name="m.title"
+            :data-open="openMissing === identityKey(m.identity)"
           >
-            <v-icon icon="mdi-usb-port" class="rr-bad" />
-            <div class="rr-row-main">
-              <div class="rr-row-title">{{ m.title }}</div>
-              <div class="rr-row-sub">
-                Needed by {{ m.profiles.join(', ') }} ·
-                <template v-if="m.lastSeen"
-                  >last seen {{ m.lastSeen }},
-                  {{ m.lastLocation?.replace(/^./, (c) => c.toLowerCase()) }} (USB path
-                  {{ m.lastPath }})</template
+            <button
+              type="button"
+              class="rr-row missing-head"
+              :aria-expanded="openMissing === identityKey(m.identity)"
+              @click="toggleMissing(m)"
+            >
+              <v-icon icon="mdi-usb-port" class="rr-bad" />
+              <div class="rr-row-main">
+                <div class="rr-row-title">{{ m.title }}</div>
+                <div class="rr-row-sub">
+                  Needed by {{ m.profiles.join(', ') }} ·
+                  <template v-if="m.lastSeen"
+                    >last seen {{ m.lastSeen }},
+                    {{ m.lastLocation?.replace(/^./, (c) => c.toLowerCase()) }} (USB path
+                    {{ m.lastPath }})</template
+                  >
+                  <template v-else>RigReady has not seen it plugged in yet</template>
+                </div>
+                <div
+                  v-if="m.otherUnit && (m.identity.serial || m.identity.instanceId)"
+                  class="rr-row-sub"
                 >
-                <template v-else>RigReady has not seen it plugged in yet</template>
+                  Another unit of the same model is connected, but not this one.
+                </div>
               </div>
-              <div
-                v-if="m.otherUnit && (m.identity.serial || m.identity.instanceId)"
-                class="rr-row-sub"
+              <span class="rr-mono rr-muted"
+                >{{ m.identity.vendorId.toUpperCase() }}:{{
+                  m.identity.productId.toUpperCase()
+                }}</span
               >
-                Another unit of the same model is connected, but not this one.
+              <v-icon
+                :icon="
+                  openMissing === identityKey(m.identity) ? 'mdi-chevron-up' : 'mdi-chevron-down'
+                "
+                class="rr-muted"
+                size="20"
+              />
+            </button>
+            <div
+              v-if="openMissing === identityKey(m.identity)"
+              class="missing-detail"
+              data-testid="missing-detail"
+            >
+              <dl class="missing-fields">
+                <dt>Status</dt>
+                <dd class="rr-bad">Not connected</dd>
+                <dt>Needed by</dt>
+                <dd>{{ m.profiles.join(', ') }}</dd>
+                <dt>Vendor : product</dt>
+                <dd class="rr-mono">
+                  {{ m.identity.vendorId.toUpperCase() }}:{{ m.identity.productId.toUpperCase() }}
+                </dd>
+                <template v-if="m.identity.serial">
+                  <dt>Serial number</dt>
+                  <dd class="rr-mono">{{ m.identity.serial }}</dd>
+                </template>
+                <template v-if="m.identity.instanceId">
+                  <dt>Instance path</dt>
+                  <dd class="rr-mono">{{ m.identity.instanceId }}</dd>
+                </template>
+                <dt>Recognised by</dt>
+                <dd>{{ recognisedBy(m.identity) }}</dd>
+                <dt>Last plugged into</dt>
+                <dd v-if="m.lastSeen">
+                  {{ m.lastLocation }}
+                  <span class="rr-muted">· USB path {{ m.lastPath }} · {{ m.lastSeen }}</span>
+                </dd>
+                <dd v-else class="rr-muted">RigReady has not seen it plugged in yet</dd>
+              </dl>
+              <p class="missing-steps">
+                <template v-if="m.otherUnit && m.identity.instanceId">
+                  A device of this model is connected on another USB port. This setup recognises it
+                  by port, so plug it back into the port above, or capture the setup again with it
+                  where it is now.
+                </template>
+                <template v-else-if="m.otherUnit && m.identity.serial">
+                  A device of this model is connected, with another serial number. This setup needs
+                  the unit with the serial number above.
+                </template>
+                <template v-else>
+                  Check the cable at both ends and that the device and its hub have power. It
+                  appears here within a couple of seconds of being plugged in. If it stays away, the
+                  USB map shows whether its hub is still there.
+                </template>
+              </p>
+              <div class="d-flex ga-2">
+                <v-btn
+                  variant="tonal"
+                  prepend-icon="mdi-family-tree"
+                  to="/configure/devices/usb"
+                  data-testid="missing-show-usb"
+                  >Open the USB map</v-btn
+                >
               </div>
             </div>
-            <span class="rr-mono rr-muted"
-              >{{ m.identity.vendorId.toUpperCase() }}:{{
-                m.identity.productId.toUpperCase()
-              }}</span
-            >
           </div>
         </div>
       </section>
@@ -381,33 +525,7 @@ watch(
         </section>
         <section>
           <h2 class="rr-section-title">Notifications</h2>
-          <div class="rr-panel devices-panel" data-testid="devices-notifications">
-            <p class="mb-2">
-              While RigReady is in the tray, tell me when these are plugged in or unplugged:
-            </p>
-            <v-radio-group
-              :model-value="store.overview.notifications"
-              density="compact"
-              hide-details
-              data-testid="notify-mode"
-              @update:model-value="setMode"
-            >
-              <v-radio
-                v-for="o in notifyOptions"
-                :key="o.value"
-                :value="o.value"
-                :data-testid="`notify-${o.value}`"
-              >
-                <template #label>
-                  <div>
-                    <div>{{ o.title }}</div>
-                    <div class="rr-row-sub">{{ o.sub }}</div>
-                  </div>
-                </template>
-              </v-radio>
-            </v-radio-group>
-            <p v-if="notifyError" class="rr-bad">{{ notifyError }}</p>
-          </div>
+          <div class="rr-panel"><NotificationSettings /></div>
         </section>
       </div>
     </template>
@@ -439,6 +557,45 @@ watch(
   100% {
     box-shadow: 0 0 0 12px transparent;
   }
+}
+.missing {
+  border-top: 1px solid var(--rr-border);
+}
+.missing:first-child {
+  border-top: none;
+}
+.missing.highlighted {
+  box-shadow: inset 3px 0 0 var(--rr-accent);
+  background: color-mix(in srgb, var(--rr-accent) 12%, var(--rr-surface));
+}
+.missing-head {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.missing-detail {
+  padding: 4px 16px 16px 52px;
+  font-size: 13px;
+}
+.missing-fields {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 6px 16px;
+  margin: 8px 0 12px;
+}
+.missing-fields dt {
+  color: var(--rr-muted);
+}
+.missing-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.missing-steps {
+  margin: 0 0 12px;
+  max-width: 720px;
 }
 .devices-collapsed {
   font-size: 13px;

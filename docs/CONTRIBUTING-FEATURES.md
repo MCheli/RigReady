@@ -90,7 +90,8 @@ import { audioContract } from './contract';
 export default defineFeatureMain({
   id: 'audio',
   setup(ctx) {
-    // ctx: ports, log, checks (registry), games (registry), profiles, settings, layouts, emit
+    // ctx: ports, log, checks (registry), games (registry), profiles, settings, layouts,
+    //      names, bindings, backupSources, emit
     return [
       bind(audioContract, {
         read: () => ctx.ports.audio.read(),          // handlers return Promise<Result<output>>
@@ -176,6 +177,7 @@ export default defineFeature({
   routes: [{ path: '/configure/audio', component: () => import('./renderer/AudioPage.vue') }],
   checkTypes: [{ type: 'audio.defaultDevice', label: 'Default audio device', group: 'audio' }],
   // overlays: [Prompt]   components mounted at the app root on every screen
+  // settings: [{ title: 'Audio', component: () => import('./renderer/AudioSettings.vue') }]
 });
 ```
 
@@ -185,6 +187,8 @@ export default defineFeature({
 - After your feature changes the machine, call `notifyMachineChanged()` from `src/renderer/machine.ts`; to refresh when others do, subscribe with `onMachineChanged(fn)` (it returns the unsubscribe). The shell also calls it when a USB device is plugged in or removed, when the tray acts, and when a test changes the fake machine.
 - Give every element a test drives a `data-testid`.
 - Do not render a button for something that is not implemented.
+- A setting of your own that belongs on the Settings page: list it in the manifest as `settings: [{ title, component, order? }]`. Settings gives the component a titled panel below its own sections; the component reads and stores the setting through your feature's IPC (`src/features/devices/renderer/NotificationSettings.vue` is the example, shown on the Devices page too).
+- Linking to another feature's page is done by route, never by import. Two routes take parameters, validated on arrival: `/configure/devices?profile=<setup id>&item=<checklist item id>` opens the device a checklist item is about, connected or not (the Fly screen's Diagnose link), and the route a `BindingReader` gives (`ctx.bindings.get('dcs')?.route({ guid, aircraftId })`) opens a controller's bindings.
 
 ## 5. A game module
 
@@ -227,6 +231,8 @@ Every port has a real implementation (`src/platform/windows`, `src/platform/elec
 | `loginItem` | `isEnabled()`, `setEnabled(bool)` (start with Windows) | `enabled` |
 | `overlays` | `showLabels([{ x, y, width, height, text, caption }], durationMs)` big labels on monitors ("Identify") | `shown` |
 
+**The input reader's lifetime.** One DirectInput reader (the sidecar) serves the whole app. A feature calls `ctx.ports.input.start()` every time it needs controllers and never calls `stop()`: `start()` is idempotent (it answers at once while the reader runs, calls made while it is starting share that one start, and after a failed start the next call tries again). Only the app shell stops the reader, on quit. A feature that listens to live input keeps the function `subscribe` returns and calls it when it is done; do not cache the result of `start()`, ask again (`tests/unit/inputLifetime.test.ts`).
+
 In a scenario run of the real app (e2e, `dev:scenario`) everything is fake except `secrets` and `render`, which are the real Electron ones working inside the temp data root.
 
 ### FileStore (`ctx.ports.files`)
@@ -258,6 +264,8 @@ Zip (`src/core/files/zip.ts`): `createZip(entries)`, `readZip(bytes, { maxTotalB
 | `core/pathVariables.ts` | `allPathVariables(ctx, ctx.games)` -> `{ USER, DOCUMENTS, SAVED_GAMES, APPDATA, LOCALAPPDATA, PROGRAM_FILES, PROGRAM_FILES_X86, RIGREADY_HOME, STEAM?, DCS_USER?, DCS_INSTALL?, ... }`; `expandPath('{DCS_USER}/Config/options.lua', vars)`; `collapsePath(absolute, vars)` (longest match wins). Store paths in the collapsed form in profiles, backups and shared files. |
 | `core/paths.ts` | `isWithin`, `resolveAllowedPath`, `allowedRoots(ports)`. |
 | `core/steam.ts` | `readSteamApp(ports, appId)` / `listSteamApps(ports)` -> `{ installDir, buildId, targetBuildId?, lastUpdated?, stateFlags, updatePending }`; `steamRoot(registry)`. |
+| `core/names.ts` | `ctx.names`: the names the owner gave things. `await ctx.names.monitors()` (by monitor id) and `(await ctx.names.devices()).nameOf({ vendorId, productId, serial?, instanceId?, guid? })`. The displays and devices features provide them (`provideMonitors`, `provideDevices`); every other feature only reads. A name is something to show beside the hardware name; never match on it, and never guess between identical devices (the lookup returns nothing when it cannot tell). |
+| `core/bindings.ts` | `ctx.bindings`: what is bound in a game, for features that do not own its files (input tester, cheat sheets, AI guidance). `ctx.bindings.get('dcs')` / `all()` give a `BindingReader`: `available()`, `aircraft()` (id, name, hasUserBindings), `bindings(aircraftId)` (per device: kind, name, givenName, guid, vendorId, productId, connected, and per binding: `input` such as JOY_BTN3, `inputLabel`, `kind`, `modifiers`, `actionId`, `action`, `category`, `source: 'user' \| 'default'`), `route({ guid?, aircraftId? })`. Read only. A bindings feature registers its reader with `ctx.bindings.register(reader)`. |
 | `core/directInput.ts` | `readDirectInputIdentities(ports.registry)` -> per VID/PID: product name (the name in DCS file names), product GUID, instance GUID per calibration slot; `identityForDevice`, `identityForGuid`, `dcsGuidText` (DCS's casing), `sameGuid`, `guidFromBytes`. For the controllers attached now, `ports.input.start()` gives the live instance GUID. |
 | `core/lua/data.ts` | `parseLuaData(text)` / `writeLuaDocument(doc)` for DCS data files (binding diffs, `options.lua`, `appSettings.lua`): an unchanged file is written back byte for byte. `LuaTable` keeps order and key types (`get`, `set`, `table`, `list`, `toJs`, `LuaTable.from(plain)`). Anything that is not table data fails with a line number. |
 | `core/lua/sandbox.ts` | `runLua(source, { prelude, globals, files, read, maxInstructions })` evaluates Lua that is a real program (input `default.lua`, MonitorSetup) with no io/os, `dofile` limited to what `files` hands out, and an instruction budget. `tests/unit/lua.test.ts` shows the prelude that evaluates the F/A-18C and UH-1H joystick defaults. |
@@ -339,7 +347,7 @@ Quote ids that YAML would read as numbers (`'4098'`, `'17E9'`). A mutation that 
 
 HidHide is queried the way the real one is: `ports.shell.run(<HidHideCLI.exe>, ['--cloak-state', '--inv-state', '--dev-list', '--app-list', '--cancel'])` answers `--cloak-on|off`, `--inv-on|off`, `--dev-hide "<HID path>"` and `--app-reg "<exe>"` lines; `--dev-gaming` answers the recorded JSON. Always end read-only queries with `--cancel` (the real CLI saves on exit otherwise). The `--dev-hide` line format is inferred: nothing was hidden on the rig when it was recorded.
 
-Existing scenarios: `desk-mfds-wrong` (the rig exactly as recorded), `flying-fresh` (known-good flying layout, no setups), `flying-all-good`, `flying-pedals-unplugged`, `flying-mfd-rotated`, `flying-trackir-not-running`, `flying-optional-missing`, `racing-fresh`, `app-old-backups`, and one or more per feature (`audio-*`, `backup-*`, `dcs-setup-*`, `devices-*`, `displays-*`, `share-*`, `stream-deck-*`, `trackir-*`).
+Existing scenarios: `desk-mfds-wrong` (the rig exactly as recorded), `flying-fresh` (known-good flying layout, no setups), `flying-all-good`, `flying-pedals-unplugged`, `flying-mfd-rotated`, `flying-trackir-not-running`, `flying-optional-missing`, `racing-fresh`, `app-old-backups`, and one or more per feature (`audio-*`, `backup-*`, `dcs-bindings-*` (`dcs-bindings-identical`: three panels with one name whose IDs all changed), `dcs-setup-*`, `dcs-two-installs`, `devices-*`, `displays-*`, `share-*`, `stream-deck-*`, `trackir-*`).
 
 The racing rig and the generic PC, which the ledger names as fixtures, are scenarios too:
 

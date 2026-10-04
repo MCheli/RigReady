@@ -45,6 +45,8 @@ export const RigDeviceSchema = z.object({
   hidden: z.boolean(),
   /** Names of the setups whose checklist needs this device. */
   requiredBy: z.array(z.string()),
+  /** Pages that show what this device's controls are bound to in a game ("DCS bindings"). */
+  bindingLinks: z.array(z.object({ label: z.string(), to: z.string() })),
 });
 export type RigDevice = z.infer<typeof RigDeviceSchema>;
 

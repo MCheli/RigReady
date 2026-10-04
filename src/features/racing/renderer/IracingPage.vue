@@ -138,7 +138,10 @@ const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19
             <div class="rr-row dev-head">
               <v-icon icon="mdi-steering" class="rr-muted" />
               <div class="rr-row-main">
-                <div class="rr-row-title">{{ d.name }}</div>
+                <div class="rr-row-title" data-testid="iracing-device-name">
+                  {{ d.givenName ?? d.name }}
+                  <span v-if="d.givenName" class="rr-muted racing-hardware"> {{ d.name }}</span>
+                </div>
                 <div class="rr-row-sub">
                   {{ d.bindingCount }} binding{{ d.bindingCount === 1 ? '' : 's' }}
                   <template v-if="d.calibrated">

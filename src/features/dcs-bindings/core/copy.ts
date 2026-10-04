@@ -109,7 +109,11 @@ export async function previewCopy(
       if (!command) continue;
       const found = findTarget(command, target.value);
       if (!found) {
-        unmatched.push({ deviceName: device.name, label: binding.label, name: command.name });
+        unmatched.push({
+          deviceName: device.givenName ?? device.name,
+          label: binding.label,
+          name: command.name,
+        });
         continue;
       }
       const onInput = targetDevice.bindings.filter(
@@ -123,7 +127,7 @@ export async function previewCopy(
       proposals.push({
         id: `${deviceId}|${binding.commandId}|${comboId(binding.combo)}`,
         deviceId,
-        deviceName: device.name,
+        deviceName: device.givenName ?? device.name,
         combo: binding.combo,
         label: binding.label,
         from: { commandId: command.id, name: command.name },

@@ -3,6 +3,7 @@ import type {
   CaptureDefinition,
   CheckContext,
   CheckDefinition,
+  CheckOutcome,
 } from '../../../core/checks/registry';
 import type { Ports } from '../../../core/ports';
 import { ProfileStore } from '../../../core/profile/store';
@@ -18,7 +19,7 @@ import {
   sameModel,
   vidPid,
 } from './identity';
-import { deviceStores, findName, lastSighting } from './store';
+import { deviceNames, deviceStores, findName, lastSighting } from './store';
 
 export const DEVICE_CONNECTED = 'device.connected';
 
@@ -103,7 +104,50 @@ export const deviceConnectedCheck: CheckDefinition<DeviceParams> = {
   async run(params, ctx) {
     const listed = await ctx.ports.devices.list();
     if (!listed.ok) return { pass: false, summary: listed.error.message };
-    const devices = listed.value;
+    const outcome = await checkConnected(params, listed.value, ctx);
+    // The owner's name for it leads the line; what was matched is still the identity.
+    const name = await ownersName(params, listed.value, ctx);
+    return name ? { ...outcome, summary: `${name} · ${outcome.summary}` } : outcome;
+  },
+};
+
+/**
+ * The name the owner gave the one device this check is about, unless the item's title
+ * already says it (a setup captured after the device was named).
+ */
+async function ownersName(
+  params: DeviceParams,
+  devices: DeviceInfo[],
+  ctx: CheckContext
+): Promise<string | undefined> {
+  if ((params.count ?? 1) > 1) return undefined;
+  const data = await deviceStores(ctx.ports).data.read();
+  if (!data.ok) return undefined;
+  const name = deviceNames(data.value.names, devices).nameOf(params);
+  if (!name || !ctx.profile) return name;
+  const profile = await new ProfileStore(ctx.ports.files, ctx.ports.folders.dataRoot()).get(
+    ctx.profile.id
+  );
+  if (!profile.ok) return name;
+  const mine = JSON.stringify(params);
+  const inTitle = profile.value.checks.some((check) => {
+    if (check.type !== DEVICE_CONNECTED) return false;
+    const parsed = DeviceParamsSchema.safeParse(check.params);
+    return (
+      parsed.success &&
+      JSON.stringify(parsed.data) === mine &&
+      check.title.toLowerCase().includes(name.toLowerCase())
+    );
+  });
+  return inTitle ? undefined : name;
+}
+
+async function checkConnected(
+  params: DeviceParams,
+  devices: DeviceInfo[],
+  ctx: CheckContext
+): Promise<CheckOutcome> {
+  {
     const wanted = params.count ?? 1;
     const matches = devices.filter((d) => matchesDevice(d, params));
     const hubs = hubNames(devices);
@@ -149,8 +193,8 @@ export const deviceConnectedCheck: CheckDefinition<DeviceParams> = {
     details.push('Check that it is plugged in and powered on, then check again.');
     if (params.instanceId !== undefined) details.push(BY_PORT_NOTE);
     return { pass: false, summary, details };
-  },
-};
+  }
+}
 
 /** Narrowest identity that still tells this device apart from the others present. */
 export function identityFor(device: DeviceInfo, all: DeviceInfo[]): DeviceParams {

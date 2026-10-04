@@ -103,6 +103,8 @@ export const DeviceSchema = z.object({
   type: DeviceTypeSchema,
   /** DirectInput product name, as in the binding file name. */
   name: z.string(),
+  /** The name the owner gave the device (Devices page); shown first, with `name` beside it. */
+  givenName: z.string().optional(),
   /** Instance GUID in DCS's casing; absent for the keyboard. */
   guid: z.string().optional(),
   /** "<name> {GUID}". */

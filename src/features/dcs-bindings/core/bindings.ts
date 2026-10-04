@@ -9,6 +9,7 @@ import {
 } from '../../../core/directInput';
 import type { GameRegistry } from '../../../core/games';
 import { JsonStore } from '../../../core/jsonStore';
+import type { DeviceNames } from '../../../core/names';
 import { LuaDocument, LuaTable, parseLuaData } from '../../../core/lua/data';
 import { err, ok, type Result } from '../../../core/result';
 import type { DirectInputIdentity, InputDevice } from '../../../shared/models';
@@ -56,6 +57,8 @@ import { findProblems, suggestRole } from './problems';
 
 export interface BindingsContext extends CheckContext {
   games: GameRegistry;
+  /** The names the owner gave devices (ctx.names.devices); without it devices have no given name. */
+  names?: () => Promise<DeviceNames>;
 }
 
 export interface Locations {
@@ -80,6 +83,8 @@ export type BindingsState = z.infer<typeof StateSchema>;
 export interface DeviceState {
   type: DeviceType;
   name: string;
+  /** The name the owner gave the device, to show; `name` stays what DCS knows it by. */
+  givenName?: string;
   guid?: string;
   fullId: string;
   id: string;
@@ -337,6 +342,7 @@ export class DcsBindings {
     const known: DirectInputIdentity[] = identities.ok ? identities.value : [];
     const loader = locations.installDir ? this.defaults(locations.installDir) : undefined;
     const wizard = await this.readTable(path.join(locations.inputDir, 'wizard.lua'));
+    const names = await this.ctx.names?.();
 
     // 1. The devices: what is attached, plus what has a binding file.
     interface Slot {
@@ -491,9 +497,18 @@ export class DcsBindings {
       };
       const chosen = state.roles[roleKey(ids)];
       const fullId = fullIdFor(slot.name, slot.guid);
+      const given =
+        slot.type === 'joystick'
+          ? names?.nameOf({
+              vendorId: vendorId ?? '0000',
+              productId: productId ?? '0000',
+              ...(slot.guid ? { guid: slot.guid } : {}),
+            })
+          : undefined;
       devices.push({
         type: slot.type,
         ...ids,
+        ...(given ? { givenName: given } : {}),
         ...(slot.guid ? { guid: dcsGuidText(slot.guid) } : {}),
         fullId,
         id: `${slot.type}/${fullId}`,
@@ -622,6 +637,7 @@ export function buildView(state: AircraftState): AircraftView {
       id: device.id,
       type: device.type,
       name: device.name,
+      ...(device.givenName ? { givenName: device.givenName } : {}),
       ...(device.guid ? { guid: device.guid } : {}),
       fullId: device.fullId,
       connected: device.connected,

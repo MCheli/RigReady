@@ -62,9 +62,21 @@ const aircraftItems = computed(() =>
   }))
 );
 
+/** A link from another page names the aircraft (and device) to open on; unknown ids are ignored. */
+async function openFromRoute(): Promise<void> {
+  const wanted = route.query['aircraft'];
+  if (typeof wanted === 'string' && store.overview?.aircraft.some((a) => a.id === wanted)) {
+    await store.selectAircraft(wanted);
+  }
+}
+watch(
+  () => route.query['aircraft'],
+  () => void openFromRoute()
+);
+
 let off: (() => void) | undefined;
 onMounted(() => {
-  void store.load();
+  void store.load().then(openFromRoute);
   off = onMachineChanged(() => void store.load());
 });
 onBeforeUnmount(() => off?.());

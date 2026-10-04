@@ -95,7 +95,7 @@ export function findProblems(input: ProblemInput): ProblemsView {
       inputConflicts.push({
         id: `${device.id}|${id}`,
         deviceId: device.id,
-        deviceName: device.name,
+        deviceName: device.givenName ?? device.name,
         combo: bindings[0]!.combo,
         label: bindings[0]!.label,
         commandIds: ids,
@@ -111,7 +111,7 @@ export function findProblems(input: ProblemInput): ProblemsView {
         ...(occurrences.get(binding.commandId) ?? []),
         {
           deviceId: device.id,
-          deviceName: device.name,
+          deviceName: device.givenName ?? device.name,
           combo: binding.combo,
           label: binding.label,
           source: binding.source,
@@ -152,7 +152,7 @@ export function findProblems(input: ProblemInput): ProblemsView {
       unwantedDefaults.push({
         id: `${device.id}|${binding.commandId}|${comboId(binding.combo)}`,
         deviceId: device.id,
-        deviceName: device.name,
+        deviceName: device.givenName ?? device.name,
         commandId: binding.commandId,
         combo: binding.combo,
         label: binding.label,

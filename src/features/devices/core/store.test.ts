@@ -4,6 +4,7 @@ import type { DeviceInfo } from '../../../shared/models';
 import { scenarioRig, type TestRig } from '../../../../tests/helpers';
 import {
   DevicesDataSchema,
+  deviceNames,
   deviceStores,
   findName,
   HistorySchema,
@@ -35,6 +36,57 @@ const device = (overrides: Partial<DeviceInfo>): DeviceInfo => ({
 const empty = DevicesDataSchema.parse({});
 
 describe('device names', () => {
+  it('answers other features by the same rules: serial, port, only one of its model, or GUID', () => {
+    const wheel = device({});
+    const mfd = { vendorId: '4098', productId: 'BEE0', name: 'WINWING MFD1' };
+    const left = device({ ...mfd, instanceId: 'USB\\VID_4098&PID_BEE0\\7&1&0&1' });
+    const right = device({ ...mfd, instanceId: 'USB\\VID_4098&PID_BEE0\\7&1&0&2' });
+    const screen = device({
+      vendorId: '17E9',
+      productId: 'FF00',
+      serial: 'S1',
+      instanceId: 'USB\\VID_17E9&PID_FF00\\S1',
+    });
+    const present = [wheel, left, right, screen];
+    let data = withName(empty, wheel, present, 'Wheel base');
+    data = withName(data, left, present, 'MFD left');
+    data = withName(data, right, present, 'MFD right');
+    data = withName(data, screen, present, 'Left screen');
+    data = withControllerName(
+      data,
+      { vendorId: '0000', productId: '0000', guid: 'AAAAAAAA-0000-0000-0000-000000000001' },
+      'Virtual stick'
+    );
+    const names = deviceNames(data.names, present);
+    // The only one of its model: ids are enough, and so is asking from a game's point of view.
+    expect(names.nameOf({ vendorId: '0eb7', productId: '0007' })).toBe('Wheel base');
+    expect(
+      names.nameOf({ vendorId: '0EB7', productId: '0007', guid: 'BBBBBBBB-0000-0000-0000-1' })
+    ).toBe('Wheel base');
+    // Identical devices: only the port tells them apart; without it there is no guess.
+    expect(names.nameOf({ vendorId: '4098', productId: 'BEE0' })).toBeUndefined();
+    expect(
+      names.nameOf({ vendorId: '4098', productId: 'BEE0', instanceId: right.instanceId })
+    ).toBe('MFD right');
+    expect(names.nameOf({ vendorId: '17E9', productId: 'FF00', serial: 'S1' })).toBe('Left screen');
+    expect(names.nameOf({ vendorId: '17E9', productId: 'FF00', serial: 'S2' })).toBeUndefined();
+    // A controller that is its own identity, in DCS's spelling of the GUID.
+    expect(
+      names.nameOf({
+        vendorId: '0000',
+        productId: '0000',
+        guid: '{aaaaaaaa-0000-0000-0000-000000000001}',
+      })
+    ).toBe('Virtual stick');
+    // Unplugged: the name stored for exactly that identity is still its name.
+    const without = deviceNames(data.names, [left, right]);
+    expect(without.nameOf({ vendorId: '0EB7', productId: '0007' })).toBe('Wheel base');
+    expect(without.nameOf({ vendorId: '17E9', productId: 'FF00', serial: 'S1' })).toBe(
+      'Left screen'
+    );
+    expect(without.nameOf({ vendorId: '1234', productId: '5678' })).toBeUndefined();
+  });
+
   it('keeps the name of a serial-less device that moved to another port, as long as it is the only one', () => {
     const wheel = device({});
     const named = withName(empty, wheel, [wheel], 'Wheel base');

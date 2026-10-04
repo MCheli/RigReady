@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
+import { manifests } from '../../../renderer/features';
 import { errorText, useClient } from '../../../renderer/ipc';
 import type { Result } from '../../../core/result';
 import { settingsContract, type SettingsView } from '../contract';
+
+/** Sections other features add for settings of their own (manifest `settings`). */
+const featureSections = manifests
+  .flatMap((m) => (m.settings ?? []).map((section) => ({ feature: m.id, ...section })))
+  .sort((a, b) => (a.order ?? 500) - (b.order ?? 500) || a.title.localeCompare(b.title))
+  .map((section) => ({
+    feature: section.feature,
+    title: section.title,
+    view: defineAsyncComponent(section.component),
+  }));
 
 const api = useClient(settingsContract);
 const view = ref<SettingsView>();
@@ -349,6 +360,17 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
         </div>
       </div>
     </div>
+
+    <template v-for="section in featureSections" :key="`${section.feature}/${section.title}`">
+      <div class="rr-section-title">{{ section.title }}</div>
+      <div
+        class="rr-panel settings-panel"
+        data-testid="settings-feature-section"
+        :data-feature="section.feature"
+      >
+        <component :is="section.view" />
+      </div>
+    </template>
   </div>
 </template>
 

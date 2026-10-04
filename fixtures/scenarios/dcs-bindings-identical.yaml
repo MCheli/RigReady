@@ -1,0 +1,39 @@
+description: DCS bindings, three identical MFD panels whose device IDs all changed
+rig: mark-full
+extends: dcs-bindings-hornet.yaml
+# The three MFD frames report the same name ("WINWING MFD1", as frames without the L/C/R
+# firmware do) and Windows has given each a new device ID. The binding files still carry the
+# old IDs, so DCS finds none of them, and nothing in a file says which panel it was for:
+# RigReady must ask, panel by panel, instead of guessing.
+mutations:
+  - op: setController
+    match: { name: WINWING MFD1-L }
+    set: { name: WINWING MFD1, guid: A1A1A1A1-C0DE-11F1-8001-444553540000 }
+  - op: setController
+    match: { name: WINWING MFD1-C }
+    set: { name: WINWING MFD1, guid: A2A2A2A2-C0DE-11F1-8002-444553540000 }
+  - op: setController
+    match: { name: WINWING MFD1-R }
+    set: { name: WINWING MFD1, guid: A3A3A3A3-C0DE-11F1-8003-444553540000 }
+  - { op: removeFile, path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-L {7F3956A0-B756-11f0-801A-444553540000}.diff.lua" }
+  - { op: removeFile, path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-C {806DDF00-B756-11f0-8021-444553540000}.diff.lua" }
+  - { op: removeFile, path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-R {806E0610-B756-11f0-8024-444553540000}.diff.lua" }
+  # The old files: left, centre and right panel, under IDs no attached device has.
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {4B3710E0-9AA7-11EE-801E-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-L {4B3710E0-9AA7-11EE-801E-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-C {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {5206D720-9AA7-11EE-8028-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-R {5206D720-9AA7-11EE-8028-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {4B3710E0-9AA7-11ee-801E-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-L {4B3710E0-9AA7-11ee-801E-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-C {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+  - op: writeFile
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {5206D720-9AA7-11ee-8028-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-R {5206D720-9AA7-11ee-8028-444553540000}.diff.lua"

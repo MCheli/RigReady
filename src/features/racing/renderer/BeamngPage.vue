@@ -154,8 +154,9 @@ async function copyToController(): Promise<void> {
             />
             <div class="rr-row-main">
               <div class="rr-row-title">
-                {{ m.name
-                }}<span v-if="m.vehicle" class="rr-muted"> · only in {{ m.vehicle }}</span>
+                {{ m.givenName ?? m.name
+                }}<span v-if="m.givenName" class="rr-muted racing-hardware"> {{ m.name }}</span
+                ><span v-if="m.vehicle" class="rr-muted"> · only in {{ m.vehicle }}</span>
               </div>
               <div class="rr-row-sub">
                 <span class="rr-mono">{{ m.file }}</span>

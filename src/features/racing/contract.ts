@@ -9,6 +9,8 @@ export const IracingDeviceViewSchema = z.object({
   /** The instance GUID iRacing stored (upper case, no braces). */
   key: z.string(),
   name: z.string(),
+  /** The name the owner gave the device on the Devices page, shown before `name`. */
+  givenName: z.string().optional(),
   instanceGuid: z.string(),
   productGuid: z.string(),
   vendorId: z.string().optional(),
@@ -59,6 +61,8 @@ export type IracingView = z.infer<typeof IracingViewSchema>;
 export const LmuDeviceViewSchema = z.object({
   key: z.string(),
   name: z.string(),
+  /** The name the owner gave the device on the Devices page, shown before `name`. */
+  givenName: z.string().optional(),
   vendorId: z.string().optional(),
   productId: z.string().optional(),
   type: z.string(),
@@ -98,6 +102,8 @@ export const BeamngMapViewSchema = z.object({
   /** Set for per-vehicle maps. */
   vehicle: z.string().optional(),
   name: z.string(),
+  /** The name the owner gave the device on the Devices page, shown before `name`. */
+  givenName: z.string().optional(),
   vidpid: z.string(),
   vendorId: z.string().optional(),
   productId: z.string().optional(),
@@ -163,6 +169,8 @@ export type AcView = z.infer<typeof AcViewSchema>;
 export const WheelStatusSchema = z.object({
   connected: z.boolean(),
   name: z.string().optional(),
+  /** The name the owner gave the device on the Devices page, shown before `name`. */
+  givenName: z.string().optional(),
   vendorId: z.string().optional(),
   productId: z.string().optional(),
   /** pc: native (red) mode. compatibility: yellow mode, reporting as a ClubSport V2.5. */

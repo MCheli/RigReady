@@ -175,8 +175,16 @@ requirements:
       - "A failed or warning item with a configured remediation shows a fix button whose label names the action (e.g. 'Start TrackIR', 'Apply flying layout', 'Restore options.lua')."
       - "An item whose remediation type is not implemented or not registered shows no fix button (rule 2); an E2E with such a profile asserts the button is absent."
       - "Items without a remediation show only the failure detail; devices additionally show 'Diagnose' linking to the device detail (DEV-006)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/e2e/fly.e2e.ts#TrackIR not running: Make ready starts it"
+      - "tests/e2e/fly.e2e.ts#MFD rotated: Make ready applies the layout and asks to keep it"
+      - "tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified"
+      - "tests/e2e/fly.e2e.ts#pedals unplugged: red, no fix available, Launch warns but is not blocked"
+      - "tests/e2e/devices-bindings.e2e.ts#diagnose: a failing device on the Fly screen opens that device on the Devices page, connected or not"
+      - "tests/unit/bindingsAcrossFeatures.test.ts#Diagnose: a checklist item resolves to its device, connected or not, and nothing else does (FLY-009)"
+      - "artifacts/screens/devices-diagnose/01-missing-device.png"
+      - "artifacts/screens/devices-diagnose/02-connected-device.png"
 
   - id: FLY-010
     title: Fix result is verified by re-running the check
@@ -1242,8 +1250,19 @@ requirements:
       - "Each device can be given a friendly name stored by its identity (VID/PID plus serial or instance) in {RIGREADY_HOME}/devices.json."
       - "The friendly name is used in the devices page, checklist items, binding views and cheat sheets."
       - "The three identical MFD panels keep their names across app restarts in fixture mark-flight."
-    status: todo
-    evidence: []
+    status: in_progress
+    evidence:
+      - "src/features/devices/core/store.test.ts#answers other features by the same rules: serial, port, only one of its model, or GUID"
+      - "src/features/devices/core/store.test.ts#tells identical units apart by serial, and by port when the serial is shared"
+      - "src/features/devices/core/deviceCheck.test.ts#leads the Fly line with the name the owner gave, connected or not, and still matches on ids"
+      - "tests/unit/deviceNames.test.ts#a name given on the Devices page shows on the Fly checklist, in DCS bindings and on the USB map"
+      - "tests/unit/deviceNames.test.ts#the racing pages show the name given to the wheel base, beside what it reports"
+      - "tests/e2e/devices.e2e.ts#devices: controllers apart from the rest, find one by pressing a button, name it, names survive a restart"
+      - "tests/e2e/devices-bindings.e2e.ts#names: a name given on the Devices page shows on the Fly checklist, in DCS bindings and on the USB map"
+      - "artifacts/screens/devices-names-everywhere/01-named.png"
+      - "artifacts/screens/devices-names-everywhere/02-fly.png"
+      - "artifacts/screens/devices-names-everywhere/04-bindings-device.png"
+      - "artifacts/screens/devices-names-everywhere/05-usb-map.png"
 
   - id: DEV-004
     title: Device detail and expected-but-missing devices
@@ -1253,8 +1272,15 @@ requirements:
     done_means:
       - "A device detail view shows identity fields, the hub/port it is on (DEV-011), the profiles that require it, and links to its input tester and DCS bindings."
       - "Below connected devices, a section lists devices required by any profile but not connected, with the profiles that need them (scenario mark-flight + pedals-unplugged shows the TPR there)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/e2e/devices-bindings.e2e.ts#tester: pressing a control shows what it is bound to in the chosen aircraft, and a device opens its DCS bindings"
+      - "tests/e2e/devices-bindings.e2e.ts#diagnose: a failing device on the Fly screen opens that device on the Devices page, connected or not"
+      - "tests/e2e/devices.e2e.ts#devices: an unplugged device says where it was last plugged in, on Fly and in Devices"
+      - "tests/unit/bindingsAcrossFeatures.test.ts#a device detail links to its DCS bindings, by DirectInput GUID (DEV-004)"
+      - "artifacts/screens/devices-bound/01-device-detail.png"
+      - "artifacts/screens/devices-bound/02-its-bindings.png"
+      - "artifacts/screens/devices-diagnose/01-missing-device.png"
 
   - id: DEV-005
     title: Input tester for one device
@@ -1345,8 +1371,15 @@ requirements:
     done_means:
       - "With a DCS aircraft selected, pressing an input in the tester shows the DCS action(s) bound to that input on that device (from BIND-DCS-001)."
       - "An input bound to multiple actions shows all of them with a duplicate warning (BIND-DCS-011)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/devices/core/bound.test.ts#an input bound to several actions shows all of them with a duplicate warning; a modifier makes it a different press"
+      - "src/features/devices/core/bound.test.ts#names the control that was used the way the game does: button, hat direction, axis"
+      - "src/features/dcs-bindings/core/reader.test.ts#gives the effective bindings of an aircraft per device: input, label, action, category, source, modifiers"
+      - "tests/unit/bindingsAcrossFeatures.test.ts#the input tester can ask what a control does in an aircraft, duplicates flagged (DEV-010)"
+      - "tests/e2e/devices-bindings.e2e.ts#tester: pressing a control shows what it is bound to in the chosen aircraft, and a device opens its DCS bindings"
+      - "artifacts/screens/devices-bound/03-one-action.png"
+      - "artifacts/screens/devices-bound/04-bound-twice.png"
 
   - id: DEV-011
     title: USB hub map
@@ -1396,6 +1429,8 @@ requirements:
       - "src/features/devices/core/notifier.test.ts#tells about an unplugged device within 2 s, by the name the user gave it"
       - "src/features/devices/core/notifier.test.ts#tells about a whole hub in one notification, and only about wanted devices"
       - "artifacts/screens/devices-hidhide/03-hidhide-panel.png"
+      - "tests/e2e/devices-bindings.e2e.ts#settings: the device notification choice is on the Settings page and is the same one as on Devices"
+      - "artifacts/screens/settings-device-notifications/02-changed.png"
 
   - id: DEV-014
     title: HidHide visibility on the devices page
@@ -1714,12 +1749,15 @@ requirements:
       - "Choosing an aircraft and a device lists every input on that device (buttons, axes, hats) with its bound action(s), plain-language label, and whether it comes from defaults or user changes."
       - "Devices are matched to connected hardware by GUID and shown with the friendly name (DEV-003); diff files for devices not connected are listed separately."
       - "Screenshot artifacts/screens/bindings-device/ for F/A-18C + UFC1+HUD1 from fixture mark-flight."
-    status: in_progress
+    status: done
     evidence:
       - "src/features/dcs-bindings/core/bindings.test.ts#matches files to attached devices by GUID and lists files of devices that are not attached separately"
       - "tests/e2e/dcs-bindings.e2e.ts#bindings: every control of a device and what it does (UFC1 + HUD1)"
       - "artifacts/screens/bindings-device/01-ufc.png"
       - "artifacts/screens/bindings-device/03-stick.png"
+      - "tests/unit/deviceNames.test.ts#a name given on the Devices page shows on the Fly checklist, in DCS bindings and on the USB map"
+      - "tests/e2e/devices-bindings.e2e.ts#names: a name given on the Devices page shows on the Fly checklist, in DCS bindings and on the USB map"
+      - "artifacts/screens/devices-names-everywhere/04-bindings-device.png"
 
   - id: BIND-DCS-005
     title: Per-aircraft binding view
@@ -1941,6 +1979,10 @@ requirements:
       - "src/features/dcs-bindings/core/migration.test.ts#two old ids for one device are not both moved onto it without the user choosing"
       - "tests/e2e/dcs-bindings.e2e.ts#bindings: Windows changed the device IDs; move the bindings back, and undo"
       - "artifacts/screens/bindings-migration/05-press-a-button-on-it.png"
+      - "tests/e2e/devices-bindings.e2e.ts#bindings: three identical panels got new device IDs; each old file goes to the panel whose button is pressed"
+      - "artifacts/screens/bindings-identical/01-nothing-guessed.png"
+      - "artifacts/screens/bindings-identical/03-each-panel-chosen.png"
+      - "artifacts/screens/bindings-identical/04-preview.png"
 
   - id: BIND-DCS-018
     title: Copy common controls between aircraft

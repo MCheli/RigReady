@@ -132,6 +132,40 @@ export function diffStates(
   return changes;
 }
 
+const HAT_CODES: Record<string, string> = {
+  up: 'U',
+  'up-right': 'UR',
+  right: 'R',
+  'down-right': 'DR',
+  down: 'D',
+  'down-left': 'DL',
+  left: 'L',
+  'up-left': 'UL',
+};
+
+/** The name games give the control a change is about: JOY_BTN12, JOY_BTN_POV1_U, JOY_Z. */
+export function changeGameName(
+  device: Pick<InputDevice, 'axisNames'> | undefined,
+  change: InputChange
+): string | undefined {
+  if (change.kind === 'button') return buttonGameName(change.index);
+  if (change.kind === 'axis') return axisGameName(device, change.index);
+  const code = HAT_CODES[String(change.value)];
+  return code ? `JOY_BTN_POV${change.index + 1}_${code}` : undefined;
+}
+
+const HAT_WORDS = Object.fromEntries(Object.entries(HAT_CODES).map(([word, code]) => [code, word]));
+
+/** "Button 12", "Hat 1 up", "Z axis" for a game input name; the name itself when it is none of these. */
+export function gameInputLabel(input: string): string {
+  const button = /^JOY_BTN(\d+)$/.exec(input);
+  if (button) return `Button ${button[1]}`;
+  const hat = /^JOY_BTN_POV(\d+)_([UDLR]{1,2})$/.exec(input);
+  if (hat) return `Hat ${hat[1]} ${HAT_WORDS[hat[2]!] ?? hat[2]}`;
+  const axis = /^JOY_(.+)$/.exec(input);
+  return (axis && AXIS_LABELS[axis[1]!]) ?? input;
+}
+
 const percentText = (v: number): string => `${Math.round(axisPercent(v))}%`;
 
 /** "Z axis moved 12% → 63%", or "... moved and came back to 50%" for a movement that returned. */
@@ -149,6 +183,8 @@ export interface LogEntry {
   device: string;
   kind: InputChange['kind'];
   text: string;
+  /** The control as games name it (JOY_BTN12, JOY_BTN_POV1_U, JOY_Z); absent for a hat going back to centre. */
+  input?: string;
 }
 
 /**
@@ -158,6 +194,11 @@ export interface LogEntry {
  */
 export class ActivityLog {
   entries: LogEntry[] = [];
+  /**
+   * The control used last, as games name it: a press or a hat direction, else an axis that
+   * moved. A release is not a new use (the press already was).
+   */
+  lastControl: { deviceIndex: number; input: string } | undefined;
   private nextId = 1;
   /** Per device and axis: the open line and the value the movement started at. */
   private moving = new Map<string, { entry: LogEntry; from: number }>();
@@ -192,11 +233,13 @@ export class ActivityLog {
   ): LogEntry | undefined {
     let discrete: LogEntry | undefined;
     let moved: LogEntry | undefined;
+    let pressed: string | undefined;
     if (previous === undefined) {
       next.axes.forEach((v, i) => this.settled.set(`${next.index}:${i}`, v));
       return undefined;
     }
     for (const change of diffStates(device, previous, next)) {
+      const input = changeGameName(device, change);
       if (change.kind !== 'axis') {
         discrete = this.add({
           time: now,
@@ -204,7 +247,9 @@ export class ActivityLog {
           device: deviceName,
           kind: change.kind,
           text: change.text,
+          ...(input ? { input } : {}),
         });
+        if (input && change.value !== false) pressed = input;
         continue;
       }
       const key = `${next.index}:${change.index}`;
@@ -225,16 +270,20 @@ export class ActivityLog {
         device: deviceName,
         kind: 'axis',
         text: movedText(axisLabel(device, change.index), from, value),
+        ...(input ? { input } : {}),
       });
       this.moving.set(key, { entry, from });
       this.settled.set(key, value);
       moved = entry;
     }
+    const used = pressed ?? moved?.input;
+    if (used) this.lastControl = { deviceIndex: next.index, input: used };
     return discrete ?? moved;
   }
 
   clear(): void {
     this.entries = [];
+    this.lastControl = undefined;
     this.moving.clear();
   }
 }

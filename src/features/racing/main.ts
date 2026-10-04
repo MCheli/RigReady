@@ -27,6 +27,28 @@ export default defineFeatureMain({
   setup(ctx) {
     const rctx: RacingContext = { ports: ctx.ports, log: ctx.log, games: ctx.games };
 
+    /** Adds the name the owner gave each device (ctx.names); the ids stay what they were. */
+    const named = async <
+      T extends {
+        vendorId?: string | undefined;
+        productId?: string | undefined;
+        instanceGuid?: string;
+      },
+    >(
+      devices: T[]
+    ): Promise<(T & { givenName?: string })[]> => {
+      const names = await ctx.names.devices();
+      return devices.map((device) => {
+        if (!device.vendorId || !device.productId) return device;
+        const givenName = names.nameOf({
+          vendorId: device.vendorId,
+          productId: device.productId,
+          ...(device.instanceGuid ? { guid: device.instanceGuid } : {}),
+        });
+        return givenName ? { ...device, givenName } : device;
+      });
+    };
+
     ctx.checks.registerCheck(wheelBaseCheck);
     ctx.checks.registerCheck(iracingDevicesCheck(ctx.games));
     ctx.checks.registerCheck(iracingServiceCheck);
@@ -36,20 +58,29 @@ export default defineFeatureMain({
     return [
       bind(racingContract, {
         overview: async () => ok(await racingOverview(rctx)),
-        iracing: async () => ok(await iracingView(rctx)),
+        async iracing() {
+          const view = await iracingView(rctx);
+          return ok({ ...view, devices: await named(view.devices) });
+        },
         async iracingRepair({ mapping }) {
           const repaired = await repairIracing(rctx, mapping);
           return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
         },
-        lmu: async () => ok(await lmuView(rctx)),
-        beamng: async () => ok(await beamngView(rctx)),
+        async lmu() {
+          const view = await lmuView(rctx);
+          return ok({ ...view, devices: await named(view.devices) });
+        },
+        async beamng() {
+          const view = await beamngView(rctx);
+          return ok({ ...view, maps: await named(view.maps) });
+        },
         beamngCopyOlder: ({ version }) => copyOlderBindings(rctx, version),
         beamngCopyToController: ({ file, to }) => copyBindingsToController(rctx, file, to),
         assettoCorsa: async () => ok(await acView(rctx)),
         async wheel() {
           const presets = await readPresets(rctx);
           return ok({
-            status: await wheelStatus(rctx),
+            status: (await named([await wheelStatus(rctx)]))[0]!,
             presets,
             parameters: TUNING_PARAMETERS,
             comparisons: await compareWheelSettings(rctx, presets),

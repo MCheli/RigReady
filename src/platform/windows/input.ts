@@ -78,6 +78,10 @@ export class SidecarInputProvider implements InputProvider {
     private readonly readyTimeoutMs = 15_000
   ) {}
 
+  /**
+   * Idempotent (see InputProvider): answers at once while the sidecar runs, shares one
+   * start between concurrent callers, and starts again after a failure or a stop.
+   */
   start(): Promise<Result<InputDevice[]>> {
     if (this.child) return Promise.resolve(ok(this.current));
     this.starting ??= this.spawnSidecar().finally(() => (this.starting = undefined));
@@ -167,6 +171,8 @@ export class SidecarInputProvider implements InputProvider {
   }
 
   async stop(): Promise<void> {
+    // A reader that is still starting is stopped too, once it is up: nothing is left behind.
+    if (this.starting) await this.starting;
     const child = this.child;
     if (!child) return;
     await new Promise<void>((resolve) => {

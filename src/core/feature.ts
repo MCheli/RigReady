@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import type { ChannelMap, Contract, EventMap, Handlers } from '../shared/ipc';
 import type { BackupSourceRegistry } from './backupSources';
+import type { BindingRegistry } from './bindings';
 import type { CheckRegistry } from './checks/registry';
 import type { DisplayLayoutStore } from './displays/layouts';
 import type { GameRegistry } from './games';
@@ -23,6 +24,8 @@ export interface MainContext {
   layouts: DisplayLayoutStore;
   /** The names the owner gave monitors and devices, for every feature to show. */
   names: NameRegistry;
+  /** What is bound in each game, for features other than the one that owns the bindings. */
+  bindings: BindingRegistry;
   /** What features suggest backing up (tools that are not game modules register here). */
   backupSources: BackupSourceRegistry;
   /** Sends an event declared in a contract to the renderer. */
