@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { AircraftBindings, BindingReader } from '../../../core/bindings';
+import { directInputName, type AircraftBindings, type BindingReader } from '../../../core/bindings';
 
 /**
  * "What does this control do?" for the input tester: the actions a game has bound to each
@@ -25,7 +25,7 @@ export const BoundActionSchema = z.object({
 export type BoundAction = z.infer<typeof BoundActionSchema>;
 
 export const BoundControlSchema = z.object({
-  /** The game's name of the input: JOY_BTN12, JOY_BTN_POV1_U, JOY_Z. */
+  /** The input as press detection names it (JOY_BTN12, JOY_BTN_POV1_U, JOY_Z), in every game. */
   input: z.string(),
   label: z.string(),
   actions: z.array(BoundActionSchema),
@@ -58,21 +58,24 @@ export function boundInputsOf(
   return {
     game: reader.game,
     gameName: reader.gameName,
-    aircraft: { id: bindings.aircraft.id, name: bindings.aircraft.name },
+    aircraft: {
+      id: bindings.aircraft.id,
+      // The one set a game uses for everything is called by the game: "in iRacing", not
+      // "in All cars".
+      name: bindings.aircraft.general ? reader.gameName : bindings.aircraft.name,
+    },
     controllers: bindings.devices
       .filter((device) => device.kind === 'controller' && device.guid !== undefined)
       .map((device) => {
         const controls = new Map<string, BoundControl>();
         for (const binding of device.bindings) {
-          let control = controls.get(binding.input);
+          // A reader that says which control it is (every racing game, and DCS) is found by
+          // the name press detection gives that control, whatever the game calls its input.
+          const input = binding.control ? directInputName(binding.control) : binding.input;
+          let control = controls.get(input);
           if (!control) {
-            control = {
-              input: binding.input,
-              label: binding.inputLabel,
-              actions: [],
-              duplicate: false,
-            };
-            controls.set(binding.input, control);
+            control = { input, label: binding.inputLabel, actions: [], duplicate: false };
+            controls.set(input, control);
           }
           control.actions.push({
             action: binding.action,

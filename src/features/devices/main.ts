@@ -96,7 +96,9 @@ function setupDevices(ctx: MainContext) {
     const { all: allProfiles, active } = await activeProfile();
     const bindingPages: { label: string; route(guid: string): string }[] = [];
     for (const reader of ctx.bindings.all()) {
-      if (!(await bindingsAvailable(reader))) continue;
+      // A link from a device leads to that device's bindings; a game whose page is about
+      // the game as a whole (the racing games) is reached from its own page instead.
+      if (!reader.routesToDevice || !(await bindingsAvailable(reader))) continue;
       bindingPages.push({
         label: `${reader.gameName.replace(/ World$/, '')} bindings`,
         route: (guid) => reader.route({ guid }),

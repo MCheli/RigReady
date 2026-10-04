@@ -188,7 +188,7 @@ watch(selected, () => (now.value = Date.now()));
           {{ input.boundError }}
         </div>
         <div v-else-if="!lastBound" class="rr-muted">
-          Choose an aircraft to see what each control you press is bound to.
+          Choose an aircraft or a game to see what each control you press is bound to.
         </div>
         <div v-else-if="!lastBound.control" class="rr-muted" data-testid="bound-waiting">
           Press a button or move an axis to see what it does in {{ lastBound.aircraft }}.

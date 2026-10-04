@@ -82,6 +82,57 @@ describe('what a control does (binding inspector)', () => {
     expect(boundControl(undefined, guid, 'JOY_BTN1')).toBeUndefined();
   });
 
+  it('finds a binding by the control it is on, whatever the game calls its input (the racing games)', () => {
+    const guid = 'cccccccc-0000-0000-0000-000000000003';
+    const racing: AircraftBindings = {
+      aircraft: { id: 'all', name: 'All cars', hasUserBindings: true, general: true },
+      devices: [
+        {
+          kind: 'controller',
+          name: 'Wheel',
+          guid,
+          connected: true,
+          bindings: [
+            // iRacing counts buttons from 0, Le Mans Ultimate numbers every input, ...
+            binding('button 4', 'Shift up', {
+              inputLabel: 'Button 5',
+              control: { kind: 'button', index: 5 },
+            }),
+            binding('id 16', 'Pit Menu Up', {
+              inputLabel: 'Hat 1 up',
+              kind: 'hat',
+              control: { kind: 'hat', hat: 1, direction: 'U' },
+            }),
+            binding('axis 0', 'Steering', {
+              inputLabel: 'Steering',
+              kind: 'axis',
+              control: { kind: 'axis', axis: 'X' },
+            }),
+            // An input the reader could not place on a control keeps the game's own name.
+            binding('axis 9', 'Something else', { kind: 'axis' }),
+          ],
+        },
+      ],
+    };
+    const bound = boundInputsOf({ ...reader, game: 'iracing', gameName: 'iRacing' }, racing);
+    // One set for every car: it is spoken of by the game's name.
+    expect(bound.aircraft).toEqual({ id: 'all', name: 'iRacing' });
+    expect(bound.controllers[0]!.controls.map((c) => c.input)).toEqual([
+      'JOY_BTN5',
+      'JOY_BTN_POV1_U',
+      'JOY_X',
+      'axis 9',
+    ]);
+    // Press detection says JOY_BTN5: that is the paddle, and it shifts up.
+    expect(boundControl(bound, guid, 'JOY_BTN5')).toMatchObject({
+      label: 'Button 5',
+      actions: [{ action: 'Shift up' }],
+    });
+    expect(boundControl(bound, guid, 'JOY_BTN_POV1_U')?.actions[0]?.action).toBe('Pit Menu Up');
+    expect(boundControl(bound, guid, 'JOY_X')?.actions[0]?.action).toBe('Steering');
+    expect(boundControl(bound, guid, 'JOY_BTN4')).toBeUndefined();
+  });
+
   it('names the control that was used the way the game does: button, hat direction, axis', () => {
     const device = { axisNames: ['X', 'Y', 'RZ'] };
     const log = new ActivityLog();

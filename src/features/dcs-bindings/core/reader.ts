@@ -114,6 +114,8 @@ export function createBindingReader(bindings: DcsBindings): BindingReader {
       const text = query.toString();
       return text ? `${DEVICES_ROUTE}?${text}` : DEVICES_ROUTE;
     },
+    // The Devices tab opens on the controller asked for.
+    routesToDevice: true,
     async actions(aircraftId) {
       const view = await bindings.view(aircraftId);
       if (!view.ok) return view;

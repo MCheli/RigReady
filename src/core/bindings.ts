@@ -59,6 +59,16 @@ export function controlFromDirectInput(input: string): BoundControl | undefined 
   return undefined;
 }
 
+/**
+ * A control by its DirectInput-style name (the reverse of controlFromDirectInput): what
+ * press detection calls the control the user just used, whatever game is asked about it.
+ */
+export function directInputName(control: BoundControl): string {
+  if (control.kind === 'button') return `JOY_BTN${control.index}`;
+  if (control.kind === 'hat') return `JOY_BTN_POV${control.hat}_${control.direction}`;
+  return `JOY_${control.axis}`;
+}
+
 /** "Button 3", "Hat 1 up", "X axis": a control in words, the same for every game. */
 export function controlLabel(control: BoundControl): string {
   if (control.kind === 'button') return `Button ${control.index}`;
@@ -224,6 +234,12 @@ export interface BindingReader {
    * DirectInput instance GUID) and an aircraft when given.
    */
   route(target?: { guid?: string; aircraftId?: string }): string;
+  /**
+   * True when `route({ guid })` opens the page on that one controller. A game whose page
+   * is about the game as a whole leaves it out, and a list of devices then does not offer
+   * a link to it from every controller.
+   */
+  routesToDevice?: boolean;
   /** Every action the aircraft has, bound or not. Optional: not every game can list them. */
   actions?(aircraftId: string): Promise<Result<BoundAction[]>>;
   /** Preview, write and undo changes proposed by another feature. Optional. */

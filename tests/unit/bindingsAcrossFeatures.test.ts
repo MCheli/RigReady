@@ -89,6 +89,41 @@ describe('bindings across features', () => {
     expect(other.bindingLinks).toEqual([]);
   });
 
+  it('on the racing rig the tester knows what a paddle does in iRacing, and a device links only to a bindings page that opens on it', async () => {
+    app = await wiredApp('mark-racing', {
+      files: ['Documents/iRacing/**', 'Program Files (x86)/Steam/steamapps/**'],
+    });
+    const sources = await app.invoke<{ game: string }[]>('devices:bindingSources');
+    expect(sources.map((s) => s.game)).toEqual(['dcs', 'iracing', 'lmu']);
+
+    // iRacing counts buttons from 0 and names axes its own way; the tester finds a binding
+    // by the control it is on, as press detection names it.
+    const iracing = await app.invoke<Bound>('devices:boundInputs', {
+      game: 'iracing',
+      aircraftId: 'all',
+    });
+    expect(iracing.controllers).toHaveLength(1);
+    const wheel = iracing.controllers[0]!;
+    const does = (bound: Bound['controllers'][number], input: string): string[] =>
+      bound.controls.find((c) => c.input === input)?.actions.map((a) => a.action) ?? [];
+    expect(wheel.route).toBe('/configure/racing/iracing');
+    expect(does(wheel, 'JOY_BTN5')).toEqual(['Shift up']);
+    expect(does(wheel, 'JOY_BTN6')).toEqual(['Shift down']);
+    expect(does(wheel, 'JOY_X')).toEqual(['Steering']);
+    expect(does(wheel, 'JOY_RZ')).toEqual(['Brake']);
+    // Le Mans Ultimate's D-pad is the hat.
+    const lmu = await app.invoke<Bound>('devices:boundInputs', { game: 'lmu', aircraftId: 'all' });
+    expect(does(lmu.controllers[0]!, 'JOY_BTN_POV1_U')).toEqual(['Pit Menu Up']);
+
+    // The wheel's row links to its DCS bindings, which open on the wheel. The racing games'
+    // pages are about the game, not one controller: no link to each from every device.
+    const overview = await app.invoke<{
+      devices: { productName: string; bindingLinks: { label: string; to: string }[] }[];
+    }>('devices:overview');
+    const base = overview.devices.find((d) => d.productName === 'FANATEC Podium Wheel Base DD2')!;
+    expect(base.bindingLinks.map((l) => l.label)).toEqual(['DCS bindings']);
+  });
+
   it('without DCS on the PC there is nothing to link to or to choose', async () => {
     app = await wiredApp('dcs-bindings-no-dcs', { files: [] });
     expect(await app.invoke('devices:bindingSources')).toEqual([]);
