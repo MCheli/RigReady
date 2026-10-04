@@ -291,6 +291,7 @@ const kindIcon = (b: BackupView): string =>
         variant="outlined"
         hide-details
         class="keep-select"
+        aria-label="How many backups to keep"
         data-testid="backup-keep"
         @update:model-value="setKeep"
       />

@@ -48,7 +48,7 @@ const installed = (id: string): boolean =>
             v-for="use in profile.plugins"
             :key="use.pluginId"
             class="inv-chip"
-            :class="{ 'inv-chip-missing': !installed(use.pluginId) }"
+            :class="{ 'inv-chip-missing rr-bad': !installed(use.pluginId) }"
             :title="use.pluginId"
           >
             {{ pluginName(use.pluginId) }} <b>{{ use.actions }}</b>
@@ -148,7 +148,6 @@ const installed = (id: string): boolean =>
   margin-left: 2px;
 }
 .inv-chip-missing {
-  color: var(--rr-bad);
   border: 1px solid color-mix(in srgb, var(--rr-bad) 50%, transparent);
 }
 .inv-version {

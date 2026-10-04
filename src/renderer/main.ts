@@ -4,6 +4,7 @@ import './styles.css';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import { createVuetify } from 'vuetify';
+import { keepNaming } from './a11y';
 import App from './App.vue';
 import { router } from './router';
 
@@ -22,8 +23,14 @@ const vuetify = createVuetify({
           secondary: '#8b95a3',
           success: '#3fb97f',
           warning: '#e2b23c',
-          error: '#e5534b',
+          error: '#ee635b',
           info: '#5aa9e6',
+          // Text on a filled button or alert is dark: white on these mid-tones fails WCAG AA.
+          'on-primary': '#0f1317',
+          'on-success': '#0f1317',
+          'on-warning': '#0f1317',
+          'on-error': '#0f1317',
+          'on-info': '#0f1317',
         },
       },
     },
@@ -39,3 +46,4 @@ const vuetify = createVuetify({
 });
 
 createApp(App).use(createPinia()).use(router).use(vuetify).mount('#app');
+keepNaming(document);

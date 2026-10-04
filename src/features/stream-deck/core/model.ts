@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ChangePreviewSchema } from '../../../shared/changePreview';
 
 /** What crosses IPC and what is stored on disk for the Stream Deck feature. */
 
@@ -154,6 +155,10 @@ export const RestorePreviewSchema = z.object({
   keep: z.array(z.object({ uuid: z.string(), name: z.string() })),
   appRunning: z.boolean(),
   appInstalled: z.boolean(),
+  /** For a "files" restore: what it writes and deletes in the profiles folder, file by file. */
+  changes: ChangePreviewSchema.optional(),
+  /** What restoring the plugin folders as well would write, when the backup has them. */
+  pluginChanges: ChangePreviewSchema.optional(),
 });
 export type RestorePreview = z.infer<typeof RestorePreviewSchema>;
 

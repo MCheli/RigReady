@@ -35,7 +35,7 @@ const SIGN = { added: '+ ', removed: '− ', same: '  ' } as const;
     class="diff rr-mono"
     data-testid="diff-view"
   ><template v-for="(row, i) in rows" :key="i"><span v-if="row.fold" class="diff-fold">  …
-</span><span v-else :class="row.kind === 'added' ? 'rr-ok' : row.kind === 'removed' ? 'rr-bad' : 'diff-same'">{{ SIGN[row.kind as 'same'] }}{{ row.text }}
+</span><span v-else class="rr-no-icon" :class="row.kind === 'added' ? 'rr-ok' : row.kind === 'removed' ? 'rr-bad' : 'diff-same'">{{ SIGN[row.kind as 'same'] }}{{ row.text }}
 </span></template></pre>
 </template>
 

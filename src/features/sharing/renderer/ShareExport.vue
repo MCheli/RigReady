@@ -359,6 +359,7 @@ async function save(): Promise<void> {
             auto-grow
             variant="outlined"
             hide-details
+            aria-label="Notes for whoever gets the setup"
             data-testid="share-notes"
             @update:model-value="notesTouched = true"
           />

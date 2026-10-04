@@ -1,7 +1,8 @@
 import path from 'node:path';
-import { previewWrites, type PlannedWrite } from '../../../../core/files/preview';
+import { changePreview, previewWrites, type PlannedWrite } from '../../../../core/files/preview';
 import { err, ok, type Result } from '../../../../core/result';
 import { productGuidFor } from '../../../../core/directInput';
+import type { ChangePreview } from '../../../../shared/changePreview';
 import type { InputDevice } from '../../../../shared/models';
 import type { BeamngMapView, BeamngView, WritePreviewView } from '../../contract';
 import {
@@ -394,13 +395,11 @@ export async function copyOlderBindings(
  * wheel base): writes <new pidvid>.diff with the same bindings. Refuses when the new
  * controller already has bindings of its own.
  */
-export async function copyBindingsToController(
+async function planCopyToController(
   ctx: RacingContext,
   file: string,
   toVidpid: string
-): Promise<Result<{ message: string }>> {
-  const blocked = await refuseWhileRunning(ctx, 'beamng');
-  if (!blocked.ok) return blocked;
+): Promise<Result<{ destination: string; content: string; targetName: string; mapName: string }>> {
   const dir = await inputmapsOf(ctx);
   if (!dir) return err('beamng.copy', 'The BeamNG.drive user folder was not found.');
   const view = await beamngView(ctx);
@@ -425,11 +424,42 @@ export async function copyBindingsToController(
     vidpid: `${ids.productId}${ids.vendorId}`,
     guid: `{${productGuidFor(ids.vendorId, ids.productId)}}`,
   };
-  const written = await ctx.ports.files.write(destination, JSON.stringify(copy, null, 2) + '\n', {
-    reason: `Give ${target.name} the BeamNG.drive bindings of ${map.name}`,
+  return ok({
+    destination,
+    content: JSON.stringify(copy, null, 2) + '\n',
+    targetName: target.name,
+    mapName: map.name,
+  });
+}
+
+/** The binding file that copy would create. Nothing is written. */
+export async function previewCopyBindingsToController(
+  ctx: RacingContext,
+  file: string,
+  toVidpid: string
+): Promise<Result<ChangePreview>> {
+  const plan = await planCopyToController(ctx, file, toVidpid);
+  if (!plan.ok) return plan;
+  return changePreview(ctx.ports.files, [
+    { path: plan.value.destination, content: plan.value.content },
+  ]);
+}
+
+export async function copyBindingsToController(
+  ctx: RacingContext,
+  file: string,
+  toVidpid: string
+): Promise<Result<{ message: string }>> {
+  const blocked = await refuseWhileRunning(ctx, 'beamng');
+  if (!blocked.ok) return blocked;
+  const plan = await planCopyToController(ctx, file, toVidpid);
+  if (!plan.ok) return plan;
+  const { destination, content, targetName, mapName } = plan.value;
+  const written = await ctx.ports.files.write(destination, content, {
+    reason: `Give ${targetName} the BeamNG.drive bindings of ${mapName}`,
   });
   if (!written.ok) return written;
   return ok({
-    message: `${target.name} now has the bindings of ${map.name}. Check them in the game: button numbers can differ between controllers.`,
+    message: `${targetName} now has the bindings of ${mapName}. Check them in the game: button numbers can differ between controllers.`,
   });
 }

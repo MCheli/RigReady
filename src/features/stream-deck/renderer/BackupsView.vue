@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import ChangePreview from '../../../renderer/components/ChangePreview.vue';
 import { errorText } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import type { Overview } from '../contract';
@@ -524,7 +525,7 @@ defineExpose({ openBackup });
   </v-dialog>
 
   <!-- Restore -->
-  <v-dialog :model-value="preview !== undefined" max-width="600" persistent>
+  <v-dialog :model-value="preview !== undefined" max-width="640" persistent scrollable>
     <v-card v-if="preview" data-testid="sd-restore-dialog">
       <v-card-title>Restore "{{ preview.backup.name }}"?</v-card-title>
       <v-card-text>
@@ -550,12 +551,24 @@ defineExpose({ openBackup });
             </div>
             <div v-for="p in preview.keep" :key="p.uuid">{{ p.name }}</div>
           </div>
+          <div v-if="preview.changes" class="bk-list" data-testid="sd-restore-files">
+            <div class="bk-list-title">Files in the Stream Deck profiles folder</div>
+            <ChangePreview :preview="preview.changes" :show-unchanged="false" :limit="6" />
+          </div>
           <v-checkbox
             v-if="preview.backup.includesPluginFolders"
             v-model="restorePlugins"
             label="Also put back the plugin folders from this backup"
             data-testid="sd-restore-plugins"
           />
+          <div
+            v-if="restorePlugins && preview.pluginChanges"
+            class="bk-list"
+            data-testid="sd-restore-plugin-files"
+          >
+            <div class="bk-list-title">Files in the Stream Deck plugins folder</div>
+            <ChangePreview :preview="preview.pluginChanges" :show-unchanged="false" :limit="6" />
+          </div>
           <p class="bk-dialog-p">
             Your current profiles are backed up first, and every file RigReady changes can be undone
             on the Safety page.

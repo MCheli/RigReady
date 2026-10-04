@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import ConfirmChanges from '../../../renderer/components/ConfirmChanges.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
+import type { ChangePreview } from '../../../shared/changePreview';
 import { dcsSetupContract, type SimAppProState } from '../contract';
 import {
   RUNTIME_FEATURE_LABELS,
@@ -44,9 +46,27 @@ async function save(profileId: string): Promise<void> {
   await load();
 }
 
+/** The restore waiting for a yes, with the files it would write. */
+const restoring = ref(false);
+const restoreBusy = ref(false);
+const restorePreview = ref<ChangePreview>();
+const restorePreviewError = ref<string>();
+
+async function askRestore(): Promise<void> {
+  restorePreview.value = undefined;
+  restorePreviewError.value = undefined;
+  restoring.value = true;
+  const result = await api.restoreManagedPreview();
+  if (result.ok) restorePreview.value = result.value;
+  else restorePreviewError.value = errorText(result.error);
+}
+
 async function restore(): Promise<void> {
   error.value = undefined;
+  restoreBusy.value = true;
   const result = await api.restoreManaged();
+  restoreBusy.value = false;
+  restoring.value = false;
   if (result.ok) {
     message.value = result.value.message;
     notifyMachineChanged();
@@ -218,12 +238,28 @@ const STATUS = {
             SimAppPro rewrites Export.lua when it starts, and options.lua when its MFD wizard is
             applied.
           </span>
-          <v-btn color="primary" size="small" data-testid="sap-restore" @click="restore">
-            Restore RigReady's version
+          <v-btn color="primary" size="small" data-testid="sap-restore" @click="askRestore">
+            Restore RigReady's version…
           </v-btn>
         </div>
       </div>
     </template>
+
+    <ConfirmChanges
+      :open="restoring"
+      title="Restore RigReady's version of these DCS files?"
+      confirm-text="Restore"
+      :preview="restorePreview"
+      :error="restorePreviewError"
+      :busy="restoreBusy"
+      testid="sap-restore"
+      @cancel="restoring = false"
+      @confirm="restore"
+    >
+      RigReady puts back what it last set: its screen setup file, the options.lua keys that select
+      it, and the Export.lua lines of the tools it added. Lines other tools added to Export.lua
+      stay.
+    </ConfirmChanges>
   </div>
 </template>
 

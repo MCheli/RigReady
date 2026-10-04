@@ -17,7 +17,7 @@ import {
   type DcsOptions,
   type OptionKey,
 } from './options';
-import { boundingBox, MONITOR_SETUP_OPTION } from './screens';
+import { boundingBox, MONITOR_SETUP_NAME, MONITOR_SETUP_OPTION } from './screens';
 import { findSimAppPro, SIMAPPPRO_EXE } from './simAppPro';
 import { RuntimeFeatureSchema, runtimeFeaturePhrase } from './simAppProShared';
 import { SIMAPPPRO_CHECK, START_SIMAPPPRO, type DcsSetupService } from './service';
@@ -166,7 +166,8 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     label: 'Write the RigReady screen setup',
     order: 300,
     params: NoParams as never,
-    describe: () => 'Write the RigReady screen setup and select it in DCS',
+    describe: () =>
+      `Write ${MONITOR_SETUP_NAME}.lua (the RigReady screen setup) and select it in options.lua`,
     run: (_params, ctx) => service.for(ctx).rewriteSavedScreens(),
   };
 
@@ -373,6 +374,16 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     order: 300,
     params: NoParams as never,
     describe: () => "Restore RigReady's version",
+    // Make ready is one click: the fix says which files it will write before it does.
+    async available(_params, ctx) {
+      const names = await service.for(ctx).managedRestoreNames();
+      return {
+        ok: true,
+        description: names
+          ? `Restore RigReady's version of ${names}`
+          : "Restore RigReady's version",
+      };
+    },
     run: (_params, ctx) => service.for(ctx).restoreManaged(),
   };
 

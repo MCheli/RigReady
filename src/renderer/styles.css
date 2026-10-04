@@ -8,8 +8,10 @@
   --rr-muted: #8b95a3;
   --rr-ok: #3fb97f;
   --rr-warn: #e2b23c;
-  --rr-bad: #e5534b;
+  --rr-bad: #ee635b;
   --rr-accent: #5aa9e6;
+  /* The keyboard focus ring. */
+  --rr-focus: #a8d1f5;
   --rr-radius: 10px;
 }
 
@@ -108,4 +110,89 @@ body {
   text-align: center;
   padding: 56px 24px;
   color: var(--rr-muted);
+}
+
+/*
+ * Status is never colour alone (NFR-011). Text in a status colour gets the status icon in
+ * front of it from here, so a feature only writes class="rr-warn": check in a circle for
+ * ok, warning triangle for warn, cross in a circle for bad. Three shapes, so they read
+ * without colour.
+ *
+ * No icon is added to an element that is an icon, that has one inside it, or that sits in a
+ * row whose own status icon has the same tone (the row's icon speaks for its lines). A list
+ * gets the icon on each item. `rr-no-icon` opts out where the text carries its own sign (the
+ * + and − of a diff); tests/unit/statusNotColourOnly.test.ts lists who may use it.
+ */
+.rr-ok {
+  --rr-status-glyph: '\F05E0';
+}
+.rr-warn {
+  --rr-status-glyph: '\F0026';
+}
+.rr-bad {
+  --rr-status-glyph: '\F0159';
+}
+:is(.rr-ok, .rr-warn, .rr-bad):not(.v-icon, .mdi, .rr-no-icon, ul, ol)::before,
+:is(ul, ol):is(.rr-ok, .rr-warn, .rr-bad):not(.rr-no-icon) > li::before {
+  content: var(--rr-status-glyph);
+  font-family: 'Material Design Icons';
+  font-size: 1.15em;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  display: inline-block;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  text-transform: none;
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+:is(ul, ol):is(.rr-ok, .rr-warn, .rr-bad):not(.rr-no-icon) {
+  list-style: none;
+}
+:is(.rr-ok, .rr-warn, .rr-bad):has(.v-icon, .v-progress-circular):not(.v-icon, .mdi)::before,
+.rr-row:has(> .v-icon.rr-ok, > .rr-status-icon .rr-ok)
+  .rr-row-main
+  .rr-ok:not(.v-icon, .mdi)::before,
+.rr-row:has(> .v-icon.rr-warn, > .rr-status-icon .rr-warn)
+  .rr-row-main
+  .rr-warn:not(.v-icon, .mdi)::before,
+.rr-row:has(> .v-icon.rr-bad, > .rr-status-icon .rr-bad)
+  .rr-row-main
+  .rr-bad:not(.v-icon, .mdi)::before {
+  content: none;
+}
+
+/*
+ * Keyboard focus is always visible on the dark theme: one ring, the same on every control.
+ * Vuetify's own focus tint on a button is too faint to find.
+ */
+:where(
+  a,
+  button,
+  summary,
+  [role='button'],
+  [role='tab'],
+  [role='option'],
+  [role='menuitem'],
+  [tabindex]:not([tabindex='-1'])
+):focus-visible {
+  outline: 2px solid var(--rr-focus);
+  outline-offset: 2px;
+}
+.v-selection-control--focus-visible .v-selection-control__input {
+  outline: 2px solid var(--rr-focus);
+  outline-offset: -4px;
+  border-radius: 50%;
+}
+.v-list-item:focus-visible {
+  outline-offset: -2px;
+}
+
+/*
+ * Vuetify keeps the container of a closed tooltip in the page: role="tooltip", nothing in
+ * it, laid over the whole window. Closed means not there.
+ */
+.v-overlay.v-tooltip:not(.v-overlay--active) {
+  display: none;
 }

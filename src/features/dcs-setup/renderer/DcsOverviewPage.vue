@@ -215,7 +215,7 @@ const launchLine = (launch: { exe: string; args: string[] }): string =>
               v.name
             }}</span>
           </div>
-          <ul v-if="view.monitorSetup.problems.length" class="dcs-problems">
+          <ul v-if="view.monitorSetup.problems.length" class="dcs-problems rr-warn">
             <li v-for="p in view.monitorSetup.problems" :key="p">{{ p }}</li>
           </ul>
           <p v-if="view.monitorSetup.file?.author === 'simapppro'" class="dcs-note">
@@ -474,7 +474,6 @@ const launchLine = (launch: { exe: string; args: string[] }): string =>
   margin: 4px 0 0;
   padding-left: 18px;
   font-size: 12.5px;
-  color: var(--rr-warn);
 }
 .dcs-verify {
   display: flex;

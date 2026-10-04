@@ -19,6 +19,7 @@ import { applyRestore, previewRestore } from './core/restore';
 import {
   compareSnapshot,
   listSnapshots,
+  previewRestoreSnapshot,
   removeSnapshot,
   renameSnapshot,
   restoreSnapshot,
@@ -108,6 +109,7 @@ export default defineFeatureMain({
         takeSnapshot: ({ scope, itemId, name }) => takeSnapshot(ctx, scope, itemId, name),
         compareSnapshot: ({ id }) => compareSnapshot(ctx, id),
         restoreSnapshot: ({ id }) => restoreSnapshot(ctx, id),
+        restoreSnapshotPreview: ({ id }) => previewRestoreSnapshot(ctx, id),
         renameSnapshot: ({ id, name }) => renameSnapshot(ctx, id, name),
         removeSnapshot: ({ id }) =>
           after(removeSnapshot(ctx, id), async () => ok({ removed: true })),

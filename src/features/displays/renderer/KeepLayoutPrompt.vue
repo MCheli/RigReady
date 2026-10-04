@@ -84,7 +84,9 @@ onBeforeUnmount(() => {
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" data-testid="keep-layout-revert" @click="api.revert()">Go back</v-btn>
+        <v-btn variant="text" autofocus data-testid="keep-layout-revert" @click="api.revert()"
+          >Go back</v-btn
+        >
         <v-btn color="primary" data-testid="keep-layout-keep" @click="api.keep()">Keep it</v-btn>
       </v-card-actions>
     </v-card>

@@ -82,7 +82,7 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
     :data-title="item.title"
     :data-checked-at="result?.checkedAt ?? ''"
   >
-    <div class="check-icon" :title="look.label" :aria-label="look.label" role="img">
+    <div class="check-icon rr-status-icon" :title="look.label" :aria-label="look.label" role="img">
       <v-progress-circular
         v-if="status === 'checking'"
         indeterminate

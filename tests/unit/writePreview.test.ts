@@ -3,7 +3,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { BackupFileStore } from '../../src/core/files/fileStore';
-import { lineChanges, previewWrites, sizeText } from '../../src/core/files/preview';
+import { changePreview, lineChanges, previewWrites, sizeText } from '../../src/core/files/preview';
+import { ChangePreviewSchema } from '../../src/shared/changePreview';
 import { NodeRawFs } from '../../src/platform/node';
 import { tempDir, TestClock } from '../helpers';
 
@@ -121,6 +122,46 @@ describe('previewWrites: what will be written, before it is', () => {
     expect(sizeText(900)).toBe('900 bytes');
     expect(sizeText(30 * 1024)).toBe('30 KB');
     expect(sizeText(5 * 1024 * 1024)).toBe('5.0 MB');
+  });
+
+  it('gives the shape that crosses IPC and that the shared list shows, with labels', async () => {
+    await fs.writeFile(path.join(outside, 'app.ini'), 'a=1\n');
+    const planned = [
+      { path: path.join(outside, 'app.ini'), content: 'a=2\n' },
+      { path: path.join(outside, 'setups', 'car.cfg'), content: 'x' },
+    ];
+    const plain = await changePreview(store, planned);
+    expect(plain.ok && plain.value).toEqual({
+      summary: '1 file modified, 1 file created',
+      files: [
+        {
+          path: path.join(outside, 'app.ini'),
+          label: 'app.ini',
+          change: 'modified',
+          detail: '1 line added, 1 removed',
+        },
+        {
+          path: path.join(outside, 'setups', 'car.cfg'),
+          label: 'car.cfg',
+          change: 'created',
+          detail: 'New file (1 byte)',
+        },
+      ],
+    });
+    expect(ChangePreviewSchema.safeParse(plain.ok && plain.value).success).toBe(true);
+    const labelled = await changePreview(store, planned, (write, index) =>
+      index === 1 ? path.relative(outside, write.path).replace(/\\/g, '/') : undefined
+    );
+    expect(labelled.ok && labelled.value.files.map((f) => f.label)).toEqual([
+      'app.ini',
+      'setups/car.cfg',
+    ]);
+    // An unreadable file fails the preview, as in previewWrites.
+    await fs.mkdir(path.join(outside, 'folder.cfg'));
+    const failed = await changePreview(store, [
+      { path: path.join(outside, 'folder.cfg'), content: 'x' },
+    ]);
+    expect(failed.ok).toBe(false);
   });
 });
 

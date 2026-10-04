@@ -176,14 +176,14 @@ onBeforeUnmount(() => off?.());
           {{ t.title }}
           <span
             v-if="t.id === 'problems' && problemCount > 0"
-            class="bind-count"
+            class="bind-count rr-warn"
             data-testid="bind-problem-count"
           >
             {{ problemCount }}
           </span>
           <span
             v-if="t.id === 'device-ids' && store.overview.staleDeviceIds > 0"
-            class="bind-count"
+            class="bind-count rr-warn"
           >
             {{ store.overview.staleDeviceIds }}
           </span>
@@ -308,7 +308,6 @@ onBeforeUnmount(() => off?.());
   border: 1px solid var(--rr-border);
   font-size: 11.5px;
   line-height: 18px;
-  color: var(--rr-warn);
 }
 .bind-staged,
 .bind-saved {

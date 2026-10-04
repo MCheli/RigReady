@@ -129,8 +129,8 @@ const toolName = (tool?: string): string =>
         </div>
         <pre
           class="exp-diff rr-mono"
-        ><span v-for="line in view.changedOutside.removed" :key="`r${line}`" class="rr-bad">− {{ line }}
-</span><span v-for="line in view.changedOutside.added" :key="`a${line}`" class="rr-ok">+ {{ line }}
+        ><span v-for="line in view.changedOutside.removed" :key="`r${line}`" class="rr-bad rr-no-icon">− {{ line }}
+</span><span v-for="line in view.changedOutside.added" :key="`a${line}`" class="rr-ok rr-no-icon">+ {{ line }}
 </span></pre>
         <div class="exp-actions">
           <v-btn

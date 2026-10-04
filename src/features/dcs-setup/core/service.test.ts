@@ -610,7 +610,8 @@ describe('SimAppPro', () => {
         'SimAppPro rewrites Export.lua every time it starts.',
         "SimAppPro's MFD wizard rewrites options.lua when it is applied.",
       ],
-      fix: "Restore RigReady's version",
+      // The fix names the files it will write, before Make ready runs it.
+      fix: "Restore RigReady's version of options.lua and Export.lua",
     });
     const sap = await app.invoke<SimAppProState>('dcs-setup:simAppPro');
     expect(sap.managed.map((m) => [m.label, m.status])).toEqual([
@@ -625,7 +626,7 @@ describe('SimAppPro', () => {
     // Make ready does monitors before files: the screen setup goes back first (which
     // also selects it in options.lua), then the file restore has only Export.lua left.
     expect(made.steps.map((s) => s.message)).toEqual([
-      'Put the RigReady screen setup back in DCS',
+      'Put the RigReady screen setup back in DCS (options.lua monitor setup "wwtMonitor" → "rigready")',
       "Restored RigReady's version of Export.lua",
     ]);
     expect(result(made.report, 'DCS files').status).toBe('pass');
@@ -654,7 +655,9 @@ describe('SimAppPro', () => {
       /no MonitorSetup file with that name/
     );
     const made = await app.invoke<ActionReport>('fly:makeReady', { profileId: 'p' });
-    expect(made.steps[0]!.message).toBe('Put the RigReady screen setup back in DCS');
+    expect(made.steps[0]!.message).toBe(
+      'Put the RigReady screen setup back in DCS (Created RigReady.lua)'
+    );
     expect(await fs.readFile(file, 'utf8')).toBe(preview.lua);
   });
 });

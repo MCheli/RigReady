@@ -2617,8 +2617,34 @@ requirements:
     done_means:
       - "Before any write outside the data root triggered by the user, the UI shows which files will change and how (created, modified with summary, renamed, deleted)."
       - "Background writes (none expected) are forbidden; the journal shows no entries without a user-initiated action id (unit test on journal schema)."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: how 'the UI shows' is met, per kind of flow. Configure actions that write game or tool files show the list of files (created, modified with a one-line summary, renamed, deleted) in the confirmation, from the same plan that is then applied as one journal group; the shared list is src/renderer/components/ChangePreview.vue, and DCS bindings, DCS screens / Export.lua, the backup restore and the share import keep their own, richer previews. Make ready is one click by design: there the description is the fix text beside the failing check, which names each file the fix writes, and the Make ready summary names it again. An export writes the one file the user names in a Save dialog. tests/unit/writeAudit.test.ts holds the audit: the journal schema, no write during startup, idle and every read channel, a source rule that fails a feature which writes files without a preview, and preview-equals-journal for each flow."
+    status: done
+    evidence:
+      - "tests/unit/writeAudit.test.ts#gives every kind of change a group id, a group reason and a readable reason"
+      - "tests/unit/writeAudit.test.ts#writes nothing outside its folder while starting, idling and answering every read"
+      - "tests/unit/writeAudit.test.ts#every feature that calls a FileStore write builds a preview or is on the reasoned list"
+      - "tests/unit/writeAudit.test.ts#every channel that writes game or tool files is paired with the channel that shows the change first"
+      - "tests/unit/writeAudit.test.ts#iRacing: pointing the files at a wheel base with a new Windows id"
+      - "tests/unit/writeAudit.test.ts#DCS: putting back the files RigReady manages after another tool rewrote them"
+      - "tests/unit/writeAudit.test.ts#Stream Deck: restoring a backup over changed profiles"
+      - "tests/unit/writeAudit.test.ts#Backups: putting a snapshot back"
+      - "tests/unit/writeAudit.test.ts#DCS: the screen setup, the managed files and Export.lua"
+      - "tests/unit/writeAudit.test.ts#any game: restoring a config file from the copy that was kept"
+      - "tests/unit/writePreview.test.ts#says which files are created, modified, unchanged, renamed and deleted, with sizes"
+      - "tests/unit/writePreview.test.ts#has no entry without the id and the reason of the action it belongs to"
+      - "tests/e2e/change-preview.e2e.ts#change preview: the iRacing id repair lists the files it rewrites before it does"
+      - "tests/e2e/change-preview.e2e.ts#change preview: copying BeamNG bindings to a new controller names the file it creates"
+      - "tests/e2e/change-preview.e2e.ts#change preview: restoring RigReady's DCS files shows what is put back, and the Safety page lists it"
+      - "tests/e2e/change-preview.e2e.ts#change preview: a Stream Deck restore and a snapshot put-back list their files"
+      - "tests/e2e/backup-sources.e2e.ts#backup: a racing restore and a BeamNG copy show what each file becomes before anything is written, and every change is an action on the Safety page"
+      - "artifacts/screens/backup-change-preview-iracing/01-iracing-repair.png"
+      - "artifacts/screens/backup-change-preview-beamng/01-beamng-copy.png"
+      - "artifacts/screens/backup-change-preview-dcs/01-dcs-restore.png"
+      - "artifacts/screens/backup-change-preview-dcs/02-dcs-restore-on-safety-page.png"
+      - "artifacts/screens/backup-change-preview-restores/01-stream-deck-restore.png"
+      - "artifacts/screens/backup-change-preview-restores/02-snapshot-put-back.png"
+      - "artifacts/screens/backup-write-preview/01-restore-preview.png"
 
   - id: BACKUP-012
     title: Undo journal
@@ -3809,5 +3835,27 @@ requirements:
     priority: p1
     done_means:
       - "All statuses, health results and duplicate markers use icon plus text plus colour; an automated accessibility scan (axe) on the Fly and Configure screens reports no colour-contrast or name violations."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: how it is held. The status classes rr-ok, rr-warn and rr-bad draw the status icon in front of coloured text themselves (src/renderer/styles.css), so a feature gets icon, text and colour from the class; a source audit fails any other way of colouring status. The axe scan runs on the Fly screen (ready, not ready, Make ready running, the launch warning), on every Configure route the features declare with their tabs, and on twelve scenarios with something wrong; where axe cannot judge a contrast the scan computes it. Nothing is excluded from the scan. Found and fixed: white text on filled buttons (2.5:1), the red token on raised panels (4.2:1), dialogs and spinners without names, two unnamed fields, a tooltip container that hid every contrast on the Fly screen from axe. The Fly screen is driven by keyboard only in tests/e2e/keyboard.e2e.ts. The tray badge has a shape per status and the words in its tooltip and menu."
+    status: done
+    evidence:
+      - "tests/unit/statusNotColourOnly.test.ts#every status-coloured element in every template has an icon and words"
+      - "tests/unit/statusNotColourOnly.test.ts#the rules catch what they are for"
+      - "tests/unit/themeContrast.test.ts#every text colour is at least 4.5:1 on every surface"
+      - "tests/unit/themeContrast.test.ts#text on filled buttons and alerts is at least 4.5:1"
+      - "tests/unit/themeContrast.test.ts#the focus ring stands out from every surface (3:1)"
+      - "tests/unit/tray.test.ts#never says it by colour alone: each tone has its own badge shape and its words"
+      - "tests/e2e/a11y.e2e.ts#a11y: the Fly screen passes axe when ready, when not ready and while Make ready runs"
+      - "tests/e2e/a11y.e2e.ts#a11y: every Configure route passes axe on the full rig"
+      - "tests/e2e/a11y.e2e.ts#a11y: scenarios with something wrong pass axe and never say it by colour alone"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "artifacts/screens/a11y-fly/01-ready.png"
+      - "artifacts/screens/a11y-fly-not-ready/01-not-ready.png"
+      - "artifacts/screens/a11y-fly-not-ready/02-make-ready-running.png"
+      - "artifacts/screens/a11y-fly-not-ready/03-after-make-ready.png"
+      - "artifacts/screens/a11y-configure/01-devices.png"
+      - "artifacts/screens/a11y-keyboard/01-group-opened-with-enter.png"
+      - "artifacts/screens/a11y-keyboard/02-focus-on-make-ready.png"
+      - "artifacts/screens/a11y-keyboard/03-keep-layout-focus.png"
+      - "artifacts/screens/a11y-keyboard/04-focus-on-launch.png"
+      - "artifacts/screens/a11y-keyboard/05-launched.png"

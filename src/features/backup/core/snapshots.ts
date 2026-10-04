@@ -1,9 +1,11 @@
 import path from 'node:path';
 import { z } from 'zod';
 import { sha256 } from '../../../core/files/fileStore';
+import { changePreview } from '../../../core/files/preview';
 import { JsonStore } from '../../../core/jsonStore';
 import { err, ok, type Result } from '../../../core/result';
 import { resolveTrackedItem, TrackedItemSchema, trackedFileTarget } from '../../../core/tracked';
+import type { ChangePreview } from '../../../shared/changePreview';
 import { BlobStore } from './blobs';
 import { compareFiles, type Comparison } from './compare';
 import { fingerprintStore } from './fingerprints';
@@ -141,11 +143,18 @@ export async function compareSnapshot(
   });
 }
 
-/** Writes back every file that differs from the snapshot or is missing, as one undoable action. */
-export async function restoreSnapshot(
-  ctx: Ctx,
-  id: string
-): Promise<Result<{ written: number; leftAlone: number; groupId?: string }>> {
+interface PutBackPlan {
+  snapshot: Snapshot;
+  /** The item's folder (or file) on this PC. */
+  target: string;
+  /** Files that differ from the snapshot or are missing, with the snapshot's content. */
+  writes: { relativePath: string; target: string; sha256: string; content: Uint8Array }[];
+  /** Files there now that the snapshot does not have: left alone. */
+  leftAlone: number;
+}
+
+/** What putting a snapshot back would write. Reads only; the preview and the restore both use it. */
+async function planPutBack(ctx: Ctx, id: string): Promise<Result<PutBackPlan>> {
   const snapshot = await find(ctx, id);
   if (!snapshot.ok) return snapshot;
   const resolved = await resolveTrackedItem(
@@ -155,11 +164,45 @@ export async function restoreSnapshot(
   );
   if (!resolved.absolute)
     return err('snapshot.unresolved', resolved.problem ?? 'The item cannot be found on this PC.');
+  const blobs = blobsOf(ctx);
+  const writes: PutBackPlan['writes'] = [];
+  for (const file of snapshot.value.files) {
+    const target = trackedFileTarget(snapshot.value.item, resolved.absolute, file.path);
+    const current = await ctx.ports.files.readBytes(target);
+    if (current.ok && sha256(current.value) === file.sha256) continue;
+    const bytes = await blobs.get(file.sha256);
+    if (!bytes.ok) return bytes;
+    writes.push({ relativePath: file.path, target, sha256: file.sha256, content: bytes.value });
+  }
+  const kept = new Set(snapshot.value.files.map((f) => f.path.toLowerCase()));
+  const leftAlone = resolved.files.filter((f) => !kept.has(f.relativePath.toLowerCase())).length;
+  return ok({ snapshot: snapshot.value, target: resolved.absolute, writes, leftAlone });
+}
+
+/** Which files putting the snapshot back would change and how. Nothing is written. */
+export async function previewRestoreSnapshot(ctx: Ctx, id: string): Promise<Result<ChangePreview>> {
+  const plan = await planPutBack(ctx, id);
+  if (!plan.ok) return plan;
+  return changePreview(
+    ctx.ports.files,
+    plan.value.writes.map((w) => ({ path: w.target, content: w.content })),
+    (_write, index) => plan.value.writes[index]!.relativePath
+  );
+}
+
+/** Writes back every file that differs from the snapshot or is missing, as one undoable action. */
+export async function restoreSnapshot(
+  ctx: Ctx,
+  id: string
+): Promise<Result<{ written: number; leftAlone: number; groupId?: string }>> {
+  const plan = await planPutBack(ctx, id);
+  if (!plan.ok) return plan;
+  const { snapshot } = plan.value;
   const holding = await runningHolders(ctx, [
     {
-      label: snapshot.value.item.label,
-      target: resolved.absolute,
-      ...(snapshot.value.item.game ? { game: snapshot.value.item.game } : {}),
+      label: snapshot.item.label,
+      target: plan.value.target,
+      ...(snapshot.item.game ? { game: snapshot.item.game } : {}),
     },
   ]);
   if (!holding.ok) return holding;
@@ -169,27 +212,23 @@ export async function restoreSnapshot(
       `${runningText(holding.value)} Close it first. Nothing was put back.`
     );
   }
-  const blobs = blobsOf(ctx);
-  const reason = `Put back snapshot "${snapshot.value.name}" of ${snapshot.value.item.label}`;
+  const reason = `Put back snapshot "${snapshot.name}" of ${snapshot.item.label}`;
   const group = ctx.ports.files.beginGroup(reason);
   let written = 0;
-  for (const file of snapshot.value.files) {
-    const target = trackedFileTarget(snapshot.value.item, resolved.absolute, file.path);
-    const current = await ctx.ports.files.readBytes(target);
-    if (current.ok && sha256(current.value) === file.sha256) continue;
-    const bytes = await blobs.get(file.sha256);
-    if (!bytes.ok) return bytes;
-    const result = await ctx.ports.files.write(target, bytes.value, { reason, group });
+  for (const write of plan.value.writes) {
+    const result = await ctx.ports.files.write(write.target, write.content, { reason, group });
     if (!result.ok) return result;
-    const back = await ctx.ports.files.readBytes(target);
-    if (!back.ok || sha256(back.value) !== file.sha256) {
-      return err('snapshot.verify', `${target} does not match the snapshot after writing.`);
+    const back = await ctx.ports.files.readBytes(write.target);
+    if (!back.ok || sha256(back.value) !== write.sha256) {
+      return err('snapshot.verify', `${write.target} does not match the snapshot after writing.`);
     }
     written++;
   }
-  const kept = new Set(snapshot.value.files.map((f) => f.path.toLowerCase()));
-  const leftAlone = resolved.files.filter((f) => !kept.has(f.relativePath.toLowerCase())).length;
-  return ok({ written, leftAlone, ...(written > 0 ? { groupId: group.id } : {}) });
+  return ok({
+    written,
+    leftAlone: plan.value.leftAlone,
+    ...(written > 0 ? { groupId: group.id } : {}),
+  });
 }
 
 export async function renameSnapshot(

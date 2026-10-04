@@ -31,6 +31,7 @@ export default defineFeatureMain({
           const restored = await service.restoreManaged();
           return restored.ok ? ok({ message: restored.value, changes: [] }) : restored;
         },
+        restoreManagedPreview: () => service.previewRestoreManaged(),
         markVerified: () => service.markVerified(),
       }),
     ];
