@@ -22,6 +22,22 @@ const shown = ref(new Set<string>());
 /** "Close them for me": the games and tools that hold the files are asked to quit first. */
 const closePrograms = ref(false);
 const openRecords = ref(new Set<string>());
+const rawRecords = ref(new Set<string>());
+
+type RecordView = RestorePreviewView['records'][number];
+/** A record's rows under their headings, in the order the source listed them. */
+function recordGroups(record: RecordView): { group: string; rows: RecordView['rows'] }[] {
+  const groups: { group: string; rows: RecordView['rows'] }[] = [];
+  for (const row of record.rows) {
+    const last = groups[groups.length - 1];
+    if (last && last.group === row.group) last.rows.push(row);
+    else groups.push({ group: row.group, rows: [row] });
+  }
+  return groups;
+}
+function toggleIn(set: Set<string>, key: string): Set<string> {
+  return set.has(key) ? new Set([...set].filter((r) => r !== key)) : new Set([...set, key]);
+}
 
 interface Row {
   ref: string;
@@ -536,26 +552,60 @@ const ACTIONS = [
               </div>
               <div class="rr-row-sub rr-mono">{{ record.from }}</div>
             </div>
-            <span class="rr-row-sub">Not restored</span>
+            <span class="rr-row-sub">
+              {{ record.rows.length ? `${record.rows.length} values · ` : '' }}Not restored
+            </span>
             <v-btn
               :icon="openRecords.has(record.from) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
               variant="text"
               size="small"
               :aria-label="openRecords.has(record.from) ? 'Hide values' : 'Show values'"
               data-testid="restore-record-toggle"
-              @click="
-                openRecords = openRecords.has(record.from)
-                  ? new Set([...openRecords].filter((r) => r !== record.from))
-                  : new Set([...openRecords, record.from])
-              "
+              @click="openRecords = toggleIn(openRecords, record.from)"
             />
           </div>
-          <pre
-            v-if="openRecords.has(record.from)"
-            class="record-text rr-mono"
-            data-testid="restore-record-text"
-            >{{ record.text
-            }}{{ record.truncated ? '\n… (cut off; the backup file holds all of it)' : '' }}</pre>
+          <div v-if="openRecords.has(record.from)" class="record-body">
+            <div
+              v-if="record.rows.length && !rawRecords.has(record.from)"
+              class="record-values"
+              data-testid="restore-record-values"
+            >
+              <template v-for="g in recordGroups(record)" :key="g.group">
+                <div v-if="g.group" class="record-group" data-testid="restore-record-group">
+                  {{ g.group }}
+                </div>
+                <div
+                  v-for="(row, n) in g.rows"
+                  :key="g.group + n"
+                  class="record-row"
+                  data-testid="restore-record-row"
+                >
+                  <span class="record-label">
+                    {{ row.label }}
+                    <span v-if="row.name" class="rr-muted rr-mono record-name">{{ row.name }}</span>
+                  </span>
+                  <span class="record-value rr-mono">{{ row.value }}</span>
+                </div>
+              </template>
+              <div v-if="record.moreRows" class="rr-row-sub record-more">
+                More values than are listed here; the raw view and the backup file hold all of them.
+              </div>
+            </div>
+            <pre v-else class="record-text rr-mono" data-testid="restore-record-text"
+              >{{ record.text
+              }}{{ record.truncated ? '\n… (cut off; the backup file holds all of it)' : '' }}</pre>
+            <div v-if="record.rows.length" class="record-foot">
+              <v-btn
+                variant="text"
+                size="small"
+                :prepend-icon="rawRecords.has(record.from) ? 'mdi-table' : 'mdi-code-json'"
+                data-testid="restore-record-raw"
+                @click="rawRecords = toggleIn(rawRecords, record.from)"
+              >
+                {{ rawRecords.has(record.from) ? 'Show as a table' : 'Show the raw values' }}
+              </v-btn>
+            </div>
+          </div>
         </div>
       </template>
 
@@ -698,8 +748,44 @@ const ACTIONS = [
 .records-note {
   margin: -4px 0 8px;
 }
-.record-text {
+.record-body {
   border-top: 1px solid var(--rr-border);
+}
+.record-values {
+  max-height: 360px;
+  overflow: auto;
+  padding: 6px 16px 10px;
+  font-size: 13px;
+}
+.record-group {
+  font-weight: 600;
+  font-size: 12.5px;
+  margin-top: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--rr-border);
+}
+.record-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) minmax(120px, 1fr);
+  gap: 16px;
+  padding: 3px 0;
+}
+.record-name {
+  font-size: 11.5px;
+  margin-left: 6px;
+}
+.record-value {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.record-more {
+  margin-top: 8px;
+}
+.record-foot {
+  border-top: 1px solid var(--rr-border);
+  padding: 4px 8px;
+}
+.record-text {
   margin: 0;
   padding: 10px 16px;
   font-size: 12px;

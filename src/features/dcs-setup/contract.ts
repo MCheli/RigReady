@@ -117,6 +117,8 @@ export const CatalogSchema = z.array(
 
 export const ScreensStateSchema = z.object({
   problem: z.string().optional(),
+  /** False when DCS World is not on this PC at all (the page shows the shared empty state). */
+  dcsFound: z.boolean().optional(),
   desktops: z.array(DesktopChoiceSchema),
   saved: ScreenSetupSchema.optional(),
   files: z.array(MonitorSetupFileSchema),
@@ -167,6 +169,8 @@ export type ExportAction = z.infer<typeof ExportActionSchema>;
 
 export const ExportStateSchema = z.object({
   problem: z.string().optional(),
+  /** False when DCS World is not on this PC at all. */
+  dcsFound: z.boolean().optional(),
   path: z.string(),
   exists: z.boolean(),
   lines: z.array(
@@ -193,6 +197,8 @@ export type ExportState = z.infer<typeof ExportStateSchema>;
 const MessageSchema = z.object({ message: z.string(), changes: z.array(z.string()).default([]) });
 
 export const SimAppProStateSchema = z.object({
+  /** False when DCS World is not on this PC at all: there is nothing to do in place of SimAppPro. */
+  dcsFound: z.boolean().optional(),
   installed: z.boolean(),
   version: z.string().optional(),
   running: z.boolean(),

@@ -102,7 +102,15 @@ export function buildOverview(inputs: OverviewInputs): Overview {
 
   const devices: RigDevice[] = present.map((device) => {
     const twins = twinsOf(device, present).length;
-    const controllers = inputs.input.filter((c) => sameIds(c, device));
+    // A controller that says which USB device it is belongs to that one only; one that
+    // does not is listed with every unit of its model (and marked as shared below).
+    const controllers = inputs.input.filter(
+      (c) =>
+        sameIds(c, device) &&
+        (c.usbInstanceId === undefined ||
+          c.usbInstanceId.toUpperCase() === device.instanceId.toUpperCase() ||
+          !present.some((d) => d.instanceId.toUpperCase() === c.usbInstanceId!.toUpperCase()))
+    );
     controllers.forEach((c) => usedControllers.add(c.guid));
     const identity = identityFor(device, present);
     const given = findName(inputs.data.names, device, present)?.name;
@@ -118,7 +126,7 @@ export function buildOverview(inputs: OverviewInputs): Overview {
       name: given ?? device.name.trim(),
       kind: device.isGameController || controllers.length > 0 ? 'controller' : 'other',
       controllers,
-      controllersShared: twins > 1 && controllers.length > 0,
+      controllersShared: twins > 1 && controllers.some((c) => c.usbInstanceId === undefined),
       twins,
       identity,
       identifiedBy: identifiedBy(identity),

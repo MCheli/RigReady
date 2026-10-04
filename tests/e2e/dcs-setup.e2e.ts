@@ -399,3 +399,36 @@ test('dcs-setup: simapppro-rewrote-monitorsetup — SimAppPro puts its setup bac
   expect(await fs.readFile(options, 'utf8')).toBe(text);
   await shot('restored');
 });
+
+test('dcs-setup: on a PC without DCS every tab says so the same way, SimAppPro included', async ({
+  rig,
+}) => {
+  // The owner's rig with DCS removed: SimAppPro is installed, DCS is not.
+  const { page, shot } = await rig.launch('dcs-bindings-no-dcs', 'dcs-setup-no-dcs');
+  await openDcs(page);
+  for (const tab of ['overview', 'screens', 'export', 'simapppro'] as const) {
+    await page.getByTestId(`dcs-tab-${tab}`).click();
+    const missing = page.getByTestId('dcs-not-found');
+    await expect(missing.getByTestId('not-here-title')).toHaveText(
+      'DCS World was not found on this PC'
+    );
+    await expect(missing.getByTestId('not-here-looked')).toHaveText(
+      'RigReady looked in every Steam library, the standalone install folders and Saved Games\\DCS.'
+    );
+    await expect(missing.getByTestId('not-here-game-page')).toHaveText('DCS World game page');
+    await shot(tab);
+  }
+  // The SimAppPro tab shows none of what needs DCS, and says what it found of SimAppPro.
+  await expect(page.getByTestId('sap-replaced')).toHaveCount(0);
+  await expect(page.getByTestId('sap-managed')).toHaveCount(0);
+  await expect(page.getByTestId('sap-without-dcs')).toContainText(
+    'SimAppPro 1.16.91 is installed on this PC.'
+  );
+  // The link leads to the page where the folder can be chosen by hand.
+  await page.getByTestId('not-here-game-page').click();
+  await expect(page.getByTestId('game-title')).toHaveText('DCS World');
+  await expect(page.getByTestId('game-not-found').getByTestId('not-here-title')).toHaveText(
+    'DCS World was not found on this PC'
+  );
+  await shot('game-page');
+});

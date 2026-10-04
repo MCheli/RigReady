@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import {
@@ -353,6 +354,13 @@ onBeforeUnmount(() => {
       error
     }}</v-alert>
     <div v-if="!state && !error" class="rr-empty">Reading the monitor setups…</div>
+    <NotOnThisPc
+      v-else-if="state?.dcsFound === false"
+      name="DCS World"
+      :looked="['every Steam library', 'the standalone install folders', 'Saved Games\\DCS']"
+      game-page="/configure/games/dcs"
+      data-testid="dcs-not-found"
+    />
     <div v-else-if="state?.problem" class="rr-panel rr-empty">{{ state.problem }}</div>
 
     <template v-else-if="state && setup">

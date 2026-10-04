@@ -152,6 +152,12 @@ export const InputDeviceSchema = z.object({
   numHats: z.number().int(),
   /** One DirectInput axis name per entry of InputState.axes: X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2. */
   axisNames: z.array(z.string()).default([]),
+  /**
+   * Windows instance path of the USB device this controller belongs to (DeviceInfo.instanceId),
+   * when the platform could read it. It is what tells which of several identical devices a
+   * controller is; absent, nothing may assume one.
+   */
+  usbInstanceId: z.string().optional(),
 });
 export type InputDevice = z.infer<typeof InputDeviceSchema>;
 

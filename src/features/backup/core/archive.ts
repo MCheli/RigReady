@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { unzipSync } from 'fflate';
+import * as yaml from 'js-yaml';
 import { z } from 'zod';
 import { sha256 } from '../../../core/files/fileStore';
 import { createZip, readZip, type ZipEntry } from '../../../core/files/zip';
@@ -7,6 +8,7 @@ import { inspectZip } from '../../../core/files/zipInspect';
 import { collapsePath, variableOf } from '../../../core/pathVariables';
 import { err, ok, type Result } from '../../../core/result';
 import { resolveTrackedItem, TrackedItemSchema, type TrackedItem } from '../../../core/tracked';
+import { cleanValues } from './records';
 import { collectSuggestions } from './suggestions';
 import {
   allScopes,
@@ -74,6 +76,18 @@ export const ManifestSchema = z.object({
         /** Where it was read: "HKEY_CURRENT_USER\\Software\\Endor\\FanatecService". */
         from: z.string().max(400),
         source: z.string().max(80),
+        /** One row per stored value, as the source describes them (optional). */
+        values: z
+          .array(
+            z.object({
+              group: z.string().max(200).optional(),
+              label: z.string().max(200),
+              name: z.string().max(200).optional(),
+              value: z.string().max(400),
+            })
+          )
+          .max(2000)
+          .optional(),
       })
     )
     .max(200)
@@ -114,6 +128,7 @@ export interface BackupView {
   items: { label: string; game?: string; fileCount: number; sourceName: string }[];
   /** Settings kept as data (registry values): readable, never restored. */
   records: { label: string; from: string }[];
+  /** The setups in the backup, by name (as they were called when it was made). */
   profiles: string[];
   imported: boolean;
   /** Set when the file is not a readable RigReady backup. */
@@ -360,6 +375,7 @@ async function collect(
       label: record.label,
       from: record.from,
       source: record.source,
+      ...(record.values ? { values: record.values } : {}),
     });
   }
   onProgress?.({ done: total, total, label: 'Writing the backup' });
@@ -404,6 +420,7 @@ interface CollectedRecord {
   from: string;
   source: string;
   data: Uint8Array;
+  values?: NonNullable<Manifest['records'][number]['values']>;
 }
 
 /** What backup sources keep outside files (registry values), as JSON to store in a full backup. */
@@ -427,6 +444,7 @@ async function collectRecords(ctx: Ctx): Promise<CollectedRecord[]> {
           from: record.from.slice(0, 400),
           source: source.label.slice(0, 80),
           data: new TextEncoder().encode(JSON.stringify(record.data, null, 2) + '\n'),
+          ...(record.values?.length ? { values: cleanValues(record.values) } : {}),
         });
       }
     } catch (e) {
@@ -529,6 +547,58 @@ export function readManifest(bytes: Uint8Array): Result<Manifest> {
   }
   if (!found) return err('backup.noManifest', 'The file is not a RigReady backup (no manifest).');
   return parseManifest(found);
+}
+
+const profileIdOf = (file: string): string => file.slice('profiles/'.length, -'.yaml'.length);
+
+/**
+ * What each setup in an archive is called, by id: the name in the setup file the archive
+ * holds, so a backup still names a setup that was renamed or deleted since.
+ */
+function profileNamesIn(bytes: Uint8Array, manifest: Manifest): Map<string, string> {
+  const names = new Map<string, string>();
+  const wanted = new Set(
+    manifest.rigready.filter((f) => f.path.startsWith('profiles/')).map((f) => f.path)
+  );
+  if (wanted.size === 0) return names;
+  try {
+    const unzipped = unzipSync(bytes, {
+      filter: (file) =>
+        file.name.startsWith('rigready/') &&
+        wanted.has(file.name.slice('rigready/'.length)) &&
+        file.originalSize < 5 * 1024 * 1024,
+    });
+    for (const [name, data] of Object.entries(unzipped)) {
+      try {
+        const raw: unknown = yaml.load(new TextDecoder().decode(data));
+        const given = (raw as { name?: unknown } | null)?.name;
+        if (typeof given === 'string' && given.trim())
+          names.set(profileIdOf(name.slice('rigready/'.length)), given.trim().slice(0, 120));
+      } catch {
+        // Not YAML: named by the fallbacks of the caller.
+      }
+    }
+  } catch {
+    // Not a readable zip: describeBackup reports that from the manifest.
+  }
+  return names;
+}
+
+/** The setups a backup holds, by name. */
+async function profileNames(ctx: Ctx, bytes: Uint8Array, manifest: Manifest): Promise<string[]> {
+  const stored = profileNamesIn(bytes, manifest);
+  const out: string[] = [];
+  for (const file of manifest.rigready.filter((f) => f.path.startsWith('profiles/'))) {
+    const id = profileIdOf(file.path);
+    let name = stored.get(id);
+    if (!name) {
+      // The setup file in the backup is unreadable: the setup of that id here, if any.
+      const current = await ctx.profiles.get(id);
+      name = current.ok ? current.value.name : `Unreadable setup (${id})`;
+    }
+    out.push(name);
+  }
+  return out;
 }
 
 function parseManifest(bytes: Uint8Array): Result<Manifest> {
@@ -647,28 +717,27 @@ export async function describeBackup(ctx: Ctx, id: string): Promise<Result<Backu
   };
   const bytes = await ctx.ports.files.readBytes(file.value);
   const manifest = bytes.ok ? readManifest(bytes.value) : bytes;
-  const view: BackupView = manifest.ok
-    ? {
-        ...base,
-        createdAt: manifest.value.createdAt,
-        machine: manifest.value.machine,
-        appVersion: manifest.value.appVersion,
-        scopeKind: manifest.value.scope.kind,
-        scopeLabel: manifest.value.scope.label,
-        fileCount: manifest.value.totals.files,
-        totalBytes: manifest.value.totals.bytes,
-        items: manifest.value.items.map((i) => ({
-          label: i.label,
-          ...(i.game ? { game: i.game } : {}),
-          fileCount: i.files.length,
-          sourceName: i.sourceName,
-        })),
-        records: manifest.value.records.map((r) => ({ label: r.label, from: r.from })),
-        profiles: manifest.value.rigready
-          .filter((f) => f.path.startsWith('profiles/'))
-          .map((f) => f.path.slice('profiles/'.length, -'.yaml'.length)),
-      }
-    : { ...base, damaged: manifest.error.message };
+  const view: BackupView =
+    manifest.ok && bytes.ok
+      ? {
+          ...base,
+          createdAt: manifest.value.createdAt,
+          machine: manifest.value.machine,
+          appVersion: manifest.value.appVersion,
+          scopeKind: manifest.value.scope.kind,
+          scopeLabel: manifest.value.scope.label,
+          fileCount: manifest.value.totals.files,
+          totalBytes: manifest.value.totals.bytes,
+          items: manifest.value.items.map((i) => ({
+            label: i.label,
+            ...(i.game ? { game: i.game } : {}),
+            fileCount: i.files.length,
+            sourceName: i.sourceName,
+          })),
+          records: manifest.value.records.map((r) => ({ label: r.label, from: r.from })),
+          profiles: await profileNames(ctx, bytes.value, manifest.value),
+        }
+      : { ...base, damaged: manifest.ok ? 'It cannot be read.' : manifest.error.message };
   viewCache.set(file.value, { key: cacheKey, view });
   return ok(view);
 }

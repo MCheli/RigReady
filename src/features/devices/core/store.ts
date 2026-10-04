@@ -4,7 +4,7 @@ import { JsonStore } from '../../../core/jsonStore';
 import type { DeviceNameQuery, DeviceNames } from '../../../core/names';
 import type { Clock, FileStore, KnownFolders } from '../../../core/ports';
 import { ok, type Result } from '../../../core/result';
-import type { DeviceInfo } from '../../../shared/models';
+import type { DeviceInfo, InputDevice } from '../../../shared/models';
 import {
   DeviceIdentitySchema,
   hubNames,
@@ -116,11 +116,16 @@ export function findName(
  * - A DirectInput GUID that has a name of its own (a controller without a USB device) wins.
  * - A connected device is found by model, narrowed by serial and port when the asker has
  *   them, and named by findName. Several identical devices that the query cannot tell
- *   apart have no name: RigReady never guesses between them.
+ *   apart have no name: RigReady never guesses between them. A DirectInput GUID tells
+ *   them apart when the controller of that GUID reports the USB device it belongs to.
  * - A device that is not connected has the name stored for exactly that identity.
  * The name is only ever something to show; what a check matches on stays the identity.
  */
-export function deviceNames(entries: NameEntry[], devices: DeviceInfo[]): DeviceNames {
+export function deviceNames(
+  entries: NameEntry[],
+  devices: DeviceInfo[],
+  controllers: Pick<InputDevice, 'guid' | 'usbInstanceId'>[] = []
+): DeviceNames {
   const present = devices.filter((d) => !d.isHub);
   const narrowed = <T extends { serial?: string | undefined; instanceId?: string | undefined }>(
     list: T[],
@@ -143,7 +148,14 @@ export function deviceNames(entries: NameEntry[], devices: DeviceInfo[]): Device
         query
       );
       if (connected.length === 1) return findName(entries, connected[0]!, present)?.name;
-      if (connected.length > 1) return undefined;
+      if (connected.length > 1) {
+        // Identical devices: the DirectInput GUID says which one, but only when Windows
+        // told us which USB device that controller is. Otherwise no name, never a guess.
+        const guid = query.guid?.replace(/[{}]/g, '');
+        const unit = controllers.find((c) => eq(c.guid, guid))?.usbInstanceId;
+        const owner = unit ? connected.filter((d) => eq(d.instanceId, unit)) : [];
+        return owner.length === 1 ? findName(entries, owner[0]!, present)?.name : undefined;
+      }
       const stored = narrowed(
         entries.filter((e) => e.guid === undefined && sameModel(e, query)),
         query

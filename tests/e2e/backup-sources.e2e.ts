@@ -102,9 +102,22 @@ test('backup: racing games and tools are suggested, backed up together, and a re
   await shot('restore-waits-for-iracing');
   await expect(page.getByTestId('restore-record')).toContainText('Not restored');
   await page.getByTestId('restore-record-toggle').click();
-  await expect(page.getByTestId('restore-record-text')).toContainText('"Games"');
+  // A table a person can read: a heading per registry key, a label and a value per row.
+  const values = page.getByTestId('restore-record-values');
+  await expect(values).toBeVisible();
+  await expect(page.getByTestId('restore-record-group').first()).toHaveText('Games › 0_0');
+  const row = page.getByTestId('restore-record-row').filter({ hasText: 'IsSteamInstalled' });
+  await expect(row.first()).toContainText('Steam edition installed');
+  await expect(row.first()).toContainText('On');
+  await expect(values).not.toContainText('"type"');
+  await expect(page.getByTestId('restore-record-text')).toHaveCount(0);
   await page.getByTestId('restore-record').scrollIntoViewIfNeeded();
   await shot('registry-record');
+  // The stored data as it is, behind a switch.
+  await page.getByTestId('restore-record-raw').click();
+  await expect(page.getByTestId('restore-record-text')).toContainText('"Games"');
+  await page.getByTestId('restore-record-raw').click();
+  await expect(values).toBeVisible();
   await page.getByTestId('restore-record-toggle').click();
 
   await page.getByTestId('restore-close-programs').locator('input').check();

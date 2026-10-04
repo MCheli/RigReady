@@ -42,6 +42,7 @@ DIDOI_ASPECTPOSITION = 0x100
 DIPH_DEVICE = 0
 DIPH_BYOFFSET = 1
 DIPROP_RANGE = 4
+DIPROP_GUIDANDPATH = 12
 DIERR_INPUTLOST = 0x8007001E
 DIERR_NOTACQUIRED = 0x8007000C
 
@@ -136,6 +137,60 @@ class DIDEVICEOBJECTINSTANCEW(ctypes.Structure):
         ("wExponent", w.WORD),
         ("wReportId", w.WORD),
     ]
+
+
+class DIPROPGUIDANDPATH(ctypes.Structure):
+    _fields_ = [
+        ("dwSize", w.DWORD),
+        ("dwHeaderSize", w.DWORD),
+        ("dwObj", w.DWORD),
+        ("dwHow", w.DWORD),
+        ("guidClass", GUID),
+        ("wszPath", ctypes.c_wchar * 260),
+    ]
+
+
+def usb_instance_of(interface_path: str):
+    """The USB device a HID interface path belongs to, as a Windows instance path.
+
+    "\\\\?\\hid#vid_4098&pid_bee0#9&2c7f5c07&0&0000#{...}" is the device node
+    HID\\VID_4098&PID_BEE0\\9&2C7F5C07&0&0000; its parent (or, for a composite device, the
+    parent of its interface) is USB\\VID_4098&PID_BEE0\\<serial or port>. That is what tells
+    two identical controllers apart. None when the chain does not lead to a USB device
+    (Bluetooth, virtual controllers) or anything fails: read-only, never a guess.
+    """
+    try:
+        text = interface_path
+        if text.startswith("\\\\?\\"):
+            text = text[4:]
+        parts = text.split("#")
+        if len(parts) < 3:
+            return None
+        node_id = "\\".join(parts[:3]).upper()
+        cfgmgr = ctypes.WinDLL("cfgmgr32")
+        node = w.DWORD()
+        if cfgmgr.CM_Locate_DevNodeW(ctypes.byref(node), ctypes.c_wchar_p(node_id), 0) != 0:
+            return None
+        for _ in range(6):
+            parent = w.DWORD()
+            if cfgmgr.CM_Get_Parent(ctypes.byref(parent), node, 0) != 0:
+                return None
+            buffer = ctypes.create_unicode_buffer(512)
+            if cfgmgr.CM_Get_Device_IDW(parent, buffer, 512, 0) != 0:
+                return None
+            parent_id = buffer.value
+            segments = parent_id.split("\\")
+            if (
+                len(segments) == 3
+                and segments[0].upper() == "USB"
+                and segments[1].upper().startswith("VID_")
+                and "&MI_" not in segments[1].upper()
+            ):
+                return parent_id
+            node = parent
+        return None
+    except Exception:
+        return None
 
 
 class DIPROPRANGE(ctypes.Structure):
@@ -360,6 +415,20 @@ class DirectInput:
         method(pointer, 6, ctypes.c_void_p, ctypes.c_void_p)(ctypes.c_void_p(DIPROP_RANGE), ctypes.byref(axis_range))
         method(pointer, 7)()  # Acquire
 
+        usb_instance = None
+        try:
+            prop = DIPROPGUIDANDPATH()
+            prop.dwSize = ctypes.sizeof(DIPROPGUIDANDPATH)
+            prop.dwHeaderSize = 16
+            prop.dwObj = 0
+            prop.dwHow = DIPH_DEVICE
+            if method(pointer, 5, ctypes.c_void_p, ctypes.c_void_p)(
+                ctypes.c_void_p(DIPROP_GUIDANDPATH), ctypes.byref(prop)
+            ) == 0:
+                usb_instance = usb_instance_of(prop.wszPath)
+        except Exception:
+            usb_instance = None
+
         product = entry["productGuid"]
         info = {
             "index": index,
@@ -374,6 +443,9 @@ class DirectInput:
             "numHats": min(int(caps.dwPOVs), MAX_POVS),
             "axisNames": [AXIS_NAMES[s] for s in axis_slots],
         }
+        # Which USB device this controller is: what tells identical controllers apart.
+        if usb_instance:
+            info["usbInstanceId"] = usb_instance
         return Device(pointer, info, axis_slots)
 
     def changed(self) -> bool:

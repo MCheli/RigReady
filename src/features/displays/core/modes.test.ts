@@ -84,6 +84,54 @@ describe('a layout that asks for a resolution or refresh rate', () => {
     expect(ultrawide()).toMatchObject({ width: 3840, height: 1080, refreshHz: 120 });
   });
 
+  it('hands a layout that changes resolution, refresh rate, position and rotation to the display port as one apply', async () => {
+    const { layout, fix, guard } = await setUp();
+    const calls: unknown[][] = [];
+    const apply = rig.ports.displays.apply.bind(rig.ports.displays);
+    rig.ports.displays.apply = (targets) => {
+      calls.push(structuredClone(targets));
+      return apply(targets);
+    };
+    // The ultrawide smaller and slower, and one MFD screen turned and moved, all at once.
+    const wanted = await layout({ width: 3840, height: 1080, refreshHz: 60 });
+    const mfd = wanted.displays.find((d) => d.name === 'USB_Monitor')!;
+    Object.assign(mfd, {
+      rotation: 0,
+      width: mfd.height,
+      height: mfd.width,
+      x: 9000,
+      y: 0,
+    });
+    const running = fix.run(wanted, rig.ctx);
+    await expect.poll(() => guard.pending).toBe(true);
+    guard.keep();
+    expect(await running).toMatchObject({ ok: true });
+
+    // One call, and it carries the mode with the placement: nothing is left for a second one.
+    expect(calls).toHaveLength(1);
+    const sent = calls[0] as {
+      id: string;
+      width?: number;
+      height?: number;
+      refreshHz?: number;
+      rotation: number;
+      x: number;
+    }[];
+    expect(sent.find((t) => t.id === ultrawide().id)).toMatchObject({
+      width: 3840,
+      height: 1080,
+      refreshHz: 60,
+    });
+    expect(sent.find((t) => t.id === mfd.id)).toMatchObject({ rotation: 0, x: 9000 });
+    expect(ultrawide()).toMatchObject({ width: 3840, height: 1080, refreshHz: 60 });
+    expect(rig.ports.state.displays.find((d) => d.id === mfd.id)).toMatchObject({
+      rotation: 0,
+      x: 9000,
+      width: mfd.width,
+      height: mfd.height,
+    });
+  });
+
   it('refuses a mode the monitor does not list, names the monitor and the mode, and applies nothing', async () => {
     const { layout, fix } = await setUp();
     const before = structuredClone(rig.ports.state.displays);

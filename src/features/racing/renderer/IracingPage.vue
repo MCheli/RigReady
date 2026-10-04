@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import ConfirmChanges from '../../../renderer/components/ConfirmChanges.vue';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import {
@@ -120,15 +121,13 @@ const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19
     </div>
 
     <template v-if="view">
-      <div
+      <NotOnThisPc
         v-if="!view.installed && !view.userFolder"
-        class="rr-panel rr-empty"
+        name="iRacing"
+        :looked="['every Steam library', 'the usual install folders', 'Documents\\iRacing']"
+        game-page="/configure/games/iracing"
         data-testid="iracing-missing"
-      >
-        iRacing was not found on this PC. If it is installed somewhere unusual, choose its folder on
-        the
-        <router-link to="/configure/games/iracing">iRacing game page</router-link>.
-      </div>
+      />
 
       <div v-if="view.simRunning" class="rc-notice warn" data-testid="iracing-running">
         <v-icon icon="mdi-alert" class="rr-warn" />

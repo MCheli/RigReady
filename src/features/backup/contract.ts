@@ -176,6 +176,15 @@ const PreviewSchema = z.object({
       label: z.string(),
       from: z.string(),
       source: z.string(),
+      rows: z.array(
+        z.object({
+          group: z.string(),
+          label: z.string(),
+          name: z.string().optional(),
+          value: z.string(),
+        })
+      ),
+      moreRows: z.boolean(),
       text: z.string(),
       truncated: z.boolean(),
     })

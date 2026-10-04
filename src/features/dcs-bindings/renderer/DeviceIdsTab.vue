@@ -53,10 +53,15 @@ const mappings = computed<Mapping[]>(() =>
 const candidateItems = (orphan: Orphan) => [
   { title: 'Leave these bindings where they are', value: '' },
   ...orphan.candidates.map((c) => ({
-    title: `${c.name} · ${c.guid}`,
+    // The owner's name first: it is what tells devices with one name apart.
+    title: c.givenName ? `${c.givenName} · ${c.name} · ${c.guid}` : `${c.name} · ${c.guid}`,
     value: c.guid,
   })),
 ];
+
+/** The owner's name of the device the bindings would move to. */
+const chosenName = (orphan: Orphan): string | undefined =>
+  orphan.candidates.find((c) => c.guid === choice.value[orphan.id]?.toGuid)?.givenName;
 
 const CONFLICT_ITEMS = [
   { title: 'Keep the file that is there', value: 'keep' },
@@ -181,6 +186,9 @@ onBeforeUnmount(() => void stopIdentify());
                   {{ choice[orphan.id]!.toGuid }}
                 </span>
                 <span v-else class="rr-warn" data-testid="ids-new">not chosen yet</span>
+                <span v-if="chosenName(orphan)" class="ids-given" data-testid="ids-new-name">{{
+                  chosenName(orphan)
+                }}</span>
               </div>
               <div v-if="orphan.reason" class="rr-row-sub rr-warn" data-testid="ids-reason">
                 {{ orphan.reason }}
@@ -323,6 +331,10 @@ onBeforeUnmount(() => void stopIdentify());
 .ids-main {
   flex: 1;
   min-width: 0;
+}
+.ids-given {
+  font-family: inherit;
+  font-weight: 600;
 }
 .ids-guids {
   display: flex;

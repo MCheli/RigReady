@@ -44,6 +44,15 @@ export class NodeRawFs implements RawFs {
   async removeDir(dir: string): Promise<void> {
     await fs.rm(dir, { recursive: true, force: true });
   }
+  async removeEmptyDir(dir: string): Promise<boolean> {
+    try {
+      // rmdir refuses a folder that holds anything; nothing is checked and then deleted.
+      await fs.rmdir(dir);
+      return true;
+    } catch {
+      return false;
+    }
+  }
   async writeBytes(file: string, data: Uint8Array | string): Promise<void> {
     await fs.mkdir(path.dirname(file), { recursive: true });
     // Write to a sibling and rename so a crash never leaves a half-written file.

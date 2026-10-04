@@ -130,6 +130,29 @@ describe('DCS overview', () => {
     const exportState = await app.invoke<ExportState>('dcs-setup:exportLua');
     expect(exportState.problem).toMatch(/not found/);
   });
+
+  it.each(['generic-fresh', 'backup-no-dcs', 'dcs-bindings-no-dcs'])(
+    'every DCS World tab knows DCS is not on this PC (%s), SimAppPro included',
+    async (scenario) => {
+      app = await wiredApp(scenario);
+      expect((await app.invoke<Overview>('dcs-setup:overview')).found).toBe(false);
+      for (const channel of ['screens', 'exportLua', 'simAppPro'] as const) {
+        const state = await app.invoke<{ dcsFound?: boolean }>(`dcs-setup:${channel}`);
+        expect(state.dcsFound, channel).toBe(false);
+      }
+      // SimAppPro itself is still reported as it is: installed on the owner's rig, not on the generic PC.
+      const simAppPro = await app.invoke<SimAppProState>('dcs-setup:simAppPro');
+      expect(simAppPro.installed).toBe(scenario !== 'generic-fresh');
+    }
+  );
+
+  it('the tabs do not claim DCS is missing when it is there', async () => {
+    app = await wiredApp('flying-fresh', { files: FILES });
+    for (const channel of ['screens', 'exportLua', 'simAppPro'] as const) {
+      const state = await app.invoke<{ dcsFound?: boolean }>(`dcs-setup:${channel}`);
+      expect(state.dcsFound, channel).toBeUndefined();
+    }
+  });
 });
 
 describe('DCS checks on the Fly screen', () => {

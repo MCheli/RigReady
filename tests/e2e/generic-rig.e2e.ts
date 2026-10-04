@@ -17,6 +17,11 @@ interface ConfigurePage {
   says: string[];
   /** What it must not say. */
   never?: string[];
+  /**
+   * The game the page is about, which this PC does not have: the page says so with the
+   * shared empty state (what is missing, where RigReady looked, what to do).
+   */
+  notFound?: string;
 }
 
 /** Every Configure page and sub-page. */
@@ -44,12 +49,19 @@ const PAGES: ConfigurePage[] = [
     testId: 'games-page',
     says: ['Not found on this PC'],
   },
-  { name: 'game-dcs', route: '/configure/games/dcs', testId: 'game-page', says: ['Not found'] },
+  {
+    name: 'game-dcs',
+    route: '/configure/games/dcs',
+    testId: 'game-page',
+    says: ['DCS World was not found on this PC'],
+    notFound: 'DCS World',
+  },
   {
     name: 'game-iracing',
     route: '/configure/games/iracing',
     testId: 'game-page',
-    says: ['Not found', 'Choose folder'],
+    says: ['iRacing was not found on this PC', 'Choose folder'],
+    notFound: 'iRacing',
   },
   {
     name: 'backups',
@@ -57,24 +69,51 @@ const PAGES: ConfigurePage[] = [
     testId: 'backups-page',
     says: ['No backups yet'],
   },
-  { name: 'dcs', route: '/configure/dcs', testId: 'dcs-page', says: ['DCS World was not found'] },
+  {
+    name: 'dcs',
+    route: '/configure/dcs',
+    testId: 'dcs-page',
+    says: [
+      'DCS World was not found on this PC',
+      'RigReady looked in every Steam library, the standalone install folders and Saved Games\\DCS.',
+      'Install DCS World and start it once',
+    ],
+    notFound: 'DCS World',
+  },
   {
     name: 'dcs-screens',
     route: '/configure/dcs/screens',
     testId: 'dcs-page',
-    says: ['DCS World was not found'],
+    says: [
+      'DCS World was not found on this PC',
+      'RigReady looked in every Steam library, the standalone install folders and Saved Games\\DCS.',
+      'Install DCS World and start it once',
+    ],
+    notFound: 'DCS World',
   },
   {
     name: 'dcs-export',
     route: '/configure/dcs/export',
     testId: 'dcs-page',
-    says: ['DCS World was not found'],
+    says: [
+      'DCS World was not found on this PC',
+      'RigReady looked in every Steam library, the standalone install folders and Saved Games\\DCS.',
+      'Install DCS World and start it once',
+    ],
+    notFound: 'DCS World',
   },
   {
     name: 'dcs-simapppro',
     route: '/configure/dcs/simapppro',
     testId: 'dcs-page',
-    says: ['SimAppPro is not installed'],
+    says: [
+      'DCS World was not found on this PC',
+      'RigReady looked in every Steam library, the standalone install folders and Saved Games\\DCS.',
+      'Install DCS World and start it once',
+    ],
+    notFound: 'DCS World',
+    // Nothing of the page that needs DCS: no comparison table, no setups, no managed files.
+    never: ['What RigReady does instead', 'What still needs SimAppPro running', 'wwtMonitor.lua'],
   },
   {
     name: 'share',
@@ -86,7 +125,12 @@ const PAGES: ConfigurePage[] = [
     name: 'dcs-bindings',
     route: '/configure/dcs-bindings',
     testId: 'bindings-page',
-    says: ['DCS World was not found on this PC'],
+    says: [
+      'DCS World was not found on this PC',
+      'RigReady looked in every Steam library, the standalone install folders and Saved Games\\DCS.',
+      'Install DCS World and start it once',
+    ],
+    notFound: 'DCS World',
   },
   {
     name: 'racing',
@@ -99,26 +143,30 @@ const PAGES: ConfigurePage[] = [
     name: 'racing-iracing',
     route: '/configure/racing/iracing',
     testId: 'iracing-page',
-    says: ['iRacing was not found on this PC'],
+    says: ['iRacing was not found on this PC', 'iRacing game page'],
+    notFound: 'iRacing',
   },
   {
     name: 'racing-lmu',
     route: '/configure/racing/lmu',
     testId: 'lmu-page',
-    says: ['Le Mans Ultimate was not found'],
+    says: ['Le Mans Ultimate was not found on this PC', 'Le Mans Ultimate game page'],
+    notFound: 'Le Mans Ultimate',
   },
   {
     name: 'racing-beamng',
     route: '/configure/racing/beamng',
     testId: 'beamng-page',
-    says: ['BeamNG.drive was not found on this PC'],
+    says: ['BeamNG.drive was not found on this PC', 'BeamNG.drive game page'],
     never: ['uses its defaults'],
+    notFound: 'BeamNG.drive',
   },
   {
     name: 'racing-ac',
     route: '/configure/racing/assetto-corsa',
     testId: 'ac-page',
-    says: ['Assetto Corsa was not found on this PC'],
+    says: ['Assetto Corsa was not found on this PC', 'Assetto Corsa game page'],
+    notFound: 'Assetto Corsa',
   },
   {
     name: 'wheel',
@@ -240,6 +288,18 @@ test('generic rig: every Configure page renders an honest empty state, never an 
     await expect(root, entry.name).toBeVisible();
     for (const text of entry.says) await expect(root, entry.name).toContainText(text);
     for (const text of entry.never ?? []) await expect(root, entry.name).not.toContainText(text);
+    if (entry.notFound) {
+      // One wording on every page: what is missing, where RigReady looked, what to do.
+      await expect(root.getByTestId('not-here-title'), entry.name).toHaveText(
+        `${entry.notFound} was not found on this PC`
+      );
+      await expect(root.getByTestId('not-here-looked'), entry.name).toContainText(
+        /RigReady looked in .+\./
+      );
+      await expect(root.getByTestId('not-here-todo'), entry.name).toContainText(
+        `Install ${entry.notFound} and start it once; this page then fills in by itself.`
+      );
+    }
     await expect(page.locator(BUSY), entry.name).toHaveCount(0);
     // No error alert, on any page.
     await expect(page.locator('[data-testid$="-error"]'), entry.name).toHaveCount(0);

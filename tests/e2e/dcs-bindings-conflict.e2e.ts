@@ -58,7 +58,12 @@ test('bindings: a PC without DCS says so instead of showing empty lists', async 
   await expect(page.getByTestId('bind-not-found')).toContainText(
     'DCS World was not found on this PC'
   );
-  await expect(page.getByTestId('bind-not-found')).toContainText('Start DCS once');
+  await expect(page.getByTestId('bind-not-found')).toContainText(
+    'RigReady looked in every Steam library, the standalone install folders and Saved Games\\DCS.'
+  );
+  await expect(page.getByTestId('bind-not-found')).toContainText(
+    'Install DCS World and start it once'
+  );
   await expect(page.getByTestId('bind-tabs')).toHaveCount(0);
   await expect(page.getByTestId('bindings-aircraft')).toHaveCount(0);
   await shot('not-found');

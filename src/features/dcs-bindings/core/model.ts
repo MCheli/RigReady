@@ -315,6 +315,8 @@ export const CandidateSchema = z.object({
   /** The attached device's instance GUID in DCS's casing. */
   guid: z.string(),
   name: z.string(),
+  /** The name the owner gave this device on the Devices page, when it has one. */
+  givenName: z.string().optional(),
   fullId: z.string(),
   /** DirectInput index, to match live input to this device. */
   index: z.number().int(),

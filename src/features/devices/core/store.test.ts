@@ -152,6 +152,50 @@ describe('device names', () => {
     expect(findName(withName(empty, b, [a, b], 'B').names, other, [other])).toBeUndefined();
   });
 
+  it('names identical controllers by DirectInput GUID when the controller says which USB device it is, and never guesses otherwise', () => {
+    const box = { vendorId: '1234', productId: 'ABCD', name: 'Button Box' };
+    const a = device({ ...box, serial: 'A1', instanceId: 'USB\\VID_1234&PID_ABCD\\A1' });
+    const b = device({ ...box, serial: 'B2', instanceId: 'USB\\VID_1234&PID_ABCD\\B2' });
+    const present = [a, b];
+    let data = withName(empty, a, present, 'Left box');
+    data = withName(data, b, present, 'Right box');
+    const GUID_A = 'AAAAAAAA-0000-0000-0000-000000000001';
+    const GUID_B = 'BBBBBBBB-0000-0000-0000-000000000002';
+    const query = { vendorId: '1234', productId: 'ABCD' };
+
+    // Windows said which USB device each controller is: the GUID finds the name.
+    const linked = deviceNames(data.names, present, [
+      { guid: GUID_A, usbInstanceId: a.instanceId.toLowerCase() },
+      { guid: GUID_B, usbInstanceId: b.instanceId },
+    ]);
+    expect(linked.nameOf({ ...query, guid: GUID_A })).toBe('Left box');
+    expect(linked.nameOf({ ...query, guid: `{${GUID_B.toLowerCase()}}` })).toBe('Right box');
+    // Without a GUID, or with one no controller has, there is still no telling.
+    expect(linked.nameOf(query)).toBeUndefined();
+    expect(
+      linked.nameOf({ ...query, guid: 'CCCCCCCC-0000-0000-0000-000000000003' })
+    ).toBeUndefined();
+    // Serial and port keep working as before.
+    expect(linked.nameOf({ ...query, serial: 'B2' })).toBe('Right box');
+
+    // The controllers do not say which device they are: nothing is guessed.
+    const unlinked = deviceNames(data.names, present, [{ guid: GUID_A }, { guid: GUID_B }]);
+    expect(unlinked.nameOf({ ...query, guid: GUID_A })).toBeUndefined();
+    expect(deviceNames(data.names, present).nameOf({ ...query, guid: GUID_A })).toBeUndefined();
+    // A controller pointing at a device that is not there (or of another model) names nothing.
+    const stray = deviceNames(data.names, present, [
+      { guid: GUID_A, usbInstanceId: 'USB\\VID_1234&PID_ABCD\\GONE' },
+    ]);
+    expect(stray.nameOf({ ...query, guid: GUID_A })).toBeUndefined();
+    // Only one of the twins was named: the other has no name, not its twin's.
+    const one = deviceNames(withName(empty, a, present, 'Left box').names, present, [
+      { guid: GUID_A, usbInstanceId: a.instanceId },
+      { guid: GUID_B, usbInstanceId: b.instanceId },
+    ]);
+    expect(one.nameOf({ ...query, guid: GUID_A })).toBe('Left box');
+    expect(one.nameOf({ ...query, guid: GUID_B })).toBeUndefined();
+  });
+
   it('names a controller without a USB device by its instance GUID', () => {
     const identity = { vendorId: '0000', productId: '0000', guid: 'ABC' };
     let data = withControllerName(empty, identity, 'vJoy');
