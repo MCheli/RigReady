@@ -61,7 +61,14 @@ const savedAtText = (iso: string): string =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 onMounted(async () => {
-  unsubscribe.push(api.on('applied', ({ seconds }) => start(seconds)));
+  unsubscribe.push(
+    api.on('applied', ({ seconds }) => {
+      // A change made now has its own question. What an earlier run left is no longer what
+      // would be put back: the layout from before this change has taken its place.
+      recovery.value = undefined;
+      start(seconds);
+    })
+  );
   unsubscribe.push(
     api.on('settled', () => {
       close();
@@ -75,7 +82,8 @@ onMounted(async () => {
     return;
   }
   const left = await api.recovery();
-  if (left.ok && left.value) recovery.value = left.value;
+  // Not when a change was made while this was being asked (a start with --launch).
+  if (left.ok && left.value && !open.value) recovery.value = left.value;
 });
 
 onBeforeUnmount(() => {

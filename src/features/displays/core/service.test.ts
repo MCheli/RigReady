@@ -359,4 +359,35 @@ describe('a layout change RigReady never got an answer for', () => {
       .toBe(false);
     expect(app.ports.state.displays.find((d) => d.primary)?.name).toBe('DELL G3223D');
   });
+
+  it('is never asked about a change this run made itself: that one has the countdown', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    // The question stays open until this test answers it.
+    app.layoutAnswer = 'wait';
+    const file = path.join(app.ports.folders.dataRoot(), 'displays', 'pending-revert.json');
+    const there = (): Promise<boolean> =>
+      fs.access(file).then(
+        () => true,
+        () => false
+      );
+    // A start with --launch is here while the window still asks whether anything was left
+    // behind: the file exists and the monitors are not as it says, which is exactly what an
+    // earlier run would have left.
+    await app.invoke('displays:applyLayout', { id: 'flying' });
+    expect(await there()).toBe(true);
+    expect(await app.invoke('displays:pending')).toMatchObject({ pending: true });
+    expect(await app.invoke('displays:recovery')).toBeNull();
+    await expect(app.invoke('displays:recover', { restore: true })).rejects.toThrow(
+      /no earlier layout/
+    );
+    await expect(app.invoke('displays:recover', { restore: false })).rejects.toThrow(
+      /no earlier layout/
+    );
+    // Asking took nothing away: the countdown still has its way back after a crash.
+    expect(await there()).toBe(true);
+    expect(await app.invoke('displays:pending')).toMatchObject({ pending: true });
+    await app.invoke('displays:keep');
+    await expect.poll(there).toBe(false);
+    expect(await app.invoke('displays:recovery')).toBeNull();
+  });
 });

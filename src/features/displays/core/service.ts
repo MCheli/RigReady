@@ -301,29 +301,33 @@ export class DisplaysService {
     return ok({ message: `Applied "${name}"${without}` });
   }
 
+  /**
+   * The layout an earlier run changed without getting an answer. Never the one from before
+   * a change this run made: that change has its own question, the countdown.
+   */
   async recovery(): Promise<Result<RecoveryView | null>> {
-    const point = await this.recoveryStore.read();
+    const point = await this.recoveryStore.leftOver();
     if (!point) return ok(null);
     // Nothing to offer when the monitors already are as they were.
     const current = await this.ctx.ports.displays.read();
     if (current.ok) {
       const saved = analyzeLayout(point.displays, current.value.displays);
       if (saved.changes.length === 0) {
-        await this.recoveryStore.clear();
+        await this.recoveryStore.clearLeftOver();
         return ok(null);
       }
     }
-    return ok({
-      savedAt: point.savedAt,
-      lines: describeTargets(point.displays, await this.names.readOrEmpty()),
-    });
+    const names = await this.names.readOrEmpty();
+    // A change that began while the monitors were being read took the file over.
+    if (this.recoveryStore.ownedByThisRun) return ok(null);
+    return ok({ savedAt: point.savedAt, lines: describeTargets(point.displays, names) });
   }
 
   async recover(restore: boolean): Promise<Result<{ message: string }>> {
-    const point = await this.recoveryStore.read();
+    const point = await this.recoveryStore.leftOver();
     if (!point) return err('display.norecovery', 'There is no earlier layout to put back.');
     if (!restore) {
-      await this.recoveryStore.clear();
+      await this.recoveryStore.clearLeftOver();
       return ok({ message: 'Kept the monitors as they are.' });
     }
     const current = await this.ctx.ports.displays.read();
