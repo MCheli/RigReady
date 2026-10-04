@@ -7,8 +7,8 @@ export default defineFeature({
       title: 'Cheat sheets',
       icon: 'mdi-card-text-outline',
       to: '/configure/cheat-sheets',
-      order: 250,
-      section: 'Bindings',
+      order: 320,
+      section: 'Controls',
     },
   ],
   routes: [

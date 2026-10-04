@@ -7,8 +7,8 @@ export default defineFeature({
       title: 'DCS World',
       icon: 'mdi-airplane',
       to: '/configure/dcs',
-      order: 150,
-      section: 'Setup',
+      order: 210,
+      section: 'Games',
     },
   ],
   routes: [

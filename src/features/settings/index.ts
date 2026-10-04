@@ -8,7 +8,7 @@ export default defineFeature({
       icon: 'mdi-cog-outline',
       to: '/configure/settings',
       order: 910,
-      section: 'App',
+      section: 'RigReady',
     },
   ],
   routes: [{ path: '/configure/settings', component: () => import('./renderer/SettingsPage.vue') }],

@@ -7,7 +7,7 @@ export default defineFeature({
       title: 'Stream Deck',
       icon: 'mdi-view-grid-outline',
       to: '/configure/stream-deck',
-      order: 330,
+      order: 440,
       section: 'Hardware',
     },
   ],

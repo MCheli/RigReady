@@ -7,8 +7,8 @@ export default defineFeature({
       title: 'Games',
       icon: 'mdi-gamepad-variant-outline',
       to: '/configure/games',
-      order: 110,
-      section: 'Setup',
+      order: 200,
+      section: 'Games',
     },
   ],
   routes: [

@@ -9,7 +9,7 @@ export default defineFeature({
       icon: 'mdi-lightbulb-outline',
       to: '/configure/zz-example',
       order: 150,
-      section: 'Setup',
+      section: 'Setups',
     },
   ],
   routes: [

@@ -172,7 +172,7 @@ describe('PLAT-015 a feature folder is all it takes: renderer side', () => {
             icon: 'mdi-x',
             to: '/configure/profiles',
             order: 100,
-            section: 'Setup',
+            section: 'Setups',
           },
         ],
         routes: [{ path: '/configure/profiles', component: { render: () => null } }],
@@ -185,7 +185,7 @@ describe('PLAT-015 a feature folder is all it takes: renderer side', () => {
             icon: 'mdi-x',
             to: '/configure/settings',
             order: 910,
-            section: 'App',
+            section: 'RigReady',
           },
         ],
       },
@@ -193,13 +193,13 @@ describe('PLAT-015 a feature folder is all it takes: renderer side', () => {
     const manifests = [...others, ...example];
     expect(navSectionsOf(manifests)).toEqual([
       {
-        section: 'Setup',
+        section: 'Setups',
         entries: [
           expect.objectContaining({ title: 'Setups', order: 100 }),
           expect.objectContaining({ title: 'Example', to: '/configure/zz-example', order: 150 }),
         ],
       },
-      { section: 'App', entries: [expect.objectContaining({ title: 'Settings' })] },
+      { section: 'RigReady', entries: [expect.objectContaining({ title: 'Settings' })] },
     ]);
     expect(manifests.flatMap((m) => m.routes ?? []).map((r) => r.path)).toEqual([
       '/configure/profiles',

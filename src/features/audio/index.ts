@@ -7,7 +7,7 @@ export default defineFeature({
       title: 'Audio',
       icon: 'mdi-volume-high',
       to: '/configure/audio',
-      order: 320,
+      order: 420,
       section: 'Hardware',
     },
   ],
