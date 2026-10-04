@@ -52,6 +52,9 @@ async function ownerIdentifiers(): Promise<Map<string, string>> {
     add(display.serial, `serial of ${display.name}`);
     add(display.usbSerial, `USB serial of ${display.name}`);
     add(display.id.split('#')[2], `connector instance of ${display.name}`);
+    // The EDID model code ("SAM7053"): which monitors the owner happens to have.
+    add(display.id.split('#')[1], `model code of ${display.name}`);
+    add(display.edid, `model code of ${display.name}`);
   }
   for (const controller of rig.input) add(controller.guid, `GUID of ${controller.name}`);
   for (const endpoint of rig.audio.devices) {
@@ -94,7 +97,18 @@ describe('nothing is hardcoded to the owner’s rig', () => {
     people.set(`users/${user}/`, 'this PC’s user folder');
     if (os.hostname().length >= 6) people.set(os.hostname().toLowerCase(), 'this PC’s name');
 
-    const files = await sourceFiles(path.join(repoRoot, 'src'));
+    // His web address and e-mail name, as one word ("markcheli").
+    const whole = pkg.author?.name?.replace(/\s+/g, '').toLowerCase();
+    if (whole && whole.length >= 6) people.set(whole, 'the owner’s name');
+
+    // Everything that ships or builds what ships: the app, the Python sidecar, the scripts.
+    const files = [
+      ...(await sourceFiles(path.join(repoRoot, 'src'))),
+      ...(await sourceFiles(path.join(repoRoot, 'python'))),
+      ...(await sourceFiles(path.join(repoRoot, 'scripts'))),
+    ];
+    expect(files.some((f) => f.endsWith('.py'))).toBe(true);
+    expect(files.some((f) => f.includes(`${path.sep}scripts${path.sep}`))).toBe(true);
     expect(files.length).toBeGreaterThan(200);
     const hits: string[] = [];
     for (const file of files) {

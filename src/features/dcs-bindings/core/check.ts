@@ -48,7 +48,10 @@ export function createBindingsCheck(
         };
       }
       const label = params.aircraftName ?? params.aircraft;
-      const scan = await scanMigration(service);
+      // One read of the device names for both halves of the check.
+      const names = await service.ctx.names?.();
+      const given = names ? { names } : undefined;
+      const scan = await scanMigration(service, given);
       if (!scan.ok) return { pass: false, summary: scan.error.message };
       const folder = profileFolderName(params.aircraft).toLowerCase();
       const mine = (files: { folder: string }[]): boolean =>
@@ -66,7 +69,7 @@ export function createBindingsCheck(
           ),
         };
       }
-      const view = await service.view(params.aircraft);
+      const view = await service.view(params.aircraft, given);
       if (!view.ok) return { pass: false, summary: view.error.message };
       const withFiles = view.value.devices.filter(
         (d) => d.type === 'joystick' && d.connected && d.file.source === 'user'

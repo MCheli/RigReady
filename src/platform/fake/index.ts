@@ -428,16 +428,18 @@ export class FakeKnownFolders implements KnownFolders {
   constructor(
     private readonly root: string,
     private readonly data: string,
-    private readonly registry: Registry
+    private readonly registry: Registry,
+    /** For folders the scenario moved (setKnownFolder). */
+    private readonly state?: Pick<RigState, 'folders'>
   ) {}
   home(): string {
     return this.root;
   }
   documents(): string {
-    return path.join(this.root, 'Documents');
+    return path.join(this.root, this.state?.folders?.documents ?? 'Documents');
   }
   savedGames(): string {
-    return path.join(this.root, 'Saved Games');
+    return path.join(this.root, this.state?.folders?.savedGames ?? 'Saved Games');
   }
   appData(): string {
     return path.join(this.root, 'AppData', 'Roaming');
@@ -454,6 +456,10 @@ export class FakeKnownFolders implements KnownFolders {
   programData(): string {
     return path.join(this.root, 'ProgramData');
   }
+  /** Outside the fake home on purpose: it only names Windows' own programs, nothing is read or written there. */
+  windows(): string {
+    return 'C:\\Windows';
+  }
   dataRoot(): string {
     return this.data;
   }
@@ -463,6 +469,36 @@ export class FakeKnownFolders implements KnownFolders {
   }
   steamLibraries(): Promise<Result<string[]>> {
     return findSteamLibraries(this.registry, (file) => fs.readFile(file, 'utf8'));
+  }
+}
+
+/**
+ * The real file system, with the delay a scenario asks for (slowFiles): every read and
+ * write of a file's content waits first. Without the mutation it is NodeRawFs exactly.
+ */
+export class SlowableRawFs extends NodeRawFs {
+  constructor(private readonly state: Pick<RigState, 'faults'>) {
+    super();
+  }
+  private async wait(): Promise<void> {
+    const ms = this.state.faults?.fileDelayMs;
+    if (ms) await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  override async readText(file: string): Promise<string> {
+    await this.wait();
+    return super.readText(file);
+  }
+  override async readBytes(file: string): Promise<Uint8Array> {
+    await this.wait();
+    return super.readBytes(file);
+  }
+  override async writeBytes(file: string, data: Uint8Array | string): Promise<void> {
+    await this.wait();
+    return super.writeBytes(file, data);
+  }
+  override async copyFile(from: string, to: string): Promise<void> {
+    await this.wait();
+    return super.copyFile(from, to);
   }
 }
 
@@ -750,8 +786,8 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     services: new FakeServiceProvider(state),
     audio: new FakeAudioProvider(state),
     registry,
-    files: new BackupFileStore(new NodeRawFs(), dataRoot, clock),
-    folders: new FakeKnownFolders(options.homeDir, dataRoot, registry),
+    files: new BackupFileStore(new SlowableRawFs(state), dataRoot, clock),
+    folders: new FakeKnownFolders(options.homeDir, dataRoot, registry, state),
     shell,
     clock,
     secrets: new FakeSecrets(),
@@ -952,7 +988,10 @@ export async function applyFileMutations(
         const target = path.join(home, mutation.path);
         await fs.mkdir(path.dirname(target), { recursive: true });
         if (mutation.from !== undefined) await fs.copyFile(mutation.from, target);
-        else await fs.writeFile(target, mutation.content ?? '');
+        else {
+          const content = mutation.content ?? '';
+          await fs.writeFile(target, mutation.rehome ? rehomePaths(content, home) : content);
+        }
         break;
       }
       case 'removeFile': {

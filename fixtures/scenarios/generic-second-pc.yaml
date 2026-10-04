@@ -1,0 +1,127 @@
+description: A second generic PC - two monitors, two sticks, DCS in a second Steam library, Saved Games moved
+rig: generic-rig
+extends: generic-fresh.yaml
+# What the ledger's NFR-009 asks of a PC that is not the owner's, built from mutations on
+# fixtures/rigs/generic-rig (nothing here was recorded, every id is made up):
+#   - different devices: a Thrustmaster T.16000M next to the Logitech stick
+#   - two monitors: an AOC 2560x1440 to the right of the BenQ
+#   - DCS World (Steam edition) in a library that is not Steam's own folder
+#   - Saved Games moved out of the user folder's default place (Properties > Location)
+# Discord is running (it is in the rig), which gives a setup an app to check, start and close.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_044F&PID_B10A\6&3a5d17e2&0&3'
+      vendorId: 044F
+      productId: B10A
+      name: T.16000M
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\VID_05E3&PID_0608\5&2b7c91d0&0&2', name: Generic USB Hub }
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Thrustmaster
+    controller:
+      name: T.16000M
+      guid: 7D2E4F10-6D21-11EF-8002-444553540000
+      productGuid: B10A044F-0000-0000-0000-504944564944
+      vendorId: 044F
+      productId: B10A
+      numAxes: 4
+      numButtons: 16
+      numHats: 1
+      axisNames: [X, Y, RZ, SLIDER1]
+  - op: plugDisplay
+    display:
+      id: '\\?\display#aoc2790#5&3b1f2a77&0&uid4353#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}'
+      name: AOC Q27G2
+      enabled: true
+      primary: false
+      x: 1920
+      y: 0
+      width: 2560
+      height: 1440
+      rotation: 0
+      rawRotation: 1
+      edid: AOC2790
+      gdiName: '\\.\DISPLAY2'
+      refreshHz: 144
+      serial: GENERIC0002
+      connector: DisplayPort
+      modes:
+        - { width: 2560, height: 1440, refreshHz: 144 }
+        - { width: 2560, height: 1440, refreshHz: 60 }
+        - { width: 1920, height: 1080, refreshHz: 60 }
+  # Steam in its usual folder, with a second library elsewhere ("another drive").
+  - op: setRegistryValue
+    hive: HKCU
+    key: Software\Valve\Steam
+    name: SteamPath
+    value: { type: string, value: 'C:\Program Files (x86)\Steam' }
+  - op: writeFile
+    path: Program Files (x86)/Steam/steam.exe
+    content: ''
+  - op: writeFile
+    path: Program Files (x86)/Steam/steamapps/libraryfolders.vdf
+    rehome: true
+    content: |
+      "libraryfolders"
+      {
+      	"0"
+      	{
+      		"path"		"C:\\Program Files (x86)\\Steam"
+      		"apps"
+      		{
+      		}
+      	}
+      	"1"
+      	{
+      		"path"		"C:\\Users\\User\\Games\\SteamLibrary"
+      		"apps"
+      		{
+      			"223750"		"799072595137"
+      		}
+      	}
+      }
+  - op: writeFile
+    path: Games/SteamLibrary/steamapps/appmanifest_223750.acf
+    content: |
+      "AppState"
+      {
+      	"appid"		"223750"
+      	"name"		"DCS World Steam Edition"
+      	"StateFlags"		"4"
+      	"installdir"		"DCSWorld"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"25625823"
+      }
+  - op: writeFile
+    path: Games/SteamLibrary/steamapps/common/DCSWorld/bin/DCS.exe
+    content: ''
+  # Saved Games is not where Windows puts it by default.
+  - op: setKnownFolder
+    folder: savedGames
+    path: Data/Saved Games
+  - op: writeFile
+    path: Data/Saved Games/DCS/Config/options.lua
+    content: |
+      options = {
+        ["graphics"] = { ["width"] = 1920, ["height"] = 1080, ["multiMonitorSetup"] = "1camera" },
+      }
+  - op: writeFile
+    path: Data/Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/T.16000M {7D2E4F10-6D21-11ef-8002-444553540000}.diff.lua
+    content: |
+      local diff = {
+      	["keyDiffs"] = {
+      		["d3003pnilu3003cd13vd1vpnilvu0"] = {
+      			["added"] = {
+      				[1] = {
+      					["key"] = "JOY_BTN2",
+      				},
+      			},
+      			["name"] = "Weapon Release Button",
+      		},
+      	},
+      }
+      return diff

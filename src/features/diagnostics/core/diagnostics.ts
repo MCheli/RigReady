@@ -279,8 +279,8 @@ export async function copyDiagnostics(
 }
 
 /** Windows' own Explorer. */
-function explorer(env: NodeJS.ProcessEnv = process.env): string {
-  return path.join(env['SystemRoot'] ?? 'C:\\Windows', 'explorer.exe');
+function explorer(ctx: Ctx): string {
+  return path.join(ctx.ports.folders.windows(), 'explorer.exe');
 }
 
 export async function openLogFolder(ctx: Ctx): Promise<Result<{ opened: boolean }>> {
@@ -288,7 +288,7 @@ export async function openLogFolder(ctx: Ctx): Promise<Result<{ opened: boolean 
   const made = await ctx.ports.files.mkdir(folder);
   if (!made.ok) return made;
   // An argument array: the path is never part of a command line.
-  const started = await ctx.ports.shell.launch(explorer(), [folder]);
+  const started = await ctx.ports.shell.launch(explorer(ctx), [folder]);
   return started.ok ? ok({ opened: true }) : started;
 }
 

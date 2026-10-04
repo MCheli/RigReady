@@ -4,7 +4,7 @@ import type { MainContext } from '../../../core/feature';
 import { allPathVariables, collapsePath, variableOf } from '../../../core/pathVariables';
 import type { CheckItem, Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
-import { trackedExtension } from './capture';
+import { storedPathKey, trackedExtension, trackedSuggestions } from './capture';
 import type {
   CheckTypeInfo,
   DetectedGame,
@@ -14,7 +14,7 @@ import type {
   RemediationTypeInfo,
 } from '../contract';
 
-type Ctx = Pick<MainContext, 'ports' | 'profiles' | 'checks' | 'games' | 'log'>;
+type Ctx = Pick<MainContext, 'ports' | 'profiles' | 'checks' | 'games' | 'log' | 'backupSources'>;
 
 /** Every string in a value, with where it is, for checking path variables. */
 function strings(value: unknown, at: string, out: { at: string; text: string }[]): void {
@@ -115,6 +115,19 @@ async function validate(ctx: Ctx, profile: Profile): Promise<Result<void>> {
 
 /** Creates a profile from checks chosen in the capture screen. */
 export async function createProfile(ctx: Ctx, input: NewProfile): Promise<Result<Profile>> {
+  // The capture screen offers the files to back up and the user ticks them: a path the
+  // renderer sends that main did not offer is refused, never stored for a later backup to read.
+  if (input.tracked && input.tracked.length > 0) {
+    const offered = new Set((await trackedSuggestions(ctx)).map((s) => storedPathKey(s.path)));
+    const stranger = input.tracked.find((item) => !offered.has(storedPathKey(item.path)));
+    if (stranger) {
+      return err(
+        'path.outside',
+        `${stranger.path} is not one of the files RigReady offered to back up for this setup.`,
+        'Create the setup without it, then add it on the Backups page with Browse.'
+      );
+    }
+  }
   const id = await ctx.profiles.uniqueId(input.name);
   const now = ctx.ports.clock.now().toISOString();
   const checks: CheckItem[] = [];
@@ -339,8 +352,8 @@ export async function prepareFix(
 }
 
 /** Windows' own Explorer: opens a file with its default program, or shows it selected. */
-function explorer(): string {
-  return path.join(process.env['SystemRoot'] ?? 'C:\\Windows', 'explorer.exe');
+function explorer(ctx: Pick<Ctx, 'ports'>): string {
+  return path.join(ctx.ports.folders.windows(), 'explorer.exe');
 }
 
 export async function openProfileFile(
@@ -354,7 +367,7 @@ export async function openProfileFile(
     return err('profile.missing', `There is no profile "${id}".`);
   // An argument array: the path is never part of a command line.
   const started = await ctx.ports.shell.launch(
-    explorer(),
+    explorer(ctx),
     mode === 'open' ? [file] : [`/select,${file}`]
   );
   return started.ok ? ok({ opened: true }) : started;

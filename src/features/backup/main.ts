@@ -1,5 +1,5 @@
 import { bind, defineFeatureMain, type MainContext } from '../../core/feature';
-import { ok, type Result } from '../../core/result';
+import { err, ok, type Result } from '../../core/result';
 import packageJson from '../../../package.json';
 import { backupContract } from './contract';
 import {
@@ -34,6 +34,12 @@ import { allScopes } from './core/store';
 const WATCH_MS = 3000;
 
 let watcher: LaunchWatcher | undefined;
+
+interface BackupJob {
+  /** Set by Cancel; read between files. */
+  cancelled: boolean;
+  progress?: { done: number; total: number; label: string };
+}
 
 async function overview(ctx: MainContext) {
   const scopes = await scopeViews(ctx);
@@ -73,6 +79,8 @@ export default defineFeatureMain({
     );
     watcher.start(WATCH_MS);
     void watcher.poll();
+    // The backup "Back up now" started, while it runs: one at a time, and it can be stopped.
+    let job: BackupJob | undefined;
 
     return [
       bind(backupContract, {
@@ -86,12 +94,31 @@ export default defineFeatureMain({
         saveItem: ({ scope, item }) => after(saveItem(ctx, scope, item), () => overview(ctx)),
         removeItem: ({ scope, id }) => after(removeItem(ctx, scope, id), () => overview(ctx)),
         browse: ({ kind }) => browseForItem(ctx, kind),
-        backUp: ({ scope }) =>
-          createBackup(ctx, scope as BackupScope, {
-            identity: identity(),
-            appVersion,
-            onProgress: (p) => ctx.emit(backupContract, 'progress', p),
-          }),
+        backUp: async ({ scope }) => {
+          if (job) return err('backup.busy', 'A backup is already running.');
+          const mine: BackupJob = (job = { cancelled: false });
+          try {
+            return await createBackup(ctx, scope as BackupScope, {
+              identity: identity(),
+              appVersion,
+              onProgress: (p) => {
+                mine.progress = p;
+                ctx.emit(backupContract, 'progress', p);
+              },
+              cancelled: () => mine.cancelled,
+            });
+          } finally {
+            job = undefined;
+            ctx.emit(backupContract, 'ended', { cancelled: mine.cancelled });
+          }
+        },
+        cancelBackUp: async () => {
+          if (!job) return ok({ cancelling: false });
+          job.cancelled = true;
+          return ok({ cancelling: true });
+        },
+        backUpStatus: async () =>
+          ok({ running: job !== undefined, ...(job?.progress ? { progress: job.progress } : {}) }),
         rename: ({ id, name }) => renameBackup(ctx, id, name),
         remove: ({ id }) => after(removeBackup(ctx, id), async () => ok({ removed: true })),
         exportBackup: ({ id }) => exportBackup(ctx, id),

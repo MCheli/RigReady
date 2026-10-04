@@ -90,7 +90,8 @@ export type DisplayLayout = z.infer<typeof DisplayLayoutSchema>;
 
 /** What a profile wants a display to be. Size is only set when the mode must change. */
 export const DisplayTargetSchema = z.object({
-  id: z.string(),
+  /** The device interface path (model code plus connector instance). Never empty: a name is no identity. */
+  id: z.string().min(1),
   name: z.string().default(''),
   enabled: z.boolean(),
   primary: z.boolean().default(false),

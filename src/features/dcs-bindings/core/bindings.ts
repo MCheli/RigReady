@@ -338,7 +338,7 @@ export class DcsBindings {
   }
 
   /** Everything about one aircraft's bindings, parsed files included. */
-  async state(aircraftId: string): Promise<Result<AircraftState>> {
+  async state(aircraftId: string, given?: { names?: DeviceNames }): Promise<Result<AircraftState>> {
     const { ports } = this.ctx;
     const locations = await this.locations();
     const profile =
@@ -357,7 +357,7 @@ export class DcsBindings {
     const known: DirectInputIdentity[] = identities.ok ? identities.value : [];
     const loader = locations.installDir ? this.defaults(locations.installDir) : undefined;
     const wizard = await this.readTable(path.join(locations.inputDir, 'wizard.lua'));
-    const names = await this.ctx.names?.();
+    const names = given?.names ?? (await this.ctx.names?.());
 
     // 1. The devices: what is attached, plus what has a binding file.
     interface Slot {
@@ -597,8 +597,8 @@ export class DcsBindings {
   }
 
   /** The model in model.ts for one aircraft: devices, effective bindings, problems. */
-  async view(aircraftId: string): Promise<Result<AircraftView>> {
-    const loaded = await this.state(aircraftId);
+  async view(aircraftId: string, given?: { names?: DeviceNames }): Promise<Result<AircraftView>> {
+    const loaded = await this.state(aircraftId, given);
     if (!loaded.ok) return loaded;
     return ok(buildView(loaded.value));
   }

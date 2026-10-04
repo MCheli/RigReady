@@ -52,3 +52,34 @@ export interface FeatureManifest {
 export function defineFeature(manifest: FeatureManifest): FeatureManifest {
   return manifest;
 }
+
+/**
+ * The manifests of a set of discovered modules (what import.meta.glob over every feature
+ * folder's index.ts returns), in a stable order. This is the whole registry: a feature is
+ * its folder.
+ */
+export function collectManifests(
+  modules: Record<string, { default?: FeatureManifest }>
+): FeatureManifest[] {
+  return Object.entries(modules)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([file, module]) => {
+      if (!module.default?.id) throw new Error(`${file} must default-export defineFeature({...})`);
+      return module.default;
+    });
+}
+
+const SECTION_ORDER: NavEntry['section'][] = ['Setup', 'Bindings', 'Hardware', 'App'];
+
+/** The Configure navigation: every feature's entries by section, in order. */
+export function navSectionsOf(
+  manifests: FeatureManifest[]
+): { section: NavEntry['section']; entries: NavEntry[] }[] {
+  return SECTION_ORDER.map((section) => ({
+    section,
+    entries: manifests
+      .flatMap((m) => m.nav ?? [])
+      .filter((entry) => entry.section === section)
+      .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title)),
+  })).filter((group) => group.entries.length > 0);
+}

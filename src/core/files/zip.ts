@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { unzipSync, zipSync, type Unzipped } from 'fflate';
+import { unzipSync, Zip, ZipDeflate, zipSync, type Unzipped } from 'fflate';
 import { isWithin } from '../paths';
 import type { ChangeGroup, ChangeOptions, FileStore, TreeOptions } from '../ports';
 import { err, ok, type Result } from '../result';
@@ -52,6 +52,79 @@ export function createZip(entries: ZipEntry[]): Result<Uint8Array> {
   } catch (e) {
     return err('zip.create', 'Could not create the archive.', String(e));
   }
+}
+
+export interface ZipSteps {
+  /** Asked between files (and between slices of a big file): true stops with `zip.cancelled`. */
+  cancelled?(): boolean;
+  /** Called after each file. */
+  onFile?(done: number, total: number): void;
+}
+
+/** A big file is compressed in slices of this size, with a pause after each. */
+const ZIP_SLICE_BYTES = 1024 * 1024;
+
+/** Lets everything else that is waiting (IPC, timers) run before the next step. */
+const breathe = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
+
+/**
+ * Builds the same archive as createZip, one file at a time, giving the thread back between
+ * files. A backup of hundreds of megabytes compressed in one go would hold the main process
+ * for seconds (nothing else answers meanwhile); this way it never holds it longer than one
+ * slice takes, it can report progress, and it can be cancelled before anything is written.
+ */
+export async function createZipInSteps(
+  entries: ZipEntry[],
+  steps: ZipSteps = {}
+): Promise<Result<Uint8Array>> {
+  const files: [string, Uint8Array][] = [];
+  const names = new Set<string>();
+  for (const entry of entries) {
+    const safe = safeEntryPath(entry.path);
+    if (!safe.ok) return safe;
+    if (safe.value === undefined) continue;
+    if (names.has(safe.value)) return err('zip.duplicate', `Two entries are named ${safe.value}.`);
+    names.add(safe.value);
+    files.push([safe.value, entry.data]);
+  }
+  const cancelled = (): Result<never> =>
+    err('zip.cancelled', 'Cancelled before the archive was finished.');
+  const chunks: Uint8Array[] = [];
+  let failure: unknown;
+  try {
+    const zip = new Zip((error, chunk) => {
+      if (error) failure = error;
+      else chunks.push(chunk);
+    });
+    for (const [index, [name, data]] of files.entries()) {
+      if (steps.cancelled?.()) return cancelled();
+      const file = new ZipDeflate(name, { level: 6 });
+      zip.add(file);
+      if (data.length === 0) file.push(data, true);
+      for (let offset = 0; offset < data.length; offset += ZIP_SLICE_BYTES) {
+        const end = Math.min(offset + ZIP_SLICE_BYTES, data.length);
+        file.push(data.subarray(offset, end), end === data.length);
+        if (end < data.length) {
+          await breathe();
+          if (steps.cancelled?.()) return cancelled();
+        }
+      }
+      steps.onFile?.(index + 1, files.length);
+      await breathe();
+    }
+    if (steps.cancelled?.()) return cancelled();
+    zip.end();
+  } catch (e) {
+    failure = e;
+  }
+  if (failure) return err('zip.create', 'Could not create the archive.', String(failure));
+  const out = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.length, 0));
+  let at = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, at);
+    at += chunk.length;
+  }
+  return ok(out);
 }
 
 const tooBig = (maxTotal: number): Result<never> =>

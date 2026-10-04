@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # Every push, on every branch (PLAT-016).
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
     branches: [main]
 

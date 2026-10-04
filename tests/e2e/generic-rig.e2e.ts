@@ -306,7 +306,7 @@ test('generic rig: every Configure page renders an honest empty state, never an 
       await expect(root.getByTestId('not-here-looked'), entry.name).toContainText(
         /RigReady looked in .+\./
       );
-      await expect(root.getByTestId('not-here-todo'), entry.name).toContainText(
+      await expect(root.getByTestId('not-here-next'), entry.name).toContainText(
         `Install ${entry.notFound} and start it once; this page then fills in by itself.`
       );
     }

@@ -7,16 +7,20 @@ import { GameRegistry } from '../core/games';
 import type { Logger } from '../core/logger';
 import { NameRegistry } from '../core/names';
 import type { Ports } from '../core/ports';
+import { verifiedProcesses } from '../core/processes';
 import { ProfileStore } from '../core/profile/store';
 import { SettingsStore } from '../core/settings';
 import { channelName, eventName } from '../shared/channels';
 import { createInvoker, type Envelope } from '../shared/ipc';
 
 /** Feature main modules, discovered at build time. Adding a feature edits no shared file. */
-export function discoverFeatures(): FeatureMain[] {
-  const modules = import.meta.glob<{ default: FeatureMain }>('../features/*/main.ts', {
-    eager: true,
-  });
+export function discoverFeatures(
+  /** What the glob found. Tests pass their own, to add a feature that is not in src/features. */
+  modules: Record<string, { default?: FeatureMain }> = import.meta.glob<{ default: FeatureMain }>(
+    '../features/*/main.ts',
+    { eager: true }
+  )
+): FeatureMain[] {
   return Object.entries(modules)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([file, module]) => {
@@ -43,7 +47,9 @@ export function wireFeatures(options: {
   log: Logger;
   send: (channel: string, payload: unknown) => void;
 }): Wiring {
-  const { ports, log } = options;
+  const { log } = options;
+  // A close is believed only when the process is gone from the list (NFR-006).
+  const ports: Ports = { ...options.ports, processes: verifiedProcesses(options.ports.processes) };
   const context: MainContext = {
     ports,
     log,

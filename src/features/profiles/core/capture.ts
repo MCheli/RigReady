@@ -98,6 +98,9 @@ export function suggestGame(
 
 const normal = (stored: string): string => stored.replace(/\\/g, '/').toLowerCase();
 
+/** One spelling for a stored path, to tell whether two are the same place. */
+export const storedPathKey = normal;
+
 /**
  * What a setup could back up: every suggestion of the backup sources and the game
  * modules that exists on this PC, in stored form ({DCS_USER}/Config/Input). The first

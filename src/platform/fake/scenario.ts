@@ -86,7 +86,14 @@ export interface RigState {
     startFails: Record<string, 'error' | 'neverRuns'>;
     /** Ports whose reads fail, with the message they fail with. */
     fail?: Partial<Record<HangablePort, string>>;
+    /** Every read and write of a file's content takes this long (see slowFiles). */
+    fileDelayMs?: number;
   };
+  /**
+   * Known folders the user moved (see setKnownFolder): paths below the fake user folder.
+   * Absent: Documents and Saved Games are where Windows puts them.
+   */
+  folders?: { documents?: string; savedGames?: string };
 }
 
 export const HangablePortSchema = z.enum(['devices', 'displays', 'processes', 'services', 'audio']);
@@ -283,6 +290,21 @@ const StateMutationSchemas = [
   }),
   /** Connects a monitor the rig does not have (the TV). Its id must not be connected already. */
   z.object({ op: z.literal('plugDisplay'), display: DisplayInfoSchema }),
+  /**
+   * Moves Documents or Saved Games to another folder (below the fake user folder), as a
+   * user does in the folder's Properties > Location. Everything that asks KnownFolders
+   * follows; a file the scenario writes must be written to the new place.
+   */
+  z.object({
+    op: z.literal('setKnownFolder'),
+    folder: z.enum(['documents', 'savedGames']),
+    path: HomePathSchema,
+  }),
+  /**
+   * Makes every read and write of a file's content take `ms` milliseconds (a slow disk, a
+   * big backup), so a long operation can be watched. 0 ends it. Nothing else changes.
+   */
+  z.object({ op: z.literal('slowFiles'), ms: z.number().int().min(0).max(60_000) }),
 ] as const;
 
 /** Changes to the files in the fake user folder, applied after the rig's files are in place. */
@@ -294,6 +316,12 @@ const FileMutationSchemas = [
       path: HomePathSchema,
       content: z.string().optional(),
       from: z.string().optional(),
+      /**
+       * Re-point paths in `content` at the fake user folder, as is done for recorded
+       * files: C:\Users\User, C:\Program Files, ... (for a libraryfolders.vdf that names
+       * a second Steam library).
+       */
+      rehome: z.boolean().default(false),
     })
     .refine(
       (m) => (m.content === undefined) !== (m.from === undefined),
@@ -712,6 +740,16 @@ export function mutateState(state: RigState, mutation: StateMutation): void {
         for (const other of state.displays) other.primary = false;
       }
       state.displays.push(display);
+      break;
+    }
+    case 'setKnownFolder': {
+      state.folders = { ...state.folders, [mutation.folder]: mutation.path };
+      break;
+    }
+    case 'slowFiles': {
+      const faults = (state.faults ??= { hang: [], startFails: {} });
+      if (mutation.ms > 0) faults.fileDelayMs = mutation.ms;
+      else delete faults.fileDelayMs;
       break;
     }
   }

@@ -18,6 +18,8 @@ const router = useRouter();
 const view = ref<Overview>();
 const error = ref<string>();
 const message = ref<string>();
+/** Something that happened which is neither a success nor an error (a backup the user stopped). */
+const notice = ref<string>();
 const running = ref(false);
 const progress = ref<{ done: number; total: number; label: string }>();
 const outcome = ref<BackupOutcomeView>();
@@ -32,16 +34,41 @@ async function load(): Promise<void> {
 }
 
 let offProgress: (() => void) | undefined;
+let offEnded: (() => void) | undefined;
 let offMachine: (() => void) | undefined;
 onMounted(() => {
   void load();
-  offProgress = api.on('progress', (p) => (progress.value = p));
+  offProgress = api.on('progress', (p) => {
+    progress.value = p;
+    running.value = true;
+  });
+  // A backup that was started before this screen was left and opened again ends here too.
+  offEnded = api.on('ended', (ended) => {
+    running.value = false;
+    cancelling.value = false;
+    if (ended.cancelled) notice.value = 'The backup was cancelled. Nothing was written.';
+    void load();
+  });
   offMachine = onMachineChanged(() => void load());
+  void api.backUpStatus().then((status) => {
+    if (!status.ok || !status.value.running) return;
+    running.value = true;
+    progress.value = status.value.progress;
+  });
 });
 onBeforeUnmount(() => {
   offProgress?.();
+  offEnded?.();
   offMachine?.();
 });
+
+const cancelling = ref(false);
+/** Stops the running backup. Safe at any point: the archive is written only at the very end. */
+async function cancelBackUp(): Promise<void> {
+  cancelling.value = true;
+  const result = await api.cancelBackUp();
+  if (!result.ok || !result.value.cancelling) cancelling.value = false;
+}
 
 const setups = computed(() => (view.value?.scopes ?? []).filter((s) => s.id !== ALWAYS));
 const tracked = computed(() => {
@@ -60,6 +87,7 @@ const nothingToBackUp = computed(() => setups.value.length === 0 && tracked.valu
 function clearMessages(): void {
   error.value = undefined;
   message.value = undefined;
+  notice.value = undefined;
 }
 
 async function backUp(
@@ -71,8 +99,11 @@ async function backUp(
   progress.value = undefined;
   const result = await api.backUp({ scope });
   running.value = false;
+  cancelling.value = false;
   if (!result.ok) {
-    error.value = errorText(result.error);
+    // Stopped by the user: said plainly, and not as an error.
+    if (result.error.code === 'backup.cancelled') notice.value = result.error.message;
+    else error.value = errorText(result.error);
     return;
   }
   outcome.value = result.value;
@@ -178,6 +209,9 @@ const kindIcon = (b: BackupView): string =>
     <div v-if="message" class="backup-message rr-ok" data-testid="backup-message">
       <v-icon icon="mdi-check" size="16" /> {{ message }}
     </div>
+    <div v-if="notice" class="backup-message" data-testid="backup-cancelled">
+      {{ notice }}
+    </div>
 
     <div v-if="view" class="rr-panel hero">
       <div class="hero-main">
@@ -240,8 +274,21 @@ const kindIcon = (b: BackupView): string =>
           color="primary"
           rounded
         />
-        <div class="rr-row-sub mt-1">
-          {{ progress ? `${progress.label} · ${progress.done} of ${progress.total}` : 'Starting' }}
+        <div class="hero-progress-line mt-1">
+          <span class="rr-row-sub" data-testid="backup-progress-text">
+            {{
+              progress ? `${progress.label} · ${progress.done} of ${progress.total}` : 'Starting'
+            }}
+          </span>
+          <v-btn
+            size="small"
+            variant="text"
+            :loading="cancelling"
+            data-testid="backup-cancel"
+            @click="cancelBackUp"
+          >
+            Cancel
+          </v-btn>
         </div>
       </div>
     </div>
@@ -532,6 +579,12 @@ const kindIcon = (b: BackupView): string =>
 }
 .hero-progress {
   flex-basis: 100%;
+}
+.hero-progress-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .outcome {
   padding: 14px 20px;

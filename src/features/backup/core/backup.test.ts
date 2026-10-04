@@ -664,6 +664,15 @@ describe('restoring on another PC', () => {
     const loose = path.join(owner.home, '..', `${path.basename(owner.home)}-tools`, 'tool.ini');
     await fs.mkdir(path.dirname(loose), { recursive: true });
     await fs.writeFile(loose, 'volume=3\n');
+    // Typed, it is refused (NFR-005); chosen in the file picker, it is the user's own word.
+    await expect(
+      owner.invoke('backup:saveItem', {
+        scope: '@always',
+        item: { label: 'Tool', path: loose, kind: 'file' },
+      })
+    ).rejects.toThrow(/path\.outside/);
+    owner.ports.dialogs.script.open.push([loose]);
+    await owner.invoke('backup:browse', { kind: 'file' });
     await track(owner, '@always', { label: 'Tool', path: loose, kind: 'file' });
     await track(owner, '@always', {
       label: 'DCS monitor config',

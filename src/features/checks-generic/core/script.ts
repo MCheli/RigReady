@@ -171,7 +171,12 @@ export function createScriptRemediation(
           hidden: params.hidden,
           ...(cwd ? { cwd: cwd.value } : {}),
         });
-        return started.ok ? ok(`Started ${name}`) : started;
+        if (!started.ok) return started;
+        // Not waited for, so the one thing that can be known: Windows gave it a process.
+        if (started.value.pid === undefined) {
+          return err('script.notStarted', `${name} was started but did not get a process.`);
+        }
+        return ok(`Started ${name}`);
       }
       const run = await runProgram(params, ctx, games, sleep);
       switch (run.kind) {

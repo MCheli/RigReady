@@ -45,7 +45,7 @@ const lookedText = computed(() => {
       <div v-if="lookedText" class="not-here-line" data-testid="not-here-looked">
         RigReady looked in {{ lookedText }}.
       </div>
-      <div class="not-here-line" data-testid="not-here-todo">
+      <div class="not-here-line" data-testid="not-here-next">
         <slot>
           Install {{ name }} and start it once; this page then fills in by itself.
           <template v-if="gamePage">

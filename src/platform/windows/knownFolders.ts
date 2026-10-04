@@ -23,6 +23,14 @@ function knownFolder(guid: string): string | undefined {
 }
 
 /**
+ * The user folders the environment names, for the log's redaction before the ports exist:
+ * the real profile folder, and the one an isolated run was given.
+ */
+export function userFoldersInEnvironment(env: NodeJS.ProcessEnv = process.env): string[] {
+  return [env['USERPROFILE'], env['HOME']].filter((home): home is string => !!home);
+}
+
+/**
  * The only place user paths are computed.
  *
  * When USERPROFILE has been redirected (isolated test runs), every folder is derived
@@ -88,6 +96,10 @@ export class WindowsKnownFolders implements KnownFolders {
 
   programData(): string {
     return this.env['ProgramData'] ?? 'C:\\ProgramData';
+  }
+
+  windows(): string {
+    return this.env['SystemRoot'] ?? this.env['windir'] ?? 'C:\\Windows';
   }
 
   steamLibraries(): Promise<Result<string[]>> {

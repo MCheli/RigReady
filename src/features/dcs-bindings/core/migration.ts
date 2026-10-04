@@ -6,6 +6,7 @@ import {
   sameGuid,
 } from '../../../core/directInput';
 import { parseLuaData, writeLuaDocument } from '../../../core/lua/data';
+import type { DeviceNames } from '../../../core/names';
 import { err, ok, type Result } from '../../../core/result';
 import type { InputDevice } from '../../../shared/models';
 import type { DcsBindings } from './bindings';
@@ -45,7 +46,10 @@ interface Scanned {
   referenceTexts: Map<string, string>;
 }
 
-async function scan(bindings: DcsBindings): Promise<Result<Scanned>> {
+async function scan(
+  bindings: DcsBindings,
+  given?: { names?: DeviceNames }
+): Promise<Result<Scanned>> {
   const { ports } = bindings.ctx;
   const locations = await bindings.locations();
   const connected = await bindings.connectedDevices();
@@ -96,7 +100,7 @@ async function scan(bindings: DcsBindings): Promise<Result<Scanned>> {
   }
 
   // The owner's names: what tells three devices with one name apart at a glance.
-  const names = await bindings.ctx.names?.();
+  const names = given?.names ?? (await bindings.ctx.names?.());
   const givenNameOf = (device: InputDevice): string | undefined =>
     device.vendorId && device.productId
       ? names?.nameOf({
@@ -176,9 +180,16 @@ async function scan(bindings: DcsBindings): Promise<Result<Scanned>> {
   });
 }
 
-/** Binding files and id references that belong to device ids no longer attached. */
-export async function scanMigration(bindings: DcsBindings): Promise<Result<MigrationScan>> {
-  const scanned = await scan(bindings);
+/**
+ * Binding files and id references that belong to device ids no longer attached. A caller
+ * that has the device names already (a check that also builds the view) hands them in,
+ * so the devices are enumerated once for both.
+ */
+export async function scanMigration(
+  bindings: DcsBindings,
+  given?: { names?: DeviceNames }
+): Promise<Result<MigrationScan>> {
+  const scanned = await scan(bindings, given);
   return scanned.ok ? ok(scanned.value.scan) : scanned;
 }
 

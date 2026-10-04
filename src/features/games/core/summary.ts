@@ -135,12 +135,14 @@ export async function launchGame(
   const started = await ctx.ports.processes.start(install.launch);
   if (!started.ok) return started;
   const exe = path.win32.basename(install.launch.exe);
-  if (install.source === 'steam') {
-    return ok({ message: `Asked Steam to start ${summary.name}.` });
-  }
+  // Read back, for Steam too: "asked Steam" is only true when Steam is there to be asked.
   const list = await ctx.ports.processes.list();
   const running = list.ok && list.value.some((p) => p.name.toLowerCase() === exe.toLowerCase());
-  return running
-    ? ok({ message: `Started ${summary.name}.` })
-    : err('games.notStarted', `${exe} was started but is not running.`);
+  if (!running) return err('games.notStarted', `${exe} was started but is not running.`);
+  return ok({
+    message:
+      install.source === 'steam'
+        ? `Asked Steam to start ${summary.name}.`
+        : `Started ${summary.name}.`,
+  });
 }

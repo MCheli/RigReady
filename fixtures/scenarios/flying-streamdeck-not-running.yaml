@@ -1,0 +1,7 @@
+description: Flying, Stream Deck app not running (optional)
+rig: mark-full
+extends: flying-all-good.yaml
+# The ledger's "mark-flight + streamdeck-not-running": the Stream Deck is plugged in, its app
+# is closed. The setup's Stream Deck item is optional, so this warns and never blocks.
+mutations:
+  - { op: stopProcess, name: StreamDeck.exe }

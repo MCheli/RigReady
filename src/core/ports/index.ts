@@ -136,6 +136,8 @@ export interface KnownFolders {
   programFilesX86(): string;
   /** C:\ProgramData */
   programData(): string;
+  /** C:\Windows: where Windows' own programs are (explorer.exe). */
+  windows(): string;
   /** RigReady's own data folder. Honors RIGREADY_HOME. */
   dataRoot(): string;
   /** This PC's name, for saying where a backup was made and for keeping it out of shared files. */

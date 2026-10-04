@@ -3,7 +3,7 @@ import { unzipSync } from 'fflate';
 import * as yaml from 'js-yaml';
 import { z } from 'zod';
 import { sha256 } from '../../../core/files/fileStore';
-import { createZip, readZip, type ZipEntry } from '../../../core/files/zip';
+import { createZipInSteps, readZip, type ZipEntry } from '../../../core/files/zip';
 import { inspectZip } from '../../../core/files/zipInspect';
 import { collapsePath, variableOf } from '../../../core/pathVariables';
 import { err, ok, type Result } from '../../../core/result';
@@ -148,6 +148,15 @@ export const MAX_BACKUP_BYTES = 2 * 1024 ** 3;
 
 export type Progress = (p: { done: number; total: number; label: string }) => void;
 
+/**
+ * Whether the user stopped the backup: asked before each file is read and before each is
+ * compressed. Nothing has been written when it stops, so there is nothing to clean up.
+ */
+export type Cancelled = () => boolean;
+
+const cancelledResult = (): Result<never> =>
+  err('backup.cancelled', 'The backup was cancelled. Nothing was written.');
+
 const BAD_NAME = /[\\/:*?"<>|\u0000-\u001f]/g;
 
 export function cleanName(name: string): string {
@@ -280,7 +289,8 @@ async function collect(
   label: string,
   identity: MachineIdentity,
   appVersion: string,
-  onProgress?: Progress
+  onProgress?: Progress,
+  cancelled?: Cancelled
 ): Promise<Result<Collected>> {
   const variables = await pathVariables(ctx);
   const refs = await itemRefs(ctx, scope);
@@ -333,6 +343,7 @@ async function collect(
       skipped.push({ path: ref.item.path, reason: r.problem });
     }
     for (const file of r.files) {
+      if (cancelled?.()) return cancelledResult();
       onProgress?.({ done: done++, total, label: ref.item.label });
       const data = await ctx.ports.files.readBytes(file.path);
       if (!data.ok) {
@@ -472,13 +483,18 @@ export async function writeArchive(
   ctx: Ctx,
   manifest: Manifest,
   entries: ZipEntry[],
-  baseName: string
+  baseName: string,
+  cancelled?: Cancelled
 ): Promise<Result<string>> {
-  const zipped = createZip([
-    { path: 'manifest.json', data: new TextEncoder().encode(JSON.stringify(manifest, null, 2)) },
-    ...entries,
-  ]);
-  if (!zipped.ok) return zipped;
+  // File by file, so the app keeps answering while a big backup is compressed.
+  const zipped = await createZipInSteps(
+    [
+      { path: 'manifest.json', data: new TextEncoder().encode(JSON.stringify(manifest, null, 2)) },
+      ...entries,
+    ],
+    cancelled ? { cancelled } : {}
+  );
+  if (!zipped.ok) return zipped.error.code === 'zip.cancelled' ? cancelledResult() : zipped;
   const id = await uniqueId(ctx, cleanName(baseName));
   const file = path.join(backupRoot(ctx), id);
   const written = await ctx.ports.files.write(file, zipped.value, { reason: 'Backup' });
@@ -493,7 +509,13 @@ export async function writeArchive(
 export async function createBackup(
   ctx: Ctx,
   scope: BackupScope,
-  options: { identity: MachineIdentity; appVersion: string; onProgress?: Progress }
+  options: {
+    identity: MachineIdentity;
+    appVersion: string;
+    onProgress?: Progress;
+    /** True once the user asked to stop: the backup ends with `backup.cancelled`. */
+    cancelled?: Cancelled;
+  }
 ): Promise<Result<BackupOutcome>> {
   const label = await scopeLabel(ctx, scope);
   if (!label.ok) return label;
@@ -503,7 +525,8 @@ export async function createBackup(
     label.value,
     options.identity,
     options.appVersion,
-    options.onProgress
+    options.onProgress,
+    options.cancelled
   );
   if (!collected.ok) return collected;
   const { manifest, entries } = collected.value;
@@ -521,7 +544,8 @@ export async function createBackup(
     ctx,
     manifest,
     entries,
-    `${stampOf(ctx.ports.clock.now())} ${label.value}`
+    `${stampOf(ctx.ports.clock.now())} ${label.value}`,
+    options.cancelled
   );
   if (!id.ok) return id;
   const pruned = await applyRetention(ctx, id.value);
@@ -874,7 +898,7 @@ export async function revealBackup(ctx: Ctx, id: string): Promise<Result<void>> 
   if (!file.ok) return file;
   if (!(await ctx.ports.files.exists(file.value)))
     return err('backup.missing', `There is no backup "${id}".`);
-  const windows = process.env['SystemRoot'] ?? process.env['windir'] ?? 'C:\\Windows';
+  const windows = ctx.ports.folders.windows();
   const shown = await ctx.ports.shell.launch(path.join(windows, 'explorer.exe'), [
     '/select,',
     file.value,

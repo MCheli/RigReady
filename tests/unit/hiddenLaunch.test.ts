@@ -51,7 +51,7 @@ describe('hidden launch', () => {
       ComSpec: 'C:\\Win Dir\\cmd.exe',
     });
     expect(commandLine(batch)).toBe(
-      '"C:\\Win Dir\\cmd.exe" /d /s /c "C:\\My^ Scripts\\go.cmd ^"a^ ^&^ b^""'
+      '"C:\\Win Dir\\cmd.exe" /d /v:off /s /c "C:\\My^ Scripts\\go.cmd ^"a^ ^&^ b^""'
     );
   });
 

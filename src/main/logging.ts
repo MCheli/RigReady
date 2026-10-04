@@ -11,6 +11,7 @@ import {
 import type { Clock } from '../core/ports';
 import type { SettingsStore } from '../core/settings';
 import { RotatingFileSink } from '../platform/node';
+import { userFoldersInEnvironment } from '../platform/windows/knownFolders';
 
 /**
  * The app's log. The logger exists before the data root is known (the platform needs one
@@ -36,7 +37,7 @@ export function startLogging(clock: Clock, env: NodeJS.ProcessEnv = process.env)
   const sink = new DeferredSink();
   let file: RotatingFileSink | undefined;
   // The real user folder and the one this run was given: neither is spelled out in the log.
-  const homes = [env['USERPROFILE'], env['HOME']].filter((h): h is string => !!h);
+  const homes = userFoldersInEnvironment(env);
   let redact = createRedactor(homes);
   const log = createLogger(sink, clock, () => level, 'app', { redact: (line) => redact(line) });
   return {
