@@ -1,0 +1,34 @@
+description: mark-racing with the TV above the ultrawide and SimHub running, no setups yet
+rig: mark-full
+extends: mark-racing.yaml
+# The racing rig as the ledger describes it (RACE-001). Two things here were NOT on the PC
+# when mark-full was recorded and are made up: the TV (it was not connected; this is the
+# same TV the saved "Racing" layout in data/displays/layouts.json names) and SimHub (it is
+# not installed on the owner's PC).
+mutations:
+  - op: plugDisplay
+    display:
+      id: '\\?\display#tv00001#5&1509d400&0&uid4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}'
+      name: TV
+      edid: TV00001
+      serial: TV0000001
+      connector: HDMI
+      enabled: true
+      primary: false
+      x: 640
+      y: -2160
+      width: 3840
+      height: 2160
+      rotation: 0
+      rawRotation: 1
+      refreshHz: 60
+      gdiName: '\\.\DISPLAY3'
+      modes:
+        - { width: 3840, height: 2160, refreshHz: 60 }
+        - { width: 1920, height: 1080, refreshHz: 60 }
+  - op: writeFile
+    path: Program Files (x86)/SimHub/SimHubWPF.exe
+    content: ''
+  - op: startProcess
+    name: SimHubWPF.exe
+    path: C:\Program Files (x86)\SimHub\SimHubWPF.exe

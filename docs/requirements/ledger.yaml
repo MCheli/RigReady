@@ -5,10 +5,21 @@
 # under artifacts/screens/<flow>/ from a scenario run.
 #
 # Conventions used in done_means:
-#   fixture  = fixtures/rigs/<name>/. The one that exists is mark-full, recorded from the owner's rig
-#              with everything connected; where an entry says mark-flight or mark-racing, use mark-full
-#              with mutations. generic-rig (a second, non-WinWing rig used to prove nothing is
-#              hardcoded) has not been recorded yet.
+#   fixture  = fixtures/rigs/<name>/. Two exist:
+#              mark-full    recorded from the owner's rig with everything connected. mark-flight and
+#                           mark-racing are mark-full with mutations: mark-flight is flying-fresh.yaml
+#                           and the scenarios that extend it; mark-racing is mark-racing.yaml (wheel
+#                           and ultrawide, all flight gear and the MFD screens unplugged, Dell off)
+#                           and mark-racing-tv.yaml (the same with the TV above the ultrawide and
+#                           SimHub running; neither was on the PC when it was recorded).
+#              generic-rig  written by hand, not recorded: a PC that is not the owner's, used to
+#                           prove nothing is hardcoded. One Logitech joystick, a keyboard and a
+#                           mouse, one 1920x1080 monitor, onboard audio, no sim, no HidHide, no
+#                           Steam. Scenarios: generic-fresh.yaml, generic-custom-game.yaml (a game
+#                           without a module), generic-dcs.yaml (standalone DCS installed).
+#                           It has ONE monitor and no DCS in a Steam library: entries that ask for
+#                           two monitors, a non-default Steam library or a redirected Saved Games
+#                           folder on generic-rig (NFR-009) are not covered by it yet.
 #   scenario = RIGREADY_SCENARIO run on fake providers: <fixture> + <mutation>, e.g.
 #              mark-full + pedals unplugged (fixtures/scenarios/flying-pedals-unplugged.yaml)
 #   Paths use path variables ({DCS_USER}, {DOCUMENTS}, {RIGREADY_HOME}, ...) and forward slashes.
@@ -1026,8 +1037,13 @@ requirements:
     done_means:
       - "A profile can use game 'Other' with a user-given name, an executable launch target and user-chosen tracked files; checklist, launch, tracked files and backup all work for it."
       - "E2E with fixture generic-rig: create an 'Other' profile for a fake game exe, run checks, launch, back up its tracked folder."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/unit/genericRig.test.ts#"Other" with a name, a program, checks, launch, tracked files and a backup'
+      - 'tests/e2e/generic-rig.e2e.ts#generic rig: an "Other" game is set up, checked, launched and its tracked folder backed up'
+      - 'artifacts/screens/generic-custom-game/01-other-game.png'
+      - 'artifacts/screens/generic-custom-game/03-launched.png'
+      - 'artifacts/screens/generic-custom-game/07-backed-up.png'
 
   - id: CFG-PROFILE-015
     title: Path variables in profiles
@@ -2463,8 +2479,17 @@ requirements:
     done_means:
       - "Before import, a report compares the bundle's requirements with this machine: devices present or missing (matched by VID/PID), games installed or missing, helper apps found or not, monitors count vs layout."
       - "Fixture generic-rig importing mark-flight's F/A-18C bundle reports the WinWing devices as missing and DCS as found."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/sharing/core/sharing.test.ts#reports what it needs against this PC: missing devices, the game, helper apps, monitors'
+      - 'tests/unit/shareCompat.test.ts#generic-rig with DCS installed: the WinWing devices are missing and DCS is found'
+      - 'tests/unit/shareCompat.test.ts#generic-rig: every device of the flight rig is missing, DCS and the helper apps are not found, one monitor for four'
+      - 'tests/unit/shareCompat.test.ts#$scenario: the flight gear is missing, what stayed on the rig is found, $monitors monitors for four'
+      - 'tests/unit/shareCompat.test.ts#on the rig it was made on, everything it needs is there'
+      - 'tests/e2e/share-compat.e2e.ts#share: the F/A-18C setup of the flight rig, opened on a generic PC and on the racing rig, reports what is missing'
+      - 'artifacts/screens/share-compat-generic/01-report.png'
+      - 'artifacts/screens/share-compat-generic/02-report-software.png'
+      - 'artifacts/screens/share-compat-racing/01-report.png'
 
   - id: SHARE-007
     title: Selective import
@@ -2515,6 +2540,10 @@ requirements:
       - "artifacts/screens/racing-game-pages/02-iracing.png"
       - "artifacts/screens/racing-game-pages/03-not-found.png"
       - "artifacts/screens/racing-game-pages/04-folder-chosen.png"
+      - "tests/unit/genericRig.test.ts#every Configure page gets an answer it can draw as an empty state, never an error"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "artifacts/screens/generic-configure/06-game-iracing.png"
+      - "artifacts/screens/generic-configure/15-racing-iracing.png"
 
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults
@@ -2707,8 +2736,20 @@ requirements:
     done_means:
       - "Fixture mark-racing (Fanatec DD2, racing layout ultrawide + TV, Fanatec control panel and SimHub running) supports capturing an 'iRacing' profile whose checks all pass on the unchanged fixture."
       - "Make ready applies the Racing layout and starts missing apps; Stand down returns to Desk (E2E)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/unit/markRacing.test.ts#mark-racing is the recorded rig without flight gear: wheel and ultrawide, Dell off'
+      - 'tests/unit/markRacing.test.ts#mark-racing-tv adds the TV above the ultrawide, and SimHub running'
+      - 'tests/unit/markRacing.test.ts#an iRacing setup captured from the rig passes every check on the unchanged rig'
+      - 'tests/unit/markRacing.test.ts#Make ready applies the racing layout and starts the missing apps; Stand down returns to Desk'
+      - 'tests/e2e/mark-racing.e2e.ts#mark-racing with the TV: an iRacing setup is captured and Ready; Make ready applies the racing layout and starts the apps; Stand down returns to Desk'
+      - 'tests/e2e/mark-racing.e2e.ts#mark-racing without the TV: the captured iRacing setup is Ready on the ultrawide alone'
+      - 'artifacts/screens/mark-racing-tv/01-capture.png'
+      - 'artifacts/screens/mark-racing-tv/02-ready.png'
+      - 'artifacts/screens/mark-racing-tv/04-at-the-desk.png'
+      - 'artifacts/screens/mark-racing-tv/05-made-ready.png'
+      - 'artifacts/screens/mark-racing-tv/06-stood-down.png'
+      - 'artifacts/screens/mark-racing/02-ready.png'
 
   - id: RACE-FANATEC-001
     title: Detect the Fanatec wheel base, rim and software

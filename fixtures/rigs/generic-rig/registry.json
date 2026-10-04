@@ -1,0 +1,77 @@
+{
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_046D&PID_C215\\Calibration\\0": {
+    "GUID": {
+      "type": "binary",
+      "value": "409e3a5c216def118001444553540000"
+    },
+    "Joystick Id": {
+      "type": "binary",
+      "value": "00000000"
+    }
+  },
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_046D&PID_C215\\Calibration\\0\\Type": {},
+  "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\OEM\\VID_046D&PID_C215": {
+    "OEMName": {
+      "type": "string",
+      "value": "Logitech Extreme 3D"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Google Chrome": {
+    "DisplayName": {
+      "type": "string",
+      "value": "Google Chrome"
+    },
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe,0"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files\\Google\\Chrome\\Application"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Google LLC"
+    }
+  },
+  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Logitech Gaming Software": {
+    "DisplayName": {
+      "type": "string",
+      "value": "Logitech Gaming Software 9.04"
+    },
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Program Files\\Logitech Gaming Software\\LCore.exe"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Program Files\\Logitech Gaming Software"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Logitech Inc."
+    },
+    "DisplayVersion": {
+      "type": "string",
+      "value": "9.04.49"
+    }
+  },
+  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Discord": {
+    "DisplayName": {
+      "type": "string",
+      "value": "Discord"
+    },
+    "DisplayIcon": {
+      "type": "string",
+      "value": "C:\\Users\\User\\AppData\\Local\\Discord\\app.ico"
+    },
+    "InstallLocation": {
+      "type": "string",
+      "value": "C:\\Users\\User\\AppData\\Local\\Discord"
+    },
+    "Publisher": {
+      "type": "string",
+      "value": "Discord Inc."
+    }
+  }
+}

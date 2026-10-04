@@ -121,8 +121,9 @@ watch(selected, () => void reveal());
         <div class="rr-row-main">
           <div class="rr-row-title">{{ c.name }}</div>
           <div class="rr-row-sub" data-testid="usb-controller-counts">
-            {{ c.devices }} devices and {{ c.hubs }} hubs · {{ c.addresses }} of 127 USB addresses
-            used · deepest device {{ c.deepest }} {{ c.deepest === 1 ? 'hub' : 'hubs' }} down
+            {{ c.devices }} {{ c.devices === 1 ? 'device' : 'devices' }} and {{ c.hubs }}
+            {{ c.hubs === 1 ? 'hub' : 'hubs' }} · {{ c.addresses }} of 127 USB addresses used ·
+            deepest device {{ c.deepest }} {{ c.deepest === 1 ? 'hub' : 'hubs' }} down
           </div>
           <div
             v-if="c.status !== 'ok'"

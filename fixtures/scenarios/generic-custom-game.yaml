@@ -1,0 +1,27 @@
+description: A generic PC with a game RigReady has no module for (Star Hauler)
+rig: generic-rig
+extends: generic-fresh.yaml
+# A game of the "Other game" kind: a program in a folder of its own and settings in Documents.
+mutations:
+  - op: writeFile
+    path: Games/Star Hauler/StarHauler.exe
+    content: ''
+  - op: writeFile
+    path: Documents/Star Hauler/settings.ini
+    content: |
+      [video]
+      width=1920
+      height=1080
+      fullscreen=1
+  - op: writeFile
+    path: Documents/Star Hauler/controls.cfg
+    content: |
+      joystick "Logitech Extreme 3D"
+      bind axis_x roll
+      bind axis_y pitch
+      bind axis_rz yaw
+      bind slider throttle
+      bind button_1 fire
+  - op: writeFile
+    path: Documents/Star Hauler/saves/slot1.sav
+    content: 'cargo=42'

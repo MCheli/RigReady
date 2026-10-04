@@ -1,0 +1,10 @@
+description: mark-racing - the owner's rig set up for racing (wheel and ultrawide, no flight gear), no setups yet
+rig: mark-full
+extends: racing-fresh.yaml
+# "mark-racing" in the ledger. racing-fresh already unplugs the WinWing devices, the TPR
+# pedals, the Virpil panel and the three USB MFD screens, stops TrackIR and SimAppPro, turns
+# the Dell off and makes the ultrawide the main display. What is left to take away is the
+# TrackIR camera. The TV is not connected here: see mark-racing-tv.yaml.
+mutations:
+  - op: unplugDevice
+    match: { vendorId: 131D }

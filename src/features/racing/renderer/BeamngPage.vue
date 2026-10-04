@@ -130,7 +130,7 @@ async function copyToController(): Promise<void> {
         </div>
       </section>
 
-      <section class="rc-section">
+      <section v-if="view.installed || view.userFolder" class="rc-section">
         <div class="rc-section-head">
           <h2 class="rr-section-title">Controllers</h2>
           <span class="rc-hint"

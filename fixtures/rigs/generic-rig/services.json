@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Audiosrv",
+    "displayName": "Windows Audio",
+    "state": "running",
+    "pid": 1104
+  },
+  {
+    "name": "BITS",
+    "displayName": "Background Intelligent Transfer Service",
+    "state": "stopped"
+  },
+  {
+    "name": "Dhcp",
+    "displayName": "DHCP Client",
+    "state": "running",
+    "pid": 1104
+  },
+  {
+    "name": "hidserv",
+    "displayName": "Human Interface Device Service",
+    "state": "running",
+    "pid": 1104
+  },
+  {
+    "name": "Spooler",
+    "displayName": "Print Spooler",
+    "state": "running",
+    "pid": 1104
+  },
+  {
+    "name": "WSearch",
+    "displayName": "Windows Search",
+    "state": "stopped"
+  }
+]

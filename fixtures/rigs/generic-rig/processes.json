@@ -1,0 +1,65 @@
+[
+  {
+    "pid": 0,
+    "name": "[System Process]"
+  },
+  {
+    "pid": 4,
+    "name": "System"
+  },
+  {
+    "pid": 412,
+    "name": "smss.exe"
+  },
+  {
+    "pid": 620,
+    "name": "csrss.exe"
+  },
+  {
+    "pid": 712,
+    "name": "wininit.exe"
+  },
+  {
+    "pid": 780,
+    "name": "services.exe"
+  },
+  {
+    "pid": 800,
+    "name": "lsass.exe"
+  },
+  {
+    "pid": 1104,
+    "name": "svchost.exe",
+    "path": "C:\\Windows\\System32\\svchost.exe"
+  },
+  {
+    "pid": 2260,
+    "name": "dwm.exe",
+    "path": "C:\\Windows\\System32\\dwm.exe"
+  },
+  {
+    "pid": 4312,
+    "name": "explorer.exe",
+    "path": "C:\\Windows\\explorer.exe"
+  },
+  {
+    "pid": 5120,
+    "name": "chrome.exe",
+    "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+  },
+  {
+    "pid": 5544,
+    "name": "Discord.exe",
+    "path": "C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9163\\Discord.exe"
+  },
+  {
+    "pid": 6020,
+    "name": "notepad.exe",
+    "path": "C:\\Windows\\System32\\notepad.exe"
+  },
+  {
+    "pid": 6388,
+    "name": "LCore.exe",
+    "path": "C:\\Program Files\\Logitech Gaming Software\\LCore.exe"
+  }
+]

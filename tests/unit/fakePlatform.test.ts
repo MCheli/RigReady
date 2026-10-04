@@ -105,6 +105,42 @@ describe('mutations', () => {
       applyMutations(base, [{ op: 'unplugDisplay', match: { name: 'USB_Monitor', index: 9 } }])
     ).toThrow(/matched no display/);
   });
+
+  it('plugDisplay connects a monitor the rig does not have; the same id twice is an error', async () => {
+    const base = await markFull();
+    const tv = {
+      id: '\\\\?\\DISPLAY#TV00001#5&1509d400&0&UID4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
+      name: 'TV',
+      enabled: true,
+      primary: false,
+      x: 640,
+      y: -2160,
+      width: 3840,
+      height: 2160,
+      rotation: 0 as const,
+      connector: 'HDMI',
+    };
+    const next = applyMutations(base, [{ op: 'plugDisplay', display: tv }]);
+    expect(next.displays).toHaveLength(base.displays.length + 1);
+    // Ids are lower case, as Windows reports them, so layouts and matches find the monitor.
+    expect(next.displays.at(-1)).toMatchObject({ name: 'TV', id: tv.id.toLowerCase(), y: -2160 });
+    expect(next.displays.filter((d) => d.primary).map((d) => d.name)).toEqual(['DELL G3223D']);
+    expect(base.displays.some((d) => d.name === 'TV')).toBe(false);
+    expect(() =>
+      applyMutations(next, [{ op: 'plugDisplay', display: { ...tv, id: tv.id.toLowerCase() } }])
+    ).toThrow(/already connected/);
+    // Plugged in as the main display, it takes over from the one that was.
+    const main = applyMutations(base, [
+      { op: 'plugDisplay', display: { ...tv, primary: true, x: 0, y: 0 } },
+    ]);
+    expect(main.displays.filter((d) => d.primary).map((d) => d.name)).toEqual(['TV']);
+    // It can be changed and unplugged like any other monitor.
+    const gone = applyMutations(next, [
+      { op: 'setDisplay', match: { name: 'TV' }, set: { enabled: false } },
+      { op: 'unplugDisplay', match: { name: 'TV' } },
+    ]);
+    expect(gone.displays).toHaveLength(base.displays.length);
+  });
 });
 
 describe('scenario files', () => {

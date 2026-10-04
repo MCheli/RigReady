@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   AudioStateSchema,
   DeviceInfoSchema,
+  DisplayInfoSchema,
   DisplayLayoutSchema,
   InputDeviceSchema,
   ProcessInfoSchema,
@@ -259,6 +260,8 @@ const StateMutationSchemas = [
     inverse: z.boolean().optional(),
     apps: z.array(z.string()).optional(),
   }),
+  /** Connects a monitor the rig does not have (the TV). Its id must not be connected already. */
+  z.object({ op: z.literal('plugDisplay'), display: DisplayInfoSchema }),
 ] as const;
 
 /** Changes to the files in the fake user folder, applied after the rig's files are in place. */
@@ -660,6 +663,21 @@ export function mutateState(state: RigState, mutation: StateMutation): void {
       if (mutation.cloak !== undefined) state.hidHide.cloak = mutation.cloak;
       if (mutation.inverse !== undefined) state.hidHide.inverse = mutation.inverse;
       if (mutation.apps !== undefined) state.hidHide.apps = [...mutation.apps];
+      break;
+    }
+    case 'plugDisplay': {
+      const display = {
+        ...structuredClone(mutation.display),
+        id: mutation.display.id.toLowerCase(),
+      };
+      if (state.displays.some((d) => d.id === display.id)) {
+        throw new Error(`plugDisplay: ${display.id} is already connected`);
+      }
+      // As Windows: a new main display takes over from the one that was.
+      if (display.enabled && display.primary) {
+        for (const other of state.displays) other.primary = false;
+      }
+      state.displays.push(display);
       break;
     }
   }
