@@ -73,7 +73,7 @@ const ProgressFileSchema = z.object({ aircraft: z.record(z.string(), ProgressSch
 /** What is and is not sent to Anthropic, shown in Settings and before every request. */
 export const WHAT_IS_SENT = [
   "Sent: the aircraft's name, and DCS's list of its actions (ids, names, categories) with what each is bound to now.",
-  'Sent: for each controller used in DCS, its DirectInput product name (such as "WINWING MFD1-C"), what it is used as, how many buttons and hats it has, and the names of its axes.',
+  'Sent: for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
   "Sent: RigReady's guide for the aircraft when there is one, and your question.",
   'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files.',
   'The key goes only to api.anthropic.com, in a request header. It is stored encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots.',
