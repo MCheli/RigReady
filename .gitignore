@@ -46,3 +46,4 @@ artifacts/*
 
 # Fixtures are recordings: nothing in them is ignored (a recorded dcs.log is evidence, not noise).
 !fixtures/**
+.claude/worktrees/
