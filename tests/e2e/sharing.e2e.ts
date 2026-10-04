@@ -210,6 +210,15 @@ test('share: a picture of a setup is previewed in both shapes and saved where th
   const wide = path.join(home, 'Documents', 'my rig.png');
   await expect(picture.getByTestId('share-picture-saved')).toContainText(`Saved ${wide}`);
   expect(await pngSize(wide)).toEqual({ width: 1920, height: 1080 });
+  // The picture on screen beside "Saved" is the file itself, byte for byte.
+  const onScreen = async (): Promise<Buffer> =>
+    Buffer.from(
+      await image.evaluate((element) =>
+        (element as unknown as { src: string }).src.slice('data:image/png;base64,'.length)
+      ),
+      'base64'
+    );
+  expect((await onScreen()).equals(await fs.readFile(wide))).toBe(true);
   await shot('saved');
 
   // Square, for a profile picture: drawn again, and "saved" is gone until it is saved again.
@@ -218,6 +227,7 @@ test('share: a picture of a setup is previewed in both shapes and saved where th
   await expect(image).toHaveAttribute('data-shape', 'square');
   await expect(picture.getByTestId('share-picture-saved')).toHaveCount(0);
   await shot('square-preview');
+  const previewed = await onScreen();
   await picture.getByTestId('share-picture-save').click();
   const square = path.join(home, 'Documents', 'my rig square.png');
   await expect(picture.getByTestId('share-picture-saved')).toContainText(`Saved ${square}`);
@@ -226,11 +236,9 @@ test('share: a picture of a setup is previewed in both shapes and saved where th
   // The saved files themselves, kept beside the screenshots: they are the result.
   await fs.copyFile(wide, path.join(screensDir, flow, 'rig-wide.png'));
   await fs.copyFile(square, path.join(screensDir, flow, 'rig-square.png'));
-  // What was saved is what was shown: the preview's bytes are the file's bytes.
-  const shown = await image.evaluate((element) =>
-    (element as unknown as { src: string }).src.slice('data:image/png;base64,'.length)
-  );
-  expect(Buffer.from(shown, 'base64').equals(await fs.readFile(square))).toBe(true);
+  // What was shown before saving is what was saved, and what is shown now is the file.
+  expect(previewed.equals(await fs.readFile(square))).toBe(true);
+  expect((await onScreen()).equals(await fs.readFile(square))).toBe(true);
 
   // The other setup of this PC, which checks its pedals by serial number, draws as well.
   await picture.getByTestId('share-picture-setup').click();

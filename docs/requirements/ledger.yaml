@@ -1734,7 +1734,7 @@ requirements:
     priority: p2
     done_means:
       - "Share > 'Save a picture of this setup' draws a setup as one image, 1920 by 1080 or 1080 square: its name and game, the monitors of its layout to scale with the names the owner gave them, every controller once with an icon for its kind and the owner's name for it, and the helper apps."
-      - "The picture is rendered by the Render port from a page without script or outside files, and is on screen before it is saved: the preview is the very PNG that Save writes."
+      - "The picture is rendered by the Render port from a page without script or outside files, and is on screen before it is saved: the preview is, byte for byte, what Save then writes. Save draws the picture again, so after saving the page shows the picture that is in the file, also when the rig changed in between."
       - "Nothing personal is in it: it is built from names only, and every text goes through the privacy scan the share export uses, so a serial number, the Windows user name, the PC name or a folder path that was typed into a name does not survive. No device id, monitor id or program path is asked for."
       - "Save asks where through the Dialogs port and answers 'Saved' only after the file has been read back and is, byte for byte, the picture. Cancel writes nothing and claims nothing; a file that is not the picture afterwards is an error."
     status: done

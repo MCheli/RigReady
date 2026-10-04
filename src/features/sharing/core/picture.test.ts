@@ -450,7 +450,7 @@ describe('previewing and saving the picture', () => {
   it('saves where the user says, and answers only once the file has been read back', async () => {
     const app = await start();
     app.ports.dialogs.script.save.push('Documents/my rig', null);
-    const saved = await app.invoke<{ path: string; size: number; width: number; height: number }>(
+    const saved = await app.invoke<PicturePreviewView & { path: string; size: number }>(
       'sharing:savePicture',
       { profileId: 'dcs-f-a-18c', shape: 'square' }
     );
@@ -460,6 +460,10 @@ describe('previewing and saving the picture', () => {
     expect(onDisk.length).toBe(saved.size);
     expect(pngSize(onDisk)).toEqual({ width: 1080, height: 1080 });
     expect(saved).toMatchObject({ width: 1080, height: 1080 });
+    // It answers with the picture that is in the file, for the page to show beside "Saved":
+    // Save draws the picture again, so this and not the earlier preview is what was written.
+    expect(saved.image).toBe(`data:image/png;base64,${onDisk.toString('base64')}`);
+    expect(saved).toMatchObject({ monitors: 4, controllers: 12, apps: 3, monitorsFrom: 'setup' });
     const asked = app.ports.dialogs.calls.at(-1)!;
     expect(asked.kind).toBe('save');
     expect(asked.options).toMatchObject({

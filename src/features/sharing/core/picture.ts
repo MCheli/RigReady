@@ -532,38 +532,45 @@ export interface PicturePreview {
   monitorsFrom: PictureModel['monitorsFrom'];
 }
 
+const previewOf = ({ png, width, height, model }: RenderedPicture): PicturePreview => ({
+  image: `data:image/png;base64,${Buffer.from(png).toString('base64')}`,
+  width,
+  height,
+  monitors: model.monitors.length,
+  controllers: model.devices.length,
+  apps: model.apps.length,
+  monitorsFrom: model.monitorsFrom,
+});
+
 export async function picturePreview(
   ctx: PictureCtx,
   profileId: string,
   shape: PictureShape
 ): Promise<Result<PicturePreview>> {
   const rendered = await renderPicture(ctx, profileId, shape);
-  if (!rendered.ok) return rendered;
-  const { png, width, height, model } = rendered.value;
-  return ok({
-    image: `data:image/png;base64,${Buffer.from(png).toString('base64')}`,
-    width,
-    height,
-    monitors: model.monitors.length,
-    controllers: model.devices.length,
-    apps: model.apps.length,
-    monitorsFrom: model.monitorsFrom,
-  });
+  return rendered.ok ? ok(previewOf(rendered.value)) : rendered;
+}
+
+/** What Save wrote: where, how large, and the picture itself, for the page to show. */
+export interface SavedPicture extends PicturePreview {
+  path: string;
+  size: number;
 }
 
 /**
  * Renders the picture and writes it where the user says. Resolves with null when they
  * cancel. It answers with the path only after the file has been read back and is, byte
- * for byte, the picture.
+ * for byte, the picture; and it answers with that picture, so what the page shows next to
+ * "Saved" is the file even if the rig changed since the preview was drawn.
  */
 export async function savePicture(
   ctx: PictureCtx,
   profileId: string,
   shape: PictureShape
-): Promise<Result<{ path: string; size: number; width: number; height: number } | null>> {
+): Promise<Result<SavedPicture | null>> {
   const rendered = await renderPicture(ctx, profileId, shape);
   if (!rendered.ok) return rendered;
-  const { png, width, height, model } = rendered.value;
+  const { png, model } = rendered.value;
   const safeName = model.name.replace(/[\\/:*?"<>|]/g, '-').trim() || 'Setup';
   const target = await ctx.ports.dialogs.save({
     title: 'Save a picture of this setup',
@@ -585,5 +592,5 @@ export async function savePicture(
     return err('share.picture', `The file at ${file} is not the picture that was written.`);
   }
   ctx.log.info(`saved a picture of ${profileId}`, { file, bytes: png.length, shape });
-  return ok({ path: file, size: png.length, width, height });
+  return ok({ path: file, size: png.length, ...previewOf(rendered.value) });
 }

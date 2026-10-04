@@ -55,7 +55,13 @@ async function save(): Promise<void> {
   saving.value = false;
   if (!result.ok) error.value = errorText(result.error);
   // Null: the Save dialog was cancelled, and nothing was written.
-  else if (result.value) saved.value = result.value;
+  else if (result.value) {
+    saved.value = result.value;
+    // What is on screen beside "Saved" is the file: Save draws the picture again, and a
+    // device plugged in since the preview would be in the file but not in the preview.
+    const { path: _path, size: _size, ...picture } = result.value;
+    preview.value = picture;
+  }
 }
 
 const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;

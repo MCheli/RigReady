@@ -183,11 +183,12 @@ export const sharingContract = defineContract('sharing', {
    * as Save would write it, as a PNG data URL. Nothing personal is in it. Writes nothing.
    */
   picturePreview: channel(PictureInput, PicturePreviewSchema),
-  /** Writes that picture where the user picks; null when cancelled. */
+  /**
+   * Writes that picture where the user picks; null when cancelled. Answers with the picture
+   * that is in the file, which the page then shows.
+   */
   savePicture: channel(
     PictureInput,
-    z
-      .object({ path: z.string(), size: z.number(), width: z.number(), height: z.number() })
-      .nullable()
+    PicturePreviewSchema.extend({ path: z.string(), size: z.number() }).nullable()
   ),
 });
