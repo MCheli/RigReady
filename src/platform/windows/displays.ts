@@ -501,10 +501,17 @@ function configWithEnabled(
 /**
  * Rotation, position, primary and disable for the monitors of a configuration (the
  * active ones, or configWithEnabled's), applied in one call.
+ *
+ * With `modesFrom` (the monitors as they are now), another size or refresh rate is part
+ * of the same call: the source mode gets the new size and the path is left without a
+ * target mode, which Windows then computes itself (SDC_ALLOW_CHANGES), the way it does
+ * for a monitor that is being turned on. The caller checks afterwards that the monitors
+ * really have the modes asked for.
  */
 function arrange(
   targets: Map<string, DisplayTarget>,
-  config: RawConfig = query(QDC_ONLY_ACTIVE_PATHS)
+  config: RawConfig = query(QDC_ONLY_ACTIVE_PATHS),
+  modesFrom?: Map<string, DisplayInfo>
 ): void {
   interface Entry {
     pathOffset: number;
@@ -532,11 +539,25 @@ function arrange(
   for (const e of remaining) {
     if (!e.target) continue;
     const { pathOffset: o, modeOffset: m, target } = e;
-    // Size and refresh rate stay as they are here: a path needs a complete target mode,
-    // and only Windows can compute one for another mode (see changeModes).
     config.paths.writeUInt32LE(ROTATION_TO_RAW[target.rotation], o + P_TGT_ROTATION);
     config.modes.writeInt32LE(target.x, m + M_SRC_X);
     config.modes.writeInt32LE(target.y, m + M_SRC_Y);
+    // Without modesFrom, size and refresh rate stay as they are (see changeModes).
+    const now = modesFrom?.get(target.id);
+    if (!now?.enabled || !modeDiffers(target, now)) continue;
+    const size = nativeSize(target);
+    if (size) {
+      // The source mode holds the size before rotation.
+      config.modes.writeUInt32LE(size.width, m + M_SRC_WIDTH);
+      config.modes.writeUInt32LE(size.height, m + M_SRC_HEIGHT);
+    }
+    // No target mode: Windows works out the signal for the new source mode.
+    config.paths.writeUInt32LE(IDX_INVALID, o + P_TGT_MODE);
+    if (target.refreshHz !== undefined) {
+      config.paths.writeUInt32LE(Math.round(target.refreshHz * 1000), o + P_TGT_REFRESH_NUM);
+      config.paths.writeUInt32LE(1000, o + P_TGT_REFRESH_DEN);
+      config.paths.writeUInt32LE(0, o + P_TGT_SCANLINE); // unspecified
+    }
   }
 
   // Windows requires the primary display at (0,0): shift everything so it is.
@@ -589,9 +610,21 @@ const DM_PELSHEIGHT = 0x100000;
 const DM_DISPLAYFREQUENCY = 0x400000;
 const CDS_UPDATEREGISTRY = 1;
 const CDS_TEST = 2;
+const CDS_NORESET = 0x10000000;
+
+/** The size a target asks for as the panel has it (before rotation), when it gives one. */
+export function nativeSize(
+  target: Pick<DisplayTarget, 'width' | 'height' | 'rotation'>
+): { width: number; height: number } | undefined {
+  if (target.width === undefined || target.height === undefined) return undefined;
+  const turned = target.rotation === 90 || target.rotation === 270;
+  return turned
+    ? { width: target.height, height: target.width }
+    : { width: target.width, height: target.height };
+}
 
 /** True when the target asks for a size or refresh rate the monitor does not have now. */
-function modeDiffers(target: DisplayTarget, now: DisplayInfo): boolean {
+export function modeDiffers(target: DisplayTarget, now: DisplayInfo): boolean {
   const size =
     target.width !== undefined &&
     target.height !== undefined &&
@@ -606,10 +639,21 @@ function modeDiffers(target: DisplayTarget, now: DisplayInfo): boolean {
   return size || sizeLong || rate;
 }
 
+/** True when every enabled monitor of `targets` has the size and refresh rate asked for. */
+function modesAsWanted(targets: Map<string, DisplayTarget>): boolean {
+  return readLayout().displays.every((now) => {
+    const target = targets.get(now.id);
+    return !target?.enabled || !now.enabled || !modeDiffers(target, now);
+  });
+}
+
 /**
  * Sets the size and refresh rate of enabled monitors that should have another one, each
- * tested first. Windows computes the signal for the new mode itself, which the display
- * configuration API cannot be asked to do. Returns how many monitors changed.
+ * tested first, through GDI: the fallback for when Windows does not take the new modes as
+ * part of the layout (arrange with modesFrom). Every monitor's new mode is written
+ * without resetting the displays (CDS_NORESET) and all of them are then applied by one
+ * reset, so several monitors changing mode is one change, not one per monitor. Returns
+ * how many monitors changed.
  */
 function changeModes(targets: Map<string, DisplayTarget>): number {
   let changed = 0;
@@ -633,16 +677,30 @@ function changeModes(targets: Map<string, DisplayTarget>): number {
     const what = `${now.name || now.id} ${width}x${height} at ${hz} Hz`;
     const tested = ChangeDisplaySettingsExW(now.gdiName, devMode, 0, CDS_TEST, null);
     if (tested !== 0) throw new Error(`Windows does not accept ${what} (${tested})`);
-    const status = ChangeDisplaySettingsExW(now.gdiName, devMode, 0, CDS_UPDATEREGISTRY, null);
+    const status = ChangeDisplaySettingsExW(
+      now.gdiName,
+      devMode,
+      0,
+      CDS_UPDATEREGISTRY | CDS_NORESET,
+      null
+    );
     if (status !== 0) throw new Error(`Could not set ${what} (${status})`);
     changed++;
+  }
+  if (changed > 0) {
+    // One reset applies everything written above.
+    const status = ChangeDisplaySettingsExW(null, null, 0, 0, null);
+    if (status !== 0) throw new Error(`Could not apply the new display modes (${status})`);
   }
   return changed;
 }
 
 export class WindowsDisplayProvider implements DisplayProvider {
   private undo: RawConfig[] = [];
-  /** How many SetDisplayConfig applies the last apply() took (1 = atomic). For the rig smoke test. */
+  /**
+   * How many times the last apply() changed the display configuration (SetDisplayConfig
+   * applies plus GDI mode resets; 1 = one transaction). For the rig smoke test.
+   */
   lastApplyCalls = 0;
   /** Why the last apply() could not be done in one call, when it could not. */
   lastAtomicFailure: string | undefined;
@@ -679,35 +737,54 @@ export class WindowsDisplayProvider implements DisplayProvider {
     if (stillOn.length === 0) {
       return err('display.none', 'The layout would turn every monitor off.');
     }
+    this.lastApplyCalls = 0;
+    this.lastAtomicFailure = undefined;
     try {
       const toEnable = new Set(
         [...wanted.values()].filter((t) => t.enabled && !known.get(t.id)!.enabled).map((t) => t.id)
       );
+      const modeChanges = [...wanted.values()].some((t) => {
+        const now = known.get(t.id)!;
+        return t.enabled && now.enabled && modeDiffers(t, now);
+      });
       // Turning monitors on is part of the same call when their size is known. Otherwise,
       // or when Windows refuses that, Windows turns them on first and they are arranged after.
       const combined = toEnable.size > 0 ? configWithEnabled(wanted, toEnable) : undefined;
-      let atomic = false;
-      if (combined) {
-        try {
-          arrange(wanted, combined);
-          atomic = true;
-        } catch (e) {
-          atomic = false;
-          this.lastAtomicFailure = String(e);
-        }
-      } else if (toEnable.size > 0) {
+      if (toEnable.size > 0 && !combined) {
         this.lastAtomicFailure = 'no combined configuration (a size is missing or no free path)';
       }
-      if (!atomic) {
-        if (toEnable.size > 0) enableTargets(toEnable);
-        arrange(wanted);
+      // First choice: everything in one SetDisplayConfig call, new sizes and refresh rates
+      // included. It counts only when the monitors then really have those modes.
+      let done = false;
+      if (toEnable.size === 0 || combined) {
+        try {
+          arrange(wanted, combined, modeChanges ? known : undefined);
+          this.lastApplyCalls++;
+          done = !modeChanges || modesAsWanted(wanted);
+          if (!done) {
+            this.lastAtomicFailure =
+              'Windows took the layout but kept another size or refresh rate; set separately';
+          }
+        } catch (e) {
+          // Nothing was applied (the call validates first). Without a monitor to turn on
+          // and without a mode change there is no other way to do it: report the failure.
+          if (toEnable.size === 0 && !modeChanges) throw e;
+          this.lastAtomicFailure = String(e);
+        }
       }
-      this.lastApplyCalls = atomic || toEnable.size === 0 ? 1 : 2;
-      // Another size or refresh rate is a change of its own, after which the positions
-      // (given for the new sizes) are applied once more.
-      if (changeModes(wanted) > 0) {
+      if (!done) {
+        // In steps: monitors on (Windows picks their modes), then every new mode in one
+        // reset, then the arrangement, which is given for the new sizes.
+        const stillOff = [...toEnable].filter(
+          (id) => !readLayout().displays.find((d) => d.id === id)?.enabled
+        );
+        if (stillOff.length > 0) {
+          enableTargets(new Set(stillOff));
+          this.lastApplyCalls++;
+        }
+        if (changeModes(wanted) > 0) this.lastApplyCalls++;
         arrange(wanted);
-        this.lastApplyCalls += 2;
+        this.lastApplyCalls++;
       }
       this.undo.push(captured);
       return ok({ previous, current: readLayout() });
