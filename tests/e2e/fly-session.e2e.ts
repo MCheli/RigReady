@@ -65,14 +65,17 @@ test('session: the game running with its clock, Welcome back when it closes, and
   const run = await rig.launch('flying-all-good', 'fly-session');
   const { page, shot } = run;
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
-  // Never launched from here: it says so, in the words of flying.
-  await expect(page.getByTestId('fly-context')).toHaveText('DCS WorldNot flown yet');
+  // Never launched from here: it says so, in words a racer reads as naturally as a pilot.
+  await expect(page.getByTestId('fly-context')).toHaveText('DCS WorldNo session yet');
   await menu(page, 'fly-minimize-pref');
 
   // Nothing on the record yet.
   await page.getByTestId('fly-more').click();
   await page.getByTestId('fly-history').click();
   await expect(page.getByTestId('history-empty')).toContainText('No sessions yet.');
+  await expect(page.getByTestId('history-empty')).toContainText(
+    'Launch a game from the Play screen and its session is listed here once the game has closed'
+  );
   await shot('no-history-yet');
   await page.getByTestId('history-close').click();
   await expect(page.getByTestId('history-dialog')).toBeHidden();
@@ -110,9 +113,9 @@ test('session: the game running with its clock, Welcome back when it closes, and
   await expect(page.getByTestId('fly-actions')).toHaveAttribute('data-primary', 'standDown');
   expect(await buttons(page)).toEqual(['stand-down', 'launch', 'make-ready', 'recheck']);
   await expect(page.getByTestId('stand-down').locator('kbd')).toHaveText('Enter');
-  // The setup knows when it was last flown.
+  // The setup knows when its last session was.
   await expect(page.getByTestId('fly-context')).toHaveText(
-    'DCS WorldLast flown today, less than a minute'
+    'DCS WorldLast session today, less than a minute'
   );
   await focusNothing(page);
   expect(await accessible(page)).toEqual([]);
@@ -249,7 +252,7 @@ async function restartWith(run: RunningApp, files: Record<string, unknown>): Pro
   return run.restart();
 }
 
-test('history: "last flown" on the setup, the totals in one line, and every session with what it took to be ready', async ({
+test('history: "last session" on the setup, the totals in one line, and every session with what it took to be ready', async ({
   rig,
 }) => {
   const first = await rig.launch('flying-all-good', 'fly-history');
@@ -328,10 +331,12 @@ test('history: "last flown" on the setup, the totals in one line, and every sess
 
   // The one line of context under the setup's name.
   const last = sessions.at(-1)!;
-  const lastFlown = `Last flown ${whenText(new Date(last.startedAt), new Date())}, ${durationText(last.durationSeconds)}`;
-  expect(lastFlown).toMatch(/^Last flown (Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day, 1 h 42 min$/);
-  await expect(page.getByTestId('fly-context')).toHaveText(`DCS World${lastFlown}`);
-  await shot('last-flown');
+  const lastSession = `Last session ${whenText(new Date(last.startedAt), new Date())}, ${durationText(last.durationSeconds)}`;
+  expect(lastSession).toMatch(
+    /^Last session (Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day, 1 h 42 min$/
+  );
+  await expect(page.getByTestId('fly-context')).toHaveText(`DCS World${lastSession}`);
+  await shot('last-session');
 
   await page.getByTestId('fly-more').click();
   await page.getByTestId('fly-history').click();

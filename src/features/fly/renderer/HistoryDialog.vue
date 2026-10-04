@@ -89,7 +89,7 @@ const listed = computed(() => props.history?.sessions.length ?? 0);
           <v-icon icon="mdi-history" size="34" class="mb-2" />
           <div>No sessions yet.</div>
           <div class="history-hint">
-            Launch a game from the Fly screen and its session is listed here once the game has
+            Launch a game from the Play screen and its session is listed here once the game has
             closed: how long it was, how long the rig took to be ready, and what had to be fixed.
           </div>
         </div>

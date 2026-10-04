@@ -221,14 +221,14 @@ onBeforeUnmount(() => {
       <h1 class="rr-page-title">Compact view</h1>
       <p class="rr-page-sub">
         The dial, the setup and the one action, as they are shown in the small window that stays on
-        top. <router-link to="/fly" data-testid="compact-back">Back to the Fly screen</router-link>
+        top. <router-link to="/fly" data-testid="compact-back">Back to the Play screen</router-link>
       </p>
     </template>
 
     <div v-if="!fly.loaded" class="compact-line rr-muted">Loading…</div>
 
     <div v-else-if="!fly.activeId" class="compact-empty" data-testid="compact-empty">
-      <p>There is no setup to show yet. The first one is made on the Fly screen.</p>
+      <p>There is no setup to show yet. The first one is made on the Play screen.</p>
       <v-btn
         v-if="inPanel"
         variant="tonal"
@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
       >
         Open the full window
       </v-btn>
-      <v-btn v-else variant="tonal" to="/fly">Go to the Fly screen</v-btn>
+      <v-btn v-else variant="tonal" to="/fly">Go to the Play screen</v-btn>
       <div v-if="openError" class="compact-line rr-bad">{{ openError }}</div>
     </div>
 

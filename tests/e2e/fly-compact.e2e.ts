@@ -294,7 +294,8 @@ test('compact: a program that has to be shown first is left to the full window, 
   expect(await accessible(popup)).toEqual([]);
   await snap(popup, 'fly-compact-needs-ok', '01-left-to-the-full-window.png');
 
-  // In the main window the same view is a page, with the way back to the Fly screen.
+  // In the main window the same view is a page, with the way back to the screen it came
+  // from, which the product calls the Play screen.
   await page.evaluate(() => {
     (globalThis as unknown as { location: { hash: string } }).location.hash = '#/fly/compact';
   });
@@ -302,6 +303,7 @@ test('compact: a program that has to be shown first is left to the full window, 
   await expect(inMain).toHaveAttribute('data-panel', 'false');
   await expect(inMain.locator('.rr-page-title')).toHaveText('Compact view');
   await expect(page.getByTestId('compact-status')).toContainText('Not ready');
+  await expect(page.getByTestId('compact-back')).toHaveText('Back to the Play screen');
   await page.getByTestId('compact-back').click();
   await expect(page.getByTestId('fly-page')).toBeVisible();
 });

@@ -607,7 +607,7 @@ requirements:
       - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and either 'Stand down when you are done' or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
       - "Every session is recorded in {RIGREADY_HOME}/fly/sessions.json: setup, game, start, length, seconds from opening the setup to every required check being met, what had to be fixed (by Make ready or a fix button), the first required item that was not met, and whether it was launched not ready. A game whose programs RigReady does not know is recorded without a length. A session in progress survives a restart of RigReady: it is picked up when the game still runs, and recorded without a length when it closed meanwhile."
       - "A damaged history file is left exactly as it is and named; the history goes on in the next file (sessions.1.json ...). The newest thousand sessions are kept."
-      - "Under the setup's name the screen says 'Last flown <today | yesterday | weekday | date>, <length>' ('Last raced' for a racing game, 'Last played' otherwise), or 'Not flown yet'."
+      - "Under the setup's name the screen says 'Last session <today | yesterday | weekday | date>, <length>', or 'No session yet': the same words for every game, with no word of flying, so they read naturally to someone who only races."
       - "History, from the Fly menu: one line of totals ('12 sessions, 14 h; TrackIR needed starting 6 times'), the number of sessions, time in the game, the usual time to ready, how often it was launched not ready, what needed fixing most often, and every session newest first with its length, time to ready, what was fixed and what was not met first."
     status: done
     evidence:
@@ -629,12 +629,14 @@ requirements:
       - "src/features/fly/core/sessions.test.ts#lists the newest first and adds up hours, fixes and the usual time to ready"
       - "src/features/fly/core/sessions.test.ts#a damaged file is left exactly as it is, named, and the history goes on in the next one"
       - "src/features/fly/core/sessionText.test.ts#today, yesterday, the weekday within a week, then the date"
-      - "src/features/fly/core/sessionText.test.ts#says when it was last flown and for how long"
+      - "src/features/fly/core/sessionText.test.ts#says when the last session was and how long"
+      - "src/features/fly/core/sessionText.test.ts#uses no word of flying: it reads the same to someone who only races"
+      - "src/features/fly/core/sessionText.test.ts#says so when there was none"
       - "src/features/fly/core/sessionText.test.ts#sessions, hours, and what needed fixing most"
       - "tests/e2e/fly-session.e2e.ts#session: the game running with its clock, Welcome back when it closes, and Stand down as the one action"
       - "tests/e2e/fly-session.e2e.ts#session: Dismiss puts the screen back without standing down"
       - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to"
-      - "tests/e2e/fly-session.e2e.ts#history: \"last flown\" on the setup, the totals in one line, and every session with what it took to be ready"
+      - "tests/e2e/fly-session.e2e.ts#history: \"last session\" on the setup, the totals in one line, and every session with what it took to be ready"
       - "tests/e2e/fly-session.e2e.ts#session: a game started through Steam is waited for, and the session begins when the game itself runs"
       - "artifacts/screens/fly-session/01-no-history-yet.png"
       - "artifacts/screens/fly-session/02-in-session.png"
@@ -642,7 +644,7 @@ requirements:
       - "artifacts/screens/fly-session/04-stood-down.png"
       - "artifacts/screens/fly-session-away/01-stood-down-by-itself.png"
       - "artifacts/screens/fly-session-steam/01-waiting-for-steam.png"
-      - "artifacts/screens/fly-history/01-last-flown.png"
+      - "artifacts/screens/fly-history/01-last-session.png"
       - "artifacts/screens/fly-history/02-history.png"
 
   - id: WOW-FLY-004

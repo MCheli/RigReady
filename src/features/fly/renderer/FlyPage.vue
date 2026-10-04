@@ -200,14 +200,11 @@ function when(iso: string): string {
     : date.toLocaleDateString([], { day: 'numeric', month: 'short' });
 }
 
-/** Under the setup's name: the game it is for, and when it was last flown and for how long. */
+/** Under the setup's name: the game it is for, and when its last session was and how long. */
 const context = computed(() => {
   const setup = fly.active;
   if (!setup) return [];
-  return [
-    setup.gameName ?? 'No game chosen',
-    lastSessionLine(setup.kind, setup.lastSession, new Date()),
-  ];
+  return [setup.gameName ?? 'No game chosen', lastSessionLine(setup.lastSession, new Date())];
 });
 
 /** The family of sims of the game in session, for the picture beside "Welcome back". */

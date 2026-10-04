@@ -1,9 +1,8 @@
 import type { CheckGroup } from '../../../core/profile/schema';
-import type { GameKind } from '../../../shared/models';
 
 /**
  * The words for a session: how long it was, when it was, what the history adds up to.
- * Pure and free of Node, so the Fly screen and the notification say the same thing.
+ * Pure and free of Node, so the screen and the notification say the same thing.
  */
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -69,31 +68,22 @@ export function clockText(at: Date): string {
   return `${two(at.getHours())}:${two(at.getMinutes())}`;
 }
 
-/** What a session with this kind of game is called. */
-export function sessionVerb(kind: GameKind | undefined): { past: string; never: string } {
-  if (kind === 'flight') return { past: 'Last flown', never: 'Not flown yet' };
-  if (kind === 'racing') return { past: 'Last raced', never: 'Not raced yet' };
-  return { past: 'Last played', never: 'Not played yet' };
-}
-
 export interface LastSession {
   startedAt: string;
   /** Absent when RigReady could not tell how long it was. */
   durationSeconds?: number | undefined;
 }
 
-/** The one line of context under a setup's name: "Last flown Tuesday, 1 h 42 min". */
-export function lastSessionLine(
-  kind: GameKind | undefined,
-  last: LastSession | undefined,
-  now: Date
-): string {
-  const verb = sessionVerb(kind);
-  if (!last) return verb.never;
+/**
+ * The one line of context under a setup's name: "Last session Tuesday, 1 h 42 min". The
+ * same words whatever the game is: someone who only races reads it as naturally as a pilot.
+ */
+export function lastSessionLine(last: LastSession | undefined, now: Date): string {
+  if (!last) return 'No session yet';
   const when = whenText(new Date(last.startedAt), now);
   return last.durationSeconds === undefined
-    ? `${verb.past} ${when}`
-    : `${verb.past} ${when}, ${durationText(last.durationSeconds)}`;
+    ? `Last session ${when}`
+    : `Last session ${when}, ${durationText(last.durationSeconds)}`;
 }
 
 /** What a fix of this kind did, for "TrackIR needed starting 6 times". */

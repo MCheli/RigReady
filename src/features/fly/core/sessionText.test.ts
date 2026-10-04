@@ -5,7 +5,6 @@ import {
   elapsedText,
   fixTotalText,
   lastSessionLine,
-  sessionVerb,
   timesText,
   totalsLine,
   totalText,
@@ -77,26 +76,33 @@ describe('when a session was', () => {
 describe('the line under the setup name', () => {
   const now = local(2026, 10, 8, 20);
   const tuesday = local(2026, 10, 6, 19).toISOString();
-  it('says when it was last flown and for how long', () => {
-    expect(lastSessionLine('flight', { startedAt: tuesday, durationSeconds: 6120 }, now)).toBe(
-      'Last flown Tuesday, 1 h 42 min'
+  it('says when the last session was and how long', () => {
+    expect(lastSessionLine({ startedAt: tuesday, durationSeconds: 6120 }, now)).toBe(
+      'Last session Tuesday, 1 h 42 min'
     );
+    expect(
+      lastSessionLine(
+        { startedAt: local(2026, 10, 8, 9).toISOString(), durationSeconds: 1800 },
+        now
+      )
+    ).toBe('Last session today, 30 min');
+    expect(
+      lastSessionLine({ startedAt: local(2026, 9, 12, 21).toISOString(), durationSeconds: 60 }, now)
+    ).toBe('Last session 12 Sep, 1 min');
   });
-  it('speaks of racing for a racing game, and neutrally for any other', () => {
-    expect(lastSessionLine('racing', { startedAt: tuesday, durationSeconds: 1800 }, now)).toBe(
-      'Last raced Tuesday, 30 min'
-    );
-    expect(lastSessionLine(undefined, { startedAt: tuesday, durationSeconds: 1800 }, now)).toBe(
-      'Last played Tuesday, 30 min'
-    );
-    expect(sessionVerb('racing').never).toBe('Not raced yet');
+  it('uses no word of flying: it reads the same to someone who only races', () => {
+    const lines = [
+      lastSessionLine({ startedAt: tuesday, durationSeconds: 1800 }, now),
+      lastSessionLine({ startedAt: tuesday }, now),
+      lastSessionLine(undefined, now),
+    ];
+    for (const line of lines) expect(line).not.toMatch(/fl(y|own|ew|ight)|pilot/i);
   });
-  it('says so when it never was', () => {
-    expect(lastSessionLine('flight', undefined, now)).toBe('Not flown yet');
-    expect(lastSessionLine(undefined, undefined, now)).toBe('Not played yet');
+  it('says so when there was none', () => {
+    expect(lastSessionLine(undefined, now)).toBe('No session yet');
   });
   it('leaves the length out when it is not known', () => {
-    expect(lastSessionLine('flight', { startedAt: tuesday }, now)).toBe('Last flown Tuesday');
+    expect(lastSessionLine({ startedAt: tuesday }, now)).toBe('Last session Tuesday');
   });
 });
 

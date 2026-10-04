@@ -7,7 +7,8 @@ export default defineFeature({
     {
       path: '/fly',
       component: () => import('./renderer/FlyPage.vue'),
-      meta: { mode: 'fly', title: 'Fly' },
+      // The screen is called Play; the route, the mode and the feature keep their names.
+      meta: { mode: 'fly', title: 'Play' },
     },
     {
       // The compact view: opened as a small window that stays on top (Fly menu).
