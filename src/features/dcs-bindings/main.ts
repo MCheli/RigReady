@@ -3,6 +3,7 @@ import { ok } from '../../core/result';
 import { dcsBindingsContract } from './contract';
 import { DcsBindings, roleKey } from './core/bindings';
 import { listenForInput } from './core/capture';
+import { createBindingReader } from './core/reader';
 import { createBindingsCapture, createBindingsCheck, createOpenMigration } from './core/check';
 import { copyOps, previewCopy } from './core/copy';
 import { applyEdits, cleanupOps, planEdits } from './core/edits';
@@ -22,9 +23,15 @@ let stopListening: (() => void) | undefined;
 export default defineFeatureMain({
   id: 'dcs-bindings',
   setup(ctx) {
-    const bindings = new DcsBindings({ ports: ctx.ports, log: ctx.log, games: ctx.games });
+    const bindings = new DcsBindings({
+      ports: ctx.ports,
+      log: ctx.log,
+      games: ctx.games,
+      names: () => ctx.names.devices(),
+    });
     const service = (): DcsBindings => bindings;
 
+    ctx.bindings.register(createBindingReader(bindings));
     ctx.checks.registerCheck(createBindingsCheck(service));
     ctx.checks.registerRemediation(
       createOpenMigration(() => ctx.emit(dcsBindingsContract, 'openMigration', {}))

@@ -73,7 +73,9 @@ const summary = computed(() => {
 });
 
 const shortName = (device: DeviceView): string =>
-  device.type === 'keyboard' ? 'Keyboard' : device.name.replace(/^WINWING /, '');
+  device.type === 'keyboard'
+    ? 'Keyboard'
+    : (device.givenName ?? device.name.replace(/^WINWING /, ''));
 
 function clear(command: CommandView, occurrence: Occurrence): void {
   if (!store.aircraftId) return;

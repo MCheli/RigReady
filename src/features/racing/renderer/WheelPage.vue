@@ -113,7 +113,14 @@ const STATUS = {
             />
             <div class="rr-row-main">
               <div class="rr-row-title" data-testid="wheel-name">
-                {{ view.status.name ?? 'No Fanatec wheel base connected' }}
+                {{ view.status.givenName ?? view.status.name ?? 'No Fanatec wheel base connected' }}
+                <span
+                  v-if="view.status.givenName && view.status.name"
+                  class="rr-muted racing-hardware"
+                  data-testid="wheel-hardware-name"
+                >
+                  {{ view.status.name }}</span
+                >
               </div>
               <div class="rr-row-sub" data-testid="wheel-mode">
                 <template v-if="view.status.connected">

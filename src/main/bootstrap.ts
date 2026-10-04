@@ -1,4 +1,5 @@
 import { BackupSourceRegistry } from '../core/backupSources';
+import { BindingRegistry } from '../core/bindings';
 import { CheckRegistry } from '../core/checks/registry';
 import { DisplayLayoutStore } from '../core/displays/layouts';
 import type { FeatureMain, IpcBinding, MainContext } from '../core/feature';
@@ -52,6 +53,7 @@ export function wireFeatures(options: {
     settings: new SettingsStore(ports.files, ports.folders.dataRoot(), ports.clock),
     layouts: new DisplayLayoutStore(ports.files, ports.folders.dataRoot(), ports.clock),
     names: new NameRegistry(),
+    bindings: new BindingRegistry(),
     backupSources: new BackupSourceRegistry(),
     emit(contract, event, payload) {
       const schema = contract.events[event];

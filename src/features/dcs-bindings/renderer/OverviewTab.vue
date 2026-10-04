@@ -120,7 +120,10 @@ function summary(device: DeviceView): string {
         :data-device="device.name"
       >
         <div class="rr-row-main">
-          <div class="rr-row-title">{{ device.name }}</div>
+          <div class="rr-row-title">
+            {{ device.givenName ?? device.name }}
+            <span v-if="device.givenName" class="rr-muted ov-hardware">{{ device.name }}</span>
+          </div>
           <div class="rr-row-sub" data-testid="ov-device-summary">
             {{ summary(device) }}
             <span v-if="problemsOf(device) > 0" class="rr-warn" data-testid="ov-device-problems">
@@ -240,6 +243,11 @@ function summary(device: DeviceView): string {
 </template>
 
 <style scoped>
+.ov-hardware {
+  font-weight: 400;
+  font-size: 12.5px;
+  margin-left: 6px;
+}
 .ov-tiles {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -56,7 +56,7 @@ const actionItems = computed(() => {
 
 const deviceItems = computed(() =>
   store.controllers.map((d) => ({
-    title: d.name,
+    title: d.givenName ?? d.name,
     value: d.id,
     subtitle: d.connected ? '' : 'Not attached',
   }))

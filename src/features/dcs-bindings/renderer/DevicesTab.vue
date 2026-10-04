@@ -17,9 +17,12 @@ const showRemoved = ref(false);
 
 const deviceItems = computed(() => [
   ...store.controllers.map((d) => ({
-    title: d.name,
+    title: d.givenName ?? d.name,
     value: d.id,
-    subtitle: d.connected ? `${d.counts.active} bound` : 'Not attached · binding file only',
+    subtitle: [
+      ...(d.givenName ? [d.name] : []),
+      d.connected ? `${d.counts.active} bound` : 'Not attached · binding file only',
+    ].join(' · '),
   })),
   ...view.value.devices
     .filter((d) => d.type !== 'joystick')
@@ -28,8 +31,16 @@ const deviceItems = computed(() => [
 
 const device = computed<DeviceView | undefined>(() => {
   const wanted = String(route.query['device'] ?? '');
+  // A link from the Devices page names the device by its DirectInput instance GUID.
+  const guid = String(route.query['guid'] ?? '')
+    .replace(/[{}]/g, '')
+    .toUpperCase();
+  const byGuid = /^[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}$/.test(guid)
+    ? view.value.devices.find((d) => d.guid?.toUpperCase() === guid)
+    : undefined;
   return (
     view.value.devices.find((d) => d.id === wanted) ??
+    byGuid ??
     // Start on the device with the most bindings of the user's own.
     [...store.controllers].sort((a, b) => b.counts.fromUser - a.counts.fromUser)[0] ??
     view.value.devices[0]
@@ -167,6 +178,10 @@ const isStaged = (key: string): boolean =>
     <div v-if="!device" class="rr-panel rr-empty">There are no devices to show.</div>
     <template v-else>
       <div class="rr-row-sub dev-meta" data-testid="dev-meta">
+        <template v-if="device.givenName">
+          <strong data-testid="dev-given-name">{{ device.givenName }}</strong> ·
+          <span data-testid="dev-hardware-name">{{ device.name }}</span> ·
+        </template>
         <template v-if="device.type === 'joystick'">
           <span v-if="device.connected" class="rr-ok">Attached</span>
           <span v-else class="rr-warn">Not attached</span>
@@ -347,7 +362,7 @@ const isStaged = (key: string): boolean =>
 
     <v-dialog v-model="confirmClear" max-width="520">
       <v-card v-if="device" data-testid="dev-clear-confirm">
-        <v-card-title>Clear {{ device.name }}?</v-card-title>
+        <v-card-title>Clear {{ device.givenName ?? device.name }}?</v-card-title>
         <v-card-text>
           This removes all {{ device.counts.active }} bindings on this device for
           {{ view.aircraft.name }}: {{ clearCounts.yours }} of yours and

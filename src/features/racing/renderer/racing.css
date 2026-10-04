@@ -129,3 +129,9 @@ a.rc-card:hover {
 .rc-filter {
   max-width: 320px;
 }
+
+/* The name the hardware reports, beside the name the owner gave it. */
+.racing-hardware {
+  font-weight: 400;
+  font-size: 12.5px;
+}

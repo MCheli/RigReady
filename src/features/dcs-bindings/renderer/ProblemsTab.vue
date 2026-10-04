@@ -171,7 +171,7 @@ async function cleanUp(everyAircraft: boolean): Promise<void> {
       >
         <div class="rr-row prob-device">
           <div class="rr-row-main">
-            <div class="rr-row-title">{{ group.device.name }}</div>
+            <div class="rr-row-title">{{ group.device.givenName ?? group.device.name }}</div>
             <div class="rr-row-sub">
               {{ group.items.length }} unwanted
               {{ group.items.length === 1 ? 'default' : 'defaults' }}
