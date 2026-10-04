@@ -77,8 +77,19 @@ export class SettingsStore {
     return path.join(this.dataRoot, 'settings.json');
   }
 
+  private loading: Promise<Result<AppSettings>> | undefined;
+
   async get(): Promise<Result<AppSettings>> {
     if (this.cached) return ok(structuredClone(this.cached));
+    // Callers that ask while the file is being read share that one read: a damaged file
+    // is set aside once, not once per caller.
+    this.loading ??= this.load().finally(() => {
+      this.loading = undefined;
+    });
+    return this.loading;
+  }
+
+  private async load(): Promise<Result<AppSettings>> {
     if (!(await this.files.exists(this.file))) {
       this.cached = defaultSettings();
       return ok(structuredClone(this.cached));

@@ -114,6 +114,19 @@ describe('SettingsStore', () => {
       await fs.rm(path.join(dataRoot, aside[0]!));
     }
   });
+
+  it('callers that ask at the same moment share one read of a damaged file', async () => {
+    rig = await rigFromState(await markFull());
+    const dataRoot = rig.ports.folders.dataRoot();
+    await fs.mkdir(dataRoot, { recursive: true });
+    await fs.writeFile(path.join(dataRoot, 'settings.json'), '{ not json');
+    const store = new SettingsStore(rig.ports.files, dataRoot, rig.clock);
+    const answers = await Promise.all([store.get(), store.get(), store.get()]);
+    for (const answer of answers) expect(answer).toEqual({ ok: true, value: defaultSettings() });
+    const aside = (await fs.readdir(dataRoot)).filter((f) => f.startsWith('settings.corrupt-'));
+    expect(aside).toHaveLength(1);
+    expect(store.takeNotice()).toContain('could not be read');
+  });
 });
 
 describe('DisplayLayoutStore', () => {

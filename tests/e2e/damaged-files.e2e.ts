@@ -155,13 +155,13 @@ test('damaged files: a game whose folders were deleted shows "not found" on ever
   await shot('games');
 
   await go(page, '/configure/games/dcs');
-  await expect(page.getByTestId('game-page')).toContainText('Not found');
+  await expect(page.getByTestId('game-page')).toContainText('not found on this PC');
   await expect(page.getByTestId('game-error')).toHaveCount(0);
   await calm(page);
   await shot('game-dcs');
 
   await go(page, '/configure/games/iracing');
-  await expect(page.getByTestId('game-page')).toContainText('Not found');
+  await expect(page.getByTestId('game-page')).toContainText('not found on this PC');
   await calm(page);
 
   await go(page, '/configure/dcs');
