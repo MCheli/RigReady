@@ -264,6 +264,19 @@ export const backupContract = defineContract(
       z.object({ path: z.string(), label: z.string() }).nullable()
     ),
     backUp: channel(z.object({ scope: ScopeSchema }), OutcomeSchema),
+    /**
+     * Stops the backup that is running, before anything is written: `backUp` then answers
+     * with `backup.cancelled`. `cancelling` is false when no backup is running.
+     */
+    cancelBackUp: channel(noInput, z.object({ cancelling: z.boolean() })),
+    /** Whether a backup is running now, and how far it is: for a screen that opens meanwhile. */
+    backUpStatus: channel(
+      noInput,
+      z.object({
+        running: z.boolean(),
+        progress: z.object({ done: z.number(), total: z.number(), label: z.string() }).optional(),
+      })
+    ),
     rename: channel(z.object({ id: z.string(), name: z.string().max(200) }), BackupViewSchema),
     remove: channel(Id, z.object({ removed: z.boolean() })),
     /** Copies a backup to a place the user picks; null when cancelled. */
@@ -311,6 +324,8 @@ export const backupContract = defineContract(
   },
   {
     progress: z.object({ done: z.number(), total: z.number(), label: z.string() }),
+    /** The backup that was running has ended: written, failed or cancelled. */
+    ended: z.object({ cancelled: z.boolean() }),
     /** A game start was noticed and the setup's files were recorded as working. */
     recorded: z.object({ profileId: z.string() }),
   }

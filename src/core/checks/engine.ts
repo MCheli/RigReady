@@ -7,6 +7,7 @@ import type {
   CommandPreview,
   RemediationDefinition,
 } from './registry';
+import { cachedReads } from './readCache';
 import { withProfile } from './registry';
 
 /**
@@ -288,14 +289,18 @@ export function summarize(profileId: string, results: CheckResult[]): ChecklistR
   };
 }
 
-/** Runs every check of a profile at the same time. One slow or hung check delays no other. */
+/**
+ * Runs every check of a profile at the same time. One slow or hung check delays no other.
+ * The machine is asked each question once per run (the device list, the process list, ...):
+ * every check of the run shares the answer, and the next run asks again.
+ */
 export async function runChecks(
   profile: Profile,
   registry: CheckRegistry,
   baseCtx: CheckContext,
   options: RunOptions = {}
 ): Promise<ChecklistReport> {
-  const ctx = withProfile(baseCtx, profile);
+  const ctx = withProfile({ ...baseCtx, ports: cachedReads(baseCtx.ports) }, profile);
   const results = await Promise.all(
     profile.checks.map(async (item) => {
       const result = await runCheckItem(item, registry, ctx, options);

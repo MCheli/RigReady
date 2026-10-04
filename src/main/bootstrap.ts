@@ -14,10 +14,13 @@ import { channelName, eventName } from '../shared/channels';
 import { createInvoker, type Envelope } from '../shared/ipc';
 
 /** Feature main modules, discovered at build time. Adding a feature edits no shared file. */
-export function discoverFeatures(): FeatureMain[] {
-  const modules = import.meta.glob<{ default: FeatureMain }>('../features/*/main.ts', {
-    eager: true,
-  });
+export function discoverFeatures(
+  /** What the glob found. Tests pass their own, to add a feature that is not in src/features. */
+  modules: Record<string, { default?: FeatureMain }> = import.meta.glob<{ default: FeatureMain }>(
+    '../features/*/main.ts',
+    { eager: true }
+  )
+): FeatureMain[] {
   return Object.entries(modules)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([file, module]) => {
