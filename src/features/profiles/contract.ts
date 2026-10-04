@@ -6,6 +6,7 @@ import {
   ProfileActionsSchema,
   ProfileSchema,
 } from '../../core/profile/schema';
+import { ChangePreviewSchema } from '../../shared/changePreview';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 import { GameKindSchema, LaunchTargetSchema } from '../../shared/models';
 import { TrackedItemSchema } from '../../core/trackedSchema';
@@ -152,6 +153,25 @@ export const PickersSchema = z.object({
 });
 export type Pickers = z.infer<typeof PickersSchema>;
 
+/** A setup's desktop shortcut: whether it is there and still does what it should. */
+export const ShortcutStatusSchema = z.object({
+  /** Where the shortcut is, or would be made: the Desktop folder and the name below. */
+  file: z.string(),
+  /** "<setup name> - RigReady.lnk", with the characters a file name cannot hold replaced. */
+  name: z.string(),
+  /**
+   * none: not on the desktop. current: there, and it starts this RigReady for this setup.
+   * outdated: there, but under the setup's earlier name, for another copy of RigReady, or
+   * asking for the wrong thing. taken: another file has the name.
+   */
+  state: z.enum(['none', 'current', 'outdated', 'taken']),
+  /** One line on what a double-click does, or on what is wrong with it. */
+  detail: z.string(),
+  /** True when the shortcut launches the game; false when it only makes the rig ready. */
+  launches: z.boolean(),
+});
+export type ShortcutStatus = z.infer<typeof ShortcutStatusSchema>;
+
 export const profilesContract = defineContract('profiles', {
   list: channel(noInput, z.array(ProfileSchema)),
   /** Every profile with its file, and the files that could not be loaded. */
@@ -208,4 +228,15 @@ export const profilesContract = defineContract('profiles', {
   openFile: channel(ProfileId, z.object({ opened: z.boolean() })),
   /** Opens Explorer with the profile's file selected. */
   showFile: channel(ProfileId, z.object({ opened: z.boolean() })),
+  /** The setup's desktop shortcut, as it is now. */
+  shortcut: channel(ProfileId, ShortcutStatusSchema),
+  /** What making or removing the shortcut would do to the desktop, before anything is written. */
+  shortcutPreview: channel(
+    ProfileId.extend({ action: z.enum(['create', 'remove']) }),
+    ChangePreviewSchema
+  ),
+  /** Writes the shortcut; answers only after reading it back and finding it starts this setup. */
+  createShortcut: channel(ProfileId, ShortcutStatusSchema),
+  /** Removes the shortcut; answers only after finding it gone. */
+  removeShortcut: channel(ProfileId, ShortcutStatusSchema),
 });

@@ -12,7 +12,9 @@ import {
 import path from 'node:path';
 import { z } from 'zod';
 import trayIconPath from '../../assets/icon.ico?asset';
+import { parseCommandLine, type ParsedCommandLine } from '../core/commandLine';
 import { startupNotices } from '../core/dataHealth';
+import { MAKE_READY_HOTKEY } from '../core/hotkeys';
 import { bind } from '../core/feature';
 import type { Logger } from '../core/logger';
 import { isWithin } from '../core/paths';
@@ -20,14 +22,18 @@ import type { FileStore, Ports } from '../core/ports';
 import { err, ok } from '../core/result';
 import { panelPlaces, withPanelPlace } from '../core/windowPlace';
 import {
+  APP_USER_MODEL_ID,
   ElectronAppWindow,
   ElectronClipboard,
   ElectronDialogs,
+  ElectronHotkeys,
   ElectronLoginItem,
   ElectronNotifications,
   ElectronOverlays,
   ElectronRender,
   ElectronSecrets,
+  ElectronShortcuts,
+  ElectronTaskbar,
   HIDDEN_ARG,
 } from '../platform/electron';
 import { ElectronUpdateFeed } from '../platform/electron/updater';
@@ -37,12 +43,22 @@ import { MutationSchema } from '../platform/fake/scenario';
 import { systemClock } from '../platform/node';
 import { createWindowsPorts } from '../platform/windows';
 import { trimWorkingSets } from '../platform/windows/memory';
-import { appContract } from '../shared/appContract';
+import { appContract, type CommandRun } from '../shared/appContract';
 import { eventName } from '../shared/channels';
 import type { Envelope } from '../shared/ipc';
+import { appMenu } from './appMenu';
 import { discoverFeatures, wireFeatures } from './bootstrap';
 import { runDiagnose } from './diagnose';
 import { unsupportedPlatformMessage } from './platformGuard';
+import { CommandRunner } from './rigCommand';
+import {
+  TaskbarActivity,
+  TaskbarTold,
+  jumpTasks,
+  taskbarOverlay,
+  taskbarTooltip,
+  thumbButtons,
+} from './taskbarModel';
 import { TrayMemoryTrimmer } from './trayMemory';
 import {
   installProcessErrorHooks,
@@ -55,11 +71,14 @@ import {
   paintBadge,
   statusFromFlyResponse,
   TONE_RGB,
+  trayClick,
   trayMenu,
+  trayStatusLine,
   trayTone,
   trayTooltip,
   type TrayMenuItem,
   type TrayStatus,
+  type TrayWindowState,
 } from './trayModel';
 
 /**
@@ -127,6 +146,9 @@ const appWindow = new ElectronAppWindow(() => mainWindow, {
   },
 });
 
+/** The real taskbar button, kept here so it can follow the main window once there is one. */
+let realTaskbar: ElectronTaskbar | undefined;
+
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
   return index >= 0 ? process.argv[index + 1] : undefined;
@@ -147,17 +169,27 @@ async function createPlatform(): Promise<Platform> {
         log: logging.log,
         projectRoot,
         ...(resourcesPath ? { resourcesPath } : {}),
-        app: (dataRoot) => ({
-          secrets: new ElectronSecrets(dataRoot),
-          dialogs: new ElectronDialogs(() => mainWindow),
-          render: new ElectronRender(dataRoot),
-          notifications: new ElectronNotifications(),
-          clipboard: new ElectronClipboard(),
-          loginItem: new ElectronLoginItem(),
-          overlays: new ElectronOverlays(),
-          window: appWindow,
-          updates: new ElectronUpdateFeed(logging.log.child('updater')),
-        }),
+        app: (dataRoot) => {
+          const shortcuts = new ElectronShortcuts(dataRoot);
+          realTaskbar = new ElectronTaskbar(
+            () => mainWindow,
+            () => shortcuts.self()
+          );
+          return {
+            secrets: new ElectronSecrets(dataRoot),
+            dialogs: new ElectronDialogs(() => mainWindow),
+            render: new ElectronRender(dataRoot),
+            notifications: new ElectronNotifications(),
+            clipboard: new ElectronClipboard(),
+            loginItem: new ElectronLoginItem(),
+            overlays: new ElectronOverlays(),
+            window: appWindow,
+            updates: new ElectronUpdateFeed(logging.log.child('updater')),
+            shortcuts,
+            taskbar: realTaskbar,
+            hotkeys: new ElectronHotkeys(),
+          };
+        },
       }),
     };
   }
@@ -241,7 +273,10 @@ function createWindow(
     },
   });
   if (state.maximized) window.maximize();
-  if (show) window.once('ready-to-show', () => window.show());
+  window.once('ready-to-show', () => {
+    windowDrawn = true;
+    if (show) window.show();
+  });
   // Links never open inside the app window.
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//.test(url)) void shell.openExternal(url);
@@ -269,11 +304,39 @@ function createWindow(
   return window;
 }
 
+/** False until the window has drawn its first frame: showing it earlier shows an empty one. */
+let windowDrawn = false;
+
 function showWindow(): void {
   if (!mainWindow) return;
+  if (!windowDrawn) {
+    const window = mainWindow;
+    window.once('ready-to-show', () => {
+      if (!window.isDestroyed()) showWindow();
+    });
+    return;
+  }
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
+}
+
+/** What this start was asked to do (--fly, --make-ready, --setup), read before anything else. */
+const startCommand = parseCommandLine(process.argv);
+/** What a second start handed over before this one had finished starting. */
+let handedOver: ParsedCommandLine | undefined;
+/** Set once the features are wired: runs what a start asks for. */
+let runCommand: ((parsed: ParsedCommandLine) => void) | undefined;
+
+/** A second start (a desktop shortcut, a Jump List task) while RigReady is already running. */
+function onSecondInstance(argv: string[], handed: unknown): void {
+  // The second start read its own arguments and sent what it found: Chromium may reorder
+  // the raw ones it passes along, which would part a flag from its setup.
+  const sent = (handed as { command?: ParsedCommandLine } | null | undefined)?.command;
+  const parsed = sent && typeof sent.kind === 'string' ? sent : parseCommandLine(argv);
+  if (parsed.kind === 'none') showWindow();
+  else if (runCommand) runCommand(parsed);
+  else handedOver = parsed;
 }
 
 async function start(): Promise<void> {
@@ -288,7 +351,14 @@ async function start(): Promise<void> {
     return;
   }
 
-  app.setAppUserModelId('io.rigready.app');
+  app.setAppUserModelId(APP_USER_MODEL_ID);
+  // RigReady's own keys in place of Electron's menu, and no menu bar in any window (appMenu.ts).
+  Menu.setApplicationMenu(Menu.buildFromTemplate(appMenu(app.isPackaged)));
+  app.on('browser-window-created', (_event, window) => {
+    // Windows are made with the bar hidden; this stops Alt from bringing it up.
+    window.setAutoHideMenuBar(false);
+    window.setMenuBarVisibility(false);
+  });
   const { ports, scenario, fake } = await createPlatform();
   const dataRoot = ports.folders.dataRoot();
   panelPlaceFile = { files: ports.files, file: path.join(dataRoot, 'panels.json') };
@@ -300,7 +370,40 @@ async function start(): Promise<void> {
   const send = (channel: string, payload: unknown): void => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
     for (const panel of appWindow.panels()) panel.webContents.send(channel, payload);
+    // A command started from outside the window follows the progress the features report.
+    commands.onEvent(channel, payload);
+    // So does the taskbar button; and a setup made, renamed or deleted changes its Jump List.
+    if (activity.event(channel, payload)) refreshTaskbar();
+    if (channel === SETUPS_CHANGED) refreshSetups();
   };
+  /**
+   * Where a command has got to is told to the main window only: the small extra windows a
+   * feature opens (a cheat sheet on the second monitor) show their own thing.
+   */
+  const COMMAND_EVENT = eventName(appContract.feature, 'command');
+  let commandEndedAt = 0;
+  const tellCommand = (run: CommandRun): void => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(COMMAND_EVENT, run);
+  };
+  /** What is running right now, for the progress bar in the taskbar button. */
+  const activity = new TaskbarActivity();
+  const SETUPS_CHANGED = eventName('fly', 'profilesChanged');
+  // Commands: --fly, --make-ready, --setup (a shortcut, a Jump List task, a second start).
+  // What it works with is defined further down; nothing here runs before that.
+  const commands = new CommandRunner({
+    call: (channel, input) => call(channel, input),
+    publish: (run) => {
+      if (run.outcome) commandEndedAt = Date.now();
+      tellCommand(run);
+    },
+    showWindow,
+    flyChanged: () => flyChanged(),
+    busy: () => trayBusy || activity.busy(),
+    working: (on) => {
+      trayBusy = on;
+      refreshTray();
+    },
+  });
   const machineChanged = (reason: string): void =>
     send(eventName(appContract.feature, 'machineChanged'), { reason });
 
@@ -348,6 +451,7 @@ async function start(): Promise<void> {
         notices,
         ...(scenario ? { scenario } : {}),
       }),
+    cancelCommand: async () => ok({ cancelled: commands.cancel() }),
     scenario: async ({ mutations, input, change, render, labels }) => {
       if (!fake) return err('scenario.off', 'This only works in a scenario run.');
       const parsed = z.array(MutationSchema).safeParse(mutations);
@@ -413,11 +517,31 @@ async function start(): Promise<void> {
   // ---- tray ----
   let trayStatus: TrayStatus = {};
   let trayBusy = false;
+  /** Calls after which the list of setups, or which one was used last, may be different. */
+  const SETUP_CHANGERS = new Set([
+    'fly:check',
+    'profiles:create',
+    'profiles:save',
+    'profiles:remove',
+    'profiles:clone',
+    'profiles:use',
+    'sharing:import',
+  ]);
   const handlers = new Map([...wiring.handlers, ...appWiring.handlers]);
   const call = async (channel: string, input?: unknown): Promise<Envelope> => {
     const handler = handlers.get(channel);
     if (!handler) return err('ipc.unknown', `Unknown channel ${channel}.`);
-    const envelope = await handler(input);
+    // Make ready, Launch, Stand down and checks show on the taskbar button, whoever asked.
+    if (activity.began(channel, input)) refreshTaskbar();
+    let envelope: Envelope;
+    try {
+      envelope = await handler(input);
+    } finally {
+      if (activity.ended(channel, input)) refreshTaskbar();
+    }
+    // The quiet re-check the Fly screen makes every few seconds changes neither.
+    const quiet = (input as { remember?: unknown } | undefined)?.remember === false;
+    if (envelope.ok && SETUP_CHANGERS.has(channel) && !quiet) refreshSetups();
     if (envelope.ok) {
       const next = statusFromFlyResponse(channel, envelope.value, trayStatus);
       if (next) {
@@ -447,10 +571,20 @@ async function start(): Promise<void> {
     machineChanged('tray');
   };
 
+  /**
+   * Reads the setups again, a moment after the last thing that may have changed them: the
+   * quick switch of the tray and the Jump List follow setups made, renamed, deleted and used.
+   */
+  let setupsTimer: ReturnType<typeof setTimeout> | undefined;
+  function refreshSetups(): void {
+    clearTimeout(setupsTimer);
+    setupsTimer = setTimeout(() => void call('fly:state'), 250);
+  }
+
   const fromTray = async (
     work: (profileId: string, name: string) => Promise<void>
   ): Promise<void> => {
-    if (trayBusy || !trayStatus.profileId) return;
+    if (trayBusy || activity.busy() || !trayStatus.profileId) return;
     trayBusy = true;
     refreshTray();
     try {
@@ -467,7 +601,8 @@ async function start(): Promise<void> {
     quit,
     makeReady: () =>
       fromTray(async (profileId, name) => {
-        const result = await call('fly:makeReady', { profileId });
+        // Tagged, so its fixes are reported one by one and the taskbar button can fill.
+        const result = await call('fly:makeReady', { profileId, runId: `tray-${Date.now()}` });
         await ports.notifications.notify(
           result.ok
             ? {
@@ -562,9 +697,63 @@ async function start(): Promise<void> {
     });
   }
 
+  // ---- taskbar button: Jump List, status badge, tooltip, progress, thumbnail buttons ----
+  /** What the taskbar was last told, so it is told again only when something changed. */
+  const taskbarTold = new TaskbarTold();
+  const taskbarFailures = new Set<string>();
+  function tellTaskbar(
+    what: string,
+    key: string,
+    tell: () => ReturnType<Ports['taskbar']['setTooltip']>
+  ): void {
+    if (!taskbarTold.news(what, key)) return;
+    void tell().then((told) => {
+      if (told.ok || taskbarFailures.has(`${what} ${told.error.code}`)) return;
+      // Said once: a PC without a taskbar to tell stays that way for this run.
+      taskbarFailures.add(`${what} ${told.error.code}`);
+      log.warn(`taskbar: ${what} was not set`, told.error);
+    });
+  }
+  function refreshTaskbar(): void {
+    const tasks = jumpTasks(trayStatus);
+    tellTaskbar('the Jump List', JSON.stringify(tasks), () => ports.taskbar.setJumpTasks(tasks));
+    // The rest belongs to the button of the window: nothing to tell before the window exists.
+    if (!mainWindow) return;
+    // The badge is drawn only when it is a different one.
+    tellTaskbar(
+      'the status badge',
+      `${trayTone(trayStatus) ?? ''} ${trayStatusLine(trayStatus)}`,
+      () => ports.taskbar.setOverlay(taskbarOverlay(trayStatus))
+    );
+    const tooltip = taskbarTooltip(trayStatus, trayBusy || activity.busy());
+    tellTaskbar('the tooltip', tooltip, () => ports.taskbar.setTooltip(tooltip));
+    const progress = activity.progress();
+    tellTaskbar('the progress bar', JSON.stringify(progress), () =>
+      ports.taskbar.setProgress(progress)
+    );
+    const buttons = thumbButtons(trayStatus, trayBusy || activity.busy());
+    tellTaskbar(
+      'the thumbnail buttons',
+      JSON.stringify(buttons.map((button) => [button.id, button.tooltip, button.enabled])),
+      () => ports.taskbar.setButtons(buttons)
+    );
+  }
+  // A button under the thumbnail does what the same line of the tray menu does.
+  ports.taskbar.subscribe((buttonId) => void trayActions[buttonId]?.());
+
+  // The hotkey, when one is chosen in Settings: RigReady comes forward and makes the setup
+  // in use ready, exactly as --make-ready would. Without a setup there is only the window.
+  ports.hotkeys.subscribe((id) => {
+    if (id !== MAKE_READY_HOTKEY) return;
+    const setup = trayStatus.profileId;
+    if (!setup) showWindow();
+    else void commands.run({ action: 'makeReady', setup });
+  });
+
   function refreshTray(): void {
+    refreshTaskbar();
     if (!tray) return;
-    tray.setToolTip(trayTooltip(trayStatus));
+    tray.setToolTip(trayTooltip(trayStatus, trayBusy));
     tray.setImage(trayImage(trayTone(trayStatus)));
     tray.setContextMenu(Menu.buildFromTemplate(trayTemplate(trayMenu(trayStatus, trayBusy))));
   }
@@ -573,12 +762,54 @@ async function start(): Promise<void> {
     // Scenario runs only: lets an end-to-end test read and use the tray like a user would.
     const hooks = globalThis as unknown as Record<string, unknown>;
     hooks['__rigreadyTray'] = () => ({
-      tooltip: trayTooltip(trayStatus),
+      tooltip: trayTooltip(trayStatus, trayBusy),
       tone: trayTone(trayStatus) ?? null,
       menu: trayMenu(trayStatus, trayBusy),
       notifications: fake.notifications.sent,
+      // How often a click put the window away, and whether one is about to.
+      hides: trayHides,
+      hidePending: trayHideTimer !== undefined,
     });
+    // A click or a double-click on the tray icon; `inFront` says the window was the one in
+    // front (a test cannot rely on which window Windows has in front).
+    hooks['__rigreadyTrayIcon'] = (kind: 'click' | 'double-click', inFront?: boolean) =>
+      onTrayIcon(kind, inFront === undefined ? {} : { inFront });
     hooks['__rigreadyClipboard'] = () => fake.clipboard.copied;
+    // What a command did, and every program the fake machine was asked to start.
+    hooks['__rigreadyCommand'] = () => ({
+      run: commands.state(),
+      started: fake.processes.started.map((target) => target.exe),
+    });
+    // Every shortcut the fake machine was asked to make.
+    hooks['__rigreadyShortcuts'] = () => fake.shortcuts.built;
+    // The taskbar button as the fake machine was last told, and a press on one of its buttons.
+    hooks['__rigreadyTaskbar'] = () => ({
+      jumpTasks: fake.taskbar.jumpTasks,
+      jumpListWrites: fake.taskbar.jumpListWrites,
+      overlay: fake.taskbar.overlay ? fake.taskbar.overlay.description : null,
+      tone: trayTone(trayStatus) ?? null,
+      tooltip: fake.taskbar.tooltip,
+      progress: fake.taskbar.progress,
+      progressSeen: fake.taskbar.progressSeen,
+      buttons: fake.taskbar.buttons.map(({ id, tooltip, enabled }) => ({ id, tooltip, enabled })),
+    });
+    hooks['__rigreadyTaskbarPress'] = (buttonId: string) => fake.taskbar.press(buttonId);
+    // The hotkeys Windows has for RigReady, another program taking one, and a press.
+    hooks['__rigreadyHotkeys'] = () => Object.fromEntries(fake.hotkeys.active);
+    hooks['__rigreadyHotkeyTaken'] = (accelerator: string) => fake.hotkeys.taken.add(accelerator);
+    hooks['__rigreadyHotkeyPress'] = (id: string) => fake.hotkeys.press(id);
+    // The pictures it was handed, as PNG files a person can look at.
+    hooks['__rigreadyTaskbarPictures'] = () => {
+      const png = (image: { width: number; height: number; pixels: Uint8Array }): string =>
+        nativeImage
+          .createFromBitmap(Buffer.from(image.pixels), { width: image.width, height: image.height })
+          .toPNG()
+          .toString('base64');
+      return {
+        overlay: fake.taskbar.overlay ? png(fake.taskbar.overlay.icon) : null,
+        buttons: Object.fromEntries(fake.taskbar.buttons.map((b) => [b.id, png(b.icon)])),
+      };
+    };
     hooks['__rigreadyTrayClick'] = async (id: string) => {
       if (id.startsWith('profile:')) await switchFromTray(id.slice('profile:'.length));
       else await trayActions[id]?.();
@@ -592,9 +823,37 @@ async function start(): Promise<void> {
     `features: ${wiring.features.map((f) => f.id).join(', ')}; ${wiring.handlers.size} channels`
   );
 
+  // ---- the tray icon itself: a double-click opens RigReady, one click does the sensible thing ----
+  /** When the window last stopped being the one in front (a click on the tray takes that away first). */
+  let lastInFront = 0;
+  let trayHides = 0;
+  let trayHideTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Longer than the gap between the two clicks of a double-click. */
+  const DOUBLE_CLICK_MS = 350;
+  const windowState = (): TrayWindowState => ({
+    visible: mainWindow?.isVisible() ?? false,
+    minimized: mainWindow?.isMinimized() ?? false,
+    inFront: (mainWindow?.isFocused() ?? false) || Date.now() - lastInFront < 300,
+  });
+  function onTrayIcon(kind: 'click' | 'double-click', known: Partial<TrayWindowState> = {}): void {
+    clearTimeout(trayHideTimer);
+    trayHideTimer = undefined;
+    if (trayClick(kind, { ...windowState(), ...known }) === 'show') {
+      showWindow();
+      return;
+    }
+    // Putting it away waits a moment: the first click of a double-click must not make it blink.
+    trayHideTimer = setTimeout(() => {
+      trayHideTimer = undefined;
+      trayHides++;
+      mainWindow?.hide();
+    }, DOUBLE_CLICK_MS);
+  }
+
   try {
     tray = new Tray(nativeImage.createFromPath(trayIconPath));
-    tray.on('click', showWindow);
+    tray.on('click', () => onTrayIcon('click'));
+    tray.on('double-click', () => onTrayIcon('double-click'));
     refreshTray();
     // Fill in the setup name before the window has asked for it (started hidden at login).
     void call('fly:state');
@@ -603,7 +862,9 @@ async function start(): Promise<void> {
   }
 
   const stateFile = path.join(dataRoot, 'window.json');
-  const startHidden = process.argv.includes(HIDDEN_ARG) && tray !== undefined;
+  // A start that was asked to do something is never a hidden one: what it does is shown.
+  const startHidden =
+    process.argv.includes(HIDDEN_ARG) && tray !== undefined && startCommand.kind === 'none';
   mainWindow = createWindow(
     await readWindowState(ports.files, stateFile),
     ports.files,
@@ -611,6 +872,20 @@ async function start(): Promise<void> {
     !startHidden
   );
   watchWindow(mainWindow, log);
+  // The window has a taskbar button from when it is shown: what the button should say is
+  // decided now, and handed over each time Windows makes the button.
+  realTaskbar?.watch(mainWindow, (results) => {
+    const failed = results.filter((result) => !result.ok);
+    if (failed.length === 0) {
+      log.info('Windows made the taskbar button: its badge, tooltip, progress and buttons are set');
+    } else {
+      log.warn(
+        'Windows made the taskbar button, but did not take everything',
+        failed.map((result) => (result.ok ? null : result.error))
+      );
+    }
+  });
+  refreshTaskbar();
   mainWindow.on('close', (event) => {
     if (quitting || !tray) return;
     // Decided from the cached settings: the close event cannot wait for a file read.
@@ -621,6 +896,16 @@ async function start(): Promise<void> {
     mainWindow?.hide();
   });
   mainWindow.on('closed', () => (mainWindow = undefined));
+  // A command of this start may have begun, or even ended, before the window could be told:
+  // it is told once its page is there (and again when a page that crashed was loaded anew).
+  // One that stopped stays worth telling; one that went well only for a short while.
+  mainWindow.webContents.on('did-finish-load', () => {
+    const run = commands.state();
+    if (!run) return;
+    const justEnded = Date.now() - commandEndedAt < 20_000;
+    if (!run.outcome || run.outcome === 'stopped' || justEnded) tellCommand(run);
+  });
+  mainWindow.on('blur', () => (lastInFront = Date.now()));
 
   // In the tray with the window hidden, memory RigReady is not using goes back to Windows.
   const trimmer = new TrayMemoryTrimmer(() => {
@@ -630,6 +915,15 @@ async function start(): Promise<void> {
   mainWindow.on('hide', () => trimmer.onHidden());
   mainWindow.on('show', () => trimmer.onShown());
   if (startHidden) trimmer.onHidden();
+
+  runCommand = (parsed) => {
+    void commands.handle(parsed).then((run) => {
+      if (run)
+        log.info(`command ${run.action} "${run.asked}": ${run.outcome ?? run.phase}`, run.reasons);
+    });
+  };
+  runCommand(startCommand.kind === 'none' && handedOver ? handedOver : startCommand);
+  handedOver = undefined;
 
   app.on('window-all-closed', () => app.quit());
   let disposed = false;
@@ -670,10 +964,13 @@ if (refusal) {
   console.error(refusal);
   dialog.showErrorBox('RigReady', refusal);
   app.exit(1);
-} else if (!app.requestSingleInstanceLock() && !argValue('--diagnose')) {
+} else if (!app.requestSingleInstanceLock({ command: startCommand }) && !argValue('--diagnose')) {
+  // RigReady is already running: it was handed what this start asked for, and does it.
   app.quit();
 } else {
-  app.on('second-instance', showWindow);
+  app.on('second-instance', (_event, argv, _workingDirectory, handed) =>
+    onSecondInstance(argv, handed)
+  );
   void app
     .whenReady()
     .then(start)

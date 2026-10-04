@@ -1,0 +1,13 @@
+description: One click, TrackIR takes a long time to come up
+rig: mark-full
+extends: flying-all-good.yaml
+# TrackIR is closed, and when it is started Windows accepts the start but the program does
+# not show up: the fix waits for it (up to a minute in this setup), which leaves time to
+# press "Do not launch". A test lets it show up with a live startProcess mutation.
+mutations:
+  - { op: stopProcess, name: TrackIR5.exe }
+  - { op: failProcessStart, name: TrackIR5.exe, mode: neverRuns }
+profiles:
+  - profiles/one-click-slow.yaml
+data:
+  state.json: data/one-click/state-slow.json

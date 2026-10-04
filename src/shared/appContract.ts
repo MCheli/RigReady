@@ -2,10 +2,52 @@ import { z } from 'zod';
 import { channel, defineContract, noInput } from './ipc';
 import { InputStateSchema } from './models';
 
+/** One thing a command did or is doing: a fix of Make ready, a step of Launch. */
+export const CommandStepSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  state: z.enum(['pending', 'running', 'done', 'failed', 'skipped']),
+  message: z.string().optional(),
+});
+export type CommandStep = z.infer<typeof CommandStepSchema>;
+
+/**
+ * A command RigReady was started with (`--fly`, `--make-ready`, `--setup`: a desktop
+ * shortcut, a Jump List task, the hotkey), as far as it has got. The shell runs it; the
+ * window shows it.
+ */
+export const CommandRunSchema = z.object({
+  /** Counts up with every command, so the window can tell a new one from news about the same one. */
+  id: z.number().int(),
+  action: z.enum(['fly', 'makeReady', 'select']),
+  /** The setup as it was asked for: an id or a name. Empty when the command named none. */
+  asked: z.string(),
+  /** The setup that was meant, once it is found. */
+  setup: z.object({ id: z.string(), name: z.string() }).optional(),
+  phase: z.enum(['checking', 'makingReady', 'launching', 'finished']),
+  /** How it ended. Absent while it is still going. */
+  outcome: z.enum(['launched', 'ready', 'selected', 'stopped', 'cancelled']).optional(),
+  /** ok: done as asked. warn: needs a look. bad: not ready, or it failed. idle: nothing to judge. */
+  tone: z.enum(['ok', 'warn', 'bad', 'idle']),
+  /** One line: what is happening, or what happened. */
+  headline: z.string(),
+  /** Why it stopped, or what to know about how it ended, one line each. */
+  reasons: z.array(z.string()),
+  steps: z.array(CommandStepSchema),
+  /** True while "Do not launch" can still keep the game from being started. */
+  canCancel: z.boolean(),
+});
+export type CommandRun = z.infer<typeof CommandRunSchema>;
+
 /** The shell's own contract: facts about this run of the app. */
 export const appContract = defineContract(
   'app',
   {
+    /**
+     * Keeps a `--fly` command that is still checking or making ready from launching the
+     * game. Answers false when it is too late (the launch has begun) or nothing is running.
+     */
+    cancelCommand: channel(noInput, z.object({ cancelled: z.boolean() })),
     info: channel(
       noInput,
       z.object({
@@ -74,5 +116,10 @@ export const appContract = defineContract(
   {
     /** Something outside the renderer changed the machine (tray action, live scenario mutation). */
     machineChanged: z.object({ reason: z.string() }),
+    /**
+     * A command started, got further or ended. Sent to the main window only, and once more
+     * when its page has loaded (a command of this start may have begun before that).
+     */
+    command: CommandRunSchema,
   }
 );

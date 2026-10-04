@@ -289,6 +289,8 @@ describe('the source rule: a feature that writes files shows the change first', 
       'racing:beamngCopyToController': 'racing:beamngCopyToControllerPreview',
       'racing:iracingRepair': 'racing:iracingRepairPreview',
       'racing:lmuRepair': 'racing:lmuRepairPreview',
+      'profiles:createShortcut': 'profiles:shortcutPreview',
+      'profiles:removeShortcut': 'profiles:shortcutPreview',
     };
     const all = new Set(
       contracts.flatMap((c) => Object.keys(c.channels).map((k) => `${c.feature}:${k}`))
@@ -475,6 +477,50 @@ describe('a preview says exactly what is then written', () => {
     );
     const changed = written.filter((e) => e.action === 'remove' || e.hashBefore !== e.hashAfter);
     expectSame(changes, changed, target.ports.folders.dataRoot());
+  });
+
+  it('Setups: putting a shortcut on the desktop, replacing one under an earlier name, and removing it', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const target = app;
+    const dataRoot = target.ports.folders.dataRoot();
+    const id = 'dcs-f-a-18c';
+    const preview = (action: 'create' | 'remove'): Promise<ChangePreview> =>
+      target.invoke<ChangePreview>('profiles:shortcutPreview', { id, action });
+
+    const create = await preview('create');
+    expect(await journal(target)).toEqual([]);
+    expect(create.files.map((f) => [f.label, f.change])).toEqual([
+      ['DCS F-A-18C - RigReady.lnk', 'created'],
+    ]);
+    expectSame(
+      create,
+      await during(target, () => target.invoke('profiles:createShortcut', { id })),
+      dataRoot
+    );
+
+    // Renamed since: the new name is written and the old one goes, as one action.
+    const profile = await target.invoke<Record<string, unknown>>('profiles:get', { id });
+    await target.invoke('profiles:save', { ...profile, name: 'Hornet' });
+    const update = await preview('create');
+    expect(update.files.map((f) => [f.label, f.change])).toEqual([
+      ['Hornet - RigReady.lnk', 'created'],
+      ['DCS F-A-18C - RigReady.lnk', 'deleted'],
+    ]);
+    expectSame(
+      update,
+      await during(target, () => target.invoke('profiles:createShortcut', { id })),
+      dataRoot
+    );
+
+    const remove = await preview('remove');
+    expect(remove.files.map((f) => [f.label, f.change])).toEqual([
+      ['Hornet - RigReady.lnk', 'deleted'],
+    ]);
+    expectSame(
+      remove,
+      await during(target, () => target.invoke('profiles:removeShortcut', { id })),
+      dataRoot
+    );
   });
 
   it('Backups: putting a snapshot back', async () => {

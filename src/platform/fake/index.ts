@@ -14,6 +14,7 @@ import type {
   Dialogs,
   DisplayApplyOutcome,
   DisplayProvider,
+  Hotkeys,
   Http,
   HttpRequest,
   HttpResponse,
@@ -37,9 +38,17 @@ import type {
   Shell,
   ShellOptions,
   ShellResult,
+  ShortcutLink,
+  Shortcuts,
+  JumpTask,
+  Taskbar,
+  TaskbarImage,
+  TaskbarProgress,
+  ThumbButton,
 } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
 import { findSteamLibraries } from '../../core/steam';
+import { joinWindowsArgs, splitWindowsArgs } from '../../core/windowsArgs';
 import type {
   AudioRole,
   AudioState,
@@ -444,6 +453,9 @@ export class FakeKnownFolders implements KnownFolders {
   }
   savedGames(): string {
     return path.join(this.root, this.state?.folders?.savedGames ?? 'Saved Games');
+  }
+  desktop(): string {
+    return path.join(this.root, 'Desktop');
   }
   appData(): string {
     return path.join(this.root, 'AppData', 'Roaming');
@@ -873,6 +885,151 @@ export class FakeAppWindow implements AppWindow {
   }
 }
 
+/** What the first line of a fake shortcut file says, so anything else is "not a shortcut". */
+const FAKE_SHORTCUT_MAGIC = 'RigReady scenario shortcut';
+
+/**
+ * Shortcuts of a scenario run. A link's content is a small text file that says what a real
+ * .lnk would: the target, and the arguments as the one text Windows stores, so they go
+ * through the same quoting rules as on the real machine. Records every link that was made.
+ */
+export class FakeShortcuts implements Shortcuts {
+  /** Every link build() was asked for, oldest first. */
+  readonly built: ShortcutLink[] = [];
+  constructor(private readonly folders: Pick<KnownFolders, 'localAppData'>) {}
+
+  /** Where a per-user install of RigReady is, on the fake machine. */
+  self(): { exe: string; args: string[] } {
+    return {
+      exe: path.join(this.folders.localAppData(), 'Programs', 'RigReady', 'RigReady.exe'),
+      args: [],
+    };
+  }
+
+  async build(link: ShortcutLink): Promise<Result<Uint8Array>> {
+    this.built.push(structuredClone(link));
+    const { args, ...rest } = link;
+    const stored = JSON.stringify({ ...rest, args: joinWindowsArgs(args) });
+    return ok(new TextEncoder().encode([FAKE_SHORTCUT_MAGIC, stored, ''].join('\n')));
+  }
+
+  async read(file: string): Promise<Result<ShortcutLink | undefined>> {
+    let text: string;
+    try {
+      text = await fs.readFile(file, 'utf8');
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'ENOENT') return ok(undefined);
+      return err('shortcut.read', `${path.basename(file)} could not be read.`, String(e));
+    }
+    const notOne = err(
+      'shortcut.read',
+      `${path.basename(file)} is not a shortcut Windows can read.`
+    );
+    const [magic, body] = text.split('\n');
+    if (magic !== FAKE_SHORTCUT_MAGIC || body === undefined) return notOne;
+    try {
+      const stored = JSON.parse(body) as Omit<ShortcutLink, 'args'> & { args: string };
+      if (typeof stored.target !== 'string' || typeof stored.args !== 'string') return notOne;
+      return ok({ ...stored, args: splitWindowsArgs(stored.args) });
+    } catch {
+      // Damaged content is "not a shortcut", as a damaged .lnk is.
+      return notOne;
+    }
+  }
+}
+
+/** System-wide hotkeys of a scenario run: what is registered, and a way to press one. */
+export class FakeHotkeys implements Hotkeys {
+  /** id -> accelerator, as registered now. */
+  readonly active = new Map<string, string>();
+  /** Accelerators another program has: registering one of these fails. */
+  readonly taken = new Set<string>();
+  private listeners = new Set<(id: string) => void>();
+
+  async register(id: string, accelerator: string): Promise<Result<void>> {
+    const elsewhere = [...this.active].some(
+      ([other, held]) => other !== id && held === accelerator
+    );
+    if (this.taken.has(accelerator) || elsewhere) {
+      return err('hotkey.taken', `Windows did not register ${accelerator}.`);
+    }
+    this.active.set(id, accelerator);
+    return ok(undefined);
+  }
+  async unregister(id: string): Promise<Result<void>> {
+    this.active.delete(id);
+    return ok(undefined);
+  }
+  async registered(id: string): Promise<Result<string | undefined>> {
+    return ok(this.active.get(id));
+  }
+  subscribe(listener: (id: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+  /** Test hook: the user presses the hotkey called `id`. False when no such hotkey is registered. */
+  press(id: string): boolean {
+    if (!this.active.has(id)) return false;
+    for (const listener of [...this.listeners]) listener(id);
+    return true;
+  }
+}
+
+/** The taskbar button of a scenario run: remembers what it was last told, and all of it. */
+export class FakeTaskbar implements Taskbar {
+  /** The Jump List as it is now. */
+  jumpTasks: JumpTask[] = [];
+  /** How often the Jump List was set (it must not be rewritten when nothing changed). */
+  jumpListWrites = 0;
+  overlay: { icon: TaskbarImage; description: string } | null = null;
+  tooltip = '';
+  progress: TaskbarProgress = { mode: 'none' };
+  /** Every progress state there was, oldest first: a test can see that a bar was shown. */
+  readonly progressSeen: TaskbarProgress[] = [];
+  buttons: ThumbButton[] = [];
+  private listeners = new Set<(buttonId: string) => void>();
+
+  async setJumpTasks(tasks: JumpTask[]): Promise<Result<void>> {
+    this.jumpTasks = structuredClone(tasks);
+    this.jumpListWrites++;
+    return ok(undefined);
+  }
+  async setOverlay(
+    overlay: { icon: TaskbarImage; description: string } | null
+  ): Promise<Result<void>> {
+    this.overlay = overlay ? { ...overlay } : null;
+    return ok(undefined);
+  }
+  async setTooltip(text: string): Promise<Result<void>> {
+    this.tooltip = text;
+    return ok(undefined);
+  }
+  async setProgress(progress: TaskbarProgress): Promise<Result<void>> {
+    this.progress = { ...progress };
+    this.progressSeen.push({ ...progress });
+    return ok(undefined);
+  }
+  async setButtons(buttons: ThumbButton[]): Promise<Result<void>> {
+    this.buttons = buttons.map((button) => ({ ...button }));
+    return ok(undefined);
+  }
+  subscribe(listener: (buttonId: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+  /** Test hook: the user presses a button under the window's thumbnail. A button that is off does nothing. */
+  press(buttonId: string): boolean {
+    const button = this.buttons.find((b) => b.id === buttonId);
+    if (!button?.enabled) return false;
+    for (const listener of [...this.listeners]) listener(buttonId);
+    return true;
+  }
+}
+
 export interface FakePorts extends Ports {
   devices: FakeDeviceProvider;
   processes: FakeProcessProvider;
@@ -890,6 +1047,9 @@ export interface FakePorts extends Ports {
   overlays: FakeOverlays;
   window: FakeAppWindow;
   updates: FakeUpdateFeed;
+  shortcuts: FakeShortcuts;
+  taskbar: FakeTaskbar;
+  hotkeys: FakeHotkeys;
   /** The mutable machine state behind the providers. */
   state: RigState;
 }
@@ -917,6 +1077,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
   const shell = new FakeShell(processes, state);
   const http = new FakeHttp();
   const dialogs = new FakeDialogs(options.homeDir);
+  const folders = new FakeKnownFolders(options.homeDir, dataRoot, registry, state);
   if (options.scenario) {
     shell.scripts.push(...structuredClone(options.scenario.shell));
     http.scripts.push(...structuredClone(options.scenario.http));
@@ -933,7 +1094,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     audio: new FakeAudioProvider(state),
     registry,
     files: new BackupFileStore(new SlowableRawFs(state), dataRoot, clock),
-    folders: new FakeKnownFolders(options.homeDir, dataRoot, registry, state),
+    folders,
     shell,
     clock,
     secrets: new FakeSecrets(),
@@ -946,6 +1107,9 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     overlays: new FakeOverlays(),
     window: new FakeAppWindow(),
     updates: new FakeUpdateFeed(path.join(options.homeDir, UPDATE_FEED_FILE)),
+    shortcuts: new FakeShortcuts(folders),
+    taskbar: new FakeTaskbar(),
+    hotkeys: new FakeHotkeys(),
   };
 }
 

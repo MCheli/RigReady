@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: one-click-slow
+name: DCS F/A-18C evening
+game: dcs
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+launch:
+  exe: '{DCS_INSTALL}/bin/DCS.exe'
+  args: []
+checks:
+  - { id: c1, type: device.connected, title: T-Pendular-Rudder, required: true, params: { vendorId: 044F, productId: B68F } }
+  - id: c2
+    type: process.running
+    title: TrackIR
+    required: true
+    params: { name: TrackIR5.exe }
+    remediation:
+      type: process.launch
+      params: { exe: '{PROGRAM_FILES_X86}/TrackIR5/TrackIR5.exe', args: [], timeoutMs: 60000 }

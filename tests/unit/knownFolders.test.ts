@@ -25,7 +25,14 @@ const emptyRegistry: Registry = {
   listValues: async () => ok({}),
 };
 
-const USER_FOLDERS = ['home', 'documents', 'savedGames', 'appData', 'localAppData'] as const;
+const USER_FOLDERS = [
+  'home',
+  'documents',
+  'savedGames',
+  'desktop',
+  'appData',
+  'localAppData',
+] as const;
 
 describe.runIf(windows)('the real Windows KnownFolders under a redirected profile', () => {
   let cleanup: (() => Promise<void>) | undefined;
@@ -48,6 +55,8 @@ describe.runIf(windows)('the real Windows KnownFolders under a redirected profil
     expect(folders.home()).toBe(user);
     expect(folders.documents()).toBe(path.join(user, 'Documents'));
     expect(folders.savedGames()).toBe(path.join(user, 'Saved Games'));
+    // A desktop shortcut made in a redirected run can never land on the real desktop.
+    expect(folders.desktop()).toBe(path.join(user, 'Desktop'));
     expect(folders.appData()).toBe(roaming);
     expect(folders.localAppData()).toBe(local);
     // Without RIGREADY_HOME the data root follows the (redirected) home.
@@ -60,7 +69,7 @@ describe.runIf(windows)('the real Windows KnownFolders under a redirected profil
     // (The temp folder itself is under the real AppData\Local, so the home is not compared.)
     const real = os.homedir();
     for (const name of [...USER_FOLDERS, 'dataRoot'] as const) {
-      for (const used of ['Documents', 'Saved Games', '.rigready', 'AppData\\Roaming']) {
+      for (const used of ['Documents', 'Saved Games', 'Desktop', '.rigready', 'AppData\\Roaming']) {
         expect(isWithin(path.join(real, used), folders[name]()), `${name} in ${used}`).toBe(false);
       }
       expect(folders[name]().toLowerCase()).not.toBe(real.toLowerCase());

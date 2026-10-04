@@ -5,7 +5,9 @@ import {
   type ElectronApplication,
   type Page,
 } from '@playwright/test';
+import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import type { InputState } from '../../src/shared/models';
@@ -117,6 +119,12 @@ export interface RunningApp {
    * user would. The returned page replaces the old one; screenshots keep counting.
    */
   restart(): Promise<RunningApp>;
+  /**
+   * Starts the app a second time on the same folders while this one runs, as a desktop
+   * shortcut or a Jump List task does: `secondStart(['--fly=dcs-f-a-18c'])`. The second
+   * start hands over to the running app and ends; its exit code is the answer.
+   */
+  secondStart(args?: string[]): Promise<number | null>;
 }
 
 export interface LaunchOptions {
@@ -127,6 +135,8 @@ export interface LaunchOptions {
    * the fake user folder): { open: [['Documents/setup.rigready']], save: ['Documents/out.zip'] }.
    */
   dialogs?: { open?: string[][]; save?: (string | null)[] };
+  /** Command-line arguments for the app, as a shortcut would pass them: ['--fly', 'DCS F/A-18C']. */
+  args?: string[];
 }
 
 export interface Rig {
@@ -166,8 +176,11 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
         let count = 0;
 
         const open = async (): Promise<RunningApp> => {
+          const extra = options.args ?? [];
           const app = await _electron.launch({
-            ...(executablePath ? { executablePath, args: [] } : { args: [repoRoot] }),
+            ...(executablePath
+              ? { executablePath, args: [...extra] }
+              : { args: [repoRoot, ...extra] }),
             env: isolated.env,
           });
           const page = await app.firstWindow();
@@ -247,6 +260,18 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
               await app.close();
               started.splice(started.indexOf(entry), 1);
               return open();
+            },
+            secondStart(args = []) {
+              const program =
+                executablePath ?? (createRequire(__filename)('electron') as unknown as string);
+              const second = spawn(program, executablePath ? args : [repoRoot, ...args], {
+                env: isolated.env,
+                stdio: 'ignore',
+              });
+              return new Promise<number | null>((resolve, reject) => {
+                second.once('error', reject);
+                second.once('exit', resolve);
+              });
             },
           };
         };

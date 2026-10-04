@@ -63,6 +63,7 @@ const WITH_INPUT: [string, unknown][] = [
   ['fly:gameStatus', { profileId: 'dcs-f-a-18c' }],
   ['profiles:get', { id: 'dcs-f-a-18c' }],
   ['profiles:edit', { id: 'dcs-f-a-18c' }],
+  ['profiles:shortcut', { id: 'dcs-f-a-18c' }],
   ['sharing:prepare', { profileId: 'dcs-f-a-18c' }],
   ['backup:changes', { profileId: 'dcs-f-a-18c' }],
   ['backup:backUp', { scope: { kind: 'full' } }],

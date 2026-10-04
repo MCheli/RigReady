@@ -1,4 +1,15 @@
-import { app, BrowserWindow, clipboard, dialog, Notification, safeStorage, screen } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  globalShortcut,
+  nativeImage,
+  Notification,
+  safeStorage,
+  screen,
+  shell,
+} from 'electron';
 import type { NativeImage } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -6,6 +17,7 @@ import type {
   AppWindow,
   Clipboard,
   Dialogs,
+  Hotkeys,
   LoginItem,
   Notifications,
   OpenDialogOptions,
@@ -17,11 +29,20 @@ import type {
   ScreenArea,
   ScreenLabel,
   Secrets,
+  ShortcutLink,
+  Shortcuts,
+  JumpTask,
+  Taskbar,
+  TaskbarImage,
+  TaskbarProgress,
+  ThumbButton,
 } from '../../core/ports';
 import { loginEntryEnabled, RUN_KEY, STARTUP_APPROVED_KEY } from '../../core/loginItem';
 import { err, ok, type Result } from '../../core/result';
 import { placeOnScreens, type WindowPlace } from '../../core/windowPlace';
+import { joinWindowsArgs, splitWindowsArgs } from '../../core/windowsArgs';
 import { WindowsRegistry } from '../windows/registry';
+import { RegisterWindowMessageW } from '../windows/win32';
 
 /** The ports that need Electron: secret storage, file pickers, HTML rendering, notifications, login item. */
 
@@ -344,6 +365,286 @@ export class ElectronLoginItem implements LoginItem {
     } catch (e) {
       return err('login.write', 'Could not change the Start with Windows setting.', String(e));
     }
+  }
+}
+
+/** The id Windows groups RigReady's windows, shortcuts and Jump List under. */
+export const APP_USER_MODEL_ID = 'io.rigready.app';
+
+/**
+ * Windows shortcuts through the shell's own reader and writer. A link is made in a file of
+ * its own under <data root>/tmp and handed back as bytes: where it ends up is FileStore's
+ * business (a backup first, a journal entry, Undo).
+ */
+export class ElectronShortcuts implements Shortcuts {
+  private counter = 0;
+
+  constructor(private readonly dataRoot: string) {}
+
+  self(): { exe: string; args: string[] } {
+    // In a development run the program is electron.exe, which needs to be told the app.
+    return { exe: process.execPath, args: app.isPackaged ? [] : [app.getAppPath()] };
+  }
+
+  async build(link: ShortcutLink): Promise<Result<Uint8Array>> {
+    const dir = path.join(this.dataRoot, 'tmp');
+    const file = path.join(dir, `shortcut-${process.pid}-${++this.counter}.lnk`);
+    try {
+      await fs.mkdir(dir, { recursive: true });
+      const made = shell.writeShortcutLink(file, 'create', {
+        target: link.target,
+        // One text, as a shortcut stores it; Windows' own rules give the values back.
+        args: joinWindowsArgs(link.args),
+        appUserModelId: APP_USER_MODEL_ID,
+        ...(link.description ? { description: link.description } : {}),
+        ...(link.icon ? { icon: link.icon, iconIndex: 0 } : {}),
+        ...(link.cwd ? { cwd: link.cwd } : {}),
+      });
+      if (!made) return err('shortcut.build', 'Windows could not make the shortcut.');
+      return ok(new Uint8Array(await fs.readFile(file)));
+    } catch (e) {
+      return err('shortcut.build', 'Windows could not make the shortcut.', String(e));
+    } finally {
+      await fs.rm(file, { force: true });
+    }
+  }
+
+  async read(file: string): Promise<Result<ShortcutLink | undefined>> {
+    try {
+      await fs.access(file);
+    } catch {
+      // No such file: there is no shortcut, which is an answer and not a failure.
+      return ok(undefined);
+    }
+    try {
+      const details = shell.readShortcutLink(file);
+      return ok({
+        target: details.target,
+        args: splitWindowsArgs(details.args ?? ''),
+        ...(details.description ? { description: details.description } : {}),
+        ...(details.icon ? { icon: details.icon } : {}),
+        ...(details.cwd ? { cwd: details.cwd } : {}),
+      });
+    } catch (e) {
+      return err(
+        'shortcut.read',
+        `${path.basename(file)} is not a shortcut Windows can read.`,
+        String(e)
+      );
+    }
+  }
+}
+
+/**
+ * System-wide hotkeys through Electron's globalShortcut, one per name. Windows is asked
+ * what it has registered; nothing is taken on trust.
+ */
+export class ElectronHotkeys implements Hotkeys {
+  private readonly held = new Map<string, string>();
+  private readonly listeners = new Set<(id: string) => void>();
+
+  async register(id: string, accelerator: string): Promise<Result<void>> {
+    const before = this.held.get(id);
+    if (before === accelerator && globalShortcut.isRegistered(accelerator)) return ok(undefined);
+    try {
+      const given = globalShortcut.register(accelerator, () => {
+        for (const listener of [...this.listeners]) listener(id);
+      });
+      if (!given) return err('hotkey.taken', `Windows did not register ${accelerator}.`);
+    } catch (e) {
+      return err('hotkey.invalid', `${accelerator} is not a key combination.`, String(e));
+    }
+    // Only now is the one it had given back: a refused hotkey leaves the old one working.
+    if (before !== undefined && before !== accelerator) globalShortcut.unregister(before);
+    this.held.set(id, accelerator);
+    return ok(undefined);
+  }
+
+  async unregister(id: string): Promise<Result<void>> {
+    const accelerator = this.held.get(id);
+    if (accelerator === undefined) return ok(undefined);
+    try {
+      globalShortcut.unregister(accelerator);
+    } catch (e) {
+      return err('hotkey.release', `${accelerator} could not be given back.`, String(e));
+    }
+    this.held.delete(id);
+    return ok(undefined);
+  }
+
+  async registered(id: string): Promise<Result<string | undefined>> {
+    const accelerator = this.held.get(id);
+    if (accelerator === undefined) return ok(undefined);
+    return ok(globalShortcut.isRegistered(accelerator) ? accelerator : undefined);
+  }
+
+  subscribe(listener: (id: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+}
+
+/**
+ * RigReady's taskbar button through Electron. The Jump List belongs to the app. The badge,
+ * the tooltip, the progress bar and the thumbnail buttons belong to the button Windows
+ * makes for the main window, and only while there is one: not before the window is first
+ * shown, and not while it is hidden in the tray. What the button should show is remembered
+ * and handed over whenever Windows makes the button (again).
+ */
+export class ElectronTaskbar implements Taskbar {
+  private readonly listeners = new Set<(buttonId: string) => void>();
+  /** Windows has made the window's taskbar button, and it is still there. */
+  private button = false;
+  private overlay: { icon: TaskbarImage; description: string } | null = null;
+  private tooltip: string | undefined;
+  private progress: TaskbarProgress = { mode: 'none' };
+  private buttons: ThumbButton[] | undefined;
+
+  constructor(
+    private readonly window: () => BrowserWindow | undefined,
+    /** How Windows starts this copy of RigReady (Shortcuts.self). */
+    private readonly self: () => { exe: string; args: string[] }
+  ) {}
+
+  /**
+   * Follows a window's taskbar button. Windows announces a new button with the registered
+   * message "TaskbarButtonCreated": when the window is first shown, and each time it comes
+   * back from the tray. A new button knows nothing, so it is told everything then;
+   * `made` hears how that went.
+   */
+  watch(window: BrowserWindow, made?: (results: Result<void>[]) => void): void {
+    const created = RegisterWindowMessageW('TaskbarButtonCreated') as number;
+    if (!created) return;
+    window.hookWindowMessage(created, () => {
+      this.button = true;
+      // A moment later: Electron answers the same message by putting the thumbnail buttons
+      // it knows back on the new button, and ours (which may have changed while the window
+      // was away) must come after that.
+      setTimeout(() => made?.(this.tellAll()), 0);
+    });
+    const gone = (): void => {
+      this.button = false;
+    };
+    window.on('hide', gone);
+    window.on('closed', gone);
+  }
+
+  private tellAll(): Result<void>[] {
+    return [
+      this.applyOverlay(),
+      ...(this.tooltip === undefined ? [] : [this.applyTooltip()]),
+      this.applyProgress(),
+      ...(this.buttons === undefined ? [] : [this.applyButtons()]),
+    ];
+  }
+
+  private onButton(what: string, change: (window: BrowserWindow) => boolean | void): Result<void> {
+    const window = this.window();
+    // No button to tell: it is told when Windows makes one.
+    if (!this.button || !window || window.isDestroyed()) return ok(undefined);
+    try {
+      if (change(window) === false) return err('taskbar.refused', `Windows did not take ${what}.`);
+      return ok(undefined);
+    } catch (e) {
+      return err('taskbar.failed', `Windows did not take ${what}.`, String(e));
+    }
+  }
+
+  private picture(image: TaskbarImage): Electron.NativeImage {
+    return nativeImage.createFromBitmap(Buffer.from(image.pixels), {
+      width: image.width,
+      height: image.height,
+    });
+  }
+
+  async setJumpTasks(tasks: JumpTask[]): Promise<Result<void>> {
+    try {
+      const { exe, args } = this.self();
+      const taken = app.setUserTasks(
+        tasks.map((task) => ({
+          program: exe,
+          // One text, as Windows stores it for a task; its own rules give the values back.
+          arguments: joinWindowsArgs([...args, ...task.args]),
+          title: task.title,
+          description: task.description,
+          iconPath: exe,
+          iconIndex: 0,
+        }))
+      );
+      return taken ? ok(undefined) : err('taskbar.jumpList', 'Windows did not take the Jump List.');
+    } catch (e) {
+      return err('taskbar.jumpList', 'Windows did not take the Jump List.', String(e));
+    }
+  }
+
+  private applyOverlay(): Result<void> {
+    const overlay = this.overlay;
+    return this.onButton('the status badge', (window) =>
+      window.setOverlayIcon(overlay ? this.picture(overlay.icon) : null, overlay?.description ?? '')
+    );
+  }
+  async setOverlay(
+    overlay: { icon: TaskbarImage; description: string } | null
+  ): Promise<Result<void>> {
+    this.overlay = overlay;
+    return this.applyOverlay();
+  }
+
+  private applyTooltip(): Result<void> {
+    const text = this.tooltip ?? '';
+    return this.onButton('the tooltip', (window) => window.setThumbnailToolTip(text));
+  }
+  async setTooltip(text: string): Promise<Result<void>> {
+    this.tooltip = text;
+    return this.applyTooltip();
+  }
+
+  private applyProgress(): Result<void> {
+    const progress = this.progress;
+    return this.onButton('the progress bar', (window) => {
+      if (progress.mode === 'none') window.setProgressBar(-1);
+      else if (progress.mode === 'indeterminate') {
+        window.setProgressBar(2, { mode: 'indeterminate' });
+      } else {
+        const value = Math.min(1, Math.max(0, progress.value ?? 0));
+        window.setProgressBar(value, { mode: progress.mode });
+      }
+    });
+  }
+  async setProgress(progress: TaskbarProgress): Promise<Result<void>> {
+    this.progress = progress;
+    return this.applyProgress();
+  }
+
+  private applyButtons(): Result<void> {
+    const buttons = this.buttons ?? [];
+    return this.onButton('the thumbnail buttons', (window) =>
+      window.setThumbarButtons(
+        buttons.map((button) => ({
+          tooltip: button.tooltip,
+          icon: this.picture(button.icon),
+          // No flag is "enabled". Electron's documentation lists a flag of that name, but
+          // the call is refused when it is given (measured with Electron 44 on Windows 11).
+          flags: button.enabled ? [] : ['disabled'],
+          click: () => {
+            for (const listener of [...this.listeners]) listener(button.id);
+          },
+        }))
+      )
+    );
+  }
+  async setButtons(buttons: ThumbButton[]): Promise<Result<void>> {
+    this.buttons = buttons;
+    return this.applyButtons();
+  }
+
+  subscribe(listener: (buttonId: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 }
 

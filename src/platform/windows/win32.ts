@@ -66,6 +66,10 @@ export const GetWindowThreadProcessId = user32.func(
   'uint32_t GetWindowThreadProcessId(intptr_t window, _Out_ uint32_t *pid)'
 );
 export const IsWindowVisible = user32.func('int32_t IsWindowVisible(intptr_t window)');
+/** The number Windows gives a named message, the same in every program. */
+export const RegisterWindowMessageW = user32.func(
+  'uint32_t RegisterWindowMessageW(const char16_t *name)'
+);
 export const PostMessageW = user32.func(
   'int32_t PostMessageW(intptr_t window, uint32_t message, uintptr_t wParam, intptr_t lParam)'
 );
