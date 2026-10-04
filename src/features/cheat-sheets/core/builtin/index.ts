@@ -19,42 +19,54 @@ function mfd(): LayoutBuilder {
     WINWING,
     ['BEE0', 'BEE1', 'BEE2'],
     1000,
-    980,
-    'Twenty buttons around the screen and a rocker in each corner, numbered as the frame reports them. Labels sit on the screen side of each button.'
+    1000,
+    'Twenty buttons around the screen and a rocker in each corner, numbered as the frame reports them. Each label is on its button.'
   );
-  b.rect(40, 30, 920, 920, 46, 'body').rect(170, 160, 660, 660, 10, 'screen');
-  const xs = [240, 370, 500, 630, 760];
-  const ys = [282, 386, 490, 594, 698];
+  // One card per control, and the card is the button: the frame is drawn by its own keys,
+  // five along each edge of the screen and a rocker (up, down) in each corner.
+  const edge = 24;
+  const gap = 8;
+  const side = 184;
+  const band = 134;
+  const screen = { x: edge + side + gap, y: edge + band + gap, w: 568, h: 668 };
+  b.rect(12, 12, 976, 976, 44, 'body').rect(screen.x, screen.y, screen.w, screen.h, 12, 'screen');
+  const far = { x: screen.x + screen.w + gap, y: screen.y + screen.h + gap };
+  const across = (screen.w - 4 * gap) / 5;
+  const down = (screen.h - 4 * gap) / 5;
   const top = [42, 40, 38, 36, 34];
   const bottom = [12, 14, 16, 18, 20];
   const left = [1, 3, 5, 7, 9];
   const right = [31, 29, 27, 25, 23];
-  xs.forEach((cx, i) => {
-    b.rect(cx - 30, 78, 60, 44, 7, 'panel').text(cx, 106, String(top[i]), 17);
-    b.button(top[i]!, cx - 60, 172, 120, 62, `OSB ${i + 1}`);
-    b.rect(cx - 30, 858, 60, 44, 7, 'panel').text(cx, 886, String(bottom[i]), 17);
-    b.button(bottom[i]!, cx - 60, 746, 120, 62, `OSB ${15 - i}`);
-  });
-  ys.forEach((cy, i) => {
-    b.rect(83, cy - 30, 44, 60, 7, 'panel').text(105, cy + 6, String(left[i]), 17);
-    b.button(left[i]!, 182, cy - 31, 176, 62, `OSB ${20 - i}`);
-    b.rect(873, cy - 30, 44, 60, 7, 'panel').text(895, cy + 6, String(right[i]), 17);
-    b.button(right[i]!, 642, cy - 31, 176, 62, `OSB ${6 + i}`);
-  });
-  // The four corner rockers, shown in the middle in the corners they sit in.
-  const rockers: [string, number, number, number, number, number, number][] = [
-    ['GAIN', 105, 100, 368, 262, 43, 44],
-    ['SYM', 895, 100, 504, 262, 33, 32],
-    ['BRT', 105, 880, 368, 616, 10, 11],
-    ['CON', 895, 880, 504, 616, 22, 21],
-  ];
-  for (const [name, cx, cy, x, y, up, down] of rockers) {
-    b.rect(cx - 34, cy - 34, 68, 68, 34, 'panel').text(cx, cy + 5, name, 15);
-    b.button(up, x, y, 128, 50, `${name} ▲`).button(down, x, y + 54, 128, 50, `${name} ▼`);
+  for (let i = 0; i < 5; i++) {
+    const x = Math.round((screen.x + i * (across + gap)) * 10) / 10;
+    const y = Math.round((screen.y + i * (down + gap)) * 10) / 10;
+    b.button(top[i]!, x, edge, across, band, `OSB ${i + 1}`);
+    b.button(bottom[i]!, x, far.y, across, band, `OSB ${15 - i}`);
+    b.button(left[i]!, edge, y, side, down, `OSB ${20 - i}`);
+    b.button(right[i]!, far.x, y, side, down, `OSB ${6 + i}`);
   }
-  b.axis('SLIDER1', 368, 400, 264, 58, 'Knob');
-  b.button(49, 368, 464, 128, 50, 'Knob ◄').button(50, 504, 464, 128, 50, 'Knob ►');
-  b.text(500, 566, 'MFD', 30, 'line');
+  const rockers: [string, number, number, number, number][] = [
+    ['GAIN', edge, edge, 43, 44],
+    ['SYM', far.x, edge, 33, 32],
+    ['BRT', edge, far.y, 10, 11],
+    ['CON', far.x, far.y, 22, 21],
+  ];
+  const half = (band - 6) / 2;
+  for (const [name, x, y, up, low] of rockers) {
+    b.button(up, x, y, side, half, `${name} ▲`).button(
+      low,
+      x,
+      y + half + 6,
+      side,
+      half,
+      `${name} ▼`
+    );
+  }
+  // The knob is not on the bezel; it is shown on the screen it belongs to.
+  b.text(500, 340, 'MFD', 30, 'line');
+  b.group('Knob', 336, 410, 328, 150);
+  b.axis('SLIDER1', 344, 434, 312, 58);
+  b.button(49, 344, 498, 153, 54, '◄').button(50, 503, 498, 153, 54, '►');
   return b;
 }
 
@@ -164,27 +176,36 @@ function throttle(): LayoutBuilder {
 }
 
 function virpil(): LayoutBuilder {
-  const b = new LayoutBuilder('Virpil Control Panel #1', '3344', ['C259'], 1000, 520, ASSUMED);
-  b.rect(12, 10, 976, 500, 16, 'body');
+  const b = new LayoutBuilder('Virpil Control Panel #1', '3344', ['C259'], 1000, 572, ASSUMED);
+  b.rect(12, 10, 976, 552, 16, 'body');
   b.group('Buttons 1–12', 26, 22, 948, 146);
   b.row([1, 2, 3, 4, 5, 6], 34, 46, 150, 54, 6.4);
   b.row([7, 8, 9, 10, 11, 12], 34, 106, 150, 54, 6.4);
+  // The switch cards are narrow, so they are tall: three rows of text fit at a size that reads.
+  const tall = 58;
   for (let i = 0; i < 8; i++) {
     const n = 13 + i * 2;
-    b.stack(`${n} · ${n + 1}`, 26 + i * 119, 180, 112, [[n], [n + 1]]);
+    b.stack(`${n} · ${n + 1}`, 26 + i * 119, 180, 112, [[n], [n + 1]], tall);
   }
-  b.stack('29 · 30', 26, 316, 150, [[29], [30]]);
-  b.stack('31 · 32', 184, 316, 150, [[31], [32]]);
+  b.stack('29 · 30', 26, 340, 150, [[29], [30]], tall);
+  b.stack('31 · 32', 184, 340, 150, [[31], [32]], tall);
   [33, 36, 39].forEach((push, i) => {
-    b.stack(`ENCODER ${i + 1}`, 342 + i * 158, 316, 150, [
-      [push + 1, '◄ turn'],
-      [push, 'Push'],
-      [push + 2, 'Turn ►'],
-    ]);
+    b.stack(
+      `ENCODER ${i + 1}`,
+      342 + i * 158,
+      340,
+      150,
+      [
+        [push + 1, '◄ turn'],
+        [push, 'Push'],
+        [push + 2, 'Turn ►'],
+      ],
+      tall
+    );
   });
-  b.group('Knobs', 816, 316, 158, 150);
-  b.axis('SLIDER1', 822, 340, 146, 56);
-  b.axis('SLIDER2', 822, 402, 146, 56);
+  b.group('Knobs', 816, 340, 158, 150);
+  b.axis('SLIDER1', 822, 364, 146, 56);
+  b.axis('SLIDER2', 822, 426, 146, 56);
   return b;
 }
 
@@ -460,28 +481,50 @@ function takeoff(): LayoutBuilder {
 }
 
 function fanatec(): LayoutBuilder {
+  // A Podium DD1 or DD2, and the ClubSport V2.5 a direct-drive base reports itself as in
+  // compatibility mode: one driver, the same axes and button numbers.
   const b = new LayoutBuilder(
-    'Fanatec Podium wheel base',
+    'Fanatec wheel base (Podium, ClubSport)',
     '0EB7',
-    ['0007'],
+    ['0006', '0007', '0004'],
     1000,
-    740,
-    `Which buttons a wheel has depends on the rim that is mounted. ${ASSUMED}`
+    872,
+    'Which buttons a wheel has depends on the rim that is mounted; the paddles, the pedals, ' +
+      'the handbrake and a shifter plugged into the base are named the way the Fanatec driver ' +
+      `usually reports them. ${ASSUMED}`
   );
-  // The rim around the hub, button clusters either side of it.
+  // The rim around the hub, a paddle and a button cluster either side of it.
   b.ellipse(500, 318, 218, 218, 'body').ellipse(500, 318, 190, 190, 'screen');
   b.line([500, 100, 500, 126], 'accent');
   b.axis('X', 350, 20, 300, 62, 'Steering');
   b.cross('D-pad', 'hat:1', 344, 216, 312, 204);
-  b.group('Left side', 14, 204, 262, 214);
-  b.group('Right side', 724, 204, 262, 214);
-  [1, 2, 3, 4, 5, 6].forEach((n, i) => {
+  b.group('Left side', 14, 142, 262, 276);
+  b.group('Right side', 724, 142, 262, 276);
+  b.button(6, 22, 166, 246, 56, 'Left paddle');
+  b.button(5, 732, 166, 246, 56, 'Right paddle');
+  [1, 2, 3, 4].forEach((n, i) => {
     b.button(n, 22 + (i % 2) * 126, 228 + Math.floor(i / 2) * 62, 120, 56);
-    b.button(n + 6, 732 + (i % 2) * 126, 228 + Math.floor(i / 2) * 62, 120, 56);
   });
-  b.group('Pedals and other axes', 14, 560, 972, 162);
-  ['Y', 'Z', 'RZ', 'RX', 'RY', 'SLIDER1', 'SLIDER2'].forEach((name, i) => {
-    b.axis(name, 22 + (i % 4) * 240, 584 + Math.floor(i / 4) * 66, 234, 60);
+  [7, 8, 9, 10, 11, 12].forEach((n, i) => {
+    b.button(n, 732 + (i % 2) * 126, 228 + Math.floor(i / 2) * 62, 120, 56);
+  });
+  // A shifter on the base's own port shows up as buttons of the base, one per gear.
+  b.group('Shifter', 14, 560, 972, 92);
+  [13, 14, 15, 16, 17, 18, 19, 20].forEach((n, i) => {
+    b.button(n, 22 + i * 120.5, 584, 114.5, 60);
+  });
+  b.group('Pedals and other axes', 14, 668, 972, 162);
+  const axes: [string, string?][] = [
+    ['Z', 'Throttle pedal'],
+    ['RZ', 'Brake pedal'],
+    ['Y', 'Clutch pedal'],
+    ['SLIDER1', 'Handbrake'],
+    ['RX'],
+    ['RY'],
+    ['SLIDER2'],
+  ];
+  axes.forEach(([name, label], i) => {
+    b.axis(name, 22 + (i % 4) * 240, 692 + Math.floor(i / 4) * 66, 234, 60, label);
   });
   return b;
 }

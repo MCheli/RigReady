@@ -1,8 +1,10 @@
 import { CATEGORIES, CATEGORY_IDS, type CategoryId } from './categories';
-import { categoryColor, escapeHtml, renderDeviceSvg, THEMES, type ThemeName } from './render';
+import { categorySwatch, escapeHtml, renderDeviceSvg, THEMES, type ThemeName } from './render';
 import {
   summaryActions,
   actionIndex,
+  entryName,
+  sheetTitle,
   type ActionEntry,
   type Sheet,
   type SheetDevice,
@@ -31,7 +33,7 @@ export function legendHtml(kinds: CategoryId[], theme: ThemeName): string {
     kinds
       .map(
         (id) =>
-          `<span class="chip" data-kind="${id}"><i style="background:${categoryColor(id, theme)}"></i>${escapeHtml(CATEGORIES[id].label)}</span>`
+          `<span class="chip" data-kind="${id}"><i style="background:${categorySwatch(id, theme)}"></i>${escapeHtml(CATEGORIES[id].label)}</span>`
       )
       .join('') +
     `</div>`
@@ -62,8 +64,8 @@ html,body{margin:0;padding:0;background:${t.bg};color:${t.text};font-family:"Seg
 .kind h3{margin:0 0 3px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
 .kind h3 i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .row{display:flex;gap:8px;justify-content:space-between;align-items:baseline;border-bottom:1px solid ${t.emptyStroke};padding:2.5px 0;break-inside:avoid}
-.row .what{font-weight:600;min-width:0}
-.row .where{color:${t.muted};text-align:right;flex-shrink:0;max-width:56%}
+.row .what{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.row .where{color:${t.muted};text-align:right;flex-shrink:0;max-width:56%;overflow-wrap:anywhere}
 .row .where b{color:${t.text};font-weight:700}
 .row .where em{color:${t.accent};font-style:normal;font-weight:700}
 .row .note{color:${t.accent};font-style:italic}
@@ -73,7 +75,7 @@ html,body{margin:0;padding:0;background:${t.bg};color:${t.text};font-family:"Seg
 
 function header(sheet: Sheet, title: string, sub: string | undefined, stamp: string): string {
   return (
-    `<div class="head"><div class="ac">${escapeHtml(sheet.aircraft.name)}</div>` +
+    `<div class="head"><div class="ac">${escapeHtml(sheetTitle(sheet))}</div>` +
     `<div class="dev">${escapeHtml(title)}${sub ? `<small>${escapeHtml(sub)}</small>` : ''}</div>` +
     `<div class="brand">RigReady cheat sheet<br>${escapeHtml(stamp)}</div></div>`
   );
@@ -119,6 +121,15 @@ function placeText(entry: ActionEntry): string {
     .join('<br>');
 }
 
+/**
+ * What a list row calls an action: the binding guide's plain name when it has one. A
+ * printed page holds a fixed number of rows, so the game's own name is not repeated here;
+ * it is beside the plain name everywhere in the app (the detail panel, By action).
+ */
+function whatText(entry: ActionEntry): string {
+  return escapeHtml(entryName(entry));
+}
+
 function listBlock(
   entries: ActionEntry[],
   theme: ThemeName,
@@ -126,7 +137,7 @@ function listBlock(
   fontPx: number
 ): string {
   if (entries.length === 0) {
-    return `<div class="list empty">Nothing of your own is bound yet for this aircraft.</div>`;
+    return `<div class="list empty">Nothing of your own is bound yet here.</div>`;
   }
   const byKind = new Map<CategoryId, ActionEntry[]>();
   for (const entry of entries) {
@@ -136,11 +147,11 @@ function listBlock(
   }
   const blocks = [...byKind.entries()].map(
     ([kind, list]) =>
-      `<div class="kind" data-kind="${kind}"><h3><i style="background:${categoryColor(kind, theme)}"></i>${escapeHtml(CATEGORIES[kind].label)}</h3>` +
+      `<div class="kind" data-kind="${kind}"><h3><i style="background:${categorySwatch(kind, theme)}"></i>${escapeHtml(CATEGORIES[kind].label)}</h3>` +
       list
         .map(
           (entry) =>
-            `<div class="row"><span class="what">${escapeHtml(entry.action)}</span><span class="where">${placeText(entry)}</span></div>`
+            `<div class="row"><span class="what">${whatText(entry)}</span><span class="where">${placeText(entry)}</span></div>`
         )
         .join('') +
       `</div>`
@@ -239,7 +250,7 @@ export function printDocument(
     `.page:last-child{page-break-after:auto;break-after:auto}`;
   const body = pages.join('');
   const html =
-    `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(sheet.aircraft.name)} cheat sheet</title>` +
+    `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(sheetTitle(sheet))} cheat sheet</title>` +
     `<style>${css}</style></head><body>${body}</body></html>`;
   return { html, pages: pages.length, css, body };
 }

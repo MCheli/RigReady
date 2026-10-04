@@ -132,7 +132,7 @@ describe('exporting kneeboard pages', () => {
       .map((c) => c.html);
     expect(html[1]).toContain('class="k-light"');
     expect(html[4]).toContain('class="k-night"');
-    expect(html[2]).toContain('Weapon Release Button');
+    expect(html[2]).toContain('Pickle: release weapon');
     const night = await exportPages(running, {
       devices: ['4098:BEA8'],
       styles: ['night'],

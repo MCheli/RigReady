@@ -1,6 +1,7 @@
 import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { racingContract } from './contract';
+import { racingBindingReaders } from './core/bindingReaders';
 import { acView } from './core/assettoCorsa';
 import {
   backupNow,
@@ -70,12 +71,24 @@ export default defineFeatureMain({
       });
     };
 
+    // What is bound in each racing game, for cheat sheets and the other features that ask.
+    for (const reader of racingBindingReaders(rctx)) ctx.bindings.register(reader);
+    /** Tells the features that show bindings that a game's binding files were changed. */
+    const changed = <T extends { ok: boolean }>(game: string, result: T): T => {
+      if (result.ok && game !== 'fanatec') ctx.bindings.notifyChanged({ game });
+      return result;
+    };
+    const restoreFix = restoreBindingSetFix(ctx.games);
+
     ctx.checks.registerCheck(wheelBaseCheck);
     ctx.checks.registerCheck(iracingDevicesCheck(ctx.games));
     ctx.checks.registerCheck(iracingServiceCheck);
     ctx.checks.registerCheck(wheelSettingsCheck(ctx.games));
     ctx.checks.registerCheck(bindingSetCheck(ctx.games));
-    ctx.checks.registerRemediation(restoreBindingSetFix(ctx.games));
+    ctx.checks.registerRemediation({
+      ...restoreFix,
+      run: async (params, checkCtx) => changed(params.game, await restoreFix.run(params, checkCtx)),
+    });
     ctx.checks.registerCapture(racingCapture(ctx.games));
     const setups = { profiles: ctx.profiles, clock: ctx.ports.clock };
     ctx.backupSources.register(fanatecBackupSource);
@@ -88,7 +101,7 @@ export default defineFeatureMain({
           return ok({ ...view, devices: await named(view.devices) });
         },
         async iracingRepair({ mapping }) {
-          const repaired = await repairIracing(rctx, mapping);
+          const repaired = changed('iracing', await repairIracing(rctx, mapping));
           return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
         },
         iracingRepairPreview: ({ mapping }) => previewRepairIracing(rctx, mapping),
@@ -97,7 +110,7 @@ export default defineFeatureMain({
           return ok({ ...view, devices: await named(view.devices) });
         },
         async lmuRepair() {
-          const repaired = await repairLmu(rctx);
+          const repaired = changed('lmu', await repairLmu(rctx));
           return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
         },
         lmuRepairPreview: () => previewRepairLmu(rctx),
@@ -105,9 +118,11 @@ export default defineFeatureMain({
           const view = await beamngView(rctx);
           return ok({ ...view, maps: await named(view.maps) });
         },
-        beamngCopyOlder: ({ version }) => copyOlderBindings(rctx, version),
+        beamngCopyOlder: async ({ version }) =>
+          changed('beamng', await copyOlderBindings(rctx, version)),
         beamngCopyOlderPreview: ({ version }) => previewCopyOlderBindings(rctx, version),
-        beamngCopyToController: ({ file, to }) => copyBindingsToController(rctx, file, to),
+        beamngCopyToController: async ({ file, to }) =>
+          changed('beamng', await copyBindingsToController(rctx, file, to)),
         beamngCopyToControllerPreview: ({ file, to }) =>
           previewCopyBindingsToController(rctx, file, to),
         assettoCorsa: async () => ok(await acView(rctx)),
@@ -129,7 +144,8 @@ export default defineFeatureMain({
         useBackupInSetup: ({ game, id, profileId }) =>
           useSetInSetup(rctx, setups, game, id, profileId),
         stopUsingBackup: ({ game, profileId }) => stopUsingSet(setups, game, profileId),
-        restore: ({ game, id, closeApp }) => restoreBackup(rctx, game, id, { closeApp }),
+        restore: async ({ game, id, closeApp }) =>
+          changed(game, await restoreBackup(rctx, game, id, { closeApp })),
         restorePreview: ({ game, id }) => previewRestoreBackup(rctx, game, id),
         async deleteBackup({ game, id }) {
           const deleted = await deleteBackup(rctx, game, id);

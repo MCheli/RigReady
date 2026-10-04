@@ -27,16 +27,24 @@ import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './label
 
 export const SIM_EXE = 'iRacingSim64DX11.exe';
 
-interface IracingFiles {
+export interface IracingFiles {
   folder: string;
   controls?: ControlsCfg;
   calibration?: CalibratedDevice[];
   problems: string[];
 }
 
-async function readFiles(ctx: RacingContext): Promise<IracingFiles | undefined> {
-  const folder = await locationOf(ctx, 'iracing', 'documents');
-  if (!folder) return undefined;
+/**
+ * iRacing's bindings and calibration as they are on disk. `car` reads the custom controls
+ * iRacing keeps for one car (setups\<car>\controls.cfg) instead of the general ones.
+ */
+export async function readFiles(
+  ctx: RacingContext,
+  car?: string
+): Promise<IracingFiles | undefined> {
+  const documents = await locationOf(ctx, 'iracing', 'documents');
+  if (!documents) return undefined;
+  const folder = car ? path.join(documents, 'setups', car) : documents;
   const problems: string[] = [];
   const result: IracingFiles = { folder, problems };
   const cfg = path.join(folder, 'controls.cfg');

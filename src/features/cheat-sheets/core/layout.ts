@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { BoundControl } from '../../../core/bindings';
 
 /**
  * The RigReady device layout format: where the controls of one controller model sit on a
@@ -286,6 +287,26 @@ export function controlIdOf(gameInput: string): string | undefined {
   const axis = /^JOY_(X|Y|Z|RX|RY|RZ|SLIDER\d)$/.exec(gameInput);
   if (axis) return `axis:${axis[1]}`;
   return undefined;
+}
+
+/**
+ * The control id of a binding. A reader that says which control it is (core's neutral
+ * `control`: every racing game, and DCS) is taken at its word; otherwise the game's input
+ * name is read as a DirectInput name.
+ */
+export function controlIdFor(binding: {
+  input: string;
+  control?: BoundControl | undefined;
+}): string | undefined {
+  const control = binding.control;
+  if (!control) return controlIdOf(binding.input);
+  const id =
+    control.kind === 'button'
+      ? `button:${control.index}`
+      : control.kind === 'hat'
+        ? `hat:${control.hat}:${control.direction}`
+        : `axis:${control.axis}`;
+  return CONTROL_ID.test(id) ? id : undefined;
 }
 
 /** Sort order of control ids: axes, hats, then buttons by number. */

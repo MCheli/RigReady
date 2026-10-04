@@ -344,7 +344,13 @@ export async function applyEdits(
   const prepared = await prepare(bindings, ops, summary);
   if (!prepared.ok) return prepared;
   const { builder, dcsRunning } = prepared.value;
-  return executePlan(bindings.ctx.ports, prepared.value.summary, builder, dcsRunning);
+  return executePlan(
+    bindings.ctx.ports,
+    prepared.value.summary,
+    builder,
+    dcsRunning,
+    bindings.ctx.changed
+  );
 }
 
 /** The edits that cancel every unwanted default binding of the given aircraft. */

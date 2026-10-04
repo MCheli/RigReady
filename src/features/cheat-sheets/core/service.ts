@@ -29,7 +29,7 @@ import {
   type DeviceLayout,
 } from './layout';
 import { KNEEBOARD_SIZE, printDocument, type PageStyle, type PaperSize } from './pages';
-import { buildSheet, type Sheet } from './sheet';
+import { buildSheet, sheetTitle, type Sheet } from './sheet';
 import { CheatSheetStore } from './store';
 
 /**
@@ -126,10 +126,12 @@ export class CheatSheets {
     if (!bindings.ok) return bindings;
     const notes = await this.store.notes(game, aircraftId);
     if (!notes.ok) return notes;
-    const [controllers, layoutFor, names] = await Promise.all([
+    const [controllers, layoutFor, names, labels] = await Promise.all([
       this.controllers(),
       this.store.chooser(),
       this.ctx.names.devices(),
+      // The binding guide's plain-language names (never fails; empty without a guide).
+      this.ctx.bindings.labels(reader.game, aircraftId),
     ]);
     return ok(
       buildSheet({
@@ -139,6 +141,7 @@ export class CheatSheets {
         controllers,
         layoutFor,
         notes: notes.value,
+        labels,
         nameOf: (device) => names.nameOf(device),
         route: (guid) => reader.route({ aircraftId, ...(guid ? { guid } : {}) }),
       })
@@ -278,7 +281,7 @@ export class CheatSheets {
       return err('sheet.print', 'Choose at least one device to print.');
     }
     const { dialogs, files, folders, render, clock } = this.ctx.ports;
-    const name = sheet.value.aircraft.name.replace(/[\\/:*?"<>|]/g, '-');
+    const name = sheetTitle(sheet.value).replace(/[\\/:*?"<>|]/g, '-');
     const picked = await dialogs.save({
       title: 'Save the cheat sheet as PDF',
       defaultPath: path.join(folders.documents(), `${name} cheat sheet.pdf`),
@@ -294,7 +297,7 @@ export class CheatSheets {
     const pdf = await render.pdf(document.html, { pageSize: input.paper, landscape: false });
     if (!pdf.ok) return pdf;
     const written = await files.write(picked.value, pdf.value, {
-      reason: `Save the ${sheet.value.aircraft.name} cheat sheet as PDF`,
+      reason: `Save the ${sheetTitle(sheet.value)} cheat sheet as PDF`,
     });
     if (!written.ok) return written;
     const stat = await files.stat(picked.value);

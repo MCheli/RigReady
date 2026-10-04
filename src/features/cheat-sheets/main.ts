@@ -1,7 +1,14 @@
 import { bind, defineFeatureMain, type MainContext } from '../../core/feature';
-import { ok } from '../../core/result';
+import { err, ok } from '../../core/result';
 import { cheatSheetsContract } from './contract';
-import { createCapture, createKneeboardCheck, createRegenerate } from './core/check';
+import {
+  addKneeboardCheck,
+  createCapture,
+  createKneeboardCheck,
+  createRegenerate,
+  kneeboardSetups,
+  removeKneeboardCheck,
+} from './core/check';
 import { LiveTracker, type LiveDevice } from './core/live';
 import { CheatSheets } from './core/service';
 
@@ -16,6 +23,13 @@ function setup(ctx: MainContext) {
   ctx.checks.registerCheck(createKneeboardCheck(service));
   ctx.checks.registerRemediation(createRegenerate(service));
   ctx.checks.registerCapture(createCapture(service));
+  const setups = { profiles: ctx.profiles, clock: ctx.ports.clock };
+
+  // A bindings feature changed its game's files: every window with a sheet redraws it.
+  // The pop-out is a window of its own and gets the same event as the main one.
+  cleanups.add(
+    ctx.bindings.onChanged((change) => ctx.emit(cheatSheetsContract, 'changed', change))
+  );
 
   // ---- press a control, its label lights up ----
   const watchers = new Set<string>();
@@ -66,6 +80,22 @@ function setup(ctx: MainContext) {
       exportKneeboard: ({ game, aircraftId, options }) =>
         service.exportKneeboard(game, aircraftId, options),
       removeKneeboard: ({ aircraftId }) => service.kneeboard.remove(aircraftId),
+
+      kneeboardSetups: ({ game, aircraftId }) => kneeboardSetups(setups, game, aircraftId),
+      async addKneeboardCheck({ game, aircraftId, profileId }) {
+        // Only an aircraft the game really has: the id ends up in a setup and in a folder name.
+        const aircraft = await ctx.bindings.get(game)?.aircraft();
+        const known = aircraft?.ok ? aircraft.value.find((a) => a.id === aircraftId) : undefined;
+        if (!known) return err('kneeboard.aircraft', 'That is not an aircraft of this game.');
+        return addKneeboardCheck(service, setups, {
+          game,
+          aircraft: aircraftId,
+          aircraftName: known.name,
+          profileId,
+        });
+      },
+      removeKneeboardCheck: ({ game, aircraftId, profileId }) =>
+        removeKneeboardCheck(setups, { game, aircraft: aircraftId, profileId }),
 
       async watch({ client, on }) {
         if (!on) {

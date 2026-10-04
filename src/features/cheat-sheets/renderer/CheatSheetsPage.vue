@@ -40,7 +40,13 @@ function matches(target: SheetDevice): Set<string> {
       control.name,
       labels.get(control.id) ?? '',
       control.note ?? '',
-      ...control.bindings.flatMap((b) => [b.action, b.short, ...b.category, ...b.modifiers]),
+      ...control.bindings.flatMap((b) => [
+        b.action,
+        b.plain ?? '',
+        b.short,
+        ...b.category,
+        ...b.modifiers,
+      ]),
     ]
       .join(' ')
       .toLowerCase();
@@ -116,6 +122,7 @@ const actions = computed(() => {
     if (!needle.value) return true;
     return [
       entry.action,
+      entry.plain ?? '',
       ...entry.category,
       ...entry.places.flatMap((p) => [p.device, p.physical ?? '', p.note ?? '']),
     ]
@@ -214,13 +221,14 @@ onBeforeUnmount(() => {
     data-testid="cheat-sheets-page"
     :data-live="store.watching"
     :data-ready="store.loaded && !store.loading"
+    :data-followed="store.followed"
   >
     <div class="cs-top">
       <div>
         <h1 class="rr-page-title">Cheat sheets</h1>
         <p class="rr-page-sub">
-          Every device with what each control does in the aircraft you choose. Press a control and
-          its label lights up.
+          Every device with what each control does in the aircraft or car you choose. Press a
+          control and its label lights up.
         </p>
       </div>
     </div>
@@ -243,8 +251,9 @@ onBeforeUnmount(() => {
       <v-icon icon="mdi-card-text-outline" size="34" class="mb-2" />
       <div>No game whose bindings RigReady can read was found on this PC.</div>
       <div class="cs-small">
-        Cheat sheets are drawn from a game's bindings. DCS World is supported today; once it is
-        installed, its aircraft appear here.
+        Cheat sheets are drawn from a game's bindings: DCS World, iRacing, Le Mans Ultimate,
+        BeamNG.drive and Assetto Corsa. Once one of them is installed and has bindings, its aircraft
+        or cars appear here.
       </div>
     </div>
 
@@ -252,7 +261,7 @@ onBeforeUnmount(() => {
       <div class="cs-bar rr-panel">
         <v-select
           class="cs-aircraft"
-          label="Aircraft"
+          label="Aircraft or car"
           :items="store.aircraftItems"
           :model-value="store.choice"
           density="compact"
@@ -321,8 +330,8 @@ onBeforeUnmount(() => {
 
       <div v-if="store.sheet" class="cs-totals" data-testid="sheet-totals">
         <span
-          ><strong>{{ store.sheet.aircraft.name }}</strong> · {{ totals.devices }} devices ·
-          {{ totals.bound }} controls bound</span
+          ><strong data-testid="sheet-name">{{ store.title }}</strong> ·
+          {{ totals.devices }} devices · {{ totals.bound }} controls bound</span
         >
         <span v-if="totals.conflicts > 0" class="rr-warn" data-testid="sheet-conflicts">
           <v-icon icon="mdi-alert" size="15" /> {{ totals.conflicts }}
@@ -340,7 +349,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-if="store.sheet && store.sheet.devices.length === 0" class="rr-panel rr-empty">
-        No game controller is connected and none has bindings for this aircraft.
+        No game controller is connected and none has bindings here.
       </div>
 
       <!-- By device -->
@@ -492,7 +501,7 @@ onBeforeUnmount(() => {
                     class="rr-muted cs-detail-block"
                     data-testid="detail-empty"
                   >
-                    Nothing is bound to this control in {{ store.sheet.aircraft.name }}.
+                    Nothing is bound to this control in {{ store.title }}.
                   </div>
                   <div
                     v-for="(b, i) in selectedControl.bindings"
@@ -501,7 +510,11 @@ onBeforeUnmount(() => {
                     data-testid="detail-binding"
                   >
                     <div class="cs-detail-action">
-                      <i :style="{ background: CATEGORIES[b.kind].color }"></i>{{ b.action }}
+                      <i :style="{ background: CATEGORIES[b.kind].color }"></i
+                      >{{ b.plain ?? b.action }}
+                    </div>
+                    <div v-if="b.plain" class="rr-row-sub" data-testid="detail-game-name">
+                      {{ store.sheet.gameName }} calls it: {{ b.action }}
                     </div>
                     <div v-if="b.modifiers.length" class="cs-mod">
                       while holding {{ b.modifiers.join(' + ') }}
@@ -589,7 +602,10 @@ onBeforeUnmount(() => {
             :data-action="entry.action"
           >
             <div class="rr-row-main">
-              <div class="rr-row-title">{{ entry.action }}</div>
+              <div class="rr-row-title">{{ entry.plain ?? entry.action }}</div>
+              <div v-if="entry.plain" class="rr-row-sub" data-testid="action-game-name">
+                {{ store.sheet.gameName }} calls it: {{ entry.action }}
+              </div>
               <div v-if="entry.category.length" class="rr-row-sub">
                 {{ entry.category.join(' › ') }}
               </div>

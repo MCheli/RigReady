@@ -277,6 +277,7 @@ export async function beamngView(ctx: RacingContext): Promise<BeamngView> {
         .map(({ binding, yours }) => ({
           action: binding.action as string,
           label: beamngActionLabel(binding.action as string),
+          control: binding.control as string,
           input: beamngControlLabel(binding.control as string, ids?.vendorId, ids?.productId),
           detail: bindingDetail(binding),
           yours,

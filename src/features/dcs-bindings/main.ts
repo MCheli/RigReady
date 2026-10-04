@@ -24,11 +24,14 @@ let stopListening: (() => void) | undefined;
 export default defineFeatureMain({
   id: 'dcs-bindings',
   setup(ctx) {
+    // Every change to the binding files is announced, so cheat sheets and guides follow.
+    const changed = (): void => ctx.bindings.notifyChanged({ game: 'dcs' });
     const bindings = new DcsBindings({
       ports: ctx.ports,
       log: ctx.log,
       games: ctx.games,
       names: () => ctx.names.devices(),
+      changed,
     });
     // One service per DCS install a setup names; the pages use the first install found.
     const perInstall = new Map<string, DcsBindings>();
@@ -44,6 +47,7 @@ export default defineFeatureMain({
           games: ctx.games,
           names: () => ctx.names.devices(),
           install,
+          changed,
         });
         perInstall.set(key, scoped);
       }
@@ -151,6 +155,7 @@ export default defineFeatureMain({
           }
           const undone = await ctx.ports.files.undoGroup(groupId);
           if (!undone.ok) return undone;
+          changed();
           ctx.log.info(`dcs-bindings: undid "${undone.value.reason}"`);
           return ok({ undone: true });
         },

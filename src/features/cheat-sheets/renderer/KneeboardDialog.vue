@@ -135,6 +135,33 @@ async function removePages(): Promise<void> {
   await loadStatus();
 }
 
+// ---- "check it before flying": the check in a setup, without going through capture ----
+const setups = ref<{ id: string; name: string; checked: boolean }[]>([]);
+const setupNote = ref('');
+const setupBusy = ref('');
+
+async function loadSetups(): Promise<void> {
+  const result = await store.api.kneeboardSetups(ref_.value);
+  if (result.ok) setups.value = result.value;
+  else error.value = errorText(result.error);
+}
+
+async function toggleSetup(setup: { id: string; checked: boolean }): Promise<void> {
+  setupBusy.value = setup.id;
+  setupNote.value = '';
+  error.value = '';
+  const input = { ...ref_.value, profileId: setup.id };
+  const result = setup.checked
+    ? await store.api.removeKneeboardCheck(input)
+    : await store.api.addKneeboardCheck(input);
+  setupBusy.value = '';
+  if (result.ok) {
+    setupNote.value = result.value.message;
+    notifyMachineChanged();
+  } else error.value = errorText(result.error);
+  await loadSetups();
+}
+
 watch(style, (value) => {
   if (value !== 'both') previewStyle.value = value;
 });
@@ -142,6 +169,7 @@ watch([previewDevice, previewStyle], () => void loadPreview());
 
 onMounted(async () => {
   await loadStatus();
+  await loadSetups();
   const last = status.value?.options;
   if (last) {
     if (last.devices.length > 0) chosen.value = last.devices;
@@ -231,6 +259,33 @@ onMounted(async () => {
             RigReady only ever replaces or removes pages it wrote itself. Your own kneeboard pages
             are never touched, and every change can be undone on the Safety page. DCS loads new
             pages with the next mission.
+          </div>
+
+          <div class="rr-section-title mt-4">Check before flying</div>
+          <div class="rr-row-sub">
+            A setup can check that these pages still show what is bound, and Make ready writes them
+            again when they do not. It is a warning, never a reason to be Not ready.
+          </div>
+          <div v-if="setups.length === 0" class="rr-row-sub mt-1" data-testid="kneeboard-no-setups">
+            There is no setup for this game yet. Create one under Setups, then add the check here.
+          </div>
+          <div v-else class="kb-setups" data-testid="kneeboard-setups">
+            <v-checkbox
+              v-for="s in setups"
+              :key="s.id"
+              :model-value="s.checked"
+              :label="s.name"
+              :disabled="setupBusy !== ''"
+              density="compact"
+              hide-details
+              data-testid="kneeboard-setup"
+              :data-setup="s.id"
+              :data-checked="s.checked"
+              @update:model-value="toggleSetup(s)"
+            />
+          </div>
+          <div v-if="setupNote" class="rr-row-sub mt-1" data-testid="kneeboard-setup-note">
+            {{ setupNote }}
           </div>
 
           <v-alert
@@ -374,6 +429,10 @@ onMounted(async () => {
 }
 .kb-devices {
   max-height: 220px;
+  overflow-y: auto;
+}
+.kb-setups {
+  max-height: 120px;
   overflow-y: auto;
 }
 .kb-preview {

@@ -19,7 +19,12 @@ export const OverviewSchema = z.object({
       /** Whether cheat sheets can become kneeboard pages in this game. */
       kneeboard: z.boolean(),
       aircraft: z.array(
-        z.object({ id: z.string(), name: z.string(), hasUserBindings: z.boolean() })
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          hasUserBindings: z.boolean(),
+          general: z.boolean().optional(),
+        })
       ),
     })
   ),
@@ -131,6 +136,21 @@ export const cheatSheetsContract = defineContract(
       z.object({ removed: z.array(z.string()), kept: z.array(z.string()) })
     ),
 
+    /** The setups the "kneeboard pages are up to date" check can go into, for one aircraft. */
+    kneeboardSetups: channel(
+      sheetRef,
+      z.array(z.object({ id: z.string(), name: z.string(), checked: z.boolean() }))
+    ),
+    /** Adds the check (with the fix that writes the pages again) to a setup. */
+    addKneeboardCheck: channel(
+      sheetRef.extend({ profileId: z.string().min(1) }),
+      z.object({ message: z.string() })
+    ),
+    removeKneeboardCheck: channel(
+      sheetRef.extend({ profileId: z.string().min(1) }),
+      z.object({ message: z.string() })
+    ),
+
     /** Starts or stops live input for a window ("press a control, its label lights up"). */
     watch: channel(
       z.object({ client: z.string().min(1), on: z.boolean() }),
@@ -142,5 +162,9 @@ export const cheatSheetsContract = defineContract(
       z.object({ opened: z.boolean() })
     ),
   },
-  { input: z.object({ devices: z.array(LiveDeviceSchema) }) }
+  {
+    input: z.object({ devices: z.array(LiveDeviceSchema) }),
+    /** A game's bindings were changed by the feature that owns them: sheets of it are redrawn. */
+    changed: z.object({ game: z.string(), aircraftId: z.string().optional() }),
+  }
 );

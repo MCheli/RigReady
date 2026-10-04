@@ -91,7 +91,11 @@ export function pagesFingerprint(sheet: Sheet, options: KneeboardOptions): strin
       options.lists,
       chosenDevices(sheet, options).map((device) => [device.key, deviceFingerprint(device)]),
       options.summary
-        ? summaryActions(sheet, KNEEBOARD_LIST_ROWS).map((e) => [e.actionId, e.places])
+        ? summaryActions(sheet, KNEEBOARD_LIST_ROWS).map((e) => [
+            e.actionId,
+            e.places,
+            ...(e.plain ? [e.plain] : []),
+          ])
         : null,
     ])
   );

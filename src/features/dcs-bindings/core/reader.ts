@@ -1,10 +1,11 @@
-import type {
-  AircraftBindings,
-  BindingProposal,
-  BindingReader,
-  BoundAction,
-  BoundDevice,
-  BoundInput,
+import {
+  controlFromDirectInput,
+  type AircraftBindings,
+  type BindingProposal,
+  type BindingReader,
+  type BoundAction,
+  type BoundDevice,
+  type BoundInput,
 } from '../../../core/bindings';
 import { err, ok, type Result } from '../../../core/result';
 import type { DcsBindings } from './bindings';
@@ -66,10 +67,12 @@ export function toAircraftBindings(view: AircraftView): AircraftBindings {
         .map((binding): BoundInput => {
           const input = describeInput(binding.combo.key);
           const command = commands.get(binding.commandId);
+          const control = controlFromDirectInput(binding.combo.key);
           return {
             input: binding.combo.key,
             inputLabel: input.label,
             kind: input.kind,
+            ...(control ? { control } : {}),
             modifiers: modifiersOf(binding.label, binding.combo.reformers.length),
             actionId: binding.commandId,
             action: command?.name ?? binding.commandId,
@@ -146,6 +149,7 @@ export function createBindingReader(bindings: DcsBindings): BindingReader {
           );
         }
         const undone = await bindings.ctx.ports.files.undoGroup(groupId);
+        if (undone.ok) bindings.ctx.changed?.();
         return undone.ok ? ok(undefined) : undone;
       },
     },

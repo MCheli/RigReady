@@ -3,7 +3,7 @@ import { computed, ref, shallowRef } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { cheatSheetsContract, type Overview } from '../contract';
 import { controlName } from '../core/layout';
-import type { Sheet, SheetDevice } from '../core/sheet';
+import { sheetTitle, type Sheet, type SheetDevice } from '../core/sheet';
 
 /**
  * The sheet being looked at, shared by the full page, the quick look and the editor, and
@@ -49,6 +49,8 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
       }))
     )
   );
+  /** "F/A-18C", or "iRacing" for a game with one set of bindings for every car. */
+  const title = computed(() => (sheet.value ? sheetTitle(sheet.value) : ''));
   const kneeboard = computed(
     () => overview.value?.games.find((g) => g.game === game.value)?.kneeboard ?? false
   );
@@ -129,6 +131,9 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
   const holdDevice = ref(false);
   let users = 0;
   let off: (() => void) | undefined;
+  let offChanged: (() => void) | undefined;
+  /** How many times the sheet was redrawn because its bindings changed elsewhere. */
+  const followed = ref(0);
 
   function describe(target: SheetDevice, control: string): LastPress {
     const entry = target.controls.find((c) => c.id === control);
@@ -138,7 +143,7 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
       control,
       name: controlName(control),
       actions: (entry?.bindings ?? []).map(
-        (b) => (b.modifiers.length ? `${b.modifiers.join('+')}: ` : '') + b.action
+        (b) => (b.modifiers.length ? `${b.modifiers.join('+')}: ` : '') + (b.plain ?? b.action)
       ),
       ...(entry?.note ? { note: entry.note } : {}),
       at: Date.now(),
@@ -169,6 +174,14 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
       pressed.value = nextPressed;
       axes.value = nextAxes;
     });
+    // The bindings page (in this window or the main one, when this is the pop-out) changed
+    // the bindings of the game on show: draw the sheet again. Not while a layout is being
+    // edited: the editor works on the sheet it opened.
+    offChanged = api.on('changed', (change) => {
+      if (change.game !== game.value || holdDevice.value) return;
+      if (change.aircraftId && change.aircraftId !== aircraftId.value) return;
+      void refresh().then(() => followed.value++);
+    });
     const result = await api.watch({ client, on: true });
     watching.value = result.ok && result.value.watching;
   }
@@ -178,6 +191,8 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
     if (users > 0) return;
     off?.();
     off = undefined;
+    offChanged?.();
+    offChanged = undefined;
     watching.value = false;
     pressed.value = new Map();
     await api.watch({ client, on: false });
@@ -197,6 +212,8 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
     device,
     follow,
     aircraftItems,
+    title,
+    followed,
     kneeboard,
     load,
     choose,

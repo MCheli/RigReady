@@ -1,4 +1,4 @@
-import { CATEGORIES, type CategoryId } from './categories';
+import { CATEGORIES, type CategoryId, type CategoryPattern } from './categories';
 import {
   controlName,
   controlShort,
@@ -120,6 +120,19 @@ export function categoryColor(kind: CategoryId, theme: ThemeName): string {
   return theme === 'night' ? CATEGORIES[kind].night : CATEGORIES[kind].color;
 }
 
+/** How a kind's marker is drawn: always solid, except in the night style (see categories.ts). */
+export function categoryPattern(kind: CategoryId, theme: ThemeName): CategoryPattern {
+  return theme === 'night' ? CATEGORIES[kind].nightPattern : 'solid';
+}
+
+/** The CSS `background` of a kind's legend swatch: a solid square, or a striped one. */
+export function categorySwatch(kind: CategoryId, theme: ThemeName): string {
+  const color = categoryColor(kind, theme);
+  return categoryPattern(kind, theme) === 'dashed'
+    ? `repeating-linear-gradient(0deg,${color} 0 3px,transparent 3px 5px)`
+    : color;
+}
+
 /** The style sheet of a sheet picture. Scoped to .cs-svg, safe to inline in a page. */
 export function sheetCss(theme: Theme): string {
   const t = theme;
@@ -146,7 +159,7 @@ export function sheetCss(theme: Theme): string {
 .cs-svg .cs-live .cs-axis-val{opacity:1}
 .cs-svg .cs-hub{fill:${t.panel};stroke:${t.bodyStroke};stroke-width:1.2}
 .cs-svg .cs-hub-text{fill:${t.muted};font-size:10.5px;font-weight:700;letter-spacing:.05em}
-.cs-svg .cs-t{color:${t.text};line-height:1.16;overflow:hidden;height:100%;box-sizing:border-box;word-break:break-word}
+.cs-svg .cs-t{color:${t.text};line-height:${LINE_HEIGHT};overflow:hidden;height:100%;box-sizing:border-box;overflow-wrap:anywhere;word-break:normal}
 .cs-svg .cs-head{display:flex;align-items:baseline;gap:4px;color:${t.muted};font-size:.82em;font-weight:600;white-space:nowrap;overflow:hidden}
 .cs-svg .cs-num{font-weight:800;color:${t.text};font-variant-numeric:tabular-nums}
 .cs-svg .cs-phys{overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em}
@@ -177,50 +190,205 @@ interface CardText {
   control?: SheetControl;
 }
 
+/** Line height of card text, in em. The estimate below and the style sheet share it. */
+const LINE_HEIGHT = 1.16;
+/** The head row (control number, printed label) is this much smaller than the text. */
+const HEAD_SCALE = 0.82;
 /**
- * The largest font size at which the card's text fits its box, from a rough measure of
- * the text (no browser to ask). Below the smallest size the text is clipped.
+ * Label sizes tried from the largest. The last one is the smallest that is still read
+ * with ease on a printed page and on a kneeboard: text that does not fit at it is
+ * shortened, not made smaller.
  */
-export function fitFont(lines: string[], width: number, height: number, scale = 1): number {
-  const sizes = [14, 13, 12, 11, 10.2, 9.4, 8.6];
-  for (const base of sizes) {
-    const size = base * scale;
-    // Semi-bold text in a UI font is a little over half as wide as it is tall, on average.
-    const perLine = Math.max(4, Math.floor(width / (size * 0.56)));
-    let rows = 0;
-    for (const line of lines) rows += wrappedRows(line, perLine);
-    if (rows * size * 1.16 <= height) return Math.round(size * 10) / 10;
-  }
-  return Math.round(sizes[sizes.length - 1]! * scale * 10) / 10;
+const FONT_SIZES = [14, 13, 12, 11, 10.2];
+/** Only for a card so small that not one row fits at the smallest label size. */
+const TINY_CARD_SIZES = [9.4, 8.6, 7.8, 7];
+
+/**
+ * How wide each character from space to tilde is in Segoe UI Semibold, in thousandths of
+ * an em: the font's own advance widths. That is the face label text is drawn in (the
+ * style sheet asks for Segoe UI first, and weight 600), so text can be measured here
+ * exactly, with no browser to ask: a page made for the Render port runs no script.
+ */
+const ASCII_WIDTHS = [
+  275, 304, 438, 591, 555, 840, 715, 258, 332, 332, 434, 694, 241, 402, 241, 414, 555, 402, 555,
+  555, 576, 555, 558, 536, 555, 558, 241, 241, 694, 694, 694, 444, 955, 671, 604, 621, 717, 518,
+  502, 697, 735, 292, 397, 611, 489, 924, 767, 756, 585, 756, 623, 544, 552, 703, 642, 966, 619,
+  577, 587, 332, 405, 332, 694, 415, 289, 522, 603, 470, 603, 531, 345, 603, 582, 261, 261, 525,
+  261, 886, 584, 597, 603, 603, 370, 431, 361, 584, 507, 756, 501, 508, 464, 332, 278, 332, 694,
+];
+/** The same for the few other characters labels use; the pencil comes from the symbol font. */
+const OTHER_WIDTHS: Record<string, number> = {
+  '…': 814,
+  '✎': 1000,
+  '◄': 861,
+  '►': 861,
+  '▲': 861,
+  '▼': 861,
+  '↑': 472,
+  '↓': 472,
+  '←': 863,
+  '→': 863,
+  '↔': 862,
+  '⟷': 1400,
+  '·': 241,
+  '–': 500,
+  '—': 1000,
+  '×': 694,
+  '’': 256,
+};
+/**
+ * Air on top of the font's own widths. A line may be drawn a little wider than they add
+ * up to: the modifier in front of an action is bold, and small sizes are hinted. An
+ * estimate that errs must err towards smaller text, never towards text that does not fit.
+ */
+const MEASURE_MARGIN = 1.03;
+
+/** How wide a character is, in em. */
+function charWidth(ch: string): number {
+  const code = ch.charCodeAt(0);
+  const known = code >= 32 && code <= 126 ? ASCII_WIDTHS[code - 32] : OTHER_WIDTHS[ch];
+  if (known !== undefined) return (known / 1000) * MEASURE_MARGIN;
+  // Accented letters are as wide as their base letter at most; symbols, arrows and
+  // letters of other scripts are about as wide as they are tall.
+  return code > 0x2000 ? 1.05 : 0.72;
 }
 
-/** How many rows a line takes when it wraps at spaces (and inside a word that is too long). */
-function wrappedRows(line: string, perLine: number): number {
+/** The width of a run of text at a font size, in the units the size is in. */
+export function textWidth(text: string, size: number): number {
+  let em = 0;
+  for (const ch of text) em += charWidth(ch);
+  return em * size;
+}
+
+/**
+ * How many rows a line takes in a box this wide: it wraps at spaces, and a word that is
+ * wider than the box runs over as many rows as it needs (the style sheet breaks such a
+ * word anywhere, so it never sticks out).
+ */
+export function wrappedRows(line: string, width: number, size: number): number {
+  const space = textWidth(' ', size);
   let rows = 1;
   let used = 0;
   for (const word of line.split(/\s+/).filter(Boolean)) {
-    if (word.length > perLine) {
-      // A long word starts on a row of its own and runs over as many as it needs.
-      if (used > 0) rows++;
-      rows += Math.ceil(word.length / perLine) - 1;
-      used = word.length % perLine || perLine;
+    const w = textWidth(word, size);
+    if (w > width) {
+      // A long word fills what is left of the row, then whole rows.
+      const rest = used > 0 ? Math.max(0, width - used - space) : width;
+      const over = w - rest;
+      const extra = Math.ceil(over / width);
+      rows += extra;
+      used = over - (extra - 1) * width;
     } else if (used === 0) {
-      used = word.length;
-    } else if (used + 1 + word.length <= perLine) {
-      used += 1 + word.length;
+      used = w;
+    } else if (used + space + w <= width) {
+      used += space + w;
     } else {
       rows++;
-      used = word.length;
+      used = w;
     }
   }
   return rows;
 }
 
+export interface FittedText {
+  /** Font size in px. */
+  size: number;
+  /** The lines that are shown: all of them, or fewer with the last one cut short. */
+  lines: string[];
+  /** True when text had to be cut ("…"); the full text is in the control's tooltip and lists. */
+  shortened: boolean;
+}
+
+/**
+ * Fits the lines of a label card into its box. The size steps down while that helps:
+ * the largest size at which everything fits is used. Text that does not fit even at the
+ * smallest label size is too long for the card, and is shown at that size as the whole
+ * rows there is room for, ending in an ellipsis. Nothing is ever left to be clipped by
+ * the box, and nothing is made too small to read to avoid saying so.
+ */
+export function fitText(
+  lines: string[],
+  width: number,
+  height: number,
+  scale = 1,
+  /** Whether the box also holds the head row (the control's number and printed label). */
+  head = false
+): FittedText {
+  const sizeOf = (base: number): number => Math.round(base * scale * 10) / 10;
+  if (lines.length === 0) return { size: sizeOf(FONT_SIZES[0]!), lines, shortened: false };
+  const wide = Math.max(1, width);
+  /** How many whole rows of text the box holds at a size. */
+  const room = (size: number): number =>
+    Math.floor((height - (head ? size * HEAD_SCALE * LINE_HEIGHT : 0) - 1) / (size * LINE_HEIGHT));
+  const needs = (size: number): number =>
+    lines.reduce((rows, line) => rows + wrappedRows(line, wide, size), 0);
+
+  let size = sizeOf(FONT_SIZES[0]!);
+  for (const base of FONT_SIZES) {
+    size = sizeOf(base);
+    if (needs(size) <= room(size)) return { size, lines, shortened: false };
+  }
+  // A card that cannot hold one row at that size gets smaller type, until one row fits.
+  for (const base of TINY_CARD_SIZES) {
+    if (room(size) >= 1) break;
+    size = sizeOf(base);
+    if (needs(size) <= room(size)) return { size, lines, shortened: false };
+  }
+
+  // Too long for the card: the rows there is room for, and an ellipsis.
+  const maxRows = Math.max(1, room(size));
+  const kept: string[] = [];
+  let used = 0;
+  let shortened = false;
+  for (const line of lines) {
+    const rows = wrappedRows(line, wide, size);
+    if (used + rows <= maxRows) {
+      kept.push(line);
+      used += rows;
+      continue;
+    }
+    if (used < maxRows) {
+      kept.push(cutToRows(line, maxRows - used, wide, size));
+    } else {
+      // No row left for this line: the one before says that there is more.
+      const last = kept.length - 1;
+      kept[last] = cutToRows(kept[last]!, wrappedRows(kept[last]!, wide, size), wide, size);
+    }
+    shortened = true;
+    break;
+  }
+  return { size, lines: kept, shortened };
+}
+
+/**
+ * As much of a line as fits in so many rows with an ellipsis after it. The cut is made
+ * between words where that loses little, so a label does not end in half a word.
+ */
+function cutToRows(line: string, rows: number, width: number, size: number): string {
+  const whole = line.trim();
+  let text = whole;
+  while (text.length > 1 && wrappedRows(`${text}…`, width, size) > rows) {
+    text = text.slice(0, -1).trimEnd();
+  }
+  const midWord = text.length < whole.length && whole[text.length] !== ' ';
+  const word = text.lastIndexOf(' ');
+  if (midWord && word >= text.length * 0.6) text = text.slice(0, word).trimEnd();
+  // "Knob:…" reads better as "Knob…".
+  const tidy = text.replace(/[\s:;,./(-]+$/, '');
+  return `${tidy || text}…`;
+}
+
+/**
+ * The largest font size at which the lines fit a box (the size part of fitText, for a
+ * box without a head row).
+ */
+export function fitFont(lines: string[], width: number, height: number, scale = 1): number {
+  return fitText(lines, width, height, scale).size;
+}
+
 function cardBody(card: CardText, w: number, h: number, options: RenderOptions): string {
   const control = card.control;
   const bindings = control?.bindings ?? [];
-  const lines: string[] = [];
-  const parts: string[] = [];
   const also = bindings.some((b) => b.alsoOn.length > 0);
   const flags =
     (control?.conflict
@@ -229,30 +397,40 @@ function cardBody(card: CardText, w: number, h: number, options: RenderOptions):
     (also && !control?.conflict
       ? `<span class="cs-flag" title="Also on another control">×2</span>`
       : '');
-  parts.push(
+  const head =
     `<div class="cs-head"><span class="cs-num">${escapeHtml(card.short)}</span>` +
-      (card.physical ? `<span class="cs-phys">${escapeHtml(card.physical)}</span>` : '') +
-      `${flags}</div>`
-  );
+    (card.physical ? `<span class="cs-phys">${escapeHtml(card.physical)}</span>` : '') +
+    `${flags}</div>`;
+  // What each line says, and how it is dressed.
+  const entries: { text: string; cls: string; bold?: string }[] = [];
   for (const binding of bindings) {
-    const modifiers = binding.modifiers.length > 0 ? `${binding.modifiers.join('+')}: ` : '';
-    lines.push(modifiers + binding.short);
-    const cls = binding.source === 'default' ? ' cs-default' : '';
-    parts.push(
-      binding.modifiers.length > 0
-        ? `<div class="cs-mod${cls}"><b>${escapeHtml(binding.modifiers.join('+'))}:</b> ${escapeHtml(binding.short)}</div>`
-        : `<div class="cs-act${cls}">${escapeHtml(binding.short)}</div>`
-    );
+    const dim = binding.source === 'default' ? ' cs-default' : '';
+    if (binding.modifiers.length > 0) {
+      const bold = `${binding.modifiers.join('+')}:`;
+      entries.push({ text: `${bold} ${binding.short}`, cls: `cs-mod${dim}`, bold });
+    } else {
+      entries.push({ text: binding.short, cls: `cs-act${dim}` });
+    }
   }
-  if (control?.note) {
-    lines.push(`✎ ${control.note}`);
-    parts.push(`<div class="cs-note">✎ ${escapeHtml(control.note)}</div>`);
-  }
-  const headHeight = 12;
-  const size = fitFont(lines, w - 13, h - 5 - headHeight, options.fontScale ?? 1);
+  if (control?.note) entries.push({ text: `✎ ${control.note}`, cls: 'cs-note' });
+  // The text box is the foreignObject below, less a little air on the right.
+  const fitted = fitText(
+    entries.map((e) => e.text),
+    w - 13,
+    h - 4,
+    options.fontScale ?? 1,
+    true
+  );
+  const body = fitted.lines.map((text, i) => {
+    const entry = entries[i]!;
+    const bold = entry.bold && text.startsWith(`${entry.bold} `) ? entry.bold : undefined;
+    return bold
+      ? `<div class="${entry.cls}"><b>${escapeHtml(bold)}</b>${escapeHtml(text.slice(bold.length))}</div>`
+      : `<div class="${entry.cls}">${escapeHtml(text)}</div>`;
+  });
   return (
     `<foreignObject x="7" y="2" width="${n(w - 10)}" height="${n(h - 4)}">` +
-    `<div xmlns="http://www.w3.org/1999/xhtml" class="cs-t" style="font-size:${size}px">${parts.join('')}</div>` +
+    `<div xmlns="http://www.w3.org/1999/xhtml" class="cs-t"${fitted.shortened ? ' data-shortened="true"' : ''} style="font-size:${fitted.size}px">${head}${body.join('')}</div>` +
     `</foreignObject>`
   );
 }
@@ -261,7 +439,11 @@ function titleOf(id: string, control: SheetControl | undefined, physical?: strin
   const head = physical ? `${controlName(id)} (${physical})` : controlName(id);
   if (!control || (control.bindings.length === 0 && !control.note)) return `${head}: nothing bound`;
   const what = control.bindings
-    .map((b) => (b.modifiers.length ? `${b.modifiers.join('+')}: ` : '') + b.action)
+    .map(
+      (b) =>
+        (b.modifiers.length ? `${b.modifiers.join('+')}: ` : '') +
+        (b.plain ? `${b.plain} (${b.action})` : b.action)
+    )
     .join(' / ');
   return `${head}: ${what}${control.note ? ` (${control.note})` : ''}`;
 }
@@ -283,9 +465,7 @@ function card(
   const kind = control?.bindings[0]?.kind;
   const classes = ['cs-ctl', filled ? 'cs-bound' : 'cs-empty'];
   if (control?.conflict) classes.push('cs-conflict');
-  const stripe = kind
-    ? `<rect class="cs-stripe" x="0" y="0" width="4.5" height="${n(h)}" rx="2" fill="${categoryColor(kind, options.theme)}"/>`
-    : '';
+  const stripe = kind ? stripeMark(kind, h, options.theme) : '';
   const track = axis
     ? `<rect class="cs-track" x="8" y="${n(h - 6.5)}" width="${n(w - 16)}" height="3" rx="1.5"/>` +
       `<rect class="cs-axis-val" data-axis="${id}" data-x0="8" data-w="${n(w - 16)}" x="${n(w / 2 - 2)}" y="${n(h - 9)}" width="4" height="8" rx="2"/>`
@@ -306,6 +486,15 @@ function card(
   );
 }
 
+/** The bar on the left edge of a card that says what kind of action it is. */
+function stripeMark(kind: CategoryId, h: number, theme: ThemeName): string {
+  const color = categoryColor(kind, theme);
+  if (categoryPattern(kind, theme) === 'dashed') {
+    return `<line class="cs-stripe" data-pattern="dashed" x1="2.25" y1="2.5" x2="2.25" y2="${n(h - 2.5)}" stroke="${color}" stroke-width="4.5" stroke-dasharray="5 3.5"/>`;
+  }
+  return `<rect class="cs-stripe" data-pattern="solid" x="0" y="0" width="4.5" height="${n(h)}" rx="2" fill="${color}"/>`;
+}
+
 /** Where a line from a pin meets the card: the nearest point on its edge. */
 function edgePoint(
   box: { x: number; y: number; w: number; h: number },
@@ -320,7 +509,9 @@ function pinMarks(
   box: { x: number; y: number; w: number; h: number; pin?: { x: number; y: number } | undefined },
   color: string,
   index: number,
-  options: RenderOptions
+  options: RenderOptions,
+  /** A ring instead of a dot: the pin of a kind whose marker is dashed. */
+  hollow = false
 ): string {
   if (!box.pin) return '';
   const end = edgePoint(box, box.pin);
@@ -328,7 +519,9 @@ function pinMarks(
     `<line class="cs-lead" x1="${n(box.pin.x)}" y1="${n(box.pin.y)}" x2="${n(end.x)}" y2="${n(end.y)}"/>` +
     (options.edit
       ? `<circle class="cs-pin-handle" data-pin="${index}" cx="${n(box.pin.x)}" cy="${n(box.pin.y)}" r="7"/>`
-      : `<circle class="cs-pin" cx="${n(box.pin.x)}" cy="${n(box.pin.y)}" r="5" fill="${color}"/>`)
+      : hollow
+        ? `<circle class="cs-pin" cx="${n(box.pin.x)}" cy="${n(box.pin.y)}" r="4.5" style="fill:${THEMES[options.theme].bg};stroke:${color};stroke-width:2.5"/>`
+        : `<circle class="cs-pin" cx="${n(box.pin.x)}" cy="${n(box.pin.y)}" r="5" fill="${color}"/>`)
   );
 }
 
@@ -483,7 +676,13 @@ export function renderDeviceSvg(
       Boolean(byId.get(control.input)?.note);
     if (!visible) return;
     out.push(
-      pinMarks(control, kind ? categoryColor(kind, options.theme) : theme.line, index, options)
+      pinMarks(
+        control,
+        kind ? categoryColor(kind, options.theme) : theme.line,
+        index,
+        options,
+        kind !== undefined && categoryPattern(kind, options.theme) === 'dashed'
+      )
     );
   });
   layout.controls.forEach((control, index) => {

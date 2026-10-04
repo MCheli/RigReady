@@ -19,9 +19,73 @@ export interface BoundAircraft {
   name: string;
   /** True when the user has bindings of their own for it (not only the game's defaults). */
   hasUserBindings: boolean;
+  /**
+   * True for the one set of bindings a game uses for everything ("All cars"): there is
+   * nothing to tell apart, so a page about it is titled by the game.
+   */
+  general?: boolean;
 }
 
 export type BoundInputKind = 'button' | 'hat' | 'axis' | 'key';
+
+export const HAT_DIRECTIONS = ['U', 'UR', 'R', 'DR', 'D', 'DL', 'L', 'UL'] as const;
+export type BoundHatDirection = (typeof HAT_DIRECTIONS)[number];
+
+/**
+ * Which control of a controller an input is, in one vocabulary for every game (the way
+ * DirectInput numbers a device): button 1 is the first button, hat 1 the first POV hat,
+ * axes are X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2. Games name inputs their own way
+ * (JOY_BTN3, "button2", id 34); consumers that draw or match controls use this instead.
+ */
+export type BoundControl =
+  | { kind: 'button'; index: number }
+  | { kind: 'hat'; hat: number; direction: BoundHatDirection }
+  | { kind: 'axis'; axis: string };
+
+/** The control a DirectInput-style input name means: JOY_BTN3, JOY_BTN_POV1_U, JOY_RZ, JOY_SLIDER1. */
+export function controlFromDirectInput(input: string): BoundControl | undefined {
+  const button = /^JOY_BTN(\d{1,3})$/.exec(input);
+  if (button) {
+    const index = Number(button[1]);
+    return index > 0 ? { kind: 'button', index } : undefined;
+  }
+  const hat = /^JOY_BTN_POV(\d)_(U|UR|R|DR|D|DL|L|UL)$/.exec(input);
+  if (hat) {
+    const n = Number(hat[1]);
+    return n > 0 ? { kind: 'hat', hat: n, direction: hat[2] as BoundHatDirection } : undefined;
+  }
+  const axis = /^JOY_(X|Y|Z|RX|RY|RZ|SLIDER\d)$/.exec(input);
+  if (axis) return { kind: 'axis', axis: axis[1]! };
+  return undefined;
+}
+
+/** "Button 3", "Hat 1 up", "X axis": a control in words, the same for every game. */
+export function controlLabel(control: BoundControl): string {
+  if (control.kind === 'button') return `Button ${control.index}`;
+  if (control.kind === 'hat') return `Hat ${control.hat} ${HAT_WORDS[control.direction]}`;
+  return AXIS_WORDS[control.axis] ?? `${control.axis} axis`;
+}
+
+const HAT_WORDS: Record<BoundHatDirection, string> = {
+  U: 'up',
+  UR: 'up-right',
+  R: 'right',
+  DR: 'down-right',
+  D: 'down',
+  DL: 'down-left',
+  L: 'left',
+  UL: 'up-left',
+};
+const AXIS_WORDS: Record<string, string> = {
+  X: 'X axis',
+  Y: 'Y axis',
+  Z: 'Z axis',
+  RX: 'X rotation',
+  RY: 'Y rotation',
+  RZ: 'Z rotation',
+  SLIDER1: 'Slider 1',
+  SLIDER2: 'Slider 2',
+};
 
 /** One action on one input of a device, as it is in effect now. */
 export interface BoundInput {
@@ -30,6 +94,11 @@ export interface BoundInput {
   /** "Button 3", "Hat 1 up", "X axis". */
   inputLabel: string;
   kind: BoundInputKind;
+  /**
+   * The control on the controller, whatever the game calls it. Absent for keys and for
+   * inputs that are not one control of a controller.
+   */
+  control?: BoundControl;
   /** Modifiers that must be held with it, in plain language ("LCtrl", "Button 5 on Stick"). */
   modifiers: string[];
   /** Stable id of the action within the aircraft. */
@@ -161,6 +230,14 @@ export interface BindingReader {
   proposals?: BindingProposals;
 }
 
+/** What a bindings feature says after it changed a game's bindings. */
+export interface BindingsChanged {
+  /** Game module id. */
+  game: string;
+  /** The aircraft whose bindings changed; absent when several or all may have. */
+  aircraftId?: string;
+}
+
 /**
  * Plain-language names for a game's actions ("Sensor Control Switch - Fwd" is "Sensor
  * select: HUD"), from whoever knows them (the binding guide's shipped label files). Any
@@ -178,6 +255,29 @@ export interface ActionLabelSource {
 export class BindingRegistry {
   private readonly readers = new Map<string, BindingReader>();
   private readonly labelSources: ActionLabelSource[] = [];
+  private readonly changeListeners = new Set<(change: BindingsChanged) => void>();
+
+  /**
+   * Called by the feature that owns a game's binding files after it changed them (an
+   * edit, a restore, an undo of its own), so features that show bindings refresh.
+   */
+  notifyChanged(change: BindingsChanged): void {
+    for (const listener of [...this.changeListeners]) {
+      try {
+        listener(change);
+      } catch {
+        // A listener that fails must not stop the others or the change that was just made.
+      }
+    }
+  }
+
+  /** Subscribes to binding changes; returns the unsubscribe function. */
+  onChanged(listener: (change: BindingsChanged) => void): () => void {
+    this.changeListeners.add(listener);
+    return () => {
+      this.changeListeners.delete(listener);
+    };
+  }
 
   registerLabels(source: ActionLabelSource): void {
     if (this.labelSources.some((s) => s.id === source.id)) {

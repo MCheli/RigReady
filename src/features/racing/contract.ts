@@ -123,6 +123,8 @@ export const BeamngMapViewSchema = z.object({
     z.object({
       action: z.string(),
       label: z.string(),
+      /** The game's own name for the input: "button11", "xaxis", "upov". */
+      control: z.string(),
       input: z.string(),
       detail: z.string(),
       yours: z.boolean(),
