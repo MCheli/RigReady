@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { Result } from '../../../core/result';
+import EmptyState from '../../../renderer/components/EmptyState.vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import {
@@ -484,17 +486,14 @@ onBeforeUnmount(() => stop?.());
         {{ view.layoutsError }}
       </v-alert>
 
-      <div
+      <EmptyState
         v-if="!layouts.length && !view.layoutsError"
-        class="rr-panel rr-empty"
+        art="monitor"
+        title="No saved layouts yet"
         data-testid="layouts-empty"
       >
-        <v-icon icon="mdi-monitor-multiple" size="32" class="mb-2" />
-        <div>No saved layouts yet.</div>
-        <div class="rr-row-sub">
-          Arrange the monitors the way you fly, race or work in Windows, then save them here.
-        </div>
-      </div>
+        Arrange the monitors the way you fly, race or work in Windows, then save them here.
+      </EmptyState>
 
       <div class="displays-layouts">
         <div
@@ -596,7 +595,7 @@ onBeforeUnmount(() => stop?.());
         </div>
       </div>
     </template>
-    <div v-else-if="!loadError" class="rr-empty">Reading the monitors…</div>
+    <PageSkeleton v-else-if="!loadError" label="Reading the monitors…" />
 
     <!-- Save current -->
     <v-dialog v-model="saveOpen" max-width="440">

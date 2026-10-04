@@ -5165,3 +5165,283 @@ requirements:
       - "artifacts/screens/a11y-keyboard/03-keep-layout-focus.png"
       - "artifacts/screens/a11y-keyboard/04-focus-on-launch.png"
       - "artifacts/screens/a11y-keyboard/05-launched.png"
+
+  # ---------------------------------------------------------------------------
+  # THE FINAL PASS: HOW THE WHOLE APPLICATION LOOKS, MOVES AND IS NAVIGATED
+  # ---------------------------------------------------------------------------
+
+  - id: WOW-UI-001
+    title: Command palette (Ctrl+K) over every page and the commands of the features
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "Ctrl+K, or the button in the header, opens one field that finds every page: each navigation entry and every other route a link can open, read from the feature manifests, so a new feature's pages are in it without an edit (E2E compares the list with the running app's router)."
+      - "A feature contributes commands from src/features/<name>/commands.ts (defineCommands), found by import.meta.glob like its manifest; a test feature that is not in src/features proves that no shared file has to be edited, and a module that names another folder, repeats an id or holds a command that does nothing is refused by name."
+      - "Matching is fuzzy: the letters typed must appear in order and the reading that keeps them together and at the starts of words counts ('mr' finds Make ready, 'f18' finds F/A-18C); letters scattered inside words find nothing; words typed apart are found in any order in the title, a keyword, the heading or the hint; the letters found are marked in the title."
+      - "With nothing typed the commands used last come first, then every other command under its heading (a heading with many shows its first few and counts the rest); with something typed, a command used recently wins a near tie and never a clear one. What was used last is remembered when RigReady is started again."
+      - "It is operated by keyboard alone: arrow keys move the mark and go round at the ends, Enter opens or runs, Escape closes and the focus is back on the element that had it; after a page was opened the focus is on that page's heading. It is a combobox with a listbox (aria-activedescendant follows the mark), and it passes the axe scan and the colour-only scan when open, typed into, and with nothing found."
+    status: done
+    evidence:
+      - "src/renderer/shell/fuzzy.test.ts#finds the typed letters in order, whatever their case, and says where"
+      - "src/renderer/shell/fuzzy.test.ts#prefers letters that stand together and at the starts of words"
+      - "src/renderer/shell/fuzzy.test.ts#picks the best way to place the letters, not the first"
+      - "src/renderer/shell/fuzzy.test.ts#drops a match made only of letters scattered inside words"
+      - "src/renderer/shell/fuzzy.test.ts#finds every word somewhere: title, keyword, group or hint, in any order"
+      - "src/renderer/shell/palette.test.ts#with nothing typed: the commands used last come first, newest first, then the others"
+      - "src/renderer/shell/palette.test.ts#with something typed: one list, the best answer first"
+      - "src/renderer/shell/palette.test.ts#puts a command used recently ahead in a near tie, never ahead of a clearly better answer"
+      - "src/renderer/shell/registry.test.ts#lists the pages reached from inside others, named after the page they belong to"
+      - "src/renderer/shell/registry.test.ts#a feature’s name for one of its pages replaces the one made from the route"
+      - "tests/unit/selfRegistration.test.ts#adding the example feature adds its page, its words for the page, its action and its listed command"
+      - "tests/unit/selfRegistration.test.ts#a commands.ts that is not one, names another folder, repeats an id or holds a command that does nothing is refused by name"
+      - "tests/unit/selfRegistration.test.ts#what a feature offers the command palette is found by one more glob over the features folder, and there is no other"
+      - "tests/e2e/shell.e2e.ts#palette: Ctrl+K finds every page and the commands of the features, by keyboard alone"
+      - "tests/e2e/shell.e2e.ts#palette: a first run and a PC without any sim still get a palette that works"
+      - "tests/e2e/shell.e2e.ts#a11y: the palette, the shortcut list, About and the toasts pass axe and never say it by colour alone"
+      - "artifacts/screens/shell-palette/01-open.png"
+      - "artifacts/screens/shell-palette/02-typed.png"
+      - "artifacts/screens/shell-palette/04-recent.png"
+
+  - id: WOW-UI-002
+    title: Palette commands call their feature and a toast reports what really happened
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "Play: Make ready, Launch, Stand down and Re-check for the setup in use, and a switch to every other setup, each through the Play screen's own channel. Nobody can be asked from the palette, so a fix or step that runs a program is not run and is reported as not run; Launch on a rig that is not ready launches and says so; Stand down never closes the game unasked and says it is still running."
+      - "Monitors: one command per saved layout, with how it differs from the monitors now; applying reports the answer to 'Keep this layout?' (kept, or gone back), never 'applied' for a layout that went back; a layout that needs a monitor that is not connected is refused and nothing changes. Identify says how many monitors show their number."
+      - "Backups: 'Back up now' writes the full backup, shows how far it is, and names the backup that was written. Diagnostics: 'Copy the diagnostics report' says how many characters are on the clipboard. Devices: 'Find a device' listens from any page and opens the device whose button was pressed, and says so when nothing was pressed or no controller is connected. DCS bindings and Cheat sheets: one command per aircraft, the ones with bindings of the owner's own first, that opens the page on that aircraft; a game that has one sheet for everything is offered under the game's own name."
+      - "Every outcome is a toast with a tone of its own shape and words (done, attention, not done, note, still working), announced politely to a screen reader; it stays while the pointer or focus is on it, and may carry one button to the page it is about. A command that takes more than a moment shows that it is running, with its progress. Where the strip of a command RigReady was started with is docked at the bottom of the window, a toast stands above it, not over it."
+      - "With the fake machine made to accept every change and carry out none, no command reports success. A feature whose commands cannot be listed is named in the palette with the reason, and the rest still works."
+    status: done
+    evidence:
+      - "tests/unit/paletteCommands.test.ts#Re-check, Make ready, Launch and Stand down report what the channels of the Play screen answered"
+      - "tests/unit/paletteCommands.test.ts#Launch on a rig that is not ready launches, and says it was not ready"
+      - "tests/unit/paletteCommands.test.ts#nothing is reported as done when the machine accepts a change and does not carry it out"
+      - "tests/unit/paletteCommands.test.ts#a switch to another setup makes it the one in use, opens Play, and says how it stands"
+      - "tests/unit/paletteCommands.test.ts#applying a layout reports the answer to \"Keep this layout?\": kept, or gone back"
+      - "tests/unit/paletteCommands.test.ts#a layout that needs a monitor that is not connected is refused, and nothing changes"
+      - "tests/unit/paletteCommands.test.ts#a layout the machine accepts and does not apply is not reported as applied"
+      - "tests/unit/paletteCommands.test.ts#\"Back up now\" writes a full backup and reports the one that was written"
+      - "tests/unit/paletteCommands.test.ts#\"Find a device\" names the device whose button was pressed and opens it on the Devices page"
+      - "tests/unit/paletteCommands.test.ts#\"Find a device\" stops listening after a while and says that nothing was pressed"
+      - "tests/unit/paletteCommands.test.ts#open the bindings page on an aircraft: the ones with bindings of your own first"
+      - "tests/unit/paletteCommands.test.ts#a game with one set of bindings for everything is offered under the game’s own name"
+      - "tests/unit/paletteCommands.test.ts#\"Copy the diagnostics report\" puts the report on the clipboard and says how much it was"
+      - "tests/unit/paletteCommands.test.ts#every icon a command names exists in the icon font"
+      - "src/renderer/shell/runner.test.ts#an action that takes a moment shows that it is running, with its progress, then becomes the outcome"
+      - "src/renderer/shell/runner.test.ts#an action that throws is reported as not finished, with the error: never as done"
+      - "src/renderer/shell/toast.test.ts#stays while the pointer or the focus is on it, and its time starts again afterwards"
+      - "tests/e2e/shell.e2e.ts#palette commands: each calls its feature and the toast reports what really happened"
+      - "tests/e2e/shell.e2e.ts#palette commands: bindings and cheat sheets open on the aircraft, setups switch, and a failing feature is named"
+      - "tests/e2e/shell.e2e.ts#toasts: where a strip of the app is docked at the bottom of the window, a toast stands above it"
+      - "artifacts/screens/shell-palette/03-made-ready.png"
+      - "artifacts/screens/shell-commands/01-layout-applied-waiting.png"
+      - "artifacts/screens/shell-commands/05-found-device.png"
+      - "artifacts/screens/shell-a11y/02-toasts.png"
+
+  - id: WOW-UI-003
+    title: Keyboard shortcuts for the shell, and a list of them on "?"
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "Ctrl+1 goes to Play and Ctrl+2 to Configure, from anywhere, also while typing in a field."
+      - "'?' shows the keyboard shortcuts; typed into a text field it is a question mark. The list is the table the key handler reads, so it cannot promise a key that does nothing."
+      - "The keys of the window itself are listed with them (Ctrl and + or - for the size of the text, Ctrl+0 for the normal size, F11 for the full screen). E2E reads the window's menu and finds each one under the key printed, and runs the menu's own actions: the text gets larger, smaller, and normal again."
+      - "At twice the text size the page inside the window is half as wide: the header still fits (nothing of it is outside the window), and Ctrl+K, Ctrl+1, Ctrl+2 and '?' still work, because a window is told from a pop-out by its width on screen, not by the width of its page."
+      - "A pop-out panel (the quick look in its own small window) keeps to itself: no palette, no list of shortcuts and no change of mode there, however wide it is made. In the app's own window the quick look is a page like any other, and the palette opens over it."
+      - "While a dialog of a feature waits for an answer, the shell's shortcuts leave the keyboard to it: no palette opens over it and the page does not change."
+    status: done
+    evidence:
+      - "src/renderer/shell/shortcuts.test.ts#Ctrl+K opens the palette, Ctrl+1 and Ctrl+2 change mode, with either case of the letter"
+      - "src/renderer/shell/shortcuts.test.ts#the Ctrl shortcuts work while typing in a field; \"?\" there is a question mark"
+      - "src/renderer/shell/shortcuts.test.ts#the list shown by \"?\" is the table the key handler reads: every entry answers to its keys"
+      - "src/renderer/shell/shortcuts.test.ts#the keys of the window are listed beside them, and none of them is a key the shell takes"
+      - "src/renderer/shell/shortcuts.test.ts#the app’s own window has the shell’s keys at every text size: its width on screen counts, not the page’s"
+      - "src/renderer/shell/shortcuts.test.ts#a small window is a panel, and so is one opened as a pop-out, however wide it was made"
+      - "tests/e2e/shell.e2e.ts#shortcuts: \"?\" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting dialog keeps the keyboard"
+      - "tests/e2e/shell.e2e.ts#shortcuts: a pop-out panel keeps to itself, the shell’s keys belong to the app’s own window"
+      - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
+      - "artifacts/screens/shell-shortcuts/02-twice-the-text-size.png"
+      - "artifacts/screens/shell-popout/01-palette-over-the-quick-look.png"
+
+  - id: WOW-UI-004
+    title: The visual system, refined - depth, type, one focus ring, motion that can be switched off
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The dark theme is kept: every token and shared class the screens are written against is still defined, the surface, text and status colours are unchanged, and no stylesheet or component uses a token that is not defined (a test scans every one)."
+      - "Depth has two steps, set by tokens: a panel lies on the page (a faint top light and a short shadow), and what floats above it (dialogs, menus, the palette, toasts) has a firmer edge and a long soft shadow."
+      - "Type: Windows' own interface font, a scale of five sizes, and digits of one width everywhere, so counts, times and ids line up. Text for running explanation has its own token, readable on every surface (WCAG AA)."
+      - "One focus ring: two pixels of the focus colour on every kind of control, the same on the shell's links, the navigation and a page's buttons (E2E reads it on each)."
+      - "Motion is two durations (120 ms, 180 ms) and one easing without overshoot, used for a page arriving, a dialog arriving and leaving, and the shell's own panels and toasts; no component of the shell animates on a number of its own. With 'reduce motion' the tokens are zero and nothing animates (E2E emulates the setting)."
+      - "Less motion takes away the time only (0 s, exactly): how often an animation repeats and whether it is held are left as they were, so a component that switches its own motion off finds it off, and a loading bar a dialog keeps in hand stays an animation that never ends instead of one that is held and can never finish. A busy bar that may not travel is drawn whole and dimmed instead of not at all."
+      - "The window is dark to its edges: the scrollbar is a thin dark bar, the strip kept free for it continues the header, and a snackbar a feature shows itself looks like the shell's toasts, with its tone as an icon. Because that strip is always kept free, a page has the same width whether or not it is long enough to scroll, and keeps it while a dialog or the palette is open over it."
+    status: done
+    evidence:
+      - "tests/unit/designSystem.test.ts#every token the features use is still there, with the colour it had"
+      - "tests/unit/designSystem.test.ts#every shared class is still defined"
+      - "tests/unit/designSystem.test.ts#no stylesheet or component uses a token that is not defined"
+      - "tests/unit/designSystem.test.ts#depth has two steps: a panel lies on the page, a dialog floats above it"
+      - "tests/unit/designSystem.test.ts#the type scale is a scale, and digits have one width"
+      - "tests/unit/designSystem.test.ts#the text for running explanation is readable on every surface (WCAG AA)"
+      - "tests/unit/designSystem.test.ts#there is one focus ring: two pixels of the focus colour, on every kind of control"
+      - "tests/unit/designSystem.test.ts#motion is short and eased out, with no bounce"
+      - "tests/unit/designSystem.test.ts#asking Windows for less motion switches it off: the tokens are zero and nothing animates"
+      - "tests/unit/designSystem.test.ts#less motion takes away the time only: how often an animation repeats and whether it is held stay as they were"
+      - "tests/unit/designSystem.test.ts#no component of the shell animates on a number of its own"
+      - "tests/e2e/look.e2e.ts#look: depth, type and motion come from the tokens, and \"reduce motion\" switches motion off"
+      - "tests/e2e/look.e2e.ts#look: a snackbar of a feature looks like the shell’s toasts, with its tone as an icon"
+      - "tests/e2e/shell.e2e.ts#palette: Ctrl+K finds every page and the commands of the features, by keyboard alone"
+      - "artifacts/screens/look-system/01-monitors.png"
+      - "artifacts/screens/look-system/02-less-motion.png"
+      - "artifacts/screens/look-toast/01-snackbar.png"
+
+  - id: WOW-UI-005
+    title: A page that is still reading shows its outline, not a line of text
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "One shared component (PageSkeleton) draws the outline of what will be there while a page reads; the pages that used to show 'Reading…' or 'Looking…' in an empty space use it."
+      - "The words are still on the page for a screen reader, in a status region marked busy, and the page tour, the accessibility scan and the crawl all see the outline as 'still loading', as they see a progress indicator."
+      - "It fades in after a moment, so a page that answers at once never flashes it; with 'reduce motion' the outline holds still."
+      - "On scenario flying-all-good with the display provider hung, the Monitors page shows its title, what it is for and the outline, and passes the axe and colour-only scans; when the provider answers again the page replaces it and nothing counts as loading."
+    status: done
+    evidence:
+      - "tests/unit/shellComponents.test.ts#no page says it is loading with a line of text in an empty box"
+      - "tests/unit/shellComponents.test.ts#the scan sees such a line when there is one, and leaves an empty state alone"
+      - "tests/unit/shellComponents.test.ts#every outline says what is being read, in words that end with an ellipsis"
+      - "tests/unit/shellComponents.test.ts#the outline is a status region marked busy, with its words on the page and its bars hidden"
+      - "tests/e2e/look.e2e.ts#look: a page that is still reading shows its outline, says so to a screen reader, and counts as loading"
+      - "tests/e2e/tour.e2e.ts#tour: every page on ${rigged.what} has a title, says what it is for, and settles"
+      - "artifacts/screens/look-loading/01-reading.png"
+      - "artifacts/screens/look-loading/02-read.png"
+
+  - id: WOW-UI-006
+    title: Empty states look the same everywhere - a drawing, what is missing, and one action
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "One shared component (EmptyState) says there is nothing to show yet: a small line drawing inside four corner marks, what is missing in a few words, a sentence, and one action that leads where the thing is made. Backups, Snapshots, What changed, Tracked files, Safety and Monitors use it; 'What changed' without a setup leads to creating one."
+      - "A game or tool that is not on this PC (NotOnThisPc) and an address that is not a page have the same look; the latter offers the way back and the palette."
+      - "A panel that only says it in words gets a plain drawing from the stylesheet, so no empty panel is bare; a panel with a status colour or an icon of its own is left as it is."
+      - "On generic-rig the empty states pass the axe and colour-only scans, and nothing empty is said in a status colour."
+    status: done
+    evidence:
+      - "tests/unit/shellComponents.test.ts#every drawing an empty state names exists, and every empty state says something"
+      - "tests/unit/shellComponents.test.ts#each drawing is drawn: a branch in the template for every name but the plain one"
+      - "tests/unit/shellComponents.test.ts#\"not on this PC\" and \"nothing at this address\" use the same drawing and component"
+      - "tests/unit/shellComponents.test.ts#a panel that only says it in words gets the plain drawing, unless it has a status or an icon of its own"
+      - "tests/e2e/look.e2e.ts#look: an empty state has a drawing, says what is missing, and leads somewhere"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "artifacts/screens/look-empty/01-backups.png"
+      - "artifacts/screens/look-empty/02-changes.png"
+      - "artifacts/screens/look-empty/03-not-on-this-pc.png"
+      - "artifacts/screens/look-empty/04-nothing-at-this-address.png"
+
+  - id: WOW-UI-007
+    title: One instrument detail - the header's heading tape and the brand mark
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The brand mark is a simplified flight path marker, drawn as a thin-lined SVG in the accent colour."
+      - "The header carries a heading tape along its bottom edge (a short tick every 8 px, a longer one every 40) that fades out towards both ends, with an index mark at its centre. Both are drawn, not content: hidden from a screen reader, not clickable, and nowhere else in the app."
+      - "The Configure navigation marks where you are with a thin line as well as a tint."
+    status: done
+    evidence:
+      - "tests/unit/shellComponents.test.ts#the brand mark is a drawing with two shapes, hidden from a screen reader"
+      - "tests/unit/shellComponents.test.ts#the heading tape is drawn by the header and the About panel only, and is not content"
+      - "tests/e2e/look.e2e.ts#look: depth, type and motion come from the tokens, and \"reduce motion\" switches motion off"
+      - "artifacts/screens/look-system/01-monitors.png"
+
+  - id: WOW-UI-008
+    title: The first-run welcome, to the standard of the rest
+    job: fly
+    area: shell
+    priority: p2
+    done_means:
+      - "With no setups (scenario flying-fresh), the Play screen greets with one panel: a simplified head-up display (the horizon and the flight path marker, drawn and not read out), what RigReady does in three lines, and what it found on this PC as three readings (games, game controllers, monitors), each a number with its unit and what is behind it."
+      - "One clear first step ('Create a setup from this rig') leads into capture; restoring from a backup and importing a shared setup are one click away; a line says where the keyboard leads (Ctrl+K, '?')."
+      - "While the PC is still being looked at the readings show their outline, three side by side where the readings will be, and when it cannot be looked at the panel says so instead of showing nothing."
+      - "At twice the text size, where the page is half as wide, the panel puts one thing under the other: nothing sticks out of the window and the first step is still there."
+      - "A PC whose only game is a racing one is greeted with the wheel for a mark; one without any sim says that any other game still works. The panel passes the axe and colour-only scans on each."
+    status: done
+    evidence:
+      - "src/features/fly/core/welcome.test.ts#says which games, game controllers and monitors were found on this PC"
+      - "src/features/fly/core/welcome.test.ts#on a PC with no sim it finds no game and still says what is there; a provider that fails leaves its part out"
+      - "tests/e2e/first-impressions.e2e.ts#welcome: a first run says what RigReady does, what it found on this PC, and leads to the first setup"
+      - "tests/e2e/first-impressions.e2e.ts#welcome: a PC whose only game is a racing one is greeted with the wheel, and one without a sim says so"
+      - "tests/e2e/capture.e2e.ts#first run: welcome, what was found on this PC, and two clicks to a Ready DCS F/A-18C setup"
+      - "artifacts/screens/welcome/01-welcome.png"
+      - "artifacts/screens/welcome/02-looking.png"
+      - "artifacts/screens/welcome/03-large-text.png"
+      - "artifacts/screens/welcome-racing/01-welcome.png"
+      - "artifacts/screens/welcome-generic/01-welcome.png"
+
+  - id: WOW-UI-009
+    title: An About panel - version, what RigReady does, the licence, where to find it
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The version in the header opens About, and so does the command palette: the version of this run, what RigReady does in one sentence and its three jobs, the licence and the copyright line, the website, the source and where to report a problem, and the data folder of this run."
+      - "The licence, the copyright line and the addresses are read from the package's own description, so the panel cannot disagree with what was built and no name is written into the source; only https addresses are offered, and they open in Windows' browser, never inside the app."
+      - "Escape closes it and the focus is back on the version; the keyboard shortcuts and Diagnostics are one step away from it. It passes the axe and colour-only scans."
+    status: done
+    evidence:
+      - "src/renderer/shell/about.test.ts#turns the addresses a package states into pages a person can open"
+      - "src/renderer/shell/about.test.ts#offers nothing that is not an https address: only those are handed to the browser"
+      - "src/renderer/shell/about.test.ts#the package this app is built from states a licence, a website, its source and where to report a problem"
+      - "tests/e2e/first-impressions.e2e.ts#about: the version, what RigReady does, the licence and where to find it"
+      - "artifacts/screens/about/01-about.png"
+
+  - id: WOW-UI-010
+    title: A quiet accent follows the kind of game the setup in use is for
+    job: fly
+    area: shell
+    priority: p2
+    done_means:
+      - "The shell does not know what a setup is: a feature says the kind (flight or racing) of the setup in use from its commands.ts, and when to ask again; an answer overtaken by a later question is dropped, and a feature that cannot say leaves the plain accent."
+      - "With a flight setup or no setup nothing changes: the accent is the blue it was. With a racing setup the brand mark becomes a wheel and the mark, the header's index, the line that says where you are in Configure and the small mark in an empty state's drawing turn violet."
+      - "It is decoration only: controls stay blue, status keeps green, amber and red, and the violet is far from all three around the colour wheel and seen on every surface (3:1)."
+      - "On scenario shell-flight-and-racing, switching the setup on the Play screen, or from the palette, changes it within the same window without a restart."
+    status: done
+    evidence:
+      - "src/renderer/shell/kind.test.ts#asks at once, again when the feature says the setup changed, and again when the machine did"
+      - "src/renderer/shell/kind.test.ts#an answer that a later question overtook is dropped"
+      - "src/renderer/shell/kind.test.ts#a feature that cannot say leaves the plain accent, and the next one that knows is asked"
+      - "tests/unit/paletteCommands.test.ts#knows the kind of game the setup in use is for"
+      - "tests/unit/designSystem.test.ts#the accent for a racing setup is seen, is not a status colour, and is only set by the shell"
+      - "tests/e2e/first-impressions.e2e.ts#accent: the mark and the lines that say where you are follow the kind of game the setup in use is for"
+      - "artifacts/screens/kind-accent/01-flight.png"
+      - "artifacts/screens/kind-accent/02-racing.png"
+      - "artifacts/screens/kind-accent/03-racing-configure.png"
+
+  - id: WOW-UI-011
+    title: The first mode is called Play, and the shell has the names of its modes in one place
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The mode that checks the rig and launches the game is called Play on screen, so the app reads the same to someone who flies and to someone who only races. In the shell the word comes from one table (MODE_NAMES in src/shared/feature.ts): the switch in the header and its tooltip, the list of keyboard shortcuts (Ctrl+1, Go to Play), the way back from an address that is not a page, and the command palette."
+      - "The palette calls the page the switch opens Play whatever its feature calls the route, lists that feature's commands under the heading Play, and still finds the page by 'fly' and by 'race'. Its icon and its hint say nothing of flying. A toast of those commands names the Play screen."
+      - "Only the word on screen changed: the folder, the routes, the IPC channels, meta.mode and the test ids are what they were (mode-fly, /fly, fly:check)."
+    notes:
+      - "2026-10-04: this entry is the shell and the palette's commands. Copy in other places that still says Fly (the capture page, the tray, the user guide) is not covered by it."
+    status: done
+    evidence:
+      - "src/renderer/shell/registry.test.ts#the page the mode switch opens is called what the switch calls it: Play"
+      - "src/renderer/shell/registry.test.ts#the feature whose pages are those of Play mode stands under the mode’s name"
+      - "src/renderer/shell/palette.test.ts#with something typed: one list, the best answer first"
+      - "tests/unit/paletteCommands.test.ts#a switch to another setup makes it the one in use, opens Play, and says how it stands"
+      - "tests/e2e/shell.e2e.ts#palette: Ctrl+K finds every page and the commands of the features, by keyboard alone"
+      - "tests/e2e/shell.e2e.ts#shortcuts: \"?\" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting dialog keeps the keyboard"
+      - "tests/e2e/look.e2e.ts#look: an empty state has a drawing, says what is missing, and leads somewhere"
+      - "artifacts/screens/shell-palette/01-open.png"
+      - "artifacts/screens/shell-shortcuts/01-shortcuts.png"

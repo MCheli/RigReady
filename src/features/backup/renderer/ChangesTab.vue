@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import EmptyState from '../../../renderer/components/EmptyState.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { backupContract, type ChangesViewData, type Overview } from '../contract';
@@ -72,14 +73,20 @@ async function markWorking(): Promise<void> {
       {{ error }}
     </v-alert>
 
-    <div
+    <EmptyState
       v-if="view && setups.length === 0"
-      class="rr-panel rr-empty"
+      art="setup"
+      title="Create a setup first"
       data-testid="changes-no-setups"
     >
-      Create a setup first. Each time its game starts, RigReady records its tracked files, so when
-      something stops working you can see exactly what changed since.
-    </div>
+      Each time its game starts, RigReady records its tracked files, so when something stops working
+      you can see exactly what changed since.
+      <template #action>
+        <v-btn color="primary" prepend-icon="mdi-camera-iris" to="/configure/profiles/capture">
+          New setup from this rig
+        </v-btn>
+      </template>
+    </EmptyState>
 
     <template v-else-if="view">
       <v-chip-group v-model="profileId" mandatory selected-class="scope-selected" class="mb-3">

@@ -2,6 +2,7 @@
 import DeviceTabs from './DeviceTabs.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { onMachineChanged } from '../../../renderer/machine';
 import type { InputState } from '../../../shared/models';
 import { detectIdentify } from '../core/input';
@@ -531,7 +532,7 @@ watch(
         </section>
       </div>
     </template>
-    <div v-else-if="!store.error" class="rr-empty">Looking at what is plugged in…</div>
+    <PageSkeleton v-else-if="!store.error" label="Looking at what is plugged in…" :rows="6" />
   </div>
 </template>
 

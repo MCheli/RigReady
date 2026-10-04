@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import ConfirmChanges from '../../../renderer/components/ConfirmChanges.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import type { ChangePreview } from '../../../shared/changePreview';
@@ -121,7 +122,7 @@ const STATUS = {
     <div v-if="message" class="sap-message rr-ok" data-testid="sap-message">
       <v-icon icon="mdi-check" size="16" /> {{ message }}
     </div>
-    <div v-if="!view && !error" class="rr-empty">Looking for SimAppPro…</div>
+    <PageSkeleton v-if="!view && !error" label="Looking for SimAppPro…" />
 
     <template v-else-if="view && view.dcsFound === false">
       <NotOnThisPc

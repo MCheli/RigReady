@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import EmptyState from '../../../renderer/components/EmptyState.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import {
@@ -353,14 +354,14 @@ const kindIcon = (b: BackupView): string =>
       </v-btn>
     </div>
 
-    <div
+    <EmptyState
       v-if="view && view.backups.length === 0"
-      class="rr-panel rr-empty"
+      art="backup"
+      title="No backups yet"
       data-testid="backups-empty"
     >
-      No backups yet. "Back up now" saves one here; "Open backup file" adds one you made on another
-      PC.
-    </div>
+      "Back up now" saves one here; "Open backup file" adds one you made on another PC.
+    </EmptyState>
 
     <div v-else-if="view" class="rr-panel">
       <div

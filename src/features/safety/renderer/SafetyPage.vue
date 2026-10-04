@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import EmptyState from '../../../renderer/components/EmptyState.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { safetyContract, type ChangeGroupView, type SafetyView } from '../contract';
@@ -87,9 +88,14 @@ const fileCount = (n: number): string => `${n} ${n === 1 ? 'file' : 'files'}`;
         {{ view.retention.autoBackupGroups }} changes are always kept.
       </div>
 
-      <div v-if="view.groups.length === 0" class="rr-panel rr-empty" data-testid="safety-empty">
-        RigReady has not changed any of your files.
-      </div>
+      <EmptyState
+        v-if="view.groups.length === 0"
+        art="shield"
+        title="RigReady has not changed any of your files"
+        data-testid="safety-empty"
+      >
+        When it does, the change is listed here with the file as it was before, and can be undone.
+      </EmptyState>
 
       <div v-else class="rr-panel">
         <div

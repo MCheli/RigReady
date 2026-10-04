@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import EmptyArt from './EmptyArt.vue';
 
 /**
  * The one way a page says that a game or tool it is about is not on this PC: what is
@@ -37,7 +38,8 @@ const lookedText = computed(() => {
     role="status"
     data-testid="not-on-this-pc"
   >
-    <v-icon icon="mdi-magnify-remove-outline" :size="inline ? 22 : 34" class="not-here-icon" />
+    <v-icon v-if="inline" icon="mdi-magnify-remove-outline" size="22" class="not-here-icon" />
+    <EmptyArt v-else name="search" class="not-here-icon" />
     <div class="not-here-text">
       <div class="not-here-title" data-testid="not-here-title">
         {{ name }} was not found on this PC
@@ -62,30 +64,31 @@ const lookedText = computed(() => {
 </template>
 
 <style scoped>
+/* The same look as every other empty state (EmptyState.vue): drawing, title, sentence, action. */
 .not-here {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 6px;
-  padding: 44px 24px;
+  gap: 4px;
+  padding: 40px 24px 44px;
   color: var(--rr-muted);
 }
 .not-here-icon {
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 .not-here-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--rr-text);
 }
 .not-here-line {
   font-size: 13.5px;
-  max-width: 640px;
+  max-width: 600px;
   line-height: 1.5;
 }
 .not-here-action {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 .not-here-inline {
   flex-direction: row;

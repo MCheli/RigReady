@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText } from '../../../renderer/ipc';
 import type { Mapping, MigrationScan, Orphan } from '../core/model';
 import { useBindingsStore } from './store';
@@ -157,7 +158,7 @@ onBeforeUnmount(() => void stopIdentify());
       and updates the IDs inside the modifier and settings files, as one change you can undo.
     </p>
 
-    <div v-if="!scan" class="rr-panel rr-empty">Looking through the binding files…</div>
+    <PageSkeleton v-if="!scan" label="Looking through the binding files…" :rows="3" />
     <template v-else>
       <div v-if="movable.length === 0" class="rr-panel rr-empty ids-ok" data-testid="ids-none">
         <v-icon icon="mdi-check-circle-outline" size="36" class="rr-ok mb-3" />

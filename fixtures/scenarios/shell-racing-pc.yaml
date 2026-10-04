@@ -1,0 +1,9 @@
+description: A generic PC with iRacing installed and no flight sim
+rig: generic-rig
+extends: generic-fresh.yaml
+# For the first-run welcome (tests/e2e/first-impressions.e2e.ts): a PC whose only game is a
+# racing one. The standalone iRacing, as its installer leaves it: the launcher in its folder.
+mutations:
+  - op: writeFile
+    path: Program Files (x86)/iRacing/ui/iRacingUI.exe
+    content: ''

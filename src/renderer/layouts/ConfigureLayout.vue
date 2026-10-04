@@ -1,5 +1,14 @@
 <script setup lang="ts">
+import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import { navSections } from '../features';
+import { pageEpoch } from '../shell/shell';
+
+/**
+ * The page shown, keyed by its route record: moving between the tabs of one page keeps the
+ * page, and a command that links to the page already on screen opens it afresh (pageEpoch).
+ */
+const viewKey = (shown: RouteLocationNormalizedLoaded): string =>
+  `${shown.matched[1]?.path ?? ''}:${pageEpoch.value}`;
 </script>
 
 <template>
@@ -29,7 +38,9 @@ import { navSections } from '../features';
       </div>
     </nav>
     <div class="configure-content">
-      <router-view />
+      <router-view v-slot="{ Component, route: shown }">
+        <component :is="Component" :key="viewKey(shown)" />
+      </router-view>
     </div>
   </div>
 </template>
@@ -68,6 +79,7 @@ import { navSections } from '../features';
   margin-bottom: 3px;
 }
 .configure-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -77,13 +89,28 @@ import { navSections } from '../features';
   text-decoration: none;
   font-size: 13.5px;
   line-height: 20px;
+  transition:
+    color var(--rr-motion-fast) var(--rr-ease),
+    background-color var(--rr-motion-fast) var(--rr-ease);
 }
 .configure-link:hover {
   color: var(--rr-text);
+  background: color-mix(in srgb, var(--rr-surface-2) 55%, transparent);
 }
 .configure-link.active {
   background: var(--rr-surface-2);
   color: var(--rr-text);
+}
+/* Where you are: a thin line as well as a tint, like the index mark on an instrument. */
+.configure-link.active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--rr-kind, var(--rr-accent));
 }
 .configure-content {
   flex: 1;

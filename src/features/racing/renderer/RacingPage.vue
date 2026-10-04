@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { racingContract, type RacingOverview } from '../contract';
@@ -54,7 +55,7 @@ const ICONS: Record<string, string> = {
     </div>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
-    <div v-if="!view && !error" class="rr-empty">Looking at the rig…</div>
+    <PageSkeleton v-if="!view && !error" label="Looking at the rig…" />
 
     <template v-if="view">
       <section class="rc-section">

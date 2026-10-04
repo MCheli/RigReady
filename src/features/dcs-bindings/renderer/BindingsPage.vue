@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { onMachineChanged } from '../../../renderer/machine';
 import ActionsTab from './ActionsTab.vue';
 import BindDialog from './BindDialog.vue';
@@ -108,9 +109,11 @@ onBeforeUnmount(() => off?.());
       {{ store.error }}
     </v-alert>
 
-    <div v-if="store.loading" class="rr-panel rr-empty" data-testid="bind-loading">
-      Reading DCS's input files…
-    </div>
+    <PageSkeleton
+      v-if="store.loading"
+      label="Reading DCS's input files…"
+      data-testid="bind-loading"
+    />
 
     <NotOnThisPc
       v-else-if="store.overview && !store.overview.found && store.overview.aircraft.length === 0"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import ChangePreview from '../../../renderer/components/ChangePreview.vue';
+import EmptyState from '../../../renderer/components/EmptyState.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import type { ChangePreview as Preview } from '../../../shared/changePreview';
@@ -177,13 +178,15 @@ async function confirmDelete(): Promise<void> {
     </div>
 
     <h2 class="rr-section-title section-gap">Snapshots</h2>
-    <div
+    <EmptyState
       v-if="snapshots && snapshots.length === 0"
-      class="rr-panel rr-empty"
+      art="snapshot"
+      title="No snapshots yet"
       data-testid="snapshots-empty"
     >
-      No snapshots yet.
-    </div>
+      Take one before you change something you may want back: it keeps one tracked item exactly as
+      it is now.
+    </EmptyState>
     <div v-else-if="snapshots" class="rr-panel">
       <div
         v-for="s in snapshots"

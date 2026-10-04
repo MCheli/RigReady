@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import {
@@ -353,7 +354,7 @@ onBeforeUnmount(() => {
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4" data-testid="screens-error">{{
       error
     }}</v-alert>
-    <div v-if="!state && !error" class="rr-empty">Reading the monitor setups…</div>
+    <PageSkeleton v-if="!state && !error" label="Reading the monitor setups…" />
     <NotOnThisPc
       v-else-if="state?.dcsFound === false"
       name="DCS World"

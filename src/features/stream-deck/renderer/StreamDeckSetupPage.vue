@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import ExternalLink from './ExternalLink.vue';
@@ -230,7 +231,7 @@ async function importFile(): Promise<void> {
         </div>
       </div>
     </template>
-    <div v-else-if="!error" class="rr-panel rr-empty">Checking this PC…</div>
+    <PageSkeleton v-else-if="!error" label="Checking this PC…" :rows="5" />
   </div>
 </template>
 

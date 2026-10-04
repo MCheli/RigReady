@@ -2,6 +2,7 @@
 import DeviceTabs from './DeviceTabs.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { devicesContract } from '../contract';
@@ -258,7 +259,7 @@ watch(selected, () => void reveal());
         </p>
       </div>
     </template>
-    <div v-else-if="!error" class="rr-empty">Reading the USB tree…</div>
+    <PageSkeleton v-else-if="!error" label="Reading the USB tree…" :rows="6" />
   </div>
 </template>
 
