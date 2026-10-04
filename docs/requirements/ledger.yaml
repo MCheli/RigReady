@@ -4094,6 +4094,96 @@ requirements:
       - ".github/workflows/ci.yml"
 
   # ---------------------------------------------------------------------------
+  # THE FINAL PASS: HOW THE WHOLE APPLICATION LOOKS, MOVES AND IS NAVIGATED
+  # ---------------------------------------------------------------------------
+
+  - id: WOW-UI-001
+    title: Command palette (Ctrl+K) over every page and the commands of the features
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "Ctrl+K, or the button in the header, opens one field that finds every page: each navigation entry and every other route a link can open, read from the feature manifests, so a new feature's pages are in it without an edit (E2E compares the list with the running app's router)."
+      - "A feature contributes commands from src/features/<name>/commands.ts (defineCommands), found by import.meta.glob like its manifest; a test feature that is not in src/features proves that no shared file has to be edited, and a module that names another folder, repeats an id or holds a command that does nothing is refused by name."
+      - "Matching is fuzzy: the letters typed must appear in order and the reading that keeps them together and at the starts of words counts ('mr' finds Make ready, 'f18' finds F/A-18C); letters scattered inside words find nothing; words typed apart are found in any order in the title, a keyword, the heading or the hint; the letters found are marked in the title."
+      - "With nothing typed the commands used last come first, then every other command under its heading (a heading with many shows its first few and counts the rest); with something typed, a command used recently wins a near tie and never a clear one. What was used last is remembered when RigReady is started again."
+      - "It is operated by keyboard alone: arrow keys move the mark and go round at the ends, Enter opens or runs, Escape closes and the focus is back on the element that had it; after a page was opened the focus is on that page's heading. It is a combobox with a listbox (aria-activedescendant follows the mark), and it passes the axe scan and the colour-only scan when open, typed into, and with nothing found."
+    status: done
+    evidence:
+      - "src/renderer/shell/fuzzy.test.ts#finds the typed letters in order, whatever their case, and says where"
+      - "src/renderer/shell/fuzzy.test.ts#prefers letters that stand together and at the starts of words"
+      - "src/renderer/shell/fuzzy.test.ts#picks the best way to place the letters, not the first"
+      - "src/renderer/shell/fuzzy.test.ts#drops a match made only of letters scattered inside words"
+      - "src/renderer/shell/fuzzy.test.ts#finds every word somewhere: title, keyword, group or hint, in any order"
+      - "src/renderer/shell/palette.test.ts#with nothing typed: the commands used last come first, newest first, then the others"
+      - "src/renderer/shell/palette.test.ts#with something typed: one list, the best answer first"
+      - "src/renderer/shell/palette.test.ts#puts a command used recently ahead in a near tie, never ahead of a clearly better answer"
+      - "src/renderer/shell/registry.test.ts#lists the pages reached from inside others, named after the page they belong to"
+      - "src/renderer/shell/registry.test.ts#a feature’s name for one of its pages replaces the one made from the route"
+      - "tests/unit/selfRegistration.test.ts#adding the example feature adds its page, its words for the page, its action and its listed command"
+      - "tests/unit/selfRegistration.test.ts#a commands.ts that is not one, names another folder, repeats an id or holds a command that does nothing is refused by name"
+      - "tests/unit/selfRegistration.test.ts#what a feature offers the command palette is found by one more glob over the features folder, and there is no other"
+      - "tests/e2e/shell.e2e.ts#palette: Ctrl+K finds every page and the commands of the features, by keyboard alone"
+      - "tests/e2e/shell.e2e.ts#palette: a first run and a PC without any sim still get a palette that works"
+      - "tests/e2e/shell.e2e.ts#a11y: the palette, the shortcut list, About and the toasts pass axe and never say it by colour alone"
+      - "artifacts/screens/shell-palette/01-open.png"
+      - "artifacts/screens/shell-palette/02-typed.png"
+      - "artifacts/screens/shell-palette/04-recent.png"
+
+  - id: WOW-UI-002
+    title: Palette commands call their feature and a toast reports what really happened
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "Fly: Make ready, Launch, Stand down and Re-check for the setup in use, and a switch to every other setup, each through the Fly screen's own channel. Nobody can be asked from the palette, so a fix or step that runs a program is not run and is reported as not run; Launch on a rig that is not ready launches and says so; Stand down never closes the game unasked and says it is still running."
+      - "Monitors: one command per saved layout, with how it differs from the monitors now; applying reports the answer to 'Keep this layout?' (kept, or gone back), never 'applied' for a layout that went back; a layout that needs a monitor that is not connected is refused and nothing changes. Identify says how many monitors show their number."
+      - "Backups: 'Back up now' writes the full backup, shows how far it is, and names the backup that was written. Diagnostics: 'Copy the diagnostics report' says how many characters are on the clipboard. Devices: 'Find a device' listens from any page and opens the device whose button was pressed, and says so when nothing was pressed or no controller is connected. DCS bindings and Cheat sheets: one command per aircraft, the ones with bindings of the owner's own first, that opens the page on that aircraft."
+      - "Every outcome is a toast with a tone of its own shape and words (done, attention, not done, note, still working), announced politely to a screen reader; it stays while the pointer or focus is on it, and may carry one button to the page it is about. A command that takes more than a moment shows that it is running, with its progress."
+      - "With the fake machine made to accept every change and carry out none, no command reports success. A feature whose commands cannot be listed is named in the palette with the reason, and the rest still works."
+    status: done
+    evidence:
+      - "tests/unit/paletteCommands.test.ts#Re-check, Make ready, Launch and Stand down report what the Fly channels answered"
+      - "tests/unit/paletteCommands.test.ts#Launch on a rig that is not ready launches, and says it was not ready"
+      - "tests/unit/paletteCommands.test.ts#nothing is reported as done when the machine accepts a change and does not carry it out"
+      - "tests/unit/paletteCommands.test.ts#a switch to another setup makes it the one in use, opens Fly, and says how it stands"
+      - "tests/unit/paletteCommands.test.ts#applying a layout reports the answer to \"Keep this layout?\": kept, or gone back"
+      - "tests/unit/paletteCommands.test.ts#a layout that needs a monitor that is not connected is refused, and nothing changes"
+      - "tests/unit/paletteCommands.test.ts#a layout the machine accepts and does not apply is not reported as applied"
+      - "tests/unit/paletteCommands.test.ts#\"Back up now\" writes a full backup and reports the one that was written"
+      - "tests/unit/paletteCommands.test.ts#\"Find a device\" names the device whose button was pressed and opens it on the Devices page"
+      - "tests/unit/paletteCommands.test.ts#\"Find a device\" stops listening after a while and says that nothing was pressed"
+      - "tests/unit/paletteCommands.test.ts#open the bindings page on an aircraft: the ones with bindings of your own first"
+      - "tests/unit/paletteCommands.test.ts#\"Copy the diagnostics report\" puts the report on the clipboard and says how much it was"
+      - "tests/unit/paletteCommands.test.ts#every icon a command names exists in the icon font"
+      - "src/renderer/shell/runner.test.ts#an action that takes a moment shows that it is running, with its progress, then becomes the outcome"
+      - "src/renderer/shell/runner.test.ts#an action that throws is reported as not finished, with the error: never as done"
+      - "src/renderer/shell/toast.test.ts#stays while the pointer or the focus is on it, and its time starts again afterwards"
+      - "tests/e2e/shell.e2e.ts#palette commands: each calls its feature and the toast reports what really happened"
+      - "tests/e2e/shell.e2e.ts#palette commands: bindings and cheat sheets open on the aircraft, setups switch, and a failing feature is named"
+      - "artifacts/screens/shell-palette/03-made-ready.png"
+      - "artifacts/screens/shell-commands/01-layout-applied-waiting.png"
+      - "artifacts/screens/shell-commands/05-found-device.png"
+      - "artifacts/screens/shell-a11y/02-toasts.png"
+
+  - id: WOW-UI-003
+    title: Keyboard shortcuts for the shell, and a list of them on "?"
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "Ctrl+1 goes to Fly and Ctrl+2 to Configure, from anywhere, also while typing in a field."
+      - "'?' shows the keyboard shortcuts; typed into a text field it is a question mark. The list is the table the key handler reads, so it cannot promise a key that does nothing."
+      - "While a dialog of a feature waits for an answer, the shell's shortcuts leave the keyboard to it: no palette opens over it and the page does not change."
+    status: done
+    evidence:
+      - "src/renderer/shell/shortcuts.test.ts#Ctrl+K opens the palette, Ctrl+1 and Ctrl+2 change mode, with either case of the letter"
+      - "src/renderer/shell/shortcuts.test.ts#the Ctrl shortcuts work while typing in a field; \"?\" there is a question mark"
+      - "src/renderer/shell/shortcuts.test.ts#the list shown by \"?\" is the table the key handler reads: every entry answers to its keys"
+      - "tests/e2e/shell.e2e.ts#shortcuts: \"?\" lists them, Ctrl+1 and Ctrl+2 change mode, and a waiting dialog keeps the keyboard"
+      - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
+
+  # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY
   # ---------------------------------------------------------------------------
 

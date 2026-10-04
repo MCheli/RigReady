@@ -42,6 +42,8 @@ const vuetify = createVuetify({
     VCheckbox: { density: 'compact', hideDetails: true },
     VSwitch: { density: 'compact', hideDetails: true, color: 'primary' },
     VCard: { rounded: 'lg', flat: true },
+    // Dialogs arrive like pages: a short rise and fade (styles.css), not a zoom from the button.
+    VDialog: { transition: 'rr-dialog' },
   },
 });
 

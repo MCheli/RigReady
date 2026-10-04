@@ -1,11 +1,19 @@
 /* RigReady design system: tokens and the few shared primitives. */
 :root {
+  /* Surfaces, from the window's own background up. Text is tested against each (WCAG AA). */
   --rr-bg: #0f1317;
   --rr-surface: #171c22;
   --rr-surface-2: #1e252d;
+  /* Lines: the hairline between things, and the firmer edge of what floats above the page. */
   --rr-border: #262d36;
+  --rr-border-strong: #36404c;
+
+  /* Text: headings and values, running explanation, and what steps back. */
   --rr-text: #e6e9ed;
+  --rr-text-2: #c3cad3;
   --rr-muted: #8b95a3;
+
+  /* Status and nothing else: ready, attention, not ready. Blue is what can be clicked. */
   --rr-ok: #3fb97f;
   --rr-warn: #e2b23c;
   --rr-bad: #ee635b;
@@ -13,42 +21,131 @@
   /* The keyboard focus ring. */
   --rr-focus: #a8d1f5;
   --rr-radius: 10px;
+
+  /*
+   * Depth, in two steps. 1: what lies on the page (a panel): a faint top light and a short
+   * shadow. 2: what floats above it (a dialog, a menu, the palette, a toast): a firm edge
+   * and a long soft shadow.
+   */
+  --rr-elev-1: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.22);
+  --rr-elev-2:
+    0 0 0 1px var(--rr-border-strong), 0 20px 50px -12px rgba(0, 0, 0, 0.65),
+    0 8px 18px rgba(0, 0, 0, 0.32);
+
+  /* Motion: short, eased out, never bouncing. Off under "reduce motion" (end of this file). */
+  --rr-motion-fast: 120ms;
+  --rr-motion-base: 180ms;
+  --rr-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Type: Windows' own interface font, and a fixed-width one for paths, ids and values. */
+  --rr-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --rr-font-display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --rr-font-mono: 'Cascadia Mono', 'Cascadia Code', Consolas, monospace;
+  /* The scale: detail, secondary, body, emphasis, page title. */
+  --rr-text-xs: 12px;
+  --rr-text-sm: 13px;
+  --rr-text-md: 14px;
+  --rr-text-lg: 16px;
+  --rr-text-xl: 22px;
+
+  /* Vuetify's own text styles use the same fonts. */
+  --v-font-body: var(--rr-font);
+  --v-font-heading: var(--rr-font-display);
+
+  color-scheme: dark;
 }
 
 html {
   overflow-y: auto !important;
   /* The same page width whether or not a page is long enough to scroll. */
   scrollbar-gutter: stable;
+  /*
+   * The strip kept free for the scrollbar is painted as the header's continuation, so the
+   * header reaches the edge of the window on every page, scrolling or not.
+   */
+  background: linear-gradient(
+      to bottom,
+      var(--rr-surface) 0 55px,
+      var(--rr-border) 55px 56px,
+      var(--rr-bg) 56px
+    )
+    fixed;
+}
+html::-webkit-scrollbar {
+  width: 14px;
+}
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+html::-webkit-scrollbar-thumb {
+  background-color: var(--rr-border-strong);
+  background-clip: content-box;
+  border: 4px solid transparent;
+  border-radius: 8px;
+}
+html::-webkit-scrollbar-thumb:hover {
+  background-color: var(--rr-muted);
 }
 
 body {
   background: var(--rr-bg);
   color: var(--rr-text);
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--rr-font);
+  /* Digits of one width everywhere: counts, times and ids line up and do not jitter. */
+  font-variant-numeric: tabular-nums;
+  /* Every scrolling box inside the window gets the same thin, dark bar. */
+  scrollbar-color: var(--rr-border-strong) transparent;
+}
+:where(body *) {
+  scrollbar-width: thin;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--rr-accent) 38%, transparent);
 }
 
 .rr-page {
   max-width: 1040px;
   margin: 0 auto;
   padding: 28px 32px 48px;
+  /* A page arrives: a short rise, the same for every page. */
+  animation: rr-page-in var(--rr-motion-base) var(--rr-ease);
+}
+@keyframes rr-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+/* Focus put on a page's heading after it was opened from the keyboard: no ring on words. */
+.rr-page:focus,
+.rr-page-title:focus {
+  outline: none;
 }
 
 .rr-page-title {
-  font-size: 22px;
+  font-family: var(--rr-font-display);
+  font-size: var(--rr-text-xl);
   font-weight: 600;
+  letter-spacing: -0.005em;
   margin: 0 0 4px;
 }
 
 .rr-page-sub {
   color: var(--rr-muted);
   margin: 0 0 24px;
-  font-size: 14px;
+  font-size: var(--rr-text-md);
 }
 
 .rr-panel {
   background: var(--rr-surface);
   border: 1px solid var(--rr-border);
   border-radius: var(--rr-radius);
+  box-shadow: var(--rr-elev-1);
+}
+/* A panel inside a panel is a division of it, not another layer. */
+.rr-panel .rr-panel {
+  box-shadow: none;
 }
 
 .rr-section-title {
@@ -89,8 +186,13 @@ body {
 }
 
 .rr-mono {
-  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-family: var(--rr-font-mono);
   font-size: 12px;
+}
+
+/* A value among words: digits of one width, so a number that changes does not move its line. */
+.rr-num {
+  font-variant-numeric: tabular-nums;
 }
 
 .rr-ok {
@@ -110,6 +212,40 @@ body {
   text-align: center;
   padding: 56px 24px;
   color: var(--rr-muted);
+  font-size: var(--rr-text-md);
+  line-height: 1.5;
+}
+
+/* A key as printed on the keyboard. */
+.rr-kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--rr-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--rr-surface-2);
+  color: var(--rr-text-2);
+  font-family: var(--rr-font);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 17px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* For a screen reader only: on the page, read aloud, not drawn. */
+.rr-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /*
@@ -195,4 +331,83 @@ body {
  */
 .v-overlay.v-tooltip:not(.v-overlay--active) {
   display: none;
+}
+
+/*
+ * Dialogs arrive the way pages do: a short rise and fade (VDialog's transition, set in
+ * main.ts). They leave faster than they come.
+ */
+.rr-dialog-enter-active {
+  transition:
+    opacity var(--rr-motion-base) var(--rr-ease),
+    transform var(--rr-motion-base) var(--rr-ease);
+}
+.rr-dialog-leave-active {
+  transition: opacity var(--rr-motion-fast) var(--rr-ease);
+}
+.rr-dialog-enter-from {
+  opacity: 0;
+  transform: translateY(8px) scale(0.985);
+}
+.rr-dialog-leave-to {
+  opacity: 0;
+}
+
+/*
+ * Vuetify's components, refined. In Vuetify's own layer for overrides: above its component
+ * styles, below its utility classes and below every style a feature writes itself.
+ */
+@layer vuetify-overrides {
+  /* What floats above the page has an edge and a shadow: depth step 2. */
+  .v-dialog > .v-overlay__content > .v-card,
+  .v-dialog > .v-overlay__content > .v-sheet,
+  .v-menu > .v-overlay__content > .v-list,
+  .v-menu > .v-overlay__content > .v-card,
+  .v-menu > .v-overlay__content > .v-sheet {
+    box-shadow: var(--rr-elev-2);
+  }
+  .v-card-title {
+    font-family: var(--rr-font-display);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    padding: 18px 20px 10px;
+  }
+  .v-card-text {
+    letter-spacing: 0;
+    padding: 4px 20px 16px;
+  }
+  .v-card .v-card-text {
+    line-height: 1.5;
+  }
+  .v-card-actions {
+    padding: 8px 14px 14px;
+  }
+  .v-tooltip > .v-overlay__content {
+    background: var(--rr-surface-2);
+    color: var(--rr-text);
+    border: 1px solid var(--rr-border-strong);
+    font-size: 12.5px;
+  }
+  /* A link in running text: the accent, underlined, so it is not told by colour alone. */
+  a:not([class]) {
+    color: var(--rr-accent);
+    text-underline-offset: 2px;
+  }
+}
+
+/* Motion is switched off for those who ask Windows for less of it. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rr-motion-fast: 0ms;
+    --rr-motion-base: 0ms;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

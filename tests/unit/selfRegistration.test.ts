@@ -16,7 +16,19 @@ import type { CaptureCandidate } from '../../src/core/checks/registry';
 import type { FeatureMain } from '../../src/core/feature';
 import { nullLogger } from '../../src/core/logger';
 import { discoverFeatures, wireFeatures, type Wiring } from '../../src/main/bootstrap';
-import { collectManifests, navSectionsOf, type FeatureManifest } from '../../src/shared/feature';
+import { listDynamic, pageCommands, staticCommands } from '../../src/renderer/shell/registry';
+import {
+  collectCommands,
+  collectManifests,
+  commandFailed,
+  commandProblem,
+  defineCommands,
+  navSectionsOf,
+  type CommandShell,
+  type FeatureCommands,
+  type FeatureManifest,
+} from '../../src/shared/feature';
+import { createClient, type Bridge } from '../../src/shared/ipc';
 import { disposedTimes } from '../fixtures/features/zz-example/main';
 import { repoRoot, scenarioRig, type TestRig } from '../helpers';
 
@@ -25,6 +37,10 @@ const fixtureMains = import.meta.glob<{ default: FeatureMain }>('../fixtures/fea
 });
 const fixtureManifests = import.meta.glob<{ default: FeatureManifest }>(
   '../fixtures/features/*/index.ts',
+  { eager: true }
+);
+const fixtureCommands = import.meta.glob<{ default: FeatureCommands }>(
+  '../fixtures/features/*/commands.ts',
   { eager: true }
 );
 
@@ -215,6 +231,127 @@ describe('PLAT-015 a feature folder is all it takes: renderer side', () => {
   });
 });
 
+describe('WOW-UI-001 a feature folder is all it takes: the command palette', () => {
+  const run = async (): Promise<void> => undefined;
+
+  it('adding the example feature adds its page, its words for the page, its action and its listed command', async () => {
+    const manifests = collectManifests(fixtureManifests);
+    const modules = collectCommands(fixtureCommands);
+    expect(modules.map((m) => m.feature)).toEqual(['zz-example']);
+
+    // Without its commands.ts the page is still there, from the manifest alone.
+    expect(pageCommands(manifests).map((c) => [c.title, c.to])).toEqual([
+      ['Example', '/configure/zz-example'],
+    ]);
+
+    const all = staticCommands(manifests, modules);
+    expect(all.map((c) => [c.group, c.title, c.kind])).toEqual([
+      ['Example', 'Ping the example', 'action'],
+      ['Go to', 'Example', 'page'],
+    ]);
+    // The navigation entry keeps its name and is found by the feature's own words too.
+    expect(all[1]!.keywords).toEqual(['Lamp', 'bulb']);
+
+    // The action goes through the feature's own channel, validated like any other call.
+    const { wiring, events } = await wire(discoverFeatures(fixtureMains));
+    const bridge: Bridge = {
+      invoke: async (channel, input) => wiring.handlers.get(channel)!(input),
+      on: () => () => undefined,
+    };
+    let refreshed = 0;
+    const shell: CommandShell = {
+      client: (contract) => createClient(contract, bridge),
+      go: async () => undefined,
+      route: () => '/fly',
+      machineChanged: () => {
+        refreshed++;
+      },
+      progress: () => undefined,
+    };
+    expect(await all[0]!.run!(shell)).toEqual({
+      tone: 'ok',
+      text: 'The example answered "from the palette"',
+    });
+    expect(events).toContainEqual({
+      channel: 'zz-example:event:pinged',
+      payload: { text: 'from the palette' },
+    });
+    expect(refreshed).toBe(1);
+
+    // And the command that depends on its state says what that state is now.
+    const listing = await listDynamic(modules[0]!, manifests[0], shell);
+    expect(listing.problem).toBeUndefined();
+    expect(listing.commands.map((c) => [c.group, c.title, c.hint])).toEqual([
+      ['Example', 'Ping the example again', 'Pinged 1 times'],
+    ]);
+    for (const feature of wiring.features) await feature.dispose?.();
+  });
+
+  it('a commands.ts that is not one, names another folder, repeats an id or holds a command that does nothing is refused by name', () => {
+    expect(() => collectCommands({ './broken/commands.ts': {} })).toThrow(
+      /broken\/commands\.ts must default-export defineCommands/
+    );
+    expect(() =>
+      collectCommands({ '../features/audio/commands.ts': { default: { feature: 'displays' } } })
+    ).toThrow(/names the feature "displays", not its folder/);
+    const stub = { id: 'audio.stub', title: 'Does nothing' };
+    expect(() =>
+      collectCommands({
+        '../features/audio/commands.ts': { default: { feature: 'audio', commands: [stub] } },
+      })
+    ).toThrow(/command "audio\.stub": it must either open a page \(to\) or do something \(run\)/);
+    const once = { id: 'audio.x', title: 'X', run };
+    expect(() =>
+      collectCommands({
+        '../features/audio/commands.ts': { default: { feature: 'audio', commands: [once, once] } },
+      })
+    ).toThrow(/Command id used twice: audio\.x/);
+    // In a stable order, whatever order the files were found in.
+    expect(
+      collectCommands({
+        '../features/trackir/commands.ts': { default: { feature: 'trackir' } },
+        '../features/audio/commands.ts': { default: { feature: 'audio', commands: [once] } },
+      }).map((m) => m.feature)
+    ).toEqual(['audio', 'trackir']);
+  });
+
+  it('says what is wrong with a command, and nothing when it is sound', () => {
+    expect(commandProblem('audio', { id: 'audio.a', title: 'A', run })).toBeUndefined();
+    expect(
+      commandProblem('audio', { id: 'audio.a', title: 'A', to: '/configure/audio' })
+    ).toBeUndefined();
+    expect(commandProblem('audio', { id: 'other.a', title: 'A', run })).toBe(
+      'its id must start with "audio."'
+    );
+    expect(commandProblem('audio', { id: 'audio.a', title: '  ', run })).toBe('it has no title');
+    expect(
+      commandProblem('audio', { id: 'audio.a', title: 'A', run, to: '/configure/audio' })
+    ).toBe('it must either open a page (to) or do something (run)');
+    expect(commandProblem('audio', { id: 'audio.a', title: 'A', to: 'https://example.com' })).toBe(
+      'the page it opens must be an in-app route'
+    );
+  });
+
+  it('turns an error result into an outcome that says it did not happen', () => {
+    expect(commandFailed({ code: 'x', message: 'The monitors could not be read.' })).toEqual({
+      tone: 'bad',
+      text: 'The monitors could not be read.',
+    });
+    expect(
+      commandFailed(
+        { code: 'x', message: 'Not applied.', detail: 'TV is not connected.' },
+        { label: 'Open Monitors', to: '/configure/displays' }
+      )
+    ).toEqual({
+      tone: 'bad',
+      text: 'Not applied.',
+      detail: 'TV is not connected.',
+      action: { label: 'Open Monitors', to: '/configure/displays' },
+    });
+    expect(defineCommands({ feature: 'audio' })).toEqual({ feature: 'audio' });
+  });
+});
+
 describe('PLAT-015 there is no registry to edit', () => {
   const shared = ['core', 'main', 'renderer', 'shared', 'platform'];
 
@@ -228,7 +365,8 @@ describe('PLAT-015 there is no registry to edit', () => {
     return out;
   }
 
-  it('the app finds features in exactly two places, both globs over the features folder', async () => {
+  /** Every import.meta.glob in shared code, as "file: pattern". */
+  async function globsOfSharedCode(): Promise<string[]> {
     const globs: string[] = [];
     for (const layer of shared) {
       for (const file of await sources(path.join(repoRoot, 'src', layer))) {
@@ -238,8 +376,22 @@ describe('PLAT-015 there is no registry to edit', () => {
         }
       }
     }
-    expect(globs.sort()).toEqual([
+    return globs.sort();
+  }
+
+  it('the app finds features in exactly two places, both globs over the features folder', async () => {
+    // What makes a folder a feature: its main side and its manifest.
+    const globs = await globsOfSharedCode();
+    expect(globs.filter((glob) => !glob.endsWith('/commands.ts'))).toEqual([
       'src/main/bootstrap.ts: ../features/*/main.ts',
+      'src/renderer/features.ts: ../features/*/index.ts',
+    ]);
+  });
+
+  it('what a feature offers the command palette is found by one more glob over the features folder, and there is no other', async () => {
+    expect(await globsOfSharedCode()).toEqual([
+      'src/main/bootstrap.ts: ../features/*/main.ts',
+      'src/renderer/features.ts: ../features/*/commands.ts',
       'src/renderer/features.ts: ../features/*/index.ts',
     ]);
   });
