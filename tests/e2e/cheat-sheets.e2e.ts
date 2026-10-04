@@ -1,11 +1,13 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
-import { checkRow, expect, test } from './harness';
+import { checkRow, expect, test, type RunningApp } from './harness';
 
 /**
- * Cheat sheets on the recorded rig: device pictures, labels, live highlight, notes, the
- * layout editor, print and PDF, kneeboard pages and the check that they are up to date.
+ * Cheat sheets on the recorded rig: device pictures, labels in plain language, text that
+ * fits its card, live highlight, notes, the layout editor, print and PDF, kneeboard pages
+ * and the check that they are up to date, a sheet that follows the bindings page, and the
+ * racing games' sheets on the racing rig.
  */
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -14,6 +16,7 @@ const outputs = path.join(repoRoot, 'artifacts', 'screens', 'cheat-sheets-output
 
 /** Controllers as DirectInput lists them in fixtures/rigs/mark-full/input.json. */
 const CONTROLLERS = {
+  wheel: { index: 0, name: 'FANATEC Podium Wheel Base DD2', axes: 8, buttons: 108, hats: 1 },
   mfdLeft: { index: 7, name: 'WINWING MFD1-L', axes: 1, buttons: 50, hats: 0 },
   stick: {
     index: 9,
@@ -65,6 +68,37 @@ async function choose(page: Page, testId: string, option: string | RegExp): Prom
   await page.getByRole('option', { name: option }).first().click();
 }
 
+/**
+ * How the label text of the sheet on screen fits its cards, asked of the browser itself:
+ * a card whose text is taller than its box would be cut off by it, and one the page had
+ * to make smaller after drawing was measured wrongly before.
+ */
+async function labelFit(
+  page: Page
+): Promise<{ cards: number; clipped: string[]; refitted: string[]; shortened: string[] }> {
+  return page
+    .getByTestId('sheet-view')
+    .first()
+    .evaluate((root) => {
+      // (The specs are compiled without the browser's own types.)
+      interface Card {
+        scrollHeight: number;
+        clientHeight: number;
+        textContent: string | null;
+        dataset: Record<string, string | undefined>;
+      }
+      const view = root as unknown as { querySelectorAll(selector: string): Iterable<Card> };
+      const cards = [...view.querySelectorAll('.cs-t')];
+      const text = (el: Card): string => el.textContent ?? '';
+      return {
+        cards: cards.length,
+        clipped: cards.filter((el) => el.scrollHeight > el.clientHeight + 0.5).map(text),
+        refitted: cards.filter((el) => el.dataset['fitted'] === 'true').map(text),
+        shortened: cards.filter((el) => el.dataset['shortened'] === 'true').map(text),
+      };
+    });
+}
+
 function pngSize(bytes: Buffer): { width: number; height: number } {
   expect(bytes.subarray(1, 4).toString('latin1')).toBe('PNG');
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
@@ -96,8 +130,21 @@ test('cheat sheets: every device of the rig has a picture', async ({ rig }) => {
     await expect(page.getByTestId('sheet-title')).toHaveText(title);
     // Ten devices have a hand-arranged layout; none is a bare grid.
     await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute('data-source', 'builtin');
+    // Every label of the owner's own bindings is whole, and fits its card as it was measured.
+    const fit = await labelFit(page);
+    expect(fit.cards, title).toBeGreaterThan(0);
+    expect(fit, title).toMatchObject({ clipped: [], refitted: [], shortened: [] });
     await shot(title.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase());
   }
+  // The MFD frame: each button is drawn once, as its label card on the bezel. Nothing on
+  // the picture is a second, bare key with the same number.
+  await device(page, 'Left MFD').click();
+  await expect(page.getByTestId('sheet-title')).toHaveText('Left MFD');
+  const picture = page.locator('[data-testid="sheet-view"] svg');
+  await expect(picture.locator('text').filter({ hasText: /^\d+$/ })).toHaveCount(0);
+  await expect(picture.locator('.cs-num').filter({ hasText: /^42$/ })).toHaveCount(1);
+  await expect(control(page, 'button:42')).toContainText('OSB 1');
+  await expect(control(page, 'button:42')).toContainText('Left MDI PB 6');
 });
 
 test('cheat sheets: labels, a pressed control lights up, notes, search and by action', async ({
@@ -111,11 +158,12 @@ test('cheat sheets: labels, a pressed control lights up, notes, search and by ac
 
   // The stick: what each control does, empty ones visibly empty, modifiers and defaults told apart.
   await device(page, 'Stick').click();
-  await expect(control(page, 'button:20')).toContainText('Weapon Release');
+  // Labels say it the way the binding guide does.
+  await expect(control(page, 'button:20')).toContainText('Pickle: release weapon');
   await expect(control(page, 'button:20')).toHaveAttribute('data-kind', 'weapons');
-  await expect(control(page, 'button:5')).toContainText('Gun Trigger: SECOND DETENT');
-  await expect(control(page, 'hat:1:U')).toContainText('Trimmer: PUSH(DESCEND)');
-  await expect(control(page, 'axis:SLIDER1')).toContainText('Wheel Brake');
+  await expect(control(page, 'button:5')).toContainText('Trigger: fire');
+  await expect(control(page, 'hat:1:U')).toContainText('Trim nose down');
+  await expect(control(page, 'axis:SLIDER1')).toContainText('Both brakes, one axis');
   await expect(control(page, 'button:1')).toHaveClass(/cs-empty/);
   await expect(control(page, 'button:20')).toHaveClass(/cs-bound/);
   await shot('stick');
@@ -125,9 +173,13 @@ test('cheat sheets: labels, a pressed control lights up, notes, search and by ac
   await sendInput([state(CONTROLLERS.stick, { pressed: [20] })]);
   await expect(control(page, 'button:20')).toHaveClass(/cs-on/);
   await expect(page.getByTestId('sheet-last')).toContainText('Stick · Button 20');
-  await expect(page.getByTestId('sheet-last')).toContainText('Weapon Release Button');
+  await expect(page.getByTestId('sheet-last')).toContainText('Pickle: release weapon');
   await expect(page.getByTestId('detail-title')).toHaveText('Button 20');
-  await expect(page.getByTestId('detail-binding')).toContainText('Weapon Release Button');
+  // The plain name first, and what DCS itself calls it beside it.
+  await expect(page.getByTestId('detail-binding')).toContainText('Pickle: release weapon');
+  await expect(page.getByTestId('detail-game-name')).toHaveText(
+    'DCS World calls it: Weapon Release Button'
+  );
   await expect(page.getByTestId('detail-binding')).toContainText('your binding');
   await shot('pressed');
   await sendInput([state(CONTROLLERS.stick)]);
@@ -148,7 +200,8 @@ test('cheat sheets: labels, a pressed control lights up, notes, search and by ac
 
   // The same action elsewhere is pointed out.
   await control(page, 'button:36').click();
-  await expect(page.getByTestId('detail-binding')).toContainText('View Center');
+  await expect(page.getByTestId('detail-binding')).toContainText('Centre the view');
+  await expect(page.getByTestId('detail-game-name')).toContainText('View Center');
   await expect(page.getByTestId('detail-also')).toContainText('Button 19');
 
   // Pressing a control on another device brings that device forward.
@@ -176,6 +229,10 @@ test('cheat sheets: labels, a pressed control lights up, notes, search and by ac
   await expect(row.getByTestId('action-place')).toContainText('Throttle');
   await page.getByTestId('sheet-search').locator('input').fill('weapon release');
   const release = page.locator('[data-testid="action-row"][data-action="Weapon Release Button"]');
+  await expect(release.locator('.rr-row-title')).toHaveText('Pickle: release weapon');
+  await expect(release.getByTestId('action-game-name')).toHaveText(
+    'DCS World calls it: Weapon Release Button'
+  );
   await expect(release.getByTestId('action-place')).toContainText('Stick');
   await expect(release.getByTestId('action-place')).toContainText('hold until the bomb is off');
   await shot('by-action');
@@ -228,13 +285,13 @@ test('cheat sheets: quick look follows the hands and pops out as a window that s
   await sendInput([state(CONTROLLERS.throttle)]);
   await sendInput([state(CONTROLLERS.throttle, { pressed: [24] })]);
   await expect(quick.getByTestId('sheet-view')).toHaveAttribute('data-device', '4098:BD26');
-  await expect(page.getByTestId('quick-last')).toContainText('Dispense Switch - Aft(FLARE)');
+  await expect(page.getByTestId('quick-last')).toContainText('Dispense flares');
   await expect(quick.locator('.cs-ctl[data-control="button:24"]')).toHaveClass(/cs-on/);
   await shot('quick-look');
   await sendInput([state(CONTROLLERS.throttle)]);
 
   await page.getByTestId('quick-search').locator('input').fill('speed brake');
-  await expect(page.getByTestId('quick-answer').first()).toContainText('Speed Brake');
+  await expect(page.getByTestId('quick-answer').first()).toContainText('Speed brake');
   await expect(page.getByTestId('quick-answer').first()).toContainText('Throttle');
   await shot('quick-answer');
 
@@ -260,11 +317,87 @@ test('cheat sheets: quick look follows the hands and pops out as a window that s
   await sendInput([state(CONTROLLERS.stick, { pressed: [5] })]);
   await expect(popped.getByTestId('sheet-view')).toHaveAttribute('data-device', '4098:BEA8');
   await expect(popped.locator('[data-control="button:5"]')).toHaveClass(/cs-on/);
-  await expect(popup.getByTestId('quick-last')).toContainText('Gun Trigger');
+  await expect(popup.getByTestId('quick-last')).toContainText('Trigger: fire');
   await popup.screenshot({
     path: path.join(repoRoot, 'artifacts', 'screens', 'cheat-sheets-quick', '03-popped-out.png'),
   });
   await popup.close();
+});
+
+test('cheat sheets: the pop-out opens where it was left and as large as it was, also after a restart', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-popout-place');
+  const placesFile = path.join(run.dataRoot, 'panels.json');
+  // (Whole numbers at every display scaling Windows offers.)
+  const place = { x: 160, y: 120, width: 720, height: 800 };
+
+  const popOut = async (from: RunningApp): Promise<Page> => {
+    const [popup] = await Promise.all([
+      from.app.waitForEvent('window'),
+      from.page.getByTestId('quick-popout').click(),
+    ]);
+    await popup.waitForLoadState('domcontentloaded');
+    await expect(popup.getByTestId('quick-look')).toHaveAttribute('data-ready', 'true');
+    await expect(popup.getByTestId('sheet-view')).toBeVisible();
+    return popup;
+  };
+  const quickLook = async (from: RunningApp): Promise<void> => {
+    await openSheets(from.page);
+    await device(from.page, 'Stick').click();
+    await from.page.getByTestId('sheet-quick').click();
+    await expect(from.page.getByTestId('quick-look')).toHaveAttribute('data-live', 'true');
+  };
+  /** The pop-out is the one window that stays on top. */
+  const bounds = (from: RunningApp) =>
+    from.app.evaluate(({ BrowserWindow }) => {
+      const panel = BrowserWindow.getAllWindows().find((w) => w.isAlwaysOnTop());
+      return panel ? panel.getBounds() : null;
+    });
+
+  // The first time, it opens at the size the cheat sheets give it.
+  await quickLook(run);
+  const first = await popOut(run);
+  expect(await bounds(run)).toMatchObject({ width: 560, height: 640 });
+  // The user drags it to where it is wanted and makes it larger.
+  await run.app.evaluate(({ BrowserWindow }, to) => {
+    BrowserWindow.getAllWindows()
+      .find((w) => w.isAlwaysOnTop())
+      ?.setBounds(to);
+  }, place);
+  await expect
+    .poll(async () => {
+      // No file yet: nothing was stored so far.
+      const text = await fs.readFile(placesFile, 'utf8').catch(() => '{}');
+      return (JSON.parse(text) as { panels?: Record<string, unknown> }).panels?.[
+        'cheat-sheets-quick'
+      ];
+    })
+    .toEqual(place);
+  await first.close();
+  await expect.poll(() => bounds(run)).toBeNull();
+
+  // Popped out again: where it was left, as large as it was.
+  const second = await popOut(run);
+  expect(await bounds(run)).toEqual(place);
+  await second.close();
+
+  // And the next time RigReady is started.
+  const again = await run.restart();
+  await quickLook(again);
+  const third = await popOut(again);
+  expect(await bounds(again)).toEqual(place);
+  await third.evaluate('document.fonts.ready');
+  await third.screenshot({
+    path: path.join(
+      repoRoot,
+      'artifacts',
+      'screens',
+      'cheat-sheets-popout-place',
+      '01-where-it-was-left.png'
+    ),
+  });
+  await third.close();
 });
 
 test('cheat sheets: layout editor - drag, label, group, photo, share, import, discard', async ({
@@ -636,4 +769,342 @@ test('cheat sheets: the Fly check notices stale kneeboard pages and its fix writ
   const after = await fs.readFile(path.join(folder, stickPage));
   expect(after.equals(before)).toBe(false);
   await shot('fixed');
+});
+
+test('cheat sheets: the kneeboard check is added to a setup from the kneeboard dialog, and taken out again', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-check-add');
+  const { page, shot } = run;
+  const setupFile = path.join(run.dataRoot, 'profiles', 'dcs-f-a-18c.yaml');
+  const row = checkRow(page, 'Kneeboard cheat sheet for F/A-18C is up to date');
+  // The setup is ready and does not look at kneeboard pages yet.
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  expect(await fs.readFile(setupFile, 'utf8')).not.toContain('cheat-sheets.kneeboardCurrent');
+
+  await openSheets(page);
+  await page.getByTestId('sheet-kneeboard').click();
+  const dialog = page.getByTestId('kneeboard-dialog');
+  await expect(page.getByTestId('kneeboard-preview')).toHaveAttribute('data-busy', 'false');
+  // The setups of this game are offered, each with a tick.
+  const setup = dialog.getByTestId('kneeboard-setup');
+  await expect(setup).toHaveCount(1);
+  await expect(setup).toContainText('DCS F/A-18C');
+  await expect(setup).toHaveAttribute('data-checked', 'false');
+  await setup.locator('input').check();
+  await expect(page.getByTestId('kneeboard-setup-note')).toContainText(
+    '"DCS F/A-18C" now checks the F/A-18C kneeboard pages'
+  );
+  await expect(setup).toHaveAttribute('data-checked', 'true');
+  await page.getByTestId('kneeboard-setup-note').scrollIntoViewIfNeeded();
+  await shot('added-in-the-dialog');
+  // The setup holds the check with the fix that writes the pages again.
+  const saved = await fs.readFile(setupFile, 'utf8');
+  expect(saved).toContain('cheat-sheets.kneeboardCurrent');
+  expect(saved).toContain('cheat-sheets.regenerate');
+  expect(saved).toContain('aircraft: FA-18C_hornet');
+  await page.getByTestId('kneeboard-close').click();
+
+  // On the Fly screen it is a warning, never Not ready, and Make ready writes the pages.
+  await page.getByTestId('mode-fly').click();
+  await expect(row).toHaveAttribute('data-status', 'warn');
+  await expect(row).toContainText('No kneeboard pages exported for F/A-18C');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready with warnings');
+  await shot('on-the-fly-screen');
+  await page.getByTestId('make-ready').click();
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await expect(page.getByTestId('fly-activity')).toContainText('Wrote 12 kneeboard pages');
+  expect(
+    await fs.readdir(path.join(run.home, 'Saved Games', 'DCS', 'Kneeboard', 'FA-18C_hornet'))
+  ).toHaveLength(12);
+  await shot('made-ready');
+
+  // Taken out again in the same place.
+  await openSheets(page);
+  await page.getByTestId('sheet-kneeboard').click();
+  await expect(setup).toHaveAttribute('data-checked', 'true');
+  await setup.locator('input').uncheck();
+  await expect(page.getByTestId('kneeboard-setup-note')).toContainText(
+    '"DCS F/A-18C" no longer checks these kneeboard pages'
+  );
+  await expect(setup).toHaveAttribute('data-checked', 'false');
+  expect(await fs.readFile(setupFile, 'utf8')).not.toContain('cheat-sheets.kneeboardCurrent');
+  await page.getByTestId('kneeboard-close').click();
+  await page.getByTestId('mode-fly').click();
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await expect(page.getByTestId('fly-status-sub')).not.toContainText('warning');
+  await expect(row).toHaveCount(0);
+});
+
+test('cheat sheets: a label too long for its card is shortened with an ellipsis, never clipped', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-long-label');
+  const { page, shot } = run;
+  await page.setViewportSize({ width: 1500, height: 1250 });
+  await openSheets(page);
+  await device(page, 'Stick').click();
+  const card = control(page, 'button:20');
+  await card.click();
+
+  // A short note sits under the action at full size.
+  await page.getByTestId('note-input').locator('input').fill('hold until the bomb is off');
+  await page.getByTestId('note-save').click();
+  await expect(page.getByTestId('note-saved')).toBeVisible();
+  await expect(card.locator('.cs-note')).toHaveText('✎ hold until the bomb is off');
+  await expect(card.locator('.cs-t')).not.toHaveAttribute('data-shortened');
+  await expect(card.locator('.cs-t')).toHaveAttribute('style', /font-size:\s*14px/);
+
+  // A note that no readable size can hold: the type steps down as far as it may, and the
+  // rest is shortened. The action stays whole; the note gives way and ends in an ellipsis.
+  const note =
+    'hold through the whole countdown and two seconds after release, or the bomb stays on the rack and the run is wasted';
+  await page.getByTestId('note-input').locator('input').fill(note);
+  await page.getByTestId('note-save').click();
+  await expect(page.getByTestId('note-saved')).toBeVisible();
+  await expect(card.locator('.cs-t')).toHaveAttribute('data-shortened', 'true');
+  await expect(card.locator('.cs-t')).toHaveAttribute('style', /font-size:\s*10\.2px/);
+  await expect(card.locator('.cs-act')).toHaveText('Pickle: release weapon');
+  await expect(card.locator('.cs-note')).toHaveText(/^✎ hold through the whole countdown .+…$/);
+  await expect(card.locator('.cs-note')).not.toContainText('wasted');
+  // Nothing sticks out of any card, and the page did not have to make any text smaller.
+  const fit = await labelFit(page);
+  expect(fit.clipped).toEqual([]);
+  expect(fit.refitted).toEqual([]);
+  expect(fit.shortened).toHaveLength(1);
+  // The whole note is a hover away, and in the detail panel beside the picture.
+  expect(await card.locator('title').textContent()).toContain(note);
+  await expect(page.getByTestId('note-input').locator('input')).toHaveValue(note);
+  await shot('long-note');
+
+  // "By action" has room for all of it.
+  await page.getByTestId('sheet-view-actions').click();
+  await page.getByTestId('sheet-search').locator('input').fill('pickle');
+  await expect(
+    page
+      .locator('[data-testid="action-row"][data-action="Weapon Release Button"]')
+      .getByTestId('action-place')
+  ).toContainText(note);
+  await page.getByTestId('sheet-search').locator('input').fill('');
+  await page.getByTestId('sheet-view-devices').click();
+
+  // The kneeboard page of the stick, in its larger type, shortens it the same way.
+  await page.getByTestId('sheet-kneeboard').click();
+  await expect(page.getByTestId('kneeboard-preview')).toHaveAttribute('data-busy', 'false');
+  await shot('long-note-on-the-kneeboard-page');
+});
+
+test('cheat sheets: an open sheet follows the bindings page - the pop-out redraws when a binding is saved', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-follow');
+  const { page, app } = run;
+  // The owner named his devices: the bindings page lists the stick under that name.
+  const stick = 'Stick';
+  // Both windows are pictured here, so the pictures are numbered here too.
+  let pictures = 0;
+  const snap = async (target: Page, name: string): Promise<void> => {
+    await target.evaluate('document.fonts.ready');
+    const file = `${String(++pictures).padStart(2, '0')}-${name}.png`;
+    await target.screenshot({
+      path: path.join(repoRoot, 'artifacts', 'screens', 'cheat-sheets-follow', file),
+    });
+  };
+  /** Picks from a searchable list: type, then take the first match. */
+  const pick = async (testId: string, text: string): Promise<void> => {
+    const input = page.getByTestId(testId).locator('input[type="text"]');
+    await input.click();
+    await input.fill(text);
+    await page.getByRole('option', { name: text }).first().click();
+  };
+
+  await page.setViewportSize({ width: 1500, height: 1250 });
+  await openSheets(page);
+  await device(page, 'Stick').click();
+  // Button 1 of the stick does nothing yet.
+  await expect(control(page, 'button:1')).toHaveClass(/cs-empty/);
+
+  // The quick look, popped out: the small window that stays open beside the game.
+  await page.getByTestId('sheet-quick').click();
+  const [popup] = await Promise.all([
+    app.waitForEvent('window'),
+    page.getByTestId('quick-popout').click(),
+  ]);
+  await popup.waitForLoadState('domcontentloaded');
+  const popped = popup.getByTestId('quick-look');
+  await expect(popped).toHaveAttribute('data-popped', 'true');
+  await expect(popped).toHaveAttribute('data-live', 'true');
+  await expect(popped.getByTestId('sheet-view')).toHaveAttribute('data-device', '4098:BEA8');
+  await expect(popped).toHaveAttribute('data-followed', '0');
+  await expect(popped.locator('.cs-ctl[data-control="button:1"]')).toHaveCount(0);
+  // The frame button 1 belongs in, as it is before: only what does something is drawn.
+  await popped.locator('.cs-ctl[data-control="button:19"]').scrollIntoViewIfNeeded();
+  await snap(popup, 'pop-out-before');
+
+  // On the bindings page, in the main window: put the canopy on button 1 of the stick.
+  await page.getByTestId('nav-dcs-bindings').click();
+  await expect(page.getByTestId('bind-overview')).toBeVisible();
+  await page.getByTestId('bind-tab-actions').click();
+  await page.getByTestId('act-search').locator('input').fill('canopy control switch - open');
+  await page.getByTestId('act-bind').first().click();
+  await expect(page.getByTestId('bind-dialog')).toBeVisible();
+  await pick('bind-device', stick);
+  await pick('bind-input', 'Button 1');
+  await page.getByTestId('bind-save').click();
+  await page.getByTestId('bind-review').click();
+  const plan = page.getByTestId('plan-dialog');
+  await expect(plan).toContainText('Canopy Control Switch - OPEN: bind Button 1');
+  await plan.getByTestId('plan-apply').click();
+  await expect(page.getByTestId('bind-saved')).toContainText('Saved: Change 1 binding');
+  await snap(page, 'saved-on-the-bindings-page');
+
+  // The pop-out drew its sheet again by itself: button 1 has its label now.
+  await expect(popped).toHaveAttribute('data-followed', '1');
+  const canopy = popped.locator('.cs-ctl[data-control="button:1"]');
+  await expect(canopy).toContainText('Canopy: OPEN');
+  await canopy.scrollIntoViewIfNeeded();
+  await snap(popup, 'pop-out-followed');
+
+  // Undo on the bindings page takes it off the sheet again, and saving it once more puts
+  // it back: the pop-out follows every time.
+  await page.getByTestId('bind-undo').click();
+  await expect(page.getByTestId('bind-saved')).toContainText('Undone: Change 1 binding');
+  await expect(popped).toHaveAttribute('data-followed', '2');
+  await expect(canopy).toHaveCount(0);
+  await page.getByTestId('act-bind').first().click();
+  await expect(page.getByTestId('bind-dialog')).toBeVisible();
+  await pick('bind-device', stick);
+  await pick('bind-input', 'Button 1');
+  await page.getByTestId('bind-save').click();
+  await page.getByTestId('bind-review').click();
+  await plan.getByTestId('plan-apply').click();
+  await expect(page.getByTestId('bind-saved')).toContainText('Saved: Change 1 binding');
+  await expect(popped).toHaveAttribute('data-followed', '3');
+  await expect(canopy).toContainText('Canopy: OPEN');
+
+  // The full page shows it too.
+  await page.getByTestId('nav-cheat-sheets').click();
+  await expect(page.getByTestId('cheat-sheets-page')).toHaveAttribute('data-ready', 'true');
+  await device(page, 'Stick').click();
+  await expect(control(page, 'button:1')).toContainText('Canopy: OPEN');
+  await expect(control(page, 'button:1')).toHaveClass(/cs-bound/);
+  await control(page, 'button:1').click();
+  await expect(page.getByTestId('detail-binding')).toContainText('Canopy Control Switch - OPEN');
+  await snap(page, 'full-sheet-after');
+  await popup.close();
+});
+
+test('cheat sheets: the racing rig - iRacing and Le Mans Ultimate on the shipped Fanatec wheel', async ({
+  rig,
+}) => {
+  const run = await rig.launch('mark-racing', 'cheat-sheets-racing');
+  const { page, shot, sendInput } = run;
+  await page.setViewportSize({ width: 1500, height: 1250 });
+  await openSheets(page);
+
+  // Every game with bindings on this PC is offered; a racing game keeps one set for all cars.
+  await page.getByTestId('sheet-aircraft').click();
+  for (const name of [
+    'iRacing · All cars',
+    'Le Mans Ultimate · All cars',
+    'BeamNG.drive · All vehicles',
+    'Assetto Corsa · All cars',
+  ]) {
+    await expect(page.getByRole('option', { name })).toHaveCount(1);
+  }
+  await page.getByRole('option', { name: 'iRacing · All cars' }).click();
+
+  // iRacing: the sheet is named after the game, and the wheel is drawn on the shipped layout.
+  await expect(page.getByTestId('sheet-name')).toHaveText('iRacing');
+  await expect(page.getByTestId('sheet-totals')).toContainText('iRacing · 1 device ·');
+  await expect(page.getByTestId('sheet-title')).toHaveText('FANATEC Podium Wheel Base DD2');
+  await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute('data-source', 'builtin');
+  await expect(control(page, 'axis:X')).toContainText('Steering');
+  await expect(control(page, 'axis:X')).toHaveAttribute('data-kind', 'driving');
+  await expect(control(page, 'axis:Z')).toContainText('Throttle');
+  await expect(control(page, 'axis:RZ')).toContainText('Brake');
+  await expect(control(page, 'button:5')).toContainText('Paddle');
+  await expect(control(page, 'button:5')).toContainText('Shift up');
+  await expect(control(page, 'button:6')).toContainText('Shift down');
+  // A bound button the layout does not place is added below it, never left out.
+  await expect(control(page, 'button:26')).toContainText('Reset car');
+  await expect(page.getByTestId('legend-chip')).toHaveText(['Driving', 'View']);
+  // Kneeboard pages are a DCS thing; the bindings link leads to the game's own page.
+  await expect(page.getByTestId('sheet-kneeboard')).toHaveCount(0);
+  await expect(page.getByTestId('sheet-open-bindings')).toHaveAttribute(
+    'href',
+    /\/configure\/racing\/iracing$/
+  );
+  expect(await labelFit(page)).toMatchObject({ clipped: [], refitted: [], shortened: [] });
+
+  // Pull the right paddle on the real wheel: its label lights up and says what it does.
+  await sendInput([state(CONTROLLERS.wheel)]);
+  await sendInput([state(CONTROLLERS.wheel, { pressed: [5] })]);
+  await expect(control(page, 'button:5')).toHaveClass(/cs-on/);
+  await expect(page.getByTestId('sheet-last')).toContainText('Button 5');
+  await expect(page.getByTestId('sheet-last')).toContainText('Shift up');
+  await shot('iracing-wheel');
+  await sendInput([state(CONTROLLERS.wheel)]);
+
+  // "Which control shifts up?"
+  await page.getByTestId('sheet-view-actions').click();
+  const shiftUp = page.locator('[data-testid="action-row"][data-action="Shift up"]');
+  await expect(shiftUp.getByTestId('action-place')).toContainText('Right side Paddle');
+  await expect(shiftUp.getByTestId('action-game-name')).toHaveCount(0);
+  // Only the kinds a racing sheet has are offered as filters, and a row does not repeat
+  // the kind it is listed under.
+  await expect(page.locator('[data-testid="sheet-actions"] .cs-chip')).toHaveText([
+    'Driving',
+    'View',
+  ]);
+  await expect(shiftUp.locator('.rr-row-sub')).toHaveCount(0);
+  await shot('iracing-by-action');
+  await page.getByTestId('sheet-view-devices').click();
+
+  // Le Mans Ultimate: the D-pad is on the hat, and what it has twice is flagged.
+  await choose(page, 'sheet-aircraft', 'Le Mans Ultimate · All cars');
+  await expect(page.getByTestId('sheet-name')).toHaveText('Le Mans Ultimate');
+  // What the paddle did in iRacing is not said of this sheet.
+  await expect(page.getByTestId('sheet-last')).toHaveCount(0);
+  await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute('data-source', 'builtin');
+  await expect(control(page, 'hat:1:U')).toContainText('Pit Menu Up');
+  await expect(control(page, 'hat:1:U')).toHaveAttribute('data-kind', 'pit');
+  await expect(control(page, 'button:33')).toContainText('Bias Forward');
+  await expect(control(page, 'button:33')).toHaveAttribute('data-kind', 'car');
+  await expect(page.getByTestId('sheet-open-bindings')).toHaveAttribute(
+    'href',
+    /\/configure\/racing\/lmu$/
+  );
+  expect(await labelFit(page)).toMatchObject({ clipped: [], refitted: [], shortened: [] });
+  await control(page, 'button:33').click();
+  await expect(page.getByTestId('detail-binding')).toContainText('Bias Forward');
+  await expect(page.getByTestId('detail-also')).toContainText('Button 104');
+  await shot('lmu-wheel');
+
+  // The quick look works for a wheel as it does for a stick.
+  await page.getByTestId('sheet-quick').click();
+  const quick = page.getByTestId('quick-look');
+  await expect(quick).toHaveAttribute('data-live', 'true');
+  await expect(quick.getByTestId('sheet-view')).toHaveAttribute('data-device', '0EB7:0007');
+  await page.getByTestId('quick-search').locator('input').fill('pit');
+  await expect(page.getByTestId('quick-answer').first()).toContainText('Pit');
+  await shot('lmu-quick-look');
+
+  // The same readers serve the input tester: it knows what the paddle does in iRacing.
+  await page.getByTestId('nav-devices').click();
+  await page.getByTestId('devices-tab-test').click();
+  await expect(page.getByTestId('tester-page')).toHaveAttribute('data-live', 'true');
+  await page.getByTestId('tester-aircraft').click();
+  await page.getByRole('option', { name: 'iRacing · All cars' }).click();
+  await expect(page.getByTestId('bound-waiting')).toContainText('what it does in iRacing');
+  await sendInput([state(CONTROLLERS.wheel)]);
+  await sendInput([state(CONTROLLERS.wheel, { pressed: [5] })]);
+  await expect(page.getByTestId('bound-control')).toHaveText(
+    'Button 5 on FANATEC Podium Wheel Base DD2'
+  );
+  await expect(page.getByTestId('bound-action')).toHaveCount(1);
+  await expect(page.getByTestId('tester-bound')).toContainText('Shift up');
+  await sendInput([state(CONTROLLERS.wheel)]);
+  await sendInput([state(CONTROLLERS.wheel, { pressed: [100] })]);
+  await expect(page.getByTestId('bound-none')).toContainText('Nothing is bound to it in iRacing');
 });
