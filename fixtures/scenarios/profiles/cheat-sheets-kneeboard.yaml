@@ -1,0 +1,16 @@
+schemaVersion: 1
+id: cheat-sheets-kneeboard
+name: DCS F/A-18C
+game: dcs
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+checks:
+  - { id: c1, type: device.connected, title: WINWING Orion Joystick Base 2 + JGRIP-F16, required: true, params: { vendorId: '4098', productId: BEA8 } }
+  - id: c2
+    type: cheat-sheets.kneeboardCurrent
+    title: Kneeboard cheat sheet is up to date (F/A-18C)
+    required: false
+    params: { game: dcs, aircraft: FA-18C_hornet, aircraftName: F/A-18C }
+    remediation:
+      type: cheat-sheets.regenerate
+      params: { game: dcs, aircraft: FA-18C_hornet, aircraftName: F/A-18C }

@@ -1,0 +1,7 @@
+description: Cheat sheets, a setup that checks the kneeboard pages
+rig: mark-full
+extends: flying-fresh.yaml
+profiles:
+  - profiles/cheat-sheets-kneeboard.yaml
+data:
+  devices.json: data/cheat-sheets/devices.json

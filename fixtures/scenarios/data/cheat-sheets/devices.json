@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "names": [
+    { "vendorId": "4098", "productId": "BEE1", "name": "Left MFD" },
+    { "vendorId": "4098", "productId": "BEE0", "name": "Centre MFD" },
+    { "vendorId": "4098", "productId": "BEE2", "name": "Right MFD" },
+    { "vendorId": "4098", "productId": "BEA8", "name": "Stick" },
+    { "vendorId": "4098", "productId": "BD26", "name": "Throttle" },
+    { "vendorId": "044F", "productId": "B68F", "name": "Pedals" }
+  ],
+  "switches": [],
+  "notifications": "controllers"
+}
