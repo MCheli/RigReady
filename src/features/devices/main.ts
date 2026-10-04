@@ -1,4 +1,5 @@
 import { bind, defineFeatureMain, type MainContext } from '../../core/feature';
+import { privacyContext, Scanner } from '../../core/privacy';
 import type { Profile } from '../../core/profile/schema';
 import { err, ok, type Result } from '../../core/result';
 import type { DeviceInfo, InputDevice, InputState } from '../../shared/models';
@@ -11,7 +12,7 @@ import {
   matchesDevice,
 } from './core/deviceCheck';
 import { boundInputsOf, type BindingSource } from './core/bound';
-import { analyzeHealth, type HealthReport, type Sample } from './core/health';
+import { analyzeHealth, healthText, type HealthReport, type Sample } from './core/health';
 import { hidHideCached } from './core/hidhide';
 import type { Overview } from './core/model';
 import { ConnectionNotifier, diffDevices } from './core/notifier';
@@ -364,6 +365,13 @@ function setupDevices(ctx: MainContext) {
     },
     watchInput: ({ client, on }) => watch(client, on),
     healthScan: ({ seconds }) => healthScan(seconds),
+    copyHealth: async ({ report }) => {
+      // It is meant to be pasted somewhere public: nothing of this PC or its owner goes along.
+      const scanner = new Scanner(await privacyContext(ctx, ctx.games));
+      const text = scanner.transform(healthText(report), 'Health check', 'profile', () => 'remove');
+      const copied = await ports.clipboard.writeText(text);
+      return copied.ok ? ok({ characters: text.length }) : copied;
+    },
     markSwitch: async ({ inputKey, button, expected }) => {
       const saved = await stores.data.update((data) => {
         const switches = data.switches.filter(

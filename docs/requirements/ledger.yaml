@@ -1674,6 +1674,34 @@ requirements:
       - "artifacts/screens/devices-tester-stick/03-less-motion.png"
       - "artifacts/screens/devices-tester-load/01-sixteen-controllers.png"
 
+  - id: WOW-TOOLS-002
+    title: A health check that shows its evidence
+    job: troubleshoot
+    area: devices
+    priority: p2
+    done_means:
+      - "Every noisy-axis finding shows the trace recorded during the hands-off window, zoomed in on where the axis rested, with the band it may tremble in. Every stuck-button, held-switch and rogue-input finding shows a time line of when it was on."
+      - "Every finding says how bad it is as a number (percent of travel, seconds held, times it fired) and as a bar; the bar of a noisy axis marks the 1% limit."
+      - "Every finding says in one plain line what a game makes of it and in one what to do about it; an axis that travelled a long way is told apart from one that trembles."
+      - "'Copy as text' puts the findings on the clipboard with what was recorded, what it means and what to do, with the PC name and other personal details removed; the button says 'Copied' only after the clipboard took it."
+      - "While the check listens, every controller is shown live, so a button that is down or an axis that moves is seen as it happens."
+    status: done
+    evidence:
+      - "src/features/devices/core/health.test.ts#keeps the trace of a noisy axis: when it moved, how far, and where it rested"
+      - "src/features/devices/core/health.test.ts#keeps when a button was down: all of the check for a stuck one, each press of a rogue one"
+      - "src/features/devices/core/health.test.ts#tells an axis that travelled a long way apart from one that trembles"
+      - "src/features/devices/core/health.test.ts#thins a long trace without losing its spikes"
+      - "src/features/devices/core/health.test.ts#says what was checked, each finding with what was recorded, what it means and what to do"
+      - "src/features/devices/main.test.ts#copies the findings as text, with what was recorded and without the name of this PC"
+      - "src/features/devices/main.test.ts#says so when the clipboard cannot be written, and copies nothing"
+      - "tests/e2e/devices.e2e.ts#devices: every health finding shows what was recorded, how bad it is, what a game makes of it and what to do, and the findings copy as text"
+      - "tests/e2e/devices.e2e.ts#devices: hands-off health check reports stuck buttons, switches, noisy axes and rogue inputs"
+      - "artifacts/screens/devices-health-evidence/01-listening.png"
+      - "artifacts/screens/devices-health-evidence/02-findings.png"
+      - "artifacts/screens/devices-health-evidence/03-noisy-axis-trace.png"
+      - "artifacts/screens/devices-health-evidence/04-copied.png"
+      - "artifacts/screens/devices-health/02-hands-off.png"
+
   # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files
   # ---------------------------------------------------------------------------

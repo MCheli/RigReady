@@ -1,4 +1,5 @@
-import type { Locator, Page } from '@playwright/test';
+import type { ElectronApplication, Locator, Page } from '@playwright/test';
+import { axeViolations, colourOnlyStatus } from './a11y';
 import { checkRow, expect, test } from './harness';
 
 /**
@@ -102,6 +103,62 @@ async function startMotion(
     await page.evaluate(() => {
       const scope = globalThis as unknown as { rigreadyMotion?: ReturnType<typeof setInterval> };
       clearInterval(scope.rigreadyMotion);
+    });
+  };
+}
+
+/** What the app put on the (fake) clipboard, oldest first. */
+const clipboard = (app: ElectronApplication): Promise<string[]> =>
+  app.evaluate(() =>
+    (globalThis as unknown as { __rigreadyClipboard: () => string[] }).__rigreadyClipboard()
+  );
+
+/**
+ * A rig that is not well, from inside the page until the returned function is called: the
+ * throttle's Z axis trembles five times a second over 2.5% of its travel, and after three
+ * seconds the ICP's button 7 goes down for half a second by itself.
+ */
+async function startTrouble(page: Page): Promise<() => Promise<void>> {
+  await page.evaluate(
+    ({ throttle, icp }) => {
+      const scope = globalThis as unknown as {
+        rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+        rigreadyTrouble?: ReturnType<typeof setInterval>;
+      };
+      const send = (
+        c: { index: number; name: string; axes: number; buttons: number; hats: number },
+        axes: Record<number, number>,
+        pressed: number[],
+        timestamp: number
+      ): void =>
+        void scope.rigready.invoke('app:scenario', {
+          input: [
+            {
+              index: c.index,
+              name: c.name,
+              axes: Array.from({ length: c.axes }, (_, i) => axes[i] ?? 0),
+              buttons: Array.from({ length: c.buttons }, (_, i) => pressed.includes(i + 1)),
+              hats: Array.from({ length: c.hats }, () => [0, 0]),
+              timestamp,
+            },
+          ],
+        });
+      // Never further than 0.03 up and 0.02 down: 2.5% of the travel.
+      const tremble = [0.02, -0.015, 0.03, -0.02, 0.012, -0.008, 0.026, -0.018, 0.005, -0.012];
+      let step = 0;
+      scope.rigreadyTrouble = setInterval(() => {
+        send(throttle, { 2: tremble[step % tremble.length]! }, [], 7_000_000 + step);
+        if (step === 15) send(icp, {}, [7], 7_100_000);
+        if (step === 18) send(icp, {}, [], 7_100_001);
+        step++;
+      }, 200);
+    },
+    { throttle: CONTROLLERS.throttle, icp: CONTROLLERS.icp }
+  );
+  return async () => {
+    await page.evaluate(() => {
+      const scope = globalThis as unknown as { rigreadyTrouble?: ReturnType<typeof setInterval> };
+      clearInterval(scope.rigreadyTrouble);
     });
   };
 }
@@ -406,6 +463,8 @@ test('devices: the tester draws a stick as a plot with a fading trail, a hat as 
   await sendInput([state(stick, { axes: { 0: -0.5, 1: 0.5 }, hat: [1, 1], pressed: [5] })]);
   await expect(view.locator('[data-testid="button"][data-pressed="true"]')).toHaveCount(1);
   await expect(view.getByTestId('buttons-tried')).toHaveText('2 of 42 tried');
+  // The whole view passes the accessibility scan: the drawings are extra, the words carry it.
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
   await shot('stick-held');
 
   // In motion, with the trigger held and the hat pushed up: the dot draws a trail behind it
@@ -561,9 +620,11 @@ test('devices: hands-off health check reports stuck buttons, switches, noisy axe
   await page.getByTestId('devices-tab-health').click();
   await shot('start');
 
-  // The rig as recorded: nothing moves, nothing is reported.
+  // The rig as recorded: nothing moves, nothing is reported. While the check listens, every
+  // controller is shown as it reports right now.
   await page.getByTestId('health-start').click();
   await expect(page.getByTestId('health-running')).toBeVisible();
+  await expect(page.getByTestId('health-live').getByTestId('controller-strip')).toHaveCount(12);
   await shot('hands-off');
   await expect(page.getByTestId('health-title')).toHaveText('All quiet: nothing moved', {
     timeout: 20_000,
@@ -571,7 +632,8 @@ test('devices: hands-off health check reports stuck buttons, switches, noisy axe
   await expect(page.getByTestId('health-summary')).toContainText('12 game controllers checked');
   await shot('all-quiet');
 
-  // Startup panel button 3 is held, a throttle axis wanders, the ICP fires by itself.
+  // Startup panel button 3 is held, a button on the stick is down, the throttle's Z axis
+  // trembles for the whole ten seconds, and the ICP fires once by itself.
   await sendInput([
     state(CONTROLLERS.startup, { pressed: [3] }),
     state(CONTROLLERS.stick, { pressed: [2] }),
@@ -580,12 +642,9 @@ test('devices: hands-off health check reports stuck buttons, switches, noisy axe
   ]);
   await page.getByTestId('health-again').click();
   await expect(page.getByTestId('health-running')).toBeVisible();
-  for (const v of [0.02, -0.015, 0.03, -0.02]) {
-    await sendInput([state(CONTROLLERS.throttle, { axes: { 2: v } })]);
-  }
-  await sendInput([state(CONTROLLERS.icp, { pressed: [7] })]);
-  await sendInput([state(CONTROLLERS.icp)]);
+  const quiet = await startTrouble(page);
   await expect(page.getByTestId('health-summary')).toBeVisible({ timeout: 20_000 });
+  await quiet();
 
   await expect(page.getByTestId('health-stuck')).toContainText(
     'WINWING Orion Joystick Base 2 + JGRIP-F16 · Button 2'
@@ -610,6 +669,84 @@ test('devices: hands-off health check reports stuck buttons, switches, noisy axe
   );
   await expect(page.getByTestId('health-switch')).toHaveCount(0);
   await shot('switch-marked');
+});
+
+test('devices: every health finding shows what was recorded, how bad it is, what a game makes of it and what to do, and the findings copy as text', async ({
+  rig,
+}) => {
+  const run = await rig.launch('devices-rig', 'devices-health-evidence');
+  const { page, shot, sendInput } = run;
+  await openDevices(page);
+  await page.getByTestId('devices-tab-health').click();
+
+  // Startup panel button 3 is held, a button on the stick is down, the throttle's Z axis
+  // trembles for the whole ten seconds, and the ICP fires once by itself.
+  await sendInput([
+    state(CONTROLLERS.startup, { pressed: [3] }),
+    state(CONTROLLERS.stick, { pressed: [2] }),
+    state(CONTROLLERS.throttle),
+    state(CONTROLLERS.icp),
+  ]);
+  await page.getByTestId('health-start').click();
+  await expect(page.getByTestId('health-running')).toBeVisible();
+  const quiet = await startTrouble(page);
+  // The stuck button is lit in the live view while the check listens: the second square of
+  // the stick's first row, and not the third.
+  const stickStrip = page
+    .getByTestId('health-live')
+    .getByTestId('controller-strip')
+    .nth(CONTROLLERS.stick.index);
+  await expect
+    .poll(() => accentPixels(stickStrip, { left: 0.42, top: 0, right: 0.48, bottom: 0.4 }))
+    .toBeGreaterThan(20);
+  expect(await accentPixels(stickStrip, { left: 0.48, top: 0, right: 0.52, bottom: 0.4 })).toBe(0);
+  await shot('listening');
+  await expect(page.getByTestId('health-summary')).toBeVisible({ timeout: 20_000 });
+  await quiet();
+
+  const stuck = page.getByTestId('health-stuck');
+  const noisy = page.getByTestId('health-noisy');
+  const rogue = page.getByTestId('health-rogue');
+  await expect(page.getByTestId('health-title')).toHaveText('4 things need a look');
+
+  // The noisy axis: its trace across the ten seconds, 2.5% of travel on a bar with the 1%
+  // limit marked, and what to do about it.
+  await expect(noisy.getByTestId('health-evidence')).toHaveAttribute('data-kind', 'axis');
+  const trace = (await noisy.getByTestId('health-trace').getAttribute('d')) ?? '';
+  expect(trace.split(' V ').length).toBeGreaterThan(20);
+  await expect(noisy.getByTestId('health-measure')).toContainText('2.5%');
+  await expect(noisy.getByTestId('health-measure')).toContainText('of its travel');
+  await expect(noisy.getByTestId('health-bar')).toHaveAttribute('data-severity', '25');
+  await expect(noisy.getByTestId('health-meaning')).toContainText('never quite rests');
+  await expect(noisy.getByTestId('health-advice')).toContainText('dead zone');
+  // The stuck button: down from the first second to the last.
+  await expect(stuck.getByTestId('health-span')).toHaveCount(1);
+  await expect(stuck.getByTestId('health-measure')).toContainText('10 s');
+  await expect(stuck.getByTestId('health-bar')).toHaveAttribute('data-severity', '100');
+  await expect(stuck.getByTestId('health-advice')).toContainText('clear its binding');
+  // The rogue press: one short stretch on the time line.
+  await expect(rogue.getByTestId('health-span')).toHaveCount(1);
+  await expect(rogue.getByTestId('health-measure')).toContainText('1×');
+  await expect(rogue.getByTestId('health-meaning')).toContainText('fires by itself');
+  // Findings with their traces, bars and advice pass the accessibility scan.
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('findings');
+  await noisy.scrollIntoViewIfNeeded();
+  await shot('noisy-axis-trace');
+
+  // The findings as text, for a forum post: on the clipboard once the button says so.
+  await page.getByTestId('health-copy').click();
+  await expect(page.getByTestId('health-copy')).toHaveAttribute('data-copied', 'true');
+  await expect(page.getByTestId('health-copy')).toHaveText('Copied');
+  const copied = (await clipboard(run.app)).at(-1) ?? '';
+  expect(copied).toContain('RigReady health check');
+  expect(copied).toContain('4 things need a look.');
+  expect(copied).toContain('NOISY AXIS\nWINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R');
+  expect(copied).toContain('It stayed between 49% and 51.5% of its travel');
+  expect(copied).toContain('STUCK BUTTON\nWINWING Orion Joystick Base 2 + JGRIP-F16 · Button 2');
+  expect(copied).toContain('What to do: ');
+  await page.getByTestId('health-page').locator('h1').scrollIntoViewIfNeeded();
+  await shot('copied');
 });
 
 test('devices: USB map places every device on its hub, and selecting one shows it in Devices and back', async ({

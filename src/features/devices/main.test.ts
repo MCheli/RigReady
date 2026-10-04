@@ -246,6 +246,53 @@ describe('devices: live input, health check, switches', () => {
       })
     ).toEqual({ switches: 0 });
   });
+
+  it('copies the findings as text, with what was recorded and without the name of this PC', async () => {
+    app = await wiredApp('devices-rig', { files: [] });
+    app.ports.input.emit([state(3, 57, [3]), state(10, 62, [], [0, 0, 0])]);
+    const scan = app.invoke<HealthReport>('devices:healthScan', { seconds: 0.3 });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    app.ports.input.emit([state(10, 62, [], [0, 0, 0.05])]);
+    const report = await scan;
+    const noisy = report.findings.find((f) => f.kind === 'noisy')!;
+    expect(noisy.evidence).toMatchObject({ kind: 'axis', low: 50, high: 52.5, rest: 50 });
+    expect(noisy.measure).toBe('2.5%');
+
+    // A device the owner named after the PC and after themselves.
+    const machine = app.ports.folders.machineName();
+    const named = {
+      ...report,
+      findings: report.findings.map((f) =>
+        f.kind === 'noisy' ? { ...f, device: `Throttle on ${machine}` } : f
+      ),
+    };
+    const copied = await app.invoke<{ characters: number }>('devices:copyHealth', {
+      report: named,
+    });
+    expect(app.ports.clipboard.copied).toHaveLength(1);
+    const text = app.ports.clipboard.copied[0]!;
+    expect(copied.characters).toBe(text.length);
+    expect(text).toContain('RigReady health check');
+    expect(text).toContain('2 things need a look.');
+    expect(text).toContain('NOISY AXIS\nThrottle on my-pc · Z axis');
+    expect(text).toContain('It stayed between 50% and 52.5% of its travel');
+    expect(text).toContain('WINWING F18 STARTUP PANEL · Button 3');
+    expect(text).not.toContain(machine);
+  });
+
+  it('says so when the clipboard cannot be written, and copies nothing', async () => {
+    app = await wiredApp('devices-rig', { files: [] });
+    app.ports.clipboard.writeText = async () =>
+      ({
+        ok: false,
+        error: { code: 'clipboard.write', message: 'Could not copy to the clipboard.' },
+      }) as const;
+    await expect(
+      app.invoke('devices:copyHealth', {
+        report: { seconds: 10, devicesChecked: 12, findings: [] },
+      })
+    ).rejects.toThrow(/Could not copy/);
+  });
 });
 
 describe('devices: tray notifications', () => {

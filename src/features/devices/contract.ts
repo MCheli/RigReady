@@ -40,6 +40,14 @@ export const devicesContract = defineContract(
     ),
     /** Listens for `seconds` while nobody touches anything and reports what moved. */
     healthScan: channel(z.object({ seconds: z.number().min(0.1).max(30) }), HealthReportSchema),
+    /**
+     * Puts the findings of a health check on the clipboard as plain text, to paste into a
+     * forum post or a support request. Personal details are removed first.
+     */
+    copyHealth: channel(
+      z.object({ report: HealthReportSchema }),
+      z.object({ characters: z.number().int() })
+    ),
     /** Marks a held button as a switch that is normally on (or not). */
     markSwitch: channel(
       z.object({
