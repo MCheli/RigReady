@@ -550,6 +550,7 @@ Existing scenarios (`fixtures/scenarios/`, 65 files; `npm run dev:scenario` with
 | Per feature | `audio-*` (4), `backup-*` (5), `dcs-bindings-*` (6; `dcs-bindings-identical`: three panels with one name whose IDs all changed; `dcs-bindings-old-ids`), `dcs-setup-*` (4), `dcs-two-installs`, `devices-*` (3), `displays-*` (3), `share-*` (3; `share-old-ids`: binding files that carry another PC's device IDs), `stream-deck-*` (2), `trackir-*` (3), `cheat-sheets-hornet`, `cheat-sheets-kneeboard`, `ai-assist-hornet` (scripted Anthropic answers) |
 | Racing | `racing-not-ready`, `racing-iracing-moved-wheel` (the wheel has a new Windows id), `racing-rim-variant`, `mark-racing`, `mark-racing-tv`, `tour-racing` (the racing rig with an iRacing setup, for the tour) |
 | Not the owner's PC | `generic-fresh`, `generic-custom-game`, `generic-dcs`, `generic-second-pc` |
+| The shell | `shell-flight-and-racing` (the flying rig with a flight setup and a racing setup side by side, for the accent that follows the setup's kind of game), `shell-racing-pc` (a generic PC whose only game is iRacing, for the first-run welcome) |
 
 The racing rig and the generic PCs, which the ledger names as fixtures, are scenarios too:
 

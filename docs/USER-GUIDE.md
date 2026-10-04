@@ -134,6 +134,8 @@ Tuning values of a Fanatec wheel base are stored on the base. RigReady cannot re
 - **Settings**: start with Windows, close to tray, update channel, AI key, notifications, retention of automatic backups.
 - **Safety**: every change RigReady made to files outside its own folder, with Undo.
 - **Diagnostics**: the log, and a button that copies a report with personal details removed.
+- **Find anything**: Ctrl+K, or the button at the top right, opens one field that finds every page and runs the common actions from wherever you are: Make ready, Launch, Stand down, switch to another setup, apply a saved monitor layout, Back up now, find a device by pressing a button on it, open the bindings or the cheat sheet of an aircraft. What an action did is reported at the bottom of the window. Ctrl+1 and Ctrl+2 switch between Fly and Configure, and `?` lists the keys.
+- **About**: the version number at the top right opens it: the version, the licence, and where to report a problem.
 
 ## Things to know
 

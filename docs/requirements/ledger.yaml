@@ -4271,6 +4271,67 @@ requirements:
       - "tests/e2e/look.e2e.ts#look: depth, type and motion come from the tokens, and \"reduce motion\" switches motion off"
       - "artifacts/screens/look-system/01-monitors.png"
 
+  - id: WOW-UI-008
+    title: The first-run welcome, to the standard of the rest
+    job: fly
+    area: shell
+    priority: p2
+    done_means:
+      - "With no setups (scenario flying-fresh), the Fly screen greets with one panel: a simplified head-up display (the horizon and the flight path marker, drawn and not read out), what RigReady does in three lines, and what it found on this PC as three readings (games, game controllers, monitors), each a number with its unit and what is behind it."
+      - "One clear first step ('Create a setup from this rig') leads into capture; restoring from a backup and importing a shared setup are one click away; a line says where the keyboard leads (Ctrl+K, '?')."
+      - "While the PC is still being looked at the readings show their outline, and when it cannot be looked at the panel says so instead of showing nothing."
+      - "A PC whose only game is a racing one is greeted with the wheel for a mark; one without any sim says that any other game still works. The panel passes the axe and colour-only scans on each."
+    status: done
+    evidence:
+      - "src/features/fly/core/welcome.test.ts#says which games, game controllers and monitors were found on this PC"
+      - "src/features/fly/core/welcome.test.ts#on a PC with no sim it finds no game and still says what is there; a provider that fails leaves its part out"
+      - "tests/e2e/first-impressions.e2e.ts#welcome: a first run says what RigReady does, what it found on this PC, and leads to the first setup"
+      - "tests/e2e/first-impressions.e2e.ts#welcome: a PC whose only game is a racing one is greeted with the wheel, and one without a sim says so"
+      - "tests/e2e/capture.e2e.ts#first run: welcome, what was found on this PC, and two clicks to a Ready DCS F/A-18C setup"
+      - "artifacts/screens/welcome/01-welcome.png"
+      - "artifacts/screens/welcome/02-looking.png"
+      - "artifacts/screens/welcome-racing/01-welcome.png"
+      - "artifacts/screens/welcome-generic/01-welcome.png"
+
+  - id: WOW-UI-009
+    title: An About panel - version, what RigReady does, the licence, where to find it
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The version in the header opens About, and so does the command palette: the version of this run, what RigReady does in one sentence and its three jobs, the licence and the copyright line, the website, the source and where to report a problem, and the data folder of this run."
+      - "The licence, the copyright line and the addresses are read from the package's own description, so the panel cannot disagree with what was built and no name is written into the source; only https addresses are offered, and they open in Windows' browser, never inside the app."
+      - "Escape closes it and the focus is back on the version; the keyboard shortcuts and Diagnostics are one step away from it. It passes the axe and colour-only scans."
+    status: done
+    evidence:
+      - "src/renderer/shell/about.test.ts#turns the addresses a package states into pages a person can open"
+      - "src/renderer/shell/about.test.ts#offers nothing that is not an https address: only those are handed to the browser"
+      - "src/renderer/shell/about.test.ts#the package this app is built from states a licence, a website, its source and where to report a problem"
+      - "tests/e2e/first-impressions.e2e.ts#about: the version, what RigReady does, the licence and where to find it"
+      - "artifacts/screens/about/01-about.png"
+
+  - id: WOW-UI-010
+    title: A quiet accent follows the kind of game the setup in use is for
+    job: fly
+    area: shell
+    priority: p2
+    done_means:
+      - "The shell does not know what a setup is: a feature says the kind (flight or racing) of the setup in use from its commands.ts, and when to ask again; an answer overtaken by a later question is dropped, and a feature that cannot say leaves the plain accent."
+      - "With a flight setup or no setup nothing changes: the accent is the blue it was. With a racing setup the brand mark becomes a wheel and the mark, the header's index, the line that says where you are in Configure and the small mark in an empty state's drawing turn violet."
+      - "It is decoration only: controls stay blue, status keeps green, amber and red, and the violet is far from all three around the colour wheel and seen on every surface (3:1)."
+      - "On scenario shell-flight-and-racing, switching the setup on the Fly screen, or from the palette, changes it within the same window without a restart."
+    status: done
+    evidence:
+      - "src/renderer/shell/kind.test.ts#asks at once, again when the feature says the setup changed, and again when the machine did"
+      - "src/renderer/shell/kind.test.ts#an answer that a later question overtook is dropped"
+      - "src/renderer/shell/kind.test.ts#a feature that cannot say leaves the plain accent, and the next one that knows is asked"
+      - "tests/unit/paletteCommands.test.ts#knows the kind of game the setup in use is for"
+      - "tests/unit/designSystem.test.ts#the accent for a racing setup is seen, is not a status colour, and is only set by the shell"
+      - "tests/e2e/first-impressions.e2e.ts#accent: the mark and the lines that say where you are follow the kind of game the setup in use is for"
+      - "artifacts/screens/kind-accent/01-flight.png"
+      - "artifacts/screens/kind-accent/02-racing.png"
+      - "artifacts/screens/kind-accent/03-racing-configure.png"
+
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY
   # ---------------------------------------------------------------------------

@@ -1,0 +1,6 @@
+description: Flying layout, with a flight setup and a racing setup side by side
+rig: mark-full
+extends: flying-all-good.yaml
+# For the shell's accent (tests/e2e/shell.e2e.ts): it follows the kind of game the setup in use is for.
+profiles:
+  - profiles/racing-iracing.yaml
