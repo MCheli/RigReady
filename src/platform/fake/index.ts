@@ -22,6 +22,7 @@ import type {
   Notifications,
   OpenDialogOptions,
   Overlays,
+  PanelWindow,
   Ports,
   ProcessProvider,
   Registry,
@@ -664,6 +665,12 @@ export class FakeAppWindow implements AppWindow {
   async showOn(areas: ScreenArea[]): Promise<Result<{ moved: boolean }>> {
     this.shown.push(structuredClone(areas));
     return ok({ moved: false });
+  }
+  /** Every openPanel() call, for assertions. */
+  readonly panels: PanelWindow[] = [];
+  async openPanel(panel: PanelWindow): Promise<Result<{ opened: boolean }>> {
+    this.panels.push({ ...panel });
+    return ok({ opened: true });
   }
 }
 
