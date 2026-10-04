@@ -83,6 +83,15 @@ html {
     )
     fixed;
 }
+/*
+ * A dialog stops the page behind it from scrolling, and Vuetify then pads the page by the
+ * width of the scrollbar that goes away, so the page does not widen under the dialog. Here
+ * the strip for the scrollbar is kept free all the time: with that padding on top, a long
+ * page would get narrower under every dialog and the palette, and jump back afterwards.
+ */
+html.v-overlay-scroll-blocked {
+  padding-inline-end: 0;
+}
 html::-webkit-scrollbar {
   width: 14px;
 }

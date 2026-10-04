@@ -283,8 +283,27 @@ test('palette: Ctrl+K finds every page and the commands of the features, by keyb
   await expect.poll(() => hash(page)).toBe('#/configure/devices/usb');
   await shot('opened-usb-map');
 
+  // ---- The page behind keeps its place when the palette opens over it: a page long enough
+  // to scroll is held still, not made narrower for as long as the palette is open.
+  const edges = (): Promise<{ left: number; right: number; long: boolean }> =>
+    page.locator('.rr-page').evaluate((el) => {
+      const scope = globalThis as unknown as {
+        document: { documentElement: { scrollHeight: number } };
+        innerHeight: number;
+      };
+      const box = el.getBoundingClientRect();
+      return {
+        left: Math.round(box.left),
+        right: Math.round(box.right),
+        long: scope.document.documentElement.scrollHeight > scope.innerHeight,
+      };
+    });
+  const closed = await edges();
+  expect(closed.long).toBe(true);
+
   // ---- The mode by its name: its page first, then the commands that stand under it.
   await openPalette(page);
+  expect(await edges()).toMatchObject({ left: closed.left, right: closed.right });
   await page.keyboard.type('play');
   await expect(marked(page).locator('.rr-palette-title')).toHaveText('Play');
   await expect(marked(page)).toHaveAttribute('data-to', '/fly');

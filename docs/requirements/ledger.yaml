@@ -4477,7 +4477,7 @@ requirements:
       - "One focus ring: two pixels of the focus colour on every kind of control, the same on the shell's links, the navigation and a page's buttons (E2E reads it on each)."
       - "Motion is two durations (120 ms, 180 ms) and one easing without overshoot, used for a page arriving, a dialog arriving and leaving, and the shell's own panels and toasts; no component of the shell animates on a number of its own. With 'reduce motion' the tokens are zero and nothing animates (E2E emulates the setting)."
       - "Less motion takes away the time only (0 s, exactly): how often an animation repeats and whether it is held are left as they were, so a component that switches its own motion off finds it off, and a loading bar a dialog keeps in hand stays an animation that never ends instead of one that is held and can never finish. A busy bar that may not travel is drawn whole and dimmed instead of not at all."
-      - "The window is dark to its edges: the scrollbar is a thin dark bar, the strip kept free for it continues the header, and a snackbar a feature shows itself looks like the shell's toasts, with its tone as an icon."
+      - "The window is dark to its edges: the scrollbar is a thin dark bar, the strip kept free for it continues the header, and a snackbar a feature shows itself looks like the shell's toasts, with its tone as an icon. Because that strip is always kept free, a page has the same width whether or not it is long enough to scroll, and keeps it while a dialog or the palette is open over it."
     status: done
     evidence:
       - "tests/unit/designSystem.test.ts#every token the features use is still there, with the colour it had"
@@ -4493,6 +4493,7 @@ requirements:
       - "tests/unit/designSystem.test.ts#no component of the shell animates on a number of its own"
       - "tests/e2e/look.e2e.ts#look: depth, type and motion come from the tokens, and \"reduce motion\" switches motion off"
       - "tests/e2e/look.e2e.ts#look: a snackbar of a feature looks like the shell’s toasts, with its tone as an icon"
+      - "tests/e2e/shell.e2e.ts#palette: Ctrl+K finds every page and the commands of the features, by keyboard alone"
       - "artifacts/screens/look-system/01-monitors.png"
       - "artifacts/screens/look-system/02-less-motion.png"
       - "artifacts/screens/look-toast/01-snackbar.png"
