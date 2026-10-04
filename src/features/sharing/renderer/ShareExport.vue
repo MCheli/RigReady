@@ -329,7 +329,9 @@ async function save(): Promise<void> {
                     ? 'Launch command'
                     : s.kind === 'check'
                       ? 'Check that runs a script or command'
-                      : 'Fix that starts a program'
+                      : s.kind === 'action'
+                        ? 'Launch or Stand down step that runs a program'
+                        : 'Fix that starts a program'
                 }}
                 · {{ s.description }}
               </div>

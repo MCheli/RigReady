@@ -236,3 +236,33 @@ test('backup: a racing restore and a BeamNG copy show what each file becomes bef
   await expect(groups.nth(2)).toContainText('Restore iRacing bindings');
   await shot('every-change-is-an-action');
 });
+
+test('restore: bindings for a controller this PC does not have come with a button to Bindings, Device IDs', async ({
+  rig,
+}) => {
+  const run = await rig.launch('backup-dcs', 'backup-restore-device-ids');
+  const { page, shot, home } = run;
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-backups').click();
+  await page.getByTestId('backups-tab-tracked').click();
+  await suggestion(page, 'DCS bindings').getByTestId('suggestion-add').click();
+  await page.getByTestId('backups-tab-backups').click();
+  await page.getByTestId('backup-all').click();
+  await expect(page.getByTestId('backup-outcome-title')).toContainText('Backed up');
+
+  // The bindings are lost and the pedals are no longer on this PC.
+  await fs.rm(path.join(home, 'Saved Games', 'DCS', 'Config', 'Input'), { recursive: true });
+  await run.mutate([{ op: 'unplugDevice', match: { vendorId: '044F', productId: 'B68F' } }]);
+  await page.getByTestId('backup-restore').click();
+  await expect(page.getByTestId('restore-page')).toBeVisible();
+  await page.getByTestId('restore-apply').click();
+  await expect(page.getByTestId('restore-report-title')).toContainText('Restored');
+  const notice = page.getByTestId('restore-device-ids');
+  await expect(notice).toContainText('device IDs this PC does not use');
+  await expect(notice).toContainText('T-Pendular-Rudder');
+  await shot('notice-with-button');
+  await page.getByTestId('restore-open-device-ids').click();
+  await expect(page).toHaveURL(/dcs-bindings\/device-ids/);
+  await expect(page.getByTestId('bind-device-ids')).toContainText('T-Pendular-Rudder');
+  await shot('device-ids');
+});

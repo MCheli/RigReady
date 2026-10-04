@@ -159,6 +159,10 @@ ctx.checks.registerStandDownStep({        // something Stand down does once, wha
 
 That is all: the Fly screen, Make ready, Stand down and the capture screen pick the new types up through the registry. Rules the engine applies for you: a required check that is not met is `fail` (red) and makes the setup Not ready; an optional one is `warn` (yellow) and never does. A check that throws, has bad params, an unknown type, or runs longer than the check timeout from the settings is reported as not met, never as a crash. A remediation must not report success for something that did not happen: verify, then return `ok`.
 
+An item with `disabled: true` in the setup (`CheckItem.disabled`, the On/Off switch in the setup editor) is not run at all: its result carries `disabled: true` (status `pass` only so it never counts against readiness), it has no fix, Make ready and Stand down leave it alone, and the Fly screen shows it muted as "Off", never as passed. Anything that lists results must look at `result.disabled` before calling an item passed. Imports use it for checks whose device is not on this PC.
+
+A fix that does something useful without making its check pass (the backup feature's `backup.gameFiles`, "Back up now" on the game-updated warning) uses `kind: 'navigate'`: its button works on the item and its message is shown as it is, and Make ready lists the item under "Needs you" instead of running it on every pass.
+
 The displays feature already registers the stand-down step `displays.deskLayout`: when the settings name a desk layout, Stand down applies it (with the keep-or-revert countdown).
 
 Also list the types in your manifest (`checkTypes`, `remediationTypes`) so editors can label them.
@@ -195,12 +199,43 @@ export default defineFeature({
 | `id`, `name` | |
 | `detect(ctx)` | Every install: all Steam libraries from `ctx.ports.folders.steamLibraries()`, standalone, Store. |
 | `configLocations(ctx)` | Where the game keeps per-user configuration. |
-| `trackedFiles?(ctx)` | Files worth tracking and backing up. |
+| `trackedFiles?(ctx)` | Files worth tracking and backing up, absolute paths. The backup page offers each with one-click add, so put one whole-folder item first (`kind: 'folder'`, `include` / `exclude` globs, a `description` of what it holds and leaves out) and the single files after it. Only what exists on this PC. |
+| `processes?` | Image names that mean the game is running (`['iRacingUI.exe', 'iRacingSim64DX11.exe']`). The Games page and the Steam-launch watcher use it, and backup: the game must be closed before its files are restored. |
+| `closeBeforeRestore?` | `{ processes?, why }`: which of the game's programs write its files (default: all of `processes`) and one sentence the user reads when a restore is refused ("iRacing writes these files when the simulator exits, which would undo the restore."). |
 | `installedVersion?(ctx, install)` | `{ version, updatePending? }` for "updated since you last verified". Steam games: `readSteamApp` (section 7). |
 | `pathVariables?(ctx)` | The game's path variables, e.g. `{ DCS_USER, DCS_INSTALL }` (section 7). |
 | `bindings?` | Marker for the binding feature. |
 
+`src/features/games/core/helpers.ts` `GameModuleExtras` (a module's `export const extras`) holds only what the Games page needs: `kind`, `manualFolder`, `notes`, `facts`. Process names are on the module itself.
+
 It is discovered by glob from `src/features/games/main.ts` and is the only place that game's paths may appear. `src/features/games/dcs/module.ts` is the example. Game-specific checks and screens live in your own feature folder and are registered from your `main.ts` using `ctx.games.get('<id>')`.
+
+### A backup source (tools that are not games)
+
+A helper tool registers what is worth backing up from its `main.ts` (`src/core/backupSources.ts`); Stream Deck, TrackIR and Fanatec do:
+
+```ts
+ctx.backupSources.register({
+  id: 'stream-deck',
+  label: 'Stream Deck',                       // the group heading on Backups -> Tracked files
+  async suggest(ctx) {                        // absolute or stored paths; missing ones are left out for you
+    return ok([{ label: 'Stream Deck profiles', path: profilesDir, kind: 'folder',
+      description: 'Every profile with its pages, actions and icons.' }]);
+  },
+  program: {                                  // optional: what must be closed before these files are restored
+    name: 'Stream Deck', processes: ['StreamDeck.exe'], restart: true,
+    why: 'Stream Deck keeps its profiles in memory and writes them when it quits, which would undo the restore.',
+  },
+  async records(ctx) {                        // optional: settings that are not files (registry values)
+    return ok([{ id: 'service', label: 'Fanatec driver settings (registry)',
+      from: 'HKEY_CURRENT_USER\\Software\\Endor\\FanatecService', data }]);
+  },
+});
+```
+
+- Suggestions become tracked items only when the user adds them; a full backup then includes them. `backup:backUp` with scope `{ kind: 'game', gameId }` (the `backup.gameFiles` fix) backs up everything a game's module and sources suggest without tracking anything.
+- `records` are stored in every full backup under `records/` and listed in the backup and on the restore screen as "Kept as a record": readable, never restored (the registry port is read-only).
+- Before a restore (and before a snapshot is put back) the backup feature looks for running programs that hold the files it would write: game modules by `processes` / `closeBeforeRestore`, sources by `program`, matched by the item's `game` or by its path lying in the game's `configLocations` / `trackedFiles` or the source's suggestions. The restore is refused with the name and the reason; with `closePrograms: true` it asks each one to close (`ports.processes.close`, never forced), restores, and starts the ones marked `restart` again. Nothing for a feature to call: declare the facts and the restore screen does the rest.
 
 ## 6. Ports: what `ctx.ports` gives you
 
@@ -237,13 +272,15 @@ In a scenario run of the real app (e2e, `dev:scenario`) everything is fake excep
 | `list(dir)`, `listEntries(dir)` | names; entries with metadata. A missing folder is empty, not an error |
 | `listTree(dir, { include, exclude, maxEntries })` | every file below, with `relativePath` (forward slashes). Globs: `*.lua` matches a name at any depth, `Config/Input/**` a subtree, `Config/*.lua` one level; case-insensitive; exclude wins |
 | `mkdir(dir)` | not journaled |
-| `write(path, content, { reason, group? })` | text or bytes. Outside the data root: backup, journal entry returned. Inside: plain write, returns null |
+| `write(path, content, { reason, group?, journal? })` | text or bytes. Outside the data root: backup, journal entry returned. Inside: plain write, returns null, unless `journal: true` (a file inside the data root that an undo should cover, e.g. the setup an import creates). A change made without a `group` is a journal group of its own, named by its `reason`: every journal entry carries `groupId` and `groupReason`, and the Safety page lists every change as an action |
 | `copy(from, to, opts)`, `move(from, to, opts)`, `remove(path, opts)` | journaled like `write`; `move` is a write plus a remove in one group |
 | `copyTree(fromDir, toDir, { reason, group?, include, exclude })` | one group for the whole copy |
 | `beginGroup(reason)` | pass the returned group to every change of one user action |
 | `journal()`, `journalGroups()` | newest first |
 | `undo(entryId, { force })`, `undoGroup(groupId, { force })` | fails with `journal.changed` when a file was modified since, unless forced; the undo is itself journaled |
 | `prune({ days, groups })`, `backupBytes()` | used by the shell at startup and the Safety page |
+
+Preview (`src/core/files/preview.ts`): `previewWrites(files, planned)` takes the writes a feature is about to make (`{ path, content }`, `{ path, content, from }` for a rename, `{ path, remove: true }`) and says, without writing, what each one does to the file on disk: `created`, `modified` (with a one-line summary: lines added and removed for text, sizes for binary), `renamed`, `deleted` or `unchanged`, with sizes and a one-line total ("2 files modified, 1 file created"). Use it for the "this is what will change" list before any user-triggered write outside the data root, then apply the same plan under one `beginGroup()`. The racing restore and the BeamNG older-bindings copy are the examples (`racing:restorePreview`, `racing:beamngCopyOlderPreview`).
 
 Zip (`src/core/files/zip.ts`): `createZip(entries)`, `readZip(bytes, { maxTotalBytes, maxEntries })`, `zipFolder(files, dir, { include, exclude, prefix })`, `extractZip(files, bytes, destDir, { reason, group?, maxTotalBytes })`. Unsafe entry names (absolute, drive letters, `..`) fail the whole archive before anything is written; extraction goes through FileStore as one group. Use the import cap from the settings: `settings.importMaxMegabytes * 1024 * 1024`.
 
@@ -257,6 +294,8 @@ Zip (`src/core/files/zip.ts`): `createZip(entries)`, `readZip(bytes, { maxTotalB
 | `core/profile/schema.ts` | `profileExtension(profile, '<feature>', schema)` and `withProfileExtension(profile, '<feature>', value)`: your feature's per-profile data lives in `profile.extensions[<feature id>]`, validated by your schema. Do not add fields to `ProfileSchema`. |
 | `core/pathVariables.ts` | `allPathVariables(ctx, ctx.games)` -> `{ USER, DOCUMENTS, SAVED_GAMES, APPDATA, LOCALAPPDATA, PROGRAM_FILES, PROGRAM_FILES_X86, RIGREADY_HOME, STEAM?, DCS_USER?, DCS_INSTALL?, ... }`; `expandPath('{DCS_USER}/Config/options.lua', vars)`; `collapsePath(absolute, vars)` (longest match wins). Store paths in the collapsed form in profiles, backups and shared files. |
 | `core/paths.ts` | `isWithin`, `resolveAllowedPath`, `allowedRoots(ports)`. |
+| `core/backupSources.ts` | `ctx.backupSources.register(source)`: what a tool suggests backing up, the program that holds those files, and records (section 5). |
+| `core/tracked.ts` | `resolveTrackedItem(files, item, variables)`: where a tracked item is on this PC and which files it covers now (credentials withheld); `trackedFileTarget`. `TrackedItemSchema`, `BACKUP_EXTENSION` for a profile's tracked items. |
 | `core/steam.ts` | `readSteamApp(ports, appId)` / `listSteamApps(ports)` -> `{ installDir, buildId, targetBuildId?, lastUpdated?, stateFlags, updatePending }`; `steamRoot(registry)`. |
 | `core/directInput.ts` | `readDirectInputIdentities(ports.registry)` -> per VID/PID: product name (the name in DCS file names), product GUID, instance GUID per calibration slot; `identityForDevice`, `identityForGuid`, `dcsGuidText` (DCS's casing), `sameGuid`, `guidFromBytes`. For the controllers attached now, `ports.input.start()` gives the live instance GUID. |
 | `core/lua/data.ts` | `parseLuaData(text)` / `writeLuaDocument(doc)` for DCS data files (binding diffs, `options.lua`, `appSettings.lua`): an unchanged file is written back byte for byte. `LuaTable` keeps order and key types (`get`, `set`, `table`, `list`, `toJs`, `LuaTable.from(plain)`). Anything that is not table data fails with a line number. |
@@ -337,6 +376,8 @@ Quote ids that YAML would read as numbers (`'4098'`, `'17E9'`). A mutation that 
 | `setSteamBuild` | `appId`, `buildId?`, `stateFlags?` (6 = update required), `targetBuildId?`, `lastUpdated?` | Edits the game's `appmanifest_<appId>.acf` |
 
 HidHide is queried the way the real one is: `ports.shell.run(<HidHideCLI.exe>, ['--cloak-state', '--inv-state', '--dev-list', '--app-list', '--cancel'])` answers `--cloak-on|off`, `--inv-on|off`, `--dev-hide "<HID path>"` and `--app-reg "<exe>"` lines; `--dev-gaming` answers the recorded JSON. Always end read-only queries with `--cancel` (the real CLI saves on exit otherwise). The `--dev-hide` line format is inferred: nothing was hidden on the rig when it was recorded.
+
+Backup and sharing scenarios added later: `backup-racing` (racing rig with TrackIR files, nothing tracked), `backup-game-updated` (a setup whose game-updated check has the "Back up now" fix), `share-old-ids` (a squadron setup whose binding files carry another PC's device IDs).
 
 Existing scenarios: `desk-mfds-wrong` (the rig exactly as recorded), `flying-fresh` (known-good flying layout, no setups), `flying-all-good`, `flying-pedals-unplugged`, `flying-mfd-rotated`, `flying-trackir-not-running`, `flying-optional-missing`, `racing-fresh`, `app-old-backups`. Add your own file, prefixed with your feature (`audio-wrong-default.yaml`); do not change existing ones or `fixtures/rigs/`. Put helper files next to it under `fixtures/scenarios/data/<feature>/` and profiles under `fixtures/scenarios/profiles/`.
 

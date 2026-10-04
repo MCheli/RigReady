@@ -8,7 +8,7 @@ import type { PrivacyContext } from './privacy';
 
 export type Ctx = Pick<
   MainContext,
-  'ports' | 'log' | 'profiles' | 'settings' | 'layouts' | 'games'
+  'ports' | 'log' | 'profiles' | 'settings' | 'layouts' | 'games' | 'checks'
 >;
 
 export const BUNDLE_EXTENSION = 'rigready';
@@ -17,7 +17,7 @@ export const BUNDLE_FILTER = [{ name: 'RigReady shared setup', extensions: [BUND
 const Sha = z.string().regex(/^[0-9a-f]{64}$/);
 
 export const StrippedSchema = z.object({
-  kind: z.enum(['launch', 'check', 'fix']),
+  kind: z.enum(['launch', 'check', 'fix', 'action']),
   name: z.string().max(300),
   description: z.string().max(500),
 });

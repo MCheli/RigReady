@@ -11,7 +11,7 @@ import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { ExportReviewView, ImportReportView, ImportResultView } from '../contract';
 import { validateBundle } from './importer';
 import { expandTokens, Scanner } from './privacy';
-import { stripRunnable } from './strip';
+import { requireConfirmation, stripRunnable } from './strip';
 
 let apps: WiredApp[] = [];
 afterEach(async () => {
@@ -343,15 +343,119 @@ describe('importing a shared setup', () => {
     if (!profile.ok) throw new Error('not imported');
     expect(profile.value.launch).toBeUndefined();
     const mfd = profile.value.checks.find((c) => c.params['productId'] === 'BEE0')!;
-    expect(mfd).toMatchObject({ required: false, title: 'WINWING MFD1-C (device not found)' });
-    expect(profile.value.checks.find((c) => c.title === 'TrackIR 5')!.required).toBe(true);
+    // Not dropped and not made optional: switched off, and flagged.
+    expect(mfd).toMatchObject({
+      disabled: true,
+      required: true,
+      title: 'WINWING MFD1-C (device not found)',
+    });
+    expect(result.switchedOff).toContain('WINWING MFD1-C (device not found)');
+    const trackIr = profile.value.checks.find((c) => c.title === 'TrackIR 5')!;
+    expect(trackIr.required).toBe(true);
+    expect(trackIr.disabled).toBeUndefined();
 
     const groups = await friend.ports.files.journalGroups();
     const group = groups.ok ? groups.value.find((g) => g.id === result.groupId) : undefined;
     expect(group?.reason).toBe('Import shared setup "DCS F/A-18C"');
-    expect(group?.entries.length).toBe(result.written.length);
+    // The files and the setup the import created are one action.
+    expect(group?.entries.length).toBe(result.written.length + 1);
     await friend.invoke('safety:undo', { groupId: result.groupId });
     await expect(fs.access(dcsUser(friend, 'Scripts', 'Hooks.lua'))).rejects.toThrow();
+    expect(await friend.wiring.context.profiles.get(result.profileId!)).toMatchObject({
+      ok: false,
+      error: { code: 'profile.missing' },
+    });
+  });
+
+  it('checks for devices that are not here are switched off: shown as off, never failed, never passed', async () => {
+    const file = await shared();
+    const friend = await start('racing-fresh', ['Saved Games/DCS/Config/**']);
+    const report = await open(friend, file);
+    expect(report.parts[0]!.detail).toMatch(
+      /for devices not found here are kept, switched off and marked "device not found"/
+    );
+    const result = await friend.invoke<ImportResultView>('sharing:import', {
+      importId: report.importId,
+      parts: ['profile'],
+    });
+    expect(result.switchedOff.length).toBeGreaterThan(5);
+    const checked = await friend.invoke<{
+      failed: number;
+      results: { title: string; status: string; disabled?: boolean; required: boolean }[];
+    }>('fly:check', { profileId: result.profileId });
+    const off = checked.results.filter((r) => r.disabled);
+    expect(off.map((r) => r.title).sort()).toEqual([...result.switchedOff].sort());
+    expect(off.every((r) => r.title.endsWith('(device not found)') && !r.required)).toBe(true);
+    // None of the missing WinWing gear makes the imported setup Not ready.
+    const failing = checked.results.filter((r) => r.status === 'fail' || r.status === 'error');
+    expect(failing.some((r) => r.title.includes('WINWING'))).toBe(false);
+  });
+
+  it('undoing an import takes back the files and removes the setup it created', async () => {
+    const file = await shared();
+    const friend = await start('racing-fresh', ['Saved Games/DCS/Config/**']);
+    const before = (await friend.wiring.context.profiles.list()) as { value: Profile[] };
+    const report = await open(friend, file);
+    const result = await friend.invoke<ImportResultView>('sharing:import', {
+      importId: report.importId,
+      parts: ['profile', 'group:1'],
+    });
+    const setupFile = path.join(
+      friend.ports.folders.dataRoot(),
+      'profiles',
+      `${result.profileId}.yaml`
+    );
+    // The setup is saved and loads; the journal holds it as a file the import created.
+    expect((await friend.wiring.context.profiles.get(result.profileId!)).ok).toBe(true);
+    const groups = await friend.ports.files.journalGroups();
+    const group = groups.ok ? groups.value.find((g) => g.id === result.groupId)! : undefined;
+    expect(group!.entries.find((e) => e.path === setupFile)).toMatchObject({
+      action: 'write',
+      backupPath: null,
+    });
+
+    const undone = await friend.invoke<{ files: number; setupRemoved: boolean }>(
+      'sharing:undoImport',
+      { groupId: result.groupId }
+    );
+    expect(undone).toEqual({ files: result.written.length, setupRemoved: true });
+    await expect(fs.access(setupFile)).rejects.toThrow();
+    await expect(fs.access(dcsUser(friend, 'Scripts', 'Hooks.lua'))).rejects.toThrow();
+    const after = await friend.wiring.context.profiles.list();
+    expect(after.ok && after.value.map((p) => p.id)).toEqual(before.value.map((p) => p.id));
+    await expect(friend.invoke('sharing:undoImport', { groupId: result.groupId })).rejects.toThrow(
+      /already been undone/
+    );
+    await expect(friend.invoke('sharing:undoImport', { groupId: 'nope' })).rejects.toThrow(
+      /no longer in the change journal/
+    );
+  });
+
+  it('a setup imported on its own can be undone too, and asks first when it was edited since', async () => {
+    const file = await shared();
+    const friend = await start('racing-fresh', ['Saved Games/DCS/Config/**']);
+    const report = await open(friend, file);
+    const result = await friend.invoke<ImportResultView>('sharing:import', {
+      importId: report.importId,
+      parts: ['profile'],
+    });
+    expect(result.written).toEqual([]);
+    expect(result.groupId).toBeDefined();
+    // The user renames the imported setup, then undoes the import.
+    const { profiles } = friend.wiring.context;
+    const loaded = await profiles.get(result.profileId!);
+    if (!loaded.ok) throw new Error('not imported');
+    await profiles.save({ ...loaded.value, name: 'Hornet from Alex' });
+    await expect(friend.invoke('sharing:undoImport', { groupId: result.groupId })).rejects.toThrow(
+      /journal\.changed .*was changed again after this/
+    );
+    expect((await profiles.get(result.profileId!)).ok).toBe(true);
+    const forced = await friend.invoke<{ files: number; setupRemoved: boolean }>(
+      'sharing:undoImport',
+      { groupId: result.groupId, force: true }
+    );
+    expect(forced).toEqual({ files: 0, setupRemoved: true });
+    expect((await profiles.get(result.profileId!)).ok).toBe(false);
   });
 
   it('keep both adds shared copies next to differing files; a second import of a setup gets its own name', async () => {
@@ -530,7 +634,29 @@ describe('hostile .rigready files', () => {
           params: { name: 'helper.exe' },
           remediation: { type: 'process.launch', params: { exe: 'C:\\evil\\helper.exe' } },
         },
+        {
+          id: 'c',
+          type: 'process.running',
+          title: 'Quiet helper',
+          params: { name: 'quiet.exe' },
+          // A fix type this version does not know, set up to run without asking.
+          remediation: { type: 'vendor.tool', params: { requiresConfirmation: false, mode: 'x' } },
+        },
       ],
+      actions: {
+        preLaunch: [
+          { id: 'p1', title: 'Warm up', type: 'script.run', params: { exe: 'C:\\x\\warmup.cmd' } },
+          {
+            id: 'p2',
+            title: 'Desk lamp',
+            type: 'vendor.lamp',
+            params: { requiresConfirmation: false },
+          },
+        ],
+        standDown: [
+          { id: 's1', title: 'Clean up', type: 'process.launch', params: { exe: 'cleanup.exe' } },
+        ],
+      },
     });
     const report = await offer(
       app,
@@ -557,6 +683,18 @@ describe('hostile .rigready files', () => {
       { kind: 'launch', name: 'cmd.exe', description: 'Launch cmd.exe /c del C:\\', inFile: true },
       { kind: 'check', name: 'payload.ps1', description: 'Totally harmless', inFile: true },
       { kind: 'fix', name: 'helper.exe', description: 'Fix for "Helper"', inFile: true },
+      {
+        kind: 'action',
+        name: 'warmup.cmd',
+        description: 'Step before launch: Warm up',
+        inFile: true,
+      },
+      {
+        kind: 'action',
+        name: 'cleanup.exe',
+        description: 'Step at Stand down: Clean up',
+        inFile: true,
+      },
     ]);
     const parts = Object.fromEntries(report.parts.map((p) => [p.id, p]));
     expect(parts['group:0']).toMatchObject({
@@ -583,8 +721,19 @@ describe('hostile .rigready files', () => {
     const profile = await app.wiring.context.profiles.get(result.profileId!);
     if (!profile.ok) throw new Error('not imported');
     expect(profile.value.launch).toBeUndefined();
-    expect(profile.value.checks.map((c) => c.id)).toEqual(['b']);
+    expect(profile.value.checks.map((c) => c.id)).toEqual(['b', 'c']);
     expect(profile.value.checks[0]!.remediation).toBeUndefined();
+    // No step that runs a program came in; what is left asks before it could ever run.
+    expect(profile.value.actions).toMatchObject({
+      preLaunch: [{ id: 'p2', type: 'vendor.lamp', params: { requiresConfirmation: true } }],
+      postLaunch: [],
+      standDown: [],
+    });
+    expect(profile.value.checks[1]!.remediation).toEqual({
+      type: 'vendor.tool',
+      params: { requiresConfirmation: true, mode: 'x' },
+    });
+    expect(yaml.dump(profile.value)).not.toMatch(/warmup|cleanup|cmd\.exe|evil|payload/);
   });
 });
 
@@ -618,6 +767,123 @@ describe('privacy helpers', () => {
     const { profile: clean, stripped } = stripRunnable(profile);
     expect(clean.checks.map((c) => c.id)).toEqual(['1', '3']);
     expect(stripped).toEqual([{ kind: 'check', name: 'runScript', description: 'Custom' }]);
+  });
+
+  it('strips the steps around a launch that run something, and names each one', () => {
+    const profile: Profile = {
+      schemaVersion: 1,
+      id: 'p',
+      name: 'P',
+      createdAt: 'a',
+      updatedAt: 'b',
+      extensions: {},
+      checks: [],
+      actions: {
+        preLaunch: [
+          {
+            id: 'a',
+            title: 'Start SRS',
+            type: 'process.launch',
+            params: { exe: 'C:\\SRS\\SR-ClientRadio.exe', args: [] },
+            continueOnError: true,
+            delaySeconds: 0,
+          },
+          {
+            id: 'b',
+            title: 'Flying monitors',
+            type: 'displays.applyLayout',
+            params: { layoutId: 'flying' },
+            continueOnError: true,
+            delaySeconds: 0,
+          },
+        ],
+        postLaunch: [
+          {
+            id: 'c',
+            title: 'Kneeboard sync',
+            type: 'script.run',
+            params: { exe: '{USER}/Scripts/sync.ps1', args: ['-Quiet'] },
+            continueOnError: true,
+            delaySeconds: 5,
+          },
+        ],
+        standDown: [],
+      },
+    };
+    const { profile: clean, stripped } = stripRunnable(profile);
+    expect(clean.actions).toEqual({
+      preLaunch: [profile.actions!.preLaunch[1]],
+      postLaunch: [],
+      standDown: [],
+    });
+    expect(stripped).toEqual([
+      { kind: 'action', name: 'SR-ClientRadio.exe', description: 'Step before launch: Start SRS' },
+      { kind: 'action', name: 'sync.ps1', description: 'Step after launch: Kneeboard sync' },
+    ]);
+    // A setup without steps stays without them.
+    expect(stripRunnable({ ...profile, actions: undefined }).profile).not.toHaveProperty('actions');
+  });
+
+  it('whatever could still run after stripping is locked to ask first', () => {
+    const profile: Profile = {
+      schemaVersion: 1,
+      id: 'p',
+      name: 'P',
+      createdAt: 'a',
+      updatedAt: 'b',
+      extensions: {},
+      checks: [
+        {
+          id: '1',
+          type: 'file.content',
+          title: 'Options',
+          required: true,
+          params: {},
+          // Kept on purpose here: the lock must hold even if a script fix got this far.
+          remediation: {
+            type: 'script.run',
+            params: { exe: 'set-mfds.cmd', requiresConfirmation: false },
+          },
+        },
+        {
+          id: '2',
+          type: 'process.running',
+          title: 'TrackIR',
+          required: true,
+          params: {},
+          remediation: { type: 'trackir.start', params: {} },
+        },
+        { id: '3', type: 'device.connected', title: 'Stick', required: true, params: {} },
+      ],
+      actions: {
+        preLaunch: [
+          {
+            id: 'a',
+            title: 'Tool',
+            type: 'future.tool',
+            params: {},
+            continueOnError: true,
+            delaySeconds: 0,
+          },
+        ],
+        postLaunch: [],
+        standDown: [],
+      },
+    };
+    const { profile: locked, forced } = requireConfirmation(
+      profile,
+      (type) => type === 'future.tool'
+    );
+    expect(forced).toBe(2);
+    expect(locked.checks[0]!.remediation!.params).toEqual({
+      exe: 'set-mfds.cmd',
+      requiresConfirmation: true,
+    });
+    // A fix that runs nothing and has no such setting is left exactly as it is.
+    expect(locked.checks[1]!.remediation).toEqual({ type: 'trackir.start', params: {} });
+    expect(locked.checks[2]).toEqual(profile.checks[2]);
+    expect(locked.actions!.preLaunch[0]!.params).toEqual({ requiresConfirmation: true });
+    expect(requireConfirmation(locked, () => false).forced).toBe(0);
   });
 
   it('a user name inside a kept path is part of the path, and tokens expand per spelling', () => {

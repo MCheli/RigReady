@@ -346,6 +346,7 @@ describe('the generic editor form', () => {
       'checks[].remediation.type': 'edit-fix-type',
       'checks[].remediation.params': 'edit-fix-params',
       'checks[].timeoutSeconds': 'edit-check-timeout',
+      'checks[].disabled': 'edit-check-disabled',
       'launch.exe': 'edit-launch',
       'launch.args[]': 'edit-launch',
       'launch.cwd': 'edit-launch',

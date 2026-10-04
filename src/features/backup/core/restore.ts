@@ -610,7 +610,7 @@ export async function applyRestore(
   if (unmatched.length > 0) {
     report.deviceIds = {
       files: unmatched,
-      message: `${unmatched.length} restored binding ${unmatched.length === 1 ? 'file is' : 'files are'} for controllers with device IDs this PC does not use. DCS ignores them until the IDs are moved to the controllers attached here: open the bindings repair for DCS and let it match the devices.`,
+      message: `${unmatched.length} restored binding ${unmatched.length === 1 ? 'file is' : 'files are'} for controllers with device IDs this PC does not use. DCS ignores them until they are moved to the IDs of the controllers attached here. Bindings → Device IDs shows which can be moved and moves them, with a preview.`,
     };
   }
   ctx.log.info(`restored ${id}`, {

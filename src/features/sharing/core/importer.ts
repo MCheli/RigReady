@@ -20,7 +20,7 @@ import {
 } from './bundle';
 import { compareWithMachine, type CompatibilityReport } from './compat';
 import { expandTokens } from './privacy';
-import { stripRunnable, type StrippedItem } from './strip';
+import { requireConfirmation, stripRunnable, type StrippedItem } from './strip';
 
 const LayoutSchema = z.object({
   name: z.string().min(1).max(60),
@@ -199,7 +199,7 @@ async function plan(ctx: Ctx, bundle: OpenedBundle): Promise<Plan[]> {
         detail:
           `${bundle.profile.checks.length} checks` +
           (missing.length
-            ? `; ${missing.length} for devices not found here are kept as optional and marked "device not found"`
+            ? `; ${missing.length} for devices not found here are kept, switched off and marked "device not found"`
             : ''),
         importable: true,
       },
@@ -346,7 +346,12 @@ export interface ImportResult {
   failed: { label: string; reason: string }[];
   groupId?: string;
   deviceIds?: { files: string[]; message: string };
+  /** Checks for devices not found on this PC: imported switched off, by title. */
+  switchedOff: string[];
 }
+
+const profileFile = (ctx: Ctx, id: string): string =>
+  path.join(ctx.ports.folders.dataRoot(), 'profiles', `${id}.yaml`);
 
 const GUID_FILE = /\{([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\}\.diff\.lua$/i;
 
@@ -366,6 +371,7 @@ export async function applyImport(
     written: [],
     unchanged: [],
     failed: [],
+    switchedOff: [],
   };
   const roots = await importRoots(ctx);
   const group = ctx.ports.files.beginGroup(`Import shared setup "${bundle.manifest.name}"`);
@@ -418,15 +424,19 @@ export async function applyImport(
       result.written.push(target);
     }
   }
-  if (result.written.length > 0) result.groupId = group.id;
+  let journaled = result.written.length > 0;
 
   if (parts.includes('profile')) {
     const saved = await importProfile(ctx, bundle);
     if (saved.ok) {
       result.profileId = saved.value.id;
       result.profileName = saved.value.name;
+      result.switchedOff = saved.value.checks.filter((c) => c.disabled).map((c) => c.title);
+      // The new setup belongs to the import: undoing the import removes it too.
+      if (await adoptProfile(ctx, saved.value.id, group)) journaled = true;
     } else result.failed.push({ label: 'Setup', reason: saved.error.message });
   }
+  if (journaled) result.groupId = group.id;
   if (parts.includes('layout') && bundle.layout) {
     const existing = await ctx.layouts.list();
     const taken =
@@ -451,7 +461,7 @@ export async function applyImport(
     if (unmatched.length > 0) {
       result.deviceIds = {
         files: unmatched,
-        message: `${unmatched.length} imported binding ${unmatched.length === 1 ? 'file is' : 'files are'} for controllers with device IDs this PC does not use. DCS ignores them until the IDs are moved to your controllers: open the bindings repair for DCS and let it match the devices.`,
+        message: `${unmatched.length} imported binding ${unmatched.length === 1 ? 'file is' : 'files are'} for controllers with device IDs this PC does not use. DCS ignores them until they are moved to the IDs of the controllers attached here. Bindings → Device IDs shows which can be moved and moves them, with a preview.`,
       };
     }
   }
@@ -463,6 +473,58 @@ export async function applyImport(
   return ok(result);
 }
 
+/**
+ * Makes the setup file an import created part of the import's journal group, as a file
+ * that did not exist before: the file just saved is written again through the journal,
+ * so that undoing the group removes it. False when that could not be done (the setup
+ * stays; only the undo will not cover it).
+ */
+async function adoptProfile(
+  ctx: Ctx,
+  id: string,
+  group: { id: string; reason: string }
+): Promise<boolean> {
+  const file = profileFile(ctx, id);
+  const bytes = await ctx.ports.files.readBytes(file);
+  if (!bytes.ok) return false;
+  const removed = await ctx.ports.files.remove(file, { reason: group.reason });
+  if (!removed.ok) return false;
+  const written = await ctx.ports.files.write(file, bytes.value, {
+    reason: group.reason,
+    group,
+    journal: true,
+  });
+  if (!written.ok) {
+    // Put the setup back as it was saved: it must not be lost to bookkeeping.
+    await ctx.ports.files.write(file, bytes.value, { reason: group.reason });
+    return false;
+  }
+  return true;
+}
+
+/** Undoes an import: its files are put back and the setup it created is removed. */
+export async function undoImport(
+  ctx: Ctx,
+  groupId: string,
+  force: boolean
+): Promise<Result<{ files: number; setupRemoved: boolean }>> {
+  const groups = await ctx.ports.files.journalGroups();
+  if (!groups.ok) return groups;
+  const group = groups.value.find((g) => g.id === groupId);
+  if (!group || !group.reason.startsWith('Import shared setup')) {
+    return err('share.undo', 'That import is no longer in the change journal.');
+  }
+  const undone = await ctx.ports.files.undoGroup(groupId, { force });
+  if (!undone.ok) return undone;
+  const profiles = path.join(ctx.ports.folders.dataRoot(), 'profiles');
+  const setups = undone.value.entries.filter((e) => isWithin(profiles, e.path));
+  let setupRemoved = false;
+  for (const entry of setups) {
+    if (!(await ctx.ports.files.exists(entry.path))) setupRemoved = true;
+  }
+  return ok({ files: undone.value.entries.length - setups.length, setupRemoved });
+}
+
 async function importProfile(ctx: Ctx, bundle: OpenedBundle): Promise<Result<Profile>> {
   const existing = await ctx.profiles.list();
   const names = new Set((existing.ok ? existing.value : []).map((p) => p.name.toLowerCase()));
@@ -472,7 +534,11 @@ async function importProfile(ctx: Ctx, bundle: OpenedBundle): Promise<Result<Pro
   const devices = await ctx.ports.devices.list();
   const present = devices.ok ? devices.value : [];
   const now = ctx.ports.clock.now().toISOString();
-  const { profile: clean } = stripRunnable(bundle.profile);
+  // Stripped once more, then locked: whatever could still run asks first, always.
+  const { profile: clean } = requireConfirmation(
+    stripRunnable(bundle.profile).profile,
+    (type) => ctx.checks.remediation(type)?.confirm !== undefined
+  );
   const profile: Profile = {
     ...clean,
     id: await ctx.profiles.uniqueId(name),
@@ -486,9 +552,11 @@ async function importProfile(ctx: Ctx, bundle: OpenedBundle): Promise<Result<Pro
       const here = present.some(
         (d) => d.vendorId === v.toUpperCase() && d.productId === p.toUpperCase()
       );
+      // Not dropped: switched off, so the setup can be Ready here and the check is one
+      // click away when the device arrives.
       return here
         ? check
-        : { ...check, required: false, title: `${check.title} (device not found)`.slice(0, 200) };
+        : { ...check, disabled: true, title: `${check.title} (device not found)`.slice(0, 200) };
     }),
   };
   const saved = await ctx.profiles.save(profile);

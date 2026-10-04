@@ -12,10 +12,36 @@ const error = ref<string>();
 const opening = ref(false);
 const importing = ref(false);
 const result = ref<ImportResultView>();
+/** Undoing the import just made: what happened, or the question when files changed since. */
+const undone = ref<{ files: number; setupRemoved: boolean }>();
+const undoing = ref(false);
+const undoQuestion = ref<string>();
+
+async function undo(force = false): Promise<void> {
+  const groupId = result.value?.groupId;
+  if (!groupId) return;
+  error.value = undefined;
+  undoing.value = true;
+  const done = await api.undoImport({ groupId, force });
+  undoing.value = false;
+  if (!done.ok) {
+    if (done.error.code === 'journal.changed' && !force) {
+      undoQuestion.value = errorText(done.error);
+      return;
+    }
+    error.value = errorText(done.error);
+    return;
+  }
+  undoQuestion.value = undefined;
+  undone.value = done.value;
+  notifyMachineChanged();
+}
 
 async function open(): Promise<void> {
   error.value = undefined;
   result.value = undefined;
+  undone.value = undefined;
+  undoQuestion.value = undefined;
   opening.value = true;
   const opened = await api.openImport();
   opening.value = false;
@@ -52,6 +78,7 @@ async function runImport(): Promise<void> {
     return;
   }
   result.value = done.value;
+  undone.value = undefined;
   notifyMachineChanged();
 }
 
@@ -106,35 +133,86 @@ const when = (iso: string): string => {
             ({{ result.unchanged.length }} were already the same)</template
           >.
           <template v-if="result.groupId"
-            >The Safety page can undo the file changes in one step.</template
+            >Undo takes all of it back in one step: the files and the setup.</template
           >
         </div>
+        <div v-if="result.switchedOff.length" class="rr-row-sub" data-testid="import-switched-off">
+          {{ result.switchedOff.length }}
+          {{ result.switchedOff.length === 1 ? 'check is' : 'checks are' }} for devices not found on
+          this PC. They were imported switched off, so they do not count until you turn them on in
+          the setup editor: {{ result.switchedOff.join(', ') }}.
+        </div>
+        <div v-if="undone" class="rr-row-sub rr-ok" data-testid="import-undone">
+          <v-icon icon="mdi-undo" size="14" /> Import undone:
+          {{ undone.setupRemoved ? 'the setup was removed' : 'no setup was removed' }}
+          <template v-if="undone.files">
+            and {{ undone.files }} {{ undone.files === 1 ? 'file was' : 'files were' }} put back the
+            way {{ undone.files === 1 ? 'it was' : 'they were' }}</template
+          >.
+        </div>
+        <v-alert
+          v-if="undoQuestion"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mt-3"
+          data-testid="import-undo-question"
+        >
+          {{ undoQuestion }}
+          <div class="mt-2">
+            <v-btn size="small" variant="tonal" data-testid="import-undo-force" @click="undo(true)">
+              Undo anyway
+            </v-btn>
+            <v-btn size="small" variant="text" @click="undoQuestion = undefined">Leave it</v-btn>
+          </div>
+        </v-alert>
         <div v-for="f in result.failed" :key="f.label" class="rr-row-sub rr-bad">
           Not imported: {{ f.label }} — {{ f.reason }}
         </div>
         <div class="done-actions">
           <v-btn
-            v-if="result.profileId"
+            v-if="result.profileId && !undone"
             color="primary"
             to="/configure/profiles"
             data-testid="import-go-setups"
           >
             Go to setups
           </v-btn>
-          <v-btn v-if="result.groupId" variant="tonal" to="/configure/safety">Safety page</v-btn>
+          <v-btn
+            v-if="result.groupId && !undone"
+            variant="tonal"
+            prepend-icon="mdi-undo"
+            :loading="undoing"
+            data-testid="import-undo"
+            @click="undo()"
+          >
+            Undo this import
+          </v-btn>
+          <v-btn v-if="result.groupId" variant="text" to="/configure/safety">Safety page</v-btn>
           <v-btn variant="text" data-testid="import-another" @click="report = undefined">
             Import another
           </v-btn>
         </div>
       </div>
       <v-alert
-        v-if="result.deviceIds"
+        v-if="result.deviceIds && !undone"
         type="warning"
         variant="tonal"
         title="Controllers have different IDs on this PC"
         data-testid="import-device-ids"
       >
         {{ result.deviceIds.message }}
+        <div class="mt-3">
+          <v-btn
+            color="primary"
+            variant="tonal"
+            prepend-icon="mdi-swap-horizontal"
+            to="/configure/dcs-bindings/device-ids"
+            data-testid="import-open-device-ids"
+          >
+            Open Bindings → Device IDs
+          </v-btn>
+        </div>
       </v-alert>
     </template>
 

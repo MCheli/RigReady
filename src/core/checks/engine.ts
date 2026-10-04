@@ -49,6 +49,11 @@ export const CheckResultSchema = z.object({
   output: z.string().optional(),
   /** When this result was produced (ISO). */
   checkedAt: z.string().optional(),
+  /**
+   * The item is switched off in the setup (CheckItem.disabled): it was not checked. Its
+   * status is "pass" only so that it never counts against readiness; show it as "Off".
+   */
+  disabled: z.boolean().optional(),
 });
 export type CheckResult = z.infer<typeof CheckResultSchema>;
 
@@ -155,6 +160,7 @@ export async function runCheckItem(
   ctx: CheckContext,
   options: RunOptions = {}
 ): Promise<CheckResult> {
+  if (item.disabled) return disabledResult(item, registry, ctx);
   const result = await evaluate(item, registry, ctx, options);
   result.checkedAt = ctx.ports.clock.now().toISOString();
   if (registry.check(item.type)?.advisory) result.required = false;
@@ -164,6 +170,22 @@ export async function runCheckItem(
     if (acknowledge) result.acknowledge = acknowledge.label;
   }
   return result;
+}
+
+/** What a switched-off item reports: nothing ran, nothing to fix, never part of readiness. */
+function disabledResult(item: CheckItem, registry: CheckRegistry, ctx: CheckContext): CheckResult {
+  return {
+    itemId: item.id,
+    type: item.type,
+    group: registry.check(item.type)?.group ?? 'other',
+    title: item.title,
+    required: false,
+    status: 'pass',
+    summary: 'Off: not checked',
+    details: [],
+    disabled: true,
+    checkedAt: ctx.ports.clock.now().toISOString(),
+  };
 }
 
 async function evaluate(
@@ -415,7 +437,15 @@ export async function fixItem(
   if (!item) return undefined;
   const definition = item.remediation ? registry.remediation(item.remediation.type) : undefined;
   let step: StepResult;
-  if (!definition) {
+  if (item.disabled) {
+    step = {
+      itemId,
+      title: item.title,
+      ok: false,
+      skipped: true,
+      message: 'This item is switched off in the setup.',
+    };
+  } else if (!definition) {
     step = { itemId, title: item.title, ok: false, message: 'This item has no fix.' };
   } else if ((definition.kind ?? 'action') === 'instructions') {
     step = {
@@ -519,7 +549,7 @@ export async function standDown(
   const ctx = withProfile(baseCtx, profile);
   const steps: StepResult[] = [];
   for (const item of profile.checks) {
-    if (options.skipItems?.has(item.id)) continue;
+    if (options.skipItems?.has(item.id) || item.disabled) continue;
     const definition = registry.check(item.type);
     if (!definition?.standDown) continue;
     const params = definition.params.safeParse(item.params);

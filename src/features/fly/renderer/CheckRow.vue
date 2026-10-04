@@ -19,11 +19,19 @@ const emit = defineEmits<{ recheck: []; fix: []; acknowledge: [] }>();
 const showInstructions = ref(false);
 const showOutput = ref(false);
 
-const status = computed(() => (props.checking || !props.result ? 'checking' : props.result.status));
+const status = computed(() =>
+  props.result?.disabled
+    ? 'off'
+    : props.checking || !props.result
+      ? 'checking'
+      : props.result.status
+);
 const required = computed(() => props.result?.required ?? props.item.required);
 
 const look = computed(() => {
   switch (status.value) {
+    case 'off':
+      return { icon: 'mdi-minus-circle-outline', tone: 'rr-muted', label: 'Off' };
     case 'pass':
       return { icon: 'mdi-check-circle', tone: 'rr-ok', label: 'Passed' };
     case 'fail':
@@ -68,6 +76,7 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
 <template>
   <div
     class="rr-row check-row"
+    :class="{ 'check-off': status === 'off' }"
     data-testid="check-row"
     :data-status="status"
     :data-title="item.title"
@@ -86,7 +95,8 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
     <div class="rr-row-main">
       <div class="rr-row-title">
         {{ item.title }}
-        <span v-if="!required" class="check-chip">optional</span>
+        <span v-if="status === 'off'" class="check-chip" data-testid="check-off">off</span>
+        <span v-else-if="!required" class="check-chip">optional</span>
         <span v-if="status === 'error'" class="check-chip check-chip-error" :class="look.tone"
           >error</span
         >
@@ -96,7 +106,15 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
         :class="status === 'pass' || status === 'checking' ? '' : look.tone"
         data-testid="check-summary"
       >
-        {{ status === 'checking' && !result ? 'Checking…' : result?.summary }}
+        <template v-if="status === 'off'">
+          Off: not checked and not counted. Turn it on in the
+          <router-link :to="`/configure/profiles/${profileId}`" class="check-off-link"
+            >setup editor</router-link
+          >.
+        </template>
+        <template v-else>
+          {{ status === 'checking' && !result ? 'Checking…' : result?.summary }}
+        </template>
       </div>
       <ul v-if="result && result.details.length" class="check-details">
         <li v-for="line in result.details" :key="line">{{ line }}</li>
@@ -288,5 +306,12 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
   background: var(--rr-bg);
   border: 1px solid var(--rr-border);
   border-radius: 6px;
+}
+.check-off .rr-row-title,
+.check-off .rr-row-sub {
+  color: var(--rr-muted);
+}
+.check-off-link {
+  color: inherit;
 }
 </style>

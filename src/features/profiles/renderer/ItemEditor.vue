@@ -172,12 +172,26 @@ function pickService(service: Pickers['services'][number]): void {
     <div class="rr-row-main">
       <div class="item-head">
         <div class="item-head-text">
-          <div class="rr-row-title">{{ item.title }}</div>
+          <div class="rr-row-title" :class="{ 'rr-muted': item.disabled }">{{ item.title }}</div>
           <div class="rr-row-sub">
             {{ type?.label ?? `Unknown type ${item.type}` }}
             <template v-if="fixType"> · fix: {{ fixType.label.toLowerCase() }}</template>
+            <span v-if="item.disabled" data-testid="edit-check-off">
+              · off: not checked, not fixed, not counted</span
+            >
           </div>
         </div>
+        <v-switch
+          :model-value="!item.disabled"
+          :label="item.disabled ? 'Off' : 'On'"
+          color="primary"
+          density="compact"
+          hide-details
+          class="item-enabled"
+          :aria-label="`${item.title}: checked by this setup`"
+          data-testid="edit-check-disabled"
+          @update:model-value="update({ disabled: $event ? undefined : true })"
+        />
         <v-btn-toggle
           :model-value="type?.advisory ? false : item.required"
           mandatory
@@ -429,5 +443,9 @@ function pickService(service: Pickers['services'][number]): void {
 .item-problems {
   margin: 6px 0 0 18px;
   font-size: 12.5px;
+}
+.item-enabled {
+  flex: 0 0 auto;
+  margin-right: 4px;
 }
 </style>

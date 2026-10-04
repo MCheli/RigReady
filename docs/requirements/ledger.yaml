@@ -801,8 +801,19 @@ requirements:
       - "A script fix runs an executable with an argument array and timeout; requiresConfirmation shows a dialog with the exact executable, arguments and working directory before running."
       - "The fix shows exit code and captured output on failure and then re-runs the check (FLY-010)."
       - "Scripts imported from a shared bundle cannot become fixes without the user re-entering the path (SHARE-004)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/checks-generic/core/checks.test.ts#the fix shows the exact command to confirm, runs it, and reports exit codes and output'
+      - 'src/features/fly/core/fly.test.ts#asks before a fix that runs a program: declined is "skipped by you", approved runs, a failure does not stop the rest'
+      - 'src/features/fly/core/fly.test.ts#a fix counts only when its check passes afterwards'
+      - 'src/features/sharing/core/sharing.test.ts#never writes outside known folders and drops runnable parts that were left in the file'
+      - 'src/features/sharing/core/sharing.test.ts#strips the steps around a launch that run something, and names each one'
+      - 'src/features/sharing/core/sharing.test.ts#whatever could still run after stripping is locked to ask first'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified'
+      - 'tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC'
+      - 'artifacts/screens/fly-generic-checks/03-confirm-run.png'
+      - 'artifacts/screens/fly-generic-checks/05-ran-but-still-failing.png'
+      - 'artifacts/screens/share-import/02-report.png'
 
   - id: FIX-006
     title: Show instructions remediation
@@ -2484,8 +2495,22 @@ requirements:
       - "The user ticks which parts to import (profile, display layouts, each config file group); unticked parts are not written."
       - "Imported device checks that have no match here are imported as disabled items flagged 'device not found' rather than dropped."
       - "Imported DCS binding files whose GUIDs do not match local devices are routed through GUID mapping (BIND-DCS-016/017)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/sharing/core/sharing.test.ts#imports only the ticked parts, into this PC''s folders, as one undoable action'
+      - 'src/features/sharing/core/sharing.test.ts#checks for devices that are not here are switched off: shown as off, never failed, never passed'
+      - 'src/features/sharing/core/sharing.test.ts#undoing an import takes back the files and removes the setup it created'
+      - 'tests/unit/disabledChecks.test.ts#is not run, is reported as off, and does not count for readiness'
+      - 'tests/unit/disabledChecks.test.ts#is not fixed by Make ready, by its own fix, or touched by Stand down'
+      - 'tests/e2e/share-selective.e2e.ts#setups: a check switched off in the editor is shown as Off on the Fly screen and does not count'
+      - 'tests/e2e/share-selective.e2e.ts#share: checks for devices a PC does not have are imported switched off, and Undo removes the setup with the files'
+      - 'tests/e2e/share-selective.e2e.ts#share: imported binding files under another PC''s device IDs open Bindings, Device IDs, ready to move'
+      - 'tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC'
+      - 'artifacts/screens/share-import/03-choose.png'
+      - 'artifacts/screens/share-selective-import/01-imported.png'
+      - 'artifacts/screens/share-selective-import/03-missing-devices-are-off.png'
+      - 'artifacts/screens/share-device-ids/01-notice-with-button.png'
+      - 'artifacts/screens/share-device-ids/02-device-ids.png'
 
   - id: SHARE-008
     title: Import never writes outside known folders
