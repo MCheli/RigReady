@@ -67,12 +67,14 @@ import {
   paintBadge,
   statusFromFlyResponse,
   TONE_RGB,
+  trayClick,
   trayMenu,
   trayStatusLine,
   trayTone,
   trayTooltip,
   type TrayMenuItem,
   type TrayStatus,
+  type TrayWindowState,
 } from './trayModel';
 
 /**
@@ -666,7 +668,7 @@ async function start(): Promise<void> {
       `${trayTone(trayStatus) ?? ''} ${trayStatusLine(trayStatus)}`,
       () => ports.taskbar.setOverlay(taskbarOverlay(trayStatus))
     );
-    const tooltip = taskbarTooltip(trayStatus);
+    const tooltip = taskbarTooltip(trayStatus, trayBusy || activity.busy());
     tellTaskbar('the tooltip', tooltip, () => ports.taskbar.setTooltip(tooltip));
     const progress = activity.progress();
     tellTaskbar('the progress bar', JSON.stringify(progress), () =>
@@ -685,7 +687,7 @@ async function start(): Promise<void> {
   function refreshTray(): void {
     refreshTaskbar();
     if (!tray) return;
-    tray.setToolTip(trayTooltip(trayStatus));
+    tray.setToolTip(trayTooltip(trayStatus, trayBusy));
     tray.setImage(trayImage(trayTone(trayStatus)));
     tray.setContextMenu(Menu.buildFromTemplate(trayTemplate(trayMenu(trayStatus, trayBusy))));
   }
@@ -694,11 +696,18 @@ async function start(): Promise<void> {
     // Scenario runs only: lets an end-to-end test read and use the tray like a user would.
     const hooks = globalThis as unknown as Record<string, unknown>;
     hooks['__rigreadyTray'] = () => ({
-      tooltip: trayTooltip(trayStatus),
+      tooltip: trayTooltip(trayStatus, trayBusy),
       tone: trayTone(trayStatus) ?? null,
       menu: trayMenu(trayStatus, trayBusy),
       notifications: fake.notifications.sent,
+      // How often a click put the window away, and whether one is about to.
+      hides: trayHides,
+      hidePending: trayHideTimer !== undefined,
     });
+    // A click or a double-click on the tray icon; `inFront` says the window was the one in
+    // front (a test cannot rely on which window Windows has in front).
+    hooks['__rigreadyTrayIcon'] = (kind: 'click' | 'double-click', inFront?: boolean) =>
+      onTrayIcon(kind, inFront === undefined ? {} : { inFront });
     hooks['__rigreadyClipboard'] = () => fake.clipboard.copied;
     // What a command did, and every program the fake machine was asked to start.
     hooks['__rigreadyCommand'] = () => ({
@@ -744,9 +753,37 @@ async function start(): Promise<void> {
     `features: ${wiring.features.map((f) => f.id).join(', ')}; ${wiring.handlers.size} channels`
   );
 
+  // ---- the tray icon itself: a double-click opens RigReady, one click does the sensible thing ----
+  /** When the window last stopped being the one in front (a click on the tray takes that away first). */
+  let lastInFront = 0;
+  let trayHides = 0;
+  let trayHideTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Longer than the gap between the two clicks of a double-click. */
+  const DOUBLE_CLICK_MS = 350;
+  const windowState = (): TrayWindowState => ({
+    visible: mainWindow?.isVisible() ?? false,
+    minimized: mainWindow?.isMinimized() ?? false,
+    inFront: (mainWindow?.isFocused() ?? false) || Date.now() - lastInFront < 300,
+  });
+  function onTrayIcon(kind: 'click' | 'double-click', known: Partial<TrayWindowState> = {}): void {
+    clearTimeout(trayHideTimer);
+    trayHideTimer = undefined;
+    if (trayClick(kind, { ...windowState(), ...known }) === 'show') {
+      showWindow();
+      return;
+    }
+    // Putting it away waits a moment: the first click of a double-click must not make it blink.
+    trayHideTimer = setTimeout(() => {
+      trayHideTimer = undefined;
+      trayHides++;
+      mainWindow?.hide();
+    }, DOUBLE_CLICK_MS);
+  }
+
   try {
     tray = new Tray(nativeImage.createFromPath(trayIconPath));
-    tray.on('click', showWindow);
+    tray.on('click', () => onTrayIcon('click'));
+    tray.on('double-click', () => onTrayIcon('double-click'));
     refreshTray();
     // Fill in the setup name before the window has asked for it (started hidden at login).
     void call('fly:state');
@@ -778,6 +815,7 @@ async function start(): Promise<void> {
     mainWindow?.hide();
   });
   mainWindow.on('closed', () => (mainWindow = undefined));
+  mainWindow.on('blur', () => (lastInFront = Date.now()));
 
   // In the tray with the window hidden, memory RigReady is not using goes back to Windows.
   const trimmer = new TrayMemoryTrimmer(() => {

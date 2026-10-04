@@ -4233,6 +4233,26 @@ requirements:
       - "artifacts/screens/taskbar-button/02-pictures.png"
       - "artifacts/screens/taskbar-button/01-not-ready.png"
 
+  - id: WOW-WIN-006
+    title: Tray icon says what is wrong; a double-click opens, one click does the sensible thing
+    job: fly
+    area: one-click
+    priority: p2
+    done_means:
+      - "The tray tooltip names the setup, its state and what is not met by name: 'RigReady - DCS F/A-18C: Not ready (1 problem): TrackIR5', 'RigReady - DCS F/A-18C: Ready (1 warning): Stream Deck XL'. More names than fit are counted ('and 10 more'); it is never longer than the 127 characters Windows shows. While Make ready, Launch or Stand down runs it says 'working...'."
+      - "A double-click on the tray icon always opens the window."
+      - "One click brings the window out when it is hidden in the tray, minimized, or behind another window, and puts it away when it is the window in front. The first click of a double-click does not make the window blink: putting it away waits for longer than the gap between the two clicks."
+    notes:
+      - "2026-10-04: decision on 'one click does the sensible thing': show or hide the window, never run anything. A click that started Make ready would rearrange the monitors on an accidental click, and the menu (right-click) already has every action. Whether the window is 'in front' is read from its focus, and from how recently it lost it (the click on the tray takes the focus away first). The pure decision is unit-tested and its wiring is driven in E2E through the scenario hooks; the real icon cannot be clicked from a test, so the order in which Windows delivers a click and a double-click is taken from Electron's source (button down is 'click', the second button down is 'double-click')."
+    status: done
+    evidence:
+      - "tests/unit/tray.test.ts#the tooltip names the setup, its state and what is wrong, within what Windows shows"
+      - "tests/unit/tray.test.ts#what is not met is read from the checklist report, by title"
+      - "tests/unit/tray.test.ts#a double-click on the icon always opens the window; one click brings it out or puts it away"
+      - "tests/e2e/tray.e2e.ts#tray: a double-click on the icon opens the window; one click brings it out, or puts it away when it is in front"
+      - "tests/e2e/tray.e2e.ts#tray: shows readiness as a colour, switches setup, and runs Make ready, Launch and Stand down"
+      - "artifacts/screens/tray-icon/01-ready-with-a-warning.png"
+
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY
   # ---------------------------------------------------------------------------

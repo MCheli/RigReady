@@ -580,6 +580,9 @@ describe('tray model', () => {
       failed: 2,
       warnings: 0,
       fixable: 0,
+      // A report without results names nothing.
+      problems: [],
+      warningNames: [],
     });
     expect(
       statusFromFlyResponse('fly:state', { profiles: [{ id: 'b' }], activeProfileId: 'b' }, status)

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   paintBadge,
+  statusFromFlyResponse,
   TONE_RGB,
   TONE_SHAPE,
+  TOOLTIP_MAX,
+  trayClick,
   trayMenu,
   trayStatusLine,
   trayTone,
@@ -118,5 +121,116 @@ describe('tray', () => {
         .filter((i) => ['makeReady', 'launch', 'standDown', 'setups'].includes(i.id))
         .every((i) => !i.enabled)
     ).toBe(true);
+  });
+
+  it('the tooltip names the setup, its state and what is wrong, within what Windows shows', () => {
+    const base = { profileId: 'a', profileName: 'DCS F/A-18C' };
+    expect(trayTooltip({})).toBe('RigReady - No setup yet');
+    expect(trayTooltip(base)).toBe('RigReady - DCS F/A-18C: not checked yet');
+    expect(trayTooltip({ ...base, ready: true, warnings: 0, problems: [], warningNames: [] })).toBe(
+      'RigReady - DCS F/A-18C: Ready'
+    );
+    expect(
+      trayTooltip({ ...base, ready: false, failed: 2, problems: ['TrackIR5', 'Monitor layout'] })
+    ).toBe('RigReady - DCS F/A-18C: Not ready (2 problems): TrackIR5, Monitor layout');
+    expect(
+      trayTooltip({ ...base, ready: true, warnings: 1, warningNames: ['Stream Deck XL'] })
+    ).toBe('RigReady - DCS F/A-18C: Ready (1 warning): Stream Deck XL');
+    // A warning is not named while something required is missing: that comes first.
+    expect(
+      trayTooltip({
+        ...base,
+        ready: false,
+        failed: 1,
+        warnings: 1,
+        problems: ['T-Pendular-Rudder'],
+        warningNames: ['Stream Deck XL'],
+      })
+    ).toBe('RigReady - DCS F/A-18C: Not ready (1 problem): T-Pendular-Rudder');
+
+    // More than fits: the first ones, and how many more. Never longer than Windows shows.
+    const many = Array.from({ length: 12 }, (_, i) => `WINWING panel number ${i + 1}`);
+    const long = trayTooltip({ ...base, ready: false, failed: 12, problems: many });
+    expect(long.length).toBeLessThanOrEqual(TOOLTIP_MAX);
+    expect(long).toBe(
+      'RigReady - DCS F/A-18C: Not ready (12 problems): WINWING panel number 1, WINWING panel number 2 and 10 more'
+    );
+    // A name that cannot fit at all is left out: the count still says it.
+    const endless = trayTooltip({ ...base, ready: false, failed: 1, problems: ['x'.repeat(200)] });
+    expect(endless).toBe('RigReady - DCS F/A-18C: Not ready (1 problem)');
+    const longName = { profileId: 'a', profileName: 'S'.repeat(140), ready: true };
+    expect(trayTooltip(longName).length).toBe(TOOLTIP_MAX);
+
+    // While Make ready, Launch or Stand down runs, it says so.
+    expect(trayTooltip({ ...base, ready: false, failed: 1, problems: ['TrackIR5'] }, true)).toBe(
+      'RigReady - DCS F/A-18C: working...'
+    );
+    expect(trayTooltip({}, true)).toBe('RigReady - No setup yet');
+  });
+
+  it('what is not met is read from the checklist report, by title', () => {
+    const report = {
+      profileId: 'a',
+      ready: false,
+      failed: 2,
+      warnings: 1,
+      fixable: 1,
+      results: [
+        { itemId: 'c1', title: 'Stick', required: true, status: 'pass' },
+        { itemId: 'c2', title: 'TrackIR5', required: true, status: 'fail' },
+        { itemId: 'c3', title: 'Stream Deck XL', required: false, status: 'warn' },
+        { itemId: 'c4', title: 'Script', required: true, status: 'error' },
+        // Switched off in the setup: not checked, so not a problem.
+        { itemId: 'c5', title: 'Off', required: true, status: 'pass', disabled: true },
+        'not a result',
+      ],
+    };
+    const current = { profileId: 'a', profileName: 'A', profiles: [] };
+    const status = statusFromFlyResponse('fly:check', report, current)!;
+    expect(status.problems).toEqual(['TrackIR5', 'Script']);
+    expect(status.warningNames).toEqual(['Stream Deck XL']);
+    expect(trayTooltip(status)).toBe('RigReady - A: Not ready (2 problems): TrackIR5, Script');
+    // Make ready and Stand down carry the report one level down.
+    const made = statusFromFlyResponse('fly:makeReady', { steps: [], report }, current)!;
+    expect(made.problems).toEqual(['TrackIR5', 'Script']);
+    // A report without results says nothing by name.
+    const bare = statusFromFlyResponse(
+      'fly:check',
+      { profileId: 'a', ready: true, failed: 0, warnings: 0, fixable: 0 },
+      current
+    )!;
+    expect([bare.problems, bare.warningNames]).toEqual([[], []]);
+    // The setups keep when they were last used, for the Jump List.
+    const state = statusFromFlyResponse(
+      'fly:state',
+      {
+        activeProfileId: 'a',
+        profiles: [
+          { id: 'a', name: 'A', canLaunch: true, lastUsed: '2026-10-03T19:30:00.000Z' },
+          { id: 'b', name: 'B', canLaunch: false },
+        ],
+      },
+      {}
+    )!;
+    expect(state.profiles).toEqual([
+      { id: 'a', name: 'A', canLaunch: true, lastUsed: '2026-10-03T19:30:00.000Z' },
+      { id: 'b', name: 'B', canLaunch: false },
+    ]);
+  });
+
+  it('a double-click on the icon always opens the window; one click brings it out or puts it away', () => {
+    const away = { visible: false, minimized: false, inFront: false };
+    const minimized = { visible: true, minimized: true, inFront: false };
+    const behind = { visible: true, minimized: false, inFront: false };
+    const inFront = { visible: true, minimized: false, inFront: true };
+    for (const window of [away, minimized, behind, inFront]) {
+      expect(trayClick('double-click', window)).toBe('show');
+    }
+    expect(trayClick('click', away)).toBe('show');
+    expect(trayClick('click', minimized)).toBe('show');
+    // Behind another window: brought to the front, not hidden.
+    expect(trayClick('click', behind)).toBe('show');
+    // What the user is looking at: put away.
+    expect(trayClick('click', inFront)).toBe('hide');
   });
 });
