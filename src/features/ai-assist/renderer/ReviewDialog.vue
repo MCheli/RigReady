@@ -77,7 +77,7 @@ const canApply = computed(
             </template>
             <template v-else>Nothing would change: the files already look like this.</template>
           </p>
-          <div v-for="(note, i) in plan.notes" :key="`n${i}`" class="rv-note">
+          <div v-for="(note, i) in plan.notes" :key="`n${i}`" class="rv-note rr-warn">
             <v-icon icon="mdi-information-outline" size="16" /> {{ note }}
           </div>
           <div
@@ -153,7 +153,6 @@ const canApply = computed(
   display: flex;
   gap: 8px;
   font-size: 13px;
-  color: var(--rr-warn);
   margin-bottom: 10px;
 }
 .rv-file {
