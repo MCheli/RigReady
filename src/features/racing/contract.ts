@@ -285,6 +285,8 @@ export type BackupGame = z.infer<typeof BackupGameSchema>;
 export const BindingBackupSchema = z.object({
   id: z.string(),
   game: BackupGameSchema,
+  /** What the owner calls this set of bindings: "Formula rim". */
+  name: z.string().max(80).optional(),
   createdAt: z.string(),
   files: z.array(
     z.object({
@@ -317,6 +319,7 @@ export const WritePreviewSchema = z.object({
 export type WritePreviewView = z.infer<typeof WritePreviewSchema>;
 
 const GameRef = z.object({ game: BackupGameSchema });
+const BackupName = z.string().trim().max(80);
 const BackupRef = z.object({ game: BackupGameSchema, id: z.string().regex(/^[\w-]+$/) });
 
 export const racingContract = defineContract('racing', {
@@ -346,7 +349,18 @@ export const racingContract = defineContract('racing', {
   wheel: channel(noInput, WheelViewSchema),
   savePresets: channel(WheelPresetsSchema, WheelPresetsSchema),
   backups: channel(GameRef, z.array(BindingBackupSchema)),
-  backup: channel(GameRef, BindingBackupSchema),
+  backup: channel(GameRef.extend({ name: BackupName.optional() }), BindingBackupSchema),
+  /** Gives a backup a name ("Formula rim"), or with an empty one takes it away. */
+  nameBackup: channel(BackupRef.extend({ name: BackupName }), BindingBackupSchema),
+  /** The setups for this game, with the binding backup each expects (rim variants). */
+  backupSetups: channel(
+    GameRef,
+    z.array(z.object({ id: z.string(), name: z.string(), backupId: z.string().optional() }))
+  ),
+  /** Makes a setup expect the bindings of this backup: a checklist item with its fix. */
+  useBackupInSetup: channel(BackupRef.extend({ profileId: z.string().min(1) }), Message),
+  /** Takes that item out of the setup again. */
+  stopUsingBackup: channel(GameRef.extend({ profileId: z.string().min(1) }), Message),
   restore: channel(BackupRef.extend({ closeApp: z.boolean().default(false) }), Message),
   /** What restoring that backup would change, file by file. Reads only. */
   restorePreview: channel(BackupRef, WritePreviewSchema),

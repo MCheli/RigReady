@@ -29,6 +29,9 @@ export default defineFeature({
     },
     { path: '/configure/racing/wheel', component: () => import('./renderer/WheelPage.vue') },
   ],
+  remediationTypes: [
+    { type: 'racing.restoreBindingSet', label: 'Restore the saved racing bindings' },
+  ],
   checkTypes: [
     { type: 'racing.wheelBase', label: 'Wheel base connected in the right mode', group: 'devices' },
     {
@@ -37,6 +40,7 @@ export default defineFeature({
       group: 'files',
     },
     { type: 'racing.iracingService', label: 'iRacing helper service running', group: 'apps' },
+    { type: 'racing.bindingSet', label: 'Racing bindings are the saved set', group: 'files' },
     {
       type: 'racing.wheelSettings',
       label: 'In-game wheel settings as recommended',

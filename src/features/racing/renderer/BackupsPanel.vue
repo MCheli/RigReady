@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import {
@@ -13,6 +13,10 @@ import {
  * Quick backups of one game's bindings: back up now, restore one (after a confirmation
  * listing its files), delete one. Restores go through RigReady's journal, so they show up
  * on the Safety page and can be undone.
+ *
+ * A backup can be given a name ("Formula rim") and used in a setup: that setup then
+ * expects exactly these bindings and Make ready restores them. With a copy of a setup per
+ * steering wheel, switching rims is switching setups.
  */
 const props = defineProps<{
   game: BackupGame;
@@ -25,6 +29,18 @@ const emit = defineEmits<{ restored: [] }>();
 
 const api = useClient(racingContract);
 const backups = ref<BindingBackup[]>([]);
+/** Name for the next backup. */
+const newName = ref('');
+/** Setups for this game and the backup each expects. */
+const setups = ref<{ id: string; name: string; backupId?: string | undefined }[]>([]);
+const renaming = ref<{ id: string; name: string }>();
+const usedBy = computed(() => {
+  const map = new Map<string, string[]>();
+  for (const s of setups.value) {
+    if (s.backupId) map.set(s.backupId, [...(map.get(s.backupId) ?? []), s.name]);
+  }
+  return map;
+});
 const loaded = ref(false);
 const busy = ref(false);
 const error = ref<string>();
@@ -59,21 +75,57 @@ async function load(): Promise<void> {
   const result = await api.backups({ game: props.game });
   if (result.ok) backups.value = result.value;
   else error.value = errorText(result.error);
+  const used = await api.backupSetups({ game: props.game });
+  if (used.ok) setups.value = used.value;
   loaded.value = true;
+}
+
+async function useIn(backup: BindingBackup, profileId: string): Promise<void> {
+  error.value = undefined;
+  message.value = undefined;
+  const result = await api.useBackupInSetup({ game: props.game, id: backup.id, profileId });
+  if (result.ok) {
+    message.value = result.value.message;
+    notifyMachineChanged();
+  } else error.value = errorText(result.error);
+  await load();
+}
+
+async function stopUsing(profileId: string): Promise<void> {
+  error.value = undefined;
+  message.value = undefined;
+  const result = await api.stopUsingBackup({ game: props.game, profileId });
+  if (result.ok) {
+    message.value = result.value.message;
+    notifyMachineChanged();
+  } else error.value = errorText(result.error);
+  await load();
+}
+
+async function saveName(): Promise<void> {
+  const target = renaming.value;
+  if (!target) return;
+  error.value = undefined;
+  const result = await api.nameBackup({ game: props.game, id: target.id, name: target.name });
+  renaming.value = undefined;
+  if (!result.ok) error.value = errorText(result.error);
+  await load();
 }
 
 async function backup(): Promise<void> {
   busy.value = true;
   error.value = undefined;
   message.value = undefined;
-  const result = await api.backup({ game: props.game });
+  const name = newName.value.trim();
+  const result = await api.backup({ game: props.game, ...(name ? { name } : {}) });
   busy.value = false;
   if (!result.ok) {
     error.value = errorText(result.error);
     return;
   }
+  newName.value = '';
   const n = result.value.files.length;
-  message.value = `Backed up ${n} ${n === 1 ? 'file' : 'files'}.`;
+  message.value = `Backed up ${n} ${n === 1 ? 'file' : 'files'}${name ? ` as "${name}"` : ''}.`;
   await load();
 }
 
@@ -123,6 +175,18 @@ onMounted(load);
       <h2 class="rr-section-title">Backups</h2>
       <span class="rc-hint">Copies of the {{ what }} kept by RigReady</span>
       <v-spacer />
+      <v-text-field
+        v-if="game !== 'fanatec'"
+        v-model="newName"
+        density="compact"
+        variant="outlined"
+        hide-details
+        placeholder="Name, e.g. Formula rim (optional)"
+        aria-label="Name for the next backup"
+        class="backup-name"
+        data-testid="backup-name"
+        @keyup.enter="backup"
+      />
       <v-btn
         size="small"
         variant="tonal"
@@ -146,15 +210,68 @@ onMounted(load);
       <v-icon icon="mdi-check" size="16" /> {{ message }}
     </div>
     <div class="rr-panel">
-      <div v-for="b in backups" :key="b.id" class="rr-row" data-testid="backup-row">
+      <div
+        v-for="b in backups"
+        :key="b.id"
+        class="rr-row"
+        data-testid="backup-row"
+        :data-name="b.name ?? ''"
+      >
         <v-icon icon="mdi-archive-outline" class="rr-muted" />
         <div class="rr-row-main">
-          <div class="rr-row-title">{{ when(b.createdAt) }}</div>
+          <div class="rr-row-title" data-testid="backup-title">
+            {{ b.name || when(b.createdAt) }}
+          </div>
           <div class="rr-row-sub">
+            <template v-if="b.name">{{ when(b.createdAt) }} · </template>
             {{ b.files.length }} {{ b.files.length === 1 ? 'file' : 'files' }} ·
             {{ size(total(b)) }}
           </div>
+          <div v-if="usedBy.get(b.id)" class="rr-row-sub" data-testid="backup-used-by">
+            The bindings of {{ usedBy.get(b.id)!.length === 1 ? 'the setup' : 'the setups' }}
+            {{ usedBy.get(b.id)!.join(', ') }}
+          </div>
         </div>
+        <v-menu v-if="game !== 'fanatec' && setups.length > 0">
+          <template #activator="{ props: menu }">
+            <v-btn
+              v-bind="menu"
+              size="small"
+              variant="text"
+              append-icon="mdi-menu-down"
+              data-testid="backup-use"
+              >Use in a setup</v-btn
+            >
+          </template>
+          <v-list density="compact" data-testid="backup-use-menu">
+            <v-list-subheader>This setup expects these bindings</v-list-subheader>
+            <v-list-item
+              v-for="s in setups"
+              :key="s.id"
+              :title="s.name"
+              :subtitle="
+                s.backupId === b.id
+                  ? 'Uses these bindings: click to stop'
+                  : s.backupId
+                    ? 'Uses other bindings now'
+                    : ''
+              "
+              :prepend-icon="s.backupId === b.id ? 'mdi-check' : 'mdi-clipboard-check-outline'"
+              data-testid="backup-use-setup"
+              :data-setup="s.name"
+              @click="s.backupId === b.id ? stopUsing(s.id) : useIn(b, s.id)"
+            />
+          </v-list>
+        </v-menu>
+        <v-btn
+          v-if="game !== 'fanatec'"
+          size="small"
+          variant="text"
+          icon="mdi-pencil-outline"
+          :aria-label="`Name the backup of ${when(b.createdAt)}`"
+          data-testid="backup-rename"
+          @click="renaming = { id: b.id, name: b.name ?? '' }"
+        />
         <v-btn size="small" variant="text" data-testid="backup-restore" @click="askRestore(b)"
           >Restore…</v-btn
         >
@@ -267,7 +384,12 @@ onMounted(load);
         <v-card-title>Delete this backup?</v-card-title>
         <v-card-text
           >The backup of {{ when(confirmDelete.createdAt) }} is removed from RigReady. Your game
-          files are not touched.</v-card-text
+          files are not touched.
+          <div v-if="usedBy.get(confirmDelete.id)" class="rr-warn mt-2" data-testid="delete-used">
+            {{ usedBy.get(confirmDelete.id)!.join(', ') }}
+            {{ usedBy.get(confirmDelete.id)!.length === 1 ? 'expects' : 'expect' }} these bindings:
+            that item will be not met until the setup is given another backup.
+          </div></v-card-text
         >
         <v-card-actions>
           <v-spacer />
@@ -276,10 +398,41 @@ onMounted(load);
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog
+      :model-value="renaming !== undefined"
+      max-width="440"
+      @update:model-value="renaming = undefined"
+    >
+      <v-card v-if="renaming" data-testid="backup-rename-dialog">
+        <v-card-title>Name this backup</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="renaming.name"
+            label="Name"
+            placeholder="Formula rim"
+            hint="What these bindings are for. Setups that use them show this name."
+            persistent-hint
+            autofocus
+            maxlength="80"
+            data-testid="backup-rename-input"
+            @keyup.enter="saveName"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="renaming = undefined">Cancel</v-btn>
+          <v-btn color="primary" data-testid="backup-rename-save" @click="saveName">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </section>
 </template>
 
 <style scoped>
+.backup-name {
+  max-width: 280px;
+}
 .restore-file {
   display: flex;
   align-items: flex-start;

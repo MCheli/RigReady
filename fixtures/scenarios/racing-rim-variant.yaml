@@ -1,0 +1,5 @@
+description: Racing - an iRacing setup that is ready, to be copied into a variant for another steering wheel
+rig: mark-full
+extends: racing-fresh.yaml
+profiles:
+  - profiles/racing-iracing.yaml

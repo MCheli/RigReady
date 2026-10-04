@@ -1,6 +1,22 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { parseControlsCfg } from '../../src/features/racing/core/iracing/controlsCfg';
 import { checkRow, expect, test } from './harness';
+
+/** The same iRacing bindings file with one action moved to the next button: another rim's bindings. */
+function withOneButtonMoved(controls: Buffer): Buffer {
+  const parsed = parseControlsCfg(new Uint8Array(controls));
+  if (!parsed.ok) throw new Error(parsed.error.message);
+  const record = parsed.value.records.find((r) => r.binding.kind === 'button');
+  if (!record || record.binding.kind !== 'button') throw new Error('no button binding');
+  const out = Buffer.from(controls);
+  const from = record.binding.buttons[0]!;
+  const to = (from + 1) % 32;
+  const mask = record.offset + 12;
+  out[mask + (from >> 3)] = out[mask + (from >> 3)]! & ~(1 << (from & 7));
+  out[mask + (to >> 3)] = out[mask + (to >> 3)]! | (1 << (to & 7));
+  return out;
+}
 
 /** Racing: the wheel, the racing games' bindings and controller ids, and a racing setup in Fly. */
 
@@ -115,6 +131,147 @@ test('racing: overview, iRacing bindings, and repairing a wheel with a new Windo
     'data-reason',
     'Point iRacing at the new Windows id of FANATEC Podium Wheel Base DD2'
   );
+});
+
+test('racing: a setup cloned into a rim variant has its own binding backup; switching setups puts the right bindings back', async ({
+  rig,
+}) => {
+  const { page, shot, home } = await rig.launch('racing-rim-variant', 'racing-rim-variant');
+  const controls = path.join(home, 'Documents', 'iRacing', 'controls.cfg');
+  const gt3Bindings = await fs.readFile(controls);
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+
+  const openIracing = async (): Promise<void> => {
+    await page.getByTestId('mode-configure').click();
+    await page.getByTestId('nav-racing').click();
+    await page.locator('[data-testid="racing-game-card"][data-game="iracing"]').click();
+    await expect(page.getByTestId('backups-iracing')).toBeVisible();
+  };
+  const backupRow = (name: string) =>
+    page.locator(`[data-testid="backup-row"][data-name="${name}"]`);
+  const useIn = async (backup: string, setup: string): Promise<void> => {
+    await backupRow(backup).getByTestId('backup-use').click();
+    await page.locator(`[data-testid="backup-use-setup"][data-setup="${setup}"]`).click();
+    await expect(page.getByTestId('backup-message')).toContainText(
+      `"${setup}" now expects the bindings saved as "${backup}"`
+    );
+  };
+
+  // The bindings as they are now are the ones for the GT3 rim: saved under that name and
+  // made what the setup expects.
+  await openIracing();
+  await page.getByTestId('backup-name').locator('input').fill('GT3 rim');
+  await page.getByTestId('backup-now').click();
+  await expect(page.getByTestId('backup-message')).toHaveText('Backed up 3 files as "GT3 rim".');
+  await useIn('GT3 rim', 'iRacing');
+  await expect(backupRow('GT3 rim').getByTestId('backup-used-by')).toHaveText(
+    'The bindings of the setup iRacing'
+  );
+  await backupRow('GT3 rim').scrollIntoViewIfNeeded();
+  await shot('gt3-bindings-used-by-the-setup');
+
+  // The variant: a copy of the setup, made on the Setups page.
+  await page.getByTestId('nav-profiles').click();
+  await page
+    .locator('[data-testid="profile-row"][data-name="iRacing"]')
+    .getByTestId('profile-clone')
+    .click();
+  await expect(page.getByTestId('edit-name').locator('input')).toHaveValue('iRacing (copy)');
+  await page.getByTestId('edit-name').locator('input').fill('iRacing - Formula rim');
+  await page.getByTestId('edit-save').click();
+  await expect(
+    page.locator('[data-testid="profile-row"][data-name="iRacing - Formula rim"]')
+  ).toBeVisible();
+  await shot('variant-cloned');
+
+  // The Formula rim goes on the base and is bound in iRacing (the simulator writes the file).
+  const formulaBindings = withOneButtonMoved(gt3Bindings);
+  expect(Buffer.compare(formulaBindings, gt3Bindings)).not.toBe(0);
+  await fs.writeFile(controls, formulaBindings);
+  await openIracing();
+  await expect(page.getByTestId('iracing-error')).toHaveCount(0);
+  await page.getByTestId('backup-name').locator('input').fill('Formula rim');
+  await page.getByTestId('backup-now').click();
+  await expect(page.getByTestId('backup-message')).toHaveText(
+    'Backed up 3 files as "Formula rim".'
+  );
+  await backupRow('Formula rim').getByTestId('backup-use').click();
+  const menu = page.getByTestId('backup-use-menu');
+  await expect(menu).toBeVisible();
+  // The copy still expects what the original did, until it is given its own.
+  await expect(
+    menu.locator('[data-testid="backup-use-setup"][data-setup="iRacing - Formula rim"]')
+  ).toContainText('Uses other bindings now');
+  await shot('choose-the-setup');
+  await menu
+    .locator('[data-testid="backup-use-setup"][data-setup="iRacing - Formula rim"]')
+    .click();
+  await expect(page.getByTestId('backup-message')).toContainText(
+    '"iRacing - Formula rim" now expects the bindings saved as "Formula rim", and Make ready restores them.'
+  );
+  await expect(backupRow('Formula rim').getByTestId('backup-used-by')).toHaveText(
+    'The bindings of the setup iRacing - Formula rim'
+  );
+  await expect(backupRow('GT3 rim').getByTestId('backup-used-by')).toHaveText(
+    'The bindings of the setup iRacing'
+  );
+  await backupRow('GT3 rim').scrollIntoViewIfNeeded();
+  await shot('each-setup-its-bindings');
+
+  const choose = async (name: string): Promise<void> => {
+    await page.getByTestId('profile-switcher').click();
+    // An option reads "<setup> <game> · <last used>".
+    await page.getByRole('option', { name: new RegExp(`^${name} iRacing ·`) }).click();
+    await expect(page.getByTestId('profile-switcher')).toContainText(name);
+  };
+
+  // Back to the GT3 rim: its setup notices the formula bindings and puts its own back.
+  await page.getByTestId('mode-fly').click();
+  await choose('iRacing');
+  const gt3 = checkRow(page, 'iRacing bindings: GT3 rim');
+  await expect(gt3).toHaveAttribute('data-status', 'fail');
+  await expect(gt3.getByTestId('check-summary')).toHaveText(
+    'iRacing has other bindings than "GT3 rim": 1 of 2 files differ'
+  );
+  await expect(gt3.getByTestId('check-fix')).toHaveText('Restore the bindings saved as "GT3 rim"');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Not ready');
+  await gt3.scrollIntoViewIfNeeded();
+  await shot('gt3-setup-sees-other-bindings');
+  await page.getByTestId('make-ready').click();
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await expect(page.getByTestId('fly-activity')).toContainText(
+    'Restored the iRacing bindings saved as "GT3 rim" (2 files)'
+  );
+  expect(Buffer.compare(await fs.readFile(controls), gt3Bindings)).toBe(0);
+  await shot('gt3-bindings-restored');
+
+  // And the other rim: the variant restores the formula bindings from its own item.
+  await choose('iRacing - Formula rim');
+  const formula = checkRow(page, 'iRacing bindings: Formula rim');
+  await expect(formula).toHaveAttribute('data-status', 'fail');
+  await formula.getByTestId('check-fix').click();
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  // A group that passes is collapsed: open it to see the item.
+  await page.getByTestId('group-toggle-files').click();
+  await expect(formula).toHaveAttribute('data-status', 'pass');
+  await expect(formula.getByTestId('check-summary')).toHaveText(
+    'iRacing has the bindings saved as "Formula rim"'
+  );
+  expect(Buffer.compare(await fs.readFile(controls), formulaBindings)).toBe(0);
+  await shot('formula-variant-ready');
+
+  // Both restores are actions that can be undone.
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-safety').click();
+  await expect(
+    page.locator(
+      `[data-testid="change-group"][data-reason='Restore iRacing bindings "Formula rim"']`
+    )
+  ).toHaveCount(1);
+  await expect(
+    page.locator(`[data-testid="change-group"][data-reason='Restore iRacing bindings "GT3 rim"']`)
+  ).toHaveCount(1);
+  await shot('safety');
 });
 
 test('racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a backup and restore', async ({

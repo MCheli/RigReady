@@ -3024,8 +3024,15 @@ requirements:
     priority: p3
     done_means:
       - "Cloning a racing profile into a rim variant (e.g. 'iRacing GT3 - Formula rim') with a different binding backup works end-to-end; if the rim is detectable (RACE-FANATEC-001) the rim becomes a device check."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/racing/core/bindingSets.test.ts#a cloned setup gets its own binding backup; each setup is met only with its own bindings, and its fix restores them"
+      - "src/features/racing/core/bindingSets.test.ts#does not restore while the simulator runs, and says why"
+      - "src/features/racing/core/bindingSets.test.ts#the rim itself is not a device a check can see: the driver only records the rims it has seen, so no rim check is offered"
+      - "tests/e2e/racing.e2e.ts#racing: a setup cloned into a rim variant has its own binding backup; switching setups puts the right bindings back"
+      - "artifacts/screens/racing-rim-variant/04-each-setup-its-bindings.png"
+      - "artifacts/screens/racing-rim-variant/05-gt3-setup-sees-other-bindings.png"
+      - "artifacts/screens/racing-rim-variant/07-formula-variant-ready.png"
 
   - id: GAME-MSFS-001
     title: Detect Microsoft Flight Simulator 2024 and its settings

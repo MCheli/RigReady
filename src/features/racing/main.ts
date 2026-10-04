@@ -7,9 +7,17 @@ import {
   deleteBackup,
   fanatecBackupSource,
   listBackups,
+  nameBackup,
   previewRestoreBackup,
   restoreBackup,
 } from './core/backups';
+import {
+  bindingSetCheck,
+  restoreBindingSetFix,
+  setupsFor,
+  stopUsingSet,
+  useSetInSetup,
+} from './core/bindingSets';
 import {
   beamngView,
   copyBindingsToController,
@@ -65,7 +73,10 @@ export default defineFeatureMain({
     ctx.checks.registerCheck(iracingDevicesCheck(ctx.games));
     ctx.checks.registerCheck(iracingServiceCheck);
     ctx.checks.registerCheck(wheelSettingsCheck(ctx.games));
+    ctx.checks.registerCheck(bindingSetCheck(ctx.games));
+    ctx.checks.registerRemediation(restoreBindingSetFix(ctx.games));
     ctx.checks.registerCapture(racingCapture(ctx.games));
+    const setups = { profiles: ctx.profiles, clock: ctx.ports.clock };
     ctx.backupSources.register(fanatecBackupSource);
 
     return [
@@ -103,7 +114,12 @@ export default defineFeatureMain({
         savePresets: (presets) =>
           presetStore(rctx).write({ ...presets, updatedAt: ctx.ports.clock.now().toISOString() }),
         backups: async ({ game }) => ok(await listBackups(rctx, game)),
-        backup: ({ game }) => backupNow(rctx, game),
+        backup: ({ game, name }) => backupNow(rctx, game, name),
+        nameBackup: ({ game, id, name }) => nameBackup(rctx, game, id, name),
+        backupSetups: async ({ game }) => (game === 'fanatec' ? ok([]) : setupsFor(setups, game)),
+        useBackupInSetup: ({ game, id, profileId }) =>
+          useSetInSetup(rctx, setups, game, id, profileId),
+        stopUsingBackup: ({ game, profileId }) => stopUsingSet(setups, game, profileId),
         restore: ({ game, id, closeApp }) => restoreBackup(rctx, game, id, { closeApp }),
         restorePreview: ({ game, id }) => previewRestoreBackup(rctx, game, id),
         async deleteBackup({ game, id }) {

@@ -110,7 +110,7 @@ async function sources(ctx: RacingContext, game: BackupGame): Promise<Source[]> 
   }
 }
 
-const backupsRoot = (ctx: RacingContext, game: BackupGame): string =>
+export const backupsRoot = (ctx: RacingContext, game: BackupGame): string =>
   path.join(ctx.ports.folders.dataRoot(), 'racing', 'backups', game);
 
 const FANATEC_SERVICE_KEY = 'Software\\Endor\\FanatecService';
@@ -271,7 +271,8 @@ export async function listBackups(ctx: RacingContext, game: BackupGame): Promise
 
 export async function backupNow(
   ctx: RacingContext,
-  game: BackupGame
+  game: BackupGame,
+  name?: string
 ): Promise<Result<BindingBackup>> {
   const files = await sources(ctx, game);
   if (files.length === 0 && game !== 'fanatec') {
@@ -315,7 +316,13 @@ export async function backupNow(
       size: text.length,
     });
   }
-  const backup: BindingBackup = { id, game, createdAt: now.toISOString(), files: stored };
+  const backup: BindingBackup = {
+    id,
+    game,
+    ...(name?.trim() ? { name: name.trim() } : {}),
+    createdAt: now.toISOString(),
+    files: stored,
+  };
   const manifest = await ctx.ports.files.write(
     path.join(dir, 'manifest.json'),
     JSON.stringify(backup, null, 2) + '\n',
@@ -325,6 +332,26 @@ export async function backupNow(
   );
   if (!manifest.ok) return manifest;
   return ok(backup);
+}
+
+/** Names a backup ("Formula rim"); an empty name takes the name away. */
+export async function nameBackup(
+  ctx: RacingContext,
+  game: BackupGame,
+  id: string,
+  name: string
+): Promise<Result<BindingBackup>> {
+  const backup = (await listBackups(ctx, game)).find((b) => b.id === id);
+  if (!backup) return err('racing.backup', 'That backup no longer exists.');
+  const { name: _old, ...rest } = backup;
+  const next: BindingBackup = name.trim() ? { ...rest, name: name.trim() } : rest;
+  const written = await ctx.ports.files.write(
+    path.join(backupsRoot(ctx, game), id, 'manifest.json'),
+    JSON.stringify(next, null, 2) + '\n',
+    { reason: 'RigReady backup' }
+  );
+  if (!written.ok) return written;
+  return ok(next);
 }
 
 const when = (iso: string): string =>
@@ -383,7 +410,13 @@ export async function restoreBackup(
   ctx: RacingContext,
   game: BackupGame,
   id: string,
-  options: { closeApp?: boolean } = {}
+  options: {
+    closeApp?: boolean;
+    /** Restore only these files of the backup (a setup's binding set leaves the options alone). */
+    only?: (file: BindingBackup['files'][number]) => boolean;
+    /** How the journal names what was restored, instead of the date: '"Formula rim"'. */
+    what?: string;
+  } = {}
 ): Promise<Result<{ message: string }>> {
   const backup = (await listBackups(ctx, game)).find((b) => b.id === id);
   if (!backup) return err('racing.backup', 'That backup no longer exists.');
@@ -412,10 +445,10 @@ export async function restoreBackup(
   }
   const dir = path.join(backupsRoot(ctx, game), id);
   const group = ctx.ports.files.beginGroup(
-    `Restore ${GAME_NAMES[game]} ${game === 'fanatec' ? 'settings' : 'bindings'} from ${when(backup.createdAt)}`
+    `Restore ${GAME_NAMES[game]} ${game === 'fanatec' ? 'settings' : 'bindings'} ${options.what ?? `from ${when(backup.createdAt)}`}`
   );
   let restored = 0;
-  for (const file of backup.files.filter((f) => f.restorable)) {
+  for (const file of backup.files.filter((f) => f.restorable && (options.only?.(f) ?? true))) {
     const bytes = await ctx.ports.files.readBytes(path.join(dir, file.stored));
     if (!bytes.ok) return bytes;
     const written = await ctx.ports.files.write(file.path, bytes.value, {
