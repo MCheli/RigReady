@@ -3,6 +3,7 @@ import {
   _electron,
   expect,
   type ElectronApplication,
+  type Locator,
   type Page,
 } from '@playwright/test';
 import { spawn } from 'node:child_process';
@@ -296,5 +297,17 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
 export { expect };
 
 /** The checklist row for a check title. */
+/**
+ * A click after which RigReady hides its window (Launch does, unless told to stay). After a
+ * click the driver waits on the page once more, and a page whose window has just gone does
+ * not always answer: on GitHub's runner that wait once lasted the whole time limit.
+ */
+export const clickAndLeave = (target: Locator): Promise<void> =>
+  target.click({ noWaitAfter: true });
+
+/** An entry of the list a select has open now. One that is closing is still on the page for a moment. */
+export const openOption = (page: Page, name: string): Locator =>
+  page.locator('.v-overlay--active').getByRole('option', { name });
+
 export const checkRow = (page: Page, title: string) =>
   page.locator(`[data-testid="check-row"][data-title="${title}"]`);

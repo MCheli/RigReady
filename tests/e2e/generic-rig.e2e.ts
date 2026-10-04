@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { unzipSync } from 'fflate';
 import type { ElectronApplication, Page } from '@playwright/test';
-import { checkRow, expect, test } from './harness';
+import { checkRow, clickAndLeave, expect, test } from './harness';
 
 /**
  * A PC that is not the owner's (fixtures/rigs/generic-rig): one joystick, one monitor, no
@@ -425,7 +425,7 @@ test('generic rig: an "Other" game is set up, checked, launched and its tracked 
 
   // Launch starts the program and RigReady gets out of the way.
   await expect(page.getByTestId('launch')).toBeEnabled();
-  await page.getByTestId('launch').click();
+  await clickAndLeave(page.getByTestId('launch'));
   await expect.poll(() => windowVisible(app)).toBe(false);
   await showWindow(app);
   await expect(page.getByTestId('fly-activity')).toContainText('Launched StarHauler.exe');

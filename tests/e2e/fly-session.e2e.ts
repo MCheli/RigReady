@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { ElectronApplication, Page } from '@playwright/test';
 import { durationText, whenText } from '../../src/features/fly/core/sessionText';
 import { axeViolations, colourOnlyStatus } from './a11y';
-import { checkRow, expect, test, type RunningApp } from './harness';
+import { checkRow, clickAndLeave, expect, test, type RunningApp } from './harness';
 
 /**
  * The session: what the Play screen shows from Launch until the game has closed, what it
@@ -186,7 +186,7 @@ test('session: with RigReady in the tray Windows says Welcome back, and Stand do
 
   // Launch hides RigReady (the default). The game closes while nobody is at the window:
   // the click on Launch was the last thing done there, and the window went away with it.
-  await page.getByTestId('launch').click();
+  await clickAndLeave(page.getByTestId('launch'));
   await expect.poll(() => windowVisible(app)).toBe(false);
   await closeGame(run);
   await expect
@@ -214,7 +214,7 @@ test('session: with RigReady in the tray Windows says Welcome back, and Stand do
   await page.keyboard.press('Escape');
   await expect(setting).toBeHidden();
 
-  await page.getByTestId('launch').click();
+  await clickAndLeave(page.getByTestId('launch'));
   await expect.poll(() => windowVisible(app)).toBe(false);
   await closeGame(run);
   await expect

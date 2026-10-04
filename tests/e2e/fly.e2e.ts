@@ -1,5 +1,5 @@
 import type { ElectronApplication } from '@playwright/test';
-import { checkRow, expect, test } from './harness';
+import { checkRow, clickAndLeave, expect, test } from './harness';
 
 /** Play mode on scenarios: the recorded rig plus one thing wrong at a time. */
 
@@ -55,7 +55,7 @@ test('pedals unplugged: red, no fix available, Launch warns but is not blocked',
     'T-Pendular-Rudder — Not connected'
   );
   await shot('launch-warning');
-  await page.getByTestId('launch-anyway').click();
+  await clickAndLeave(page.getByTestId('launch-anyway'));
   // The game really started (the fake process list has it), and RigReady got out of the way.
   await expect.poll(() => windowVisible(app)).toBe(false);
   await showWindow(app);

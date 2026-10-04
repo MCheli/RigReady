@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { ElectronApplication } from '@playwright/test';
-import { checkRow, expect, test } from './harness';
+import { checkRow, clickAndLeave, expect, test } from './harness';
 
 /** Play mode in depth: switching, single checks, fixes, Make ready, launch steps, timing. */
 
@@ -323,7 +323,7 @@ test('fly: steps before and after launch; a step that must not fail pauses with 
 test('fly: hidden after a launch by default, and back from the tray', async ({ rig }) => {
   const { page, app } = await rig.launch('flying-all-good', 'fly-launch-hides');
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
-  await page.getByTestId('launch').click();
+  await clickAndLeave(page.getByTestId('launch'));
   await expect.poll(() => windowVisible(app)).toBe(false);
   await app.evaluate(async () => {
     await (

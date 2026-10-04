@@ -1,6 +1,6 @@
 import type { ElectronApplication, Locator, Page } from '@playwright/test';
 import { axeViolations, colourOnlyStatus } from './a11y';
-import { checkRow, expect, test } from './harness';
+import { checkRow, expect, openOption, test } from './harness';
 
 /**
  * Hardware troubleshooting on the recorded rig: the Devices list, Find a device, names,
@@ -508,9 +508,9 @@ test('devices: the tester draws a stick as a plot with a fading trail, a hat as 
 
   // Any two axes can be plotted against each other: the twist against the lever.
   await view.getByTestId('plot-x').click();
-  await page.getByRole('option', { name: 'Z rotation' }).click();
+  await openOption(page, 'Z rotation').click();
   await view.getByTestId('plot-y').click();
-  await page.getByRole('option', { name: 'Slider 1' }).click();
+  await openOption(page, 'Slider 1').click();
   await sendInput([state(stick, { axes: { 4: 1, 5: -1 } })]);
   await expect(plot).toHaveAttribute('data-x', '100');
   await expect(plot).toHaveAttribute('data-y', '0');
@@ -532,9 +532,9 @@ test('devices: the tester draws a stick as a plot with a fading trail, a hat as 
   await expect(view).toHaveAttribute('data-motion', 'reduced');
   await expect(plot).toHaveAttribute('data-mode', 'still');
   await view.getByTestId('plot-x').click();
-  await page.getByRole('option', { name: 'X axis' }).click();
+  await openOption(page, 'X axis').click();
   await view.getByTestId('plot-y').click();
-  await page.getByRole('option', { name: 'Y axis' }).click();
+  await openOption(page, 'Y axis').click();
   const stopAgain = await startMotion(page, stick, { x: 0, y: 1, sweep: 4 });
   const xValue = xAxis.getByTestId('axis-value');
   // The values keep following the stick...

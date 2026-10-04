@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { unzipSync } from 'fflate';
 import type { ElectronApplication, Page } from '@playwright/test';
-import { expect, test } from './harness';
+import { clickAndLeave, expect, test } from './harness';
 
 /**
  * NFR-009: the core flows on a second PC that is not the owner's
@@ -119,7 +119,7 @@ test('second generic PC: capture, Ready, Make ready, Launch from the second Stea
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
   await shot('made-ready');
 
-  await page.getByTestId('launch').click();
+  await clickAndLeave(page.getByTestId('launch'));
   await expect.poll(() => windowVisible(app)).toBe(false);
   await showWindow(app);
   await expect(page.getByTestId('fly-activity')).toContainText('Launched DCS.exe');
