@@ -5,10 +5,21 @@
 # under artifacts/screens/<flow>/ from a scenario run.
 #
 # Conventions used in done_means:
-#   fixture  = fixtures/rigs/<name>/. The one that exists is mark-full, recorded from the owner's rig
-#              with everything connected; where an entry says mark-flight or mark-racing, use mark-full
-#              with mutations. generic-rig (a second, non-WinWing rig used to prove nothing is
-#              hardcoded) has not been recorded yet.
+#   fixture  = fixtures/rigs/<name>/. Two exist:
+#              mark-full    recorded from the owner's rig with everything connected. mark-flight and
+#                           mark-racing are mark-full with mutations: mark-flight is flying-fresh.yaml
+#                           and the scenarios that extend it; mark-racing is mark-racing.yaml (wheel
+#                           and ultrawide, all flight gear and the MFD screens unplugged, Dell off)
+#                           and mark-racing-tv.yaml (the same with the TV above the ultrawide and
+#                           SimHub running; neither was on the PC when it was recorded).
+#              generic-rig  written by hand, not recorded: a PC that is not the owner's, used to
+#                           prove nothing is hardcoded. One Logitech joystick, a keyboard and a
+#                           mouse, one 1920x1080 monitor, onboard audio, no sim, no HidHide, no
+#                           Steam. Scenarios: generic-fresh.yaml, generic-custom-game.yaml (a game
+#                           without a module), generic-dcs.yaml (standalone DCS installed).
+#                           It has ONE monitor and no DCS in a Steam library: entries that ask for
+#                           two monitors, a non-default Steam library or a redirected Saved Games
+#                           folder on generic-rig (NFR-009) are not covered by it yet.
 #   scenario = RIGREADY_SCENARIO run on fake providers: <fixture> + <mutation>, e.g.
 #              mark-full + pedals unplugged (fixtures/scenarios/flying-pedals-unplugged.yaml)
 #   Paths use path variables ({DCS_USER}, {DOCUMENTS}, {RIGREADY_HOME}, ...) and forward slashes.

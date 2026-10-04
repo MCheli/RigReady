@@ -2,7 +2,7 @@
 
 How to add a feature to RigReady without touching a shared file. Read `docs/PRODUCT.md` and `docs/ARCHITECTURE.md` first; this page is the mechanics and the inventory of what the shared foundation gives you.
 
-Contents: [ground rules](#ground-rules) · [working in a worktree](#working-in-a-worktree) · [commands](#commands) · [1 the feature folder](#1-the-feature-folder) · [2 IPC](#2-ipc-contract) · [3 checks](#3-a-check-type-and-its-fix-and-its-capture) · [4 renderer](#4-renderer-manifest-pages-navigation) · [5 game modules](#5-a-game-module) · [6 ports](#6-ports-what-ctxports-gives-you) · [7 core helpers](#7-core-helpers) · [8 unit tests](#8-unit-tests) · [9 scenarios and mutations](#9-scenarios) · [10 the recorded rig](#10-the-recorded-rig-mark-full) · [11 e2e](#11-an-e2e-flow) · [12 ledger](#12-ledger-evidence) · [13 before you commit](#13-before-you-commit) · [14 the features being built now](#14-the-features-being-built-in-parallel)
+Contents: [ground rules](#ground-rules) · [working in a worktree](#working-in-a-worktree) · [commands](#commands) · [1 the feature folder](#1-the-feature-folder) · [2 IPC](#2-ipc-contract) · [3 checks](#3-a-check-type-and-its-fix-and-its-capture) · [4 renderer](#4-renderer-manifest-pages-navigation) · [5 game modules](#5-a-game-module) · [6 ports](#6-ports-what-ctxports-gives-you) · [7 core helpers](#7-core-helpers) · [8 unit tests](#8-unit-tests) · [9 scenarios and mutations](#9-scenarios) · [10 the recorded rig and the generic rig](#10-the-recorded-rig-mark-full) · [11 e2e](#11-an-e2e-flow) · [12 ledger](#12-ledger-evidence) · [13 before you commit](#13-before-you-commit) · [14 the features being built now](#14-the-features-being-built-in-parallel)
 
 ## Ground rules
 
@@ -325,6 +325,7 @@ Quote ids that YAML would read as numbers (`'4098'`, `'17E9'`). A mutation that 
 | `startProcess` | `name`, `path` | Adds a running process |
 | `setDisplay` | `match: { name?, id?, index? }`, `set: { enabled?, primary?, x?, y?, width?, height?, rotation? }` | Changes monitors (`index` picks one of several with the same name) |
 | `unplugDisplay` | `match` | Removes a monitor |
+| `plugDisplay` | `display`: a whole monitor as in `displays.json` (`id`, `name`, `enabled`, `primary`, `x`, `y`, `width`, `height`, `rotation`, and optionally `serial`, `connector`, `modes`, ...) | Connects a monitor the rig does not have (the TV in `mark-racing-tv`). An id that is already connected is an error; plugged in as `primary`, it takes over as the main display |
 | `setAudioDefault` | `flow: playback \| recording`, `match: { name? , id? }`, `role?: default \| communications \| both` | Makes an endpoint the default |
 | `unplugAudio` | `match` | Removes an endpoint; a default pointing at it moves on |
 | `setRegistryValue` | `hive`, `key`, `name`, `value: { type, value } \| null` | Sets or (null) deletes a value; creates the key |
@@ -338,7 +339,19 @@ Quote ids that YAML would read as numbers (`'4098'`, `'17E9'`). A mutation that 
 
 HidHide is queried the way the real one is: `ports.shell.run(<HidHideCLI.exe>, ['--cloak-state', '--inv-state', '--dev-list', '--app-list', '--cancel'])` answers `--cloak-on|off`, `--inv-on|off`, `--dev-hide "<HID path>"` and `--app-reg "<exe>"` lines; `--dev-gaming` answers the recorded JSON. Always end read-only queries with `--cancel` (the real CLI saves on exit otherwise). The `--dev-hide` line format is inferred: nothing was hidden on the rig when it was recorded.
 
-Existing scenarios: `desk-mfds-wrong` (the rig exactly as recorded), `flying-fresh` (known-good flying layout, no setups), `flying-all-good`, `flying-pedals-unplugged`, `flying-mfd-rotated`, `flying-trackir-not-running`, `flying-optional-missing`, `racing-fresh`, `app-old-backups`. Add your own file, prefixed with your feature (`audio-wrong-default.yaml`); do not change existing ones or `fixtures/rigs/`. Put helper files next to it under `fixtures/scenarios/data/<feature>/` and profiles under `fixtures/scenarios/profiles/`.
+Existing scenarios: `desk-mfds-wrong` (the rig exactly as recorded), `flying-fresh` (known-good flying layout, no setups), `flying-all-good`, `flying-pedals-unplugged`, `flying-mfd-rotated`, `flying-trackir-not-running`, `flying-optional-missing`, `racing-fresh`, `app-old-backups`, and one or more per feature (`audio-*`, `backup-*`, `dcs-setup-*`, `devices-*`, `displays-*`, `share-*`, `stream-deck-*`, `trackir-*`).
+
+The racing rig and the generic PC, which the ledger names as fixtures, are scenarios too:
+
+| Scenario | What it is |
+|---|---|
+| `mark-racing` | The ledger's `mark-racing`: `mark-full` with all flight gear unplugged (WinWing devices, TPR pedals, Virpil panel, TrackIR camera, the three USB MFD screens), TrackIR and SimAppPro closed, the Dell off, the ultrawide the main display. The Fanatec DD2, Fanatec Service, trophi.ai and the Stream Deck stay. It extends `racing-fresh` (which keeps the TrackIR camera) and adds nothing that was not recorded |
+| `mark-racing-tv` | `mark-racing` plus two things that were **not** on the PC when it was recorded: the TV (3840x2160 at 640,-2160, above the ultrawide; the same monitor id the saved "Racing" layout in `data/displays/layouts.json` names) and SimHub installed and running |
+| `generic-fresh` | `fixtures/rigs/generic-rig` as written: a PC that is not the owner's, with one joystick, one monitor, no sim, no helper apps, no setups (section 10) |
+| `generic-custom-game` | `generic-fresh` plus a game RigReady has no module for: `Games/Star Hauler/StarHauler.exe` and `Documents/Star Hauler` (settings, controls, a save) |
+| `generic-dcs` | `generic-fresh` plus the standalone (not Steam) DCS World: the Eagle Dynamics registry key, `Program Files/Eagle Dynamics/DCS World/bin/DCS.exe`, `Saved Games/DCS/Config/options.lua` |
+
+Add your own file, prefixed with your feature (`audio-wrong-default.yaml`); do not change existing ones or `fixtures/rigs/`. Put helper files next to it under `fixtures/scenarios/data/<feature>/` and profiles under `fixtures/scenarios/profiles/`.
 
 ## 10. The recorded rig (`mark-full`)
 
@@ -365,6 +378,12 @@ Existing scenarios: `desk-mfds-wrong` (the rig exactly as recorded), `flying-fre
 - **Programs are empty files.** `DCS.exe`, `iRacingUI.exe`, `TrackIR5.exe`, `HidHideCLI.exe`, `StreamDeck.exe`, `SimAppPro.exe` and so on exist with zero bytes so `files.exists()` detection works. There is nothing to run and no file version to read.
 - **Recorded paths are re-pointed.** In registry values and in the recorded text files, `C:\Users\User`, `C:\Program Files`, `C:\Program Files (x86)` and `C:\ProgramData` become the matching folder under the fake home, in `\`, `\\` and `/` spellings. Process paths in `processes.json` are left as recorded (`C:\Program Files (x86)\TrackIR5\TrackIR5.exe`).
 - Never recorded: `%APPDATA%\SimAppPro\config.json` (account credentials), DCS `network.vault` and `steam_authdata.bin`, images, binaries. Steam ids and the LMU player name are replaced.
+
+### The generic rig (`generic-rig`)
+
+`fixtures/rigs/generic-rig/` is a second rig that is **not recorded**: it was written by hand to be a PC with nothing of the owner's on it, and it loads through the same loader with the same files and schemas (`NOTES.md` there lists them). One Logitech Extreme 3D joystick (`046D:C215`) with its DirectInput controller, a keyboard and a mouse on a hub, one 1920x1080 monitor, one playback and one recording endpoint, a handful of processes and services, a registry without any sim, Steam, Fanatec, TrackIR or Stream Deck key, HidHide not installed, and no game file.
+
+Use it (`wiredApp('generic-fresh')`, `rig.launch('generic-fresh', ...)`) whenever a feature must behave on a PC that lacks what it is about: its page should render an empty state that says what is missing, never an error, never a red status for hardware nobody asked for, and its capture should offer nothing. `tests/unit/genericRig.test.ts` and `tests/e2e/generic-rig.e2e.ts` do this for the whole app (every Configure page, capture, a setup for an "Other" game); a new Configure page must be added to the `PAGES` list in that e2e file, which fails when the navigation offers a page it does not visit. `tests/unit/notHardcoded.test.ts` fails when code under `src/` (comments and tests aside) contains a serial, device instance, monitor id, audio endpoint id or controller GUID of `mark-full`, the owner's name, or the name or user folder of the PC the test runs on.
 
 ## 11. An e2e flow
 
@@ -414,7 +433,7 @@ In `docs/requirements/ledger.yaml`, set `status: done` only with evidence, in th
       - "artifacts/screens/audio-wrong-default/02-fixed.png"
 ```
 
-A test is `<file>#<test title>`; the file must exist and contain that title (quote the line: titles often contain `:`). A screenshot or other file is a path from the repository root and must exist (commit `artifacts/screens/<flow>/`). `done` needs at least one test. `npm run ledger:check` (part of `npm run check`) enforces this. Where an entry says `mark-flight` or `mark-racing`, use `mark-full` with mutations. Edit only your own entries, and only their `status` and `evidence` lines, so parallel branches merge cleanly.
+A test is `<file>#<test title>`; the file must exist and contain that title (quote the line: titles often contain `:`). A screenshot or other file is a path from the repository root and must exist (commit `artifacts/screens/<flow>/`). `done` needs at least one test. `npm run ledger:check` (part of `npm run check`) enforces this. Where an entry says `mark-flight`, use `mark-full` with mutations (`flying-fresh` and the scenarios that extend it); `mark-racing` is the scenario `mark-racing` (or `mark-racing-tv` when the entry needs the TV or SimHub); `generic-rig` is `fixtures/rigs/generic-rig` through the `generic-*` scenarios (section 9). Edit only your own entries, and only their `status` and `evidence` lines, so parallel branches merge cleanly.
 
 ## 13. Before you commit
 
