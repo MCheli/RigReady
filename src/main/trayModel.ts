@@ -4,6 +4,8 @@ export interface TraySetup {
   id: string;
   name: string;
   canLaunch: boolean;
+  /** When it was last used (ISO), for offering the most recent ones first. */
+  lastUsed?: string;
 }
 
 export interface TrayStatus {
@@ -118,6 +120,34 @@ export function paintBadge(
   return out;
 }
 
+/**
+ * The status badge alone, filling a square picture (BGRA, clear around it): what the taskbar
+ * button carries. The same shapes and colours as the badge on the tray icon.
+ */
+export function statusIcon(size: number, tone: keyof typeof TONE_RGB): Uint8Array {
+  const out = new Uint8Array(size * size * 4);
+  const shape = TONE_SHAPE[tone];
+  const ring = Math.max(1, size / 16);
+  const radius = size / 2 - ring - 0.5;
+  const centre = size / 2;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x + 0.5 - centre;
+      const dy = y + 0.5 - centre;
+      if (!inside(shape, dx, dy, radius + ring)) continue;
+      const i = (y * size + x) * 4;
+      const [r, g, b] = inside(shape, dx, dy, radius)
+        ? TONE_RGB[tone]
+        : ([0x0f, 0x13, 0x17] as const);
+      out[i] = b;
+      out[i + 1] = g;
+      out[i + 2] = r;
+      out[i + 3] = 255;
+    }
+  }
+  return out;
+}
+
 export function trayMenu(status: TrayStatus, busy = false): TrayMenuItem[] {
   const hasSetup = status.profileId !== undefined;
   const canLaunch = status.profiles?.find((p) => p.id === status.profileId)?.canLaunch ?? hasSetup;
@@ -171,6 +201,7 @@ export function statusFromFlyResponse(
         id: p['id'] as string,
         name: typeof p['name'] === 'string' ? p['name'] : (p['id'] as string),
         canLaunch: p['canLaunch'] === true,
+        ...(typeof p['lastUsed'] === 'string' ? { lastUsed: p['lastUsed'] } : {}),
       }));
     const activeId =
       typeof state?.['activeProfileId'] === 'string' ? state['activeProfileId'] : undefined;

@@ -22,6 +22,7 @@ import type {
   ShellOptions,
   ShellResult,
   Shortcuts,
+  Taskbar,
   UpdateFeed,
 } from '../../core/ports';
 import { LOG_KEEP_OLDER, LOG_MAX_BYTES } from '../../core/logger';
@@ -417,7 +418,17 @@ export const headlessPorts: {
   window: AppWindow;
   updates: UpdateFeed;
   shortcuts: Shortcuts;
+  taskbar: Taskbar;
 } = {
+  taskbar: {
+    setJumpTasks: async () => unavailable('The Jump List'),
+    setOverlay: async () => unavailable('The taskbar button'),
+    setTooltip: async () => unavailable('The taskbar button'),
+    setProgress: async () => unavailable('The taskbar button'),
+    setButtons: async () => unavailable('The taskbar button'),
+    // Nothing presses a button outside the app.
+    subscribe: () => () => {},
+  },
   shortcuts: {
     self: () => ({ exe: process.execPath, args: [] }),
     build: async () => unavailable('Making a shortcut'),

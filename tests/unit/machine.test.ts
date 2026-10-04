@@ -820,11 +820,67 @@ describe('scripted ports', () => {
       await headlessPorts.loginItem.setEnabled(true),
       await headlessPorts.shortcuts.build({ target: 'C:\\x.exe', args: [] }),
       await headlessPorts.shortcuts.read('C:\\x.lnk'),
+      await headlessPorts.taskbar.setJumpTasks([]),
+      await headlessPorts.taskbar.setOverlay(null),
+      await headlessPorts.taskbar.setTooltip('x'),
+      await headlessPorts.taskbar.setProgress({ mode: 'none' }),
+      await headlessPorts.taskbar.setButtons([]),
     ]) {
       expect(result).toMatchObject({ ok: false, error: { code: 'port.unavailable' } });
     }
     // What starts this program is known without the app.
     expect(headlessPorts.shortcuts.self()).toEqual({ exe: process.execPath, args: [] });
+    // Nothing presses a taskbar button outside the app: subscribing is harmless.
+    const pressed: string[] = [];
+    headlessPorts.taskbar.subscribe((id) => pressed.push(id))();
+    expect(pressed).toEqual([]);
+  });
+
+  it('the fake taskbar button remembers what it was told, and a press reaches whoever listens', async () => {
+    rig = await rigFromState(await markFull());
+    const { taskbar } = rig.ports;
+    const icon = { width: 1, height: 1, pixels: new Uint8Array(4) };
+    expect([taskbar.jumpTasks, taskbar.overlay, taskbar.tooltip, taskbar.progress]).toEqual([
+      [],
+      null,
+      '',
+      { mode: 'none' },
+    ]);
+    const task = { title: 'Fly A', description: 'Make the rig ready for A', args: ['--fly=a'] };
+    expect(await taskbar.setJumpTasks([task])).toEqual({ ok: true, value: undefined });
+    await taskbar.setOverlay({ icon, description: 'A: Ready' });
+    await taskbar.setTooltip('RigReady - A: Ready');
+    await taskbar.setProgress({ mode: 'indeterminate' });
+    await taskbar.setProgress({ mode: 'normal', value: 0.5 });
+    await taskbar.setProgress({ mode: 'none' });
+    expect(taskbar.jumpTasks).toEqual([task]);
+    expect(taskbar.jumpListWrites).toBe(1);
+    expect(taskbar.overlay?.description).toBe('A: Ready');
+    expect(taskbar.tooltip).toBe('RigReady - A: Ready');
+    expect(taskbar.progress).toEqual({ mode: 'none' });
+    expect(taskbar.progressSeen).toEqual([
+      { mode: 'indeterminate' },
+      { mode: 'normal', value: 0.5 },
+      { mode: 'none' },
+    ]);
+    await taskbar.setOverlay(null);
+    expect(taskbar.overlay).toBeNull();
+
+    // Buttons: one that is on reaches the listener, one that is off (or not there) does not.
+    const pressed: string[] = [];
+    const off = taskbar.subscribe((id) => pressed.push(id));
+    expect(taskbar.press('launch')).toBe(false);
+    await taskbar.setButtons([
+      { id: 'makeReady', tooltip: 'Make ready', icon, enabled: true },
+      { id: 'launch', tooltip: 'Launch', icon, enabled: false },
+    ]);
+    expect(taskbar.press('makeReady')).toBe(true);
+    expect(taskbar.press('launch')).toBe(false);
+    expect(taskbar.press('standDown')).toBe(false);
+    expect(pressed).toEqual(['makeReady']);
+    off();
+    expect(taskbar.press('makeReady')).toBe(true);
+    expect(pressed).toEqual(['makeReady']);
   });
 });
 

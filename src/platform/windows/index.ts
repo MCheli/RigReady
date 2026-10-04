@@ -11,6 +11,7 @@ import type {
   Render,
   Secrets,
   Shortcuts,
+  Taskbar,
   UpdateFeed,
 } from '../../core/ports';
 import { NodeHttp, NodeRawFs, NodeShell, headlessPorts, systemClock } from '../node';
@@ -36,6 +37,7 @@ export interface AppPorts {
   window: AppWindow;
   updates: UpdateFeed;
   shortcuts: Shortcuts;
+  taskbar: Taskbar;
 }
 
 export interface WindowsPlatformOptions {

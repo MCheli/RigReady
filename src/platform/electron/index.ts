@@ -3,6 +3,7 @@ import {
   BrowserWindow,
   clipboard,
   dialog,
+  nativeImage,
   Notification,
   safeStorage,
   screen,
@@ -27,11 +28,17 @@ import type {
   Secrets,
   ShortcutLink,
   Shortcuts,
+  JumpTask,
+  Taskbar,
+  TaskbarImage,
+  TaskbarProgress,
+  ThumbButton,
 } from '../../core/ports';
 import { loginEntryEnabled, RUN_KEY, STARTUP_APPROVED_KEY } from '../../core/loginItem';
 import { err, ok, type Result } from '../../core/result';
 import { joinWindowsArgs, splitWindowsArgs } from '../../core/windowsArgs';
 import { WindowsRegistry } from '../windows/registry';
+import { RegisterWindowMessageW } from '../windows/win32';
 
 /** The ports that need Electron: secret storage, file pickers, HTML rendering, notifications, login item. */
 
@@ -390,6 +397,129 @@ export class ElectronShortcuts implements Shortcuts {
         String(e)
       );
     }
+  }
+}
+
+/**
+ * RigReady's taskbar button through Electron. The Jump List belongs to the app; the badge,
+ * the tooltip, the progress bar and the thumbnail buttons belong to the main window, and
+ * are refused while there is none.
+ */
+export class ElectronTaskbar implements Taskbar {
+  private readonly listeners = new Set<(buttonId: string) => void>();
+  /** What the button was last told: Windows forgets it when the button is made anew. */
+  private overlay: { icon: TaskbarImage; description: string } | null = null;
+  private tooltip: string | undefined;
+  private progress: TaskbarProgress = { mode: 'none' };
+
+  constructor(
+    private readonly window: () => BrowserWindow | undefined,
+    /** How Windows starts this copy of RigReady (Shortcuts.self). */
+    private readonly self: () => { exe: string; args: string[] }
+  ) {}
+
+  private onWindow(what: string, change: (window: BrowserWindow) => boolean | void): Result<void> {
+    const window = this.window();
+    if (!window || window.isDestroyed()) {
+      return err('taskbar.noWindow', 'RigReady has no window on the taskbar right now.');
+    }
+    try {
+      if (change(window) === false) return err('taskbar.refused', `Windows did not take ${what}.`);
+      return ok(undefined);
+    } catch (e) {
+      return err('taskbar.failed', `Windows did not take ${what}.`, String(e));
+    }
+  }
+
+  /**
+   * Follows a window's taskbar button: Windows makes a new button whenever the window comes
+   * back from being hidden (from the tray), and a new button has no badge, tooltip or
+   * progress until it is told again. (Electron puts the thumbnail buttons back itself.)
+   */
+  watch(window: BrowserWindow): void {
+    const created = RegisterWindowMessageW('TaskbarButtonCreated') as number;
+    if (!created) return;
+    window.hookWindowMessage(created, () => {
+      void this.setOverlay(this.overlay);
+      if (this.tooltip !== undefined) void this.setTooltip(this.tooltip);
+      void this.setProgress(this.progress);
+    });
+  }
+
+  private picture(image: TaskbarImage): Electron.NativeImage {
+    return nativeImage.createFromBitmap(Buffer.from(image.pixels), {
+      width: image.width,
+      height: image.height,
+    });
+  }
+
+  async setJumpTasks(tasks: JumpTask[]): Promise<Result<void>> {
+    try {
+      const { exe, args } = this.self();
+      const taken = app.setUserTasks(
+        tasks.map((task) => ({
+          program: exe,
+          // One text, as Windows stores it for a task; its own rules give the values back.
+          arguments: joinWindowsArgs([...args, ...task.args]),
+          title: task.title,
+          description: task.description,
+          iconPath: exe,
+          iconIndex: 0,
+        }))
+      );
+      return taken ? ok(undefined) : err('taskbar.jumpList', 'Windows did not take the Jump List.');
+    } catch (e) {
+      return err('taskbar.jumpList', 'Windows did not take the Jump List.', String(e));
+    }
+  }
+
+  async setOverlay(
+    overlay: { icon: TaskbarImage; description: string } | null
+  ): Promise<Result<void>> {
+    this.overlay = overlay;
+    return this.onWindow('the status badge', (window) =>
+      window.setOverlayIcon(overlay ? this.picture(overlay.icon) : null, overlay?.description ?? '')
+    );
+  }
+
+  async setTooltip(text: string): Promise<Result<void>> {
+    this.tooltip = text;
+    return this.onWindow('the tooltip', (window) => window.setThumbnailToolTip(text));
+  }
+
+  async setProgress(progress: TaskbarProgress): Promise<Result<void>> {
+    this.progress = progress;
+    return this.onWindow('the progress bar', (window) => {
+      if (progress.mode === 'none') window.setProgressBar(-1);
+      else if (progress.mode === 'indeterminate') {
+        window.setProgressBar(2, { mode: 'indeterminate' });
+      } else {
+        const value = Math.min(1, Math.max(0, progress.value ?? 0));
+        window.setProgressBar(value, { mode: progress.mode });
+      }
+    });
+  }
+
+  async setButtons(buttons: ThumbButton[]): Promise<Result<void>> {
+    return this.onWindow('the thumbnail buttons', (window) =>
+      window.setThumbarButtons(
+        buttons.map((button) => ({
+          tooltip: button.tooltip,
+          icon: this.picture(button.icon),
+          flags: [button.enabled ? 'enabled' : 'disabled'],
+          click: () => {
+            for (const listener of [...this.listeners]) listener(button.id);
+          },
+        }))
+      )
+    );
+  }
+
+  subscribe(listener: (buttonId: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 }
 

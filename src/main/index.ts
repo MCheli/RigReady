@@ -30,6 +30,7 @@ import {
   ElectronRender,
   ElectronSecrets,
   ElectronShortcuts,
+  ElectronTaskbar,
   HIDDEN_ARG,
 } from '../platform/electron';
 import { ElectronUpdateFeed } from '../platform/electron/updater';
@@ -46,6 +47,14 @@ import { discoverFeatures, wireFeatures } from './bootstrap';
 import { runDiagnose } from './diagnose';
 import { unsupportedPlatformMessage } from './platformGuard';
 import { CommandRunner } from './rigCommand';
+import {
+  TaskbarActivity,
+  TaskbarTold,
+  jumpTasks,
+  taskbarOverlay,
+  taskbarTooltip,
+  thumbButtons,
+} from './taskbarModel';
 import { TrayMemoryTrimmer } from './trayMemory';
 import {
   installProcessErrorHooks,
@@ -59,6 +68,7 @@ import {
   statusFromFlyResponse,
   TONE_RGB,
   trayMenu,
+  trayStatusLine,
   trayTone,
   trayTooltip,
   type TrayMenuItem,
@@ -97,6 +107,9 @@ const appWindow = new ElectronAppWindow(() => mainWindow, {
   load: loadApp,
 });
 
+/** The real taskbar button, kept here so it can follow the main window once there is one. */
+let realTaskbar: ElectronTaskbar | undefined;
+
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
   return index >= 0 ? process.argv[index + 1] : undefined;
@@ -117,18 +130,26 @@ async function createPlatform(): Promise<Platform> {
         log: logging.log,
         projectRoot,
         ...(resourcesPath ? { resourcesPath } : {}),
-        app: (dataRoot) => ({
-          secrets: new ElectronSecrets(dataRoot),
-          dialogs: new ElectronDialogs(() => mainWindow),
-          render: new ElectronRender(dataRoot),
-          notifications: new ElectronNotifications(),
-          clipboard: new ElectronClipboard(),
-          loginItem: new ElectronLoginItem(),
-          overlays: new ElectronOverlays(),
-          window: appWindow,
-          updates: new ElectronUpdateFeed(logging.log.child('updater')),
-          shortcuts: new ElectronShortcuts(dataRoot),
-        }),
+        app: (dataRoot) => {
+          const shortcuts = new ElectronShortcuts(dataRoot);
+          realTaskbar = new ElectronTaskbar(
+            () => mainWindow,
+            () => shortcuts.self()
+          );
+          return {
+            secrets: new ElectronSecrets(dataRoot),
+            dialogs: new ElectronDialogs(() => mainWindow),
+            render: new ElectronRender(dataRoot),
+            notifications: new ElectronNotifications(),
+            clipboard: new ElectronClipboard(),
+            loginItem: new ElectronLoginItem(),
+            overlays: new ElectronOverlays(),
+            window: appWindow,
+            updates: new ElectronUpdateFeed(logging.log.child('updater')),
+            shortcuts,
+            taskbar: realTaskbar,
+          };
+        },
       }),
     };
   }
@@ -303,7 +324,13 @@ async function start(): Promise<void> {
     for (const panel of appWindow.panels()) panel.webContents.send(channel, payload);
     // A command started from outside the window follows the progress the features report.
     commands.onEvent(channel, payload);
+    // So does the taskbar button; and a setup made, renamed or deleted changes its Jump List.
+    if (activity.event(channel, payload)) refreshTaskbar();
+    if (channel === SETUPS_CHANGED) refreshSetups();
   };
+  /** What is running right now, for the progress bar in the taskbar button. */
+  const activity = new TaskbarActivity();
+  const SETUPS_CHANGED = eventName('fly', 'profilesChanged');
   // Commands: --fly, --make-ready, --setup (a shortcut, a Jump List task, a second start).
   // What it works with is defined further down; nothing here runs before that.
   const commands = new CommandRunner({
@@ -311,7 +338,7 @@ async function start(): Promise<void> {
     publish: (run) => send(eventName(appContract.feature, 'command'), run),
     showWindow,
     flyChanged: () => flyChanged(),
-    busy: () => trayBusy || actionsRunning > 0,
+    busy: () => trayBusy || activity.busy(),
     working: (on) => {
       trayBusy = on;
       refreshTray();
@@ -431,21 +458,31 @@ async function start(): Promise<void> {
   // ---- tray ----
   let trayStatus: TrayStatus = {};
   let trayBusy = false;
-  /** Make ready, Launch, Stand down and single fixes that are running now, whoever asked. */
-  let actionsRunning = 0;
-  const ACTION_CHANNELS = new Set(['fly:makeReady', 'fly:launch', 'fly:standDown', 'fly:fix']);
+  /** Calls after which the list of setups, or which one was used last, may be different. */
+  const SETUP_CHANGERS = new Set([
+    'fly:check',
+    'profiles:create',
+    'profiles:save',
+    'profiles:remove',
+    'profiles:clone',
+    'profiles:use',
+    'sharing:import',
+  ]);
   const handlers = new Map([...wiring.handlers, ...appWiring.handlers]);
   const call = async (channel: string, input?: unknown): Promise<Envelope> => {
     const handler = handlers.get(channel);
     if (!handler) return err('ipc.unknown', `Unknown channel ${channel}.`);
-    const action = ACTION_CHANNELS.has(channel);
-    if (action) actionsRunning++;
+    // Make ready, Launch, Stand down and checks show on the taskbar button, whoever asked.
+    if (activity.began(channel, input)) refreshTaskbar();
     let envelope: Envelope;
     try {
       envelope = await handler(input);
     } finally {
-      if (action) actionsRunning--;
+      if (activity.ended(channel, input)) refreshTaskbar();
     }
+    // The quiet re-check the Fly screen makes every few seconds changes neither.
+    const quiet = (input as { remember?: unknown } | undefined)?.remember === false;
+    if (envelope.ok && SETUP_CHANGERS.has(channel) && !quiet) refreshSetups();
     if (envelope.ok) {
       const next = statusFromFlyResponse(channel, envelope.value, trayStatus);
       if (next) {
@@ -475,10 +512,20 @@ async function start(): Promise<void> {
     machineChanged('tray');
   };
 
+  /**
+   * Reads the setups again, a moment after the last thing that may have changed them: the
+   * quick switch of the tray and the Jump List follow setups made, renamed, deleted and used.
+   */
+  let setupsTimer: ReturnType<typeof setTimeout> | undefined;
+  function refreshSetups(): void {
+    clearTimeout(setupsTimer);
+    setupsTimer = setTimeout(() => void call('fly:state'), 250);
+  }
+
   const fromTray = async (
     work: (profileId: string, name: string) => Promise<void>
   ): Promise<void> => {
-    if (trayBusy || !trayStatus.profileId) return;
+    if (trayBusy || activity.busy() || !trayStatus.profileId) return;
     trayBusy = true;
     refreshTray();
     try {
@@ -495,7 +542,8 @@ async function start(): Promise<void> {
     quit,
     makeReady: () =>
       fromTray(async (profileId, name) => {
-        const result = await call('fly:makeReady', { profileId });
+        // Tagged, so its fixes are reported one by one and the taskbar button can fill.
+        const result = await call('fly:makeReady', { profileId, runId: `tray-${Date.now()}` });
         await ports.notifications.notify(
           result.ok
             ? {
@@ -590,7 +638,52 @@ async function start(): Promise<void> {
     });
   }
 
+  // ---- taskbar button: Jump List, status badge, tooltip, progress, thumbnail buttons ----
+  /** What the taskbar was last told, so it is told again only when something changed. */
+  const taskbarTold = new TaskbarTold();
+  const taskbarFailures = new Set<string>();
+  function tellTaskbar(
+    what: string,
+    key: string,
+    tell: () => ReturnType<Ports['taskbar']['setTooltip']>
+  ): void {
+    if (!taskbarTold.news(what, key)) return;
+    void tell().then((told) => {
+      if (told.ok || taskbarFailures.has(`${what} ${told.error.code}`)) return;
+      // Said once: a PC without a taskbar to tell stays that way for this run.
+      taskbarFailures.add(`${what} ${told.error.code}`);
+      log.warn(`taskbar: ${what} was not set`, told.error);
+    });
+  }
+  function refreshTaskbar(): void {
+    const tasks = jumpTasks(trayStatus);
+    tellTaskbar('the Jump List', JSON.stringify(tasks), () => ports.taskbar.setJumpTasks(tasks));
+    // The rest belongs to the button of the window: nothing to tell before the window exists.
+    if (!mainWindow) return;
+    // The badge is drawn only when it is a different one.
+    tellTaskbar(
+      'the status badge',
+      `${trayTone(trayStatus) ?? ''} ${trayStatusLine(trayStatus)}`,
+      () => ports.taskbar.setOverlay(taskbarOverlay(trayStatus))
+    );
+    const tooltip = taskbarTooltip(trayStatus);
+    tellTaskbar('the tooltip', tooltip, () => ports.taskbar.setTooltip(tooltip));
+    const progress = activity.progress();
+    tellTaskbar('the progress bar', JSON.stringify(progress), () =>
+      ports.taskbar.setProgress(progress)
+    );
+    const buttons = thumbButtons(trayStatus, trayBusy || activity.busy());
+    tellTaskbar(
+      'the thumbnail buttons',
+      JSON.stringify(buttons.map((button) => [button.id, button.tooltip, button.enabled])),
+      () => ports.taskbar.setButtons(buttons)
+    );
+  }
+  // A button under the thumbnail does what the same line of the tray menu does.
+  ports.taskbar.subscribe((buttonId) => void trayActions[buttonId]?.());
+
   function refreshTray(): void {
+    refreshTaskbar();
     if (!tray) return;
     tray.setToolTip(trayTooltip(trayStatus));
     tray.setImage(trayImage(trayTone(trayStatus)));
@@ -614,6 +707,30 @@ async function start(): Promise<void> {
     });
     // Every shortcut the fake machine was asked to make.
     hooks['__rigreadyShortcuts'] = () => fake.shortcuts.built;
+    // The taskbar button as the fake machine was last told, and a press on one of its buttons.
+    hooks['__rigreadyTaskbar'] = () => ({
+      jumpTasks: fake.taskbar.jumpTasks,
+      jumpListWrites: fake.taskbar.jumpListWrites,
+      overlay: fake.taskbar.overlay ? fake.taskbar.overlay.description : null,
+      tone: trayTone(trayStatus) ?? null,
+      tooltip: fake.taskbar.tooltip,
+      progress: fake.taskbar.progress,
+      progressSeen: fake.taskbar.progressSeen,
+      buttons: fake.taskbar.buttons.map(({ id, tooltip, enabled }) => ({ id, tooltip, enabled })),
+    });
+    hooks['__rigreadyTaskbarPress'] = (buttonId: string) => fake.taskbar.press(buttonId);
+    // The pictures it was handed, as PNG files a person can look at.
+    hooks['__rigreadyTaskbarPictures'] = () => {
+      const png = (image: { width: number; height: number; pixels: Uint8Array }): string =>
+        nativeImage
+          .createFromBitmap(Buffer.from(image.pixels), { width: image.width, height: image.height })
+          .toPNG()
+          .toString('base64');
+      return {
+        overlay: fake.taskbar.overlay ? png(fake.taskbar.overlay.icon) : null,
+        buttons: Object.fromEntries(fake.taskbar.buttons.map((b) => [b.id, png(b.icon)])),
+      };
+    };
     hooks['__rigreadyTrayClick'] = async (id: string) => {
       if (id.startsWith('profile:')) await switchFromTray(id.slice('profile:'.length));
       else await trayActions[id]?.();
@@ -648,6 +765,9 @@ async function start(): Promise<void> {
     !startHidden
   );
   watchWindow(mainWindow, log);
+  // The taskbar button of the window exists now: its badge, tooltip and buttons can be set.
+  realTaskbar?.watch(mainWindow);
+  refreshTaskbar();
   mainWindow.on('close', (event) => {
     if (quitting || !tray) return;
     // Decided from the cached settings: the close event cannot wait for a file read.

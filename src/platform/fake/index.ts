@@ -39,6 +39,11 @@ import type {
   ShellResult,
   ShortcutLink,
   Shortcuts,
+  JumpTask,
+  Taskbar,
+  TaskbarImage,
+  TaskbarProgress,
+  ThumbButton,
 } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
 import { findSteamLibraries } from '../../core/steam';
@@ -932,6 +937,59 @@ export class FakeShortcuts implements Shortcuts {
   }
 }
 
+/** The taskbar button of a scenario run: remembers what it was last told, and all of it. */
+export class FakeTaskbar implements Taskbar {
+  /** The Jump List as it is now. */
+  jumpTasks: JumpTask[] = [];
+  /** How often the Jump List was set (it must not be rewritten when nothing changed). */
+  jumpListWrites = 0;
+  overlay: { icon: TaskbarImage; description: string } | null = null;
+  tooltip = '';
+  progress: TaskbarProgress = { mode: 'none' };
+  /** Every progress state there was, oldest first: a test can see that a bar was shown. */
+  readonly progressSeen: TaskbarProgress[] = [];
+  buttons: ThumbButton[] = [];
+  private listeners = new Set<(buttonId: string) => void>();
+
+  async setJumpTasks(tasks: JumpTask[]): Promise<Result<void>> {
+    this.jumpTasks = structuredClone(tasks);
+    this.jumpListWrites++;
+    return ok(undefined);
+  }
+  async setOverlay(
+    overlay: { icon: TaskbarImage; description: string } | null
+  ): Promise<Result<void>> {
+    this.overlay = overlay ? { ...overlay } : null;
+    return ok(undefined);
+  }
+  async setTooltip(text: string): Promise<Result<void>> {
+    this.tooltip = text;
+    return ok(undefined);
+  }
+  async setProgress(progress: TaskbarProgress): Promise<Result<void>> {
+    this.progress = { ...progress };
+    this.progressSeen.push({ ...progress });
+    return ok(undefined);
+  }
+  async setButtons(buttons: ThumbButton[]): Promise<Result<void>> {
+    this.buttons = buttons.map((button) => ({ ...button }));
+    return ok(undefined);
+  }
+  subscribe(listener: (buttonId: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+  /** Test hook: the user presses a button under the window's thumbnail. A button that is off does nothing. */
+  press(buttonId: string): boolean {
+    const button = this.buttons.find((b) => b.id === buttonId);
+    if (!button?.enabled) return false;
+    for (const listener of [...this.listeners]) listener(buttonId);
+    return true;
+  }
+}
+
 export interface FakePorts extends Ports {
   devices: FakeDeviceProvider;
   processes: FakeProcessProvider;
@@ -950,6 +1008,7 @@ export interface FakePorts extends Ports {
   window: FakeAppWindow;
   updates: FakeUpdateFeed;
   shortcuts: FakeShortcuts;
+  taskbar: FakeTaskbar;
   /** The mutable machine state behind the providers. */
   state: RigState;
 }
@@ -1008,6 +1067,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     window: new FakeAppWindow(),
     updates: new FakeUpdateFeed(path.join(options.homeDir, UPDATE_FEED_FILE)),
     shortcuts: new FakeShortcuts(folders),
+    taskbar: new FakeTaskbar(),
   };
 }
 

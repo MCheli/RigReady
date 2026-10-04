@@ -4189,6 +4189,50 @@ requirements:
       - "artifacts/screens/one-click-shortcut/03-on-the-desktop.png"
       - "artifacts/screens/one-click-shortcut/04-on-the-safety-page.png"
 
+  - id: WOW-WIN-004
+    title: Jump List tasks "Fly <setup>"
+    job: fly
+    area: one-click
+    priority: p2
+    done_means:
+      - "A right-click on RigReady's taskbar button offers 'Fly <setup>' for up to six setups, the most recently used first and the never used ones after them by name; each task starts RigReady with --fly=<setup id>. A setup that launches nothing is offered as 'Make ready: <setup>' with --make-ready."
+      - "The list is kept current: it follows a setup being used (switched to), renamed, created (cloned) and deleted, within a moment and without a restart (E2E through the fake taskbar)."
+      - "Started with its arguments, a task flies its setup (E2E: a second start with the task's arguments launches)."
+      - "Windows is told the list only when it is a different list; a failure to set it (no taskbar) is logged once as a warning and stops nothing."
+    status: done
+    evidence:
+      - 'tests/unit/taskbar.test.ts#offers "Fly <setup>" for the setups used most recently, then the others by name'
+      - "tests/unit/taskbar.test.ts#is empty without setups and never longer than a list anybody reads"
+      - "tests/unit/taskbar.test.ts#is told again only when it is a different thing: nothing is rewritten on every check"
+      - 'tests/e2e/taskbar.e2e.ts#taskbar: the Jump List offers "Fly <setup>" for the setups used most recently and follows setups used, renamed, cloned and deleted'
+      - "tests/e2e/taskbar.e2e.ts#taskbar: on a PC without setups the Jump List is empty, there is no badge, and the buttons are off"
+      - "artifacts/screens/taskbar-jump-list/01-three-setups.png"
+
+  - id: WOW-WIN-005
+    title: Taskbar button shows the status, progress, and Make ready / Launch / Stand down
+    job: fly
+    area: one-click
+    priority: p2
+    done_means:
+      - "The taskbar button carries a badge for the setup in use: a green dot when ready, an amber triangle when ready with warnings, a red square when not ready (three shapes, never colour alone), with the status in words as its description ('DCS F/A-18C: Not ready (1 problem)') and in the thumbnail's tooltip. No badge until checks have run."
+      - "A progress bar shows in the button while a check somebody asked for, Make ready, Launch or Stand down runs, whoever started it (the window, the tray, a command): it fills as the fixes of Make ready end, and is gone when the action is over. The Fly screen's quiet re-check every few seconds shows nothing."
+      - "Three buttons under the window's thumbnail, Make ready, Launch and Stand down, do what the same lines of the tray menu do, and are off when those are (no setup, nothing to launch, something already running)."
+      - "Everything goes through a Taskbar port whose fake remembers what it was told; the pictures are drawn by pure, unit-tested functions and saved as a picture a person can look at."
+    notes:
+      - "2026-10-04: the button pictures are light with a dark edge so they read on a dark taskbar and on a light one (artifacts/screens/taskbar-button/02-pictures.png shows each on both). Windows makes a new taskbar button when the window comes back from the tray and forgets the badge, tooltip and progress; the Electron port tells it again when Windows announces the new button (the registered TaskbarButtonCreated message)."
+    status: done
+    evidence:
+      - "tests/unit/taskbar.test.ts#the badge says the status in a shape and in words, and is absent until checks ran"
+      - "tests/unit/taskbar.test.ts#the thumbnail buttons are the tray’s three actions, enabled when the tray’s are"
+      - "tests/unit/taskbar.test.ts#each button has a picture of its own"
+      - "tests/unit/taskbar.test.ts#progress: a check somebody asked for is busy; the quiet re-check every few seconds is not"
+      - "tests/unit/taskbar.test.ts#progress: Make ready fills as its fixes end, and is gone when it is over"
+      - "tests/unit/taskbar.test.ts#progress: Launch counts the steps before the game and the game, not the ones after"
+      - "tests/unit/machine.test.ts#the fake taskbar button remembers what it was told, and a press reaches whoever listens"
+      - "tests/e2e/taskbar.e2e.ts#taskbar: the button carries the status as a badge with words, fills while Make ready runs, and its three buttons do what they say"
+      - "artifacts/screens/taskbar-button/02-pictures.png"
+      - "artifacts/screens/taskbar-button/01-not-ready.png"
+
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY
   # ---------------------------------------------------------------------------

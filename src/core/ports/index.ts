@@ -396,6 +396,56 @@ export interface Shortcuts {
   read(file: string): Promise<Result<ShortcutLink | undefined>>;
 }
 
+/** A small picture handed to Windows: BGRA pixels, top row first. */
+export interface TaskbarImage {
+  width: number;
+  height: number;
+  pixels: Uint8Array;
+}
+
+/** One entry of the Jump List (right-click on the taskbar button): it starts RigReady with these arguments. */
+export interface JumpTask {
+  title: string;
+  /** The words Windows shows when the pointer rests on it. */
+  description: string;
+  /** Arguments for RigReady, one value each: never a command line. */
+  args: string[];
+}
+
+/** A button under the window's thumbnail on the taskbar. */
+export interface ThumbButton {
+  /** Handed to subscribers when the button is pressed. */
+  id: string;
+  tooltip: string;
+  icon: TaskbarImage;
+  enabled: boolean;
+}
+
+export interface TaskbarProgress {
+  /** none: no bar. indeterminate: busy, no telling how long. normal, paused, error: a bar at `value`. */
+  mode: 'none' | 'indeterminate' | 'normal' | 'paused' | 'error';
+  /** 0 to 1. */
+  value?: number;
+}
+
+/**
+ * RigReady's button on the Windows taskbar: its Jump List, the status badge on it, the
+ * progress bar in it, and the buttons under the window's thumbnail.
+ */
+export interface Taskbar {
+  /** Replaces the tasks of the Jump List. */
+  setJumpTasks(tasks: JumpTask[]): Promise<Result<void>>;
+  /** The small badge on the button, with what it says in words for a screen reader; null takes it away. */
+  setOverlay(overlay: { icon: TaskbarImage; description: string } | null): Promise<Result<void>>;
+  /** The words shown with the window's thumbnail. */
+  setTooltip(text: string): Promise<Result<void>>;
+  setProgress(progress: TaskbarProgress): Promise<Result<void>>;
+  /** The buttons under the window's thumbnail. Windows cannot take one away again, only turn it off. */
+  setButtons(buttons: ThumbButton[]): Promise<Result<void>>;
+  /** Calls the listener with a button's id when it is pressed. Returns the unsubscribe function. */
+  subscribe(listener: (buttonId: string) => void): () => void;
+}
+
 /** The update channels a user can follow. */
 export type UpdateChannel = 'stable' | 'beta';
 
@@ -628,4 +678,5 @@ export interface Ports {
   window: AppWindow;
   updates: UpdateFeed;
   shortcuts: Shortcuts;
+  taskbar: Taskbar;
 }
