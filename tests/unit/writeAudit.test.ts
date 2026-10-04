@@ -287,6 +287,7 @@ describe('the source rule: a feature that writes files shows the change first', 
       'racing:beamngCopyOlder': 'racing:beamngCopyOlderPreview',
       'racing:beamngCopyToController': 'racing:beamngCopyToControllerPreview',
       'racing:iracingRepair': 'racing:iracingRepairPreview',
+      'racing:lmuRepair': 'racing:lmuRepairPreview',
     };
     const all = new Set(
       contracts.flatMap((c) => Object.keys(c.channels).map((k) => `${c.feature}:${k}`))
@@ -339,6 +340,18 @@ describe('a preview says exactly what is then written', () => {
     expect(preview.summary).toBe('2 files modified');
     const target = app;
     const written = await during(target, () => target.invoke('racing:iracingRepair', { mapping }));
+    expectSame(preview, written, target.ports.folders.dataRoot());
+  });
+
+  it('Le Mans Ultimate: putting the new name of a renamed wheel base into the bindings', async () => {
+    app = await wiredApp('racing-lmu-renamed-wheel');
+    const preview = await app.invoke<ChangePreview>('racing:lmuRepairPreview');
+    expect(await journal(app)).toEqual([]);
+    expect(preview.files.map((f) => [f.label, f.change])).toEqual([
+      ['direct input.json', 'modified'],
+    ]);
+    const target = app;
+    const written = await during(target, () => target.invoke('racing:lmuRepair'));
     expectSame(preview, written, target.ports.folders.dataRoot());
   });
 

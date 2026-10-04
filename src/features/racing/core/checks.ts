@@ -241,13 +241,16 @@ export async function racingOverview(ctx: RacingContext): Promise<RacingOverview
         const off = view.devices.filter(
           (d) => d.state === 'missing' || d.state === 'other-mode'
         ).length;
-        attention = off > 0;
+        const renamed = view.devices.filter((d) => d.state === 'renamed').length;
+        attention = off > 0 || renamed > 0;
         bindings =
           view.bindings.length === 0
             ? 'No bindings yet'
             : off > 0
               ? `${off} controller${off === 1 ? '' : 's'} not connected`
-              : `${view.bindings.length} bindings · controllers connected`;
+              : renamed > 0
+                ? `${renamed} controller${renamed === 1 ? ' has' : 's have'} a new name`
+                : `${view.bindings.length} bindings · controllers connected`;
       } else if (game.id === 'beamng') {
         const view = await beamngView(ctx);
         running = view.running;

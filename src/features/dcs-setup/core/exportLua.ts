@@ -246,8 +246,18 @@ function linesToRemove(parsed: ParsedExport, tool: ExportTool, keepFirst: boolea
   );
   for (const helper of parsed.lines.filter((l) => l.tool === tool && l.helperFor)) {
     const name = new RegExp(`\\b${helper.helperFor}\\b`);
+    // A helper serves the lines after it, up to the next line that declares the same name:
+    // the helper of a duplicate goes with its duplicate, the first one stays with the first.
+    const next = parsed.lines.find(
+      (l) => l.index > helper.index && l.helperFor === helper.helperFor
+    );
     const stillUsed = parsed.lines.some(
-      (l) => l.index !== helper.index && !removing.has(l.index) && !l.helperFor && name.test(l.text)
+      (l) =>
+        l.index > helper.index &&
+        (!next || l.index < next.index) &&
+        !removing.has(l.index) &&
+        !l.helperFor &&
+        name.test(l.text)
     );
     if (!stillUsed) removing.add(helper.index);
   }
