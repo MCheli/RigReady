@@ -303,7 +303,7 @@ test('racing: game pages show status at a glance, launch, and a folder chosen by
   await page.locator('[data-testid="game-row"][data-game="iracing"]').click();
   await expect(page.getByTestId('game-title')).toHaveText('iRacing');
   await expect(page.getByTestId('game-glance')).toContainText('Standalone install');
-  await expect(page.locator('[data-testid="game-tracked"]')).toHaveCount(6);
+  await expect(page.locator('[data-testid="game-tracked"]')).toHaveCount(7);
   await expect(page.getByTestId('game-bindings')).toBeVisible();
   await shot('iracing');
   await page.getByTestId('game-launch').click();

@@ -165,6 +165,7 @@ describe('TrackIR profiles and the game map', () => {
     rig = await scenarioRig('trackir-ready', { files: FILES });
     const tracked = await trackIrTrackedFiles(rig.ports);
     expect(tracked.ok && tracked.value.map((t) => t.label)).toEqual([
+      'TrackIR settings and profiles',
       'TrackIR settings',
       'TrackIR game-to-profile map',
       'TrackIR profile default.xml',

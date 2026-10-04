@@ -30,6 +30,19 @@ onMounted(() => void load());
 
 const scope = computed(() => view.value?.scopes.find((s) => s.id === scopeId.value));
 
+/** Rows of one game or tool shown before "Show all": its whole-folder items come first. */
+const GROUP_FOLD = 3;
+const unfolded = ref(new Set<string>());
+const suggestionGroups = computed(() => {
+  const groups: { source: string; items: Suggestion[] }[] = [];
+  for (const s of suggestions.value ?? []) {
+    const group = groups.find((g) => g.source === s.source);
+    if (group) group.items.push(s);
+    else groups.push({ source: s.source, items: [s] });
+  }
+  return groups;
+});
+
 async function refreshSuggestions(): Promise<void> {
   const suggested = await api.suggestions();
   if (suggested.ok) suggestions.value = suggested.value;
@@ -280,18 +293,27 @@ const status = (entry: ItemView): { text: string; cls: string } => {
         No supported game or tool settings were found on this PC. Add files and folders yourself
         above.
       </div>
-      <div v-else class="rr-panel">
+      <div
+        v-for="group in suggestionGroups"
+        v-else
+        :key="group.source"
+        class="rr-panel suggestion-group"
+        data-testid="suggestion-group"
+        :data-source="group.source"
+      >
+        <div class="rr-row group-head">
+          <div class="rr-row-main rr-row-title">{{ group.source }}</div>
+          <span class="rr-row-sub">{{ plural(group.items.length, 'suggestion') }}</span>
+        </div>
         <div
-          v-for="s in suggestions"
+          v-for="s in unfolded.has(group.source) ? group.items : group.items.slice(0, GROUP_FOLD)"
           :key="s.key"
           class="rr-row"
           data-testid="suggestion"
           :data-label="s.label"
         >
           <div class="rr-row-main">
-            <div class="rr-row-title">
-              {{ s.label }} <span class="rr-muted suggestion-source">{{ s.source }}</span>
-            </div>
+            <div class="rr-row-title">{{ s.label }}</div>
             <div v-if="s.description" class="rr-row-sub">{{ s.description }}</div>
             <div class="rr-row-sub rr-mono">{{ s.path }}</div>
           </div>
@@ -314,6 +336,16 @@ const status = (entry: ItemView): { text: string; cls: string } => {
             @click="add(s)"
           >
             Add
+          </v-btn>
+        </div>
+        <div v-if="group.items.length > GROUP_FOLD && !unfolded.has(group.source)" class="rr-row">
+          <v-btn
+            variant="text"
+            size="small"
+            data-testid="suggestion-show-all"
+            @click="unfolded = new Set([...unfolded, group.source])"
+          >
+            Show all {{ group.items.length }} (single files and folders)
           </v-btn>
         </div>
       </div>
@@ -372,6 +404,12 @@ const status = (entry: ItemView): { text: string; cls: string } => {
   border-radius: 6px;
   padding: 0 6px;
   margin-left: 6px;
+}
+.suggestion-group {
+  margin-bottom: 10px;
+}
+.group-head {
+  border-top: none;
 }
 .suggestion-source {
   font-weight: 400;

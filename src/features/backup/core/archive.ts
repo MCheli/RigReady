@@ -7,6 +7,7 @@ import { inspectZip } from '../../../core/files/zipInspect';
 import { collapsePath, variableOf } from '../../../core/pathVariables';
 import { err, ok, type Result } from '../../../core/result';
 import { resolveTrackedItem, TrackedItemSchema, type TrackedItem } from '../../../core/tracked';
+import { collectSuggestions } from './suggestions';
 import {
   allScopes,
   backupRoot,
@@ -61,6 +62,22 @@ export const ManifestSchema = z.object({
   rigready: z
     .array(ManifestFileSchema.extend({ path: z.string().regex(RIGREADY_FILES) }))
     .max(1000),
+  /**
+   * Settings that are not files (registry values), kept as data under records/. They can
+   * be read back; nothing restores them.
+   */
+  records: z
+    .array(
+      ManifestFileSchema.extend({
+        path: z.string().regex(/^[a-z0-9][a-z0-9-]{0,120}\.json$/),
+        label: z.string().max(120),
+        /** Where it was read: "HKEY_CURRENT_USER\\Software\\Endor\\FanatecService". */
+        from: z.string().max(400),
+        source: z.string().max(80),
+      })
+    )
+    .max(200)
+    .default([]),
   /** Files that could not be read when the backup was made. */
   skipped: z
     .array(z.object({ path: z.string(), reason: z.string() }))
@@ -78,7 +95,9 @@ export type Manifest = z.infer<typeof ManifestSchema>;
 export type BackupScope =
   | { kind: 'full' }
   | { kind: 'profile'; profileId: string }
-  | { kind: 'custom'; label: string; items: { scope: string; id: string }[] };
+  | { kind: 'custom'; label: string; items: { scope: string; id: string }[] }
+  /** Everything known about one game: what the user tracks for it and what its module suggests. */
+  | { kind: 'game'; gameId: string };
 
 export interface BackupView {
   id: string;
@@ -93,6 +112,8 @@ export interface BackupView {
   fileCount: number;
   totalBytes: number;
   items: { label: string; game?: string; fileCount: number; sourceName: string }[];
+  /** Settings kept as data (registry values): readable, never restored. */
+  records: { label: string; from: string }[];
   profiles: string[];
   imported: boolean;
   /** Set when the file is not a readable RigReady backup. */
@@ -206,6 +227,27 @@ async function itemRefs(ctx: Ctx, scope: BackupScope): Promise<Result<ItemRef[]>
     const own = await itemsOf(ctx, scope.profileId);
     if (!own.ok) return own;
     for (const item of own.value) add(scope.profileId, item);
+  } else if (scope.kind === 'game') {
+    const name = ctx.games.get(scope.gameId)?.name ?? scope.gameId;
+    for (const s of scopes.value)
+      for (const item of s.items) if (item.game === scope.gameId) add(s.id, item);
+    // Folders before single files, so a file a folder already covers is not stored twice.
+    const suggested = (await collectSuggestions(ctx, []))
+      .filter((s) => s.game === scope.gameId)
+      .sort((a, b) => Number(b.kind === 'folder') - Number(a.kind === 'folder'));
+    for (const [n, s] of suggested.entries()) {
+      const item: TrackedItem = {
+        id: `suggested-${n}`,
+        label: s.label,
+        path: s.path,
+        kind: s.kind,
+        include: s.include ?? [],
+        exclude: s.exclude ?? [],
+        game: scope.gameId,
+      };
+      if (!refs.some((r) => sameRef(r.item, item)))
+        refs.push({ source: `game:${scope.gameId}`, sourceName: name, item });
+    }
   } else {
     for (const ref of scope.items) {
       const item = scopes.value.find((s) => s.id === ref.scope)?.items.find((i) => i.id === ref.id);
@@ -231,12 +273,18 @@ async function collect(
   const own = await rigreadyFiles(ctx, scope);
   if (!own.ok) return own;
   const resolved = [];
+  const seen = new Set<string>();
   for (const ref of refs.value) {
-    resolved.push({
-      ref,
-      resolved: await resolveTrackedItem(ctx.ports.files, ref.item, variables),
-    });
+    const r = await resolveTrackedItem(ctx.ports.files, ref.item, variables);
+    if (scope.kind === 'game') {
+      // A game's suggestions overlap (the whole folder, then its files one by one).
+      const fresh = r.files.filter((f) => !seen.has(f.path.toLowerCase()));
+      if (r.files.length > 0 && fresh.length === 0) continue;
+      for (const f of r.files) seen.add(f.path.toLowerCase());
+    }
+    resolved.push({ ref, resolved: r });
   }
+  const records = scope.kind === 'full' ? await collectRecords(ctx) : [];
   const total = resolved.reduce((sum, r) => sum + r.resolved.files.length, 0) + own.value.length;
   // The archive is built in memory; refuse before reading anything rather than run out of it.
   const planned = resolved.reduce(
@@ -302,6 +350,18 @@ async function collect(
     rigready.push({ path: file.path, size: file.data.length, sha256: sha256(file.data) });
     bytes += file.data.length;
   }
+  const recorded: Manifest['records'] = [];
+  for (const record of records) {
+    entries.push({ path: `records/${record.path}`, data: record.data });
+    recorded.push({
+      path: record.path,
+      size: record.data.length,
+      sha256: sha256(record.data),
+      label: record.label,
+      from: record.from,
+      source: record.source,
+    });
+  }
   onProgress?.({ done: total, total, label: 'Writing the backup' });
   const manifest: Manifest = {
     format: 'rigready-backup',
@@ -311,7 +371,7 @@ async function collect(
     user: identity.users[0] ?? '',
     appVersion,
     scope: {
-      kind: scope.kind,
+      kind: scope.kind === 'game' ? 'custom' : scope.kind,
       label,
       profileIds:
         scope.kind === 'profile'
@@ -322,16 +382,69 @@ async function collect(
     },
     items,
     rigready,
+    records: recorded,
     skipped,
     withheld,
-    totals: { files: entries.length, bytes },
+    // Records are listed on their own: the totals are the files that can be restored.
+    totals: { files: entries.length - recorded.length, bytes },
   };
   return ok({ manifest, entries });
+}
+
+const slug = (text: string): string =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50) || 'record';
+
+interface CollectedRecord {
+  path: string;
+  label: string;
+  from: string;
+  source: string;
+  data: Uint8Array;
+}
+
+/** What backup sources keep outside files (registry values), as JSON to store in a full backup. */
+async function collectRecords(ctx: Ctx): Promise<CollectedRecord[]> {
+  const out: CollectedRecord[] = [];
+  for (const source of ctx.backupSources.all()) {
+    if (!source.records) continue;
+    try {
+      const found = await source.records(ctx);
+      if (!found.ok) {
+        ctx.log.warn(`records of ${source.id}: ${found.error.message}`);
+        continue;
+      }
+      for (const record of found.value) {
+        let name = `${slug(source.id)}-${slug(record.id)}.json`;
+        for (let n = 2; out.some((o) => o.path === name); n++)
+          name = `${slug(source.id)}-${slug(record.id)}-${n}.json`;
+        out.push({
+          path: name,
+          label: record.label.slice(0, 120),
+          from: record.from.slice(0, 400),
+          source: source.label.slice(0, 80),
+          data: new TextEncoder().encode(JSON.stringify(record.data, null, 2) + '\n'),
+        });
+      }
+    } catch (e) {
+      ctx.log.error(`records of ${source.id} threw`, e);
+    }
+  }
+  return out;
 }
 
 async function scopeLabel(ctx: Ctx, scope: BackupScope): Promise<Result<string>> {
   if (scope.kind === 'full') return ok('Everything');
   if (scope.kind === 'custom') return ok(scope.label.trim() || 'Selected items');
+  if (scope.kind === 'game') {
+    const module = ctx.games.get(scope.gameId);
+    return module
+      ? ok(`${module.name} files`)
+      : err('backup.game', `This version of RigReady does not know the game "${scope.gameId}".`);
+  }
   const profile = await ctx.profiles.get(scope.profileId);
   return profile.ok ? ok(profile.value.name) : profile;
 }
@@ -376,12 +489,14 @@ export async function createBackup(
   );
   if (!collected.ok) return collected;
   const { manifest, entries } = collected.value;
-  if (entries.length === 0) {
+  if (manifest.totals.files === 0) {
     return err(
       'backup.empty',
       scope.kind === 'full'
         ? 'There is nothing to back up yet: no setups and no tracked files.'
-        : 'Nothing to back up: the tracked files of this setup do not exist on this PC.'
+        : scope.kind === 'game'
+          ? `Nothing to back up: no settings files of ${label.value.replace(/ files$/, '')} were found on this PC.`
+          : 'Nothing to back up: the tracked files of this setup do not exist on this PC.'
     );
   }
   const id = await writeArchive(
@@ -481,6 +596,7 @@ export async function openArchive(ctx: Ctx, file: string): Promise<Result<Opened
     for (const f of item.files) declared.set(`items/${item.key}/${f.path}`, f.sha256);
   }
   for (const f of manifest.value.rigready) declared.set(`rigready/${f.path}`, f.sha256);
+  for (const f of manifest.value.records) declared.set(`records/${f.path}`, f.sha256);
   const data = new Map<string, Uint8Array>();
   for (const entry of entries.value) {
     if (entry.path === 'manifest.json') continue;
@@ -525,6 +641,7 @@ export async function describeBackup(ctx: Ctx, id: string): Promise<Result<Backu
     fileCount: 0,
     totalBytes: 0,
     items: [],
+    records: [],
     profiles: [],
     imported,
   };
@@ -546,6 +663,7 @@ export async function describeBackup(ctx: Ctx, id: string): Promise<Result<Backu
           fileCount: i.files.length,
           sourceName: i.sourceName,
         })),
+        records: manifest.value.records.map((r) => ({ label: r.label, from: r.from })),
         profiles: manifest.value.rigready
           .filter((f) => f.path.startsWith('profiles/'))
           .map((f) => f.path.slice('profiles/'.length, -'.yaml'.length)),

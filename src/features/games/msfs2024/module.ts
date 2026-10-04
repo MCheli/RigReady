@@ -67,6 +67,10 @@ async function inputProfileFolders(ctx: CheckContext): Promise<string[]> {
 const msfs2024: GameModule = {
   id: 'msfs2024',
   name: 'Microsoft Flight Simulator 2024',
+  processes: [EXE],
+  closeBeforeRestore: {
+    why: 'Flight Simulator writes its options when it exits, and Steam Cloud syncs the controller profiles while it runs.',
+  },
 
   detect: async (ctx) => ok(await findInstalls(ctx)),
 
@@ -116,6 +120,8 @@ const msfs2024: GameModule = {
           suggestions.push({
             label: `Controller profile (${name})`,
             path: path.join(folder, name),
+            kind: 'file',
+            description: 'A binary Steam Cloud file: backed up as a whole.',
           });
         }
       }
@@ -144,7 +150,6 @@ export const extras: GameModuleExtras = {
     exe: EXE,
     label: 'the Flight Simulator 2024 folder (it contains FlightSimulator2024.exe)',
   },
-  processes: [EXE],
   notes: [
     'Controller bindings are kept as Steam Cloud profiles in a binary format: RigReady backs them up as whole files but cannot list what is bound.',
     'The Microsoft Store edition is started from the Start menu; RigReady cannot launch it directly.',

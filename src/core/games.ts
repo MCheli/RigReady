@@ -77,6 +77,13 @@ export interface GameModule {
    * started through Steam is up, and by backup: the game must be closed before a restore.
    */
   processes?: string[];
+  /**
+   * What has to be closed before this game's files are restored, and why, in a sentence
+   * the user reads ("iRacing writes these files when the simulator exits."). Without it,
+   * `processes` is used with a general reason. `processes` here narrows the list when
+   * only some of the game's programs write the files (iRacing: the simulator, not its UI).
+   */
+  closeBeforeRestore?: { processes?: string[]; why: string };
   bindings?: BindingManager;
 }
 

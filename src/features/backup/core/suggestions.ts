@@ -110,8 +110,14 @@ export async function collectSuggestions(
   for (const source of ctx.backupSources.all()) {
     try {
       const found = await source.suggest(ctx);
-      if (found.ok)
-        raw.push(...found.value.map((suggestion) => ({ source: source.label, suggestion })));
+      if (!found.ok) continue;
+      for (const suggestion of found.value) {
+        // A source may hand out the full path it found; it is stored with a variable.
+        const stored = suggestion.path.startsWith('{')
+          ? suggestion.path
+          : collapsePath(suggestion.path, variables);
+        raw.push({ source: source.label, suggestion: { ...suggestion, path: stored } });
+      }
     } catch (e) {
       ctx.log.error(`backup source ${source.id} threw`, e);
     }

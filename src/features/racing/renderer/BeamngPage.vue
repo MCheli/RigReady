@@ -2,7 +2,12 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
-import { racingContract, type BeamngMapView, type BeamngView } from '../contract';
+import {
+  racingContract,
+  type BeamngMapView,
+  type BeamngView,
+  type WritePreviewView,
+} from '../contract';
 import BackupsPanel from './BackupsPanel.vue';
 import StateChip from './StateChip.vue';
 import './racing.css';
@@ -40,6 +45,28 @@ async function after(
   } else error.value = errorText(result.error);
   await load();
 }
+
+/** Which files the copy would create and replace; loaded when the confirmation opens. */
+const olderPreview = ref<WritePreviewView>();
+const olderPreviewError = ref<string>();
+
+async function askOlder(version: string): Promise<void> {
+  olderPreview.value = undefined;
+  olderPreviewError.value = undefined;
+  confirmOlder.value = version;
+  const result = await api.beamngCopyOlderPreview({ version });
+  if (confirmOlder.value !== version) return;
+  if (result.ok) olderPreview.value = result.value;
+  else olderPreviewError.value = errorText(result.error);
+}
+
+const CHANGE_LABEL = {
+  created: 'New',
+  modified: 'Replaced',
+  unchanged: 'Same as now',
+  renamed: 'Renamed',
+  deleted: 'Deleted',
+} as const;
 
 async function copyOlder(): Promise<void> {
   const version = confirmOlder.value;
@@ -123,7 +150,7 @@ async function copyToController(): Promise<void> {
               variant="tonal"
               :disabled="view.running || busy"
               data-testid="beamng-copy-older"
-              @click="confirmOlder = o.version"
+              @click="askOlder(o.version)"
               >Copy into current…</v-btn
             >
           </div>
@@ -293,11 +320,36 @@ async function copyToController(): Promise<void> {
           The binding files of BeamNG.drive {{ confirmOlder }} are copied into the current user
           folder. Files with the same name are replaced; they are backed up first and Undo is on the
           Safety page.
+          <div v-if="olderPreviewError" class="rr-bad mt-3" data-testid="beamng-copy-preview-error">
+            What it would change could not be worked out: {{ olderPreviewError }}
+          </div>
+          <div v-else-if="!olderPreview" class="rr-muted mt-3">
+            Comparing with the current bindings…
+          </div>
+          <div v-else class="mt-3" data-testid="beamng-copy-preview">
+            <div class="older-summary">{{ olderPreview.summary }}</div>
+            <div
+              v-for="f in olderPreview.files"
+              :key="f.path"
+              class="older-file"
+              data-testid="beamng-copy-preview-file"
+              :data-change="f.change"
+            >
+              <span class="rr-mono">{{ f.label }}</span>
+              <span class="rr-muted"> · {{ CHANGE_LABEL[f.change] }} · {{ f.detail }}</span>
+            </div>
+          </div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="confirmOlder = undefined">Cancel</v-btn>
-          <v-btn color="primary" data-testid="beamng-copy-go" @click="copyOlder">Copy</v-btn>
+          <v-btn
+            color="primary"
+            :disabled="!olderPreview"
+            data-testid="beamng-copy-go"
+            @click="copyOlder"
+            >Copy</v-btn
+          >
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -313,5 +365,14 @@ async function copyToController(): Promise<void> {
 }
 .beam-select {
   max-width: 320px;
+}
+.older-summary {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.older-file {
+  font-size: 13px;
+  padding: 2px 0;
+  overflow-wrap: anywhere;
 }
 </style>

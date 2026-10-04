@@ -13,6 +13,7 @@ import {
   type BackupScope,
 } from './core/archive';
 import { changesSinceWorked, LaunchWatcher, recordFingerprint } from './core/fingerprints';
+import { createGameFilesBackup } from './core/gameBackup';
 import { browseForItem, removeItem, saveItem, scopeViews, previewItem } from './core/items';
 import { applyRestore, previewRestore } from './core/restore';
 import {
@@ -63,6 +64,9 @@ export default defineFeatureMain({
     ctx.backupSources.register(dcsBackupSource);
     const identity = () => machineIdentity(ctx);
     const appVersion = packageJson.version;
+    ctx.checks.registerRemediation(
+      createGameFilesBackup(ctx, () => ({ identity: identity(), appVersion }))
+    );
     watcher = new LaunchWatcher(ctx, (profileId) =>
       ctx.emit(backupContract, 'recorded', { profileId })
     );
@@ -98,8 +102,8 @@ export default defineFeatureMain({
             () => overview(ctx)
           ),
         previewRestore: ({ id }) => previewRestore(ctx, id, identity()),
-        restore: ({ id, choices }) =>
-          applyRestore(ctx, id, choices, { identity: identity(), appVersion }),
+        restore: ({ id, choices, closePrograms }) =>
+          applyRestore(ctx, id, choices, { identity: identity(), appVersion, closePrograms }),
         snapshots: () => listSnapshots(ctx),
         takeSnapshot: ({ scope, itemId, name }) => takeSnapshot(ctx, scope, itemId, name),
         compareSnapshot: ({ id }) => compareSnapshot(ctx, id),

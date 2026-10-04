@@ -22,7 +22,7 @@ const FindingSchema = z.object({
 export type FindingView = z.infer<typeof FindingSchema>;
 
 const StrippedSchema = z.object({
-  kind: z.enum(['launch', 'check', 'fix']),
+  kind: z.enum(['launch', 'check', 'fix', 'action']),
   name: z.string(),
   description: z.string(),
 });
@@ -114,6 +114,8 @@ const ImportResultSchema = z.object({
   failed: z.array(z.object({ label: z.string(), reason: z.string() })),
   groupId: z.string().optional(),
   deviceIds: z.object({ files: z.array(z.string()), message: z.string() }).optional(),
+  /** Checks for devices not found on this PC: imported switched off, by title. */
+  switchedOff: z.array(z.string()).default([]),
 });
 export type ImportResultView = z.infer<typeof ImportResultSchema>;
 
@@ -149,5 +151,14 @@ export const sharingContract = defineContract('sharing', {
       conflict: z.enum(['overwrite', 'keepBoth']).default('overwrite'),
     }),
     ImportResultSchema
+  ),
+  /**
+   * Undoes an import in one step: the files it wrote are put back and the setup it
+   * created is removed. Fails with `journal.changed` when something was edited since;
+   * `force` undoes anyway.
+   */
+  undoImport: channel(
+    z.object({ groupId: z.string(), force: z.boolean().default(false) }),
+    z.object({ files: z.number(), setupRemoved: z.boolean() })
   ),
 });

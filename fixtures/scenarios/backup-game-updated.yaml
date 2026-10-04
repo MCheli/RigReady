@@ -1,0 +1,5 @@
+description: Flying, DCS was updated since the setup was last verified
+rig: mark-full
+extends: flying-fresh.yaml
+profiles:
+  - profiles/backup-game-updated.yaml

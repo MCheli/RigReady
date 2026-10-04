@@ -43,9 +43,22 @@ async function lastRunVersion(ctx: CheckContext, dir: string): Promise<string | 
   return /LMU-Retail:([0-9.]+)/.exec(text.value)?.[1];
 }
 
+/** What is worth keeping in UserData: the player files, car setups and the display mode. */
+export const LMU_INCLUDE = [
+  'player/*.json',
+  'player/*.gal',
+  'player/Settings/**',
+  'Config_DX11*.ini',
+];
+export const LMU_EXCLUDE = ['Log/**'];
+
 const lmu: GameModule = {
   id: 'lmu',
   name: 'Le Mans Ultimate',
+  processes: [EXE, 'start_protected_game.exe'],
+  closeBeforeRestore: {
+    why: 'Le Mans Ultimate rewrites its player files when it starts and when it exits.',
+  },
 
   async detect(ctx) {
     const install = await findInstall(ctx);
@@ -72,6 +85,15 @@ const lmu: GameModule = {
     if (!dir) return ok([]);
     const player = path.join(dir, 'player');
     const suggestions: TrackedFileSuggestion[] = [
+      {
+        label: 'Le Mans Ultimate settings and bindings',
+        path: dir,
+        kind: 'folder',
+        include: LMU_INCLUDE,
+        exclude: LMU_EXCLUDE,
+        description:
+          'Every player file (bindings, force feedback, keyboard, game settings), car setups and the display mode. Logs are left out.',
+      },
       {
         label: 'Bindings and force feedback (direct input.json)',
         path: path.join(player, 'direct input.json'),
@@ -127,7 +149,6 @@ export const extras: GameModuleExtras = {
     exe: EXE,
     label: 'the Le Mans Ultimate folder (it contains Le Mans Ultimate.exe)',
   },
-  processes: [EXE, 'start_protected_game.exe'],
   notes: [
     'Le Mans Ultimate is started through Steam so its anti-cheat and sign-in work.',
     'Its settings live inside the game folder (UserData), so uninstalling the game can delete them: keep a backup.',

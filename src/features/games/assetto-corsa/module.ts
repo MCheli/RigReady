@@ -33,6 +33,10 @@ const contentManager = (ctx: CheckContext): string =>
 const assettoCorsa: GameModule = {
   id: 'assetto-corsa',
   name: 'Assetto Corsa',
+  processes: [EXE, 'acs.exe', 'Content Manager.exe'],
+  closeBeforeRestore: {
+    why: 'Assetto Corsa and Content Manager write controls.ini and the other settings while they are open.',
+  },
 
   async detect(ctx) {
     const install = await findInstall(ctx);
@@ -51,6 +55,13 @@ const assettoCorsa: GameModule = {
   async trackedFiles(ctx) {
     const dir = cfgFolder(ctx);
     const suggestions: TrackedFileSuggestion[] = [
+      {
+        label: 'Assetto Corsa settings and bindings',
+        path: dir,
+        kind: 'folder',
+        description:
+          'The whole cfg folder: bindings, force feedback, graphics, audio, assists and saved control presets.',
+      },
       { label: 'Bindings and force feedback (controls.ini)', path: path.join(dir, 'controls.ini') },
       { label: 'Graphics (video.ini)', path: path.join(dir, 'video.ini') },
       { label: 'Gameplay (gameplay.ini)', path: path.join(dir, 'gameplay.ini') },
@@ -77,7 +88,6 @@ const assettoCorsa: GameModule = {
 export const extras: GameModuleExtras = {
   kind: 'racing',
   manualFolder: { exe: EXE, label: 'the assettocorsa folder (it contains AssettoCorsa.exe)' },
-  processes: [EXE, 'acs.exe', 'Content Manager.exe'],
   notes: [
     'Bindings refer to controllers by their Windows instance id; after a USB port change Assetto Corsa may ask you to bind the wheel again.',
   ],

@@ -31,6 +31,7 @@ const userFolder = (ctx: CheckContext): string => path.join(ctx.ports.folders.do
 const evo: GameModule = {
   id: 'assetto-corsa-evo',
   name: 'Assetto Corsa EVO',
+  processes: [EXE],
 
   async detect(ctx) {
     const install = await findInstall(ctx);
@@ -45,7 +46,16 @@ const evo: GameModule = {
     ),
 
   trackedFiles: async (ctx) =>
-    ok(await existingFiles(ctx, [{ label: 'Settings (Documents\\ACE)', path: userFolder(ctx) }])),
+    ok(
+      await existingFiles(ctx, [
+        {
+          label: 'Settings (Documents\\ACE)',
+          path: userFolder(ctx),
+          kind: 'folder',
+          description: 'Everything in Documents\\ACE: controls, graphics and saved setups.',
+        },
+      ])
+    ),
 
   installedVersion: (ctx) => steamVersion(ctx, APP_ID),
 };
@@ -56,7 +66,6 @@ export const extras: GameModuleExtras = {
     exe: EXE,
     label: 'the Assetto Corsa EVO folder (it contains AssettoCorsaEVO.exe)',
   },
-  processes: [EXE],
   notes: [
     'Assetto Corsa EVO is in early access: RigReady detects and launches it and backs up its settings folder, but does not read its bindings yet.',
   ],

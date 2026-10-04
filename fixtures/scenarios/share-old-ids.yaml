@@ -1,0 +1,5 @@
+description: Sharing - a squadron F/A-18C setup whose binding files carry another PC's device IDs
+rig: mark-full
+extends: dcs-bindings-old-ids.yaml
+profiles:
+  - profiles/squadron-f-a-18c.yaml

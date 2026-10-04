@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { z } from 'zod';
+import type { BackupSource } from '../../../core/backupSources';
 import type { TrackedFileSuggestion } from '../../../core/games';
 import type { FileStore, Ports, Registry } from '../../../core/ports';
 import { ok, type Result } from '../../../core/result';
@@ -268,24 +269,58 @@ export async function readTrackIrProfiles(ports: Ports): Promise<Result<TrackIrP
 }
 
 /**
+ * What the backup page offers for TrackIR, so its settings and profiles are part of a
+ * full backup and come back through the restore screen.
+ */
+export const trackIrBackupSource: BackupSource = {
+  id: 'trackir',
+  label: 'TrackIR',
+  async suggest(ctx) {
+    const tracked = await trackIrTrackedFiles(ctx.ports);
+    if (!tracked.ok) return tracked;
+    return ok(tracked.value.map((t) => ({ ...t, kind: t.kind ?? 'file' })));
+  },
+  program: {
+    name: 'TrackIR',
+    processes: [PROCESS_NAME],
+    why: 'TrackIR writes its settings and profiles when it closes, which would undo the restore.',
+    restart: true,
+  },
+};
+
+/** TrackIR's own files inside its data folder: settings, the game map and the profiles. */
+export const TRACKIR_INCLUDE = ['Settings.xml', 'ProfileMap.dat', 'Profiles/*.xml'];
+
+/**
  * What a full backup should include for TrackIR: settings, the game-to-profile map and
  * every profile. Only files that exist are listed.
  */
 export async function trackIrTrackedFiles(ports: Ports): Promise<Result<TrackedFileSuggestion[]>> {
   const dir = dataFolder(ports);
   const out: TrackedFileSuggestion[] = [];
+  const tree = await ports.files.listTree(dir, { include: TRACKIR_INCLUDE });
+  if (tree.ok && tree.value.length > 0) {
+    // One item for all of it, so a profile made later is covered too.
+    out.push({
+      label: 'TrackIR settings and profiles',
+      path: dir,
+      kind: 'folder',
+      include: TRACKIR_INCLUDE,
+      description: 'Settings.xml, the game-to-profile map and every profile.',
+    });
+  }
   for (const [file, label] of [
     ['Settings.xml', 'TrackIR settings'],
     ['ProfileMap.dat', 'TrackIR game-to-profile map'],
   ] as const) {
     const full = path.join(dir, file);
-    if (await ports.files.exists(full)) out.push({ label, path: full });
+    if (await ports.files.exists(full)) out.push({ label, path: full, kind: 'file' });
   }
   const profiles = await ports.files.listEntries(path.join(dir, 'Profiles'));
   if (!profiles.ok) return profiles;
   for (const entry of profiles.value) {
     if (!entry.isDirectory && /\.xml$/i.test(entry.name)) {
-      out.push({ label: `TrackIR profile ${entry.name}`, path: entry.path });
+      out.push({ label: `TrackIR profile ${entry.name}`, path: entry.path, kind: 'file' });
     }
   }
   return ok(out);

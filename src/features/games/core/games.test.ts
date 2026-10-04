@@ -41,6 +41,7 @@ describe('game modules', () => {
       { id: 'documents', label: 'Documents\\iRacing', path: documents },
     ]);
     expect(game.trackedFiles.map((f) => path.basename(f.path))).toEqual([
+      'iRacing',
       'controls.cfg',
       'joyCalib.yaml',
       'app.ini',
@@ -147,6 +148,7 @@ describe('game modules', () => {
     ]);
     const tracked = game.trackedFiles.map((f) => path.relative(install, f.path));
     expect(tracked).toEqual([
+      'UserData',
       path.join('UserData', 'player', 'direct input.json'),
       path.join('UserData', 'player', 'keyboard.json'),
       path.join('UserData', 'Config_DX11.ini'),
@@ -172,6 +174,7 @@ describe('game modules', () => {
     app = await wiredApp('racing-fresh');
     let game = await get(app, 'beamng');
     expect(game.trackedFiles.map((f) => f.label)).toEqual([
+      'BeamNG.drive settings and bindings',
       'Bindings and force feedback (inputmaps, including per-vehicle)',
       'Graphics, display and audio (settings.json)',
       'Gameplay (cloud\\settings.json)',
@@ -240,6 +243,7 @@ describe('game modules', () => {
     const ac = await get(app, 'assetto-corsa');
     expect(ac.installs[0]!.source).toBe('steam');
     expect(ac.trackedFiles.map((f) => path.basename(f.path))).toEqual([
+      'cfg',
       'controls.ini',
       'video.ini',
     ]);

@@ -19,4 +19,7 @@ export default defineFeature({
       props: true,
     },
   ],
+  remediationTypes: [
+    { type: 'backup.gameFiles', label: "Back up the game's settings and bindings" },
+  ],
 });

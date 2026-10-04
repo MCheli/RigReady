@@ -3,6 +3,7 @@ import { ok } from '../../core/result';
 import { streamDeckContract } from './contract';
 import { startApp } from './core/app';
 import { StreamDeckBackups } from './core/backups';
+import { streamDeckBackupSource } from './core/backupSource';
 import {
   connectedCheck,
   createStartRemediation,
@@ -18,6 +19,7 @@ export default defineFeatureMain({
     ctx.checks.registerCheck(connectedCheck);
     ctx.checks.registerRemediation(createStartRemediation());
     ctx.checks.registerCapture(streamDeckCapture);
+    ctx.backupSources.register(streamDeckBackupSource);
 
     const backups = new StreamDeckBackups(ctx.ports, {
       async maxBytes() {

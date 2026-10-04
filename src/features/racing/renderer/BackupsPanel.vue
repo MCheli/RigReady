@@ -2,7 +2,12 @@
 import { onMounted, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
-import { racingContract, type BackupGame, type BindingBackup } from '../contract';
+import {
+  racingContract,
+  type BackupGame,
+  type BindingBackup,
+  type WritePreviewView,
+} from '../contract';
 
 /**
  * Quick backups of one game's bindings: back up now, restore one (after a confirmation
@@ -26,6 +31,27 @@ const error = ref<string>();
 const message = ref<string>();
 const confirmRestore = ref<BindingBackup>();
 const confirmDelete = ref<BindingBackup>();
+/** What the restore would change, file by file; loaded when the confirmation opens. */
+const preview = ref<WritePreviewView>();
+const previewError = ref<string>();
+
+async function askRestore(backup: BindingBackup): Promise<void> {
+  preview.value = undefined;
+  previewError.value = undefined;
+  confirmRestore.value = backup;
+  const result = await api.restorePreview({ game: props.game, id: backup.id });
+  if (confirmRestore.value !== backup) return;
+  if (result.ok) preview.value = result.value;
+  else previewError.value = errorText(result.error);
+}
+
+const CHANGE_LABEL = {
+  created: 'New',
+  modified: 'Changes',
+  unchanged: 'Same as now',
+  renamed: 'Renamed',
+  deleted: 'Deleted',
+} as const;
 /** The Fanatec App is open: offer to close it, restore, and start it again. */
 const appOpen = ref(false);
 
@@ -129,7 +155,7 @@ onMounted(load);
             {{ size(total(b)) }}
           </div>
         </div>
-        <v-btn size="small" variant="text" data-testid="backup-restore" @click="confirmRestore = b"
+        <v-btn size="small" variant="text" data-testid="backup-restore" @click="askRestore(b)"
           >Restore…</v-btn
         >
         <v-btn
@@ -158,13 +184,42 @@ onMounted(load);
             These files are put back as they were on {{ when(confirmRestore.createdAt) }}. The
             current files are backed up first, so this can be undone on the Safety page.
           </p>
-          <div v-for="f in confirmRestore.files" :key="f.stored" class="restore-file">
-            <v-icon
-              :icon="f.restorable ? 'mdi-file-restore-outline' : 'mdi-file-eye-outline'"
-              size="16"
-            />
+          <div v-if="previewError" class="rr-bad mb-2" data-testid="restore-preview-error">
+            What it would change could not be worked out: {{ previewError }}
+          </div>
+          <div v-else-if="!preview" class="rr-muted mb-2">Comparing with the files on disk…</div>
+          <template v-else>
+            <div class="restore-summary" data-testid="restore-preview-summary">
+              {{ preview.summary }}
+            </div>
+            <div
+              v-for="f in preview.files"
+              :key="f.path"
+              class="restore-file"
+              data-testid="restore-preview-file"
+              :data-change="f.change"
+            >
+              <v-icon icon="mdi-file-restore-outline" size="16" />
+              <div class="restore-file-main">
+                <div>
+                  {{ f.label }}
+                  <span class="restore-change" :class="`change-${f.change}`">{{
+                    CHANGE_LABEL[f.change]
+                  }}</span>
+                </div>
+                <div class="rr-row-sub">{{ f.detail }}</div>
+                <div class="rr-row-sub rr-mono restore-path">{{ f.path }}</div>
+              </div>
+            </div>
+          </template>
+          <div
+            v-for="f in confirmRestore.files.filter((file) => !file.restorable)"
+            :key="f.stored"
+            class="restore-file"
+          >
+            <v-icon icon="mdi-file-eye-outline" size="16" />
             <span>{{ f.label }}</span>
-            <span v-if="!f.restorable" class="rr-muted">· kept as a record, not restored</span>
+            <span class="rr-muted">· kept as a record, not restored</span>
           </div>
           <p class="rc-hint mt-3">{{ closedHint }}</p>
           <v-alert
@@ -194,7 +249,13 @@ onMounted(load);
             @click="restore(true)"
             >Close the app and restore</v-btn
           >
-          <v-btn v-else color="primary" :loading="busy" data-testid="restore-go" @click="restore()"
+          <v-btn
+            v-else
+            color="primary"
+            :loading="busy"
+            :disabled="!preview"
+            data-testid="restore-go"
+            @click="restore()"
             >Restore</v-btn
           >
         </v-card-actions>
@@ -221,9 +282,28 @@ onMounted(load);
 <style scoped>
 .restore-file {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-size: 13px;
-  padding: 2px 0;
+  padding: 4px 0;
+}
+.restore-file-main {
+  min-width: 0;
+}
+.restore-summary {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.restore-change {
+  font-size: 12px;
+  margin-left: 6px;
+  color: var(--rr-muted);
+}
+.change-modified,
+.change-created {
+  color: var(--rr-accent);
+}
+.restore-path {
+  overflow-wrap: anywhere;
 }
 </style>

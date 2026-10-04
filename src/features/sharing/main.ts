@@ -3,7 +3,7 @@ import { ok } from '../../core/result';
 import packageJson from '../../../package.json';
 import { sharingContract } from './contract';
 import { prepareExport, writeExport } from './core/exporter';
-import { applyImport, openImport } from './core/importer';
+import { applyImport, openImport, undoImport } from './core/importer';
 
 export default defineFeatureMain({
   id: 'sharing',
@@ -26,6 +26,7 @@ export default defineFeatureMain({
           writeExport(ctx, { ...options, decisions, notes, appVersion: packageJson.version }),
         openImport: () => openImport(ctx),
         import: ({ importId, parts, conflict }) => applyImport(ctx, importId, parts, conflict),
+        undoImport: ({ groupId, force }) => undoImport(ctx, groupId, force),
       }),
     ];
   },

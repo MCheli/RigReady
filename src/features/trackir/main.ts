@@ -9,6 +9,7 @@ import {
   trackIrCapture,
 } from './core/checks';
 import { trackIrOverview } from './core/overview';
+import { trackIrBackupSource } from './core/trackir';
 
 export default defineFeatureMain({
   id: 'trackir',
@@ -17,6 +18,7 @@ export default defineFeatureMain({
     ctx.checks.registerCheck(connectedCheck);
     ctx.checks.registerRemediation(createStartRemediation());
     ctx.checks.registerCapture(trackIrCapture);
+    ctx.backupSources.register(trackIrBackupSource);
     return [
       bind(trackIrContract, {
         overview: () => trackIrOverview(ctx.ports),

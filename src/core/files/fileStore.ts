@@ -235,7 +235,10 @@ export class BackupFileStore implements FileStore {
         backupPath,
         hashBefore,
         hashAfter,
-        ...(options.group ? { groupId: options.group.id, groupReason: options.group.reason } : {}),
+        // A change made outside a beginGroup() is an action of its own: every entry
+        // names the user action it belongs to, so the Safety page lists it as one.
+        groupId: options.group?.id ?? id,
+        groupReason: options.group?.reason ?? options.reason,
         ...(options.undoOf ? { undoOf: options.undoOf } : {}),
         undone: false,
       };

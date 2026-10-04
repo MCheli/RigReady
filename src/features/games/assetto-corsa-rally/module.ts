@@ -32,6 +32,7 @@ const saved = (ctx: CheckContext): string =>
 const rally: GameModule = {
   id: 'assetto-corsa-rally',
   name: 'Assetto Corsa Rally',
+  processes: ['acr.exe', 'acr-Win64-Shipping.exe'],
 
   async detect(ctx) {
     const install = await findInstall(ctx);
@@ -50,10 +51,13 @@ const rally: GameModule = {
       await existingFiles(ctx, [
         {
           label: 'Graphics (GameUserSettings.ini)',
+          kind: 'file',
           path: path.join(saved(ctx), 'Config', 'Windows', 'GameUserSettings.ini'),
         },
         {
           label: 'Bindings (EnhancedInputUserSettings.sav)',
+          kind: 'file',
+          description: 'A binary Unreal Engine file: backed up as a whole.',
           path: path.join(saved(ctx), 'SaveGames', 'EnhancedInputUserSettings.sav'),
         },
       ])
@@ -68,7 +72,6 @@ export const extras: GameModuleExtras = {
     exe: EXE,
     label: 'the Assetto Corsa Rally folder (it contains acr\\Binaries\\Win64\\acr.exe)',
   },
-  processes: ['acr.exe', 'acr-Win64-Shipping.exe'],
   notes: [
     'Bindings are saved in a binary Unreal Engine file: RigReady backs it up as a whole but cannot list what is bound.',
   ],

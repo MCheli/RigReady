@@ -386,7 +386,7 @@ export interface JournalEntry {
   hashBefore?: string | null;
   /** sha256 of the content this change left behind. Null for a removal. */
   hashAfter?: string | null;
-  /** The action this change belongs to. Absent for a single change. */
+  /** The action this change belongs to. A single change is an action of its own (its id). Absent only in journals written before that. */
   groupId?: string;
   groupReason?: string;
   /** Set on an entry that was itself written by undoing another one. */

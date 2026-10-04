@@ -37,6 +37,11 @@ export const CheckItemSchema = z.object({
   remediation: RemediationRefSchema.optional(),
   /** Overrides the check timeout from the settings for this item. */
   timeoutSeconds: z.number().int().min(1).max(600).optional(),
+  /**
+   * Switched off: kept in the setup but not checked, not counted for readiness, not fixed
+   * by Make ready and left alone by Stand down. Shown as "Off", never as passed.
+   */
+  disabled: z.boolean().optional(),
 });
 export type CheckItem = z.infer<typeof CheckItemSchema>;
 

@@ -38,12 +38,16 @@ const groups = computed(() =>
     const items = fly.items.filter((i) => i.group === group);
     const results = items.map((i) => fly.results[i.itemId]).filter(Boolean) as CheckResult[];
     const checking = items.some((i) => fly.checking[i.itemId] || !fly.results[i.itemId]);
-    const passed = results.filter((r) => r.status === 'pass').length;
+    // Items switched off in the setup are not checked: they are neither passed nor counted.
+    const off = results.filter((r) => r.disabled).length;
+    const passed = results.filter((r) => r.status === 'pass' && !r.disabled).length;
     const attention = results.some((r) => r.status !== 'pass');
     return {
       group,
       title: GROUP_TITLES[group],
       items,
+      off,
+      total: items.length - off,
       passed,
       checking,
       attention,
@@ -560,12 +564,19 @@ onBeforeUnmount(() => {
           <h2 class="rr-section-title">{{ group.title }}</h2>
           <span
             class="fly-group-count"
-            :class="{ 'rr-ok': !group.checking && group.passed === group.items.length }"
+            :class="{
+              'rr-ok': !group.checking && group.total > 0 && group.passed === group.total,
+            }"
           >
             <template v-if="group.checking && group.passed + (group.attention ? 1 : 0) === 0"
               >Checking…</template
             >
-            <template v-else>{{ group.passed }} of {{ group.items.length }} OK</template>
+            <template v-else-if="group.total === 0">{{ group.off }} off</template>
+            <template v-else
+              >{{ group.passed }} of {{ group.total }} OK<template v-if="group.off">
+                · {{ group.off }} off</template
+              ></template
+            >
           </span>
         </button>
         <div v-if="group.open" class="rr-panel">
