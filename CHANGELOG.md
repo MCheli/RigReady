@@ -7,9 +7,12 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 ### What it contains
 
 **Play**
-- One screen for the setup used last: a grouped checklist, a fix beside every failing item, Make ready, Launch and Stand down.
-- Required items make the rig Not ready; optional items only warn.
-- Launch is never blocked. Steps can run before and after launch. Stand down closes what RigReady started and returns the monitors to the desk layout.
+- One screen for the setup used last: a readiness dial, the rig drawn with its monitors and devices so a problem shows as a place, a grouped checklist, and a fix beside every failing item.
+- One action, Make ready and launch (or Enter): the fixes run in order as visible steps and the game is launched once everything required is met. Make ready, Launch and Stand down are also there on their own.
+- Required items make the rig Not ready; optional items only warn. Launch is never blocked, and nothing is launched past a required problem without asking.
+- The session is followed: in progress, then Welcome back with Stand down as the main action, optionally standing down by itself. A history of sessions says what needed fixing most often.
+- A compact view that stays on top, a quiet offer to switch when the gear plugged in fits another setup, an optional ready tone.
+- One double-click: a desktop shortcut per setup, `RigReady.exe --launch "<setup>"` (also `--make-ready` and `--setup`), a taskbar Jump List, a status badge, progress and three buttons on the taskbar button, an optional global hotkey.
 - Tray icon with the same actions; optional start with Windows.
 
 **Setups**
@@ -21,7 +24,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - Fixes: start an app, apply a monitor layout with a timed revert, set the audio device, restore a file, run a script, show instructions.
 
 **Monitors and audio**
-- A to-scale map, named layouts, Identify with numbers and an up arrow on every screen, position, rotation, on/off, main display, resolution and refresh rate.
+- A to-scale map, named layouts, Identify with numbers and an up arrow on every screen, position, rotation, on/off, main display, resolution and refresh rate. Applying a layout shows the map moving from before to after.
 - Identical USB screens are recognised by the serial number of their USB device.
 
 **DCS World**
@@ -29,21 +32,21 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one.
 - Export.lua managed one tool at a time; overwrites by other programs are noticed.
 - Bindings: effective bindings (defaults plus your changes) for the F/A-18C and UH-1H, editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots.
-- Cheat sheets with a picture of every device, print and PDF, DCS kneeboard pages in day and night styles.
+- Cheat sheets with a picture of every device, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
 - A binding guide for the F/A-18C and UH-1H, and optional AI help with your own Anthropic API key.
 
 **Racing and other games**
-- iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, backup and restore.
+- iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore.
 - Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
 - A Fanatec wheel page; any other game works generically.
 
 **Protecting your configuration**
 - One-click backup, a restore wizard with a preview and per-item choices, snapshots, "what changed since it last worked".
-- Sharing a setup as a file with a privacy review; imports are validated and never write outside known folders.
+- Sharing a setup as a file with a privacy review; imports are validated and never write outside known folders. A picture of the setup to show people, with no personal details in it.
 - Every change outside RigReady's folder is backed up first, journaled, and can be undone on the Safety page.
 
 **Hardware**
-- Devices with your own names, find a device by pressing a button, input tester, hands-off health check, USB map, plug and unplug notifications.
+- Devices with your own names, find a device by pressing a button, an input tester with a live trace per axis and a plot of two axes together, a hands-off health check that shows what it recorded, a USB map drawn as a tree, plug and unplug notifications.
 - Stream Deck: inventory, health findings, backup, restore, a guide for a new PC. TrackIR: status and checks.
 
 **The app**
@@ -59,6 +62,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - The iRacing device ID repair has not been tried with a wheel whose Windows ID really changed (RACE-IRACING-005).
 - Which way is up on sideways-mounted screens cannot be read from Windows; Monitors > Identify asks once.
 - Restoring a Stream Deck backup file by file, and closing the Stream Deck app, were only exercised against recorded data.
+- The taskbar badge, progress bar and thumbnail buttons were accepted by Windows in tests, but nobody has looked at them on a real taskbar; the ready tone's sound and a real press of the global hotkey are untested too.
 
 **By design, for now**
 - Many DCS actions (mostly keyboard and view commands) can be shown but not edited; they are marked "bind in DCS".
@@ -66,6 +70,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - Tuning values of a Fanatec wheel base live on the base and cannot be read; the Wheel page keeps a hand-entered copy.
 - TrackIR's active profile cannot be switched from outside TrackIR.
 - The binding guides were written from general knowledge of the aircraft and have not been reviewed by a pilot. Action names are checked against the installed DCS.
+- The trainer asks buttons and hats only: no axes, modifier combinations or keyboard.
 - A single backup is built in memory and capped at 2 GB.
 - Windows 10 and 11 only.
 

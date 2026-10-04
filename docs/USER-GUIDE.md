@@ -24,14 +24,17 @@ Later, **Configure > Setups** edits everything about a setup: its checks, their 
 
 Open RigReady. The Play screen shows the setup you used last and checks it.
 
-![Play screen with problems](../artifacts/screens/fly-make-ready-all/01-four-problems.png)
+![The Play screen with two problems](../artifacts/screens/fly-rig/01-problems-as-places.png)
 
-- A **red** item is required and not met: the rig is **Not ready**.
-- A **yellow** item is optional and not met: the rig is still **Ready**, with warnings.
+- The dial shows how many checks are met. Under it the monitors are drawn to scale and the devices are listed, so a problem shows as a place; choosing one jumps to its row in the checklist.
+- A **red** item is required and not met: the rig is **Not ready**. A **yellow** item is optional and not met: the rig is still **Ready**, with warnings.
 - Each failing item has its own fix button, and a re-check button.
-- **Make ready** runs every fix in order: monitors, audio, files, devices, apps, scripts. A monitor change asks you to keep it; if you do not answer, it goes back.
-- **Launch** starts the game. It is never blocked. If the rig is not ready, it tells you what is missing and asks first.
-- **Stand down** closes the helper apps RigReady started and puts the monitors back to your desk layout.
+- **Make ready and launch** (or Enter) does everything: it runs the fixes in order (monitors, audio, files, devices, apps, scripts) and launches the game once everything required is met. A monitor change asks you to keep it; if you do not answer, it goes back. If something still needs you, it stops, says what, and offers Launch anyway.
+- **Make ready** and **Launch** are also there on their own. Launch is never blocked: if the rig is not ready, it tells you what is missing and asks first.
+- While the game runs, the screen shows the session. When the game closes it says **Welcome back**, and **Stand down** becomes the main action: it closes the helper apps RigReady started and puts the monitors back to your desk layout.
+- If the gear that is plugged in fits another setup better, the screen offers to switch to it.
+
+The menu at the top right of the screen (⋮) has the rest: **Stand down when the game closes**, **Hide RigReady after Launch**, **History** (your sessions, and what needed fixing most often), **Compact view** (a small window that stays on top, with the dial and the main action) and an optional **Ready tone**.
 
 The same actions are in the tray menu, and the tray icon shows whether the rig is ready.
 
@@ -87,7 +90,7 @@ Some actions can only be bound inside DCS for now. They are shown and marked, ne
 
 ## 6. Cheat sheets and kneeboard pages
 
-**Configure > Cheat sheets** draws each device with what every control does in the aircraft you choose.
+**Configure > Cheat sheets** draws each device with what every control does in the aircraft or car you choose: DCS aircraft, and iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa.
 
 - Press a control on the device and its label lights up.
 - **By action** answers "which control does this?".
