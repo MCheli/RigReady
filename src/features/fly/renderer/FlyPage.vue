@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 import type { CheckResult } from '../../../core/checks/engine';
 import type { CommandPreview } from '../../../core/checks/registry';
 import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
@@ -162,8 +162,8 @@ async function fixOne(itemId: string): Promise<void> {
   }
 }
 
-async function makeReady(): Promise<void> {
-  // Fixes that run a program are asked about first, one by one, showing exactly what runs.
+/** Fixes that run a program are asked about first, one by one, showing exactly what runs. */
+async function fixApprovals(): Promise<string[]> {
   const approved: string[] = [];
   for (const item of fly.items) {
     const result = fly.results[item.itemId];
@@ -171,7 +171,11 @@ async function makeReady(): Promise<void> {
       continue;
     if (await askToRun(result.title, result.confirm)) approved.push(item.itemId);
   }
-  await fly.makeReady(approved);
+  return approved;
+}
+
+async function makeReady(): Promise<void> {
+  await fly.makeReady(await fixApprovals());
 }
 
 async function approvals(phase: 'preLaunch' | 'postLaunch'): Promise<string[]> {
@@ -213,6 +217,115 @@ function launchAnyway(): void {
   if (state) void doLaunch(state.at, state.approved);
 }
 
+// ---- the one action ----
+
+type ActionId = 'readyAndLaunch' | 'makeReady' | 'launch';
+
+/**
+ * What the screen is for right now, and what Enter runs. A rig that is not ready and can
+ * be fixed: fix it and launch. Otherwise: launch (with the warning while something
+ * required is missing). A setup with nothing to launch: Make ready, when there is
+ * something to fix.
+ */
+const primaryNow = computed<ActionId | undefined>(() => {
+  const setup = fly.active;
+  if (!setup) return undefined;
+  const fixable = fly.counts.fixable > 0;
+  if (!setup.canLaunch) return fixable ? 'makeReady' : undefined;
+  return fly.readiness === 'notReady' && fixable ? 'readyAndLaunch' : 'launch';
+});
+/** The buttons do not change places while one of them is at work. */
+const primary = ref<ActionId>();
+watchEffect(() => {
+  if (fly.busy === null) primary.value = primaryNow.value;
+});
+
+/** The buttons on the left, the primary one first. */
+const actions = computed<ActionId[]>(() => {
+  if (primary.value === 'readyAndLaunch') return ['readyAndLaunch', 'makeReady', 'launch'];
+  if (primary.value === 'launch') return ['launch', 'makeReady'];
+  return ['makeReady', 'launch'];
+});
+
+/** Launch is green once the rig is known to be ready, and never before. */
+const launchLook = computed(() => {
+  const ready = fly.readiness === 'ready' || fly.readiness === 'warnings';
+  return {
+    color: ready ? 'success' : undefined,
+    variant: ready && primary.value === 'launch' ? ('flat' as const) : ('tonal' as const),
+  };
+});
+
+/** Make ready and launch is running, from its first fix to the game. */
+const inFlight = computed(() => fly.activity?.kind === 'flight' && fly.busy !== null);
+/** The primary action is waiting for the checklist run under way to finish. */
+const waiting = ref(false);
+/** What the user agreed to run around the launch, for "Launch anyway" after a stop. */
+const flightApproved = ref<string[]>([]);
+
+async function flyNow(): Promise<void> {
+  // Everything that needs an answer is asked first; then the run goes through by itself.
+  const approvedFixes = await fixApprovals();
+  const approvedActions = [...(await approvals('preLaunch')), ...(await approvals('postLaunch'))];
+  flightApproved.value = approvedActions;
+  const outcome = await fly.readyAndLaunch({ approvedFixes, approvedActions });
+  if (outcome.paused) paused.value = { ...outcome.paused, approved: approvedActions };
+}
+
+/** "Launch anyway" after Make ready and launch stopped: what is missing is on the screen. */
+async function launchHeld(): Promise<void> {
+  const approved = flightApproved.value;
+  const outcome = await fly.launch({ approved, keep: true });
+  if (outcome.paused) paused.value = { ...outcome.paused, approved };
+}
+
+async function runPrimary(): Promise<void> {
+  if (fly.busy !== null || waiting.value) return;
+  // It acts on answers, not on guesses: a checklist run under way is finished first.
+  waiting.value = true;
+  try {
+    await fly.settled();
+  } finally {
+    waiting.value = false;
+  }
+  if (fly.busy !== null) return;
+  const action = primaryNow.value;
+  if (action === 'readyAndLaunch') await flyNow();
+  else if (action === 'makeReady') await makeReady();
+  else if (action === 'launch') onLaunch();
+}
+
+function onLaunchClick(): void {
+  if (primary.value === 'launch') void runPrimary();
+  else onLaunch();
+}
+
+/** A focused control keeps Enter for itself. */
+const KEEPS_ENTER =
+  'a, button, input, select, textarea, summary, [role="button"], [role="combobox"], [role="option"], [role="menuitem"], [role="tab"], [contenteditable]';
+
+function onKey(event: KeyboardEvent): void {
+  if (event.key !== 'Enter' || event.repeat || event.defaultPrevented) return;
+  if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.closest(KEEPS_ENTER)) return;
+  // So does an open dialog or menu: its own buttons answer.
+  if (document.querySelector('.v-overlay--active.v-dialog, .v-overlay--active.v-menu')) return;
+  if (!primaryNow.value) return;
+  event.preventDefault();
+  void runPrimary();
+}
+
+const STEP_LOOK = {
+  none: { icon: 'mdi-minus', tone: 'rr-muted', says: 'nothing to fix' },
+  pending: { icon: 'mdi-circle-outline', tone: 'rr-muted', says: 'waiting' },
+  running: { icon: '', tone: 'rr-muted', says: 'working' },
+  done: { icon: 'mdi-check-circle', tone: 'rr-ok', says: 'done' },
+  failed: { icon: 'mdi-alert-circle', tone: 'rr-bad', says: 'failed' },
+  skipped: { icon: 'mdi-debug-step-over', tone: 'rr-muted', says: 'skipped' },
+  held: { icon: 'mdi-hand-back-right-outline', tone: 'rr-warn', says: 'not started' },
+} as const;
+
 async function onStandDown(): Promise<void> {
   const game = await fly.gameStatus();
   if (game.running) gameRunning.value = game.name ?? 'The game';
@@ -246,6 +359,7 @@ onMounted(async () => {
   // Devices get plugged in and apps get closed while this screen is open.
   timer = setInterval(refresh, 5000);
   window.addEventListener('focus', refresh);
+  window.addEventListener('keydown', onKey);
   offs.push(onMachineChanged(refresh));
   // A setup edited by hand (or in Configure) shows up here without a restart.
   offs.push(await fly.watch(() => void fly.load()));
@@ -253,6 +367,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   clearInterval(timer);
   window.removeEventListener('focus', refresh);
+  window.removeEventListener('keydown', onKey);
   for (const off of offs) off();
 });
 </script>
@@ -328,6 +443,7 @@ onBeforeUnmount(() => {
                   variant="plain"
                   density="compact"
                   class="fly-switcher"
+                  :menu-props="{ minWidth: 320 }"
                   hide-details
                   data-testid="profile-switcher"
                   @update:model-value="fly.select($event)"
@@ -436,50 +552,84 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="fly-actions">
-          <v-btn
-            color="primary"
-            :variant="fly.counts.fixable > 0 ? 'flat' : 'tonal'"
-            prepend-icon="mdi-wrench-check"
-            :disabled="fly.counts.fixable === 0 || fly.busy !== null"
-            :loading="fly.busy === 'makeReady'"
-            :title="
-              fly.counts.fixable === 0 ? 'Nothing for Make ready to fix right now' : undefined
-            "
-            data-testid="make-ready"
-            @click="makeReady"
-          >
-            Make ready
-          </v-btn>
-          <v-tooltip
-            v-if="fly.active?.canLaunch"
-            :text="fly.view?.launchLabel ? `Starts ${fly.view.launchLabel}` : 'Starts the game'"
-            location="bottom"
-          >
-            <template #activator="{ props: tip }">
-              <v-btn
-                v-bind="tip"
-                :color="fly.readiness === 'notReady' ? undefined : 'success'"
-                :variant="fly.readiness === 'notReady' ? 'tonal' : 'flat'"
-                prepend-icon="mdi-rocket-launch"
-                :disabled="fly.busy !== null"
-                :loading="fly.busy === 'launch'"
-                data-testid="launch"
-                @click="onLaunch"
-              >
-                Launch
-              </v-btn>
-            </template>
-          </v-tooltip>
-          <v-btn
-            v-else
-            variant="text"
-            prepend-icon="mdi-rocket-launch-outline"
-            :to="`/configure/profiles/${fly.activeId}`"
-            data-testid="launch-setup"
-          >
-            Choose what Launch starts
-          </v-btn>
+        <div class="fly-actions" :data-primary="primary ?? 'none'" data-testid="fly-actions">
+          <template v-for="action in actions" :key="action">
+            <v-tooltip
+              v-if="action === 'readyAndLaunch'"
+              text="Runs every fix in order, checks again, and starts the game once everything required is met"
+              location="bottom"
+              max-width="380"
+            >
+              <template #activator="{ props: tip }">
+                <v-btn
+                  v-bind="tip"
+                  color="primary"
+                  size="large"
+                  prepend-icon="mdi-rocket-launch"
+                  :disabled="fly.busy !== null"
+                  :loading="waiting || inFlight"
+                  aria-keyshortcuts="Enter"
+                  data-testid="ready-and-launch"
+                  @click="runPrimary"
+                >
+                  Make ready and launch
+                  <kbd class="fly-key" aria-hidden="true">Enter</kbd>
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-btn
+              v-else-if="action === 'makeReady'"
+              color="primary"
+              :size="primary === 'makeReady' ? 'large' : 'default'"
+              :variant="primary === 'makeReady' ? 'flat' : 'tonal'"
+              prepend-icon="mdi-wrench-check"
+              :disabled="fly.counts.fixable === 0 || fly.busy !== null"
+              :loading="fly.busy === 'makeReady' && !inFlight"
+              :title="
+                fly.counts.fixable === 0 ? 'Nothing for Make ready to fix right now' : undefined
+              "
+              :aria-keyshortcuts="primary === 'makeReady' ? 'Enter' : undefined"
+              data-testid="make-ready"
+              @click="makeReady"
+            >
+              Make ready
+              <kbd v-if="primary === 'makeReady'" class="fly-key" aria-hidden="true">Enter</kbd>
+            </v-btn>
+            <v-tooltip
+              v-else-if="fly.active?.canLaunch"
+              :text="fly.view?.launchLabel ? `Starts ${fly.view.launchLabel}` : 'Starts the game'"
+              location="bottom"
+            >
+              <template #activator="{ props: tip }">
+                <v-btn
+                  v-bind="tip"
+                  :color="launchLook.color"
+                  :variant="launchLook.variant"
+                  :size="primary === 'launch' ? 'large' : 'default'"
+                  prepend-icon="mdi-rocket-launch"
+                  :disabled="fly.busy !== null"
+                  :loading="
+                    (fly.busy === 'launch' && !inFlight) || (waiting && primary === 'launch')
+                  "
+                  :aria-keyshortcuts="primary === 'launch' ? 'Enter' : undefined"
+                  data-testid="launch"
+                  @click="onLaunchClick"
+                >
+                  Launch
+                  <kbd v-if="primary === 'launch'" class="fly-key" aria-hidden="true">Enter</kbd>
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-btn
+              v-else
+              variant="text"
+              prepend-icon="mdi-rocket-launch-outline"
+              :to="`/configure/profiles/${fly.activeId}`"
+              data-testid="launch-setup"
+            >
+              Choose what Launch starts
+            </v-btn>
+          </template>
           <v-spacer />
           <v-btn
             variant="text"
@@ -531,6 +681,35 @@ onBeforeUnmount(() => {
             @click="fly.activity = undefined"
           />
         </div>
+        <ol v-if="fly.steps.length" class="fly-steps" aria-label="Steps" data-testid="fly-steps">
+          <li
+            v-for="step in fly.steps"
+            :key="step.id"
+            class="fly-step"
+            :class="`fly-step-${step.state}`"
+            :aria-label="`${step.label}: ${STEP_LOOK[step.state].says}`"
+            :data-state="step.state"
+            :data-testid="`fly-step-${step.id}`"
+          >
+            <v-progress-circular
+              v-if="step.state === 'running'"
+              indeterminate
+              size="14"
+              width="2"
+              aria-label="Working"
+            />
+            <v-icon
+              v-else
+              :icon="STEP_LOOK[step.state].icon"
+              :class="STEP_LOOK[step.state].tone"
+              size="16"
+            />
+            <span class="fly-step-label">{{ step.label }}</span>
+            <span v-if="step.total > 1" class="fly-step-count"
+              >{{ step.finished }}/{{ step.total }}</span
+            >
+          </li>
+        </ol>
         <div
           v-if="fly.activity.entries.length === 0 && !fly.activity.running"
           class="rr-row rr-muted"
@@ -567,6 +746,33 @@ onBeforeUnmount(() => {
             </div>
             <pre v-if="entry.output" class="fly-output rr-mono">{{ entry.output }}</pre>
           </div>
+        </div>
+        <div
+          v-if="fly.activity.stage === 'held' && fly.readiness === 'notReady'"
+          class="rr-row fly-held"
+          data-testid="flight-held"
+        >
+          <v-icon icon="mdi-hand-back-right-outline" class="rr-warn" size="20" />
+          <div class="rr-row-main">
+            <div class="rr-row-title" data-testid="flight-held-title">
+              Not launched: {{ fly.counts.failed }} required
+              {{ fly.counts.failed === 1 ? 'item still needs' : 'items still need' }} you
+            </div>
+            <ul class="fly-held-list">
+              <li v-for="r in fly.counts.failing" :key="r.itemId" data-testid="flight-held-item">
+                <strong>{{ r.title }}</strong> — {{ r.summary }}
+              </li>
+            </ul>
+          </div>
+          <v-btn
+            color="warning"
+            variant="tonal"
+            :disabled="fly.busy !== null"
+            data-testid="flight-launch-anyway"
+            @click="launchHeld"
+          >
+            Launch anyway
+          </v-btn>
         </div>
         <template v-if="fly.activity.needsYou.length">
           <div class="rr-row fly-needs-head"><span class="rr-section-title">Needs you</span></div>
@@ -884,8 +1090,64 @@ onBeforeUnmount(() => {
   padding-top: 16px;
   border-top: 1px solid var(--rr-border);
 }
+/* The key that runs the primary action, on the button itself. */
+.fly-key {
+  margin-left: 12px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 17px;
+  letter-spacing: 0.02em;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: 4px;
+}
 .fly-activity {
   margin-bottom: 24px;
+}
+/* Make ready, phase by phase: where the run is, in one line. */
+.fly-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 0;
+  list-style: none;
+  margin: 0;
+  padding: 10px 16px 12px;
+}
+.fly-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.fly-step + .fly-step::before {
+  content: '';
+  width: 20px;
+  height: 1px;
+  margin: 0 6px 0 4px;
+  background: var(--rr-border);
+}
+.fly-step-none,
+.fly-step-pending {
+  color: var(--rr-muted);
+  font-weight: 400;
+}
+.fly-step-count {
+  color: var(--rr-muted);
+  font-size: 11.5px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.fly-held {
+  align-items: flex-start;
+}
+.fly-held-list {
+  margin: 3px 0 0;
+  padding-left: 16px;
+  font-size: 12.5px;
+  color: var(--rr-muted);
 }
 .fly-activity-head {
   display: flex;

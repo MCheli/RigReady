@@ -561,6 +561,40 @@ requirements:
       - "artifacts/screens/fly-hero/02-ready.png"
       - "artifacts/screens/fly-hero-checking/01-checking.png"
 
+  - id: WOW-FLY-002
+    title: One action to fly, and Enter runs it
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "The Fly screen has one primary action, first among the buttons, larger, with the key that runs it on the button: 'Make ready and launch' while the rig is not ready and RigReady can fix something; 'Launch' otherwise (green only once the rig is known to be ready); 'Make ready' for a setup with nothing to launch. The separate Make ready, Launch, Re-check all and Stand down actions stay, with their test ids."
+      - "'Make ready and launch' asks first for every confirmation it will need, then runs the fixes in Make ready's order, shown as steps (Monitors, Audio, Files, Devices, Apps, Scripts, Re-check, Launch) each in its state; it waits for the keep-layout answer before anything after the monitors runs; it checks everything again; and it starts the game only when every required check is met."
+      - "When something required is still not met it stops: the launch step is 'not started', the screen says 'Not launched: N required items still need you' with each item and its reason, and offers 'Launch anyway', which launches with one click. Nothing is launched past a required failure without that click. When the missing thing comes back by itself, the warning goes and Launch is offered."
+      - "Enter runs the primary action when nothing has the focus. A focused control keeps Enter for itself, and so does an open dialog or menu. With something required missing and nothing to fix, Enter opens the 'Launch anyway?' question; it does not launch."
+      - "The primary action waits for a checklist run that is under way, so it acts on answers."
+    status: done
+    evidence:
+      - "src/features/fly/core/flight.test.ts#names the phases in the order Make ready really works in"
+      - "src/features/fly/core/flight.test.ts#shows every phase, the re-check and the launch, each in its state as the run goes on"
+      - "src/features/fly/core/flight.test.ts#fixes four things in order, checks again, and starts the game only then"
+      - "src/features/fly/core/flight.test.ts#waits for \"Keep this layout?\" before anything else happens"
+      - "src/features/fly/core/flight.test.ts#stops when the layout is not kept: says what is still missing and does not launch"
+      - "src/features/fly/core/flight.test.ts#stops for something only the user can do, after fixing what it could"
+      - "src/features/fly/core/flight.test.ts#a game that does not start is a failed launch, not a launched one"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: Enter makes the rig ready phase by phase, waits for the layout answer, and launches once everything required is met"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: when something required still needs you it stops, says what, and Launch anyway is a deliberate click"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: the pedals come back while it is held, and the screen offers Launch instead of the warning"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: Enter launches a ready rig; a focused control and an open question keep Enter for themselves"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: a setup with nothing to launch offers Make ready as its one action"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "artifacts/screens/fly-one-action/01-not-ready.png"
+      - "artifacts/screens/fly-one-action/02-waiting-for-the-layout-answer.png"
+      - "artifacts/screens/fly-one-action/03-launched.png"
+      - "artifacts/screens/fly-one-action-held/01-held.png"
+      - "artifacts/screens/fly-one-action-held/02-launched-anyway.png"
+      - "artifacts/screens/fly-one-action-enter/01-ready.png"
+      - "artifacts/screens/fly-one-action-no-launch/01-make-ready-is-primary.png"
+
   # ---------------------------------------------------------------------------
   # CHECK TYPES
   # ---------------------------------------------------------------------------
