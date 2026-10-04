@@ -81,7 +81,7 @@ export async function privacyContext(
   return {
     variables,
     users: [...users],
-    machine: os.hostname(),
+    machine: ctx.ports.folders.machineName(),
     serials: [...serials, ...extraSerials],
   };
 }

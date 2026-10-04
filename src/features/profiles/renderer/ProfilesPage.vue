@@ -99,7 +99,7 @@ onBeforeUnmount(() => off?.());
         to="/configure/profiles/capture"
         data-testid="new-profile"
       >
-        New from this rig
+        New setup from this rig
       </v-btn>
     </div>
 
@@ -130,7 +130,9 @@ onBeforeUnmount(() => off?.());
     >
       <v-icon icon="mdi-clipboard-check-outline" size="40" class="mb-3" />
       <div>No setups yet. Get the rig working the way you want it, then capture it.</div>
-      <v-btn class="mt-4" color="primary" to="/configure/profiles/capture">New from this rig</v-btn>
+      <v-btn class="mt-4" color="primary" to="/configure/profiles/capture"
+        >New setup from this rig</v-btn
+      >
     </div>
 
     <div v-else-if="overview" class="rr-panel">

@@ -3,6 +3,7 @@ import type { CheckContext } from '../../../core/checks/registry';
 import type { ConfigLocation, GameInstall, GameVersion } from '../../../core/games';
 import { err, ok, type Result } from '../../../core/result';
 import { readSteamApp } from '../../../core/steam';
+import { manualInstall } from '../core/helpers';
 
 /**
  * Where DCS World is installed and where each install keeps its user files. See
@@ -96,11 +97,35 @@ async function standaloneInstalls(ctx: CheckContext): Promise<GameInstall[]> {
   return installs;
 }
 
-/** Every DCS install: Steam (all libraries) first, then standalone. */
+/** DCS.exe below the install folder. */
+export const DCS_EXE = path.join('bin', 'DCS.exe');
+
+/** A folder the user pointed RigReady at on the Games page, when it still holds DCS. */
+async function chosenInstall(ctx: CheckContext): Promise<GameInstall[]> {
+  const chosen = await manualInstall(ctx, 'dcs', DCS_EXE);
+  if (!chosen) return [];
+  const exe = path.join(chosen.installDir, DCS_EXE);
+  return [
+    {
+      source: 'standalone',
+      installDir: chosen.installDir,
+      launch: { exe, args: [], cwd: path.dirname(exe) },
+      userDir: path.join(
+        ctx.ports.folders.savedGames(),
+        await userFolderName(ctx, chosen.installDir)
+      ),
+    },
+  ];
+}
+
+/** Every DCS install: Steam (all libraries) first, then standalone, then a folder chosen by hand. */
 export async function detectInstalls(ctx: CheckContext): Promise<Result<GameInstall[]>> {
   const steam = await steamInstalls(ctx);
   if (!steam.ok) return steam;
-  const standalone = await standaloneInstalls(ctx);
+  const standalone = [...(await standaloneInstalls(ctx)), ...(await chosenInstall(ctx))].filter(
+    (install, index, all) =>
+      all.findIndex((other) => sameDir(other.installDir, install.installDir)) === index
+  );
   return ok([
     ...steam.value,
     ...standalone.filter((s) => !steam.value.some((i) => sameDir(i.installDir, s.installDir))),

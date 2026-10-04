@@ -1,7 +1,8 @@
 import path from 'node:path';
 import type { GameModule, TrackedFileSuggestion } from '../../../core/games';
 import { err, ok } from '../../../core/result';
-import { detectInstalls, installVersion, sameDir, userLocations } from './detect';
+import type { GameModuleExtras } from '../core/helpers';
+import { DCS_EXE, detectInstalls, installVersion, sameDir, userLocations } from './detect';
 
 /**
  * DCS World: installs (every Steam library and standalone), the Saved Games folder of
@@ -63,3 +64,12 @@ const dcs: GameModule = {
 };
 
 export default dcs;
+
+export const extras: GameModuleExtras = {
+  kind: 'flight',
+  // A standalone install on another drive whose registry entry is gone can be pointed at.
+  manualFolder: {
+    exe: DCS_EXE,
+    label: 'the DCS World folder (the one that contains the "bin" folder)',
+  },
+};

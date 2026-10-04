@@ -407,6 +407,8 @@ export class FakeRegistry implements Registry {
  * Program Files, Program Files (x86) and ProgramData are folders inside it too, which
  * is where the rig's recorded install files (the Steam library, DCS) are placed.
  */
+export const FAKE_MACHINE_NAME = 'RIG-PC';
+
 export class FakeKnownFolders implements KnownFolders {
   constructor(
     private readonly root: string,
@@ -439,6 +441,10 @@ export class FakeKnownFolders implements KnownFolders {
   }
   dataRoot(): string {
     return this.data;
+  }
+  /** Never the real PC's name: it would end up in screenshots and test output. */
+  machineName(): string {
+    return FAKE_MACHINE_NAME;
   }
   steamLibraries(): Promise<Result<string[]>> {
     return findSteamLibraries(this.registry, (file) => fs.readFile(file, 'utf8'));

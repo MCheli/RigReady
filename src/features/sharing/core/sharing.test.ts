@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { zipSync } from 'fflate';
 import * as yaml from 'js-yaml';
@@ -77,7 +76,7 @@ async function personalSetup(app: WiredApp): Promise<void> {
   await fs.writeFile(
     dcsUser(app, 'Scripts', 'Hooks.lua'),
     [
-      `-- written on ${os.hostname()} by ${path.basename(app.home)}`,
+      `-- written on ${app.ports.folders.machineName()} by ${path.basename(app.home)}`,
       `local logs = "${dcsUser(app, 'Logs').replace(/\\/g, '\\\\')}"`,
       `local pedals = "USB\\\\VID_044F&PID_B68F\\\\TPR0012345"`,
       '-- pedals serial TPR0012345',
@@ -119,7 +118,7 @@ describe('sharing a setup', () => {
     const found = (kind: string): string[] =>
       review.findings.filter((f) => f.kind === kind).map((f) => f.value);
     expect(found('userName')).toContain(path.basename(app.home));
-    expect(found('machineName')).toEqual([os.hostname()]);
+    expect(found('machineName')).toEqual([app.ports.folders.machineName()]);
     expect(found('serial')).toEqual(['TPR0012345']);
     expect(found('instancePath')).toEqual(
       expect.arrayContaining([
@@ -195,7 +194,7 @@ describe('sharing a setup', () => {
       const content = new TextDecoder().decode(data);
       for (const secret of [
         user,
-        os.hostname(),
+        app.ports.folders.machineName(),
         'TPR0012345',
         app.home,
         app.home.replace(/\\/g, '\\\\'),
@@ -258,7 +257,7 @@ describe('sharing a setup', () => {
       [rudder.id]: 'remove',
     });
     const hooks = new TextDecoder().decode([...entries].find(([k]) => k.endsWith('Hooks.lua'))![1]);
-    expect(hooks).toContain(`written on ${os.hostname()}`);
+    expect(hooks).toContain(`written on ${app.ports.folders.machineName()}`);
     expect([...entries.keys()].some((k) => k.includes('T-Pendular'))).toBe(false);
     expect([...entries.keys()].some((k) => k.includes('WINWING MFD1-C'))).toBe(true);
   });

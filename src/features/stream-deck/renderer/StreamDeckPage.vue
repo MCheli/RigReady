@@ -33,6 +33,18 @@ onMounted(() => {
 onBeforeUnmount(() => off?.());
 
 const status = computed(() => overview.value?.status);
+/**
+ * A PC that never had a Stream Deck: no app, no hardware, no profiles, no backups. That
+ * is not a problem to colour red or yellow, just something this PC does not have.
+ */
+const never = computed(
+  () =>
+    overview.value !== undefined &&
+    !overview.value.status.installed &&
+    overview.value.status.devices.length === 0 &&
+    overview.value.inventory.profiles.length === 0 &&
+    overview.value.backups.length === 0
+);
 const newestBackup = computed(() => overview.value?.backups.find((b) => b.kind === 'manual'));
 const problems = computed(
   () =>
@@ -115,13 +127,22 @@ async function backupNow(): Promise<void> {
             </v-btn>
           </template>
           <template v-else>
-            <div class="sd-tile-main rr-bad" data-testid="sd-app-state">Not installed</div>
+            <div
+              class="sd-tile-main"
+              :class="never ? 'rr-muted' : 'rr-bad'"
+              data-testid="sd-app-state"
+            >
+              Not installed
+            </div>
             <div class="rr-row-sub">See below for how to install it.</div>
           </template>
         </div>
         <div class="rr-panel sd-tile" data-testid="sd-tile-device">
           <div class="rr-section-title">Hardware</div>
-          <div class="sd-tile-main" :class="status.devices.length ? 'rr-ok' : 'rr-warn'">
+          <div
+            class="sd-tile-main"
+            :class="status.devices.length ? 'rr-ok' : never ? 'rr-muted' : 'rr-warn'"
+          >
             {{ status.devices.length ? 'Connected' : 'Not connected' }}
           </div>
           <div class="rr-row-sub">
@@ -143,7 +164,7 @@ async function backupNow(): Promise<void> {
         </div>
         <div class="rr-panel sd-tile" data-testid="sd-tile-backup">
           <div class="rr-section-title">Last backup</div>
-          <div class="sd-tile-main" :class="newestBackup ? '' : 'rr-warn'">
+          <div class="sd-tile-main" :class="newestBackup ? '' : never ? 'rr-muted' : 'rr-warn'">
             {{ newestBackup ? formatDate(newestBackup.createdAt) : 'None yet' }}
           </div>
           <div class="rr-row-sub">{{ plural(overview.backups.length, 'backup') }} in RigReady</div>
@@ -167,7 +188,11 @@ async function backupNow(): Promise<void> {
       <div v-if="tab === 'overview'" data-testid="sd-panel-overview">
         <InstallGuide v-if="!status.installed" :download-url="overview.downloadUrl" />
         <h2 class="rr-section-title">Health</h2>
-        <FindingList :findings="overview.findings" @backup="backupNow" />
+        <FindingList
+          v-if="!never || overview.findings.length > 0"
+          :findings="overview.findings"
+          @backup="backupNow"
+        />
       </div>
       <div v-else-if="tab === 'profiles'" data-testid="sd-panel-profiles">
         <InventoryView :inventory="overview.inventory" :profiles-folder="status.profilesFolder" />

@@ -10,7 +10,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { dedupeCandidates, fixItem, runChecks } from '../../src/core/checks/engine';
 import type { CaptureCandidate } from '../../src/core/checks/registry';
 import { NameRegistry } from '../../src/core/names';
-import type { CheckItem, Profile } from '../../src/core/profile/schema';
+import {
+  CHECK_GROUPS,
+  GROUP_TITLES,
+  type CheckItem,
+  type Profile,
+} from '../../src/core/profile/schema';
 import { Fly } from '../../src/features/fly/core/fly';
 import { applyMutations } from '../../src/platform/fake/scenario';
 import {
@@ -749,5 +754,50 @@ describe('DCS screen setup and the monitors', () => {
     ]);
     const problems = (await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems;
     expect(problems.some((p) => p.includes('MFD left is off or not connected'))).toBe(true);
+  });
+});
+
+describe('the checklist by kind', () => {
+  it('the full Hornet setup has a check in each of the five groups, each with a one-line detail', async () => {
+    app = await wiredApp('fly-make-ready-all');
+    const state = await app.invoke<{
+      activeProfileId: string;
+      active: { items: { title: string; group: string }[] };
+    }>('fly:state');
+    const present = new Set(state.active.items.map((i) => i.group));
+    // Shown in this fixed order; a group without checks (Other, here) is not shown at all.
+    expect(CHECK_GROUPS.filter((g) => present.has(g))).toEqual([
+      'devices',
+      'apps',
+      'displays',
+      'audio',
+      'files',
+    ]);
+    expect(CHECK_GROUPS.map((g) => GROUP_TITLES[g])).toEqual([
+      'Devices connected',
+      'Apps and services',
+      'Monitors',
+      'Audio',
+      'Config files',
+      'Other',
+    ]);
+    const report = await app.invoke<{
+      results: { title: string; group: string; status: string; summary: string }[];
+    }>('fly:check', { profileId: state.activeProfileId });
+    for (const result of report.results) {
+      expect(result.summary.length, result.title).toBeGreaterThan(0);
+      expect(result.summary).not.toContain('\n');
+    }
+    const byGroup = (group: string) =>
+      report.results.filter((r) => r.group === group).map((r) => r.status);
+    // Devices and audio are fine in this scenario; apps, monitors and files are not.
+    expect(byGroup('devices')).toEqual(['pass', 'pass', 'pass']);
+    expect(byGroup('audio')).toEqual(['pass']);
+    expect(byGroup('apps')).toEqual(['fail', 'fail']);
+    expect(byGroup('displays')).toEqual(['fail']);
+    expect(byGroup('files')).toEqual(['fail']);
+    expect(report.results.find((r) => r.group === 'displays')!.summary).toMatch(
+      /rotated 0°, expected 90°|differences/
+    );
   });
 });

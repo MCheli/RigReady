@@ -79,8 +79,14 @@ requirements:
       - "Each item shows its display name, its status icon and colour, and a one-line detail (e.g. 'Not connected', 'Running', 'MFD 2 rotated 0°, expected 90°')."
       - "Scenario mark-flight produces a screenshot showing all five groups populated for the F/A-18C profile."
       - "Groups with any failure are expanded; fully passing groups may be collapsed to a single 'n of n OK' line."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/e2e/fly-depth.e2e.ts#fly: Make ready fixes monitors, files and apps in that order, and ends Ready"
+      - "tests/unit/crossFeature.test.ts#the full Hornet setup has a check in each of the five groups, each with a one-line detail"
+      - "tests/e2e/fly.e2e.ts#all good: opens on the setup, every group is green, Ready"
+      - "artifacts/screens/fly-all-good/02-ready-expanded.png"
+      - "artifacts/screens/fly-make-ready-all/01-four-problems.png"
+      - "artifacts/screens/fly-generic-checks/01-every-kind.png"
 
   - id: FLY-004
     title: Check statuses
@@ -163,8 +169,12 @@ requirements:
       - "Each check has a timeout (default 5 s, overridable per item in the profile); on expiry the item shows 'error: timed out after 5 s'."
       - "A fake provider that never resolves for one item does not delay the other items' results or the overall banner (unit test with fake Clock)."
       - "A timed-out item offers 'Re-check' and, for required items, counts as not ready."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/fly/core/fly.test.ts#one hung check times out on its own; the others and the verdict do not wait for it"
+      - "tests/unit/crossFeature.test.ts#a provider that never answers times out its own checks; the rest and the verdict do not wait"
+      - "tests/e2e/integration.e2e.ts#fly: checks of a provider that never answers time out on their own; the rest of the list does not wait"
+      - "artifacts/screens/fly-hung-check/01-timed-out.png"
 
   - id: FLY-009
     title: Fix button next to each failing item
@@ -233,8 +243,15 @@ requirements:
       - "A failing fix does not stop the remaining fixes; the final summary lists what succeeded, what failed with reason, and what needs manual action."
       - "The display-layout step's timed revert prompt (FIX-002) is shown during Make ready and the run waits for Keep or Revert before continuing."
       - "Make ready is disabled while it is running and while no failing item has a fix."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/fly/core/fly.test.ts#fixes monitors first, then config files, then apps in the setup order, and verifies each"
+      - "src/features/fly/core/fly.test.ts#asks before a fix that runs a program: declined is \"skipped by you\", approved runs, a failure does not stop the rest"
+      - "tests/unit/app.test.ts#MFD rotated: Make ready applies the layout, announces the timed revert, Keep settles it"
+      - "tests/unit/app.test.ts#MFD rotated: when the new layout is not kept, Make ready says so and the setup stays Not ready"
+      - "tests/e2e/fly-depth.e2e.ts#fly: Make ready fixes monitors, files and apps in that order, and ends Ready"
+      - "artifacts/screens/fly-make-ready-all/02-keep-prompt.png"
+      - "artifacts/screens/fly-make-ready-all/03-ready.png"
 
   - id: FLY-013
     title: Make ready respects fixes that require confirmation
@@ -282,8 +299,13 @@ requirements:
       - "Known games auto-fill the launch target from detection (DCS-001/002, RACE-*-001) and the user can override it."
     notes:
       - "2026-10-03: was 'via Shell.run'. Shell.run waits for the program to exit, and steam.exe stays running; the handoff is a detached start, and 'Launched' means Steam accepted it (FLY-016)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/fly/core/fly.test.ts#resolves path variables and passes every argument as one literal element"
+      - "src/features/fly/core/fly.test.ts#launches through Steam with steam://rungameid/<id>"
+      - "tests/unit/crossFeature.test.ts#a game started through steam.exe is handed to Steam: no wait for Steam to exit, and Steam is never \"the game\""
+      - "tests/e2e/profiles.e2e.ts#setups: choosing a detected game fills in what Launch starts, and the setup can launch it"
+      - "artifacts/screens/profile-capture-game/01-game-chosen.png"
 
   - id: FLY-016
     title: Launch reports what actually happened
@@ -294,8 +316,14 @@ requirements:
       - "If the executable does not exist, Launch shows 'DCS.exe not found at <resolved path>' and no 'Launched' message."
       - "'Launched' is shown only after the ProcessProvider reports the game process running (or the Steam handoff process started for Steam targets), within a 30 s window."
       - "After a successful launch the window minimises to tray or stays open according to a setting (default: minimise)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/fly/core/fly.test.ts#says where it looked when the game is not there, and never claims a launch it did not see"
+      - "tests/unit/crossFeature.test.ts#a program that Windows refuses to start, or that never shows up, is never reported as launched"
+      - "src/features/fly/core/fly.test.ts#remembers whether to hide after Launch"
+      - "tests/e2e/integration.e2e.ts#fly: a game that Windows refuses to start is never reported as launched"
+      - "tests/e2e/fly-depth.e2e.ts#fly: hidden after a launch by default, and back from the tray"
+      - "artifacts/screens/fly-launch-refused/01-refused.png"
 
   - id: FLY-017
     title: Pre-launch actions
@@ -380,8 +408,13 @@ requirements:
       - "Scripts and actions receive RIGREADY_PROFILE_NAME, RIGREADY_PROFILE_ID, RIGREADY_GAME, RIGREADY_GAME_PATH, RIGREADY_USER_DATA and RIGREADY_HOME as environment variables."
       - "Profile values reach scripts only as environment variables or argv elements, never interpolated into a command string (unit test asserts the env object and argv)."
       - "Captured stdout and stderr (last 200 lines) are viewable from the launch panel for each action."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/crossFeature.test.ts#passes the setup, the game and its folders as environment variables, and arguments as literal elements"
+      - "tests/unit/crossFeature.test.ts#shows the last 200 lines of a launch action, and of a fix, whether it worked or not"
+      - "tests/unit/crossFeature.test.ts#a real batch file gets every argument as one literal value, and its environment and exit code come through"
+      - "tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started"
+      - "artifacts/screens/fly-launch-actions/01-paused.png"
 
   - id: FLY-023
     title: Stand down closes helper apps
@@ -473,8 +506,12 @@ requirements:
     done_means:
       - "While the Fly screen is open, unplugging a required device turns its item red within 2 s without a manual re-check (scenario mutation applied live: pedals-unplugged)."
       - "Plugging it back turns it green within 2 s and updates the banner."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/crossFeature.test.ts#a device that is unplugged and plugged back turns its check red and green again"
+      - "tests/e2e/integration.e2e.ts#fly: a device unplugged and plugged back turns red and green again without a re-check"
+      - "artifacts/screens/fly-live-plug/01-unplugged.png"
+      - "artifacts/screens/fly-live-plug/02-plugged-back.png"
 
   # ---------------------------------------------------------------------------
   # CHECK TYPES
@@ -594,8 +631,17 @@ requirements:
       - "Monitors are matched by EDID manufacturer, product code and serial; when serials are identical or empty, by the display target's connector path (adapter + target id)."
       - "Fixture mark-flight has three identical USB MFD screens; swapping two of them between positions (mutation mfd1-mfd2-swapped) makes the check fail naming both screens."
       - "Unit test: two monitors with identical EDID data and different target ids are matched to the right layout entries."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: beyond the criterion, a USB screen is matched first by the serial of the USB device it hangs off (the three MFD screens report the same EDID serial, 1), so it keeps its identity on any USB port."
+    status: done
+    evidence:
+      - "src/core/displays/identity.test.ts#matches two monitors with identical EDID data and different target ids to the right entries"
+      - "src/core/displays/identity.test.ts#keeps the identity of identical USB screens when every one of them moves to another USB port"
+      - "src/core/displays/identity.test.ts#follows a monitor to another connector by its EDID serial, or by being the only one of its model"
+      - "src/features/displays/core/layoutCheck.test.ts#tells the identical MFD screens apart when two of them swapped places, naming both"
+      - "src/features/displays/core/upright.test.ts#a setup still passes after the three USB screens are moved to other USB ports"
+      - "tests/e2e/displays.e2e.ts#identical MFD screens swapped: both are named in the check, Make ready swaps them back"
+      - "artifacts/screens/display-mfd-swapped/01-swapped.png"
 
   - id: CHECK-008
     title: Default audio playback device check
@@ -771,8 +817,15 @@ requirements:
       - "If the countdown expires or Revert is pressed, the previous layout is re-applied and the item returns to its previous status (unit test with fake Clock and fake DisplayProvider)."
       - "The prompt is placed on a monitor that is enabled in the new layout so it is always visible."
       - "Scenario mark-flight + mfd2-rotated: Fix then Keep results in a passing display item and the screenshot artifacts/screens/fix-display/."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/layoutCheck.test.ts#turns the desk state into the flying layout, saving the old one first, and arms the timed revert"
+      - "src/features/displays/core/layoutCheck.test.ts#reverts by itself when nobody confirms in time, and the fix says the layout was not kept"
+      - "src/features/displays/core/layoutCheck.test.ts#keep stops the countdown and leaves the layout, which Stand down can still revert"
+      - "tests/unit/app.test.ts#MFD rotated: when the new layout is not kept, Make ready says so and the setup stays Not ready"
+      - "tests/e2e/displays.e2e.ts#fix-display: an MFD screen back in landscape fails by name, Fix then Keep makes it pass"
+      - "artifacts/screens/fix-display/01-rotated.png"
+      - "artifacts/screens/fix-display/02-keep-prompt.png"
 
   - id: FIX-003
     title: Restore file from backup remediation
@@ -1105,8 +1158,16 @@ requirements:
       - "Disabled-but-connected monitors (the Dell while flying) are listed as 'off'."
       - "Fixture mark-flight lists the Samsung 49-inch, three identical USB MFD screens, the Dell and (racing fixture) the TV."
       - "Rig smoke reads the real layout without admin and matches the fixture's monitor count."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/service.test.ts#lists every connected monitor with identity, mode, position, rotation and flags"
+      - "src/features/displays/core/upright.test.ts#shows connector and serials, and says how identical screens are told apart"
+      - "tests/rig/read.rig.test.ts#reads every monitor with a unique stable id and exactly one primary"
+      - "tests/rig/read.rig.test.ts#finds every monitor of the recorded fixture on this PC, by the identity that follows the monitor"
+      - "tests/e2e/integration.e2e.ts#monitors: which way is up, identity of identical screens, and a captured arrangement saved by name"
+      - "tests/e2e/mark-racing.e2e.ts"
+      - "artifacts/screens/displays-upright/02-which-way-is-up.png"
+      - "artifacts/screens/display-layouts/01-desk-now.png"
 
   - id: DISP-002
     title: Identify and name monitors
@@ -1154,8 +1215,18 @@ requirements:
     done_means:
       - "Rotation is read as 0, 90, 180 or 270 for each monitor from the display configuration API and reported in the diagram with the monitor drawn rotated."
       - "Rig smoke on the owner's PC reports the MFD screens' actual rotation (recorded in fixture mark-flight)."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the rig smoke reports each monitor's rotation (0 in the desk state the fixture records). On the real MFD screens Windows accepts both portrait orientations: 90 is DISPLAYCONFIG rotation 2 and GDI DMDO_90, Windows' 'Portrait', which is what SimAppPro's 'portrait' most likely means; 270 is 'Portrait (flipped)'. Which of the two is upright on the panels cannot be read from the machine, so Monitors > Identify asks 'Which way is up?' once and stores the answer in the saved layouts."
+    status: done
+    evidence:
+      - "src/features/displays/core/service.test.ts#lists every connected monitor with identity, mode, position, rotation and flags"
+      - "src/features/displays/core/upright.test.ts#Identify draws an arrow on every screen, and the answer is remembered per monitor and rotation"
+      - "src/features/displays/core/upright.test.ts#turning a screen the other way up waits for Keep, then corrects every saved layout that had it the old way"
+      - "tests/rig/read.rig.test.ts#reads every monitor with a unique stable id and exactly one primary"
+      - "tests/rig/displayIdentity.rig.test.ts#MFD portrait orientation: applies the flying layout with 90 and with 270 and reports what Windows calls each"
+      - "tests/e2e/integration.e2e.ts#monitors: which way is up, identity of identical screens, and a captured arrangement saved by name"
+      - "artifacts/screens/displays-upright/02-which-way-is-up.png"
+      - "artifacts/screens/displays-upright/03-turned.png"
 
   - id: DISP-005
     title: Apply rotation and position
@@ -1166,8 +1237,12 @@ requirements:
       - "Applying a layout sets each monitor's rotation and desktop position in one atomic SetDisplayConfig call (or staged ChangeDisplaySettingsEx with a single commit)."
       - "Rig smoke: rotate one MFD screen by 90 degrees, read it back as rotated, restore the original layout in a finally block, read it back as original."
       - "Positions are normalised so the primary monitor is at 0,0 and no monitors overlap; an overlapping layout is rejected before applying with a message."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/rig/displayIdentity.rig.test.ts#turns a monitor that is not the main display off, then on again where it was, in one call"
+      - "tests/rig/displayApply.rig.test.ts#rotates, moves and disables monitors, then restores the original layout exactly"
+      - "src/features/displays/core/layoutCheck.test.ts#refuses a layout whose monitors would overlap"
+      - "tests/unit/fakePlatform.test.ts#display apply changes what read returns, keeps one primary at 0,0, and reverts"
 
   - id: DISP-006
     title: Enable and disable monitors, set primary
@@ -1178,8 +1253,14 @@ requirements:
       - "Applying the Flying layout disables the Dell and enables the three MFD screens; applying Desk reverses it (scenario on fake DisplayProvider asserts the enabled set)."
       - "The primary monitor is set as specified by the layout."
       - "Rig smoke: disable and re-enable one non-primary monitor and restore the original layout in finally."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/layoutCheck.test.ts#turns the desk state into the flying layout, saving the old one first, and arms the timed revert"
+      - "tests/unit/settings.test.ts#applies the desk layout named in the settings, with the keep-or-revert countdown"
+      - "tests/rig/displayIdentity.rig.test.ts#turns a monitor that is not the main display off, then on again where it was, in one call"
+      - "tests/rig/displayApply.rig.test.ts#rotates, moves and disables monitors, then restores the original layout exactly"
+      - "tests/e2e/fly.e2e.ts"
+      - "artifacts/screens/fly-desk-to-flying/02-flying.png"
 
   - id: DISP-007
     title: Apply resolution and refresh rate
@@ -1189,8 +1270,12 @@ requirements:
     done_means:
       - "A layout may specify resolution and refresh rate per monitor; apply sets them only if the mode is in the monitor's supported mode list, otherwise it reports which monitor/mode is unsupported and applies nothing."
       - "Unit test with fake DisplayProvider modes covers supported and unsupported modes."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/displays/core/modes.test.ts#applies a mode the monitor lists, and the check then compares the refresh rate too"
+      - "src/features/displays/core/modes.test.ts#refuses a mode the monitor does not list, names the monitor and the mode, and applies nothing"
+      - "src/features/displays/core/modes.test.ts#the provider itself refuses an unlisted mode and leaves every monitor as it was"
+      - "tests/rig/displayIdentity.rig.test.ts#applies another refresh rate the monitor lists, and refuses nothing it was not asked"
 
   - id: DISP-008
     title: Capture prior layout and revert
@@ -1527,8 +1612,14 @@ requirements:
     done_means:
       - "When more than one DCS install is detected, the profile stores which one it uses, and {DCS_INSTALL}/{DCS_USER} resolve to that install's paths."
       - "If the chosen install disappears, the Fly screen shows an error item 'DCS install not found' instead of launching the wrong one."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/crossFeature.test.ts#resolves {DCS_INSTALL} and {DCS_USER} to that install for its checks, its launch and its scripts"
+      - "tests/unit/crossFeature.test.ts#when that install disappears the checks say \"DCS install not found\" and Launch never starts the other one"
+      - "tests/e2e/integration.e2e.ts#dcs: a setup chooses which DCS install it uses, and says so when that install is gone"
+      - "artifacts/screens/dcs-install-choice/01-install-chosen.png"
+      - "artifacts/screens/dcs-install-choice/02-install-gone.png"
+      - "artifacts/screens/dcs-install-choice/03-not-launched.png"
 
   - id: DCS-005
     title: List installed aircraft modules
@@ -1574,8 +1665,13 @@ requirements:
       - "The writer emits DCS's own formatting (tab-indented, ['key'] = value,) so a parse-write of an unmodified file produces identical semantics and minimal diff."
     notes:
       - "2026-10-03: was 'every .lua file under Saved Games/DCS'. Only the files under Config are table data; the scripts are Lua programs, which a table parser must refuse."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/lua.test.ts#reads every DCS data file of the recorded rig and writes it back byte for byte"
+      - "tests/unit/lua.test.ts#reads the Lua data syntax DCS and hand edits produce"
+      - "tests/unit/lua.test.ts#refuses anything that is not data, with the line number"
+      - "tests/unit/lua.test.ts#writes DCS formatting: tabs, [\"key\"] = value, a comma after every entry"
+      - "tests/unit/lua.test.ts#has no file, process or code-loading access, and reports errors with the file name"
 
   # ---------------------------------------------------------------------------
   # DCS — MonitorSetup and Export.lua (SimAppPro replacement for configuration)

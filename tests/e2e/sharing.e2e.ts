@@ -19,7 +19,7 @@ test('share: review personal details and what runs, save a .rigready file, impor
   const logs = path.join(home, 'Saved Games', 'DCS', 'Logs').replace(/\\/g, '\\\\');
   await fs.writeFile(
     path.join(scripts, 'Hooks.lua'),
-    `-- set up on ${os.hostname()} by ${os.userInfo().username}\nlocal logs = "${logs}"\n`
+    `-- set up on ${'RIG-PC'} by ${os.userInfo().username}\nlocal logs = "${logs}"\n`
   );
   await fs.writeFile(path.join(scripts, 'check_vpn.py'), 'print("vpn")\n');
   await fs.writeFile(path.join(scripts, 'tool.exe'), 'MZ');
@@ -34,7 +34,7 @@ test('share: review personal details and what runs, save a .rigready file, impor
     page.locator(`[data-testid="share-finding"][data-kind="${kind}"]`);
   await expect(finding('serial')).toContainText('TPR0012345');
   await expect(finding('serial')).toHaveAttribute('data-decision', 'remove');
-  await expect(finding('machineName')).toContainText(os.hostname());
+  await expect(finding('machineName')).toContainText('RIG-PC');
   await expect(finding('path').first()).toContainText('Replaced with {DCS_USER}');
   // Long groups start folded with one choice for all of them.
   const group = (kind: string) =>
@@ -67,7 +67,7 @@ test('share: review personal details and what runs, save a .rigready file, impor
   const entries = unzipSync(new Uint8Array(await fs.readFile(file)));
   for (const [name, data] of Object.entries(entries)) {
     const content = new TextDecoder().decode(data).toLowerCase();
-    for (const secret of [os.hostname(), os.userInfo().username, home, 'TPR0012345']) {
+    for (const secret of ['RIG-PC', os.userInfo().username, home, 'TPR0012345']) {
       expect(content, `${name} names ${secret}`).not.toContain(secret.toLowerCase());
     }
     expect(name).not.toMatch(/\.(py|exe)$/);

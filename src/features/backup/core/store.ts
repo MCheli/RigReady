@@ -77,7 +77,10 @@ export function machineIdentity(ctx: Pick<Ctx, 'ports'>): MachineIdentity {
   } catch {
     // No user name available: the home folder's name still counts.
   }
-  return { machine: os.hostname(), users: [...users].filter((u) => u.length >= 2) };
+  return {
+    machine: ctx.ports.folders.machineName(),
+    users: [...users].filter((u) => u.length >= 2),
+  };
 }
 
 export function pathVariables(ctx: Ctx): Promise<PathVariables> {

@@ -290,7 +290,7 @@ onBeforeUnmount(() => {
         arranged — then capture it.
       </p>
       <v-btn color="primary" to="/configure/profiles/capture" data-testid="fly-create">
-        Create a setup from this rig
+        New setup from this rig
       </v-btn>
     </div>
 

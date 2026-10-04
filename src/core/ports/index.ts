@@ -138,6 +138,8 @@ export interface KnownFolders {
   programData(): string;
   /** RigReady's own data folder. Honors RIGREADY_HOME. */
   dataRoot(): string;
+  /** This PC's name, for saying where a backup was made and for keeping it out of shared files. */
+  machineName(): string;
   /** Every Steam library folder (from libraryfolders.vdf). Empty when Steam is absent. */
   steamLibraries(): Promise<Result<string[]>>;
 }

@@ -111,7 +111,7 @@ const sources = (g: GameSummary): string =>
                 {{
                   game.manualFolder
                     ? 'Installed somewhere unusual? Open it to choose its folder.'
-                    : 'Not found on this PC'
+                    : 'RigReady did not find it where it is normally installed.'
                 }}
               </div>
               <div v-for="problem in game.problems" :key="problem" class="rr-row-sub rr-warn">

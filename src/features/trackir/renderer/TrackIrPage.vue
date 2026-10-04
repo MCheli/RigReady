@@ -47,6 +47,10 @@ function toggle(file: string): void {
 }
 
 const status = computed(() => view.value?.status);
+/** A PC that never had TrackIR: neither the software nor the camera. Not a problem, just absent. */
+const never = computed(
+  () => status.value !== undefined && !status.value.installed && status.value.devices.length === 0
+);
 const profiles = computed(() => view.value?.profiles);
 const profileName = (file: string | undefined): string | undefined =>
   file
@@ -116,13 +120,20 @@ const games = (n: number): string => `${n.toLocaleString('en-US')} ${n === 1 ? '
               Start TrackIR
             </v-btn>
           </template>
-          <div v-else class="tir-tile-main rr-bad" data-testid="tir-running">Not installed</div>
+          <div
+            v-else
+            class="tir-tile-main"
+            :class="never ? 'rr-muted' : 'rr-bad'"
+            data-testid="tir-running"
+          >
+            Not installed
+          </div>
         </div>
         <div class="rr-panel tir-tile" data-testid="tir-tile-camera">
           <div class="rr-section-title">Camera</div>
           <div
             class="tir-tile-main"
-            :class="status.devices.length ? 'rr-ok' : 'rr-warn'"
+            :class="status.devices.length ? 'rr-ok' : never ? 'rr-muted' : 'rr-warn'"
             data-testid="tir-camera"
           >
             {{ status.devices.length ? 'Connected' : 'Not connected' }}
@@ -139,7 +150,7 @@ const games = (n: number): string => `${n.toLocaleString('en-US')} ${n === 1 ? '
           <div class="rr-section-title">Games can find it</div>
           <div
             class="tir-tile-main"
-            :class="status.npClient.ok ? 'rr-ok' : 'rr-warn'"
+            :class="status.npClient.ok ? 'rr-ok' : never ? 'rr-muted' : 'rr-warn'"
             data-testid="tir-npclient"
           >
             {{ status.npClient.ok ? 'Yes' : 'No' }}

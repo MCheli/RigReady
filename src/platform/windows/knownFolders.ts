@@ -68,6 +68,9 @@ export class WindowsKnownFolders implements KnownFolders {
     return this.resolve(FOLDERID_LocalAppData, fallback);
   }
 
+  machineName(): string {
+    return os.hostname();
+  }
   dataRoot(): string {
     const override = this.env['RIGREADY_HOME'];
     return override && override.length > 0
