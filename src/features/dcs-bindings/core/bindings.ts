@@ -61,6 +61,8 @@ export interface BindingsContext extends CheckContext {
   names?: () => Promise<DeviceNames>;
   /** The DCS install a setup names (Profile.gameInstall). Absent: the first install found. */
   install?: string;
+  /** Called after the binding files were changed, so other features that show them refresh. */
+  changed?: () => void;
 }
 
 export interface Locations {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { builtinLayoutFor, builtinLayouts } from './builtin';
-import { categorize, shortAction } from './categories';
+import { CATEGORIES, CATEGORY_IDS, categorize, categoryTrail, shortAction } from './categories';
 import { convertJoystickDiagrams, parseTransform, placeholderControl } from './convert';
 import { appendUnplaced, generateLayout, shapeFromControls } from './generate';
 import {
@@ -16,6 +16,7 @@ import {
   type DeviceLayout,
 } from './layout';
 import { axisValues, LiveTracker, pressedControls } from './live';
+import { categoryColor, categoryPattern, renderDeviceSvg } from './render';
 
 const boxes = (layout: DeviceLayout) =>
   layout.controls.map((c) => ({
@@ -154,6 +155,36 @@ describe('the layouts RigReady ships', () => {
     }
   });
 
+  it('draw every MFD button once: its label card is the key, on the bezel', () => {
+    const mfd = builtinLayoutFor('4098', 'BEE1')!;
+    // Nothing on the drawing repeats a control: no numbered keys, no named rocker knobs.
+    expect(mfd.shapes.map((s) => (s.type === 'text' ? s.text : s.role))).toEqual([
+      'body',
+      'screen',
+      'MFD',
+    ]);
+    const screen = mfd.shapes.find((s) => s.type === 'rect' && s.role === 'screen')!;
+    if (screen.type !== 'rect') throw new Error('The screen is a rectangle.');
+    const onBezel = mfd.controls.filter(
+      (c) => c.kind === 'button' && /^(OSB|GAIN|SYM|BRT|CON)\b/.test(c.label ?? '')
+    );
+    // Twenty buttons and four rockers with two directions each.
+    expect(onBezel).toHaveLength(28);
+    for (const key of onBezel) {
+      const outside =
+        key.x + key.w <= screen.x ||
+        key.x >= screen.x + screen.w ||
+        key.y + key.h <= screen.y ||
+        key.y >= screen.y + screen.h;
+      expect(outside, key.label).toBe(true);
+    }
+    // In the picture a button's number appears once, in its card.
+    const svg = renderDeviceSvg({ layout: mfd, controls: [] }, { theme: 'night' });
+    for (const n of [42, 1, 31, 12, 43, 22]) {
+      expect(svg.match(new RegExp(`>${n}<`, 'g')), `button ${n}`).toHaveLength(1);
+    }
+  });
+
   it('place the pedals as two toe brakes and a rudder, the stick with its hat as a cross', () => {
     const pedals = builtinLayoutFor('044F', 'B68F')!;
     expect([...placedControls(pedals)].sort()).toEqual(['axis:X', 'axis:Y', 'axis:Z']);
@@ -273,8 +304,68 @@ describe('kinds of action, for colour-coding', () => {
       'Gun Trigger: SECOND DETENT (Press to shoot)'
     );
     expect(shortAction('Roll')).toBe('Roll');
+    // "Knob" says what kind of control it is, like "Switch": the picture shows that.
+    expect(shortAction('HUD Symbology Brightness Selector Knob - NIGHT')).toBe(
+      'HUD Symbology Brightness: NIGHT'
+    );
+    expect(shortAction('UFC COMM 1 Volume Control Knob')).toBe('UFC COMM 1 Volume');
     // Never shortened to nothing.
     expect(shortAction('A Button')).toBe('A Button');
+  });
+
+  it('takes a reader at its word when it names the kind, and does not say it twice', () => {
+    expect(categorize('Shift up', ['Driving'])).toBe('driving');
+    expect(categorize('Brake bias up', ['Car adjustments'])).toBe('car');
+    expect(categorize('Push to talk', ['Radio & chat'])).toBe('comms');
+    // Beside the kind, only what the game's own category adds is shown.
+    expect(categoryTrail(['Driving'])).toBe('');
+    expect(categoryTrail(['Radio & chat'])).toBe('');
+    expect(categoryTrail(['Stick', 'HOTAS'])).toBe('Stick › HOTAS');
+    expect(categoryTrail([])).toBe('');
+  });
+
+  it('tells every kind apart in the night style, which has only warm colours to work with', () => {
+    const rgb = (hex: string): number[] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    /** CIELAB, so a difference is a difference to the eye and not between numbers. */
+    const lab = (hex: string): number[] => {
+      const [r, g, b] = rgb(hex).map((v) => {
+        const c = v / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      }) as [number, number, number];
+      const f = (t: number): number => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+      const x = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047);
+      const y = f(0.2126 * r + 0.7152 * g + 0.0722 * b);
+      const z = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+      return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+    };
+    const apart = (a: string, b: string): number => {
+      const [p, q] = [lab(a), lab(b)];
+      return Math.hypot(p[0]! - q[0]!, p[1]! - q[1]!, p[2]! - q[2]!);
+    };
+    for (const id of CATEGORY_IDS) {
+      // Red leads and blue trails: nothing blue or white on a page read in a dark cockpit.
+      const [r, g, b] = rgb(categoryColor(id, 'night')) as [number, number, number];
+      expect(r, id).toBeGreaterThan(g);
+      expect(g, id).toBeGreaterThanOrEqual(b);
+      // On screen and on paper every marker is a solid bar.
+      expect(categoryPattern(id, 'dark')).toBe('solid');
+      expect(categoryPattern(id, 'light')).toBe('solid');
+      expect(categoryColor(id, 'light')).toBe(CATEGORIES[id].color);
+    }
+    // Two kinds never look alike: the bar differs (solid or dashed), or the colour clearly does.
+    for (const [i, a] of CATEGORY_IDS.entries()) {
+      for (const b of CATEGORY_IDS.slice(i + 1)) {
+        if (categoryPattern(a, 'night') !== categoryPattern(b, 'night')) continue;
+        expect(
+          apart(categoryColor(a, 'night'), categoryColor(b, 'night')),
+          `${a} and ${b}`
+        ).toBeGreaterThan(20);
+      }
+    }
+    // Both bars are used, and a dashed one is drawn dashed on the card and in the legend.
+    expect(new Set(CATEGORY_IDS.map((id) => categoryPattern(id, 'night')))).toEqual(
+      new Set(['solid', 'dashed'])
+    );
   });
 });
 

@@ -84,7 +84,9 @@ describe('the F/A-18C sheet from the recorded bindings', () => {
     const stick = byTitle(sheet, 'Stick');
     expect(control(stick, 'button:20')?.bindings[0]).toMatchObject({
       action: 'Weapon Release Button',
-      short: 'Weapon Release',
+      // The binding guide's plain name is what the label says (AI-001).
+      plain: 'Pickle: release weapon',
+      short: 'Pickle: release weapon',
       kind: 'weapons',
       source: 'user',
       modifiers: [],
@@ -455,7 +457,9 @@ describe('the picture', () => {
       expect(svg).toContain(THEMES[theme].bg);
       expect(svg).not.toMatch(/<script|onerror=alert\(1\)>/);
       expect(svg).toContain('&lt;img src=x onerror=alert(1)&gt; &amp; &quot;hold&quot;');
-      expect(svg).toContain('<title>Button 20 (Weapon release): Weapon Release Button');
+      expect(svg).toContain(
+        '<title>Button 20 (Weapon release): Pickle: release weapon (Weapon Release Button)'
+      );
       expect(svg).toContain('<title>Button 1: nothing bound</title>');
     }
     // Night: nothing white or blue.
@@ -510,11 +514,15 @@ describe('the picture', () => {
 
   it('sizes label text to its card', () => {
     expect(fitFont(['Roll'], 200, 40)).toBe(14);
-    expect(fitFont(['Autopilot/Nosewheel Steering Disengage (Paddle)'], 100, 30)).toBeLessThan(10);
+    // Text that needs it gets smaller type, but never smaller than reads with ease: below
+    // that it is shortened (labels.test.ts).
+    expect(fitFont(['Autopilot/Nosewheel Steering Disengage (Paddle)'], 120, 44)).toBe(12);
+    expect(fitFont(['Autopilot/Nosewheel Steering Disengage (Paddle)'], 100, 30)).toBe(10.2);
     // A long word cannot be broken at a space and takes the rows it needs.
     expect(fitFont(['PUSH(DESCEND)'], 60, 20)).toBeLessThan(fitFont(['PUSH DESC'], 60, 20));
+    // Only a card too small for one row at that size gets smaller type still.
     expect(fitFont(['A much longer text than this card could ever hold in any size'], 30, 10)).toBe(
-      8.6
+      7
     );
     expect(fitFont(['Roll'], 200, 40, 1.5)).toBe(21);
   });
@@ -562,7 +570,7 @@ describe('pages', () => {
       style: 'night',
       stamp: '2026-10-03',
     });
-    expect(list).toContain('Weapon Release Button');
+    expect(list).toContain('Pickle: release weapon');
     expect(list).toContain('<b>Weapon release <span>(Button 20)</span></b>');
   });
 });

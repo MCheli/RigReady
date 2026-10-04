@@ -3,7 +3,8 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { Render } from '../../../core/ports';
-import { err, ok } from '../../../core/result';
+import type { CheckItem, Profile } from '../../../core/profile/schema';
+import { err, ok, type Result } from '../../../core/result';
 import type { FakeRender } from '../../../platform/fake';
 import { pngSize } from '../../../platform/fake/png';
 import { KNEEBOARD_CHECK, KNEEBOARD_REGENERATE } from './check';
@@ -48,6 +49,14 @@ async function start(scenario = 'cheat-sheets-hornet'): Promise<{ app: WiredApp;
     folder: path.join(app.home, 'Saved Games', 'DCS', 'Kneeboard', 'FA-18C_hornet'),
   };
 }
+
+/** The checks of a setup as it is stored. */
+function profileChecksOf(profile: Result<Profile>): CheckItem[] {
+  if (!profile.ok) throw new Error(profile.error.message);
+  return profile.value.checks;
+}
+const profileChecks = async (running: WiredApp): Promise<CheckItem[]> =>
+  profileChecksOf(await running.wiring.context.profiles.get('dcs-f-a-18c'));
 
 const exportPages = (running: WiredApp, options: Record<string, unknown> = {}): Promise<Outcome> =>
   running.invoke<Outcome>('cheat-sheets:exportKneeboard', { ...HORNET, options });
@@ -132,7 +141,7 @@ describe('exporting kneeboard pages', () => {
       .map((c) => c.html);
     expect(html[1]).toContain('class="k-light"');
     expect(html[4]).toContain('class="k-night"');
-    expect(html[2]).toContain('Weapon Release Button');
+    expect(html[2]).toContain('Pickle: release weapon');
     const night = await exportPages(running, {
       devices: ['4098:BEA8'],
       styles: ['night'],
@@ -348,6 +357,112 @@ describe('the check "kneeboard pages are up to date"', () => {
         remediation: { type: KNEEBOARD_REGENERATE },
       },
     });
+  });
+
+  it('is added to a setup of the game from the kneeboard dialog, with its fix, and taken out again', async () => {
+    const { app: running, folder } = await start();
+    const target = { ...HORNET, profileId: 'dcs-f-a-18c' };
+    const setups = (): Promise<{ id: string; name: string; checked: boolean }[]> =>
+      running.invoke('cheat-sheets:kneeboardSetups', HORNET);
+    const inSetup = async (): Promise<CheckItem[]> =>
+      (await profileChecks(running)).filter((c) => c.type === KNEEBOARD_CHECK);
+    expect(await setups()).toEqual([{ id: 'dcs-f-a-18c', name: 'DCS F/A-18C', checked: false }]);
+
+    const added = await running.invoke<{ message: string }>(
+      'cheat-sheets:addKneeboardCheck',
+      target
+    );
+    expect(added.message).toBe(
+      '"DCS F/A-18C" now checks the F/A-18C kneeboard pages, and Make ready writes them again when a binding changed.'
+    );
+    expect(await setups()).toEqual([{ id: 'dcs-f-a-18c', name: 'DCS F/A-18C', checked: true }]);
+    const params = { game: 'dcs', aircraft: 'FA-18C_hornet', aircraftName: 'F/A-18C' };
+    expect(await inSetup()).toEqual([
+      {
+        id: 'kneeboard-fa-18c-hornet',
+        type: KNEEBOARD_CHECK,
+        title: 'Kneeboard cheat sheet for F/A-18C is up to date',
+        // A warning on the Fly screen, never a reason to be Not ready.
+        required: false,
+        params,
+        remediation: { type: KNEEBOARD_REGENERATE, params },
+      },
+    ]);
+    // Asked twice, it is there once.
+    expect(
+      (await running.invoke<{ message: string }>('cheat-sheets:addKneeboardCheck', target)).message
+    ).toBe('"DCS F/A-18C" already checks these kneeboard pages.');
+    expect(await inSetup()).toHaveLength(1);
+
+    // The check runs with the setup, and its fix writes the pages.
+    const report = await running.invoke<{
+      ready: boolean;
+      results: { title: string; status: string; summary: string }[];
+    }>('fly:check', { profileId: 'dcs-f-a-18c' });
+    expect(
+      report.results.find((r) => r.title === 'Kneeboard cheat sheet for F/A-18C is up to date')
+    ).toMatchObject({ status: 'warn', summary: 'No kneeboard pages exported for F/A-18C' });
+    expect(report.ready).toBe(true);
+    const fixed = await running.wiring.context.checks
+      .remediation(KNEEBOARD_REGENERATE)!
+      .run(params, running.ctx);
+    expect(fixed.ok).toBe(true);
+    expect((await fs.readdir(folder)).length).toBeGreaterThan(0);
+
+    // Taken out again: only this check goes.
+    const before = (await profileChecks(running)).length;
+    expect(
+      (await running.invoke<{ message: string }>('cheat-sheets:removeKneeboardCheck', target))
+        .message
+    ).toBe('"DCS F/A-18C" no longer checks these kneeboard pages.');
+    expect(await inSetup()).toEqual([]);
+    expect(await profileChecks(running)).toHaveLength(before - 1);
+    expect(await setups()).toEqual([{ id: 'dcs-f-a-18c', name: 'DCS F/A-18C', checked: false }]);
+    expect(
+      (await running.invoke<{ message: string }>('cheat-sheets:removeKneeboardCheck', target))
+        .message
+    ).toBe('"DCS F/A-18C" did not check these kneeboard pages.');
+  });
+
+  it('is refused for an aircraft the game does not have, a game without kneeboards and a setup of another game', async () => {
+    app = await wiredApp('cheat-sheets-hornet', {
+      files: [...FILES, 'Documents/iRacing/**'],
+    });
+    const running = app;
+    const add = (input: Record<string, string>): Promise<unknown> =>
+      running.invoke('cheat-sheets:addKneeboardCheck', input);
+    // The id ends up in a setup and in a folder name: only an aircraft the game really has.
+    await expect(
+      add({ game: 'dcs', aircraftId: '..\\..\\Windows', profileId: 'dcs-f-a-18c' })
+    ).rejects.toThrow(/kneeboard.aircraft/);
+    await expect(add({ ...HORNET, profileId: 'no-such-setup' })).rejects.toThrow();
+    // Kneeboard pages are a DCS thing.
+    await expect(
+      add({ game: 'iracing', aircraftId: 'all', profileId: 'dcs-f-a-18c' })
+    ).rejects.toThrow(/kneeboard.game/);
+
+    // A setup for another game is not offered, and refused when asked for by id.
+    const profiles = running.wiring.context.profiles;
+    const hornet = await profiles.get('dcs-f-a-18c');
+    if (!hornet.ok) throw new Error(hornet.error.message);
+    const saved = await profiles.save({
+      ...hornet.value,
+      id: 'iracing-night',
+      name: 'iRacing',
+      game: 'iracing',
+      checks: [],
+    });
+    expect(saved.ok).toBe(true);
+    expect(
+      (await running.invoke<{ id: string }[]>('cheat-sheets:kneeboardSetups', HORNET)).map(
+        (s) => s.id
+      )
+    ).toEqual(['dcs-f-a-18c']);
+    await expect(add({ ...HORNET, profileId: 'iracing-night' })).rejects.toThrow(/kneeboard.setup/);
+    expect(profileChecksOf(await profiles.get('iracing-night'))).toEqual([]);
+    expect(profileChecksOf(await profiles.get('dcs-f-a-18c'))).not.toContainEqual(
+      expect.objectContaining({ type: KNEEBOARD_CHECK })
+    );
   });
 
   it('on a PC without DCS, says the folder was not found instead of writing anywhere', async () => {

@@ -2639,6 +2639,157 @@ requirements:
       - "artifacts/screens/cheat-sheets-outputs/kneeboard-stick-night.png"
       - "artifacts/screens/cheat-sheets-outputs/kneeboard-key-actions-night.png"
 
+  - id: SHEET-009
+    title: Cheat sheets for the racing games
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa have binding readers in the shared registry, and a control is named the same way in every game (button 1, hat 1 up, the X axis), so a cheat sheet is drawn for each from its own files: one set for all cars, and a set per car or vehicle where the game keeps one. On a PC without the games the readers are not available and nothing fails."
+      - "On mark-racing the Fanatec wheel base is drawn on a shipped layout (rim with paddles and D-pad, shifter, pedals); a bound button the layout does not place is added below it, and the two halves of the steering axis are one action, not a conflict."
+      - "A racing sheet is titled by the game, has its own kinds of action (driving, car adjustments, pit and session), offers no kneeboard export and prints under the game's name. With several games on the PC the page opens on the game of the setup in use, else on the one most of the connected controllers are bound in."
+      - "The input tester and the Devices page work with the same readers: a press is found by the control it is on whatever the game calls its input, and a device links only to a bindings page that opens on that device."
+    status: done
+    evidence:
+      - "src/features/racing/core/bindingReaders.test.ts#registers a reader per racing game, each with the game’s own racing page as its route"
+      - "src/features/racing/core/bindingReaders.test.ts#reads iRacing: the wheel with its pedals and paddles as controls, the keyboard apart"
+      - "src/features/racing/core/bindingReaders.test.ts#reads Le Mans Ultimate: hat directions, buttons, and a second binding of the same action"
+      - "src/features/racing/core/bindingReaders.test.ts#reads BeamNG.drive: the game’s defaults and the user’s own, and a vehicle’s own map on top"
+      - "src/features/racing/core/bindingReaders.test.ts#reads Assetto Corsa: axes and buttons of the controller controls.ini names, keys apart"
+      - "src/features/racing/core/bindingReaders.test.ts#are not available, list nothing and fail in words, never with an exception"
+      - "src/features/cheat-sheets/core/labels.test.ts#offers every racing game with bindings, each with one set for all cars"
+      - "src/features/cheat-sheets/core/labels.test.ts#draws the wheel with the shipped Fanatec layout and what iRacing has on each control"
+      - "src/features/cheat-sheets/core/labels.test.ts#puts Le Mans Ultimate’s D-pad on the hat and its second bindings on the far buttons"
+      - "src/features/cheat-sheets/core/labels.test.ts#saves the printout of a racing sheet under the game’s name"
+      - "src/features/cheat-sheets/core/labels.test.ts#is the game of the setup in use, not the first game in the alphabet"
+      - "src/features/cheat-sheets/core/labels.test.ts#is, without a setup, the game most of the connected controllers are bound in"
+      - "src/features/devices/core/bound.test.ts#finds a binding by the control it is on, whatever the game calls its input (the racing games)"
+      - "tests/unit/bindingsAcrossFeatures.test.ts#on the racing rig the tester knows what a paddle does in iRacing, and a device links only to a bindings page that opens on it"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the racing rig - iRacing and Le Mans Ultimate on the shipped Fanatec wheel"
+      - "artifacts/screens/cheat-sheets-racing/01-iracing-wheel.png"
+      - "artifacts/screens/cheat-sheets-racing/02-iracing-by-action.png"
+      - "artifacts/screens/cheat-sheets-racing/03-lmu-wheel.png"
+      - "artifacts/screens/cheat-sheets-racing/04-lmu-quick-look.png"
+
+  - id: SHEET-010
+    title: An open sheet follows the bindings page
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The feature that owns a game's binding files says so after it changed them (an edit, a restore, an undo, a repair on a racing page), and every window with a sheet of that game draws it again by itself: the pop-out beside the game as well as the main window."
+      - "A sheet of another game, and a layout that is being edited, are left as they are."
+    notes:
+      - "2026-10-04: an undo made on the Safety page, a restore from Backups and an import are not announced by a bindings feature; the full page reads the bindings again whenever it is opened, an open pop-out follows only changes made on a bindings page."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/labels.test.ts#tells every window when the bindings page changed a binding, with the game it was"
+      - "src/features/cheat-sheets/core/labels.test.ts#hears a racing page too: repairing iRacing’s device id redraws the iRacing sheet"
+      - "src/features/cheat-sheets/core/labels.test.ts#hears Le Mans Ultimate’s repair of a renamed wheel base"
+      - "src/features/racing/core/bindingReaders.test.ts#tells the features that show bindings when a racing page changed a game’s files"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: an open sheet follows the bindings page - the pop-out redraws when a binding is saved"
+      - "artifacts/screens/cheat-sheets-follow/01-pop-out-before.png"
+      - "artifacts/screens/cheat-sheets-follow/02-saved-on-the-bindings-page.png"
+      - "artifacts/screens/cheat-sheets-follow/03-pop-out-followed.png"
+      - "artifacts/screens/cheat-sheets-follow/04-full-sheet-after.png"
+
+  - id: SHEET-011
+    title: Label text fits its card, or is shortened with an ellipsis - never clipped, never too small to read
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "Label text is measured with the advance widths of the font it is drawn in, and rows are counted the way the browser breaks them, so the same picture fits on screen, in the PDF and in the kneeboard PNG, where no script can correct it afterwards."
+      - "The size steps down while that makes everything fit, to a smallest size that still reads; text that does not fit even then is shown as the whole rows there is room for, ending in an ellipsis. The card is marked as shortened and the full text stays in its tooltip, the detail panel and the by-action list."
+      - "No label of the owner's own bindings on the recorded rig is shortened, on screen, on paper or on a kneeboard page, and in the app no card needs correcting after it is drawn."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/labels.test.ts#is measured per character, so wide and narrow letters are not counted alike"
+      - "src/features/cheat-sheets/core/labels.test.ts#steps the size down while that helps, then shows whole rows and an ellipsis: never a clipped row"
+      - "src/features/cheat-sheets/core/labels.test.ts#is drawn in a card whose style breaks a long word instead of letting it stick out"
+      - "src/features/cheat-sheets/core/labels.test.ts#never shortens a label of the recorded rig, on screen, on paper or on a kneeboard page"
+      - "src/features/cheat-sheets/core/sheet.test.ts#sizes label text to its card"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a label too long for its card is shortened with an ellipsis, never clipped"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "artifacts/screens/cheat-sheets-long-label/01-long-note.png"
+      - "artifacts/screens/cheat-sheets-long-label/02-long-note-on-the-kneeboard-page.png"
+      - "artifacts/screens/cheat-sheets-gallery/04-r-vpc-panel-1.png"
+      - "artifacts/screens/cheat-sheets-gallery/10-winwing-ufc1-hud1.png"
+
+  - id: SHEET-012
+    title: The binding guide's plain names on sheets, printouts and kneeboard pages
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "Where the binding guide names an action in plain language (AI-001: 'Weapon Release Button' is 'Pickle: release weapon'), a label card, the by-action list, the quick look, the printout and the kneeboard pages say that; an action the guide does not name keeps the game's wording."
+      - "In the app the game's own name is always beside it: in the detail panel, in the by-action list and in the card's tooltip, and search finds an action by either name. Printed and kneeboard pages carry the plain name only: they hold a fixed number of rows."
+      - "The plain name is for reading: kinds, duplicates and 'same action elsewhere' are still decided from the game's own name, and a changed label makes exported kneeboard pages out of date."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/labels.test.ts#are what a label, the action list, the printout and the kneeboard pages say, with the game’s own name kept beside them"
+      - "src/features/cheat-sheets/core/labels.test.ts#change what a page shows, so exported pages are known to be out of date"
+      - "src/features/cheat-sheets/core/labels.test.ts#are left out when a game has no guide: the racing games name their actions plainly already"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: labels, a pressed control lights up, notes, search and by action"
+      - "artifacts/screens/cheat-sheets-sheet/02-pressed.png"
+      - "artifacts/screens/cheat-sheets-sheet/06-by-action.png"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-stick-day.png"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-key-actions-night.png"
+      - "artifacts/screens/cheat-sheets-print/02-printout.png"
+
+  - id: SHEET-013
+    title: The kneeboard check is added to a setup from the kneeboard dialog
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The kneeboard dialog lists the setups of the game with a tick each; ticking one puts 'kneeboard pages are up to date' for this aircraft into that setup with the fix that writes the pages again, optional (a warning, never Not ready), without going through capture. Unticking takes it out again."
+      - "It says it is in the setup only after reading the setup back; an aircraft the game does not have, a game without kneeboards and a setup of another game are refused."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#is added to a setup of the game from the kneeboard dialog, with its fix, and taken out again"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#is refused for an aircraft the game does not have, a game without kneeboards and a setup of another game"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the kneeboard check is added to a setup from the kneeboard dialog, and taken out again"
+      - "artifacts/screens/cheat-sheets-check-add/01-added-in-the-dialog.png"
+      - "artifacts/screens/cheat-sheets-check-add/02-on-the-fly-screen.png"
+      - "artifacts/screens/cheat-sheets-check-add/03-made-ready.png"
+
+  - id: SHEET-014
+    title: Every control is drawn once, and kinds are told apart in the night style
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "On the MFD frame a button is one thing on the picture: its label card is the key, on the bezel where the button is (five along each edge of the screen, a rocker in each corner). No second, bare key repeats its number."
+      - "The night style has only warm colours, so two kinds of action never look alike there: the marker differs (a solid or a dashed bar, on the card and in the legend) or the colour clearly does."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/layout.test.ts#draw every MFD button once: its label card is the key, on the bezel"
+      - "src/features/cheat-sheets/core/layout.test.ts#draw the MFD frame as twenty buttons around a screen with a rocker in each corner"
+      - "src/features/cheat-sheets/core/layout.test.ts#tells every kind apart in the night style, which has only warm colours to work with"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-left-mfd-night.png"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-left-mfd-day.png"
+      - "artifacts/screens/cheat-sheets-gallery/08-left-mfd.png"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-key-actions-night.png"
+
+  - id: SHEET-015
+    title: The pop-out opens where it was left
+    job: configure
+    area: cheat-sheet
+    priority: p3
+    done_means:
+      - "The quick-look pop-out remembers its position and size (per panel, in the data folder) and opens there the next time, also after RigReady is restarted."
+      - "A place that is no longer on a connected screen (the monitor layout changes between flying and the desk) is not used: the window keeps its size and opens where Windows puts it."
+    status: done
+    evidence:
+      - "tests/unit/windowPlace.test.ts#is kept per panel in one small file, and read back"
+      - "tests/unit/windowPlace.test.ts#is nothing for a file that is missing, damaged or holds something else"
+      - "tests/unit/windowPlace.test.ts#is used again while it is on a connected screen"
+      - "tests/unit/windowPlace.test.ts#keeps only the size when the screen it was on is gone, so the window opens where one is"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the pop-out opens where it was left and as large as it was, also after a restart"
+      - "artifacts/screens/cheat-sheets-popout-place/01-where-it-was-left.png"
+
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
   # ---------------------------------------------------------------------------

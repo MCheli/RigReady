@@ -74,14 +74,16 @@ const ACTIONS: Record<string, string> = {
   ACTION_HORN: 'Horn',
 };
 
-const AXES = ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'S0', 'S1'];
+export const AC_AXES = ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'S0', 'S1'];
 
-function label(section: string): string {
+export function acActionLabel(section: string): string {
   if (ACTIONS[section]) return ACTIONS[section];
   const gear = /^GEAR_(\d+|R|N)$/.exec(section);
   if (gear)
     return gear[1] === 'R' ? 'Reverse gear' : gear[1] === 'N' ? 'Neutral' : `Gear ${gear[1]}`;
   const text = section
+    // Content Manager and Custom Shaders Patch add their own sections: __CM_ABS, __EXT_HAZARDS.
+    .replace(/^_+(CM|EXT)_/, '')
     .replace(/^ACTION_/, '')
     .replace(/_/g, ' ')
     .toLowerCase();
@@ -142,15 +144,15 @@ export async function acView(ctx: RacingContext): Promise<AcView> {
     const key = values.get('KEY');
     const controller = view.controllers.find((c) => c.index === joy);
     const inputs: string[] = [];
-    if (joy >= 0 && axle >= 0 && AXES[axle]) {
-      inputs.push(axisName(AXES[axle]!, controller?.vendorId, controller?.productId));
+    if (joy >= 0 && axle >= 0 && AC_AXES[axle]) {
+      inputs.push(axisName(AC_AXES[axle]!, controller?.vendorId, controller?.productId));
     }
     if (joy >= 0 && button >= 0) inputs.push(`Button ${button + 1}`);
     if (inputs.length > 0) {
       if (controller) controller.used = true;
       view.bindings.push({
         action: section,
-        label: label(section),
+        label: acActionLabel(section),
         controller: controller?.name ?? `Controller ${joy}`,
         input: inputs.join(', '),
       });
@@ -158,7 +160,7 @@ export async function acView(ctx: RacingContext): Promise<AcView> {
     if (key && key.value !== '-1' && key.value !== '' && values.has('BUTTON')) {
       view.bindings.push({
         action: section,
-        label: label(section),
+        label: acActionLabel(section),
         controller: 'Keyboard',
         input: key.comment || key.value,
       });

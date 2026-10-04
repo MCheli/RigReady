@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { onMachineChanged } from '../../../renderer/machine';
-import { CATEGORIES, CATEGORY_IDS, type CategoryId } from '../core/categories';
+import { CATEGORIES, CATEGORY_IDS, categoryTrail, type CategoryId } from '../core/categories';
 import { controlName } from '../core/layout';
 import { kindsOn } from '../core/pages';
 import { actionIndex, physicalLabels, type SheetDevice } from '../core/sheet';
@@ -40,7 +40,13 @@ function matches(target: SheetDevice): Set<string> {
       control.name,
       labels.get(control.id) ?? '',
       control.note ?? '',
-      ...control.bindings.flatMap((b) => [b.action, b.short, ...b.category, ...b.modifiers]),
+      ...control.bindings.flatMap((b) => [
+        b.action,
+        b.plain ?? '',
+        b.short,
+        ...b.category,
+        ...b.modifiers,
+      ]),
     ]
       .join(' ')
       .toLowerCase();
@@ -86,10 +92,14 @@ watch(
     noteSaved.value = false;
   }
 );
-// Another aircraft: what was selected belongs to the sheet before.
+// Another aircraft or car: what was selected, and the kind filtered for, belong to the
+// sheet before (a racing sheet has no "Weapons" to filter by).
 watch(
   () => store.choice,
-  () => (selected.value = undefined)
+  () => {
+    selected.value = undefined;
+    kind.value = undefined;
+  }
 );
 // Pressing a control on the device selects it, so its details and note are right there.
 watch(
@@ -109,13 +119,19 @@ async function saveNote(): Promise<void> {
   noteSaved.value = !failed;
 }
 
+const allActions = computed(() => (store.sheet ? actionIndex(store.sheet) : []));
+/** The kinds this sheet has, in legend order: a racing sheet offers no "Weapons" to filter by. */
+const actionKinds = computed(() => {
+  const present = new Set(allActions.value.map((entry) => entry.kind));
+  return CATEGORY_IDS.filter((id) => present.has(id));
+});
 const actions = computed(() => {
-  if (!store.sheet) return [];
-  return actionIndex(store.sheet).filter((entry) => {
+  return allActions.value.filter((entry) => {
     if (kind.value && entry.kind !== kind.value) return false;
     if (!needle.value) return true;
     return [
       entry.action,
+      entry.plain ?? '',
       ...entry.category,
       ...entry.places.flatMap((p) => [p.device, p.physical ?? '', p.note ?? '']),
     ]
@@ -214,13 +230,14 @@ onBeforeUnmount(() => {
     data-testid="cheat-sheets-page"
     :data-live="store.watching"
     :data-ready="store.loaded && !store.loading"
+    :data-followed="store.followed"
   >
     <div class="cs-top">
       <div>
         <h1 class="rr-page-title">Cheat sheets</h1>
         <p class="rr-page-sub">
-          Every device with what each control does in the aircraft you choose. Press a control and
-          its label lights up.
+          Every device with what each control does in the aircraft or car you choose. Press a
+          control and its label lights up.
         </p>
       </div>
     </div>
@@ -243,8 +260,9 @@ onBeforeUnmount(() => {
       <v-icon icon="mdi-card-text-outline" size="34" class="mb-2" />
       <div>No game whose bindings RigReady can read was found on this PC.</div>
       <div class="cs-small">
-        Cheat sheets are drawn from a game's bindings. DCS World is supported today; once it is
-        installed, its aircraft appear here.
+        Cheat sheets are drawn from a game's bindings: DCS World, iRacing, Le Mans Ultimate,
+        BeamNG.drive and Assetto Corsa. Once one of them is installed and has bindings, its aircraft
+        or cars appear here.
       </div>
     </div>
 
@@ -252,7 +270,7 @@ onBeforeUnmount(() => {
       <div class="cs-bar rr-panel">
         <v-select
           class="cs-aircraft"
-          label="Aircraft"
+          label="Aircraft or car"
           :items="store.aircraftItems"
           :model-value="store.choice"
           density="compact"
@@ -332,8 +350,9 @@ onBeforeUnmount(() => {
 
       <div v-if="store.sheet" class="cs-totals" data-testid="sheet-totals">
         <span
-          ><strong>{{ store.sheet.aircraft.name }}</strong> · {{ totals.devices }} devices ·
-          {{ totals.bound }} controls bound</span
+          ><strong data-testid="sheet-name">{{ store.title }}</strong> · {{ totals.devices }}
+          {{ totals.devices === 1 ? 'device' : 'devices' }} · {{ totals.bound }}
+          {{ totals.bound === 1 ? 'control' : 'controls' }} bound</span
         >
         <span v-if="totals.conflicts > 0" class="rr-warn" data-testid="sheet-conflicts">
           <v-icon icon="mdi-alert" size="15" /> {{ totals.conflicts }}
@@ -351,7 +370,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-if="store.sheet && store.sheet.devices.length === 0" class="rr-panel rr-empty">
-        No game controller is connected and none has bindings for this aircraft.
+        No game controller is connected and none has bindings here.
       </div>
 
       <!-- By device -->
@@ -503,7 +522,7 @@ onBeforeUnmount(() => {
                     class="rr-muted cs-detail-block"
                     data-testid="detail-empty"
                   >
-                    Nothing is bound to this control in {{ store.sheet.aircraft.name }}.
+                    Nothing is bound to this control in {{ store.title }}.
                   </div>
                   <div
                     v-for="(b, i) in selectedControl.bindings"
@@ -512,14 +531,21 @@ onBeforeUnmount(() => {
                     data-testid="detail-binding"
                   >
                     <div class="cs-detail-action">
-                      <i :style="{ background: CATEGORIES[b.kind].color }"></i>{{ b.action }}
+                      <i :style="{ background: CATEGORIES[b.kind].color }"></i
+                      >{{ b.plain ?? b.action }}
+                    </div>
+                    <div v-if="b.plain" class="rr-row-sub" data-testid="detail-game-name">
+                      {{ store.sheet.gameName }} calls it: {{ b.action }}
                     </div>
                     <div v-if="b.modifiers.length" class="cs-mod">
                       while holding {{ b.modifiers.join(' + ') }}
                     </div>
                     <div class="rr-row-sub">
                       {{ CATEGORIES[b.kind].label
-                      }}<span v-if="b.category.length"> · {{ b.category.join(' › ') }}</span> ·
+                      }}<span v-if="categoryTrail(b.category)">
+                        · {{ categoryTrail(b.category) }}</span
+                      >
+                      ·
                       {{ b.source === 'user' ? 'your binding' : 'game default' }}
                     </div>
                     <div v-if="b.alsoOn.length" class="rr-row-sub" data-testid="detail-also">
@@ -573,7 +599,7 @@ onBeforeUnmount(() => {
       <div v-else-if="store.sheet" class="cs-actions" data-testid="sheet-actions">
         <div class="cs-legend">
           <button
-            v-for="id in CATEGORY_IDS"
+            v-for="id in actionKinds"
             :key="id"
             type="button"
             class="cs-chip"
@@ -600,9 +626,12 @@ onBeforeUnmount(() => {
             :data-action="entry.action"
           >
             <div class="rr-row-main">
-              <div class="rr-row-title">{{ entry.action }}</div>
-              <div v-if="entry.category.length" class="rr-row-sub">
-                {{ entry.category.join(' › ') }}
+              <div class="rr-row-title">{{ entry.plain ?? entry.action }}</div>
+              <div v-if="entry.plain" class="rr-row-sub" data-testid="action-game-name">
+                {{ store.sheet.gameName }} calls it: {{ entry.action }}
+              </div>
+              <div v-if="categoryTrail(entry.category)" class="rr-row-sub">
+                {{ categoryTrail(entry.category) }}
               </div>
             </div>
             <div class="cs-places">

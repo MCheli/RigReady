@@ -7,6 +7,7 @@ import type { Logger } from '../../../core/logger';
 import type { NameRegistry } from '../../../core/names';
 import { allPathVariables } from '../../../core/pathVariables';
 import type { Ports } from '../../../core/ports';
+import type { ProfileStore } from '../../../core/profile/store';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChangePreview } from '../../../shared/changePreview';
 import type { InputDevice } from '../../../shared/models';
@@ -29,7 +30,7 @@ import {
   type DeviceLayout,
 } from './layout';
 import { KNEEBOARD_SIZE, printDocument, type PageStyle, type PaperSize } from './pages';
-import { buildSheet, type Sheet } from './sheet';
+import { buildSheet, sheetTitle, type Sheet } from './sheet';
 import { CheatSheetStore } from './store';
 
 /**
@@ -43,6 +44,8 @@ export interface ServiceContext {
   bindings: BindingRegistry;
   names: NameRegistry;
   games: GameRegistry;
+  /** The setups: a sheet opens on the game of the one in use. */
+  profiles?: Pick<ProfileStore, 'list' | 'lastProfileId'>;
 }
 
 /** Games whose cheat sheets can be exported as kneeboard pages, with the folder under the user folder. */
@@ -105,6 +108,49 @@ export class CheatSheets {
     return ok({ games });
   }
 
+  /**
+   * Where a sheet opens when nothing was chosen yet. A PC with a stick and a wheel has
+   * bindings in several games, so it is not the first in the alphabet: it is the game of
+   * the setup in use (the one the Fly screen shows), else the game most of the connected
+   * controllers carry the user's own bindings in.
+   */
+  async suggest(): Promise<Result<{ game: string; aircraftId: string } | null>> {
+    const overview = await this.overview();
+    if (!overview.ok) return overview;
+    const sets = overview.value.games.flatMap((g) => {
+      const first = g.aircraft.find((a) => a.hasUserBindings) ?? g.aircraft[0];
+      return first ? [{ game: g.game, aircraftId: first.id }] : [];
+    });
+    if (sets.length <= 1) return ok(sets[0] ?? null);
+    const inUse = await this.gameInUse();
+    const ofSetup = sets.find((set) => set.game === inUse);
+    if (ofSetup) return ok(ofSetup);
+    let best = sets[0]!;
+    let most = -1;
+    for (const set of sets) {
+      const bindings = await this.ctx.bindings.get(set.game)?.bindings(set.aircraftId);
+      // A game whose bindings cannot be read is not where to start.
+      if (!bindings?.ok) continue;
+      const own = bindings.value.devices
+        .filter((d) => d.kind === 'controller' && d.connected)
+        .reduce((n, d) => n + d.bindings.filter((b) => b.source === 'user').length, 0);
+      if (own > most) {
+        most = own;
+        best = set;
+      }
+    }
+    return ok(best);
+  }
+
+  private async gameInUse(): Promise<string | undefined> {
+    const profiles = this.ctx.profiles;
+    if (!profiles) return undefined;
+    const listed = await profiles.list();
+    if (!listed.ok) return undefined;
+    const last = await profiles.lastProfileId();
+    return (listed.value.find((p) => p.id === last) ?? listed.value[0])?.game;
+  }
+
   /** The controllers attached now; empty when the reader is slow or fails (sheets still draw). */
   private async controllers(): Promise<InputDevice[]> {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -126,10 +172,12 @@ export class CheatSheets {
     if (!bindings.ok) return bindings;
     const notes = await this.store.notes(game, aircraftId);
     if (!notes.ok) return notes;
-    const [controllers, layoutFor, names] = await Promise.all([
+    const [controllers, layoutFor, names, labels] = await Promise.all([
       this.controllers(),
       this.store.chooser(),
       this.ctx.names.devices(),
+      // The binding guide's plain-language names (never fails; empty without a guide).
+      this.ctx.bindings.labels(reader.game, aircraftId),
     ]);
     return ok(
       buildSheet({
@@ -139,6 +187,7 @@ export class CheatSheets {
         controllers,
         layoutFor,
         notes: notes.value,
+        labels,
         nameOf: (device) => names.nameOf(device),
         route: (guid) => reader.route({ aircraftId, ...(guid ? { guid } : {}) }),
       })
@@ -278,7 +327,7 @@ export class CheatSheets {
       return err('sheet.print', 'Choose at least one device to print.');
     }
     const { dialogs, files, folders, render, clock } = this.ctx.ports;
-    const name = sheet.value.aircraft.name.replace(/[\\/:*?"<>|]/g, '-');
+    const name = sheetTitle(sheet.value).replace(/[\\/:*?"<>|]/g, '-');
     const picked = await dialogs.save({
       title: 'Save the cheat sheet as PDF',
       defaultPath: path.join(folders.documents(), `${name} cheat sheet.pdf`),
@@ -294,7 +343,7 @@ export class CheatSheets {
     const pdf = await render.pdf(document.html, { pageSize: input.paper, landscape: false });
     if (!pdf.ok) return pdf;
     const written = await files.write(picked.value, pdf.value, {
-      reason: `Save the ${sheet.value.aircraft.name} cheat sheet as PDF`,
+      reason: `Save the ${sheetTitle(sheet.value)} cheat sheet as PDF`,
     });
     if (!written.ok) return written;
     const stat = await files.stat(picked.value);

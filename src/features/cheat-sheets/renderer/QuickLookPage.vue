@@ -33,7 +33,10 @@ const answers = computed(() => {
   if (!store.sheet || needle.value.length < 2) return [];
   return actionIndex(store.sheet)
     .filter((entry) =>
-      [entry.action, ...entry.category].join(' ').toLowerCase().includes(needle.value)
+      [entry.plain ?? '', entry.action, ...entry.category]
+        .join(' ')
+        .toLowerCase()
+        .includes(needle.value)
     )
     .slice(0, 8);
 });
@@ -94,6 +97,7 @@ onBeforeUnmount(() => {
     :data-popped="popped"
     :data-live="store.watching"
     :data-ready="store.loaded && !store.loading"
+    :data-followed="store.followed"
   >
     <div class="ql-bar">
       <v-select
@@ -103,7 +107,7 @@ onBeforeUnmount(() => {
         density="compact"
         variant="outlined"
         hide-details
-        aria-label="Aircraft"
+        aria-label="Aircraft or car"
         data-testid="quick-aircraft"
         @update:model-value="store.choose(String($event))"
       />
@@ -171,7 +175,7 @@ onBeforeUnmount(() => {
         data-testid="quick-answer"
       >
         <i :style="{ background: CATEGORIES[entry.kind].color }"></i>
-        <span class="ql-answer-action">{{ entry.action }}</span>
+        <span class="ql-answer-action">{{ entry.plain ?? entry.action }}</span>
         <button
           v-for="(place, i) in entry.places"
           :key="i"

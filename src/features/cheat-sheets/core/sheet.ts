@@ -5,7 +5,7 @@ import { categorize, CATEGORY_IDS, shortAction, type CategoryId } from './catego
 import { appendUnplaced, generateLayout, shapeFromControls, type DeviceShape } from './generate';
 import {
   compareControlIds,
-  controlIdOf,
+  controlIdFor,
   controlName,
   DeviceLayoutSchema,
   HAT_ARROWS,
@@ -26,7 +26,12 @@ export const SheetBindingSchema = z.object({
   actionId: z.string(),
   /** The game's plain-language name: "Weapon Release Button". */
   action: z.string(),
-  /** A shorter wording for small labels. */
+  /**
+   * The plain-language name from the binding guide ("Sensor select: HUD"), when it has
+   * one. Shown first, with the game's own name beside it; never used for matching.
+   */
+  plain: z.string().optional(),
+  /** What a small label says: the plain name, else a shorter wording of the game's. */
   short: z.string(),
   /** Held with the control, in plain language. Empty for the plain press. */
   modifiers: z.array(z.string()),
@@ -96,7 +101,13 @@ export type SheetDevice = z.infer<typeof SheetDeviceSchema>;
 export const SheetSchema = z.object({
   game: z.string(),
   gameName: z.string(),
-  aircraft: z.object({ id: z.string(), name: z.string(), hasUserBindings: z.boolean() }),
+  aircraft: z.object({
+    id: z.string(),
+    name: z.string(),
+    hasUserBindings: z.boolean(),
+    /** The one set the game uses for everything ("All cars"). */
+    general: z.boolean().optional(),
+  }),
   devices: z.array(SheetDeviceSchema),
 });
 export type Sheet = z.infer<typeof SheetSchema>;
@@ -120,6 +131,8 @@ export interface SheetInputs {
   /** The layout for a device model: the user's, a shipped one, or none (then one is generated). */
   layoutFor(shape: DeviceShape): LayoutChoice | undefined;
   notes: DeviceNotes;
+  /** Plain-language names by the game's own action name (core: ctx.bindings.labels). */
+  labels?: Record<string, string>;
   /** The name the owner gave a device, when the game's reader did not say. */
   nameOf?(device: { vendorId: string; productId: string; guid?: string }): string | undefined;
   route(guid: string | undefined): string;
@@ -191,7 +204,7 @@ export function buildSheet(inputs: SheetInputs): Sheet {
   const places = new Map<string, { device: number; control: string }[]>();
   all.forEach((device, index) => {
     for (const binding of device.bindings) {
-      const id = controlIdOf(binding.input);
+      const id = controlIdFor(binding);
       if (!id) continue;
       const list = places.get(binding.actionId) ?? [];
       if (!list.some((p) => p.device === index && p.control === id)) {
@@ -214,9 +227,16 @@ export function buildSheet(inputs: SheetInputs): Sheet {
       return entry;
     };
     for (const binding of device.bindings) {
-      const id = controlIdOf(binding.input);
+      const id = controlIdFor(binding);
+      // A label is the guide's wording for reading; the game's own name stays the identity.
+      const label = inputs.labels?.[binding.action]?.trim();
+      const plain = label && label !== binding.action ? label : undefined;
       if (!id) {
-        other.push({ input: binding.input, label: binding.inputLabel, action: binding.action });
+        other.push({
+          input: binding.input,
+          label: binding.inputLabel,
+          action: plain ?? binding.action,
+        });
         continue;
       }
       const alsoOn = (places.get(binding.actionId) ?? [])
@@ -229,7 +249,8 @@ export function buildSheet(inputs: SheetInputs): Sheet {
       control(id).bindings.push({
         actionId: binding.actionId,
         action: binding.action,
-        short: shortAction(binding.action),
+        ...(plain ? { plain } : {}),
+        short: plain ?? shortAction(binding.action),
         modifiers: binding.modifiers,
         category: binding.category,
         kind: categorize(binding.action, binding.category),
@@ -319,18 +340,14 @@ export function buildSheet(inputs: SheetInputs): Sheet {
     };
   });
 
-  // What the hands are on first (stick, throttle, pedals: the user's bindings and a flight
-  // or engine axis), busiest first; then the other devices the user bound something on,
-  // then those with only the game's defaults, then the bare ones, in the game's order.
+  // What the hands are on first (stick, throttle, pedals, wheel: the user's bindings and
+  // a flight, engine or driving axis), busiest first; then the other devices the user bound
+  // something on, then those with only the game's defaults, then the bare ones, in the
+  // game's order.
   const rank = (device: SheetDevice): number => {
     const own = device.controls.some((c) => c.bindings.some((b) => b.source === 'user'));
     if (!own) return device.counts.bound > 0 ? 1 : 0;
-    const flown = device.controls.some(
-      (c) =>
-        c.id.startsWith('axis:') &&
-        c.bindings.some((b) => b.kind === 'flight' || b.kind === 'engine')
-    );
-    return flown ? 3 : 2;
+    return isHandsOn(device) ? 3 : 2;
   };
   devices.sort(
     (a, b) => rank(b) - rank(a) || (rank(a) === 3 ? b.counts.bound - a.counts.bound : 0)
@@ -342,6 +359,16 @@ export function buildSheet(inputs: SheetInputs): Sheet {
     aircraft: inputs.bindings.aircraft,
     devices,
   };
+}
+
+/** The kinds of action an axis carries on a device the hands (or feet) are on all the time. */
+const HANDS_ON_KINDS: CategoryId[] = ['flight', 'engine', 'driving'];
+
+/** A stick, throttle, pedals or wheel: a device with an axis that flies or drives. */
+function isHandsOn(device: Pick<SheetDevice, 'controls'>): boolean {
+  return device.controls.some(
+    (c) => c.id.startsWith('axis:') && c.bindings.some((b) => HANDS_ON_KINDS.includes(b.kind))
+  );
 }
 
 /** What is printed on the device at a control, from the layout: "OSB 6", "TRIM hat ↑". */
@@ -385,7 +412,10 @@ export interface ActionPlace {
 
 export interface ActionEntry {
   actionId: string;
+  /** The game's own name. */
   action: string;
+  /** The binding guide's plain-language name, when it has one. */
+  plain?: string;
   kind: CategoryId;
   category: string[];
   source: 'user' | 'default';
@@ -405,6 +435,7 @@ export function actionIndex(sheet: Sheet, deviceKeys?: string[]): ActionEntry[] 
           entry = {
             actionId: binding.actionId,
             action: binding.action,
+            ...(binding.plain ? { plain: binding.plain } : {}),
             kind: binding.kind,
             category: binding.category,
             source: binding.source,
@@ -426,15 +457,29 @@ export function actionIndex(sheet: Sheet, deviceKeys?: string[]): ActionEntry[] 
       }
     }
   }
-  return [...entries.values()].sort((a, b) => a.action.localeCompare(b.action));
+  return [...entries.values()].sort((a, b) => entryName(a).localeCompare(entryName(b)));
 }
 
-/** The kinds of action that matter most in the air, in the order a summary lists them. */
+/**
+ * What a sheet is of, for a title: the aircraft or car, or the game when it keeps one set
+ * of bindings for everything ("iRacing", not "All cars").
+ */
+export const sheetTitle = (sheet: Pick<Sheet, 'aircraft' | 'gameName'>): string =>
+  sheet.aircraft.general ? sheet.gameName : sheet.aircraft.name;
+
+/** What an action is called where it is read: the plain name, else the game's. */
+export const entryName = (entry: Pick<ActionEntry, 'action' | 'plain'>): string =>
+  entry.plain ?? entry.action;
+
+/** The kinds of action that matter most in the air or on track, in the order a summary lists them. */
 const SUMMARY_KINDS: CategoryId[] = [
   'weapons',
   'sensors',
   'countermeasures',
   'flight',
+  'driving',
+  'car',
+  'pit',
   'comms',
   'airframe',
   'engine',
@@ -446,17 +491,7 @@ const SUMMARY_KINDS: CategoryId[] = [
  * bound to flight controls) before panels.
  */
 export function summaryActions(sheet: Sheet, lines = 44): ActionEntry[] {
-  const handsOn = new Set(
-    sheet.devices
-      .filter((d) =>
-        d.controls.some(
-          (c) =>
-            c.id.startsWith('axis:') &&
-            c.bindings.some((b) => b.kind === 'flight' || b.kind === 'engine')
-        )
-      )
-      .map((d) => d.key)
-  );
+  const handsOn = new Set(sheet.devices.filter(isHandsOn).map((d) => d.key));
   const score = (entry: ActionEntry): number => {
     const kind = SUMMARY_KINDS.indexOf(entry.kind);
     const hotas = entry.category.some((c) => /hotas/i.test(c)) ? 0 : 1;
@@ -468,7 +503,7 @@ export function summaryActions(sheet: Sheet, lines = 44): ActionEntry[] {
       (entry) => entry.source === 'user' && entry.kind !== 'displays' && entry.kind !== 'view'
     )
     .map((entry) => ({ entry, score: score(entry) }))
-    .sort((a, b) => a.score - b.score || a.entry.action.localeCompare(b.entry.action));
+    .sort((a, b) => a.score - b.score || entryName(a.entry).localeCompare(entryName(b.entry)));
   // The page holds so many lines; an action on several controls takes one line per control.
   const chosen: ActionEntry[] = [];
   let used = 0;
@@ -479,7 +514,7 @@ export function summaryActions(sheet: Sheet, lines = 44): ActionEntry[] {
     used += needs;
   }
   return chosen.sort(
-    (a, b) => orderOf(a.kind) - orderOf(b.kind) || a.action.localeCompare(b.action)
+    (a, b) => orderOf(a.kind) - orderOf(b.kind) || entryName(a).localeCompare(entryName(b))
   );
 }
 
@@ -512,7 +547,14 @@ export function deviceFingerprint(device: SheetDevice): string {
       device.controls.map((c) => [
         c.id,
         c.note ?? '',
-        c.bindings.map((b) => [b.actionId, b.action, b.modifiers, b.kind]),
+        // The plain label is on the page too; without one the fingerprint is what it always was.
+        c.bindings.map((b) => [
+          b.actionId,
+          b.action,
+          b.modifiers,
+          b.kind,
+          ...(b.plain ? [b.plain] : []),
+        ]),
       ]),
     ])
   );

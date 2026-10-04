@@ -59,15 +59,45 @@ function paint(): void {
   }
 }
 
+/**
+ * The size of every label is worked out without a browser (core/render: the same picture
+ * goes to the PDF and the kneeboard). Here there is one, so it is asked: a card whose text
+ * is still taller than its box, in whatever font this PC draws it with, steps down until
+ * it fits.
+ */
+function fit(): void {
+  const root = host.value;
+  if (!root) return;
+  for (const el of root.querySelectorAll<HTMLElement>('.cs-t')) {
+    let size = Number.parseFloat(el.style.fontSize);
+    if (!Number.isFinite(size)) continue;
+    for (let step = 0; step < 16 && size > 6 && el.scrollHeight > el.clientHeight + 0.5; step++) {
+      size = Math.round((size - 0.5) * 10) / 10;
+      el.style.fontSize = `${size}px`;
+      el.dataset['fitted'] = 'true';
+    }
+  }
+}
+
 function click(event: MouseEvent): void {
   const target = (event.target as Element | null)?.closest<SVGGElement>('.cs-ctl');
   const id = target?.dataset['control'];
   if (id) emit('control', id);
 }
 
-watch(svg, () => void nextTick(paint));
+watch(
+  svg,
+  () =>
+    void nextTick(() => {
+      fit();
+      paint();
+    })
+);
 watch(() => [props.pressed, props.axes, props.selected, props.keep], paint, { deep: false });
-onMounted(paint);
+onMounted(() => {
+  fit();
+  paint();
+});
 </script>
 
 <template>

@@ -363,7 +363,8 @@ export async function applyMigration(
     bindings.ctx.ports,
     prepared.value.summary,
     prepared.value.builder,
-    prepared.value.dcsRunning
+    prepared.value.dcsRunning,
+    bindings.ctx.changed
   );
 }
 

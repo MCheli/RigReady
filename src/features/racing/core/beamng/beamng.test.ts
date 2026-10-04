@@ -54,6 +54,7 @@ describe('BeamNG.drive bindings', () => {
     expect(wheel.bindings).toContainEqual({
       action: 'accelerate',
       label: 'Throttle',
+      control: 'zaxis',
       input: 'Accelerator',
       detail: 'inverted',
       yours: true,

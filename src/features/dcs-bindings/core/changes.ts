@@ -95,7 +95,9 @@ export async function executePlan(
   ports: Ports,
   summary: string,
   builder: PlanBuilder,
-  dcsRunning: boolean
+  dcsRunning: boolean,
+  /** Told once the files hold the change (the cheat sheets and other readers refresh). */
+  changed?: () => void
 ): Promise<Result<Applied>> {
   if (dcsRunning) return err('dcs.running', DCS_RUNNING);
   if (builder.steps.length === 0) {
@@ -166,5 +168,6 @@ export async function executePlan(
       return err('dcs.verify', `${step.from} is still there after renaming it.`);
     }
   }
+  changed?.();
   return ok({ groupId: group.id, summary, files: builder.steps.length });
 }

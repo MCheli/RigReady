@@ -14,37 +14,77 @@ export const CATEGORY_IDS = [
   'displays',
   'airframe',
   'systems',
+  'driving',
+  'car',
+  'pit',
   'view',
   'other',
 ] as const;
 export type CategoryId = (typeof CATEGORY_IDS)[number];
+
+/** How a kind's marker is drawn where colour alone is not enough (the night style). */
+export type CategoryPattern = 'solid' | 'dashed';
 
 export interface CategoryInfo {
   id: CategoryId;
   label: string;
   /** On a dark screen and on white paper. */
   color: string;
-  /** In the night kneeboard style: dim, warm, no blue. */
+  /** In the night kneeboard style: warm only (red to amber), nothing blue or white. */
   night: string;
+  /** In the night style the marker is a solid or a dashed bar, so two kinds never look alike. */
+  nightPattern: CategoryPattern;
 }
 
+/**
+ * The night style has only the warm end of the spectrum to work with, which is too narrow
+ * for fourteen hues. So it uses four hues (red, orange, amber, salmon) in a bright and a
+ * dim step, and a second cue: the marker is a solid or a dashed bar. Any two kinds differ
+ * in the bar or clearly in colour (layout.test.ts measures the difference).
+ */
+const NIGHT = {
+  red: '#ff3b30',
+  dimRed: '#8a1c17',
+  orange: '#ff8419',
+  dimOrange: '#9a4a0c',
+  amber: '#e6aa00',
+  dimAmber: '#8a6a0a',
+  salmon: '#f29a8a',
+  maroon: '#571511',
+} as const;
+
+const kind = (
+  id: CategoryId,
+  label: string,
+  color: string,
+  night: string,
+  nightPattern: CategoryPattern = 'solid'
+): CategoryInfo => ({ id, label, color, night, nightPattern });
+
 export const CATEGORIES: Record<CategoryId, CategoryInfo> = {
-  flight: { id: 'flight', label: 'Flight controls', color: '#4f8fe6', night: '#b8442e' },
-  engine: { id: 'engine', label: 'Engines & fuel', color: '#ee8a3a', night: '#c4622a' },
-  weapons: { id: 'weapons', label: 'Weapons', color: '#e2559b', night: '#e0352f' },
-  sensors: { id: 'sensors', label: 'Sensors & targeting', color: '#9a7bf0', night: '#93302a' },
-  countermeasures: {
-    id: 'countermeasures',
-    label: 'Countermeasures',
-    color: '#cf5ad6',
-    night: '#d2503a',
-  },
-  comms: { id: 'comms', label: 'Radio & comms', color: '#b98a5e', night: '#a8703a' },
-  displays: { id: 'displays', label: 'Displays & UFC', color: '#31b4d6', night: '#7a2a24' },
-  airframe: { id: 'airframe', label: 'Gear, flaps & airframe', color: '#8aa83a', night: '#a85a2a' },
-  systems: { id: 'systems', label: 'Aircraft systems', color: '#7a8ea6', night: '#6a2a26' },
-  view: { id: 'view', label: 'View', color: '#aab2bd', night: '#5a2420' },
-  other: { id: 'other', label: 'Other', color: '#5f6b7a', night: '#4a201c' },
+  flight: kind('flight', 'Flight controls', '#4f8fe6', NIGHT.red),
+  engine: kind('engine', 'Engines & fuel', '#ee8a3a', NIGHT.orange),
+  weapons: kind('weapons', 'Weapons', '#e2559b', NIGHT.amber),
+  sensors: kind('sensors', 'Sensors & targeting', '#9a7bf0', NIGHT.salmon),
+  countermeasures: kind('countermeasures', 'Countermeasures', '#cf5ad6', NIGHT.dimRed),
+  comms: kind('comms', 'Radio & comms', '#b98a5e', NIGHT.dimOrange),
+  displays: kind('displays', 'Displays & UFC', '#31b4d6', NIGHT.dimAmber),
+  airframe: kind('airframe', 'Gear, flaps & airframe', '#8aa83a', NIGHT.red, 'dashed'),
+  systems: kind('systems', 'Aircraft systems', '#7a8ea6', NIGHT.orange, 'dashed'),
+  driving: kind('driving', 'Driving', '#4a90e2', NIGHT.amber, 'dashed'),
+  car: kind('car', 'Car adjustments', '#f08c42', NIGHT.salmon, 'dashed'),
+  pit: kind('pit', 'Pit & session', '#9d7cf2', NIGHT.dimRed, 'dashed'),
+  view: kind('view', 'View', '#aab2bd', NIGHT.dimOrange, 'dashed'),
+  other: kind('other', 'Other', '#5f6b7a', NIGHT.maroon),
+};
+
+/**
+ * A game whose reader already says what kind an action is (its outermost category is the
+ * name of a kind: "Driving", "Pit & session", "View") is taken at its word.
+ */
+const NAMED: Record<string, CategoryId> = {
+  ...Object.fromEntries(CATEGORY_IDS.map((id) => [CATEGORIES[id].label.toLowerCase(), id])),
+  'radio & chat': 'comms',
 };
 
 /** First match wins; the order settles names that fit two kinds ("Throttle Designator"). */
@@ -83,6 +123,8 @@ const RULES: [CategoryId, RegExp][] = [
 
 /** The kind of an action, from the game's category path (outermost first) and its name. */
 export function categorize(action: string, category: readonly string[] = []): CategoryId {
+  const named = NAMED[(category[0] ?? '').trim().toLowerCase()];
+  if (named) return named;
   const name = action.toLowerCase();
   for (const [id, pattern] of RULES) if (pattern.test(name)) return id;
   const path = category.join(' ').toLowerCase();
@@ -90,11 +132,23 @@ export function categorize(action: string, category: readonly string[] = []): Ca
   return category.length > 0 ? 'systems' : 'other';
 }
 
-const FILLER = /\s+(Pushbutton|Push Button|Switch|Button|Control|Controller|Selector|Handle)\b/gi;
+/**
+ * The game's category path, to show beside the kind. A reader that gives the kind itself
+ * as the category ("Driving", "Pit & session") has said it already: nothing is repeated.
+ */
+export function categoryTrail(category: readonly string[]): string {
+  const named = NAMED[(category[0] ?? '').trim().toLowerCase()] !== undefined;
+  return (named ? category.slice(1) : category).join(' › ');
+}
+
+/** Words that only say what kind of control it is, which the picture already shows. */
+const FILLER =
+  /\s+(Pushbutton|Push Button|Switch|Button|Control|Controller|Selector|Handle|Knob)\b/gi;
 
 /**
  * A shorter way to say an action on a small label: "FLAP Switch - AUTO" becomes
- * "FLAP: AUTO". The full name is always available beside the picture.
+ * "FLAP: AUTO", "HUD Symbology Brightness Selector Knob - NIGHT" becomes "HUD Symbology
+ * Brightness: NIGHT". The full name is always available beside the picture.
  */
 export function shortAction(action: string): string {
   const dash = action.indexOf(' - ');
