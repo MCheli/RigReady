@@ -376,7 +376,10 @@ export const headlessPorts: {
   },
   overlays: { showLabels: async () => unavailable('Screen labels') },
   // No window to move outside the app; a layout change from a script needs none.
-  window: { showOn: async () => ok({ moved: false }) },
+  window: {
+    showOn: async () => ok({ moved: false }),
+    openPanel: async () => unavailable('Extra windows'),
+  },
 };
 
 /**

@@ -257,6 +257,14 @@ const PAGES: ConfigurePage[] = [
       'BenQ GW2480: 1920x1080 at 0,0, main',
     ],
   },
+  // Last, so the screenshots of the pages above keep their numbers.
+  {
+    name: 'cheat-sheets',
+    route: '/configure/cheat-sheets',
+    testId: 'cheat-sheets-page',
+    says: ['No game whose bindings RigReady can read was found on this PC'],
+    never: ['WINWING', 'F/A-18C'],
+  },
 ];
 
 /** Something still loading. */
@@ -286,7 +294,7 @@ test('generic rig: every Configure page renders an honest empty state, never an 
   await page.getByTestId('mode-configure').click();
   // Every page the navigation offers is in the list above.
   const links = page.getByTestId('configure-nav').locator('a');
-  await expect(links).toHaveCount(17);
+  await expect(links).toHaveCount(18);
   const offered = await links.evaluateAll((all) =>
     all.map((a) => (a.getAttribute('href') ?? '').replace(/^#/, ''))
   );

@@ -305,6 +305,25 @@ export interface AppWindow {
    * never on a screen that just went dark.
    */
   showOn(areas: ScreenArea[]): Promise<Result<{ moved: boolean }>>;
+  /**
+   * Opens a small extra window of RigReady's own on a route of the app (for example a
+   * quick-look cheat sheet kept on a second monitor), or brings it forward and sends it
+   * to the route when a window with this id is already open. It receives the same events
+   * as the main window and closes with the app.
+   */
+  openPanel(panel: PanelWindow): Promise<Result<{ opened: boolean }>>;
+}
+
+export interface PanelWindow {
+  /** One window per id. */
+  id: string;
+  /** In-app route, e.g. "/configure/cheat-sheets/quick?aircraft=FA-18C_hornet". */
+  route: string;
+  title: string;
+  width: number;
+  height: number;
+  /** Stays above other windows. Default false. */
+  alwaysOnTop?: boolean;
 }
 
 /** The per-user "start with Windows" entry. */

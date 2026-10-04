@@ -10,6 +10,7 @@ import type {
   OpenDialogOptions,
   Overlays,
   Registry,
+  PanelWindow,
   Render,
   SaveDialogOptions,
   ScreenArea,
@@ -323,7 +324,60 @@ const escapeHtml = (text: string): string =>
  */
 /** Keeps the app window where the user can see it across a monitor layout change. */
 export class ElectronAppWindow implements AppWindow {
-  constructor(private readonly window: () => BrowserWindow | undefined) {}
+  private readonly panelWindows = new Map<string, BrowserWindow>();
+
+  constructor(
+    private readonly window: () => BrowserWindow | undefined,
+    /** How a panel window gets the app: the preload script and a loader for a route. */
+    private readonly host?: { preload: string; load(window: BrowserWindow, route: string): void }
+  ) {}
+
+  /** The open panel windows, so events reach them like the main window. */
+  panels(): BrowserWindow[] {
+    return [...this.panelWindows.values()].filter((w) => !w.isDestroyed());
+  }
+
+  async openPanel(panel: PanelWindow): Promise<Result<{ opened: boolean }>> {
+    if (!this.host) return err('window.panel', 'Extra windows are not available here.');
+    if (!panel.route.startsWith('/')) return err('window.panel', 'A panel needs an in-app route.');
+    try {
+      let window = this.panelWindows.get(panel.id);
+      if (!window || window.isDestroyed()) {
+        window = new BrowserWindow({
+          width: panel.width,
+          height: panel.height,
+          minWidth: 320,
+          minHeight: 240,
+          backgroundColor: '#0f1317',
+          autoHideMenuBar: true,
+          title: panel.title,
+          alwaysOnTop: panel.alwaysOnTop === true,
+          webPreferences: {
+            preload: this.host.preload,
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+          },
+        });
+        window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+        window.webContents.on('will-navigate', (event) => event.preventDefault());
+        const id = panel.id;
+        window.on('closed', () => this.panelWindows.delete(id));
+        // A panel never outlives the app's main window.
+        this.window()?.once('closed', () => {
+          const open = this.panelWindows.get(id);
+          if (open && !open.isDestroyed()) open.destroy();
+        });
+        this.panelWindows.set(panel.id, window);
+      }
+      this.host.load(window, panel.route);
+      if (window.isMinimized()) window.restore();
+      window.show();
+      return ok({ opened: true });
+    } catch (e) {
+      return err('window.panel', 'Could not open the window.', String(e));
+    }
+  }
 
   async showOn(areas: ScreenArea[]): Promise<Result<{ moved: boolean }>> {
     const window = this.window();

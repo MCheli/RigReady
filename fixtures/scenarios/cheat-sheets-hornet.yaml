@@ -1,0 +1,5 @@
+description: Cheat sheets, the owner's F/A-18C with named devices
+rig: mark-full
+extends: flying-all-good.yaml
+data:
+  devices.json: data/cheat-sheets/devices.json

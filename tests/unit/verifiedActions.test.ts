@@ -58,6 +58,13 @@ interface ChannelRun {
 
 /** How many scenarios get the sweep over every channel. */
 const CHANNEL_SWEEPS = 6;
+/**
+ * The actions the sweeps must have asked the sabotaged machine for. Scenarios are swept in
+ * name order, so a new feature's scenarios can push out the one where Stand down has work
+ * to do: the sweeps then go on (a few more at most) until each of these was reached.
+ */
+const MUST_REACH = ['fly:makeReady', 'fly:standDown', 'fly:launch', 'fly:fix'];
+const EXTRA_SWEEPS = 4;
 
 const fixRuns: FixRun[] = [];
 const channelRuns: ChannelRun[] = [];
@@ -342,7 +349,10 @@ beforeAll(async () => {
     // The sweep over every channel is the slow part: once per distinct set of failing
     // checks (and once for a rig where everything is ready), six scenarios at most.
     await auditScenario(scenario, (failing) => {
-      if (seen.has(failing) || seen.size >= CHANNEL_SWEEPS) return false;
+      if (seen.has(failing)) return false;
+      const reachedAll = MUST_REACH.every((c) => channelRuns.some((run) => run.channel === c));
+      const limit = reachedAll ? CHANNEL_SWEEPS : CHANNEL_SWEEPS + EXTRA_SWEEPS;
+      if (seen.size >= limit) return false;
       seen.add(failing);
       return true;
     });

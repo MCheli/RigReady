@@ -75,6 +75,24 @@ let quitting = false;
 // Exists before the data root is known; what is logged until then is written once the file opens.
 const logging = startLogging(systemClock);
 
+/** Loads the renderer in a window, on a route when given (the main window starts at the root). */
+function loadApp(window: BrowserWindow, route?: string): void {
+  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  if (!app.isPackaged && devUrl) void window.loadURL(route ? `${devUrl}#${route}` : devUrl);
+  else {
+    void window.loadFile(
+      path.join(__dirname, '../renderer/index.html'),
+      route ? { hash: route } : undefined
+    );
+  }
+}
+
+/** The app's own windows: the main one, and small panels a feature opens (quick-look sheets). */
+const appWindow = new ElectronAppWindow(() => mainWindow, {
+  preload: path.join(__dirname, '../preload/index.js'),
+  load: loadApp,
+});
+
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
   return index >= 0 ? process.argv[index + 1] : undefined;
@@ -103,7 +121,7 @@ async function createPlatform(): Promise<Platform> {
           clipboard: new ElectronClipboard(),
           loginItem: new ElectronLoginItem(),
           overlays: new ElectronOverlays(),
-          window: new ElectronAppWindow(() => mainWindow),
+          window: appWindow,
           updates: new ElectronUpdateFeed(logging.log.child('updater')),
         }),
       }),
@@ -121,6 +139,11 @@ async function createPlatform(): Promise<Platform> {
     ...fake,
     secrets: new ElectronSecrets(dataRoot),
     render: new ElectronRender(dataRoot),
+    // Panels are RigReady's own windows, not the machine: a scenario run opens real ones.
+    window: {
+      showOn: (areas) => fake.window.showOn(areas),
+      openPanel: (panel) => appWindow.openPanel(panel),
+    },
   };
   return { ports, scenario: started.description, fake };
 }
@@ -208,9 +231,7 @@ function createWindow(
   window.on('maximize', save);
   window.on('unmaximize', save);
 
-  const devUrl = process.env['ELECTRON_RENDERER_URL'];
-  if (!app.isPackaged && devUrl) void window.loadURL(devUrl);
-  else void window.loadFile(path.join(__dirname, '../renderer/index.html'));
+  loadApp(window);
   return window;
 }
 
@@ -243,6 +264,7 @@ async function start(): Promise<void> {
 
   const send = (channel: string, payload: unknown): void => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
+    for (const panel of appWindow.panels()) panel.webContents.send(channel, payload);
   };
   const machineChanged = (reason: string): void =>
     send(eventName(appContract.feature, 'machineChanged'), { reason });
