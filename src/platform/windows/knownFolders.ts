@@ -10,6 +10,7 @@ import { CoTaskMemFree, SHGetKnownFolderPath, guidBuffer, wstrAt } from './win32
 const FOLDERID_Profile = '{5E6C858F-0E22-4760-9AFE-EA3317B67173}';
 const FOLDERID_Documents = '{FDD39AD0-238F-46AF-ADB4-6C85480369C7}';
 const FOLDERID_SavedGames = '{4C5C32FF-BB9D-43B0-B5B4-2D72E54EAAA4}';
+const FOLDERID_Desktop = '{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}';
 const FOLDERID_RoamingAppData = '{3EB685DB-65F9-4CF6-A03A-E3EF65729F3D}';
 const FOLDERID_LocalAppData = '{F1B32785-6FBA-4FCF-9D55-7B8E7F157091}';
 
@@ -64,6 +65,11 @@ export class WindowsKnownFolders implements KnownFolders {
 
   savedGames(): string {
     return this.resolve(FOLDERID_SavedGames, path.join(this.home(), 'Saved Games'));
+  }
+
+  /** Windows is asked, so a Desktop kept in OneDrive is found; a redirected run stays under its home. */
+  desktop(): string {
+    return this.resolve(FOLDERID_Desktop, path.join(this.home(), 'Desktop'));
   }
 
   appData(): string {

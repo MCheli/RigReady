@@ -6,6 +6,7 @@ import type {
   Clipboard,
   Clock,
   Dialogs,
+  Hotkeys,
   Http,
   HttpRequest,
   HttpResponse,
@@ -21,6 +22,8 @@ import type {
   Shell,
   ShellOptions,
   ShellResult,
+  Shortcuts,
+  Taskbar,
   UpdateFeed,
 } from '../../core/ports';
 import { LOG_KEEP_OLDER, LOG_MAX_BYTES } from '../../core/logger';
@@ -415,7 +418,31 @@ export const headlessPorts: {
   overlays: Overlays;
   window: AppWindow;
   updates: UpdateFeed;
+  shortcuts: Shortcuts;
+  taskbar: Taskbar;
+  hotkeys: Hotkeys;
 } = {
+  hotkeys: {
+    register: async () => unavailable('A system-wide hotkey'),
+    unregister: async () => unavailable('A system-wide hotkey'),
+    registered: async () => unavailable('A system-wide hotkey'),
+    // Nothing presses a hotkey outside the app.
+    subscribe: () => () => {},
+  },
+  taskbar: {
+    setJumpTasks: async () => unavailable('The Jump List'),
+    setOverlay: async () => unavailable('The taskbar button'),
+    setTooltip: async () => unavailable('The taskbar button'),
+    setProgress: async () => unavailable('The taskbar button'),
+    setButtons: async () => unavailable('The taskbar button'),
+    // Nothing presses a button outside the app.
+    subscribe: () => () => {},
+  },
+  shortcuts: {
+    self: () => ({ exe: process.execPath, args: [] }),
+    build: async () => unavailable('Making a shortcut'),
+    read: async () => unavailable('Reading a shortcut'),
+  },
   updates: {
     currentVersion: () => '0.0.0',
     unavailable: () => 'Updates are only available inside the RigReady app.',

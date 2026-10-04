@@ -128,6 +128,8 @@ export interface KnownFolders {
   home(): string;
   documents(): string;
   savedGames(): string;
+  /** The user's Desktop folder: where a desktop shortcut goes. */
+  desktop(): string;
   appData(): string;
   localAppData(): string;
   /** C:\Program Files */
@@ -358,6 +360,108 @@ export interface PanelWindow {
 export interface LoginItem {
   isEnabled(): Promise<Result<boolean>>;
   setEnabled(enabled: boolean): Promise<Result<void>>;
+}
+
+/** What a Windows shortcut (a .lnk file) says. */
+export interface ShortcutLink {
+  /** The program it starts. */
+  target: string;
+  /** The program's arguments, one value each: never a command line. */
+  args: string[];
+  /** The words Explorer shows when the pointer rests on it. */
+  description?: string;
+  /** The file its icon comes from (a program or an .ico file). */
+  icon?: string;
+  /** The folder the program starts in. */
+  cwd?: string;
+}
+
+/**
+ * Windows shortcuts. The port makes the content of one and reads one; putting the file
+ * where it belongs is FileStore's job, like every other change outside RigReady's folder
+ * (backed up first, journaled, undone from the Safety page).
+ */
+export interface Shortcuts {
+  /**
+   * How Windows starts this copy of RigReady: the program, and the arguments that must
+   * come before any others (none in the installed app).
+   */
+  self(): { exe: string; args: string[] };
+  /** The bytes of a .lnk file for a link. Changes nothing outside RigReady's data folder. */
+  build(link: ShortcutLink): Promise<Result<Uint8Array>>;
+  /**
+   * What a .lnk file on disk says: undefined when there is no such file, an error when the
+   * file is there but is not a shortcut.
+   */
+  read(file: string): Promise<Result<ShortcutLink | undefined>>;
+}
+
+/** A small picture handed to Windows: BGRA pixels, top row first. */
+export interface TaskbarImage {
+  width: number;
+  height: number;
+  pixels: Uint8Array;
+}
+
+/** One entry of the Jump List (right-click on the taskbar button): it starts RigReady with these arguments. */
+export interface JumpTask {
+  title: string;
+  /** The words Windows shows when the pointer rests on it. */
+  description: string;
+  /** Arguments for RigReady, one value each: never a command line. */
+  args: string[];
+}
+
+/** A button under the window's thumbnail on the taskbar. */
+export interface ThumbButton {
+  /** Handed to subscribers when the button is pressed. */
+  id: string;
+  tooltip: string;
+  icon: TaskbarImage;
+  enabled: boolean;
+}
+
+export interface TaskbarProgress {
+  /** none: no bar. indeterminate: busy, no telling how long. normal, paused, error: a bar at `value`. */
+  mode: 'none' | 'indeterminate' | 'normal' | 'paused' | 'error';
+  /** 0 to 1. */
+  value?: number;
+}
+
+/**
+ * RigReady's button on the Windows taskbar: its Jump List, the status badge on it, the
+ * progress bar in it, and the buttons under the window's thumbnail.
+ */
+export interface Taskbar {
+  /** Replaces the tasks of the Jump List. */
+  setJumpTasks(tasks: JumpTask[]): Promise<Result<void>>;
+  /** The small badge on the button, with what it says in words for a screen reader; null takes it away. */
+  setOverlay(overlay: { icon: TaskbarImage; description: string } | null): Promise<Result<void>>;
+  /** The words shown with the window's thumbnail. */
+  setTooltip(text: string): Promise<Result<void>>;
+  setProgress(progress: TaskbarProgress): Promise<Result<void>>;
+  /** The buttons under the window's thumbnail. Windows cannot take one away again, only turn it off. */
+  setButtons(buttons: ThumbButton[]): Promise<Result<void>>;
+  /** Calls the listener with a button's id when it is pressed. Returns the unsubscribe function. */
+  subscribe(listener: (buttonId: string) => void): () => void;
+}
+
+/**
+ * System-wide hotkeys: key combinations that work whatever program is in front. Each is
+ * registered under a name of the caller's own; whoever wants to act on it subscribes.
+ */
+export interface Hotkeys {
+  /**
+   * Makes `accelerator` ("Control+Alt+R") the hotkey called `id`, in place of the one it
+   * had. Fails when Windows does not give it (another program has it); the one it had stays.
+   */
+  register(id: string, accelerator: string): Promise<Result<void>>;
+  /** Gives the hotkey called `id` back to Windows. Nothing to do when there is none. */
+  unregister(id: string): Promise<Result<void>>;
+  /** The combination Windows has registered under `id` right now; undefined when none. */
+  registered(id: string): Promise<Result<string | undefined>>;
+  /** Calls the listener with a hotkey's id when it is pressed. Returns the unsubscribe function. */
+  subscribe(listener: (id: string) => void): () => void;
 }
 
 /** The update channels a user can follow. */
@@ -591,4 +695,7 @@ export interface Ports {
   overlays: Overlays;
   window: AppWindow;
   updates: UpdateFeed;
+  shortcuts: Shortcuts;
+  taskbar: Taskbar;
+  hotkeys: Hotkeys;
 }

@@ -35,6 +35,18 @@ Open RigReady. The Fly screen shows the setup you used last and checks it.
 
 The same actions are in the tray menu, and the tray icon shows whether the rig is ready.
 
+### One double-click
+
+Once a setup works, flying need not start in RigReady's window at all.
+
+- **A desktop shortcut.** In **Configure > Setups**, edit the setup and choose **Create desktop shortcut**. Double-clicking "<setup name> - RigReady" starts RigReady, makes the rig ready (monitors, helper apps, files) and launches the game. If something required is missing, nothing is launched: RigReady's window comes forward and says what is missing. A monitor change still asks you to keep it.
+- **The taskbar.** Right-click RigReady's taskbar button for **Fly <setup>**, with the setups you used last at the top. The button itself shows the state of the setup in use (a green dot, an amber triangle, a red square), fills while RigReady works, and has Make ready, Launch and Stand down under its thumbnail.
+- **The tray.** Rest the pointer on the icon to read what is not met. One click brings the window out or puts it away, a double-click always opens it, and the right-click menu has every action.
+- **A hotkey.** **Configure > Settings > Hotkey** lets you choose a key combination that works from anywhere: it brings RigReady forward and runs Make ready. It is off until you choose one, and it never launches.
+- **The command line**, for a Stream Deck button or a script: `RigReady.exe --fly "<setup>"` makes ready and launches, `--make-ready "<setup>"` stops before launching, and `--setup "<setup>"` only shows the setup. A setup is named by its name or by its id.
+
+![Started with --fly: the rig was made ready and the game launched](../artifacts/screens/one-click-fly/02-launched.png)
+
 ## 3. Monitors
 
 **Configure > Monitors** shows the arrangement to scale and your saved layouts.
@@ -134,6 +146,7 @@ Tuning values of a Fanatec wheel base are stored on the base. RigReady cannot re
 - **Settings**: start with Windows, close to tray, update channel, AI key, notifications, retention of automatic backups.
 - **Safety**: every change RigReady made to files outside its own folder, with Undo.
 - **Diagnostics**: the log, and a button that copies a report with personal details removed.
+- **Text size**: Ctrl and + makes everything in the window larger, Ctrl and - smaller, Ctrl+0 puts it back. F11 fills the screen.
 
 ## Things to know
 

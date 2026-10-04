@@ -1,0 +1,10 @@
+description: One click, the middle MFD screen rotated back and TrackIR not running
+rig: mark-full
+extends: flying-mfd-rotated.yaml
+# What a desktop shortcut meets on a PC that was used for other things: the monitors are in
+# the desk arrangement and a helper app is closed. The window stays open after the launch
+# (the preference is off), so the result can be seen.
+mutations:
+  - { op: stopProcess, name: TrackIR5.exe }
+data:
+  fly/preferences.json: data/one-click/stay-open.json

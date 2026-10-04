@@ -22,6 +22,7 @@ import { isDuplicate, nextId } from '../core/duplicates';
 import ActionEditor from './ActionEditor.vue';
 import ItemEditor from './ItemEditor.vue';
 import ParamsForm from './ParamsForm.vue';
+import ShortcutPanel from './ShortcutPanel.vue';
 import { defaultsOf, plain } from './schemaForm';
 
 const props = defineProps<{ id: string }>();
@@ -46,6 +47,8 @@ const launchKind = ref<'program' | 'steam' | 'none'>('none');
 const commentsWarning = ref(false);
 const leaving = ref(false);
 const fileMessage = ref<string>();
+/** The setup as it was last saved: its desktop shortcut is made from that, not from the draft. */
+const saved = ref<{ name: string; launches: boolean }>();
 
 const PHASES = [
   { key: 'preLaunch', title: 'Before launch', sub: 'Run in order before the game starts.' },
@@ -83,7 +86,20 @@ onMounted(async () => {
   hasComments.value = loaded.value.hasComments;
   file.value = loaded.value.file;
   launchKind.value = draft.value.steamAppId ? 'steam' : draft.value.launch ? 'program' : 'none';
+  saved.value = { name: draft.value.name, launches: launchKind.value !== 'none' };
   original.value = snapshot();
+});
+
+/** The shortcut carries the setup's name and whether it launches: both must be saved first. */
+const shortcutBlocked = computed(() => {
+  if (!draft.value || !saved.value) return undefined;
+  if (draft.value.name !== saved.value.name) {
+    return 'Save the setup first: the shortcut takes its name from the setup.';
+  }
+  if ((launchKind.value !== 'none') !== saved.value.launches) {
+    return 'Save the setup first: the shortcut depends on whether the setup launches something.';
+  }
+  return undefined;
 });
 
 // ---- basics ----
@@ -569,6 +585,13 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
         />
         <div v-else class="rr-row-sub">The Fly screen offers no Launch button for this setup.</div>
       </div>
+
+      <ShortcutPanel
+        v-if="saved"
+        :id="props.id"
+        :setup-name="saved.name"
+        :blocked="shortcutBlocked"
+      />
 
       <div class="edit-section-head">
         <h2 class="rr-section-title">Checklist</h2>

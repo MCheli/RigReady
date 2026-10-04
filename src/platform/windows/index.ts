@@ -4,12 +4,15 @@ import type {
   AppWindow,
   Clipboard,
   Dialogs,
+  Hotkeys,
   LoginItem,
   Notifications,
   Overlays,
   Ports,
   Render,
   Secrets,
+  Shortcuts,
+  Taskbar,
   UpdateFeed,
 } from '../../core/ports';
 import { NodeHttp, NodeRawFs, NodeShell, headlessPorts, systemClock } from '../node';
@@ -34,6 +37,9 @@ export interface AppPorts {
   overlays: Overlays;
   window: AppWindow;
   updates: UpdateFeed;
+  shortcuts: Shortcuts;
+  taskbar: Taskbar;
+  hotkeys: Hotkeys;
 }
 
 export interface WindowsPlatformOptions {
