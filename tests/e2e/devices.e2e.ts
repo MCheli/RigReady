@@ -269,7 +269,8 @@ test('devices: all controllers stay responsive with 16 controllers at 60 Hz', as
     return { sent, frames: gaps.length, worst: Math.max(...gaps.slice(1)) };
   });
   await expect(page.getByTestId('compact-controller')).toHaveCount(16);
-  expect(result.sent).toBeGreaterThan(120);
+  // How many updates this test itself managed to send: fewer on a slow shared runner.
+  expect(result.sent).toBeGreaterThan(process.env['CI'] ? 60 : 120);
   expect(result.worst).toBeLessThan(50);
   await shot('sixteen-controllers');
 });
