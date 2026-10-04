@@ -313,3 +313,33 @@ test('look: a snackbar of a feature looks like the shell’s toasts, with its to
   expect(problems).toEqual([]);
   await shot('snackbar');
 });
+
+test('look: the navigation shows where you are, also on a page below an entry, and one entry at a time', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('flying-all-good', 'look-navigation');
+  const active = page.locator('.configure-link.active');
+  // A page with an entry of its own.
+  await go(page, '/configure/cheat-sheets');
+  await expect(active).toHaveText('Cheat sheets');
+  await expect(active).toHaveAttribute('aria-current', 'page');
+  // One below it: the trainer has no entry, and is under Cheat sheets.
+  await go(page, '/configure/cheat-sheets/learn');
+  await expect(page.getByRole('heading', { name: 'Learn your controls' })).toBeVisible();
+  await expect(active).toHaveText('Cheat sheets');
+  await expect(active).toHaveAttribute('aria-current', 'location');
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('trainer-under-cheat-sheets');
+  // A setup's editor is under Setups.
+  await go(page, '/configure/profiles/dcs-f-a-18c');
+  await expect(active).toHaveText('Setups');
+  await expect(active).toHaveAttribute('aria-current', 'location');
+  // The wheel has an entry of its own below Racing: that one, not both.
+  await go(page, '/configure/racing/wheel');
+  await expect(active).toHaveText('Wheel');
+  await expect(active).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('.configure-link[aria-current]')).toHaveCount(1);
+  await go(page, '/configure/racing');
+  await expect(active).toHaveText('Racing');
+  await shot('racing');
+});

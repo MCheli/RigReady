@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import type { RouteLocationNormalizedLoaded } from 'vue-router';
+import { computed } from 'vue';
+import { useRoute, type RouteLocationNormalizedLoaded } from 'vue-router';
 import { navSections } from '../features';
+import { ariaCurrent, currentEntry } from '../shell/nav';
 import { pageEpoch } from '../shell/shell';
 
 /**
@@ -9,6 +11,14 @@ import { pageEpoch } from '../shell/shell';
  */
 const viewKey = (shown: RouteLocationNormalizedLoaded): string =>
   `${shown.matched[1]?.path ?? ''}:${pageEpoch.value}`;
+
+/**
+ * The navigation says where you are on every page, also on one that has no entry of its
+ * own: a setup's editor is under Setups, the trainer under Cheat sheets.
+ */
+const route = useRoute();
+const entries = navSections.flatMap((group) => group.entries.map((entry) => entry.to));
+const current = computed(() => currentEntry(entries, route.path));
 </script>
 
 <template>
@@ -29,7 +39,8 @@ const viewKey = (shown: RouteLocationNormalizedLoaded): string =>
           :key="entry.to"
           :to="entry.to"
           class="configure-link"
-          active-class="active"
+          :class="{ active: entry.to === current }"
+          :aria-current="ariaCurrent(entry.to, current, route.path)"
           :data-testid="`nav-${entry.to.split('/').pop()}`"
         >
           <v-icon :icon="entry.icon" size="17" />
