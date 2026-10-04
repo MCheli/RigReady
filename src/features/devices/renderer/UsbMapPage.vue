@@ -6,7 +6,8 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { devicesContract } from '../contract';
 import type { UsbMap, UsbNode } from '../core/model';
-import UsbTreeNode from './UsbTreeNode.vue';
+import UsbTreeDrawing from './UsbTreeDrawing.vue';
+import { useReducedMotion } from './canvas';
 import { useDevicesStore } from './store';
 
 const api = useClient(devicesContract);
@@ -34,25 +35,6 @@ async function load(): Promise<void> {
   if (!devicesStore.overview) void devicesStore.load();
 }
 
-const childrenOf = computed(() => {
-  const out = new Map<string, UsbNode[]>();
-  for (const node of map.value?.nodes ?? []) {
-    if (!node.parentId) continue;
-    const list = out.get(node.parentId) ?? [];
-    list.push(node);
-    out.set(node.parentId, list);
-  }
-  // Devices before hubs on each level, then by port.
-  for (const list of out.values()) {
-    list.sort(
-      (a, b) =>
-        (a.kind === 'device' ? 0 : 1) - (b.kind === 'device' ? 0 : 1) ||
-        (a.port ?? 99) - (b.port ?? 99) ||
-        a.name.localeCompare(b.name)
-    );
-  }
-  return out;
-});
 const roots = computed(() => (map.value?.nodes ?? []).filter((n) => n.kind === 'root'));
 const selectedNode = computed(() =>
   selected.value === undefined
@@ -78,11 +60,22 @@ async function select(key: string): Promise<void> {
   await router.replace({ query: { select: key } });
 }
 
+const bar = ref<HTMLElement>();
+const reducedMotion = useReducedMotion();
+
+/**
+ * Bring the selected device into view. One that is in view already (it was clicked) stays
+ * under the pointer; one chosen elsewhere, in Devices or in the list of what can be
+ * unplugged, is brought to the middle of the window.
+ */
 async function reveal(): Promise<void> {
   await nextTick();
-  document
-    .querySelector(`[data-testid="usb-node"][data-selected="true"]`)
-    ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  const node = document.querySelector(`[data-testid="usb-node"][data-selected="true"]`);
+  if (!node) return;
+  const box = node.getBoundingClientRect();
+  const under = bar.value?.getBoundingClientRect().bottom ?? 0;
+  if (box.top >= under && box.bottom <= window.innerHeight) return;
+  node.scrollIntoView({ block: 'center', behavior: reducedMotion.value ? 'auto' : 'smooth' });
 }
 
 let off: (() => void) | undefined;
@@ -189,80 +182,80 @@ watch(selected, () => void reveal());
         closer to the computer.
       </v-alert>
 
-      <div class="usb-grid">
-        <div class="rr-panel usb-tree" data-testid="usb-tree">
-          <div class="usb-tree-bar">
-            <v-switch
-              v-model="hideEmpty"
-              label="Hide empty hubs"
-              class="flex-grow-0"
-              data-testid="usb-hide-empty"
-            />
+      <div class="rr-panel usb-tree" data-testid="usb-tree">
+        <!-- The way to the selected device in words. It stays in view while the drawing
+             scrolls under it, so the whole width is the drawing's. -->
+        <div ref="bar" class="usb-bar">
+          <div class="usb-picked" data-testid="usb-selected">
+            <template v-if="selectedNode">
+              <div class="usb-picked-head">
+                <span class="usb-picked-name">{{ selectedNode.name }}</span>
+                <span class="rr-muted">
+                  <template v-if="selectedDevice?.location"
+                    >{{ selectedDevice.location.text }} ·
+                  </template>
+                  {{ selectedNode.depth }} {{ selectedNode.depth === 1 ? 'hub' : 'hubs' }} between
+                  it and the computer<template v-if="selectedDevice?.requiredBy.length">
+                    · needed by {{ selectedDevice.requiredBy.join(', ') }}</template
+                  >
+                </span>
+              </div>
+              <ol class="usb-chain" aria-label="The way to it from the computer">
+                <li v-for="n in chain" :key="n.id">
+                  <span
+                    v-if="n.port !== undefined && n.kind !== 'root'"
+                    class="rr-mono usb-chain-port"
+                    >{{ n.port }}</span
+                  >
+                  {{ n.name }}
+                </li>
+                <li class="usb-chain-self">
+                  <span v-if="selectedNode.port !== undefined" class="rr-mono usb-chain-port">{{
+                    selectedNode.port
+                  }}</span>
+                  {{ selectedNode.name }}
+                </li>
+              </ol>
+            </template>
+            <span v-else class="rr-muted">
+              Click a device in the tree to see the path to it from the computer.
+            </span>
           </div>
-          <ul class="usb-roots">
-            <UsbTreeNode
-              v-for="root in roots"
-              :key="root.id"
-              :node="root"
-              :children-of="childrenOf"
-              :selected="selected"
-              :hide-empty="hideEmpty"
-              @select="select"
-            />
-          </ul>
-          <p class="rr-muted usb-foot">
-            Numbers are port numbers on the hub above. A USB 3 hub appears twice (once for USB 2
-            devices, once for USB 3 devices), and one hub box often holds two or three hub chips.
-          </p>
+          <v-btn
+            v-if="selectedNode"
+            variant="tonal"
+            size="small"
+            prepend-icon="mdi-format-list-bulleted"
+            data-testid="usb-show-device"
+            @click="
+              router.push({
+                path: '/configure/devices',
+                query: { select: selectedNode.deviceKey },
+              })
+            "
+            >Show in Devices</v-btn
+          >
+          <v-switch
+            v-model="hideEmpty"
+            label="Hide empty hubs"
+            class="flex-grow-0"
+            data-testid="usb-hide-empty"
+          />
         </div>
-
-        <aside class="rr-panel usb-side" data-testid="usb-selected">
-          <template v-if="selectedNode">
-            <div class="rr-section-title">Selected</div>
-            <div class="rr-row-title usb-side-name">{{ selectedNode.name }}</div>
-            <div v-if="selectedDevice?.location" class="rr-row-sub">
-              {{ selectedDevice.location.text }}
-            </div>
-            <ol class="usb-chain">
-              <li v-for="n in chain" :key="n.id">
-                <span v-if="n.port !== undefined && n.kind !== 'root'" class="rr-mono rr-muted"
-                  >{{ n.port }} ·</span
-                >
-                {{ n.name }}
-              </li>
-              <li class="usb-chain-self">
-                <span v-if="selectedNode.port !== undefined" class="rr-mono rr-muted"
-                  >{{ selectedNode.port }} ·</span
-                >
-                {{ selectedNode.name }}
-              </li>
-            </ol>
-            <div class="rr-row-sub">
-              {{ selectedNode.depth }} {{ selectedNode.depth === 1 ? 'hub' : 'hubs' }} between it
-              and the computer
-              <template v-if="selectedDevice?.requiredBy.length">
-                · needed by {{ selectedDevice.requiredBy.join(', ') }}</template
-              >
-            </div>
-            <v-btn
-              class="mt-3"
-              variant="tonal"
-              size="small"
-              prepend-icon="mdi-format-list-bulleted"
-              data-testid="usb-show-device"
-              @click="
-                router.push({
-                  path: '/configure/devices',
-                  query: { select: selectedNode.deviceKey },
-                })
-              "
-              >Show in Devices</v-btn
-            >
-          </template>
-          <p v-else class="rr-muted">
-            Click a device in the tree to see the path to it from the computer.
-          </p>
-        </aside>
+        <div class="usb-scroll">
+          <UsbTreeDrawing
+            :nodes="map.nodes"
+            :selected="selected"
+            :hide-empty="hideEmpty"
+            @select="select"
+          />
+        </div>
+        <p class="rr-muted usb-foot">
+          Follow a line from the USB controller to a device: each round box on the way is a hub, and
+          every number is the port something is plugged into on the hub before it. Point at a hub
+          for its name. A USB 3 hub appears twice (once for USB 2 devices, once for USB 3 devices),
+          and one hub box often holds two or three hub chips.
+        </p>
       </div>
     </template>
     <div v-else-if="!error" class="rr-empty">Reading the USB tree…</div>
@@ -309,50 +302,83 @@ watch(selected, () => void reveal());
   color: var(--rr-accent);
   text-decoration: none;
 }
-.usb-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 16px;
-  align-items: start;
-}
 .usb-tree {
-  padding: 12px 8px;
+  padding-bottom: 12px;
 }
-.usb-tree-bar {
-  display: flex;
-  justify-content: flex-end;
-  margin: -4px 8px 4px;
-  font-size: 13px;
-}
-.usb-roots {
-  margin: 0;
-  padding: 0;
-}
-.usb-foot {
-  font-size: 12px;
-  margin: 10px 8px 0;
-}
-.usb-side {
-  padding: 14px 16px;
+.usb-bar {
   position: sticky;
-  top: 72px;
+  top: var(--v-layout-top, 56px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* The height of a selection, so that the first click does not move the drawing. */
+  min-height: 70px;
+  padding: 8px 16px;
+  margin-bottom: 10px;
+  background: var(--rr-surface);
+  border-bottom: 1px solid var(--rr-border);
+  border-radius: calc(var(--rr-radius) - 1px) calc(var(--rr-radius) - 1px) 0 0;
   font-size: 13px;
 }
-.usb-side-name {
+.usb-bar :deep(.v-label) {
+  font-size: 13px;
+}
+.usb-picked {
+  flex: 1;
+  min-width: 0;
+}
+.usb-picked-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.usb-picked-name {
   font-size: 15px;
-  margin-bottom: 2px;
+  font-weight: 600;
 }
 .usb-chain {
   list-style: none;
-  margin: 10px 0;
-  padding: 0 0 0 10px;
-  border-left: 2px solid var(--rr-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 0;
+  margin: 6px 0 0;
+  padding: 0;
 }
 .usb-chain li {
-  padding: 2px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.usb-chain li + li::before {
+  content: '›';
+  margin: 0 2px 0 8px;
+  color: var(--rr-muted);
+}
+.usb-chain-port {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--rr-surface-2);
+  color: var(--rr-muted);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 .usb-chain-self {
   color: var(--rr-accent);
   font-weight: 500;
+}
+.usb-scroll {
+  overflow-x: auto;
+  padding: 2px 16px 6px;
+}
+.usb-foot {
+  font-size: 12px;
+  margin: 10px 16px 0;
 }
 </style>

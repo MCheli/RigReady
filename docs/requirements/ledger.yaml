@@ -1785,6 +1785,28 @@ requirements:
       - "artifacts/screens/cheat-sheets-trainer/07-learned.png"
       - "artifacts/screens/cheat-sheets-trainer/08-after-restart.png"
 
+  - id: WOW-TOOLS-006
+    title: The USB map is a tree drawing
+    job: troubleshoot
+    area: devices
+    priority: p2
+    done_means:
+      - "The USB map is drawn as a tree: each USB controller of the computer heads its own tree, hubs branch off to the right as round boxes with the number of the port they are plugged into, and every device is at the end of its branch with its port, its name and whether the active setup needs it. One line runs to every hub and device. Only controllers and devices take a row, so the rig of 31 devices is 32 rows, and no name is cut short on a window of the usual size."
+      - "Selecting a device draws the way to it through in the accent colour, from the controller through each hub to the device, and says it in words in a bar that stays in view above the drawing: the port and hub it is on, how many hubs are between it and the computer, what needs it, every hub on the way by name, and 'Show in Devices'."
+      - "A device that was clicked stays under the pointer: nothing scrolls or shifts. One chosen in Devices or in the list of what can be unplugged is brought into view (at once under reduced motion). Hubs with nothing plugged in are left out until asked for, and then have a row with their name and say that they are empty."
+    status: done
+    evidence:
+      - "src/features/devices/core/usbTree.test.ts#gives a controller and every device a row, and puts a hub on the row of its first device"
+      - "src/features/devices/core/usbTree.test.ts#joins everything to what it is plugged into, with one line each"
+      - "src/features/devices/core/usbTree.test.ts#leaves out empty hubs unless asked, and then gives each a row"
+      - "src/features/devices/core/usbTree.test.ts#keeps a chain of hubs with one device at its end on one row"
+      - "src/features/devices/core/usbTree.test.ts#draws each USB controller as its own tree, one under the other"
+      - "src/features/devices/core/usbTree.test.ts#is the device and every hub above it, up to the controller"
+      - "tests/e2e/devices.e2e.ts#devices: USB map places every device on its hub, and selecting one shows it in Devices and back"
+      - "artifacts/screens/usb-map/01-tree.png"
+      - "artifacts/screens/usb-map/02-pedals-selected.png"
+      - "artifacts/screens/usb-map/05-empty-hubs.png"
+
   # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files
   # ---------------------------------------------------------------------------

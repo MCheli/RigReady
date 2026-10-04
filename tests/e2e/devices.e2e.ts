@@ -170,6 +170,22 @@ type Part = { left: number; top: number; right: number; bottom: number };
  * of its width and height). The proof that a drawing shows what the numbers say. With
  * `faint`, a fading trail counts too (but never the grey of a frame or a grid line).
  */
+/** Waits for a smooth scroll to come to rest: the element is where it was a moment ago. */
+async function atRest(locator: Locator): Promise<void> {
+  let last: number | undefined;
+  await expect
+    .poll(
+      async () => {
+        const y = (await locator.boundingBox())?.y;
+        const still = y !== undefined && y === last;
+        last = y;
+        return still;
+      },
+      { intervals: [150] }
+    )
+    .toBe(true);
+}
+
 async function accentPixels(
   canvas: Locator,
   part: Part = { left: 0, top: 0, right: 1, bottom: 1 },
@@ -761,15 +777,72 @@ test('devices: USB map places every device on its hub, and selecting one shows i
   await expect(page.getByTestId('usb-controller')).toHaveCount(1);
   await expect(page.getByTestId('usb-controller-counts')).toContainText('62 of 127 USB addresses');
   await expect(tree.locator('[data-kind="device"]')).toHaveCount(31);
+  // It is a drawing: the controller heads the tree, one line runs to every hub and device,
+  // and only the controller and the devices take a row, so the 31 devices of the rig are
+  // 32 rows however many hubs they hang from.
+  const drawing = tree.getByTestId('usb-drawing');
+  await expect(drawing.locator('[data-testid="usb-node"][data-kind="root"]')).toHaveCount(1);
+  const drawn = await drawing.getByTestId('usb-node').count();
+  await expect(drawing.getByTestId('usb-link')).toHaveCount(drawn - 1);
+  await expect(drawing.locator('[data-testid="usb-link"][data-on="true"]')).toHaveCount(0);
+  expect((await drawing.boundingBox())!.height).toBe(32 * 30);
+  // No name is cut short on a window of the usual size.
+  const cut = await drawing
+    .locator('.usb-name')
+    .evaluateAll((names) =>
+      names.filter((n) => n.scrollWidth > n.clientWidth).map((n) => n.textContent)
+    );
+  expect(cut).toEqual([]);
   await shot('tree');
+
+  // What the map asks of the window when it brings a device into view, and how.
+  await page.evaluate(`(() => {
+    const asked = [];
+    const scroll = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (how) {
+      if (this.matches('[data-testid="usb-node"]')) {
+        asked.push(typeof how === 'object' ? String(how.behavior) : String(how));
+      }
+      scroll.call(this, how);
+    };
+    window.usbScrolls = asked;
+  })()`);
+  const broughtIntoView = (): Promise<string[]> =>
+    page.evaluate('window.usbScrolls.splice(0)') as Promise<string[]>;
 
   // The pedals: three hubs deep, port 2.
   const pedals = tree.locator('[data-testid="usb-node"][data-name="T-Pendular-Rudder"]');
+  await pedals.scrollIntoViewIfNeeded();
+  const found = (await pedals.boundingBox())!.y;
   await pedals.click();
   await expect(pedals).toHaveAttribute('data-selected', 'true');
   const side = page.getByTestId('usb-selected');
   await expect(side).toContainText('Port 2 on USB2.1 Hub');
   await expect(side).toContainText('3 hubs between it and the computer');
+  // The way to it in words stays in view above the drawing, hubs by name...
+  await expect(side).toBeInViewport();
+  await expect(side.locator('.usb-chain li')).toHaveText([
+    'USB Root Hub (USB 3.0)',
+    /^6\s*ASM107x$/,
+    /^4\s*USB2\.1 Hub$/,
+    /^2\s*USB2\.1 Hub$/,
+    /^2\s*T-Pendular-Rudder$/,
+  ]);
+  // ...and a device that was clicked stays under the pointer: nothing scrolls or shifts.
+  await atRest(pedals);
+  expect((await pedals.boundingBox())!.y).toBeCloseTo(found, 0);
+  expect(await broughtIntoView()).toEqual([]);
+  // The way to them is drawn through: the controller, three hubs, each further right than
+  // the one before, and the four lines between them.
+  await expect(drawing.locator('[data-testid="usb-link"][data-on="true"]')).toHaveCount(4);
+  await expect(drawing.locator('[data-kind="root"][data-on="true"]')).toHaveCount(1);
+  const onTheWay = drawing.locator('[data-kind="hub"][data-on="true"]');
+  await expect(onTheWay).toHaveCount(3);
+  const across = [];
+  for (const hub of await onTheWay.all()) across.push((await hub.boundingBox())!.x);
+  across.push((await pedals.boundingBox())!.x);
+  expect(across).toEqual([...across].sort((a, b) => a - b));
+  expect(new Set(across).size).toBe(4);
   await shot('pedals-selected');
 
   // ...which is the same device in the Devices list.
@@ -779,12 +852,16 @@ test('devices: USB map places every device on its hub, and selecting one shows i
   await expect(row.getByTestId('device-detail')).toContainText('USB path 6 › 4 › 2 › 2');
   await shot('in-devices');
 
-  // And back: the DD2 from its Devices entry to its place on the map.
+  // And back: the DD2 from its Devices entry to its place on the map, brought into view.
   await deviceRow(page, 'FANATEC Podium Wheel Base DD2').locator('button').first().click();
   await deviceRow(page, 'FANATEC Podium Wheel Base DD2').getByTestId('device-show-usb').click();
-  await expect(
-    tree.locator('[data-testid="usb-node"][data-name="FANATEC Podium Wheel Base DD2"]')
-  ).toHaveAttribute('data-selected', 'true');
+  const wheelBase = tree.locator(
+    '[data-testid="usb-node"][data-name="FANATEC Podium Wheel Base DD2"]'
+  );
+  await expect(wheelBase).toHaveAttribute('data-selected', 'true');
+  await atRest(wheelBase);
+  await expect(wheelBase).toBeInViewport({ ratio: 1 });
+  expect(await broughtIntoView()).toEqual(['smooth']);
 
   // What can be unplugged: devices the active setup does not need.
   await page.getByTestId('usb-spare-toggle').click();
@@ -793,6 +870,29 @@ test('devices: USB map places every device on its hub, and selecting one shows i
   await expect(spare).toContainText('Keychron K2 Pro');
   await expect(spare).not.toContainText('T-Pendular-Rudder');
   await shot('what-to-unplug');
+
+  // Each is a way to its place in the drawing. With reduced motion it is there at once.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await spare.getByRole('link', { name: 'Keychron K2 Pro' }).click();
+  const keyboard = tree.locator('[data-testid="usb-node"][data-name="Keychron K2 Pro"]');
+  await expect(keyboard).toHaveAttribute('data-selected', 'true');
+  await expect(keyboard).toBeInViewport({ ratio: 1 });
+  expect(await broughtIntoView()).toEqual(['auto']);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+  // Hubs with nothing plugged in are left out until asked for; then each has a row of its
+  // own at the end of its branch, with its name, and says that it is empty.
+  const hubs = drawing.locator('[data-testid="usb-node"][data-kind="hub"]');
+  const used = await hubs.count();
+  await page.getByTestId('usb-hide-empty').locator('input').uncheck();
+  await expect(hubs).not.toHaveCount(used);
+  const empty = hubs.filter({ hasText: '· empty' });
+  expect(await empty.count()).toBeGreaterThan(0);
+  expect(await hubs.count()).toBeGreaterThan(used);
+  expect((await drawing.boundingBox())!.height).toBe((32 + (await empty.count())) * 30);
+  await expect(tree.locator('[data-kind="device"]')).toHaveCount(31);
+  await empty.first().scrollIntoViewIfNeeded();
+  await shot('empty-hubs');
 });
 
 test('devices: HidHide hiding the pedals is shown on the device and fails its check', async ({
