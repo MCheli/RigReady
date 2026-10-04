@@ -236,7 +236,8 @@ test('stream deck: a new PC gets install guidance, a guided setup and can import
   await expect(page.getByTestId('sd-app-state')).toHaveText('Not installed');
   await expect(page.getByTestId('sd-install-guide')).toContainText('Install the Stream Deck app');
   await expect(page.getByTestId('sd-install-dcs')).toContainText('DCS-BIOS');
-  await expect(page.getByTestId('sd-findings-none')).toBeVisible();
+  // Nothing is here to be healthy or not: no green "no problems" on a PC without a Stream Deck.
+  await expect(page.getByTestId('sd-findings-none')).toHaveCount(0);
   await shot('not-installed');
 
   await page.getByTestId('sd-download').click();
