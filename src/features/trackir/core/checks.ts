@@ -140,7 +140,6 @@ export const trackIrCapture: CaptureDefinition = {
         title: 'TrackIR camera',
         description: `${status.value.devices[0]!.name}, on any USB port`,
         selectedByDefault: false,
-        tier: 'more',
         icon: 'mdi-head-sync-outline',
         check: { type: TIR_CONNECTED, title: 'TrackIR camera', required: true, params: {} },
       });
