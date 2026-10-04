@@ -203,6 +203,7 @@ export function createDisplayCapture(deps: LayoutDeps): CaptureDefinition {
         ? { layoutId: same.id, layoutName: same.name, displays }
         : { displays };
       const lines = describeTargets(displays, names);
+      const labels = monitorLabels(displays, names);
       const title = same ? `Monitor layout: ${same.name}` : 'Monitor layout';
       return ok([
         {
@@ -223,6 +224,17 @@ export function createDisplayCapture(deps: LayoutDeps): CaptureDefinition {
           title,
           description: (same ? [`Your saved layout "${same.name}"`, ...lines] : lines).join(' · '),
           selectedByDefault: true,
+          icon: 'mdi-monitor-multiple',
+          monitors: displays.map((d) => ({
+            label: labels.get(d.id.toLowerCase()) ?? d.name,
+            enabled: d.enabled,
+            primary: d.primary,
+            x: d.x,
+            y: d.y,
+            width: d.width ?? 0,
+            height: d.height ?? 0,
+            rotation: d.rotation,
+          })),
           check: {
             type: DISPLAY_LAYOUT,
             title,

@@ -3,6 +3,7 @@ import type { Logger } from '../logger';
 import type { Ports } from '../ports';
 import type { CheckGroup, CheckItem } from '../profile/schema';
 import type { Result } from '../result';
+import type { GameKind } from '../../shared/models';
 
 /** The setup a check, fix or action runs for. */
 export interface RunProfile {
@@ -191,6 +192,64 @@ export interface CaptureCandidate {
    * finds the program wherever it is installed). Generic candidates for them are left out.
    */
   covers?: string[];
+  /**
+   * The family of sims this candidate is for (a wheel base: 'racing'; SimAppPro: 'flight').
+   * The capture screen keeps it by default only in a setup for a game of that family, or
+   * when no game was chosen. Absent: it suits any setup.
+   */
+  kind?: GameKind;
+  /**
+   * One aircraft or car of `game` this candidate is about. The capture screen asks which
+   * one the setup is for when a game has several, and shows only that one's candidates.
+   */
+  variant?: CaptureVariant;
+  /**
+   * How prominently the capture screen lists it: 'main' with what a rig usually needs,
+   * 'more' behind "show all" (keyboards, mice, background programs). Absent: 'main'.
+   */
+  tier?: 'main' | 'more';
+  /** An icon for the row, from the bundled Material Design set ("mdi-headset"). */
+  icon?: string;
+  /** A device candidate's identity, shown beside its name and used by "press a button". */
+  device?: CaptureDevice;
+  /** A monitor candidate's arrangement, drawn to scale by the capture screen. */
+  monitors?: CaptureMonitor[];
+  /** What this item means for Stand down, in a few words ("closed at Stand down"). */
+  standDownNote?: string;
+}
+
+/** An aircraft or car a capture candidate belongs to. */
+export interface CaptureVariant {
+  id: string;
+  /** "F/A-18C" */
+  name: string;
+  /** What a setup for it is usually called: "DCS F/A-18C". */
+  setupName?: string;
+}
+
+export interface CaptureDevice {
+  vendorId: string;
+  productId: string;
+  serial?: string;
+  /** A game sees it as a controller (joystick, wheel, pedals, button panel). */
+  gameController: boolean;
+  /** How the check tells it apart: by model alone, by serial number, or by USB port. */
+  identifiedBy: 'ids' | 'serial' | 'port';
+  /** Set when several identical devices are connected: this is number `index` of `of`. */
+  twin?: { index: number; of: number };
+  /** The name the device reports, when the title is a name the owner gave it. */
+  model?: string;
+}
+
+export interface CaptureMonitor {
+  label: string;
+  enabled: boolean;
+  primary: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
 }
 
 export interface CaptureDefinition {

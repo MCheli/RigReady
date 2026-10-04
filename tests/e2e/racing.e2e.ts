@@ -46,11 +46,15 @@ test('racing: capture the racing rig as a setup, which is Ready', async ({ rig }
   await expect(candidate('Fanatec Service').getByRole('checkbox')).toBeChecked();
   await expect(candidate('trophi.ai coach').getByRole('checkbox')).toBeChecked();
   await expect(page.getByTestId('capture-group-displays')).toContainText('LC49G95T');
-  // Game-specific items are offered, not chosen for the user.
-  await expect(candidate('iRacing knows the wheel').getByRole('checkbox')).not.toBeChecked();
-  await candidate('iRacing knows the wheel').getByRole('checkbox').check();
-  await candidate('iRacing helper service').getByRole('checkbox').check();
-  await page.getByTestId('capture-name').locator('input').fill('iRacing');
+  // Game-specific items come with the game, and only with it.
+  await expect(candidate('iRacing knows the wheel')).toHaveCount(0);
+  await page.getByTestId('capture-game-iracing').click();
+  await expect(candidate('iRacing knows the wheel').getByRole('checkbox')).toBeChecked();
+  await expect(candidate('iRacing helper service').getByRole('checkbox')).toBeChecked();
+  await expect(page.getByTestId('capture-name').locator('input')).toHaveValue('iRacing');
+  await expect(page.getByTestId('capture-summary-standdown')).toContainText(
+    'Closes trophi.ai coach'
+  );
   await page.getByTestId('capture-app-filter').locator('input').fill('fanatec');
   await page.getByTestId('capture-group-apps').scrollIntoViewIfNeeded();
   await shot('capture-apps');

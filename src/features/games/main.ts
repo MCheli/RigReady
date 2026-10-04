@@ -24,7 +24,9 @@ export default defineFeatureMain({
     const extras: ExtrasById = new Map();
     for (const [file, module] of Object.entries(modules)) {
       if (!module.default?.id) throw new Error(`${file} must default-export a GameModule`);
-      ctx.games.register(module.default);
+      // The family (flight, racing) is part of what other features may know about a game.
+      const kind = module.default.kind ?? module.extras?.kind;
+      ctx.games.register(kind ? { ...module.default, kind } : module.default);
       if (module.extras) extras.set(module.default.id, module.extras);
     }
     return [

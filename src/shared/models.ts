@@ -165,6 +165,10 @@ export const InputStateSchema = z.object({
 });
 export type InputState = z.infer<typeof InputStateSchema>;
 
+/** The family of sims a game belongs to; decides which gear and helper apps suit a setup for it. */
+export const GameKindSchema = z.enum(['flight', 'racing']);
+export type GameKind = z.infer<typeof GameKindSchema>;
+
 export const LaunchTargetSchema = z.object({
   exe: z.string().min(1),
   args: z.array(z.string()).default([]),

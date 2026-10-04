@@ -1,6 +1,6 @@
 import type { CheckContext } from './checks/registry';
 import type { Result } from './result';
-import type { LaunchTarget } from '../shared/models';
+import type { GameKind, LaunchTarget } from '../shared/models';
 
 export interface GameInstall {
   /** How it was found. */
@@ -52,6 +52,11 @@ export interface BindingManager {
 export interface GameModule {
   id: string;
   name: string;
+  /**
+   * The family of sims it belongs to. A setup for the game keeps, by default, the gear
+   * and helper apps of that family and leaves the other family's out.
+   */
+  kind?: GameKind;
   /** Every installation found: all Steam libraries, standalone, Store. */
   detect(ctx: CheckContext): Promise<Result<GameInstall[]>>;
   /** Where the game keeps per-user configuration. */

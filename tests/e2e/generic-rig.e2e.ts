@@ -203,8 +203,6 @@ const go = (page: Page, route: string): Promise<void> =>
     (globalThis as unknown as { location: { hash: string } }).location.hash = hash;
   }, `#${route}`);
 
-const menuItem = (page: Page, text: string | RegExp) =>
-  page.locator('.v-overlay--active .v-list-item').filter({ hasText: text });
 const candidate = (page: Page, title: string) =>
   page.locator(`[data-testid="capture-candidate"][data-title="${title}"]`);
 const windowVisible = (app: ElectronApplication): Promise<boolean> =>
@@ -250,6 +248,9 @@ test('generic rig: capture proposes the stick, the monitor and the audio devices
   await page.getByTestId('fly-create').click();
   const capture = page.getByTestId('capture-page');
   await expect(candidate(page, 'Logitech Extreme 3D').getByRole('checkbox')).toBeChecked();
+  // Keyboards and mice are one click away, and not kept.
+  await expect(candidate(page, 'USB Keyboard')).toHaveCount(0);
+  await page.getByTestId('capture-more-devices').click();
   await expect(candidate(page, 'USB Keyboard').getByRole('checkbox')).not.toBeChecked();
   await expect(candidate(page, 'Monitor layout').getByRole('checkbox')).toBeChecked();
   await expect(capture.getByTestId('capture-group-displays')).toContainText(
@@ -262,10 +263,14 @@ test('generic rig: capture proposes the stick, the monitor and the audio devices
     candidate(page, 'Microphone: Microphone (Realtek(R) Audio)').getByRole('checkbox')
   ).toBeChecked();
   // Only games found on this PC are offered, and none is.
-  await page.getByTestId('capture-game').click();
-  await expect(menuItem(page, /./)).toHaveText(['No particular game', 'Other game…']);
-  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('capture-game').getByRole('radio')).toHaveText([
+    /Another game/,
+    /No game/,
+  ]);
+  await expect(page.getByTestId('capture-no-games')).toContainText('No game RigReady knows');
+  await expect(page.getByTestId('capture-save')).toBeDisabled();
   await page.getByTestId('capture-name').locator('input').fill('Space sim');
+  await expect(page.getByTestId('capture-summary')).toContainText('4 checks');
   await shot('capture');
   await capture.getByTestId('capture-group-audio').scrollIntoViewIfNeeded();
   await shot('capture-audio');
@@ -299,10 +304,10 @@ test('generic rig: an "Other" game is set up, checked, launched and its tracked 
 
   // An "Other" setup: the user names the game and the program Launch starts.
   await page.getByTestId('fly-create').click();
-  await page.getByTestId('capture-name').locator('input').fill('Star Hauler');
-  await page.getByTestId('capture-game').click();
-  await menuItem(page, 'Other game…').click();
+  await page.getByTestId('capture-game-other').click();
   await page.getByTestId('capture-game-name').locator('input').fill('Star Hauler');
+  // The setup is named after the game until the user names it.
+  await expect(page.getByTestId('capture-name').locator('input')).toHaveValue('Star Hauler');
   await page.getByTestId('capture-launch-exe').locator('input').fill(exe);
   await page.getByTestId('capture-launch-args').locator('input').fill('-fullscreen');
   await expect(page.getByTestId('capture-game-name').locator('input')).toHaveValue('Star Hauler');

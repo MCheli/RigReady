@@ -115,11 +115,15 @@ export function createBindingsCapture(bindings: () => DcsBindings): CaptureDefin
       return ok(
         overview.value.aircraft
           .filter((a) => a.userFiles > 0)
+          // The aircraft with the most of the user's own bindings is the likeliest setup.
+          .sort((a, b) => b.userFiles - a.userFiles || a.name.localeCompare(b.name))
           .map((a) => {
             const title = `DCS bindings match devices (${a.name})`;
             return {
               key: `dcs-bindings:${a.id}`,
               game: 'dcs',
+              variant: { id: a.id, name: a.name, setupName: `DCS ${a.name}` },
+              icon: 'mdi-controller',
               group: 'files' as const,
               title,
               description: `${a.userFiles} binding ${a.userFiles === 1 ? 'file' : 'files'}; warns when Windows has changed a device ID and DCS no longer finds them`,

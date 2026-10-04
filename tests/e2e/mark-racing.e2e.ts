@@ -8,12 +8,11 @@ import { checkRow, expect, test } from './harness';
 
 const candidate = (page: Page, title: string) =>
   page.locator(`[data-testid="capture-candidate"][data-title="${title}"]`);
-const menuItem = (page: Page, text: string | RegExp) =>
-  page.locator('.v-overlay--active .v-list-item').filter({ hasText: text });
-
-/** Capture an iRacing setup from the rig as it is: iRacing chosen, its two own checks ticked. */
+/** Capture an iRacing setup from the rig as it is: iRacing chosen, everything else as proposed. */
 async function captureIracing(page: Page): Promise<void> {
   await page.getByTestId('fly-create').click();
+  // Several racing sims are installed, so the user says which one this setup is for.
+  await expect(page.getByTestId('capture-suggested')).toHaveCount(0);
   await expect(candidate(page, 'Wheel base in PC mode').getByRole('checkbox')).toBeChecked();
   await expect(
     candidate(page, 'FANATEC Podium Wheel Base DD2').getByRole('checkbox')
@@ -22,15 +21,19 @@ async function captureIracing(page: Page): Promise<void> {
   // No flight gear is offered: it is not on the rig.
   await expect(page.getByTestId('capture-group-devices')).not.toContainText('WINWING');
   await expect(page.getByTestId('capture-group-devices')).not.toContainText('T-Pendular-Rudder');
-  await page.getByTestId('capture-name').locator('input').fill('iRacing');
-  await page.getByTestId('capture-game').click();
-  await menuItem(page, 'iRacing').click();
+  // Nothing of a particular game is on the screen until one is chosen.
+  await expect(candidate(page, 'iRacing knows the wheel')).toHaveCount(0);
+  await page.getByTestId('capture-game-iracing').click();
+  await expect(page.getByTestId('capture-name').locator('input')).toHaveValue('iRacing');
   await expect(page.getByTestId('capture-launch-exe').locator('input')).toHaveValue(
     /iRacingUI\.exe$/
   );
-  await candidate(page, 'iRacing knows the wheel').getByRole('checkbox').check();
-  await candidate(page, 'iRacing helper service').getByRole('checkbox').check();
+  // iRacing's own checks and files come with it, kept; no other game's are offered.
+  await expect(candidate(page, 'iRacing knows the wheel').getByRole('checkbox')).toBeChecked();
+  await expect(candidate(page, 'iRacing helper service').getByRole('checkbox')).toBeChecked();
   await expect(candidate(page, 'Bindings (controls.cfg)').getByRole('checkbox')).toBeChecked();
+  await expect(page.getByTestId('capture-page')).not.toContainText('Le Mans Ultimate wheel');
+  await expect(page.getByTestId('capture-group-files')).not.toContainText('DCS');
 }
 
 test('mark-racing with the TV: an iRacing setup is captured and Ready; Make ready applies the racing layout and starts the apps; Stand down returns to Desk', async ({

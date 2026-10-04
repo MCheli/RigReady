@@ -19,6 +19,7 @@ import {
   sameModel,
   vidPid,
 } from './identity';
+import { simFamily } from './family';
 import { deviceNames, deviceStores, findName, lastSighting } from './store';
 
 export const DEVICE_CONNECTED = 'device.connected';
@@ -209,28 +210,51 @@ export const deviceCapture: CaptureDefinition = {
     if (!devices.ok) return devices;
     const peripherals = devices.value.filter((d) => !d.isHub);
     const names = await deviceStores(ctx.ports).data.read();
+    const candidates = peripherals.map((device) => {
+      const params = identityFor(device, peripherals);
+      const given = names.ok ? findName(names.value.names, device, peripherals)?.name : undefined;
+      const id = vidPid(device);
+      const how = identifiedBy(params);
+      // Identical devices without names of their own are told apart by position in the list.
+      const twins = peripherals.filter((d) => sameModel(d, device));
+      const twin =
+        twins.length > 1 ? { index: twins.indexOf(device) + 1, of: twins.length } : undefined;
+      const title = given ?? (twin ? `${device.name} (${twin.index} of ${twin.of})` : device.name);
+      const kind = simFamily(device.vendorId, device.productId);
+      return {
+        key: `device:${device.instanceId}`,
+        group: 'devices' as const,
+        title,
+        description:
+          how === 'serial'
+            ? `${id} · serial ${device.serial}`
+            : how === 'port'
+              ? `${id} · identified by USB port`
+              : id,
+        // Sim gear is pre-selected; keyboards, mice, headsets and the rest are the user's call.
+        selectedByDefault: device.isGameController,
+        tier: device.isGameController ? ('main' as const) : ('more' as const),
+        icon: device.isGameController ? 'mdi-controller' : 'mdi-usb',
+        ...(kind && device.isGameController ? { kind } : {}),
+        device: {
+          vendorId: device.vendorId,
+          productId: device.productId,
+          ...(device.serial ? { serial: device.serial } : {}),
+          gameController: device.isGameController,
+          identifiedBy: how,
+          ...(twin ? { twin } : {}),
+          ...(given ? { model: device.name } : {}),
+        },
+        check: { type: DEVICE_CONNECTED, title, required: true, params },
+      };
+    });
+    // Game controllers first, as the capture screen lists them; names in order within each.
     return ok(
-      peripherals.map((device) => {
-        const params = identityFor(device, peripherals);
-        const given = names.ok ? findName(names.value.names, device, peripherals)?.name : undefined;
-        const title = given ?? device.name;
-        const id = vidPid(device);
-        const how = identifiedBy(params);
-        return {
-          key: `device:${device.instanceId}`,
-          group: 'devices' as const,
-          title,
-          description:
-            how === 'serial'
-              ? `${id} · serial ${device.serial}`
-              : how === 'port'
-                ? `${id} · identified by USB port`
-                : id,
-          // Sim gear is pre-selected; keyboards, mice, headsets and the rest are the user's call.
-          selectedByDefault: device.isGameController,
-          check: { type: DEVICE_CONNECTED, title, required: true, params },
-        };
-      })
+      candidates.sort(
+        (a, b) =>
+          Number(b.device.gameController) - Number(a.device.gameController) ||
+          a.title.localeCompare(b.title)
+      )
     );
   },
 };

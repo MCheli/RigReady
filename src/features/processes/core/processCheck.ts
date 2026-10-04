@@ -10,7 +10,7 @@ import type {
 import type { GameRegistry } from '../../../core/games';
 import { allPathVariables, collapsePath, expandPath } from '../../../core/pathVariables';
 import { err, ok, type Result } from '../../../core/result';
-import type { ProcessInfo } from '../../../shared/models';
+import type { GameKind, ProcessInfo } from '../../../shared/models';
 
 export const PROCESS_RUNNING = 'process.running';
 export const PROCESS_LAUNCH = 'process.launch';
@@ -238,17 +238,107 @@ export function createLaunchRemediation(
 
 const WINDOWS_DIR = /^[a-z]:\\windows\\/i;
 
-/** Helper apps sim rigs commonly need: listed first in the capture and ticked. */
-export const KNOWN_HELPERS: Record<string, string> = {
-  'trackir5.exe': 'TrackIR',
-  'simapppro.exe': 'SimAppPro',
-  'streamdeck.exe': 'Stream Deck',
-  'voiceattack.exe': 'VoiceAttack',
-  'simhubwpf.exe': 'SimHub',
-  'sr-clientradio.exe': 'DCS-SRS',
-  'opentrack.exe': 'opentrack',
-  'joystick_gremlin.exe': 'Joystick Gremlin',
-  'fanatecapp.exe': 'Fanatec App',
+/**
+ * Programs a sim rig commonly runs, by lower-case image name. General knowledge, used to
+ * give the capture screen friendly names and an order:
+ * - `helper`: a sim helper; listed first and kept by default.
+ * - otherwise a program people often want in a setup (voice chat, streaming, overlays);
+ *   listed with the helpers but not kept unless the user ticks it.
+ * Everything else that is running is behind "Show all running apps".
+ * `close`: closed again at Stand down (helpers that are only useful while flying or racing).
+ */
+export interface KnownApp {
+  name: string;
+  icon: string;
+  helper?: boolean;
+  kind?: GameKind;
+  close?: boolean;
+  /** What it is for, in a few words. */
+  purpose?: string;
+}
+
+const app = (
+  name: string,
+  icon: string,
+  purpose?: string,
+  more: Pick<KnownApp, 'helper' | 'kind' | 'close'> = {}
+): KnownApp => ({ name, icon, ...(purpose ? { purpose } : {}), ...more });
+/** A sim helper that Stand down closes again. */
+const helper = (name: string, icon: string, purpose: string, kind?: GameKind): KnownApp =>
+  app(name, icon, purpose, { helper: true, close: true, ...(kind ? { kind } : {}) });
+
+export const KNOWN_APPS: Record<string, KnownApp> = {
+  // head tracking
+  'trackir5.exe': helper('TrackIR', 'mdi-head-sync-outline', 'head tracking'),
+  'opentrack.exe': helper('opentrack', 'mdi-head-sync-outline', 'head tracking'),
+  'tobii.gamehub.exe': app('Tobii Game Hub', 'mdi-eye-outline', 'eye and head tracking', {
+    helper: true,
+  }),
+  // flight
+  'simapppro.exe': helper(
+    'SimAppPro',
+    'mdi-airplane-cog',
+    'WinWing panels, displays and backlight',
+    'flight'
+  ),
+  'sr-clientradio.exe': helper('DCS-SRS', 'mdi-radio-handheld', 'radio for multiplayer', 'flight'),
+  'target.exe': helper('Thrustmaster TARGET', 'mdi-controller', 'controller scripts', 'flight'),
+  'helios control center.exe': helper(
+    'Helios',
+    'mdi-monitor-dashboard',
+    'cockpit panels on a touch screen',
+    'flight'
+  ),
+  'simshaker for aviators.exe': helper(
+    'SimShaker for Aviators',
+    'mdi-vibrate',
+    'seat shakers',
+    'flight'
+  ),
+  'tacview.exe': app('Tacview', 'mdi-chart-timeline-variant', 'flight recording and debrief', {
+    kind: 'flight',
+  }),
+  // racing
+  'simhubwpf.exe': helper(
+    'SimHub',
+    'mdi-view-dashboard-outline',
+    'dashboards, shakers and LEDs',
+    'racing'
+  ),
+  'crewchiefv4.exe': helper('Crew Chief', 'mdi-account-voice', 'race engineer', 'racing'),
+  'racelabapps.exe': helper('RaceLab', 'mdi-layers-outline', 'overlays', 'racing'),
+  'ioverlay.exe': helper('iOverlay', 'mdi-layers-outline', 'overlays', 'racing'),
+  'garage61-agent.exe': app('Garage 61', 'mdi-chart-line', 'telemetry', {
+    helper: true,
+    kind: 'racing',
+  }),
+  'trading paints.exe': app('Trading Paints', 'mdi-palette-outline', 'car liveries', {
+    helper: true,
+    kind: 'racing',
+  }),
+  'moza pit house.exe': app('MOZA Pit House', 'mdi-steering', 'wheel settings', {
+    helper: true,
+    kind: 'racing',
+  }),
+  'simpro manager.exe': app('SimPro Manager', 'mdi-steering', 'wheel settings', {
+    helper: true,
+    kind: 'racing',
+  }),
+  'fanatecapp.exe': app('Fanatec App', 'mdi-steering', 'wheel settings', { kind: 'racing' }),
+  // on every kind of rig
+  'voiceattack.exe': helper('VoiceAttack', 'mdi-microphone-message', 'voice commands'),
+  'joystick_gremlin.exe': helper('Joystick Gremlin', 'mdi-controller', 'remaps controllers'),
+  'joytokey.exe': helper('JoyToKey', 'mdi-controller', 'maps controller buttons to keys'),
+  'streamdeck.exe': app('Stream Deck', 'mdi-view-grid-outline', 'button deck', { helper: true }),
+  'vrserver.exe': app('SteamVR', 'mdi-virtual-reality', 'VR headset'),
+  'oculusclient.exe': app('Meta Quest Link', 'mdi-virtual-reality', 'VR headset'),
+  'virtualdesktop.streamer.exe': app('Virtual Desktop Streamer', 'mdi-virtual-reality', 'VR'),
+  'discord.exe': app('Discord', 'mdi-forum-outline', 'voice chat'),
+  'ts3client_win64.exe': app('TeamSpeak', 'mdi-forum-outline', 'voice chat'),
+  'teamspeak.exe': app('TeamSpeak', 'mdi-forum-outline', 'voice chat'),
+  'mumble.exe': app('Mumble', 'mdi-forum-outline', 'voice chat'),
+  'obs64.exe': app('OBS Studio', 'mdi-record-rec', 'recording and streaming'),
+  'msiafterburner.exe': app('MSI Afterburner', 'mdi-speedometer', 'frame rate and temperatures'),
 };
 
 /** Never offered: RigReady itself and the shells it might be started from. */
@@ -263,28 +353,39 @@ export function createProcessCapture(games: GameRegistry): CaptureDefinition {
       const processes = await ctx.ports.processes.list();
       if (!processes.ok) return processes;
       const variables = await allPathVariables(ctx, games);
-      const byName = new Map<string, CaptureCandidate & { known: boolean }>();
+      const byName = new Map<string, CaptureCandidate & { known: boolean; helper: boolean }>();
       for (const process of processes.value) {
         // Only programs we could start again: a known path, and not part of Windows.
         if (!process.path || WINDOWS_DIR.test(process.path)) continue;
         const key = process.name.toLowerCase();
         if (byName.has(key) || NEVER.has(key)) continue;
-        const known = KNOWN_HELPERS[key];
-        const title = known ?? process.name.replace(/\.exe$/i, '');
+        const known = KNOWN_APPS[key];
+        const isHelper = known?.helper === true;
+        const title = known?.name ?? process.name.replace(/\.exe$/i, '');
         byName.set(key, {
           key: `process:${key}`,
           group: 'apps',
           title,
-          description: process.path,
-          selectedByDefault: known !== undefined,
+          description: known?.purpose ? `For ${known.purpose} · ${process.name}` : process.path,
+          selectedByDefault: isHelper,
           known: known !== undefined,
+          helper: isHelper,
           program: process.name,
           generic: true,
+          // What a rig usually runs is listed; the rest is behind "show all".
+          tier: known ? 'main' : 'more',
+          icon: known?.icon ?? 'mdi-application-outline',
+          ...(known?.kind ? { kind: known.kind } : {}),
+          ...(known?.close ? { standDownNote: 'closed at Stand down' } : {}),
           check: {
             type: PROCESS_RUNNING,
             title,
             required: true,
-            params: { name: process.name },
+            params: {
+              name: process.name,
+              // A helper that is only useful in the sim is closed again by Stand down.
+              ...(known?.close ? { stopOnStandDown: true } : {}),
+            },
             remediation: {
               type: PROCESS_LAUNCH,
               params: { exe: collapsePath(process.path, variables), args: [] },
@@ -294,8 +395,13 @@ export function createProcessCapture(games: GameRegistry): CaptureDefinition {
       }
       return ok(
         [...byName.values()]
-          .sort((a, b) => Number(b.known) - Number(a.known) || a.title.localeCompare(b.title))
-          .map(({ known: _known, ...candidate }) => candidate)
+          .sort(
+            (a, b) =>
+              Number(b.helper) - Number(a.helper) ||
+              Number(b.known) - Number(a.known) ||
+              a.title.localeCompare(b.title)
+          )
+          .map(({ known: _known, helper: _helper, ...candidate }) => candidate)
       );
     },
   };

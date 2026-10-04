@@ -6,6 +6,7 @@ import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
 import { onMachineChanged } from '../../../renderer/machine';
 import CheckRow from './CheckRow.vue';
 import SafeMarkdown from './SafeMarkdown.vue';
+import WelcomePanel from './WelcomePanel.vue';
 import { useFlyStore } from './store';
 
 const fly = useFlyStore();
@@ -278,21 +279,7 @@ onBeforeUnmount(() => {
 
     <div v-if="!fly.loaded" class="rr-empty">Loading…</div>
 
-    <div
-      v-else-if="fly.profiles.length === 0 && fly.invalid.length === 0"
-      class="rr-panel rr-empty"
-      data-testid="fly-empty"
-    >
-      <v-icon icon="mdi-airplane-takeoff" size="40" class="mb-3" />
-      <h2 class="rr-page-title">No setups yet</h2>
-      <p class="mb-5">
-        Get the rig the way you fly or race — devices plugged in, helper apps running, monitors
-        arranged — then capture it.
-      </p>
-      <v-btn color="primary" to="/configure/profiles/capture" data-testid="fly-create">
-        New setup from this rig
-      </v-btn>
-    </div>
+    <WelcomePanel v-else-if="fly.profiles.length === 0 && fly.invalid.length === 0" />
 
     <div v-else-if="!fly.activeId" class="rr-panel rr-empty" data-testid="fly-all-broken">
       <v-icon icon="mdi-file-alert-outline" size="40" class="mb-3" />

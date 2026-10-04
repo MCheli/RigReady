@@ -3,6 +3,7 @@ import { ok } from '../../core/result';
 import { flyContract } from './contract';
 import { Fly } from './core/fly';
 import { ProfileWatcher } from './core/watch';
+import { welcome } from './core/welcome';
 
 let watcher: ProfileWatcher | undefined;
 
@@ -21,6 +22,7 @@ export default defineFeatureMain({
     return [
       bind(flyContract, {
         state: () => fly.state(),
+        welcome: async () => ok(await welcome(ctx)),
         view: ({ profileId }) => fly.profileView(profileId),
         check: ({ profileId, runId, remember }) => fly.check(profileId, runId, remember),
         checkItem: ({ profileId, itemId }) => fly.checkItem(profileId, itemId),

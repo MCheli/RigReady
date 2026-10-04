@@ -8,6 +8,7 @@ import {
 } from '../../core/checks/engine';
 import { CheckGroupSchema } from '../../core/profile/schema';
 import { channel, defineContract, noInput } from '../../shared/ipc';
+import { GameKindSchema } from '../../shared/models';
 
 const ProfileRef = z.object({ profileId: z.string() });
 
@@ -107,11 +108,22 @@ export type Preferences = z.infer<typeof PreferencesSchema>;
 
 const ProgressStateSchema = z.enum(['pending', 'running', 'done', 'failed', 'skipped']);
 
+/** What RigReady found on this PC, for the first-run screen. */
+export const WelcomeSchema = z.object({
+  games: z.array(z.object({ id: z.string(), name: z.string(), kind: GameKindSchema.optional() })),
+  /** Names of the connected game controllers. */
+  controllers: z.array(z.string()),
+  monitors: z.object({ connected: z.number().int(), on: z.number().int() }),
+});
+export type Welcome = z.infer<typeof WelcomeSchema>;
+
 export const flyContract = defineContract(
   'fly',
   {
     /** What the Fly screen needs to draw itself before any check has run. */
     state: channel(noInput, FlyStateSchema),
+    /** First run: the games, controllers and monitors found on this PC. */
+    welcome: channel(noInput, WelcomeSchema),
     /** One profile's checklist skeleton, for switching without waiting for checks. */
     view: channel(ProfileRef, ProfileViewSchema),
     /**

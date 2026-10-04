@@ -88,20 +88,18 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
       const candidates: CaptureCandidate[] = [];
       const devices = await ctx.ports.devices.list();
       const base = devices.ok ? fanatecBases(devices.value)[0] : undefined;
-      // A rig set up for racing: the wheel is connected and no other game controllers
-      // (flight sticks, panels) are. Only then are racing items kept by default; with the
-      // flight gear plugged in they are offered, and the user decides.
-      const racingRig =
-        base !== undefined &&
-        devices.ok &&
-        !devices.value.some((d) => d.isGameController && !d.isHub && d.vendorId !== base.vendorId);
+      // Everything here is marked as racing gear (`kind`) or as one game's (`game`): the
+      // capture screen keeps it in a setup for a racing game, or for that game, and leaves
+      // it out of a flight setup even while the wheel is plugged in.
       if (base) {
         candidates.push({
           key: 'racing:wheel-base',
           group: 'devices',
           title: 'Wheel base in PC mode',
           description: `${base.name || 'Fanatec wheel base'} · warns when it is in compatibility (yellow) mode`,
-          selectedByDefault: racingRig,
+          selectedByDefault: true,
+          kind: 'racing',
+          icon: 'mdi-steering',
           check: {
             type: WHEEL_BASE,
             title: 'Wheel base in PC mode',
@@ -112,24 +110,28 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
       }
       for (const app of await helperApps(ctx)) {
         if (!app.exe) continue;
+        // The driver's service stays; what is only useful on track is closed by Stand down.
+        const close = app.id !== 'fanatec-service';
         candidates.push({
           key: `racing:app:${app.id}`,
           group: 'apps',
           title: app.name,
           description: `For ${app.purpose}${app.running ? ' · running now' : ' · not running now'}`,
           // Kept by default when it is running now: the rig is working, so it is part of the setup.
-          selectedByDefault: racingRig && app.running,
+          selectedByDefault: app.running,
+          kind: 'racing',
+          icon: app.id === 'fanatec-service' ? 'mdi-steering' : 'mdi-flag-checkered',
+          ...(close ? { standDownNote: 'closed at Stand down' } : {}),
           program: app.process,
           check: {
             type: 'process.running',
             title: app.name,
             required: true,
-            params: { name: app.process, stopOnStandDown: false },
+            params: { name: app.process, stopOnStandDown: close },
             remediation: { type: 'process.launch', params: { exe: app.exe, args: [] } },
           },
         });
       }
-      if (!racingRig) return ok(candidates);
       if (await installOf(ctx, 'iracing')) {
         const service = await ctx.ports.services.get('iRacingService');
         if (service.ok && service.value) {
@@ -138,8 +140,9 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
             game: 'iracing',
             group: 'apps',
             title: 'iRacing helper service',
-            description: 'For an iRacing setup: iRacing needs it to start a session',
-            selectedByDefault: false,
+            description: 'iRacing needs it to start a session',
+            selectedByDefault: true,
+            icon: 'mdi-cog-outline',
             check: {
               type: IRACING_SERVICE,
               title: 'iRacing helper service',
@@ -155,8 +158,9 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
             game: 'iracing',
             group: 'files',
             title: 'iRacing knows the wheel',
-            description: 'For an iRacing setup: warns before iRacing asks you to calibrate again',
-            selectedByDefault: false,
+            description: 'Warns before iRacing asks you to calibrate again',
+            selectedByDefault: true,
+            icon: 'mdi-steering',
             check: {
               type: IRACING_DEVICES,
               title: 'iRacing knows the wheel',

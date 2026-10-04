@@ -113,9 +113,35 @@ describe('device capture', () => {
     expect(
       result.value.find((c) => c.title === 'FANATEC Podium Wheel Base DD2')!.selectedByDefault
     ).toBe(true);
-    // The three identical USB display adapters are told apart by serial.
-    const adapters = result.value.filter((c) => c.title === 'WINWING USB 3.0 Display1');
+    // The three identical USB display adapters are told apart by serial, and say which is which.
+    const adapters = result.value.filter((c) => c.title.startsWith('WINWING USB 3.0 Display1'));
+    expect(adapters.map((c) => c.title)).toEqual([
+      'WINWING USB 3.0 Display1 (1 of 3)',
+      'WINWING USB 3.0 Display1 (2 of 3)',
+      'WINWING USB 3.0 Display1 (3 of 3)',
+    ]);
     expect(new Set(adapters.map((c) => c.check.params['serial'])).size).toBe(3);
+    expect(adapters.map((c) => c.device?.twin)).toEqual([
+      { index: 1, of: 3 },
+      { index: 2, of: 3 },
+      { index: 3, of: 3 },
+    ]);
+    // Game controllers lead the list; everything else is behind "show all".
+    const firstOther = result.value.findIndex((c) => !c.device!.gameController);
+    expect(result.value.slice(0, firstOther).every((c) => c.tier === 'main')).toBe(true);
+    expect(result.value.slice(firstOther).every((c) => c.tier === 'more')).toBe(true);
+    // Sim hardware says which family it is for, so a wheel is not kept in a flight setup.
+    expect(result.value.find((c) => c.title === 'FANATEC Podium Wheel Base DD2')!.kind).toBe(
+      'racing'
+    );
+    expect(result.value.find((c) => c.title === 'T-Pendular-Rudder')!.kind).toBe('flight');
+    expect(result.value.find((c) => c.title === 'WINWING MFD1-L')!.device).toEqual({
+      vendorId: '4098',
+      productId: 'BEE1',
+      serial: expect.any(String),
+      gameController: true,
+      identifiedBy: 'ids',
+    });
     // Every proposed check passes right now: capture describes the present.
     for (const candidate of result.value) {
       const params = deviceConnectedCheck.params.parse(candidate.check.params);
@@ -259,7 +285,9 @@ describe('device checks on the recorded rig', () => {
     if (!result.ok) throw new Error('capture');
     const candidate = result.value.find((c) => c.title === 'Rudder pedals')!;
     expect(candidate.check.params).toEqual({ vendorId: '044F', productId: 'B68F' });
-    const trackball = result.value.find((c) => c.title === 'ORBIT WIRELESS TB')!;
+    // The name the device reports stays visible beside the owner's name.
+    expect(candidate.device?.model).toBe('T-Pendular-Rudder');
+    const trackball = result.value.find((c) => c.title === 'ORBIT WIRELESS TB (1 of 2)')!;
     expect(trackball.description).toBe('047D:80A6 · identified by USB port');
   });
 

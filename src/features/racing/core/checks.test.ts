@@ -9,6 +9,8 @@ interface Candidate {
   group: string;
   title: string;
   selectedByDefault: boolean;
+  kind?: string;
+  game?: string;
   check: {
     type: string;
     params: Record<string, unknown>;
@@ -45,9 +47,18 @@ describe('racing checks, capture and overview', () => {
       /Fanatec[\\/]FanatecService[\\/]Service[\\/]FanatecService\.exe$/
     );
     expect(byKey.get('racing:app:trophi')!.selectedByDefault).toBe(true);
-    // Game-specific checks are offered, not chosen for the user.
-    expect(byKey.get('racing:iracing-service')!.selectedByDefault).toBe(false);
-    expect(byKey.get('racing:iracing-devices')!.selectedByDefault).toBe(false);
+    // What is only useful on track is closed again by Stand down; the driver's service stays.
+    expect(byKey.get('racing:app:trophi')!.check.params).toMatchObject({ stopOnStandDown: true });
+    expect(fanatec.check.params).toMatchObject({ stopOnStandDown: false });
+    // Game-specific checks belong to their game: kept in a setup for it, not shown otherwise.
+    expect(byKey.get('racing:iracing-service')).toMatchObject({
+      game: 'iracing',
+      selectedByDefault: true,
+    });
+    expect(byKey.get('racing:iracing-devices')).toMatchObject({
+      game: 'iracing',
+      selectedByDefault: true,
+    });
     expect(byKey.get('racing:wheel-settings:lmu')!.check).toMatchObject({
       type: 'racing.wheelSettings',
       required: false,
@@ -59,16 +70,21 @@ describe('racing checks, capture and overview', () => {
     ).toBe(true);
   });
 
-  it('with the flight gear connected, racing items are offered but not kept by default', async () => {
+  it("with the flight gear connected, racing items are marked as racing gear or as one game's, so a flight setup leaves them out", async () => {
     app = await wiredApp('flying-all-good');
-    const { candidates } = await app.invoke<{ candidates: Candidate[] }>('profiles:capture');
+    const { candidates, suggested } = await app.invoke<{
+      candidates: Candidate[];
+      suggested: { kind?: string; game?: string };
+    }>('profiles:capture');
     const racing = candidates.filter((c) => c.key.startsWith('racing:'));
-    expect(racing.map((c) => c.key)).toEqual([
+    expect(racing.every((c) => c.kind === 'racing' || c.game !== undefined)).toBe(true);
+    expect(racing.filter((c) => !c.game).map((c) => c.key)).toEqual([
       'racing:wheel-base',
       'racing:app:fanatec-service',
       'racing:app:trophi',
     ]);
-    expect(racing.every((c) => !c.selectedByDefault)).toBe(true);
+    // Eleven flight controllers against one wheel: the rig is set up for flying.
+    expect(suggested).toMatchObject({ kind: 'flight', game: 'dcs' });
   });
 
   it('capture offers SimHub and Crew Chief when they are installed, even when not running', async () => {

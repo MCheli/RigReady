@@ -7,7 +7,8 @@ import {
   ProfileSchema,
 } from '../../core/profile/schema';
 import { channel, defineContract, noInput } from '../../shared/ipc';
-import { LaunchTargetSchema } from '../../shared/models';
+import { GameKindSchema, LaunchTargetSchema } from '../../shared/models';
+import { TrackedItemSchema } from '../../core/trackedSchema';
 
 export const NewProfileSchema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -19,9 +20,16 @@ export const NewProfileSchema = z.object({
     .string()
     .regex(/^\d{1,10}$/)
     .optional(),
+  /** The install folder this setup uses, for a game installed more than once. */
+  gameInstall: z.string().max(400).optional(),
   /** Checks chosen from the capture; ids are assigned on creation. */
   checks: z.array(CheckItemSchema.omit({ id: true })),
   actions: ProfileActionsSchema.optional(),
+  /** Files and folders the setup backs up; ids are assigned on creation. */
+  tracked: z
+    .array(TrackedItemSchema.omit({ id: true }))
+    .max(100)
+    .optional(),
 });
 export type NewProfile = z.infer<typeof NewProfileSchema>;
 
@@ -89,6 +97,42 @@ export const DetectedGameSchema = z.object({
 });
 export type DetectedGame = z.infer<typeof DetectedGameSchema>;
 
+/** A game module and what was found of it on this PC, for the capture screen. */
+export const CaptureGameSchema = DetectedGameSchema.extend({
+  kind: GameKindSchema.optional(),
+  /** One of the game's programs is running right now. */
+  running: z.boolean(),
+});
+export type CaptureGame = z.infer<typeof CaptureGameSchema>;
+
+/** A file or folder a new setup could back up, found on this PC. */
+export const CaptureTrackedSchema = TrackedItemSchema.omit({ id: true }).extend({
+  key: z.string(),
+  /** Who suggests it: "DCS World", "Stream Deck". */
+  source: z.string(),
+  /** The aircraft or car it belongs to (the id of a candidate's variant). */
+  variant: z.string().optional(),
+  description: z.string().optional(),
+  /** Kept by default in a setup for its game. */
+  selectedByDefault: z.boolean(),
+});
+export type CaptureTracked = z.infer<typeof CaptureTrackedSchema>;
+
+export const CaptureResultSchema = z.object({
+  candidates: z.array(CaptureCandidateSchema),
+  problems: z.array(z.string()),
+  games: z.array(CaptureGameSchema),
+  tracked: z.array(CaptureTrackedSchema),
+  /** What the rig itself says the setup is for, when it says so clearly. */
+  suggested: z.object({
+    game: z.string().optional(),
+    kind: GameKindSchema.optional(),
+    /** Why that game, in words the screen shows. */
+    reason: z.string().optional(),
+  }),
+});
+export type CaptureResult = z.infer<typeof CaptureResultSchema>;
+
 export const PickersSchema = z.object({
   devices: z.array(
     z.object({
@@ -127,10 +171,7 @@ export const profilesContract = defineContract('profiles', {
   /** A deep copy under a new id, named "<name> (copy)". */
   clone: channel(ProfileId, ProfileSchema),
   /** Looks at the machine as it is now and proposes checks. */
-  capture: channel(
-    noInput,
-    z.object({ candidates: z.array(CaptureCandidateSchema), problems: z.array(z.string()) })
-  ),
+  capture: channel(noInput, CaptureResultSchema),
   create: channel(NewProfileSchema, ProfileSchema),
   /** Every registered check and fix type, with the schema its params form is built from. */
   types: channel(

@@ -4,6 +4,7 @@ import type { MainContext } from '../../../core/feature';
 import { allPathVariables, collapsePath, variableOf } from '../../../core/pathVariables';
 import type { CheckItem, Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
+import { trackedExtension } from './capture';
 import type {
   CheckTypeInfo,
   DetectedGame,
@@ -131,7 +132,8 @@ export async function createProfile(ctx: Ctx, input: NewProfile): Promise<Result
     createdAt: now,
     updatedAt: now,
     checks,
-    extensions: {},
+    extensions: trackedExtension(input.tracked ?? []),
+    ...(input.gameInstall ? { gameInstall: input.gameInstall } : {}),
     ...(input.description ? { description: input.description } : {}),
     ...(input.game ? { game: input.game } : {}),
     ...(input.gameName ? { gameName: input.gameName } : {}),

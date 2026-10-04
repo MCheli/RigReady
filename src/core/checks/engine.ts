@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CheckGroupSchema, type CheckGroup, type CheckItem, type Profile } from '../profile/schema';
+import { GameKindSchema } from '../../shared/models';
 import type {
   CaptureCandidate,
   CheckContext,
@@ -631,6 +632,38 @@ export const CaptureCandidateSchema = z.object({
   program: z.string().optional(),
   generic: z.boolean().optional(),
   covers: z.array(z.string()).optional(),
+  kind: GameKindSchema.optional(),
+  variant: z
+    .object({ id: z.string(), name: z.string(), setupName: z.string().optional() })
+    .optional(),
+  tier: z.enum(['main', 'more']).optional(),
+  icon: z.string().optional(),
+  device: z
+    .object({
+      vendorId: z.string(),
+      productId: z.string(),
+      serial: z.string().optional(),
+      gameController: z.boolean(),
+      identifiedBy: z.enum(['ids', 'serial', 'port']),
+      twin: z.object({ index: z.number().int(), of: z.number().int() }).optional(),
+      model: z.string().optional(),
+    })
+    .optional(),
+  monitors: z
+    .array(
+      z.object({
+        label: z.string(),
+        enabled: z.boolean(),
+        primary: z.boolean(),
+        x: z.number(),
+        y: z.number(),
+        width: z.number(),
+        height: z.number(),
+        rotation: z.number(),
+      })
+    )
+    .optional(),
+  standDownNote: z.string().optional(),
 });
 
 const processName = (candidate: CaptureCandidate): string | undefined =>
@@ -649,6 +682,9 @@ export function dedupeCandidates(candidates: CaptureCandidate[]): CaptureCandida
   const keepSelected = (kept: CaptureCandidate, gone: CaptureCandidate): void => {
     dropped.add(gone);
     if (gone.selectedByDefault) kept.selectedByDefault = true;
+    // How the program is shown (icon, family) is known to whoever knows the program.
+    if (kept.icon === undefined && gone.icon !== undefined) kept.icon = gone.icon;
+    if (kept.kind === undefined && gone.kind !== undefined) kept.kind = gone.kind;
   };
   for (const candidate of candidates) {
     for (const covered of candidate.covers ?? []) {

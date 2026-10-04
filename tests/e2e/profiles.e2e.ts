@@ -255,9 +255,13 @@ test('setups: choosing a detected game fills in what Launch starts, and the setu
 }) => {
   const { page, shot, home } = await rig.launch('flying-fresh', 'profile-capture-game');
   await page.getByTestId('fly-create').click();
+  // The rig says what it is for; choosing another game and back brings DCS's target again.
+  await expect(page.getByTestId('capture-game-dcs')).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('capture-game-none').click();
+  await expect(page.getByTestId('capture-launch-exe').locator('input')).toHaveValue('');
+  await expect(page.getByTestId('capture-launch-text')).toContainText('no Launch button');
+  await page.getByTestId('capture-game-dcs').click();
   await page.getByTestId('capture-name').locator('input').fill('DCS UH-1H');
-  await page.getByTestId('capture-game').click();
-  await menuItem(page, 'DCS World').click();
   // The Steam edition is started through Steam, so Steam can update and authorise it first.
   await expect(page.getByTestId('capture-launch-exe').locator('input')).toHaveValue(
     path.join(home, 'Program Files (x86)', 'Steam', 'steam.exe')
@@ -308,4 +312,61 @@ test('setups: a device is added by pressing a button on it', async ({ rig }) => 
   await expect(found.getByTestId('edit-params-vendorId').locator('input')).toHaveValue('3344');
   await expect(found.getByTestId('edit-params-productId').locator('input')).toHaveValue('C259');
   await shot('found');
+});
+
+test('setups: name, notes, install, and what Launch starts are edited; Cancel leaves the file as it was; a rename keeps the id', async ({
+  rig,
+}) => {
+  const { page, shot, dataRoot, home } = await rig.launch(
+    'dcs-two-installs',
+    'profile-edit-basics'
+  );
+  const file = path.join(dataRoot, 'profiles', 'dcs-open-beta.yaml');
+  const before = await fs.readFile(file);
+
+  const change = async (): Promise<void> => {
+    await openEditor(page, 'DCS open beta');
+    await page.getByTestId('edit-name').locator('input').fill('Hornet on the beta');
+    await page.getByTestId('edit-description').locator('textarea').first().fill('Squadron night');
+    await page.getByTestId('edit-game-install').click();
+    await menuItem(page, /DCS World OpenBeta \(standalone\)/).click();
+    await page.getByTestId('edit-launch-program').click();
+    await page.getByTestId('edit-use-detected').click();
+    await page.getByTestId('edit-launch-args-add').click();
+    await page.getByTestId('edit-launch-args').locator('input').first().fill('--force_enable_VR');
+  };
+
+  // Cancel: asked first, and the file on disk is byte for byte what it was.
+  await change();
+  await expect(page.getByTestId('edit-launch-exe').locator('input')).toHaveValue(
+    path.join(home, 'Games', 'DCS World OpenBeta', 'bin', 'DCS.exe')
+  );
+  await shot('edited');
+  await page.getByTestId('edit-cancel').click();
+  await expect(page.getByTestId('discard-warning')).toBeVisible();
+  await page.getByTestId('discard-confirm').click();
+  await expect(page.getByTestId('profiles-page')).toBeVisible();
+  expect((await fs.readFile(file)).equals(before)).toBe(true);
+  await expect(
+    page.locator('[data-testid="profile-row"][data-name="DCS open beta"]')
+  ).toBeVisible();
+
+  // Save: the same file under the same id, with everything that was changed.
+  await change();
+  await page.getByTestId('edit-save').click();
+  await expect(
+    page.locator('[data-testid="profile-row"][data-name="Hornet on the beta"]')
+  ).toBeVisible();
+  const saved = await fs.readFile(file, 'utf8');
+  expect(saved).toContain('id: dcs-open-beta');
+  expect(saved).toContain('name: Hornet on the beta');
+  expect(saved).toContain('description: Squadron night');
+  expect(saved).toMatch(/gameInstall: .*DCS World OpenBeta/);
+  expect(saved).toMatch(/exe: .*DCS World OpenBeta.*DCS\.exe/);
+  expect(saved).toContain('--force_enable_VR');
+  expect(await fs.readdir(path.join(dataRoot, 'profiles'))).toEqual(['dcs-open-beta.yaml']);
+  // The Fly screen still opens on it: "last used" goes by id, not by name.
+  await page.getByTestId('mode-fly').click();
+  await expect(page.getByTestId('profile-switcher')).toContainText('Hornet on the beta');
+  await shot('renamed-on-fly');
 });

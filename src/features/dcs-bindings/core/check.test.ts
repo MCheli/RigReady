@@ -162,6 +162,9 @@ describe('the Fly check for bindings', () => {
       {
         key: `dcs-bindings:${HORNET}`,
         game: 'dcs',
+        // The aircraft the setup is for: the capture screen asks which when there are several.
+        variant: { id: HORNET, name: 'F/A-18C', setupName: 'DCS F/A-18C' },
+        icon: 'mdi-controller',
         group: 'files',
         title: 'DCS bindings match devices (F/A-18C)',
         description:

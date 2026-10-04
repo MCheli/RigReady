@@ -267,10 +267,13 @@ export function createFileCapture(games: GameRegistry): CaptureDefinition {
           const stored = collapsePath(file.path, variables);
           candidates.push({
             key: `file:${module.id}:${stored}`,
+            game: module.id,
             group: 'files',
             title: file.label,
             description: `${module.name} · ${stored}`,
-            selectedByDefault: false,
+            // Only ever offered in a setup for this game, where it is kept.
+            selectedByDefault: true,
+            icon: stat.value.isDirectory ? 'mdi-folder-outline' : 'mdi-file-outline',
             check: {
               type: FILE_EXISTS,
               title: file.label,

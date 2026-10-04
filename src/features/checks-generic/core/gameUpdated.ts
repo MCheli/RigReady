@@ -119,10 +119,13 @@ export function createGameUpdatedCapture(games: GameRegistry): CaptureDefinition
         const title = `${module.name} not updated since verified`;
         candidates.push({
           key: `game:${module.id}`,
+          game: module.id,
           group: 'other',
           title,
           description: `Warns after an update (now ${found.value.version.version})`,
-          selectedByDefault: false,
+          // Only ever offered in a setup for this game, where it is kept.
+          selectedByDefault: true,
+          icon: 'mdi-update',
           check: {
             type: GAME_UPDATED,
             title,

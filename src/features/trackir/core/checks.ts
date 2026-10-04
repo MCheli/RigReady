@@ -122,11 +122,13 @@ export const trackIrCapture: CaptureDefinition = {
         // Replaces the generic "TrackIR5.exe is running" candidate, and is kept when that was.
         selectedByDefault: false,
         covers: ['TrackIR5.exe'],
+        standDownNote: 'closed at Stand down',
         check: {
           type: TIR_RUNNING,
           title: 'TrackIR software',
           required: true,
-          params: { closeOnStandDown: false },
+          // Only useful in the sim: Stand down closes it again.
+          params: { closeOnStandDown: true },
           remediation: { type: TIR_START, params: {} },
         },
       });
@@ -138,6 +140,8 @@ export const trackIrCapture: CaptureDefinition = {
         title: 'TrackIR camera',
         description: `${status.value.devices[0]!.name}, on any USB port`,
         selectedByDefault: false,
+        tier: 'more',
+        icon: 'mdi-head-sync-outline',
         check: { type: TIR_CONNECTED, title: 'TrackIR camera', required: true, params: {} },
       });
     }

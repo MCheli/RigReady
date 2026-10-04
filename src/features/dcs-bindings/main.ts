@@ -56,6 +56,27 @@ export default defineFeatureMain({
       createOpenMigration(() => ctx.emit(dcsBindingsContract, 'openMigration', {}))
     );
     ctx.checks.registerCapture(createBindingsCapture(service));
+    // One aircraft's bindings on their own: what a setup for that aircraft backs up.
+    ctx.backupSources.register({
+      id: 'dcs-bindings',
+      label: 'DCS bindings by aircraft',
+      async suggest() {
+        const overview = await bindings.overview();
+        if (!overview.ok) return overview;
+        return ok(
+          overview.value.aircraft
+            .filter((a) => a.userFiles > 0)
+            .map((a) => ({
+              label: `DCS bindings: ${a.name}`,
+              path: `{DCS_USER}/Config/Input/${a.id}`,
+              kind: 'folder' as const,
+              game: 'dcs',
+              variant: a.id,
+              description: `Your controller bindings for the ${a.name} only`,
+            }))
+        );
+      },
+    });
 
     return [
       bind(dcsBindingsContract, {

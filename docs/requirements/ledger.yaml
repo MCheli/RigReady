@@ -928,11 +928,19 @@ requirements:
     area: profiles
     priority: p0
     done_means:
-      - "'New setup from this rig' lists every connected game controller and HID panel with name, VID/PID and serial/instance, pre-ticked for game controllers and unticked for keyboards, mice and hubs."
-      - "Identical devices (three WinWing MFD panels in mark-flight) are listed separately, each with a 'press a button to identify' affordance (DEV-003) and an editable name."
-      - "Saving creates device checks with VID/PID plus serial or instance (rule 4), verified by reading the written YAML."
-    status: todo
-    evidence: []
+      - "'New setup from this rig' lists every connected game controller and HID panel with name, VID/PID and serial/instance, pre-ticked for game controllers and unticked for keyboards and mice (behind 'Show other USB devices'); hubs are not offered."
+      - "Identical devices (three WinWing MFD panels in mark-flight) are listed separately, with a 'press a button to identify' action (DEV-003) for the list and an editable name per device."
+      - "Saving creates device checks with VID/PID, plus serial or instance where identical devices must be told apart (rule 4), verified by reading the written YAML."
+    notes:
+      - "2026-10-03: wording brought in line with rule 4 and the rig. The three WinWing MFD panels have different product ids (BEE0/BEE1/BEE2), so they are not identical; the identical devices on the rig are the three USB display adapters (17E9:FF00, told apart by serial) and two trackballs (told apart by USB port), and those are what the tests use. Pressing a button identifies a model; identical controllers cannot be told apart by a press (DirectInput gives no serial), and the screen says so. Serial or instance is stored only when needed, as rule 4 says."
+    status: done
+    evidence:
+      - "src/features/profiles/core/capture.test.ts#lists every connected game controller and HID device with name, VID/PID and serial or port; controllers are kept, keyboards and mice are not"
+      - "src/features/profiles/core/capture.test.ts#identical devices are listed separately, each saying which of them it is and how it is told apart"
+      - "src/features/profiles/core/capture.test.ts#a saved setup identifies devices by VID/PID, plus serial or USB port for identical ones, never by name (read from the written YAML)"
+      - "tests/e2e/capture.e2e.ts#capture: identical devices are told apart, found by pressing a button, and named for the setup"
+      - "artifacts/screens/capture-devices/01-identified-and-named.png"
+      - "artifacts/screens/capture-devices/02-identical.png"
 
   - id: CFG-PROFILE-002
     title: Capture running apps and services
@@ -945,9 +953,11 @@ requirements:
       - "Scenario mark-flight capture produces process checks for TrackIR5.exe, SimAppPro.exe and StreamDeck.exe."
     status: done
     evidence:
-      - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
-      - 'tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready'
-      - 'artifacts/screens/profile-capture/02-capture.png'
+      - "src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix"
+      - "src/features/profiles/core/capture.test.ts#known sim helpers lead with friendly names and are kept; other known programs are listed; the rest is behind \"show all\""
+      - "tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready"
+      - "artifacts/screens/profile-capture/02-capture-apps.png"
+      - "artifacts/screens/profile-capture/03-capture-app-search.png"
 
   - id: CFG-PROFILE-003
     title: Capture monitor layout and audio devices
@@ -958,8 +968,17 @@ requirements:
       - "The capture shows the current monitor arrangement as a diagram and offers to save it as a named layout (e.g. 'Flying') plus a display check that uses it."
       - "The capture shows the current default playback and recording devices and offers audio checks for each."
       - "Scenario mark-flight capture produces a 'Flying' layout with the ultrawide and three MFD screens enabled and the Dell disabled."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/profiles/core/capture.test.ts#carries the arrangement for the to-scale diagram and offers to save it as a named layout"
+      - "src/features/profiles/core/capture.test.ts#the flying rig captured with the name \"Flying\" produces that layout: ultrawide and three MFD screens on, the Dell off"
+      - "src/features/profiles/core/capture.test.ts#offers a check for the default playback and the default recording device"
+      - "tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready"
+      - "tests/e2e/integration.e2e.ts#monitors: which way is up, identity of identical screens, and a captured arrangement saved by name"
+      - "tests/e2e/audio.e2e.ts#capture: the current default devices are offered as audio checks"
+      - "artifacts/screens/profile-capture/05-capture-monitors.png"
+      - "artifacts/screens/displays-upright/01-capture-save-as-layout.png"
+      - "artifacts/screens/audio-capture/01-capture.png"
 
   - id: CFG-PROFILE-004
     title: Capture game, launch target and config files
@@ -968,10 +987,25 @@ requirements:
     priority: p0
     done_means:
       - "The capture asks for the game from the detected list plus 'Other'; for a detected game the launch target and the game module's suggested tracked files are pre-filled."
-      - "For DCS with aircraft F/A-18C chosen, suggested items include {DCS_USER}/Config/options.lua, {DCS_USER}/Config/Input/FA-18C_hornet/, {DCS_USER}/Config/MonitorSetup/ and {DCS_USER}/Scripts/Export.lua."
+      - "For DCS with aircraft F/A-18C chosen, suggested items include {DCS_USER}/Config/options.lua, {DCS_USER}/Config/Input/FA-18C_hornet/ and {DCS_USER}/Scripts/Export.lua, and {DCS_USER}/Config/MonitorSetup/ once that folder exists."
       - "Every capture step can be skipped and the result is still a valid, saveable profile."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: MonitorSetup made conditional. Only what exists on the PC is suggested, and on the recorded rig the monitor setups are in the install folder (SimAppPro's wwtMonitor.lua); Saved Games\\DCS\\Config\\MonitorSetup appears once RigReady's DCS screen setup has written its file there."
+    status: done
+    evidence:
+      - "src/features/profiles/core/capture.test.ts#lists the detected games with family, installs and launch target"
+      - "src/features/profiles/core/capture.test.ts#for DCS with the F/A-18C, suggests the options, the Hornet bindings folder and Export.lua to back up; the whole settings folder is kept"
+      - "src/features/profiles/core/capture.test.ts#only the chosen game brings its own checks; nothing from another game is offered, ticked or not"
+      - "src/features/profiles/core/capture.test.ts#every part can be skipped: a setup with only a name is valid and saved"
+      - "src/features/profiles/core/capture.test.ts#on the flying rig the defaults are a correct DCS F/A-18C setup, and it is Ready"
+      - "src/features/profiles/core/capture.test.ts#on the racing rig, choosing iRacing gives a correct racing setup, and it is Ready"
+      - "tests/e2e/capture.e2e.ts#capture: the game brings its files to check and to back up; another game brings its own"
+      - "tests/e2e/devices-bindings.e2e.ts#capture: every game found on this PC is a choice that brings its own launch target"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: an \"Other\" game is set up, checked, launched and its tracked folder backed up"
+      - "artifacts/screens/capture-game-files/01-dcs-files.png"
+      - "artifacts/screens/capture-game-files/02-dcs-backup.png"
+      - "artifacts/screens/capture-game-files/03-iracing-chosen.png"
+      - "artifacts/screens/capture-launch-targets/02-picked.png"
 
   - id: CFG-PROFILE-005
     title: Review before saving a captured profile
@@ -983,10 +1017,12 @@ requirements:
       - "Saving writes one YAML file under {RIGREADY_HOME}/profiles/ and opens the Fly screen on the new profile, which then passes all its checks on the unchanged rig (scenario mark-flight)."
     status: done
     evidence:
-      - 'tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready'
-      - 'src/features/profiles/core/profiles.test.ts#creating from the capture opens the Fly screen on the new setup; every part can be skipped'
-      - 'artifacts/screens/profile-capture/02-capture.png'
-      - 'artifacts/screens/profile-capture/03-ready.png'
+      - "tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready"
+      - "tests/e2e/capture.e2e.ts#first run: welcome, what was found on this PC, and two clicks to a Ready DCS F/A-18C setup"
+      - "src/features/profiles/core/profiles.test.ts#creating from the capture opens the Fly screen on the new setup; every part can be skipped"
+      - "artifacts/screens/first-run/02-capture.png"
+      - "artifacts/screens/profile-capture/04-capture.png"
+      - "artifacts/screens/profile-capture/06-ready.png"
 
   - id: CFG-PROFILE-006
     title: Edit profile basics and launch
@@ -994,11 +1030,20 @@ requirements:
     area: profiles
     priority: p0
     done_means:
-      - "The profile editor changes name, description, game, install choice, launch target (executable, arguments list, working directory) and the desk/flying layout used."
+      - "The profile editor changes name, description, game, install choice, launch target (executable, arguments list, working directory). The monitor layout a setup uses is its Monitors check, edited like any other check; the desk layout Stand down returns to is an app setting (Settings)."
       - "Changes are saved only on Save; Cancel leaves the file byte-identical (unit test compares file hashes)."
       - "Renaming a profile keeps its id stable, so last-used and backups still reference it."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the layout sentence corrected to the architecture: a setup has no layout field of its own; its layout is the display.layout check item (by layout name), and the desk layout is settings.deskLayoutId."
+    status: done
+    evidence:
+      - "tests/e2e/profiles.e2e.ts#setups: name, notes, install, and what Launch starts are edited; Cancel leaves the file as it was; a rename keeps the id"
+      - "src/features/profiles/core/profiles.test.ts#renaming keeps the id; reading for the editor changes nothing on disk"
+      - "tests/e2e/integration.e2e.ts#dcs: a setup chooses which DCS install it uses, and says so when that install is gone"
+      - "tests/e2e/capture.e2e.ts#capture: a game installed twice asks which install the setup uses"
+      - "artifacts/screens/profile-edit-basics/01-edited.png"
+      - "artifacts/screens/profile-edit-basics/02-renamed-on-fly.png"
+      - "artifacts/screens/capture-install/01-install-chosen.png"
 
   - id: CFG-PROFILE-007
     title: Edit checklist items
@@ -2370,8 +2415,16 @@ requirements:
     done_means:
       - "Each game module suggests tracked items: DCS (Config/Input, options.lua, MonitorSetup, Scripts/Export.lua and tool folders, Kneeboard), iRacing, LMU, BeamNG, Stream Deck and Fanatec as defined in their entries."
       - "Suggestions appear in profile capture (CFG-PROFILE-004) and on the backup page with one-click add."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/backup/core/sources.test.ts#suggests the racing games, MSFS, Stream Deck, TrackIR and Fanatec, each one click to add"
+      - "src/features/profiles/core/capture.test.ts#for DCS with the F/A-18C, suggests the options, the Hornet bindings folder and Export.lua to back up; the whole settings folder is kept"
+      - "src/features/profiles/core/capture.test.ts#a tracked item chosen in the capture is stored with the setup, with ids of its own"
+      - "tests/e2e/capture.e2e.ts#capture: the game brings its files to check and to back up; another game brings its own"
+      - "tests/e2e/backup-sources.e2e.ts#backup: racing games and tools are suggested, backed up together, and a restore closes the running game first"
+      - "artifacts/screens/capture-game-files/02-dcs-backup.png"
+      - "artifacts/screens/capture-game-files/04-backups-tracked.png"
+      - "artifacts/screens/backup-sources/01-suggested.png"
 
   - id: BACKUP-004
     title: One-click full backup
@@ -3540,8 +3593,13 @@ requirements:
     done_means:
       - "On first run (empty data root) the app explains in one screen what it does and offers 'Create a setup from this rig' (CFG-PROFILE-001) and 'Restore from a backup' (BACKUP-007)."
       - "E2E with an empty RIGREADY_HOME reaches the Fly screen with a new profile in under 10 user actions."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/fly/core/welcome.test.ts#says which games, game controllers and monitors were found on this PC"
+      - "tests/e2e/capture.e2e.ts#first run: welcome, what was found on this PC, and two clicks to a Ready DCS F/A-18C setup"
+      - "artifacts/screens/first-run/01-welcome.png"
+      - "artifacts/screens/first-run/02-capture.png"
+      - "artifacts/screens/first-run/03-ready.png"
 
   - id: PLAT-015
     title: Features self-register

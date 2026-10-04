@@ -98,7 +98,12 @@ const gameItems = computed(() => [
 ]);
 const detectedLaunch = computed(() => {
   const game = games.value.find((g) => g.id === draft.value?.game);
-  return game?.installs.find((i) => i.launch)?.launch;
+  // The install the setup names, when it names one: its program, not the first found.
+  const chosen = draft.value?.gameInstall?.toLowerCase();
+  const install = chosen
+    ? game?.installs.find((i) => i.installDir.toLowerCase() === chosen)
+    : undefined;
+  return (install ?? game?.installs.find((i) => i.launch))?.launch;
 });
 
 /** The installs of the setup's game, for choosing one when there are several. */

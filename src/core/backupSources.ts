@@ -30,6 +30,8 @@ export interface BackupSuggestion {
   exclude?: string[];
   /** Game module id, when it belongs to a game. */
   game?: string;
+  /** The aircraft or car of that game it belongs to, when it is about one (its id). */
+  variant?: string;
   /** One line on what it holds. */
   description?: string;
 }

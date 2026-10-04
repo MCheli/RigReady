@@ -1,7 +1,7 @@
-import { captureCandidates } from '../../core/checks/engine';
 import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { profilesContract } from './contract';
+import { captureRig } from './core/capture';
 import { waitForPress } from './core/identify';
 import {
   browse,
@@ -46,7 +46,7 @@ export default defineFeatureMain({
           return set.ok ? ok({ used: true }) : set;
         },
         clone: ({ id }) => cloneProfile(ctx, id),
-        capture: async () => ok(await captureCandidates(ctx.checks, ctx)),
+        capture: async () => ok(await captureRig(ctx)),
         create: (input) => createProfile(ctx, input),
         types: async () => ok(describeTypes(ctx)),
         pickers: () => pickers(ctx),

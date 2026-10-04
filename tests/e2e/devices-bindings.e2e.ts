@@ -384,26 +384,32 @@ test('settings: the device notification choice is on the Settings page and is th
   await shot('devices-page');
 });
 
-test('capture: the program to launch can be picked from the games found on this PC, before a game is chosen', async ({
+test('capture: every game found on this PC is a choice that brings its own launch target', async ({
   rig,
 }) => {
   const { page, shot, home } = await rig.launch('flying-fresh', 'capture-launch-targets');
   await page.getByTestId('fly-create').click();
-  const targets = page.getByTestId('capture-launch-targets');
-  await expect(targets.getByTestId('capture-launch-target').first()).toBeVisible();
-  const dcs = targets.locator('[data-testid="capture-launch-target"][data-game="DCS World"]');
-  await expect(dcs).toBeVisible();
-  await targets.scrollIntoViewIfNeeded();
+  const games = page.getByTestId('capture-game');
+  await expect(games.getByRole('radio')).toHaveCount(10);
+  await expect(page.getByTestId('capture-game-dcs')).toContainText('Steam');
+  await expect(page.getByTestId('capture-game-iracing')).toContainText('Installed');
   await shot('pick-list');
-  await dcs.click();
+  await page.getByTestId('capture-game-iracing').click();
+  await expect(page.getByTestId('capture-launch-exe').locator('input')).toHaveValue(
+    path.join(home, 'Program Files (x86)', 'iRacing', 'ui', 'iRacingUI.exe')
+  );
+  await expect(page.getByTestId('capture-launch-text')).toContainText(
+    'starts iRacing, with iRacingUI.exe'
+  );
+  await page.getByTestId('capture-game-dcs').click();
   await expect(page.getByTestId('capture-launch-exe').locator('input')).toHaveValue(
     path.join(home, 'Program Files (x86)', 'Steam', 'steam.exe')
   );
   await expect(page.getByTestId('capture-launch-args').locator('input')).toHaveValue(
     '-applaunch 223750'
   );
-  // Only what Launch starts was filled in: no game was chosen for the setup.
-  await expect(page.getByTestId('capture-game')).toContainText('No particular game');
-  await expect(targets).toHaveCount(0);
+  await expect(page.getByTestId('capture-launch-text')).toContainText(
+    'starts DCS World, through Steam'
+  );
   await shot('picked');
 });
