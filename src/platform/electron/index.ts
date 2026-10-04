@@ -1,4 +1,13 @@
-import { app, BrowserWindow, clipboard, dialog, Notification, safeStorage, screen } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  Notification,
+  safeStorage,
+  screen,
+  shell,
+} from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
@@ -16,9 +25,12 @@ import type {
   ScreenArea,
   ScreenLabel,
   Secrets,
+  ShortcutLink,
+  Shortcuts,
 } from '../../core/ports';
 import { loginEntryEnabled, RUN_KEY, STARTUP_APPROVED_KEY } from '../../core/loginItem';
 import { err, ok, type Result } from '../../core/result';
+import { joinWindowsArgs, splitWindowsArgs } from '../../core/windowsArgs';
 import { WindowsRegistry } from '../windows/registry';
 
 /** The ports that need Electron: secret storage, file pickers, HTML rendering, notifications, login item. */
@@ -310,6 +322,73 @@ export class ElectronLoginItem implements LoginItem {
       return ok(undefined);
     } catch (e) {
       return err('login.write', 'Could not change the Start with Windows setting.', String(e));
+    }
+  }
+}
+
+/** The id Windows groups RigReady's windows, shortcuts and Jump List under. */
+export const APP_USER_MODEL_ID = 'io.rigready.app';
+
+/**
+ * Windows shortcuts through the shell's own reader and writer. A link is made in a file of
+ * its own under <data root>/tmp and handed back as bytes: where it ends up is FileStore's
+ * business (a backup first, a journal entry, Undo).
+ */
+export class ElectronShortcuts implements Shortcuts {
+  private counter = 0;
+
+  constructor(private readonly dataRoot: string) {}
+
+  self(): { exe: string; args: string[] } {
+    // In a development run the program is electron.exe, which needs to be told the app.
+    return { exe: process.execPath, args: app.isPackaged ? [] : [app.getAppPath()] };
+  }
+
+  async build(link: ShortcutLink): Promise<Result<Uint8Array>> {
+    const dir = path.join(this.dataRoot, 'tmp');
+    const file = path.join(dir, `shortcut-${process.pid}-${++this.counter}.lnk`);
+    try {
+      await fs.mkdir(dir, { recursive: true });
+      const made = shell.writeShortcutLink(file, 'create', {
+        target: link.target,
+        // One text, as a shortcut stores it; Windows' own rules give the values back.
+        args: joinWindowsArgs(link.args),
+        appUserModelId: APP_USER_MODEL_ID,
+        ...(link.description ? { description: link.description } : {}),
+        ...(link.icon ? { icon: link.icon, iconIndex: 0 } : {}),
+        ...(link.cwd ? { cwd: link.cwd } : {}),
+      });
+      if (!made) return err('shortcut.build', 'Windows could not make the shortcut.');
+      return ok(new Uint8Array(await fs.readFile(file)));
+    } catch (e) {
+      return err('shortcut.build', 'Windows could not make the shortcut.', String(e));
+    } finally {
+      await fs.rm(file, { force: true });
+    }
+  }
+
+  async read(file: string): Promise<Result<ShortcutLink | undefined>> {
+    try {
+      await fs.access(file);
+    } catch {
+      // No such file: there is no shortcut, which is an answer and not a failure.
+      return ok(undefined);
+    }
+    try {
+      const details = shell.readShortcutLink(file);
+      return ok({
+        target: details.target,
+        args: splitWindowsArgs(details.args ?? ''),
+        ...(details.description ? { description: details.description } : {}),
+        ...(details.icon ? { icon: details.icon } : {}),
+        ...(details.cwd ? { cwd: details.cwd } : {}),
+      });
+    } catch (e) {
+      return err(
+        'shortcut.read',
+        `${path.basename(file)} is not a shortcut Windows can read.`,
+        String(e)
+      );
     }
   }
 }

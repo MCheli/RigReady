@@ -4153,6 +4153,42 @@ requirements:
       - "tests/unit/rigCommand.test.ts#is refused while the tray or the window is already working, and only brings the window forward"
       - "artifacts/screens/one-click-second-start/01-made-ready-from-a-second-start.png"
 
+  - id: WOW-WIN-003
+    title: A desktop shortcut per setup
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "The setup editor has a 'Desktop shortcut' panel: 'Create desktop shortcut' writes \"<setup name> - RigReady.lnk\" on the Desktop (characters a file name cannot hold become dashes: 'DCS F/A-18C' is 'DCS F-A-18C - RigReady.lnk') that starts this RigReady with --fly=<setup id>; a setup that launches nothing gets --make-ready."
+      - "The panel shows whether the shortcut is there and still right: on the desktop; out of date (the setup was renamed, it starts another copy of RigReady, or it asks for the wrong thing); the name taken by a file that is not this setup's; not there. It can be updated and removed."
+      - "Every change is shown first (the file and where it goes) and written through FileStore: one journaled action with a reason, a copy of whatever was replaced, Undo on the Safety page. A file that merely has the name is never removed."
+      - "Success is reported only after the link was read back and starts this RigReady with this setup: under sabotage (the file written and put back, a link to another program handed back) the answer is an error."
+      - "Started with its own arguments, the shortcut flies the setup (E2E: a second start with the arguments of the link that was made runs the fix and launches)."
+      - "Through a Shortcuts port: Electron's shell.writeShortcutLink / readShortcutLink in the app, a recording fake in scenario runs. Arguments are a list of values, turned into the one text a shortcut stores by Windows' own quoting rules (unit tests, including a real program started with that text)."
+    notes:
+      - "2026-10-04: decisions. (1) The shortcut names the setup by id, which a rename keeps, so an old shortcut keeps working; the panel then offers to give it the new name. (2) The link is made by Windows in a file of its own under the data folder and put on the desktop through FileStore: copying a .lnk keeps what it says (measured with Electron on this PC), and this way the desktop file is backed up, journaled and undoable like every other change. (3) The Desktop folder comes from KnownFolders (Windows is asked, so a Desktop kept in OneDrive is found); a run with a redirected profile stays under its own home and can never reach the real desktop (unit test). (4) While the setup's name or its launch choice has unsaved changes the panel asks to save first: the shortcut is made from the saved setup."
+    status: done
+    evidence:
+      - "src/features/profiles/core/shortcut.test.ts#is the setup name with what a file name cannot hold replaced"
+      - "src/features/profiles/core/shortcut.test.ts#is shown first, written through FileStore, and read back before it is called made"
+      - "src/features/profiles/core/shortcut.test.ts#is removed through FileStore, shown first, and can be put back from the journal"
+      - "src/features/profiles/core/shortcut.test.ts#never says it is made when the file is not there afterwards"
+      - "src/features/profiles/core/shortcut.test.ts#never says it is made when what was written starts something else"
+      - "src/features/profiles/core/shortcut.test.ts#follows a renamed setup: the old shortcut is found, and updating replaces it"
+      - "src/features/profiles/core/shortcut.test.ts#leaves a file that merely has the name alone until the user replaces it, with a copy kept"
+      - "src/features/profiles/core/shortcut.test.ts#says so when the shortcut starts another copy of RigReady or asks for the wrong thing"
+      - "src/features/profiles/core/shortcut.test.ts#a setup that launches nothing gets a shortcut that only makes the rig ready"
+      - "src/features/profiles/core/shortcut.test.ts#other shortcuts and files on the desktop are not touched or mistaken for ours"
+      - "src/core/windowsArgs.test.ts#reads back exactly the values that were written, whatever is in them"
+      - "src/core/windowsArgs.test.ts#a real program started with the written text gets the same values"
+      - "tests/unit/writeAudit.test.ts#Setups: putting a shortcut on the desktop, replacing one under an earlier name, and removing it"
+      - "tests/unit/knownFolders.test.ts#with USERPROFILE, APPDATA and LOCALAPPDATA in temp folders every user folder is under them"
+      - "tests/e2e/one-click.e2e.ts#one click: a desktop shortcut is made in the setup editor, flies when it is started, and is removed again"
+      - "artifacts/screens/one-click-shortcut/01-not-on-the-desktop-yet.png"
+      - "artifacts/screens/one-click-shortcut/02-shown-first.png"
+      - "artifacts/screens/one-click-shortcut/03-on-the-desktop.png"
+      - "artifacts/screens/one-click-shortcut/04-on-the-safety-page.png"
+
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY
   # ---------------------------------------------------------------------------

@@ -21,6 +21,7 @@ import type {
   Shell,
   ShellOptions,
   ShellResult,
+  Shortcuts,
   UpdateFeed,
 } from '../../core/ports';
 import { LOG_KEEP_OLDER, LOG_MAX_BYTES } from '../../core/logger';
@@ -415,7 +416,13 @@ export const headlessPorts: {
   overlays: Overlays;
   window: AppWindow;
   updates: UpdateFeed;
+  shortcuts: Shortcuts;
 } = {
+  shortcuts: {
+    self: () => ({ exe: process.execPath, args: [] }),
+    build: async () => unavailable('Making a shortcut'),
+    read: async () => unavailable('Reading a shortcut'),
+  },
   updates: {
     currentVersion: () => '0.0.0',
     unavailable: () => 'Updates are only available inside the RigReady app.',

@@ -20,6 +20,7 @@ import { isWithin } from '../core/paths';
 import type { FileStore, Ports } from '../core/ports';
 import { err, ok } from '../core/result';
 import {
+  APP_USER_MODEL_ID,
   ElectronAppWindow,
   ElectronClipboard,
   ElectronDialogs,
@@ -28,6 +29,7 @@ import {
   ElectronOverlays,
   ElectronRender,
   ElectronSecrets,
+  ElectronShortcuts,
   HIDDEN_ARG,
 } from '../platform/electron';
 import { ElectronUpdateFeed } from '../platform/electron/updater';
@@ -125,6 +127,7 @@ async function createPlatform(): Promise<Platform> {
           overlays: new ElectronOverlays(),
           window: appWindow,
           updates: new ElectronUpdateFeed(logging.log.child('updater')),
+          shortcuts: new ElectronShortcuts(dataRoot),
         }),
       }),
     };
@@ -287,7 +290,7 @@ async function start(): Promise<void> {
     return;
   }
 
-  app.setAppUserModelId('io.rigready.app');
+  app.setAppUserModelId(APP_USER_MODEL_ID);
   const { ports, scenario, fake } = await createPlatform();
   const dataRoot = ports.folders.dataRoot();
   logging.open(dataRoot, [ports.folders.home()]);
@@ -609,6 +612,8 @@ async function start(): Promise<void> {
       run: commands.state(),
       started: fake.processes.started.map((target) => target.exe),
     });
+    // Every shortcut the fake machine was asked to make.
+    hooks['__rigreadyShortcuts'] = () => fake.shortcuts.built;
     hooks['__rigreadyTrayClick'] = async (id: string) => {
       if (id.startsWith('profile:')) await switchFromTray(id.slice('profile:'.length));
       else await trayActions[id]?.();

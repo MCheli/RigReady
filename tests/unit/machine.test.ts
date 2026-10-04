@@ -818,9 +818,13 @@ describe('scripted ports', () => {
       await headlessPorts.notifications.notify({ title: 'a', body: 'b' }),
       await headlessPorts.loginItem.isEnabled(),
       await headlessPorts.loginItem.setEnabled(true),
+      await headlessPorts.shortcuts.build({ target: 'C:\\x.exe', args: [] }),
+      await headlessPorts.shortcuts.read('C:\\x.lnk'),
     ]) {
       expect(result).toMatchObject({ ok: false, error: { code: 'port.unavailable' } });
     }
+    // What starts this program is known without the app.
+    expect(headlessPorts.shortcuts.self()).toEqual({ exe: process.execPath, args: [] });
   });
 });
 

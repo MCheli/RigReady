@@ -1,5 +1,6 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
-import type { ElectronApplication, Page } from '@playwright/test';
+import type { ElectronApplication, Locator, Page } from '@playwright/test';
 import { axeViolations, colourOnlyStatus } from './a11y';
 import { expect, test } from './harness';
 
@@ -33,6 +34,17 @@ const windowVisible = (app: ElectronApplication): Promise<boolean> =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false);
 
 const strip = (page: Page) => page.getByTestId('command-strip');
+/**
+ * A result that needs nothing more goes away by itself after some seconds, but not while
+ * the pointer rests on it: the test keeps it there to read it, as a user would.
+ */
+const read = (page: Page): Promise<void> => strip(page).hover();
+/** Scrolls an element to the middle of the window, clear of the page's sticky footer. */
+const centre = (target: Locator): Promise<void> =>
+  target.evaluate((el) => (el as unknown as ScrollTarget).scrollIntoView({ block: 'center' }));
+interface ScrollTarget {
+  scrollIntoView(options: { block: string }): void;
+}
 
 test('one click: --fly on a cold start arranges the monitors, starts TrackIR and launches', async ({
   rig,
@@ -51,6 +63,7 @@ test('one click: --fly on a cold start arranges the monitors, starts TrackIR and
 
   await page.getByTestId('keep-layout-keep').click();
   await expect(strip(page)).toHaveAttribute('data-outcome', 'launched');
+  await read(page);
   await expect(page.getByTestId('command-headline')).toHaveText('Launched DCS.exe');
   await expect(strip(page)).toHaveAttribute('data-tone', 'ok');
   // TrackIR before the game, and nothing else.
@@ -135,6 +148,7 @@ test('one click: "Do not launch" while Make ready is still working keeps the gam
     },
   ]);
   await expect(strip(page)).toHaveAttribute('data-outcome', 'cancelled');
+  await read(page);
   await expect(page.getByTestId('command-headline')).toHaveText(
     'DCS F/A-18C evening is ready. Not launched, as you asked'
   );
@@ -162,8 +176,9 @@ test('one click: a second start hands over to the running RigReady, which comes 
   expect(await run.secondStart(['--setup', 'DCS F/A-18C'])).toBe(0);
   await expect.poll(() => windowVisible(app)).toBe(true);
   await expect(page.getByTestId('profile-switcher')).toContainText('DCS F/A-18C');
-  await expect(strip(page)).toHaveAttribute('data-outcome', 'selected');
-  await expect(page.getByTestId('command-headline')).toHaveText('Showing DCS F/A-18C');
+  await expect
+    .poll(async () => (await command(app)).run)
+    .toMatchObject({ action: 'select', outcome: 'selected', headline: 'Showing DCS F/A-18C' });
   expect(await started(app)).toEqual([]);
 
   // --make-ready from a Configure page: fixes, no launch, and a way back to the Fly screen.
@@ -172,6 +187,7 @@ test('one click: a second start hands over to the running RigReady, which comes 
   await expect(page.getByTestId('profiles-page')).toBeVisible();
   expect(await run.secondStart(['--make-ready=dcs-f-a-18c'])).toBe(0);
   await expect(strip(page)).toHaveAttribute('data-outcome', 'ready');
+  await read(page);
   await expect(page.getByTestId('command-headline')).toHaveText('DCS F/A-18C is ready');
   expect(await started(app)).toEqual(['TrackIR5.exe']);
   await shot('made-ready-from-a-second-start');
@@ -188,4 +204,99 @@ test('one click: a second start hands over to the running RigReady, which comes 
     outcome: 'launched',
     headline: 'Launched DCS.exe',
   });
+});
+
+interface BuiltLink {
+  target: string;
+  args: string[];
+  description?: string;
+}
+const shortcuts = (app: ElectronApplication): Promise<BuiltLink[]> =>
+  app.evaluate(() =>
+    (globalThis as unknown as { __rigreadyShortcuts(): BuiltLink[] }).__rigreadyShortcuts()
+  );
+
+test('one click: a desktop shortcut is made in the setup editor, flies when it is started, and is removed again', async ({
+  rig,
+}) => {
+  const run = await rig.launch('flying-all-good', 'one-click-shortcut');
+  const { page, app, shot, home, mutate } = run;
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  const file = path.join(home, 'Desktop', 'DCS F-A-18C - RigReady.lnk');
+
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('profile-edit').first().click();
+  const panel = page.getByTestId('edit-shortcut');
+  await centre(panel);
+  await expect(panel).toHaveAttribute('data-state', 'none');
+  await expect(page.getByTestId('shortcut-state')).toHaveText('Not on the desktop yet.');
+  await expect(page.getByTestId('shortcut-file')).toHaveText(file);
+  await shot('not-on-the-desktop-yet');
+
+  // Shown first: the one file that will be written, and where.
+  await page.getByTestId('shortcut-create').click();
+  await expect(page.getByTestId('shortcut-confirm')).toBeVisible();
+  await expect(page.getByTestId('change-preview-summary')).toHaveText('1 file created');
+  await expect(page.getByTestId('change-preview-file')).toContainText('DCS F-A-18C - RigReady.lnk');
+  expect(existsSync(file)).toBe(false);
+  await shot('shown-first');
+  expect(await axeViolations(page)).toEqual([]);
+
+  await page.getByTestId('shortcut-go').click();
+  await expect(panel).toHaveAttribute('data-state', 'current');
+  await expect(page.getByTestId('shortcut-state')).toHaveText(
+    'On the desktop: DCS F-A-18C - RigReady.lnk'
+  );
+  expect(existsSync(file)).toBe(true);
+  await centre(panel);
+  await shot('on-the-desktop');
+  expect(await axeViolations(page)).toEqual([]);
+  expect(await colourOnlyStatus(page)).toEqual([]);
+
+  // What the fake machine was asked to make: this RigReady, asked to fly this setup by id.
+  const [link] = await shortcuts(app);
+  expect(link).toMatchObject({
+    args: ['--fly=dcs-f-a-18c'],
+    description: 'Make the rig ready for DCS F/A-18C and launch it',
+  });
+  expect(path.win32.basename(link!.target)).toBe('RigReady.exe');
+
+  // A name that is not saved yet cannot go on a shortcut: the panel says so.
+  await page.getByTestId('edit-name').locator('input').fill('Hornet evening');
+  await expect(page.getByTestId('shortcut-blocked')).toHaveText(
+    'Save the setup first: the shortcut takes its name from the setup.'
+  );
+  await expect(page.getByTestId('shortcut-remove')).toBeDisabled();
+  await page.getByTestId('edit-name').locator('input').fill('DCS F/A-18C');
+  await expect(page.getByTestId('shortcut-blocked')).toHaveCount(0);
+
+  // The change is on the Safety page like any other, with Undo.
+  await page.getByTestId('nav-safety').click();
+  await expect(page.getByTestId('change-group').first()).toContainText(
+    'Create a desktop shortcut for "DCS F/A-18C"'
+  );
+  await shot('on-the-safety-page');
+
+  // Double-clicking it is a second start with the shortcut's own arguments.
+  await mutate([{ op: 'stopProcess', name: 'TrackIR5.exe' }]);
+  expect(await run.secondStart(link!.args)).toBe(0);
+  await expect.poll(() => started(app)).toEqual(['TrackIR5.exe', 'DCS.exe']);
+  await expect.poll(async () => (await command(app)).run?.outcome).toBe('launched');
+  // After the launch the window got out of the way; back to the editor.
+  await expect.poll(() => windowVisible(app)).toBe(false);
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.show());
+  await expect.poll(() => windowVisible(app)).toBe(true);
+
+  // Removed again, shown first, and the file is gone.
+  await page.getByTestId('nav-profiles').click();
+  await page.getByTestId('profile-edit').first().click();
+  await expect(panel).toHaveAttribute('data-state', 'current');
+  await page.getByTestId('shortcut-remove').click();
+  await expect(page.getByTestId('change-preview-summary')).toHaveText('1 file deleted');
+  await page.getByTestId('shortcut-go').click();
+  await expect(panel).toHaveAttribute('data-state', 'none');
+  await expect(page.getByTestId('shortcut-done')).toHaveText(
+    'The shortcut was removed from the desktop.'
+  );
+  expect(existsSync(file)).toBe(false);
 });

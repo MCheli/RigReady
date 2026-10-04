@@ -15,6 +15,7 @@ import {
   prepareFix,
   updateProfile,
 } from './core/profiles';
+import { createShortcut, previewShortcut, removeShortcut, shortcutStatus } from './core/shortcut';
 
 export default defineFeatureMain({
   id: 'profiles',
@@ -56,6 +57,10 @@ export default defineFeatureMain({
         prepareFix: ({ type, params }) => prepareFix(ctx, type, params),
         openFile: ({ id }) => openProfileFile(ctx, id, 'open'),
         showFile: ({ id }) => openProfileFile(ctx, id, 'show'),
+        shortcut: ({ id }) => shortcutStatus(ctx, id),
+        shortcutPreview: ({ id, action }) => previewShortcut(ctx, id, action),
+        createShortcut: ({ id }) => createShortcut(ctx, id),
+        removeShortcut: ({ id }) => removeShortcut(ctx, id),
       }),
     ];
   },

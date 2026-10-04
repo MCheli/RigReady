@@ -10,6 +10,7 @@ import type {
   Ports,
   Render,
   Secrets,
+  Shortcuts,
   UpdateFeed,
 } from '../../core/ports';
 import { NodeHttp, NodeRawFs, NodeShell, headlessPorts, systemClock } from '../node';
@@ -34,6 +35,7 @@ export interface AppPorts {
   overlays: Overlays;
   window: AppWindow;
   updates: UpdateFeed;
+  shortcuts: Shortcuts;
 }
 
 export interface WindowsPlatformOptions {

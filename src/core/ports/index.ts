@@ -128,6 +128,8 @@ export interface KnownFolders {
   home(): string;
   documents(): string;
   savedGames(): string;
+  /** The user's Desktop folder: where a desktop shortcut goes. */
+  desktop(): string;
   appData(): string;
   localAppData(): string;
   /** C:\Program Files */
@@ -358,6 +360,40 @@ export interface PanelWindow {
 export interface LoginItem {
   isEnabled(): Promise<Result<boolean>>;
   setEnabled(enabled: boolean): Promise<Result<void>>;
+}
+
+/** What a Windows shortcut (a .lnk file) says. */
+export interface ShortcutLink {
+  /** The program it starts. */
+  target: string;
+  /** The program's arguments, one value each: never a command line. */
+  args: string[];
+  /** The words Explorer shows when the pointer rests on it. */
+  description?: string;
+  /** The file its icon comes from (a program or an .ico file). */
+  icon?: string;
+  /** The folder the program starts in. */
+  cwd?: string;
+}
+
+/**
+ * Windows shortcuts. The port makes the content of one and reads one; putting the file
+ * where it belongs is FileStore's job, like every other change outside RigReady's folder
+ * (backed up first, journaled, undone from the Safety page).
+ */
+export interface Shortcuts {
+  /**
+   * How Windows starts this copy of RigReady: the program, and the arguments that must
+   * come before any others (none in the installed app).
+   */
+  self(): { exe: string; args: string[] };
+  /** The bytes of a .lnk file for a link. Changes nothing outside RigReady's data folder. */
+  build(link: ShortcutLink): Promise<Result<Uint8Array>>;
+  /**
+   * What a .lnk file on disk says: undefined when there is no such file, an error when the
+   * file is there but is not a shortcut.
+   */
+  read(file: string): Promise<Result<ShortcutLink | undefined>>;
 }
 
 /** The update channels a user can follow. */
@@ -591,4 +627,5 @@ export interface Ports {
   overlays: Overlays;
   window: AppWindow;
   updates: UpdateFeed;
+  shortcuts: Shortcuts;
 }
