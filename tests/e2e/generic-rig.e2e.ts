@@ -265,6 +265,16 @@ const PAGES: ConfigurePage[] = [
     says: ['No game whose bindings RigReady can read was found on this PC'],
     never: ['WINWING', 'F/A-18C'],
   },
+  {
+    name: 'cheat-sheets-learn',
+    route: '/configure/cheat-sheets/learn',
+    testId: 'trainer-page',
+    says: [
+      'No game whose bindings RigReady can read was found on this PC',
+      'there is nothing to ask yet',
+    ],
+    never: ['WINWING', 'F/A-18C', 'Start a round'],
+  },
 ];
 
 /** Something still loading. */

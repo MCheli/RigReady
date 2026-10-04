@@ -1754,6 +1754,37 @@ requirements:
       - "artifacts/screens/share-picture/rig-wide.png"
       - "artifacts/screens/share-picture/rig-square.png"
 
+  - id: WOW-TOOLS-005
+    title: Learn your controls
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "Cheat sheets > Learn opens a trainer for the aircraft: it names an action in plain language (with the game's own name beside a plainer wording) and the user presses the control for it on the real device. Cards are the actions a button or hat of a connected controller does by itself; with bindings of the user's own, only those."
+      - "A press is judged at once: right, with the control lit on the picture of the device; or wrong, with what was pressed and what that does, and the right control lit. The picture has nothing written on it while the question is open. 'Show me' gives the answer away and counts as a miss. Letting go of the right control brings the next card."
+      - "A missed card comes back a few cards later in the same round; a round ends with how many were right first time and the list of missed ones with where they are, and 'Practise the missed' asks just those."
+      - "Progress is kept per aircraft under the data root (cheat-sheets/trainer.json): per action how often it was right and wrong and how many times running; right first time twice running is learned. A round asks what is known least first. A progress file that cannot be read is said and never overwritten."
+      - "It runs on live input: the first state a controller reports is where it rests (a switch that is on is not a press). A round can be limited to one device and can be stopped; a PC without a readable game says what is missing."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/trainer.test.ts#asks every action a button or hat of a connected controller does by itself"
+      - "src/features/cheat-sheets/core/trainer.test.ts#is right when any control of the action is pressed, at once, and moves on when told"
+      - "src/features/cheat-sheets/core/trainer.test.ts#is wrong at once for another control, shows what was pressed, and waits for the right one"
+      - "src/features/cheat-sheets/core/trainer.test.ts#brings a missed card back a few cards later, and right then does not count as known"
+      - "src/features/cheat-sheets/core/trainer.test.ts#asks what needs it most: never asked, then missed, then right once, then learned"
+      - "src/features/cheat-sheets/core/trainer.test.ts#calls an action learned once it was right first time twice running"
+      - "src/features/cheat-sheets/core/trainerStore.test.ts#asks what the Hornet has bound on the controllers of the rig, by the names the owner gave them"
+      - "src/features/cheat-sheets/core/trainerStore.test.ts#keeps each answer per aircraft in cheat-sheets/trainer.json and gives it back with the cards"
+      - "src/features/cheat-sheets/core/trainerStore.test.ts#does not overwrite a progress file it cannot read, and says so"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: an action is named, the control is pressed on the device, right or wrong is said at once, missed cards come back, and what is learned is kept"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a round can be stopped, and a PC without a game to read says what is missing"
+      - "artifacts/screens/cheat-sheets-trainer/02-asking.png"
+      - "artifacts/screens/cheat-sheets-trainer/03-right.png"
+      - "artifacts/screens/cheat-sheets-trainer/04-wrong.png"
+      - "artifacts/screens/cheat-sheets-trainer/06-round-over.png"
+      - "artifacts/screens/cheat-sheets-trainer/07-learned.png"
+      - "artifacts/screens/cheat-sheets-trainer/08-after-restart.png"
+
   # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files
   # ---------------------------------------------------------------------------

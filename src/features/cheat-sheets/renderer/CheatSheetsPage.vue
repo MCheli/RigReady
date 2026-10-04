@@ -281,6 +281,17 @@ onBeforeUnmount(() => {
         <v-btn
           size="small"
           variant="text"
+          prepend-icon="mdi-school-outline"
+          data-testid="sheet-learn"
+          :to="{
+            path: '/configure/cheat-sheets/learn',
+            query: { game: store.game, aircraft: store.aircraftId },
+          }"
+          >Learn</v-btn
+        >
+        <v-btn
+          size="small"
+          variant="text"
           prepend-icon="mdi-eye-outline"
           data-testid="sheet-quick"
           :disabled="!device"

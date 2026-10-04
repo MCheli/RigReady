@@ -17,6 +17,10 @@ export default defineFeature({
       path: '/configure/cheat-sheets/quick',
       component: () => import('./renderer/QuickLookPage.vue'),
     },
+    {
+      path: '/configure/cheat-sheets/learn',
+      component: () => import('./renderer/TrainerPage.vue'),
+    },
   ],
   checkTypes: [
     {

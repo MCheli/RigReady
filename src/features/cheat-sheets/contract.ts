@@ -4,6 +4,7 @@ import { channel, defineContract, noInput } from '../../shared/ipc';
 import { KneeboardOptionsSchema } from './core/kneeboardOptions';
 import { DeviceLayoutSchema } from './core/layout';
 import { SheetSchema } from './core/sheet';
+import { trainerChannels } from './trainerContract';
 
 const sheetRef = z.object({ game: z.string().min(1), aircraftId: z.string().min(1) });
 const model = z.object({
@@ -141,6 +142,8 @@ export const cheatSheetsContract = defineContract(
       sheetRef.extend({ deviceKey: z.string().optional() }),
       z.object({ opened: z.boolean() })
     ),
+    /** "Learn your controls" (trainerContract.ts). */
+    ...trainerChannels,
   },
   { input: z.object({ devices: z.array(LiveDeviceSchema) }) }
 );

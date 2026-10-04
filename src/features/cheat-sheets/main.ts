@@ -4,6 +4,7 @@ import { cheatSheetsContract } from './contract';
 import { createCapture, createKneeboardCheck, createRegenerate } from './core/check';
 import { LiveTracker, type LiveDevice } from './core/live';
 import { CheatSheets } from './core/service';
+import { trainerHandlers } from './trainerMain';
 
 /** Live input reaches the windows at most this often. */
 const FLUSH_MS = 25;
@@ -44,6 +45,7 @@ function setup(ctx: MainContext) {
 
   return [
     bind(cheatSheetsContract, {
+      ...trainerHandlers(ctx, service),
       overview: () => service.overview(),
       sheet: ({ game, aircraftId }) => service.sheet(game, aircraftId),
       setNote: ({ game, aircraftId, deviceKey, control, note }) =>
