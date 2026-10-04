@@ -1,8 +1,11 @@
 import path from 'node:path';
 import { z } from 'zod';
+import type { BackupSource } from '../../../core/backupSources';
+import type { CheckContext } from '../../../core/checks/registry';
+import { previewWrites, type PlannedWrite } from '../../../core/files/preview';
 import { err, ok, type Result } from '../../../core/result';
 import type { RegistryHive } from '../../../shared/models';
-import type { BackupGame, BindingBackup } from '../contract';
+import type { BackupGame, BindingBackup, WritePreviewView } from '../contract';
 import { BindingBackupSchema } from '../contract';
 import { locationOf, refuseWhileRunning, type RacingContext } from './context';
 
@@ -24,7 +27,7 @@ async function existing(ctx: RacingContext, sources: Source[]): Promise<Source[]
   return out;
 }
 
-export const fanatecPrefs = (ctx: RacingContext): string =>
+export const fanatecPrefs = (ctx: CheckContext): string =>
   path.join(ctx.ports.folders.appData(), 'com.example', 'Fanatec', 'shared_preferences.json');
 
 async function sources(ctx: RacingContext, game: BackupGame): Promise<Source[]> {
@@ -110,9 +113,53 @@ async function sources(ctx: RacingContext, game: BackupGame): Promise<Source[]> 
 const backupsRoot = (ctx: RacingContext, game: BackupGame): string =>
   path.join(ctx.ports.folders.dataRoot(), 'racing', 'backups', game);
 
+const FANATEC_SERVICE_KEY = 'Software\\Endor\\FanatecService';
+
+/**
+ * What the backup page offers for Fanatec: the Fanatec App's settings file, and the
+ * driver's registry settings as a record in every full backup. The record can be read
+ * back; nothing writes it to the registry (the registry port is read-only).
+ */
+export const fanatecBackupSource: BackupSource = {
+  id: 'fanatec',
+  label: 'Fanatec',
+  async suggest(ctx) {
+    return ok([
+      {
+        label: 'Fanatec App settings',
+        path: fanatecPrefs(ctx),
+        kind: 'file' as const,
+        description: "The Fanatec App's own preferences (shared_preferences.json).",
+      },
+    ]);
+  },
+  program: {
+    name: 'Fanatec App',
+    processes: ['Fanatec.exe'],
+    why: 'The Fanatec App writes its settings when it closes, which would undo the restore.',
+    restart: true,
+  },
+  async records(ctx) {
+    const values = await ctx.ports.registry.listValues('HKCU', FANATEC_SERVICE_KEY);
+    const keys = await ctx.ports.registry.listKeys('HKCU', FANATEC_SERVICE_KEY);
+    const empty =
+      Object.keys(values.ok ? values.value : {}).length === 0 &&
+      (keys.ok ? keys.value : []).length === 0;
+    if (empty) return ok([]);
+    return ok([
+      {
+        id: 'service',
+        label: 'Fanatec driver settings (registry)',
+        from: `HKEY_CURRENT_USER\\${FANATEC_SERVICE_KEY}`,
+        data: await exportRegistry(ctx, 'HKCU', FANATEC_SERVICE_KEY),
+      },
+    ]);
+  },
+};
+
 /** Every value below a registry key, as data (the registry port is read-only: shown, never restored). */
 async function exportRegistry(
-  ctx: RacingContext,
+  ctx: CheckContext,
   hive: RegistryHive,
   key: string
 ): Promise<Record<string, unknown>> {
@@ -177,7 +224,7 @@ export async function backupNow(
     });
   }
   if (game === 'fanatec') {
-    const registry = await exportRegistry(ctx, 'HKCU', 'Software\\Endor\\FanatecService');
+    const registry = await exportRegistry(ctx, 'HKCU', FANATEC_SERVICE_KEY);
     const text = JSON.stringify(registry, null, 2) + '\n';
     const name = `${String(stored.length + 1).padStart(3, '0')}-FanatecService-registry.json`;
     const written = await ctx.ports.files.write(path.join(dir, name), text, {
@@ -222,6 +269,35 @@ const GAME_NAMES: Record<BackupGame, string> = {
 };
 
 export const RestoreOptionsSchema = z.object({ closeApp: z.boolean().default(false) });
+
+/** What restoring a backup would do to each file on disk now. Nothing is written. */
+export async function previewRestoreBackup(
+  ctx: RacingContext,
+  game: BackupGame,
+  id: string
+): Promise<Result<WritePreviewView>> {
+  const backup = (await listBackups(ctx, game)).find((b) => b.id === id);
+  if (!backup) return err('racing.backup', 'That backup no longer exists.');
+  const dir = path.join(backupsRoot(ctx, game), id);
+  const restorable = backup.files.filter((f) => f.restorable);
+  const planned: PlannedWrite[] = [];
+  for (const file of restorable) {
+    const bytes = await ctx.ports.files.readBytes(path.join(dir, file.stored));
+    if (!bytes.ok) return bytes;
+    planned.push({ path: file.path, content: bytes.value });
+  }
+  const preview = await previewWrites(ctx.ports.files, planned);
+  if (!preview.ok) return preview;
+  return ok({
+    summary: preview.value.summary,
+    files: preview.value.entries.map((entry, index) => ({
+      path: entry.path,
+      label: restorable[index]!.label,
+      change: entry.change,
+      detail: entry.summary,
+    })),
+  });
+}
 
 /**
  * Puts the files of a backup back. Refused while the game that owns them runs; for the

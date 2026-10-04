@@ -42,6 +42,8 @@ export const BackupViewSchema = z.object({
       sourceName: z.string(),
     })
   ),
+  /** Settings kept as data (registry values): readable, never restored. */
+  records: z.array(z.object({ label: z.string(), from: z.string() })).default([]),
   profiles: z.array(z.string()),
   imported: z.boolean(),
   damaged: z.string().optional(),
@@ -157,6 +159,26 @@ const PreviewSchema = z.object({
     })
   ),
   notInBackup: z.array(PathReason),
+  /** Games and tools running now that hold files of this backup: close them before restoring. */
+  running: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      why: z.string(),
+      processes: z.array(z.string()),
+      restart: z.boolean(),
+      items: z.array(z.string()),
+    })
+  ),
+  records: z.array(
+    z.object({
+      label: z.string(),
+      from: z.string(),
+      source: z.string(),
+      text: z.string(),
+      truncated: z.boolean(),
+    })
+  ),
 });
 export type RestorePreviewView = z.infer<typeof PreviewSchema>;
 
@@ -171,6 +193,7 @@ const ReportSchema = z.object({
   groupId: z.string().optional(),
   safetyBackup: z.string().optional(),
   deviceIds: z.object({ files: z.array(z.string()), message: z.string() }).optional(),
+  closed: z.array(z.object({ name: z.string(), restarted: z.boolean().optional() })).default([]),
 });
 export type RestoreReportView = z.infer<typeof ReportSchema>;
 
@@ -254,6 +277,8 @@ export const backupContract = defineContract(
       z.object({
         id: z.string(),
         choices: z.record(z.string(), z.enum(['overwrite', 'keepBoth'])),
+        /** Ask the games and tools that hold the files to close first (never by force). */
+        closePrograms: z.boolean().default(false),
       }),
       ReportSchema
     ),

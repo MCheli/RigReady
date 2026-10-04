@@ -1,0 +1,14 @@
+schemaVersion: 1
+id: backup-game-updated
+name: DCS after an update
+game: dcs
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+checks:
+  - { id: c1, type: device.connected, title: WINWING Orion Joystick Base 2 + JGRIP-F16, required: true, params: { vendorId: '4098', productId: BEA8 } }
+  - id: g1
+    type: game.updated
+    title: DCS not updated since verified
+    required: false
+    params: { game: dcs, verifiedVersion: Steam build 25000000 }
+    remediation: { type: backup.gameFiles, params: { game: dcs } }

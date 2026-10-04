@@ -291,6 +291,23 @@ export const BindingBackupSchema = z.object({
 export type BindingBackup = z.infer<typeof BindingBackupSchema>;
 
 const Message = z.object({ message: z.string() });
+/** What a restore or copy will do to each file, shown before anything is written. */
+export const WritePreviewSchema = z.object({
+  /** "2 files modified, 1 file unchanged" */
+  summary: z.string(),
+  files: z.array(
+    z.object({
+      path: z.string(),
+      /** "Bindings (controls.cfg)", or the file name. */
+      label: z.string(),
+      change: z.enum(['created', 'modified', 'unchanged', 'renamed', 'deleted']),
+      /** "3 lines added, 1 removed", "30 KB to 31 KB", "Identical: left as it is". */
+      detail: z.string(),
+    })
+  ),
+});
+export type WritePreviewView = z.infer<typeof WritePreviewSchema>;
+
 const GameRef = z.object({ game: BackupGameSchema });
 const BackupRef = z.object({ game: BackupGameSchema, id: z.string().regex(/^[\w-]+$/) });
 
@@ -305,6 +322,11 @@ export const racingContract = defineContract('racing', {
   lmu: channel(noInput, LmuViewSchema),
   beamng: channel(noInput, BeamngViewSchema),
   beamngCopyOlder: channel(z.object({ version: z.string().regex(/^[\d.]+$/) }), Message),
+  /** Which binding files that copy would create and replace. Reads only. */
+  beamngCopyOlderPreview: channel(
+    z.object({ version: z.string().regex(/^[\d.]+$/) }),
+    WritePreviewSchema
+  ),
   beamngCopyToController: channel(
     z.object({
       file: z.string().regex(/^[\w ./-]+\.diff$/),
@@ -318,5 +340,7 @@ export const racingContract = defineContract('racing', {
   backups: channel(GameRef, z.array(BindingBackupSchema)),
   backup: channel(GameRef, BindingBackupSchema),
   restore: channel(BackupRef.extend({ closeApp: z.boolean().default(false) }), Message),
+  /** What restoring that backup would change, file by file. Reads only. */
+  restorePreview: channel(BackupRef, WritePreviewSchema),
   deleteBackup: channel(BackupRef, z.object({ deleted: z.boolean() })),
 });

@@ -671,8 +671,17 @@ requirements:
       - "For a detected game the check reads the installed version (DCS: autoupdate.cfg version; Steam: appmanifest buildid) and compares it to the version stored when the user last pressed 'Mark verified' on this profile."
       - "When the version changed, the item is a warning 'DCS updated 2.9.x -> 2.9.y since you last verified' with a fix 'Back up bindings now' (BACKUP-004) and 'Mark verified'."
       - "It is optional by default and never makes the rig 'Not ready'."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/checks-generic/core/checks.test.ts#warns after a Steam update, never makes the rig Not ready, and Mark verified clears it'
+      - 'src/features/games/dcs/module.test.ts#reads a standalone version from autoupdate.cfg'
+      - 'src/features/games/dcs/module.test.ts#reports the Steam build and a queued update'
+      - 'src/features/backup/core/gameBackup.test.ts#warns that DCS was updated, offers the backup and Mark verified, and never makes the rig Not ready'
+      - 'src/features/backup/core/gameBackup.test.ts#makes one backup of everything the game keeps, without the user tracking anything first'
+      - 'src/features/backup/core/gameBackup.test.ts#capture proposes the game-updated check with the backup as its fix'
+      - 'tests/e2e/backup-sources.e2e.ts#backup: after a game update, Back up now saves the files of the game before the version is marked verified'
+      - 'artifacts/screens/backup-game-updated/01-updated-warning.png'
+      - 'artifacts/screens/backup-game-updated/02-backed-up.png'
 
   - id: CHECK-014
     title: HidHide hiding a required device
@@ -2540,8 +2549,14 @@ requirements:
     done_means:
       - "Backup and restore of the iRacing tracked items work through BACKUP-* with a fixture user folder."
       - "Restore is refused while iRacingSim64DX11.exe is running, explaining iRacing writes these files on exit."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/backup/core/sources.test.ts#a full backup holds the added iRacing, Le Mans Ultimate, BeamNG, Stream Deck, TrackIR and Fanatec files'
+      - 'src/features/backup/core/sources.test.ts#iRacing: refused while the simulator runs, saying why; the UI alone does not block; restores byte for byte'
+      - 'src/features/racing/core/backups.test.ts#backs up and restores the iRacing bindings byte for byte, refusing while the simulator runs'
+      - 'tests/e2e/backup-sources.e2e.ts#backup: racing games and tools are suggested, backed up together, and a restore closes the running game first'
+      - 'artifacts/screens/backup-sources/04-restore-waits-for-iracing.png'
+      - 'artifacts/screens/backup-sources/06-restored.png'
 
   - id: RACE-IRACING-004
     title: iRacing devices and calibration view
@@ -2601,8 +2616,16 @@ requirements:
     done_means:
       - "Suggested tracked items: UserData/player/*.json (Settings.JSON, 'direct input.json' with its space, keyboard.json, current controller file), Config_DX11*.ini; excluded: UserData/Log."
       - "Backup and restore work through BACKUP-* and restore is refused while LMU is running."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/games/core/games.test.ts#finds Le Mans Ultimate in a second Steam library with its UserData'
+      - 'src/features/backup/core/sources.test.ts#suggests the racing games, MSFS, Stream Deck, TrackIR and Fanatec, each one click to add'
+      - 'src/features/backup/core/sources.test.ts#a full backup holds the added iRacing, Le Mans Ultimate, BeamNG, Stream Deck, TrackIR and Fanatec files'
+      - 'src/features/backup/core/sources.test.ts#Le Mans Ultimate: asks the game to close when told to, and leaves it closed'
+      - 'src/features/racing/core/backups.test.ts#refuses to restore Le Mans Ultimate while it runs, because it rewrites its files'
+      - 'tests/e2e/backup-sources.e2e.ts#backup: racing games and tools are suggested, backed up together, and a restore closes the running game first'
+      - 'artifacts/screens/backup-sources/01-suggested.png'
+      - 'artifacts/screens/backup-sources/02-tracked.png'
 
   - id: RACE-LMU-003
     title: LMU binding view
@@ -2750,8 +2773,14 @@ requirements:
     done_means:
       - "Fanatec tracked items are included in full backup and can be restored via the restore wizard, with the Fanatec software closed (the restore offers to close and restart it)."
       - "Fixture test with sample Fanatec settings files round-trips through backup and restore."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/backup/core/sources.test.ts#Fanatec: round-trips the App settings, closing the Fanatec App first and starting it again'
+      - 'src/features/backup/core/sources.test.ts#keeps the Fanatec driver settings from the registry as a record that is shown and never restored'
+      - 'src/features/racing/core/backups.test.ts#backs up the Fanatec App settings and the service registry as a record; restoring closes and restarts the app'
+      - 'tests/e2e/backup-sources.e2e.ts#backup: racing games and tools are suggested, backed up together, and a restore closes the running game first'
+      - 'artifacts/screens/backup-sources/03-backed-up.png'
+      - 'artifacts/screens/backup-sources/05-registry-record.png'
 
   - id: RACE-FANATEC-004
     title: Per-game recommended vs current wheel settings
@@ -2870,8 +2899,17 @@ requirements:
     done_means:
       - "'Back up Stream Deck' copies the app's profile folder (ProfilesV2 or current equivalent) and the plugin list (with plugin folders optional) from {APPDATA}/Elgato/StreamDeck into a RigReady backup with a manifest of profile names."
       - "Backup works while the Stream Deck app is running (read-only copy), and is included in the full backup."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/stream-deck/core/backups.test.ts#copies every profile and the plugin list into the data folder while the app keeps running'
+      - 'src/features/stream-deck/core/backups.test.ts#can include the plugin folders, in a separate archive'
+      - 'src/features/backup/core/sources.test.ts#suggests the racing games, MSFS, Stream Deck, TrackIR and Fanatec, each one click to add'
+      - 'src/features/backup/core/sources.test.ts#a full backup holds the added iRacing, Le Mans Ultimate, BeamNG, Stream Deck, TrackIR and Fanatec files'
+      - 'tests/e2e/stream-deck.e2e.ts#stream deck: back up while the app runs, then rename, export and delete backups'
+      - 'tests/e2e/backup-sources.e2e.ts#backup: racing games and tools are suggested, backed up together, and a restore closes the running game first'
+      - 'artifacts/screens/stream-deck-backups/03-two-backups.png'
+      - 'artifacts/screens/backup-sources/02-tracked.png'
+      - 'artifacts/screens/backup-sources/03-backed-up.png'
 
   - id: SDECK-003
     title: Restore Stream Deck backups
@@ -3031,8 +3069,13 @@ requirements:
     priority: p2
     done_means:
       - "The full backup includes TrackIR's Settings.xml, ProfileMap.dat and Profiles/*.xml, taken from trackIrTrackedFiles() in src/features/trackir/core/trackir.ts, and restores them through FileStore."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'src/features/trackir/core/trackir.test.ts#lists the files a full backup should keep'
+      - 'src/features/backup/core/sources.test.ts#a full backup holds the added iRacing, Le Mans Ultimate, BeamNG, Stream Deck, TrackIR and Fanatec files'
+      - 'src/features/backup/core/sources.test.ts#TrackIR: restores Settings.xml, ProfileMap.dat and the profiles through the change journal'
+      - 'tests/e2e/backup-sources.e2e.ts#backup: racing games and tools are suggested, backed up together, and a restore closes the running game first'
+      - 'artifacts/screens/backup-sources/02-tracked.png'
 
   # ---------------------------------------------------------------------------
   # SIMAPPPRO REPLACEMENT

@@ -7,6 +7,7 @@ import { resolveTrackedItem, TrackedItemSchema, trackedFileTarget } from '../../
 import { BlobStore } from './blobs';
 import { compareFiles, type Comparison } from './compare';
 import { fingerprintStore } from './fingerprints';
+import { runningHolders, runningText } from './programs';
 import { itemsOf, pathVariables, type Ctx } from './store';
 
 const SnapshotSchema = z.object({
@@ -154,6 +155,20 @@ export async function restoreSnapshot(
   );
   if (!resolved.absolute)
     return err('snapshot.unresolved', resolved.problem ?? 'The item cannot be found on this PC.');
+  const holding = await runningHolders(ctx, [
+    {
+      label: snapshot.value.item.label,
+      target: resolved.absolute,
+      ...(snapshot.value.item.game ? { game: snapshot.value.item.game } : {}),
+    },
+  ]);
+  if (!holding.ok) return holding;
+  if (holding.value.length > 0) {
+    return err(
+      'restore.running',
+      `${runningText(holding.value)} Close it first. Nothing was put back.`
+    );
+  }
   const blobs = blobsOf(ctx);
   const reason = `Put back snapshot "${snapshot.value.name}" of ${snapshot.value.item.label}`;
   const group = ctx.ports.files.beginGroup(reason);

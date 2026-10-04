@@ -19,8 +19,6 @@ import type { LaunchTarget } from '../../../shared/models';
 export interface GameModuleExtras {
   /** Offer "Choose folder…" when the game is not found; the folder must contain this file. */
   manualFolder?: { exe: string; label: string };
-  /** Image names that mean the game is running (any of them). */
-  processes?: string[];
   /** Plain-language facts shown on the game's page (what RigReady can and cannot read). */
   notes?: string[];
   /** Short product family, shown as a chip: "Racing", "Flight". */

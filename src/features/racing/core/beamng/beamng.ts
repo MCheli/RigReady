@@ -1,8 +1,9 @@
 import path from 'node:path';
+import { previewWrites, type PlannedWrite } from '../../../../core/files/preview';
 import { err, ok, type Result } from '../../../../core/result';
 import { productGuidFor } from '../../../../core/directInput';
 import type { InputDevice } from '../../../../shared/models';
-import type { BeamngMapView, BeamngView } from '../../contract';
+import type { BeamngMapView, BeamngView, WritePreviewView } from '../../contract';
 import {
   installOf,
   isRunning,
@@ -324,6 +325,41 @@ export async function beamngView(ctx: RacingContext): Promise<BeamngView> {
     });
   }
   return view;
+}
+
+/** Which binding files copying an older user folder's bindings would create and replace. Reads only. */
+export async function previewCopyOlderBindings(
+  ctx: RacingContext,
+  version: string
+): Promise<Result<WritePreviewView>> {
+  const target = await inputmapsOf(ctx);
+  if (!target) return err('beamng.copy', 'The current BeamNG.drive user folder was not found.');
+  const source = await locationOf(ctx, 'beamng', `legacy-${version}`);
+  if (!source) return err('beamng.copy', `There is no user folder of version ${version}.`);
+  const tree = await ctx.ports.files.listTree(path.join(source, 'settings', 'inputmaps'), {
+    include: ['*.diff'],
+  });
+  if (!tree.ok) return tree;
+  const planned: PlannedWrite[] = [];
+  for (const entry of tree.value) {
+    const bytes = await ctx.ports.files.readBytes(entry.path);
+    if (!bytes.ok) return bytes;
+    planned.push({
+      path: path.join(target, ...entry.relativePath.split('/')),
+      content: bytes.value,
+    });
+  }
+  const preview = await previewWrites(ctx.ports.files, planned);
+  if (!preview.ok) return preview;
+  return ok({
+    summary: preview.value.summary,
+    files: preview.value.entries.map((entry, index) => ({
+      path: entry.path,
+      label: tree.value[index]!.relativePath,
+      change: entry.change,
+      detail: entry.summary,
+    })),
+  });
 }
 
 /** Copies the binding files of an older user folder into the current one ("restore 0.31 bindings into 0.32"). */

@@ -125,6 +125,10 @@ const short = (v: string): string => v.replace(/(\.0)+$/, '');
 const beamng: GameModule = {
   id: 'beamng',
   name: 'BeamNG.drive',
+  processes: [EXE],
+  closeBeforeRestore: {
+    why: 'BeamNG.drive saves its bindings and settings while it runs and when it exits.',
+  },
 
   async detect(ctx) {
     const install = await findInstall(ctx);
@@ -152,6 +156,13 @@ const beamng: GameModule = {
     if (!folder.current) return ok([]);
     const settings = path.join(folder.current, 'settings');
     const suggestions: TrackedFileSuggestion[] = [
+      {
+        label: 'BeamNG.drive settings and bindings',
+        path: settings,
+        kind: 'folder',
+        description:
+          'The whole settings folder: bindings and force feedback per controller, graphics, audio, gameplay and the UI layout.',
+      },
       {
         label: 'Bindings and force feedback (inputmaps, including per-vehicle)',
         path: path.join(settings, 'inputmaps'),
@@ -199,7 +210,6 @@ const beamng: GameModule = {
 export const extras: GameModuleExtras = {
   kind: 'racing',
   manualFolder: { exe: EXE, label: 'the BeamNG.drive folder (it contains BeamNG.drive.exe)' },
-  processes: [EXE],
   notes: [
     'Bindings are stored per controller model (vendor and product id), so moving the wheel to another USB port does not break them.',
   ],

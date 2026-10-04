@@ -21,6 +21,16 @@ import {
   type ManifestItem,
   type OpenedArchive,
 } from './archive';
+import {
+  closeHolders,
+  reopenHolders,
+  runningHolders,
+  runningText,
+  type ClosedProgram,
+  type Reopen,
+  type RestoreTarget,
+  type RunningProgram,
+} from './programs';
 import { sameItem } from './suggestions';
 import { globalStore, pathVariables, type Ctx, type MachineIdentity } from './store';
 
@@ -70,7 +80,50 @@ export interface RestorePreview {
   own: RestoreOwnView[];
   /** Left out when the backup was made: unreadable or credential files. */
   notInBackup: { path: string; reason: string }[];
+  /**
+   * Games and tools running now that would overwrite restored files when they exit.
+   * They have to be closed first; RigReady can ask them to.
+   */
+  running: RunningProgram[];
+  /** Settings kept as data (registry values). Shown for reading; nothing restores them. */
+  records: RecordView[];
 }
+
+export interface RecordView {
+  label: string;
+  from: string;
+  source: string;
+  /** The stored values as text, cut off when very long. */
+  text: string;
+  truncated: boolean;
+}
+
+const RECORD_TEXT_LIMIT = 200_000;
+
+function recordViews(opened: OpenedArchive): RecordView[] {
+  return opened.manifest.records.map((record) => {
+    const text = new TextDecoder().decode(opened.data.get(`records/${record.path}`)!);
+    return {
+      label: record.label,
+      from: record.from,
+      source: record.source,
+      text: text.slice(0, RECORD_TEXT_LIMIT),
+      truncated: text.length > RECORD_TEXT_LIMIT,
+    };
+  });
+}
+
+const targetsOf = (
+  planned: Planned[],
+  wanted: (file: RestoreFileView) => boolean
+): RestoreTarget[] =>
+  planned
+    .filter((p) => p.view.restorable && p.view.target && p.view.files.some(wanted))
+    .map((p) => ({
+      label: p.view.label,
+      target: p.view.target!,
+      ...(p.view.game ? { game: p.view.game } : {}),
+    }));
 
 export interface ReportEntry {
   ref: string;
@@ -91,6 +144,8 @@ export interface RestoreReport {
   safetyBackup?: string;
   /** Set when restored binding files name controllers this PC does not have. */
   deviceIds?: { files: string[]; message: string };
+  /** Programs RigReady closed for this restore, and whether the tools among them run again. */
+  closed: ClosedProgram[];
 }
 
 const LayoutsFileSchema = z.object({ layouts: z.array(NamedLayoutSchema).default([]) });
@@ -288,7 +343,13 @@ export async function previewRestore(
   if (!opened.ok) return opened;
   const { manifest } = opened.value;
   const planned = await planItems(ctx, manifest);
+  const running = await runningHolders(
+    ctx,
+    targetsOf(planned, (f) => f.status !== 'same')
+  );
   return ok({
+    running: running.ok ? running.value : [],
+    records: recordViews(opened.value),
     backup: view.value,
     otherMachine:
       manifest.machine.toLowerCase() !== identity.machine.toLowerCase() ||
@@ -341,7 +402,7 @@ export async function applyRestore(
   ctx: Ctx,
   id: string,
   choices: Record<string, RestoreAction>,
-  options: { identity: MachineIdentity; appVersion: string }
+  options: { identity: MachineIdentity; appVersion: string; closePrograms?: boolean }
 ): Promise<Result<RestoreReport>> {
   const file = backupFile(ctx, id);
   if (!file.ok) return file;
@@ -358,7 +419,28 @@ export async function applyRestore(
     keptBoth: [],
     skipped: [],
     failed: [],
+    closed: [],
   };
+
+  // 0. Nothing is written while a game or tool that owns the files would write over them.
+  const holding = await runningHolders(
+    ctx,
+    targetsOf(planned, (f) => choices[f.ref] !== undefined && f.status !== 'same')
+  );
+  if (!holding.ok) return holding;
+  let reopen: Reopen[] = [];
+  if (holding.value.length > 0) {
+    if (!options.closePrograms) {
+      return err(
+        'restore.running',
+        `${runningText(holding.value)} Close ${holding.value.length === 1 ? 'it' : 'them'} first, or let RigReady close ${holding.value.length === 1 ? 'it' : 'them'}. Nothing was restored.`
+      );
+    }
+    const closed = await closeHolders(ctx, holding.value);
+    if (!closed.ok) return closed;
+    reopen = closed.value;
+    report.closed = holding.value.filter((p) => !p.restart).map((p) => ({ name: p.name }));
+  }
 
   // 1. Save what will be replaced.
   const safetyItems: ManifestItem[] = [];
@@ -408,6 +490,7 @@ export async function applyRestore(
         scope: { kind: 'before-restore', label: `Before restoring ${name}`, profileIds: [] },
         items: safetyItems,
         rigready: safetyOwn,
+        records: [],
         skipped: [],
         withheld: [],
         totals: {
@@ -419,6 +502,7 @@ export async function applyRestore(
       `Before restoring ${name}`
     );
     if (!safety.ok) {
+      await reopenHolders(ctx, reopen);
       return err(
         'restore.safety',
         'Nothing was restored: the current files could not be saved first.',
@@ -519,6 +603,8 @@ export async function applyRestore(
       report.keptBoth.push({ ref: entry.ref, label: entry.label, detail: outcome.value.keptBoth });
     else report.restored.push({ ref: entry.ref, label: entry.label });
   }
+
+  report.closed.push(...(await reopenHolders(ctx, reopen)));
 
   const unmatched = await unmatchedDeviceFiles(ctx, written);
   if (unmatched.length > 0) {

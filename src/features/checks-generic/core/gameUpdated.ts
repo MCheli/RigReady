@@ -11,6 +11,8 @@ import { err, ok, type Result } from '../../../core/result';
 import { listSteamApps } from '../../../core/steam';
 
 export const GAME_UPDATED = 'game.updated';
+/** Registered by the backup feature: one backup of the game's settings and bindings. */
+export const BACKUP_GAME_FILES = 'backup.gameFiles';
 
 export const GameUpdatedParamsSchema = z.object({
   /** Game module id, e.g. "dcs". */
@@ -66,7 +68,7 @@ export function createGameUpdatedCheck(games: GameRegistry): CheckDefinition<Gam
     params: GameUpdatedParamsSchema,
     // A heads-up, never a reason the rig is not ready.
     advisory: true,
-    fixes: ['instructions.show', 'script.run'],
+    fixes: [BACKUP_GAME_FILES, 'instructions.show', 'script.run'],
     async run(params, ctx) {
       const found = await installedVersion(ctx, games, params.game);
       if (!found.ok) return { pass: false, error: true, summary: found.error.message };
@@ -126,6 +128,8 @@ export function createGameUpdatedCapture(games: GameRegistry): CaptureDefinition
             title,
             required: false,
             params: { game: module.id, verifiedVersion: found.value.version.version },
+            // "Back up now", before the new version is marked verified.
+            remediation: { type: BACKUP_GAME_FILES, params: { game: module.id } },
           },
         });
       }

@@ -415,6 +415,15 @@ const kindIcon = (b: BackupView): string =>
               >{{ plural(item.fileCount, 'file') }} · {{ item.sourceName }}</span
             >
           </div>
+          <div
+            v-for="record in backup.records"
+            :key="record.from"
+            class="content-line"
+            data-testid="backup-record"
+          >
+            <span>{{ record.label }}</span>
+            <span class="rr-muted">kept as a record, not restored · {{ record.from }}</span>
+          </div>
           <div v-if="backup.profiles.length" class="content-line">
             <span>Setups</span>
             <span class="rr-muted">{{ backup.profiles.join(', ') }}</span>

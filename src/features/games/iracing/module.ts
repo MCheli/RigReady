@@ -64,9 +64,25 @@ async function findInstall(ctx: CheckContext): Promise<GameInstall | undefined> 
   return manualInstall(ctx, 'iracing', UI_EXE);
 }
 
+/** What is worth keeping in Documents\iRacing; replays, telemetry and logs are not. */
+export const IRACING_INCLUDE = [
+  'controls.cfg',
+  'joyCalib.yaml',
+  '*.ini',
+  'profiles/**',
+  'scripts/**',
+  'setups/**',
+];
+
 const iracing: GameModule = {
   id: 'iracing',
   name: 'iRacing',
+  processes: ['iRacingUI.exe', 'iRacingSim64DX11.exe'],
+  closeBeforeRestore: {
+    // The UI does not touch these files; the simulator writes them when it exits.
+    processes: ['iRacingSim64DX11.exe'],
+    why: 'iRacing writes these files when the simulator exits, which would undo the restore.',
+  },
 
   async detect(ctx) {
     const install = await findInstall(ctx);
@@ -84,6 +100,14 @@ const iracing: GameModule = {
   async trackedFiles(ctx) {
     const dir = userFolder(ctx);
     const suggestions: TrackedFileSuggestion[] = [
+      {
+        label: 'iRacing settings and bindings',
+        path: dir,
+        kind: 'folder',
+        include: IRACING_INCLUDE,
+        description:
+          'Bindings, calibration, options, graphics, HUD profiles, radio scripts and car setups. Replays and telemetry are left out.',
+      },
       { label: 'Bindings (controls.cfg)', path: path.join(dir, 'controls.cfg') },
       {
         label: 'Wheel and pedal calibration (joyCalib.yaml)',
@@ -135,7 +159,6 @@ const iracing: GameModule = {
 export const extras: GameModuleExtras = {
   kind: 'racing',
   manualFolder: { exe: UI_EXE, label: 'the iRacing folder (it contains ui\\iRacingUI.exe)' },
-  processes: ['iRacingUI.exe', 'iRacingSim64DX11.exe'],
   notes: [
     'iRacing updates itself from its own UI; RigReady shows the installed build but cannot tell whether an update is waiting.',
     'The simulator rewrites its .ini files when it exits, so restore them only while iRacing is closed.',

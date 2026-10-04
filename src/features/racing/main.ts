@@ -2,8 +2,20 @@ import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { racingContract } from './contract';
 import { acView } from './core/assettoCorsa';
-import { backupNow, deleteBackup, listBackups, restoreBackup } from './core/backups';
-import { beamngView, copyBindingsToController, copyOlderBindings } from './core/beamng/beamng';
+import {
+  backupNow,
+  deleteBackup,
+  fanatecBackupSource,
+  listBackups,
+  previewRestoreBackup,
+  restoreBackup,
+} from './core/backups';
+import {
+  beamngView,
+  copyBindingsToController,
+  copyOlderBindings,
+  previewCopyOlderBindings,
+} from './core/beamng/beamng';
 import {
   iracingDevicesCheck,
   iracingServiceCheck,
@@ -32,6 +44,7 @@ export default defineFeatureMain({
     ctx.checks.registerCheck(iracingServiceCheck);
     ctx.checks.registerCheck(wheelSettingsCheck(ctx.games));
     ctx.checks.registerCapture(racingCapture(ctx.games));
+    ctx.backupSources.register(fanatecBackupSource);
 
     return [
       bind(racingContract, {
@@ -44,6 +57,7 @@ export default defineFeatureMain({
         lmu: async () => ok(await lmuView(rctx)),
         beamng: async () => ok(await beamngView(rctx)),
         beamngCopyOlder: ({ version }) => copyOlderBindings(rctx, version),
+        beamngCopyOlderPreview: ({ version }) => previewCopyOlderBindings(rctx, version),
         beamngCopyToController: ({ file, to }) => copyBindingsToController(rctx, file, to),
         assettoCorsa: async () => ok(await acView(rctx)),
         async wheel() {
@@ -60,6 +74,7 @@ export default defineFeatureMain({
         backups: async ({ game }) => ok(await listBackups(rctx, game)),
         backup: ({ game }) => backupNow(rctx, game),
         restore: ({ game, id, closeApp }) => restoreBackup(rctx, game, id, { closeApp }),
+        restorePreview: ({ game, id }) => previewRestoreBackup(rctx, game, id),
         async deleteBackup({ game, id }) {
           const deleted = await deleteBackup(rctx, game, id);
           return deleted.ok ? ok({ deleted: true }) : deleted;

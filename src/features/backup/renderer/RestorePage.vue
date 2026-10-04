@@ -19,10 +19,21 @@ const report = ref<RestoreReportView>();
 /** Report sections longer than FOLD rows start folded. */
 const FOLD = 6;
 const shown = ref(new Set<string>());
+/** "Close them for me": the games and tools that hold the files are asked to quit first. */
+const closePrograms = ref(false);
+const openRecords = ref(new Set<string>());
 
 interface Row {
   ref: string;
   status: 'new' | 'same' | 'different';
+}
+
+/** Looks again at which programs are running, keeping what the user ticked. */
+async function recheck(): Promise<void> {
+  const result = await api.previewRestore({ id: props.id });
+  if (result.ok && preview.value) {
+    preview.value = { ...preview.value, running: result.value.running };
+  }
 }
 
 onMounted(async () => {
@@ -110,10 +121,16 @@ async function restore(): Promise<void> {
     if (selected.value[row.ref]) choices[row.ref] = actions.value[row.ref] ?? 'overwrite';
   }
   restoring.value = true;
-  const result = await api.restore({ id: props.id, choices });
+  const result = await api.restore({
+    id: props.id,
+    choices,
+    closePrograms: closePrograms.value,
+  });
   restoring.value = false;
   if (!result.ok) {
     error.value = errorText(result.error);
+    // A game may have been started (or closed) since the preview: show what runs now.
+    await recheck();
     return;
   }
   report.value = result.value;
@@ -199,7 +216,33 @@ const ACTIONS = [
       >
         {{ report.deviceIds.message }}
         <div v-for="f in report.deviceIds.files" :key="f" class="rr-mono mt-1">{{ f }}</div>
+        <div class="mt-3">
+          <v-btn
+            color="primary"
+            variant="tonal"
+            prepend-icon="mdi-swap-horizontal"
+            to="/configure/dcs-bindings/device-ids"
+            data-testid="restore-open-device-ids"
+          >
+            Open Bindings → Device IDs
+          </v-btn>
+        </div>
       </v-alert>
+
+      <div v-if="report.closed.length" class="rr-panel closed" data-testid="restore-closed">
+        <div v-for="program in report.closed" :key="program.name" class="rr-row-sub">
+          <template v-if="program.restarted === true">
+            {{ program.name }} was closed for the restore and started again.
+          </template>
+          <span v-else-if="program.restarted === false" class="rr-warn">
+            {{ program.name }} was closed for the restore and could not be started again: start it
+            yourself.
+          </span>
+          <template v-else>
+            {{ program.name }} was closed for the restore. Start it again when you are ready.
+          </template>
+        </div>
+      </div>
 
       <template
         v-for="group in [
@@ -268,6 +311,44 @@ const ACTIONS = [
       >
         This backup comes from another PC or Windows user. Paths are worked out for this PC, as
         shown under each item.
+      </v-alert>
+
+      <v-alert
+        v-if="preview.running.length"
+        type="warning"
+        variant="tonal"
+        class="mb-4"
+        title="Close these before restoring"
+        data-testid="restore-running"
+      >
+        <div
+          v-for="program in preview.running"
+          :key="program.id"
+          class="running-row"
+          data-testid="restore-running-program"
+        >
+          <strong>{{ program.name }}</strong> is running ({{ program.processes.join(', ') }}).
+          {{ program.why }}
+          <span class="rr-muted">Affects: {{ program.items.join(', ') }}.</span>
+        </div>
+        <v-checkbox
+          v-model="closePrograms"
+          density="compact"
+          hide-details
+          data-testid="restore-close-programs"
+          :label="
+            preview.running.some((p) => p.restart)
+              ? 'Ask them to close for me, and start the helper tools again afterwards'
+              : 'Ask them to close for me'
+          "
+        />
+        <div class="rr-row-sub">
+          RigReady asks the way their own Exit does and never ends a program by force. Unsaved work
+          in a game is the game's to save.
+          <v-btn variant="text" size="small" data-testid="restore-recheck" @click="recheck">
+            I closed them: check again
+          </v-btn>
+        </div>
       </v-alert>
 
       <div v-if="conflicts.length" class="conflicts" data-testid="restore-conflicts">
@@ -435,6 +516,49 @@ const ACTIONS = [
         </div>
       </template>
 
+      <template v-if="preview.records.length">
+        <h2 class="rr-section-title section-gap">Kept as a record</h2>
+        <p class="rr-row-sub records-note">
+          These settings live in the Windows registry. The backup holds a copy to read; RigReady
+          does not write them back. Set them again in the tool they belong to.
+        </p>
+        <div
+          v-for="record in preview.records"
+          :key="record.label + record.from"
+          class="rr-panel item"
+          data-testid="restore-record"
+        >
+          <div class="rr-row item-head">
+            <v-icon icon="mdi-file-eye-outline" class="rr-muted" />
+            <div class="rr-row-main">
+              <div class="rr-row-title">
+                {{ record.label }} <span class="rr-muted source">{{ record.source }}</span>
+              </div>
+              <div class="rr-row-sub rr-mono">{{ record.from }}</div>
+            </div>
+            <span class="rr-row-sub">Not restored</span>
+            <v-btn
+              :icon="openRecords.has(record.from) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+              variant="text"
+              size="small"
+              :aria-label="openRecords.has(record.from) ? 'Hide values' : 'Show values'"
+              data-testid="restore-record-toggle"
+              @click="
+                openRecords = openRecords.has(record.from)
+                  ? new Set([...openRecords].filter((r) => r !== record.from))
+                  : new Set([...openRecords, record.from])
+              "
+            />
+          </div>
+          <pre
+            v-if="openRecords.has(record.from)"
+            class="record-text rr-mono"
+            data-testid="restore-record-text"
+            >{{ record.text
+            }}{{ record.truncated ? '\n… (cut off; the backup file holds all of it)' : '' }}</pre>
+        </div>
+      </template>
+
       <div
         v-if="preview.notInBackup.length"
         class="rr-row-sub mt-4"
@@ -456,7 +580,7 @@ const ACTIONS = [
         <v-btn
           color="primary"
           prepend-icon="mdi-restore"
-          :disabled="plan.total === 0"
+          :disabled="plan.total === 0 || (preview.running.length > 0 && !closePrograms)"
           :loading="restoring"
           data-testid="restore-apply"
           @click="restore"
@@ -562,6 +686,26 @@ const ACTIONS = [
   margin-top: 12px;
 }
 .report-label {
+  overflow-wrap: anywhere;
+}
+.running-row {
+  margin-bottom: 6px;
+}
+.closed {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.records-note {
+  margin: -4px 0 8px;
+}
+.record-text {
+  border-top: 1px solid var(--rr-border);
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 12px;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 </style>

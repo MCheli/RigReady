@@ -15,6 +15,8 @@ import type { Result } from './result';
  *       return ok([{ label: 'Stream Deck profiles', path: '{APPDATA}/Elgato/StreamDeck/ProfilesV3',
  *         kind: 'folder', exclude: ['*.png'] }]);
  *     },
+ *     program: { name: 'Stream Deck', processes: ['StreamDeck.exe'], restart: true,
+ *       why: 'Stream Deck writes its profiles when it quits.' },
  *   });
  */
 export interface BackupSuggestion {
@@ -32,11 +34,47 @@ export interface BackupSuggestion {
   description?: string;
 }
 
+/**
+ * A program that keeps the files a source suggests open, or writes them when it quits:
+ * it has to be closed before those files are restored, or the restore is lost.
+ */
+export interface HoldingProgram {
+  /** "Stream Deck" */
+  name: string;
+  /** Image names; any of them running means the program is open. */
+  processes: string[];
+  /** One sentence the user reads: "Stream Deck writes its profiles when it quits." */
+  why: string;
+  /** Start it again after a restore that closed it (helper tools; a game is left closed). */
+  restart?: boolean;
+}
+
+/**
+ * Settings that are not files (registry values). A full backup stores them as data so
+ * they can be read later; they are shown, never restored (the registry port is read-only).
+ */
+export interface BackupRecord {
+  /** File-name safe: "fanatec-service". */
+  id: string;
+  /** "Fanatec driver settings" */
+  label: string;
+  /** Where it was read from, in words: "HKEY_CURRENT_USER\Software\Endor\FanatecService". */
+  from: string;
+  data: unknown;
+}
+
 export interface BackupSource {
   id: string;
   label: string;
-  /** Only suggestions whose folder or file exists on this PC. */
+  /**
+   * Suggestions for this PC. Paths may be absolute or in stored form; ones that do not
+   * exist here are left out by the backup page.
+   */
   suggest(ctx: CheckContext): Promise<Result<BackupSuggestion[]>>;
+  /** The program that must be closed before the suggested files are restored. */
+  program?: HoldingProgram;
+  /** Settings kept outside files, added to every full backup as a record. */
+  records?(ctx: CheckContext): Promise<Result<BackupRecord[]>>;
 }
 
 export class BackupSourceRegistry {
