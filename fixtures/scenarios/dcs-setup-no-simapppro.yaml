@@ -1,0 +1,17 @@
+description: Flying rig where SimAppPro is not installed (its export scripts are still in Saved Games)
+rig: mark-full
+extends: flying-fresh.yaml
+# The owner's rig after a Windows reinstall with Saved Games put back, or after uninstalling
+# SimAppPro: no uninstall entry, no program folder, no %APPDATA%\SimAppPro at all (so no MFD
+# plan and no account file), nothing running. The WinWing devices are connected, and
+# Saved Games\DCS still has Export.lua with the wwt lines and Scripts\wwt.
+mutations:
+  - op: removeRegistryKey
+    hive: HKCU
+    key: Software\Microsoft\Windows\CurrentVersion\Uninstall\2873a9d6-0e65-5078-b232-daee9dce2239
+  - op: removeFile
+    path: AppData/Local/Programs/SimAppPro
+  - op: removeFile
+    path: AppData/Roaming/SimAppPro
+  - op: stopProcess
+    name: SimAppPro.exe

@@ -2025,6 +2025,8 @@ requirements:
       - "Parse-then-write of every fixture diff file without edits yields an equivalent model (round-trip test across the whole fixture)."
       - "Manual rig verification recorded once: a binding edited in RigReady appears in DCS's controls screen for F/A-18C (screenshot from DCS stored as evidence)."
       - "Saving is refused while DCS.exe is running, with an explanation that DCS may overwrite bindings."
+    notes:
+      - "2026-10-04: criteria 1, 2 and 4 are met by the tests below. Open is only the third, which needs DCS itself and is left for the owner. What to do, on the real rig with DCS closed: (1) in RigReady open DCS bindings, F/A-18C, the WINWING MFD1-L device, pick a button that has no binding yet and bind it to one action that is easy to find in DCS, review the change and save it; note the action and the button. (2) Start DCS, Options > Controls > F/A-18C Sim, find the action and the MFD1-L column: the button must be shown there, with no red (conflict) marking that was not there before. (3) Take a screenshot of that controls screen (Win+Shift+S, or DCS's own PrintScreen into Saved Games/DCS/ScreenShots). (4) Quit DCS and check in RigReady that the binding is still there (DCS did not rewrite the file without it). Evidence to store: the DCS screenshot as artifacts/rig/BIND-DCS-008/dcs-controls-after-edit.png and the RigReady review dialog as artifacts/rig/BIND-DCS-008/rigready-review.png; add both paths to evidence and set the entry done. If DCS does not show the binding, keep the .diff.lua RigReady wrote (Safety page has the backup of the one before) and attach it: that is a writer bug."
     status: in_progress
     evidence:
       - "src/features/dcs-bindings/core/edits.test.ts#goes through FileStore with a backup and a readable journal entry, and can be undone"
@@ -3094,6 +3096,8 @@ requirements:
     done_means:
       - "Research note in docs/research/ records whether iRacing's controls.cfg and joyCalib.yaml reference device instance GUIDs and whether rewriting them restores bindings."
       - "If yes, a repair rewrites the GUIDs in joyCalib.yaml (and controls.cfg if safe) with preview and backup; if no, the UI does not offer repair (rule 2)."
+    notes:
+      - "2026-10-04: status left as it is; what is missing needs the real wheel to change its Windows id. Done in code: docs/research/racing.md 2.3-2.5 records that joyCalib.yaml (text) and every bound controls.cfg record (16 bytes) carry the DirectInput instance GUID and product GUID; the iRacing page marks a controller 'New Windows id' when the stored instance GUID is not attached but a controller of the same product GUID is, suggests the target only when it is unambiguous, shows the files that will change (racing:iracingRepairPreview), replaces the GUID in controls.cfg, joyCalib.yaml and any per-car copies as one journaled action with backups, refuses while the simulator runs, reads the files back, and offers nothing for a connected or missing controller (src/features/racing/core/iracing/iracing.test.ts 'flags a wheel whose stored id no longer matches and repairs both files through FileStore' and 'refuses to repair while the simulator runs, and refuses a controller that is not a candidate'; tests/e2e/racing.e2e.ts 'racing: overview, iRacing bindings, and repairing a wheel with a new Windows id'; artifacts/screens/racing-iracing-repair/). The dialog says 'Not yet verified on real hardware'. Not known: whether iRacing accepts the rewritten files, i.e. the second half of the first criterion ('whether rewriting them restores bindings'). Owner's check: back up Documents/iRacing (RigReady Racing > iRacing > Back up now), move the DD2's USB cable to another port (or use a PC where the id differs), confirm in RigReady that the wheel shows 'New Windows id', run 'Update iRacing…', start the iRacing simulator in a test session: it must not ask to calibrate, and steering, pedals and the shifter paddles must work. Evidence to store: before/after screenshots of the RigReady iRacing page and one of the iRacing controls screen under artifacts/rig/RACE-IRACING-005/, plus one line in docs/research/racing.md 2.5 saying what happened (including whether moving the cable changed the id at all). If iRacing still asks to calibrate: Undo on the Safety page, and the repair must be withdrawn from the page (rule 2)."
     status: todo
     evidence: []
 
@@ -3626,6 +3630,8 @@ requirements:
     done_means:
       - "On a fixture where SimAppPro is not installed, the user can go from three connected MFD screens to a working DCS MFD export: apply rotation/position (DISP-005), generate MonitorSetup (DCS-MON-002), select it in options.lua (DCS-MON-004)."
       - "Manual rig verification recorded once: with SimAppPro closed, DCS F/A-18C shows the left, right and AMPCD displays on the three MFD screens (photo/screenshot evidence)."
+    notes:
+      - "2026-10-04: status left as it is. The first criterion's parts exist and are tested separately (DISP-005 applies rotation and position, DCS-MON-002 writes RigReady.lua, DCS-MON-004 selects it in options.lua; the scenario dcs-setup-no-simapppro is a rig without SimAppPro), but no test was found that walks all three in one flow on a rig without SimAppPro, and the second criterion needs DCS on the real rig. Left for the owner, with the three MFD screens connected: (1) quit SimAppPro (tray icon > Exit) and check in Task Manager that SimAppPro.exe is gone; it must stay closed until step 5, because its MFD wizard rewrites options.lua. (2) In RigReady: Monitors, apply the flying layout (ultrawide main, the three USB screens portrait) and keep it. (3) DCS World > Screens: choose that layout and F/A-18C, check the three displays sit on the three screens in the preview, Write; the page must show RigReady.lua written and selected. (4) Start DCS, F/A-18C, any mission with the aircraft powered (a hot start): the left DDI, right DDI and AMPCD must each appear on their own MFD screen, upright and not cut off. (5) Evidence to store: one photo of the cockpit hardware showing all three screens lit with the displays (the screens are separate monitors, so a photo says more than a screenshot) as artifacts/rig/SAP-001/mfd-screens-without-simapppro.jpg, and a desktop-wide screenshot from DCS if one can be taken without personal content, as artifacts/rig/SAP-001/dcs-desktop.png; note the DCS version and the date in this entry, add the paths to evidence and set it done. If a display is on the wrong screen, upside down or missing: note which, keep Saved Games/DCS/Config/MonitorSetup/RigReady.lua and the options.lua graphics block, and do not mark done."
     status: todo
     evidence: []
 
@@ -3637,8 +3643,21 @@ requirements:
     done_means:
       - "Export.lua entries needed by WinWing devices (wwt) are managed by DCS-EXPORT-002 without SimAppPro installed."
       - "WinWing binding backup/restore is covered by BIND-DCS-020/021 and full backup; no feature requires SimAppPro's cloud or profile format."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-04: proven on a rig without SimAppPro (scenario dcs-setup-no-simapppro: no uninstall entry, no program folder, no %APPDATA%\\SimAppPro, not running; WinWing devices connected, Saved Games\\DCS as recorded). Through IPC: the wwt lines of Export.lua are previewed, removed, added and deduplicated with backup; a binding snapshot of the nine WinWing devices is restored after files are lost or rewritten; a full backup holds the WinWing binding files, Export.lua and Scripts\\wwt and restores them. The last test records every file read: none is under a SimAppPro folder. One real fault was found and fixed in dcs-setup: deduplicating the WinWing lines left the second 'local wwtlfs=require(lfs)' helper line behind (exportLua.ts linesToRemove). Known limits, outside these criteria: adding the wwt line is refused when Scripts\\wwt\\wwtExport.lua is not in Saved Games (SimAppPro installs that script; RigReady restores it from a backup, it does not ship it), and the device names DCS puts into binding file names come from the OEMName registry values SimAppPro writes (docs/research/hardware-and-tools.md 1a) - on a PC that never had SimAppPro the names may differ, which the Device IDs tab (BIND-DCS-016) treats as a renamed device; not verified on real hardware without SimAppPro."
+    status: done
+    evidence:
+      - "tests/unit/withoutSimAppPro.test.ts#the rig really has no SimAppPro: not installed, not running, none of its folders"
+      - "tests/unit/withoutSimAppPro.test.ts#manages the WinWing (wwt) lines of Export.lua: preview, remove, add, dedupe, with backup"
+      - "tests/unit/withoutSimAppPro.test.ts#with the wwt scripts gone too, a stale line can be removed and adding it is refused with the reason"
+      - "tests/unit/withoutSimAppPro.test.ts#snapshots the WinWing bindings and restores them (BIND-DCS-020/021)"
+      - "tests/unit/withoutSimAppPro.test.ts#a full backup holds the WinWing bindings and export scripts and restores them, reading nothing of SimAppPro"
+      - "src/features/dcs-setup/core/exportLua.test.ts#removes a duplicate WinWing load together with its own helper line, and keeps the first pair"
+      - "src/features/dcs-setup/core/service.test.ts#manages the WinWing Export.lua line when SimAppPro is not installed"
+      - "tests/e2e/without-simapppro.e2e.ts#without SimAppPro: the WinWing Export.lua lines are managed and the WinWing bindings are snapshotted and restored"
+      - "artifacts/screens/dcs-setup-no-simapppro/01-simapppro-not-installed.png"
+      - "artifacts/screens/dcs-setup-no-simapppro/02-confirm-remove-winwing.png"
+      - "artifacts/screens/dcs-setup-no-simapppro/04-restore-winwing-bindings.png"
 
   - id: SAP-003
     title: SimAppPro running check only when runtime features are needed
@@ -3680,7 +3699,9 @@ requirements:
       - "docs/research/winwing-protocol.md records the HID reports used for backlight brightness, UFC/ICP text and vibration on the owner's devices, captured from SimAppPro traffic, with sources and legal notes."
       - "A read-only or reversible prototype sets one backlight level on one device on the owner's rig, demonstrated by rig smoke; or the note concludes it is not feasible and why."
       - "No product UI is added until the research concludes feasible (rule 2)."
-    status: todo
+    notes:
+      - "2026-10-04: the feasibility note is written: docs/research/winwing-direct-control.md. Per feature (backlight, UFC/ICP displays, MFD frame backlight, vibration, the USB MFD screens) it gives what SimAppPro does, the transport (HID output report 0x02, 14 bytes, command 0x49 for LEDs and motors, 0x4C for UFC segments; report 0xF0 for the ICP display), what is public and for which of the owner's devices, feasibility, risks (commands that restart, flash or recalibrate sit next to the harmless ones; firmware differences; licence notes) and the smallest safe experiment. Nothing was sent to any device and nothing was installed. Not done, and why the entry is not done: both criteria need work on the rig. Left for the owner: (1) the read-only descriptor read (step 1 of section 7); (2) a USBPcap/Wireshark capture of SimAppPro changing one backlight level, and the other captures listed in section 7 step 2, written up as docs/research/winwing-protocol.md (the file the first criterion names); (3) the one reversible write: one backlight level on the Takeoff Panel 2 and back, as a flagged rig test (section 7 step 3), or the conclusion that it is not feasible. No product UI was added."
+    status: in_progress
     evidence: []
 
   # ---------------------------------------------------------------------------
