@@ -3,10 +3,15 @@ import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 import type { CheckResult } from '../../../core/checks/engine';
 import type { CommandPreview } from '../../../core/checks/registry';
 import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
+import { errorText } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
+import type { History } from '../contract';
+import { lastSessionLine } from '../core/sessionText';
 import CheckRow from './CheckRow.vue';
+import HistoryDialog from './HistoryDialog.vue';
 import ReadinessDial from './ReadinessDial.vue';
 import SafeMarkdown from './SafeMarkdown.vue';
+import SessionBanner from './SessionBanner.vue';
 import WelcomePanel from './WelcomePanel.vue';
 import { useFlyStore } from './store';
 
@@ -139,15 +144,32 @@ function when(iso: string): string {
     : date.toLocaleDateString([], { day: 'numeric', month: 'short' });
 }
 
-/** Under the setup's name: the game it is for, and when it was last in use. */
+/** Under the setup's name: the game it is for, and when it was last flown and for how long. */
 const context = computed(() => {
   const setup = fly.active;
   if (!setup) return [];
   return [
     setup.gameName ?? 'No game chosen',
-    setup.lastUsed ? `Last used ${when(setup.lastUsed)}` : 'Not used yet',
+    lastSessionLine(setup.kind, setup.lastSession, new Date()),
   ];
 });
+
+/** The session is about the setup on screen (it may be another's, after a switch). */
+const sessionHere = computed(() => fly.session.profileId === fly.activeId);
+const sessionKind = computed(() => fly.profiles.find((p) => p.id === fly.session.profileId)?.kind);
+
+// ---- history ----
+const historyOpen = ref(false);
+const history = ref<History>();
+const historyError = ref<string>();
+async function openHistory(): Promise<void> {
+  history.value = undefined;
+  historyError.value = undefined;
+  historyOpen.value = true;
+  const answer = await fly.history();
+  if (answer.ok) history.value = answer.value;
+  else historyError.value = errorText(answer.error);
+}
 
 // ---- actions ----
 
@@ -219,17 +241,24 @@ function launchAnyway(): void {
 
 // ---- the one action ----
 
-type ActionId = 'readyAndLaunch' | 'makeReady' | 'launch';
+type ActionId = 'readyAndLaunch' | 'makeReady' | 'launch' | 'standDown';
 
 /**
  * What the screen is for right now, and what Enter runs. A rig that is not ready and can
  * be fixed: fix it and launch. Otherwise: launch (with the warning while something
  * required is missing). A setup with nothing to launch: Make ready, when there is
- * something to fix.
+ * something to fix. While the game runs: nothing. Once it has closed: Stand down.
  */
 const primaryNow = computed<ActionId | undefined>(() => {
   const setup = fly.active;
   if (!setup) return undefined;
+  const session = fly.session;
+  if (sessionHere.value) {
+    // Enter must never start a second copy of a game that is running.
+    if (session.phase === 'running' || session.phase === 'starting') return undefined;
+    // The game has closed: what is left is to put the rig back, unless that already happened.
+    if (session.phase === 'ended' && !session.stoodDown) return 'standDown';
+  }
   const fixable = fly.counts.fixable > 0;
   if (!setup.canLaunch) return fixable ? 'makeReady' : undefined;
   return fly.readiness === 'notReady' && fixable ? 'readyAndLaunch' : 'launch';
@@ -240,8 +269,9 @@ watchEffect(() => {
   if (fly.busy === null) primary.value = primaryNow.value;
 });
 
-/** The buttons on the left, the primary one first. */
+/** The buttons on the left, the primary one first. Stand down is on the right until it is the primary. */
 const actions = computed<ActionId[]>(() => {
+  if (primary.value === 'standDown') return ['standDown', 'launch', 'makeReady'];
   if (primary.value === 'readyAndLaunch') return ['readyAndLaunch', 'makeReady', 'launch'];
   if (primary.value === 'launch') return ['launch', 'makeReady'];
   return ['makeReady', 'launch'];
@@ -293,6 +323,7 @@ async function runPrimary(): Promise<void> {
   if (action === 'readyAndLaunch') await flyNow();
   else if (action === 'makeReady') await makeReady();
   else if (action === 'launch') onLaunch();
+  else if (action === 'standDown') await onStandDown();
 }
 
 function onLaunchClick(): void {
@@ -513,6 +544,23 @@ onBeforeUnmount(() => {
                     data-testid="fly-minimize-pref"
                     @click="fly.setMinimizeOnLaunch(!fly.minimizeOnLaunch)"
                   />
+                  <v-list-item
+                    :prepend-icon="
+                      fly.autoStandDown
+                        ? 'mdi-checkbox-marked-outline'
+                        : 'mdi-checkbox-blank-outline'
+                    "
+                    title="Stand down when the game closes"
+                    data-testid="fly-auto-stand-down"
+                    @click="fly.setAutoStandDown(!fly.autoStandDown)"
+                  />
+                  <v-divider class="my-1" />
+                  <v-list-item
+                    prepend-icon="mdi-history"
+                    title="History"
+                    data-testid="fly-history"
+                    @click="openHistory"
+                  />
                 </v-list>
               </v-menu>
             </div>
@@ -551,6 +599,8 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
+
+        <SessionBanner :session="fly.session" :kind="sessionKind" @dismiss="fly.dismissSession()" />
 
         <div class="fly-actions" :data-primary="primary ?? 'none'" data-testid="fly-actions">
           <template v-for="action in actions" :key="action">
@@ -594,6 +644,20 @@ onBeforeUnmount(() => {
             >
               Make ready
               <kbd v-if="primary === 'makeReady'" class="fly-key" aria-hidden="true">Enter</kbd>
+            </v-btn>
+            <v-btn
+              v-else-if="action === 'standDown'"
+              color="primary"
+              size="large"
+              prepend-icon="mdi-power-standby"
+              :disabled="fly.busy !== null"
+              :loading="fly.busy === 'standDown'"
+              aria-keyshortcuts="Enter"
+              data-testid="stand-down"
+              @click="onStandDown"
+            >
+              Stand down
+              <kbd class="fly-key" aria-hidden="true">Enter</kbd>
             </v-btn>
             <v-tooltip
               v-else-if="fly.active?.canLaunch"
@@ -642,6 +706,7 @@ onBeforeUnmount(() => {
             Re-check all
           </v-btn>
           <v-btn
+            v-if="primary !== 'standDown'"
             variant="tonal"
             prepend-icon="mdi-power-standby"
             :disabled="fly.busy !== null"
@@ -958,6 +1023,13 @@ onBeforeUnmount(() => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <HistoryDialog
+      :open="historyOpen"
+      :history="history"
+      :error="historyError"
+      @close="historyOpen = false"
+    />
 
     <v-snackbar
       :model-value="toast !== undefined"

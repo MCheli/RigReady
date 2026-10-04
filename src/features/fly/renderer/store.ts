@@ -7,10 +7,12 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import {
   flyContract,
+  type History,
   type LaunchResult,
   type LaunchStep,
   type ProfileSummary,
   type ProfileView,
+  type SessionState,
 } from '../contract';
 import {
   fixesLine,
@@ -84,6 +86,10 @@ export const useFlyStore = defineStore('fly', () => {
   const error = ref<string>();
   const activity = ref<Activity>();
   const minimizeOnLaunch = ref(true);
+  /** Stand down by itself when the game closes. */
+  const autoStandDown = ref(false);
+  /** The session of the moment: none, a game running, or one that just closed. */
+  const session = ref<SessionState>({ phase: 'idle' });
   let runId: string | undefined;
   let launchRunId: string | undefined;
   let makeReadyRunId: string | undefined;
@@ -185,8 +191,31 @@ export const useFlyStore = defineStore('fly', () => {
           phase: payload.phase,
           ...(payload.message ? { message: payload.message } : {}),
         });
-      })
+      }),
+      api.on('session', (payload) => takeSession(payload))
     );
+  }
+
+  /** The session changed: started, running, closed, stood down. */
+  function takeSession(next: SessionState): void {
+    const before = session.value;
+    session.value = next;
+    // Stand down running by itself holds the screen the way Stand down does.
+    if (next.standingDown && busy.value === null) busy.value = 'standDown';
+    else if (before.standingDown && !next.standingDown && busy.value === 'standDown') {
+      busy.value = null;
+    }
+    // A session ended: the setup has a new "last flown".
+    if (before.phase !== next.phase && (next.phase === 'ended' || next.phase === 'idle')) {
+      void refreshProfiles();
+    }
+    // Stand down ran by itself: apps were closed, the monitors may have changed.
+    if (next.stoodDown && !before.stoodDown) notifyMachineChanged();
+  }
+
+  async function refreshProfiles(): Promise<void> {
+    const state = await api.state();
+    if (state.ok) profiles.value = state.value.profiles;
   }
 
   function upsert(entry: ActivityEntry): void {
@@ -227,7 +256,12 @@ export const useFlyStore = defineStore('fly', () => {
     }
     error.value = undefined;
     void api.preferences().then((prefs) => {
-      if (prefs.ok) minimizeOnLaunch.value = prefs.value.minimizeOnLaunch;
+      if (!prefs.ok) return;
+      minimizeOnLaunch.value = prefs.value.minimizeOnLaunch;
+      autoStandDown.value = prefs.value.autoStandDown;
+    });
+    void api.session().then((current) => {
+      if (current.ok) session.value = current.value;
     });
     await check();
   }
@@ -542,6 +576,24 @@ export const useFlyStore = defineStore('fly', () => {
     else error.value = errorText(saved.error);
   }
 
+  async function setAutoStandDown(value: boolean): Promise<void> {
+    const saved = await api.setPreferences({ autoStandDown: value });
+    if (saved.ok) autoStandDown.value = saved.value.autoStandDown;
+    else error.value = errorText(saved.error);
+  }
+
+  /** "Welcome back" was read: back to normal without standing down. */
+  async function dismissSession(): Promise<void> {
+    const next = await api.dismissSession();
+    if (next.ok) takeSession(next.value);
+    else error.value = errorText(next.error);
+  }
+
+  /** Every recorded session and what they add up to. */
+  function history(): Promise<Result<History>> {
+    return api.history();
+  }
+
   async function watch(onChange: (ids: string[]) => void): Promise<() => void> {
     const off = api.on('profilesChanged', (payload) => onChange(payload.ids));
     await api.watch();
@@ -565,6 +617,8 @@ export const useFlyStore = defineStore('fly', () => {
     activity,
     steps,
     minimizeOnLaunch,
+    autoStandDown,
+    session,
     items,
     anyChecking,
     counts,
@@ -583,6 +637,9 @@ export const useFlyStore = defineStore('fly', () => {
     launch,
     readyAndLaunch,
     setMinimizeOnLaunch,
+    setAutoStandDown,
+    dismissSession,
+    history,
     watch,
   };
 });

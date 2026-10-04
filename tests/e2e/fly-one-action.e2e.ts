@@ -137,8 +137,10 @@ test('one action: Enter makes the rig ready phase by phase, waits for the layout
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
   expect(await gameRunning(page, 'fly-hornet-full')).toBe(true);
   await expect(page.getByTestId('flight-held')).toHaveCount(0);
-  // Ready now: the one action is Launch, in green.
-  await expect(actions).toHaveAttribute('data-primary', 'launch');
+  // The game is running: the screen says so, and Enter has nothing left to start.
+  await expect(page.getByTestId('fly-session')).toHaveAttribute('data-phase', 'running');
+  await expect(actions).toHaveAttribute('data-primary', 'none');
+  await focusNothing(page);
   await shot('launched');
 });
 

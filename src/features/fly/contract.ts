@@ -22,8 +22,91 @@ export const ProfileSummarySchema = z.object({
   /** When it was last used on the Fly screen (ISO). */
   lastUsed: z.string().optional(),
   canLaunch: z.boolean(),
+  /** The family of sims its game belongs to, for the words a session is described in. */
+  kind: GameKindSchema.optional(),
+  /** The last session launched from RigReady with this setup. */
+  lastSession: z
+    .object({
+      startedAt: z.string(),
+      /** Absent when RigReady could not tell how long it was. */
+      durationSeconds: z.number().int().optional(),
+    })
+    .optional(),
 });
 export type ProfileSummary = z.infer<typeof ProfileSummarySchema>;
+
+/** Something Make ready or a fix button put right before a launch. */
+export const FixedSchema = z.object({
+  title: z.string(),
+  group: CheckGroupSchema,
+  /** What the fix said it did ("Started TrackIR5.exe"). */
+  message: z.string(),
+});
+
+/** One session: from the game running to the game closed. */
+export const SessionRecordSchema = z.object({
+  id: z.string(),
+  profileId: z.string(),
+  profileName: z.string(),
+  gameName: z.string().optional(),
+  /** When the game was running (ISO). */
+  startedAt: z.string(),
+  /** Whole seconds the game ran. Absent when RigReady could not tell (it was closed, or cannot see this game). */
+  durationSeconds: z.number().int().min(0).optional(),
+  /** Seconds from opening the setup in RigReady until every required check was met. Absent when it was launched not ready. */
+  readySeconds: z.number().int().min(0).optional(),
+  /** What had to be fixed before the launch. */
+  fixed: z.array(FixedSchema).default([]),
+  /** The first required item that was not met when the setup was opened. */
+  failedFirst: z.object({ title: z.string(), summary: z.string() }).optional(),
+  /** Launched with something required not met. */
+  notReady: z.boolean().optional(),
+});
+export type SessionRecord = z.infer<typeof SessionRecordSchema>;
+
+/** The session of the moment, as every window shows it. */
+export const SessionStateSchema = z.object({
+  /**
+   * idle: none. starting: handed to Steam, the game has not shown up yet. running: the
+   * game is running. ended: the game closed ("welcome back") and nothing was done about
+   * it yet.
+   */
+  phase: z.enum(['idle', 'starting', 'running', 'ended']),
+  profileId: z.string().optional(),
+  profileName: z.string().optional(),
+  gameName: z.string().optional(),
+  startedAt: z.string().optional(),
+  endedAt: z.string().optional(),
+  durationSeconds: z.number().int().optional(),
+  /** Stand down is running by itself right now (the user asked for that). */
+  standingDown: z.boolean().optional(),
+  /** Stand down ran by itself: what it did. */
+  stoodDown: z.object({ headline: z.string(), failed: z.number().int() }).optional(),
+});
+export type SessionState = z.infer<typeof SessionStateSchema>;
+
+export const HistorySchema = z.object({
+  /** Newest first. */
+  sessions: z.array(SessionRecordSchema),
+  totals: z.object({
+    sessions: z.number().int(),
+    /** Seconds in the sessions whose length is known. */
+    seconds: z.number().int(),
+    /** What had to be fixed before launching, most often first. */
+    fixes: z.array(
+      z.object({ title: z.string(), group: CheckGroupSchema, count: z.number().int() })
+    ),
+    /** The usual time from opening RigReady to a ready rig (the median). */
+    readySeconds: z.number().int().optional(),
+    /** Sessions launched with something required not met. */
+    notReady: z.number().int(),
+  }),
+  /** The totals in one line: "12 sessions, 14 h; TrackIR needed starting 6 times". */
+  line: z.string(),
+  /** One line when a history file could not be read. */
+  notice: z.string().optional(),
+});
+export type History = z.infer<typeof HistorySchema>;
 
 export const InvalidProfileSummarySchema = z.object({
   id: z.string(),
@@ -105,8 +188,20 @@ export type LaunchResult = z.infer<typeof LaunchResultSchema>;
 export const PreferencesSchema = z.object({
   /** After a successful launch, hide RigReady to the tray. */
   minimizeOnLaunch: z.boolean().default(true),
+  /** When the game closes, run Stand down without being asked. */
+  autoStandDown: z.boolean().default(false),
 });
 export type Preferences = z.infer<typeof PreferencesSchema>;
+
+/**
+ * A change to the preferences: only what is named changes. (Not PreferencesSchema.partial():
+ * its defaults would fill in what was left out and undo the other choices.)
+ */
+export const PreferencesPatchSchema = z.object({
+  minimizeOnLaunch: z.boolean().optional(),
+  autoStandDown: z.boolean().optional(),
+});
+export type PreferencesPatch = z.infer<typeof PreferencesPatchSchema>;
 
 const ProgressStateSchema = z.enum(['pending', 'running', 'done', 'failed', 'skipped']);
 
@@ -183,11 +278,28 @@ export const flyContract = defineContract(
     /** The item's own confirm action ("Mark verified"); stores the new params, re-checks. */
     acknowledge: channel(ProfileRef.extend({ itemId: z.string() }), CheckResultSchema),
     preferences: channel(noInput, PreferencesSchema),
-    setPreferences: channel(PreferencesSchema.partial(), PreferencesSchema),
+    setPreferences: channel(PreferencesPatchSchema, PreferencesSchema),
     /** Starts watching the profiles folder; `profilesChanged` fires within about 2 s of a change. */
     watch: channel(noInput, z.object({ watching: z.boolean() })),
+    /** The session of the moment: none, a game running, or one that just closed. */
+    session: channel(noInput, SessionStateSchema),
+    /** "Welcome back" was read: back to normal without standing down. */
+    dismissSession: channel(noInput, SessionStateSchema),
+    /** Every recorded session, newest first, and what they add up to. */
+    history: channel(noInput, HistorySchema),
+    /**
+     * A window of RigReady says whether somebody is at it (on screen and in front). Sent
+     * again every few seconds while that is so: a window that stops saying so counts as
+     * gone. With nobody at a window, "welcome back" is a Windows notification.
+     */
+    presence: channel(
+      z.object({ window: z.string().min(1).max(40), visible: z.boolean() }),
+      z.object({ attended: z.boolean() })
+    ),
   },
   {
+    /** The session changed: started, running, closed, stood down. */
+    session: SessionStateSchema,
     result: z.object({ runId: z.string(), profileId: z.string(), result: CheckResultSchema }),
     progress: z.object({
       runId: z.string(),
