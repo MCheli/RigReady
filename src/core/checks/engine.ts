@@ -584,6 +584,14 @@ export const CaptureCandidateSchema = z.object({
       .optional(),
   }),
   game: z.string().optional(),
+  ask: z
+    .object({
+      param: z.string(),
+      label: z.string(),
+      placeholder: z.string().optional(),
+      hint: z.string().optional(),
+    })
+    .optional(),
   program: z.string().optional(),
   generic: z.boolean().optional(),
   covers: z.array(z.string()).optional(),

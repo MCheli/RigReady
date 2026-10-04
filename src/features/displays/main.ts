@@ -4,6 +4,7 @@ import { displaysContract } from './contract';
 import { LayoutApplier } from './core/applier';
 import { createDeskLayoutStep, deskLayoutId } from './core/deskLayout';
 import {
+  adoptLayoutItem,
   createApplyLayoutRemediation,
   createDisplayCapture,
   createLayoutCheck,
@@ -11,7 +12,7 @@ import {
 } from './core/layoutCheck';
 import { RevertGuard } from './core/revertGuard';
 import { DisplaysService } from './core/service';
-import { MonitorNameStore, RecoveryStore } from './core/stores';
+import { MonitorNameStore, RecoveryStore, UprightStore } from './core/stores';
 
 export default defineFeatureMain({
   id: 'displays',
@@ -32,7 +33,8 @@ export default defineFeatureMain({
     const deps: LayoutDeps = { names: () => names.readOrEmpty(), layouts: ctx.layouts };
     // Other features (DCS screen setup) call monitors by the names given here.
     ctx.names.provideMonitors(() => names.readOrEmpty());
-    const service = new DisplaysService(ctx, names, recovery, applier);
+    const upright = new UprightStore(ctx.ports.files, dataRoot);
+    const service = new DisplaysService(ctx, names, recovery, applier, upright);
 
     // The countdown length comes from the settings and follows changes to them.
     void ctx.settings.get().then((s) => {
@@ -42,6 +44,7 @@ export default defineFeatureMain({
 
     ctx.checks.registerCheck({
       ...createLayoutCheck(deps),
+      adopt: (item) => adoptLayoutItem(item, ctx.layouts),
       // Stand down puts back the layout from before Make ready changed it, unless a desk
       // layout is chosen in the settings: then the desk-layout step below applies that.
       async standDown() {
@@ -67,6 +70,8 @@ export default defineFeatureMain({
         revert: () => guard.revertNow(),
         view: () => service.view(),
         identify: () => service.identify(),
+        flip: ({ id }) => service.flip(id),
+        confirmUpright: () => service.confirmUpright(),
         setName: ({ id, name }) => service.setName(id, name),
         saveLayout: ({ name }) => service.saveLayout(name),
         updateLayout: ({ id }) => service.updateLayout(id),

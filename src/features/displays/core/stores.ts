@@ -101,3 +101,41 @@ export class RecoveryStore {
     }
   }
 }
+
+const UprightSchema = z.object({
+  schemaVersion: z.literal(1).default(1),
+  /** uprightKey() of every monitor-and-rotation the user has seen the right way up. */
+  confirmed: z.array(z.string()).default([]),
+});
+
+/**
+ * "Which way is up?": which monitors the user has looked at (Identify shows an arrow) and
+ * found the right way up, at <data root>/displays/upright.json. Asked once per monitor
+ * and rotation; a monitor mounted turned can be upright at 90° or at 270°, and only
+ * someone looking at it can tell.
+ */
+export class UprightStore {
+  private readonly store: JsonStore<typeof UprightSchema>;
+
+  constructor(files: FileStore, dataRoot: string) {
+    this.store = new JsonStore(
+      files,
+      path.join(dataRoot, 'displays', 'upright.json'),
+      UprightSchema
+    );
+  }
+
+  /** The confirmed keys; none when the file cannot be read. */
+  async read(): Promise<string[]> {
+    const value = await this.store.read();
+    return value.ok ? value.value.confirmed : [];
+  }
+
+  async confirm(keys: string[]): Promise<Result<void>> {
+    const saved = await this.store.update((current) => ({
+      schemaVersion: 1 as const,
+      confirmed: [...new Set([...current.confirmed, ...keys])],
+    }));
+    return saved.ok ? ok(undefined) : saved;
+  }
+}

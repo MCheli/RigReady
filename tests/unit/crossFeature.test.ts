@@ -450,3 +450,113 @@ describe('names the owner gave things, through core', () => {
     expect(await app.wiring.context.names.monitors()).toEqual({ [mfd!.id]: 'MFD left' });
   });
 });
+
+describe('a setup that names the DCS install it uses', () => {
+  async function twoInstalls(): Promise<{ beta: string; betaUser: string }> {
+    app = await wiredApp('flying-all-good');
+    const beta = path.join(app.home, 'Games', 'DCS World OpenBeta');
+    const betaUser = path.join(app.ports.folders.savedGames(), 'DCS.openbeta');
+    await mutate(app, [
+      { op: 'writeFile', path: 'Games/DCS World OpenBeta/bin/DCS.exe', content: '' },
+      { op: 'writeFile', path: 'Games/DCS World OpenBeta/dcs_variant.txt', content: 'openbeta' },
+      { op: 'writeFile', path: 'Saved Games/DCS.openbeta/Config/only-beta.lua', content: 'x = 1' },
+      {
+        op: 'setRegistryValue',
+        hive: 'HKCU',
+        key: 'Software\\Eagle Dynamics\\DCS World OpenBeta',
+        name: 'Path',
+        value: { type: 'string', value: beta },
+      },
+    ]);
+    return { beta, betaUser };
+  }
+
+  const exists = (id: string, file: string): CheckItem => ({
+    id,
+    type: 'file.exists',
+    title: id,
+    required: true,
+    params: { path: file },
+  });
+  const CHECKS = [
+    exists('user', '{DCS_USER}/Config/only-beta.lua'),
+    exists('install', '{DCS_INSTALL}/bin/DCS.exe'),
+  ];
+
+  it('resolves {DCS_INSTALL} and {DCS_USER} to that install for its checks, its launch and its scripts', async () => {
+    const { beta, betaUser } = await twoInstalls();
+    const { checks, games } = app.wiring.context;
+    const installs = await games.get('dcs')!.detect(app.ctx);
+    expect(installs.ok && installs.value.map((i) => i.source)).toEqual(['steam', 'standalone']);
+
+    // Without a choice the first install (Steam) is used: the beta-only file is not there.
+    const first = await runChecks(profileOf(CHECKS, { game: 'dcs' }), checks, app.ctx);
+    expect(first.results.map((r) => r.status)).toEqual(['fail', 'pass']);
+
+    const profile = profileOf(CHECKS, {
+      game: 'dcs',
+      gameInstall: beta,
+      launch: { exe: '{DCS_INSTALL}/bin/DCS.exe', args: [] },
+    });
+    const chosen = await runChecks(profile, checks, app.ctx);
+    expect(chosen.results.map((r) => r.status)).toEqual(['pass', 'pass']);
+
+    await saveProfile(profile);
+    const launched = await fly().launch('p');
+    expect(launched).toMatchObject({ value: { outcome: 'launched' } });
+    expect(app.ports.processes.started.at(-1)!.exe).toBe(path.join(beta, 'bin', 'DCS.exe'));
+
+    const { scriptEnvironment } = await import('../../src/core/scriptEnv');
+    const { withProfile } = await import('../../src/core/checks/registry');
+    expect(await scriptEnvironment(withProfile(app.ctx, profile), games)).toMatchObject({
+      RIGREADY_GAME_PATH: beta,
+      RIGREADY_USER_DATA: betaUser,
+    });
+    // The DCS feature's own checks follow the setup's install too.
+    const options: CheckItem = {
+      id: 'options',
+      type: 'dcs.options',
+      title: 'DCS options',
+      required: true,
+      params: { vr: false },
+    };
+    const own = await runChecks({ ...profile, checks: [options] }, checks, app.ctx);
+    expect(own.results[0]!.summary).toBe(
+      'options.lua does not exist yet. DCS creates it the first time it runs.'
+    );
+    const steam = await runChecks(profileOf([options], { game: 'dcs' }), checks, app.ctx);
+    expect(steam.results[0]!.summary).not.toContain('does not exist');
+  });
+
+  it('when that install disappears the checks say "DCS install not found" and Launch never starts the other one', async () => {
+    const { beta } = await twoInstalls();
+    const { checks } = app.wiring.context;
+    const installed: CheckItem = {
+      id: 'dcs',
+      type: 'dcs.install',
+      title: 'DCS World installed',
+      required: true,
+      params: { installDir: beta },
+    };
+    const profile = profileOf([...CHECKS, installed], {
+      game: 'dcs',
+      gameInstall: beta,
+      launch: { exe: '{DCS_INSTALL}/bin/DCS.exe', args: [] },
+    });
+    await saveProfile(profile);
+    await mutate(app, [{ op: 'removeFile', path: 'Games/DCS World OpenBeta' }]);
+
+    const report = await runChecks(profile, checks, app.ctx);
+    expect(report.ready).toBe(false);
+    expect(report.results.map((r) => [r.itemId, r.status, r.summary])).toEqual([
+      ['user', 'error', 'DCS user folder not found'],
+      ['install', 'error', 'DCS install not found'],
+      ['dcs', 'fail', 'DCS install not found'],
+    ]);
+    const started = app.ports.processes.started.length;
+    expect(await fly().launch('p')).toMatchObject({
+      value: { outcome: 'failed', message: `DCS World install not found at ${beta}` },
+    });
+    expect(app.ports.processes.started).toHaveLength(started);
+  });
+});

@@ -33,6 +33,8 @@ export default tseslint.config(
       'playwright-report/**',
       'test-results/**',
       'src/legacy/**',
+      // Other agents' git worktrees live here; each is linted in its own tree.
+      '.claude/**',
     ],
   },
   ...tseslint.configs.recommended,

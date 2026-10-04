@@ -539,15 +539,22 @@ async function start(): Promise<void> {
     if (disposed) return;
     event.preventDefault();
     disposed = true;
+    // Quitting never waits on the machine: a feature still stuck in a driver call that
+    // does not answer (a hung USB enumeration) must not keep RigReady from closing.
+    const within = (work: Promise<void> | void, ms: number): Promise<void> =>
+      Promise.race([
+        Promise.resolve(work),
+        new Promise<void>((resolve) => setTimeout(resolve, ms)),
+      ]);
     void (async () => {
       for (const feature of wiring.features) {
         try {
-          await feature.dispose?.();
+          await within(feature.dispose?.(), 2000);
         } catch (e) {
           log.error(`dispose ${feature.id}`, e);
         }
       }
-      await ports.input.stop();
+      await within(ports.input.stop(), 3000);
       tray?.destroy();
       tray = undefined;
       await sink.close();

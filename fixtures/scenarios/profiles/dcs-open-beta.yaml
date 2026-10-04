@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: dcs-open-beta
+name: DCS open beta
+game: dcs
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+launch:
+  exe: '{DCS_INSTALL}/bin/DCS.exe'
+  args: []
+checks:
+  - { id: c1, type: file.exists, title: DCS program, required: true, params: { path: '{DCS_INSTALL}/bin/DCS.exe' } }
+  - { id: c2, type: file.exists, title: DCS options, required: true, params: { path: '{DCS_USER}/Config/options.lua' } }

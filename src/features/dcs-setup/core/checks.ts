@@ -94,8 +94,8 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     group: 'other',
     label: 'DCS World installed',
     params: InstallParams,
-    async run(params) {
-      const paths = await service.paths();
+    async run(params, ctx) {
+      const paths = await service.for(ctx).paths();
       const installs = paths.ok ? paths.value.installs : [];
       const found = installs.find(
         (i) =>
@@ -127,8 +127,8 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     group: 'displays',
     label: 'DCS monitor setup fits the monitors',
     params: MonitorParams,
-    async run(params) {
-      const active = await service.activeMonitorSetup();
+    async run(params, ctx) {
+      const active = await service.for(ctx).activeMonitorSetup();
       if (!active.ok) return { pass: false, summary: active.error.message };
       const { option, file, problems } = active.value;
       const details = [...problems];
@@ -167,7 +167,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     order: 300,
     params: NoParams as never,
     describe: () => 'Write the RigReady screen setup and select it in DCS',
-    run: () => service.rewriteSavedScreens(),
+    run: (_params, ctx) => service.for(ctx).rewriteSavedScreens(),
   };
 
   const exportLua: CheckDefinition<z.infer<typeof ExportParams>> = {
@@ -176,7 +176,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     label: 'Export.lua loads the tools this setup needs',
     params: ExportParams,
     async run(params, ctx) {
-      const paths = await service.paths();
+      const paths = await service.for(ctx).paths();
       if (!paths.ok) return { pass: false, summary: paths.error.message };
       const text = await ctx.ports.files.readText(paths.value.exportLua);
       const parsed = parseExportLua(text.ok ? text.value : '');
@@ -184,7 +184,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
       if (missing.length === 0) return { pass: true, summary: `Loads ${names(params.tools)}` };
       const details: string[] = [];
       for (const tool of missing) {
-        const installed = await service.toolInstalled(paths.value, tool);
+        const installed = await service.for(ctx).toolInstalled(paths.value, tool);
         details.push(
           installed
             ? `${TOOL_INFO[tool].name}: no line loads ${TOOL_INFO[tool].scripts[0]}`
@@ -207,7 +207,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     order: 300,
     params: ExportParams,
     describe: () => 'Put back the missing Export.lua lines',
-    run: (params) => service.repairExport(params.tools),
+    run: (params, ctx) => service.for(ctx).repairExport(params.tools),
   };
 
   const options: CheckDefinition<z.infer<typeof OptionsParams>> = {
@@ -215,10 +215,10 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     group: 'files',
     label: 'DCS graphics options',
     params: OptionsParams,
-    async run(params) {
-      const paths = await service.paths();
+    async run(params, ctx) {
+      const paths = await service.for(ctx).paths();
       if (!paths.ok) return { pass: false, summary: paths.error.message };
-      const read = await service.options(paths.value);
+      const read = await service.for(ctx).options(paths.value);
       if (!read.options)
         return { pass: false, summary: read.problem ?? 'options.lua is not readable' };
       const differences = optionDifferences(params, read.options);
@@ -256,7 +256,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
           'dcs.running',
           'DCS is running. Close DCS first: it rewrites options.lua when it exits.'
         );
-      const paths = await service.paths();
+      const paths = await service.for(ctx).paths();
       if (!paths.ok) return paths;
       const text = await ctx.ports.files.readText(paths.value.options);
       if (!text.ok) return text;
@@ -339,7 +339,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     label: 'DCS files RigReady manages are unchanged',
     params: NoParams as never,
     async run(_params, ctx) {
-      const status = await service.managedStatus();
+      const status = await service.for(ctx).managedStatus();
       const changed = status.filter((s) => s.status === 'changed' || s.status === 'missing');
       const watched = status.filter((s) => s.status !== 'notManaged');
       if (changed.length === 0) {
@@ -373,7 +373,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
     order: 300,
     params: NoParams as never,
     describe: () => "Restore RigReady's version",
-    run: () => service.restoreManaged(),
+    run: (_params, ctx) => service.for(ctx).restoreManaged(),
   };
 
   const capture: CaptureDefinition = {

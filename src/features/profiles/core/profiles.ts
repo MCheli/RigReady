@@ -116,10 +116,14 @@ async function validate(ctx: Ctx, profile: Profile): Promise<Result<void>> {
 export async function createProfile(ctx: Ctx, input: NewProfile): Promise<Result<Profile>> {
   const id = await ctx.profiles.uniqueId(input.name);
   const now = ctx.ports.clock.now().toISOString();
-  const checks: CheckItem[] = input.checks.map((check, index) => ({
-    ...check,
-    id: `c${index + 1}`,
-  }));
+  const checks: CheckItem[] = [];
+  for (const [index, proposed] of input.checks.entries()) {
+    // The check type may finish its item first (save a captured layout under a name, ...).
+    const adopt = ctx.checks.check(proposed.type)?.adopt;
+    const adopted = adopt ? await adopt(proposed, ctx) : ok(proposed);
+    if (!adopted.ok) return adopted;
+    checks.push({ ...adopted.value, id: `c${index + 1}` });
+  }
   const profile: Profile = {
     schemaVersion: 1,
     id,

@@ -10,11 +10,12 @@ import type {
   MonitorView,
   RecoveryView,
 } from '../contract';
+import { matchMonitors } from '../../../core/displays/identity';
 import type { LayoutApplier } from './applier';
-import { describeTargets } from './layoutCheck';
+import { describeTargets, targetFromDisplay } from './layoutCheck';
 import { monitorLabels, monitorNumbers, type MonitorNames } from './labels';
 import { analyzeLayout, joinNames } from './plan';
-import type { MonitorNameStore, RecoveryStore } from './stores';
+import type { MonitorNameStore, RecoveryStore, UprightStore } from './stores';
 
 type Ctx = Pick<MainContext, 'ports' | 'settings' | 'layouts'>;
 
@@ -29,7 +30,8 @@ export class DisplaysService {
     private readonly ctx: Ctx,
     private readonly names: MonitorNameStore,
     private readonly recoveryStore: RecoveryStore,
-    private readonly applier: Pick<LayoutApplier, 'apply'>
+    private readonly applier: Pick<LayoutApplier, 'apply' | 'applyAndWait'>,
+    private readonly upright?: UprightStore
   ) {}
 
   async view(): Promise<Result<DisplaysView>> {
@@ -37,8 +39,12 @@ export class DisplaysService {
     if (!current.ok) return current;
     const names = await this.names.readOrEmpty();
     const displays = current.value.displays;
+    const confirmed = (await this.upright?.read()) ?? [];
     const view: DisplaysView = {
-      monitors: monitorViews(displays, names),
+      monitors: monitorViews(displays, names).map((m) => ({
+        ...m,
+        uprightConfirmed: confirmed.includes(uprightKey(m)),
+      })),
       layouts: [],
       canRevert: this.ctx.ports.displays.canRevert(),
     };
@@ -73,11 +79,72 @@ export class DisplaysService {
         height: d.height,
         text: String(numbers.get(d.id)),
         caption: labels.get(d.id) ?? d.name,
+        // "Which way is up?": the arrow must point up on every screen.
+        up: true,
       })),
       IDENTIFY_MS
     );
     if (!shown.ok) return shown;
     return ok({ shown: on.length, off: displays.length - on.length });
+  }
+
+  /**
+   * Turns one monitor upside down and waits for Keep or Go back. When it is kept, the
+   * saved layouts that had this monitor the old way round are corrected too.
+   */
+  async flip(
+    id: string
+  ): Promise<Result<{ kept: boolean; layoutsUpdated: number; message: string }>> {
+    const current = await this.ctx.ports.displays.read();
+    if (!current.ok) return current;
+    const monitor = current.value.displays.find((d) => d.id === id.toLowerCase());
+    if (!monitor || !monitor.enabled) {
+      return err('displays.flip', 'That monitor is off or not connected, so it cannot be turned.');
+    }
+    const names = await this.names.readOrEmpty();
+    const label = monitorLabels(current.value.displays, names).get(monitor.id) ?? monitor.name;
+    const from = monitor.rotation;
+    const to = ((from + 180) % 360) as DisplayTarget['rotation'];
+    const applied = await this.applier.applyAndWait([
+      { ...targetFromDisplay(monitor), rotation: to },
+    ]);
+    if (!applied.ok) {
+      if (applied.error.code !== 'display.reverted') return applied;
+      return ok({
+        kept: false,
+        layoutsUpdated: 0,
+        message: `${label} is back the way it was. Nothing was changed.`,
+      });
+    }
+    // The answer goes where it is used: every saved layout with this monitor the old way.
+    let layoutsUpdated = 0;
+    const layouts = await this.ctx.layouts.list();
+    for (const layout of layouts.ok ? layouts.value : []) {
+      const match = matchMonitors(layout.displays, [monitor]).find((m) => m.actual);
+      if (!match || !match.expected.enabled || match.expected.rotation !== from) continue;
+      const replaced = await this.ctx.layouts.replace(
+        layout.id,
+        layout.displays.map((d) => (d === match.expected ? { ...d, rotation: to } : d))
+      );
+      if (replaced.ok) layoutsUpdated++;
+    }
+    await this.upright?.confirm([uprightKey({ ...monitor, rotation: to })]);
+    const also =
+      layoutsUpdated > 0
+        ? ` and corrected it in ${layoutsUpdated} saved ${layoutsUpdated === 1 ? 'layout' : 'layouts'}`
+        : '';
+    return ok({ kept: true, layoutsUpdated, message: `Turned ${label} the other way up${also}.` });
+  }
+
+  /** The user looked at the arrows: every monitor that is on is the right way up. */
+  async confirmUpright(): Promise<Result<DisplaysView>> {
+    const current = await this.ctx.ports.displays.read();
+    if (!current.ok) return current;
+    const saved = await this.upright?.confirm(
+      current.value.displays.filter((d) => d.enabled).map(uprightKey)
+    );
+    if (saved && !saved.ok) return saved;
+    return this.view();
   }
 
   async setName(id: string, name: string): Promise<Result<DisplaysView>> {
@@ -277,6 +344,16 @@ export class DisplaysService {
   }
 }
 
+/**
+ * What a "this screen is the right way up" answer is kept under: the monitor (by the
+ * identity that follows it) and the rotation it had when the user looked.
+ */
+export function uprightKey(
+  monitor: Pick<DisplayInfo, 'id' | 'rotation'> & { usbSerial?: string | undefined }
+): string {
+  return `${monitor.usbSerial ?? monitor.id.toLowerCase()}@${monitor.rotation}`;
+}
+
 export function monitorViews(displays: DisplayInfo[], names: MonitorNames): MonitorView[] {
   const labels = monitorLabels(displays, names);
   const numbers = monitorNumbers(displays);
@@ -301,7 +378,20 @@ export function monitorViews(displays: DisplayInfo[], names: MonitorNames): Moni
       height: d.height,
       rotation: d.rotation,
       identical: (counts.get(d.name) ?? 0) > 1,
+      uprightConfirmed: false,
     };
+    if ((counts.get(d.name) ?? 0) > 1) {
+      // A serial of its own (the USB device's) follows the screen to any port.
+      const twins = displays.filter((o) => o.name === d.name);
+      const own = d.usbSerial ?? d.serial;
+      view.toldApartBy =
+        own !== undefined && twins.filter((o) => (o.usbSerial ?? o.serial) === own).length === 1
+          ? 'serial'
+          : 'port';
+    }
+    if (d.connector) view.connector = d.connector;
+    if (d.serial) view.serial = d.serial;
+    if (d.usbSerial) view.usbSerial = d.usbSerial;
     const friendly = names[d.id.toLowerCase()];
     if (friendly) view.friendlyName = friendly;
     const number = numbers.get(d.id.toLowerCase());

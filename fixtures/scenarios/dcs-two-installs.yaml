@@ -1,0 +1,14 @@
+description: Flying, with a second DCS install (standalone open beta) beside the Steam one
+rig: mark-full
+extends: flying-fresh.yaml
+mutations:
+  - { op: writeFile, path: 'Games/DCS World OpenBeta/bin/DCS.exe', content: '' }
+  - { op: writeFile, path: 'Games/DCS World OpenBeta/dcs_variant.txt', content: openbeta }
+  - { op: writeFile, path: 'Saved Games/DCS.openbeta/Config/options.lua', content: "options = {\n\t[\"graphics\"] = {\n\t\t[\"width\"] = 5120,\n\t},\n}\n" }
+  - op: setRegistryValue
+    hive: HKCU
+    key: Software\Eagle Dynamics\DCS World OpenBeta
+    name: Path
+    value: { type: string, value: 'C:\Users\User\Games\DCS World OpenBeta' }
+profiles:
+  - profiles/dcs-open-beta.yaml

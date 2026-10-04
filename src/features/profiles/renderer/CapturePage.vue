@@ -51,6 +51,8 @@ const loading = ref(true);
 const saving = ref(false);
 const error = ref<string>();
 const appFilter = ref('');
+/** key -> the answer to the candidate's question (e.g. a layout name) */
+const answers = reactive<Record<string, string>>({});
 /** key -> included / required */
 const selected = reactive<Record<string, boolean>>({});
 const required = reactive<Record<string, boolean>>({});
@@ -120,7 +122,14 @@ async function save(): Promise<void> {
     ...(exe ? { launch: { exe, args: splitArgs(launchArgs.value), ...(cwd ? { cwd } : {}) } } : {}),
     checks: candidates.value
       .filter((c) => selected[c.key])
-      .map((c) => ({ ...c.check, required: required[c.key] ?? true })),
+      .map((c) => {
+        const answer = c.ask ? (answers[c.key] ?? '').trim() : '';
+        return {
+          ...c.check,
+          required: required[c.key] ?? true,
+          ...(c.ask && answer ? { params: { ...c.check.params, [c.ask.param]: answer } } : {}),
+        };
+      }),
   });
   saving.value = false;
   if (!result.ok) {
@@ -225,6 +234,18 @@ onMounted(capture);
           <div class="rr-row-main">
             <div class="rr-row-title">{{ candidate.title }}</div>
             <div v-if="candidate.description" class="rr-row-sub">{{ candidate.description }}</div>
+            <v-text-field
+              v-if="candidate.ask && selected[candidate.key]"
+              v-model="answers[candidate.key]"
+              :label="candidate.ask.label"
+              :placeholder="candidate.ask.placeholder"
+              :hint="candidate.ask.hint"
+              persistent-hint
+              density="compact"
+              class="capture-ask"
+              data-testid="candidate-ask"
+              @click.stop
+            />
           </div>
           <v-btn-toggle
             v-if="selected[candidate.key]"
@@ -266,6 +287,10 @@ onMounted(capture);
   display: grid;
   gap: 12px;
   margin-bottom: 24px;
+}
+.capture-ask {
+  max-width: 460px;
+  margin-top: 8px;
 }
 .capture-launch {
   display: grid;

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { CheckContext } from '../../../core/checks/registry';
+import type { CheckContext, RunProfile } from '../../../core/checks/registry';
 import type { MainContext } from '../../../core/feature';
 import { profileExtension, withProfileExtension, type Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
@@ -143,8 +143,27 @@ export class DcsSetupService {
     this.store = createStateStore(ctx.ports.files, ctx.ports.folders.dataRoot());
   }
 
+  /** The setup this instance works for, when a check or fix of a setup is running. */
+  private profile: RunProfile | undefined;
+
   private get check(): CheckContext {
-    return { ports: this.ctx.ports, log: this.ctx.log };
+    return {
+      ports: this.ctx.ports,
+      log: this.ctx.log,
+      ...(this.profile ? { profile: this.profile } : {}),
+    };
+  }
+
+  /**
+   * The service for one setup's check or fix: when the setup names the DCS install it
+   * uses, every path is that install's. Configure pages use the service as it is (the
+   * first install found).
+   */
+  for(ctx: CheckContext): DcsSetupService {
+    if (ctx.profile?.game !== 'dcs' || !ctx.profile.install) return this;
+    const scoped = Object.create(this) as DcsSetupService;
+    scoped.profile = ctx.profile;
+    return scoped;
   }
 
   paths(): Promise<Result<DcsPaths>> {

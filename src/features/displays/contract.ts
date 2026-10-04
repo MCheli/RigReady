@@ -15,6 +15,12 @@ export const MonitorViewSchema = z.object({
   number: z.number().int().optional(),
   edid: z.string().optional(),
   gdiName: z.string().optional(),
+  /** HDMI, DisplayPort, USB, ... */
+  connector: z.string().optional(),
+  /** EDID serial number, when the monitor has a real one. */
+  serial: z.string().optional(),
+  /** For a USB screen: the serial of its USB device, which follows it to any port. */
+  usbSerial: z.string().optional(),
   enabled: z.boolean(),
   primary: z.boolean(),
   x: z.number().int(),
@@ -23,8 +29,12 @@ export const MonitorViewSchema = z.object({
   height: z.number().int(),
   rotation: RotationSchema,
   refreshHz: z.number().optional(),
-  /** Other connected monitors share its EDID name: only its connector tells them apart. */
+  /** Other connected monitors share its EDID name. */
   identical: z.boolean(),
+  /** How identical monitors are told apart: by a serial that follows the screen, or only by the port it is on. */
+  toldApartBy: z.enum(['serial', 'port']).optional(),
+  /** The user has looked at Identify's arrow on this screen and said it points up. */
+  uprightConfirmed: z.boolean().default(false),
 });
 export type MonitorView = z.infer<typeof MonitorViewSchema>;
 
@@ -107,6 +117,17 @@ export const displaysContract = defineContract(
     view: channel(noInput, DisplaysViewSchema),
     /** Shows each enabled monitor's number on the monitor itself for a few seconds. */
     identify: channel(noInput, z.object({ shown: z.number().int(), off: z.number().int() })),
+    /**
+     * "Which way is up?": turns one monitor upside down (its rotation plus 180°), with
+     * the keep-or-revert question. When kept, every saved layout that has this monitor
+     * in the old orientation gets the new one, so the answer is stored where it is used.
+     */
+    flip: channel(
+      z.object({ id: z.string() }),
+      z.object({ kept: z.boolean(), layoutsUpdated: z.number().int(), message: z.string() })
+    ),
+    /** The user says Identify's arrow points up on every monitor that is on. */
+    confirmUpright: channel(noInput, DisplaysViewSchema),
     /** Names a monitor ("MFD left"); an empty name removes it. */
     setName: channel(z.object({ id: z.string(), name: z.string() }), DisplaysViewSchema),
     /** Saves the monitors as they are now under a new name. */

@@ -74,11 +74,34 @@ async function identify(): Promise<void> {
     return;
   }
   const { shown, off } = result.value;
+  upright.value = true;
   notice.value =
     `Each monitor that is on shows its number for 5 seconds (${shown} ${shown === 1 ? 'monitor' : 'monitors'}).` +
     (off > 0
       ? ` ${off} turned-off ${off === 1 ? 'monitor cannot' : 'monitors cannot'} show one.`
       : '');
+}
+
+// "Which way is up?": offered after Identify, which draws an arrow on every screen.
+const upright = ref(false);
+const flipping = ref<string>();
+
+async function flip(monitor: MonitorView): Promise<void> {
+  flipping.value = monitor.id;
+  error.value = undefined;
+  notice.value = undefined;
+  // Answers once the "Keep this layout?" question is answered.
+  const result = await api.flip({ id: monitor.id });
+  flipping.value = undefined;
+  if (result.ok) notice.value = result.value.message;
+  else error.value = errorText(result.error);
+  await load();
+}
+
+async function confirmUpright(): Promise<void> {
+  if (await act(api.confirmUpright(), 'Noted: every screen is the right way up.')) {
+    upright.value = false;
+  }
 }
 
 const naming = ref<{ id: string; name: string; suggestions: string[] }>();
@@ -110,8 +133,16 @@ const detailLine = (m: MonitorView): string =>
   ].join(' · ');
 
 const identityLine = (m: MonitorView): string => {
-  const connector = m.id.split('#')[2];
-  return [m.edid, m.gdiName, connector ? `connector ${connector}` : undefined]
+  const port = m.id.split('#')[2];
+  return [
+    m.connector,
+    m.edid,
+    m.serial ? `serial ${m.serial}` : 'no serial',
+    m.usbSerial ? `USB device ${m.usbSerial}` : undefined,
+    // The port only matters for a monitor that nothing else identifies.
+    m.toldApartBy === 'port' && port ? `port ${port}` : undefined,
+    m.gdiName,
+  ]
     .filter(Boolean)
     .join(' · ');
 };
@@ -272,6 +303,60 @@ onBeforeUnmount(() => stop?.());
       {{ notice }}
     </v-alert>
 
+    <div v-if="upright && view" class="rr-panel displays-upright" data-testid="upright-panel">
+      <div class="rr-row">
+        <v-icon icon="mdi-arrow-up-bold-outline" size="22" />
+        <div class="rr-row-main">
+          <div class="rr-row-title">Which way is up?</div>
+          <div class="rr-row-sub">
+            Each screen shows its number and an arrow, which must point up. A screen mounted on its
+            side can be upright in two ways, and only you can see which. If the arrow points down on
+            a screen, turn that screen here; you get the usual time to keep it or go back.
+          </div>
+        </div>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          data-testid="upright-confirm"
+          @click="confirmUpright"
+        >
+          All arrows point up
+        </v-btn>
+        <v-btn variant="text" size="small" data-testid="upright-close" @click="upright = false">
+          Not now
+        </v-btn>
+      </div>
+      <div
+        v-for="m in monitors.filter((o) => o.enabled)"
+        :key="m.id"
+        class="rr-row"
+        data-testid="upright-row"
+        :data-label="m.label"
+      >
+        <div class="displays-num">{{ m.number }}</div>
+        <div class="rr-row-main">
+          <div class="rr-row-title">{{ m.label }}</div>
+          <div class="rr-row-sub">
+            {{ orientationText(m.rotation) }}{{ m.rotation ? ` (${m.rotation}°)` : '' }}
+            <span v-if="m.uprightConfirmed" data-testid="upright-confirmed">
+              · you have seen it the right way up</span
+            >
+          </div>
+        </div>
+        <v-btn
+          size="small"
+          variant="text"
+          prepend-icon="mdi-rotate-3d-variant"
+          :loading="flipping === m.id"
+          :disabled="flipping !== undefined"
+          data-testid="upright-flip"
+          @click="flip(m)"
+        >
+          Arrow points down: turn it
+        </v-btn>
+      </div>
+    </div>
+
     <template v-if="view">
       <div class="rr-section-title">Right now</div>
       <div class="rr-panel displays-map-wrap" data-testid="displays-map">
@@ -343,6 +428,20 @@ onBeforeUnmount(() => stop?.());
             >
               Identical to other connected monitors. Use Identify to see which screen this is, then
               name it.
+            </div>
+            <div
+              v-if="m.identical"
+              class="rr-row-sub"
+              data-testid="display-told-apart"
+              :data-by="m.toldApartBy"
+            >
+              <template v-if="m.toldApartBy === 'serial'">
+                Told apart by the USB device it hangs off: it keeps its name and place in a layout
+                on any USB port.
+              </template>
+              <template v-else>
+                Told apart only by the port it is plugged into: keep it on this port.
+              </template>
             </div>
           </div>
           <v-btn
@@ -620,6 +719,9 @@ onBeforeUnmount(() => stop?.());
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.displays-upright {
+  margin-bottom: 16px;
 }
 .displays-num.off {
   background: var(--rr-surface-2);

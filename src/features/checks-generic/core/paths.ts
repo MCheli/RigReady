@@ -16,7 +16,7 @@ const LABELS: Record<string, string> = {
   RIGREADY_HOME: 'RigReady data folder',
   STEAM: 'Steam library',
   DCS_USER: 'DCS user folder',
-  DCS_INSTALL: 'DCS install folder',
+  DCS_INSTALL: 'DCS install',
   IRACING_USER: 'iRacing user folder',
   LMU_USER: 'Le Mans Ultimate user folder',
   BEAMNG_USER: 'BeamNG.drive user folder',
@@ -36,7 +36,9 @@ export async function resolveStored(
     return err(
       'path.variable',
       `${variableLabel(variable)} not found`,
-      `{${variable}} is not available on this PC: the program that provides it was not detected.`
+      ctx.profile?.install
+        ? `This setup uses the install at ${ctx.profile.install}, which is gone. Choose another install in the setup, or install it again.`
+        : `{${variable}} is not available on this PC: the program that provides it was not detected.`
     );
   }
   return expanded;

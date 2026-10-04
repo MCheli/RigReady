@@ -251,6 +251,11 @@ export interface ScreenLabel {
   text: string;
   /** Smaller line below it, e.g. the monitor's name. */
   caption?: string;
+  /**
+   * Draws an arrow pointing to the top of the picture. On a monitor that is mounted
+   * turned, the arrow points up only when Windows has it rotated the right way.
+   */
+  up?: boolean;
 }
 
 /** Short-lived labels drawn on top of everything, one per monitor ("Identify"). */

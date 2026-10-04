@@ -30,6 +30,10 @@ export const EnumDisplaySettingsExW = user32.func(
   'int32_t EnumDisplaySettingsExW(const char16_t *deviceName, uint32_t modeNum, void *devMode, uint32_t flags)'
 );
 
+export const ChangeDisplaySettingsExW = user32.func(
+  'int32_t ChangeDisplaySettingsExW(const char16_t *deviceName, void *devMode, intptr_t window, uint32_t flags, void *param)'
+);
+
 // ---- kernel32: processes ----
 export const CreateToolhelp32Snapshot = kernel32.func(
   'intptr_t CreateToolhelp32Snapshot(uint32_t flags, uint32_t pid)'

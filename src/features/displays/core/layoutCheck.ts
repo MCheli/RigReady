@@ -3,10 +3,11 @@ import type {
   CaptureDefinition,
   CheckDefinition,
   CheckOutcome,
+  NewCheckItem,
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import { layoutToTargets, type DisplayLayoutStore } from '../../../core/displays/layouts';
-import { err, ok } from '../../../core/result';
+import { err, ok, type Result } from '../../../core/result';
 import type { DisplayInfo, DisplayTarget } from '../../../shared/models';
 import type { LayoutApplier } from './applier';
 import { monitorLabels, type MonitorNames } from './labels';
@@ -123,6 +124,44 @@ export function createApplyLayoutRemediation(
   };
 }
 
+/** The capture screen's answer to "save this arrangement as a layout named ...". */
+const SAVE_AS = 'saveAs';
+
+/**
+ * When a setup is created with a monitor check and a layout name was given, the
+ * arrangement is saved under that name and the check refers to the saved layout.
+ */
+export async function adoptLayoutItem(
+  item: NewCheckItem,
+  layouts: Pick<DisplayLayoutStore, 'create'>
+): Promise<Result<NewCheckItem>> {
+  const { [SAVE_AS]: asked, ...params } = item.params;
+  const strip = (p: Record<string, unknown>): Record<string, unknown> => {
+    const { [SAVE_AS]: _saveAs, ...rest } = p;
+    return rest;
+  };
+  const plain: NewCheckItem = {
+    ...item,
+    params,
+    ...(item.remediation
+      ? { remediation: { ...item.remediation, params: strip(item.remediation.params) } }
+      : {}),
+  };
+  const name = typeof asked === 'string' ? asked.trim() : '';
+  if (!name) return ok(plain);
+  const parsed = LayoutParamsSchema.safeParse(params);
+  if (!parsed.success) return ok(plain);
+  const created = await layouts.create(name, parsed.data.displays);
+  if (!created.ok) return created;
+  const named = { ...params, layoutId: created.value.id, layoutName: created.value.name };
+  return ok({
+    ...plain,
+    title: `Monitor layout: ${created.value.name}`,
+    params: named,
+    ...(plain.remediation ? { remediation: { ...plain.remediation, params: named } } : {}),
+  });
+}
+
 /** One line per monitor, as the capture screen shows it. */
 export function describeTargets(targets: DisplayTarget[], names: MonitorNames): string[] {
   const labels = monitorLabels(targets, names);
@@ -169,6 +208,18 @@ export function createDisplayCapture(deps: LayoutDeps): CaptureDefinition {
         {
           key: 'displays:layout',
           group: 'displays' as const,
+          // Not one of the saved layouts yet: offer to make it one, so other setups and
+          // Stand down can use the same arrangement by name.
+          ...(same
+            ? {}
+            : {
+                ask: {
+                  param: SAVE_AS,
+                  label: 'Save this arrangement as a layout named',
+                  placeholder: 'Flying',
+                  hint: 'Optional. Changing the saved layout later changes every setup that uses it.',
+                },
+              }),
           title,
           description: (same ? [`Your saved layout "${same.name}"`, ...lines] : lines).join(' · '),
           selectedByDefault: true,

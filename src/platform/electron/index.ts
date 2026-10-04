@@ -373,7 +373,11 @@ export class ElectronOverlays implements Overlays {
           '<body style="margin:0;height:100vh;display:flex;flex-direction:column;align-items:center;' +
           'justify-content:center;background:rgba(15,19,23,0.92);color:#e6e9ed;border-radius:18px;' +
           'font-family:Segoe UI,sans-serif;overflow:hidden">' +
-          `<div style="font-size:150px;font-weight:700;line-height:1">${escapeHtml(label.text)}</div>` +
+          (label.up
+            ? '<div style="font-size:44px;line-height:1;color:#5aa9e6">&#9650;</div>' +
+              '<div style="font-size:13px;letter-spacing:2px;color:#5aa9e6;margin-bottom:2px">THIS SIDE UP</div>'
+            : '') +
+          `<div style="font-size:${label.up ? 120 : 150}px;font-weight:700;line-height:1">${escapeHtml(label.text)}</div>` +
           (label.caption
             ? `<div style="font-size:20px;margin-top:8px;color:#8b95a3">${escapeHtml(label.caption)}</div>`
             : '') +

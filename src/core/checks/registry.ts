@@ -55,6 +55,9 @@ export interface CheckOutcome {
   output?: string;
 }
 
+/** A checklist item before the setup gives it an id. */
+export type NewCheckItem = Omit<CheckItem, 'id'>;
+
 /** Something a check type lets the user confirm on an item, e.g. "Mark verified". */
 export interface CheckAcknowledge<P> {
   /** Button label. */
@@ -89,6 +92,13 @@ export interface CheckDefinition<P = unknown> {
   timeoutSeconds?(params: P): number | undefined;
   /** Never decides readiness: when not met it is a warning even on a required item. */
   advisory?: boolean;
+  /**
+   * Called when a setup is created from the capture screen with an item of this type,
+   * before it is saved. The check may finish the item (for example save the captured
+   * monitor arrangement as a named layout and refer to it). An error stops the creation
+   * and is shown to the user.
+   */
+  adopt?(item: NewCheckItem, ctx: CheckContext): Promise<Result<NewCheckItem>>;
 }
 
 /** The exact program a fix would run, shown to the user before it runs. */
@@ -158,6 +168,11 @@ export interface CaptureCandidate {
    * candidate by default only when the setup is for that game.
    */
   game?: string;
+  /**
+   * One question the capture screen asks when this candidate is kept; the answer is
+   * stored in the item's params under `param` (and handled by the check's `adopt`).
+   */
+  ask?: { param: string; label: string; placeholder?: string; hint?: string };
   /**
    * The image name of the program this candidate is about ("StreamDeck.exe"), when it is
    * about one program. Two candidates for the same program are one too many: the more

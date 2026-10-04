@@ -11,6 +11,7 @@ import type {
 import { DevTree, KEY_PARENT } from './devices';
 import { readRegistryValue } from './registry';
 import {
+  ChangeDisplaySettingsExW,
   DisplayConfigGetDeviceInfo,
   EnumDisplaySettingsExW,
   GetDisplayConfigBufferSizes,
@@ -37,6 +38,7 @@ const SDC_ALLOW_CHANGES = 0x400;
 const PATH_ACTIVE = 1;
 const IDX_INVALID = 0xffffffff;
 const MODE_SOURCE = 1;
+const MODE_TARGET = 2;
 const ERROR_INSUFFICIENT_BUFFER = 122;
 
 // DISPLAYCONFIG_PATH_INFO offsets
@@ -49,6 +51,8 @@ const P_TGT_MODE = 32;
 const P_TGT_ROTATION = 40;
 const P_TGT_REFRESH_NUM = 48;
 const P_TGT_REFRESH_DEN = 52;
+const P_TGT_SCALING = 44;
+const SCALING_PREFERRED = 128;
 const P_TGT_SCANLINE = 56;
 const P_TGT_AVAILABLE = 60;
 const P_FLAGS = 68;
@@ -170,6 +174,21 @@ const DM_SIZE = 68;
 const DM_WIDTH = 172;
 const DM_HEIGHT = 176;
 const DM_FREQUENCY = 184;
+
+const DM_ORIENTATION = 84;
+const ENUM_CURRENT_SETTINGS = 0xffffffff;
+
+/**
+ * What the older GDI API calls the orientation of an enabled display: 0 landscape,
+ * 1 portrait (DMDO_90), 2 landscape flipped, 3 portrait flipped (DMDO_270), in the order
+ * of Windows' own orientation list. For diagnosis and the rig smoke test.
+ */
+export function gdiOrientation(gdiName: string): number | undefined {
+  const devMode = Buffer.alloc(DEVMODE_SIZE);
+  devMode.writeUInt16LE(DEVMODE_SIZE, DM_SIZE);
+  if (EnumDisplaySettingsExW(gdiName, ENUM_CURRENT_SETTINGS, devMode, 0) === 0) return undefined;
+  return devMode.readUInt32LE(DM_ORIENTATION);
+}
 
 /** Every mode Windows lists for an enabled display, unrotated, largest first. */
 function displayModes(gdiName: string): DisplayMode[] {
@@ -364,11 +383,36 @@ function enableTargets(ids: Set<string>): void {
 }
 
 /**
+ * The signal a connected monitor prefers (from its EDID), also while it is off: its
+ * native size and the 48 bytes of DISPLAYCONFIG_VIDEO_SIGNAL_INFO a target mode needs.
+ */
+function preferredMode(
+  paths: Buffer,
+  offset: number
+): { width: number; height: number; refreshHz: number; signal: Buffer } | undefined {
+  const packet = Buffer.alloc(80);
+  packet.writeUInt32LE(3, 0); // DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_PREFERRED_MODE
+  packet.writeUInt32LE(80, 4);
+  paths.copy(packet, 8, offset + P_TGT_ADAPTER, offset + P_TGT_ADAPTER + 8);
+  packet.writeUInt32LE(paths.readUInt32LE(offset + P_TGT_ID), 16);
+  if (DisplayConfigGetDeviceInfo(packet) !== 0) return undefined;
+  // DISPLAYCONFIG_VIDEO_SIGNAL_INFO: pixelRate (8 bytes), hSyncFreq, then vSyncFreq as a rational.
+  const vSyncDen = packet.readUInt32LE(32 + 20);
+  return {
+    width: packet.readUInt32LE(20),
+    height: packet.readUInt32LE(24),
+    refreshHz: vSyncDen > 0 ? packet.readUInt32LE(32 + 16) / vSyncDen : 0,
+    signal: Buffer.from(packet.subarray(32, 80)),
+  };
+}
+
+/**
  * The active paths plus one path for every monitor in `ids` that is connected but off,
  * each with a new source mode of the size its target asks for. With it, turning monitors
  * on, moving, rotating and turning others off is one SetDisplayConfig call instead of
- * two. Undefined when a monitor to turn on has no size in its target or no free path:
- * the caller then lets Windows turn it on first (enableTargets).
+ * two. Undefined when a monitor to turn on has no free path, or is asked for a size or
+ * refresh rate other than the one it prefers: the caller then lets Windows turn it on
+ * first (enableTargets) and arranges it afterwards.
  */
 function configWithEnabled(
   targets: Map<string, DisplayTarget>,
@@ -402,23 +446,47 @@ function configWithEnabled(
     }
     if (!remaining.has(id)) continue;
     const target = targets.get(id)!;
-    if (target.width === undefined || target.height === undefined) return undefined;
+    const preferred = preferredMode(all.paths, o);
+    if (!preferred) return undefined;
+    if (target.refreshHz !== undefined && Math.abs(target.refreshHz - preferred.refreshHz) >= 1) {
+      return undefined;
+    }
+    const turned = target.rotation === 90 || target.rotation === 270;
+    const wantWidth = turned ? target.height : target.width;
+    const wantHeight = turned ? target.width : target.height;
+    if (
+      (wantWidth !== undefined && wantWidth !== preferred.width) ||
+      (wantHeight !== undefined && wantHeight !== preferred.height)
+    ) {
+      return undefined;
+    }
     remaining.delete(id);
     usedSources.add(sourceKey(all.paths, o));
     activeTargets.add(targetKey(all.paths, o));
-    // A source mode for the new path; arrange() fills in rotation and position.
-    const sideways = target.rotation === 90 || target.rotation === 270;
-    const mode = Buffer.alloc(MODE_SIZE);
-    mode.writeUInt32LE(MODE_SOURCE, M_TYPE);
-    mode.writeUInt32LE(all.paths.readUInt32LE(o + P_SRC_ID), M_ID);
-    all.paths.copy(mode, M_ADAPTER, o + P_SRC_ADAPTER, o + P_SRC_ADAPTER + 8);
-    mode.writeUInt32LE(sideways ? target.height : target.width, M_SRC_WIDTH);
-    mode.writeUInt32LE(sideways ? target.width : target.height, M_SRC_HEIGHT);
-    mode.writeUInt32LE(PIXELFORMAT_32BPP, M_SRC_FORMAT);
+    // A source mode (the desktop area; arrange() fills in rotation and position) and a
+    // target mode (the monitor's preferred signal) for the new path. Windows wants both.
+    const source = Buffer.alloc(MODE_SIZE);
+    source.writeUInt32LE(MODE_SOURCE, M_TYPE);
+    source.writeUInt32LE(all.paths.readUInt32LE(o + P_SRC_ID), M_ID);
+    all.paths.copy(source, M_ADAPTER, o + P_SRC_ADAPTER, o + P_SRC_ADAPTER + 8);
+    source.writeUInt32LE(preferred.width, M_SRC_WIDTH);
+    source.writeUInt32LE(preferred.height, M_SRC_HEIGHT);
+    source.writeUInt32LE(PIXELFORMAT_32BPP, M_SRC_FORMAT);
+    const signal = Buffer.alloc(MODE_SIZE);
+    signal.writeUInt32LE(MODE_TARGET, M_TYPE);
+    signal.writeUInt32LE(all.paths.readUInt32LE(o + P_TGT_ID), M_ID);
+    all.paths.copy(signal, M_ADAPTER, o + P_TGT_ADAPTER, o + P_TGT_ADAPTER + 8);
+    preferred.signal.copy(signal, 16);
     all.paths.writeUInt32LE(all.numModes + added.length, o + P_SRC_MODE);
-    all.paths.writeUInt32LE(IDX_INVALID, o + P_TGT_MODE);
+    all.paths.writeUInt32LE(all.numModes + added.length + 1, o + P_TGT_MODE);
+    // An inactive path comes without these; an active one must have them, matching its signal.
+    if (all.paths.readUInt32LE(o + P_TGT_SCALING) === 0) {
+      all.paths.writeUInt32LE(SCALING_PREFERRED, o + P_TGT_SCALING);
+    }
+    preferred.signal.copy(all.paths, o + P_TGT_REFRESH_NUM, 16, 24);
+    all.paths.writeUInt32LE(preferred.signal.readUInt32LE(44), o + P_TGT_SCANLINE);
     all.paths.writeUInt32LE(all.paths.readUInt32LE(o + P_FLAGS) | PATH_ACTIVE, o + P_FLAGS);
-    added.push(mode);
+    added.push(source, signal);
     keep.push(p);
   }
   if (remaining.size > 0) return undefined;
@@ -431,8 +499,8 @@ function configWithEnabled(
 }
 
 /**
- * Rotation, position, size, refresh rate, primary and disable for the monitors of a
- * configuration (the active ones, or configWithEnabled's), applied in one call.
+ * Rotation, position, primary and disable for the monitors of a configuration (the
+ * active ones, or configWithEnabled's), applied in one call.
  */
 function arrange(
   targets: Map<string, DisplayTarget>,
@@ -464,34 +532,9 @@ function arrange(
   for (const e of remaining) {
     if (!e.target) continue;
     const { pathOffset: o, modeOffset: m, target } = e;
-    // Source modes are stored unrotated; targets give the desktop (rotated) size.
-    let width = config.modes.readUInt32LE(m + M_SRC_WIDTH);
-    let height = config.modes.readUInt32LE(m + M_SRC_HEIGHT);
-    if (target.width !== undefined && target.height !== undefined) {
-      const sideways = target.rotation === 90 || target.rotation === 270;
-      const wantWidth = sideways ? target.height : target.width;
-      const wantHeight = sideways ? target.width : target.height;
-      if (wantWidth !== width || wantHeight !== height) {
-        // A different resolution: let Windows pick a matching target mode.
-        config.paths.writeUInt32LE(IDX_INVALID, o + P_TGT_MODE);
-        width = wantWidth;
-        height = wantHeight;
-      }
-    }
-    if (target.refreshHz !== undefined) {
-      const num = config.paths.readUInt32LE(o + P_TGT_REFRESH_NUM);
-      const den = config.paths.readUInt32LE(o + P_TGT_REFRESH_DEN);
-      if (den === 0 || Math.abs(num / den - target.refreshHz) >= 0.5) {
-        // Another refresh rate: say which, and let Windows pick the matching target mode.
-        config.paths.writeUInt32LE(Math.round(target.refreshHz * 1000), o + P_TGT_REFRESH_NUM);
-        config.paths.writeUInt32LE(1000, o + P_TGT_REFRESH_DEN);
-        config.paths.writeUInt32LE(0, o + P_TGT_SCANLINE);
-        config.paths.writeUInt32LE(IDX_INVALID, o + P_TGT_MODE);
-      }
-    }
+    // Size and refresh rate stay as they are here: a path needs a complete target mode,
+    // and only Windows can compute one for another mode (see changeModes).
     config.paths.writeUInt32LE(ROTATION_TO_RAW[target.rotation], o + P_TGT_ROTATION);
-    config.modes.writeUInt32LE(width, m + M_SRC_WIDTH);
-    config.modes.writeUInt32LE(height, m + M_SRC_HEIGHT);
     config.modes.writeInt32LE(target.x, m + M_SRC_X);
     config.modes.writeInt32LE(target.y, m + M_SRC_Y);
   }
@@ -540,10 +583,69 @@ function arrange(
   if (status !== 0) throw new Error(`SetDisplayConfig failed with ${status}`);
 }
 
+const DM_FIELDS = 72;
+const DM_PELSWIDTH = 0x80000;
+const DM_PELSHEIGHT = 0x100000;
+const DM_DISPLAYFREQUENCY = 0x400000;
+const CDS_UPDATEREGISTRY = 1;
+const CDS_TEST = 2;
+
+/** True when the target asks for a size or refresh rate the monitor does not have now. */
+function modeDiffers(target: DisplayTarget, now: DisplayInfo): boolean {
+  const size =
+    target.width !== undefined &&
+    target.height !== undefined &&
+    // Compared unrotated, so a pure rotation is not a mode change.
+    Math.min(target.width, target.height) !== Math.min(now.width, now.height);
+  const sizeLong =
+    target.width !== undefined &&
+    target.height !== undefined &&
+    Math.max(target.width, target.height) !== Math.max(now.width, now.height);
+  const rate =
+    target.refreshHz !== undefined && Math.abs((now.refreshHz ?? 0) - target.refreshHz) >= 0.5;
+  return size || sizeLong || rate;
+}
+
+/**
+ * Sets the size and refresh rate of enabled monitors that should have another one, each
+ * tested first. Windows computes the signal for the new mode itself, which the display
+ * configuration API cannot be asked to do. Returns how many monitors changed.
+ */
+function changeModes(targets: Map<string, DisplayTarget>): number {
+  let changed = 0;
+  for (const now of readLayout().displays) {
+    const target = targets.get(now.id);
+    if (!target?.enabled || !now.enabled || !now.gdiName || !modeDiffers(target, now)) continue;
+    // GDI takes the size as the desktop sees it now (turned when the monitor is).
+    const nowSideways = now.rotation === 90 || now.rotation === 270;
+    const wantSideways = target.rotation === 90 || target.rotation === 270;
+    let width = target.width ?? now.width;
+    let height = target.height ?? now.height;
+    if (target.width !== undefined && nowSideways !== wantSideways)
+      [width, height] = [height, width];
+    const hz = Math.round(target.refreshHz ?? now.refreshHz ?? 60);
+    const devMode = Buffer.alloc(DEVMODE_SIZE);
+    devMode.writeUInt16LE(DEVMODE_SIZE, DM_SIZE);
+    devMode.writeUInt32LE(DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY, DM_FIELDS);
+    devMode.writeUInt32LE(width, DM_WIDTH);
+    devMode.writeUInt32LE(height, DM_HEIGHT);
+    devMode.writeUInt32LE(hz, DM_FREQUENCY);
+    const what = `${now.name || now.id} ${width}x${height} at ${hz} Hz`;
+    const tested = ChangeDisplaySettingsExW(now.gdiName, devMode, 0, CDS_TEST, null);
+    if (tested !== 0) throw new Error(`Windows does not accept ${what} (${tested})`);
+    const status = ChangeDisplaySettingsExW(now.gdiName, devMode, 0, CDS_UPDATEREGISTRY, null);
+    if (status !== 0) throw new Error(`Could not set ${what} (${status})`);
+    changed++;
+  }
+  return changed;
+}
+
 export class WindowsDisplayProvider implements DisplayProvider {
   private undo: RawConfig[] = [];
   /** How many SetDisplayConfig applies the last apply() took (1 = atomic). For the rig smoke test. */
   lastApplyCalls = 0;
+  /** Why the last apply() could not be done in one call, when it could not. */
+  lastAtomicFailure: string | undefined;
 
   async read(): Promise<Result<DisplayLayout>> {
     try {
@@ -589,15 +691,24 @@ export class WindowsDisplayProvider implements DisplayProvider {
         try {
           arrange(wanted, combined);
           atomic = true;
-        } catch {
+        } catch (e) {
           atomic = false;
+          this.lastAtomicFailure = String(e);
         }
+      } else if (toEnable.size > 0) {
+        this.lastAtomicFailure = 'no combined configuration (a size is missing or no free path)';
       }
       if (!atomic) {
         if (toEnable.size > 0) enableTargets(toEnable);
         arrange(wanted);
       }
       this.lastApplyCalls = atomic || toEnable.size === 0 ? 1 : 2;
+      // Another size or refresh rate is a change of its own, after which the positions
+      // (given for the new sizes) are applied once more.
+      if (changeModes(wanted) > 0) {
+        arrange(wanted);
+        this.lastApplyCalls += 2;
+      }
       this.undo.push(captured);
       return ok({ previous, current: readLayout() });
     } catch (e) {

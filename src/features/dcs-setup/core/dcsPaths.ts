@@ -22,7 +22,20 @@ export async function dcsPaths(ctx: CheckContext, games: GameRegistry): Promise<
   if (!dcs) return err('dcs.module', 'This version of RigReady has no DCS World support.');
   const installs = await dcs.detect(ctx);
   if (!installs.ok) return installs;
-  const install = installs.value[0];
+  // A setup that names its install gets that one or an error, never another install's files.
+  const chosen = ctx.profile?.game === 'dcs' ? ctx.profile.install : undefined;
+  const install = chosen
+    ? installs.value.find(
+        (i) => path.resolve(i.installDir).toLowerCase() === path.resolve(chosen).toLowerCase()
+      )
+    : installs.value[0];
+  if (chosen && !install) {
+    return err(
+      'dcs.installMissing',
+      'DCS install not found',
+      `This setup uses the DCS install at ${chosen}, which is gone.`
+    );
+  }
   let userDir = install?.userDir;
   if (!userDir) {
     const locations = await dcs.configLocations(ctx);

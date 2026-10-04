@@ -347,7 +347,16 @@ export class Fly {
       ? await allPathVariables(withProfile(this.ctx, profile), this.ctx.games)
       : {};
     const exe = expandPath(target.exe, variables);
-    if (!exe.ok) return exe;
+    if (!exe.ok) {
+      // The install this setup names is gone: say so, and never start another one instead.
+      if (exe.error.code === 'path.variable' && profile.gameInstall) {
+        return err(
+          'fly.installMissing',
+          `${this.gameName(profile) ?? 'The game'} install not found at ${profile.gameInstall}`
+        );
+      }
+      return exe;
+    }
     const cwd = target.cwd ? expandPath(target.cwd, variables) : undefined;
     if (cwd && !cwd.ok) return cwd;
     return ok({ exe: exe.value, args: target.args, ...(cwd ? { cwd: cwd.value } : {}) });

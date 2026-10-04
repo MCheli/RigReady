@@ -388,10 +388,11 @@ test('fly: Stand down applies the desk layout chosen in Settings, with the keep 
   await page.getByTestId('keep-layout-keep').click();
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
   await page.getByTestId('stand-down').click();
+  // The desk layout is applied, and Stand down waits for the answer before it reports.
   await expect(page.getByTestId('keep-layout')).toBeVisible();
-  await expect(page.getByTestId('fly-activity')).toContainText('Applied desk layout "Desk"');
   await shot('desk-applied');
   await page.getByTestId('keep-layout-keep').click();
+  await expect(page.getByTestId('fly-activity')).toContainText('Applied desk layout "Desk"');
   await expect(checkRow(page, 'Monitor layout')).toContainText('DELL G3223D is on, expected off');
   await shot('at-the-desk');
 });
