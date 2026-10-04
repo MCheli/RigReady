@@ -8,9 +8,38 @@ import {
 } from '../../core/checks/engine';
 import { CheckGroupSchema } from '../../core/profile/schema';
 import { channel, defineContract, noInput } from '../../shared/ipc';
-import { GameKindSchema } from '../../shared/models';
+import { GameKindSchema, RotationSchema } from '../../shared/models';
 
 const ProfileRef = z.object({ profileId: z.string() });
+
+/** A monitor as it is now, for the drawing of the rig. */
+export const RigMonitorSchema = z.object({
+  id: z.string(),
+  /** The name the owner gave it, or its own, numbered when several share it. */
+  label: z.string(),
+  x: z.number().int(),
+  y: z.number().int(),
+  /** Desktop size in pixels after rotation; 0 while it is off. */
+  width: z.number().int(),
+  height: z.number().int(),
+  rotation: RotationSchema,
+  enabled: z.boolean(),
+  primary: z.boolean(),
+  /** What is different from what the setup expects of it, in a few words. Absent: as expected. */
+  issue: z.string().optional(),
+});
+
+/** The rig at a glance: the monitors as they are, compared with what the setup expects. */
+export const RigGlanceSchema = z.object({
+  monitors: z.array(RigMonitorSchema),
+  /** Monitors the setup wants on that are not connected, by name. */
+  missing: z.array(z.string()),
+  /** The checklist item the arrangement belongs to: where choosing a monitor leads. Absent when the setup expects nothing of the monitors. */
+  itemId: z.string().optional(),
+  /** Why the monitors cannot be drawn. */
+  error: z.string().optional(),
+});
+export type RigGlance = z.infer<typeof RigGlanceSchema>;
 
 export const ProfileSummarySchema = z.object({
   id: z.string(),
@@ -281,6 +310,8 @@ export const flyContract = defineContract(
     setPreferences: channel(PreferencesPatchSchema, PreferencesSchema),
     /** Starts watching the profiles folder; `profilesChanged` fires within about 2 s of a change. */
     watch: channel(noInput, z.object({ watching: z.boolean() })),
+    /** The monitors as they are now, each with what is different from what the setup expects. */
+    rig: channel(ProfileRef, RigGlanceSchema),
     /** The session of the moment: none, a game running, or one that just closed. */
     session: channel(noInput, SessionStateSchema),
     /** "Welcome back" was read: back to normal without standing down. */

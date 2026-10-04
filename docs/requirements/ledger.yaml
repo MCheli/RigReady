@@ -645,6 +645,40 @@ requirements:
       - "artifacts/screens/fly-history/01-last-flown.png"
       - "artifacts/screens/fly-history/02-history.png"
 
+  - id: WOW-FLY-004
+    title: The rig at a glance - monitors to scale and devices as chips
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "Under the top of the Fly screen a strip draws every monitor that is on, to scale and in its place (one scale for both directions), with the main display outlined; monitors that are off are named under the drawing. The monitors are read through the display port, named as the checklist names them (the owner's name, or the monitor's own, numbered when several share it)."
+      - "While the setup's monitor check is not met, the monitor that differs is drawn with a dashed outline and a named sign, and what differs is said in words under the drawing ('USB_Monitor (2 of 3): rotated 0°, expected 90°'; '...: not connected' for one that is unplugged). A saved layout the check names is what the monitors are compared with, as for the check itself. A setup that expects nothing of the monitors shows them with nothing marked. When Windows does not report the monitors, the strip says why."
+      - "The setup's device items are chips: an icon by kind of device (stick, throttle, pedals, wheel, display unit, panel, head tracker, button deck, ...), the name (without the maker most of them share; the whole name and what the check found are in the tooltip), and a state icon with a name. A chip that is not met has its own outline as well as its icon."
+      - "Choosing a monitor or a device opens its checklist group if it is folded, brings its row into view, tints it for a moment and puts the keyboard focus on it."
+      - "The drawing follows the machine: after a fix or a change of the monitors it is read again."
+    status: done
+    evidence:
+      - "src/features/fly/core/rig.test.ts#says the first thing that is off about a monitor, in a few words"
+      - "src/features/fly/core/rig.test.ts#positions are measured from the main display, wherever the setup recorded it"
+      - "src/features/fly/core/rig.test.ts#draws the monitors as they are, named as the checklist names them, with nothing wrong when ready"
+      - "src/features/fly/core/rig.test.ts#marks the monitor that is off, in the words the checklist uses for it"
+      - "src/features/fly/core/rig.test.ts#a monitor that is not connected is named as missing"
+      - "src/features/fly/core/rig.test.ts#a saved layout is what counts while it exists, as for the check"
+      - "src/features/fly/core/rig.test.ts#a setup that expects nothing of the monitors still shows them, with nothing to mark"
+      - "src/features/fly/core/rig.test.ts#says why when Windows does not report the monitors"
+      - "src/features/fly/core/deviceKind.test.ts#knows the gear of a flying rig by its names"
+      - "src/features/fly/core/deviceKind.test.ts#knows the gear of a racing rig"
+      - "src/features/fly/core/deviceKind.test.ts#leaves out the word most of the devices begin with: their maker"
+      - "src/features/fly/renderer/rigDrawing.test.ts#fits the whole desktop in the box, every monitor at its place and in proportion"
+      - "tests/e2e/fly-rig.e2e.ts#rig: the monitors are drawn to scale and the devices are chips; a problem is a place, and choosing it leads to its row"
+      - "tests/e2e/fly-rig.e2e.ts#rig: a device in a folded group is one click away, and a setup without a monitor check still shows the monitors"
+      - "tests/e2e/fly-rig.e2e.ts#rig: a monitor that is unplugged, and monitors that cannot be read, are said in words"
+      - "artifacts/screens/fly-rig/01-problems-as-places.png"
+      - "artifacts/screens/fly-rig/02-led-to-the-row.png"
+      - "artifacts/screens/fly-rig/03-all-in-place.png"
+      - "artifacts/screens/fly-rig-plain/01-no-monitor-check.png"
+      - "artifacts/screens/fly-rig-trouble/01-unplugged.png"
+
   # ---------------------------------------------------------------------------
   # CHECK TYPES
   # ---------------------------------------------------------------------------

@@ -12,6 +12,7 @@ import {
   type LaunchStep,
   type ProfileSummary,
   type ProfileView,
+  type RigGlance,
   type SessionState,
 } from '../contract';
 import {
@@ -90,6 +91,8 @@ export const useFlyStore = defineStore('fly', () => {
   const autoStandDown = ref(false);
   /** The session of the moment: none, a game running, or one that just closed. */
   const session = ref<SessionState>({ phase: 'idle' });
+  /** The rig at a glance: the monitors as they are. Undefined until read. */
+  const rig = ref<RigGlance>();
   let runId: string | undefined;
   let launchRunId: string | undefined;
   let makeReadyRunId: string | undefined;
@@ -234,6 +237,18 @@ export const useFlyStore = defineStore('fly', () => {
     fixing.value = {};
     fixMessages.value = {};
     activity.value = undefined;
+    rig.value = undefined;
+  }
+
+  /** The monitors as they are now, compared with what the setup expects of them. */
+  async function loadRig(): Promise<void> {
+    const profileId = activeId.value;
+    if (!profileId) return;
+    const answer = await api.rig({ profileId });
+    if (profileId !== activeId.value) return;
+    rig.value = answer.ok
+      ? answer.value
+      : { monitors: [], missing: [], error: errorText(answer.error) };
   }
 
   async function load(): Promise<void> {
@@ -263,6 +278,7 @@ export const useFlyStore = defineStore('fly', () => {
     void api.session().then((current) => {
       if (current.ok) session.value = current.value;
     });
+    void loadRig();
     await check();
   }
 
@@ -326,6 +342,7 @@ export const useFlyStore = defineStore('fly', () => {
       return;
     }
     view.value = next.value;
+    void loadRig();
     await check();
     // The list's "last used" moves with the switch.
     const state = await api.state();
@@ -619,12 +636,14 @@ export const useFlyStore = defineStore('fly', () => {
     minimizeOnLaunch,
     autoStandDown,
     session,
+    rig,
     items,
     anyChecking,
     counts,
     dial,
     readiness,
     load,
+    loadRig,
     check,
     settled,
     checkOne,

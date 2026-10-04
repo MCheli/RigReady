@@ -3,6 +3,7 @@ import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { flyContract } from './contract';
 import { Fly } from './core/fly';
+import { rigGlance } from './core/rig';
 import { SessionLog, SessionTracker } from './core/sessions';
 import { ProfileWatcher } from './core/watch';
 import { welcome } from './core/welcome';
@@ -75,6 +76,11 @@ export default defineFeatureMain({
         watch: async () => {
           await watching.start();
           return ok({ watching: true });
+        },
+        rig: async ({ profileId }) => {
+          const found = await fly.profile(profileId);
+          if (!found.ok) return found;
+          return ok(await rigGlance(ctx, found.value.profile));
         },
         session: async () => ok(await sessions.current()),
         dismissSession: async () => ok(sessions.dismiss()),

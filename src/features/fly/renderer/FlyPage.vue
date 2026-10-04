@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 import type { CheckResult } from '../../../core/checks/engine';
 import type { CommandPreview } from '../../../core/checks/registry';
 import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
@@ -10,6 +10,7 @@ import { lastSessionLine } from '../core/sessionText';
 import CheckRow from './CheckRow.vue';
 import HistoryDialog from './HistoryDialog.vue';
 import ReadinessDial from './ReadinessDial.vue';
+import RigStrip, { type RigDevice, type RigState } from './RigStrip.vue';
 import SafeMarkdown from './SafeMarkdown.vue';
 import SessionBanner from './SessionBanner.vue';
 import WelcomePanel from './WelcomePanel.vue';
@@ -68,6 +69,76 @@ const groups = computed(() =>
 
 function toggle(group: string, open: boolean): void {
   toggled.value = { ...toggled.value, [group]: !open };
+}
+
+// ---- the rig at a glance ----
+
+/** The setup's devices, each with how its check stands. */
+const rigDevices = computed<RigDevice[]>(() =>
+  fly.items
+    .filter((item) => item.group === 'devices')
+    .map((item) => {
+      const result = fly.results[item.itemId];
+      const state: RigState =
+        (result?.disabled ?? item.disabled)
+          ? 'off'
+          : !result || fly.checking[item.itemId]
+            ? 'checking'
+            : result.status;
+      return {
+        itemId: item.itemId,
+        title: item.title,
+        state,
+        required: result?.required ?? item.required,
+        ...(result ? { summary: result.summary } : {}),
+      };
+    })
+);
+
+/** How the setup's monitor item stands, when it has one. */
+const monitorState = computed<RigState | undefined>(() => {
+  const itemId = fly.rig?.itemId;
+  if (!itemId) return undefined;
+  const result = fly.results[itemId];
+  if (!result || fly.checking[itemId]) return 'checking';
+  return result.disabled ? 'off' : result.status;
+});
+
+/** What the monitor checks say: when it changes, the drawing is read again. */
+const monitorVerdict = computed(() =>
+  fly.items
+    .filter((item) => item.group === 'displays')
+    .map((item) => {
+      const result = fly.results[item.itemId];
+      return result ? `${result.status}:${result.summary}:${result.details.join('|')}` : '';
+    })
+    .join('/')
+);
+watch(monitorVerdict, (now, before) => {
+  if (before !== '' && now !== before) void fly.loadRig();
+});
+
+/** The row a monitor or a device was chosen from, tinted for a moment. */
+const pointedAt = ref<string>();
+let pointing: ReturnType<typeof setTimeout> | undefined;
+
+/** Leads from the drawing of the rig to the item's row: opens its group, brings the row into view. */
+async function showItem(itemId: string): Promise<void> {
+  const item = fly.items.find((i) => i.itemId === itemId);
+  if (!item) return;
+  toggled.value = { ...toggled.value, [item.group]: true };
+  await nextTick();
+  const row = [...document.querySelectorAll<HTMLElement>('[data-testid="check-row"]')].find(
+    (candidate) => candidate.dataset['item'] === itemId
+  );
+  if (!row) return;
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  row.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'center' });
+  // The keyboard goes on from the row.
+  row.focus({ preventScroll: true });
+  pointedAt.value = itemId;
+  clearTimeout(pointing);
+  pointing = setTimeout(() => (pointedAt.value = undefined), 1300);
 }
 
 const headline = computed(() => {
@@ -391,12 +462,18 @@ onMounted(async () => {
   timer = setInterval(refresh, 5000);
   window.addEventListener('focus', refresh);
   window.addEventListener('keydown', onKey);
-  offs.push(onMachineChanged(refresh));
+  offs.push(
+    onMachineChanged(() => {
+      refresh();
+      void fly.loadRig();
+    })
+  );
   // A setup edited by hand (or in Configure) shows up here without a restart.
   offs.push(await fly.watch(() => void fly.load()));
 });
 onBeforeUnmount(() => {
   clearInterval(timer);
+  clearTimeout(pointing);
   window.removeEventListener('focus', refresh);
   window.removeEventListener('keydown', onKey);
   for (const off of offs) off();
@@ -719,6 +796,13 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
+      <RigStrip
+        :glance="fly.rig"
+        :monitor-state="monitorState"
+        :devices="rigDevices"
+        @select="showItem"
+      />
+
       <div
         v-if="fly.activity"
         class="rr-panel fly-activity"
@@ -921,6 +1005,7 @@ onBeforeUnmount(() => {
             :fix-message="fly.fixMessages[item.itemId]"
             :locked="locked"
             :profile-id="fly.activeId"
+            :flash="pointedAt === item.itemId"
             @recheck="fly.checkOne(item.itemId)"
             @fix="fixOne(item.itemId)"
             @acknowledge="fly.acknowledge(item.itemId)"
