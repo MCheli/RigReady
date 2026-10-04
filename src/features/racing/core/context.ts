@@ -94,6 +94,15 @@ export async function refuseWhileRunning(
   gameId: RacingGameId
 ): Promise<Result<void>> {
   const game = racingGame(gameId);
+  // Not knowing is not the same as "closed": the game's files are not written on a guess.
+  const list = await ctx.ports.processes.list();
+  if (!list.ok) {
+    return err(
+      'racing.processes',
+      `RigReady could not see which programs are running, so it cannot tell whether ${game.name} is open.`,
+      list.error.message
+    );
+  }
   if (await isRunning(ctx, game.blocking)) {
     return err('racing.gameRunning', `Close ${game.name} first. ${game.why}`);
   }

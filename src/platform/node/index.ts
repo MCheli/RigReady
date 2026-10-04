@@ -40,6 +40,7 @@ export class NodeRawFs implements RawFs {
       const stat = await fs.stat(file);
       return { isDirectory: stat.isDirectory(), size: stat.size, mtimeMs: stat.mtimeMs };
     } catch {
+      // The port says undefined for a path that is not there; one that cannot be looked at is treated the same, and reading it then fails with the real reason.
       return undefined;
     }
   }
@@ -62,6 +63,7 @@ export class NodeRawFs implements RawFs {
       await fs.access(file);
       return true;
     } catch {
+      // Not there.
       return false;
     }
   }
@@ -71,8 +73,11 @@ export class NodeRawFs implements RawFs {
   async list(dir: string): Promise<string[]> {
     try {
       return (await fs.readdir(dir)).sort();
-    } catch {
-      return [];
+    } catch (e) {
+      // The port says a folder that does not exist is empty. One that exists and cannot be
+      // listed (no access, not a folder) is an error: "empty" would be a wrong answer.
+      if ((e as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw e;
     }
   }
   async copyFile(from: string, to: string): Promise<void> {

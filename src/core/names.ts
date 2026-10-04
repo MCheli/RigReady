@@ -8,6 +8,8 @@
  * without a source, or when the source fails, there are simply no names.
  */
 
+import { nullLogger, type Logger } from './logger';
+
 /** Friendly monitor names by monitor id (lower case). */
 export type MonitorNames = Record<string, string>;
 
@@ -34,6 +36,8 @@ export class NameRegistry {
   private monitorSource: (() => Promise<MonitorNames>) | undefined;
   private deviceSource: (() => Promise<DeviceNames>) | undefined;
 
+  constructor(private readonly log: Logger = nullLogger) {}
+
   provideMonitors(source: () => Promise<MonitorNames>): void {
     if (this.monitorSource) throw new Error('Monitor names are already provided');
     this.monitorSource = source;
@@ -48,7 +52,9 @@ export class NameRegistry {
   async monitors(): Promise<MonitorNames> {
     try {
       return (await this.monitorSource?.()) ?? {};
-    } catch {
+    } catch (e) {
+      // Names are decoration: a provider that fails must not take down the screen that shows them.
+      this.log.warn('monitor names could not be read', e);
       return {};
     }
   }
@@ -57,7 +63,8 @@ export class NameRegistry {
   async devices(): Promise<DeviceNames> {
     try {
       return (await this.deviceSource?.()) ?? NO_DEVICE_NAMES;
-    } catch {
+    } catch (e) {
+      this.log.warn('device names could not be read', e);
       return NO_DEVICE_NAMES;
     }
   }

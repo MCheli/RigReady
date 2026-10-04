@@ -52,7 +52,7 @@ export function wireFeatures(options: {
     profiles: new ProfileStore(ports.files, ports.folders.dataRoot()),
     settings: new SettingsStore(ports.files, ports.folders.dataRoot(), ports.clock),
     layouts: new DisplayLayoutStore(ports.files, ports.folders.dataRoot(), ports.clock),
-    names: new NameRegistry(),
+    names: new NameRegistry(log),
     bindings: new BindingRegistry(),
     backupSources: new BackupSourceRegistry(),
     emit(contract, event, payload) {
@@ -75,7 +75,12 @@ export function wireFeatures(options: {
       for (const key of Object.keys(binding.contract.channels)) {
         const name = channelName(binding.contract.feature, key);
         if (handlers.has(name)) throw new Error(`IPC channel registered twice: ${name}`);
-        handlers.set(name, (rawInput) => invoke(key, rawInput));
+        handlers.set(name, async (rawInput) => {
+          const envelope = await invoke(key, rawInput);
+          // Expected failures go back to the screen that asked; the detailed log has them too.
+          if (!envelope.ok) log.debug(`ipc ${name} answered with an error`, envelope.error);
+          return envelope;
+        });
       }
     }
   }

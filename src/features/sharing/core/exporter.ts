@@ -146,6 +146,7 @@ async function build(
       try {
         text = data.includes(0) ? undefined : decoder.decode(data);
       } catch {
+        // Not UTF-8: a binary file, which is listed as "not checked" below.
         text = undefined;
       }
       if (text === undefined) {

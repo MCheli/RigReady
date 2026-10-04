@@ -138,6 +138,7 @@ async function readWindowState(files: FileStore, file: string): Promise<WindowSt
       ? state
       : { width: state.width, height: state.height, maximized: state.maximized };
   } catch {
+    // A damaged window.json: the window opens at its default size and the file is rewritten on the next move.
     return fallback;
   }
 }

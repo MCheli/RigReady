@@ -39,6 +39,15 @@ const cleanups = new Set<() => Promise<void>>();
 function setupDevices(ctx: MainContext) {
   const { ports } = ctx;
   const stores = deviceStores(ports);
+  /** A binding reader that fails is left out (and logged), like one that has nothing to show. */
+  const bindingsAvailable = async (reader: { gameName: string; available(): Promise<boolean> }) => {
+    try {
+      return await reader.available();
+    } catch (e) {
+      ctx.log.warn(`the bindings of ${reader.gameName} could not be read`, e);
+      return false;
+    }
+  };
 
   // The DirectInput reader is shared by the whole app: start() is idempotent, so every use
   // simply asks for it (see InputProvider). A failed start is tried again by the next call.
@@ -81,7 +90,7 @@ function setupDevices(ctx: MainContext) {
     const { all: allProfiles, active } = await activeProfile();
     const bindingPages: { label: string; route(guid: string): string }[] = [];
     for (const reader of ctx.bindings.all()) {
-      if (!(await reader.available().catch(() => false))) continue;
+      if (!(await bindingsAvailable(reader))) continue;
       bindingPages.push({
         label: `${reader.gameName.replace(/ World$/, '')} bindings`,
         route: (guid) => reader.route({ guid }),
@@ -261,7 +270,7 @@ function setupDevices(ctx: MainContext) {
       const listed = await ports.devices.list();
       if (listed.ok) known ??= listed.value;
     })
-    .catch(() => undefined);
+    .catch((e: unknown) => ctx.log.warn('could not read the devices at startup', e));
 
   const cleanup = async (): Promise<void> => {
     unsubscribe();
@@ -363,7 +372,7 @@ function setupDevices(ctx: MainContext) {
     bindingSources: async () => {
       const sources: BindingSource[] = [];
       for (const reader of ctx.bindings.all()) {
-        if (!(await reader.available().catch(() => false))) continue;
+        if (!(await bindingsAvailable(reader))) continue;
         const aircraft = await reader.aircraft();
         if (!aircraft.ok) {
           ctx.log.warn(`bindings of ${reader.game} could not be listed`, aircraft.error);

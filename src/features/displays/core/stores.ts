@@ -91,6 +91,7 @@ export class RecoveryStore {
       const parsed = RecoverySchema.safeParse(JSON.parse(text.value));
       return parsed.success ? parsed.data : undefined;
     } catch {
+      // A damaged file counts as no saved point (see above): there is then nothing to offer to recover.
       return undefined;
     }
   }

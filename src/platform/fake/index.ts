@@ -927,6 +927,7 @@ async function walkFiles(dir: string, visit: (file: string) => Promise<void>): P
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });
   } catch {
+    // The folder does not exist: nothing to walk.
     return;
   }
   for (const entry of entries) {
@@ -1041,6 +1042,7 @@ export async function seedScenario(
           .array(z.string())
           .parse(await readJson(path.join(loaded.filesDir, '..', 'rehome.json')));
       } catch {
+        // This rig recorded no list of files to re-point.
         list = undefined;
       }
       if (list) {
@@ -1101,6 +1103,7 @@ export async function cleanupScenarioTemp(
   try {
     names = await fs.readdir(tempDir);
   } catch {
+    // No temp folder to clean.
     return removed;
   }
   for (const name of names) {

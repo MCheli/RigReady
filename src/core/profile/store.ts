@@ -225,6 +225,7 @@ export class ProfileStore {
       const parsed = StateSchema.safeParse(JSON.parse(text.value));
       return parsed.success ? parsed.data : { lastUsed: {} };
     } catch {
+      // Not JSON: the same as no state (see above).
       return { lastUsed: {} };
     }
   }

@@ -140,6 +140,7 @@ export class ElectronRender implements Render {
 
   private run<T>(job: () => Promise<Result<T>>): Promise<Result<T>> {
     const next = this.queue.then(job, job);
+    // The queue only orders the jobs; each caller gets its own job's result, or failure, from next.
     this.queue = next.catch(() => undefined);
     return next;
   }

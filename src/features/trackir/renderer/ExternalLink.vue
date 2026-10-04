@@ -18,6 +18,7 @@ const host = (): string => {
   try {
     return new URL(props.url).host;
   } catch {
+    // Not a URL: show the text as it is.
     return props.url;
   }
 };

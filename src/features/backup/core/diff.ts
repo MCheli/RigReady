@@ -29,6 +29,7 @@ export function isText(bytes: Uint8Array): boolean {
     new TextDecoder('utf-8', { fatal: true }).decode(head, { stream: true });
     return true;
   } catch {
+    // Not UTF-8: the file is binary, which is an answer, not a failure.
     return false;
   }
 }

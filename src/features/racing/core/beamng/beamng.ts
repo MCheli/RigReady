@@ -51,6 +51,7 @@ export function parseRelaxedJson(text: string): unknown {
   try {
     return JSON.parse(text);
   } catch {
+    // Not strict JSON: BeamNG writes comments and trailing commas, which the pass below removes.
     let out = '';
     let inString = false;
     for (let i = 0; i < text.length; i++) {

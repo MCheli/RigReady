@@ -184,6 +184,7 @@ export class SidecarInputProvider implements InputProvider {
       try {
         child.stdin!.write(JSON.stringify({ command: 'stop' }) + '\n');
       } catch {
+        // The pipe to the reader is already closed: end it the hard way.
         child.kill();
       }
     });

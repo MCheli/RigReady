@@ -68,6 +68,7 @@ function parseJson(text: string): unknown {
   try {
     return JSON.parse(text.replace(/^﻿/, ''));
   } catch {
+    // Some manifests are encrypted (see readPluginManifest): not parseable means "no details", not an error.
     return undefined;
   }
 }

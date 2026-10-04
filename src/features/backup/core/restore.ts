@@ -183,6 +183,7 @@ function parseJson<S extends z.ZodType>(bytes: Uint8Array, schema: S): z.output<
     const parsed = schema.safeParse(JSON.parse(new TextDecoder().decode(bytes)));
     return parsed.success ? parsed.data : undefined;
   } catch {
+    // Not JSON: undefined, which every caller reports as "not valid" or treats as nothing to offer.
     return undefined;
   }
 }

@@ -426,9 +426,15 @@ export class BackupFileStore implements FileStore {
       const changed: string[] = [];
       for (const entry of pending) {
         if (entry.hashAfter === undefined) continue;
-        const current = (await this.raw.exists(entry.path))
-          ? sha256(await this.raw.readBytes(entry.path).catch(() => ''))
-          : null;
+        let current: string | null = null;
+        if (await this.raw.exists(entry.path)) {
+          try {
+            current = sha256(await this.raw.readBytes(entry.path));
+          } catch {
+            // A file that cannot be read (locked) is not known to be unchanged: it counts as changed.
+            current = 'unreadable';
+          }
+        }
         // Only the newest change of a file in the group is comparable with the file on disk.
         const newest = pending.find((e) => e.path === entry.path);
         if (newest === entry && current !== entry.hashAfter) changed.push(entry.path);

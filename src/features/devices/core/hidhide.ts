@@ -118,6 +118,7 @@ export function parseGaming(stdout: string): HidHideGamingDevice[] {
     }
     return out;
   } catch {
+    // HidHide printed something that is not its device list: no hidden game devices are known from it. The hidden list itself is parsed from another answer.
     return [];
   }
 }

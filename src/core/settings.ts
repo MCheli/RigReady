@@ -91,6 +91,7 @@ export class SettingsStore {
     try {
       parsed = AppSettingsSchema.safeParse(JSON.parse(text.value));
     } catch {
+      // Not JSON: handled below like any content that is not settings (set aside, defaults, notice).
       parsed = undefined;
     }
     if (parsed?.success) {

@@ -3517,8 +3517,36 @@ requirements:
     done_means:
       - "Unhandled errors in main or renderer are logged and shown as a non-blocking error notice with 'Copy details'; the app keeps running where possible."
       - "Expected failures return Result errors that the UI renders with a message; a test forces a provider error and asserts the message appears."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: covered: uncaughtException and unhandledRejection in main, error and unhandledrejection events and Vue's errorHandler in the window, a crashed window (it is loaded again and says so), a helper process that died. A failure to start at all shows a Windows message box. Every catch in src/ that drops the error either reports it or says why in a comment (audit test). The failProvider scenario mutation forces a failing read of devices, displays, audio, processes or services."
+    status: done
+    evidence:
+      - "tests/unit/errorCenter.test.ts#keeps reports, counts repeats, tells listeners and survives a listener that throws"
+      - "tests/unit/errorCenter.test.ts#masks secrets and user folders, bounds what it keeps, and can be reset"
+      - "src/features/diagnostics/core/diagnostics.test.ts#reach the window as an event, can be copied with details, and are dismissed"
+      - "src/features/diagnostics/core/diagnostics.test.ts#a provider that does not answer or fails is reported in its section; the rest still shows"
+      - "tests/unit/swallowedErrors.test.ts#every catch in src/ that drops the error says why"
+      - "tests/unit/providerFailure.test.ts#every check of a setup reports the failure as not met, with the message"
+      - "tests/unit/providerFailure.test.ts#a game is not written to when RigReady cannot see whether it is running"
+      - "tests/unit/providerFailure.test.ts#a folder that exists but cannot be listed is an error, not an empty folder"
+      - "tests/unit/providerFailure.test.ts#an error answer of any request is in the detailed log; a handler that throws is an error entry"
+      - "tests/e2e/diagnostics.e2e.ts#diagnostics: an unexpected error in main or in the window is logged and shown with Copy details; the app keeps running"
+      - "tests/e2e/diagnostics.e2e.ts#diagnostics: a window whose page crashed is loaded again and says what happened"
+      - "tests/e2e/errors.e2e.ts#errors: a provider that fails is shown as a message on Fly, Devices, Monitors, Audio and Backups, and the pages recover"
+      - "tests/e2e/errors.e2e.ts#errors: a driver call that never answers does not freeze Diagnostics"
+      - "artifacts/screens/errors-unexpected/01-main-error.png"
+      - "artifacts/screens/errors-unexpected/02-copied-details.png"
+      - "artifacts/screens/errors-unexpected/03-window-errors.png"
+      - "artifacts/screens/errors-unexpected/04-errors-in-log.png"
+      - "artifacts/screens/errors-window-crash/01-reloaded.png"
+      - "artifacts/screens/errors-provider/01-fly.png"
+      - "artifacts/screens/errors-provider/02-devices.png"
+      - "artifacts/screens/errors-provider/03-monitors.png"
+      - "artifacts/screens/errors-provider/04-audio.png"
+      - "artifacts/screens/errors-provider/05-diagnostics.png"
+      - "artifacts/screens/errors-provider/06-backups.png"
+      - "artifacts/screens/errors-provider/07-recovered.png"
+      - "artifacts/screens/errors-hung-provider/01-devices-silent.png"
 
   - id: PLAT-011
     title: Settings
