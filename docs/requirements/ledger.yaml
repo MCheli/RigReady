@@ -3556,8 +3556,20 @@ requirements:
     done_means:
       - "Settings (start with Windows, close to tray, minimise on launch, desk layout, notifications, update channel, retention, AI key) are stored as JSON under the data root, validated by zod, with defaults for missing fields."
       - "A corrupted settings file is backed up and replaced by defaults with a notice; the app still starts."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: where each lives, all JSON under the data root and validated by zod with defaults: settings.json holds start with Windows, close to tray (minimizeToTray), desk layout, retention, the AI key's presence flag (the key itself is in the encrypted secret store) and the log level; fly/preferences.json holds minimise on launch; devices.json holds the notification choice. The update channel is the updater's own block in settings.json and its evidence is with the updater's entries, not listed here."
+    status: done
+    evidence:
+      - "tests/unit/settingsInventory.test.ts#each has a default before anything is saved"
+      - "tests/unit/settingsInventory.test.ts#each is stored as JSON under the data root and read back after a restart"
+      - "tests/unit/settingsInventory.test.ts#each is validated: a value that is not allowed is refused and nothing changes"
+      - "tests/unit/settingsInventory.test.ts#a settings file from an older version gets defaults for what it lacks, and unknown fields do no harm"
+      - "tests/unit/settings.test.ts#fills in defaults for missing fields, and sets an unreadable file aside with a notice"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: the app gets settings, and the old file is kept byte for byte"
+      - "tests/unit/fuzzStores.test.ts#locked: an error that says so; the file is neither replaced nor set aside"
+      - "tests/e2e/damaged-files.e2e.ts#damaged files: the app starts with a damaged settings file, setups, monitor layouts and journal, says so, and keeps every file"
+      - "artifacts/screens/damaged-data-files/01-started-with-notices.png"
+      - "artifacts/screens/damaged-data-files/06-second-start.png"
 
   - id: PLAT-012
     title: Windows 10 and 11
@@ -3705,8 +3717,40 @@ requirements:
     done_means:
       - "Every reader (profiles, Lua, JSON, INI, YAML, VDF) returns a Result error for missing, empty, locked, non-UTF-8 and BOM-prefixed files; fuzz-style tests feed each reader these cases and none throws."
       - "A game whose folders were deleted shows 'not found' in the UI rather than crashing the page."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: 'locked' is simulated at the file port (reads or writes fail with EBUSY), because Node always opens files shared on Windows and cannot hold one exclusively. Beyond the criterion: a damaged store is never overwritten without the old file being kept (settings and monitor layouts are set aside byte for byte, everything else is left in place and reported), the journal survives a cut-off line, readers have size caps, and a file that is not UTF-8 is never rewritten from its lossy text. Two parsers (VDF, BeamNG's relaxed JSON) report damage by throwing an Error that their callers turn into a Result; the fuzz tests hold them to that. Steam games detected only by their app manifest (Assetto Corsa EVO and Rally, MSFS 2024) are still listed when their folder is deleted by hand while Steam's manifest remains, as Steam itself does."
+    status: done
+    evidence:
+      - "tests/unit/fuzzParsers.test.ts#huge and deeply nested content is refused or read quickly, never a stack overflow or a hang"
+      - "tests/unit/fuzzParsers.test.ts#profile YAML: every damaged form is a parse error or a value, never a crash of the YAML reader"
+      - "tests/unit/fuzzParsers.test.ts#a zip is checked before it is unpacked: a bomb, a path outside the folder and a cut-off archive are refused"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: the app gets settings, and the old file is kept byte for byte"
+      - "tests/unit/fuzzStores.test.ts#every damaged form of one setup: it is listed as unreadable, the others still load, and its file is untouched"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: reading says so and changes nothing; recovery keeps the file aside and starts empty"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: an error result, and an update never overwrites the damaged file"
+      - "tests/unit/fuzzStores.test.ts#every damaged form: the readable entries are listed, new changes are recorded, and no line is lost"
+      - "tests/unit/fuzzStores.test.ts#a line cut off by a crash: the entries before it survive and the next entry is not glued to it"
+      - "tests/unit/fuzzStores.test.ts#locked: reading says so, and a file is not changed when the change cannot be journaled"
+      - "tests/unit/fuzzStores.test.ts#a file that is not UTF-8 is never rewritten from its lossy text"
+      - "tests/unit/fuzzStores.test.ts#garbage in every data file: each is named, kept, and the app has something to work with"
+      - "tests/unit/fuzzApp.test.ts#every file locked (reads fail with EBUSY at the file port): every request still comes back as a value"
+      - "tests/unit/fuzzApp.test.ts#every file gone, and then every folder: \"not found\" answers, never a crash"
+      - "tests/unit/fuzzApp.test.ts#every JSON store of RigReady is garbage: no request overwrites one without keeping it aside"
+      - "tests/unit/fuzzApp.test.ts#files changing under a running app: damaged after the first read, the next read copes"
+      - "tests/e2e/damaged-files.e2e.ts#damaged files: the app starts with a damaged settings file, setups, monitor layouts and journal, says so, and keeps every file"
+      - "tests/e2e/damaged-files.e2e.ts#damaged files: a game whose folders were deleted shows \"not found\" on every page about it, never a crash"
+      - "tests/e2e/damaged-files.e2e.ts#damaged files: a game folder that disappears while the app is open turns into \"not found\""
+      - "artifacts/screens/damaged-data-files/01-started-with-notices.png"
+      - "artifacts/screens/damaged-data-files/02-setups.png"
+      - "artifacts/screens/damaged-data-files/03-monitors.png"
+      - "artifacts/screens/damaged-data-files/04-safety.png"
+      - "artifacts/screens/damaged-data-files/05-diagnostics.png"
+      - "artifacts/screens/damaged-game-folders/02-games.png"
+      - "artifacts/screens/damaged-game-folders/03-game-dcs.png"
+      - "artifacts/screens/damaged-game-folders/04-dcs.png"
+      - "artifacts/screens/damaged-game-folders/05-dcs-bindings.png"
+      - "artifacts/screens/damaged-game-folders/06-iracing.png"
+      - "artifacts/screens/damaged-game-vanishes/02-after.png"
 
   - id: NFR-009
     title: Nothing hardcoded to the owner's rig

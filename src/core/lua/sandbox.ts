@@ -99,8 +99,14 @@ function errorText(L: LuaState): string {
   return text;
 }
 
+/** The programs DCS and its tools ship are well under a megabyte; compiling tens of megabytes takes seconds. */
+const MAX_LUA_SOURCE = 8 * 1024 * 1024;
+
 /** Runs a Lua chunk in the sandbox. Fails with `lua.run` (and the Lua error text) or `lua.limit`. */
 export function runLua(source: string, options: LuaRunOptions = {}): Result<LuaRunResult> {
+  if (source.length > MAX_LUA_SOURCE) {
+    return err('lua.tooLarge', 'The Lua file is too large to be evaluated.');
+  }
   const L = lauxlib.luaL_newstate();
   let exhausted = false;
   try {

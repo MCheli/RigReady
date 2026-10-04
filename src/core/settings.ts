@@ -100,7 +100,12 @@ export class SettingsStore {
     }
     const stamp = this.clock.now().toISOString().replace(/[:.]/g, '-');
     const aside = path.join(this.dataRoot, `settings.corrupt-${stamp}.json`);
-    const kept = await this.files.write(aside, text.value, { reason: 'Unreadable settings file' });
+    // Byte for byte: the text above lost its byte order mark and anything that was not UTF-8.
+    const original = await this.files.readBytes(this.file);
+    if (!original.ok) return original;
+    const kept = await this.files.write(aside, original.value, {
+      reason: 'Unreadable settings file',
+    });
     if (!kept.ok) return kept;
     this.cached = defaultSettings();
     this.notice = `The settings file could not be read, so defaults are in use. The old file was kept as ${aside}.`;

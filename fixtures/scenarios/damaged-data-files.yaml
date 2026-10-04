@@ -1,0 +1,12 @@
+description: Flying, with damaged files in RigReady's data folder
+rig: mark-full
+extends: flying-all-good.yaml
+# NFR-008: what the app does at startup when its own files cannot be read. The good setup
+# (DCS F/A-18C) is still there; a second setup file, the settings, the saved monitor
+# layouts and the change journal are damaged in different ways.
+data:
+  settings.json: data/damaged/settings-cut.json
+  displays/layouts.json: data/damaged/layouts-garbage.json
+  journal.jsonl: data/damaged/journal-damaged.jsonl
+  profiles/dcs-uh-1h.yaml: data/damaged/huey-broken.yaml
+  profiles/garbage.yaml: data/damaged/garbage.txt

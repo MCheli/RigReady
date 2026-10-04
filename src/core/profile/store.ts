@@ -37,9 +37,38 @@ export interface StoredProfile {
 
 /** A YAML comment: "#" at the start of a line or after a space, outside quoted text. */
 export function hasYamlComments(text: string): boolean {
-  return text
-    .split(/\r?\n/)
-    .some((line) => /(^|\s)#/.test(line.replace(/'(?:[^']|'')*'|"(?:[^"\\]|\\.)*"/g, '""')));
+  return text.split(/\r?\n/).some(lineHasComment);
+}
+
+/** Index of the quote that closes the one at `open`, or -1 when the line does not close it. */
+function closingQuote(line: string, open: number): number {
+  const quote = line[open]!;
+  for (let i = open + 1; i < line.length; i++) {
+    if (quote === '"' && line[i] === '\\') i++;
+    else if (line[i] === quote) {
+      // In single quotes, '' is an apostrophe, not the end.
+      if (quote === "'" && line[i + 1] === "'") i++;
+      else return i;
+    }
+  }
+  return -1;
+}
+
+/** One pass over the line (a regular expression overflows the stack on a very long line). */
+function lineHasComment(line: string): boolean {
+  const unclosed = new Set<string>();
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]!;
+    if ((ch === '"' || ch === "'") && !unclosed.has(ch)) {
+      const close = closingQuote(line, i);
+      // A quote that is never closed is an apostrophe in plain text.
+      if (close < 0) unclosed.add(ch);
+      else i = close;
+    } else if (ch === '#' && (i === 0 || /\s/.test(line[i - 1]!))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Profiles as YAML files under <data root>/profiles, one file per profile. */

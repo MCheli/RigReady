@@ -6,7 +6,12 @@ export interface VdfObject {
   [key: string]: VdfValue;
 }
 
+/** Steam's own files are a few kilobytes; anything near this is not one of them. */
+const MAX_VDF_CHARACTERS = 4 * 1024 * 1024;
+
+/** Throws an Error for content that is not KeyValues text; callers catch it. */
 export function parseVdf(text: string): VdfObject {
+  if (text.length > MAX_VDF_CHARACTERS) throw new Error('Too large to be a VDF file');
   let i = 0;
   const n = text.length;
 
@@ -37,9 +42,9 @@ export function parseVdf(text: string): VdfObject {
       i++;
       return out;
     }
-    let out = '';
-    while (i < n && !/[\s{}"]/.test(text[i]!)) out += text[i++];
-    return out;
+    const start = i;
+    while (i < n && !/[\s{}"]/.test(text[i]!)) i++;
+    return text.slice(start, i);
   };
 
   const readObject = (top: boolean): VdfObject => {

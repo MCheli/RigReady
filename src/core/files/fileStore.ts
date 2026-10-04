@@ -43,7 +43,10 @@ export function parseJournal(text: string): JournalFileLine[] {
     if (raw.trim().length === 0) continue;
     let record: JournalLine | undefined;
     try {
-      const value = JSON.parse(raw) as Record<string, unknown> | null;
+      // Only a JSON object can be a record; looking first keeps a large damaged file quick.
+      const value = raw.trimStart().startsWith('{')
+        ? (JSON.parse(raw) as Record<string, unknown> | null)
+        : null;
       if (value && typeof value === 'object') {
         if (isText(value['undo'])) record = { undo: value['undo'] };
         else if (
@@ -194,8 +197,39 @@ export class BackupFileStore implements FileStore {
     content: string | Uint8Array,
     options: ChangeOptions
   ): Promise<Result<JournalEntry | null>> {
+    const lossy = await this.lossyRewrite(file, content);
+    if (lossy) return lossy;
     return this.change(file, 'write', options, sha256(content), () =>
       this.raw.writeBytes(file, content)
+    );
+  }
+
+  /**
+   * A file that is not UTF-8 (a game file in a Windows code page, UTF-16) reads as text
+   * with U+FFFD where its bytes meant something else. Writing such text back would
+   * destroy those characters for good, so it is refused: the text has the replacement
+   * character and the file on disk does not.
+   */
+  private async lossyRewrite(
+    file: string,
+    content: string | Uint8Array
+  ): Promise<Result<never> | undefined> {
+    if (typeof content !== 'string' || !content.includes('�')) return undefined;
+    if (!path.isAbsolute(file) || isWithin(this.dataRoot, path.resolve(file))) return undefined;
+    try {
+      if (!(await this.raw.exists(file))) return undefined;
+      const current = await this.raw.readBytes(file);
+      for (let i = 0; i + 2 < current.length; i++) {
+        if (current[i] === 0xef && current[i + 1] === 0xbf && current[i + 2] === 0xbd) {
+          return undefined;
+        }
+      }
+    } catch (e) {
+      return fromThrown('file.write', `Could not write ${file}.`, e);
+    }
+    return err(
+      'file.encoding',
+      `${file} is not UTF-8 text, so RigReady cannot change it without damaging characters in it. It was left as it is.`
     );
   }
 

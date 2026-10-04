@@ -245,7 +245,10 @@ async function start(): Promise<void> {
   const current = loaded.ok ? loaded.value : undefined;
   if (!loaded.ok) notices.push(`${loaded.error.message} ${loaded.error.detail ?? ''}`.trim());
   const settingsNotice = settings.takeNotice();
-  if (settingsNotice) notices.push(settingsNotice);
+  if (settingsNotice) {
+    notices.push(settingsNotice);
+    log.warn(settingsNotice);
+  }
   await logging.follow(settings);
   notices.push(...(await startupNotices({ ...wiring.context, log })));
   if (current) {
