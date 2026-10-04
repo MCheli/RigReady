@@ -9,13 +9,16 @@ import type {
   Notifications,
   OpenDialogOptions,
   Overlays,
+  Registry,
   Render,
   SaveDialogOptions,
   ScreenArea,
   ScreenLabel,
   Secrets,
 } from '../../core/ports';
+import { loginEntryEnabled, RUN_KEY, STARTUP_APPROVED_KEY } from '../../core/loginItem';
 import { err, ok, type Result } from '../../core/result';
+import { WindowsRegistry } from '../windows/registry';
 
 /** The ports that need Electron: secret storage, file pickers, HTML rendering, notifications, login item. */
 
@@ -264,25 +267,33 @@ export const HIDDEN_ARG = '--hidden';
  * name so updates and reinstalls never create a second one.
  */
 export class ElectronLoginItem implements LoginItem {
+  constructor(private readonly registry: Registry = new WindowsRegistry()) {}
+
   private settings(): { path: string; args: string[]; name: string } {
     return { path: process.execPath, args: [HIDDEN_ARG], name: 'RigReady' };
   }
 
   async isEnabled(): Promise<Result<boolean>> {
-    try {
-      const { path: exe, args, name } = this.settings();
-      const state = app.getLoginItemSettings({ path: exe, args });
-      // The entry is written under RigReady's own name, which Windows' summary flags do
-      // not look at: find the entry itself, for this program, and see that it is not
-      // switched off in Task Manager.
-      const item = (state.launchItems ?? []).find(
-        (i) => i.name === name && i.path.toLowerCase() === exe.toLowerCase()
+    // Read from the registry entry itself: Electron's getLoginItemSettings does not find
+    // the entry when the program's path has a space in it (a user folder like
+    // "C:\Users\Jane Doe"), which would make Start with Windows impossible to turn on.
+    const { path: exe, name } = this.settings();
+    const entry = await this.registry.getValue('HKCU', RUN_KEY, name);
+    if (!entry.ok) {
+      return err(
+        'login.read',
+        'Could not read the Start with Windows setting.',
+        entry.error.message
       );
-      if (item) return ok(item.enabled !== false);
-      return ok(state.openAtLogin && state.executableWillLaunchAtLogin !== false);
-    } catch (e) {
-      return err('login.read', 'Could not read the Start with Windows setting.', String(e));
     }
+    const approved = await this.registry.getValue('HKCU', STARTUP_APPROVED_KEY, name);
+    return ok(
+      loginEntryEnabled(
+        entry.value?.type === 'string' ? entry.value.value : undefined,
+        approved.ok && approved.value?.type === 'binary' ? approved.value.value : undefined,
+        exe
+      )
+    );
   }
 
   async setEnabled(enabled: boolean): Promise<Result<void>> {

@@ -1,0 +1,7 @@
+# Where the installed app looks for updates. electron-builder writes the same file from
+# the `publish` entry in package.json when it builds the installer; this copy puts it
+# into the unpacked build (electron-builder --dir) as well, which the packaged smoke uses.
+provider: github
+owner: MCheli
+repo: rigready
+updaterCacheDirName: rigready-updater

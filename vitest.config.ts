@@ -9,6 +9,8 @@ export default defineConfig({
     exclude: ['src/legacy/**', 'node_modules/**'],
     environment: 'node',
     globalSetup: ['tests/cleanTemp.ts'],
+    // Fails any test in which a feature changes a file below Program Files (PLAT-007).
+    setupFiles: ['tests/guardProgramFiles.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],

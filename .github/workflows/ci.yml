@@ -48,3 +48,36 @@ jobs:
             artifacts/screens/
             artifacts/playwright/
           retention-days: 14
+
+  packaged:
+    name: Packaged smoke (the unpacked app, as built for release)
+    runs-on: windows-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # The DirectInput sidecar's Python runtime, which the package must contain.
+      - run: npm run setup:python
+
+      # electron-builder --dir, then the packaged app is started for real: enumeration of
+      # the runner's devices and displays, a scenario up to the Fly screen, the updater
+      # against a feed on the runner, memory in the tray. A failure here fails CI.
+      # Tests that need a game controller or a desktop skip themselves when CI is set.
+      - run: npm run smoke:packaged
+
+      - name: Upload screenshots and failure output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-artifacts
+          path: |
+            artifacts/screens/packaged-*/
+            artifacts/playwright-packaged/
+          retention-days: 14

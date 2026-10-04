@@ -1,4 +1,14 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeImage,
+  screen,
+  shell,
+  Tray,
+} from 'electron';
 import path from 'node:path';
 import { z } from 'zod';
 import trayIconPath from '../../assets/icon.ico?asset';
@@ -19,16 +29,20 @@ import {
   ElectronSecrets,
   HIDDEN_ARG,
 } from '../platform/electron';
+import { ElectronUpdateFeed } from '../platform/electron/updater';
 import { applyLiveMutations, startScenario, type FakePorts } from '../platform/fake';
 import { pngSize } from '../platform/fake/png';
 import { MutationSchema } from '../platform/fake/scenario';
 import { systemClock } from '../platform/node';
 import { createWindowsPorts } from '../platform/windows';
+import { trimWorkingSets } from '../platform/windows/memory';
 import { appContract } from '../shared/appContract';
 import { eventName } from '../shared/channels';
 import type { Envelope } from '../shared/ipc';
 import { discoverFeatures, wireFeatures } from './bootstrap';
 import { runDiagnose } from './diagnose';
+import { unsupportedPlatformMessage } from './platformGuard';
+import { TrayMemoryTrimmer } from './trayMemory';
 import {
   installProcessErrorHooks,
   logReportedErrors,
@@ -90,6 +104,7 @@ async function createPlatform(): Promise<Platform> {
           loginItem: new ElectronLoginItem(),
           overlays: new ElectronOverlays(),
           window: new ElectronAppWindow(() => mainWindow),
+          updates: new ElectronUpdateFeed(logging.log.child('updater')),
         }),
       }),
     };
@@ -97,6 +112,8 @@ async function createPlatform(): Promise<Platform> {
   // Scenario runs never use the real profile: without RIGREADY_HOME they get a temp folder.
   const started = await startScenario(scenarioFile, process.env, app.getPath('temp'));
   const fake = started.ports;
+  // The fake update feed never touches the network; it reports this build's version.
+  fake.updates.version = app.getVersion();
   const dataRoot = fake.folders.dataRoot();
   // Encryption and HTML rendering do not depend on the rig, so scenario runs use the real
   // ones (inside the temp data root). Everything that describes or changes the machine is fake.
@@ -548,6 +565,15 @@ async function start(): Promise<void> {
   });
   mainWindow.on('closed', () => (mainWindow = undefined));
 
+  // In the tray with the window hidden, memory RigReady is not using goes back to Windows.
+  const trimmer = new TrayMemoryTrimmer(() => {
+    const trimmed = trimWorkingSets(app.getAppMetrics().map((metric) => metric.pid));
+    log.debug(`in the tray: handed unused memory of ${trimmed} processes back to Windows`);
+  });
+  mainWindow.on('hide', () => trimmer.onHidden());
+  mainWindow.on('show', () => trimmer.onShown());
+  if (startHidden) trimmer.onHidden();
+
   app.on('window-all-closed', () => app.quit());
   let disposed = false;
   app.on('before-quit', (event) => {
@@ -581,7 +607,13 @@ async function start(): Promise<void> {
 
 installProcessErrorHooks();
 
-if (!app.requestSingleInstanceLock() && !argValue('--diagnose')) {
+const refusal = unsupportedPlatformMessage(process.platform);
+if (refusal) {
+  // RigReady reads and changes Windows itself; anywhere else it says so and stops.
+  console.error(refusal);
+  dialog.showErrorBox('RigReady', refusal);
+  app.exit(1);
+} else if (!app.requestSingleInstanceLock() && !argValue('--diagnose')) {
   app.quit();
 } else {
   app.on('second-instance', showWindow);

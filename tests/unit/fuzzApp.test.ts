@@ -212,54 +212,63 @@ describe('NFR-008: the whole app on damaged files', () => {
     }
     expect(stores.size).toBeGreaterThan(8);
 
-    const app = await start();
-    const dataRoot = app.ports.folders.dataRoot().toLowerCase();
-    const files = app.ports.files;
-    const isStore = (file: string): boolean =>
-      key(file).startsWith(dataRoot) && stores.has(path.relative(dataRoot, key(file)));
-    const garbage = '\u0000\u0001 not json {{{ ';
-    const real = {
-      exists: files.exists.bind(files),
-      stat: files.stat.bind(files),
-      readText: files.readText.bind(files),
-      readBytes: files.readBytes.bind(files),
-      write: files.write.bind(files),
-    };
     const aside = new Set<string>();
     const overwritten = new Set<string>();
     const written = new Set<string>();
-    // Every .json file under the data root exists and is garbage, whatever a feature calls it,
-    // until something is written in its place.
-    const virtual = (file: string): boolean => isStore(file) && !written.has(key(file));
-    files.exists = async (file) => (virtual(file) ? true : real.exists(file));
-    files.stat = async (file) =>
-      virtual(file)
-        ? {
-            ok: true,
-            value: {
-              name: path.basename(file),
-              path: file,
-              isDirectory: false,
-              size: garbage.length,
-              mtimeMs: 0,
-            },
+    let dataRoot = '';
+    // The files are garbage before any feature is set up: a feature that reads its store
+    // while it starts (the updater reads the settings) meets the damaged file too.
+    const app = await wiredApp('flying-all-good', {
+      beforeWiring: (rig) => {
+        dataRoot = rig.ports.folders.dataRoot().toLowerCase();
+        const files = rig.ports.files;
+        const isStore = (file: string): boolean =>
+          key(file).startsWith(dataRoot) && stores.has(path.relative(dataRoot, key(file)));
+        const garbage = '\u0000\u0001 not json {{{ ';
+        const real = {
+          exists: files.exists.bind(files),
+          stat: files.stat.bind(files),
+          readText: files.readText.bind(files),
+          readBytes: files.readBytes.bind(files),
+          write: files.write.bind(files),
+        };
+        // Every .json file under the data root exists and is garbage, whatever a feature calls it,
+        // until something is written in its place.
+        const virtual = (file: string): boolean => isStore(file) && !written.has(key(file));
+        files.exists = async (file) => (virtual(file) ? true : real.exists(file));
+        files.stat = async (file) =>
+          virtual(file)
+            ? {
+                ok: true,
+                value: {
+                  name: path.basename(file),
+                  path: file,
+                  isDirectory: false,
+                  size: garbage.length,
+                  mtimeMs: 0,
+                },
+              }
+            : real.stat(file);
+        files.readText = async (file) =>
+          virtual(file) ? { ok: true, value: garbage } : real.readText(file);
+        files.readBytes = async (file) =>
+          virtual(file)
+            ? { ok: true, value: new TextEncoder().encode(garbage) }
+            : real.readBytes(file);
+        files.write = async (file, content, options) => {
+          const name = path.basename(file);
+          if (name.includes('.corrupt-')) {
+            // layouts.corrupt-<time>.json keeps layouts.json: remember which store it stands for.
+            aside.add(key(path.join(path.dirname(file), name.replace(/\.corrupt-.*$/, '.json'))));
+          } else if (isStore(file)) {
+            if (virtual(file) && !aside.has(key(file))) overwritten.add(key(file));
+            written.add(key(file));
           }
-        : real.stat(file);
-    files.readText = async (file) =>
-      virtual(file) ? { ok: true, value: garbage } : real.readText(file);
-    files.readBytes = async (file) =>
-      virtual(file) ? { ok: true, value: new TextEncoder().encode(garbage) } : real.readBytes(file);
-    files.write = async (file, content, options) => {
-      const name = path.basename(file);
-      if (name.includes('.corrupt-')) {
-        // layouts.corrupt-<time>.json keeps layouts.json: remember which store it stands for.
-        aside.add(key(path.join(path.dirname(file), name.replace(/\.corrupt-.*$/, '.json'))));
-      } else if (isStore(file)) {
-        if (virtual(file) && !aside.has(key(file))) overwritten.add(key(file));
-        written.add(key(file));
-      }
-      return real.write(file, content, options);
-    };
+          return real.write(file, content, options);
+        };
+      },
+    });
+    apps.push(app);
 
     // Startup first, as the app does it, then every request.
     const context = app.wiring.context;

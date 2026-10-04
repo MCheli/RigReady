@@ -55,6 +55,7 @@ import type {
 } from '../../shared/models';
 import { NodeRawFs, systemClock } from '../node';
 import { solidPng } from './png';
+import { FakeUpdateFeed, UPDATE_FEED_FILE } from './updater';
 import {
   DialogScriptSchema,
   RigFixtureSchema,
@@ -706,6 +707,7 @@ export interface FakePorts extends Ports {
   loginItem: FakeLoginItem;
   overlays: FakeOverlays;
   window: FakeAppWindow;
+  updates: FakeUpdateFeed;
   /** The mutable machine state behind the providers. */
   state: RigState;
 }
@@ -761,6 +763,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     loginItem: new FakeLoginItem(),
     overlays: new FakeOverlays(),
     window: new FakeAppWindow(),
+    updates: new FakeUpdateFeed(path.join(options.homeDir, UPDATE_FEED_FILE)),
   };
 }
 

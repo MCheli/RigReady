@@ -100,8 +100,15 @@ export interface WiredApp extends TestRig {
 }
 
 /** The whole main side (every discovered feature) wired onto fake ports for a scenario. */
-export async function wiredApp(scenario: string, options: SeedOptions = {}): Promise<WiredApp> {
+export async function wiredApp(
+  scenario: string,
+  options: SeedOptions & {
+    /** Runs on the rig before any feature is set up: for what must be true when the app starts. */
+    beforeWiring?: (rig: TestRig) => void | Promise<void>;
+  } = {}
+): Promise<WiredApp> {
   const rig = await scenarioRig(scenario, options);
+  await options.beforeWiring?.(rig);
   const events: WiredApp['events'] = [];
   const answer = (channel: string): void => {
     // After the event, as a click would be: never inside the apply that raised it.

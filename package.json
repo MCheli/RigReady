@@ -21,8 +21,9 @@
     "rig:smoke": "vitest run --config vitest.rig.config.ts",
     "rig:smoke:apply": "cross-env RIGREADY_RIG_APPLY=1 vitest run --config vitest.rig.config.ts",
     "setup:python": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-python.ps1",
-    "pack": "npm run build && node scripts/check-sidecar.mjs && electron-builder --dir",
+    "pack": "npm run build && node scripts/check-sidecar.mjs && electron-builder --dir --publish never",
     "smoke:packaged": "npm run pack && playwright test --config playwright.packaged.config.ts",
+    "smoke:installer": "npm run build && node scripts/check-sidecar.mjs && node scripts/build-test-installer.mjs && playwright test --config playwright.installer.config.ts",
     "dist": "npm run build && node scripts/check-sidecar.mjs && electron-builder --win --publish never",
     "prepare": "husky",
     "format:check": "prettier --check \"src/**/*.{ts,vue,css,html}\" \"tests/**/*.ts\" \"scripts/**/*.{ts,mjs}\" \"*.{ts,mjs}\""
@@ -78,8 +79,17 @@
       "createStartMenuShortcut": true,
       "shortcutName": "RigReady",
       "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh",
+      "packElevateHelper": false,
       "runAfterFinish": true
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "MCheli",
+        "repo": "rigready"
+      }
+    ],
     "files": [
       "dist/**/*",
       "package.json"
@@ -89,6 +99,10 @@
       "node_modules/@koromix/**"
     ],
     "extraResources": [
+      {
+        "from": "build/app-update.yml",
+        "to": "app-update.yml"
+      },
       {
         "from": "resources/python",
         "to": "python",
@@ -119,6 +133,7 @@
     "cross-env": "^10.0.0",
     "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.9",
     "electron-vite": "^5.0.0",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
