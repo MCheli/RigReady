@@ -28,6 +28,8 @@ export interface OverviewInputs {
   profiles: Profile[];
   activeProfile?: Profile;
   hidHide: HidHideInfo;
+  /** Games whose bindings can be read: where a controller's bindings are shown. */
+  bindingPages?: { label: string; route(guid: string): string }[];
   /** RigReady's own executable: it must see hidden devices for the input tester to show them. */
   rigReadyExe?: string;
   now: Date;
@@ -90,6 +92,13 @@ export function buildOverview(inputs: OverviewInputs): Overview {
   const hidden = hiddenDeviceIds(inputs.hidHide, present);
   const needs = requirements(inputs.profiles);
   const usedControllers = new Set<string>();
+  const bindingLinks = (controllers: InputDevice[]): RigDevice['bindingLinks'] =>
+    controllers.length === 0
+      ? []
+      : (inputs.bindingPages ?? []).map((page) => ({
+          label: page.label,
+          to: page.route(controllers[0]!.guid),
+        }));
 
   const devices: RigDevice[] = present.map((device) => {
     const twins = twinsOf(device, present).length;
@@ -118,6 +127,7 @@ export function buildOverview(inputs: OverviewInputs): Overview {
       requiredBy: [
         ...new Set(needs.filter((n) => matchesDevice(device, n.params)).map((n) => n.profile)),
       ],
+      bindingLinks: bindingLinks(controllers),
     };
   });
 
@@ -145,6 +155,7 @@ export function buildOverview(inputs: OverviewInputs): Overview {
       identifiedBy: 'guid',
       hidden: false,
       requiredBy: [],
+      bindingLinks: bindingLinks([controller]),
     });
   }
 

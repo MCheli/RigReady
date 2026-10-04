@@ -3,13 +3,21 @@ import type { Profile } from '../../core/profile/schema';
 import { err, ok, type Result } from '../../core/result';
 import type { DeviceInfo, InputDevice, InputState } from '../../shared/models';
 import { devicesContract } from './contract';
-import { deviceCapture, deviceConnectedCheck, matchesDevice } from './core/deviceCheck';
+import {
+  DEVICE_CONNECTED,
+  deviceCapture,
+  deviceConnectedCheck,
+  DeviceParamsSchema,
+  matchesDevice,
+} from './core/deviceCheck';
+import { boundInputsOf, type BindingSource } from './core/bound';
 import { analyzeHealth, type HealthReport, type Sample } from './core/health';
 import { hidHideCached } from './core/hidhide';
 import type { Overview } from './core/model';
 import { ConnectionNotifier, diffDevices } from './core/notifier';
 import { buildOverview, requirements } from './core/overview';
 import {
+  deviceNames,
   deviceStores,
   findName,
   HistorySchema,
@@ -32,15 +40,15 @@ function setupDevices(ctx: MainContext) {
   const { ports } = ctx;
   const stores = deviceStores(ports);
 
-  // ---- DirectInput reader: started on first use, shared by every screen ----
-  let inputReady: Promise<Result<InputDevice[]>> | undefined;
-  const startInput = (): Promise<Result<InputDevice[]>> => {
-    inputReady ??= ports.input.start().then((result) => {
-      if (!result.ok) inputReady = undefined; // try again next time
-      return result;
-    });
-    return inputReady;
-  };
+  // The DirectInput reader is shared by the whole app: start() is idempotent, so every use
+  // simply asks for it (see InputProvider). A failed start is tried again by the next call.
+  const startInput = (): Promise<Result<InputDevice[]>> => ports.input.start();
+
+  // The names the owner gave devices, for every other feature (ctx.names.devices()).
+  ctx.names.provideDevices(async () => {
+    const [listed, data] = await Promise.all([ports.devices.list(), stores.data.read()]);
+    return deviceNames(data.ok ? data.value.names : [], listed.ok ? listed.value : []);
+  });
 
   /** The setup Fly shows: the one used last, else the first. */
   const activeProfile = async (): Promise<{ all: Profile[]; active?: Profile }> => {
@@ -71,7 +79,16 @@ function setupDevices(ctx: MainContext) {
     if (!data.ok) return data;
     const history = await updateHistory(stores, listed.value, ports.clock);
     const { all: allProfiles, active } = await activeProfile();
+    const bindingPages: { label: string; route(guid: string): string }[] = [];
+    for (const reader of ctx.bindings.all()) {
+      if (!(await reader.available().catch(() => false))) continue;
+      bindingPages.push({
+        label: `${reader.gameName.replace(/ World$/, '')} bindings`,
+        route: (guid) => reader.route({ guid }),
+      });
+    }
     const built = buildOverview({
+      bindingPages,
       devices: listed.value,
       // The reader's current list: controllers come and go after it started.
       input: input !== 'pending' && input.ok ? ports.input.devices() : [],
@@ -274,6 +291,25 @@ function setupDevices(ctx: MainContext) {
   return bind(devicesContract, {
     list: () => ports.devices.list(),
     overview,
+    forCheck: async ({ profileId, itemId }) => {
+      const profile = await ctx.profiles.get(profileId);
+      if (!profile.ok) return err('devices.noSuchItem', 'That setup no longer exists.');
+      const check = profile.value.checks.find((c) => c.id === itemId);
+      const params =
+        check?.type === DEVICE_CONNECTED ? DeviceParamsSchema.safeParse(check.params) : undefined;
+      if (!check || !params?.success) {
+        return err('devices.noSuchItem', 'That checklist item is not about a device.');
+      }
+      const listed = await ports.devices.list();
+      if (!listed.ok) return listed;
+      const { count: _count, ...identity } = params.data;
+      return ok({
+        title: check.title,
+        profile: profile.value.name,
+        identity,
+        keys: listed.value.filter((d) => matchesDevice(d, params.data)).map((d) => d.instanceId),
+      });
+    },
     rename: async ({ key, name }) => {
       const listed = await ports.devices.list();
       if (!listed.ok) return listed;
@@ -324,6 +360,25 @@ function setupDevices(ctx: MainContext) {
       return saved.ok ? ok({ switches: saved.value.switches.length }) : saved;
     },
     usbMap,
+    bindingSources: async () => {
+      const sources: BindingSource[] = [];
+      for (const reader of ctx.bindings.all()) {
+        if (!(await reader.available().catch(() => false))) continue;
+        const aircraft = await reader.aircraft();
+        if (!aircraft.ok) {
+          ctx.log.warn(`bindings of ${reader.game} could not be listed`, aircraft.error);
+          continue;
+        }
+        sources.push({ game: reader.game, gameName: reader.gameName, aircraft: aircraft.value });
+      }
+      return ok(sources);
+    },
+    boundInputs: async ({ game, aircraftId }) => {
+      const reader = ctx.bindings.get(game);
+      if (!reader) return err('devices.noBindings', 'Bindings of that game cannot be read here.');
+      const bindings = await reader.bindings(aircraftId);
+      return bindings.ok ? ok(boundInputsOf(reader, bindings.value)) : bindings;
+    },
     setNotifications: async ({ mode }) => {
       const saved = await stores.data.update((data) => ({ ...data, notifications: mode }));
       if (!saved.ok) return saved;

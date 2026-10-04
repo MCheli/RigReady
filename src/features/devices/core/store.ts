@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
 import { JsonStore } from '../../../core/jsonStore';
+import type { DeviceNameQuery, DeviceNames } from '../../../core/names';
 import type { Clock, FileStore, KnownFolders } from '../../../core/ports';
 import { ok, type Result } from '../../../core/result';
 import type { DeviceInfo } from '../../../shared/models';
@@ -107,6 +108,49 @@ export function findName(
     if (!pinnedElsewhere) return only;
   }
   return undefined;
+}
+
+/**
+ * The names as other features ask for them (`ctx.names.devices()`): the same rules as
+ * findName, for a device described by what the asker knows about it.
+ * - A DirectInput GUID that has a name of its own (a controller without a USB device) wins.
+ * - A connected device is found by model, narrowed by serial and port when the asker has
+ *   them, and named by findName. Several identical devices that the query cannot tell
+ *   apart have no name: RigReady never guesses between them.
+ * - A device that is not connected has the name stored for exactly that identity.
+ * The name is only ever something to show; what a check matches on stays the identity.
+ */
+export function deviceNames(entries: NameEntry[], devices: DeviceInfo[]): DeviceNames {
+  const present = devices.filter((d) => !d.isHub);
+  const narrowed = <T extends { serial?: string | undefined; instanceId?: string | undefined }>(
+    list: T[],
+    query: DeviceNameQuery
+  ): T[] =>
+    list.filter(
+      (d) =>
+        (query.serial === undefined || d.serial === query.serial) &&
+        (query.instanceId === undefined || eq(d.instanceId, query.instanceId))
+    );
+  return {
+    nameOf(query) {
+      if (query.guid !== undefined) {
+        const guid = query.guid.replace(/[{}]/g, '');
+        const byGuid = entries.find((e) => eq(e.guid, guid));
+        if (byGuid) return byGuid.name;
+      }
+      const connected = narrowed(
+        present.filter((d) => sameModel(d, query)),
+        query
+      );
+      if (connected.length === 1) return findName(entries, connected[0]!, present)?.name;
+      if (connected.length > 1) return undefined;
+      const stored = narrowed(
+        entries.filter((e) => e.guid === undefined && sameModel(e, query)),
+        query
+      );
+      return stored.length === 1 ? stored[0]!.name : undefined;
+    },
+  };
 }
 
 /** What is stored when the user names a device: the model, a unique serial, and the port as a hint. */

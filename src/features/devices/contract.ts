@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 import { DeviceInfoSchema, InputDeviceSchema, InputStateSchema } from '../../shared/models';
+import { BindingSourceSchema, BoundInputsSchema } from './core/bound';
 import { HealthReportSchema } from './core/health';
+import { DeviceIdentitySchema } from './core/identity';
 import { NotificationModeSchema, OverviewSchema, UsbMapSchema } from './core/model';
 
 export const devicesContract = defineContract(
@@ -11,6 +13,19 @@ export const devicesContract = defineContract(
     list: channel(noInput, z.array(DeviceInfoSchema)),
     /** Devices with names, controllers, location, HidHide state and what setups need. */
     overview: channel(noInput, OverviewSchema),
+    /**
+     * Which device a checklist item of a setup is about (the Fly screen's "Diagnose" link):
+     * its identity, and the connected devices that match it (RigDevice.key), if any.
+     */
+    forCheck: channel(
+      z.object({ profileId: z.string().min(1).max(64), itemId: z.string().min(1).max(200) }),
+      z.object({
+        title: z.string(),
+        profile: z.string(),
+        identity: DeviceIdentitySchema,
+        keys: z.array(z.string()),
+      })
+    ),
     /** Gives a device a name (an empty name removes it). `key` is RigDevice.key. */
     rename: channel(
       z.object({ key: z.string().min(1), name: z.string().max(80) }),
@@ -35,6 +50,13 @@ export const devicesContract = defineContract(
       z.object({ switches: z.number().int() })
     ),
     usbMap: channel(noInput, UsbMapSchema),
+    /** The games whose bindings can be read on this PC, with their aircraft (input tester). */
+    bindingSources: channel(noInput, z.array(BindingSourceSchema)),
+    /** What every control of every controller does in one aircraft of one game. */
+    boundInputs: channel(
+      z.object({ game: z.string().min(1).max(40), aircraftId: z.string().min(1).max(200) }),
+      BoundInputsSchema
+    ),
     setNotifications: channel(
       z.object({ mode: NotificationModeSchema }),
       z.object({ mode: NotificationModeSchema })

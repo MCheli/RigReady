@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { ProfileStore } from '../../../core/profile/store';
 import { err } from '../../../core/result';
 import type { DeviceInfo } from '../../../shared/models';
 import { mutate, scenarioRig, type TestRig } from '../../../../tests/helpers';
@@ -260,5 +261,42 @@ describe('device checks on the recorded rig', () => {
     expect(candidate.check.params).toEqual({ vendorId: '044F', productId: 'B68F' });
     const trackball = result.value.find((c) => c.title === 'ORBIT WIRELESS TB')!;
     expect(trackball.description).toBe('047D:80A6 · identified by USB port');
+  });
+
+  it('leads the Fly line with the name the owner gave, connected or not, and still matches on ids', async () => {
+    rig = await scenarioRig('flying-all-good', { files: [] });
+    const stores = deviceStores(rig.ports);
+    const listed = await rig.ports.devices.list();
+    if (!listed.ok) throw new Error('list');
+    const pedals = listed.value.find((d) => d.productId === 'B68F')!;
+    await stores.data.update((data) => withName(data, pedals, listed.value, 'Rudder pedals'));
+    const params = { vendorId: '044F', productId: 'B68F' };
+    const connected = await deviceConnectedCheck.run(params, rig.ctx);
+    expect(connected.pass).toBe(true);
+    expect(connected.summary).toMatch(/^Rudder pedals · Connected · /);
+    await mutate(rig, [{ op: 'unplugDevice', match: params }]);
+    const gone = await deviceConnectedCheck.run(params, rig.ctx);
+    expect(gone.pass).toBe(false);
+    expect(gone.summary).toMatch(/^Rudder pedals · Not connected/);
+    // A name is never the identity: another model does not get it.
+    const other = await deviceConnectedCheck.run({ vendorId: '4098', productId: 'BE62' }, rig.ctx);
+    expect(other.summary).not.toContain('Rudder pedals');
+  });
+
+  it('does not repeat the name when the item title already shows it', async () => {
+    rig = await scenarioRig('flying-all-good', { files: [] });
+    const stores = deviceStores(rig.ports);
+    const listed = await rig.ports.devices.list();
+    if (!listed.ok) throw new Error('list');
+    const pedals = listed.value.find((d) => d.productId === 'B68F')!;
+    await stores.data.update((data) => withName(data, pedals, listed.value, 'T-Pendular-Rudder'));
+    const profiles = await new ProfileStore(rig.ports.files, rig.ports.folders.dataRoot()).list();
+    if (!profiles.ok) throw new Error('profiles');
+    const profile = profiles.value[0]!;
+    const outcome = await deviceConnectedCheck.run(
+      { vendorId: '044F', productId: 'B68F' },
+      { ...rig.ctx, profile: { id: profile.id, name: profile.name } }
+    );
+    expect(outcome.summary).toMatch(/^Connected · /);
   });
 });

@@ -3,6 +3,8 @@ import { computed, ref, shallowReactive, shallowRef } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import type { InputDevice, InputState } from '../../../shared/models';
 import { devicesContract } from '../contract';
+import type { BindingSource, BoundInputs } from '../core/bound';
+import type { DeviceIdentity } from '../core/identity';
 import { ActivityLog, widen, type AxisRange } from '../core/input';
 import type { NotificationMode, Overview, RigDevice } from '../core/model';
 
@@ -46,6 +48,20 @@ export const useDevicesStore = defineStore('devices', () => {
     return undefined;
   }
 
+  /** Which device a checklist item of a setup is about (the Fly screen's Diagnose link). */
+  async function forCheck(
+    profileId: string,
+    itemId: string
+  ): Promise<
+    | { ok: true; title: string; profile: string; identity: DeviceIdentity; keys: string[] }
+    | { ok: false; message: string }
+  > {
+    const result = await api.forCheck({ profileId, itemId });
+    return result.ok
+      ? { ok: true, ...result.value }
+      : { ok: false, message: errorText(result.error) };
+  }
+
   /** The device a DirectInput controller belongs to. */
   function deviceOfController(index: number): RigDevice | undefined {
     return overview.value?.devices.find((d) => d.controllers.some((c) => c.index === index));
@@ -69,6 +85,7 @@ export const useDevicesStore = defineStore('devices', () => {
     load,
     rename,
     setNotifications,
+    forCheck,
     deviceOfController,
     controllerName,
   };
@@ -100,6 +117,14 @@ export const useInputStore = defineStore('devices-input', () => {
   const lastInput = ref<{ index: number; text: string }>();
   /** The latest log line per controller. */
   const lastByIndex = new Map<number, string>();
+  /** The control used last, as games name it (JOY_BTN12), overall and per controller. */
+  const lastControl = ref<{ index: number; input: string }>();
+  const lastControlByIndex = new Map<number, string>();
+  /** "What does it do": the games whose bindings can be read, the aircraft chosen, its bindings. */
+  const sources = shallowRef<BindingSource[]>([]);
+  const boundChoice = ref('');
+  const bound = shallowRef<BoundInputs>();
+  const boundError = ref<string>();
   const listeners = new Set<Listener>();
   const client = `tester-${Math.random().toString(36).slice(2)}`;
   let users = 0;
@@ -158,6 +183,11 @@ export const useInputStore = defineStore('devices-input', () => {
           lastActivity.set(state.index, now);
           lastInput.value = { index: state.index, text: entry.text };
           lastByIndex.set(state.index, entry.text);
+          const used = log.lastControl;
+          if (used?.deviceIndex === state.index) {
+            lastControl.value = { index: used.deviceIndex, input: used.input };
+            lastControlByIndex.set(used.deviceIndex, used.input);
+          }
         }
       } else {
         log.record(device, names(device), undefined, state, now);
@@ -213,7 +243,35 @@ export const useInputStore = defineStore('devices-input', () => {
     log.clear();
     lastInput.value = undefined;
     lastByIndex.clear();
+    lastControl.value = undefined;
+    lastControlByIndex.clear();
     logVersion.value++;
+  }
+
+  async function loadSources(): Promise<void> {
+    const result = await api.bindingSources();
+    if (result.ok) sources.value = result.value;
+  }
+
+  /** Reads what is bound in the chosen aircraft ("<game>/<aircraft id>"; empty shows nothing). */
+  async function chooseBound(choice: string): Promise<void> {
+    boundChoice.value = choice;
+    boundError.value = undefined;
+    if (!choice) {
+      bound.value = undefined;
+      return;
+    }
+    const at = choice.indexOf('/');
+    const result = await api.boundInputs({
+      game: choice.slice(0, at),
+      aircraftId: choice.slice(at + 1),
+    });
+    if (boundChoice.value !== choice) return;
+    if (result.ok) bound.value = result.value;
+    else {
+      bound.value = undefined;
+      boundError.value = errorText(result.error);
+    }
   }
 
   function resetRanges(index: number): void {
@@ -236,6 +294,14 @@ export const useInputStore = defineStore('devices-input', () => {
     logVersion,
     lastInput,
     lastByIndex,
+    lastControl,
+    lastControlByIndex,
+    sources,
+    boundChoice,
+    bound,
+    boundError,
+    loadSources,
+    chooseBound,
     deviceFor,
     loadDevices,
     acquire,

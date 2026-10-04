@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { onMachineChanged } from '../../../renderer/machine';
+import { boundControl } from '../core/bound';
+import { gameInputLabel } from '../core/input';
 import CompactController from './CompactController.vue';
 import ControllerView from './ControllerView.vue';
 import { useDevicesStore, useInputStore } from './store';
@@ -47,6 +49,42 @@ const lastInput = computed(() => {
   return last ? `${name(last.index)}: ${last.text}` : undefined;
 });
 
+// ---- what the control does in a game ----
+const aircraftItems = computed(() => [
+  { title: 'Do not show', value: '' },
+  ...input.sources.flatMap((source) =>
+    source.aircraft.map((a) => ({
+      title: `${source.gameName.replace(/ World$/, '')} · ${a.name}`,
+      value: `${source.game}/${a.id}`,
+    }))
+  ),
+]);
+/** The control used last (on the chosen controller, or on any) and what it does in the chosen aircraft. */
+const lastBound = computed(() => {
+  void input.logVersion;
+  const bound = input.bound;
+  if (!bound) return undefined;
+  const last =
+    selected.value === undefined
+      ? input.lastControl
+      : input.lastControlByIndex.has(selected.value)
+        ? { index: selected.value, input: input.lastControlByIndex.get(selected.value)! }
+        : undefined;
+  if (!last) return { aircraft: bound.aircraft.name, gameName: bound.gameName };
+  const guid = input.deviceFor(last.index)?.guid;
+  const controller = bound.controllers.find((c) => c.guid === guid?.toUpperCase());
+  const control = boundControl(bound, guid, last.input);
+  return {
+    aircraft: bound.aircraft.name,
+    gameName: bound.gameName,
+    control: `${gameInputLabel(last.input)} on ${name(last.index)}`,
+    input: last.input,
+    actions: control?.actions ?? [],
+    duplicate: control?.duplicate ?? false,
+    route: controller?.route,
+  };
+});
+
 const time = (ms: number): string => {
   const d = new Date(ms);
   const pad = (n: number, w = 2): string => String(n).padStart(w, '0');
@@ -63,6 +101,9 @@ onMounted(async () => {
     void devicesStore.load();
   });
   if (!devicesStore.overview) void devicesStore.load();
+  void input.loadSources();
+  // Bindings may have been edited since this page was last open.
+  if (input.boundChoice) void input.chooseBound(input.boundChoice);
   await input.acquire();
 });
 onBeforeUnmount(() => {
@@ -126,6 +167,67 @@ watch(selected, () => (now.value = Date.now()));
         >Last input: <strong>{{ lastInput }}</strong></span
       >
       <span v-else class="rr-muted">Last input: nothing yet. Press a button or move an axis.</span>
+    </div>
+
+    <div v-if="input.sources.length > 0" class="tester-bound rr-panel" data-testid="tester-bound">
+      <v-select
+        class="tester-aircraft"
+        label="Show what it does in"
+        :items="aircraftItems"
+        :model-value="input.boundChoice"
+        density="compact"
+        variant="outlined"
+        hide-details
+        data-testid="tester-aircraft"
+        @update:model-value="input.chooseBound(String($event ?? ''))"
+      />
+      <div class="rr-row-main">
+        <div v-if="input.boundError" class="rr-warn" data-testid="bound-error">
+          {{ input.boundError }}
+        </div>
+        <div v-else-if="!lastBound" class="rr-muted">
+          Choose an aircraft to see what each control you press is bound to.
+        </div>
+        <div v-else-if="!lastBound.control" class="rr-muted" data-testid="bound-waiting">
+          Press a button or move an axis to see what it does in {{ lastBound.aircraft }}.
+        </div>
+        <template v-else>
+          <div class="rr-row-title" data-testid="bound-control" :data-input="lastBound.input">
+            {{ lastBound.control }}
+          </div>
+          <div v-if="lastBound.actions.length === 0" class="rr-muted" data-testid="bound-none">
+            Nothing is bound to it in {{ lastBound.aircraft }}.
+          </div>
+          <ul v-else class="bound-actions">
+            <li v-for="(a, i) in lastBound.actions" :key="i" data-testid="bound-action">
+              <strong>{{ a.action }}</strong>
+              <span v-if="a.modifiers.length" class="rr-muted">
+                with {{ a.modifiers.join(' + ') }}</span
+              >
+              <span v-if="a.category.length" class="rr-muted"> · {{ a.category.join(' · ') }}</span>
+              <span class="bound-chip">{{
+                a.source === 'user'
+                  ? 'Yours'
+                  : `${lastBound.gameName.replace(/ World$/, '')} default`
+              }}</span>
+            </li>
+          </ul>
+          <div v-if="lastBound.duplicate" class="rr-warn" data-testid="bound-duplicate">
+            <v-icon icon="mdi-alert" size="16" /> This control does several things at once in
+            {{ lastBound.aircraft }}. If that is not what you want, clear one of them on the
+            bindings page.
+          </div>
+        </template>
+      </div>
+      <v-btn
+        v-if="lastBound?.route"
+        size="small"
+        variant="text"
+        prepend-icon="mdi-open-in-app"
+        :to="lastBound.route"
+        data-testid="bound-open"
+        >Open its bindings</v-btn
+      >
     </div>
 
     <div class="tester-grid">
@@ -221,6 +323,34 @@ watch(selected, () => (now.value = Date.now()));
   padding: 10px 16px;
   margin-bottom: 16px;
   font-size: 13.5px;
+}
+.tester-bound {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+}
+.tester-aircraft {
+  flex: 0 0 260px;
+}
+.bound-actions {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.bound-actions li {
+  padding: 2px 0;
+}
+.bound-chip {
+  margin-left: 8px;
+  font-size: 11.5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--rr-border);
+  color: var(--rr-muted);
+  white-space: nowrap;
 }
 .tester-grid {
   display: grid;

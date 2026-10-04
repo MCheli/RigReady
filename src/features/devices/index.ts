@@ -25,5 +25,12 @@ export default defineFeature({
     },
   ],
   overlays: [WindowVisibility],
+  settings: [
+    {
+      title: 'Device notifications',
+      component: () => import('./renderer/NotificationSettings.vue'),
+      order: 300,
+    },
+  ],
   checkTypes: [{ type: 'device.connected', label: 'Device connected', group: 'devices' }],
 });

@@ -26,15 +26,25 @@ const gameItems = computed(() => [
   { title: 'Other game…', value: 'other' },
 ]);
 
+type GameLaunch = NonNullable<DetectedGame['installs'][number]['launch']>;
+function setLaunch(launch: GameLaunch): void {
+  launchExe.value = launch.exe;
+  launchArgs.value = launch.args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ');
+  launchCwd.value = launch.cwd ?? '';
+}
+/** What each game found on this PC is started with: offered while the program field is empty. */
+const launchTargets = computed(() =>
+  games.value.flatMap((g) => {
+    const launch = g.installs.find((i) => i.launch)?.launch;
+    return launch ? [{ id: g.id, game: g.name, launch }] : [];
+  })
+);
+
 /** A known game fills in what Launch starts and ticks its own files and version check. */
 function chooseGame(id: string): void {
   game.value = id ?? '';
   const launch = games.value.find((g) => g.id === id)?.installs.find((i) => i.launch)?.launch;
-  if (launch) {
-    launchExe.value = launch.exe;
-    launchArgs.value = launch.args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ');
-    launchCwd.value = launch.cwd ?? '';
-  }
+  if (launch) setLaunch(launch);
   for (const candidate of candidates.value) {
     if (candidate.key.startsWith('file:') || candidate.key.startsWith('game:')) {
       const own = candidate.key.startsWith(`file:${id}:`) || candidate.key === `game:${id}`;
@@ -184,6 +194,24 @@ onMounted(capture);
           data-testid="capture-launch-args"
         />
       </div>
+      <div
+        v-if="launchTargets.length > 0 && launchExe.trim() === ''"
+        class="capture-targets"
+        data-testid="capture-launch-targets"
+      >
+        <span class="rr-muted">Or start a game found on this PC:</span>
+        <v-chip
+          v-for="target in launchTargets"
+          :key="target.id"
+          size="small"
+          variant="outlined"
+          data-testid="capture-launch-target"
+          :data-game="target.game"
+          :title="[target.launch.exe, ...target.launch.args].join(' ')"
+          @click="setLaunch(target.launch)"
+          >{{ target.game }}</v-chip
+        >
+      </div>
       <v-text-field
         v-if="launchCwd"
         v-model="launchCwd"
@@ -271,6 +299,14 @@ onMounted(capture);
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 12px;
+}
+.capture-targets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  margin: -8px 0 14px;
 }
 .capture-group {
   margin-bottom: 22px;

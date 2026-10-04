@@ -176,7 +176,7 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
           size="small"
           variant="text"
           prepend-icon="mdi-stethoscope"
-          to="/configure/devices"
+          :to="{ path: '/configure/devices', query: { profile: profileId, item: item.itemId } }"
           data-testid="check-diagnose"
         >
           Diagnose
