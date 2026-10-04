@@ -71,9 +71,10 @@ const stoodDown = computed(() => {
       <v-icon icon="mdi-record-circle-outline" size="20" class="session-icon" />
       <div class="session-main">
         <div class="session-title" data-testid="fly-session-title">{{ game }} is running</div>
-        <!-- In the compact view the setup's name is right above: the line is only the time. -->
+        <!-- In the compact view the setup's name is right above: the line leaves it out. -->
         <div class="session-sub" data-testid="fly-session-sub">
-          <template v-if="!compact">{{ session.profileName }} · </template>since {{ since }}
+          Session in progress since {{ since
+          }}<template v-if="!compact"> · {{ session.profileName }}</template>
         </div>
       </div>
       <!-- A clock that ticks is not read out every second: its label says what it is. -->

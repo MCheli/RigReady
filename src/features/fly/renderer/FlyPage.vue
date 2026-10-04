@@ -204,7 +204,11 @@ function when(iso: string): string {
 const context = computed(() => {
   const setup = fly.active;
   if (!setup) return [];
-  return [setup.gameName ?? 'No game chosen', lastSessionLine(setup.lastSession, new Date())];
+  const game = setup.gameName ?? 'No game chosen';
+  // While the setup's first session is under way, "No session yet" would not be true.
+  const inSession = fly.session.profileId === setup.id && fly.session.phase !== 'idle';
+  if (!setup.lastSession && inSession) return [game];
+  return [game, lastSessionLine(setup.lastSession, new Date())];
 });
 
 /** The family of sims of the game in session, for the picture beside "Welcome back". */

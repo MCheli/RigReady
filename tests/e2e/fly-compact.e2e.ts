@@ -122,6 +122,10 @@ test('compact: the dial, the setup and the one action in a small window on top; 
   const session = popup.getByTestId('fly-session');
   await expect(session).toHaveAttribute('data-phase', 'running');
   await expect(session).toContainText('DCS World is running');
+  // The setup's name is right above it here: the line is only the session and its start.
+  await expect(popup.getByTestId('fly-session-sub')).toHaveText(
+    /^\s*Session in progress since \d\d:\d\d\s*$/
+  );
   await expect(popup.getByTestId('fly-session-elapsed')).toHaveText(/^0:00:\d\d$/);
   await expect(primary).toHaveCount(0);
   // The main window got out of the way; the small one stays.

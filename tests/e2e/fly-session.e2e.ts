@@ -89,8 +89,10 @@ test('session: the game running with its clock, Welcome back when it closes, and
   await expect(session).toHaveAttribute('data-phase', 'running');
   await expect(page.getByTestId('fly-session-title')).toHaveText('DCS World is running');
   await expect(page.getByTestId('fly-session-sub')).toHaveText(
-    /^\s*DCS F\/A-18C · since \d\d:\d\d\s*$/
+    /^\s*Session in progress since \d\d:\d\d · DCS F\/A-18C\s*$/
   );
+  // With its first session under way, the setup no longer says there was none.
+  await expect(page.getByTestId('fly-context')).toHaveText('DCS World');
   const clock = page.getByTestId('fly-session-elapsed');
   await expect(clock).toHaveText(/^0:00:\d\d$/);
   const first = await clock.textContent();
