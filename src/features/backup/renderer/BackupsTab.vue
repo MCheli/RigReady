@@ -426,7 +426,9 @@ const kindIcon = (b: BackupView): string =>
           </div>
           <div v-if="backup.profiles.length" class="content-line">
             <span>Setups</span>
-            <span class="rr-muted">{{ backup.profiles.join(', ') }}</span>
+            <span class="rr-muted" data-testid="backup-setups">{{
+              backup.profiles.join(', ')
+            }}</span>
           </div>
           <div v-if="backup.items.length === 0 && backup.profiles.length === 0" class="rr-muted">
             RigReady settings only.

@@ -61,6 +61,24 @@ export interface BackupRecord {
   /** Where it was read from, in words: "HKEY_CURRENT_USER\Software\Endor\FanatecService". */
   from: string;
   data: unknown;
+  /**
+   * The same settings, one line per value, for reading: the backup screens show these as
+   * a table and keep `data` as the raw view. Optional: without it the table is derived
+   * from `data` (key path and value, no friendly labels).
+   */
+  values?: BackupRecordValue[];
+}
+
+/** One stored setting of a record, as a person reads it. */
+export interface BackupRecordValue {
+  /** Heading the value is listed under: "Games › 5_0". Values without one come first. */
+  group?: string;
+  /** "Steam edition installed" */
+  label: string;
+  /** The name as stored ("IsSteamInstalled"), when the label is not it. */
+  name?: string;
+  /** Readable text; long binary data already shortened by the source. */
+  value: string;
 }
 
 export interface BackupSource {

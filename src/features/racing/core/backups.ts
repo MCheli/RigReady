@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { z } from 'zod';
-import type { BackupSource } from '../../../core/backupSources';
+import type { BackupRecordValue, BackupSource } from '../../../core/backupSources';
 import type { CheckContext } from '../../../core/checks/registry';
 import { previewWrites, type PlannedWrite } from '../../../core/files/preview';
 import { err, ok, type Result } from '../../../core/result';
@@ -146,16 +146,92 @@ export const fanatecBackupSource: BackupSource = {
       Object.keys(values.ok ? values.value : {}).length === 0 &&
       (keys.ok ? keys.value : []).length === 0;
     if (empty) return ok([]);
+    const data = await exportRegistry(ctx, 'HKCU', FANATEC_SERVICE_KEY);
     return ok([
       {
         id: 'service',
         label: 'Fanatec driver settings (registry)',
         from: `HKEY_CURRENT_USER\\${FANATEC_SERVICE_KEY}`,
-        data: await exportRegistry(ctx, 'HKCU', FANATEC_SERVICE_KEY),
+        data,
+        values: registryValues(data),
       },
     ]);
   },
 };
+
+/** What the Fanatec driver calls its settings, in words. Anything else is spelled out from its name. */
+const FANATEC_LABELS: Record<string, string> = {
+  IsHidden: 'Hidden in the game list',
+  IsFavorite: 'Favourite',
+  IsSteamInstalled: 'Steam edition installed',
+  IsExeLaunch: 'Started from a program file',
+  ExeLaunch: 'Program file',
+  DefaultProfile: 'Default profile',
+  IsItmEnabled: 'ITM display enabled',
+  FavoritePage: 'Favourite page',
+  DisplayDuration: 'Display duration',
+  DefaultSettings: 'Default settings',
+  LedRevBrightness: 'Rev LED brightness',
+  MinimizeToTray: 'Minimize to tray',
+  MinimizeToTrayAtStart: 'Start minimized to tray',
+};
+const FANATEC_GROUPS: Record<string, string> = {
+  ITM: 'ITM display',
+  Led: 'LEDs',
+  Base: 'Wheel base',
+  Rim: 'Steering wheel',
+  SW: 'Steering wheel (SW)',
+};
+
+/** "SliderLedRaw1" -> "Slider led raw 1", "TYRE_FL_C_TEMP" -> "Tyre FL C temp". */
+export function spelledOut(name: string): string {
+  const words = name
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Za-z])([0-9])/g, '$1 $2')
+    .split(/[\s_]+/)
+    .filter(Boolean);
+  const upper = name === name.toUpperCase();
+  const text = words.map((w) => (upper && w.length <= 3 ? w : w.toLowerCase())).join(' ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function registryValueText(value: unknown): string {
+  const v = value as { type?: string; value?: unknown } | null;
+  if (!v || typeof v !== 'object') return String(value);
+  if (v.type === 'binary' && typeof v.value === 'string') {
+    if (v.value === '00') return 'Off';
+    if (v.value === '01') return 'On';
+    const bytes = Math.floor(v.value.length / 2);
+    const spaced = (hex: string): string => hex.replace(/(..)(?=.)/g, '$1 ').toUpperCase();
+    return bytes <= 16
+      ? spaced(v.value) || '(empty)'
+      : `${spaced(v.value.slice(0, 16))} … (${bytes} bytes)`;
+  }
+  if (Array.isArray(v.value)) return v.value.length ? v.value.join(', ') : '(empty)';
+  return v.value === '' || v.value === undefined || v.value === null ? '(empty)' : String(v.value);
+}
+
+/** An exported registry key as one line per value, for the backup screens. */
+export function registryValues(
+  data: Record<string, unknown>,
+  trail: string[] = []
+): BackupRecordValue[] {
+  const out: BackupRecordValue[] = [];
+  const group = trail.map((t) => FANATEC_GROUPS[t] ?? t).join(' › ');
+  for (const [name, value] of Object.entries((data['values'] as Record<string, unknown>) ?? {})) {
+    const label = FANATEC_LABELS[name] ?? spelledOut(name);
+    out.push({
+      ...(group ? { group } : {}),
+      label,
+      ...(label !== name ? { name } : {}),
+      value: registryValueText(value),
+    });
+  }
+  for (const [child, inner] of Object.entries((data['keys'] as Record<string, unknown>) ?? {})) {
+    out.push(...registryValues(inner as Record<string, unknown>, [...trail, child]));
+  }
+  return out;
+}
 
 /** Every value below a registry key, as data (the registry port is read-only: shown, never restored). */
 async function exportRegistry(

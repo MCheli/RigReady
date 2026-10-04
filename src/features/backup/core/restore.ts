@@ -21,6 +21,7 @@ import {
   type ManifestItem,
   type OpenedArchive,
 } from './archive';
+import { MAX_RECORD_ROWS, recordRows, type RecordRow } from './records';
 import {
   closeHolders,
   reopenHolders,
@@ -93,6 +94,10 @@ export interface RecordView {
   label: string;
   from: string;
   source: string;
+  /** One row per stored value, for the table. */
+  rows: RecordRow[];
+  /** True when the record holds more values than are listed. */
+  moreRows: boolean;
   /** The stored values as text, cut off when very long. */
   text: string;
   truncated: boolean;
@@ -103,10 +108,13 @@ const RECORD_TEXT_LIMIT = 200_000;
 function recordViews(opened: OpenedArchive): RecordView[] {
   return opened.manifest.records.map((record) => {
     const text = new TextDecoder().decode(opened.data.get(`records/${record.path}`)!);
+    const rows = recordRows(record.values, text);
     return {
       label: record.label,
       from: record.from,
       source: record.source,
+      rows,
+      moreRows: rows.length >= MAX_RECORD_ROWS,
       text: text.slice(0, RECORD_TEXT_LIMIT),
       truncated: text.length > RECORD_TEXT_LIMIT,
     };

@@ -105,6 +105,9 @@ test('backup: choose what to track, back up everything in one click, see what is
   await page.getByTestId('backup-toggle').click();
   await expect(page.getByTestId('backup-contents')).toContainText('DCS bindings');
   await expect(page.getByTestId('backup-contents')).toContainText('Setups');
+  // The setup by its name, never its id.
+  await expect(page.getByTestId('backup-setups')).toHaveText('DCS F/A-18C');
+  await expect(page.getByTestId('backup-contents')).not.toContainText('dcs-f-a-18c');
   await shot('backed-up');
 
   const dir = path.join(run.dataRoot, 'backups');
