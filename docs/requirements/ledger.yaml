@@ -3890,7 +3890,7 @@ requirements:
       - "artifacts/screens/diagnostics/03-log-no-warnings.png"
       - "artifacts/screens/diagnostics/04-copied.png"
       - "artifacts/screens/diagnostics/05-exported.png"
-      - "artifacts/screens/generic-configure/31-diagnostics.png"
+      - "artifacts/screens/generic-configure/32-diagnostics.png"
 
   - id: PLAT-010
     title: Errors are visible, not swallowed
