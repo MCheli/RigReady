@@ -18,6 +18,7 @@ import type { Logger } from '../core/logger';
 import { isWithin } from '../core/paths';
 import type { FileStore, Ports } from '../core/ports';
 import { err, ok } from '../core/result';
+import { panelPlaces, withPanelPlace } from '../core/windowPlace';
 import {
   ElectronAppWindow,
   ElectronClipboard,
@@ -87,10 +88,43 @@ function loadApp(window: BrowserWindow, route?: string): void {
   }
 }
 
+/**
+ * Where the user left each panel, in <data root>/panels.json beside window.json. Known
+ * once the platform is up; until then, and when the file cannot be read, panels open at
+ * the size their feature asks for.
+ */
+let panelPlaceFile: { files: FileStore; file: string } | undefined;
+/** One write at a time: each reads the file, sets one panel's place and writes it back. */
+let panelPlaceWrites: Promise<void> = Promise.resolve();
+
+async function readPanelPlaces(): Promise<string | undefined> {
+  if (!panelPlaceFile) return undefined;
+  const text = await panelPlaceFile.files.readText(panelPlaceFile.file);
+  return text.ok ? text.value : undefined;
+}
+
 /** The app's own windows: the main one, and small panels a feature opens (quick-look sheets). */
 const appWindow = new ElectronAppWindow(() => mainWindow, {
   preload: path.join(__dirname, '../preload/index.js'),
   load: loadApp,
+  places: {
+    read: async (id) => panelPlaces(await readPanelPlaces())[id],
+    write: (id, place) => {
+      const kept = panelPlaceFile;
+      if (!kept) return;
+      panelPlaceWrites = panelPlaceWrites.then(async () => {
+        // Inside the data root, so this is a plain write with no journal entry.
+        const written = await kept.files.write(
+          kept.file,
+          withPanelPlace(await readPanelPlaces(), id, place),
+          { reason: 'Window position' }
+        );
+        if (!written.ok) {
+          logging.log.warn(`Where the "${id}" window was left could not be stored`, written.error);
+        }
+      });
+    },
+  },
 });
 
 function argValue(flag: string): string | undefined {
@@ -257,6 +291,7 @@ async function start(): Promise<void> {
   app.setAppUserModelId('io.rigready.app');
   const { ports, scenario, fake } = await createPlatform();
   const dataRoot = ports.folders.dataRoot();
+  panelPlaceFile = { files: ports.files, file: path.join(dataRoot, 'panels.json') };
   logging.open(dataRoot, [ports.folders.home()]);
   const log: Logger = logging.log;
   logReportedErrors(log);

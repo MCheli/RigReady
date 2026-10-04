@@ -19,6 +19,7 @@ import type {
 } from '../../core/ports';
 import { loginEntryEnabled, RUN_KEY, STARTUP_APPROVED_KEY } from '../../core/loginItem';
 import { err, ok, type Result } from '../../core/result';
+import { placeOnScreens, type WindowPlace } from '../../core/windowPlace';
 import { WindowsRegistry } from '../windows/registry';
 
 /** The ports that need Electron: secret storage, file pickers, HTML rendering, notifications, login item. */
@@ -322,14 +323,33 @@ const escapeHtml = (text: string): string =>
  * coordinates are desktop pixels (what DisplayProvider reports); Electron wants its own
  * scaled units, so each label is placed through the matching Electron display.
  */
+/** A panel must stay large enough to take hold of. */
+const PANEL_MIN = { width: 320, height: 240 };
+/** How long a panel rests after being moved or resized before its place is stored. */
+const PANEL_PLACE_DELAY_MS = 400;
+
+/** How a panel window gets the app, and where its place on the desktop is kept. */
+export interface PanelHost {
+  /** The preload script and a loader for a route. */
+  preload: string;
+  load(window: BrowserWindow, route: string): void;
+  /**
+   * Where the user left each panel, by panel id. Optional: without it every panel opens
+   * at the size its feature asks for, wherever Windows puts it.
+   */
+  places?: {
+    read(id: string): Promise<WindowPlace | undefined>;
+    write(id: string, place: WindowPlace): void;
+  };
+}
+
 /** Keeps the app window where the user can see it across a monitor layout change. */
 export class ElectronAppWindow implements AppWindow {
   private readonly panelWindows = new Map<string, BrowserWindow>();
 
   constructor(
     private readonly window: () => BrowserWindow | undefined,
-    /** How a panel window gets the app: the preload script and a loader for a route. */
-    private readonly host?: { preload: string; load(window: BrowserWindow, route: string): void }
+    private readonly host?: PanelHost
   ) {}
 
   /** The open panel windows, so events reach them like the main window. */
@@ -343,11 +363,19 @@ export class ElectronAppWindow implements AppWindow {
     try {
       let window = this.panelWindows.get(panel.id);
       if (!window || window.isDestroyed()) {
+        // Where the user left it, while that is still on a connected screen.
+        const places = this.host.places;
+        const kept = placeOnScreens(
+          await places?.read(panel.id),
+          screen.getAllDisplays().map((display) => display.workArea),
+          PANEL_MIN
+        );
         window = new BrowserWindow({
-          width: panel.width,
-          height: panel.height,
-          minWidth: 320,
-          minHeight: 240,
+          width: kept?.width ?? panel.width,
+          height: kept?.height ?? panel.height,
+          ...(kept?.x !== undefined && kept.y !== undefined ? { x: kept.x, y: kept.y } : {}),
+          minWidth: PANEL_MIN.width,
+          minHeight: PANEL_MIN.height,
           backgroundColor: '#0f1317',
           autoHideMenuBar: true,
           title: panel.title,
@@ -362,6 +390,25 @@ export class ElectronAppWindow implements AppWindow {
         window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
         window.webContents.on('will-navigate', (event) => event.preventDefault());
         const id = panel.id;
+        const opened = window;
+        let resting: ReturnType<typeof setTimeout> | undefined;
+        const remember = (): void => {
+          clearTimeout(resting);
+          resting = undefined;
+          if (opened.isDestroyed() || opened.isMinimized()) return;
+          const { x, y, width, height } = opened.getNormalBounds();
+          places?.write(id, { x, y, width, height });
+        };
+        const moved = (): void => {
+          clearTimeout(resting);
+          resting = setTimeout(remember, PANEL_PLACE_DELAY_MS);
+        };
+        opened.on('move', moved);
+        opened.on('resize', moved);
+        // Closed right after being moved: its place is stored before it is gone.
+        opened.on('close', () => {
+          if (resting !== undefined) remember();
+        });
         window.on('closed', () => this.panelWindows.delete(id));
         // A panel never outlives the app's main window.
         this.window()?.once('closed', () => {
