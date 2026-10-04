@@ -13,6 +13,10 @@ const props = defineProps<{
   /** Make ready or Stand down is running: per-item actions wait. */
   locked: boolean;
   profileId: string;
+  /** Position in its group: rows arrive one after another, not all at once. */
+  index?: number;
+  /** The row was just pointed at from the drawing of the rig: it stands out for a moment. */
+  flash?: boolean;
 }>();
 const emit = defineEmits<{ recheck: []; fix: []; acknowledge: [] }>();
 
@@ -76,8 +80,11 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
 <template>
   <div
     class="rr-row check-row"
-    :class="{ 'check-off': status === 'off' }"
+    :class="{ 'check-off': status === 'off', 'check-flash': flash }"
+    :style="{ '--i': Math.min(index ?? 0, 10) }"
+    tabindex="-1"
     data-testid="check-row"
+    :data-item="item.itemId"
     :data-status="status"
     :data-title="item.title"
     :data-checked-at="result?.checkedAt ?? ''"
@@ -225,6 +232,49 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
 <style scoped>
 .check-row {
   align-items: flex-start;
+  /* Rows arrive one after another, each a moment after the one above. */
+  animation: check-arrive 180ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 32ms);
+}
+@keyframes check-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Reached from the drawing of the rig: the row is tinted for a moment, then fades back. */
+.check-flash {
+  animation: check-point 1200ms ease-out;
+}
+@keyframes check-point {
+  0%,
+  84% {
+    background: color-mix(in srgb, var(--rr-accent) 16%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+/* It is focused from there too, so the keyboard goes on from this row. */
+.check-row:focus-visible {
+  outline: 2px solid var(--rr-focus);
+  outline-offset: -2px;
+}
+.check-row:focus:not(:focus-visible) {
+  outline: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .check-row {
+    animation: none;
+  }
+  .check-flash {
+    animation: none;
+    background: color-mix(in srgb, var(--rr-accent) 12%, transparent);
+  }
 }
 .check-icon {
   width: 22px;

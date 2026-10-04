@@ -532,6 +532,245 @@ requirements:
       - "artifacts/screens/fly-live-plug/02-plugged-back.png"
 
   # ---------------------------------------------------------------------------
+  # FLY MODE — the final pass (docs/PRODUCT.md, "The final pass")
+  # ---------------------------------------------------------------------------
+
+  - id: WOW-FLY-001
+    title: The top of the Fly screen is a readiness dial, the setup's identity and the state in words
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "The top of the Fly screen is one panel: a dial, the setup's name as the title of the screen (24 px or larger; it is also the switcher), the game under it, and the state as an icon and words (Checking…, Ready, Ready with warnings, Not ready with the count)."
+      - "The dial is an SVG ring with one segment per checklist item, in checklist order, and in its middle the number of checks met out of those that count (items switched off do not), in tabular numerals. A segment lights when its result arrives; while results are outstanding, the segments still waiting animate one after another round the ring."
+      - "An item that is not met is drawn further out than the ring (a warning a little, a failure more), so the dial reads without colour. The dial is an image named '<met> of <total> checks met' for a screen reader."
+      - "Checklist rows arrive staggered: each row starts 32 ms after the one above and takes 180 ms, eased out. Becoming ready is one transition of at most 200 ms, without a bounce or a loop."
+      - "Under prefers-reduced-motion nothing animates and nothing transitions."
+      - "The screen is still usable within two seconds of starting, passes the axe scan in every state, and is operated by keyboard in the same order as before."
+    status: done
+    evidence:
+      - "src/features/fly/renderer/dial.test.ts#draws one arc per item, in order, with a gap between neighbours"
+      - "src/features/fly/renderer/dial.test.ts#a warning stands out of the ring and a failure further: shape, not colour alone"
+      - "src/features/fly/renderer/dial.test.ts#a long checklist keeps every segment visible: the gap narrows, an arc never has no length"
+      - "tests/e2e/fly-hero.e2e.ts#hero: the dial counts the checks met, a failing item stands out of the ring, and getting ready is one change of state"
+      - "tests/e2e/fly-hero.e2e.ts#hero: the dial moves while checks run, rows arrive one after another, and none of it moves under reduced motion"
+      - "tests/e2e/fly-depth.e2e.ts#fly: usable within two seconds of starting"
+      - "tests/e2e/a11y.e2e.ts#a11y: the Fly screen passes axe when ready, when not ready and while Make ready runs"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "artifacts/screens/fly-hero/01-not-ready.png"
+      - "artifacts/screens/fly-hero/02-ready.png"
+      - "artifacts/screens/fly-hero-checking/01-checking.png"
+
+  - id: WOW-FLY-002
+    title: One action to fly, and Enter runs it
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "The Fly screen has one primary action, first among the buttons, larger, with the key that runs it on the button: 'Make ready and launch' while the rig is not ready and RigReady can fix something; 'Launch' otherwise (green only once the rig is known to be ready); 'Make ready' for a setup with nothing to launch. The separate Make ready, Launch, Re-check all and Stand down actions stay, with their test ids."
+      - "'Make ready and launch' asks first for every confirmation it will need, then runs the fixes in Make ready's order, shown as steps (Monitors, Audio, Files, Devices, Apps, Scripts, Re-check, Launch) each in its state; it waits for the keep-layout answer before anything after the monitors runs; it checks everything again; and it starts the game only when every required check is met."
+      - "When something required is still not met it stops: the launch step is 'not started', the screen says 'Not launched: N required items still need you' with each item and its reason, and offers 'Launch anyway', which launches with one click. Nothing is launched past a required failure without that click. When the missing thing comes back by itself, the warning goes and Launch is offered."
+      - "Enter runs the primary action when nothing has the focus. A focused control keeps Enter for itself, and so does an open dialog or menu. With something required missing and nothing to fix, Enter opens the 'Launch anyway?' question; it does not launch."
+      - "The primary action waits for a checklist run that is under way, so it acts on answers."
+    status: done
+    evidence:
+      - "src/features/fly/core/flight.test.ts#names the phases in the order Make ready really works in"
+      - "src/features/fly/core/flight.test.ts#shows every phase, the re-check and the launch, each in its state as the run goes on"
+      - "src/features/fly/core/flight.test.ts#fixes four things in order, checks again, and starts the game only then"
+      - "src/features/fly/core/flight.test.ts#waits for \"Keep this layout?\" before anything else happens"
+      - "src/features/fly/core/flight.test.ts#stops when the layout is not kept: says what is still missing and does not launch"
+      - "src/features/fly/core/flight.test.ts#stops for something only the user can do, after fixing what it could"
+      - "src/features/fly/core/flight.test.ts#a game that does not start is a failed launch, not a launched one"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: Enter makes the rig ready phase by phase, waits for the layout answer, and launches once everything required is met"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: when something required still needs you it stops, says what, and Launch anyway is a deliberate click"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: the pedals come back while it is held, and the screen offers Launch instead of the warning"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: Enter launches a ready rig; a focused control and an open question keep Enter for themselves"
+      - "tests/e2e/fly-one-action.e2e.ts#one action: a setup with nothing to launch offers Make ready as its one action"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "artifacts/screens/fly-one-action/01-not-ready.png"
+      - "artifacts/screens/fly-one-action/02-waiting-for-the-layout-answer.png"
+      - "artifacts/screens/fly-one-action/03-launched.png"
+      - "artifacts/screens/fly-one-action-held/01-held.png"
+      - "artifacts/screens/fly-one-action-held/02-launched-anyway.png"
+      - "artifacts/screens/fly-one-action-enter/01-ready.png"
+      - "artifacts/screens/fly-one-action-no-launch/01-make-ready-is-primary.png"
+
+  - id: WOW-FLY-003
+    title: The session - the game running, Welcome back, and a history
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "After a launch the Fly screen shows the session: which game is running, 'Session in progress since <time>', and a running clock (h:mm:ss, tabular numerals). A game handed to Steam is shown as waited for, and its session begins when the game's own program runs; one that never shows up within fifteen minutes is not a session. While the game runs, Enter starts nothing."
+      - "When the game's program is gone (RigReady looks every two seconds), the screen says 'Welcome back' with the setup, how long the session was and when it closed, and Stand down becomes the primary action, on Enter. Dismiss puts the screen back without standing down. Stand down used while the game was still open leaves nothing to offer when it closes."
+      - "A setting in the Fly menu, off by default, stands down by itself when the game closes; the screen then says what Stand down did, or that it did not finish."
+      - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and either 'Stand down when you are done' or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
+      - "Every session is recorded in {RIGREADY_HOME}/fly/sessions.json: setup, game, start, length, seconds from opening the setup to every required check being met, what had to be fixed (by Make ready or a fix button), the first required item that was not met, and whether it was launched not ready. A game whose programs RigReady does not know is recorded without a length. A session in progress survives a restart of RigReady: it is picked up when the game still runs, and recorded without a length when it closed meanwhile."
+      - "A damaged history file is left exactly as it is and named; the history goes on in the next file (sessions.1.json ...). The newest thousand sessions are kept."
+      - "Under the setup's name the screen says 'Last session <today | yesterday | weekday | date>, <length>', or 'No session yet': the same words for every game, with no word of flying, so they read naturally to someone who only races. While a setup's first session is under way the line does not say there was none."
+      - "History, from the Fly menu: one line of totals ('12 sessions, 14 h; TrackIR needed starting 6 times'), the number of sessions, time in the game, the usual time to ready, how often it was launched not ready, what needed fixing most often, and every session newest first with its length, time to ready, what was fixed and what was not met first."
+    status: done
+    evidence:
+      - "src/features/fly/core/sessions.test.ts#starts when the game runs, lasts while it runs, and ends when its program is gone: recorded with its length"
+      - "src/features/fly/core/sessions.test.ts#looks at the process list by itself, every few seconds, until the game is gone or RigReady quits"
+      - "src/features/fly/core/sessions.test.ts#the time from opening to ready, what was fixed, and what was wrong first"
+      - "src/features/fly/core/sessions.test.ts#launched with something required missing: it says so, and there is no time to ready"
+      - "src/features/fly/core/sessions.test.ts#with no window on screen, Windows says it; with one on screen, the screen does"
+      - "src/features/fly/core/sessions.test.ts#a launch that hides RigReady leaves nobody at its window, whatever was done there a moment before"
+      - "src/features/fly/core/sessions.test.ts#a window in the tray is not on screen, and one that stopped saying so for a minute is gone"
+      - "src/features/fly/core/sessions.test.ts#stands down by itself when asked to, says what it did, and leaves the welcome on screen"
+      - "src/features/fly/core/sessions.test.ts#a Stand down that fails by itself says so instead of \"stood down\""
+      - "src/features/fly/core/sessions.test.ts#stood down while the game was still open: when it closes there is nothing left to offer"
+      - "src/features/fly/core/sessions.test.ts#is a session from the moment the game itself runs, not from the hand-off"
+      - "src/features/fly/core/sessions.test.ts#that never shows up is not a session: after a quarter of an hour RigReady stops waiting"
+      - "src/features/fly/core/sessions.test.ts#whose programs RigReady does not know is recorded as launched, without a length"
+      - "src/features/fly/core/sessions.test.ts#picks the session up again when the game is still running"
+      - "src/features/fly/core/sessions.test.ts#records it without a length when the game closed meanwhile: when is not known"
+      - "src/features/fly/core/sessions.test.ts#lists the newest first and adds up hours, fixes and the usual time to ready"
+      - "src/features/fly/core/sessions.test.ts#a damaged file is left exactly as it is, named, and the history goes on in the next one"
+      - "src/features/fly/core/sessionText.test.ts#today, yesterday, the weekday within a week, then the date"
+      - "src/features/fly/core/sessionText.test.ts#says when the last session was and how long"
+      - "src/features/fly/core/sessionText.test.ts#uses no word of flying: it reads the same to someone who only races"
+      - "src/features/fly/core/sessionText.test.ts#says so when there was none"
+      - "src/features/fly/core/sessionText.test.ts#sessions, hours, and what needed fixing most"
+      - "tests/e2e/fly-session.e2e.ts#session: the game running with its clock, Welcome back when it closes, and Stand down as the one action"
+      - "tests/e2e/fly-session.e2e.ts#session: Dismiss puts the screen back without standing down"
+      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to"
+      - "tests/e2e/fly-session.e2e.ts#history: \"last session\" on the setup, the totals in one line, and every session with what it took to be ready"
+      - "tests/e2e/fly-session.e2e.ts#session: a game started through Steam is waited for, and the session begins when the game itself runs"
+      - "artifacts/screens/fly-session/01-no-history-yet.png"
+      - "artifacts/screens/fly-session/02-in-session.png"
+      - "artifacts/screens/fly-session/03-welcome-back.png"
+      - "artifacts/screens/fly-session/04-stood-down.png"
+      - "artifacts/screens/fly-session-away/01-stood-down-by-itself.png"
+      - "artifacts/screens/fly-session-steam/01-waiting-for-steam.png"
+      - "artifacts/screens/fly-history/01-last-session.png"
+      - "artifacts/screens/fly-history/02-history.png"
+
+  - id: WOW-FLY-004
+    title: The rig at a glance - monitors to scale and devices as chips
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "Under the top of the Fly screen a strip draws every monitor that is on, to scale and in its place (one scale for both directions), with the main display outlined; monitors that are off are named under the drawing. The monitors are read through the display port, named as the checklist names them (the owner's name, or the monitor's own, numbered when several share it)."
+      - "While the setup's monitor check is not met, the monitor that differs is drawn with a dashed outline and a named sign, and what differs is said in words under the drawing ('USB_Monitor (2 of 3): rotated 0°, expected 90°'; '...: not connected' for one that is unplugged). A saved layout the check names is what the monitors are compared with, as for the check itself. A setup that expects nothing of the monitors shows them with nothing marked. When Windows does not report the monitors, the strip says why."
+      - "The setup's device items are chips: an icon by kind of device (stick, throttle, pedals, wheel, display unit, panel, head tracker, button deck, ...), the name (without the maker most of them share; the whole name and what the check found are in the tooltip), and a state icon with a name. A chip that is not met has its own outline as well as its icon."
+      - "Choosing a monitor or a device opens its checklist group if it is folded, brings its row into view, tints it for a moment and puts the keyboard focus on it."
+      - "The drawing follows the machine: after a fix or a change of the monitors it is read again."
+    status: done
+    evidence:
+      - "src/features/fly/core/rig.test.ts#says the first thing that is off about a monitor, in a few words"
+      - "src/features/fly/core/rig.test.ts#positions are measured from the main display, wherever the setup recorded it"
+      - "src/features/fly/core/rig.test.ts#draws the monitors as they are, named as the checklist names them, with nothing wrong when ready"
+      - "src/features/fly/core/rig.test.ts#marks the monitor that is off, in the words the checklist uses for it"
+      - "src/features/fly/core/rig.test.ts#a monitor that is not connected is named as missing"
+      - "src/features/fly/core/rig.test.ts#a saved layout is what counts while it exists, as for the check"
+      - "src/features/fly/core/rig.test.ts#a setup that expects nothing of the monitors still shows them, with nothing to mark"
+      - "src/features/fly/core/rig.test.ts#says why when Windows does not report the monitors"
+      - "src/features/fly/core/deviceKind.test.ts#knows the gear of a flying rig by its names"
+      - "src/features/fly/core/deviceKind.test.ts#knows the gear of a racing rig"
+      - "src/features/fly/core/deviceKind.test.ts#leaves out the word most of the devices begin with: their maker"
+      - "src/features/fly/renderer/rigDrawing.test.ts#fits the whole desktop in the box, every monitor at its place and in proportion"
+      - "tests/e2e/fly-rig.e2e.ts#rig: the monitors are drawn to scale and the devices are chips; a problem is a place, and choosing it leads to its row"
+      - "tests/e2e/fly-rig.e2e.ts#rig: a device in a folded group is one click away, and a setup without a monitor check still shows the monitors"
+      - "tests/e2e/fly-rig.e2e.ts#rig: a monitor that is unplugged, and monitors that cannot be read, are said in words"
+      - "artifacts/screens/fly-rig/01-problems-as-places.png"
+      - "artifacts/screens/fly-rig/02-led-to-the-row.png"
+      - "artifacts/screens/fly-rig/03-all-in-place.png"
+      - "artifacts/screens/fly-rig-plain/01-no-monitor-check.png"
+      - "artifacts/screens/fly-rig-trouble/01-unplugged.png"
+
+  - id: WOW-FLY-005
+    title: Compact view - the daily routine in a small window that stays on top
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "'Compact view' in the Fly menu opens one small window that stays on top of the others (asked for again, the same window comes forward). It shows the readiness dial, the setup switcher, the state in words and the one action of the Fly screen, with Re-check and Stand down at the foot; nothing in it needs scrolling."
+      - "The one action is the Fly screen's: Make ready and launch, Launch, or Stand down after a session, on Enter as well. The 'Keep this layout?' question is answered in the small window too. Launching hides the main window as the user's setting says; the small window stays, with the session and its clock, then 'Welcome back' and Stand down."
+      - "Launch on a rig that is not ready launches nothing: the button becomes 'Launch anyway', with what is not met in words and a Cancel. When Make ready and launch stops on something required, the same is offered. 'Launch anyway' is a click (or the button focused and pressed): Enter with nothing focused does not run it, and the Enter hint is not shown on it."
+      - "A fix or a launch step that runs a program has to be shown to the user before it runs, and the small window has no room for that: the action is then disabled there, with the reason in words, and one button brings the full window back (on a monitor that is on; where it is when the monitors cannot be read)."
+      - "A setup chosen in one window is the setup in every window of RigReady: the main process says when the setup in use changes, and only then."
+    status: done
+    evidence:
+      - "src/features/fly/core/compact.test.ts#opens as one small window that stays on top, on its own route"
+      - "src/features/fly/core/compact.test.ts#brings the full window back on a monitor that is on, the main one first"
+      - "src/features/fly/core/compact.test.ts#still shows the full window, where it is, when the monitors cannot be read"
+      - "src/features/fly/core/compact.test.ts#tells every window when the setup in use changes, and only then"
+      - "src/features/fly/core/compact.test.ts#the first setup ever noted as in use is not a switch"
+      - "tests/e2e/fly-compact.e2e.ts#compact: the dial, the setup and the one action in a small window on top; the whole routine is done from there"
+      - "tests/e2e/fly-compact.e2e.ts#compact: a setup chosen in one window is the setup in the other, and the menu brings the same small window back"
+      - "tests/e2e/fly-compact.e2e.ts#compact: Launch on a rig that is not ready asks once more before it launches"
+      - "tests/e2e/fly-compact.e2e.ts#compact: Make ready and launch that stops on something required says what, launches nothing, and offers Launch once it is met"
+      - "tests/e2e/fly-compact.e2e.ts#compact: a program that has to be shown first is left to the full window, and the page is reachable in the main window too"
+      - "artifacts/screens/fly-compact/01-not-ready.png"
+      - "artifacts/screens/fly-compact/02-keep-this-layout.png"
+      - "artifacts/screens/fly-compact/03-in-session.png"
+      - "artifacts/screens/fly-compact/04-welcome-back.png"
+      - "artifacts/screens/fly-compact-switch/01-ready.png"
+      - "artifacts/screens/fly-compact-not-ready/01-launch-anyway.png"
+      - "artifacts/screens/fly-compact-held/01-stopped.png"
+      - "artifacts/screens/fly-compact-needs-ok/01-left-to-the-full-window.png"
+
+  - id: WOW-FLY-006
+    title: A quiet suggestion when the gear on the desk is another setup's
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "When the setup on screen is missing a device it requires and every device another setup requires is connected, the Fly screen offers that setup in one line under the setup's name: 'Wheel connected: switch to iRacing?', with the device that gave it away and how many of this setup's devices are not here, and two buttons, Switch and Not now. It names the kind of device (wheel, pedals, stick, ...), or the device itself when its kind is not known, and the device it names is one the two setups do not share."
+      - "It only offers: nothing is switched and nothing runs by itself. Switch goes to the offered setup; Not now is the end of that offer for as long as RigReady runs. Enter on one of its buttons is that button's, not the screen's one action."
+      - "Only devices a setup requires count (optional and switched-off items decide nothing; a setup that requires no device is never offered and never contradicted). Of several setups whose devices are all here, the one used most recently is offered. The offer follows the machine: it goes when the device is unplugged and comes back when it is plugged in again."
+      - "The device list is read once for all the setups, and nothing but devices is looked at."
+    status: done
+    evidence:
+      - "src/features/fly/core/suggest.test.ts#names the kind of device that gave it away, the setup, and what is not here"
+      - "src/features/fly/core/suggest.test.ts#calls a device nobody knows the kind of by its own name"
+      - "src/features/fly/core/suggest.test.ts#offers the setup whose required devices are all connected when the one on screen is missing some"
+      - "src/features/fly/core/suggest.test.ts#says nothing while the gear of the setup on screen is here"
+      - "src/features/fly/core/suggest.test.ts#says nothing when no other setup has all of its devices either"
+      - "src/features/fly/core/suggest.test.ts#counts only the devices a setup requires: optional and switched-off ones decide nothing"
+      - "src/features/fly/core/suggest.test.ts#of several setups whose gear is here, offers the one used most recently"
+      - "src/features/fly/core/suggest.test.ts#names the device that tells the two setups apart, not one they share"
+      - "src/features/fly/core/suggest.test.ts#looks at the machine once for all the setups"
+      - "src/features/fly/core/suggest.test.ts#nothing else of a setup is looked at: only its devices"
+      - "tests/e2e/fly-suggest.e2e.ts#suggestion: with the wheel connected and the flight gear not, the Fly screen offers the racing setup, and Switch goes there"
+      - "tests/e2e/fly-suggest.e2e.ts#suggestion: Not now is the end of it for that setup, and an offer follows the gear when it is unplugged"
+      - "tests/e2e/fly-suggest.e2e.ts#suggestion: a rig whose gear is the setup on screen is offered nothing"
+      - "artifacts/screens/fly-suggest/01-the-offer.png"
+      - "artifacts/screens/fly-suggest/02-switched.png"
+
+  - id: WOW-FLY-007
+    title: An optional ready tone
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "'Ready tone' in the Fly menu, off as installed, switches on two short, quiet notes (a rising fifth, E5 then B5, made on the spot with Web Audio: there is no sound file) that play when the rig becomes ready: from not ready, or from not yet known, to Ready or Ready with warnings. Staying ready, a re-check and becoming not ready are silent."
+      - "Switched on, it is played once, so that what was switched on is heard; switching it off is silent. The choice is stored with the other Fly preferences (fly/preferences.json), validated, and kept across restarts; changing it does not undo the other preferences."
+      - "A note is a sine that never gets louder than a small part of full volume, fades in over a few milliseconds so it does not click, and fades out to silence. One audio context is used however often it plays."
+      - "When the sound system does not start or there is none, nothing is scheduled to sound later, and the Fly screen says that the tone could not be played and why."
+    status: done
+    evidence:
+      - "src/features/fly/renderer/tone.test.ts#is two short notes, the second a fifth above the first, over in under half a second"
+      - "src/features/fly/renderer/tone.test.ts#is quiet: a note never gets louder than a small part of full volume"
+      - "src/features/fly/renderer/tone.test.ts#plays each note as a sine that fades in without a click and out to silence, then stops"
+      - "src/features/fly/renderer/tone.test.ts#is for the moment the rig becomes ready, not for staying ready"
+      - "src/features/fly/renderer/tone.test.ts#plays on one audio context, however often it is asked"
+      - "src/features/fly/renderer/tone.test.ts#wakes a sound system that is asleep first"
+      - "src/features/fly/renderer/tone.test.ts#says so, and schedules nothing for later, when the sound system does not start"
+      - "src/features/fly/renderer/tone.test.ts#says why when there is no sound system at all"
+      - "src/features/fly/core/fly.test.ts#remembers whether to hide after Launch"
+      - "tests/unit/settingsInventory.test.ts#each has a default before anything is saved"
+      - "tests/unit/settingsInventory.test.ts#each is stored as JSON under the data root and read back after a restart"
+      - "tests/unit/settingsInventory.test.ts#each is validated: a value that is not allowed is refused and nothing changes"
+      - "tests/e2e/fly-tone.e2e.ts#ready tone: silent until switched on in the Fly menu; then two quiet notes each time the rig becomes ready"
+      - "tests/e2e/fly-tone.e2e.ts#ready tone: on a PC whose sound system does not start, the Fly screen says the tone could not be played"
+      - "artifacts/screens/fly-tone/01-the-setting.png"
+      - "artifacts/screens/fly-tone-no-sound/01-could-not-be-played.png"
+
+  # ---------------------------------------------------------------------------
   # CHECK TYPES
   # ---------------------------------------------------------------------------
 

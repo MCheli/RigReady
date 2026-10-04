@@ -9,7 +9,7 @@ import { wiredApp, type WiredApp } from '../helpers';
  * saved, is validated, and is stored as JSON under the data root.
  *
  *   start with Windows, close to tray, desk layout, retention, AI key, log level  settings.json
- *   minimise on launch                                                             fly/preferences.json
+ *   minimise on launch, stand down when the game closes, ready tone                fly/preferences.json
  *   notifications                                                                  devices.json
  *
  * (The update channel is the updater's own block in settings.json and is tested with it.)
@@ -42,7 +42,11 @@ describe('PLAT-011: the settings', () => {
       logLevel: 'info',
     });
     expect(view.settings['deskLayoutId']).toBeUndefined();
-    expect(await app.invoke('fly:preferences')).toEqual({ minimizeOnLaunch: true });
+    expect(await app.invoke('fly:preferences')).toEqual({
+      minimizeOnLaunch: true,
+      autoStandDown: false,
+      readyTone: false,
+    });
     const devices = await app.invoke<{ notifications: string }>('devices:overview');
     expect(devices.notifications).toBe('controllers');
     // Reading defaults writes nothing.
@@ -59,6 +63,8 @@ describe('PLAT-011: the settings', () => {
     await app.invoke('settings:setAiKey', { key: 'sk-ant-api03-test-key-000000' });
     await app.invoke('diagnostics:setLogLevel', { level: 'debug' });
     await app.invoke('fly:setPreferences', { minimizeOnLaunch: false });
+    await app.invoke('fly:setPreferences', { autoStandDown: true });
+    await app.invoke('fly:setPreferences', { readyTone: true });
     await app.invoke('devices:setNotifications', { mode: 'all' });
 
     expect(await json(app, 'settings.json')).toMatchObject({
@@ -70,7 +76,11 @@ describe('PLAT-011: the settings', () => {
       aiKeyPresent: true,
       logLevel: 'debug',
     });
-    expect(await json(app, 'fly', 'preferences.json')).toEqual({ minimizeOnLaunch: false });
+    expect(await json(app, 'fly', 'preferences.json')).toEqual({
+      minimizeOnLaunch: false,
+      autoStandDown: true,
+      readyTone: true,
+    });
     expect(await json(app, 'devices.json')).toMatchObject({ notifications: 'all' });
     // The key itself is in the secret store, never in a settings file.
     expect(JSON.stringify(await json(app, 'settings.json'))).not.toContain('sk-ant');
@@ -100,7 +110,11 @@ describe('PLAT-011: the settings', () => {
       aiKeyPresent: true,
       logLevel: 'debug',
     });
-    expect(await ask('fly:preferences')).toEqual({ minimizeOnLaunch: false });
+    expect(await ask('fly:preferences')).toEqual({
+      minimizeOnLaunch: false,
+      autoStandDown: true,
+      readyTone: true,
+    });
     expect((await ask('devices:overview'))['notifications']).toBe('all');
   });
 
@@ -126,6 +140,8 @@ describe('PLAT-011: the settings', () => {
     expect(await refused('settings:update', { aiKeyPresent: true })).toBe('settings.invalid');
     expect(await refused('settings:setAiKey', { key: 'short' })).toBe('ipc.input');
     expect(await refused('fly:setPreferences', { minimizeOnLaunch: 'no' })).toBe('ipc.input');
+    expect(await refused('fly:setPreferences', { autoStandDown: 1 })).toBe('ipc.input');
+    expect(await refused('fly:setPreferences', { readyTone: 'on' })).toBe('ipc.input');
     expect(await refused('devices:setNotifications', { mode: 'loud' })).toBe('ipc.input');
     const view = await app.invoke<{ settings: Record<string, unknown> }>('settings:get');
     expect(view.settings).toMatchObject({

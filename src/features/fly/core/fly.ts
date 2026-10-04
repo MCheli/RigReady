@@ -23,9 +23,11 @@ import {
   type LaunchResult,
   type LaunchStep,
   type Preferences,
+  type PreferencesPatch,
   type ProfileView,
 } from '../contract';
 import { actionConfirmation, realSleep, runAction, startedProgram, type Sleep } from './actions';
+import type { LastSession } from './sessionText';
 
 export type Ctx = Pick<MainContext, 'ports' | 'log' | 'checks' | 'profiles' | 'settings' | 'games'>;
 
@@ -46,6 +48,28 @@ export interface FlyEvents {
     state: 'pending' | 'running' | 'done' | 'failed' | 'skipped';
     message?: string;
   }): void;
+  /** Another setup became the one in use: every window of RigReady follows. */
+  switched?(profileId: string): void;
+}
+
+/** What a session is made of: Fly says when each thing happens, the session tracker keeps it. */
+export interface SessionHooks {
+  /** A checklist run ended; `startedAt` is when it began. */
+  checked(profile: Profile, report: ChecklistReport, startedAt: Date): void;
+  /** One item's fix ran. */
+  fixed(profile: Profile, step: StepResult, result: CheckResult): void;
+  madeReady(profile: Profile, report: ActionReport): void;
+  /**
+   * The game is running, or was handed to Steam. `processes` are the image names that mean
+   * it is running; `seen` is false when Steam still has to start it.
+   */
+  launched(
+    profile: Profile,
+    game: { name?: string | undefined; processes: string[]; seen: boolean }
+  ): Promise<void>;
+  /** RigReady's main window is being hidden after the launch. */
+  hidden(): void;
+  stoodDown(): void;
 }
 
 export interface FlyOptions {
@@ -55,6 +79,10 @@ export interface FlyOptions {
   timer?: Sleep;
   /** How long Launch waits for the game to show up. */
   launchConfirmMs?: number;
+  /** Follows what happens around a launch, to record the session. */
+  sessions?: SessionHooks;
+  /** The record of sessions, for "last flown" beside each setup. */
+  sessionLog?: { lastByProfile(): Promise<Record<string, LastSession>> };
 }
 
 const baseName = (exe: string): string => path.win32.basename(exe.replace(/\//g, '\\'));
@@ -82,6 +110,8 @@ export class Fly {
   private readonly sleep: Sleep;
   private readonly timer: Sleep;
   private readonly launchConfirmMs: number;
+  private readonly sessions: SessionHooks | undefined;
+  private readonly sessionLog: FlyOptions['sessionLog'];
 
   constructor(
     private readonly ctx: Ctx,
@@ -96,6 +126,8 @@ export class Fly {
     this.sleep = options.sleep ?? realSleep;
     this.timer = options.timer ?? realSleep;
     this.launchConfirmMs = options.launchConfirmMs ?? 30_000;
+    this.sessions = options.sessions;
+    this.sessionLog = options.sessionLog;
   }
 
   // ---- profiles ----
@@ -142,6 +174,7 @@ export class Fly {
         title: item.title,
         group: this.ctx.checks.check(item.type)?.group ?? 'other',
         required: this.ctx.checks.check(item.type)?.advisory ? false : item.required,
+        ...(item.disabled ? { disabled: true } : {}),
       })),
       ...(launchLabel ? { launchLabel } : {}),
       actions: (['preLaunch', 'postLaunch', 'standDown'] as const).flatMap((phase) =>
@@ -159,9 +192,12 @@ export class Fly {
     if (!listed.ok) return listed;
     const { profiles, invalid } = listed.value;
     const lastUsed = await this.ctx.profiles.lastUsed();
+    const lastSession = (await this.sessionLog?.lastByProfile()) ?? {};
     const state: FlyState = {
       profiles: profiles.map(({ profile }) => {
         const gameName = this.gameName(profile);
+        const kind = profile.game ? this.ctx.games.get(profile.game)?.kind : undefined;
+        const last = lastSession[profile.id];
         return {
           id: profile.id,
           name: profile.name,
@@ -169,6 +205,17 @@ export class Fly {
           ...(gameName ? { gameName } : {}),
           ...(lastUsed[profile.id] ? { lastUsed: lastUsed[profile.id] } : {}),
           canLaunch: profile.launch !== undefined || profile.steamAppId !== undefined,
+          ...(kind ? { kind } : {}),
+          ...(last
+            ? {
+                lastSession: {
+                  startedAt: last.startedAt,
+                  ...(last.durationSeconds !== undefined
+                    ? { durationSeconds: last.durationSeconds }
+                    : {}),
+                },
+              }
+            : {}),
         };
       }),
       invalid: invalid.map((i) => ({
@@ -223,8 +270,12 @@ export class Fly {
   /** Remembers the profile as the one in use. Writes only when it changes. */
   private async remember(id: string): Promise<void> {
     // Read each time: the setups page and the tray change it too.
-    if ((await this.ctx.profiles.lastProfileId()) === id) return;
-    await this.ctx.profiles.setLastProfileId(id, this.ctx.ports.clock.now());
+    const before = await this.ctx.profiles.lastProfileId();
+    if (before === id) return;
+    const saved = await this.ctx.profiles.setLastProfileId(id, this.ctx.ports.clock.now());
+    // From one setup to another: the other windows follow. The first setup ever noted is
+    // the one every window opened on already, so there is nothing to follow.
+    if (saved.ok && before !== undefined) this.events.switched?.(id);
   }
 
   // ---- checks ----
@@ -239,16 +290,17 @@ export class Fly {
     if (remember) await this.remember(profileId);
     // Results stream as events only to a caller that tagged its run (the Fly screen).
     if (runId) this.latestRun = runId;
-    return ok(
-      await runChecks(found.value.profile, this.ctx.checks, this.ctx, {
-        timeoutMs: await this.timeoutMs(),
-        onResult: (result) => {
-          // A newer run (another profile, or Re-check all) makes this one stale.
-          if (!runId || this.latestRun !== runId) return;
-          this.events.result({ runId, profileId, result });
-        },
-      })
-    );
+    const startedAt = this.ctx.ports.clock.now();
+    const report = await runChecks(found.value.profile, this.ctx.checks, this.ctx, {
+      timeoutMs: await this.timeoutMs(),
+      onResult: (result) => {
+        // A newer run (another profile, or Re-check all) makes this one stale.
+        if (!runId || this.latestRun !== runId) return;
+        this.events.result({ runId, profileId, result });
+      },
+    });
+    this.sessions?.checked(found.value.profile, report, startedAt);
+    return ok(report);
   }
 
   async checkItem(profileId: string, itemId: string): Promise<Result<CheckResult>> {
@@ -276,6 +328,7 @@ export class Fly {
     });
     if (!fixed) return err('fly.noItem', `"${found.value.profile.name}" has no item ${itemId}.`);
     this.ctx.log.info(`fix ${profileId}/${itemId}`, fixed.step);
+    this.sessions?.fixed(found.value.profile, fixed.step, fixed.result);
     return ok(fixed);
   }
 
@@ -293,6 +346,7 @@ export class Fly {
       ...(runId ? { onProgress: (p) => this.events.progress({ runId, ...p }) } : {}),
     });
     this.ctx.log.info(`make ready ${profileId}`, report.steps);
+    this.sessions?.madeReady(found.value.profile, report);
     return ok(report);
   }
 
@@ -490,6 +544,17 @@ export class Fly {
     steps.push({ itemId: 'game', title, ok: true, message, phase: 'launch' });
     report('launch', 'game', title, 'done', message);
     this.ctx.log.info(`launched ${target.value.exe}`, { pid: started.value.pid });
+    // The session lasts as long as any of the game's own programs runs (a launcher and the
+    // simulator it starts are one session). Steam still has to start the game itself.
+    const module = profile.game ? this.ctx.games.get(profile.game) : undefined;
+    const watched = [...this.gameProcesses(profile), ...(module?.processes ?? [])];
+    await this.sessions?.launched(profile, {
+      name: this.gameName(profile),
+      processes: watched.filter(
+        (name, index) => watched.findIndex((n) => sameName(n, name)) === index
+      ),
+      seen: !viaSteam,
+    });
 
     // Post-launch actions run once the game is up, each at its delay after the start.
     const post = actions.postLaunch;
@@ -521,12 +586,15 @@ export class Fly {
     })();
 
     const prefs = await this.preferences();
+    const minimize = prefs.ok ? prefs.value.minimizeOnLaunch : true;
+    // The shell hides the window on this answer: from here on nobody is looking at it.
+    if (minimize) this.sessions?.hidden();
     return ok({
       outcome: 'launched',
       message,
       steps,
       postLaunchPending: post.length,
-      minimize: prefs.ok ? prefs.value.minimizeOnLaunch : true,
+      minimize,
     });
   }
 
@@ -625,6 +693,7 @@ export class Fly {
       ...(failed > 0 ? [`${failed} ${failed === 1 ? 'step' : 'steps'} need attention`] : []),
     ];
     this.ctx.log.info(`stand down ${profileId}`, steps);
+    this.sessions?.stoodDown();
     return ok({ ...report, steps, headline: parts.join(' · ') });
   }
 
@@ -634,7 +703,11 @@ export class Fly {
     return this.prefs.read();
   }
 
-  async setPreferences(patch: Partial<Preferences>): Promise<Result<Preferences>> {
-    return this.prefs.update((current) => ({ ...current, ...patch }));
+  /** Changes the preferences that are named; the others stay as they are. */
+  async setPreferences(patch: PreferencesPatch): Promise<Result<Preferences>> {
+    const named = Object.fromEntries(
+      Object.entries(patch).filter(([, value]) => value !== undefined)
+    );
+    return this.prefs.update((current) => ({ ...current, ...named }));
   }
 }

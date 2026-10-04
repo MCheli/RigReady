@@ -1,9 +1,29 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import type { CheckResult, NeedsYou, StepResult } from '../../../core/checks/engine';
+import type { ActionReport, CheckResult, NeedsYou, StepResult } from '../../../core/checks/engine';
+import { CHECK_GROUPS, type CheckGroup } from '../../../core/profile/schema';
+import { err, ok, type Result } from '../../../core/result';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
-import { flyContract, type LaunchStep, type ProfileSummary, type ProfileView } from '../contract';
+import {
+  flyContract,
+  type History,
+  type LaunchResult,
+  type LaunchStep,
+  type ProfileSummary,
+  type ProfileView,
+  type RigGlance,
+  type SessionState,
+  type Suggestion,
+} from '../contract';
+import {
+  fixesLine,
+  flightSteps,
+  runFlight,
+  type FlightStage,
+  type FlightStep,
+} from '../core/flight';
+import type { SegmentState } from './dial';
 
 export type Busy = 'makeReady' | 'standDown' | 'launch' | null;
 export type ProgressState = 'pending' | 'running' | 'done' | 'failed' | 'skipped';
@@ -15,16 +35,29 @@ export interface ActivityEntry {
   message?: string;
   output?: string;
   phase?: 'preLaunch' | 'launch' | 'postLaunch';
+  /** For a fix: the checklist group of its item, which decides the phase it runs in. */
+  group?: CheckGroup;
 }
 
 export interface Activity {
-  kind: 'makeReady' | 'standDown' | 'launch';
+  /** flight: Make ready and Launch as one run. */
+  kind: 'makeReady' | 'standDown' | 'launch' | 'flight';
   title: string;
   headline?: string;
   entries: ActivityEntry[];
   needsYou: NeedsYou[];
   /** True while the action is still going. */
   running: boolean;
+  /** Make ready, alone or before a launch: where the run is. */
+  stage?: FlightStage;
+}
+
+/** What a launch came to, for the screen: a step that stopped it, or whether to get out of the way. */
+export interface LaunchOutcome {
+  paused?: { at: number; message: string; output?: string };
+  minimize?: boolean;
+  /** Make ready and launch stopped before the launch: something required still needs the user. */
+  held?: boolean;
 }
 
 let runCounter = 0;
@@ -32,6 +65,8 @@ const newRunId = (prefix: string): string => `${prefix}-${Date.now()}-${++runCou
 
 const stateOf = (step: StepResult): ProgressState =>
   step.skipped ? 'skipped' : step.ok ? 'done' : 'failed';
+
+const ENDED: ProgressState[] = ['done', 'failed', 'skipped'];
 
 export const useFlyStore = defineStore('fly', () => {
   const api = useClient(flyContract);
@@ -53,9 +88,23 @@ export const useFlyStore = defineStore('fly', () => {
   const error = ref<string>();
   const activity = ref<Activity>();
   const minimizeOnLaunch = ref(true);
+  /** Stand down by itself when the game closes. */
+  const autoStandDown = ref(false);
+  /** Two quiet notes when the rig becomes ready. */
+  const readyTone = ref(false);
+  /** The session of the moment: none, a game running, or one that just closed. */
+  const session = ref<SessionState>({ phase: 'idle' });
+  /** The rig at a glance: the monitors as they are. Undefined until read. */
+  const rig = ref<RigGlance>();
+  /** Another setup the gear on the desk is for, while this one's is not all here. */
+  const suggestion = ref<Suggestion | null>(null);
+  /** Offers answered "Not now", as "this setup>that setup". */
+  const declined = new Set<string>();
   let runId: string | undefined;
   let launchRunId: string | undefined;
   let makeReadyRunId: string | undefined;
+  /** The checklist run under way, when there is one. */
+  let checkRun: Promise<void> | undefined;
   const offs: (() => void)[] = [];
 
   const active = computed(() => profiles.value.find((p) => p.id === activeId.value));
@@ -75,12 +124,55 @@ export const useFlyStore = defineStore('fly', () => {
     };
   });
 
+  /**
+   * What the dial draws: one state per item in the order the checklist shows them, and
+   * how many of the items that count are met.
+   */
+  const dial = computed(() => {
+    const ordered = CHECK_GROUPS.flatMap((group) => items.value.filter((i) => i.group === group));
+    const states = ordered.map((item): SegmentState => {
+      const result = results.value[item.itemId];
+      if (result?.disabled ?? item.disabled) return 'off';
+      if (!result || checking.value[item.itemId]) return 'pending';
+      if (result.status === 'pass') return 'pass';
+      return result.required ? 'fail' : 'warn';
+    });
+    const off = states.filter((state) => state === 'off').length;
+    const met = ordered.filter((item) => {
+      const result = results.value[item.itemId];
+      return result !== undefined && !result.disabled && result.status === 'pass';
+    }).length;
+    return { states, met, total: ordered.length - off };
+  });
+
   /** Ready, Ready with warnings or Not ready; undefined until every item has a result. */
   const readiness = computed<'ready' | 'warnings' | 'notReady' | undefined>(() => {
     if (counts.value.failed > 0) return 'notReady';
     if (counts.value.checked < items.value.length) return undefined;
     return counts.value.warnings > 0 ? 'warnings' : 'ready';
   });
+
+  /** The steps of Make ready (and of the launch after it), each in its state. */
+  const steps = computed<FlightStep[]>(() => {
+    const current = activity.value;
+    if (!current?.stage) return [];
+    const fixes = current.entries
+      .filter((entry) => entry.phase === undefined)
+      .map((entry) => ({ group: entry.group ?? ('other' as const), state: entry.state }));
+    // Every fix has ended and Make ready has not answered yet: it is checking again.
+    const rechecking =
+      current.stage === 'fixing' &&
+      fixes.length > 0 &&
+      fixes.every((fix) => ENDED.includes(fix.state));
+    return flightSteps({
+      fixes,
+      stage: rechecking ? 'checking' : current.stage,
+      withLaunch: current.kind === 'flight',
+    });
+  });
+
+  const groupOf = (itemId: string): CheckGroup =>
+    items.value.find((item) => item.itemId === itemId)?.group ?? 'other';
 
   function listen(): void {
     if (offs.length > 0) return;
@@ -96,6 +188,7 @@ export const useFlyStore = defineStore('fly', () => {
           id: payload.itemId,
           title: payload.title,
           state: payload.state,
+          group: groupOf(payload.itemId),
           ...(payload.message ? { message: payload.message } : {}),
         });
       }),
@@ -108,8 +201,35 @@ export const useFlyStore = defineStore('fly', () => {
           phase: payload.phase,
           ...(payload.message ? { message: payload.message } : {}),
         });
+      }),
+      api.on('session', (payload) => takeSession(payload)),
+      // Another window of RigReady (or the tray) switched setups: this one follows.
+      api.on('activeChanged', (payload) => {
+        if (payload.profileId !== activeId.value) void load();
       })
     );
+  }
+
+  /** The session changed: started, running, closed, stood down. */
+  function takeSession(next: SessionState): void {
+    const before = session.value;
+    session.value = next;
+    // Stand down running by itself holds the screen the way Stand down does.
+    if (next.standingDown && busy.value === null) busy.value = 'standDown';
+    else if (before.standingDown && !next.standingDown && busy.value === 'standDown') {
+      busy.value = null;
+    }
+    // A session ended: the setup has a new "last flown".
+    if (before.phase !== next.phase && (next.phase === 'ended' || next.phase === 'idle')) {
+      void refreshProfiles();
+    }
+    // Stand down ran by itself: apps were closed, the monitors may have changed.
+    if (next.stoodDown && !before.stoodDown) notifyMachineChanged();
+  }
+
+  async function refreshProfiles(): Promise<void> {
+    const state = await api.state();
+    if (state.ok) profiles.value = state.value.profiles;
   }
 
   function upsert(entry: ActivityEntry): void {
@@ -128,6 +248,19 @@ export const useFlyStore = defineStore('fly', () => {
     fixing.value = {};
     fixMessages.value = {};
     activity.value = undefined;
+    rig.value = undefined;
+    suggestion.value = null;
+  }
+
+  /** The monitors as they are now, compared with what the setup expects of them. */
+  async function loadRig(): Promise<void> {
+    const profileId = activeId.value;
+    if (!profileId) return;
+    const answer = await api.rig({ profileId });
+    if (profileId !== activeId.value) return;
+    rig.value = answer.ok
+      ? answer.value
+      : { monitors: [], missing: [], error: errorText(answer.error) };
   }
 
   async function load(): Promise<void> {
@@ -150,13 +283,35 @@ export const useFlyStore = defineStore('fly', () => {
     }
     error.value = undefined;
     void api.preferences().then((prefs) => {
-      if (prefs.ok) minimizeOnLaunch.value = prefs.value.minimizeOnLaunch;
+      if (!prefs.ok) return;
+      minimizeOnLaunch.value = prefs.value.minimizeOnLaunch;
+      autoStandDown.value = prefs.value.autoStandDown;
+      readyTone.value = prefs.value.readyTone;
     });
+    void api.session().then((current) => {
+      if (current.ok) session.value = current.value;
+    });
+    void loadRig();
     await check();
   }
 
   /** Re-checks every item. Quiet: keep showing the current statuses (background refresh). */
   async function check(quiet = false): Promise<void> {
+    const run = runCheck(quiet);
+    checkRun = run;
+    try {
+      await run;
+    } finally {
+      if (checkRun === run) checkRun = undefined;
+    }
+  }
+
+  /** Resolves once no checklist run is under way: every item has its answer. */
+  async function settled(): Promise<void> {
+    while (checkRun) await checkRun;
+  }
+
+  async function runCheck(quiet: boolean): Promise<void> {
     const profileId = activeId.value;
     if (!profileId || busy.value === 'makeReady' || busy.value === 'standDown') return;
     const mine = newRunId('check');
@@ -175,6 +330,41 @@ export const useFlyStore = defineStore('fly', () => {
     }
     error.value = undefined;
     results.value = Object.fromEntries(result.value.results.map((r) => [r.itemId, r]));
+    void loadSuggestion();
+  }
+
+  /**
+   * Asks whether the gear on the desk is another setup's. Only worth asking while a device
+   * this setup requires is missing and there is another setup to offer; asked again with
+   * every checklist run, so the offer follows what is plugged in.
+   */
+  async function loadSuggestion(): Promise<void> {
+    const profileId = activeId.value;
+    const short = counts.value.failing.some((result) => groupOf(result.itemId) === 'devices');
+    if (!profileId || !short || profiles.value.length < 2) {
+      suggestion.value = null;
+      return;
+    }
+    const answer = await api.suggestion({ profileId });
+    if (profileId !== activeId.value) return;
+    // No answer is no offer: the checklist above says what is wrong with the machine.
+    const offer = answer.ok ? answer.value : null;
+    suggestion.value = offer && !declined.has(`${profileId}>${offer.profileId}`) ? offer : null;
+  }
+
+  /** "Not now": this offer is not made again while RigReady runs. */
+  function declineSuggestion(): void {
+    const offer = suggestion.value;
+    if (offer && activeId.value) declined.add(`${activeId.value}>${offer.profileId}`);
+    suggestion.value = null;
+  }
+
+  /** "Switch": to the setup that was offered. */
+  async function takeSuggestion(): Promise<void> {
+    const offer = suggestion.value;
+    if (!offer) return;
+    suggestion.value = null;
+    await select(offer.profileId);
   }
 
   async function checkOne(itemId: string): Promise<void> {
@@ -200,6 +390,7 @@ export const useFlyStore = defineStore('fly', () => {
       return;
     }
     view.value = next.value;
+    void loadRig();
     await check();
     // The list's "last used" moves with the switch.
     const state = await api.state();
@@ -236,52 +427,54 @@ export const useFlyStore = defineStore('fly', () => {
     else error.value = errorText(result.error);
   }
 
-  async function makeReady(approved: string[]): Promise<void> {
+  /**
+   * Every available fix in order, then a re-check. As part of "Make ready and launch" the
+   * screen stays busy afterwards: the launch follows, or the run says why it does not.
+   */
+  async function runMakeReady(
+    kind: 'makeReady' | 'flight',
+    approved: string[]
+  ): Promise<Result<ActionReport>> {
     const profileId = activeId.value;
-    if (!profileId || busy.value) return;
+    if (!profileId) return err('fly.noSetup', 'No setup is open.');
+    const title = kind === 'flight' ? 'Make ready and launch' : 'Make ready';
     busy.value = 'makeReady';
     makeReadyRunId = newRunId('ready');
     runId = undefined;
-    activity.value = {
-      kind: 'makeReady',
-      title: 'Make ready',
-      entries: [],
-      needsYou: [],
-      running: true,
-    };
+    activity.value = { kind, title, entries: [], needsYou: [], running: true, stage: 'fixing' };
     const result = await api.makeReady({ profileId, runId: makeReadyRunId, approved });
-    busy.value = null;
     if (!result.ok) {
+      busy.value = null;
       activity.value = undefined;
       error.value = errorText(result.error);
-      return;
+      return result;
     }
     error.value = undefined;
     results.value = Object.fromEntries(result.value.report.results.map((r) => [r.itemId, r]));
-    const steps = result.value.steps;
-    const done = steps.filter((s) => s.ok).length;
-    const failed = steps.filter((s) => !s.ok && !s.skipped).length;
     activity.value = {
-      kind: 'makeReady',
-      title: 'Make ready',
-      headline:
-        steps.length === 0
-          ? 'Nothing RigReady can fix'
-          : [
-              `${done} of ${steps.length} ${steps.length === 1 ? 'fix' : 'fixes'} worked`,
-              ...(failed > 0 ? [`${failed} failed`] : []),
-            ].join(' · '),
-      entries: steps.map((s) => ({
+      kind,
+      title,
+      headline: fixesLine(result.value.steps),
+      entries: result.value.steps.map((s) => ({
         id: s.itemId,
         title: s.title,
         state: stateOf(s),
         message: s.message,
+        group: groupOf(s.itemId),
         ...(s.output ? { output: s.output } : {}),
       })),
       needsYou: result.value.needsYou,
-      running: false,
+      running: kind === 'flight',
+      stage: 'checked',
     };
+    if (kind === 'makeReady') busy.value = null;
     notifyMachineChanged();
+    return result;
+  }
+
+  async function makeReady(approved: string[]): Promise<void> {
+    if (!activeId.value || busy.value) return;
+    await runMakeReady('makeReady', approved);
   }
 
   async function gameStatus(): Promise<{ running: boolean; name?: string }> {
@@ -321,27 +514,33 @@ export const useFlyStore = defineStore('fly', () => {
   }
 
   /**
-   * Runs pre-launch actions and starts the game. Resolves with the paused action when one
-   * that must not fail did, so the screen can ask "Launch anyway / Cancel".
+   * Pre-launch actions, the game, post-launch actions. `keep` goes on in the panel that is
+   * open (the launch after Make ready, or "Launch anyway" from it); a resumed launch does
+   * the same.
    */
-  async function launch(
-    options: { resumeAfter?: number; approved?: string[] } = {}
-  ): Promise<{ paused?: { at: number; message: string; output?: string }; minimize?: boolean }> {
+  async function runLaunch(
+    options: { resumeAfter?: number; approved?: string[]; keep?: boolean } = {}
+  ): Promise<Result<LaunchResult>> {
     const profileId = activeId.value;
-    if (!profileId || busy.value) return {};
+    if (!profileId) return err('fly.noSetup', 'No setup is open.');
     busy.value = 'launch';
     launchRunId = newRunId('launch');
-    if (options.resumeAfter === undefined || activity.value?.kind !== 'launch') {
-      activity.value = {
-        kind: 'launch',
-        title: 'Launch',
-        entries: [],
-        needsYou: [],
-        running: true,
-      };
-    } else {
-      activity.value = { ...activity.value, running: true };
-    }
+    const open = activity.value;
+    const goesOn =
+      open !== undefined &&
+      (options.keep === true || options.resumeAfter !== undefined) &&
+      (open.kind === 'launch' || open.kind === 'flight');
+    const flight = goesOn && open.kind === 'flight';
+    const before = flight
+      ? fixesLine(
+          open.entries
+            .filter((e) => e.phase === undefined)
+            .map((e) => ({ ok: e.state === 'done', skipped: e.state === 'skipped' }))
+        )
+      : '';
+    activity.value = goesOn
+      ? { ...open, running: true, ...(flight ? { stage: 'launching' as const } : {}) }
+      : { kind: 'launch', title: 'Launch', entries: [], needsYou: [], running: true };
     const result = await api.launch({
       profileId,
       runId: launchRunId,
@@ -351,8 +550,12 @@ export const useFlyStore = defineStore('fly', () => {
     busy.value = null;
     if (!result.ok) {
       error.value = errorText(result.error);
-      activity.value = { ...activity.value, running: false };
-      return {};
+      activity.value = {
+        ...activity.value,
+        running: false,
+        ...(flight ? { stage: 'launchFailed' as const } : {}),
+      };
+      return result;
     }
     for (const step of result.value.steps as LaunchStep[]) {
       upsert({
@@ -364,11 +567,18 @@ export const useFlyStore = defineStore('fly', () => {
         ...(step.output ? { output: step.output } : {}),
       });
     }
+    const launched = result.value.outcome === 'launched';
     activity.value = {
       ...activity.value,
-      headline: result.value.message,
+      headline: flight ? `${before} · ${result.value.message}` : result.value.message,
       running: result.value.postLaunchPending > 0,
+      ...(flight ? { stage: launched ? ('launched' as const) : ('launchFailed' as const) } : {}),
     };
+    return result;
+  }
+
+  function launchOutcome(result: Result<LaunchResult>): LaunchOutcome {
+    if (!result.ok) return {};
     if (result.value.outcome === 'paused') {
       const failed = result.value.steps[result.value.steps.length - 1];
       return {
@@ -382,10 +592,83 @@ export const useFlyStore = defineStore('fly', () => {
     return { minimize: result.value.outcome === 'launched' && result.value.minimize };
   }
 
+  /**
+   * Runs pre-launch actions and starts the game. Resolves with the paused action when one
+   * that must not fail did, so the screen can ask "Launch anyway / Cancel".
+   */
+  async function launch(
+    options: { resumeAfter?: number; approved?: string[]; keep?: boolean } = {}
+  ): Promise<LaunchOutcome> {
+    if (!activeId.value || busy.value) return {};
+    return launchOutcome(await runLaunch(options));
+  }
+
+  /**
+   * Make ready and launch as one action: every fix in order, a re-check, and the game only
+   * when everything required is met. Otherwise it stops there (`held`) and the screen says
+   * what is missing and offers "Launch anyway".
+   */
+  async function readyAndLaunch(options: {
+    approvedFixes: string[];
+    approvedActions: string[];
+  }): Promise<LaunchOutcome> {
+    if (!activeId.value || busy.value) return {};
+    const outcome = await runFlight({
+      makeReady: () => runMakeReady('flight', options.approvedFixes),
+      launch: () => runLaunch({ approved: options.approvedActions, keep: true }),
+    });
+    busy.value = null;
+    if (outcome.stage === 'held') {
+      if (activity.value) {
+        activity.value = {
+          ...activity.value,
+          running: false,
+          stage: 'held',
+          headline: `${fixesLine(outcome.ready.steps)} · not launched`,
+        };
+      }
+      return { held: true };
+    }
+    if (outcome.stage === 'launched' || outcome.stage === 'launchFailed') {
+      return launchOutcome(ok(outcome.launch));
+    }
+    return {};
+  }
+
   async function setMinimizeOnLaunch(value: boolean): Promise<void> {
     const saved = await api.setPreferences({ minimizeOnLaunch: value });
     if (saved.ok) minimizeOnLaunch.value = saved.value.minimizeOnLaunch;
     else error.value = errorText(saved.error);
+  }
+
+  async function setAutoStandDown(value: boolean): Promise<void> {
+    const saved = await api.setPreferences({ autoStandDown: value });
+    if (saved.ok) autoStandDown.value = saved.value.autoStandDown;
+    else error.value = errorText(saved.error);
+  }
+
+  async function setReadyTone(value: boolean): Promise<void> {
+    const saved = await api.setPreferences({ readyTone: value });
+    if (saved.ok) readyTone.value = saved.value.readyTone;
+    else error.value = errorText(saved.error);
+  }
+
+  /** "Welcome back" was read: back to normal without standing down. */
+  async function dismissSession(): Promise<void> {
+    const next = await api.dismissSession();
+    if (next.ok) takeSession(next.value);
+    else error.value = errorText(next.error);
+  }
+
+  /** Every recorded session and what they add up to. */
+  function history(): Promise<Result<History>> {
+    return api.history();
+  }
+
+  /** Opens the compact view in its own small window, or brings it forward. */
+  async function openCompact(): Promise<void> {
+    const opened = await api.openCompact();
+    if (!opened.ok) error.value = errorText(opened.error);
   }
 
   async function watch(onChange: (ids: string[]) => void): Promise<() => void> {
@@ -409,13 +692,22 @@ export const useFlyStore = defineStore('fly', () => {
     busy,
     error,
     activity,
+    steps,
     minimizeOnLaunch,
+    autoStandDown,
+    readyTone,
+    session,
+    rig,
+    suggestion,
     items,
     anyChecking,
     counts,
+    dial,
     readiness,
     load,
+    loadRig,
     check,
+    settled,
     checkOne,
     select,
     fix,
@@ -424,7 +716,15 @@ export const useFlyStore = defineStore('fly', () => {
     gameStatus,
     standDown,
     launch,
+    readyAndLaunch,
     setMinimizeOnLaunch,
+    setAutoStandDown,
+    setReadyTone,
+    dismissSession,
+    declineSuggestion,
+    takeSuggestion,
+    history,
+    openCompact,
     watch,
   };
 });

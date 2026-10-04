@@ -8,9 +8,52 @@ import {
 } from '../../core/checks/engine';
 import { CheckGroupSchema } from '../../core/profile/schema';
 import { channel, defineContract, noInput } from '../../shared/ipc';
-import { GameKindSchema } from '../../shared/models';
+import { GameKindSchema, RotationSchema } from '../../shared/models';
 
 const ProfileRef = z.object({ profileId: z.string() });
+
+/** A monitor as it is now, for the drawing of the rig. */
+export const RigMonitorSchema = z.object({
+  id: z.string(),
+  /** The name the owner gave it, or its own, numbered when several share it. */
+  label: z.string(),
+  x: z.number().int(),
+  y: z.number().int(),
+  /** Desktop size in pixels after rotation; 0 while it is off. */
+  width: z.number().int(),
+  height: z.number().int(),
+  rotation: RotationSchema,
+  enabled: z.boolean(),
+  primary: z.boolean(),
+  /** What is different from what the setup expects of it, in a few words. Absent: as expected. */
+  issue: z.string().optional(),
+});
+
+/** The rig at a glance: the monitors as they are, compared with what the setup expects. */
+export const RigGlanceSchema = z.object({
+  monitors: z.array(RigMonitorSchema),
+  /** Monitors the setup wants on that are not connected, by name. */
+  missing: z.array(z.string()),
+  /** The checklist item the arrangement belongs to: where choosing a monitor leads. Absent when the setup expects nothing of the monitors. */
+  itemId: z.string().optional(),
+  /** Why the monitors cannot be drawn. */
+  error: z.string().optional(),
+});
+export type RigGlance = z.infer<typeof RigGlanceSchema>;
+
+/**
+ * Another setup the gear on the desk is for: every device it requires is connected, and
+ * the setup on screen is missing some of its own. An offer, never a switch.
+ */
+export const SuggestionSchema = z.object({
+  profileId: z.string(),
+  name: z.string(),
+  /** The device that gives it away: required by that setup and not by the one on screen. */
+  device: z.string(),
+  /** How many devices the setup on screen requires that are not connected. */
+  missing: z.number().int().min(1),
+});
+export type Suggestion = z.infer<typeof SuggestionSchema>;
 
 export const ProfileSummarySchema = z.object({
   id: z.string(),
@@ -22,8 +65,91 @@ export const ProfileSummarySchema = z.object({
   /** When it was last used on the Fly screen (ISO). */
   lastUsed: z.string().optional(),
   canLaunch: z.boolean(),
+  /** The family of sims its game belongs to, for the words a session is described in. */
+  kind: GameKindSchema.optional(),
+  /** The last session launched from RigReady with this setup. */
+  lastSession: z
+    .object({
+      startedAt: z.string(),
+      /** Absent when RigReady could not tell how long it was. */
+      durationSeconds: z.number().int().optional(),
+    })
+    .optional(),
 });
 export type ProfileSummary = z.infer<typeof ProfileSummarySchema>;
+
+/** Something Make ready or a fix button put right before a launch. */
+export const FixedSchema = z.object({
+  title: z.string(),
+  group: CheckGroupSchema,
+  /** What the fix said it did ("Started TrackIR5.exe"). */
+  message: z.string(),
+});
+
+/** One session: from the game running to the game closed. */
+export const SessionRecordSchema = z.object({
+  id: z.string(),
+  profileId: z.string(),
+  profileName: z.string(),
+  gameName: z.string().optional(),
+  /** When the game was running (ISO). */
+  startedAt: z.string(),
+  /** Whole seconds the game ran. Absent when RigReady could not tell (it was closed, or cannot see this game). */
+  durationSeconds: z.number().int().min(0).optional(),
+  /** Seconds from opening the setup in RigReady until every required check was met. Absent when it was launched not ready. */
+  readySeconds: z.number().int().min(0).optional(),
+  /** What had to be fixed before the launch. */
+  fixed: z.array(FixedSchema).default([]),
+  /** The first required item that was not met when the setup was opened. */
+  failedFirst: z.object({ title: z.string(), summary: z.string() }).optional(),
+  /** Launched with something required not met. */
+  notReady: z.boolean().optional(),
+});
+export type SessionRecord = z.infer<typeof SessionRecordSchema>;
+
+/** The session of the moment, as every window shows it. */
+export const SessionStateSchema = z.object({
+  /**
+   * idle: none. starting: handed to Steam, the game has not shown up yet. running: the
+   * game is running. ended: the game closed ("welcome back") and nothing was done about
+   * it yet.
+   */
+  phase: z.enum(['idle', 'starting', 'running', 'ended']),
+  profileId: z.string().optional(),
+  profileName: z.string().optional(),
+  gameName: z.string().optional(),
+  startedAt: z.string().optional(),
+  endedAt: z.string().optional(),
+  durationSeconds: z.number().int().optional(),
+  /** Stand down is running by itself right now (the user asked for that). */
+  standingDown: z.boolean().optional(),
+  /** Stand down ran by itself: what it did. */
+  stoodDown: z.object({ headline: z.string(), failed: z.number().int() }).optional(),
+});
+export type SessionState = z.infer<typeof SessionStateSchema>;
+
+export const HistorySchema = z.object({
+  /** Newest first. */
+  sessions: z.array(SessionRecordSchema),
+  totals: z.object({
+    sessions: z.number().int(),
+    /** Seconds in the sessions whose length is known. */
+    seconds: z.number().int(),
+    /** What had to be fixed before launching, most often first. */
+    fixes: z.array(
+      z.object({ title: z.string(), group: CheckGroupSchema, count: z.number().int() })
+    ),
+    /** The usual time from opening RigReady to a ready rig (the median). */
+    readySeconds: z.number().int().optional(),
+    /** Sessions launched with something required not met. */
+    notReady: z.number().int(),
+  }),
+  /** The totals in one line: "12 sessions, 14 h; TrackIR needed starting 6 times". */
+  line: z.string(),
+  /** One line when a history file could not be read. */
+  notice: z.string().optional(),
+});
+export type History = z.infer<typeof HistorySchema>;
 
 export const InvalidProfileSummarySchema = z.object({
   id: z.string(),
@@ -39,6 +165,8 @@ export const SkeletonItemSchema = z.object({
   title: z.string(),
   group: CheckGroupSchema,
   required: z.boolean(),
+  /** Switched off in the setup: listed, never checked, never counted. */
+  disabled: z.boolean().optional(),
 });
 export type SkeletonItem = z.infer<typeof SkeletonItemSchema>;
 
@@ -103,8 +231,23 @@ export type LaunchResult = z.infer<typeof LaunchResultSchema>;
 export const PreferencesSchema = z.object({
   /** After a successful launch, hide RigReady to the tray. */
   minimizeOnLaunch: z.boolean().default(true),
+  /** When the game closes, run Stand down without being asked. */
+  autoStandDown: z.boolean().default(false),
+  /** Two quiet notes when the rig becomes ready. */
+  readyTone: z.boolean().default(false),
 });
 export type Preferences = z.infer<typeof PreferencesSchema>;
+
+/**
+ * A change to the preferences: only what is named changes. (Not PreferencesSchema.partial():
+ * its defaults would fill in what was left out and undo the other choices.)
+ */
+export const PreferencesPatchSchema = z.object({
+  minimizeOnLaunch: z.boolean().optional(),
+  autoStandDown: z.boolean().optional(),
+  readyTone: z.boolean().optional(),
+});
+export type PreferencesPatch = z.infer<typeof PreferencesPatchSchema>;
 
 const ProgressStateSchema = z.enum(['pending', 'running', 'done', 'failed', 'skipped']);
 
@@ -181,11 +324,45 @@ export const flyContract = defineContract(
     /** The item's own confirm action ("Mark verified"); stores the new params, re-checks. */
     acknowledge: channel(ProfileRef.extend({ itemId: z.string() }), CheckResultSchema),
     preferences: channel(noInput, PreferencesSchema),
-    setPreferences: channel(PreferencesSchema.partial(), PreferencesSchema),
+    setPreferences: channel(PreferencesPatchSchema, PreferencesSchema),
     /** Starts watching the profiles folder; `profilesChanged` fires within about 2 s of a change. */
     watch: channel(noInput, z.object({ watching: z.boolean() })),
+    /** The monitors as they are now, each with what is different from what the setup expects. */
+    rig: channel(ProfileRef, RigGlanceSchema),
+    /** The session of the moment: none, a game running, or one that just closed. */
+    session: channel(noInput, SessionStateSchema),
+    /** "Welcome back" was read: back to normal without standing down. */
+    dismissSession: channel(noInput, SessionStateSchema),
+    /** Every recorded session, newest first, and what they add up to. */
+    history: channel(noInput, HistorySchema),
+    /**
+     * A window of RigReady says whether somebody is at it: true when the user does
+     * something in it, false when it is hidden. A window that says nothing for a minute
+     * counts as left alone. With nobody at a window, "welcome back" is a Windows
+     * notification.
+     */
+    presence: channel(
+      z.object({ window: z.string().min(1).max(40), visible: z.boolean() }),
+      z.object({ attended: z.boolean() })
+    ),
+    /**
+     * Opens the compact view (the dial, the setup switcher and the one action) in a small
+     * window that stays on top, or brings it forward when it is open.
+     */
+    openCompact: channel(noInput, z.object({ opened: z.boolean() })),
+    /** Brings RigReady's main window forward, from the tray or from behind the game. */
+    showMain: channel(noInput, z.object({ shown: z.boolean() })),
+    /**
+     * The setup the connected gear is for, when the one named is missing a device it
+     * requires and another setup has all of its own. Null when there is nothing to offer.
+     */
+    suggestion: channel(ProfileRef, SuggestionSchema.nullable()),
   },
   {
+    /** Another setup became the one in use (chosen in a window of RigReady or from the tray). */
+    activeChanged: z.object({ profileId: z.string() }),
+    /** The session changed: started, running, closed, stood down. */
+    session: SessionStateSchema,
     result: z.object({ runId: z.string(), profileId: z.string(), result: CheckResultSchema }),
     progress: z.object({
       runId: z.string(),
