@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ChangePreviewSchema } from '../../shared/changePreview';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 import { LaunchTargetSchema } from '../../shared/models';
 import { ExportToolSchema } from './core/exportLua';
@@ -242,6 +243,8 @@ export const dcsSetupContract = defineContract('dcs-setup', {
   ),
   /** Puts back RigReady.lua, the options.lua keys and the Export.lua tools RigReady last set. */
   restoreManaged: channel(noInput, MessageSchema),
+  /** Which files that restore would change and how. Reads only. */
+  restoreManagedPreview: channel(noInput, ChangePreviewSchema),
   /** Remembers the installed DCS version as one that works. */
   markVerified: channel(noInput, MessageSchema),
 });

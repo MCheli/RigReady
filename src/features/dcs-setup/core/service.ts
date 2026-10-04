@@ -3,7 +3,9 @@ import type { CheckContext, RunProfile } from '../../../core/checks/registry';
 import type { MainContext } from '../../../core/feature';
 import { profileExtension, withProfileExtension, type Profile } from '../../../core/profile/schema';
 import { matchMonitors } from '../../../core/displays/identity';
+import { changePreview } from '../../../core/files/preview';
 import { err, ok, type Result } from '../../../core/result';
+import type { ChangePreview } from '../../../shared/changePreview';
 import type {
   DesktopChoice,
   ExportAction,
@@ -696,7 +698,8 @@ export class DcsSetupService {
     return applied.ok
       ? ok(
           applied.value.changes.length
-            ? 'Put the RigReady screen setup back in DCS'
+            ? // Make ready's summary names what was written, file by file.
+              `Put the RigReady screen setup back in DCS (${applied.value.changes.join('; ')})`
             : 'The RigReady screen setup was already in place'
         )
       : applied;
@@ -999,25 +1002,29 @@ export class DcsSetupService {
     return out;
   }
 
-  /** Puts back what RigReady last wrote: RigReady.lua, the options.lua keys it set, the Export.lua tools it added. */
-  async restoreManaged(): Promise<Result<string>> {
-    const refused = await refuseWhileRunning(this.check);
-    if (!refused.ok) return refused;
+  /**
+   * The writes that put back what RigReady last wrote: RigReady.lua, the options.lua keys it
+   * set, the Export.lua tools it added. Reads only; the preview and the restore both use it.
+   */
+  private async managedPlan(): Promise<
+    Result<{
+      writes: { label: string; path: string; content: string; reason: string }[];
+      /** Export.lua as it will be afterwards, when RigReady manages it. */
+      exportAfter?: string;
+    }>
+  > {
     const state = await this.state();
-    const { files } = this.ctx.ports;
-    const group = files.beginGroup('Restore the DCS files RigReady manages');
-    const done: string[] = [];
+    const writes: { label: string; path: string; content: string; reason: string }[] = [];
     if (
       state.monitorSetup &&
       (await this.readText(state.monitorSetup.path)) !== state.monitorSetup.text
     ) {
-      await files.mkdir(path.dirname(state.monitorSetup.path));
-      const written = await files.write(state.monitorSetup.path, state.monitorSetup.text, {
+      writes.push({
+        label: `${MONITOR_SETUP_NAME}.lua`,
+        path: state.monitorSetup.path,
+        content: state.monitorSetup.text,
         reason: `Restore RigReady's ${MONITOR_SETUP_NAME}.lua`,
-        group,
       });
-      if (!written.ok) return written;
-      done.push(`${MONITOR_SETUP_NAME}.lua`);
     }
     if (state.options) {
       const text = await this.readText(state.options.path);
@@ -1034,27 +1041,75 @@ export class DcsSetupService {
         });
         if (!edited.ok) return edited;
         if (edited.value.changes.length) {
-          const written = await files.write(state.options.path, edited.value.text, {
+          writes.push({
+            label: 'options.lua',
+            path: state.options.path,
+            content: edited.value.text,
             reason: `options.lua: ${edited.value.changes.map(describeChange).join('; ')}`,
-            group,
           });
-          if (!written.ok) return written;
-          done.push('options.lua');
         }
       }
     }
+    let exportAfter: string | undefined;
     if (state.exportLua) {
       const before = (await this.readText(state.exportLua.path)) ?? '';
       let after = before;
       for (const tool of state.exportTools) after = addTool(after, tool);
       if (after !== before) {
-        const written = await files.write(state.exportLua.path, after, {
+        writes.push({
+          label: 'Export.lua',
+          path: state.exportLua.path,
+          content: after,
           reason: 'Export.lua: put back the tools RigReady added',
-          group,
         });
-        if (!written.ok) return written;
-        done.push('Export.lua');
       }
+      exportAfter = after;
+    }
+    return ok({ writes, ...(exportAfter !== undefined ? { exportAfter } : {}) });
+  }
+
+  /** The names of the files a restore would write ("options.lua and Export.lua"); empty when none. */
+  async managedRestoreNames(): Promise<string> {
+    const plan = await this.managedPlan();
+    if (!plan.ok) return '';
+    const names = plan.value.writes.map((w) => w.label);
+    return names.length <= 1
+      ? (names[0] ?? '')
+      : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+  }
+
+  /** Which DCS files the restore would change and how. Nothing is written. */
+  async previewRestoreManaged(): Promise<Result<ChangePreview>> {
+    const plan = await this.managedPlan();
+    if (!plan.ok) return plan;
+    return changePreview(
+      this.ctx.ports.files,
+      plan.value.writes.map((w) => ({ path: w.path, content: w.content })),
+      (_write, index) => plan.value.writes[index]!.label
+    );
+  }
+
+  /** Puts back what RigReady last wrote: RigReady.lua, the options.lua keys it set, the Export.lua tools it added. */
+  async restoreManaged(): Promise<Result<string>> {
+    const refused = await refuseWhileRunning(this.check);
+    if (!refused.ok) return refused;
+    const plan = await this.managedPlan();
+    if (!plan.ok) return plan;
+    const state = await this.state();
+    const { files } = this.ctx.ports;
+    const group = files.beginGroup('Restore the DCS files RigReady manages');
+    const done: string[] = [];
+    for (const write of plan.value.writes) {
+      await files.mkdir(path.dirname(write.path));
+      const written = await files.write(write.path, write.content, {
+        reason: write.reason,
+        group,
+      });
+      if (!written.ok) return written;
+      done.push(write.label);
+    }
+    if (state.exportLua && plan.value.exportAfter !== undefined) {
+      const after = plan.value.exportAfter;
       // Lines other tools added since are kept and become part of what is expected.
       await this.store.update((s) => ({
         ...s,

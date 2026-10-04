@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import ChangePreview from '../../../renderer/components/ChangePreview.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
+import type { ChangePreview as Preview } from '../../../shared/changePreview';
 import { backupContract, type ComparisonView, type Overview, type SnapshotView } from '../contract';
 import DiffView from './DiffView.vue';
 import { plural, size, when } from './format';
@@ -17,6 +19,18 @@ const name = ref('');
 const taking = ref(false);
 const comparing = ref<{ snapshot: SnapshotView; comparison: ComparisonView; folder?: string }>();
 const restoring = ref<SnapshotView>();
+/** Which files putting the snapshot back would change; loaded when the confirmation opens. */
+const restorePreview = ref<Preview>();
+const restorePreviewError = ref<string>();
+watch(restoring, async (snapshot) => {
+  restorePreview.value = undefined;
+  restorePreviewError.value = undefined;
+  if (!snapshot) return;
+  const result = await api.restoreSnapshotPreview({ id: snapshot.id });
+  if (restoring.value?.id !== snapshot.id) return;
+  if (result.ok) restorePreview.value = result.value;
+  else restorePreviewError.value = errorText(result.error);
+});
 const renaming = ref<{ id: string; name: string }>();
 const deleting = ref<SnapshotView>();
 
@@ -266,7 +280,8 @@ async function confirmDelete(): Promise<void> {
 
     <v-dialog
       :model-value="restoring !== undefined"
-      max-width="520"
+      max-width="560"
+      scrollable
       @update:model-value="restoring = undefined"
     >
       <v-card v-if="restoring" data-testid="snapshot-restore-dialog">
@@ -275,11 +290,17 @@ async function confirmDelete(): Promise<void> {
           Files of {{ restoring.itemLabel }} that differ from the snapshot are replaced with the
           snapshot's version. Each one is backed up first, and the Safety page can undo it. Files
           added since the snapshot are left alone.
+          <ChangePreview class="mt-3" :preview="restorePreview" :error="restorePreviewError" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="restoring = undefined">Cancel</v-btn>
-          <v-btn color="primary" data-testid="snapshot-restore-confirm" @click="confirmRestore">
+          <v-btn
+            color="primary"
+            :disabled="!restorePreview"
+            data-testid="snapshot-restore-confirm"
+            @click="confirmRestore"
+          >
             Put back
           </v-btn>
         </v-card-actions>

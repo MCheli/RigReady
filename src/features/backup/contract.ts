@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TrackedItemSchema } from '../../core/trackedSchema';
+import { ChangePreviewSchema } from '../../shared/changePreview';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 
 const ItemViewSchema = z.object({
@@ -299,6 +300,8 @@ export const backupContract = defineContract(
       Id,
       z.object({ written: z.number(), leftAlone: z.number(), groupId: z.string().optional() })
     ),
+    /** Which files putting that snapshot back would change and how. Reads only. */
+    restoreSnapshotPreview: channel(Id, ChangePreviewSchema),
     renameSnapshot: channel(
       z.object({ id: z.string(), name: z.string().max(200) }),
       SnapshotViewSchema

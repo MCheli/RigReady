@@ -14,6 +14,7 @@ import {
   beamngView,
   copyBindingsToController,
   copyOlderBindings,
+  previewCopyBindingsToController,
   previewCopyOlderBindings,
 } from './core/beamng/beamng';
 import {
@@ -31,7 +32,7 @@ import {
   readPresets,
   wheelSettingsCheck,
 } from './core/fanatec/wheelSettings';
-import { iracingView, repairIracing } from './core/iracing/iracing';
+import { iracingView, previewRepairIracing, repairIracing } from './core/iracing/iracing';
 import { lmuView } from './core/lmu/lmu';
 
 export default defineFeatureMain({
@@ -79,6 +80,7 @@ export default defineFeatureMain({
           const repaired = await repairIracing(rctx, mapping);
           return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
         },
+        iracingRepairPreview: ({ mapping }) => previewRepairIracing(rctx, mapping),
         async lmu() {
           const view = await lmuView(rctx);
           return ok({ ...view, devices: await named(view.devices) });
@@ -90,6 +92,8 @@ export default defineFeatureMain({
         beamngCopyOlder: ({ version }) => copyOlderBindings(rctx, version),
         beamngCopyOlderPreview: ({ version }) => previewCopyOlderBindings(rctx, version),
         beamngCopyToController: ({ file, to }) => copyBindingsToController(rctx, file, to),
+        beamngCopyToControllerPreview: ({ file, to }) =>
+          previewCopyBindingsToController(rctx, file, to),
         assettoCorsa: async () => ok(await acView(rctx)),
         async wheel() {
           const presets = await readPresets(rctx);

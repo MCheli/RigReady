@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import ConfirmChanges from '../../../renderer/components/ConfirmChanges.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
-import { racingContract, type IracingDeviceView, type IracingView } from '../contract';
+import {
+  racingContract,
+  type IracingDeviceView,
+  type IracingView,
+  type WritePreviewView,
+} from '../contract';
 import BackupsPanel from './BackupsPanel.vue';
 import StateChip from './StateChip.vue';
 import './racing.css';
@@ -46,6 +52,22 @@ const groups = computed(() => {
     (g) => g.rows.length
   );
 });
+
+/** Which files the repair would change; loaded when the confirmation opens. */
+const repairPreview = ref<WritePreviewView>();
+const repairPreviewError = ref<string>();
+
+async function askRepair(device: IracingDeviceView): Promise<void> {
+  const to = chosen[device.key];
+  if (!to) return;
+  repairPreview.value = undefined;
+  repairPreviewError.value = undefined;
+  confirming.value = device;
+  const result = await api.iracingRepairPreview({ mapping: [{ from: device.key, to }] });
+  if (confirming.value?.key !== device.key) return;
+  if (result.ok) repairPreview.value = result.value;
+  else repairPreviewError.value = errorText(result.error);
+}
 
 async function repair(): Promise<void> {
   const device = confirming.value;
@@ -175,7 +197,7 @@ const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19
                   color="primary"
                   :disabled="!chosen[d.key] || view.simRunning"
                   data-testid="iracing-repair"
-                  @click="confirming = d"
+                  @click="askRepair(d)"
                   >Update iRacing…</v-btn
                 >
               </div>
@@ -291,41 +313,33 @@ const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19
       />
     </template>
 
-    <v-dialog :model-value="confirming !== undefined" max-width="580" persistent>
-      <v-card v-if="confirming" data-testid="iracing-repair-confirm">
-        <v-card-title>Point iRacing at the new id?</v-card-title>
-        <v-card-text>
-          <p class="mb-3">
-            RigReady replaces the old id of <strong>{{ confirming.name }}</strong> with the new one
-            in <span class="rr-mono">controls.cfg</span> ({{ confirming.bindingCount }} bindings)
-            and <span class="rr-mono">joyCalib.yaml</span> (its calibration), and in any car's
-            custom controls. Nothing else in the files changes. Both files are backed up first; Undo
-            is on the Safety page.
-          </p>
-          <div class="rc-notice warn" data-testid="iracing-unverified">
-            <v-icon icon="mdi-flask-outline" class="rr-warn" />
-            <div>
-              Not yet verified on real hardware. The change follows the file layout decoded from
-              this PC's own files, but has not been tried with iRacing and a moved wheel yet. If
-              iRacing still asks to calibrate, undo it on the Safety page and calibrate in iRacing.
-            </div>
+    <ConfirmChanges
+      :open="confirming !== undefined"
+      title="Point iRacing at the new id?"
+      confirm-text="Update iRacing"
+      :preview="repairPreview"
+      :error="repairPreviewError"
+      :busy="repairing"
+      testid="iracing-repair"
+      @cancel="confirming = undefined"
+      @confirm="repair"
+    >
+      <template v-if="confirming">
+        RigReady replaces the old id of <strong>{{ confirming.name }}</strong> with the new one in
+        these files ({{ confirming.bindingCount }} bindings and its calibration). Nothing else in
+        them changes.
+      </template>
+      <template #after>
+        <div class="rc-notice warn mt-3" data-testid="iracing-unverified">
+          <v-icon icon="mdi-flask-outline" class="rr-warn" />
+          <div>
+            Not yet verified on real hardware. The change follows the file layout decoded from this
+            PC's own files, but has not been tried with iRacing and a moved wheel yet. If iRacing
+            still asks to calibrate, undo it on the Safety page and calibrate in iRacing.
           </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" data-testid="iracing-repair-cancel" @click="confirming = undefined"
-            >Cancel</v-btn
-          >
-          <v-btn
-            color="primary"
-            :loading="repairing"
-            data-testid="iracing-repair-go"
-            @click="repair"
-            >Update iRacing</v-btn
-          >
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+        </div>
+      </template>
+    </ConfirmChanges>
   </div>
 </template>
 

@@ -1,8 +1,10 @@
 import path from 'node:path';
 import { z } from 'zod';
+import { changePreview, type PlannedWrite } from '../../../core/files/preview';
 import { createZip, readZip, zipFolder, type ZipEntry } from '../../../core/files/zip';
 import type { Ports, TreeEntry } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
+import type { ChangePreview } from '../../../shared/changePreview';
 import { closeApp, isAppRunning, appExe, type Sleep, realSleep } from './app';
 import { profileRelativePath, readArchiveManifests } from './archive';
 import { detectStreamDeck, streamDeckPaths, type StreamDeckPaths } from './detect';
@@ -426,6 +428,60 @@ export class StreamDeckBackups {
     return ok(readProfiles(manifests.value).profiles);
   }
 
+  /**
+   * The writes and deletions of a "files" restore: every profile file of the backup, the
+   * files a replaced profile no longer has, and (separately) the plugin folders. Reads only;
+   * the preview and the restore both use it.
+   */
+  private async restorePlan(
+    paths: StreamDeckPaths,
+    backup: Backup,
+    replace: { uuid: string }[]
+  ): Promise<Result<{ profiles: PlannedWrite[]; plugins: PlannedWrite[] }>> {
+    const maxTotalBytes = await this.options.maxBytes();
+    const bytes = await this.ports.files.readBytes(this.file(paths, backup.id, ARCHIVE_EXT));
+    if (!bytes.ok) return bytes;
+    const entries = readZip(bytes.value, { maxTotalBytes, maxEntries: 50_000 });
+    if (!entries.ok) return entries;
+    const profiles: PlannedWrite[] = [];
+    const restored = new Set<string>();
+    for (const entry of entries.value) {
+      const relative = profileRelativePath(entry.path, 'v3');
+      if (!relative) continue;
+      restored.add(relative.toLowerCase());
+      profiles.push({
+        path: path.join(paths.profilesDir, ...relative.split('/')),
+        content: entry.data,
+      });
+    }
+    // A replaced profile ends up exactly as in the backup: files it no longer has are removed.
+    for (const profile of replace) {
+      const dir = path.join(paths.profilesDir, `${profile.uuid}.sdProfile`);
+      const tree = await this.ports.files.listTree(dir);
+      if (!tree.ok) return tree;
+      for (const file of tree.value) {
+        const relative = `${profile.uuid}.sdProfile/${file.relativePath}`.toLowerCase();
+        if (!restored.has(relative)) profiles.push({ path: file.path, remove: true });
+      }
+    }
+    const plugins: PlannedWrite[] = [];
+    if (backup.includesPluginFolders) {
+      const pluginBytes = await this.ports.files.readBytes(
+        this.file(paths, backup.id, PLUGINS_EXT)
+      );
+      if (!pluginBytes.ok) return pluginBytes;
+      const pluginEntries = readZip(pluginBytes.value, { maxTotalBytes, maxEntries: 50_000 });
+      if (!pluginEntries.ok) return pluginEntries;
+      for (const entry of pluginEntries.value) {
+        plugins.push({
+          path: path.join(paths.pluginsDir, ...entry.path.split('/')),
+          content: entry.data,
+        });
+      }
+    }
+    return ok({ profiles, plugins });
+  }
+
   async preview(id: string): Promise<Result<RestorePreview>> {
     const backup = await this.get(id);
     if (!backup.ok) return backup;
@@ -438,6 +494,31 @@ export class StreamDeckBackups {
     const byUuid = new Map(current.value.map((p) => [p.uuid.toLowerCase(), p]));
     const inBackup = new Set(backup.value.profiles.map((p) => p.uuid.toLowerCase()));
     const method = backup.value.format === 'v3' && paths.profilesV3 ? 'files' : 'app';
+    const replace = backup.value.profiles.filter((p) => byUuid.has(p.uuid.toLowerCase()));
+    let changes: ChangePreview | undefined;
+    let pluginChanges: ChangePreview | undefined;
+    if (method === 'files') {
+      const plan = await this.restorePlan(paths, backup.value, replace);
+      if (!plan.ok) return plan;
+      const within = (root: string) => (write: PlannedWrite) =>
+        path.relative(root, write.path).replace(/\\/g, '/');
+      const described = await changePreview(
+        this.ports.files,
+        plan.value.profiles,
+        within(paths.profilesDir)
+      );
+      if (!described.ok) return described;
+      changes = described.value;
+      if (plan.value.plugins.length > 0) {
+        const plugins = await changePreview(
+          this.ports.files,
+          plan.value.plugins,
+          within(paths.pluginsDir)
+        );
+        if (!plugins.ok) return plugins;
+        pluginChanges = plugins.value;
+      }
+    }
     return ok({
       backup: backup.value,
       method,
@@ -464,6 +545,8 @@ export class StreamDeckBackups {
         .map((p) => ({ uuid: p.uuid, name: p.name })),
       appRunning: running.value,
       appInstalled: installed,
+      ...(changes ? { changes } : {}),
+      ...(pluginChanges ? { pluginChanges } : {}),
     });
   }
 
@@ -506,18 +589,8 @@ export class StreamDeckBackups {
       safetyBackupId = safety.value.id;
     }
 
-    const bytes = await this.ports.files.readBytes(this.file(paths, id, ARCHIVE_EXT));
-    if (!bytes.ok) return bytes;
-    const entries = readZip(bytes.value, {
-      maxTotalBytes: await this.options.maxBytes(),
-      maxEntries: 50_000,
-    });
-    if (!entries.ok) return entries;
-    const targets: { relative: string; data: Uint8Array }[] = [];
-    for (const entry of entries.value) {
-      const relative = profileRelativePath(entry.path, 'v3');
-      if (relative) targets.push({ relative, data: entry.data });
-    }
+    const plan = await this.restorePlan(paths, backup, preview.value.replace);
+    if (!plan.ok) return plan;
     const group = this.ports.files.beginGroup(`Restore Stream Deck backup "${backup.name}"`);
     const reason = group.reason;
     const failed = (result: { ok: false; error: { message: string; detail?: string } }) =>
@@ -526,49 +599,13 @@ export class StreamDeckBackups {
         `The restore stopped part way: ${result.error.message}`,
         'What was already written can be undone on the Safety page.'
       );
-    for (const { relative, data } of targets) {
-      const written = await this.ports.files.write(
-        path.join(paths.profilesDir, ...relative.split('/')),
-        data,
-        {
-          reason,
-          group,
-        }
-      );
-      if (!written.ok) return failed(written);
-    }
-    // A replaced profile ends up exactly as in the backup: files it no longer has are removed.
-    const restoredPaths = new Set(targets.map((t) => t.relative.toLowerCase()));
-    for (const profile of preview.value.replace) {
-      const dir = path.join(paths.profilesDir, `${profile.uuid}.sdProfile`);
-      const tree = await this.ports.files.listTree(dir);
-      if (!tree.ok) return failed(tree);
-      for (const file of tree.value) {
-        const relative = `${profile.uuid}.sdProfile/${file.relativePath}`.toLowerCase();
-        if (restoredPaths.has(relative)) continue;
-        const removed = await this.ports.files.remove(file.path, { reason, group });
-        if (!removed.ok) return failed(removed);
-      }
-    }
-    if (options.restorePlugins && backup.includesPluginFolders) {
-      const pluginBytes = await this.ports.files.readBytes(this.file(paths, id, PLUGINS_EXT));
-      if (!pluginBytes.ok) return failed(pluginBytes);
-      const pluginEntries = readZip(pluginBytes.value, {
-        maxTotalBytes: await this.options.maxBytes(),
-        maxEntries: 50_000,
-      });
-      if (!pluginEntries.ok) return failed(pluginEntries);
-      for (const entry of pluginEntries.value) {
-        const written = await this.ports.files.write(
-          path.join(paths.pluginsDir, ...entry.path.split('/')),
-          entry.data,
-          {
-            reason,
-            group,
-          }
-        );
-        if (!written.ok) return failed(written);
-      }
+    const planned = [...plan.value.profiles, ...(options.restorePlugins ? plan.value.plugins : [])];
+    for (const write of planned) {
+      const done =
+        'remove' in write
+          ? await this.ports.files.remove(write.path, { reason, group })
+          : await this.ports.files.write(write.path, write.content, { reason, group });
+      if (!done.ok) return failed(done);
     }
 
     // Read it back: success only when every profile of the backup is there under its name.

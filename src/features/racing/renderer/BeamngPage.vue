@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import ConfirmChanges from '../../../renderer/components/ConfirmChanges.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import {
@@ -79,9 +80,21 @@ async function copyOlder(): Promise<void> {
 /** The copy waiting for a yes: which map, to which controller, what it holds. */
 const confirmCopy = ref<{ map: BeamngMapView; to: { vidpid: string; name: string } }>();
 
-function askCopy(map: BeamngMapView): void {
+/** The file that copy would create; loaded when the confirmation opens. */
+const copyPreview = ref<WritePreviewView>();
+const copyPreviewError = ref<string>();
+
+async function askCopy(map: BeamngMapView): Promise<void> {
   const to = map.targets.find((t) => t.vidpid === copyTarget[map.file]);
-  if (to) confirmCopy.value = { map, to };
+  if (!to) return;
+  copyPreview.value = undefined;
+  copyPreviewError.value = undefined;
+  confirmCopy.value = { map, to };
+  const result = await api.beamngCopyToControllerPreview({ file: map.file, to: to.vidpid });
+  const now = confirmCopy.value;
+  if (now?.map.file !== map.file || now.to.vidpid !== to.vidpid) return;
+  if (result.ok) copyPreview.value = result.value;
+  else copyPreviewError.value = errorText(result.error);
 }
 
 async function copyToController(): Promise<void> {
@@ -282,36 +295,31 @@ async function copyToController(): Promise<void> {
       />
     </template>
 
-    <v-dialog :model-value="confirmCopy !== undefined" max-width="540">
-      <v-card v-if="confirmCopy" data-testid="beamng-copy-controller-confirm">
-        <v-card-title>Copy these bindings?</v-card-title>
-        <v-card-text>
-          <p class="mb-3">
-            RigReady creates <span class="rr-mono">{{ confirmCopy.to.vidpid }}.diff</span> for
-            {{ confirmCopy.to.name }} with the {{ confirmCopy.map.bindings.length }} bindings and
-            the force feedback of {{ confirmCopy.map.name }}:
-          </p>
-          <div
-            v-for="b in confirmCopy.map.bindings"
-            :key="`${b.action}|${b.input}`"
-            class="rc-hint"
-          >
-            {{ b.label }} · {{ b.input }}
-          </div>
-          <p class="mt-3">
-            Button numbers can differ between controllers, so check them in the game. The new file
-            can be removed again with Undo on the Safety page.
-          </p>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="confirmCopy = undefined">Cancel</v-btn>
-          <v-btn color="primary" data-testid="beamng-copy-controller-go" @click="copyToController"
-            >Copy bindings</v-btn
-          >
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ConfirmChanges
+      :open="confirmCopy !== undefined"
+      title="Copy these bindings?"
+      confirm-text="Copy bindings"
+      :preview="copyPreview"
+      :error="copyPreviewError"
+      :max-width="540"
+      testid="beamng-copy-controller"
+      @cancel="confirmCopy = undefined"
+      @confirm="copyToController"
+    >
+      <template v-if="confirmCopy">
+        <p class="mb-3">
+          RigReady creates <span class="rr-mono">{{ confirmCopy.to.vidpid }}.diff</span> for
+          {{ confirmCopy.to.name }} with the {{ confirmCopy.map.bindings.length }} bindings and the
+          force feedback of {{ confirmCopy.map.name }}:
+        </p>
+        <div v-for="b in confirmCopy.map.bindings" :key="`${b.action}|${b.input}`" class="rc-hint">
+          {{ b.label }} · {{ b.input }}
+        </div>
+        <p class="mt-3 mb-0">
+          Button numbers can differ between controllers, so check them in the game.
+        </p>
+      </template>
+    </ConfirmChanges>
 
     <v-dialog :model-value="confirmOlder !== undefined" max-width="480">
       <v-card v-if="confirmOlder" data-testid="beamng-copy-confirm">

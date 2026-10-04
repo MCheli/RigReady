@@ -2499,8 +2499,34 @@ requirements:
     done_means:
       - "Before any write outside the data root triggered by the user, the UI shows which files will change and how (created, modified with summary, renamed, deleted)."
       - "Background writes (none expected) are forbidden; the journal shows no entries without a user-initiated action id (unit test on journal schema)."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: how 'the UI shows' is met, per kind of flow. Configure actions that write game or tool files show the list of files (created, modified with a one-line summary, renamed, deleted) in the confirmation, from the same plan that is then applied as one journal group; the shared list is src/renderer/components/ChangePreview.vue, and DCS bindings, DCS screens / Export.lua, the backup restore and the share import keep their own, richer previews. Make ready is one click by design: there the description is the fix text beside the failing check, which names each file the fix writes, and the Make ready summary names it again. An export writes the one file the user names in a Save dialog. tests/unit/writeAudit.test.ts holds the audit: the journal schema, no write during startup, idle and every read channel, a source rule that fails a feature which writes files without a preview, and preview-equals-journal for each flow."
+    status: done
+    evidence:
+      - "tests/unit/writeAudit.test.ts#gives every kind of change a group id, a group reason and a readable reason"
+      - "tests/unit/writeAudit.test.ts#writes nothing outside its folder while starting, idling and answering every read"
+      - "tests/unit/writeAudit.test.ts#every feature that calls a FileStore write builds a preview or is on the reasoned list"
+      - "tests/unit/writeAudit.test.ts#every channel that writes game or tool files is paired with the channel that shows the change first"
+      - "tests/unit/writeAudit.test.ts#iRacing: pointing the files at a wheel base with a new Windows id"
+      - "tests/unit/writeAudit.test.ts#DCS: putting back the files RigReady manages after another tool rewrote them"
+      - "tests/unit/writeAudit.test.ts#Stream Deck: restoring a backup over changed profiles"
+      - "tests/unit/writeAudit.test.ts#Backups: putting a snapshot back"
+      - "tests/unit/writeAudit.test.ts#DCS: the screen setup, the managed files and Export.lua"
+      - "tests/unit/writeAudit.test.ts#any game: restoring a config file from the copy that was kept"
+      - "tests/unit/writePreview.test.ts#says which files are created, modified, unchanged, renamed and deleted, with sizes"
+      - "tests/unit/writePreview.test.ts#has no entry without the id and the reason of the action it belongs to"
+      - "tests/e2e/change-preview.e2e.ts#change preview: the iRacing id repair lists the files it rewrites before it does"
+      - "tests/e2e/change-preview.e2e.ts#change preview: copying BeamNG bindings to a new controller names the file it creates"
+      - "tests/e2e/change-preview.e2e.ts#change preview: restoring RigReady's DCS files shows what is put back, and the Safety page lists it"
+      - "tests/e2e/change-preview.e2e.ts#change preview: a Stream Deck restore and a snapshot put-back list their files"
+      - "tests/e2e/backup-sources.e2e.ts#backup: a racing restore and a BeamNG copy show what each file becomes before anything is written, and every change is an action on the Safety page"
+      - "artifacts/screens/backup-change-preview-iracing/01-iracing-repair.png"
+      - "artifacts/screens/backup-change-preview-beamng/01-beamng-copy.png"
+      - "artifacts/screens/backup-change-preview-dcs/01-dcs-restore.png"
+      - "artifacts/screens/backup-change-preview-dcs/02-dcs-restore-on-safety-page.png"
+      - "artifacts/screens/backup-change-preview-restores/01-stream-deck-restore.png"
+      - "artifacts/screens/backup-change-preview-restores/02-snapshot-put-back.png"
+      - "artifacts/screens/backup-write-preview/01-restore-preview.png"
 
   - id: BACKUP-012
     title: Undo journal

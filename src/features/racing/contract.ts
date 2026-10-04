@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ChangePreviewSchema } from '../../shared/changePreview';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 
 const Pair = z.object({ label: z.string(), value: z.string() });
@@ -300,20 +301,7 @@ export type BindingBackup = z.infer<typeof BindingBackupSchema>;
 
 const Message = z.object({ message: z.string() });
 /** What a restore or copy will do to each file, shown before anything is written. */
-export const WritePreviewSchema = z.object({
-  /** "2 files modified, 1 file unchanged" */
-  summary: z.string(),
-  files: z.array(
-    z.object({
-      path: z.string(),
-      /** "Bindings (controls.cfg)", or the file name. */
-      label: z.string(),
-      change: z.enum(['created', 'modified', 'unchanged', 'renamed', 'deleted']),
-      /** "3 lines added, 1 removed", "30 KB to 31 KB", "Identical: left as it is". */
-      detail: z.string(),
-    })
-  ),
-});
+export const WritePreviewSchema = ChangePreviewSchema;
 export type WritePreviewView = z.infer<typeof WritePreviewSchema>;
 
 const GameRef = z.object({ game: BackupGameSchema });
@@ -326,6 +314,11 @@ export const racingContract = defineContract('racing', {
   iracingRepair: channel(
     z.object({ mapping: z.array(z.object({ from: z.string(), to: z.string() })).min(1) }),
     Message
+  ),
+  /** Which iRacing files that repair would change and how. Reads only. */
+  iracingRepairPreview: channel(
+    z.object({ mapping: z.array(z.object({ from: z.string(), to: z.string() })).min(1) }),
+    WritePreviewSchema
   ),
   lmu: channel(noInput, LmuViewSchema),
   beamng: channel(noInput, BeamngViewSchema),
@@ -341,6 +334,14 @@ export const racingContract = defineContract('racing', {
       to: z.string().regex(/^[0-9a-f]{8}$/i),
     }),
     Message
+  ),
+  /** The binding file that copy would create. Reads only. */
+  beamngCopyToControllerPreview: channel(
+    z.object({
+      file: z.string().regex(/^[\w ./-]+\.diff$/),
+      to: z.string().regex(/^[0-9a-f]{8}$/i),
+    }),
+    WritePreviewSchema
   ),
   assettoCorsa: channel(noInput, AcViewSchema),
   wheel: channel(noInput, WheelViewSchema),

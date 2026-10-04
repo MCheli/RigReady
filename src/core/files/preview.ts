@@ -1,4 +1,5 @@
 import path from 'node:path';
+import type { ChangePreview } from '../../shared/changePreview';
 import type { FileStore } from '../ports';
 import { ok, type Result } from '../result';
 import { sha256 } from './fileStore';
@@ -175,5 +176,28 @@ export async function previewWrites(
     entries,
     ...totals,
     summary: parts.length > 0 ? parts.join(', ') : 'Nothing to write',
+  });
+}
+
+/**
+ * The same preview in the shape that crosses IPC (src/shared/changePreview.ts) and that the
+ * shared ChangePreview component shows. `label` names a planned write in the list (default:
+ * the file name).
+ */
+export async function changePreview(
+  files: Pick<FileStore, 'readBytes' | 'exists'>,
+  planned: PlannedWrite[],
+  label?: (write: PlannedWrite, index: number) => string | undefined
+): Promise<Result<ChangePreview>> {
+  const preview = await previewWrites(files, planned);
+  if (!preview.ok) return preview;
+  return ok({
+    summary: preview.value.summary,
+    files: preview.value.entries.map((entry, index) => ({
+      path: entry.path,
+      label: label?.(planned[index]!, index) ?? entry.name,
+      change: entry.change,
+      detail: entry.summary,
+    })),
   });
 }

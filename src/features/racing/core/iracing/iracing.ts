@@ -1,5 +1,7 @@
 import path from 'node:path';
+import { changePreview } from '../../../../core/files/preview';
 import { err, ok, type Result } from '../../../../core/result';
+import type { ChangePreview } from '../../../../shared/changePreview';
 import type { InputDevice } from '../../../../shared/models';
 import type { IracingDeviceView, IracingView } from '../../contract';
 import {
@@ -227,19 +229,18 @@ export interface GuidMapping {
   to: string;
 }
 
-/**
- * Points iRacing at a controller's new Windows id: replaces the old instance GUID with the
- * new one in controls.cfg (16 bytes, in place) and joyCalib.yaml (text), and in any car's
- * custom controls. One journaled action; every file is backed up first and read back after.
- */
-export async function repairIracing(
-  ctx: RacingContext,
-  mapping: GuidMapping[]
-): Promise<Result<{ message: string; files: string[] }>> {
+interface RepairPlan {
+  folder: string;
+  planned: { file: string; content: Uint8Array | string }[];
+  /** Bindings in the main controls.cfg that get the new id. */
+  bindings: number;
+  names: string[];
+}
+
+/** The files a repair would rewrite and their new content. Reads only. */
+async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<Result<RepairPlan>> {
   if (mapping.length === 0)
     return err('racing.repair', 'Choose at least one controller to update.');
-  const blocked = await refuseWhileRunning(ctx, 'iracing');
-  if (!blocked.ok) return blocked;
   const files = await readFiles(ctx);
   if (!files) return err('racing.repair', 'The iRacing folder in Documents was not found.');
   const live = await liveControllers(ctx);
@@ -302,6 +303,37 @@ export async function repairIracing(
     return err('racing.repair', 'Nothing in the iRacing files refers to that id.');
 
   const names = mapping.map((m) => devices.find((d) => d.key === cleanGuid(m.from))!.name);
+  return ok({ folder: files.folder, planned, bindings, names });
+}
+
+/** Which iRacing files the repair would change and how. Nothing is written. */
+export async function previewRepairIracing(
+  ctx: RacingContext,
+  mapping: GuidMapping[]
+): Promise<Result<ChangePreview>> {
+  const plan = await planRepair(ctx, mapping);
+  if (!plan.ok) return plan;
+  return changePreview(
+    ctx.ports.files,
+    plan.value.planned.map((p) => ({ path: p.file, content: p.content })),
+    (write) => path.relative(plan.value.folder, write.path).replace(/\\/g, '/')
+  );
+}
+
+/**
+ * Points iRacing at a controller's new Windows id: replaces the old instance GUID with the
+ * new one in controls.cfg (16 bytes, in place) and joyCalib.yaml (text), and in any car's
+ * custom controls. One journaled action; every file is backed up first and read back after.
+ */
+export async function repairIracing(
+  ctx: RacingContext,
+  mapping: GuidMapping[]
+): Promise<Result<{ message: string; files: string[] }>> {
+  const blocked = await refuseWhileRunning(ctx, 'iracing');
+  if (!blocked.ok) return blocked;
+  const plan = await planRepair(ctx, mapping);
+  if (!plan.ok) return plan;
+  const { planned, bindings, names } = plan.value;
   const group = ctx.ports.files.beginGroup(
     `Point iRacing at the new Windows id of ${names.join(', ')}`
   );
