@@ -106,8 +106,11 @@ test('share: checks for devices a PC does not have are imported switched off, an
   await page.getByTestId('import-undo').click();
   await expect(page.getByTestId('import-undone')).toContainText('the setup was removed');
   expect(await fs.readdir(profiles)).toEqual([]);
-  // The folders stay; every file the import wrote is gone.
-  expect(await fs.readdir(path.join(input, 'FA-18C_hornet', 'joystick'))).toEqual([]);
+  // Every file the import wrote is gone, and so are the folders it created for them:
+  // Config was there before (it holds options.lua) and stays, Config/Input is gone again.
+  const config = path.dirname(input);
+  expect(await fs.readdir(config)).not.toContain('Input');
+  expect(await fs.readdir(config)).toContain('options.lua');
   await shot('undone');
 
   // Again, this time kept: on the Fly screen the missing gear is off, not failed, not passed.
@@ -136,6 +139,9 @@ test('share: checks for devices a PC does not have are imported switched off, an
   await imported.getByTestId('change-undo').click();
   await expect(imported.getByTestId('change-undone')).toBeVisible();
   expect(await fs.readdir(profiles)).toEqual([]);
+  // The Safety page's undo leaves no empty folders behind either.
+  expect(await fs.readdir(config)).not.toContain('Input');
+  expect(await fs.readdir(config)).toContain('options.lua');
 });
 
 test("share: imported binding files under another PC's device IDs open Bindings, Device IDs, ready to move", async ({

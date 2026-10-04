@@ -225,6 +225,7 @@ export class BackupFileStore implements FileStore {
         // Hash the copy: it is what an undo would put back.
         hashBefore = sha256(await this.raw.readBytes(backupPath));
       }
+      const createdDirs = action === 'write' && !backupPath ? await this.missingDirs(target) : [];
       // The journal is written before the change: a crash leaves a record, never a silent edit.
       const entry: JournalEntry = {
         id,
@@ -240,6 +241,7 @@ export class BackupFileStore implements FileStore {
         groupId: options.group?.id ?? id,
         groupReason: options.group?.reason ?? options.reason,
         ...(options.undoOf ? { undoOf: options.undoOf } : {}),
+        ...(createdDirs.length > 0 ? { createdDirs } : {}),
         undone: false,
       };
       await this.raw.appendText(this.journalPath, JSON.stringify(entry) + '\n');
@@ -247,6 +249,35 @@ export class BackupFileStore implements FileStore {
       return ok(entry);
     } catch (e) {
       return fromThrown(`file.${action}`, `Could not ${action} ${target}.`, e);
+    }
+  }
+
+  /** The folders above `file` that do not exist yet, innermost first. */
+  private async missingDirs(file: string): Promise<string[]> {
+    const missing: string[] = [];
+    let dir = path.dirname(file);
+    while (!(await this.raw.exists(dir))) {
+      missing.push(dir);
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+    return missing;
+  }
+
+  /**
+   * After an undo removed the file a change created: removes the folders that change
+   * created for it, innermost first, stopping at the first that still holds something.
+   * Only folders named in the journal entry are touched, and only while they lie above
+   * the file, so a folder that was there before, or that anything else was put into,
+   * always stays.
+   */
+  private async removeCreatedDirs(entry: JournalEntry): Promise<void> {
+    let expected = path.dirname(entry.path);
+    for (const dir of entry.createdDirs ?? []) {
+      if (path.resolve(dir) !== expected) return;
+      if (!(await this.raw.removeEmptyDir(dir))) return;
+      expected = path.dirname(expected);
     }
   }
 
@@ -349,6 +380,7 @@ export class BackupFileStore implements FileStore {
         undone = ok(null);
       }
       if (!undone.ok) return undone;
+      if (!entry.backupPath) await this.removeCreatedDirs(entry);
       await this.raw.appendText(this.journalPath, JSON.stringify({ undo: entry.id }) + '\n');
       return ok({ ...entry, undone: true });
     } catch (e) {

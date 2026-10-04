@@ -328,6 +328,8 @@ export interface RawFs {
   remove(path: string): Promise<void>;
   /** Removes a directory and everything in it. */
   removeDir(path: string): Promise<void>;
+  /** Removes a directory only when it is empty. False when it holds something or is not there. */
+  removeEmptyDir(path: string): Promise<boolean>;
 }
 
 export interface FileEntry {
@@ -393,6 +395,11 @@ export interface JournalEntry {
   groupReason?: string;
   /** Set on an entry that was itself written by undoing another one. */
   undoOf?: string;
+  /**
+   * Folders this change had to create for its file, innermost first. Undoing the change
+   * removes the ones that are empty again, and never any other folder.
+   */
+  createdDirs?: string[];
   undone: boolean;
 }
 
