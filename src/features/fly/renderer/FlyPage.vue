@@ -42,6 +42,8 @@ const groups = computed(() =>
     const off = results.filter((r) => r.disabled).length;
     const passed = results.filter((r) => r.status === 'pass' && !r.disabled).length;
     const attention = results.some((r) => r.status !== 'pass');
+    // A required item not met is red, an optional one yellow: as on the rows.
+    const bad = results.some((r) => r.status !== 'pass' && r.required);
     return {
       group,
       title: GROUP_TITLES[group],
@@ -51,6 +53,7 @@ const groups = computed(() =>
       passed,
       checking,
       attention,
+      bad,
       open: toggled.value[group] ?? attention,
     };
   }).filter((g) => g.items.length > 0)
@@ -347,10 +350,19 @@ onBeforeUnmount(() => {
         <div
           class="fly-status"
           :class="`fly-status-${headline.tone}`"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
           data-testid="fly-status"
           :data-ready="fly.readiness === undefined ? undefined : fly.readiness !== 'notReady'"
         >
-          <v-progress-circular v-if="headline.tone === 'idle'" indeterminate size="30" width="3" />
+          <v-progress-circular
+            v-if="headline.tone === 'idle'"
+            indeterminate
+            size="30"
+            width="3"
+            aria-label="Checking"
+          />
           <v-icon v-else :icon="headline.icon" size="34" />
           <div>
             <div class="fly-status-line">
@@ -460,7 +472,14 @@ onBeforeUnmount(() => {
         </v-btn>
       </div>
 
-      <div v-if="fly.activity" class="rr-panel fly-activity" data-testid="fly-activity">
+      <div
+        v-if="fly.activity"
+        class="rr-panel fly-activity"
+        role="log"
+        aria-live="polite"
+        :aria-label="fly.activity.title"
+        data-testid="fly-activity"
+      >
         <div class="fly-activity-head">
           <span class="rr-section-title">{{ fly.activity.title }}</span>
           <span
@@ -493,7 +512,13 @@ onBeforeUnmount(() => {
           :data-testid="`step-${entry.state === 'done' ? 'ok' : entry.state}`"
           :data-state="entry.state"
         >
-          <v-progress-circular v-if="entry.state === 'running'" indeterminate size="18" width="2" />
+          <v-progress-circular
+            v-if="entry.state === 'running'"
+            indeterminate
+            size="18"
+            width="2"
+            aria-label="Working"
+          />
           <v-icon
             v-else
             :icon="ENTRY_LOOK[entry.state].icon"
@@ -566,6 +591,8 @@ onBeforeUnmount(() => {
             class="fly-group-count"
             :class="{
               'rr-ok': !group.checking && group.total > 0 && group.passed === group.total,
+              'rr-bad': group.attention && group.bad,
+              'rr-warn': group.attention && !group.bad,
             }"
           >
             <template v-if="group.checking && group.passed + (group.attention ? 1 : 0) === 0"

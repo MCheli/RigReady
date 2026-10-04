@@ -3712,5 +3712,27 @@ requirements:
     priority: p1
     done_means:
       - "All statuses, health results and duplicate markers use icon plus text plus colour; an automated accessibility scan (axe) on the Fly and Configure screens reports no colour-contrast or name violations."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: how it is held. The status classes rr-ok, rr-warn and rr-bad draw the status icon in front of coloured text themselves (src/renderer/styles.css), so a feature gets icon, text and colour from the class; a source audit fails any other way of colouring status. The axe scan runs on the Fly screen (ready, not ready, Make ready running, the launch warning), on every Configure route the features declare with their tabs, and on twelve scenarios with something wrong; where axe cannot judge a contrast the scan computes it. Nothing is excluded from the scan. Found and fixed: white text on filled buttons (2.5:1), the red token on raised panels (4.2:1), dialogs and spinners without names, two unnamed fields, a tooltip container that hid every contrast on the Fly screen from axe. The Fly screen is driven by keyboard only in tests/e2e/keyboard.e2e.ts. The tray badge has a shape per status and the words in its tooltip and menu."
+    status: done
+    evidence:
+      - "tests/unit/statusNotColourOnly.test.ts#every status-coloured element in every template has an icon and words"
+      - "tests/unit/statusNotColourOnly.test.ts#the rules catch what they are for"
+      - "tests/unit/themeContrast.test.ts#every text colour is at least 4.5:1 on every surface"
+      - "tests/unit/themeContrast.test.ts#text on filled buttons and alerts is at least 4.5:1"
+      - "tests/unit/themeContrast.test.ts#the focus ring stands out from every surface (3:1)"
+      - "tests/unit/tray.test.ts#never says it by colour alone: each tone has its own badge shape and its words"
+      - "tests/e2e/a11y.e2e.ts#a11y: the Fly screen passes axe when ready, when not ready and while Make ready runs"
+      - "tests/e2e/a11y.e2e.ts#a11y: every Configure route passes axe on the full rig"
+      - "tests/e2e/a11y.e2e.ts#a11y: scenarios with something wrong pass axe and never say it by colour alone"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "artifacts/screens/a11y-fly/01-ready.png"
+      - "artifacts/screens/a11y-fly-not-ready/01-not-ready.png"
+      - "artifacts/screens/a11y-fly-not-ready/02-make-ready-running.png"
+      - "artifacts/screens/a11y-fly-not-ready/03-after-make-ready.png"
+      - "artifacts/screens/a11y-configure/01-devices.png"
+      - "artifacts/screens/a11y-keyboard/01-group-opened-with-enter.png"
+      - "artifacts/screens/a11y-keyboard/02-focus-on-make-ready.png"
+      - "artifacts/screens/a11y-keyboard/03-keep-layout-focus.png"
+      - "artifacts/screens/a11y-keyboard/04-focus-on-launch.png"
+      - "artifacts/screens/a11y-keyboard/05-launched.png"

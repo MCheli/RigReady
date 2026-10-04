@@ -115,7 +115,13 @@ watch(selected, () => void reveal());
         :data-status="c.status"
       >
         <v-icon
-          icon="mdi-expansion-card-variant"
+          :icon="
+            c.status === 'over'
+              ? 'mdi-close-circle'
+              : c.status === 'near'
+                ? 'mdi-alert'
+                : 'mdi-check-circle'
+          "
           :class="c.status === 'over' ? 'rr-bad' : c.status === 'near' ? 'rr-warn' : 'rr-ok'"
         />
         <div class="rr-row-main">

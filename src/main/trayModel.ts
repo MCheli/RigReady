@@ -58,17 +58,44 @@ export function trayTone(status: TrayStatus): 'ok' | 'warn' | 'bad' | undefined 
 export const TONE_RGB = {
   ok: [0x3f, 0xb9, 0x7f],
   warn: [0xe2, 0xb2, 0x3c],
-  bad: [0xe5, 0x53, 0x4b],
+  bad: [0xee, 0x63, 0x5b],
 } as const;
 
 /**
- * Paints a status dot onto the bottom-right corner of a square BGRA bitmap (what
- * nativeImage.toBitmap() gives on Windows), with a dark ring so it reads on any taskbar.
+ * The badge's shape: status is never colour alone (NFR-011). Ready is a dot, a warning a
+ * triangle, not ready a square, so the three read on a taskbar without telling green from
+ * red. The words are in the tooltip and at the top of the tray menu (trayStatusLine).
+ */
+export const TONE_SHAPE = { ok: 'dot', warn: 'triangle', bad: 'square' } as const;
+export type BadgeShape = (typeof TONE_SHAPE)[keyof typeof TONE_SHAPE];
+
+function shapeOf(rgb: readonly [number, number, number]): BadgeShape {
+  const tone = (Object.keys(TONE_RGB) as (keyof typeof TONE_RGB)[]).find((key) =>
+    TONE_RGB[key].every((value, index) => value === rgb[index])
+  );
+  return tone ? TONE_SHAPE[tone] : 'dot';
+}
+
+/** Whether a point (relative to the badge's centre) is inside the shape of this half-size. */
+function inside(shape: BadgeShape, dx: number, dy: number, half: number): boolean {
+  if (shape === 'dot') return Math.hypot(dx, dy) <= half;
+  if (shape === 'square') return Math.max(Math.abs(dx), Math.abs(dy)) <= half * 0.9;
+  // A triangle pointing up: as wide as the dot at its base, narrowing to the top.
+  if (dy < -half || dy > half * 0.9) return false;
+  const widthHere = ((dy + half) / (half * 1.9)) * half;
+  return Math.abs(dx) <= widthHere;
+}
+
+/**
+ * Paints a status badge onto the bottom-right corner of a square BGRA bitmap (what
+ * nativeImage.toBitmap() gives on Windows), with a dark ring so it reads on any taskbar. The
+ * shape follows the tone (TONE_SHAPE) unless one is given.
  */
 export function paintBadge(
   bitmap: Uint8Array,
   size: number,
-  rgb: readonly [number, number, number]
+  rgb: readonly [number, number, number],
+  shape: BadgeShape = shapeOf(rgb)
 ): Uint8Array {
   const out = new Uint8Array(bitmap);
   const radius = size * 0.24;
@@ -77,10 +104,11 @@ export function paintBadge(
   const cy = size - radius - ring;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
-      if (d > radius + ring) continue;
+      const dx = x + 0.5 - cx;
+      const dy = y + 0.5 - cy;
+      if (!inside(shape, dx, dy, radius + ring)) continue;
       const i = (y * size + x) * 4;
-      const [r, g, b] = d <= radius ? rgb : ([0x0f, 0x13, 0x17] as const);
+      const [r, g, b] = inside(shape, dx, dy, radius) ? rgb : ([0x0f, 0x13, 0x17] as const);
       out[i] = b;
       out[i + 1] = g;
       out[i + 2] = r;
