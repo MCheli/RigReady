@@ -2,7 +2,7 @@
 
 RigReady has two modes, switched at the top left of the window.
 
-- **Fly** is one screen: is the rig ready, fix what is not, launch.
+- **Play** is one screen: is the rig ready, fix what is not, launch.
 - **Configure** is everything else: setups, games, controls, hardware and the app itself.
 
 Nothing outside RigReady's own folder is ever changed without a copy being kept first. Every such change is listed under **Configure > Safety**, with Undo.
@@ -14,7 +14,7 @@ A setup is one "ready state": one aircraft or car, with the devices, apps, monit
 1. Get the rig the way you fly or race: gear plugged in, helper apps running, monitors arranged.
 2. Open RigReady. On first run it shows what it found on the PC and a **Create a setup from this rig** button.
 3. Pick the game. RigReady proposes the devices, apps, monitor layout, audio devices and game files to check. Untick what this setup does not need, and mark anything that is nice to have as optional.
-4. Create the setup. It appears on the Fly screen.
+4. Create the setup. It appears on the Play screen.
 
 ![First run](../artifacts/screens/first-run/01-welcome.png)
 
@@ -22,9 +22,9 @@ Later, **Configure > Setups** edits everything about a setup: its checks, their 
 
 ## 2. Before you fly or race
 
-Open RigReady. The Fly screen shows the setup you used last and checks it.
+Open RigReady. The Play screen shows the setup you used last and checks it.
 
-![Fly screen with problems](../artifacts/screens/fly-make-ready-all/01-four-problems.png)
+![Play screen with problems](../artifacts/screens/fly-make-ready-all/01-four-problems.png)
 
 - A **red** item is required and not met: the rig is **Not ready**.
 - A **yellow** item is optional and not met: the rig is still **Ready**, with warnings.
@@ -37,15 +37,15 @@ The same actions are in the tray menu, and the tray icon shows whether the rig i
 
 ### One double-click
 
-Once a setup works, flying need not start in RigReady's window at all.
+Once a setup works, a session need not start in RigReady's window at all.
 
 - **A desktop shortcut.** In **Configure > Setups**, edit the setup and choose **Create desktop shortcut**. Double-clicking "<setup name> - RigReady" starts RigReady, makes the rig ready (monitors, helper apps, files) and launches the game. If something required is missing, nothing is launched: RigReady's window comes forward and says what is missing. A monitor change still asks you to keep it.
-- **The taskbar.** Right-click RigReady's taskbar button for **Fly <setup>**, with the setups you used last at the top. The button itself shows the state of the setup in use (a green dot, an amber triangle, a red square), fills while RigReady works, and has Make ready, Launch and Stand down under its thumbnail.
+- **The taskbar.** Right-click RigReady's taskbar button for **Launch <setup>**, with the setups you used last at the top. The button itself shows the state of the setup in use (a green dot, an amber triangle, a red square), fills while RigReady works, and has Make ready, Launch and Stand down under its thumbnail.
 - **The tray.** Rest the pointer on the icon to read what is not met. One click brings the window out or puts it away, a double-click always opens it, and the right-click menu has every action.
 - **A hotkey.** **Configure > Settings > Hotkey** lets you choose a key combination that works from anywhere: it brings RigReady forward and runs Make ready. It is off until you choose one, and it never launches.
-- **The command line**, for a Stream Deck button or a script: `RigReady.exe --fly "<setup>"` makes ready and launches, `--make-ready "<setup>"` stops before launching, and `--setup "<setup>"` only shows the setup. A setup is named by its name or by its id.
+- **The command line**, for a Stream Deck button or a script: `RigReady.exe --launch "<setup>"` makes ready and launches, `--make-ready "<setup>"` stops before launching, and `--setup "<setup>"` only shows the setup. A setup is named by its name or by its id.
 
-![Started with --fly: the rig was made ready and the game launched](../artifacts/screens/one-click-fly/02-launched.png)
+![Started with --launch: the rig was made ready and the game launched](../artifacts/screens/one-click-fly/02-launched.png)
 
 ## 3. Monitors
 

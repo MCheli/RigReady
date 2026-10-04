@@ -174,7 +174,7 @@ describe('NFR-002 one enumeration per check run', () => {
     ).toBe(1);
     expect(first!.ready).toBe(true);
 
-    // The device change event is what makes the Fly screen check again.
+    // The device change event is what makes the Play screen check again.
     let changed = 0;
     app.ports.devices.subscribe(() => changed++);
     await mutate(app, [{ op: 'unplugDevice', match: { vendorId: '044F', productId: 'B68F' } }]);

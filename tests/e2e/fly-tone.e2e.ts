@@ -3,7 +3,7 @@ import { axeViolations, colourOnlyStatus } from './a11y';
 import { expect, test } from './harness';
 
 /**
- * The ready tone: off until it is switched on in the Fly menu, then two quiet notes, made
+ * The ready tone: off until it is switched on in the Play menu, then two quiet notes, made
  * on the spot, when the rig becomes ready.
  */
 
@@ -65,7 +65,7 @@ const heard = (page: Page): Promise<Heard> => page.evaluate('window.__heard') as
 
 const PEDALS = { vendorId: '044F', productId: 'B68F' };
 
-test('ready tone: silent until switched on in the Fly menu; then two quiet notes each time the rig becomes ready', async ({
+test('ready tone: silent until switched on in the Play menu; then two quiet notes each time the rig becomes ready', async ({
   rig,
 }) => {
   const { page, mutate, restart, shot } = await rig.launch('flying-pedals-unplugged', 'fly-tone');
@@ -133,7 +133,7 @@ test('ready tone: silent until switched on in the Fly menu; then two quiet notes
   expect((await heard(next)).notes).toBe(2);
 });
 
-test('ready tone: on a PC whose sound system does not start, the Fly screen says the tone could not be played', async ({
+test('ready tone: on a PC whose sound system does not start, the Play screen says the tone could not be played', async ({
   rig,
 }) => {
   const { page, shot } = await rig.launch('flying-all-good', 'fly-tone-no-sound');

@@ -136,7 +136,7 @@ describe('rim variants: a setup expects one set of bindings', () => {
     expect(await fs.readFile(appIni, 'utf8')).toBe('options changed while racing');
     expect(item(await check(variant.id), FORMULA).status).toBe('fail');
 
-    // And the other way with Make ready, as on the Fly screen.
+    // And the other way with Make ready, as on the Play screen.
     await app!.invoke('fly:makeReady', { profileId: variant.id });
     expect(item(await check(variant.id), FORMULA).status).toBe('pass');
     expect(await fs.readFile(controls, 'latin1')).toBe('bindings for the formula rim');

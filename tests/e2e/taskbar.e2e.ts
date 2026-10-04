@@ -114,30 +114,30 @@ async function contactSheet(
   await fs.writeFile(file, Buffer.from(png, 'base64'));
 }
 
-test('taskbar: the Jump List offers "Fly <setup>" for the setups used most recently and follows setups used, renamed, cloned and deleted', async ({
+test('taskbar: the Jump List offers "Launch <setup>" for the setups used most recently and follows setups used, renamed, cloned and deleted', async ({
   rig,
 }) => {
   const run = await rig.launch('fly-two-setups', 'taskbar-jump-list');
   const { page, app, shot } = run;
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
-  // The setup used last comes first; each task starts RigReady with --fly for its setup.
-  await expect.poll(() => titles(app)).toEqual(['Fly DCS UH-1H', 'Fly DCS F/A-18C']);
+  // The setup used last comes first; each task starts RigReady with --launch for its setup.
+  await expect.poll(() => titles(app)).toEqual(['Launch DCS UH-1H', 'Launch DCS F/A-18C']);
   expect((await taskbar(app)).jumpTasks).toEqual([
     {
-      title: 'Fly DCS UH-1H',
+      title: 'Launch DCS UH-1H',
       description: 'Make the rig ready for DCS UH-1H and launch it',
-      args: ['--fly=fly-dcs-uh-1h'],
+      args: ['--launch=fly-dcs-uh-1h'],
     },
     {
-      title: 'Fly DCS F/A-18C',
+      title: 'Launch DCS F/A-18C',
       description: 'Make the rig ready for DCS F/A-18C and launch it',
-      args: ['--fly=dcs-f-a-18c'],
+      args: ['--launch=dcs-f-a-18c'],
     },
   ]);
 
   // Used: switching to the other setup moves it to the top.
   await trayClick(app, 'profile:dcs-f-a-18c');
-  await expect.poll(() => titles(app)).toEqual(['Fly DCS F/A-18C', 'Fly DCS UH-1H']);
+  await expect.poll(() => titles(app)).toEqual(['Launch DCS F/A-18C', 'Launch DCS UH-1H']);
 
   // Renamed in the editor.
   await page.getByTestId('mode-configure').click();
@@ -148,9 +148,9 @@ test('taskbar: the Jump List offers "Fly <setup>" for the setups used most recen
   await page.getByTestId('edit-name').locator('input').fill('Huey at dusk');
   await page.getByTestId('edit-save').click();
   await expect(page.getByTestId('profiles-page')).toBeVisible();
-  await expect.poll(() => titles(app)).toEqual(['Fly DCS F/A-18C', 'Fly Huey at dusk']);
+  await expect.poll(() => titles(app)).toEqual(['Launch DCS F/A-18C', 'Launch Huey at dusk']);
   // The task still names the setup by its id, which a rename keeps.
-  expect((await taskbar(app)).jumpTasks[1]!.args).toEqual(['--fly=fly-dcs-uh-1h']);
+  expect((await taskbar(app)).jumpTasks[1]!.args).toEqual(['--launch=fly-dcs-uh-1h']);
 
   // Cloned: a new setup, never used, comes after the used ones.
   await page
@@ -159,7 +159,7 @@ test('taskbar: the Jump List offers "Fly <setup>" for the setups used most recen
     .click();
   await expect
     .poll(() => titles(app))
-    .toEqual(['Fly DCS F/A-18C', 'Fly Huey at dusk', 'Fly DCS F/A-18C (copy)']);
+    .toEqual(['Launch DCS F/A-18C', 'Launch Huey at dusk', 'Launch DCS F/A-18C (copy)']);
 
   // The copy opens in the editor. A setup that launches nothing is offered for what it can do.
   await expect(page.getByTestId('edit-name').locator('input')).toHaveValue('DCS F/A-18C (copy)');
@@ -168,7 +168,7 @@ test('taskbar: the Jump List offers "Fly <setup>" for the setups used most recen
   await expect(page.getByTestId('profiles-page')).toBeVisible();
   await expect
     .poll(() => titles(app))
-    .toEqual(['Fly DCS F/A-18C', 'Fly Huey at dusk', 'Make ready: DCS F/A-18C (copy)']);
+    .toEqual(['Launch DCS F/A-18C', 'Launch Huey at dusk', 'Make ready: DCS F/A-18C (copy)']);
   expect((await taskbar(app)).jumpTasks[2]!.args[0]).toMatch(/^--make-ready=dcs-f-a-18c-copy/);
   await shot('three-setups');
 
@@ -177,14 +177,14 @@ test('taskbar: the Jump List offers "Fly <setup>" for the setups used most recen
   await copy.getByTestId('profile-more').click();
   await page.getByTestId('profile-delete').click();
   await page.getByTestId('profile-delete-confirm').click();
-  await expect.poll(() => titles(app)).toEqual(['Fly DCS F/A-18C', 'Fly Huey at dusk']);
+  await expect.poll(() => titles(app)).toEqual(['Launch DCS F/A-18C', 'Launch Huey at dusk']);
 
   // A task is a second start with its arguments: it flies its setup.
   const task = (await taskbar(app)).jumpTasks[1]!;
   expect(await run.secondStart(task.args)).toBe(0);
   await expect.poll(() => started(app)).toEqual(['DCS.exe']);
   // Used just now, so it is the first task.
-  await expect.poll(() => titles(app)).toEqual(['Fly Huey at dusk', 'Fly DCS F/A-18C']);
+  await expect.poll(() => titles(app)).toEqual(['Launch Huey at dusk', 'Launch DCS F/A-18C']);
 });
 
 test('taskbar: the button carries the status as a badge with words, fills while Make ready runs, and its three buttons do what they say', async ({
@@ -227,7 +227,7 @@ test('taskbar: the button carries the status as a badge with words, fills while 
   ]);
   await expect.poll(async () => (await taskbar(app)).tone).toBe('ok');
 
-  // Something required breaks: the badge and its words change with the Fly screen.
+  // Something required breaks: the badge and its words change with the Play screen.
   await mutate([{ op: 'stopProcess', name: 'TrackIR5.exe' }]);
   await expect(page.getByTestId('fly-status-title')).toHaveText('Not ready');
   await expect.poll(async () => (await taskbar(app)).tone).toBe('bad');

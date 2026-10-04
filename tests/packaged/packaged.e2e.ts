@@ -109,7 +109,7 @@ test('the packaged app starts on the real machine with an isolated profile: wind
   }
 });
 
-test('the packaged app shows a usable Fly screen within two seconds of starting', async ({
+test('the packaged app shows a usable Play screen within two seconds of starting', async ({
   rig,
 }) => {
   const started = Date.now();
@@ -118,7 +118,7 @@ test('the packaged app shows a usable Fly screen within two seconds of starting'
   await expect(page.getByTestId('group-devices')).toBeVisible();
   await expect(page.getByTestId('launch')).toBeEnabled();
   const usable = Date.now() - started;
-  console.log(`  packaged: Fly screen usable ${usable} ms after process start`);
+  console.log(`  packaged: Play screen usable ${usable} ms after process start`);
   test.info().annotations.push({ type: 'fly-usable-ms', description: String(usable) });
   // The two seconds are for a user's PC; a shared CI runner only has to get there.
   expect(usable).toBeLessThan(onCi ? 15_000 : 2000);

@@ -45,7 +45,7 @@ describe('profile files', () => {
     expect(overview.invalid[1]!.detail).toContain('name');
     expect(overview.invalid[2]!.detail).toMatch(/^Line 3: /);
     expect(overview.invalid[0]!.detail).toContain('does not match the file name');
-    // The Fly screen lists them too, but cannot open them.
+    // The Play screen lists them too, but cannot open them.
     const state = await app.invoke<{ invalid: { id: string }[] }>('fly:state');
     expect(state.invalid.map((i) => i.id)).toEqual(['renamed', 'schema', 'syntax']);
   });
@@ -182,7 +182,7 @@ describe('editing', () => {
     expect(again.id).toBe('dcs-f-a-18c-copy-2');
   });
 
-  it('deletes into an undoable backup, and the Fly screen falls back', async () => {
+  it('deletes into an undoable backup, and the Play screen falls back', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
     await app.invoke('profiles:clone', { id: P });
     await app.invoke('profiles:use', { id: P });
@@ -223,7 +223,7 @@ describe('editing', () => {
     await expect(app.invoke('profiles:openFile', { id: '../x' })).rejects.toThrow(/profile.id/);
   });
 
-  it('creating from the capture opens the Fly screen on the new setup; every part can be skipped', async () => {
+  it('creating from the capture opens the Play screen on the new setup; every part can be skipped', async () => {
     app = await wiredApp('flying-fresh', { files: [] });
     const created = await app.invoke<Profile>('profiles:create', {
       name: 'Just a name',

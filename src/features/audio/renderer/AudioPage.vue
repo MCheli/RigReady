@@ -202,7 +202,7 @@ onBeforeUnmount(() => stop?.());
       </div>
       <p class="rr-muted audio-foot">
         Devices that are unplugged or disabled in Windows are not listed. A setup that expects one
-        of them says so on the Fly screen instead of picking another device.
+        of them says so on the Play screen instead of picking another device.
       </p>
     </template>
     <PageSkeleton v-else-if="!loadError" label="Reading the audio devices…" />

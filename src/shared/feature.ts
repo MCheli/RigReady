@@ -44,7 +44,7 @@ export interface FeatureManifest {
   nav?: NavEntry[];
   /**
    * Routes. Paths under /configure render inside the Configure layout; a route with
-   * meta.mode === 'fly' renders as the Fly screen.
+   * meta.mode === 'fly' renders as the Play screen.
    */
   routes?: RouteRecordRaw[];
   /**

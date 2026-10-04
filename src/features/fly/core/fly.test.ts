@@ -71,7 +71,7 @@ const app_ = (name: string, exe: string, extra: Partial<CheckItem> = {}): CheckI
   ...extra,
 });
 
-describe('opening the Fly screen', () => {
+describe('opening the Play screen', () => {
   it('opens on the last used setup and draws its checklist before checking', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
     await saveProfile({ id: 'dcs-uh-1h', name: 'DCS UH-1H', game: 'dcs' });

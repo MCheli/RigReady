@@ -76,6 +76,8 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
     // Nothing chosen yet: what main suggests (the game of the setup in use, else the one
     // most of the connected controllers are bound in), else the first there is.
     const suggested = await api.suggest();
+    // Someone picked an aircraft while the suggestion was on its way: theirs stands.
+    if (choice.value && all.includes(choice.value)) return;
     const start = suggested.ok && suggested.value ? suggested.value : undefined;
     const first = start ? `${start.game}/${start.aircraftId}` : undefined;
     if (first && all.includes(first)) await choose(first);

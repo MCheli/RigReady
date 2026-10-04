@@ -23,7 +23,7 @@ const focusedId = (page: Page): Promise<string | null> =>
     return scope.document.activeElement?.getAttribute('data-testid') ?? null;
   });
 
-test('suggestion: with the wheel connected and the flight gear not, the Fly screen offers the racing setup, and Switch goes there', async ({
+test('suggestion: with the wheel connected and the flight gear not, the Play screen offers the racing setup, and Switch goes there', async ({
   rig,
 }) => {
   const { page, shot } = await rig.launch('fly-suggest', 'fly-suggest');

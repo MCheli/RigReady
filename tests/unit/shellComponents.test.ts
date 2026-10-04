@@ -88,7 +88,7 @@ const LOADING = /^(Reading|Looking|Loading|Checking)[^.\n]*(…|\.\.\.)$/;
  */
 const OWN_DESIGN: Record<string, string> = {
   'features/fly/':
-    'The Fly screen is one design of its own: it says one word for the moment before the setup is read, and its checklist then draws itself item by item.',
+    'The Play screen is one design of its own: it says one word for the moment before the setup is read, and its checklist then draws itself item by item.',
 };
 
 /** The loading lines that stand as text in an empty box, each with what to do about it. */

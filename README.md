@@ -4,7 +4,7 @@ A Windows desktop app for flight and racing sim rigs. It checks that the rig is 
 
 Website: [rigready.io](https://rigready.io) · License: MIT
 
-![The Fly screen with four problems and a fix beside each](artifacts/screens/fly-make-ready-all/01-four-problems.png)
+![The Play screen with four problems and a fix beside each](artifacts/screens/fly-make-ready-all/01-four-problems.png)
 
 ## Who it is for
 
@@ -16,7 +16,7 @@ Version 2.0.0 is a rebuild from the ground up. It is **pre-release**: nothing ha
 
 ## What it does
 
-- **Fly.** One screen with a checklist for the setup you used last. **Make ready** runs every fix in order (starts apps, applies the monitor layout, restores files). **Launch** starts the game and is never blocked, only warned. **Stand down** closes the helper apps and puts the monitors back to the desk layout. The same actions are in the tray menu.
+- **Play.** One screen with a checklist for the setup you used last. **Make ready** runs every fix in order (starts apps, applies the monitor layout, restores files). **Launch** starts the game and is never blocked, only warned. **Stand down** closes the helper apps and puts the monitors back to the desk layout. The same actions are in the tray menu.
 - **Setups.** One per aircraft or car, created by capturing the rig while it works, then edited. Back up and restore bindings and settings; share a setup as a file with personal details reviewed and removed.
 - **Controls.** See and edit DCS bindings, clean up the defaults DCS binds on every device, recover when Windows changes device IDs, copy common controls between aircraft. Cheat sheets with a picture of each device, printable and exportable as DCS kneeboard pages. A binding guide with a walkthrough, and optional AI help with your own Anthropic API key.
 - **Hardware.** Every device, found by pressing a button on it; an input tester; a health check for stuck buttons and noisy axes; a USB map. Monitor layouts with identify and a timed revert. Default audio devices. Stream Deck, TrackIR and Fanatec wheel pages.

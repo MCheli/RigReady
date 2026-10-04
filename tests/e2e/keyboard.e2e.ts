@@ -3,7 +3,7 @@ import type { Dom } from './a11y';
 import { expect, test } from './harness';
 
 /**
- * NFR-011, keyboard: the Fly screen is operated from start to launch with Tab, Shift+Tab,
+ * NFR-011, keyboard: the Play screen is operated from start to launch with Tab, Shift+Tab,
  * Enter, Space, the arrow keys and Escape only. No mouse call anywhere in this file.
  */
 
@@ -57,7 +57,7 @@ async function walkTo(
 const windowVisible = (app: ElectronApplication): Promise<boolean> =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false);
 
-test('keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse', async ({
+test('keyboard: the Play screen from Not ready through Make ready to Launch, without a mouse', async ({
   rig,
 }) => {
   const { page, shot, app } = await rig.launch('fly-make-ready-all', 'a11y-keyboard');

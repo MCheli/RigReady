@@ -153,7 +153,7 @@ describe('no background writes', () => {
     }
     expect(ran.length).toBeGreaterThan(40);
 
-    // The Fly screen's own traffic: checking a setup, over and over, is a read.
+    // The Play screen's own traffic: checking a setup, over and over, is a read.
     const state = await running.invoke<{ profiles: { id: string }[] }>('fly:state');
     expect(state.profiles.length).toBeGreaterThan(0);
     for (const profile of state.profiles) {

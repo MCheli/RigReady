@@ -8,7 +8,7 @@ import { migrateProfile, ProfileSchema, slugify, type Profile } from './schema';
 
 const StateSchema = z.object({
   lastProfileId: z.string().optional(),
-  /** Profile id -> when it was last used on the Fly screen (ISO). */
+  /** Profile id -> when it was last used on the Play screen (ISO). */
   lastUsed: z.record(z.string(), z.string()).default({}),
 });
 type State = z.infer<typeof StateSchema>;

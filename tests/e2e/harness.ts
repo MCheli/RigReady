@@ -121,7 +121,7 @@ export interface RunningApp {
   restart(): Promise<RunningApp>;
   /**
    * Starts the app a second time on the same folders while this one runs, as a desktop
-   * shortcut or a Jump List task does: `secondStart(['--fly=dcs-f-a-18c'])`. The second
+   * shortcut or a Jump List task does: `secondStart(['--launch=dcs-f-a-18c'])`. The second
    * start hands over to the running app and ends; its exit code is the answer.
    */
   secondStart(args?: string[]): Promise<number | null>;
@@ -135,7 +135,7 @@ export interface LaunchOptions {
    * the fake user folder): { open: [['Documents/setup.rigready']], save: ['Documents/out.zip'] }.
    */
   dialogs?: { open?: string[][]; save?: (string | null)[] };
-  /** Command-line arguments for the app, as a shortcut would pass them: ['--fly', 'DCS F/A-18C']. */
+  /** Command-line arguments for the app, as a shortcut would pass them: ['--launch', 'DCS F/A-18C']. */
   args?: string[];
 }
 

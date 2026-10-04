@@ -5,7 +5,7 @@ import { checkRow, expect, test, type RunningApp } from './harness';
 
 /**
  * Where devices and DCS bindings meet the rest of the app: the names the owner gives
- * devices shown everywhere, Diagnose from the Fly screen, what a pressed control is bound
+ * devices shown everywhere, Diagnose from the Play screen, what a pressed control is bound
  * to, identical devices whose IDs all changed, and the notification choice in Settings.
  */
 
@@ -128,7 +128,7 @@ test('names: a name given on the Devices page shows on the Fly checklist, in DCS
   await shot('fly-unplugged');
 });
 
-test('diagnose: a failing device on the Fly screen opens that device on the Devices page, connected or not', async ({
+test('diagnose: a failing device on the Play screen opens that device on the Devices page, connected or not', async ({
   rig,
 }) => {
   const run = await rig.launch('flying-pedals-unplugged', 'devices-diagnose');

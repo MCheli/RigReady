@@ -78,7 +78,7 @@ test('tray: shows readiness as a colour, switches setup, and runs Make ready, La
     ['DCS UH-1H', true],
   ]);
 
-  // Switching in the tray switches the Fly screen too.
+  // Switching in the tray switches the Play screen too.
   await click(app, 'profile:dcs-f-a-18c');
   await expect(page.getByTestId('profile-switcher')).toContainText('DCS F/A-18C');
   await expect.poll(async () => (await tray(app)).tooltip).toBe('RigReady - DCS F/A-18C: Ready');

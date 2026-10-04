@@ -1,7 +1,7 @@
 import type { ElectronApplication } from '@playwright/test';
 import { checkRow, expect, test } from './harness';
 
-/** Fly mode on scenarios: the recorded rig plus one thing wrong at a time. */
+/** Play mode on scenarios: the recorded rig plus one thing wrong at a time. */
 
 const windowVisible = (app: ElectronApplication): Promise<boolean> =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false);

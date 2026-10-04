@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { commandArgs, parseCommandLine, resolveSetup } from './commandLine';
 
 describe('the command line', () => {
-  it('reads --fly, --make-ready and --setup with the setup as the next argument', () => {
-    expect(parseCommandLine(['C:\\RigReady.exe', '--fly', 'DCS F/A-18C'])).toEqual({
+  it('reads --launch, --make-ready and --setup with the setup as the next argument', () => {
+    expect(parseCommandLine(['C:\\RigReady.exe', '--launch', 'DCS F/A-18C'])).toEqual({
       kind: 'command',
       command: { action: 'fly', setup: 'DCS F/A-18C' },
     });
@@ -18,7 +18,7 @@ describe('the command line', () => {
   });
 
   it('reads the one-value form a shortcut carries, quoted or not', () => {
-    expect(parseCommandLine(['RigReady.exe', '--fly=dcs-f-a-18c'])).toEqual({
+    expect(parseCommandLine(['RigReady.exe', '--launch=dcs-f-a-18c'])).toEqual({
       kind: 'command',
       command: { action: 'fly', setup: 'dcs-f-a-18c' },
     });
@@ -37,7 +37,7 @@ describe('the command line', () => {
         command,
       });
     }
-    expect(commandArgs({ action: 'fly', setup: 'dcs-f-a-18c' })).toEqual(['--fly=dcs-f-a-18c']);
+    expect(commandArgs({ action: 'fly', setup: 'dcs-f-a-18c' })).toEqual(['--launch=dcs-f-a-18c']);
   });
 
   it('leaves everything else alone: the program, the app folder, Chromium switches, --hidden', () => {
@@ -49,7 +49,7 @@ describe('the command line', () => {
         '--inspect=0',
         '--remote-debugging-port=0',
         'C:\\repo',
-        '--fly',
+        '--launch',
         'dcs-uh-1h',
         '--allow-file-access-from-files',
         '--original-process-start-time=13400000',
@@ -62,9 +62,9 @@ describe('the command line', () => {
   });
 
   it('says what is wrong when the setup is missing or two actions are asked for', () => {
-    expect(parseCommandLine(['RigReady.exe', '--fly'])).toEqual({
+    expect(parseCommandLine(['RigReady.exe', '--launch'])).toEqual({
       kind: 'problem',
-      message: '--fly needs a setup: RigReady.exe --fly "<setup>"',
+      message: '--launch needs a setup: RigReady.exe --launch "<setup>"',
     });
     // The next switch is not a setup.
     expect(parseCommandLine(['RigReady.exe', '--make-ready', '--hidden'])).toMatchObject({
@@ -72,12 +72,12 @@ describe('the command line', () => {
       message: expect.stringContaining('--make-ready needs a setup'),
     });
     expect(parseCommandLine(['RigReady.exe', '--setup=', 'x'])).toMatchObject({ kind: 'problem' });
-    expect(parseCommandLine(['RigReady.exe', '--fly=   '])).toMatchObject({ kind: 'problem' });
-    expect(parseCommandLine(['RigReady.exe', '--fly', 'a', '--setup', 'b'])).toEqual({
+    expect(parseCommandLine(['RigReady.exe', '--launch=   '])).toMatchObject({ kind: 'problem' });
+    expect(parseCommandLine(['RigReady.exe', '--launch', 'a', '--setup', 'b'])).toEqual({
       kind: 'problem',
-      message: 'Use only one of --fly, --make-ready, --setup at a time.',
+      message: 'Use only one of --launch, --make-ready, --setup at a time.',
     });
-    expect(parseCommandLine(['RigReady.exe', '--fly=a', '--fly=b'])).toMatchObject({
+    expect(parseCommandLine(['RigReady.exe', '--launch=a', '--launch=b'])).toMatchObject({
       kind: 'problem',
     });
   });

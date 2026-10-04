@@ -80,7 +80,7 @@ export function createBindingsCheck(
         };
       }
       // File names only: the whole picture of an aircraft (its defaults evaluated) is for the
-      // bindings pages, not for a check that runs every time the Fly screen opens.
+      // bindings pages, not for a check that runs every time the Play screen opens.
       const own = await service.ownFilesOnConnected(params.aircraft);
       if (!own.ok) return { pass: false, summary: own.error.message };
       if (own.value === 0) {

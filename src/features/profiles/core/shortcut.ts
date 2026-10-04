@@ -10,7 +10,7 @@ import type { ShortcutStatus } from '../contract';
 
 /**
  * A desktop shortcut per setup: "<setup name> - RigReady.lnk" starts RigReady with
- * `--fly=<setup id>` (`--make-ready` for a setup that launches nothing), so flying is one
+ * `--launch=<setup id>` (`--make-ready` for a setup that launches nothing), so flying is one
  * double-click. The file is put on the desktop through FileStore like every change outside
  * RigReady's folder (backed up first, undone from the Safety page), and it is reported as
  * made only after it was read back and found to start this setup.

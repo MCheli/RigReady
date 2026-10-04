@@ -62,7 +62,7 @@ export const ProfileSummarySchema = z.object({
   game: z.string().optional(),
   /** What to call the game: the module's name, or the custom name. */
   gameName: z.string().optional(),
-  /** When it was last used on the Fly screen (ISO). */
+  /** When it was last used on the Play screen (ISO). */
   lastUsed: z.string().optional(),
   canLaunch: z.boolean(),
   /** The family of sims its game belongs to, for the words a session is described in. */
@@ -263,7 +263,7 @@ export type Welcome = z.infer<typeof WelcomeSchema>;
 export const flyContract = defineContract(
   'fly',
   {
-    /** What the Fly screen needs to draw itself before any check has run. */
+    /** What the Play screen needs to draw itself before any check has run. */
     state: channel(noInput, FlyStateSchema),
     /** First run: the games, controllers and monitors found on this PC. */
     welcome: channel(noInput, WelcomeSchema),

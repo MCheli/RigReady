@@ -3,12 +3,12 @@ import type { CommandRun, CommandStep } from '../shared/appContract';
 import type { Envelope } from '../shared/ipc';
 
 /**
- * Runs a command RigReady was started with: `--fly`, `--make-ready`, `--setup` (a desktop
+ * Runs a command RigReady was started with: `--launch`, `--make-ready`, `--setup` (a desktop
  * shortcut, a Jump List task, the hotkey, a command typed by hand).
  *
- * It is the flow the Fly screen and the tray already have, through the same handlers:
+ * It is the flow the Play screen and the tray already have, through the same handlers:
  * check, Make ready (fixes in order; a monitor layout still asks "Keep this layout?"), and
- * for `--fly` the launch. One rule of its own: the game is launched only when every required
+ * for `--launch` the launch. One rule of its own: the game is launched only when every required
  * item is met. Anything else stops with the window in front and the reason on it.
  *
  * Free of Electron, so it runs in unit tests on the wired features.
@@ -21,7 +21,7 @@ export interface CommandDeps {
   publish(run: CommandRun): void;
   /** Brings RigReady's window to the front. */
   showWindow(): void;
-  /** The Fly screen picks up the setup the command chose and what it changed. */
+  /** The Play screen picks up the setup the command chose and what it changed. */
   flyChanged(): void;
   /** True while the tray or the window is already making ready, launching or standing down. */
   busy?(): boolean;
@@ -155,7 +155,7 @@ export class CommandRunner {
       if (this.running()) return this.state();
       this.begin({ action: 'select', setup: '' });
       return this.finish('stopped', 'warn', parsed.message, [
-        'RigReady.exe --fly "<setup>" makes the rig ready and launches. --make-ready stops before launching. --setup only shows the setup.',
+        'RigReady.exe --launch "<setup>" makes the rig ready and launches. --make-ready stops before launching. --setup only shows the setup.',
       ]);
     }
     return this.run(parsed.command);
@@ -175,7 +175,7 @@ export class CommandRunner {
       ]);
     } finally {
       this.deps.working?.(false);
-      // The Fly screen shows what the command left behind.
+      // The Play screen shows what the command left behind.
       this.deps.flyChanged();
     }
   }
@@ -266,7 +266,7 @@ export class CommandRunner {
     this.update({ setup: { id: setup.id, name: setup.name }, canCancel: fly });
     this.update({ headline: this.doing('checking') });
 
-    // ---- check: this also makes it the setup in use, on the Fly screen and in the tray ----
+    // ---- check: this also makes it the setup in use, on the Play screen and in the tray ----
     const checked = await call('fly:check', { profileId });
     await call('fly:state');
     this.deps.flyChanged();
@@ -344,7 +344,7 @@ export class CommandRunner {
       return this.finish('stopped', 'bad', `${setup.name} was not launched`, [
         result.message,
         ...(result.outcome === 'paused'
-          ? ['Press Launch on the Fly screen to decide whether to launch anyway.']
+          ? ['Press Launch on the Play screen to decide whether to launch anyway.']
           : []),
       ]);
     }

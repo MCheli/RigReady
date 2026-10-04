@@ -131,7 +131,7 @@ export interface RemediationDefinition<P = unknown> {
    * "navigate": the fix opens a screen where the user reviews and applies the change (a
    * previewed flow). Its button works on the item, the check is expected to stay as it is
    * until the user finishes there, and Make ready lists it under "Needs you" instead of
-   * leaving the Fly screen in the middle of its run.
+   * leaving the Play screen in the middle of its run.
    * Default "action".
    */
   kind?: 'action' | 'instructions' | 'navigate';

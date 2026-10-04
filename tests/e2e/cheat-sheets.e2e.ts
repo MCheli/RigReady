@@ -805,7 +805,7 @@ test('cheat sheets: the kneeboard check is added to a setup from the kneeboard d
   expect(saved).toContain('aircraft: FA-18C_hornet');
   await page.getByTestId('kneeboard-close').click();
 
-  // On the Fly screen it is a warning, never Not ready, and Make ready writes the pages.
+  // On the Play screen it is a warning, never Not ready, and Make ready writes the pages.
   await page.getByTestId('mode-fly').click();
   await expect(row).toHaveAttribute('data-status', 'warn');
   await expect(row).toContainText('No kneeboard pages exported for F/A-18C');

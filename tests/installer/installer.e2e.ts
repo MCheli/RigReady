@@ -293,7 +293,7 @@ test('the installer installs per user without elevation, the app starts and upda
     // A silent install starts nothing.
     expect(await regValue(RUN_KEY, RUN_VALUE)).toBe(runBefore);
 
-    // ---- 2. the installed app starts on a scenario and reaches the Fly screen ----
+    // ---- 2. the installed app starts on a scenario and reaches the Play screen ----
     {
       const { app, page } = await launch({ RIGREADY_SCENARIO: scenarioFile('flying-all-good') });
       await expect(page.getByTestId('scenario-banner')).toBeVisible();

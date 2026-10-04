@@ -1,6 +1,6 @@
 /**
  * The ready tone: two short, quiet notes made on the spot with Web Audio. There is no sound
- * file. It plays only when the user switched it on (Fly menu), when the rig becomes ready.
+ * file. It plays only when the user switched it on (Play menu), when the rig becomes ready.
  */
 
 export interface ToneNote {

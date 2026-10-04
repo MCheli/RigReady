@@ -321,7 +321,7 @@ function showWindow(): void {
   mainWindow.focus();
 }
 
-/** What this start was asked to do (--fly, --make-ready, --setup), read before anything else. */
+/** What this start was asked to do (--launch, --make-ready, --setup), read before anything else. */
 const startCommand = parseCommandLine(process.argv);
 /** What a second start handed over before this one had finished starting. */
 let handedOver: ParsedCommandLine | undefined;
@@ -388,7 +388,7 @@ async function start(): Promise<void> {
   /** What is running right now, for the progress bar in the taskbar button. */
   const activity = new TaskbarActivity();
   const SETUPS_CHANGED = eventName('fly', 'profilesChanged');
-  // Commands: --fly, --make-ready, --setup (a shortcut, a Jump List task, a second start).
+  // Commands: --launch, --make-ready, --setup (a shortcut, a Jump List task, a second start).
   // What it works with is defined further down; nothing here runs before that.
   const commands = new CommandRunner({
     call: (channel, input) => call(channel, input),
@@ -539,7 +539,7 @@ async function start(): Promise<void> {
     } finally {
       if (activity.ended(channel, input)) refreshTaskbar();
     }
-    // The quiet re-check the Fly screen makes every few seconds changes neither.
+    // The quiet re-check the Play screen makes every few seconds changes neither.
     const quiet = (input as { remember?: unknown } | undefined)?.remember === false;
     if (envelope.ok && SETUP_CHANGERS.has(channel) && !quiet) refreshSetups();
     if (envelope.ok) {
@@ -565,7 +565,7 @@ async function start(): Promise<void> {
     app.quit();
   };
 
-  /** The Fly screen picks up a setup switched or acted on from the tray. */
+  /** The Play screen picks up a setup switched or acted on from the tray. */
   const flyChanged = (): void => {
     send(eventName('fly', 'profilesChanged'), { ids: [] });
     machineChanged('tray');
@@ -649,7 +649,7 @@ async function start(): Promise<void> {
 
   const switchFromTray = async (profileId: string): Promise<void> => {
     if (trayBusy || profileId === trayStatus.profileId) return;
-    // Checking a setup makes it the one in use, on the Fly screen too.
+    // Checking a setup makes it the one in use, on the Play screen too.
     await call('fly:check', { profileId });
     await call('fly:state');
     flyChanged();

@@ -1,8 +1,8 @@
 /**
- * WOW-WIN-001: `RigReady.exe --fly "<setup>"`, `--make-ready` and `--setup`, as the shell
+ * WOW-WIN-001: `RigReady.exe --launch "<setup>"`, `--make-ready` and `--setup`, as the shell
  * runs them (src/main/rigCommand.ts), on every feature wired onto the fake machine.
  *
- * What is proven here: the command goes through the same IPC handlers the Fly screen and the
+ * What is proven here: the command goes through the same IPC handlers the Play screen and the
  * tray use, in order; the game is started only when every required item is met; a monitor
  * layout still waits for "Keep this layout?"; and whatever stops it is said in words.
  */
@@ -72,7 +72,7 @@ async function harness(scenario: string, busy = false): Promise<Harness> {
 
 const fly = (setup: string) => ({ action: 'fly' as const, setup });
 
-describe('WOW-WIN-001 --fly: make ready, then launch', () => {
+describe('WOW-WIN-001 --launch: make ready, then launch', () => {
   it('with everything ready it launches at once, through the handlers the tray uses', async () => {
     const h = await harness('flying-all-good');
     const run = await h.runner.run(fly('dcs-f-a-18c'));
@@ -91,7 +91,7 @@ describe('WOW-WIN-001 --fly: make ready, then launch', () => {
     expect(h.called).toEqual(['fly:state', 'fly:check', 'fly:state', 'fly:launch']);
     expect(h.started()).toEqual(['DCS.exe']);
     expect(h.shown).toBeGreaterThan(0);
-    // The Fly screen is told: once when the setup is chosen, once when it is over.
+    // The Play screen is told: once when the setup is chosen, once when it is over.
     expect(h.flyChanged).toBe(2);
     expect(h.working).toEqual([true, false]);
     expect(h.published.map((p) => p.phase)).toContain('launching');
@@ -235,7 +235,7 @@ describe('WOW-WIN-001 --fly: make ready, then launch', () => {
     expect(run!.headline).toBe('DCS with launch steps was not launched');
     expect(run!.reasons[0]).toContain('"Check TrackIR answers" failed');
     expect(run!.reasons[1]).toBe(
-      'Press Launch on the Fly screen to decide whether to launch anyway.'
+      'Press Launch on the Play screen to decide whether to launch anyway.'
     );
     expect(h.started()).not.toContain('DCS.exe');
   });
@@ -339,17 +339,17 @@ describe('WOW-WIN-001 a command that cannot be followed', () => {
     expect(h.published).toEqual([]);
     expect(h.shown).toBe(0);
 
-    const run = await h.runner.handle(parseCommandLine(['RigReady.exe', '--fly']));
+    const run = await h.runner.handle(parseCommandLine(['RigReady.exe', '--launch']));
     expect(run).toMatchObject({
       outcome: 'stopped',
       tone: 'warn',
-      headline: '--fly needs a setup: RigReady.exe --fly "<setup>"',
+      headline: '--launch needs a setup: RigReady.exe --launch "<setup>"',
     });
     expect(h.shown).toBeGreaterThan(0);
     expect(h.called).toEqual([]);
 
     // And a command that can be followed is run.
-    const flown = await h.runner.handle(parseCommandLine(['RigReady.exe', '--fly=dcs-f-a-18c']));
+    const flown = await h.runner.handle(parseCommandLine(['RigReady.exe', '--launch=dcs-f-a-18c']));
     expect(flown).toMatchObject({ id: 2, outcome: 'launched' });
   });
 

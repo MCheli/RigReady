@@ -158,7 +158,7 @@ describe('UpdateController', () => {
       channel: 'stable',
       automatic: true,
     });
-    // Nothing is asked before the delay has passed: the Fly screen comes first.
+    // Nothing is asked before the delay has passed: the Play screen comes first.
     expect(feed.checks).toEqual([]);
     expect(timer.planned?.ms).toBe(FIRST_CHECK_DELAY_MS);
 

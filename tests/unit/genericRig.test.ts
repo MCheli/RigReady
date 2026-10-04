@@ -105,7 +105,7 @@ describe('the generic rig fixture', () => {
 });
 
 describe('the whole app on a PC that is not the owner’s', () => {
-  it('wires every feature, and the Fly screen with no setups has nothing active', async () => {
+  it('wires every feature, and the Play screen with no setups has nothing active', async () => {
     const app = await start();
     expect(app.wiring.handlers.size).toBeGreaterThan(150);
     expect(await app.invoke('fly:state')).toEqual({ profiles: [], invalid: [] });

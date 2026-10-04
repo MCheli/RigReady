@@ -5,7 +5,7 @@ import { axeViolations, colourOnlyStatus } from './a11y';
 import { expect, test } from './harness';
 
 /**
- * Flying in one click (WOW-WIN-001): RigReady started with `--fly`, `--make-ready` or
+ * Flying in one click (WOW-WIN-001): RigReady started with `--launch`, `--make-ready` or
  * `--setup`, cold and as a second start that hands over to the one already running. The
  * machine is the fake one of a scenario: what "launches" is a line in its process list.
  */
@@ -46,11 +46,11 @@ interface ScrollTarget {
   scrollIntoView(options: { block: string }): void;
 }
 
-test('one click: --fly on a cold start arranges the monitors, starts TrackIR and launches', async ({
+test('one click: --launch on a cold start arranges the monitors, starts TrackIR and launches', async ({
   rig,
 }) => {
   const { page, app, shot } = await rig.launch('one-click-fly', 'one-click-fly', {
-    args: ['--fly', 'DCS F/A-18C'],
+    args: ['--launch', 'DCS F/A-18C'],
   });
   // The command began with the app; the window shows where it has got to.
   await expect(strip(page)).toBeVisible();
@@ -79,11 +79,11 @@ test('one click: --fly on a cold start arranges the monitors, starts TrackIR and
   await expect(strip(page)).toBeHidden();
 });
 
-test('one click: --fly stops in front of a required item that is not met, and says why', async ({
+test('one click: --launch stops in front of a required item that is not met, and says why', async ({
   rig,
 }) => {
   const { page, app, shot } = await rig.launch('flying-pedals-unplugged', 'one-click-stopped', {
-    args: ['--fly=dcs-f-a-18c'],
+    args: ['--launch=dcs-f-a-18c'],
   });
   await expect(strip(page)).toHaveAttribute('data-outcome', 'stopped');
   await expect(strip(page)).toHaveAttribute('data-tone', 'bad');
@@ -106,7 +106,7 @@ test('one click: an unknown setup opens the window and names the setups there ar
   rig,
 }) => {
   const { page, app, shot } = await rig.launch('fly-two-setups', 'one-click-unknown', {
-    args: ['--fly', 'F-16C Viper'],
+    args: ['--launch', 'F-16C Viper'],
   });
   await expect(strip(page)).toHaveAttribute('data-outcome', 'stopped');
   await expect(page.getByTestId('command-headline')).toHaveText('There is no setup "F-16C Viper"');
@@ -124,7 +124,7 @@ test('one click: "Do not launch" while Make ready is still working keeps the gam
   rig,
 }) => {
   const { page, app, shot, mutate } = await rig.launch('one-click-slow-start', 'one-click-cancel', {
-    args: ['--fly=one-click-slow'],
+    args: ['--launch=one-click-slow'],
   });
   await expect(strip(page)).toHaveAttribute('data-phase', 'makingReady');
   await expect(page.getByTestId('command-step')).toContainText('TrackIR');
@@ -181,7 +181,7 @@ test('one click: a second start hands over to the running RigReady, which comes 
     .toMatchObject({ action: 'select', outcome: 'selected', headline: 'Showing DCS F/A-18C' });
   expect(await started(app)).toEqual([]);
 
-  // --make-ready from a Configure page: fixes, no launch, and a way back to the Fly screen.
+  // --make-ready from a Configure page: fixes, no launch, and a way back to the Play screen.
   await mutate([{ op: 'stopProcess', name: 'TrackIR5.exe' }]);
   await page.getByTestId('mode-configure').click();
   await expect(page.getByTestId('profiles-page')).toBeVisible();
@@ -195,8 +195,8 @@ test('one click: a second start hands over to the running RigReady, which comes 
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
   await expect(page.getByTestId('command-open-fly')).toHaveCount(0);
 
-  // --fly: launches, and the window gets out of the way as after any launch.
-  expect(await run.secondStart(['--fly=dcs-f-a-18c'])).toBe(0);
+  // --launch: launches, and the window gets out of the way as after any launch.
+  expect(await run.secondStart(['--launch=dcs-f-a-18c'])).toBe(0);
   await expect.poll(() => started(app)).toEqual(['TrackIR5.exe', 'DCS.exe']);
   await expect.poll(() => windowVisible(app)).toBe(false);
   expect((await command(app)).run).toMatchObject({
@@ -256,7 +256,7 @@ test('one click: a desktop shortcut is made in the setup editor, flies when it i
   // What the fake machine was asked to make: this RigReady, asked to fly this setup by id.
   const [link] = await shortcuts(app);
   expect(link).toMatchObject({
-    args: ['--fly=dcs-f-a-18c'],
+    args: ['--launch=dcs-f-a-18c'],
     description: 'Make the rig ready for DCS F/A-18C and launch it',
   });
   expect(path.win32.basename(link!.target)).toBe('RigReady.exe');

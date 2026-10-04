@@ -72,7 +72,7 @@ for (const rigged of RIGS) {
     test.setTimeout(300_000);
     const { page, shot } = await rig.launch(rigged.scenario, rigged.flow);
     await expect(page.locator('.rr-page').first()).toBeVisible();
-    await settled(page, 'the Fly screen');
+    await settled(page, 'the Play screen');
     await shot('fly');
 
     await page.getByTestId('mode-configure').click();

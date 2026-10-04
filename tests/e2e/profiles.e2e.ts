@@ -20,7 +20,7 @@ async function openEditor(page: Page, name: string): Promise<void> {
   await expect(page.getByTestId('profile-edit-page')).toBeVisible();
 }
 
-test('setups: an item made optional is yellow on the Fly screen', async ({ rig }) => {
+test('setups: an item made optional is yellow on the Play screen', async ({ rig }) => {
   const { page, shot, dataRoot } = await rig.launch(
     'flying-trackir-not-running',
     'profile-edit-item'
@@ -365,7 +365,7 @@ test('setups: name, notes, install, and what Launch starts are edited; Cancel le
   expect(saved).toMatch(/exe: .*DCS World OpenBeta.*DCS\.exe/);
   expect(saved).toContain('--force_enable_VR');
   expect(await fs.readdir(path.join(dataRoot, 'profiles'))).toEqual(['dcs-open-beta.yaml']);
-  // The Fly screen still opens on it: "last used" goes by id, not by name.
+  // The Play screen still opens on it: "last used" goes by id, not by name.
   await page.getByTestId('mode-fly').click();
   await expect(page.getByTestId('profile-switcher')).toContainText('Hornet on the beta');
   await shot('renamed-on-fly');

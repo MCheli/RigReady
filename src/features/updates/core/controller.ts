@@ -5,7 +5,7 @@ import type { AppSettings, AppSettingsPatch } from '../../../core/settings';
 import type { UpdatePhase, UpdateStatus } from '../contract';
 import { judgeOffer } from './version';
 
-/** How long after the start the first check runs: the Fly screen comes first. */
+/** How long after the start the first check runs: the Play screen comes first. */
 export const FIRST_CHECK_DELAY_MS = 5_000;
 export const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 

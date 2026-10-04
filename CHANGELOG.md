@@ -6,7 +6,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 ### What it contains
 
-**Fly**
+**Play**
 - One screen for the setup used last: a grouped checklist, a fix beside every failing item, Make ready, Launch and Stand down.
 - Required items make the rig Not ready; optional items only warn.
 - Launch is never blocked. Steps can run before and after launch. Stand down closes what RigReady started and returns the monitors to the desk layout.

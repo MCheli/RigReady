@@ -2,7 +2,7 @@ import { computed, ref, watchEffect, type ComputedRef, type Ref } from 'vue';
 import type { useFlyStore } from './store';
 
 /**
- * What the Fly screen and the compact view have in common: the readiness in words, the one
+ * What the Play screen and the compact view have in common: the readiness in words, the one
  * primary action, and Enter running it.
  */
 

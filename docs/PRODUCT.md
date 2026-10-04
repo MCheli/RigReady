@@ -10,7 +10,7 @@ A sim rig PC is also used for other things. Getting it ready to fly or race mean
 
 ## Three jobs, in priority order
 
-### 1. Tell me I'm ready, then launch ("Fly" mode)
+### 1. Tell me I'm ready, then launch ("Play" mode)
 
 1. I open RigReady and it shows the setup I used last, for example "DCS F/A-18C".
 2. It shows a checklist grouped by kind: devices connected, apps running, monitors correct, audio correct, config files in place.
@@ -38,7 +38,7 @@ A sim rig PC is also used for other things. Getting it ready to fly or race mean
 
 ## Two modes that must feel different
 
-"I just want to fly" (checklist, Make ready, Launch, Stand down) and "I'm configuring things" (profiles, bindings, backups, device tools, settings). The first is one screen that is useful within two seconds of opening. The second is where all the depth lives.
+"I just want to fly or race" (checklist, Make ready, Launch, Stand down) and "I'm configuring things" (profiles, bindings, backups, device tools, settings). The first is one screen that is useful within two seconds of opening. The second is where all the depth lives.
 
 ## Scope
 

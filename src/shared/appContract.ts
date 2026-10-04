@@ -12,7 +12,7 @@ export const CommandStepSchema = z.object({
 export type CommandStep = z.infer<typeof CommandStepSchema>;
 
 /**
- * A command RigReady was started with (`--fly`, `--make-ready`, `--setup`: a desktop
+ * A command RigReady was started with (`--launch`, `--make-ready`, `--setup`: a desktop
  * shortcut, a Jump List task, the hotkey), as far as it has got. The shell runs it; the
  * window shows it.
  */
@@ -44,7 +44,7 @@ export const appContract = defineContract(
   'app',
   {
     /**
-     * Keeps a `--fly` command that is still checking or making ready from launching the
+     * Keeps a `--launch` command that is still checking or making ready from launching the
      * game. Answers false when it is too late (the launch has begun) or nothing is running.
      */
     cancelCommand: channel(noInput, z.object({ cancelled: z.boolean() })),

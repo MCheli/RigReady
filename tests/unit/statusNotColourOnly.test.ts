@@ -32,7 +32,7 @@ import { repoRoot } from '../helpers';
  *     a menu or on a button may be red: its label says what it does).
  *
  * What a template cannot show (a class that comes from a variable) is checked on the rendered
- * screens by tests/e2e/a11y.ts `colourOnlyStatus`, on the Fly screen and every Configure route.
+ * screens by tests/e2e/a11y.ts `colourOnlyStatus`, on the Play screen and every Configure route.
  */
 
 const TONES = ['rr-ok', 'rr-warn', 'rr-bad'] as const;

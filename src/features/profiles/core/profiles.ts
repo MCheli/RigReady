@@ -158,7 +158,7 @@ export async function createProfile(ctx: Ctx, input: NewProfile): Promise<Result
   if (!valid.ok) return valid;
   const saved = await ctx.profiles.save(profile);
   if (!saved.ok) return saved;
-  // A new setup is the one the Fly screen opens on.
+  // A new setup is the one the Play screen opens on.
   await ctx.profiles.setLastProfileId(saved.value.id, ctx.ports.clock.now());
   return saved;
 }

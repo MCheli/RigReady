@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { checkRow, expect, test } from './harness';
 
 /**
- * The top of the Fly screen: the readiness dial, the setup's identity and the state in
+ * The top of the Play screen: the readiness dial, the setup's identity and the state in
  * words, and how the checklist arrives.
  */
 

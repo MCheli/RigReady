@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { ElectronApplication } from '@playwright/test';
 import { checkRow, expect, test } from './harness';
 
-/** Fly mode in depth: switching, single checks, fixes, Make ready, launch steps, timing. */
+/** Play mode in depth: switching, single checks, fixes, Make ready, launch steps, timing. */
 
 const showWindow = (app: ElectronApplication): Promise<void> =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.show());
@@ -357,7 +357,7 @@ test.describe('startup time', () => {
   });
 });
 
-test('fly: the Fly screen is one page with its own controls', async ({ rig }) => {
+test('fly: the Play screen is one page with its own controls', async ({ rig }) => {
   const { page, shot } = await rig.launch('flying-optional-missing', 'fly');
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready with warnings');
   await expect(page.getByTestId('configure-nav')).toHaveCount(0);

@@ -3,7 +3,7 @@
  *
  * Two kinds of proof:
  *
- *  - On a scenario (the fake machine): `--fly` on a cold start, and a second start that
+ *  - On a scenario (the fake machine): `--launch` on a cold start, and a second start that
  *    hands over to the RigReady already running. What "launches" there is a line in the
  *    fake machine's process list: never a game.
  *  - On the real Windows of this PC, in a profile of its own: the desktop shortcut the app
@@ -75,13 +75,13 @@ const readLog = (isolated: IsolatedEnv): Promise<string> =>
 
 // ---- on a scenario: nothing real is started -----------------------------------------------
 
-test('packaged --fly on a scenario: the monitors are arranged, TrackIR is started, the game "launches", and no real program is started', async ({
+test('packaged --launch on a scenario: the monitors are arranged, TrackIR is started, the game "launches", and no real program is started', async ({
   rig,
 }) => {
   const games = await running('DCS.exe');
   const trackers = await running('TrackIR5.exe');
   const { page, app, shot } = await rig.launch('one-click-fly', 'packaged-one-click-fly', {
-    args: ['--fly=dcs-f-a-18c'],
+    args: ['--launch=dcs-f-a-18c'],
   });
   await expect(strip(page)).toHaveAttribute('data-phase', 'makingReady');
   // The monitor layout still asks.
@@ -98,12 +98,12 @@ test('packaged --fly on a scenario: the monitors are arranged, TrackIR is starte
   expect(await running('TrackIR5.exe')).toBe(trackers);
 });
 
-test('packaged --fly stops in front of a required item that is not met', async ({ rig }) => {
+test('packaged --launch stops in front of a required item that is not met', async ({ rig }) => {
   const { page, app, shot } = await rig.launch(
     'flying-pedals-unplugged',
     'packaged-one-click-stopped',
     {
-      args: ['--fly', 'DCS F/A-18C'],
+      args: ['--launch', 'DCS F/A-18C'],
     }
   );
   await expect(strip(page)).toHaveAttribute('data-outcome', 'stopped');
@@ -116,7 +116,7 @@ test('packaged --fly stops in front of a required item that is not met', async (
   await shot('not-launched');
 });
 
-test('packaged second start: RigReady already running takes --setup, --make-ready and --fly from a second start and comes forward', async ({
+test('packaged second start: RigReady already running takes --setup, --make-ready and --launch from a second start and comes forward', async ({
   rig,
 }) => {
   const run = await rig.launch('fly-two-setups', 'packaged-one-click-second-start');
@@ -141,7 +141,7 @@ test('packaged second start: RigReady already running takes --setup, --make-read
   expect(await started(app)).toEqual(['TrackIR5.exe']);
   await shot('made-ready');
 
-  expect(await run.secondStart(['--fly=dcs-f-a-18c'])).toBe(0);
+  expect(await run.secondStart(['--launch=dcs-f-a-18c'])).toBe(0);
   await expect.poll(() => started(app)).toEqual(['TrackIR5.exe', 'DCS.exe']);
   await expect
     .poll(async () => (await command(app)).run)
@@ -237,7 +237,7 @@ test('packaged, real Windows: the desktop shortcut the app makes is a .lnk Windo
     expect([...bytes.subarray(0, 4)]).toEqual([0x4c, 0, 0, 0]);
     const link = await app.evaluate(({ shell }, file) => shell.readShortcutLink(file), lnk);
     expect(link.target.toLowerCase()).toBe(exe.toLowerCase());
-    expect(link.args).toBe('--fly=smoke');
+    expect(link.args).toBe('--launch=smoke');
     expect(link.description).toBe('Make the rig ready for Smoke / test and launch it');
     console.log(`  shortcut: ${lnk} -> ${link.target} ${link.args}`);
 
@@ -329,15 +329,15 @@ test('packaged, real Windows: the Jump List is written for the setups used most 
     /** Where a text is in the file; Windows stores the strings of a task as UTF-16. */
     const at = async (text: string): Promise<number> =>
       (await fs.readFile(file)).indexOf(Buffer.from(text, 'utf16le'));
-    await expect.poll(() => at('Fly Smoke newer')).toBeGreaterThan(-1);
-    const newer = await at('Fly Smoke newer');
-    const older = await at('Fly Smoke older');
+    await expect.poll(() => at('Launch Smoke newer')).toBeGreaterThan(-1);
+    const newer = await at('Launch Smoke newer');
+    const older = await at('Launch Smoke older');
     expect(older).toBeGreaterThan(-1);
     // The setup used last is the first task.
     expect(newer).toBeLessThan(older);
-    // Each task starts this program with --fly for its setup.
-    expect(await at('--fly=newer')).toBeGreaterThan(-1);
-    expect(await at('--fly=older')).toBeGreaterThan(-1);
+    // Each task starts this program with --launch for its setup.
+    expect(await at('--launch=newer')).toBeGreaterThan(-1);
+    expect(await at('--launch=older')).toBeGreaterThan(-1);
     expect(await at(path.basename(exe))).toBeGreaterThan(-1);
     console.log(`  Jump List written to ${file} (${(await fs.stat(file)).size} bytes)`);
     // Windows made the window's taskbar button and took its badge, tooltip, progress and buttons.

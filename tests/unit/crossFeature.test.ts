@@ -315,7 +315,7 @@ describe('scenario mutations for plugging in, hanging and failing', () => {
     });
     await mutate(app, [{ op: 'plugDevice', match: { productId: 'B68F' } }]);
     expect((await runChecks(profile, checks, app.ctx)).ready).toBe(true);
-    // Each change tells subscribers, which is what refreshes the Fly screen.
+    // Each change tells subscribers, which is what refreshes the Play screen.
     expect(notified).toBe(2);
   });
 

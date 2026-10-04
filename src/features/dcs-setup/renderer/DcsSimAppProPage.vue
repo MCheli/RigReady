@@ -230,7 +230,7 @@ const STATUS = {
         <template v-for="file in view.managed" :key="file.label">
           <div v-if="file.status === 'notManaged'" class="rr-row rr-muted">
             RigReady has not set up any DCS file yet. Once it has, it watches them here and on the
-            Fly screen, so you notice when SimAppPro or an installer changes them.
+            Play screen, so you notice when SimAppPro or an installer changes them.
           </div>
           <div
             v-else

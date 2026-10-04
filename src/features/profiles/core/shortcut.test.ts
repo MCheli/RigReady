@@ -100,7 +100,7 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
       ok: true,
       value: {
         target: self.exe,
-        args: ['--fly=dcs-f-a-18c'],
+        args: ['--launch=dcs-f-a-18c'],
         description: 'Make the rig ready for DCS F/A-18C and launch it',
         icon: self.exe,
         cwd: path.win32.dirname(self.exe),
@@ -229,7 +229,7 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
     });
     // The old one still works: it names the setup by its id, which a rename keeps.
     const link = await a.ports.shortcuts.read(old);
-    expect(link.ok && link.value?.args).toEqual(['--fly=dcs-f-a-18c']);
+    expect(link.ok && link.value?.args).toEqual(['--launch=dcs-f-a-18c']);
 
     const preview = await a.invoke<ChangePreview>('profiles:shortcutPreview', {
       id: ID,
@@ -298,7 +298,7 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
       await fs.writeFile(file, bytes.value);
     };
     // RigReady was moved since: the shortcut still starts the old place.
-    await write('D:\\Old\\RigReady.exe', ['--fly=dcs-f-a-18c']);
+    await write('D:\\Old\\RigReady.exe', ['--launch=dcs-f-a-18c']);
     expect(await status(a)).toMatchObject({
       state: 'outdated',
       detail: 'It starts another copy of RigReady: D:\\Old\\RigReady.exe',
@@ -310,7 +310,7 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
       detail: 'It was made before this setup had something to launch.',
     });
     // A shortcut with this name for another setup is not this setup's.
-    await write(a.ports.shortcuts.self().exe, ['--fly=another-setup']);
+    await write(a.ports.shortcuts.self().exe, ['--launch=another-setup']);
     expect(await status(a)).toMatchObject({ state: 'taken' });
     // Updating puts it right.
     expect(await a.invoke('profiles:createShortcut', { id: ID })).toMatchObject({
@@ -341,7 +341,7 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
     });
     // Updated, it launches; and when the setup stops launching, that shortcut is out of date.
     await a.invoke('profiles:createShortcut', { id: ID });
-    expect(a.ports.shortcuts.built.at(-1)).toMatchObject({ args: ['--fly=dcs-f-a-18c'] });
+    expect(a.ports.shortcuts.built.at(-1)).toMatchObject({ args: ['--launch=dcs-f-a-18c'] });
     await a.invoke('profiles:save', rest);
     expect(await status(a)).toMatchObject({
       state: 'outdated',
@@ -380,7 +380,7 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
     // Damaged shortcuts, and a folder with a shortcut's name: read as "not a shortcut".
     const good = await a.ports.shortcuts.build({
       target: 'C:\\x.exe',
-      args: ['--fly=dcs-f-a-18c'],
+      args: ['--launch=dcs-f-a-18c'],
     });
     if (!good.ok) throw new Error(good.error.message);
     const text = new TextDecoder().decode(good.value);

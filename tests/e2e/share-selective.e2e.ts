@@ -8,7 +8,7 @@ import { checkRow, expect, test } from './harness';
 const editRow = (page: Page, title: string): Locator =>
   page.locator(`[data-testid="edit-check"][data-title="${title}"]`);
 
-test('setups: a check switched off in the editor is shown as Off on the Fly screen and does not count', async ({
+test('setups: a check switched off in the editor is shown as Off on the Play screen and does not count', async ({
   rig,
 }) => {
   const { page, shot, dataRoot } = await rig.launch(
@@ -113,7 +113,7 @@ test('share: checks for devices a PC does not have are imported switched off, an
   expect(await fs.readdir(config)).toContain('options.lua');
   await shot('undone');
 
-  // Again, this time kept: on the Fly screen the missing gear is off, not failed, not passed.
+  // Again, this time kept: on the Play screen the missing gear is off, not failed, not passed.
   await page.getByTestId('import-another').click();
   await page.getByTestId('import-open').click();
   await page.getByTestId('import-apply').click();

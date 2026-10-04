@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { checkRow, expect, test } from './harness';
 
 /**
- * One action to fly: the primary action of the Fly screen, what Enter does, and the run
+ * One action to fly: the primary action of the Play screen, what Enter does, and the run
  * "Make ready and launch" shown step by step.
  */
 

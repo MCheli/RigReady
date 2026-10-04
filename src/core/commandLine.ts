@@ -2,7 +2,7 @@
  * What RigReady can be started to do at once. A desktop shortcut, a Jump List task and a
  * command typed by hand all say it the same way:
  *
- *   RigReady.exe --fly "<setup id or name>"          make the rig ready, then launch
+ *   RigReady.exe --launch "<setup id or name>"          make the rig ready, then launch
  *   RigReady.exe --make-ready "<setup id or name>"   make the rig ready, stop before launching
  *   RigReady.exe --setup "<setup id or name>"        only show that setup
  *
@@ -25,7 +25,7 @@ export type ParsedCommandLine =
   | { kind: 'problem'; message: string };
 
 const FLAGS: Record<RigAction, string> = {
-  fly: '--fly',
+  fly: '--launch',
   makeReady: '--make-ready',
   select: '--setup',
 };
@@ -36,7 +36,7 @@ const usage = (flag: string): string => `${flag} needs a setup: RigReady.exe ${f
 /**
  * Reads the action out of a program's arguments. Everything it does not know (the program
  * itself, Chromium's own switches, --hidden) is left alone. A flag takes its setup from the
- * next argument or after an equals sign: `--fly "DCS F/A-18C"` and `--fly=dcs-f-a-18c`.
+ * next argument or after an equals sign: `--launch "DCS F/A-18C"` and `--launch=dcs-f-a-18c`.
  */
 export function parseCommandLine(argv: readonly string[]): ParsedCommandLine {
   const found: RigCommand[] = [];
@@ -47,7 +47,7 @@ export function parseCommandLine(argv: readonly string[]): ParsedCommandLine {
       let value: string | undefined;
       if (token === flag) {
         const next = argv[index + 1];
-        // Another switch is not a setup: "--fly --hidden" names none.
+        // Another switch is not a setup: "--launch --hidden" names none.
         if (next === undefined || next.startsWith('--'))
           return { kind: 'problem', message: usage(flag) };
         value = next;

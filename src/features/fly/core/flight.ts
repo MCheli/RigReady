@@ -152,7 +152,7 @@ export function fixesLine(steps: { ok: boolean; skipped?: boolean | undefined }[
   ].join(' · ');
 }
 
-/** The two calls the run is made of, as the Fly screen makes them. */
+/** The two calls the run is made of, as the Play screen makes them. */
 export interface FlightCalls {
   /** Every available fix in order, then a re-check of everything. Waits for "Keep this layout?". */
   makeReady(): Promise<Result<ActionReport>>;

@@ -186,7 +186,7 @@ export const profilesContract = defineContract('profiles', {
   save: channel(ProfileSchema, ProfileSchema),
   /** Removes the profile file; it is backed up first and can be put back from Safety. */
   remove: channel(ProfileId, z.object({ removed: z.boolean() })),
-  /** Makes this the setup the Fly screen shows. */
+  /** Makes this the setup the Play screen shows. */
   use: channel(ProfileId, z.object({ used: z.boolean() })),
   /** A deep copy under a new id, named "<name> (copy)". */
   clone: channel(ProfileId, ProfileSchema),

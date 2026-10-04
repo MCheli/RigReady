@@ -116,7 +116,7 @@ onMounted(load);
     <div class="rr-row shortcut-row">
       <v-icon icon="mdi-cursor-default-click-outline" size="22" class="shortcut-icon" />
       <div class="rr-row-main">
-        <div class="rr-row-title">Fly with one double-click</div>
+        <div class="rr-row-title">Launch with one double-click</div>
         <div class="rr-row-sub">
           A shortcut on the desktop starts RigReady and {{ what }}. If something required is
           missing, RigReady stops and shows why.

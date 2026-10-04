@@ -111,7 +111,7 @@ export class CheatSheets {
   /**
    * Where a sheet opens when nothing was chosen yet. A PC with a stick and a wheel has
    * bindings in several games, so it is not the first in the alphabet: it is the game of
-   * the setup in use (the one the Fly screen shows), else the game most of the connected
+   * the setup in use (the one the Play screen shows), else the game most of the connected
    * controllers carry the user's own bindings in.
    */
   async suggest(): Promise<Result<{ game: string; aircraftId: string } | null>> {

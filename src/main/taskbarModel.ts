@@ -14,7 +14,7 @@ import {
  * What RigReady's taskbar button shows and offers. Pure, like the tray's model next to it:
  * the shell hands the results to the Taskbar port.
  *
- *   Jump List   "Fly <setup>" for the setups used most recently (right-click the button)
+ *   Jump List   "Launch <setup>" for the setups used most recently (right-click the button)
  *   overlay     the status badge of the setup in use, with its words
  *   tooltip     the same line the tray shows
  *   progress    while a check, Make ready, Launch or Stand down runs
@@ -42,7 +42,7 @@ export function jumpTasks(status: TrayStatus): JumpTask[] {
     .map((setup) =>
       setup.canLaunch
         ? {
-            title: `Fly ${setup.name}`,
+            title: `Launch ${setup.name}`,
             description: `Make the rig ready for ${setup.name} and launch it`,
             args: commandArgs({ action: 'fly', setup: setup.id }),
           }
@@ -230,7 +230,7 @@ export class TaskbarActivity {
 
   /** An IPC call started. True when it is one the taskbar shows. */
   began(channel: string, input: unknown): boolean {
-    // The Fly screen re-checks quietly every few seconds; only a check somebody asked for counts.
+    // The Play screen re-checks quietly every few seconds; only a check somebody asked for counts.
     if (channel === 'fly:check' && record(input)?.['remember'] !== false) {
       this.checks++;
       return true;

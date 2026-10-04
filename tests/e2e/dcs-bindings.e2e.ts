@@ -461,7 +461,7 @@ test('bindings: Windows changed the device IDs; move the bindings back, and undo
   const run = await rig.launch('dcs-bindings-old-ids', 'bindings-migration');
   const { page, shot } = run;
 
-  // Fly mode warns, without blocking, and its fix opens the Device IDs screen.
+  // Play mode warns, without blocking, and its fix opens the Device IDs screen.
   const check = checkRow(page, 'DCS bindings match devices (F/A-18C)');
   await expect(check).toHaveAttribute('data-status', 'warn');
   await expect(check).toContainText('Bindings for 10 devices belong to old device IDs');

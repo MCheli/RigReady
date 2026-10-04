@@ -583,7 +583,7 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
           data-testid="edit-steam-app"
           @update:model-value="draft = { ...draft!, steamAppId: $event || undefined }"
         />
-        <div v-else class="rr-row-sub">The Fly screen offers no Launch button for this setup.</div>
+        <div v-else class="rr-row-sub">The Play screen offers no Launch button for this setup.</div>
       </div>
 
       <ShortcutPanel

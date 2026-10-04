@@ -5,10 +5,10 @@ import { expect, screensDir, test } from './harness';
 
 /**
  * The compact view: the dial, the setup switcher and the one action in a small window
- * that stays on top, opened from the Fly menu.
+ * that stays on top, opened from the Play menu.
  */
 
-/** Opens the compact view from the Fly menu and hands back its window. */
+/** Opens the compact view from the Play menu and hands back its window. */
 async function openCompact(app: ElectronApplication, page: Page): Promise<Page> {
   await page.getByTestId('fly-more').click();
   // The entry says what it is.

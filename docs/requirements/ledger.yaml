@@ -36,10 +36,10 @@ requirements:
     area: fly
     priority: p0
     done_means:
-      - "With profiles 'DCS F/A-18C' and 'DCS UH-1H' in the data root and 'DCS UH-1H' used last, starting the app shows the Fly screen with 'DCS UH-1H' as the active profile name (E2E, scenario mark-flight)."
-      - "The last-used profile id survives an app restart: launch, switch to 'DCS F/A-18C', quit, relaunch; the Fly screen shows 'DCS F/A-18C'."
+      - "With profiles 'DCS F/A-18C' and 'DCS UH-1H' in the data root and 'DCS UH-1H' used last, starting the app shows the Play screen with 'DCS UH-1H' as the active profile name (E2E, scenario mark-flight)."
+      - "The last-used profile id survives an app restart: launch, switch to 'DCS F/A-18C', quit, relaunch; the Play screen shows 'DCS F/A-18C'."
       - "If the last-used profile file was deleted or fails validation, the app opens on the most recently modified valid profile and shows a one-line notice naming the missing profile; it does not show an empty or crashed screen."
-      - "With zero profiles, the Fly screen shows an empty state with a single 'Create a setup from this rig' action (see CFG-PROFILE-001) instead of a checklist."
+      - "With zero profiles, the Play screen shows an empty state with a single 'Create a setup from this rig' action (see CFG-PROFILE-001) instead of a checklist."
     status: done
     evidence:
       - 'src/features/fly/core/fly.test.ts#opens on the last used setup and draws its checklist before checking'
@@ -53,13 +53,13 @@ requirements:
       - 'artifacts/screens/profile-capture/01-empty.png'
 
   - id: FLY-002
-    title: Quick profile switch from the Fly screen
+    title: Quick profile switch from the Play screen
     job: fly
     area: fly
     priority: p0
     done_means:
-      - "The Fly screen has a profile switcher reachable in one click that lists every valid profile by name with its game and last-used time."
-      - "Selecting another profile replaces the checklist and re-runs all checks for that profile without navigating away from the Fly screen (E2E screenshot artifacts/screens/fly-switch/)."
+      - "The Play screen has a profile switcher reachable in one click that lists every valid profile by name with its game and last-used time."
+      - "Selecting another profile replaces the checklist and re-runs all checks for that profile without navigating away from the Play screen (E2E screenshot artifacts/screens/fly-switch/)."
       - "Invalid profile files appear in the switcher as disabled entries with the validation error on hover, and cannot be selected."
       - "Switching while checks are still running cancels the in-flight results of the previous profile; no result from the old profile is shown under the new one (unit test with a slow fake ProcessProvider)."
     status: done
@@ -132,7 +132,7 @@ requirements:
     area: fly
     priority: p0
     done_means:
-      - "Opening the Fly screen or switching profile runs every check of the active profile automatically."
+      - "Opening the Play screen or switching profile runs every check of the active profile automatically."
       - "A 'Re-check all' control re-runs every check; items go to 'checking' and then to their new status."
       - "Independent checks run concurrently; the total time for the mark-flight F/A-18C profile is bounded by NFR-001."
       - "While checks run, the rest of the screen (switcher, Launch, per-item fixes for completed items) stays interactive."
@@ -191,7 +191,7 @@ requirements:
       - "tests/e2e/fly.e2e.ts#MFD rotated: Make ready applies the layout and asks to keep it"
       - "tests/e2e/fly-depth.e2e.ts#fly: services, config files, scripts and the game version, with instructions, confirmations and Mark verified"
       - "tests/e2e/fly.e2e.ts#pedals unplugged: red, no fix available, Launch warns but is not blocked"
-      - "tests/e2e/devices-bindings.e2e.ts#diagnose: a failing device on the Fly screen opens that device on the Devices page, connected or not"
+      - "tests/e2e/devices-bindings.e2e.ts#diagnose: a failing device on the Play screen opens that device on the Devices page, connected or not"
       - "tests/unit/bindingsAcrossFeatures.test.ts#Diagnose: a checklist item resolves to its device, connected or not, and nothing else does (FLY-009)"
       - "artifacts/screens/devices-diagnose/01-missing-device.png"
       - "artifacts/screens/devices-diagnose/02-connected-device.png"
@@ -471,7 +471,7 @@ requirements:
     priority: p1
     done_means:
       - "A profile can list post-session actions (restore audio default, run script) that run during Stand down after apps close."
-      - "Stand down shows a summary of each step's real outcome and is reachable from the Fly screen and the tray menu."
+      - "Stand down shows a summary of each step's real outcome and is reachable from the Play screen and the tray menu."
     status: done
     evidence:
       - 'src/features/fly/core/fly.test.ts#never closes the game unless asked, closes what launch actions started, and runs its own actions'
@@ -481,21 +481,21 @@ requirements:
       - 'artifacts/screens/tray/02-stood-down-from-tray.png'
 
   - id: FLY-026
-    title: Fly screen usable within 2 seconds
+    title: Play screen usable within 2 seconds
     job: fly
     area: fly
     priority: p0
     done_means:
-      - "An E2E test measures from process start to the Fly screen showing the profile name, the grouped checklist skeleton and an enabled Launch button, and fails above 2000 ms on the packaged build (scenario mark-flight)."
+      - "An E2E test measures from process start to the Play screen showing the profile name, the grouped checklist skeleton and an enabled Launch button, and fails above 2000 ms on the packaged build (scenario mark-flight)."
       - "Check results arrive progressively after first paint; the screen does not wait for all checks to render."
       - "The measurement is recorded in the test output so regressions are visible."
     notes:
-      - "2026-10-03: measured on the packaged build on the owner's PC: about 760 ms from process start to a usable Fly screen (printed by the packaged smoke as 'packaged: Fly screen usable N ms')."
+      - "2026-10-03: measured on the packaged build on the owner's PC: about 760 ms from process start to a usable Play screen (printed by the packaged smoke as 'packaged: Play screen usable N ms')."
     status: done
     evidence:
       - "src/features/fly/core/fly.test.ts#streams results of a tagged run, and a newer run silences an older, slower one"
       - "src/features/fly/core/fly.test.ts#opens on the last used setup and draws its checklist before checking"
-      - "tests/packaged/packaged.e2e.ts#the packaged app shows a usable Fly screen within two seconds of starting"
+      - "tests/packaged/packaged.e2e.ts#the packaged app shows a usable Play screen within two seconds of starting"
       - "tests/e2e/fly-depth.e2e.ts#fly: usable within two seconds of starting"
       - "artifacts/screens/packaged-startup-time/01-usable.png"
       - "artifacts/screens/fly-startup-time/01-usable.png"
@@ -506,12 +506,12 @@ requirements:
     area: fly
     priority: p0
     done_means:
-      - "The Fly screen is a single page with profile switcher, banner, checklist, Make ready, Launch and Stand down, and no configure-mode navigation in its main area."
-      - "A single control switches to Configure mode (profiles, bindings, backups, devices, settings) and back; the app always starts in Fly mode."
+      - "The Play screen is a single page with profile switcher, banner, checklist, Make ready, Launch and Stand down, and no configure-mode navigation in its main area."
+      - "A single control switches to Configure mode (profiles, bindings, backups, devices, settings) and back; the app always starts in Play mode."
       - "Screenshots artifacts/screens/fly/ and artifacts/screens/configure/ show visibly different layouts."
     status: done
     evidence:
-      - test: 'tests/e2e/fly-depth.e2e.ts#fly: the Fly screen is one page with its own controls'
+      - test: 'tests/e2e/fly-depth.e2e.ts#fly: the Play screen is one page with its own controls'
       - test: 'tests/e2e/fly-depth.e2e.ts#configure: one switch to Configure and back; the app starts in Fly'
       - 'artifacts/screens/fly/01-fly.png'
       - 'artifacts/screens/configure/01-configure.png'
@@ -522,7 +522,7 @@ requirements:
     area: fly
     priority: p1
     done_means:
-      - "While the Fly screen is open, unplugging a required device turns its item red within 2 s without a manual re-check (scenario mutation applied live: pedals-unplugged)."
+      - "While the Play screen is open, unplugging a required device turns its item red within 2 s without a manual re-check (scenario mutation applied live: pedals-unplugged)."
       - "Plugging it back turns it green within 2 s and updates the banner."
     status: done
     evidence:
@@ -536,12 +536,12 @@ requirements:
   # ---------------------------------------------------------------------------
 
   - id: WOW-FLY-001
-    title: The top of the Fly screen is a readiness dial, the setup's identity and the state in words
+    title: The top of the Play screen is a readiness dial, the setup's identity and the state in words
     job: fly
     area: fly
     priority: p2
     done_means:
-      - "The top of the Fly screen is one panel: a dial, the setup's name as the title of the screen (24 px or larger; it is also the switcher), the game under it, and the state as an icon and words (Checking…, Ready, Ready with warnings, Not ready with the count)."
+      - "The top of the Play screen is one panel: a dial, the setup's name as the title of the screen (24 px or larger; it is also the switcher), the game under it, and the state as an icon and words (Checking…, Ready, Ready with warnings, Not ready with the count)."
       - "The dial is an SVG ring with one segment per checklist item, in checklist order, and in its middle the number of checks met out of those that count (items switched off do not), in tabular numerals. A segment lights when its result arrives; while results are outstanding, the segments still waiting animate one after another round the ring."
       - "An item that is not met is drawn further out than the ring (a warning a little, a failure more), so the dial reads without colour. The dial is an image named '<met> of <total> checks met' for a screen reader."
       - "Checklist rows arrive staggered: each row starts 32 ms after the one above and takes 180 ms, eased out. Becoming ready is one transition of at most 200 ms, without a bounce or a loop."
@@ -555,8 +555,8 @@ requirements:
       - "tests/e2e/fly-hero.e2e.ts#hero: the dial counts the checks met, a failing item stands out of the ring, and getting ready is one change of state"
       - "tests/e2e/fly-hero.e2e.ts#hero: the dial moves while checks run, rows arrive one after another, and none of it moves under reduced motion"
       - "tests/e2e/fly-depth.e2e.ts#fly: usable within two seconds of starting"
-      - "tests/e2e/a11y.e2e.ts#a11y: the Fly screen passes axe when ready, when not ready and while Make ready runs"
-      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "tests/e2e/a11y.e2e.ts#a11y: the Play screen passes axe when ready, when not ready and while Make ready runs"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Play screen from Not ready through Make ready to Launch, without a mouse"
       - "artifacts/screens/fly-hero/01-not-ready.png"
       - "artifacts/screens/fly-hero/02-ready.png"
       - "artifacts/screens/fly-hero-checking/01-checking.png"
@@ -567,7 +567,7 @@ requirements:
     area: fly
     priority: p2
     done_means:
-      - "The Fly screen has one primary action, first among the buttons, larger, with the key that runs it on the button: 'Make ready and launch' while the rig is not ready and RigReady can fix something; 'Launch' otherwise (green only once the rig is known to be ready); 'Make ready' for a setup with nothing to launch. The separate Make ready, Launch, Re-check all and Stand down actions stay, with their test ids."
+      - "The Play screen has one primary action, first among the buttons, larger, with the key that runs it on the button: 'Make ready and launch' while the rig is not ready and RigReady can fix something; 'Launch' otherwise (green only once the rig is known to be ready); 'Make ready' for a setup with nothing to launch. The separate Make ready, Launch, Re-check all and Stand down actions stay, with their test ids."
       - "'Make ready and launch' asks first for every confirmation it will need, then runs the fixes in Make ready's order, shown as steps (Monitors, Audio, Files, Devices, Apps, Scripts, Re-check, Launch) each in its state; it waits for the keep-layout answer before anything after the monitors runs; it checks everything again; and it starts the game only when every required check is met."
       - "When something required is still not met it stops: the launch step is 'not started', the screen says 'Not launched: N required items still need you' with each item and its reason, and offers 'Launch anyway', which launches with one click. Nothing is launched past a required failure without that click. When the missing thing comes back by itself, the warning goes and Launch is offered."
       - "Enter runs the primary action when nothing has the focus. A focused control keeps Enter for itself, and so does an open dialog or menu. With something required missing and nothing to fix, Enter opens the 'Launch anyway?' question; it does not launch."
@@ -586,7 +586,7 @@ requirements:
       - "tests/e2e/fly-one-action.e2e.ts#one action: the pedals come back while it is held, and the screen offers Launch instead of the warning"
       - "tests/e2e/fly-one-action.e2e.ts#one action: Enter launches a ready rig; a focused control and an open question keep Enter for themselves"
       - "tests/e2e/fly-one-action.e2e.ts#one action: a setup with nothing to launch offers Make ready as its one action"
-      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Play screen from Not ready through Make ready to Launch, without a mouse"
       - "artifacts/screens/fly-one-action/01-not-ready.png"
       - "artifacts/screens/fly-one-action/02-waiting-for-the-layout-answer.png"
       - "artifacts/screens/fly-one-action/03-launched.png"
@@ -601,14 +601,14 @@ requirements:
     area: fly
     priority: p2
     done_means:
-      - "After a launch the Fly screen shows the session: which game is running, 'Session in progress since <time>', and a running clock (h:mm:ss, tabular numerals). A game handed to Steam is shown as waited for, and its session begins when the game's own program runs; one that never shows up within fifteen minutes is not a session. While the game runs, Enter starts nothing."
+      - "After a launch the Play screen shows the session: which game is running, 'Session in progress since <time>', and a running clock (h:mm:ss, tabular numerals). A game handed to Steam is shown as waited for, and its session begins when the game's own program runs; one that never shows up within fifteen minutes is not a session. While the game runs, Enter starts nothing."
       - "When the game's program is gone (RigReady looks every two seconds), the screen says 'Welcome back' with the setup, how long the session was and when it closed, and Stand down becomes the primary action, on Enter. Dismiss puts the screen back without standing down. Stand down used while the game was still open leaves nothing to offer when it closes."
-      - "A setting in the Fly menu, off by default, stands down by itself when the game closes; the screen then says what Stand down did, or that it did not finish."
+      - "A setting in the Play menu, off by default, stands down by itself when the game closes; the screen then says what Stand down did, or that it did not finish."
       - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and either 'Stand down when you are done' or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
       - "Every session is recorded in {RIGREADY_HOME}/fly/sessions.json: setup, game, start, length, seconds from opening the setup to every required check being met, what had to be fixed (by Make ready or a fix button), the first required item that was not met, and whether it was launched not ready. A game whose programs RigReady does not know is recorded without a length. A session in progress survives a restart of RigReady: it is picked up when the game still runs, and recorded without a length when it closed meanwhile."
       - "A damaged history file is left exactly as it is and named; the history goes on in the next file (sessions.1.json ...). The newest thousand sessions are kept."
       - "Under the setup's name the screen says 'Last session <today | yesterday | weekday | date>, <length>', or 'No session yet': the same words for every game, with no word of flying, so they read naturally to someone who only races. While a setup's first session is under way the line does not say there was none."
-      - "History, from the Fly menu: one line of totals ('12 sessions, 14 h; TrackIR needed starting 6 times'), the number of sessions, time in the game, the usual time to ready, how often it was launched not ready, what needed fixing most often, and every session newest first with its length, time to ready, what was fixed and what was not met first."
+      - "History, from the Play menu: one line of totals ('12 sessions, 14 h; TrackIR needed starting 6 times'), the number of sessions, time in the game, the usual time to ready, how often it was launched not ready, what needed fixing most often, and every session newest first with its length, time to ready, what was fixed and what was not met first."
     status: done
     evidence:
       - "src/features/fly/core/sessions.test.ts#starts when the game runs, lasts while it runs, and ends when its program is gone: recorded with its length"
@@ -653,7 +653,7 @@ requirements:
     area: fly
     priority: p2
     done_means:
-      - "Under the top of the Fly screen a strip draws every monitor that is on, to scale and in its place (one scale for both directions), with the main display outlined; monitors that are off are named under the drawing. The monitors are read through the display port, named as the checklist names them (the owner's name, or the monitor's own, numbered when several share it)."
+      - "Under the top of the Play screen a strip draws every monitor that is on, to scale and in its place (one scale for both directions), with the main display outlined; monitors that are off are named under the drawing. The monitors are read through the display port, named as the checklist names them (the owner's name, or the monitor's own, numbered when several share it)."
       - "While the setup's monitor check is not met, the monitor that differs is drawn with a dashed outline and a named sign, and what differs is said in words under the drawing ('USB_Monitor (2 of 3): rotated 0°, expected 90°'; '...: not connected' for one that is unplugged). A saved layout the check names is what the monitors are compared with, as for the check itself. A setup that expects nothing of the monitors shows them with nothing marked. When Windows does not report the monitors, the strip says why."
       - "The setup's device items are chips: an icon by kind of device (stick, throttle, pedals, wheel, display unit, panel, head tracker, button deck, ...), the name (without the maker most of them share; the whole name and what the check found are in the tooltip), and a state icon with a name. A chip that is not met has its own outline as well as its icon."
       - "Choosing a monitor or a device opens its checklist group if it is folded, brings its row into view, tints it for a moment and puts the keyboard focus on it."
@@ -687,8 +687,8 @@ requirements:
     area: fly
     priority: p2
     done_means:
-      - "'Compact view' in the Fly menu opens one small window that stays on top of the others (asked for again, the same window comes forward). It shows the readiness dial, the setup switcher, the state in words and the one action of the Fly screen, with Re-check and Stand down at the foot; nothing in it needs scrolling."
-      - "The one action is the Fly screen's: Make ready and launch, Launch, or Stand down after a session, on Enter as well. The 'Keep this layout?' question is answered in the small window too. Launching hides the main window as the user's setting says; the small window stays, with the session and its clock, then 'Welcome back' and Stand down."
+      - "'Compact view' in the Play menu opens one small window that stays on top of the others (asked for again, the same window comes forward). It shows the readiness dial, the setup switcher, the state in words and the one action of the Play screen, with Re-check and Stand down at the foot; nothing in it needs scrolling."
+      - "The one action is the Play screen's: Make ready and launch, Launch, or Stand down after a session, on Enter as well. The 'Keep this layout?' question is answered in the small window too. Launching hides the main window as the user's setting says; the small window stays, with the session and its clock, then 'Welcome back' and Stand down."
       - "Launch on a rig that is not ready launches nothing: the button becomes 'Launch anyway', with what is not met in words and a Cancel. When Make ready and launch stops on something required, the same is offered. 'Launch anyway' is a click (or the button focused and pressed): Enter with nothing focused does not run it, and the Enter hint is not shown on it."
       - "A fix or a launch step that runs a program has to be shown to the user before it runs, and the small window has no room for that: the action is then disabled there, with the reason in words, and one button brings the full window back (on a monitor that is on; where it is when the monitors cannot be read)."
       - "A setup chosen in one window is the setup in every window of RigReady: the main process says when the setup in use changes, and only then."
@@ -719,7 +719,7 @@ requirements:
     area: fly
     priority: p2
     done_means:
-      - "When the setup on screen is missing a device it requires and every device another setup requires is connected, the Fly screen offers that setup in one line under the setup's name: 'Wheel connected: switch to iRacing?', with the device that gave it away and how many of this setup's devices are not here, and two buttons, Switch and Not now. It names the kind of device (wheel, pedals, stick, ...), or the device itself when its kind is not known, and the device it names is one the two setups do not share."
+      - "When the setup on screen is missing a device it requires and every device another setup requires is connected, the Play screen offers that setup in one line under the setup's name: 'Wheel connected: switch to iRacing?', with the device that gave it away and how many of this setup's devices are not here, and two buttons, Switch and Not now. It names the kind of device (wheel, pedals, stick, ...), or the device itself when its kind is not known, and the device it names is one the two setups do not share."
       - "It only offers: nothing is switched and nothing runs by itself. Switch goes to the offered setup; Not now is the end of that offer for as long as RigReady runs. Enter on one of its buttons is that button's, not the screen's one action."
       - "Only devices a setup requires count (optional and switched-off items decide nothing; a setup that requires no device is never offered and never contradicted). Of several setups whose devices are all here, the one used most recently is offered. The offer follows the machine: it goes when the device is unplugged and comes back when it is plugged in again."
       - "The device list is read once for all the setups, and nothing but devices is looked at."
@@ -735,7 +735,7 @@ requirements:
       - "src/features/fly/core/suggest.test.ts#names the device that tells the two setups apart, not one they share"
       - "src/features/fly/core/suggest.test.ts#looks at the machine once for all the setups"
       - "src/features/fly/core/suggest.test.ts#nothing else of a setup is looked at: only its devices"
-      - "tests/e2e/fly-suggest.e2e.ts#suggestion: with the wheel connected and the flight gear not, the Fly screen offers the racing setup, and Switch goes there"
+      - "tests/e2e/fly-suggest.e2e.ts#suggestion: with the wheel connected and the flight gear not, the Play screen offers the racing setup, and Switch goes there"
       - "tests/e2e/fly-suggest.e2e.ts#suggestion: Not now is the end of it for that setup, and an offer follows the gear when it is unplugged"
       - "tests/e2e/fly-suggest.e2e.ts#suggestion: a rig whose gear is the setup on screen is offered nothing"
       - "artifacts/screens/fly-suggest/01-the-offer.png"
@@ -747,10 +747,10 @@ requirements:
     area: fly
     priority: p2
     done_means:
-      - "'Ready tone' in the Fly menu, off as installed, switches on two short, quiet notes (a rising fifth, E5 then B5, made on the spot with Web Audio: there is no sound file) that play when the rig becomes ready: from not ready, or from not yet known, to Ready or Ready with warnings. Staying ready, a re-check and becoming not ready are silent."
+      - "'Ready tone' in the Play menu, off as installed, switches on two short, quiet notes (a rising fifth, E5 then B5, made on the spot with Web Audio: there is no sound file) that play when the rig becomes ready: from not ready, or from not yet known, to Ready or Ready with warnings. Staying ready, a re-check and becoming not ready are silent."
       - "Switched on, it is played once, so that what was switched on is heard; switching it off is silent. The choice is stored with the other Fly preferences (fly/preferences.json), validated, and kept across restarts; changing it does not undo the other preferences."
       - "A note is a sine that never gets louder than a small part of full volume, fades in over a few milliseconds so it does not click, and fades out to silence. One audio context is used however often it plays."
-      - "When the sound system does not start or there is none, nothing is scheduled to sound later, and the Fly screen says that the tone could not be played and why."
+      - "When the sound system does not start or there is none, nothing is scheduled to sound later, and the Play screen says that the tone could not be played and why."
     status: done
     evidence:
       - "src/features/fly/renderer/tone.test.ts#is two short notes, the second a fifth above the first, over in under half a second"
@@ -765,8 +765,8 @@ requirements:
       - "tests/unit/settingsInventory.test.ts#each has a default before anything is saved"
       - "tests/unit/settingsInventory.test.ts#each is stored as JSON under the data root and read back after a restart"
       - "tests/unit/settingsInventory.test.ts#each is validated: a value that is not allowed is refused and nothing changes"
-      - "tests/e2e/fly-tone.e2e.ts#ready tone: silent until switched on in the Fly menu; then two quiet notes each time the rig becomes ready"
-      - "tests/e2e/fly-tone.e2e.ts#ready tone: on a PC whose sound system does not start, the Fly screen says the tone could not be played"
+      - "tests/e2e/fly-tone.e2e.ts#ready tone: silent until switched on in the Play menu; then two quiet notes each time the rig becomes ready"
+      - "tests/e2e/fly-tone.e2e.ts#ready tone: on a PC whose sound system does not start, the Play screen says the tone could not be played"
       - "artifacts/screens/fly-tone/01-the-setting.png"
       - "artifacts/screens/fly-tone-no-sound/01-could-not-be-played.png"
 
@@ -1256,13 +1256,13 @@ requirements:
     area: profiles
     priority: p0
     done_means:
-      - "Before saving, a review lists every item that will be created, grouped as in Fly mode, each with a required/optional toggle and remove control."
-      - "Saving writes one YAML file under {RIGREADY_HOME}/profiles/ and opens the Fly screen on the new profile, which then passes all its checks on the unchanged rig (scenario mark-flight)."
+      - "Before saving, a review lists every item that will be created, grouped as in Play mode, each with a required/optional toggle and remove control."
+      - "Saving writes one YAML file under {RIGREADY_HOME}/profiles/ and opens the Play screen on the new profile, which then passes all its checks on the unchanged rig (scenario mark-flight)."
     status: done
     evidence:
       - "tests/e2e/capture.e2e.ts#a new rig: capture the current state into a setup, which is then Ready"
       - "tests/e2e/capture.e2e.ts#first run: welcome, what was found on this PC, and two clicks to a Ready DCS F/A-18C setup"
-      - "src/features/profiles/core/profiles.test.ts#creating from the capture opens the Fly screen on the new setup; every part can be skipped"
+      - "src/features/profiles/core/profiles.test.ts#creating from the capture opens the Play screen on the new setup; every part can be skipped"
       - "artifacts/screens/first-run/02-capture.png"
       - "artifacts/screens/profile-capture/04-capture.png"
       - "artifacts/screens/profile-capture/06-ready.png"
@@ -1297,12 +1297,12 @@ requirements:
       - "In the editor the user can add an item of any registered check type, edit every field of an existing item, remove it and reorder it by drag or up/down."
       - "Each item's required flag and timeout are editable."
       - "Adding a device check offers 'pick from connected devices' and 'press a button on it' rather than typing VID/PID; typing is still allowed."
-      - "E2E: edit the TrackIR item to optional, save, return to Fly mode with mutation trackir-not-running, and see a yellow item."
+      - "E2E: edit the TrackIR item to optional, save, return to Play mode with mutation trackir-not-running, and see a yellow item."
     status: done
     evidence:
       - 'src/features/profiles/core/profiles.test.ts#names the device a button was pressed on; buttons already held do not count'
       - 'src/features/profiles/core/profiles.test.ts#every field of every registered check and fix type has a control'
-      - 'tests/e2e/profiles.e2e.ts#setups: an item made optional is yellow on the Fly screen'
+      - 'tests/e2e/profiles.e2e.ts#setups: an item made optional is yellow on the Play screen'
       - 'tests/e2e/profiles.e2e.ts#setups: a device is added by pressing a button on it'
       - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'artifacts/screens/profile-edit-item/01-editing-trackir.png'
@@ -1367,7 +1367,7 @@ requirements:
       - "Named display layouts and backups referenced by the profile are not deleted."
     status: done
     evidence:
-      - 'src/features/profiles/core/profiles.test.ts#deletes into an undoable backup, and the Fly screen falls back'
+      - 'src/features/profiles/core/profiles.test.ts#deletes into an undoable backup, and the Play screen falls back'
       - 'tests/e2e/profiles.e2e.ts#setups: clone, copy items from another setup, delete with a confirm; broken files are listed with the reason'
       - 'artifacts/screens/profile-clone-copy/04-delete-confirm.png'
       - 'artifacts/screens/profile-clone-copy/05-in-safety.png'
@@ -1398,7 +1398,7 @@ requirements:
     priority: p1
     done_means:
       - "'Open in editor' opens the profile YAML in the system's default editor via Shell (argument array), and 'Show file' opens Explorer at it."
-      - "Changes saved on disk are picked up within 2 s by a file watcher; the Fly screen re-renders the active profile and re-runs checks."
+      - "Changes saved on disk are picked up within 2 s by a file watcher; the Play screen re-renders the active profile and re-runs checks."
       - "A hand edit that breaks the schema keeps the last valid in-memory version active and shows a banner with the validation error until fixed."
       - "Comments and key order in a hand-edited file survive a round trip only if RigReady did not edit that profile; when RigReady saves, it warns once that comments will be lost (or preserves them if the chosen YAML library supports it)."
     status: done
@@ -1693,7 +1693,7 @@ requirements:
     status: done
     evidence:
       - "tests/e2e/devices-bindings.e2e.ts#tester: pressing a control shows what it is bound to in the chosen aircraft, and a device opens its DCS bindings"
-      - "tests/e2e/devices-bindings.e2e.ts#diagnose: a failing device on the Fly screen opens that device on the Devices page, connected or not"
+      - "tests/e2e/devices-bindings.e2e.ts#diagnose: a failing device on the Play screen opens that device on the Devices page, connected or not"
       - "tests/e2e/devices.e2e.ts#devices: an unplugged device says where it was last plugged in, on Fly and in Devices"
       - "tests/unit/bindingsAcrossFeatures.test.ts#a device detail links to its DCS bindings, by DirectInput GUID (DEV-004)"
       - "artifacts/screens/devices-bound/01-device-detail.png"
@@ -2108,7 +2108,7 @@ requirements:
     priority: p1
     done_means:
       - "When more than one DCS install is detected, the profile stores which one it uses, and {DCS_INSTALL}/{DCS_USER} resolve to that install's paths."
-      - "If the chosen install disappears, the Fly screen shows an error item 'DCS install not found' instead of launching the wrong one."
+      - "If the chosen install disappears, the Play screen shows an error item 'DCS install not found' instead of launching the wrong one."
     status: done
     evidence:
       - "tests/unit/crossFeature.test.ts#resolves {DCS_INSTALL} and {DCS_USER} to that install for its checks, its launch and its scripts"
@@ -3314,7 +3314,7 @@ requirements:
     priority: p1
     done_means:
       - "After restore, a report lists restored, skipped, kept-both and failed entries with reasons; success is claimed only for files whose hash matches the backup after writing."
-      - "The report offers 'Run checks now' which opens the Fly screen."
+      - "The report offers 'Run checks now' which opens the Play screen."
       - "E2E: restore the fixture backup into an empty temp profile and assert files and report (screenshot artifacts/screens/restore/)."
     status: done
     evidence:
@@ -3557,7 +3557,7 @@ requirements:
       - 'src/features/sharing/core/sharing.test.ts#undoing an import takes back the files and removes the setup it created'
       - 'tests/unit/disabledChecks.test.ts#is not run, is reported as off, and does not count for readiness'
       - 'tests/unit/disabledChecks.test.ts#is not fixed by Make ready, by its own fix, or touched by Stand down'
-      - 'tests/e2e/share-selective.e2e.ts#setups: a check switched off in the editor is shown as Off on the Fly screen and does not count'
+      - 'tests/e2e/share-selective.e2e.ts#setups: a check switched off in the editor is shown as Off on the Play screen and does not count'
       - 'tests/e2e/share-selective.e2e.ts#share: checks for devices a PC does not have are imported switched off, and Undo removes the setup with the files'
       - 'tests/e2e/share-selective.e2e.ts#share: imported binding files under another PC''s device IDs open Bindings, Device IDs, ready to move'
       - 'tests/e2e/sharing.e2e.ts#share: review personal details and what runs, save a .rigready file, import it on another PC'
@@ -4256,12 +4256,12 @@ requirements:
     area: simapppro
     priority: p2
     done_means:
-      - "When MonitorSetup files, options.lua multiMonitorSetup or Export.lua change outside RigReady since the last check, the Fly screen shows a warning naming the file and offering the journal-style diff and 'Restore RigReady version'."
+      - "When MonitorSetup files, options.lua multiMonitorSetup or Export.lua change outside RigReady since the last check, the Play screen shows a warning naming the file and offering the journal-style diff and 'Restore RigReady version'."
       - "Scenario mutation simapppro-rewrote-monitorsetup triggers the warning."
     status: done
     evidence:
       - "src/features/dcs-setup/core/service.test.ts#notices SimAppPro rewriting the monitor setup choice, and restores RigReady's version"
-      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: simapppro-rewrote-monitorsetup — SimAppPro puts its setup back into options.lua, the Fly screen warns and restores"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: simapppro-rewrote-monitorsetup — SimAppPro puts its setup back into options.lua, the Play screen warns and restores"
       - "artifacts/screens/dcs-setup-simapppro-rewrote/01-simapppro-page-changed.png"
       - "artifacts/screens/dcs-setup-simapppro-rewrote/02-fly-warning.png"
 
@@ -4387,16 +4387,16 @@ requirements:
     priority: p0
     done_means:
       - "The packaged smoke test builds the unpacked app and, against the real machine, enumerates devices and displays with non-empty results and no missing-module errors (asar, native modules, Python sidecar)."
-      - "The same smoke runs a scenario (mark-flight) against the packaged app and reaches the Fly screen."
+      - "The same smoke runs a scenario (mark-flight) against the packaged app and reaches the Play screen."
       - "CI fails if the packaged smoke fails."
     notes:
-      - "2026-10-03: measured on the rig by the packaged smoke: 62 USB devices, 5 displays, 12 DirectInput controllers; Fly screen usable 911 to 1461 ms after process start (limit 2000). CI has a job of its own for the packaged smoke; on a runner the tests that need a controller or a desktop skip themselves and the enumeration only has to answer. The CI job has not run on GitHub yet (nothing was pushed)."
+      - "2026-10-03: measured on the rig by the packaged smoke: 62 USB devices, 5 displays, 12 DirectInput controllers; Play screen usable 911 to 1461 ms after process start (limit 2000). CI has a job of its own for the packaged smoke; on a runner the tests that need a controller or a desktop skip themselves and the enumeration only has to answer. The CI job has not run on GitHub yet (nothing was pushed)."
     status: done
     evidence:
       - "tests/packaged/packaged.e2e.ts#the package contains the native module outside the asar and the Python sidecar"
       - "tests/packaged/packaged.e2e.ts#the packaged app enumerates the real machine: devices, displays, processes, audio, DirectInput"
       - "tests/packaged/packaged.e2e.ts#the packaged app runs a scenario: TrackIR not running, Make ready, Ready"
-      - "tests/packaged/packaged.e2e.ts#the packaged app shows a usable Fly screen within two seconds of starting"
+      - "tests/packaged/packaged.e2e.ts#the packaged app shows a usable Play screen within two seconds of starting"
       - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, and none of them may fail quietly"
       - "artifacts/screens/packaged-smoke/01-made-ready.png"
       - "artifacts/screens/packaged-startup-time/01-usable.png"
@@ -4606,7 +4606,7 @@ requirements:
     priority: p1
     done_means:
       - "On first run (empty data root) the app explains in one screen what it does and offers 'Create a setup from this rig' (CFG-PROFILE-001) and 'Restore from a backup' (BACKUP-007)."
-      - "E2E with an empty RIGREADY_HOME reaches the Fly screen with a new profile in under 10 user actions."
+      - "E2E with an empty RIGREADY_HOME reaches the Play screen with a new profile in under 10 user actions."
     status: done
     evidence:
       - "src/features/fly/core/welcome.test.ts#says which games, game controllers and monitors were found on this PC"
@@ -4659,21 +4659,21 @@ requirements:
   # ---------------------------------------------------------------------------
 
   - id: WOW-WIN-001
-    title: Start RigReady to fly (--fly, --make-ready, --setup)
+    title: Start RigReady to fly (--launch, --make-ready, --setup)
     job: fly
     area: one-click
     priority: p2
     done_means:
-      - "RigReady.exe --fly \"<setup id or name>\" on a cold start checks the setup, runs every available fix in Make ready order and launches the game; --make-ready stops before launching; --setup only makes it the setup in use. It goes through the same IPC handlers the Fly screen and the tray use (E2E on scenario one-click-fly: the monitor layout is applied and still asks 'Keep this layout?', TrackIR is started before the game)."
-      - "The game is started only when every required item is met: with the pedals unplugged --fly stops with the window in front, one line per unmet item on it, and no program started. A fix that fails, a layout that is not kept and a step before launch that must not fail stop it the same way."
+      - "RigReady.exe --launch \"<setup id or name>\" on a cold start checks the setup, runs every available fix in Make ready order and launches the game; --make-ready stops before launching; --setup only makes it the setup in use. It goes through the same IPC handlers the Play screen and the tray use (E2E on scenario one-click-fly: the monitor layout is applied and still asks 'Keep this layout?', TrackIR is started before the game)."
+      - "The game is started only when every required item is met: with the pedals unplugged --launch stops with the window in front, one line per unmet item on it, and no program started. A fix that fails, a layout that is not kept and a step before launch that must not fail stop it the same way."
       - "An unknown setup, a name two setups share and a flag without a setup open the window and say so, naming the setups there are; nothing is checked or started."
-      - "The window shows the command on every screen while it runs (what it is doing, which fix, how many of how many) and how it ended; 'Do not launch' keeps a --fly command that is still checking or making ready from starting the game."
-      - "The arguments are read by a pure function with unit tests: --fly \"<setup>\" and --fly=<setup>, other switches left alone, a missing setup or two actions reported in words."
+      - "The window shows the command on every screen while it runs (what it is doing, which fix, how many of how many) and how it ended; 'Do not launch' keeps a --launch command that is still checking or making ready from starting the game."
+      - "The arguments are read by a pure function with unit tests: --launch \"<setup>\" and --launch=<setup>, other switches left alone, a missing setup or two actions reported in words."
     notes:
-      - "2026-10-04: decisions. (1) Fixes that run a program the user must confirm are not run, as from the tray: nobody is asked from a shortcut, so such an item stays unmet and the command stops and says so. (2) Optional items never stop it; when some are not met the result names them and is amber. (3) Make ready is skipped when the check finds nothing to fix, so a ready rig launches at once. (4) 'Do not launch' cannot interrupt a fix that is running (neither can the Fly screen): it lets Make ready finish and then does not launch, and says exactly that. (5) A setup with nothing to launch is made ready and the command says there is nothing to launch."
+      - "2026-10-04: decisions. (1) Fixes that run a program the user must confirm are not run, as from the tray: nobody is asked from a shortcut, so such an item stays unmet and the command stops and says so. (2) Optional items never stop it; when some are not met the result names them and is amber. (3) Make ready is skipped when the check finds nothing to fix, so a ready rig launches at once. (4) 'Do not launch' cannot interrupt a fix that is running (neither can the Play screen): it lets Make ready finish and then does not launch, and says exactly that. (5) A setup with nothing to launch is made ready and the command says there is nothing to launch."
     status: done
     evidence:
-      - "src/core/commandLine.test.ts#reads --fly, --make-ready and --setup with the setup as the next argument"
+      - "src/core/commandLine.test.ts#reads --launch, --make-ready and --setup with the setup as the next argument"
       - "src/core/commandLine.test.ts#reads the one-value form a shortcut carries, quoted or not"
       - "src/core/commandLine.test.ts#leaves everything else alone: the program, the app folder, Chromium switches, --hidden"
       - "src/core/commandLine.test.ts#says what is wrong when the setup is missing or two actions are asked for"
@@ -4687,8 +4687,8 @@ requirements:
       - "tests/unit/rigCommand.test.ts#--make-ready runs the fixes and stops before launching"
       - "tests/unit/rigCommand.test.ts#--setup only makes it the setup in use"
       - "tests/unit/rigCommand.test.ts#an unknown setup opens the window and says so, with the setups there are"
-      - test: "tests/e2e/one-click.e2e.ts#one click: --fly on a cold start arranges the monitors, starts TrackIR and launches"
-      - test: "tests/e2e/one-click.e2e.ts#one click: --fly stops in front of a required item that is not met, and says why"
+      - test: "tests/e2e/one-click.e2e.ts#one click: --launch on a cold start arranges the monitors, starts TrackIR and launches"
+      - test: "tests/e2e/one-click.e2e.ts#one click: --launch stops in front of a required item that is not met, and says why"
       - test: "tests/e2e/one-click.e2e.ts#one click: an unknown setup opens the window and names the setups there are"
       - test: 'tests/e2e/one-click.e2e.ts#one click: "Do not launch" while Make ready is still working keeps the game from starting'
       - "artifacts/screens/one-click-fly/01-keep-layout-asks.png"
@@ -4704,7 +4704,7 @@ requirements:
     area: one-click
     priority: p2
     done_means:
-      - "With RigReady running and its window closed to the tray, starting it again with --setup, --make-ready or --fly ends the second process with exit code 0, and the running one brings its window forward and does it (E2E: the setup is switched, TrackIR is started, the game is launched and the window gets out of the way as after any launch)."
+      - "With RigReady running and its window closed to the tray, starting it again with --setup, --make-ready or --launch ends the second process with exit code 0, and the running one brings its window forward and does it (E2E: the setup is switched, TrackIR is started, the game is launched and the window gets out of the way as after any launch)."
       - "The second start sends what it read from its own arguments, so Chromium reordering the raw arguments it passes along cannot part a flag from its setup."
       - "While a command, the tray or the window is already making ready, launching or standing down, a new command is refused: the window comes forward and shows what is running."
     status: done
@@ -4720,7 +4720,7 @@ requirements:
     area: profiles
     priority: p2
     done_means:
-      - "The setup editor has a 'Desktop shortcut' panel: 'Create desktop shortcut' writes \"<setup name> - RigReady.lnk\" on the Desktop (characters a file name cannot hold become dashes: 'DCS F/A-18C' is 'DCS F-A-18C - RigReady.lnk') that starts this RigReady with --fly=<setup id>; a setup that launches nothing gets --make-ready."
+      - "The setup editor has a 'Desktop shortcut' panel: 'Create desktop shortcut' writes \"<setup name> - RigReady.lnk\" on the Desktop (characters a file name cannot hold become dashes: 'DCS F/A-18C' is 'DCS F-A-18C - RigReady.lnk') that starts this RigReady with --launch=<setup id>; a setup that launches nothing gets --make-ready."
       - "The panel shows whether the shortcut is there and still right: on the desktop; out of date (the setup was renamed, it starts another copy of RigReady, or it asks for the wrong thing); the name taken by a file that is not this setup's; not there. It can be updated and removed."
       - "Every change is shown first (the file and where it goes) and written through FileStore: one journaled action with a reason, a copy of whatever was replaced, Undo on the Safety page. A file that merely has the name is never removed."
       - "Success is reported only after the link was read back and starts this RigReady with this setup: under sabotage (the file written and put back, a link to another program handed back) the answer is an error."
@@ -4752,21 +4752,21 @@ requirements:
       - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the desktop shortcut the app makes is a .lnk Windows reads, and starting it flies the setup"
 
   - id: WOW-WIN-004
-    title: Jump List tasks "Fly <setup>"
+    title: Jump List tasks "Launch <setup>"
     job: fly
     area: one-click
     priority: p2
     done_means:
-      - "A right-click on RigReady's taskbar button offers 'Fly <setup>' for up to six setups, the most recently used first and the never used ones after them by name; each task starts RigReady with --fly=<setup id>. A setup that launches nothing is offered as 'Make ready: <setup>' with --make-ready."
+      - "A right-click on RigReady's taskbar button offers 'Launch <setup>' for up to six setups, the most recently used first and the never used ones after them by name; each task starts RigReady with --launch=<setup id>. A setup that launches nothing is offered as 'Make ready: <setup>' with --make-ready."
       - "The list is kept current: it follows a setup being used (switched to), renamed, created (cloned) and deleted, within a moment and without a restart (E2E through the fake taskbar)."
       - "Started with its arguments, a task flies its setup (E2E: a second start with the task's arguments launches)."
       - "Windows is told the list only when it is a different list; a failure to set it (no taskbar) is logged once as a warning and stops nothing."
     status: done
     evidence:
-      - 'tests/unit/taskbar.test.ts#offers "Fly <setup>" for the setups used most recently, then the others by name'
+      - 'tests/unit/taskbar.test.ts#offers "Launch <setup>" for the setups used most recently, then the others by name'
       - "tests/unit/taskbar.test.ts#is empty without setups and never longer than a list anybody reads"
       - "tests/unit/taskbar.test.ts#is told again only when it is a different thing: nothing is rewritten on every check"
-      - test: 'tests/e2e/taskbar.e2e.ts#taskbar: the Jump List offers "Fly <setup>" for the setups used most recently and follows setups used, renamed, cloned and deleted'
+      - test: 'tests/e2e/taskbar.e2e.ts#taskbar: the Jump List offers "Launch <setup>" for the setups used most recently and follows setups used, renamed, cloned and deleted'
       - test: "tests/e2e/taskbar.e2e.ts#taskbar: on a PC without setups the Jump List is empty, there is no badge, and the buttons are off"
       - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the Jump List is written for the setups used most recently, inside the profile RigReady runs in"
       - "artifacts/screens/taskbar-jump-list/01-three-setups.png"
@@ -4778,7 +4778,7 @@ requirements:
     priority: p2
     done_means:
       - "The taskbar button carries a badge for the setup in use: a green dot when ready, an amber triangle when ready with warnings, a red square when not ready (three shapes, never colour alone), with the status in words as its description ('DCS F/A-18C: Not ready (1 problem)') and in the thumbnail's tooltip. No badge until checks have run."
-      - "A progress bar shows in the button while a check somebody asked for, Make ready, Launch or Stand down runs, whoever started it (the window, the tray, a command): it fills as the fixes of Make ready end, and is gone when the action is over. The Fly screen's quiet re-check every few seconds shows nothing."
+      - "A progress bar shows in the button while a check somebody asked for, Make ready, Launch or Stand down runs, whoever started it (the window, the tray, a command): it fills as the fixes of Make ready end, and is gone when the action is over. The Play screen's quiet re-check every few seconds shows nothing."
       - "Three buttons under the window's thumbnail, Make ready, Launch and Stand down, do what the same lines of the tray menu do, and are off when those are (no setup, nothing to launch, something already running)."
       - "Everything goes through a Taskbar port whose fake remembers what it was told; the pictures are drawn by pure, unit-tested functions and saved as a picture a person can look at."
     notes:
@@ -4855,17 +4855,17 @@ requirements:
     area: one-click
     priority: p2
     done_means:
-      - "Packaged app on a scenario (the fake machine, never a real game): --fly on a cold start arranges the monitors, starts TrackIR and 'launches', and the real process list shows no DCS.exe or TrackIR5.exe started by it; --fly stops in front of a required item that is not met; a second RigReady.exe with --setup, --make-ready and --fly ends with exit code 0 and the one already running comes forward and does it."
-      - "Packaged app on the real Windows, in a profile of its own under a temp folder: the desktop shortcut made in the setup editor is a real .lnk (Windows' own reader says it starts this RigReady.exe with --fly=<setup id>); started the way a double-click starts it, a second RigReady hands over and the running one launches the setup's 'game' (a copy of Windows' ping.exe); the shortcut is removed again through the app."
-      - "The Jump List is written by Windows for the setups, the one used last first, each with --fly=<setup id>, inside the profile RigReady runs in; Windows makes the window's taskbar button and takes its badge, tooltip, progress and buttons; a hotkey chosen in Settings is registered with Windows and given back."
+      - "Packaged app on a scenario (the fake machine, never a real game): --launch on a cold start arranges the monitors, starts TrackIR and 'launches', and the real process list shows no DCS.exe or TrackIR5.exe started by it; --launch stops in front of a required item that is not met; a second RigReady.exe with --setup, --make-ready and --launch ends with exit code 0 and the one already running comes forward and does it."
+      - "Packaged app on the real Windows, in a profile of its own under a temp folder: the desktop shortcut made in the setup editor is a real .lnk (Windows' own reader says it starts this RigReady.exe with --launch=<setup id>); started the way a double-click starts it, a second RigReady hands over and the running one launches the setup's 'game' (a copy of Windows' ping.exe); the shortcut is removed again through the app."
+      - "The Jump List is written by Windows for the setups, the one used last first, each with --launch=<setup id>, inside the profile RigReady runs in; Windows makes the window's taskbar button and takes its badge, tooltip, progress and buttons; a hotkey chosen in Settings is registered with Windows and given back."
       - "The PC is left as it was found: the test asserts, before the app writes, that its Desktop is inside the test's own folder; the real Jump List folder is compared before and after; every hotkey is given back; the fake game is ended; the temp folder is removed."
     notes:
       - "2026-10-04: what the real machine taught. (1) Windows writes a Jump List below the Recent folder of the profile the program sees, so a run with a redirected profile never touches the real lists (measured: with that folder present the list lands there and the real folder does not change; without it Windows refuses the list, which RigReady logs once as a warning). (2) Electron refuses thumbnail buttons that carry the flag 'enabled', although its documentation lists it: the packaged run logged 'did not take the thumbnail buttons', and a measurement showed every call with that flag answered false and every call without it true. Enabled buttons now carry no flag. (3) Copying a .lnk keeps what it says, so the link is made under the data folder and put on the desktop through FileStore."
     status: done
     evidence:
-      - test: 'tests/packaged/oneClick.e2e.ts#packaged --fly on a scenario: the monitors are arranged, TrackIR is started, the game "launches", and no real program is started'
-      - test: "tests/packaged/oneClick.e2e.ts#packaged --fly stops in front of a required item that is not met"
-      - test: "tests/packaged/oneClick.e2e.ts#packaged second start: RigReady already running takes --setup, --make-ready and --fly from a second start and comes forward"
+      - test: 'tests/packaged/oneClick.e2e.ts#packaged --launch on a scenario: the monitors are arranged, TrackIR is started, the game "launches", and no real program is started'
+      - test: "tests/packaged/oneClick.e2e.ts#packaged --launch stops in front of a required item that is not met"
+      - test: "tests/packaged/oneClick.e2e.ts#packaged second start: RigReady already running takes --setup, --make-ready and --launch from a second start and comes forward"
       - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the desktop shortcut the app makes is a .lnk Windows reads, and starting it flies the setup"
       - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the Jump List is written for the setups used most recently, inside the profile RigReady runs in"
       - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: a hotkey chosen in Settings is registered with Windows and given back when it is turned off"
@@ -4921,7 +4921,7 @@ requirements:
     priority: p0
     done_means:
       - "Rig smoke measures full device enumeration (HID + DirectInput identities) on the owner's rig with about 16 devices and fails above 2000 ms; the time is printed."
-      - "Enumeration results are cached and refreshed on device change events so the Fly screen does not re-enumerate per check (unit test counts provider calls)."
+      - "Enumeration results are cached and refreshed on device change events so the Play screen does not re-enumerate per check (unit test counts provider calls)."
     notes:
       - "2026-10-03: the rig has 62 USB devices (hubs included) and 25 DirectInput identities, not about 16; a full enumeration takes 56-62 ms. The cache lives for one check run (src/core/checks/readCache.ts): every check of the run shares one device list, one process list, one audio read; the next run, which a device change event starts, enumerates again, so nothing stale is shown. The DCS bindings check reads through its own service (one more enumeration and two process lists per run, whatever the number of checks)."
     status: done
@@ -5142,7 +5142,7 @@ requirements:
     done_means:
       - "All statuses, health results and duplicate markers use icon plus text plus colour; an automated accessibility scan (axe) on the Fly and Configure screens reports no colour-contrast or name violations."
     notes:
-      - "2026-10-03: how it is held. The status classes rr-ok, rr-warn and rr-bad draw the status icon in front of coloured text themselves (src/renderer/styles.css), so a feature gets icon, text and colour from the class; a source audit fails any other way of colouring status. The axe scan runs on the Fly screen (ready, not ready, Make ready running, the launch warning), on every Configure route the features declare with their tabs, and on twelve scenarios with something wrong; where axe cannot judge a contrast the scan computes it. Nothing is excluded from the scan. Found and fixed: white text on filled buttons (2.5:1), the red token on raised panels (4.2:1), dialogs and spinners without names, two unnamed fields, a tooltip container that hid every contrast on the Fly screen from axe. The Fly screen is driven by keyboard only in tests/e2e/keyboard.e2e.ts. The tray badge has a shape per status and the words in its tooltip and menu."
+      - "2026-10-03: how it is held. The status classes rr-ok, rr-warn and rr-bad draw the status icon in front of coloured text themselves (src/renderer/styles.css), so a feature gets icon, text and colour from the class; a source audit fails any other way of colouring status. The axe scan runs on the Play screen (ready, not ready, Make ready running, the launch warning), on every Configure route the features declare with their tabs, and on twelve scenarios with something wrong; where axe cannot judge a contrast the scan computes it. Nothing is excluded from the scan. Found and fixed: white text on filled buttons (2.5:1), the red token on raised panels (4.2:1), dialogs and spinners without names, two unnamed fields, a tooltip container that hid every contrast on the Play screen from axe. The Play screen is driven by keyboard only in tests/e2e/keyboard.e2e.ts. The tray badge has a shape per status and the words in its tooltip and menu."
     status: done
     evidence:
       - "tests/unit/statusNotColourOnly.test.ts#every status-coloured element in every template has an icon and words"
@@ -5151,10 +5151,10 @@ requirements:
       - "tests/unit/themeContrast.test.ts#text on filled buttons and alerts is at least 4.5:1"
       - "tests/unit/themeContrast.test.ts#the focus ring stands out from every surface (3:1)"
       - "tests/unit/tray.test.ts#never says it by colour alone: each tone has its own badge shape and its words"
-      - "tests/e2e/a11y.e2e.ts#a11y: the Fly screen passes axe when ready, when not ready and while Make ready runs"
+      - "tests/e2e/a11y.e2e.ts#a11y: the Play screen passes axe when ready, when not ready and while Make ready runs"
       - "tests/e2e/a11y.e2e.ts#a11y: every Configure route passes axe on the full rig"
       - "tests/e2e/a11y.e2e.ts#a11y: scenarios with something wrong pass axe and never say it by colour alone"
-      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Play screen from Not ready through Make ready to Launch, without a mouse"
       - "artifacts/screens/a11y-fly/01-ready.png"
       - "artifacts/screens/a11y-fly-not-ready/01-not-ready.png"
       - "artifacts/screens/a11y-fly-not-ready/02-make-ready-running.png"

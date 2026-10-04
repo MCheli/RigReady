@@ -5,7 +5,7 @@ import { expect, test } from './harness';
 /**
  * NFR-011: status is never conveyed by colour alone, text is readable on the dark theme
  * (WCAG AA contrast), and every control has a name. Scanned with axe-core and with a look at
- * the rendered page (tests/e2e/a11y.ts) on the Fly screen in each of its states and on every
+ * the rendered page (tests/e2e/a11y.ts) on the Play screen in each of its states and on every
  * Configure route the features declare.
  */
 
@@ -53,7 +53,7 @@ async function scan(
   if (found.length > 0) problems[where] = found;
 }
 
-test('a11y: the Fly screen passes axe when ready, when not ready and while Make ready runs', async ({
+test('a11y: the Play screen passes axe when ready, when not ready and while Make ready runs', async ({
   rig,
 }) => {
   const problems: Problems = {};
@@ -151,7 +151,7 @@ test('a11y: every Configure route passes axe on the full rig', async ({ rig }) =
 
 /**
  * The states where status matters most: things missing, changed, duplicated, not running.
- * Each scenario is opened on the Fly screen and on the pages that show its problem, tabs
+ * Each scenario is opened on the Play screen and on the pages that show its problem, tabs
  * included.
  */
 const TROUBLED: { scenario: string; routes: string[] }[] = [

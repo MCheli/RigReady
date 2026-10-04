@@ -1,7 +1,7 @@
 description: Racing rig on the desk with the F/A-18C setup on screen (the wheel is connected, the flight gear is not)
 rig: mark-full
 extends: tour-racing.yaml
-# For the quiet suggestion on the Fly screen (WOW-FLY-006): every device the iRacing setup
+# For the quiet suggestion on the Play screen (WOW-FLY-006): every device the iRacing setup
 # requires is connected, and eleven devices of the setup that was used last are not.
 profiles:
   - profiles/dcs-f-a-18c.yaml

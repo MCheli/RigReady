@@ -111,7 +111,7 @@ const recognisedBy = (identity: DeviceIdentity): string =>
       ? 'Vendor and product ID, and the USB port it was on when the setup was captured'
       : 'Vendor and product ID';
 
-// ---- "Diagnose" on the Fly screen: open the device a checklist item is about ----
+// ---- "Diagnose" on the Play screen: open the device a checklist item is about ----
 const diagnosis = ref<{ title: string; profile: string; found: boolean } | { error: string }>();
 async function diagnose(profileId: string, itemId: string): Promise<void> {
   const result = await store.forCheck(profileId, itemId);

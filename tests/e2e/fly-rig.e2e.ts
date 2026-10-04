@@ -3,7 +3,7 @@ import { axeViolations, colourOnlyStatus } from './a11y';
 import { checkRow, expect, test } from './harness';
 
 /**
- * The rig at a glance: the strip under the top of the Fly screen that draws the monitors
+ * The rig at a glance: the strip under the top of the Play screen that draws the monitors
  * to scale and lists the setup's devices, so that a problem is a place and not only a row.
  */
 

@@ -6,7 +6,7 @@ import { axeViolations, colourOnlyStatus } from './a11y';
 import { checkRow, expect, test, type RunningApp } from './harness';
 
 /**
- * The session: what the Fly screen shows from Launch until the game has closed, what it
+ * The session: what the Play screen shows from Launch until the game has closed, what it
  * says then, and the record it keeps.
  */
 
@@ -41,7 +41,7 @@ const accessible = async (page: Page): Promise<unknown[]> => [
   ...(await colourOnlyStatus(page)),
 ];
 
-/** Ticks or unticks an entry of the Fly menu. */
+/** Ticks or unticks an entry of the Play menu. */
 async function menu(page: Page, entry: string): Promise<void> {
   await page.getByTestId('fly-more').click();
   await page.getByTestId(entry).click();

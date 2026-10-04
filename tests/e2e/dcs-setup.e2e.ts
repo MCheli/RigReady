@@ -346,7 +346,7 @@ test('dcs-setup: SimAppPro not running fails only the setup that uses WinWing ru
   await expect(checkRow(page, 'SimAppPro running')).toHaveAttribute('data-status', 'pass');
 });
 
-test('dcs-setup: simapppro-rewrote-monitorsetup — SimAppPro puts its setup back into options.lua, the Fly screen warns and restores', async ({
+test('dcs-setup: simapppro-rewrote-monitorsetup — SimAppPro puts its setup back into options.lua, the Play screen warns and restores', async ({
   rig,
 }) => {
   const run = await rig.launch('dcs-setup-flying', 'dcs-setup-simapppro-rewrote');

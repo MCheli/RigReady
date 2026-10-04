@@ -14,7 +14,7 @@ export const devicesContract = defineContract(
     /** Devices with names, controllers, location, HidHide state and what setups need. */
     overview: channel(noInput, OverviewSchema),
     /**
-     * Which device a checklist item of a setup is about (the Fly screen's "Diagnose" link):
+     * Which device a checklist item of a setup is about (the Play screen's "Diagnose" link):
      * its identity, and the connected devices that match it (RigDevice.key), if any.
      */
     forCheck: channel(

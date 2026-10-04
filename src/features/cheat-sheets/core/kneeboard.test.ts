@@ -382,7 +382,7 @@ describe('the check "kneeboard pages are up to date"', () => {
         id: 'kneeboard-fa-18c-hornet',
         type: KNEEBOARD_CHECK,
         title: 'Kneeboard cheat sheet for F/A-18C is up to date',
-        // A warning on the Fly screen, never a reason to be Not ready.
+        // A warning on the Play screen, never a reason to be Not ready.
         required: false,
         params,
         remediation: { type: KNEEBOARD_REGENERATE, params },

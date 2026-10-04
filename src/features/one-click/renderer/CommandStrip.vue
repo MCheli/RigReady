@@ -6,7 +6,7 @@ import { appContract, type CommandRun } from '../../../shared/appContract';
 
 /**
  * What RigReady was started to do, on every screen: a desktop shortcut, a Jump List task,
- * the hotkey or `RigReady.exe --fly "<setup>"` asks the shell to check, make ready and
+ * the hotkey or `RigReady.exe --launch "<setup>"` asks the shell to check, make ready and
  * launch. The shell does it; this strip shows how far it has got, lets the user keep the
  * game from launching while there is still time, and says why when it stopped.
  */
@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
           </div>
           <ul v-if="reasons.length > 0" class="strip-reasons" data-testid="command-reasons">
             <li v-for="reason in reasons" :key="reason">{{ reason }}</li>
-            <li v-if="moreReasons > 0">and {{ moreReasons }} more on the Fly screen</li>
+            <li v-if="moreReasons > 0">and {{ moreReasons }} more on the Play screen</li>
           </ul>
         </div>
         <div class="strip-actions">
@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
             data-testid="command-open-fly"
             @click="router.push('/fly')"
           >
-            Open the Fly screen
+            Open the Play screen
           </v-btn>
           <v-btn
             v-if="!going"

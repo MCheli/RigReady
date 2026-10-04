@@ -9,7 +9,7 @@ export interface TraySetup {
 }
 
 export interface TrayStatus {
-  /** The setup shown on the Fly screen. Undefined when there are no setups yet. */
+  /** The setup shown on the Play screen. Undefined when there are no setups yet. */
   profileId?: string;
   profileName?: string;
   /** Every setup, for the quick switch. */

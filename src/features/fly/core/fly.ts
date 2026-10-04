@@ -100,7 +100,7 @@ export function isSteamHandoff(profile: Pick<Profile, 'launch' | 'steamAppId'>):
 }
 
 /**
- * Fly mode on the main side. Holds what lives for the session: the newest check run (so a
+ * Play mode on the main side. Holds what lives for the session: the newest check run (so a
  * slower, older run never reports over a newer one), and the programs launch actions started.
  */
 export class Fly {
@@ -288,7 +288,7 @@ export class Fly {
     const found = await this.profile(profileId);
     if (!found.ok) return found;
     if (remember) await this.remember(profileId);
-    // Results stream as events only to a caller that tagged its run (the Fly screen).
+    // Results stream as events only to a caller that tagged its run (the Play screen).
     if (runId) this.latestRun = runId;
     const startedAt = this.ctx.ports.clock.now();
     const report = await runChecks(found.value.profile, this.ctx.checks, this.ctx, {

@@ -155,7 +155,7 @@ describe('DCS overview', () => {
   });
 });
 
-describe('DCS checks on the Fly screen', () => {
+describe('DCS checks on the Play screen', () => {
   it('monitor setup check warns when an MFD screen is rotated and clears after the layout fix', async () => {
     app = await wiredApp('flying-mfd-rotated', { files: FILES });
     const profile = await app.wiring.context.profiles.get('dcs-f-a-18c');

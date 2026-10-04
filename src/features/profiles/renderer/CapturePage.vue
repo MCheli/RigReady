@@ -386,7 +386,7 @@ onMounted(capture);
     <h1 class="rr-page-title">New setup from this rig</h1>
     <p class="rr-page-sub">
       Get the rig the way you fly or race, then keep what this setup needs. Everything that stays
-      ticked becomes a check on the Fly screen, with a fix where RigReady has one.
+      ticked becomes a check on the Play screen, with a fix where RigReady has one.
     </p>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4" data-testid="capture-error">{{
@@ -558,7 +558,7 @@ onMounted(capture);
                     >The Launch button starts {{ launchText }}.</span
                   >
                   <span v-else class="rr-row-sub" data-testid="capture-launch-text"
-                    >No program yet: the Fly screen will have no Launch button.</span
+                    >No program yet: the Play screen will have no Launch button.</span
                   >
                 </div>
                 <div class="cap-launch-fields">

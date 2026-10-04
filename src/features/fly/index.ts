@@ -11,7 +11,7 @@ export default defineFeature({
       meta: { mode: 'fly', title: 'Play' },
     },
     {
-      // The compact view: opened as a small window that stays on top (Fly menu).
+      // The compact view: opened as a small window that stays on top (Play menu).
       path: '/fly/compact',
       component: () => import('./renderer/CompactPage.vue'),
       meta: { mode: 'fly', title: 'Compact view' },

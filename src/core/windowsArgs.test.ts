@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { joinWindowsArgs, splitWindowsArgs } from './windowsArgs';
 
 const TRICKY = [
-  ['--fly=dcs-f-a-18c'],
-  ['--fly', 'DCS F/A-18C'],
-  ['C:\\Program Files\\RigReady\\RigReady.exe', '--fly=x'],
+  ['--launch=dcs-f-a-18c'],
+  ['--launch', 'DCS F/A-18C'],
+  ['C:\\Program Files\\RigReady\\RigReady.exe', '--launch=x'],
   ['C:\\some dir\\', 'trailing backslash before the closing quote'],
   ['say "hello"', 'a\\"b', '\\\\server\\share\\'],
   ['', 'empty before', ''],
@@ -16,8 +16,8 @@ const TRICKY = [
 
 describe('the arguments a Windows shortcut stores', () => {
   it('writes plain values as they are and quotes only what needs it', () => {
-    expect(joinWindowsArgs(['--fly=dcs-f-a-18c'])).toBe('--fly=dcs-f-a-18c');
-    expect(joinWindowsArgs(['--fly', 'DCS F/A-18C'])).toBe('--fly "DCS F/A-18C"');
+    expect(joinWindowsArgs(['--launch=dcs-f-a-18c'])).toBe('--launch=dcs-f-a-18c');
+    expect(joinWindowsArgs(['--launch', 'DCS F/A-18C'])).toBe('--launch "DCS F/A-18C"');
     expect(joinWindowsArgs(['C:\\repo', '--setup=a'])).toBe('C:\\repo --setup=a');
     expect(joinWindowsArgs(['C:\\some dir\\'])).toBe('"C:\\some dir\\\\"');
     expect(joinWindowsArgs(['say "hi"'])).toBe('"say \\"hi\\""');
@@ -34,8 +34,8 @@ describe('the arguments a Windows shortcut stores', () => {
   it('reads what a person typed into a shortcut by hand', () => {
     expect(splitWindowsArgs('')).toEqual([]);
     expect(splitWindowsArgs('   ')).toEqual([]);
-    expect(splitWindowsArgs('  --fly   "DCS F/A-18C"  ')).toEqual(['--fly', 'DCS F/A-18C']);
-    expect(splitWindowsArgs('--fly="DCS F/A-18C"')).toEqual(['--fly=DCS F/A-18C']);
+    expect(splitWindowsArgs('  --launch   "DCS F/A-18C"  ')).toEqual(['--launch', 'DCS F/A-18C']);
+    expect(splitWindowsArgs('--launch="DCS F/A-18C"')).toEqual(['--launch=DCS F/A-18C']);
     expect(splitWindowsArgs('"C:\\some dir\\app" --hidden')).toEqual([
       'C:\\some dir\\app',
       '--hidden',

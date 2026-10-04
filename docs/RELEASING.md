@@ -53,7 +53,7 @@ Copy this into the release's description or the pull request and fill it in. A r
 | Unit, lint, types, ledger | `npm run check` | |
 | Scenario end-to-end | `npm run test:e2e` | |
 | Real hardware, read-only | `npm run rig:smoke` | |
-| Packaged app: enumeration, scenario, live input, input reader failure, updater against a local feed, start with Windows | `npm run smoke:packaged` | Fly screen usable after ____ ms (limit 2000) |
+| Packaged app: enumeration, scenario, live input, input reader failure, updater against a local feed, start with Windows | `npm run smoke:packaged` | Play screen usable after ____ ms (limit 2000) |
 | Memory idle in the tray, ten minutes | `RIGREADY_MEMORY_SETTLE_SECONDS=600 npx playwright test --config playwright.packaged.config.ts -g "memory"` | ____ MB (limit 250) |
 | Installer: install without elevation, start, update on quit, uninstall keeps or removes data | `npm run smoke:installer` | |
 
@@ -62,7 +62,7 @@ Copy this into the release's description or the pull request and fill it in. A r
 Windows 11 (the rig):
 
 - [ ] Installs by double-click with no UAC prompt, into `%LOCALAPPDATA%\Programs\RigReady`; the installer never asks "for all users".
-- [ ] Start menu entry and desktop shortcut start it; the Fly screen shows the last setup.
+- [ ] Start menu entry and desktop shortcut start it; the Play screen shows the last setup.
 - [ ] Installing over the previous version keeps setups, backups and settings (`%USERPROFILE%\.rigready`).
 - [ ] The previous version, left running, finds this release after it is published (or point it at the draft's files with a local feed), downloads it, and installs it on quit.
 - [ ] "Restart to install" while a sim is running is refused with the sim's name.

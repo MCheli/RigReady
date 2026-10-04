@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { LaunchTargetSchema } from '../../shared/models';
 
-/** Checklist groups, in the order Fly mode shows them. */
+/** Checklist groups, in the order Play mode shows them. */
 export const CHECK_GROUPS = ['devices', 'apps', 'displays', 'audio', 'files', 'other'] as const;
 export const CheckGroupSchema = z.enum(CHECK_GROUPS);
 export type CheckGroup = z.infer<typeof CheckGroupSchema>;

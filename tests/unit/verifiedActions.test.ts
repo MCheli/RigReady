@@ -274,7 +274,7 @@ async function auditScenario(
       return true;
     };
 
-    // 2. The fix button of every item that is not met, through IPC as the Fly screen calls it.
+    // 2. The fix button of every item that is not met, through IPC as the Play screen calls it.
     for (const { profileId, itemId } of failingItems) {
       await audit('fly:fix', { profileId, itemId, confirmed: true });
     }

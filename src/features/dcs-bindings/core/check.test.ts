@@ -87,7 +87,7 @@ describe('the Fly check for bindings', () => {
       'Bindings for WINWING UFC1 + HUD1 belong to an old device ID (4F2206B0-9AA7-11ee-8023-444553540000)'
     );
 
-    // Make ready never leaves the Fly screen for it: the item is listed under "Needs you"
+    // Make ready never leaves the Play screen for it: the item is listed under "Needs you"
     // with its own button.
     const made = await app.invoke<ActionReport>('fly:makeReady', { profileId });
     expect(made.steps).toEqual([]);

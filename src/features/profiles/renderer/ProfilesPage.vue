@@ -148,17 +148,17 @@ onBeforeUnmount(() => off?.());
           <div class="rr-row-title">
             {{ entry.profile.name }}
             <span v-if="entry.profile.id === overview.lastProfileId" class="profiles-chip"
-              >on the Fly screen</span
+              >on the Play screen</span
             >
           </div>
           <div class="rr-row-sub">{{ describe(entry) }} · {{ used(entry.lastUsed) }}</div>
         </div>
         <v-btn
           variant="text"
-          prepend-icon="mdi-airplane-takeoff"
+          prepend-icon="mdi-play"
           data-testid="profile-fly"
           @click="fly(entry.profile)"
-          >Fly</v-btn
+          >Play</v-btn
         >
         <v-btn
           variant="text"

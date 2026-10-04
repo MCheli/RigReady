@@ -1,6 +1,6 @@
 /**
  * What the devices feature gets from the bindings feature through core (`ctx.bindings`),
- * and the Fly screen's "Diagnose" link: no feature imports another.
+ * and the Play screen's "Diagnose" link: no feature imports another.
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { BINDING_FILES, HORNET } from '../dcsBindings';

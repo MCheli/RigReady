@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, triggerRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { CATEGORIES } from '../core/categories';
@@ -424,7 +425,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div v-if="loading && !deck" class="rr-panel rr-empty">Reading the bindings…</div>
+      <PageSkeleton v-if="loading && !deck" label="Reading the bindings…" />
 
       <!-- Nothing to ask -->
       <div
@@ -640,7 +641,7 @@ onBeforeUnmount(() => {
         </ul>
       </div>
     </template>
-    <div v-else-if="!error && !store.error" class="rr-panel rr-empty">Reading the bindings…</div>
+    <PageSkeleton v-else-if="!error && !store.error" label="Reading the bindings…" />
   </div>
 </template>
 

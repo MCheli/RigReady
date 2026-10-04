@@ -25,26 +25,26 @@ describe('what the taskbar is told', () => {
     expect(told.news('the Jump List', '[]')).toBe(true);
     expect(told.news('the Jump List', '[]')).toBe(false);
     expect(told.news('the tooltip', '[]')).toBe(true);
-    expect(told.news('the Jump List', '[{"title":"Fly A"}]')).toBe(true);
-    expect(told.news('the Jump List', '[{"title":"Fly A"}]')).toBe(false);
+    expect(told.news('the Jump List', '[{"title":"Launch A"}]')).toBe(true);
+    expect(told.news('the Jump List', '[{"title":"Launch A"}]')).toBe(false);
     // Back to what it was before is news again.
     expect(told.news('the Jump List', '[]')).toBe(true);
   });
 });
 
 describe('WOW-WIN-004 the Jump List', () => {
-  it('offers "Fly <setup>" for the setups used most recently, then the others by name', () => {
+  it('offers "Launch <setup>" for the setups used most recently, then the others by name', () => {
     const tasks = jumpTasks({ profileId: 'huey', profileName: 'DCS UH-1H', profiles: setups });
     expect(tasks.map((t) => t.title)).toEqual([
-      'Fly DCS UH-1H',
-      'Fly DCS F/A-18C',
+      'Launch DCS UH-1H',
+      'Launch DCS F/A-18C',
       'Make ready: Bench test',
-      'Fly iRacing GT3',
+      'Launch iRacing GT3',
     ]);
     expect(tasks[0]).toEqual({
-      title: 'Fly DCS UH-1H',
+      title: 'Launch DCS UH-1H',
       description: 'Make the rig ready for DCS UH-1H and launch it',
-      args: ['--fly=huey'],
+      args: ['--launch=huey'],
     });
     // A setup with nothing to launch is asked for what it can do.
     expect(tasks[2]!.args).toEqual(['--make-ready=bench']);
@@ -67,7 +67,7 @@ describe('WOW-WIN-004 the Jump List', () => {
     }));
     const tasks = jumpTasks({ profiles: many });
     expect(tasks).toHaveLength(JUMP_LIST_SETUPS);
-    expect(tasks[0]!.title).toBe('Fly Setup 00');
+    expect(tasks[0]!.title).toBe('Launch Setup 00');
   });
 });
 

@@ -237,7 +237,7 @@ describe('Make ready and launch, on the wired app', () => {
     await app?.cleanup();
   });
 
-  /** The two calls as the Fly screen makes them, through IPC validation, with a note of each. */
+  /** The two calls as the Play screen makes them, through IPC validation, with a note of each. */
   const calls = (profileId: string, made: string[]): FlightCalls => {
     const call = async <T>(channel: string, input: unknown): Promise<Result<T>> => {
       made.push(channel);

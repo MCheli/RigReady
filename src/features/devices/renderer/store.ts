@@ -50,7 +50,7 @@ export const useDevicesStore = defineStore('devices', () => {
     return undefined;
   }
 
-  /** Which device a checklist item of a setup is about (the Fly screen's Diagnose link). */
+  /** Which device a checklist item of a setup is about (the Play screen's Diagnose link). */
   async function forCheck(
     profileId: string,
     itemId: string

@@ -11,7 +11,7 @@ import { useFlyStore, type LaunchOutcome } from './store';
 
 /**
  * The compact view: the dial, the setup switcher and the one action, small enough for a
- * corner of the screen. It is the same Fly screen with everything else left out: what it
+ * corner of the screen. It is the same Play screen with everything else left out: what it
  * cannot ask in so little room (a program that needs an OK before it runs) it leaves to
  * the full window, and says so.
  */
@@ -182,7 +182,7 @@ async function openMain(): Promise<void> {
   openError.value = shown.ok ? undefined : errorText(shown.error);
 }
 
-// ---- lifecycle: the same watching as the Fly screen ----
+// ---- lifecycle: the same watching as the Play screen ----
 let timer: ReturnType<typeof setInterval> | undefined;
 const offs: (() => void)[] = [];
 const refresh = (): void => {

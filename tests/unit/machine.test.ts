@@ -891,7 +891,11 @@ describe('scripted ports', () => {
       '',
       { mode: 'none' },
     ]);
-    const task = { title: 'Fly A', description: 'Make the rig ready for A', args: ['--fly=a'] };
+    const task = {
+      title: 'Launch A',
+      description: 'Make the rig ready for A',
+      args: ['--launch=a'],
+    };
     expect(await taskbar.setJumpTasks([task])).toEqual({ ok: true, value: undefined });
     await taskbar.setOverlay({ icon, description: 'A: Ready' });
     await taskbar.setTooltip('RigReady - A: Ready');
