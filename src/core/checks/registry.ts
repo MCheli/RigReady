@@ -22,6 +22,11 @@ export interface CheckContext {
    * are not about one setup. Path variables and script environments follow it.
    */
   profile?: RunProfile;
+  /**
+   * Set while a fix or a launch action runs: hands over what the program printed (the
+   * last lines of stdout and stderr), shown with the step whether it worked or not.
+   */
+  output?(text: string): void;
 }
 
 /** The same context, for one setup. */

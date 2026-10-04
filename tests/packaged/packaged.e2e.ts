@@ -8,6 +8,7 @@ import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { _electron } from '@playwright/test';
+import { FindWindowExW, IsWindowVisible } from '../../src/platform/windows/win32';
 import { expect, isolatedEnv, repoRoot, test } from '../e2e/harness';
 
 const exe = path.join(repoRoot, 'release', 'win-unpacked', 'RigReady.exe');
@@ -93,5 +94,169 @@ test('the packaged app starts on the real machine with an isolated profile: wind
     expect(log).toContain('starting');
     expect(log).not.toContain('could not create the tray icon');
     expect(log).not.toContain('ERROR');
+  }
+});
+
+test('the packaged app shows a usable Fly screen within two seconds of starting', async ({
+  rig,
+}) => {
+  const started = Date.now();
+  const { page, shot } = await rig.launch('flying-all-good', 'packaged-startup-time');
+  await expect(page.getByTestId('profile-switcher')).toContainText('DCS F/A-18C');
+  await expect(page.getByTestId('group-devices')).toBeVisible();
+  await expect(page.getByTestId('launch')).toBeEnabled();
+  const usable = Date.now() - started;
+  console.log(`  packaged: Fly screen usable ${usable} ms after process start`);
+  test.info().annotations.push({ type: 'fly-usable-ms', description: String(usable) });
+  expect(usable).toBeLessThan(2000);
+  await shot('usable');
+});
+
+const RUN_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
+const APPROVED_KEY =
+  'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run';
+const RUN_VALUE = 'RigReady';
+
+/** The Run entry Windows starts at login, or undefined when there is none. */
+async function runEntry(): Promise<string | undefined> {
+  try {
+    const { stdout } = await promisify(execFile)('reg', ['query', RUN_KEY, '/v', RUN_VALUE]);
+    return /REG_SZ\s+(.*)/.exec(stdout)?.[1]?.trim();
+  } catch {
+    return undefined;
+  }
+}
+
+test('Start with Windows: the packaged app registers and removes its login entry, and a login start stays in the tray', async () => {
+  const before = await runEntry();
+  const isolated = await isolatedEnv();
+  let app = await _electron.launch({ executablePath: exe, args: [], env: isolated.env });
+  try {
+    const page = await app.firstWindow();
+    await page.getByTestId('mode-configure').click();
+    await page.getByTestId('nav-settings').click();
+    const toggle = page.getByTestId('setting-start-with-windows').locator('input');
+    await expect(toggle).not.toBeChecked();
+
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await expect(page.getByTestId('login-problem')).toHaveCount(0);
+    // What Windows will run at login: this program, told to stay in the tray.
+    const entry = await runEntry();
+    expect(entry, 'HKCU Run entry after turning it on').toBeDefined();
+    expect(entry!.toLowerCase()).toContain(exe.toLowerCase());
+    expect(entry).toContain('--hidden');
+    console.log(`  login entry: ${entry}`);
+
+    await toggle.click();
+    await expect(toggle).not.toBeChecked();
+    expect(await runEntry(), 'HKCU Run entry after turning it off').toBeUndefined();
+    await app.close();
+
+    // Started the way Windows starts it at login: no window on screen, only the tray.
+    app = await _electron.launch({ executablePath: exe, args: ['--hidden'], env: isolated.env });
+    const hidden = await app.firstWindow();
+    await hidden.waitForLoadState('domcontentloaded');
+    await expect(hidden.getByTestId('mode-configure')).toBeAttached();
+    expect(
+      await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible())
+    ).toBe(false);
+  } finally {
+    await app.close().catch(() => undefined);
+    // Leave the PC's startup list exactly as it was found.
+    if (before === undefined) {
+      await promisify(execFile)('reg', ['delete', RUN_KEY, '/v', RUN_VALUE, '/f']).catch(
+        () => undefined
+      );
+      await promisify(execFile)('reg', ['delete', APPROVED_KEY, '/v', RUN_VALUE, '/f']).catch(
+        () => undefined
+      );
+    } else if ((await runEntry()) !== before) {
+      await promisify(execFile)('reg', [
+        'add',
+        RUN_KEY,
+        '/v',
+        RUN_VALUE,
+        '/t',
+        'REG_SZ',
+        '/d',
+        before,
+        '/f',
+      ]);
+    }
+    expect(await runEntry()).toBe(before);
+    await isolated.cleanup();
+  }
+});
+
+/** Console windows on screen right now (classic console host and Windows Terminal). */
+function visibleConsoleWindows(): number {
+  let count = 0;
+  for (const className of ['ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS']) {
+    let window: number | bigint = 0;
+    for (let i = 0; i < 500; i++) {
+      window = FindWindowExW(0, window, className, null) as number | bigint;
+      if (Number(window) === 0) break;
+      if (IsWindowVisible(window) !== 0) count++;
+    }
+  }
+  return count;
+}
+
+test('a hidden script run by the packaged app opens no console window on the real desktop', async () => {
+  const isolated = await isolatedEnv();
+  // A setup in the isolated profile whose two fixes run the same real batch file, one
+  // hidden and one not. The check itself always fails, so both fixes stay available.
+  const scripts = path.join(isolated.env['USERPROFILE']!, 'Scripts');
+  await fs.mkdir(scripts, { recursive: true });
+  await fs.writeFile(path.join(scripts, 'fail.cmd'), '@exit /b 1\r\n');
+  await fs.writeFile(
+    path.join(scripts, 'wait.cmd'),
+    '@echo off\r\necho waiting for %RIGREADY_PROFILE_NAME%\r\nping -n 4 127.0.0.1 >nul\r\n'
+  );
+  const item = (id: string, title: string, hidden: boolean): string =>
+    `  - id: ${id}\n    type: script.check\n    title: ${title}\n    required: false\n` +
+    `    params: { exe: '{USER}/Scripts/fail.cmd' }\n    remediation:\n      type: script.run\n` +
+    `      params: { exe: '{USER}/Scripts/wait.cmd', hidden: ${hidden}, requiresConfirmation: false, timeoutSeconds: 20 }\n`;
+  await fs.mkdir(path.join(isolated.dataRoot, 'profiles'), { recursive: true });
+  await fs.writeFile(
+    path.join(isolated.dataRoot, 'profiles', 'scripts.yaml'),
+    `schemaVersion: 1\nid: scripts\nname: Script windows\n` +
+      `createdAt: '2026-10-03T12:00:00.000Z'\nupdatedAt: '2026-10-03T12:00:00.000Z'\nchecks:\n` +
+      item('hidden', 'Hidden script', true) +
+      item('shown', 'Script with a window', false)
+  );
+  const app = await _electron.launch({ executablePath: exe, args: [], env: isolated.env });
+  try {
+    const page = await app.firstWindow();
+    await expect(page.getByTestId('profile-switcher')).toContainText('Script windows');
+    const before = visibleConsoleWindows();
+
+    /** Runs the item's fix and reports the most console windows seen while it ran. */
+    const mostWindowsWhileFixing = async (title: string): Promise<number> => {
+      const row = page.locator(`[data-testid="check-row"][data-title="${title}"]`);
+      await row.getByTestId('check-fix').click();
+      let most = visibleConsoleWindows();
+      const until = Date.now() + 2500;
+      while (Date.now() < until) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        most = Math.max(most, visibleConsoleWindows());
+      }
+      // The script really ran: its fix reports the exit, and the check (which always fails) stays.
+      await expect(row).toContainText('Ran wait.cmd', { timeout: 20_000 });
+      return most;
+    };
+
+    const hidden = await mostWindowsWhileFixing('Hidden script');
+    const shown = await mostWindowsWhileFixing('Script with a window');
+    console.log(
+      `  console windows on screen: ${before} before, ${hidden} during the hidden script, ${shown} during the one with a window`
+    );
+    expect(hidden).toBe(before);
+    // The same script without "hidden" does open one: the measurement can tell the difference.
+    expect(shown).toBe(before + 1);
+  } finally {
+    await app.close().catch(() => undefined);
+    await isolated.cleanup();
   }
 });

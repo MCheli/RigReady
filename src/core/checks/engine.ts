@@ -373,14 +373,20 @@ async function runRemediation(
     }
   }
   try {
-    const outcome = await definition.run(params.data, ctx);
-    if (outcome.ok) return { ...base, ok: true, message: outcome.value };
+    let output: string | undefined;
+    const outcome = await definition.run(params.data, {
+      ...ctx,
+      output: (text) => (output = text),
+    });
+    const printed = output ? { output } : {};
+    if (outcome.ok) return { ...base, ok: true, message: outcome.value, ...printed };
     const step: StepResult = {
       ...base,
       ok: false,
       message: outcome.error.detail
         ? `${outcome.error.message} ${outcome.error.detail}`
         : outcome.error.message,
+      ...printed,
     };
     return step;
   } catch (e) {

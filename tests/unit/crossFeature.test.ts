@@ -4,6 +4,7 @@
  * device in, hang a provider or make a program fail to start, and launching through Steam.
  */
 import { promises as fs } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { dedupeCandidates, fixItem, runChecks } from '../../src/core/checks/engine';
@@ -12,7 +13,13 @@ import { NameRegistry } from '../../src/core/names';
 import type { CheckItem, Profile } from '../../src/core/profile/schema';
 import { Fly } from '../../src/features/fly/core/fly';
 import { applyMutations } from '../../src/platform/fake/scenario';
-import { launchSpawnOptions, runSpawnOptions } from '../../src/platform/node';
+import {
+  batchArgumentProblem,
+  launchSpawnOptions,
+  NodeShell,
+  programStart,
+  runSpawnOptions,
+} from '../../src/platform/node';
 import { markFull, mutate, wiredApp, type WiredApp } from '../helpers';
 
 let app: WiredApp;
@@ -87,6 +94,73 @@ describe('Shell: environment and hidden windows', () => {
     expect(
       launchSpawnOptions('C:\\Tools\\a.exe', { hidden: true, env: { A: '1' } }, { B: '2' })
     ).toMatchObject({ windowsHide: true, env: { A: '1', B: '2' } });
+  });
+});
+
+describe('Shell: batch files and PowerShell scripts', () => {
+  it('starts a batch file through cmd.exe and a PowerShell script through powershell.exe, programs directly', () => {
+    expect(programStart('C:\\Tools\\a.exe', ['x y'])).toEqual({
+      exe: 'C:\\Tools\\a.exe',
+      args: ['x y'],
+    });
+    expect(programStart('C:\\Scripts\\go.ps1', ['-Name', 'a b'])).toEqual({
+      exe: 'powershell.exe',
+      args: [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        'C:\\Scripts\\go.ps1',
+        '-Name',
+        'a b',
+      ],
+    });
+    const batch = programStart('C:\\My Scripts\\go.CMD', ['a & b'], { ComSpec: 'C:\\cmd.exe' });
+    expect(batch).toMatchObject({ exe: 'C:\\cmd.exe', verbatim: true });
+    expect(batch.args.slice(0, 3)).toEqual(['/d', '/s', '/c']);
+    // Everything cmd.exe would act on is escaped; the whole line is one quoted argument.
+    expect(batch.args[3]).toBe('"C:\\My^ Scripts\\go.CMD ^"a^ ^&^ b^""');
+    expect(batchArgumentProblem('go.cmd', ['fine', 'a "quoted" b'])).toContain('double quote');
+    expect(batchArgumentProblem('go.bat', ['two\nlines'])).toContain('line break');
+    expect(batchArgumentProblem('go.exe', ['a "quoted" b'])).toBeUndefined();
+    expect(batchArgumentProblem('go.cmd', ['a & b', '%PATH%'])).toBeUndefined();
+  });
+
+  it('a real batch file gets every argument as one literal value, and its environment and exit code come through', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'rigready-test-'));
+    try {
+      const script = path.join(dir, 'show args.cmd');
+      // Hands its arguments on to a program that prints them exactly as received.
+      await fs.writeFile(
+        script,
+        '@echo off\r\n"%RR_NODE%" -e "console.log(JSON.stringify([process.env.RIGREADY_PROFILE_NAME, ...process.argv.slice(1)]))" %*\r\nexit /b 3\r\n'
+      );
+      const args = ['a b & echo INJECTED', '%PATH% ^ | > x <y (z) !q!', 'trailing\\', '', 'plain'];
+      const shell = new NodeShell();
+      const result = await shell.run(script, args, {
+        env: {
+          RR_NODE: process.execPath,
+          ELECTRON_RUN_AS_NODE: '1',
+          RIGREADY_PROFILE_NAME: 'F/A-18C & friends',
+        },
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.code).toBe(3);
+      expect(result.value.stderr).toBe('');
+      expect(JSON.parse(result.value.stdout)).toEqual(['F/A-18C & friends', ...args]);
+      // An argument that could end the quoting inside the batch file is refused, not run.
+      expect(await shell.run(script, ['a" & echo X & "b'])).toMatchObject({
+        ok: false,
+        error: { code: 'shell.argument' },
+      });
+      expect(await shell.launch(script, ['"'])).toMatchObject({
+        ok: false,
+        error: { code: 'shell.argument' },
+      });
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -558,5 +632,73 @@ describe('a setup that names the DCS install it uses', () => {
       value: { outcome: 'failed', message: `DCS World install not found at ${beta}` },
     });
     expect(app.ports.processes.started).toHaveLength(started);
+  });
+});
+
+describe('what a script printed is kept with its step', () => {
+  it('shows the last 200 lines of a launch action, and of a fix, whether it worked or not', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const script = path.join(app.home, 'Scripts', 'prepare.cmd');
+    await fs.mkdir(path.dirname(script), { recursive: true });
+    await fs.writeFile(script, '@echo off');
+    const lines = Array.from({ length: 250 }, (_, i) => `line ${i + 1}`).join('\r\n');
+    app.ports.shell.scripts.push(
+      {
+        match: { exe: 'prepare.cmd', args: ['--ok'] },
+        result: { code: 0, stdout: lines, stderr: '' },
+      },
+      {
+        match: { exe: 'prepare.cmd', args: ['--fail'] },
+        result: { code: 2, stdout: 'starting', stderr: 'it broke' },
+      }
+    );
+    const action = (id: string, arg: string) => ({
+      id,
+      title: id,
+      type: 'script.run',
+      params: { exe: '{USER}/Scripts/prepare.cmd', args: [arg], requiresConfirmation: false },
+      continueOnError: true,
+      delaySeconds: 0,
+    });
+    await saveProfile(
+      profileOf([], {
+        launch: {
+          exe: 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\DCSWorld\\bin\\DCS.exe',
+          args: [],
+        },
+        actions: {
+          preLaunch: [action('works', '--ok'), action('fails', '--fail')],
+          postLaunch: [],
+          standDown: [],
+        },
+      })
+    );
+    const launched = await fly().launch('p');
+    expect(launched.ok).toBe(true);
+    if (!launched.ok) return;
+    const [works, fails] = launched.value.steps;
+    expect(works).toMatchObject({ ok: true, message: 'Ran prepare.cmd' });
+    expect(works!.output!.split('\n')).toHaveLength(200);
+    expect(works!.output!.split('\n').at(-1)).toBe('line 250');
+    expect(fails).toMatchObject({
+      ok: false,
+      message: 'prepare.cmd exited with code 2',
+      output: 'starting\nit broke',
+    });
+
+    // The same for a fix run by Make ready.
+    const item: CheckItem = {
+      id: 's',
+      type: 'script.check',
+      title: 'Prepared',
+      required: true,
+      params: { exe: '{USER}/Scripts/prepare.cmd', args: ['--fail'] },
+      remediation: {
+        type: 'script.run',
+        params: { exe: '{USER}/Scripts/prepare.cmd', args: ['--ok'], requiresConfirmation: false },
+      },
+    };
+    const fixed = await fixItem(profileOf([item]), 's', app.wiring.context.checks, app.ctx);
+    expect(fixed!.step.output!.split('\n')).toHaveLength(200);
   });
 });

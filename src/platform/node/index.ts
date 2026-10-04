@@ -82,6 +82,67 @@ export class NodeRawFs implements RawFs {
   }
 }
 
+// Everything cmd.exe gives a meaning to.
+const CMD_META = /([()\][%!^"`<>&|;, *?])/g;
+
+/** One argument, quoted and escaped so cmd.exe hands it to a batch file as one literal value. */
+function cmdArgument(arg: string): string {
+  // Backslashes before a quote, and at the end (before the closing quote), are doubled.
+  const quoted = `"${arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1')}"`;
+  return quoted.replace(CMD_META, '^$1');
+}
+
+/**
+ * A batch file reads its arguments a second time when it uses them (`%1`, `%*`), and a
+ * double quote inside an argument would end the quoting there. Such an argument is
+ * refused rather than risked. Programs and PowerShell scripts take any argument.
+ */
+export function batchArgumentProblem(exe: string, args: string[]): string | undefined {
+  const extension = path.extname(exe).toLowerCase();
+  if (extension !== '.cmd' && extension !== '.bat') return undefined;
+  const bad = args.find((arg) => /["\r\n]/.test(arg));
+  return bad === undefined
+    ? undefined
+    : `A batch file cannot be given an argument that contains a double quote or a line break (${JSON.stringify(bad)}). Use a PowerShell script or a program for this.`;
+}
+
+export interface ProgramStart {
+  exe: string;
+  args: string[];
+  /** The arguments are already one finished command line for cmd.exe. */
+  verbatim?: true;
+}
+
+/**
+ * What to start for a program or script. Windows starts only real programs directly: a
+ * batch file needs cmd.exe and a PowerShell script needs powershell.exe. The caller still
+ * gives an executable and an argument array; the quoting for cmd.exe is done here, in one
+ * place, so that no argument can ever be read as part of a command (`a & del x` stays
+ * one argument).
+ */
+export function programStart(
+  exe: string,
+  args: string[],
+  env: NodeJS.ProcessEnv = process.env
+): ProgramStart {
+  const extension = path.extname(exe).toLowerCase();
+  if (extension === '.cmd' || extension === '.bat') {
+    const line = [exe.replace(CMD_META, '^$1'), ...args.map(cmdArgument)].join(' ');
+    return {
+      exe: env['ComSpec'] ?? env['COMSPEC'] ?? 'cmd.exe',
+      args: ['/d', '/s', '/c', `"${line}"`],
+      verbatim: true,
+    };
+  }
+  if (extension === '.ps1') {
+    return {
+      exe: 'powershell.exe',
+      args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', exe, ...args],
+    };
+  }
+  return { exe, args };
+}
+
 /** The spawn options of Shell.run: never a shell, hidden unless asked otherwise. */
 export function runSpawnOptions(
   options: ShellOptions & { timeoutMs?: number } = {},
@@ -127,8 +188,14 @@ export class NodeShell implements Shell {
         settled = true;
         resolve(result);
       };
+      const problem = batchArgumentProblem(exe, args);
+      if (problem) return finish(err('shell.argument', `Could not start ${exe}.`, problem));
       try {
-        const child = spawn(exe, args, runSpawnOptions(options));
+        const start = programStart(exe, args);
+        const child = spawn(start.exe, start.args, {
+          ...runSpawnOptions(options),
+          ...(start.verbatim ? { windowsVerbatimArguments: true } : {}),
+        });
         child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
         child.stderr.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
         child.on('error', (e) => finish(err('shell.spawn', `Could not start ${exe}.`, e.message)));
@@ -145,8 +212,14 @@ export class NodeShell implements Shell {
     options: ShellOptions = {}
   ): Promise<Result<{ pid: number | undefined }>> {
     return new Promise((resolve) => {
+      const problem = batchArgumentProblem(exe, args);
+      if (problem) return resolve(err('shell.argument', `Could not start ${exe}.`, problem));
       try {
-        const child = spawn(exe, args, launchSpawnOptions(exe, options));
+        const start = programStart(exe, args);
+        const child = spawn(start.exe, start.args, {
+          ...launchSpawnOptions(exe, options),
+          ...(start.verbatim ? { windowsVerbatimArguments: true } : {}),
+        });
         child.once('error', (e) =>
           resolve(err('shell.launch', `Could not start ${exe}.`, e.message))
         );

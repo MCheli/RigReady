@@ -46,6 +46,8 @@ export const ScriptRunParamsSchema = z.object({
 export type ScriptRunParams = z.infer<typeof ScriptRunParamsSchema>;
 
 const TIMED_OUT = Symbol('timed out');
+/** How much of a program's output is kept for the user to read. */
+const OUTPUT_LINES = 200;
 
 type Run =
   | { kind: 'missing'; path: string }
@@ -180,6 +182,8 @@ export function createScriptRemediation(
         case 'timeout':
           return err('script.timeout', `${name} timed out after ${run.seconds} s`);
         case 'done':
+          // The last 200 lines of what it printed go with the step, success or not.
+          if (run.output) ctx.output?.(lastLines(run.output, OUTPUT_LINES));
           if (run.code !== null && params.successExitCodes.includes(run.code)) {
             return ok(`Ran ${name}`);
           }

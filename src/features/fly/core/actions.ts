@@ -82,20 +82,23 @@ export async function runAction(
   }
   const seconds = action.timeoutSeconds ?? DEFAULT_ACTION_TIMEOUT_SECONDS;
   try {
+    // What the program printed is kept with the step, whether it worked or not.
+    let output: string | undefined;
     const raced = await Promise.race([
-      definition.run(params.data, ctx),
+      definition.run(params.data, { ...ctx, output: (text) => (output = text) }),
       // A little longer than the action's own timeout, so its own message wins when it has one.
       options.timer(seconds * 1000 + 1000).then((): typeof TIMED_OUT => TIMED_OUT),
     ]);
     if (raced === TIMED_OUT) {
       return { ...base, ok: false, message: `Timed out after ${seconds} s` };
     }
-    if (raced.ok) return { ...base, ok: true, message: raced.value };
+    if (raced.ok) return { ...base, ok: true, message: raced.value, ...(output ? { output } : {}) };
+    const printed = output ?? raced.error.detail;
     return {
       ...base,
       ok: false,
       message: raced.error.message,
-      ...(raced.error.detail ? { output: raced.error.detail } : {}),
+      ...(printed ? { output: printed } : {}),
     };
   } catch (e) {
     ctx.log.error(`action ${action.type} threw`, e);
