@@ -92,6 +92,8 @@ Every window (the main one and panels opened with `openPanel`) is created with c
 
 `src/main/index.ts` refuses to start on anything but Windows (`platformGuard.ts`), holds a single-instance lock, picks the platform (real machine, or fake when `RIGREADY_SCENARIO` is set), wires the features, opens the window and keeps the tray (status, setup switch, Make ready, Launch, Stand down). While the window is hidden in the tray, unused memory is handed back to Windows (`trayMemory.ts`).
 
+**Started to do something.** `RigReady.exe --fly "<setup id or name>"` makes the rig ready and launches, `--make-ready` stops before launching, `--setup` only shows the setup. The arguments are read by a pure function (`src/core/commandLine.ts`); the shell runs the command (`src/main/rigCommand.ts`) through the same IPC handlers the Fly screen and the tray use, so fixes run in Make ready order and a monitor layout still asks "Keep this layout?". One rule is the command's own: the game is launched only when every required item is met; anything else stops with the window in front and the reason on it. A second start hands what it parsed to the RigReady already running (the single-instance lock's `additionalData`), which comes forward and does it. The window shows the command on every screen (`src/features/one-click`), from the shell's contract (`app:command`, `app:cancelCommand`).
+
 ## Test harness
 
 | Layer | What it is |

@@ -512,6 +512,7 @@ Existing scenarios (`fixtures/scenarios/`, 65 files; `npm run dev:scenario` with
 | Per feature | `audio-*` (4), `backup-*` (5), `dcs-bindings-*` (6; `dcs-bindings-identical`: three panels with one name whose IDs all changed; `dcs-bindings-old-ids`), `dcs-setup-*` (4), `dcs-two-installs`, `devices-*` (3), `displays-*` (3), `share-*` (3; `share-old-ids`: binding files that carry another PC's device IDs), `stream-deck-*` (2), `trackir-*` (3), `cheat-sheets-hornet`, `cheat-sheets-kneeboard`, `ai-assist-hornet` (scripted Anthropic answers) |
 | Racing | `racing-not-ready`, `racing-iracing-moved-wheel` (the wheel has a new Windows id), `racing-rim-variant`, `mark-racing`, `mark-racing-tv`, `tour-racing` (the racing rig with an iRacing setup, for the tour) |
 | Not the owner's PC | `generic-fresh`, `generic-custom-game`, `generic-dcs`, `generic-second-pc` |
+| One click | `one-click-fly` (the middle MFD screen rotated back and TrackIR closed; the window stays open after a launch), `one-click-slow-start` (TrackIR's start is accepted but it does not show up, so its fix keeps waiting until a test starts it) |
 
 The racing rig and the generic PCs, which the ledger names as fixtures, are scenarios too:
 
@@ -589,8 +590,9 @@ test('audio: wrong default device is fixed by Make ready', async ({ rig }) => {
 | `render(html, { width, height })` | Calls the real Render port; returns PNG size and PDF header |
 | `showLabels(items, durationMs)` | Shows the real Identify labels |
 | `restart()` | Quits and starts again on the same data root and fake home; returns a new run (use its `page`) |
+| `secondStart(args?)` | Starts the app a second time on the same folders while this one runs, as a desktop shortcut or a Jump List task does (`secondStart(['--fly=dcs-f-a-18c'])`); resolves with the second start's exit code |
 
-Options: `{ dialogs: { open: [['Documents/x.rigready']], save: ['Documents/out.zip'] }, env: { ... } }` (dialog answers given here come before those of the scenario file).
+Options: `{ dialogs: { open: [['Documents/x.rigready']], save: ['Documents/out.zip'] }, env: { ... }, args: ['--fly', 'DCS F/A-18C'] }` (dialog answers given here come before those of the scenario file; `args` are command-line arguments for the app).
 
 Use a flow name no other spec uses (prefix it with your feature); its screenshot folder is emptied on launch. No `waitForTimeout`, no `if (await x.isVisible())`: assert with `expect(locator)`, which waits. `toContainText` passes on an element that is still fading in; assert `toBeVisible()` on a dialog before you act on it. Passing checklist groups are collapsed on the Fly screen; click `group-toggle-<group>` to see their rows. Look at your screenshots before you call the work done.
 
@@ -657,6 +659,7 @@ Every folder under `src/features/`. "Registers" lists what the feature adds to t
 | `safety` | Safety (`/configure/safety`): every change RigReady made outside its own folder, by user action, with Undo. | |
 | `diagnostics` | Diagnostics (`/configure/diagnostics`): what RigReady knows about this PC, the state of its data files, the log, the "Detailed log" switch, Copy and Export diagnostics (redacted). | |
 | `updates` | Updates of RigReady itself: when to check, download and install; never while a game runs. | Two settings sections (Updates, About) |
+| `one-click` | What the window shows when RigReady is started to do something at once (a desktop shortcut, a Jump List task, `RigReady.exe --fly "<setup>"`): the strip with the command's progress, "Do not launch", and why it stopped. The shell runs the command (`src/main/rigCommand.ts`); the strip reads it through the shell's own contract. No page. | An overlay |
 
 Work in progress, being merged while this was written: binding readers for the racing games with a built-in Fanatec wheel layout for cheat sheets, a streaming answer with Cancel in the binding guide, an LMU device-name repair in `racing`. <!-- verify after merge -->
 

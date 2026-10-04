@@ -12,6 +12,7 @@ import {
 import path from 'node:path';
 import { z } from 'zod';
 import trayIconPath from '../../assets/icon.ico?asset';
+import { parseCommandLine, type ParsedCommandLine } from '../core/commandLine';
 import { startupNotices } from '../core/dataHealth';
 import { bind } from '../core/feature';
 import type { Logger } from '../core/logger';
@@ -42,6 +43,7 @@ import type { Envelope } from '../shared/ipc';
 import { discoverFeatures, wireFeatures } from './bootstrap';
 import { runDiagnose } from './diagnose';
 import { unsupportedPlatformMessage } from './platformGuard';
+import { CommandRunner } from './rigCommand';
 import { TrayMemoryTrimmer } from './trayMemory';
 import {
   installProcessErrorHooks,
@@ -207,7 +209,10 @@ function createWindow(
     },
   });
   if (state.maximized) window.maximize();
-  if (show) window.once('ready-to-show', () => window.show());
+  window.once('ready-to-show', () => {
+    windowDrawn = true;
+    if (show) window.show();
+  });
   // Links never open inside the app window.
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//.test(url)) void shell.openExternal(url);
@@ -235,11 +240,39 @@ function createWindow(
   return window;
 }
 
+/** False until the window has drawn its first frame: showing it earlier shows an empty one. */
+let windowDrawn = false;
+
 function showWindow(): void {
   if (!mainWindow) return;
+  if (!windowDrawn) {
+    const window = mainWindow;
+    window.once('ready-to-show', () => {
+      if (!window.isDestroyed()) showWindow();
+    });
+    return;
+  }
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
+}
+
+/** What this start was asked to do (--fly, --make-ready, --setup), read before anything else. */
+const startCommand = parseCommandLine(process.argv);
+/** What a second start handed over before this one had finished starting. */
+let handedOver: ParsedCommandLine | undefined;
+/** Set once the features are wired: runs what a start asks for. */
+let runCommand: ((parsed: ParsedCommandLine) => void) | undefined;
+
+/** A second start (a desktop shortcut, a Jump List task) while RigReady is already running. */
+function onSecondInstance(argv: string[], handed: unknown): void {
+  // The second start read its own arguments and sent what it found: Chromium may reorder
+  // the raw ones it passes along, which would part a flag from its setup.
+  const sent = (handed as { command?: ParsedCommandLine } | null | undefined)?.command;
+  const parsed = sent && typeof sent.kind === 'string' ? sent : parseCommandLine(argv);
+  if (parsed.kind === 'none') showWindow();
+  else if (runCommand) runCommand(parsed);
+  else handedOver = parsed;
 }
 
 async function start(): Promise<void> {
@@ -265,7 +298,22 @@ async function start(): Promise<void> {
   const send = (channel: string, payload: unknown): void => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
     for (const panel of appWindow.panels()) panel.webContents.send(channel, payload);
+    // A command started from outside the window follows the progress the features report.
+    commands.onEvent(channel, payload);
   };
+  // Commands: --fly, --make-ready, --setup (a shortcut, a Jump List task, a second start).
+  // What it works with is defined further down; nothing here runs before that.
+  const commands = new CommandRunner({
+    call: (channel, input) => call(channel, input),
+    publish: (run) => send(eventName(appContract.feature, 'command'), run),
+    showWindow,
+    flyChanged: () => flyChanged(),
+    busy: () => trayBusy || actionsRunning > 0,
+    working: (on) => {
+      trayBusy = on;
+      refreshTray();
+    },
+  });
   const machineChanged = (reason: string): void =>
     send(eventName(appContract.feature, 'machineChanged'), { reason });
 
@@ -313,6 +361,8 @@ async function start(): Promise<void> {
         notices,
         ...(scenario ? { scenario } : {}),
       }),
+    command: async () => ok(commands.state()),
+    cancelCommand: async () => ok({ cancelled: commands.cancel() }),
     scenario: async ({ mutations, input, change, render, labels }) => {
       if (!fake) return err('scenario.off', 'This only works in a scenario run.');
       const parsed = z.array(MutationSchema).safeParse(mutations);
@@ -378,11 +428,21 @@ async function start(): Promise<void> {
   // ---- tray ----
   let trayStatus: TrayStatus = {};
   let trayBusy = false;
+  /** Make ready, Launch, Stand down and single fixes that are running now, whoever asked. */
+  let actionsRunning = 0;
+  const ACTION_CHANNELS = new Set(['fly:makeReady', 'fly:launch', 'fly:standDown', 'fly:fix']);
   const handlers = new Map([...wiring.handlers, ...appWiring.handlers]);
   const call = async (channel: string, input?: unknown): Promise<Envelope> => {
     const handler = handlers.get(channel);
     if (!handler) return err('ipc.unknown', `Unknown channel ${channel}.`);
-    const envelope = await handler(input);
+    const action = ACTION_CHANNELS.has(channel);
+    if (action) actionsRunning++;
+    let envelope: Envelope;
+    try {
+      envelope = await handler(input);
+    } finally {
+      if (action) actionsRunning--;
+    }
     if (envelope.ok) {
       const next = statusFromFlyResponse(channel, envelope.value, trayStatus);
       if (next) {
@@ -544,6 +604,11 @@ async function start(): Promise<void> {
       notifications: fake.notifications.sent,
     });
     hooks['__rigreadyClipboard'] = () => fake.clipboard.copied;
+    // What a command did, and every program the fake machine was asked to start.
+    hooks['__rigreadyCommand'] = () => ({
+      run: commands.state(),
+      started: fake.processes.started.map((target) => target.exe),
+    });
     hooks['__rigreadyTrayClick'] = async (id: string) => {
       if (id.startsWith('profile:')) await switchFromTray(id.slice('profile:'.length));
       else await trayActions[id]?.();
@@ -568,7 +633,9 @@ async function start(): Promise<void> {
   }
 
   const stateFile = path.join(dataRoot, 'window.json');
-  const startHidden = process.argv.includes(HIDDEN_ARG) && tray !== undefined;
+  // A start that was asked to do something is never a hidden one: what it does is shown.
+  const startHidden =
+    process.argv.includes(HIDDEN_ARG) && tray !== undefined && startCommand.kind === 'none';
   mainWindow = createWindow(
     await readWindowState(ports.files, stateFile),
     ports.files,
@@ -595,6 +662,15 @@ async function start(): Promise<void> {
   mainWindow.on('hide', () => trimmer.onHidden());
   mainWindow.on('show', () => trimmer.onShown());
   if (startHidden) trimmer.onHidden();
+
+  runCommand = (parsed) => {
+    void commands.handle(parsed).then((run) => {
+      if (run)
+        log.info(`command ${run.action} "${run.asked}": ${run.outcome ?? run.phase}`, run.reasons);
+    });
+  };
+  runCommand(startCommand.kind === 'none' && handedOver ? handedOver : startCommand);
+  handedOver = undefined;
 
   app.on('window-all-closed', () => app.quit());
   let disposed = false;
@@ -635,10 +711,13 @@ if (refusal) {
   console.error(refusal);
   dialog.showErrorBox('RigReady', refusal);
   app.exit(1);
-} else if (!app.requestSingleInstanceLock() && !argValue('--diagnose')) {
+} else if (!app.requestSingleInstanceLock({ command: startCommand }) && !argValue('--diagnose')) {
+  // RigReady is already running: it was handed what this start asked for, and does it.
   app.quit();
 } else {
-  app.on('second-instance', showWindow);
+  app.on('second-instance', (_event, argv, _workingDirectory, handed) =>
+    onSecondInstance(argv, handed)
+  );
   void app
     .whenReady()
     .then(start)

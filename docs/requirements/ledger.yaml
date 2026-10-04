@@ -4094,6 +4094,66 @@ requirements:
       - ".github/workflows/ci.yml"
 
   # ---------------------------------------------------------------------------
+  # WINDOWS INTEGRATION — flying in one double-click (the final pass, 2026-10-04)
+  # ---------------------------------------------------------------------------
+
+  - id: WOW-WIN-001
+    title: Start RigReady to fly (--fly, --make-ready, --setup)
+    job: fly
+    area: one-click
+    priority: p2
+    done_means:
+      - "RigReady.exe --fly \"<setup id or name>\" on a cold start checks the setup, runs every available fix in Make ready order and launches the game; --make-ready stops before launching; --setup only makes it the setup in use. It goes through the same IPC handlers the Fly screen and the tray use (E2E on scenario one-click-fly: the monitor layout is applied and still asks 'Keep this layout?', TrackIR is started before the game)."
+      - "The game is started only when every required item is met: with the pedals unplugged --fly stops with the window in front, one line per unmet item on it, and no program started. A fix that fails, a layout that is not kept and a step before launch that must not fail stop it the same way."
+      - "An unknown setup, a name two setups share and a flag without a setup open the window and say so, naming the setups there are; nothing is checked or started."
+      - "The window shows the command on every screen while it runs (what it is doing, which fix, how many of how many) and how it ended; 'Do not launch' keeps a --fly command that is still checking or making ready from starting the game."
+      - "The arguments are read by a pure function with unit tests: --fly \"<setup>\" and --fly=<setup>, other switches left alone, a missing setup or two actions reported in words."
+    notes:
+      - "2026-10-04: decisions. (1) Fixes that run a program the user must confirm are not run, as from the tray: nobody is asked from a shortcut, so such an item stays unmet and the command stops and says so. (2) Optional items never stop it; when some are not met the result names them and is amber. (3) Make ready is skipped when the check finds nothing to fix, so a ready rig launches at once. (4) 'Do not launch' cannot interrupt a fix that is running (neither can the Fly screen): it lets Make ready finish and then does not launch, and says exactly that. (5) A setup with nothing to launch is made ready and the command says there is nothing to launch."
+    status: done
+    evidence:
+      - "src/core/commandLine.test.ts#reads --fly, --make-ready and --setup with the setup as the next argument"
+      - "src/core/commandLine.test.ts#reads the one-value form a shortcut carries, quoted or not"
+      - "src/core/commandLine.test.ts#leaves everything else alone: the program, the app folder, Chromium switches, --hidden"
+      - "src/core/commandLine.test.ts#says what is wrong when the setup is missing or two actions are asked for"
+      - "src/core/commandLine.test.ts#is never guessed: an unknown name and a name two setups share are both refused"
+      - "tests/unit/rigCommand.test.ts#with everything ready it launches at once, through the handlers the tray uses"
+      - "tests/unit/rigCommand.test.ts#runs the fixes first, in order, and launches only after the rig is ready"
+      - "tests/unit/rigCommand.test.ts#never launches past a required item that is not met: it stops, in front, and says why"
+      - "tests/unit/rigCommand.test.ts#stops when the only fix for a required item does not work"
+      - "tests/unit/rigCommand.test.ts#a monitor layout that is not kept goes back, and the game is not launched"
+      - "tests/unit/rigCommand.test.ts#a step before launch that must not fail stops it, with what the step said"
+      - "tests/unit/rigCommand.test.ts#--make-ready runs the fixes and stops before launching"
+      - "tests/unit/rigCommand.test.ts#--setup only makes it the setup in use"
+      - "tests/unit/rigCommand.test.ts#an unknown setup opens the window and says so, with the setups there are"
+      - "tests/e2e/one-click.e2e.ts#one click: --fly on a cold start arranges the monitors, starts TrackIR and launches"
+      - "tests/e2e/one-click.e2e.ts#one click: --fly stops in front of a required item that is not met, and says why"
+      - "tests/e2e/one-click.e2e.ts#one click: an unknown setup opens the window and names the setups there are"
+      - 'tests/e2e/one-click.e2e.ts#one click: "Do not launch" while Make ready is still working keeps the game from starting'
+      - "artifacts/screens/one-click-fly/01-keep-layout-asks.png"
+      - "artifacts/screens/one-click-fly/02-launched.png"
+      - "artifacts/screens/one-click-stopped/01-not-launched.png"
+      - "artifacts/screens/one-click-unknown/01-unknown-setup.png"
+      - "artifacts/screens/one-click-cancel/01-making-ready.png"
+      - "artifacts/screens/one-click-cancel/02-not-launched-as-asked.png"
+
+  - id: WOW-WIN-002
+    title: A second start hands over to the running RigReady
+    job: fly
+    area: one-click
+    priority: p2
+    done_means:
+      - "With RigReady running and its window closed to the tray, starting it again with --setup, --make-ready or --fly ends the second process with exit code 0, and the running one brings its window forward and does it (E2E: the setup is switched, TrackIR is started, the game is launched and the window gets out of the way as after any launch)."
+      - "The second start sends what it read from its own arguments, so Chromium reordering the raw arguments it passes along cannot part a flag from its setup."
+      - "While a command, the tray or the window is already making ready, launching or standing down, a new command is refused: the window comes forward and shows what is running."
+    status: done
+    evidence:
+      - "tests/e2e/one-click.e2e.ts#one click: a second start hands over to the running RigReady, which comes forward and does it"
+      - 'tests/unit/rigCommand.test.ts#"Do not launch" while it waits for the layout answer: made ready, not launched'
+      - "tests/unit/rigCommand.test.ts#is refused while the tray or the window is already working, and only brings the window forward"
+      - "artifacts/screens/one-click-second-start/01-made-ready-from-a-second-start.png"
+
+  # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY
   # ---------------------------------------------------------------------------
 
