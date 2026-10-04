@@ -114,6 +114,17 @@ export function createApplyLayoutRemediation(
       // Waits for Keep or Go back: what follows in Make ready must know which layout is there.
       const applied = await deps.applier.applyAndWait(analysis.targets);
       if (!applied.ok) return applied;
+      // Read back: "applied" is only said when the monitors are as the layout says.
+      const after = await ctx.ports.displays.read();
+      if (!after.ok) return after;
+      const left = analyzeLayout(expected.displays, after.value.displays, await deps.names());
+      if (left.changes.length > 0) {
+        return err(
+          'display.notApplied',
+          'Windows accepted the layout, but the monitors are not arranged as it says.',
+          left.changes.join('; ')
+        );
+      }
       const on = monitors(analysis.enabledCount);
       return ok(
         expected.name

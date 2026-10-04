@@ -116,6 +116,15 @@ export class DisplaysService {
         message: `${label} is back the way it was. Nothing was changed.`,
       });
     }
+    // Read back: saved layouts are corrected only when the monitor really turned.
+    const turned = await this.ctx.ports.displays.read();
+    if (!turned.ok) return turned;
+    if (turned.value.displays.find((d) => d.id === monitor.id)?.rotation !== to) {
+      return err(
+        'display.notApplied',
+        `Windows accepted the change, but ${label} did not turn. Nothing was changed.`
+      );
+    }
     // The answer goes where it is used: every saved layout with this monitor the old way.
     let layoutsUpdated = 0;
     const layouts = await this.ctx.layouts.list();

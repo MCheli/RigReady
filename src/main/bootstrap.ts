@@ -7,6 +7,7 @@ import { GameRegistry } from '../core/games';
 import type { Logger } from '../core/logger';
 import { NameRegistry } from '../core/names';
 import type { Ports } from '../core/ports';
+import { verifiedProcesses } from '../core/processes';
 import { ProfileStore } from '../core/profile/store';
 import { SettingsStore } from '../core/settings';
 import { channelName, eventName } from '../shared/channels';
@@ -43,7 +44,9 @@ export function wireFeatures(options: {
   log: Logger;
   send: (channel: string, payload: unknown) => void;
 }): Wiring {
-  const { ports, log } = options;
+  const { log } = options;
+  // A close is believed only when the process is gone from the list (NFR-006).
+  const ports: Ports = { ...options.ports, processes: verifiedProcesses(options.ports.processes) };
   const context: MainContext = {
     ports,
     log,

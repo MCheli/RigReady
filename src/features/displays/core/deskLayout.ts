@@ -58,6 +58,17 @@ export function createDeskLayoutStep(
       if (analysis.changes.length === 0) return ok(null);
       const applied = await applier.applyAndWait(analysis.targets);
       if (!applied.ok) return applied;
+      // Read back: the desk layout is only reported as applied when it is there.
+      const after = await ports.displays.read();
+      if (!after.ok) return after;
+      const left = analyzeLayout(layout.value.displays, after.value.displays, await names());
+      if (left.changes.length > 0) {
+        return err(
+          'display.notApplied',
+          `Windows accepted the "${layout.value.name}" layout, but the monitors are not arranged as it says.`,
+          left.changes.join('; ')
+        );
+      }
       const skipped = layout.value.displays.length - analysis.targets.length;
       const note =
         skipped > 0

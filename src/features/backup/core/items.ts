@@ -1,10 +1,17 @@
 import path from 'node:path';
 import { credentialReason } from '../../../core/credentials';
-import { isWithin } from '../../../core/paths';
-import { collapsePath, expandPath, variableOf } from '../../../core/pathVariables';
+import { allowedRoots, isWithin } from '../../../core/paths';
+import {
+  collapsePath,
+  expandPath,
+  standardPathVariables,
+  variableOf,
+  type PathVariables,
+} from '../../../core/pathVariables';
 import { err, ok, type Result } from '../../../core/result';
 import { resolveTrackedItem, type TrackedItem } from '../../../core/tracked';
 import { allScopes, itemsOf, newItemId, pathVariables, setItemsOf, type Ctx } from './store';
+import { collectSuggestions } from './suggestions';
 
 export interface ItemView {
   item: TrackedItem;
@@ -82,9 +89,61 @@ export async function normalizeDraftPath(ctx: Ctx, raw: string): Promise<Result<
   if (isWithin(ctx.ports.folders.dataRoot(), expanded.value)) {
     return err('item.path', "RigReady's own folder is part of every full backup already.");
   }
+  if (!(await mayTrack(ctx, expanded.value, variables))) {
+    return err(
+      'path.outside',
+      'That path is outside the folders RigReady may use (Documents, Saved Games, AppData, the Steam libraries and the game folders).',
+      'Choose it with Browse instead.'
+    );
+  }
   const why = credentialReason(expanded.value, variables);
   if (why) return err('item.credentials', `That file is never backed up: ${why}.`);
   return ok(stored);
+}
+
+/**
+ * Paths the user chose in a native file picker this session, per running app. The picker
+ * is the user's own word that RigReady may use that file or folder, wherever it is; the
+ * list lives in main, so the renderer cannot add to it.
+ */
+const picked = new WeakMap<object, string[]>();
+
+function rememberPicked(ctx: Ctx, absolute: string): void {
+  const list = picked.get(ctx.ports) ?? [];
+  list.push(path.resolve(absolute));
+  picked.set(ctx.ports, list);
+}
+
+/**
+ * Whether a path that arrived from the renderer may be tracked (read into backups, written
+ * by a restore). Yes when it is under the allowed roots (Documents, Saved Games, AppData,
+ * the Steam libraries) or a game's own folder; or when main itself vouches for it: picked
+ * in the native dialog this session, already tracked, or offered as a suggestion by a game
+ * module or a backup source. Anything else is refused: the Windows folder, another user's
+ * folder, a network or device path.
+ */
+async function mayTrack(ctx: Ctx, absolute: string, variables: PathVariables): Promise<boolean> {
+  const within = (roots: string[]): boolean => roots.some((root) => isWithin(root, absolute));
+  if (within(picked.get(ctx.ports) ?? [])) return true;
+  // A drive letter only: never \\server\share, \\?\C:\... or \\.\device.
+  if (!/^[a-zA-Z]:[\\/]/.test(absolute)) return false;
+  if (within(await allowedRoots(ctx.ports))) return true;
+  // The folders of the games (DCS_INSTALL, DCS_USER, ...): every variable a game module adds.
+  const standard = await standardPathVariables(ctx.ports);
+  const gameFolders = Object.entries(variables)
+    .filter(([name]) => !(name in standard))
+    .map(([, folder]) => folder);
+  if (within(gameFolders)) return true;
+  const expandAll = (stored: string[]): string[] =>
+    stored.flatMap((p) => {
+      const expanded = expandPath(p, variables);
+      return expanded.ok ? [expanded.value] : [];
+    });
+  const scopes = await allScopes(ctx);
+  if (!scopes.ok) return false;
+  if (within(expandAll(scopes.value.flatMap((s) => s.items.map((i) => i.path))))) return true;
+  const suggestions = await collectSuggestions(ctx, scopes.value);
+  return within(expandAll(suggestions.map((s) => s.path)));
 }
 
 export interface ItemPreview {
@@ -192,6 +251,8 @@ export async function browseForItem(
   if (!picked.ok) return picked;
   const first = picked.value[0];
   if (!first) return ok(null);
+  // Chosen by the user in the native picker: remembered here, in main, for this session.
+  rememberPicked(ctx, first);
   const stored = await normalizeDraftPath(ctx, first);
   if (!stored.ok) return stored;
   return ok({ path: stored.value, label: path.basename(first) });
