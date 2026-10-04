@@ -13,6 +13,8 @@ import { expect, isolatedEnv, repoRoot, test } from '../e2e/harness';
 
 const exe = path.join(repoRoot, 'release', 'win-unpacked', 'RigReady.exe');
 const resources = path.join(repoRoot, 'release', 'win-unpacked', 'resources');
+/** A CI runner has no rig: no game controller, maybe no sound device, and it is slower. */
+const onCi = process.env['CI'] !== undefined && process.env['CI'] !== '';
 
 test.use({ executablePath: exe });
 
@@ -33,6 +35,16 @@ test('the packaged app enumerates the real machine: devices, displays, processes
     const out = path.join(isolated.root, 'diagnose.json');
     await promisify(execFile)(exe, ['--diagnose', out], { env: isolated.env, timeout: 60_000 });
     const report = JSON.parse(await fs.readFile(out, 'utf8'));
+    // Nothing may fail because a part of the package is missing, wherever this runs.
+    expect(JSON.stringify(report)).not.toMatch(/Cannot find module|MODULE_NOT_FOUND|not installed/);
+    if (onCi) {
+      // No rig here: every reader must still answer, with whatever the runner has.
+      for (const section of ['devices', 'displays', 'processes', 'services', 'input', 'lua']) {
+        expect(report[section].ok, `${section}: ${JSON.stringify(report[section])}`).toBe(true);
+      }
+      expect(report.folders.dataRoot).toBe(isolated.dataRoot);
+      return;
+    }
     expect(report.ok, JSON.stringify(report, null, 1).slice(0, 2000)).toBe(true);
     expect(report.devices.value.length).toBeGreaterThan(0);
     expect(report.displays.value.displays.length).toBeGreaterThan(0);
@@ -108,7 +120,8 @@ test('the packaged app shows a usable Fly screen within two seconds of starting'
   const usable = Date.now() - started;
   console.log(`  packaged: Fly screen usable ${usable} ms after process start`);
   test.info().annotations.push({ type: 'fly-usable-ms', description: String(usable) });
-  expect(usable).toBeLessThan(2000);
+  // The two seconds are for a user's PC; a shared CI runner only has to get there.
+  expect(usable).toBeLessThan(onCi ? 15_000 : 2000);
   await shot('usable');
 });
 
