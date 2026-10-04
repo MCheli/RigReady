@@ -1,0 +1,327 @@
+# RigReady binding guide: UH-1H Huey. Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: UH-1H
+  name: UH-1H Huey
+summary: >-
+  A utility helicopter flown with both hands and both feet all the time: cyclic, collective
+  and pedals come first, then the few switches on the cyclic (trim, radio, fire) and the
+  collective head (RPM, start, lights). Most other switches are fine with the mouse.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the UH-1H's controls (cyclic, collective
+    with twist grip throttle, anti-torque pedals, force trim) and of how they work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from its default input files for the UH-1H;
+    a test checks each one against those files so a DCS update that renames an action is
+    caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      The cyclic: pitch and roll axes, force trim on a thumb button, the radio trigger on the
+      first detent of the trigger (or a button) and weapon release on the trigger.
+    items: [cyclic, trim, radio, fire, trim-reset, intercom]
+  throttle:
+    summary: >-
+      Your throttle lever becomes the collective (usually inverted so forward is collective
+      up). A rotary or slider can be the twist grip throttle; buttons on the throttle take the
+      collective head switches: RPM increase/decrease, starter, landing light.
+    items: [collective, throttle, governor-rpm, start, landing-light, search-light]
+  pedals:
+    summary: Anti-torque on the rudder axis. The Huey has no wheel brakes.
+    items: [pedals]
+  panel:
+    summary: >-
+      Armament switches, flares, the idle stop and the hydraulics switch if your panels have
+      spare switches; otherwise the mouse is fine for all of them.
+    items: [armament, flares, gun-selector, rocket-pairs, idle-stop, hydraulics, force-trim-system]
+  keyboard:
+    summary: Views, zoom, kneeboard, cargo release and night vision can stay on the keyboard.
+    items: [view-center, zoom, kneeboard, nvg, cargo-release]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: cyclic
+    title: Cyclic pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Tilts the rotor disc forward, back and sideways, which moves the helicopter that way.
+    when: All the time; you never let go of it.
+    actions:
+      - { name: Flight Control Cyclic Pitch, label: 'Cyclic forward and back' }
+      - { name: Flight Control Cyclic Roll, label: 'Cyclic left and right' }
+
+  - id: pedals
+    title: Anti-torque pedals
+    tier: must
+    place: hotas
+    role: pedals
+    what: Points the nose by changing the tail rotor's pitch; every power change needs pedal.
+    when: All the time, especially in the hover.
+    actions:
+      - { name: Flight Control Rudder, label: 'Pedals (tail rotor)' }
+
+  - id: collective
+    title: Collective
+    tier: must
+    place: hotas
+    role: throttle
+    what: Changes the pitch of all main rotor blades together, so the helicopter climbs or descends.
+    when: All the time. Up is more lift and more torque.
+    note: Usually your throttle axis, inverted so that forward is collective up. Set it in DCS's axis tune if it moves the wrong way.
+    actions:
+      - { name: Flight Control Collective, label: 'Collective up and down' }
+
+  - id: trim
+    title: Force trim
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      Holds the cyclic where it is. On a spring-centred stick, DCS's trim options decide how
+      this behaves; most people use it to fly hands-off for a moment.
+    when: Constantly in cruise and hover.
+    actions:
+      - { name: Pilot Trimmer, label: 'Force trim' }
+
+  - id: radio
+    title: Radio trigger (call the radio menu)
+    tier: must
+    place: hotas
+    role: stick
+    what: Talks on the selected radio and opens DCS's radio menu.
+    when: Talking to the tower, the flight and ground units.
+    actions:
+      - {
+          name: "Pilot's radio trigger RADIO (call radio menu)",
+          label: 'Talk on the radio / radio menu',
+        }
+
+  - id: fire
+    title: Weapon release
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the rockets or the fixed guns, whichever the armament panel has selected.
+    when: Gunship missions.
+    actions:
+      - { name: Pilot weapon release/Machinegun fire, label: 'Fire rockets / guns' }
+
+  # ---------------------------------------------------------------- should have
+  - id: throttle
+    title: Twist grip throttle
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: >-
+      The engine throttle on the collective. Rolled to full open after start; the governor
+      then keeps the rotor speed by itself.
+    when: Start-up, shut-down and autorotation practice.
+    note: A rotary or slider as an axis is best; two buttons (open, close) are fine.
+    actions:
+      - { name: Throttle, label: 'Throttle (twist grip, axis)' }
+      - { name: Throttle Up, label: 'Throttle open' }
+      - { name: Throttle Down, label: 'Throttle close' }
+
+  - id: governor-rpm
+    title: Governor RPM increase / decrease
+    tier: should
+    place: hotas
+    role: throttle
+    what: Trims the engine and rotor RPM up or down, between 6400 and 6600 in normal flight.
+    when: After start and when the RPM sags under load.
+    actions:
+      - { name: Increase Turbine RPM, label: 'RPM increase' }
+      - { name: Decrease Turbine RPM, label: 'RPM decrease' }
+
+  - id: start
+    title: Starter
+    tier: should
+    place: hotas
+    role: throttle
+    what: The starter trigger on the collective; hold it until the engine is running.
+    when: Every cold start.
+    actions:
+      - { name: Start-up engine, label: 'Starter (hold)' }
+
+  - id: trim-reset
+    title: Trim reset
+    tier: should
+    place: hotas
+    role: stick
+    what: Puts the trimmed cyclic position back to the centre.
+    when: When the trim has wandered and the helicopter fights you.
+    actions:
+      - { name: Trimmer reset, label: 'Trim reset' }
+
+  - id: intercom
+    title: Intercom trigger
+    tier: should
+    place: hotas
+    role: stick
+    what: Talks to your crew (door gunners) and opens the radio menu on the intercom.
+    when: Directing the door gunners.
+    actions:
+      - { name: "Pilot's radio trigger ICS (call radio menu)", label: 'Talk to the crew' }
+
+  - id: flares
+    title: Flares
+    tier: should
+    place: panel
+    role: panel
+    what: Dispenses flares.
+    when: When a heat-seeking missile is launched at you.
+    actions:
+      - { name: Flare Dispense Button, label: 'Dispense flares' }
+
+  - id: armament
+    title: Armament master
+    tier: should
+    place: panel
+    role: panel
+    what: Steps the armament switch through OFF, SAFE and ARMED.
+    when: Before and after a gun run.
+    actions:
+      - { name: Armament Off/Safe/Armed Up, label: 'Armament switch up (toward ARMED)' }
+      - { name: Armament Off/Safe/Armed Down, label: 'Armament switch down (toward OFF)' }
+
+  - id: view-center
+    title: Centre the view
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: Puts your head back in the middle of the cockpit.
+    when: When head tracking drifts.
+    actions:
+      - { name: Center View, label: 'Centre the view' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: landing-light
+    title: Landing light
+    tier: nice
+    place: hotas
+    role: throttle
+    need: any
+    what: Turns the landing light on and extends or retracts it.
+    when: Night landings.
+    actions:
+      - { name: Landing Light Switch, label: 'Landing light on/off' }
+      - { name: Landing light Extend, label: 'Landing light extend' }
+      - { name: Landing light Retract, label: 'Landing light retract' }
+
+  - id: search-light
+    title: Search light
+    tier: nice
+    place: hotas
+    role: throttle
+    need: any
+    what: Turns the steerable search light on and off and stows it.
+    when: Night operations.
+    actions:
+      - { name: Search light On, label: 'Search light on' }
+      - { name: Search light Off, label: 'Search light off' }
+      - { name: Search light Stow, label: 'Search light stow' }
+
+  - id: gun-selector
+    title: Gun and armament selector
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Chooses the gun and which weapon the trigger fires.
+    when: Changing weapons on a gunship.
+    actions:
+      - { name: Gun Selector Switch Up, label: 'Gun selector up' }
+      - { name: Gun Selector Switch Down, label: 'Gun selector down' }
+      - { name: Armament Selector Up, label: 'Armament selector up' }
+      - { name: Armament Selector Down, label: 'Armament selector down' }
+
+  - id: rocket-pairs
+    title: Rocket pairs
+    tier: nice
+    place: panel
+    role: panel
+    what: How many pairs of rockets each press fires.
+    when: Setting up a rocket attack.
+    actions:
+      - { name: Rocket Pair Increase, label: 'More rocket pairs' }
+      - { name: Rocket Pair Decrease, label: 'Fewer rocket pairs' }
+
+  - id: idle-stop
+    title: Idle stop release
+    tier: nice
+    place: panel
+    role: panel
+    what: Lets the throttle close past idle to cut-off.
+    when: Shut-down and practice autorotations.
+    actions:
+      - { name: Throttle Stop Switch, label: 'Idle stop release' }
+
+  - id: hydraulics
+    title: Hydraulic control switch
+    tier: nice
+    place: panel
+    role: panel
+    what: Turns the hydraulic boost on and off.
+    when: Pre-flight checks and practising a hydraulics failure.
+    actions:
+      - { name: Hydraulic Control Switch, label: 'Hydraulics on/off' }
+
+  - id: force-trim-system
+    title: Force trim system on/off
+    tier: nice
+    place: panel
+    role: panel
+    what: Turns the whole force trim system on or off (not the trim button itself).
+    when: Rarely; it is normally on.
+    actions:
+      - { name: Force Trim Switch, label: 'Force trim system on/off' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Zooms the view in to read gauges or spot targets.
+    when: Spotting and reading small gauges.
+    note: An axis (a slider) is smooth; two buttons work too.
+    actions:
+      - { name: Zoom View, label: 'Zoom (axis)' }
+      - { name: Zoom in slow, label: 'Zoom in' }
+      - { name: Zoom out slow, label: 'Zoom out' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Shows the kneeboard with the mission's pages and turns its pages.
+    when: Checking frequencies and checklists.
+    actions:
+      - re: '^Kneeboard (ON/OFF|Next Page|Previous Page)$'
+
+  - id: nvg
+    title: Night vision goggles
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Puts the goggles on and off.
+    when: Night flying.
+    actions:
+      - { name: Night Vision Goggles, label: 'Night vision on/off' }
+
+  - id: cargo-release
+    title: Cargo release
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Releases a sling load.
+    when: Cargo missions.
+    actions:
+      - { name: External Cargo Pilot Unhook, label: 'Release the sling load' }

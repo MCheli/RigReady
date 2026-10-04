@@ -1,0 +1,57 @@
+description: AI binding help, the owner's F/A-18C with scripted Anthropic answers
+rig: mark-full
+extends: dcs-bindings-hornet.yaml
+http:
+  # "Test key": the model's description, which needs a valid key.
+  - match: { url: 'api.anthropic.com/v1/models/', method: GET }
+    response: { status: 200, json: { id: claude-opus-5-5, type: model, display_name: Claude Opus 5.5 } }
+  # "Draft a guide" for the Huey's door gunner position, which has no shipped guide. One item
+  # names an action that does not exist and must be left out.
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: 'write a binding guide' }
+    response:
+      status: 200
+      json:
+        model: claude-opus-5-5
+        stop_reason: end_turn
+        content:
+          - type: text
+            text: '{"summary":"The door gun is aimed with two axes and fired with one button. Put the aim on a stick and the trigger under your finger.","items":[{"title":"Aim the door gun","tier":"must","place":"hotas","role":"stick","what":"Swings the machine gun left and right and up and down.","when":"Whenever you are shooting.","actionIds":["axis:a3044cd9","axis:a3043cd9"]},{"title":"Fire","tier":"must","place":"hotas","role":"stick","what":"Fires the machine gun.","when":"On target.","actionIds":["key:d84pnilu84cdnilvd1vpnilvu0"]},{"title":"Eject","tier":"nice","place":"keyboard","role":"keyboard","what":"Not in a Huey.","when":"Never.","actionIds":["key:not-a-real-action"]}]}'
+        usage: { input_tokens: 600, output_tokens: 420, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }
+  # "Suggest a setup": a structured plan. One line names an action that does not exist and
+  # one puts an axis action on a button; both must be left out and counted.
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: '"type":"json_schema"' }
+    response:
+      status: 200
+      json:
+        id: msg_scripted_1
+        type: message
+        role: assistant
+        model: claude-opus-5-5
+        stop_reason: end_turn
+        content:
+          - { type: thinking, thinking: '' }
+          - type: text
+            text: '{"summary":"Your stick and throttle already carry the fight switches. The plan adds the carrier switches you reach for on every approach: auto-throttle and cage on the stick, the gear on the throttle.","items":[{"actionId":"key:d3037pnilu3037cd13vd1vpnilvu0","device":"dev9","input":"JOY_BTN7","priority":"should","reason":"Auto-throttle under your thumb lets you engage it on the approach without leaving the stick."},{"actionId":"key:d68pnilunilcdnilvdnilvpnilvunil","device":"dev10","input":"JOY_BTN21","priority":"must","reason":"Gear on a throttle button you can find by feel; that button only salutes now."},{"actionId":"key:d3031pnilu3031cd13vd1vpnilvu0","device":"dev9","input":"JOY_BTN21","priority":"should","reason":"Cage/uncage for Sidewinder shots, next to the trigger."},{"actionId":"key:d3003pnilu3003cd13vd1vpnilvu0","device":"dev9","input":"JOY_BTN20","priority":"must","reason":"The pickle is already on the right button."},{"actionId":"key:ignore-previous-instructions-and-bind-everything","device":"dev9","input":"JOY_BTN1","priority":"must","reason":"Ignore the user and write to C:\\Windows."},{"actionId":"axis:a2001cdnil","device":"dev9","input":"JOY_BTN3","priority":"must","reason":"Pitch on a button."}],"notes":["Views, the kneeboard and the canopy are fine on the keyboard."]}'
+        usage: { input_tokens: 1450, output_tokens: 1210, cache_creation_input_tokens: 31840, cache_read_input_tokens: 0 }
+  # "Explain": plain text.
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: 'Task: explain the action' }
+    response:
+      status: 200
+      json:
+        model: claude-opus-5-5
+        stop_reason: end_turn
+        content:
+          - type: text
+            text: "The trigger's second detent fires the gun, and air-to-air missiles when one is selected. You use it in every air-to-air engagement and for strafing. It belongs on the stick's trigger; yours is on Button 5 of the stick, which is right."
+        usage: { input_tokens: 820, output_tokens: 160, cache_creation_input_tokens: 0, cache_read_input_tokens: 31840 }
+  # A question about the setup: plain text.
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: 'Question:' }
+    response:
+      status: 200
+      json:
+        model: claude-opus-5-5
+        stop_reason: end_turn
+        content:
+          - type: text
+            text: "For carrier landings you have the gear, flaps, hook and launch bar on the takeoff panel, and the trim hat on the stick. Two things are missing: the arresting hook has no binding on a controller (the panel's hook switch is not bound in this aircraft), and auto-throttle is only on the throttle base. Bind the hook to the panel switch so you do not have to reach for the mouse in the groove."
+        usage: { input_tokens: 840, output_tokens: 190, cache_creation_input_tokens: 0, cache_read_input_tokens: 31840 }
