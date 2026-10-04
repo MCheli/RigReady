@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { dcsSetupContract, type Overview } from '../contract';
@@ -76,15 +77,13 @@ const launchLine = (launch: { exe: string; args: string[] }): string =>
 
     <div v-if="!view && !error" class="rr-empty">Looking for DCS…</div>
 
-    <div v-else-if="view && !view.found" class="rr-panel rr-empty" data-testid="dcs-not-found">
-      <v-icon icon="mdi-airplane-off" size="40" class="mb-3" />
-      <h2 class="rr-page-title">DCS World was not found</h2>
-      <p>{{ view.problem }}</p>
-      <p class="rr-row-sub">
-        RigReady looks in every Steam library and for standalone installs. Once DCS is installed and
-        has run once, this page fills in by itself.
-      </p>
-    </div>
+    <NotOnThisPc
+      v-else-if="view && !view.found"
+      name="DCS World"
+      :looked="['every Steam library', 'the standalone install folders', 'Saved Games\\DCS']"
+      game-page="/configure/games/dcs"
+      data-testid="dcs-not-found"
+    />
 
     <template v-else-if="view">
       <v-alert

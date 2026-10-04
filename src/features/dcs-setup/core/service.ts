@@ -490,6 +490,7 @@ export class DcsSetupService {
       return {
         ...base,
         problem: paths.error.message,
+        ...(paths.error.code === 'dcs.notFound' ? { dcsFound: false } : {}),
         rigReady: { path: '', exists: false, editedOutside: false, selected: false },
       };
     }
@@ -718,7 +719,13 @@ export class DcsSetupService {
       dcsRunning: await dcsRunning(this.check),
       simAppProRunning: simAppPro.running,
     };
-    if (!paths.ok) return { ...base, problem: paths.error.message };
+    if (!paths.ok) {
+      return {
+        ...base,
+        problem: paths.error.message,
+        ...(paths.error.code === 'dcs.notFound' ? { dcsFound: false } : {}),
+      };
+    }
     const text = await this.readText(paths.value.exportLua);
     const parsed = parseExportLua(text ?? '');
     const tools: ExportState['tools'] = [];
@@ -1075,7 +1082,9 @@ export class DcsSetupService {
   async simAppProState(): Promise<SimAppProState> {
     const info = await findSimAppPro(this.check);
     const profiles = await this.ctx.profiles.list();
+    const paths = await this.paths();
     return {
+      ...(!paths.ok && paths.error.code === 'dcs.notFound' ? { dcsFound: false } : {}),
       installed: info.installed,
       ...(info.version ? { version: info.version } : {}),
       running: info.running,

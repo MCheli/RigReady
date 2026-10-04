@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { onMachineChanged } from '../../../renderer/machine';
 import ActionsTab from './ActionsTab.vue';
 import BindDialog from './BindDialog.vue';
@@ -111,18 +112,13 @@ onBeforeUnmount(() => off?.());
       Reading DCS's input files…
     </div>
 
-    <div
+    <NotOnThisPc
       v-else-if="store.overview && !store.overview.found && store.overview.aircraft.length === 0"
-      class="rr-panel rr-empty"
+      name="DCS World"
+      :looked="['every Steam library', 'the standalone install folders', 'Saved Games\\DCS']"
+      game-page="/configure/games/dcs"
       data-testid="bind-not-found"
-    >
-      <v-icon icon="mdi-airplane-off" size="36" class="mb-3" />
-      <div class="rr-row-title">DCS World was not found on this PC</div>
-      <div class="rr-row-sub">
-        RigReady looked for <span class="rr-mono">{{ store.overview.inputDir }}</span
-        >. Start DCS once so it creates its Saved Games folder, then come back.
-      </div>
-    </div>
+    />
 
     <template v-else-if="store.overview">
       <v-alert

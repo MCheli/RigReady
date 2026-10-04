@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { dcsSetupContract, type ExportAction, type ExportState } from '../contract';
@@ -99,6 +100,13 @@ const toolName = (tool?: string): string =>
       <v-icon icon="mdi-check" size="16" /> {{ message }}
     </div>
     <div v-if="!view && !error" class="rr-empty">Reading Export.lua…</div>
+    <NotOnThisPc
+      v-else-if="view?.dcsFound === false"
+      name="DCS World"
+      :looked="['every Steam library', 'the standalone install folders', 'Saved Games\\DCS']"
+      game-page="/configure/games/dcs"
+      data-testid="dcs-not-found"
+    />
     <div v-else-if="view?.problem" class="rr-panel rr-empty">{{ view.problem }}</div>
 
     <template v-else-if="view">

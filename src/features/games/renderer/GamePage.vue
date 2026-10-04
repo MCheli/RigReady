@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { gamesContract, type GameSummary } from '../contract';
@@ -141,29 +142,27 @@ async function forget(): Promise<void> {
               <div class="rr-row-sub rr-mono">{{ install.installDir }}</div>
             </div>
           </div>
-          <div v-if="game.installs.length === 0" class="rr-row" data-testid="game-not-found">
-            <v-icon icon="mdi-minus-circle-outline" class="rr-muted" />
-            <div class="rr-row-main">
-              <div class="rr-row-title">Not found</div>
-              <div class="rr-row-sub">
-                RigReady looked in every Steam library{{
-                  game.manualFolder ? ' and the usual install folder' : ''
-                }}.
-                <template v-if="game.manualFolder"
-                  >If it is installed somewhere else, choose
-                  {{ game.manualFolder.label }}.</template
-                >
-              </div>
-            </div>
-            <v-btn
-              v-if="game.manualFolder"
-              variant="tonal"
-              size="small"
-              data-testid="game-choose-folder"
-              @click="choose"
-              >Choose folder…</v-btn
-            >
-          </div>
+          <NotOnThisPc
+            v-if="game.installs.length === 0"
+            inline
+            :name="game.name"
+            :looked="
+              game.manualFolder
+                ? ['every Steam library', 'the usual install folders']
+                : ['every Steam library']
+            "
+            data-testid="game-not-found"
+          >
+            <template v-if="game.manualFolder" #default>
+              Install {{ game.name }} and start it once; this page then fills in by itself. If it is
+              installed somewhere else, choose {{ game.manualFolder.label }}.
+            </template>
+            <template v-if="game.manualFolder" #action>
+              <v-btn variant="tonal" size="small" data-testid="game-choose-folder" @click="choose"
+                >Choose folder…</v-btn
+              >
+            </template>
+          </NotOnThisPc>
           <div v-if="game.version" class="rr-row" data-testid="game-version">
             <v-icon
               :icon="game.version.updatePending ? 'mdi-update' : 'mdi-tag-outline'"

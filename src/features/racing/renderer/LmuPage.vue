@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { racingContract, type LmuView } from '../contract';
@@ -58,9 +59,13 @@ const offline = computed(
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
 
     <template v-if="view">
-      <div v-if="!view.installed" class="rr-panel rr-empty" data-testid="lmu-missing">
-        Le Mans Ultimate was not found in any Steam library on this PC.
-      </div>
+      <NotOnThisPc
+        v-if="!view.installed"
+        name="Le Mans Ultimate"
+        :looked="['every Steam library']"
+        game-page="/configure/games/lmu"
+        data-testid="lmu-missing"
+      />
       <div v-if="view.updatePending" class="rc-notice warn" data-testid="lmu-update">
         <v-icon icon="mdi-update" class="rr-warn" />
         <div>

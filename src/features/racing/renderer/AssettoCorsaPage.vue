@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { racingContract, type AcView } from '../contract';
@@ -49,9 +50,13 @@ onBeforeUnmount(() => off?.());
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
 
     <template v-if="view">
-      <div v-if="!view.installed && !view.controlsFile" class="rr-panel rr-empty">
-        Assetto Corsa was not found on this PC.
-      </div>
+      <NotOnThisPc
+        v-if="!view.installed && !view.controlsFile"
+        name="Assetto Corsa"
+        :looked="['every Steam library', 'Documents\\Assetto Corsa']"
+        game-page="/configure/games/assetto-corsa"
+        data-testid="ac-missing"
+      />
       <div v-for="p in view.problems" :key="p" class="rc-notice bad">
         <v-icon icon="mdi-alert-circle" class="rr-bad" />
         <div>{{ p }}</div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import {
@@ -120,9 +121,13 @@ async function copyToController(): Promise<void> {
     </div>
 
     <template v-if="view">
-      <div v-if="!view.installed && !view.userFolder" class="rr-panel rr-empty">
-        BeamNG.drive was not found on this PC.
-      </div>
+      <NotOnThisPc
+        v-if="!view.installed && !view.userFolder"
+        name="BeamNG.drive"
+        :looked="['every Steam library', 'AppData\\Local\\BeamNG']"
+        game-page="/configure/games/beamng"
+        data-testid="beamng-missing"
+      />
       <div v-if="view.running" class="rc-notice warn">
         <v-icon icon="mdi-alert" class="rr-warn" />
         <div>BeamNG.drive is running. Changes and restores wait until it is closed.</div>

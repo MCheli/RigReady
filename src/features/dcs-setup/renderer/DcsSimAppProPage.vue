@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { dcsSetupContract, type SimAppProState } from '../contract';
@@ -101,6 +102,24 @@ const STATUS = {
       <v-icon icon="mdi-check" size="16" /> {{ message }}
     </div>
     <div v-if="!view && !error" class="rr-empty">Looking for SimAppPro…</div>
+
+    <template v-else-if="view && view.dcsFound === false">
+      <NotOnThisPc
+        name="DCS World"
+        :looked="['every Steam library', 'the standalone install folders', 'Saved Games\\DCS']"
+        game-page="/configure/games/dcs"
+        data-testid="dcs-not-found"
+      />
+      <p class="rr-row-sub sap-without-dcs" data-testid="sap-without-dcs">
+        This tab lists what RigReady does for DCS in place of SimAppPro, and which setups still need
+        SimAppPro running. It has nothing to show until DCS is here.
+        {{
+          view.installed
+            ? `SimAppPro ${view.version ?? ''} is installed on this PC.`
+            : 'SimAppPro is not installed on this PC either.'
+        }}
+      </p>
+    </template>
 
     <template v-else-if="view">
       <div class="rr-panel sap-status" data-testid="sap-status">
@@ -234,6 +253,10 @@ const STATUS = {
   gap: 6px;
   font-size: 13px;
   margin: -12px 0 12px;
+}
+.sap-without-dcs {
+  margin-top: 12px;
+  text-align: center;
 }
 .sap-status {
   display: flex;
