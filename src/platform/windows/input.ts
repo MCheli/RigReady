@@ -130,7 +130,9 @@ export class SidecarInputProvider implements InputProvider {
       child.once('error', (e) =>
         settle(err('input.spawn', 'Could not start the input reader.', e.message))
       );
-      child.once('exit', (code) => {
+      // 'close', not 'exit': it comes after the pipes are drained, so the reason the reader
+      // wrote to stderr is all there. On a busy PC 'exit' can arrive before that text does.
+      child.once('close', (code) => {
         this.child = undefined;
         this.current = [];
         this.latest.clear();
