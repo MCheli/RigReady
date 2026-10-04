@@ -127,7 +127,7 @@ ctx.checks.registerCheck({
   group: 'audio',                         // devices | apps | displays | audio | files | other
   label: 'Default audio device',
   params: z.object({ id: z.string(), flow: z.enum(['playback', 'recording']) }),
-  async run(params, ctx) {                // ctx: { ports, log }
+  async run(params, ctx) {                // ctx: { ports, log, profile? } (profile: the setup being checked)
     return { pass, summary: 'Speakers are the default', details: [] };
   },
   async standDown(params, ctx) { return ok(null); },   // optional; ok('what was done') or ok(null)
@@ -163,6 +163,16 @@ That is all: the Fly screen, Make ready, Stand down and the capture screen pick 
 An item with `disabled: true` in the setup (`CheckItem.disabled`, the On/Off switch in the setup editor) is not run at all: its result carries `disabled: true` (status `pass` only so it never counts against readiness), it has no fix, Make ready and Stand down leave it alone, and the Fly screen shows it muted as "Off", never as passed. Anything that lists results must look at `result.disabled` before calling an item passed. Imports use it for checks whose device is not on this PC.
 
 A fix that does something useful without making its check pass (the backup feature's `backup.gameFiles`, "Back up now" on the game-updated warning) uses `kind: 'navigate'`: its button works on the item and its message is shown as it is, and Make ready lists the item under "Needs you" instead of running it on every pass.
+
+More that the registries offer (all optional; `src/core/checks/registry.ts` has the details):
+
+- **The setup a check runs for.** `ctx.profile` is `{ id, name, game?, install? }` whenever a check, fix or launch action runs for a setup (the engine sets it; Configure pages have none). `allPathVariables(ctx, games)` follows it: when the setup names the install it uses (`Profile.gameInstall`, the "Install this setup uses" field in the editor), `{DCS_INSTALL}` and `{DCS_USER}` are that install's folders, and unresolvable when it is gone (never another install's). A feature with its own path lookup should honour `ctx.profile.install` the same way (dcs-setup's `service.for(ctx)` and dcs-bindings' per-install service are the examples).
+- **Program output.** A fix or action that ran a program calls `ctx.output?.(text)` with what it printed; the step shows it whether it worked or not.
+- **Scripts get the setup as environment variables**, never as command text: `scriptEnvironment(ctx, games)` from `core/scriptEnv.ts` gives `RIGREADY_PROFILE_NAME`, `_ID`, `RIGREADY_GAME`, `RIGREADY_GAME_PATH`, `RIGREADY_USER_DATA`, `RIGREADY_HOME`; pass it as `env` to `ports.shell`.
+- **A fix that waits.** A fix may take as long as the user needs: the monitor layout fix applies the layout and resolves only when "Keep this layout?" is answered (`LayoutApplier.applyAndWait`), and fails with `display.reverted` when it was not kept. Make ready and Stand down therefore always know which layout is really there.
+- **Capture candidates** can say more than what to check: `game: 'dcs'` (kept by default only in a setup for that game), `program: 'StreamDeck.exe'` (two candidates for one program collapse into the more specific one; the list of running apps marks its own with `generic: true`), `covers: ['TrackIR5.exe']` (this candidate replaces the generic "is running" one and takes over its tick), and `ask: { param, label, placeholder?, hint? }` (one question on the capture screen; the answer lands in `params[param]`).
+- **`adopt(item, ctx)` on a check type** runs when a setup is created from the capture screen, before it is saved, and may finish the item. The monitor check uses it to save the captured arrangement as a named layout when the user gave a name.
+- **Core never names a check type** (`checks-generic/core/registration.test.ts` enforces it): anything the engine must know about an item is a field on the definition or the candidate.
 
 The displays feature already registers the stand-down step `displays.deskLayout`: when the settings name a desk layout, Stand down applies it (with the keep-or-revert countdown).
 
@@ -249,14 +259,14 @@ Every port has a real implementation (`src/platform/windows`, `src/platform/elec
 |---|---|---|
 | `devices` | `list()` USB devices with identity and hub chain; `subscribe(fn)` called on plug/unplug | `emitChanged()`; state in `ports.state.devices` |
 | `input` | `start()` the DirectInput controllers a game sees, each with `guid` (instance GUID), `productGuid`, `vendorId`, `productId`, `axisNames`; `devices()`; `subscribe(fn)` live state, starting with the last known state of every device; `stop()` | `emit(states)` |
-| `displays` | `read()`, `apply(targets)`, `canRevert()`, `revert()` | state in `ports.state.displays` |
+| `displays` | `read()` (each monitor with `id`, EDID `serial`, `usbSerial` / `usbId` for a USB screen, `connector`, `modes` while it is on), `apply(targets)` (position, rotation, on/off, main display, and `width`/`height`/`refreshHz` when the mode should change; one call, monitors being turned on included), `canRevert()`, `revert()` | state in `ports.state.displays`; refuses a mode the monitor does not list (`display.mode`) |
 | `processes` | `list()`, `start(target)`, `stop(pid)` (terminate), `close(pid, { waitMs, force })` (ask politely, wait, terminate only if `force`; `process.stillRunning` otherwise) | `started`, `closed`, `stubborn` (names that ignore a polite close) |
 | `services` | `list()`, `get(name)` Windows services with state | `ports.state.services` |
 | `audio` | `read()`, `setDefault(id, { roles? })` (all three roles by default; flow follows the device) | `calls` |
 | `registry` | read-only: `getValue(hive, key, name)`, `listKeys`, `listValues`; hives `HKCU`, `HKLM`; values are `{ type: 'string' \| 'number' \| 'binary' (hex) \| 'strings', value }` | `ports.state.registry` (keys recorded from the rig) |
 | `files` | see FileStore below | real files in a temp folder |
-| `folders` | `home`, `documents`, `savedGames`, `appData`, `localAppData`, `programFiles`, `programFilesX86`, `programData`, `dataRoot`, `steamLibraries()` | all under the fake home |
-| `shell` | `run(exe, args[], { cwd, timeoutMs })`, `launch(exe, args[])` | `calls`, `scripts` (canned answers); emulates `HidHideCLI.exe` |
+| `folders` | `home`, `documents`, `savedGames`, `appData`, `localAppData`, `programFiles`, `programFilesX86`, `programData`, `dataRoot`, `steamLibraries()`, `machineName()` (this PC's name; never use `os.hostname()`) | all under the fake home; the machine is `RIG-PC` |
+| `shell` | `run(exe, args[], { cwd, timeoutMs, env, hidden })`, `launch(exe, args[], { cwd, env, hidden })`. `env` is added to RigReady's own environment; `run` hides the console window unless `hidden: false`. Batch files (`.cmd`, `.bat`) and `.ps1` scripts are started through cmd.exe / powershell.exe by the platform, each argument as one literal value; a batch file refuses an argument containing a double quote (`shell.argument`) | `calls` (with the options given), `scripts` (canned answers); emulates `HidHideCLI.exe` |
 | `clock` | `now()` | `TestClock` with `advance(ms)` |
 | `secrets` | `get/set/remove(name)`; encrypted with Electron safeStorage in the app | in-memory `values` |
 | `http` | `request({ method, url, headers, body, timeoutMs })` (https only); a response with any status is `ok` | `calls`, `scripts`, `respond(urlPart, { status, json \| body })`; an unscripted request is an error |
@@ -264,7 +274,8 @@ Every port has a real implementation (`src/platform/windows`, `src/platform/elec
 | `render` | `png(html, { width, height })` exact pixel size; `pdf(html, { pageSize, landscape })`. No scripts run in the HTML. | returns a real one-colour PNG of that size and a stub PDF; `calls` holds the HTML |
 | `notifications` | `notify({ title, body })` | `sent` |
 | `loginItem` | `isEnabled()`, `setEnabled(bool)` (start with Windows) | `enabled` |
-| `overlays` | `showLabels([{ x, y, width, height, text, caption }], durationMs)` big labels on monitors ("Identify") | `shown` |
+| `overlays` | `showLabels([{ x, y, width, height, text, caption, up? }], durationMs)` big labels on monitors ("Identify"); `up` draws a "this side up" arrow | `shown` |
+| `window` | `showOn(areas)`: RigReady's own window, shown on one of these desktop areas (moved there when it is elsewhere). The layout applier calls it before and after a change so "Keep this layout?" is on a monitor that is on | `shown` |
 
 **The input reader's lifetime.** One DirectInput reader (the sidecar) serves the whole app. A feature calls `ctx.ports.input.start()` every time it needs controllers and never calls `stop()`: `start()` is idempotent (it answers at once while the reader runs, calls made while it is starting share that one start, and after a failed start the next call tries again). Only the app shell stops the reader, on quit. A feature that listens to live input keeps the function `subscribe` returns and calls it when it is done; do not cache the result of `start()`, ask again (`tests/unit/inputLifetime.test.ts`).
 
@@ -310,6 +321,8 @@ Zip (`src/core/files/zip.ts`): `createZip(entries)`, `readZip(bytes, { maxTotalB
 | `core/lua/sandbox.ts` | `runLua(source, { prelude, globals, files, read, maxInstructions })` evaluates Lua that is a real program (input `default.lua`, MonitorSetup) with no io/os, `dofile` limited to what `files` hands out, and an instruction budget. `tests/unit/lua.test.ts` shows the prelude that evaluates the F/A-18C and UH-1H joystick defaults. |
 | `core/vdf.ts` | `parseVdf` for Valve KeyValues files. |
 | `core/usb.ts` | `buildUsbTree(devices)`. |
+| `core/displays/identity.ts` | `matchMonitors(expected, actual)` / `findMonitor`: which connected monitor a stored one is. In order: the USB device serial of a USB screen (the same on any port), the id (model plus connector), an EDID serial only one monitor of the model has, then being the only one of its model. Every feature that stores monitors uses this (layouts, setups, the DCS screen setup); store `serial` and `usbSerial` next to the id (`layoutToTargets` does). `core/displays/edid.ts` parses an EDID block. |
+| `core/scriptEnv.ts` | `scriptEnvironment(ctx, games)`: what a script is told about the setup, as environment variables. |
 
 ## 8. Unit tests
 
@@ -324,11 +337,13 @@ await mutate(rig, [{ op: 'unplugDevice', match: { productId: 'B68F' } }]);    //
 rig.ports.http.respond('api.anthropic.com', { json: { content: [] } });       // script a port
 rig.ports.dialogs.script.open.push(['Documents/setup.rigready']);
 app.events;                                          // events emitted to the renderer
+app.layoutAnswer = 'wait';                           // 'keep' (default) | 'revert' | 'wait': the answer to "Keep this layout?"
 await rig.cleanup();                                 // in afterEach
 ```
 
 - `rig.home` is the fake user folder; every `ports.folders.*` path is under it, Program Files included. A scenario copies the rig's recorded files there (section 10). Copying all of them takes about a tenth of a second per test, so pass `files` with the globs you need (or `[]`) when a test does not need everything.
-- To make a provider fail, replace the method: `rig.ports.devices.list = async () => err('x', 'nope')`.
+- To make a provider fail, replace the method: `rig.ports.devices.list = async () => err('x', 'nope')`. To make it hang, or a program fail to start, use the `hangProvider` and `failProcessStart` mutations.
+- A fix that applies a monitor layout waits for the keep-or-revert answer. `wiredApp` answers "keep" by itself; set `app.layoutAnswer` to `'revert'` or to `'wait'` (then answer through `displays:keep` / `displays:revert`).
 - Do not mock `fs`. Test code may use `node:fs` to arrange and inspect the temp folder.
 - Temp folders (`rigready-test-*`, `rigready-e2e-*`, `rigready-scenario-*` in `%TEMP%`) are removed when a test ends; what a killed run leaves behind is cleared by the next run once it is an hour old.
 - Coverage thresholds (80% lines/functions/statements, 70% branches) apply to `src/core`, `src/shared`, `src/platform/fake`, `src/platform/node` and every feature's `core/`.
@@ -368,9 +383,13 @@ Quote ids that YAML would read as numbers (`'4098'`, `'17E9'`). A mutation that 
 | op | Fields | Effect |
 |---|---|---|
 | `unplugDevice` | `match: { vendorId?, productId?, serial?, name? }` (name = substring) | Removes the USB device, and its controller from DirectInput |
+| `plugDevice` | `match` (as above), or `device: { instanceId, vendorId, productId, name, isHid, isGameController, isHub, hubChain }` with an optional `controller: { name, guid, vendorId, productId, ... }` | Plugs a device back in that `unplugDevice` removed (with its controller), or adds a new device and the DirectInput controller a game would see for it |
+| `setController` | `match: { guid?, name?, vendorId?, productId?, nth? }`, `set: { guid?, name? }` | Gives a DirectInput controller a new instance GUID (what Windows does when it re-enumerates a device) or another name; `nth` picks one of several identical ones |
+| `hangProvider` | `port: devices \| displays \| processes \| services \| audio`, `hang?: false` | Every read of that port never answers (a hung driver call), until `hang: false` |
+| `failProcessStart` | `name` (image name), `mode?: error \| neverRuns \| off` | Starting that program fails ("Access is denied"), or is accepted but the program never shows up |
 | `stopProcess` | `name` | Removes every process with that name |
 | `startProcess` | `name`, `path` | Adds a running process |
-| `setDisplay` | `match: { name?, id?, index? }`, `set: { enabled?, primary?, x?, y?, width?, height?, rotation? }` | Changes monitors (`index` picks one of several with the same name) |
+| `setDisplay` | `match: { name?, id?, index? }`, `set: { enabled?, primary?, x?, y?, width?, height?, rotation?, refreshHz?, id?, serial?, usbSerial? }` | Changes monitors (`index` picks one of several with the same name). A new `id` is the monitor moved to another connector or USB port |
 | `unplugDisplay` | `match` | Removes a monitor |
 | `plugDisplay` | `display`: a whole monitor as in `displays.json` (`id`, `name`, `enabled`, `primary`, `x`, `y`, `width`, `height`, `rotation`, and optionally `serial`, `connector`, `modes`, ...) | Connects a monitor the rig does not have (the TV in `mark-racing-tv`). An id that is already connected is an error; plugged in as `primary`, it takes over as the main display |
 | `setAudioDefault` | `flow: playback \| recording`, `match: { name? , id? }`, `role?: default \| communications \| both` | Makes an endpoint the default |
@@ -514,4 +533,5 @@ Known limits, so you do not look for what is not there:
 - `ports.devices.subscribe` on the real machine polls a cheap device-list size every 1.5 s: expect a notification within about 2 s of a plug or unplug.
 - `engine commands` (`iCommand...`) used by DCS input defaults have no numeric values in any Lua file (see `docs/research/dcs.md` 1.6); the sandbox example resolves them to their names.
 - Screenshots that show paths contain the temp folder of that run, so they differ from run to run.
-- DCS-007 (shared Lua reader/writer) is implemented in `src/core/lua` but its ledger entry is still `todo`: the fixture sweep covers `Saved Games\DCS\Config` (data files), not the scripts under `Scripts\`, which are programs. Whoever needs the entry closed should extend the sweep and claim it.
+- Which of the two portrait orientations (90 or 270) is upright on a monitor mounted on its side cannot be read from Windows. Monitors > Identify shows an arrow and asks "Which way is up?"; the answer is stored in the saved layouts.
+- Real-hardware tests: `tests/rig/*.rig.test.ts` (`npm run rig:smoke` reads only; `npm run rig:smoke:apply` also changes and restores monitors and audio defaults: `displayApply`, `displayIdentity`, `audioApply`). The packaged smoke (`tests/packaged`) additionally writes and removes the real "start with Windows" entry and runs a real batch file, hidden and not.

@@ -257,7 +257,15 @@ export class ElectronLoginItem implements LoginItem {
 
   async isEnabled(): Promise<Result<boolean>> {
     try {
-      const state = app.getLoginItemSettings(this.settings());
+      const { path: exe, args, name } = this.settings();
+      const state = app.getLoginItemSettings({ path: exe, args });
+      // The entry is written under RigReady's own name, which Windows' summary flags do
+      // not look at: find the entry itself, for this program, and see that it is not
+      // switched off in Task Manager.
+      const item = (state.launchItems ?? []).find(
+        (i) => i.name === name && i.path.toLowerCase() === exe.toLowerCase()
+      );
+      if (item) return ok(item.enabled !== false);
       return ok(state.openAtLogin && state.executableWillLaunchAtLogin !== false);
     } catch (e) {
       return err('login.read', 'Could not read the Start with Windows setting.', String(e));

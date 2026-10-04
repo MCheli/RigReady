@@ -396,8 +396,14 @@ requirements:
     done_means:
       - "An action with hidden: true is spawned with windowsHide so no console window appears; the Windows Shell implementation passes windowsHide to spawn (unit test on the argument object)."
       - "Rig smoke: running a hidden .cmd script on the real machine shows no console window (screenshot of desktop during run)."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the first criterion is met. For the second, the packaged smoke runs a real .cmd hidden from the packaged app and counts console windows before and during: none appears. What is missing is the proof that the same measurement would see a window for a script that is not hidden (under the test harness it does not, because the app is started with hidden-by-default windows), and the desktop screenshot the criterion asks for, which is not committed because it would put the owner's desktop in the repository. Needs one look by the owner: run a setup with a hidden script and see that no window flashes."
+    status: in_progress
+    evidence:
+      - "tests/unit/crossFeature.test.ts#run() never uses a shell, hides the console window by default and adds the given variables"
+      - "tests/unit/crossFeature.test.ts#launch() shows the program unless hidden is asked for, and stays detached"
+      - "tests/unit/crossFeature.test.ts#a real batch file gets every argument as one literal value, and its environment and exit code come through"
+      - "tests/packaged/packaged.e2e.ts#a real batch file run hidden by the packaged app runs to the end and brings no console window into being"
 
   - id: FLY-022
     title: Context passed to scripts and actions
@@ -479,8 +485,16 @@ requirements:
       - "An E2E test measures from process start to the Fly screen showing the profile name, the grouped checklist skeleton and an enabled Launch button, and fails above 2000 ms on the packaged build (scenario mark-flight)."
       - "Check results arrive progressively after first paint; the screen does not wait for all checks to render."
       - "The measurement is recorded in the test output so regressions are visible."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: measured on the packaged build on the owner's PC: about 760 ms from process start to a usable Fly screen (printed by the packaged smoke as 'packaged: Fly screen usable N ms')."
+    status: done
+    evidence:
+      - "src/features/fly/core/fly.test.ts#streams results of a tagged run, and a newer run silences an older, slower one"
+      - "src/features/fly/core/fly.test.ts#opens on the last used setup and draws its checklist before checking"
+      - "tests/packaged/packaged.e2e.ts#the packaged app shows a usable Fly screen within two seconds of starting"
+      - "tests/e2e/fly-depth.e2e.ts#fly: usable within two seconds of starting"
+      - "artifacts/screens/packaged-startup-time/01-usable.png"
+      - "artifacts/screens/fly-startup-time/01-usable.png"
 
   - id: FLY-027
     title: Fly and Configure are distinct modes
@@ -3363,8 +3377,14 @@ requirements:
       - "A setting 'Start with Windows' (default off) registers a per-user login item (HKCU Run or Electron setLoginItemSettings) without admin; turning it off removes it."
       - "When started at login, the app starts minimised to tray and does not show the window."
       - "Unit test on the login-item call; rig smoke reads the registry value after toggling."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: the packaged smoke turns the setting on in the real packaged app, reads HKCU Run (the entry is the program with --hidden), turns it off, sees it gone, starts the app with --hidden and finds no visible window, and leaves the startup list as it found it. It also found that the setting could never be read back as on (the entry is written under RigReady's own name, which Electron's summary flag ignores); isEnabled now reads the entry itself."
+    status: done
+    evidence:
+      - "tests/unit/settings.test.ts#start with Windows registers the login item first, and says so when Windows refuses"
+      - "tests/unit/settings.test.ts#shows settings, saved layouts and the login item; changes go through validation"
+      - "tests/packaged/packaged.e2e.ts#Start with Windows: the packaged app registers and removes its login entry, and a login start stays in the tray"
+      - "artifacts/screens/app-settings/02-changed.png"
 
   - id: PLAT-002
     title: Lives in the tray
