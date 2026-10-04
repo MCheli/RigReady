@@ -233,7 +233,11 @@ test('backup: a racing restore and a BeamNG copy show what each file becomes bef
   // A single file written on its own (a backup exported to a USB stick) is an action too.
   await page.getByTestId('nav-backups').click();
   await page.getByTestId('backups-tab-tracked').click();
-  await suggestion(page, 'Fanatec App settings').getByTestId('suggestion-add').click();
+  const fanatec = suggestion(page, 'Fanatec App settings');
+  await fanatec.getByTestId('suggestion-add').click();
+  // The row says so once it is tracked. The other tab reads what is tracked when it opens:
+  // opened before that, on a slow machine, it found nothing to back up.
+  await expect(fanatec.getByTestId('suggestion-added')).toBeVisible();
   await page.getByTestId('backups-tab-backups').click();
   await page.getByTestId('backup-all').click();
   await expect(page.getByTestId('backup-outcome-title')).toContainText('Backed up');
@@ -259,6 +263,7 @@ test('restore: bindings for a controller this PC does not have come with a butto
   await page.getByTestId('nav-backups').click();
   await page.getByTestId('backups-tab-tracked').click();
   await suggestion(page, 'DCS bindings').getByTestId('suggestion-add').click();
+  await expect(suggestion(page, 'DCS bindings').getByTestId('suggestion-added')).toBeVisible();
   await page.getByTestId('backups-tab-backups').click();
   await page.getByTestId('backup-all').click();
   await expect(page.getByTestId('backup-outcome-title')).toContainText('Backed up');
