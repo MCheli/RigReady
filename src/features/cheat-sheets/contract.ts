@@ -151,6 +151,12 @@ export const cheatSheetsContract = defineContract(
       z.object({ message: z.string() })
     ),
 
+    /**
+     * Where a sheet opens when nothing was chosen yet: the game of the setup in use, else
+     * the one most of the connected controllers are bound in. Null when no game has a sheet.
+     */
+    suggest: channel(noInput, z.object({ game: z.string(), aircraftId: z.string() }).nullable()),
+
     /** Starts or stops live input for a window ("press a control, its label lights up"). */
     watch: channel(
       z.object({ client: z.string().min(1), on: z.boolean() }),

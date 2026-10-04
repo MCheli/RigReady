@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { builtinLayoutFor, builtinLayouts } from './builtin';
-import { CATEGORIES, CATEGORY_IDS, categorize, shortAction } from './categories';
+import { CATEGORIES, CATEGORY_IDS, categorize, categoryTrail, shortAction } from './categories';
 import { convertJoystickDiagrams, parseTransform, placeholderControl } from './convert';
 import { appendUnplaced, generateLayout, shapeFromControls } from './generate';
 import {
@@ -311,6 +311,17 @@ describe('kinds of action, for colour-coding', () => {
     expect(shortAction('UFC COMM 1 Volume Control Knob')).toBe('UFC COMM 1 Volume');
     // Never shortened to nothing.
     expect(shortAction('A Button')).toBe('A Button');
+  });
+
+  it('takes a reader at its word when it names the kind, and does not say it twice', () => {
+    expect(categorize('Shift up', ['Driving'])).toBe('driving');
+    expect(categorize('Brake bias up', ['Car adjustments'])).toBe('car');
+    expect(categorize('Push to talk', ['Radio & chat'])).toBe('comms');
+    // Beside the kind, only what the game's own category adds is shown.
+    expect(categoryTrail(['Driving'])).toBe('');
+    expect(categoryTrail(['Radio & chat'])).toBe('');
+    expect(categoryTrail(['Stick', 'HOTAS'])).toBe('Stick › HOTAS');
+    expect(categoryTrail([])).toBe('');
   });
 
   it('tells every kind apart in the night style, which has only warm colours to work with', () => {

@@ -73,16 +73,20 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
       else await refresh();
       return;
     }
-    // The first aircraft the user has bindings of their own for, else the first.
-    const first =
-      result.value.games
-        .flatMap((g) => g.aircraft.map((a) => ({ ...a, game: g.game })))
-        .find((a) => a.hasUserBindings) ??
-      result.value.games.flatMap((g) => g.aircraft.map((a) => ({ ...a, game: g.game })))[0];
-    if (first) await choose(`${first.game}/${first.id}`);
+    // Nothing chosen yet: what main suggests (the game of the setup in use, else the one
+    // most of the connected controllers are bound in), else the first there is.
+    const suggested = await api.suggest();
+    const start = suggested.ok && suggested.value ? suggested.value : undefined;
+    const first = start ? `${start.game}/${start.aircraftId}` : undefined;
+    if (first && all.includes(first)) await choose(first);
+    else if (all[0]) await choose(all[0]);
   }
 
   async function choose(value: string): Promise<void> {
+    if (value !== choice.value) {
+      // What the last press did was said of the sheet before.
+      lastPress.value = undefined;
+    }
     choice.value = value;
     sheet.value = undefined;
     await refresh();

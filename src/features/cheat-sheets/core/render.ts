@@ -261,9 +261,11 @@ export function textWidth(text: string, size: number): number {
 }
 
 /**
- * How many rows a line takes in a box this wide: it wraps at spaces, and a word that is
- * wider than the box runs over as many rows as it needs (the style sheet breaks such a
- * word anywhere, so it never sticks out).
+ * How many rows a line takes in a box this wide, the way the browser lays it out: it
+ * wraps at spaces, and a word that is wider than the box starts on a row of its own and
+ * is broken between any two characters, over as many rows as it needs (the style sheet
+ * asks for that, so a long word never sticks out). The browser may also break after a
+ * hyphen or a slash, which can only save a row: counting without it never counts too few.
  */
 export function wrappedRows(line: string, width: number, size: number): number {
   const space = textWidth(' ', size);
@@ -271,20 +273,26 @@ export function wrappedRows(line: string, width: number, size: number): number {
   let used = 0;
   for (const word of line.split(/\s+/).filter(Boolean)) {
     const w = textWidth(word, size);
-    if (w > width) {
-      // A long word fills what is left of the row, then whole rows.
-      const rest = used > 0 ? Math.max(0, width - used - space) : width;
-      const over = w - rest;
-      const extra = Math.ceil(over / width);
-      rows += extra;
-      used = over - (extra - 1) * width;
-    } else if (used === 0) {
-      used = w;
-    } else if (used + space + w <= width) {
-      used += space + w;
-    } else {
-      rows++;
-      used = w;
+    if (w <= width) {
+      if (used === 0) {
+        used = w;
+      } else if (used + space + w <= width) {
+        used += space + w;
+      } else {
+        rows++;
+        used = w;
+      }
+      continue;
+    }
+    if (used > 0) rows++;
+    used = 0;
+    for (const ch of word) {
+      const wide = charWidth(ch) * size;
+      if (used > 0 && used + wide > width) {
+        rows++;
+        used = 0;
+      }
+      used += wide;
     }
   }
   return rows;

@@ -19,17 +19,17 @@ function mfd(): LayoutBuilder {
     WINWING,
     ['BEE0', 'BEE1', 'BEE2'],
     1000,
-    1000,
+    900,
     'Twenty buttons around the screen and a rocker in each corner, numbered as the frame reports them. Each label is on its button.'
   );
   // One card per control, and the card is the button: the frame is drawn by its own keys,
   // five along each edge of the screen and a rocker (up, down) in each corner.
   const edge = 24;
   const gap = 8;
-  const side = 184;
-  const band = 134;
-  const screen = { x: edge + side + gap, y: edge + band + gap, w: 568, h: 668 };
-  b.rect(12, 12, 976, 976, 44, 'body').rect(screen.x, screen.y, screen.w, screen.h, 12, 'screen');
+  const side = 160;
+  const band = 118;
+  const screen = { x: edge + side + gap, y: edge + band + gap, w: 616, h: 600 };
+  b.rect(12, 12, 976, 876, 44, 'body').rect(screen.x, screen.y, screen.w, screen.h, 12, 'screen');
   const far = { x: screen.x + screen.w + gap, y: screen.y + screen.h + gap };
   const across = (screen.w - 4 * gap) / 5;
   const down = (screen.h - 4 * gap) / 5;
@@ -63,10 +63,9 @@ function mfd(): LayoutBuilder {
     );
   }
   // The knob is not on the bezel; it is shown on the screen it belongs to.
-  b.text(500, 340, 'MFD', 30, 'line');
-  b.group('Knob', 336, 410, 328, 150);
-  b.axis('SLIDER1', 344, 434, 312, 58);
-  b.button(49, 344, 498, 153, 54, '◄').button(50, 503, 498, 153, 54, '►');
+  b.text(500, 330, 'MFD', 30, 'line');
+  b.axis('SLIDER1', 344, 392, 312, 58, 'Knob');
+  b.button(49, 344, 456, 153, 56, 'Knob ◄').button(50, 503, 456, 153, 56, 'Knob ►');
   return b;
 }
 
@@ -498,10 +497,11 @@ function fanatec(): LayoutBuilder {
   b.line([500, 100, 500, 126], 'accent');
   b.axis('X', 350, 20, 300, 62, 'Steering');
   b.cross('D-pad', 'hat:1', 344, 216, 312, 204);
+  // (A control is named with its frame: "Left side Paddle", "Shifter".)
   b.group('Left side', 14, 142, 262, 276);
   b.group('Right side', 724, 142, 262, 276);
-  b.button(6, 22, 166, 246, 56, 'Left paddle');
-  b.button(5, 732, 166, 246, 56, 'Right paddle');
+  b.button(6, 22, 166, 246, 56, 'Paddle');
+  b.button(5, 732, 166, 246, 56, 'Paddle');
   [1, 2, 3, 4].forEach((n, i) => {
     b.button(n, 22 + (i % 2) * 126, 228 + Math.floor(i / 2) * 62, 120, 56);
   });
@@ -513,7 +513,7 @@ function fanatec(): LayoutBuilder {
   [13, 14, 15, 16, 17, 18, 19, 20].forEach((n, i) => {
     b.button(n, 22 + i * 120.5, 584, 114.5, 60);
   });
-  b.group('Pedals and other axes', 14, 668, 972, 162);
+  b.group('Axes: pedals, handbrake', 14, 668, 972, 162);
   const axes: [string, string?][] = [
     ['Z', 'Throttle pedal'],
     ['RZ', 'Brake pedal'],

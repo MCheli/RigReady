@@ -281,8 +281,11 @@ describe('cheat sheets for the racing games, on the racing rig', () => {
     expect(control(wheel, 'button:6')?.bindings[0]?.action).toBe('Shift down');
     // The two halves of the wheel axis are one action, not a conflict.
     expect(wheel.counts.conflicts).toBe(0);
-    expect(physicalLabels(wheel.layout).get('button:5')).toBe('Right side Right paddle');
-    expect(physicalLabels(wheel.layout).get('axis:RZ')).toContain('Brake pedal');
+    // A control is named with the frame it is in, once: no "Right side Right paddle".
+    expect(physicalLabels(wheel.layout).get('button:5')).toBe('Right side Paddle');
+    expect(physicalLabels(wheel.layout).get('button:6')).toBe('Left side Paddle');
+    expect(physicalLabels(wheel.layout).get('axis:RZ')).toBe('Brake pedal');
+    expect(physicalLabels(wheel.layout).get('button:14')).toBe('Shifter');
     // A bound button the layout does not place is added below it, never left out.
     expect(control(wheel, 'button:26')?.bindings[0]?.action).toBe('Reset car');
     expect(wheel.layout.groups.some((g) => g.label === 'More controls')).toBe(true);
@@ -328,6 +331,35 @@ describe('cheat sheets for the racing games, on the racing rig', () => {
   });
 });
 
+describe('where a sheet opens when nothing was chosen yet', () => {
+  const suggest = async (scenario: string): Promise<unknown> => {
+    await app?.cleanup();
+    app = await wiredApp(scenario, { files: [...DCS_FILES, ...RACING_FILES] });
+    return app.invoke('cheat-sheets:suggest');
+  };
+
+  it('is the game of the setup in use, not the first game in the alphabet', async () => {
+    // The flying rig has the wheel plugged in and bindings in five games; its setup is for DCS.
+    expect(await suggest('cheat-sheets-hornet')).toEqual({
+      game: 'dcs',
+      aircraftId: 'FA-18C_hornet',
+    });
+    // The racing rig with an iRacing setup.
+    expect(await suggest('tour-racing')).toEqual({ game: 'iracing', aircraftId: 'all' });
+  });
+
+  it('is, without a setup, the game most of the connected controllers are bound in', async () => {
+    // Stick, throttle and panels connected: nearly everything of the user's own is in DCS.
+    expect(await suggest('flying-fresh')).toEqual({ game: 'dcs', aircraftId: 'FA-18C_hornet' });
+    // Only the wheel: DCS has nothing of the user's on it, Le Mans Ultimate has the most.
+    expect(await suggest('mark-racing')).toEqual({ game: 'lmu', aircraftId: 'all' });
+    // No game at all.
+    await app?.cleanup();
+    app = await wiredApp('generic-fresh');
+    expect(await app.invoke('cheat-sheets:suggest')).toBeNull();
+  });
+});
+
 describe('a sheet follows the bindings while it is open', () => {
   it('tells every window when the bindings page changed a binding, with the game it was', async () => {
     const running = await hornet();
@@ -344,7 +376,7 @@ describe('a sheet follows the bindings while it is open', () => {
     }>('dcs-bindings:aircraft', { id: HORNET.aircraftId });
     const device = view.devices.find((d) => d.guid?.toUpperCase() === stick.guid)!;
     const command = view.commands.find((c) => c.name === 'Canopy Control Switch - OPEN')!;
-    await running.invoke('dcs-bindings:apply', {
+    const applied = await running.invoke<{ groupId: string }>('dcs-bindings:apply', {
       ops: [
         {
           op: 'bind',
@@ -357,9 +389,16 @@ describe('a sheet follows the bindings while it is open', () => {
     });
     expect(changes().map((e) => e.payload)).toEqual([{ game: 'dcs' }]);
     const after = await running.invoke<Sheet>('cheat-sheets:sheet', HORNET);
-    expect(control(byTitle(after, 'Stick'), 'button:1')?.bindings[0]?.action).toBe(
-      'Canopy Control Switch - OPEN'
-    );
+    expect(control(byTitle(after, 'Stick'), 'button:1')?.bindings[0]).toMatchObject({
+      action: 'Canopy Control Switch - OPEN',
+      short: 'Canopy: OPEN',
+    });
+
+    // Undo on the bindings page is a change of the files too: the sheet goes back.
+    await running.invoke('dcs-bindings:undo', { groupId: applied.groupId });
+    expect(changes().map((e) => e.payload)).toEqual([{ game: 'dcs' }, { game: 'dcs' }]);
+    const undone = await running.invoke<Sheet>('cheat-sheets:sheet', HORNET);
+    expect(control(byTitle(undone, 'Stick'), 'button:1')).toBeUndefined();
   });
 
   it('hears a racing page too: repairing iRacing’s device id redraws the iRacing sheet', async () => {

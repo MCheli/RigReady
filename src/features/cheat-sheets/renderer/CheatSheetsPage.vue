@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { onMachineChanged } from '../../../renderer/machine';
-import { CATEGORIES, CATEGORY_IDS, type CategoryId } from '../core/categories';
+import { CATEGORIES, CATEGORY_IDS, categoryTrail, type CategoryId } from '../core/categories';
 import { controlName } from '../core/layout';
 import { kindsOn } from '../core/pages';
 import { actionIndex, physicalLabels, type SheetDevice } from '../core/sheet';
@@ -92,10 +92,14 @@ watch(
     noteSaved.value = false;
   }
 );
-// Another aircraft: what was selected belongs to the sheet before.
+// Another aircraft or car: what was selected, and the kind filtered for, belong to the
+// sheet before (a racing sheet has no "Weapons" to filter by).
 watch(
   () => store.choice,
-  () => (selected.value = undefined)
+  () => {
+    selected.value = undefined;
+    kind.value = undefined;
+  }
 );
 // Pressing a control on the device selects it, so its details and note are right there.
 watch(
@@ -115,9 +119,14 @@ async function saveNote(): Promise<void> {
   noteSaved.value = !failed;
 }
 
+const allActions = computed(() => (store.sheet ? actionIndex(store.sheet) : []));
+/** The kinds this sheet has, in legend order: a racing sheet offers no "Weapons" to filter by. */
+const actionKinds = computed(() => {
+  const present = new Set(allActions.value.map((entry) => entry.kind));
+  return CATEGORY_IDS.filter((id) => present.has(id));
+});
 const actions = computed(() => {
-  if (!store.sheet) return [];
-  return actionIndex(store.sheet).filter((entry) => {
+  return allActions.value.filter((entry) => {
     if (kind.value && entry.kind !== kind.value) return false;
     if (!needle.value) return true;
     return [
@@ -330,8 +339,9 @@ onBeforeUnmount(() => {
 
       <div v-if="store.sheet" class="cs-totals" data-testid="sheet-totals">
         <span
-          ><strong data-testid="sheet-name">{{ store.title }}</strong> ·
-          {{ totals.devices }} devices · {{ totals.bound }} controls bound</span
+          ><strong data-testid="sheet-name">{{ store.title }}</strong> · {{ totals.devices }}
+          {{ totals.devices === 1 ? 'device' : 'devices' }} · {{ totals.bound }}
+          {{ totals.bound === 1 ? 'control' : 'controls' }} bound</span
         >
         <span v-if="totals.conflicts > 0" class="rr-warn" data-testid="sheet-conflicts">
           <v-icon icon="mdi-alert" size="15" /> {{ totals.conflicts }}
@@ -521,7 +531,10 @@ onBeforeUnmount(() => {
                     </div>
                     <div class="rr-row-sub">
                       {{ CATEGORIES[b.kind].label
-                      }}<span v-if="b.category.length"> · {{ b.category.join(' › ') }}</span> ·
+                      }}<span v-if="categoryTrail(b.category)">
+                        · {{ categoryTrail(b.category) }}</span
+                      >
+                      ·
                       {{ b.source === 'user' ? 'your binding' : 'game default' }}
                     </div>
                     <div v-if="b.alsoOn.length" class="rr-row-sub" data-testid="detail-also">
@@ -575,7 +588,7 @@ onBeforeUnmount(() => {
       <div v-else-if="store.sheet" class="cs-actions" data-testid="sheet-actions">
         <div class="cs-legend">
           <button
-            v-for="id in CATEGORY_IDS"
+            v-for="id in actionKinds"
             :key="id"
             type="button"
             class="cs-chip"
@@ -606,8 +619,8 @@ onBeforeUnmount(() => {
               <div v-if="entry.plain" class="rr-row-sub" data-testid="action-game-name">
                 {{ store.sheet.gameName }} calls it: {{ entry.action }}
               </div>
-              <div v-if="entry.category.length" class="rr-row-sub">
-                {{ entry.category.join(' › ') }}
+              <div v-if="categoryTrail(entry.category)" class="rr-row-sub">
+                {{ categoryTrail(entry.category) }}
               </div>
             </div>
             <div class="cs-places">

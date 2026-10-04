@@ -132,6 +132,15 @@ export function categorize(action: string, category: readonly string[] = []): Ca
   return category.length > 0 ? 'systems' : 'other';
 }
 
+/**
+ * The game's category path, to show beside the kind. A reader that gives the kind itself
+ * as the category ("Driving", "Pit & session") has said it already: nothing is repeated.
+ */
+export function categoryTrail(category: readonly string[]): string {
+  const named = NAMED[(category[0] ?? '').trim().toLowerCase()] !== undefined;
+  return (named ? category.slice(1) : category).join(' › ');
+}
+
 /** Words that only say what kind of control it is, which the picture already shows. */
 const FILLER =
   /\s+(Pushbutton|Push Button|Switch|Button|Control|Controller|Selector|Handle|Knob)\b/gi;

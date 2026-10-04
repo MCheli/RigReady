@@ -421,6 +421,10 @@ onMounted(async () => {
   flex: 1;
   min-width: 0;
 }
+/* The shared section title has no space above it; in this column every section needs it. */
+.kb-options .rr-section-title {
+  margin-top: 18px;
+}
 .kb-status {
   display: flex;
   gap: 10px;

@@ -59,6 +59,7 @@ function setup(ctx: MainContext) {
   return [
     bind(cheatSheetsContract, {
       overview: () => service.overview(),
+      suggest: () => service.suggest(),
       sheet: ({ game, aircraftId }) => service.sheet(game, aircraftId),
       setNote: ({ game, aircraftId, deviceKey, control, note }) =>
         service.setNote(game, aircraftId, deviceKey, control, note),
