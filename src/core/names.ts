@@ -18,7 +18,11 @@ export interface DeviceNameQuery {
   serial?: string;
   /** Windows device instance path (the USB port, for identical devices without a serial). */
   instanceId?: string;
-  /** DirectInput instance GUID, for a controller looked up from a game's point of view. */
+  /**
+   * DirectInput instance GUID, for a controller looked up from a game's point of view.
+   * Among several identical devices it picks the one the controller belongs to, when the
+   * platform reports that (InputDevice.usbInstanceId); otherwise there is no name.
+   */
   guid?: string;
 }
 

@@ -469,6 +469,8 @@ export function mutateState(state: RigState, mutation: StateMutation): void {
           numAxes: 0,
           numButtons: 32,
           numHats: 0,
+          // The controller of this very device: what DirectInput reports for it on a real PC.
+          usbInstanceId: device.instanceId,
           ...mutation.controller,
           index: state.input.length,
         });

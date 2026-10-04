@@ -94,6 +94,88 @@ describe('device names everywhere', () => {
     );
   });
 
+  it('two identical controllers each show their own name in the bindings views, found by DirectInput GUID', async () => {
+    app = await wiredApp('devices-rig', { files: BINDING_FILES });
+    const box = (serial: string, guid: string) => ({
+      op: 'plugDevice' as const,
+      device: {
+        instanceId: `USB\\VID_1234&PID_ABCD\\${serial}`,
+        vendorId: '1234',
+        productId: 'ABCD',
+        name: 'Button Box',
+        serial,
+        isHid: true,
+        isGameController: true,
+        isHub: false,
+        hubChain: [],
+      },
+      controller: { name: 'Button Box', guid, vendorId: '1234', productId: 'ABCD' },
+    });
+    const GUID_A = 'AAAAAAAA-C0DE-11F1-8001-444553540000';
+    const GUID_B = 'BBBBBBBB-C0DE-11F1-8002-444553540000';
+    await mutate(app, [box('A1', GUID_A), box('B2', GUID_B)]);
+
+    // The Devices page lists each box with its own controller, not both with both.
+    const overview = await app.invoke<{
+      devices: (RigDeviceLite & { serial?: string; controllersShared: boolean })[];
+    }>('devices:overview');
+    const boxes = overview.devices.filter((d) => d.productId === 'ABCD');
+    expect(boxes.map((d) => d.controllers.map((c) => c.guid))).toEqual([[GUID_A], [GUID_B]]);
+    expect(boxes.every((d) => !d.controllersShared)).toBe(true);
+    await app.invoke('devices:rename', { key: boxes[0]!.key, name: 'Left box' });
+    await app.invoke('devices:rename', { key: boxes[1]!.key, name: 'Right box' });
+
+    // Through core, as a bindings view asks: model plus the controller's GUID.
+    const names = await app.wiring.context.names.devices();
+    const query = { vendorId: '1234', productId: 'ABCD' };
+    expect(names.nameOf({ ...query, guid: GUID_A })).toBe('Left box');
+    expect(names.nameOf({ ...query, guid: GUID_B })).toBe('Right box');
+    // Not enough to tell the twins apart: no name, never one of the two.
+    expect(names.nameOf(query)).toBeUndefined();
+
+    // DCS bindings: each box under its own name.
+    const view = await app.invoke<{
+      devices: { name: string; givenName?: string; guid?: string }[];
+    }>('dcs-bindings:aircraft', { id: HORNET });
+    const bound = view.devices.filter((d) => d.name === 'Button Box');
+    expect(
+      bound
+        .map((d) => [d.guid?.toUpperCase(), d.givenName])
+        .sort((x, y) => (x[0]! < y[0]! ? -1 : 1))
+    ).toEqual([
+      [GUID_A, 'Left box'],
+      [GUID_B, 'Right box'],
+    ]);
+    // And through the reader other features use (input tester, cheat sheets).
+    const reader = app.wiring.context.bindings.get('dcs')!;
+    const read = await reader.bindings(HORNET);
+    const readBoxes = (read.ok ? read.value.devices : []).filter((d) => d.name === 'Button Box');
+    expect(readBoxes.map((d) => d.givenName).sort()).toEqual(['Left box', 'Right box']);
+  });
+
+  it('Device IDs: the devices old bindings can move to carry the names the owner gave them', async () => {
+    app = await wiredApp('dcs-bindings-identical', { files: BINDING_FILES });
+    const overview = await app.invoke<{ devices: RigDeviceLite[] }>('devices:overview');
+    const panel = (guidStart: string) =>
+      overview.devices.find((d) => d.controllers.some((c) => c.guid.startsWith(guidStart)))!;
+    await app.invoke('devices:rename', { key: panel('A1A1A1A1').key, name: 'MFD left' });
+    await app.invoke('devices:rename', { key: panel('A3A3A3A3').key, name: 'MFD right' });
+    const scan = await app.invoke<{
+      orphans: {
+        name: string;
+        candidates: { guid: string; name: string; givenName?: string }[];
+      }[];
+    }>('dcs-bindings:migrationScan');
+    const orphan = scan.orphans.find(
+      (o) => o.name === 'WINWING MFD1' && o.candidates.length === 3
+    )!;
+    expect(orphan.candidates.map((c) => [c.guid.slice(0, 8), c.name, c.givenName]).sort()).toEqual([
+      ['A1A1A1A1', 'WINWING MFD1', 'MFD left'],
+      ['A2A2A2A2', 'WINWING MFD1', undefined],
+      ['A3A3A3A3', 'WINWING MFD1', 'MFD right'],
+    ]);
+  });
+
   it('without names nothing changes: devices show what the hardware calls itself', async () => {
     app = await wiredApp('devices-rig', { files: BINDING_FILES });
     const names = await app.wiring.context.names.devices();

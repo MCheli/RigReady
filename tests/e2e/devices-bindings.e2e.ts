@@ -355,6 +355,85 @@ test('bindings: three identical panels got new device IDs; each old file goes to
   await expect(check).toHaveAttribute('data-status', 'pass');
 });
 
+test('names: identical controllers each show the name the owner gave them in DCS bindings, and Device IDs offers panels by those names', async ({
+  rig,
+}) => {
+  // Two button boxes of one model: same name, same USB ids, told apart by serial and by
+  // the DirectInput ID a game knows each one by.
+  const twins = await rig.launch('devices-rig', 'devices-names-identical');
+  const box = (serial: string, guid: string) => ({
+    op: 'plugDevice' as const,
+    device: {
+      instanceId: `USB\\VID_1234&PID_ABCD\\${serial}`,
+      vendorId: '1234',
+      productId: 'ABCD',
+      name: 'Button Box',
+      serial,
+      isHid: true,
+      isGameController: true,
+      isHub: false,
+      hubChain: [],
+    },
+    controller: { name: 'Button Box', guid, vendorId: '1234', productId: 'ABCD' },
+  });
+  await twins.mutate([
+    box('A1', 'AAAAAAAA-C0DE-11F1-8001-444553540000'),
+    box('B2', 'BBBBBBBB-C0DE-11F1-8002-444553540000'),
+  ]);
+  await openDevices(twins.page);
+  const boxes = deviceRow(twins.page, 'Button Box');
+  await expect(boxes).toHaveCount(2);
+  for (const name of ['Left box', 'Right box']) {
+    const row = boxes.first();
+    await row.locator('button').first().click();
+    await row.getByTestId('device-rename').click();
+    await twins.page.getByTestId('device-name-input').locator('input').fill(name);
+    await twins.page.getByTestId('device-name-save').click();
+    await expect(deviceRow(twins.page, name)).toBeVisible();
+  }
+  await expect(boxes).toHaveCount(0);
+  await deviceRow(twins.page, 'Left box').scrollIntoViewIfNeeded();
+  await twins.shot('devices-named');
+
+  await openBindings(twins.page);
+  const bound = twins.page.locator('[data-testid="ov-device"][data-device="Button Box"]');
+  await expect(bound).toHaveCount(2);
+  await expect(bound.locator('.rr-row-title')).toContainText([/Left box/, /Right box/]);
+  await bound.first().scrollIntoViewIfNeeded();
+  await twins.shot('bindings-overview');
+
+  // Three panels with one name whose IDs all changed: the list to choose from leads with
+  // the owner's names, so "which one is left" does not need a look at the IDs.
+  const run = await rig.launch('dcs-bindings-identical', 'bindings-identical-names');
+  const { page, shot, sendInput } = run;
+  await openDevices(page);
+  await nameDevice(page, 'WINWING MFD1-L', 'MFD left');
+  await nameDevice(page, 'WINWING MFD1-R', 'MFD right');
+  await page.getByTestId('nav-dcs-bindings').click();
+  await page.getByTestId('bind-tab-device-ids').click();
+  const orphan = page
+    .locator('[data-testid="ids-orphan"][data-device="WINWING MFD1"]')
+    .filter({ hasText: '4B3710E0' });
+  await orphan.getByTestId('ids-target').click();
+  const options = page.locator('.v-overlay--active .v-list-item');
+  await expect(options.filter({ hasText: 'MFD left · WINWING MFD1 · A1A1A1A1' })).toHaveCount(1);
+  await expect(options.filter({ hasText: 'MFD right · WINWING MFD1 · A3A3A3A3' })).toHaveCount(1);
+  // The panel nobody named is listed as before.
+  await expect(options.filter({ hasText: /^WINWING MFD1 · A2A2A2A2/ })).toHaveCount(1);
+  await shot('choices-by-name');
+  await page.keyboard.press('Escape');
+  // Still chosen by pressing a button on the device; the name confirms which one it was.
+  await orphan.getByTestId('ids-identify').click();
+  await expect(orphan.getByTestId('ids-identifying')).toBeVisible();
+  const panel = (index: number, pressed: number[] = []) =>
+    controller({ index, name: 'WINWING MFD1', axes: 1, buttons: 50 }, { pressed });
+  await sendInput([panel(6), panel(7), panel(8)]);
+  await sendInput([panel(7, [5])]);
+  await expect(orphan.getByTestId('ids-new')).toHaveText('A1A1A1A1-C0DE-11f1-8001-444553540000');
+  await expect(orphan.getByTestId('ids-new-name')).toHaveText('MFD left');
+  await shot('chosen-shows-the-name');
+});
+
 test('settings: the device notification choice is on the Settings page and is the same one as on Devices', async ({
   rig,
 }) => {

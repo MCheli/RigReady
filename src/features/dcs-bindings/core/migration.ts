@@ -95,9 +95,20 @@ async function scan(bindings: DcsBindings): Promise<Result<Scanned>> {
     }
   }
 
+  // The owner's names: what tells three devices with one name apart at a glance.
+  const names = await bindings.ctx.names?.();
+  const givenNameOf = (device: InputDevice): string | undefined =>
+    device.vendorId && device.productId
+      ? names?.nameOf({
+          vendorId: device.vendorId,
+          productId: device.productId,
+          guid: device.guid,
+        })
+      : undefined;
   const candidateFor = (device: InputDevice, entry: Found): Candidate => ({
     guid: dcsGuidText(device.guid),
     name: device.name,
+    ...(givenNameOf(device) ? { givenName: givenNameOf(device)! } : {}),
     fullId: fullIdFor(device.name, device.guid),
     index: device.index,
     vendorId: device.vendorId,

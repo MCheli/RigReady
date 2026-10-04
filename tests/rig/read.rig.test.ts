@@ -208,6 +208,21 @@ describe('real hardware (read-only)', () => {
         .filter((d) => !seen.has(`${d.vendorId}:${d.productId}`))
         .map((d) => `${d.name} ${d.vendorId}:${d.productId}`);
       expect(missing).toEqual([]);
+      // The USB device a controller says it belongs to (what tells identical controllers
+      // apart) is one the device list has, of the same model.
+      const linked = started.value.filter((d) => d.usbInstanceId !== undefined);
+      console.log(`  ${linked.length} of them say which USB device they are`);
+      for (const controller of linked) {
+        const owner = usb.value.find(
+          (d) => d.instanceId.toUpperCase() === controller.usbInstanceId!.toUpperCase()
+        );
+        expect(owner, `${controller.name} -> ${controller.usbInstanceId}`).toBeDefined();
+        if (owner && controller.vendorId) {
+          expect(`${owner.vendorId}:${owner.productId}`).toBe(
+            `${controller.vendorId}:${controller.productId}`
+          );
+        }
+      }
     }
     for (const device of started.value) {
       expect(device.guid).toMatch(/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/);

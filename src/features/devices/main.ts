@@ -47,7 +47,13 @@ function setupDevices(ctx: MainContext) {
   // The names the owner gave devices, for every other feature (ctx.names.devices()).
   ctx.names.provideDevices(async () => {
     const [listed, data] = await Promise.all([ports.devices.list(), stores.data.read()]);
-    return deviceNames(data.ok ? data.value.names : [], listed.ok ? listed.value : []);
+    // The controllers as the shared reader has them now (never started from here): they
+    // say which of several identical devices a DirectInput GUID is.
+    return deviceNames(
+      data.ok ? data.value.names : [],
+      listed.ok ? listed.value : [],
+      ports.input.devices()
+    );
   });
 
   /** The setup Fly shows: the one used last, else the first. */
