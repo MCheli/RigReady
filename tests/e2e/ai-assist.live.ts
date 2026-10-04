@@ -1,7 +1,8 @@
 /**
  * LIVE smoke test of the AI binding help: ONE small real request to the Anthropic API,
  * built by the same code the app uses, to prove the request shape (structured output,
- * prompt caching, refusal fallback header) is accepted and the answer validates.
+ * prompt caching, refusal fallback header, streaming) is accepted, the event stream is
+ * read by the app's own parser and the answer validates.
  *
  * Not part of `npm run check`, the e2e suite or CI (it is not a *.e2e.ts or *.test.ts file).
  * Costs a fraction of a cent. Run by hand:
@@ -14,7 +15,7 @@
 import { NodeHttp } from '../../src/platform/node';
 import {
   messageBody,
-  sendMessage,
+  streamMessage,
   DEFAULT_MODEL,
 } from '../../src/features/ai-assist/core/anthropic';
 import type { Snapshot } from '../../src/features/ai-assist/core/snapshot';
@@ -88,10 +89,21 @@ const body = messageBody({
   task: `${suggestionTask(snapshot)}\nKeep it to these four actions.`,
   schema: suggestionSchema(['dev1']),
   maxTokens: 4000,
+  stream: true,
 });
 
 async function main(): Promise<number> {
-  const answer = await sendMessage(new NodeHttp(), key!, body, 120_000);
+  // Streamed, as the app sends a suggestion request. Only counts are printed, never the text.
+  let pieces = 0;
+  let started = false;
+  const answer = await streamMessage(new NodeHttp(), key!, body, {
+    timeoutMs: 120_000,
+    onUpdate: (update) => {
+      if (update.kind === 'started') started = true;
+      else pieces += 1;
+    },
+  });
+  console.log(`stream: ${started ? 'started' : 'never started'}, ${pieces} pieces of text`);
   if (!answer.ok) {
     console.log(
       `FAILED: ${answer.error.code}: ${answer.error.message} ${answer.error.detail ?? ''}`

@@ -2534,6 +2534,12 @@ requirements:
       - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip shows what is sent, checks the answer, and applies only what is ticked after review"
       - "artifacts/screens/ai-assist-suggest/01-payload.png"
       - "artifacts/screens/ai-assist-suggest/02-suggestions.png"
+      - "src/features/ai-assist/core/anthropic.test.ts#asks for a stream with the same headers, and puts the answer together from the events"
+      - "src/features/ai-assist/core/sse.test.ts#gives the same events wherever the chunks are cut: mid-event, mid-line, inside a UTF-8 character"
+      - "src/features/ai-assist/core/service.test.ts#reports that the model started and the suggestions received so far, and uses the answer only when it is complete"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggested setup streams in, the progress says what has arrived, and the answer is used only when complete"
+      - "artifacts/screens/ai-assist-stream-trouble/01-three-so-far.png"
+      - "artifacts/screens/ai-assist-stream/01-answered.png"
 
   - id: AI-004
     title: User approves each AI change
@@ -2552,6 +2558,14 @@ requirements:
       - "src/features/ai-assist/core/anthropic.test.ts#turns every failure into a plain message: key, rate limit, overload, refusal, cut-off, network"
       - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip shows what is sent, checks the answer, and applies only what is ticked after review"
       - "artifacts/screens/ai-assist-suggest/03-review.png"
+      - "src/features/ai-assist/core/anthropic.test.ts#turns an error event in the middle of a stream into the same plain messages, and stops reading"
+      - "src/features/ai-assist/core/anthropic.test.ts#uses nothing from a stream that ends without message_stop, runs out of tokens, or is refused"
+      - "src/features/ai-assist/core/service.test.ts#Cancel aborts the request on its way: nothing of the answer is used, and there is nothing left to cancel"
+      - "src/features/ai-assist/core/service.test.ts#ends a stalled, broken or failing stream with a plain message and keeps nothing of it"
+      - "tests/unit/httpStream.test.ts#gives up when nothing arrives for the idle timeout, counted from the last chunk"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: Cancel stops a streamed request, and a stream that stalls or fails part-way says so and changes nothing"
+      - "artifacts/screens/ai-assist-stream-trouble/02-cancelled.png"
+      - "artifacts/screens/ai-assist-stream-trouble/03-stalled.png"
 
   - id: AI-005
     title: Binding guide and walkthrough without a key

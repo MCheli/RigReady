@@ -12,6 +12,7 @@ import type {
   PlanView,
   Prepared,
   RequestKind,
+  SendProgress,
   Sent,
 } from '../core/model';
 
@@ -44,7 +45,13 @@ export const useAiStore = defineStore('ai-assist', () => {
   /** A request built and shown to the user, waiting for "Send". */
   const prepared = ref<Prepared>();
   const sending = ref(false);
+  /** How far the request being answered is (streamed requests only), and when it was sent. */
+  const progress = ref<SendProgress>();
+  const sentAt = ref<number>();
+  const cancelling = ref(false);
   const aiError = ref<string>();
+  /** Something that happened to a request and is not a failure (the user cancelled it). */
+  const aiNote = ref<string>();
   const round = ref<SuggestRound>();
   const selected = ref(new Set<string>());
   const answers = ref<Answer[]>([]);
@@ -291,6 +298,7 @@ export const useAiStore = defineStore('ai-assist', () => {
   ): Promise<void> {
     if (!aircraftId.value) return;
     aiError.value = undefined;
+    aiNote.value = undefined;
     explaining = kind === 'explain' ? extra.actionId : undefined;
     const result = await api.prepare({ aircraftId: aircraftId.value, kind, ...extra });
     if (result.ok) prepared.value = result.value;
@@ -301,12 +309,19 @@ export const useAiStore = defineStore('ai-assist', () => {
     const request = prepared.value;
     if (!request || sending.value) return;
     sending.value = true;
+    progress.value = undefined;
+    cancelling.value = false;
+    sentAt.value = Date.now();
     aiError.value = undefined;
+    aiNote.value = undefined;
     const result = await api.send({ requestId: request.requestId });
     sending.value = false;
+    progress.value = undefined;
+    cancelling.value = false;
     prepared.value = undefined;
     if (!result.ok) {
-      aiError.value = errorText(result.error);
+      if (result.error.code === 'ai.cancelled') aiNote.value = result.error.message;
+      else aiError.value = errorText(result.error);
       return;
     }
     lastUsage.value = result.value.usage;
@@ -319,6 +334,23 @@ export const useAiStore = defineStore('ai-assist', () => {
     } else {
       drafted.value = `Drafted a guide with ${result.value.items} items${result.value.dropped > 0 ? ` (${result.value.dropped} more did not name real actions and were left out)` : ''}.`;
       await load();
+    }
+  }
+
+  /** Progress of the request being answered; anything about another request is ignored. */
+  function progressed(update: SendProgress): void {
+    if (sending.value && update.requestId === prepared.value?.requestId) progress.value = update;
+  }
+
+  /** Stops the request being answered. `send` then ends with the "cancelled" note. */
+  async function cancelSend(): Promise<void> {
+    const request = prepared.value;
+    if (!request || !sending.value || cancelling.value) return;
+    cancelling.value = true;
+    const result = await api.cancel({ requestId: request.requestId });
+    if (!result.ok) {
+      cancelling.value = false;
+      aiError.value = errorText(result.error);
     }
   }
 
@@ -355,7 +387,11 @@ export const useAiStore = defineStore('ai-assist', () => {
     saved,
     prepared,
     sending,
+    progress,
+    sentAt,
+    cancelling,
     aiError,
+    aiNote,
     round,
     selected,
     answers,
@@ -379,6 +415,8 @@ export const useAiStore = defineStore('ai-assist', () => {
     undoSaved,
     prepare,
     send,
+    progressed,
+    cancelSend,
     toggle,
     deleteDraft,
   };

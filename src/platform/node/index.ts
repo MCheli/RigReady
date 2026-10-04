@@ -9,6 +9,7 @@ import type {
   Http,
   HttpRequest,
   HttpResponse,
+  HttpStreamRequest,
   LogSink,
   LoginItem,
   Notifications,
@@ -325,6 +326,74 @@ export class NodeHttp implements Http {
         timedOut ? `${url.host} did not answer in time.` : `Could not reach ${url.host}.`,
         e instanceof Error ? e.message : String(e)
       );
+    }
+  }
+
+  async stream(
+    request: HttpStreamRequest,
+    onChunk: (bytes: Uint8Array) => void
+  ): Promise<Result<HttpResponse>> {
+    let url: URL;
+    try {
+      url = new URL(request.url);
+    } catch {
+      return err('http.url', `Not a valid address: ${request.url}`);
+    }
+    if (url.protocol !== 'https:') return err('http.url', 'Only https addresses are allowed.');
+    if (request.signal?.aborted) return err('http.cancelled', 'The request was cancelled.');
+
+    // One controller ends the fetch and the body read, whatever the reason; `why` keeps the first.
+    const controller = new AbortController();
+    let why: 'idle' | 'timeout' | 'cancelled' | undefined;
+    const stop = (reason: 'idle' | 'timeout' | 'cancelled'): void => {
+      why ??= reason;
+      controller.abort();
+    };
+    const idleMs = request.idleTimeoutMs ?? 60_000;
+    let idle = setTimeout(() => stop('idle'), idleMs);
+    const total =
+      request.timeoutMs === undefined
+        ? undefined
+        : setTimeout(() => stop('timeout'), request.timeoutMs);
+    const cancelled = (): void => stop('cancelled');
+    request.signal?.addEventListener('abort', cancelled, { once: true });
+    try {
+      const response = await fetch(url, {
+        method: request.method ?? 'GET',
+        ...(request.headers ? { headers: request.headers } : {}),
+        ...(request.body !== undefined ? { body: request.body } : {}),
+        signal: controller.signal,
+      });
+      const headers: Record<string, string> = {};
+      response.headers.forEach((value, key) => (headers[key.toLowerCase()] = value));
+      if (!response.ok || !response.body) {
+        return ok({ status: response.status, headers, body: await response.text() });
+      }
+      const reader = response.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        clearTimeout(idle);
+        idle = setTimeout(() => stop('idle'), idleMs);
+        if (value.length > 0) onChunk(value);
+      }
+      return ok({ status: response.status, headers, body: '' });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      if (why === 'cancelled') return err('http.cancelled', 'The request was cancelled.');
+      if (why === 'idle') {
+        return err(
+          'http.idle',
+          `${url.host} sent nothing for ${Math.round(idleMs / 1000)} seconds.`,
+          detail
+        );
+      }
+      if (why === 'timeout') return err('http.timeout', `${url.host} took too long.`, detail);
+      return err('http.network', `Could not reach ${url.host}.`, detail);
+    } finally {
+      clearTimeout(idle);
+      clearTimeout(total);
+      request.signal?.removeEventListener('abort', cancelled);
     }
   }
 }

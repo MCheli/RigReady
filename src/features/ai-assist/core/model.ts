@@ -170,6 +170,8 @@ export const PreparedSchema = z.object({
   approxCost: z.number(),
   /** What is in it, in plain words. */
   contents: z.array(z.string()),
+  /** The answer arrives as a stream: progress is reported and the request can be cancelled. */
+  streamed: z.boolean(),
 });
 export type Prepared = z.infer<typeof PreparedSchema>;
 
@@ -214,6 +216,18 @@ export const SentSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 export type Sent = z.infer<typeof SentSchema>;
+
+/** How a streamed request is coming along. Counts only: the answer itself comes when it is complete. */
+export const SendProgressSchema = z.object({
+  requestId: z.string(),
+  /** `started`: the model is working, no text yet. `receiving`: the answer's text is arriving. */
+  phase: z.enum(['started', 'receiving']),
+  /** Characters of the answer received so far. */
+  chars: z.number().int().nonnegative(),
+  /** Finished entries of the answer's list (suggestions, guide items) received so far. */
+  items: z.number().int().nonnegative(),
+});
+export type SendProgress = z.infer<typeof SendProgressSchema>;
 
 export const PressSchema = z.object({
   guid: z.string(),

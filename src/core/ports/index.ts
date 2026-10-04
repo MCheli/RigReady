@@ -209,10 +209,38 @@ export interface HttpResponse {
   body: string;
 }
 
+export interface HttpStreamRequest extends HttpRequest {
+  /**
+   * Limit for the whole exchange. Unlike `request`, a stream has none unless one is given:
+   * a long answer that keeps arriving is not a failure.
+   */
+  timeoutMs?: number;
+  /**
+   * Longest silence allowed: before the response starts and between two chunks.
+   * Default 60 000. Exceeding it fails with `http.idle`.
+   */
+  idleTimeoutMs?: number;
+  /** Aborting it ends the request at once with `http.cancelled`. */
+  signal?: AbortSignal;
+}
+
 /** A minimal fetch, so network calls (the AI features) can be scripted in tests. */
 export interface Http {
   /** Resolves with the response for any HTTP status; fails only when no response arrived. */
   request(request: HttpRequest): Promise<Result<HttpResponse>>;
+  /**
+   * The same request, with the body of a 2xx response handed over as it arrives: `onChunk`
+   * gets the raw bytes in order (a chunk may end in the middle of a line or of a UTF-8
+   * character), and the result, once the server closed the stream, has an empty `body`.
+   * Any other status is not streamed: its whole body is in the result and `onChunk` is
+   * never called. Fails with `http.idle` (nothing arrived for `idleTimeoutMs`),
+   * `http.timeout` (`timeoutMs` passed), `http.cancelled` (`signal` aborted) or
+   * `http.network`; chunks delivered before a failure stay delivered.
+   */
+  stream(
+    request: HttpStreamRequest,
+    onChunk: (bytes: Uint8Array) => void
+  ): Promise<Result<HttpResponse>>;
 }
 
 export interface FileFilter {

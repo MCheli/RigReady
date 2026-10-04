@@ -269,7 +269,7 @@ Every port has a real implementation (`src/platform/windows`, `src/platform/elec
 | `shell` | `run(exe, args[], { cwd, timeoutMs, env, hidden })`, `launch(exe, args[], { cwd, env, hidden })`. `env` is added to RigReady's own environment; `run` hides the console window unless `hidden: false`. Batch files (`.cmd`, `.bat`) and `.ps1` scripts are started through cmd.exe / powershell.exe by the platform, each argument as one literal value; a batch file refuses an argument containing a double quote (`shell.argument`) | `calls` (with the options given), `scripts` (canned answers); emulates `HidHideCLI.exe` |
 | `clock` | `now()` | `TestClock` with `advance(ms)` |
 | `secrets` | `get/set/remove(name)`; encrypted with Electron safeStorage in the app | in-memory `values` |
-| `http` | `request({ method, url, headers, body, timeoutMs })` (https only); a response with any status is `ok` | `calls`, `scripts`, `respond(urlPart, { status, json \| body })`; an unscripted request is an error |
+| `http` | `request({ method, url, headers, body, timeoutMs })` (https only); a response with any status is `ok`. `stream({ ...the same, idleTimeoutMs, signal }, onChunk)` hands the body of a 2xx response over as raw bytes while it arrives (a chunk may end mid-line or mid-character) and resolves when the server closes it; any other status comes back whole. It fails with `http.idle` (nothing for `idleTimeoutMs`, default 60 s), `http.timeout` (only when `timeoutMs` is given), `http.cancelled` (`signal` aborted) or `http.network` | `calls`, `scripts`, `respond(urlPart, { status, json \| body \| stream: { chunks, delayMs, chunkBytes, end } })`; an unscripted request is an error; scripted pauses run in real time |
 | `dialogs` | `open({ title, filters, directory, multiple })` -> paths (empty = cancelled); `save({ defaultPath, filters })` -> path or null | `script.open` / `script.save` queues, `calls` |
 | `render` | `png(html, { width, height })` exact pixel size; `pdf(html, { pageSize, landscape })`. No scripts run in the HTML. | returns a real one-colour PNG of that size and a stub PDF; `calls` holds the HTML |
 | `notifications` | `notify({ title, body })` | `sent` |
@@ -377,6 +377,26 @@ dialogs:
 ```
 
 Quote ids that YAML would read as numbers (`'4098'`, `'17E9'`). A mutation that matches nothing is an error. Paths in `writeFile`, `removeFile`, `dialogs` are relative to the fake user folder. A request to `ports.http` that no entry matches fails with `http.unscripted`.
+
+A body that arrives in pieces (for `ports.http.stream`) is a `stream` in place of `json` or `body`:
+
+```yaml
+http:
+  - match: { url: api.anthropic.com/v1/messages, method: POST }
+    response:
+      status: 200
+      stream:
+        delayMs: 90                         # real-time wait before every chunk (default 0)
+        chunkBytes: 7                       # optional: cut the whole body again every 7 bytes, mid-line and mid-character
+        end: close                          # close (default) | hang (silent until the idle timeout or Cancel)
+                                            # | stall (fails as the idle timeout does, at once) | reset (connection breaks)
+        chunks:
+          - "event: ping\ndata: {}\n\n"     # text as it is
+          - { text: ': comment', delayMs: 500 }
+          - { event: message_stop, data: { type: message_stop } }   # one Server-Sent Event: event + JSON data + empty line
+```
+
+A status that is not 2xx is never streamed (its whole body is the result), and a response without `stream` reaches `ports.http.stream` as one chunk. `ai-assist-stream.yaml` and `ai-assist-stream-trouble.yaml` are the examples; `tests/aiStream.ts` builds a Messages API event stream for unit tests (`rig.ports.http.respond(url, streamedMessage(text))`).
 
 ### Mutations
 

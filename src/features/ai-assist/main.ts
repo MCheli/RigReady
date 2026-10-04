@@ -12,7 +12,12 @@ let stopWatchingSettings: (() => void) | undefined;
 export default defineFeatureMain({
   id: 'ai-assist',
   setup(ctx) {
-    const ai = new AiAssist({ ports: ctx.ports, log: ctx.log, bindings: ctx.bindings });
+    const ai = new AiAssist({
+      ports: ctx.ports,
+      log: ctx.log,
+      bindings: ctx.bindings,
+      onProgress: (progress) => ctx.emit(aiAssistContract, 'sendProgress', progress),
+    });
     // The shipped guides' plain-language action names, for every page that lists actions.
     ctx.bindings.registerLabels({
       id: 'ai-assist',
@@ -56,6 +61,7 @@ export default defineFeatureMain({
         testKey: () => ai.testKey(),
         prepare: (input) => ai.prepare(input),
         send: ({ requestId }) => ai.send(requestId),
+        cancel: ({ requestId }) => ai.cancel(requestId),
         reviewSuggestions: ({ roundId, selected }) => ai.reviewSuggestions(roundId, selected),
         applySuggestions: ({ roundId, selected }) => ai.applySuggestions(roundId, selected),
         deleteDraft: ({ aircraftId }) => ai.deleteDraft(aircraftId),

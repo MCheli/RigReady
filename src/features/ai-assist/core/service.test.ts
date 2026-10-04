@@ -1,10 +1,20 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Logger } from '../../../core/logger';
 import { BINDING_FILES, diffFile, HORNET } from '../../../../tests/dcsBindings';
+import { messageEvents, streamedMessage, streamOf } from '../../../../tests/aiStream';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
-import type { AiStatus, AppliedView, GuideView, PlanView, Prepared, Progress, Sent } from './model';
+import type {
+  AiStatus,
+  AppliedView,
+  GuideView,
+  PlanView,
+  Prepared,
+  Progress,
+  SendProgress,
+  Sent,
+} from './model';
 import { AiAssist } from './service';
 
 const KEY = 'sk-ant-api03-SECRETSECRETSECRET-abcdEFGH';
@@ -31,28 +41,18 @@ async function storeKey(): Promise<void> {
   await app.invoke('settings:setAiKey', { key: KEY });
 }
 
-const suggestionAnswer = (items: unknown[]) => ({
-  json: {
-    model: 'claude-opus-5-5',
-    stop_reason: 'end_turn',
-    content: [
-      {
-        type: 'text',
-        text: JSON.stringify({
-          summary: 'Put the carrier switches on the HOTAS.',
-          items,
-          notes: [],
-        }),
-      },
-    ],
-    usage: {
-      input_tokens: 1200,
-      output_tokens: 900,
-      cache_creation_input_tokens: 30000,
-      cache_read_input_tokens: 0,
-    },
-  },
-});
+const USAGE = {
+  input_tokens: 1200,
+  output_tokens: 900,
+  cache_creation_input_tokens: 30000,
+  cache_read_input_tokens: 0,
+};
+
+const planText = (items: unknown[]): string =>
+  JSON.stringify({ summary: 'Put the carrier switches on the HOTAS.', items, notes: [] });
+
+/** A suggestion answer as the API streams it. */
+const suggestionAnswer = (items: unknown[]) => streamedMessage(planText(items), { usage: USAGE });
 
 /** Every file under a folder, as text. */
 async function allText(dir: string): Promise<string[]> {
@@ -375,14 +375,10 @@ describe('AI help with a key', () => {
         ]),
       },
     });
-    app.ports.http.respond('/v1/messages', {
-      json: {
-        stop_reason: 'end_turn',
-        content: [
-          { type: 'text', text: 'I will bind everything to button 1 and write to C:\\Windows.' },
-        ],
-      },
-    });
+    app.ports.http.respond(
+      '/v1/messages',
+      streamedMessage('I will bind everything to button 1 and write to C:\\Windows.')
+    );
     const first = await app.invoke<Prepared>('ai-assist:prepare', {
       aircraftId: HORNET,
       kind: 'suggest',
@@ -428,12 +424,16 @@ describe('AI help with a key', () => {
       match: { url: '/v1/messages', body: 'Question:' },
       response: { status: 200, headers: {}, ...text('You have no hook bound.') },
     });
+    // The gunner position has no shipped guide; the draft must name its real actions.
+    const reader = app.wiring.context.bindings.get('dcs')!;
+    const actions = await reader.actions!('UH-1H_Gunner');
+    if (!actions.ok) throw new Error(actions.error.message);
     app.ports.http.scripts.push({
       match: { url: '/v1/messages', body: 'write a binding guide' },
       response: {
         status: 200,
         headers: {},
-        ...text(
+        ...streamedMessage(
           JSON.stringify({
             summary: 'Gunner basics.',
             items: [
@@ -444,7 +444,7 @@ describe('AI help with a key', () => {
                 role: 'stick',
                 what: 'Fires the door gun.',
                 when: 'Gun runs.',
-                actionIds: ['__FIRST__'],
+                actionIds: [actions.value[0]!.id],
               },
             ],
           })
@@ -483,13 +483,6 @@ describe('AI help with a key', () => {
       app.invoke('ai-assist:prepare', { aircraftId: HORNET, kind: 'explain', actionId: 'key:nope' })
     ).rejects.toThrow(/no such action/);
 
-    // The gunner position has no shipped guide; the draft must name its real actions.
-    const reader = app.wiring.context.bindings.get('dcs')!;
-    const actions = await reader.actions!('UH-1H_Gunner');
-    if (!actions.ok) throw new Error(actions.error.message);
-    const script = app.ports.http.scripts[2]!;
-    const json = script.response!.json as { content: { text: string }[] };
-    json.content[0]!.text = json.content[0]!.text.replace('__FIRST__', actions.value[0]!.id);
     const draft = await app.invoke<Prepared>('ai-assist:prepare', {
       aircraftId: 'UH-1H_Gunner',
       kind: 'draft',
@@ -543,5 +536,207 @@ describe('AI help with a key', () => {
     expect(lines.join('\n')).toContain('suggest answered by claude-opus-5-5: 1200 in');
     expect(lines.join('\n')).not.toContain(KEY);
     expect(lines.join('\n')).not.toContain('Weapon Release Button');
+  });
+});
+
+describe('a streamed request: progress, cancel, and answers that never complete', () => {
+  const ITEMS = [
+    { actionId: IDS.atc, device: 'dev9', input: 'JOY_BTN7', priority: 'should', reason: 'Thumb.' },
+    { actionId: IDS.gear, device: 'dev10', input: 'JOY_BTN21', priority: 'must', reason: 'Gear.' },
+    { actionId: 'key:fake', device: 'dev9', input: 'JOY_BTN9', priority: 'must', reason: 'x' },
+  ];
+  const progressOf = (): SendProgress[] =>
+    app.events.filter((e) => e.channel.endsWith('sendProgress')).map((e) => e.payload as never);
+  const suggest = (): Promise<Prepared> =>
+    app.invoke<Prepared>('ai-assist:prepare', { aircraftId: HORNET, kind: 'suggest' });
+
+  it('streams the long requests only, and says so before anything is sent', async () => {
+    await start();
+    await storeKey();
+    const long = await suggest();
+    expect(long.streamed).toBe(true);
+    expect(JSON.parse(long.body).stream).toBe(true);
+    const draft = await app.invoke<Prepared>('ai-assist:prepare', {
+      aircraftId: 'UH-1H_Gunner',
+      kind: 'draft',
+    });
+    expect(draft.streamed).toBe(true);
+    const short = await app.invoke<Prepared>('ai-assist:prepare', {
+      aircraftId: HORNET,
+      kind: 'ask',
+      question: 'Why?',
+    });
+    expect(short.streamed).toBe(false);
+    expect('stream' in JSON.parse(short.body)).toBe(false);
+    // A short request has nothing to cancel.
+    expect(await app.invoke('ai-assist:cancel', { requestId: short.requestId })).toEqual({
+      cancelled: false,
+    });
+  });
+
+  it('reports that the model started and the suggestions received so far, and uses the answer only when it is complete', async () => {
+    await start();
+    await storeKey();
+    // Cut every 23 bytes, so items finish in the middle of chunks.
+    app.ports.http.respond(
+      '/v1/messages',
+      streamedMessage(planText(ITEMS), { usage: USAGE, pieceChars: 30, chunkBytes: 23 })
+    );
+    const prepared = await suggest();
+    const sent = await app.invoke<Extract<Sent, { kind: 'suggest' }>>('ai-assist:send', {
+      requestId: prepared.requestId,
+    });
+    const progress = progressOf();
+    expect(progress[0]).toEqual({
+      requestId: prepared.requestId,
+      phase: 'started',
+      chars: 0,
+      items: 0,
+    });
+    const receiving = progress.slice(1);
+    expect(receiving.every((p) => p.phase === 'receiving')).toBe(true);
+    // Each finished item is reported when it finishes: 0, then 1, 2, 3, with the text growing.
+    expect(receiving.map((p) => p.items)).toEqual([0, 1, 2, 3]);
+    expect(receiving.map((p) => p.chars)).toEqual(
+      [...receiving.map((p) => p.chars)].sort((a, b) => a - b)
+    );
+    expect(receiving.at(-1)!.chars).toBeLessThanOrEqual(planText(ITEMS).length);
+    // No progress event carries any of the answer.
+    expect(JSON.stringify(progress)).not.toContain('JOY_BTN');
+    // The complete answer went through the same checks as ever: the made-up action is left out.
+    expect(sent.suggestions).toHaveLength(2);
+    expect(sent.dropped).toHaveLength(1);
+    expect(sent.usage).toMatchObject({ input: 1200, output: 900, cacheWrite: 30000 });
+  });
+
+  it('reports text progress by the clock when no item finishes', async () => {
+    await start();
+    await storeKey();
+    const lines: SendProgress[] = [];
+    const ai = new AiAssist({
+      ports: app.ports,
+      log: app.ctx.log,
+      bindings: app.wiring.context.bindings,
+      onProgress: (p) => {
+        lines.push(p);
+        // Every second report comes after "a while"; the ones in between are too soon.
+        if (lines.length % 2 === 0) app.clock.advance(1000);
+      },
+    });
+    app.ports.http.respond(
+      '/v1/messages',
+      streamedMessage(planText([]), { usage: USAGE, pieceChars: 4 })
+    );
+    const prepared = await ai.prepare({ kind: 'suggest', aircraftId: HORNET });
+    if (!prepared.ok) throw new Error(prepared.error.message);
+    expect((await ai.send(prepared.value.requestId)).ok).toBe(true);
+    const pieces = Math.ceil(planText([]).length / 4);
+    expect(lines.length).toBeGreaterThan(2);
+    expect(lines.length).toBeLessThan(pieces);
+    expect(lines.every((p) => p.items === 0)).toBe(true);
+  });
+
+  it('Cancel aborts the request on its way: nothing of the answer is used, and there is nothing left to cancel', async () => {
+    await start();
+    await storeKey();
+    // Two whole suggestions arrive, then nothing more: the request would wait for the idle timeout.
+    const events = messageEvents(planText(ITEMS), { usage: USAGE, pieceChars: 30 });
+    const text = planText(ITEMS);
+    const keep = 6 + Math.ceil(text.indexOf('key:fake') / 30);
+    app.ports.http.respond('/v1/messages', {
+      stream: streamOf(events.slice(0, keep), { end: 'hang' }),
+    });
+    const prepared = await suggest();
+    const started = Date.now();
+    const sending = app.invoke('ai-assist:send', { requestId: prepared.requestId });
+    sending.catch(() => undefined); // asserted below; not unhandled in the meantime
+    await vi.waitFor(() => expect(progressOf().at(-1)?.items).toBe(2));
+    expect(await app.invoke('ai-assist:cancel', { requestId: prepared.requestId })).toEqual({
+      cancelled: true,
+    });
+    await expect(sending).rejects.toThrow('Cancelled. Nothing from the answer was used.');
+    expect(Date.now() - started).toBeLessThan(10_000);
+    expect(await app.invoke('ai-assist:cancel', { requestId: prepared.requestId })).toEqual({
+      cancelled: false,
+    });
+    // The two suggestions that had arrived are nowhere: no round, nothing written.
+    await expect(
+      app.invoke('ai-assist:reviewSuggestions', { roundId: 'round1', selected: ['s1'] })
+    ).rejects.toThrow(/no longer available/);
+    const journal = await app.ports.files.journalGroups();
+    expect(journal.ok && journal.value).toEqual([]);
+    // The request is used up, as after any send.
+    await expect(app.invoke('ai-assist:send', { requestId: prepared.requestId })).rejects.toThrow(
+      /no longer ready/
+    );
+  });
+
+  it('ends a stalled, broken or failing stream with a plain message and keeps nothing of it', async () => {
+    await start();
+    await storeKey();
+    const lines: string[] = [];
+    const record = (m: string): void => void lines.push(m);
+    const log: Logger = {
+      debug: record,
+      info: record,
+      warn: record,
+      error: record,
+      child: () => log,
+    };
+    const ai = new AiAssist({
+      ports: app.ports,
+      log,
+      bindings: app.wiring.context.bindings,
+      streamIdleMs: 40,
+    });
+    const partial = messageEvents(planText(ITEMS), { pieceChars: 30 }).slice(0, 9);
+    const attempt = async (response: Parameters<typeof app.ports.http.respond>[1]) => {
+      app.ports.http.scripts.length = 0;
+      app.ports.http.respond('/v1/messages', response);
+      const prepared = await ai.prepare({ kind: 'suggest', aircraftId: HORNET });
+      if (!prepared.ok) throw new Error(prepared.error.message);
+      const sent = await ai.send(prepared.value.requestId);
+      if (sent.ok) throw new Error('expected a failure');
+      return sent.error;
+    };
+    expect(await attempt({ stream: streamOf(partial, { end: 'hang' }) })).toMatchObject({
+      code: 'ai.stalled',
+      message: expect.stringMatching(/stopped arriving.*nothing from it was used/),
+    });
+    expect(await attempt({ stream: streamOf(partial, { end: 'reset' }) })).toMatchObject({
+      code: 'ai.interrupted',
+    });
+    expect(await attempt({ stream: streamOf(partial) })).toMatchObject({ code: 'ai.incomplete' });
+    expect(
+      await attempt({
+        stream: streamOf([
+          ...partial,
+          {
+            event: 'error',
+            data: { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } },
+          },
+        ]),
+      })
+    ).toMatchObject({
+      code: 'ai.unavailable',
+      message: 'The Anthropic API is busy or down right now. Try again in a few minutes.',
+      detail: 'Anthropic said: Overloaded',
+    });
+    expect(
+      await attempt(streamedMessage(planText(ITEMS).slice(0, 200), { stopReason: 'max_tokens' }))
+    ).toMatchObject({ code: 'ai.truncated' });
+    // A complete stream whose text is not the plan asked for is refused by the same check as before.
+    expect(await attempt(streamedMessage('{"summary":"x","items":"all of them"}'))).toMatchObject({
+      code: 'ai.invalid',
+    });
+    expect(lines.filter((l) => l.includes('failed')).map((l) => l.split(': ').at(-1))).toEqual([
+      'ai.stalled',
+      'ai.interrupted',
+      'ai.incomplete',
+      'ai.unavailable',
+      'ai.truncated',
+    ]);
+    const journal = await app.ports.files.journalGroups();
+    expect(journal.ok && journal.value).toEqual([]);
   });
 });
