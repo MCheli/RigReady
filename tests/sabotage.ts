@@ -62,6 +62,16 @@ export function sabotage(ports: FakePorts): Sabotage {
     return ok(structuredClone(ports.state.audio));
   });
 
+  // A hotkey Windows says it registered and did not, and one it says it gave back and kept.
+  replace(ports.hotkeys, 'register', async (_id, accelerator) => {
+    attempts.push(`hotkeys.register ${accelerator}`);
+    return ok(undefined);
+  });
+  replace(ports.hotkeys, 'unregister', async (id) => {
+    attempts.push(`hotkeys.unregister ${id}`);
+    return ok(undefined);
+  });
+
   // File changes that are made and then put back (another program restored its own copy).
   const files = ports.files;
   const snapshot = async (file: string): Promise<() => Promise<void>> => {

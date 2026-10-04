@@ -3,6 +3,7 @@ import {
   BrowserWindow,
   clipboard,
   dialog,
+  globalShortcut,
   nativeImage,
   Notification,
   safeStorage,
@@ -15,6 +16,7 @@ import type {
   AppWindow,
   Clipboard,
   Dialogs,
+  Hotkeys,
   LoginItem,
   Notifications,
   OpenDialogOptions,
@@ -401,16 +403,71 @@ export class ElectronShortcuts implements Shortcuts {
 }
 
 /**
- * RigReady's taskbar button through Electron. The Jump List belongs to the app; the badge,
- * the tooltip, the progress bar and the thumbnail buttons belong to the main window, and
- * are refused while there is none.
+ * System-wide hotkeys through Electron's globalShortcut, one per name. Windows is asked
+ * what it has registered; nothing is taken on trust.
+ */
+export class ElectronHotkeys implements Hotkeys {
+  private readonly held = new Map<string, string>();
+  private readonly listeners = new Set<(id: string) => void>();
+
+  async register(id: string, accelerator: string): Promise<Result<void>> {
+    const before = this.held.get(id);
+    if (before === accelerator && globalShortcut.isRegistered(accelerator)) return ok(undefined);
+    try {
+      const taken = globalShortcut.register(accelerator, () => {
+        for (const listener of [...this.listeners]) listener(id);
+      });
+      if (!taken) return err('hotkey.taken', `Windows did not register ${accelerator}.`);
+    } catch (e) {
+      return err('hotkey.invalid', `${accelerator} is not a key combination.`, String(e));
+    }
+    // Only now is the one it had given back: a refused hotkey leaves the old one working.
+    if (before !== undefined && before !== accelerator) globalShortcut.unregister(before);
+    this.held.set(id, accelerator);
+    return ok(undefined);
+  }
+
+  async unregister(id: string): Promise<Result<void>> {
+    const accelerator = this.held.get(id);
+    if (accelerator === undefined) return ok(undefined);
+    try {
+      globalShortcut.unregister(accelerator);
+    } catch (e) {
+      return err('hotkey.release', `${accelerator} could not be given back.`, String(e));
+    }
+    this.held.delete(id);
+    return ok(undefined);
+  }
+
+  async registered(id: string): Promise<Result<string | undefined>> {
+    const accelerator = this.held.get(id);
+    if (accelerator === undefined) return ok(undefined);
+    return ok(globalShortcut.isRegistered(accelerator) ? accelerator : undefined);
+  }
+
+  subscribe(listener: (id: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+}
+
+/**
+ * RigReady's taskbar button through Electron. The Jump List belongs to the app. The badge,
+ * the tooltip, the progress bar and the thumbnail buttons belong to the button Windows
+ * makes for the main window, and only while there is one: not before the window is first
+ * shown, and not while it is hidden in the tray. What the button should show is remembered
+ * and handed over whenever Windows makes the button (again).
  */
 export class ElectronTaskbar implements Taskbar {
   private readonly listeners = new Set<(buttonId: string) => void>();
-  /** What the button was last told: Windows forgets it when the button is made anew. */
+  /** Windows has made the window's taskbar button, and it is still there. */
+  private button = false;
   private overlay: { icon: TaskbarImage; description: string } | null = null;
   private tooltip: string | undefined;
   private progress: TaskbarProgress = { mode: 'none' };
+  private buttons: ThumbButton[] | undefined;
 
   constructor(
     private readonly window: () => BrowserWindow | undefined,
@@ -418,32 +475,45 @@ export class ElectronTaskbar implements Taskbar {
     private readonly self: () => { exe: string; args: string[] }
   ) {}
 
-  private onWindow(what: string, change: (window: BrowserWindow) => boolean | void): Result<void> {
+  /**
+   * Follows a window's taskbar button. Windows announces a new button with the registered
+   * message "TaskbarButtonCreated": when the window is first shown, and each time it comes
+   * back from the tray. A new button knows nothing, so it is told everything then;
+   * `made` hears how that went.
+   */
+  watch(window: BrowserWindow, made?: (results: Result<void>[]) => void): void {
+    const created = RegisterWindowMessageW('TaskbarButtonCreated') as number;
+    if (!created) return;
+    window.hookWindowMessage(created, () => {
+      this.button = true;
+      made?.(this.tellAll());
+    });
+    const gone = (): void => {
+      this.button = false;
+    };
+    window.on('hide', gone);
+    window.on('closed', gone);
+  }
+
+  private tellAll(): Result<void>[] {
+    return [
+      this.applyOverlay(),
+      ...(this.tooltip === undefined ? [] : [this.applyTooltip()]),
+      this.applyProgress(),
+      ...(this.buttons === undefined ? [] : [this.applyButtons()]),
+    ];
+  }
+
+  private onButton(what: string, change: (window: BrowserWindow) => boolean | void): Result<void> {
     const window = this.window();
-    if (!window || window.isDestroyed()) {
-      return err('taskbar.noWindow', 'RigReady has no window on the taskbar right now.');
-    }
+    // No button to tell: it is told when Windows makes one.
+    if (!this.button || !window || window.isDestroyed()) return ok(undefined);
     try {
       if (change(window) === false) return err('taskbar.refused', `Windows did not take ${what}.`);
       return ok(undefined);
     } catch (e) {
       return err('taskbar.failed', `Windows did not take ${what}.`, String(e));
     }
-  }
-
-  /**
-   * Follows a window's taskbar button: Windows makes a new button whenever the window comes
-   * back from being hidden (from the tray), and a new button has no badge, tooltip or
-   * progress until it is told again. (Electron puts the thumbnail buttons back itself.)
-   */
-  watch(window: BrowserWindow): void {
-    const created = RegisterWindowMessageW('TaskbarButtonCreated') as number;
-    if (!created) return;
-    window.hookWindowMessage(created, () => {
-      void this.setOverlay(this.overlay);
-      if (this.tooltip !== undefined) void this.setTooltip(this.tooltip);
-      void this.setProgress(this.progress);
-    });
   }
 
   private picture(image: TaskbarImage): Electron.NativeImage {
@@ -473,23 +543,31 @@ export class ElectronTaskbar implements Taskbar {
     }
   }
 
+  private applyOverlay(): Result<void> {
+    const overlay = this.overlay;
+    return this.onButton('the status badge', (window) =>
+      window.setOverlayIcon(overlay ? this.picture(overlay.icon) : null, overlay?.description ?? '')
+    );
+  }
   async setOverlay(
     overlay: { icon: TaskbarImage; description: string } | null
   ): Promise<Result<void>> {
     this.overlay = overlay;
-    return this.onWindow('the status badge', (window) =>
-      window.setOverlayIcon(overlay ? this.picture(overlay.icon) : null, overlay?.description ?? '')
-    );
+    return this.applyOverlay();
   }
 
+  private applyTooltip(): Result<void> {
+    const text = this.tooltip ?? '';
+    return this.onButton('the tooltip', (window) => window.setThumbnailToolTip(text));
+  }
   async setTooltip(text: string): Promise<Result<void>> {
     this.tooltip = text;
-    return this.onWindow('the tooltip', (window) => window.setThumbnailToolTip(text));
+    return this.applyTooltip();
   }
 
-  async setProgress(progress: TaskbarProgress): Promise<Result<void>> {
-    this.progress = progress;
-    return this.onWindow('the progress bar', (window) => {
+  private applyProgress(): Result<void> {
+    const progress = this.progress;
+    return this.onButton('the progress bar', (window) => {
       if (progress.mode === 'none') window.setProgressBar(-1);
       else if (progress.mode === 'indeterminate') {
         window.setProgressBar(2, { mode: 'indeterminate' });
@@ -499,9 +577,14 @@ export class ElectronTaskbar implements Taskbar {
       }
     });
   }
+  async setProgress(progress: TaskbarProgress): Promise<Result<void>> {
+    this.progress = progress;
+    return this.applyProgress();
+  }
 
-  async setButtons(buttons: ThumbButton[]): Promise<Result<void>> {
-    return this.onWindow('the thumbnail buttons', (window) =>
+  private applyButtons(): Result<void> {
+    const buttons = this.buttons ?? [];
+    return this.onButton('the thumbnail buttons', (window) =>
       window.setThumbarButtons(
         buttons.map((button) => ({
           tooltip: button.tooltip,
@@ -513,6 +596,10 @@ export class ElectronTaskbar implements Taskbar {
         }))
       )
     );
+  }
+  async setButtons(buttons: ThumbButton[]): Promise<Result<void>> {
+    this.buttons = buttons;
+    return this.applyButtons();
   }
 
   subscribe(listener: (buttonId: string) => void): () => void {

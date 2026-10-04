@@ -14,6 +14,7 @@ import { z } from 'zod';
 import trayIconPath from '../../assets/icon.ico?asset';
 import { parseCommandLine, type ParsedCommandLine } from '../core/commandLine';
 import { startupNotices } from '../core/dataHealth';
+import { MAKE_READY_HOTKEY } from '../core/hotkeys';
 import { bind } from '../core/feature';
 import type { Logger } from '../core/logger';
 import { isWithin } from '../core/paths';
@@ -24,6 +25,7 @@ import {
   ElectronAppWindow,
   ElectronClipboard,
   ElectronDialogs,
+  ElectronHotkeys,
   ElectronLoginItem,
   ElectronNotifications,
   ElectronOverlays,
@@ -150,6 +152,7 @@ async function createPlatform(): Promise<Platform> {
             updates: new ElectronUpdateFeed(logging.log.child('updater')),
             shortcuts,
             taskbar: realTaskbar,
+            hotkeys: new ElectronHotkeys(),
           };
         },
       }),
@@ -684,6 +687,15 @@ async function start(): Promise<void> {
   // A button under the thumbnail does what the same line of the tray menu does.
   ports.taskbar.subscribe((buttonId) => void trayActions[buttonId]?.());
 
+  // The hotkey, when one is chosen in Settings: RigReady comes forward and makes the setup
+  // in use ready, exactly as --make-ready would. Without a setup there is only the window.
+  ports.hotkeys.subscribe((id) => {
+    if (id !== MAKE_READY_HOTKEY) return;
+    const setup = trayStatus.profileId;
+    if (!setup) showWindow();
+    else void commands.run({ action: 'makeReady', setup });
+  });
+
   function refreshTray(): void {
     refreshTaskbar();
     if (!tray) return;
@@ -728,6 +740,10 @@ async function start(): Promise<void> {
       buttons: fake.taskbar.buttons.map(({ id, tooltip, enabled }) => ({ id, tooltip, enabled })),
     });
     hooks['__rigreadyTaskbarPress'] = (buttonId: string) => fake.taskbar.press(buttonId);
+    // The hotkeys Windows has for RigReady, another program taking one, and a press.
+    hooks['__rigreadyHotkeys'] = () => Object.fromEntries(fake.hotkeys.active);
+    hooks['__rigreadyHotkeyTaken'] = (accelerator: string) => fake.hotkeys.taken.add(accelerator);
+    hooks['__rigreadyHotkeyPress'] = (id: string) => fake.hotkeys.press(id);
     // The pictures it was handed, as PNG files a person can look at.
     hooks['__rigreadyTaskbarPictures'] = () => {
       const png = (image: { width: number; height: number; pixels: Uint8Array }): string =>
@@ -802,8 +818,19 @@ async function start(): Promise<void> {
     !startHidden
   );
   watchWindow(mainWindow, log);
-  // The taskbar button of the window exists now: its badge, tooltip and buttons can be set.
-  realTaskbar?.watch(mainWindow);
+  // The window has a taskbar button from when it is shown: what the button should say is
+  // decided now, and handed over each time Windows makes the button.
+  realTaskbar?.watch(mainWindow, (results) => {
+    const failed = results.filter((result) => !result.ok);
+    if (failed.length === 0) {
+      log.info('Windows made the taskbar button: its badge, tooltip, progress and buttons are set');
+    } else {
+      log.warn(
+        'Windows made the taskbar button, but did not take everything',
+        failed.map((result) => (result.ok ? '' : result.error.message))
+      );
+    }
+  });
   refreshTaskbar();
   mainWindow.on('close', (event) => {
     if (quitting || !tray) return;

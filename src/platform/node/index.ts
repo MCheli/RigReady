@@ -6,6 +6,7 @@ import type {
   Clipboard,
   Clock,
   Dialogs,
+  Hotkeys,
   Http,
   HttpRequest,
   HttpResponse,
@@ -419,7 +420,15 @@ export const headlessPorts: {
   updates: UpdateFeed;
   shortcuts: Shortcuts;
   taskbar: Taskbar;
+  hotkeys: Hotkeys;
 } = {
+  hotkeys: {
+    register: async () => unavailable('A system-wide hotkey'),
+    unregister: async () => unavailable('A system-wide hotkey'),
+    registered: async () => unavailable('A system-wide hotkey'),
+    // Nothing presses a hotkey outside the app.
+    subscribe: () => () => {},
+  },
   taskbar: {
     setJumpTasks: async () => unavailable('The Jump List'),
     setOverlay: async () => unavailable('The taskbar button'),

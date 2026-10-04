@@ -300,3 +300,102 @@ test('one click: a desktop shortcut is made in the setup editor, flies when it i
   );
   expect(existsSync(file)).toBe(false);
 });
+
+const hotkeys = (app: ElectronApplication): Promise<Record<string, string>> =>
+  app.evaluate(() =>
+    (globalThis as unknown as { __rigreadyHotkeys(): Record<string, string> }).__rigreadyHotkeys()
+  );
+const pressHotkey = (app: ElectronApplication, id: string): Promise<boolean> =>
+  app.evaluate(
+    (_electron, name) =>
+      (
+        globalThis as unknown as { __rigreadyHotkeyPress(id: string): boolean }
+      ).__rigreadyHotkeyPress(name),
+    id
+  );
+
+test('one click: a hotkey chosen in Settings brings RigReady forward and runs Make ready, from the tray', async ({
+  rig,
+}) => {
+  const run = await rig.launch('flying-trackir-not-running', 'one-click-hotkey');
+  const { page, app, shot } = run;
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Not ready');
+  // Off until chosen: nothing is registered with Windows, and a press does nothing.
+  expect(await hotkeys(app)).toEqual({});
+  expect(await pressHotkey(app, 'makeReady')).toBe(false);
+
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-settings').click();
+  const section = page.getByTestId('hotkey-settings');
+  await centre(section);
+  await expect(page.getByTestId('hotkey-state')).toHaveText('Off');
+  await shot('off');
+
+  // Choosing: a key alone is not taken, and the field says why.
+  await page.getByTestId('hotkey-choose').click();
+  const field = page.getByTestId('hotkey-capture').locator('input');
+  await expect(field).toBeFocused();
+  await field.press('KeyR');
+  await expect(page.getByTestId('hotkey-hint')).toContainText('Hold Ctrl, Alt or the Windows key');
+  expect(await hotkeys(app)).toEqual({});
+  await shot('choosing');
+  expect(await axeViolations(page)).toEqual([]);
+
+  await field.press('Control+Alt+KeyR');
+  await expect(section).toHaveAttribute('data-active', 'true');
+  await expect(page.getByTestId('hotkey-state')).toHaveText('Ctrl + Alt + R is active');
+  await expect(page.getByTestId('hotkey-capture')).toHaveCount(0);
+  // Windows has it, under the name the shell listens for.
+  expect(await hotkeys(app)).toEqual({ makeReady: 'Control+Alt+R' });
+  await centre(section);
+  await shot('active');
+  expect(await axeViolations(page)).toEqual([]);
+  expect(await colourOnlyStatus(page)).toEqual([]);
+
+  // Another program has Ctrl+Alt+F12: it is refused in words, and the hotkey before stays.
+  await app.evaluate(() =>
+    (
+      globalThis as unknown as { __rigreadyHotkeyTaken(accelerator: string): void }
+    ).__rigreadyHotkeyTaken('Control+Alt+F12')
+  );
+  await page.getByTestId('hotkey-choose').click();
+  await page.getByTestId('hotkey-capture').locator('input').press('Control+Alt+F12');
+  await expect(page.getByTestId('hotkey-error')).toContainText(
+    'Ctrl + Alt + F12 cannot be the hotkey.'
+  );
+  await expect(page.getByTestId('hotkey-error')).toContainText(
+    'another program is probably using it'
+  );
+  await expect(page.getByTestId('hotkey-state')).toHaveText('Ctrl + Alt + R is active');
+  expect(await hotkeys(app)).toEqual({ makeReady: 'Control+Alt+R' });
+  await shot('refused');
+  // Esc closes the field, and what was said about that try goes with it.
+  await page.getByTestId('hotkey-capture').locator('input').press('Escape');
+  await expect(page.getByTestId('hotkey-capture')).toHaveCount(0);
+  await expect(page.getByTestId('hotkey-error')).toHaveCount(0);
+
+  // Pressed while RigReady is in the tray: it comes forward and makes the rig ready.
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close());
+  await expect.poll(() => windowVisible(app)).toBe(false);
+  expect(await pressHotkey(app, 'makeReady')).toBe(true);
+  await expect.poll(() => windowVisible(app)).toBe(true);
+  await expect(strip(page)).toHaveAttribute('data-outcome', 'ready');
+  await read(page);
+  await expect(page.getByTestId('command-headline')).toHaveText('DCS F/A-18C is ready');
+  expect(await started(app)).toEqual(['TrackIR5.exe']);
+  expect((await command(app)).run).toMatchObject({ action: 'makeReady', outcome: 'ready' });
+  await shot('made-ready-by-the-hotkey');
+
+  // It is still the hotkey after a restart.
+  const again = await run.restart();
+  await expect.poll(() => hotkeys(again.app)).toEqual({ makeReady: 'Control+Alt+R' });
+  await again.page.getByTestId('mode-configure').click();
+  await again.page.getByTestId('nav-settings').click();
+  await expect(again.page.getByTestId('hotkey-state')).toHaveText('Ctrl + Alt + R is active');
+
+  // Turned off: given back to Windows.
+  await again.page.getByTestId('hotkey-off').click();
+  await expect(again.page.getByTestId('hotkey-state')).toHaveText('Off');
+  expect(await hotkeys(again.app)).toEqual({});
+  expect(await pressHotkey(again.app, 'makeReady')).toBe(false);
+});

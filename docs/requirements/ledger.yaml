@@ -4253,6 +4253,38 @@ requirements:
       - "tests/e2e/tray.e2e.ts#tray: shows readiness as a colour, switches setup, and runs Make ready, Launch and Stand down"
       - "artifacts/screens/tray-icon/01-ready-with-a-warning.png"
 
+  - id: WOW-WIN-007
+    title: Optional global hotkey for Make ready
+    job: fly
+    area: one-click
+    priority: p2
+    done_means:
+      - "Settings has a 'Hotkey' section (added through the settings extension point): off by default, nothing registered with Windows and nothing written until one is chosen. 'Choose a hotkey' takes the next key combination pressed; a key alone, or with Shift only, is not taken and the field says why."
+      - "A chosen hotkey is registered system-wide and shown as active only after Windows was asked what it has registered. A combination another program has is refused in words and the hotkey before keeps working. Under sabotage (Windows says 'registered' and did not, says 'given back' and kept it) the answer is an error."
+      - "Pressed, whatever program is in front and with RigReady in the tray, it brings RigReady's window forward and runs Make ready for the setup in use, exactly as --make-ready does (the command strip shows it); with no setup it only shows the window. It never launches."
+      - "The hotkey survives a restart (registered again when RigReady starts) and is given back to Windows when it is turned off and when RigReady quits."
+      - "Through a Hotkeys port (Electron globalShortcut in the app, a fake in scenario runs that a test can press)."
+    notes:
+      - "2026-10-04: decisions. (1) Ctrl, Alt or the Windows key must be part of it: a bare key or Shift plus a key is typed and pressed in a game all the time. (2) The hotkey runs Make ready, never Launch: a key pressed by accident may start helper apps, but not a game. (3) The setting is kept in the feature's own file (<data root>/one-click.json), not in settings.json."
+    status: done
+    evidence:
+      - "src/core/hotkeys.test.ts#is read whatever the spelling, and written back in one"
+      - "src/core/hotkeys.test.ts#is refused when it could be pressed by accident, has no key, has two, or names no key"
+      - "src/core/hotkeys.test.ts#is the keys held and the key pressed"
+      - "src/features/one-click/core/hotkey.test.ts#is off until one is chosen: nothing is registered and nothing is written"
+      - "src/features/one-click/core/hotkey.test.ts#is registered with Windows when chosen, stored, and reported from what Windows has"
+      - "src/features/one-click/core/hotkey.test.ts#works again after a restart: the stored hotkey is registered when RigReady starts"
+      - "src/features/one-click/core/hotkey.test.ts#a combination another program has is refused, and the one before keeps working"
+      - "src/features/one-click/core/hotkey.test.ts#never says a hotkey is on, or off, when Windows did not do it"
+      - "src/features/one-click/core/hotkey.test.ts#a damaged settings file is reported and left as it is"
+      - "tests/unit/machine.test.ts#the fake hotkeys are what \"Windows\" has registered: one per name, none that another program has"
+      - "tests/e2e/one-click.e2e.ts#one click: a hotkey chosen in Settings brings RigReady forward and runs Make ready, from the tray"
+      - "artifacts/screens/one-click-hotkey/01-off.png"
+      - "artifacts/screens/one-click-hotkey/02-choosing.png"
+      - "artifacts/screens/one-click-hotkey/03-active.png"
+      - "artifacts/screens/one-click-hotkey/04-refused.png"
+      - "artifacts/screens/one-click-hotkey/05-made-ready-by-the-hotkey.png"
+
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY
   # ---------------------------------------------------------------------------

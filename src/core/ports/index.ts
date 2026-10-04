@@ -446,6 +446,24 @@ export interface Taskbar {
   subscribe(listener: (buttonId: string) => void): () => void;
 }
 
+/**
+ * System-wide hotkeys: key combinations that work whatever program is in front. Each is
+ * registered under a name of the caller's own; whoever wants to act on it subscribes.
+ */
+export interface Hotkeys {
+  /**
+   * Makes `accelerator` ("Control+Alt+R") the hotkey called `id`, in place of the one it
+   * had. Fails when Windows does not give it (another program has it); the one it had stays.
+   */
+  register(id: string, accelerator: string): Promise<Result<void>>;
+  /** Gives the hotkey called `id` back to Windows. Nothing to do when there is none. */
+  unregister(id: string): Promise<Result<void>>;
+  /** The combination Windows has registered under `id` right now; undefined when none. */
+  registered(id: string): Promise<Result<string | undefined>>;
+  /** Calls the listener with a hotkey's id when it is pressed. Returns the unsubscribe function. */
+  subscribe(listener: (id: string) => void): () => void;
+}
+
 /** The update channels a user can follow. */
 export type UpdateChannel = 'stable' | 'beta';
 
@@ -679,4 +697,5 @@ export interface Ports {
   updates: UpdateFeed;
   shortcuts: Shortcuts;
   taskbar: Taskbar;
+  hotkeys: Hotkeys;
 }

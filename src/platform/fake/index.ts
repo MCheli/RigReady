@@ -14,6 +14,7 @@ import type {
   Dialogs,
   DisplayApplyOutcome,
   DisplayProvider,
+  Hotkeys,
   Http,
   HttpRequest,
   HttpResponse,
@@ -937,6 +938,45 @@ export class FakeShortcuts implements Shortcuts {
   }
 }
 
+/** System-wide hotkeys of a scenario run: what is registered, and a way to press one. */
+export class FakeHotkeys implements Hotkeys {
+  /** id -> accelerator, as registered now. */
+  readonly active = new Map<string, string>();
+  /** Accelerators another program has: registering one of these fails. */
+  readonly taken = new Set<string>();
+  private listeners = new Set<(id: string) => void>();
+
+  async register(id: string, accelerator: string): Promise<Result<void>> {
+    const elsewhere = [...this.active].some(
+      ([other, held]) => other !== id && held === accelerator
+    );
+    if (this.taken.has(accelerator) || elsewhere) {
+      return err('hotkey.taken', `Windows did not register ${accelerator}.`);
+    }
+    this.active.set(id, accelerator);
+    return ok(undefined);
+  }
+  async unregister(id: string): Promise<Result<void>> {
+    this.active.delete(id);
+    return ok(undefined);
+  }
+  async registered(id: string): Promise<Result<string | undefined>> {
+    return ok(this.active.get(id));
+  }
+  subscribe(listener: (id: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+  /** Test hook: the user presses the hotkey called `id`. False when no such hotkey is registered. */
+  press(id: string): boolean {
+    if (!this.active.has(id)) return false;
+    for (const listener of [...this.listeners]) listener(id);
+    return true;
+  }
+}
+
 /** The taskbar button of a scenario run: remembers what it was last told, and all of it. */
 export class FakeTaskbar implements Taskbar {
   /** The Jump List as it is now. */
@@ -1009,6 +1049,7 @@ export interface FakePorts extends Ports {
   updates: FakeUpdateFeed;
   shortcuts: FakeShortcuts;
   taskbar: FakeTaskbar;
+  hotkeys: FakeHotkeys;
   /** The mutable machine state behind the providers. */
   state: RigState;
 }
@@ -1068,6 +1109,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     updates: new FakeUpdateFeed(path.join(options.homeDir, UPDATE_FEED_FILE)),
     shortcuts: new FakeShortcuts(folders),
     taskbar: new FakeTaskbar(),
+    hotkeys: new FakeHotkeys(),
   };
 }
 

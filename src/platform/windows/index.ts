@@ -4,6 +4,7 @@ import type {
   AppWindow,
   Clipboard,
   Dialogs,
+  Hotkeys,
   LoginItem,
   Notifications,
   Overlays,
@@ -38,6 +39,7 @@ export interface AppPorts {
   updates: UpdateFeed;
   shortcuts: Shortcuts;
   taskbar: Taskbar;
+  hotkeys: Hotkeys;
 }
 
 export interface WindowsPlatformOptions {

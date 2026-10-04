@@ -825,6 +825,9 @@ describe('scripted ports', () => {
       await headlessPorts.taskbar.setTooltip('x'),
       await headlessPorts.taskbar.setProgress({ mode: 'none' }),
       await headlessPorts.taskbar.setButtons([]),
+      await headlessPorts.hotkeys.register('makeReady', 'Control+Alt+R'),
+      await headlessPorts.hotkeys.unregister('makeReady'),
+      await headlessPorts.hotkeys.registered('makeReady'),
     ]) {
       expect(result).toMatchObject({ ok: false, error: { code: 'port.unavailable' } });
     }
@@ -833,7 +836,49 @@ describe('scripted ports', () => {
     // Nothing presses a taskbar button outside the app: subscribing is harmless.
     const pressed: string[] = [];
     headlessPorts.taskbar.subscribe((id) => pressed.push(id))();
+    headlessPorts.hotkeys.subscribe((id) => pressed.push(id))();
     expect(pressed).toEqual([]);
+  });
+
+  it('the fake hotkeys are what "Windows" has registered: one per name, none that another program has', async () => {
+    rig = await rigFromState(await markFull());
+    const { hotkeys } = rig.ports;
+    const pressed: string[] = [];
+    const off = hotkeys.subscribe((id) => pressed.push(id));
+    expect(await hotkeys.registered('makeReady')).toEqual({ ok: true, value: undefined });
+    // Nothing registered: a press reaches nobody.
+    expect(hotkeys.press('makeReady')).toBe(false);
+
+    expect(await hotkeys.register('makeReady', 'Control+Alt+R')).toEqual({
+      ok: true,
+      value: undefined,
+    });
+    expect(await hotkeys.registered('makeReady')).toEqual({ ok: true, value: 'Control+Alt+R' });
+    expect(hotkeys.press('makeReady')).toBe(true);
+    expect(pressed).toEqual(['makeReady']);
+
+    // Another program has it, or another name of ours has it: refused, and the old one stays.
+    hotkeys.taken.add('Control+Alt+F12');
+    expect(await hotkeys.register('makeReady', 'Control+Alt+F12')).toMatchObject({
+      ok: false,
+      error: { code: 'hotkey.taken' },
+    });
+    expect(await hotkeys.register('other', 'Control+Alt+R')).toMatchObject({
+      ok: false,
+      error: { code: 'hotkey.taken' },
+    });
+    expect(await hotkeys.registered('makeReady')).toEqual({ ok: true, value: 'Control+Alt+R' });
+    // The same combination again under the same name is fine; a new one replaces it.
+    expect((await hotkeys.register('makeReady', 'Control+Alt+R')).ok).toBe(true);
+    expect((await hotkeys.register('makeReady', 'Control+Shift+F9')).ok).toBe(true);
+    expect([...hotkeys.active]).toEqual([['makeReady', 'Control+Shift+F9']]);
+
+    await hotkeys.unregister('makeReady');
+    await hotkeys.unregister('never-there');
+    expect(hotkeys.active.size).toBe(0);
+    expect(hotkeys.press('makeReady')).toBe(false);
+    off();
+    expect(pressed).toEqual(['makeReady']);
   });
 
   it('the fake taskbar button remembers what it was told, and a press reaches whoever listens', async () => {
