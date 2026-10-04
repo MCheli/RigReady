@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { readDataText } from './files/text';
 import type { FileStore } from './ports';
 import { err, ok, type Result } from './result';
 
@@ -30,7 +31,7 @@ export class JsonStore<S extends z.ZodType> {
       }
       return ok(fallback.data);
     }
-    const text = await this.files.readText(this.file);
+    const text = await readDataText(this.files, this.file);
     if (!text.ok) return text;
     let raw: unknown;
     try {

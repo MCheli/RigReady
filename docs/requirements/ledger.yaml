@@ -3484,8 +3484,30 @@ requirements:
       - "One async logger with levels writes rotating files under {RIGREADY_HOME}/logs/ (e.g. 5 files x 5 MB)."
       - "Logs never contain the Anthropic key or file contents; paths are logged."
       - "A Diagnostics page shows the recent log, app/OS versions, data root, detected games and devices, and 'Export diagnostics' writes a zip that passes the SHARE-002 privacy scrub."
-    status: todo
-    evidence: []
+    notes:
+      - "2026-10-03: 'paths are logged' holds with one rule: the user's home folder is written as ~, and the name in any other user folder (C:/Users/<name>) as ~, so the Windows user name is not in the log. Secrets (sk-ant-..., authorization headers, passwords) are masked whatever the caller passes, and any single text longer than 600 characters is cut, which is what keeps file contents out. Level: RIGREADY_LOG_LEVEL, else the 'Detailed log' switch on the Diagnostics page (settings.logLevel), else info. Five files of 5 MB."
+    status: done
+    evidence:
+      - "tests/unit/logging.test.ts#has four levels, and the level can change while the app runs"
+      - "tests/unit/logging.test.ts#rotates at the size limit and never keeps more than the configured number of files"
+      - "tests/unit/logging.test.ts#does not block or throw when the log cannot be written; it counts what was lost"
+      - "tests/unit/logging.test.ts#the level comes from RIGREADY_LOG_LEVEL, else from the setting, else it is info"
+      - "tests/unit/logging.test.ts#never writes the Anthropic key, whatever the caller passes"
+      - "tests/unit/logging.test.ts#writes paths, but with the home folder as ~ and no Windows user name"
+      - "tests/unit/logging.test.ts#does not write file contents: long texts are cut and binary data is only counted"
+      - "tests/unit/logging.test.ts#at the most detailed level: no API key, no file contents, no home folder"
+      - "src/features/diagnostics/core/diagnostics.test.ts#shows versions, the data root, the games found and the devices of this PC"
+      - "src/features/diagnostics/core/diagnostics.test.ts#reads the newest entries back, and says so when nothing was logged yet"
+      - "src/features/diagnostics/core/diagnostics.test.ts#Copy diagnostics puts the scrubbed text on the clipboard"
+      - "src/features/diagnostics/core/diagnostics.test.ts#Open log folder starts Explorer with the folder as one argument"
+      - "src/features/diagnostics/core/diagnostics.test.ts#Export diagnostics writes a zip that passes the privacy scrub of a shared setup"
+      - "tests/e2e/diagnostics.e2e.ts#diagnostics: versions, games, devices and the recent log; copy, open the log folder, export"
+      - "artifacts/screens/diagnostics/01-this-pc.png"
+      - "artifacts/screens/diagnostics/02-log.png"
+      - "artifacts/screens/diagnostics/03-log-no-warnings.png"
+      - "artifacts/screens/diagnostics/04-copied.png"
+      - "artifacts/screens/diagnostics/05-exported.png"
+      - "artifacts/screens/generic-configure/31-diagnostics.png"
 
   - id: PLAT-010
     title: Errors are visible, not swallowed

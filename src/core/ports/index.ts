@@ -258,6 +258,11 @@ export interface Notifications {
   notify(message: { title: string; body: string }): Promise<Result<void>>;
 }
 
+export interface Clipboard {
+  /** Puts text on the Windows clipboard. */
+  writeText(text: string): Promise<Result<void>>;
+}
+
 export interface ScreenLabel {
   /** Desktop coordinates of the monitor the label is shown on. */
   x: number;
@@ -497,6 +502,7 @@ export interface Ports {
   dialogs: Dialogs;
   render: Render;
   notifications: Notifications;
+  clipboard: Clipboard;
   loginItem: LoginItem;
   overlays: Overlays;
   window: AppWindow;

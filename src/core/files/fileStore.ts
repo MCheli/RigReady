@@ -16,12 +16,54 @@ import type {
 } from '../ports';
 import { err, fromThrown, ok, type Result } from '../result';
 import { createMatcher } from './glob';
+import { stripBom } from './text';
 
 export function sha256(data: Uint8Array | string): string {
   return createHash('sha256').update(data).digest('hex');
 }
 
 type JournalLine = JournalEntry | { undo: string };
+
+/** One line of journal.jsonl: what it says, or only its text when it cannot be read. */
+export interface JournalFileLine {
+  raw: string;
+  record?: JournalLine;
+}
+
+const isText = (value: unknown): value is string => typeof value === 'string';
+
+/**
+ * Reads the journal file line by line. A line that is not a journal record (cut off by
+ * a crash while it was being written, or damaged later) is kept as text and does not
+ * stop the others from being read: one bad line must not take Undo away for every change.
+ */
+export function parseJournal(text: string): JournalFileLine[] {
+  const lines: JournalFileLine[] = [];
+  for (const raw of stripBom(text).split(/\r?\n/)) {
+    if (raw.trim().length === 0) continue;
+    let record: JournalLine | undefined;
+    try {
+      const value = JSON.parse(raw) as Record<string, unknown> | null;
+      if (value && typeof value === 'object') {
+        if (isText(value['undo'])) record = { undo: value['undo'] };
+        else if (
+          isText(value['id']) &&
+          isText(value['path']) &&
+          isText(value['time']) &&
+          isText(value['reason']) &&
+          (value['action'] === 'write' || value['action'] === 'remove') &&
+          (value['backupPath'] === null || isText(value['backupPath']))
+        ) {
+          record = value as unknown as JournalEntry;
+        }
+      }
+    } catch {
+      // Not JSON: kept as a damaged line below.
+    }
+    lines.push(record ? { raw, record } : { raw });
+  }
+  return lines;
+}
 
 /**
  * The one way RigReady changes files. A write, copy or remove outside the data root
@@ -242,7 +284,7 @@ export class BackupFileStore implements FileStore {
         ...(options.undoOf ? { undoOf: options.undoOf } : {}),
         undone: false,
       };
-      await this.raw.appendText(this.journalPath, JSON.stringify(entry) + '\n');
+      await this.appendJournal(entry);
       await perform();
       return ok(entry);
     } catch (e) {
@@ -250,13 +292,29 @@ export class BackupFileStore implements FileStore {
     }
   }
 
-  private async lines(): Promise<JournalLine[]> {
+  private journalChecked = false;
+
+  private async appendJournal(record: JournalLine): Promise<void> {
+    let lead = '';
+    if (!this.journalChecked) {
+      // A crash while a line was being written leaves it without its line break; the
+      // next record must not be glued onto that damaged line.
+      if (await this.raw.exists(this.journalPath)) {
+        const text = await this.raw.readText(this.journalPath);
+        if (text.length > 0 && !text.endsWith('\n')) lead = '\n';
+      }
+      this.journalChecked = true;
+    }
+    await this.raw.appendText(this.journalPath, lead + JSON.stringify(record) + '\n');
+  }
+
+  private async fileLines(): Promise<JournalFileLine[]> {
     if (!(await this.raw.exists(this.journalPath))) return [];
-    const text = await this.raw.readText(this.journalPath);
-    return text
-      .split('\n')
-      .filter((line) => line.trim().length > 0)
-      .map((line) => JSON.parse(line) as JournalLine);
+    return parseJournal(await this.raw.readText(this.journalPath));
+  }
+
+  private async lines(): Promise<JournalLine[]> {
+    return (await this.fileLines()).flatMap((line) => (line.record ? [line.record] : []));
   }
 
   async journal(): Promise<Result<JournalEntry[]>> {
@@ -349,7 +407,7 @@ export class BackupFileStore implements FileStore {
         undone = ok(null);
       }
       if (!undone.ok) return undone;
-      await this.raw.appendText(this.journalPath, JSON.stringify({ undo: entry.id }) + '\n');
+      await this.appendJournal({ undo: entry.id });
       return ok({ ...entry, undone: true });
     } catch (e) {
       return fromThrown('journal.undo', `Could not undo the change to ${entry.path}.`, e);
@@ -438,13 +496,11 @@ export class BackupFileStore implements FileStore {
           await this.raw.removeDir(dir);
         }
       }
-      const kept = (await this.lines()).filter(
-        (line) => !gone.has('undo' in line ? line.undo : line.id)
+      // Lines that could not be read are written back as they are: pruning never drops them.
+      const kept = (await this.fileLines()).filter(
+        ({ record }) => !record || !gone.has('undo' in record ? record.undo : record.id)
       );
-      await this.raw.writeBytes(
-        this.journalPath,
-        kept.map((line) => JSON.stringify(line) + '\n').join('')
-      );
+      await this.raw.writeBytes(this.journalPath, kept.map((line) => line.raw + '\n').join(''));
       return ok({ removedGroups: expired.length, freedBytes });
     } catch (e) {
       return fromThrown('journal.prune', 'Could not remove old automatic backups.', e);

@@ -192,6 +192,16 @@ const PAGES: ConfigurePage[] = [
     testId: 'safety-page',
     says: ['RigReady has not changed any of your files'],
   },
+  {
+    name: 'diagnostics',
+    route: '/configure/diagnostics',
+    testId: 'diagnostics-page',
+    says: [
+      'None of the games RigReady knows were found on this PC',
+      'Logitech Extreme 3D',
+      'BenQ GW2480: 1920x1080 at 0,0, main',
+    ],
+  },
 ];
 
 /** Something still loading. */
@@ -223,7 +233,7 @@ test('generic rig: every Configure page renders an honest empty state, never an 
   await page.getByTestId('mode-configure').click();
   // Every page the navigation offers is in the list above.
   const links = page.getByTestId('configure-nav').locator('a');
-  await expect(links).toHaveCount(15);
+  await expect(links).toHaveCount(16);
   const offered = await links.evaluateAll((all) =>
     all.map((a) => (a.getAttribute('href') ?? '').replace(/^#/, ''))
   );

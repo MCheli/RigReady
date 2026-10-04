@@ -38,7 +38,7 @@ describe('logger', () => {
     expect(lines).toHaveLength(3);
     expect(lines[0]).toBe('2026-10-03T12:00:00.000Z INFO  [app] hello {"a":1}\n');
     expect(lines[1]).toContain('ERROR [devices] bad Error: boom');
-    expect(lines[2]).toContain('WARN  [app] odd [object Object]');
+    expect(lines[2]).toContain('WARN  [app] odd {"self":"[circular]"}');
     nullLogger.child('x').info('nothing happens');
     nullLogger.debug('');
     nullLogger.warn('');

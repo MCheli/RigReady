@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as yaml from 'js-yaml';
 import { z } from 'zod';
+import { readDataText } from '../files/text';
 import type { FileStore } from '../ports';
 import { err, ok, type Result } from '../result';
 import { migrateProfile, ProfileSchema, slugify, type Profile } from './schema';
@@ -11,6 +12,9 @@ const StateSchema = z.object({
   lastUsed: z.record(z.string(), z.string()).default({}),
 });
 type State = z.infer<typeof StateSchema>;
+
+/** No setup comes near this; a larger file is not parsed. */
+const MAX_PROFILE_BYTES = 4 * 1024 * 1024;
 
 /** A profile file that could not be loaded, for listing it as broken instead of hiding it. */
 export interface InvalidProfile {
@@ -128,7 +132,7 @@ export class ProfileStore {
     const file = this.fileFor(id);
     if (!(await this.files.exists(file)))
       return err('profile.missing', `There is no profile "${id}".`);
-    const text = await this.files.readText(file);
+    const text = await readDataText(this.files, file, MAX_PROFILE_BYTES);
     if (!text.ok) return text;
     let raw: unknown;
     try {
@@ -213,7 +217,9 @@ export class ProfileStore {
   }
 
   private async readState(): Promise<State> {
-    const text = await this.files.readText(this.statePath);
+    // Only which setup was used last: when the file is damaged the app starts on the
+    // first setup, and nothing the user made is lost with it.
+    const text = await readDataText(this.files, this.statePath);
     if (!text.ok) return { lastUsed: {} };
     try {
       const parsed = StateSchema.safeParse(JSON.parse(text.value));

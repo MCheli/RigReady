@@ -2,6 +2,7 @@ import { BackupFileStore } from '../../core/files/fileStore';
 import type { Logger } from '../../core/logger';
 import type {
   AppWindow,
+  Clipboard,
   Dialogs,
   LoginItem,
   Notifications,
@@ -26,6 +27,7 @@ export interface AppPorts {
   dialogs: Dialogs;
   render: Render;
   notifications: Notifications;
+  clipboard: Clipboard;
   loginItem: LoginItem;
   overlays: Overlays;
   window: AppWindow;
