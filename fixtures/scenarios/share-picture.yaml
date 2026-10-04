@@ -1,0 +1,8 @@
+description: Sharing - a picture of the F/A-18C setup, with the owner's names for the devices and the MFD screens
+rig: mark-full
+extends: share-dcs.yaml
+profiles:
+  - profiles/dcs-f-a-18c.yaml
+data:
+  devices.json: data/cheat-sheets/devices.json
+  displays/names.json: data/displays/names.json

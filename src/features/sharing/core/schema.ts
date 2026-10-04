@@ -34,3 +34,7 @@ export const CompatibilitySchema = z.object({
     .optional(),
 });
 export type Compatibility = z.infer<typeof CompatibilitySchema>;
+
+/** The shapes a picture of a setup comes in: 16:9, or square. */
+export const PictureShapeSchema = z.enum(['wide', 'square']);
+export type PictureShape = z.infer<typeof PictureShapeSchema>;

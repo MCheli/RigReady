@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { channel, defineContract, noInput } from '../../shared/ipc';
-import { CompatibilitySchema } from './core/schema';
+import { CompatibilitySchema, PictureShapeSchema } from './core/schema';
 
 const FindingSchema = z.object({
   id: z.string(),
@@ -124,6 +124,23 @@ const ExportInput = z.object({
   includeItems: z.array(z.string().max(80)).max(200).default([]),
 });
 
+const PictureInput = z.object({
+  profileId: z.string().min(1).max(80),
+  shape: PictureShapeSchema.default('wide'),
+});
+
+const PicturePreviewSchema = z.object({
+  image: z.string(),
+  width: z.number().int(),
+  height: z.number().int(),
+  monitors: z.number().int(),
+  controllers: z.number().int(),
+  apps: z.number().int(),
+  /** Where the monitor arrangement comes from: the setup's layout check, or the monitors as they are. */
+  monitorsFrom: z.enum(['setup', 'now', 'none']),
+});
+export type PicturePreviewView = z.infer<typeof PicturePreviewSchema>;
+
 export const sharingContract = defineContract('sharing', {
   /** Setups that can be shared. */
   profiles: channel(
@@ -160,5 +177,17 @@ export const sharingContract = defineContract('sharing', {
   undoImport: channel(
     z.object({ groupId: z.string(), force: z.boolean().default(false) }),
     z.object({ files: z.number(), setupRemoved: z.boolean() })
+  ),
+  /**
+   * A picture of a setup (name, game, monitors to scale, controllers, helper apps) exactly
+   * as Save would write it, as a PNG data URL. Nothing personal is in it. Writes nothing.
+   */
+  picturePreview: channel(PictureInput, PicturePreviewSchema),
+  /** Writes that picture where the user picks; null when cancelled. */
+  savePicture: channel(
+    PictureInput,
+    z
+      .object({ path: z.string(), size: z.number(), width: z.number(), height: z.number() })
+      .nullable()
   ),
 });

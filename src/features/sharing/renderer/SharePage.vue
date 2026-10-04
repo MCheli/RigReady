@@ -2,17 +2,18 @@
 import { ref } from 'vue';
 import ShareExport from './ShareExport.vue';
 import ShareImport from './ShareImport.vue';
+import SharePicture from './SharePicture.vue';
 
-const mode = ref<'export' | 'import'>('export');
+const mode = ref<'export' | 'import' | 'picture'>('export');
 </script>
 
 <template>
   <div class="rr-page" data-testid="share-page">
     <h1 class="rr-page-title">Share</h1>
     <p class="rr-page-sub">
-      Give a setup to a friend or squadron as one .rigready file, or bring in one you were given.
-      Personal details are reviewed before anything leaves this PC, and nothing that runs a program
-      is ever shared or imported.
+      Give a setup to a friend or squadron as one .rigready file, bring in one you were given, or
+      save a picture of your rig to show. Personal details are reviewed before anything leaves this
+      PC, and nothing that runs a program is ever shared or imported.
     </p>
 
     <div class="choices">
@@ -40,17 +41,30 @@ const mode = ref<'export' | 'import'>('export');
           <div class="rr-row-sub">See how it fits this PC, then pick what to bring in</div>
         </div>
       </button>
+      <button
+        class="rr-panel choice"
+        :class="{ active: mode === 'picture' }"
+        data-testid="share-mode-picture"
+        @click="mode = 'picture'"
+      >
+        <v-icon icon="mdi-image-outline" size="22" />
+        <div>
+          <div class="choice-title">Save a picture of this setup</div>
+          <div class="rr-row-sub">Monitors, controllers and helper apps as one image</div>
+        </div>
+      </button>
     </div>
 
     <ShareExport v-if="mode === 'export'" />
-    <ShareImport v-else />
+    <ShareImport v-else-if="mode === 'import'" />
+    <SharePicture v-else />
   </div>
 </template>
 
 <style scoped>
 .choices {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -62,6 +76,9 @@ const mode = ref<'export' | 'import'>('export');
   text-align: left;
   color: var(--rr-text);
   cursor: pointer;
+  transition:
+    border-color 0.15s ease-out,
+    background-color 0.15s ease-out;
 }
 .choice.active {
   border-color: var(--rr-accent);
@@ -70,6 +87,11 @@ const mode = ref<'export' | 'import'>('export');
 .choice-title {
   font-weight: 600;
   font-size: 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .choice {
+    transition: none;
+  }
 }
 </style>
 

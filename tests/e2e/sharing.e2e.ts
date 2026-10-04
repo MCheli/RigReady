@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { unzipSync, zipSync } from 'fflate';
-import { expect, test } from './harness';
+import { expect, screensDir, test } from './harness';
 
 /** Sharing: export a setup with a privacy review, import it on a friend's PC. */
 
@@ -154,4 +154,89 @@ test('share: review personal details and what runs, save a .rigready file, impor
   } finally {
     await fs.rm(evil, { force: true });
   }
+});
+
+/** Width and height of a PNG file, from its header. */
+async function pngSize(file: string): Promise<{ width: number; height: number }> {
+  const bytes = await fs.readFile(file);
+  expect(bytes.subarray(1, 4).toString('latin1')).toBe('PNG');
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
+
+test('share: a picture of a setup is previewed in both shapes and saved where the user says, and says saved only once the file is there', async ({
+  rig,
+}) => {
+  const flow = 'share-picture';
+  const run = await rig.launch('share-picture', flow, {
+    dialogs: { save: [null, 'Documents/my rig.png', 'Documents/my rig square.png'] },
+  });
+  const { page, shot, home } = run;
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-share').click();
+  await page.getByTestId('share-mode-picture').click();
+  const picture = page.getByTestId('share-picture');
+  await picture.getByTestId('share-picture-setup').click();
+  await page.getByRole('option', { name: 'DCS F/A-18C', exact: true }).click();
+
+  // The preview is the picture itself, at full size, scaled to the page.
+  const image = picture.getByTestId('share-picture-image');
+  const natural = () =>
+    image.evaluate((element) => {
+      const img = element as unknown as { naturalWidth: number; naturalHeight: number };
+      return `${img.naturalWidth}x${img.naturalHeight}`;
+    });
+  await expect(image).toBeVisible();
+  await expect.poll(natural).toBe('1920x1080');
+  await expect(picture.getByTestId('share-picture-contents')).toHaveText(
+    '4 monitors · 12 controllers · 3 helper apps · 1920 × 1080 PNG'
+  );
+  await expect(image).toHaveAttribute(
+    'alt',
+    'A picture of DCS F/A-18C: 4 monitors · 12 controllers · 3 helper apps'
+  );
+  await expect(picture.getByTestId('share-picture-foot')).toContainText(
+    'No serial number, user name, PC name or folder path is in the picture'
+  );
+  await shot('wide-preview');
+
+  // Cancelling the Save dialog writes nothing and claims nothing.
+  await picture.getByTestId('share-picture-save').click();
+  await expect(picture.getByTestId('share-picture-save')).toBeEnabled();
+  await expect(picture.getByTestId('share-picture-saved')).toHaveCount(0);
+  await expect(picture.getByTestId('share-picture-error')).toHaveCount(0);
+
+  // Saved: the file is on disk, a PNG of exactly 1920 by 1080.
+  await picture.getByTestId('share-picture-save').click();
+  const wide = path.join(home, 'Documents', 'my rig.png');
+  await expect(picture.getByTestId('share-picture-saved')).toContainText(`Saved ${wide}`);
+  expect(await pngSize(wide)).toEqual({ width: 1920, height: 1080 });
+  await shot('saved');
+
+  // Square, for a profile picture: drawn again, and "saved" is gone until it is saved again.
+  await picture.getByTestId('share-picture-square').click();
+  await expect.poll(natural).toBe('1080x1080');
+  await expect(image).toHaveAttribute('data-shape', 'square');
+  await expect(picture.getByTestId('share-picture-saved')).toHaveCount(0);
+  await shot('square-preview');
+  await picture.getByTestId('share-picture-save').click();
+  const square = path.join(home, 'Documents', 'my rig square.png');
+  await expect(picture.getByTestId('share-picture-saved')).toContainText(`Saved ${square}`);
+  expect(await pngSize(square)).toEqual({ width: 1080, height: 1080 });
+
+  // The saved files themselves, kept beside the screenshots: they are the result.
+  await fs.copyFile(wide, path.join(screensDir, flow, 'rig-wide.png'));
+  await fs.copyFile(square, path.join(screensDir, flow, 'rig-square.png'));
+  // What was saved is what was shown: the preview's bytes are the file's bytes.
+  const shown = await image.evaluate((element) =>
+    (element as unknown as { src: string }).src.slice('data:image/png;base64,'.length)
+  );
+  expect(Buffer.from(shown, 'base64').equals(await fs.readFile(square))).toBe(true);
+
+  // The other setup of this PC, which checks its pedals by serial number, draws as well.
+  await picture.getByTestId('share-picture-setup').click();
+  await page.getByRole('option', { name: 'Squadron F/A-18C', exact: true }).click();
+  await expect(image).toHaveAttribute(
+    'alt',
+    /A picture of Squadron F\/A-18C: 4 monitors · 12 controllers/
+  );
 });

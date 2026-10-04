@@ -195,8 +195,8 @@ const REASONED: Record<string, { why: string; previews?: Record<string, string> 
     why: 'Writes only inside the data folder (monitor names, the pending-revert note, upright answers).',
   },
   sharing: {
-    why: 'Has a preview of its own: openImport reports every file of the bundle with where it lands and whether it is new, the same or different, shown on the import screen with a tick per group before Import. Export writes the one file the user names in a Save dialog.',
-    previews: { import: 'openImport' },
+    why: 'Has a preview of its own: openImport reports every file of the bundle with where it lands and whether it is new, the same or different, shown on the import screen with a tick per group before Import. Export writes the one file the user names in a Save dialog. So does the picture of a setup, which is on screen as it will be saved (picturePreview) before Save writes it.',
+    previews: { import: 'openImport', savePicture: 'picturePreview' },
   },
 };
 
@@ -275,6 +275,7 @@ describe('the source rule: a feature that writes files shows the change first', 
       'backup:exportBackup': 'save',
       'sharing:import': 'sharing:openImport',
       'sharing:export': 'save',
+      'sharing:savePicture': 'sharing:picturePreview',
       'dcs-setup:applyScreens': 'dcs-setup:previewScreens',
       'dcs-setup:applyExport': 'dcs-setup:previewExport',
       'dcs-setup:restoreManaged': 'dcs-setup:restoreManagedPreview',

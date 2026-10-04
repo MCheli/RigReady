@@ -1727,6 +1727,33 @@ requirements:
       - "artifacts/screens/display-apply-preview/03-side-by-side.png"
       - "artifacts/screens/display-apply-preview/04-racing-without-the-tv.png"
 
+  - id: WOW-TOOLS-004
+    title: A picture of the rig
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "Share > 'Save a picture of this setup' draws a setup as one image, 1920 by 1080 or 1080 square: its name and game, the monitors of its layout to scale with the names the owner gave them, every controller once with an icon for its kind and the owner's name for it, and the helper apps."
+      - "The picture is rendered by the Render port from a page without script or outside files, and is on screen before it is saved: the preview is the very PNG that Save writes."
+      - "Nothing personal is in it: it is built from names only, and every text goes through the privacy scan the share export uses, so a serial number, the Windows user name, the PC name or a folder path that was typed into a name does not survive. No device id, monitor id or program path is asked for."
+      - "Save asks where through the Dialogs port and answers 'Saved' only after the file has been read back and is, byte for byte, the picture. Cancel writes nothing and claims nothing; a file that is not the picture afterwards is an error."
+    status: done
+    evidence:
+      - "src/features/sharing/core/picture.test.ts#names the setup and its game, and draws the monitors of its layout by the names the owner gave them"
+      - "src/features/sharing/core/picture.test.ts#lists every controller once, with the name the owner gave it, what it is, and an icon for its kind"
+      - "src/features/sharing/core/picture.test.ts#has no serial, user name, PC name, path, device id or monitor id, whatever the setup and the names say"
+      - "src/features/sharing/core/picture.test.ts#is a page without script or outside files, with every name written as text"
+      - "src/features/sharing/core/picture.test.ts#draws the monitors to scale: the same pixels per desktop pixel across and down"
+      - "src/features/sharing/core/picture.test.ts#previews exactly the picture that would be saved, at the size of its shape"
+      - "src/features/sharing/core/picture.test.ts#saves where the user says, and answers only once the file has been read back"
+      - "src/features/sharing/core/picture.test.ts#does not say saved when the file is not the picture afterwards"
+      - "tests/e2e/sharing.e2e.ts#share: a picture of a setup is previewed in both shapes and saved where the user says, and says saved only once the file is there"
+      - "artifacts/screens/share-picture/01-wide-preview.png"
+      - "artifacts/screens/share-picture/02-saved.png"
+      - "artifacts/screens/share-picture/03-square-preview.png"
+      - "artifacts/screens/share-picture/rig-wide.png"
+      - "artifacts/screens/share-picture/rig-square.png"
+
   # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files
   # ---------------------------------------------------------------------------

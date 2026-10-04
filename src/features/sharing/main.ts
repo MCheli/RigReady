@@ -4,6 +4,7 @@ import packageJson from '../../../package.json';
 import { sharingContract } from './contract';
 import { prepareExport, writeExport } from './core/exporter';
 import { applyImport, openImport, undoImport } from './core/importer';
+import { picturePreview, savePicture } from './core/picture';
 
 export default defineFeatureMain({
   id: 'sharing',
@@ -27,6 +28,8 @@ export default defineFeatureMain({
         openImport: () => openImport(ctx),
         import: ({ importId, parts, conflict }) => applyImport(ctx, importId, parts, conflict),
         undoImport: ({ groupId, force }) => undoImport(ctx, groupId, force),
+        picturePreview: ({ profileId, shape }) => picturePreview(ctx, profileId, shape),
+        savePicture: ({ profileId, shape }) => savePicture(ctx, profileId, shape),
       }),
     ];
   },
