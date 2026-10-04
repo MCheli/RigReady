@@ -163,76 +163,86 @@ watch(selected, () => (now.value = Date.now()));
       </v-chip-group>
     </div>
 
-    <div class="tester-last rr-panel" data-testid="tester-last-input">
-      <v-icon icon="mdi-gesture-tap-button" size="18" class="rr-muted" />
-      <span v-if="lastInput"
-        >Last input: <strong>{{ lastInput }}</strong></span
-      >
-      <span v-else class="rr-muted">Last input: nothing yet. Press a button or move an axis.</span>
-    </div>
-
-    <div v-if="input.sources.length > 0" class="tester-bound rr-panel" data-testid="tester-bound">
-      <v-select
-        class="tester-aircraft"
-        label="Show what it does in"
-        :items="aircraftItems"
-        :model-value="input.boundChoice"
-        density="compact"
-        variant="outlined"
-        hide-details
-        data-testid="tester-aircraft"
-        @update:model-value="input.chooseBound(String($event ?? ''))"
-      />
-      <div class="rr-row-main">
-        <div v-if="input.boundError" class="rr-warn" data-testid="bound-error">
-          {{ input.boundError }}
+    <!-- What was used last and, with an aircraft chosen, what that control does in the game. -->
+    <div class="tester-last rr-panel">
+      <div class="tester-last-row">
+        <div class="tester-last-input" data-testid="tester-last-input">
+          <v-icon icon="mdi-gesture-tap-button" size="18" class="rr-muted" />
+          <span v-if="lastInput"
+            >Last input: <strong>{{ lastInput }}</strong></span
+          >
+          <span v-else class="rr-muted"
+            >Last input: nothing yet. Press a button or move an axis.</span
+          >
         </div>
-        <div v-else-if="!lastBound" class="rr-muted">
-          Choose an aircraft to see what each control you press is bound to.
-        </div>
-        <div v-else-if="!lastBound.control" class="rr-muted" data-testid="bound-waiting">
-          Press a button or move an axis to see what it does in {{ lastBound.aircraft }}.
-        </div>
-        <template v-else>
-          <div class="rr-row-title" data-testid="bound-control" :data-input="lastBound.input">
-            {{ lastBound.control }}
-          </div>
-          <div v-if="lastBound.actions.length === 0" class="rr-muted" data-testid="bound-none">
-            Nothing is bound to it in {{ lastBound.aircraft }}.
-          </div>
-          <ul v-else class="bound-actions">
-            <li v-for="(a, i) in lastBound.actions" :key="i" data-testid="bound-action">
-              <strong>{{ a.action }}</strong>
-              <span v-if="a.modifiers.length" class="rr-muted">
-                with {{ a.modifiers.join(' + ') }}</span
-              >
-              <span v-if="a.category.length" class="rr-muted"> · {{ a.category.join(' · ') }}</span>
-              <span class="bound-chip">{{
-                a.source === 'user'
-                  ? 'Yours'
-                  : `${lastBound.gameName.replace(/ World$/, '')} default`
-              }}</span>
-            </li>
-          </ul>
-          <div v-if="lastBound.duplicate" class="rr-warn" data-testid="bound-duplicate">
-            <v-icon icon="mdi-alert" size="16" /> This control does several things at once in
-            {{ lastBound.aircraft }}. If that is not what you want, clear one of them on the
-            bindings page.
-          </div>
-        </template>
+        <v-select
+          v-if="input.sources.length > 0"
+          class="tester-aircraft"
+          label="Show what it does in"
+          :items="aircraftItems"
+          :model-value="input.boundChoice"
+          density="compact"
+          variant="outlined"
+          hide-details
+          data-testid="tester-aircraft"
+          @update:model-value="input.chooseBound(String($event ?? ''))"
+        />
       </div>
-      <v-btn
-        v-if="lastBound?.route"
-        size="small"
-        variant="text"
-        prepend-icon="mdi-open-in-app"
-        :to="lastBound.route"
-        data-testid="bound-open"
-        >Open its bindings</v-btn
+      <div
+        v-if="input.sources.length > 0 && (lastBound || input.boundError)"
+        class="tester-bound"
+        data-testid="tester-bound"
       >
+        <div class="rr-row-main">
+          <div v-if="input.boundError" class="rr-warn" data-testid="bound-error">
+            {{ input.boundError }}
+          </div>
+          <div v-else-if="!lastBound?.control" class="rr-muted" data-testid="bound-waiting">
+            Press a button or move an axis to see what it does in {{ lastBound?.aircraft }}.
+          </div>
+          <template v-else>
+            <div class="rr-row-title" data-testid="bound-control" :data-input="lastBound.input">
+              {{ lastBound.control }}
+            </div>
+            <div v-if="lastBound.actions.length === 0" class="rr-muted" data-testid="bound-none">
+              Nothing is bound to it in {{ lastBound.aircraft }}.
+            </div>
+            <ul v-else class="bound-actions">
+              <li v-for="(a, i) in lastBound.actions" :key="i" data-testid="bound-action">
+                <strong>{{ a.action }}</strong>
+                <span v-if="a.modifiers.length" class="rr-muted">
+                  with {{ a.modifiers.join(' + ') }}</span
+                >
+                <span v-if="a.category.length" class="rr-muted">
+                  · {{ a.category.join(' · ') }}</span
+                >
+                <span class="bound-chip">{{
+                  a.source === 'user'
+                    ? 'Yours'
+                    : `${lastBound.gameName.replace(/ World$/, '')} default`
+                }}</span>
+              </li>
+            </ul>
+            <div v-if="lastBound.duplicate" class="rr-warn" data-testid="bound-duplicate">
+              <v-icon icon="mdi-alert" size="16" /> This control does several things at once in
+              {{ lastBound.aircraft }}. If that is not what you want, clear one of them on the
+              bindings page.
+            </div>
+          </template>
+        </div>
+        <v-btn
+          v-if="lastBound?.route"
+          size="small"
+          variant="text"
+          prepend-icon="mdi-open-in-app"
+          :to="lastBound.route"
+          data-testid="bound-open"
+          >Open its bindings</v-btn
+        >
+      </div>
     </div>
 
-    <div class="tester-grid">
+    <div class="tester-grid" :class="{ all: selected === undefined }">
       <div>
         <div
           v-if="input.ready && input.devices.length === 0 && !input.error"
@@ -251,7 +261,7 @@ watch(selected, () => (now.value = Date.now()));
             <v-btn
               size="small"
               variant="text"
-              prepend-icon="mdi-view-list"
+              prepend-icon="mdi-view-grid-outline"
               @click="select(undefined)"
               >All controllers</v-btn
             >
@@ -262,7 +272,7 @@ watch(selected, () => (now.value = Date.now()));
           That controller is not connected any more.
           <v-btn variant="text" @click="select(undefined)">Show all controllers</v-btn>
         </div>
-        <div v-else class="rr-panel" data-testid="tester-all-list">
+        <div v-else class="tester-cards" data-testid="tester-all-list">
           <CompactController
             v-for="d in input.devices"
             :key="d.index"
@@ -290,10 +300,8 @@ watch(selected, () => (now.value = Date.now()));
         <ol class="tester-log-list" data-testid="tester-log">
           <li v-for="e in entries" :key="e.id" :class="`log-${e.kind}`" data-testid="log-entry">
             <span class="rr-mono rr-muted">{{ time(e.time) }}</span>
-            <span>
-              <span v-if="selected === undefined" class="rr-muted">{{ e.device }} · </span
-              >{{ e.text }}
-            </span>
+            <span v-if="selected === undefined" class="rr-muted log-device">{{ e.device }}</span>
+            <span>{{ e.text }}</span>
           </li>
         </ol>
         <p v-if="entries.length === 0" class="rr-muted tester-log-empty">
@@ -319,23 +327,33 @@ watch(selected, () => (now.value = Date.now()));
   background: color-mix(in srgb, var(--rr-accent) 18%, transparent);
 }
 .tester-last {
+  padding: 8px 12px 8px 16px;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+}
+.tester-last-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 40px;
+}
+.tester-last-input {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px;
-  margin-bottom: 16px;
-  font-size: 13.5px;
+}
+.tester-aircraft {
+  flex: 0 0 240px;
 }
 .tester-bound {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  font-size: 13.5px;
-}
-.tester-aircraft {
-  flex: 0 0 260px;
+  margin-top: 8px;
+  padding: 10px 0 4px 28px;
+  border-top: 1px solid var(--rr-border);
 }
 .bound-actions {
   list-style: none;
@@ -360,6 +378,15 @@ watch(selected, () => (now.value = Date.now()));
   gap: 16px;
   align-items: start;
 }
+/* Every controller at once: the cards take the whole width and the log goes below them. */
+.tester-grid.all {
+  grid-template-columns: minmax(0, 1fr);
+}
+.tester-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 10px;
+}
 .tester-single {
   padding: 16px;
 }
@@ -373,6 +400,10 @@ watch(selected, () => (now.value = Date.now()));
   max-height: calc(100vh - 100px);
   display: flex;
   flex-direction: column;
+}
+.tester-grid.all .tester-log {
+  position: static;
+  max-height: 264px;
 }
 .tester-log-head {
   padding: 0 12px 6px 16px;
@@ -390,6 +421,15 @@ watch(selected, () => (now.value = Date.now()));
   gap: 8px;
   padding: 3px 0;
   border-top: 1px solid var(--rr-border);
+}
+.tester-grid.all .tester-log-list li {
+  grid-template-columns: 92px minmax(0, 2fr) minmax(0, 3fr);
+  gap: 16px;
+}
+.log-device {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tester-log-list li:first-child {
   border-top: none;

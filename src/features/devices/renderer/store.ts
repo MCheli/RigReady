@@ -7,6 +7,8 @@ import type { BindingSource, BoundInputs } from '../core/bound';
 import type { DeviceIdentity } from '../core/identity';
 import { ActivityLog, widen, type AxisRange } from '../core/input';
 import type { NotificationMode, Overview, RigDevice } from '../core/model';
+import { AxisHistory, stickPairs } from '../core/trace';
+import { addPainter, schedule } from './canvas';
 
 /** The Devices overview: names, controllers, location, HidHide, what setups need. */
 export const useDevicesStore = defineStore('devices', () => {
@@ -96,7 +98,8 @@ type Listener = (state: InputState, previous: InputState | undefined) => void;
 /**
  * Live controller input. States arrive from main at most ~60 times a second; they are kept
  * outside Vue's reactivity and each controller's version is bumped at most once per frame,
- * so only the views of controllers that changed re-render.
+ * so only the views of controllers that changed re-render. The canvases (traces, the stick
+ * plot, the strips of the list) are painted in that same frame, after the versions.
  */
 export const useInputStore = defineStore('devices-input', () => {
   const api = useClient(devicesContract);
@@ -112,6 +115,14 @@ export const useInputStore = defineStore('devices-input', () => {
   const extra = shallowRef<InputDevice[]>([]);
   const lastActivity = new Map<number, number>();
   const ranges = new Map<string, AxisRange>();
+  /** Per controller: the last few seconds of its axes, for the traces and the stick plot. */
+  const histories = new Map<number, AxisHistory>();
+  /** Per controller: the buttons (zero-based) seen pressed since the tester was opened. */
+  const tried = new Map<number, Set<number>>();
+  /** Per controller: counts every state received. A canvas repaints when it changed. */
+  const revisions = new Map<number, number>();
+  /** Per controller: the two axes the plot shows, when the user chose them. */
+  const pairs = shallowReactive<Record<number, { x: number; y: number }>>({});
   const log = new ActivityLog();
   const logVersion = ref(0);
   const lastInput = ref<{ index: number; text: string }>();
@@ -130,7 +141,7 @@ export const useInputStore = defineStore('devices-input', () => {
   let users = 0;
   let off: (() => void) | undefined;
   let dirty = new Set<number>();
-  let frame: number | undefined;
+  let logged = false;
   let names: (d: InputDevice) => string = (d) => d.name.trim();
 
   const devices = computed(() =>
@@ -143,16 +154,19 @@ export const useInputStore = defineStore('devices-input', () => {
     );
   }
 
-  function paint(): void {
-    frame = undefined;
+  // First in the frame, before any canvas: what changed since the last one.
+  addPainter(() => {
+    if (dirty.size === 0 && !logged) return false;
     for (const index of dirty) versions[index] = (versions[index] ?? 0) + 1;
     dirty = new Set();
+    logged = false;
     logVersion.value++;
-  }
+    return false;
+  });
 
   function receive(incoming: InputState[]): void {
     const now = Date.now();
-    let logged = false;
+    const at = performance.now();
     for (const state of incoming) {
       const previous = states.get(state.index);
       states.set(state.index, state);
@@ -176,6 +190,19 @@ export const useInputStore = defineStore('devices-input', () => {
         const key = `${state.index}:${i}`;
         ranges.set(key, widen(ranges.get(key), v));
       });
+      let history = histories.get(state.index);
+      if (!history || history.axes !== state.axes.length) {
+        history = new AxisHistory(state.axes.length);
+        histories.set(state.index, history);
+      }
+      history.push(at, state.axes);
+      let pressed = tried.get(state.index);
+      for (let b = 0; b < state.buttons.length; b++) {
+        if (!state.buttons[b]) continue;
+        if (!pressed) tried.set(state.index, (pressed = new Set()));
+        pressed.add(b);
+      }
+      revisions.set(state.index, (revisions.get(state.index) ?? 0) + 1);
       if (previous) {
         const entry = log.record(device, names(device), previous, state, now);
         if (entry) {
@@ -195,7 +222,7 @@ export const useInputStore = defineStore('devices-input', () => {
       dirty.add(state.index);
       for (const listener of listeners) listener(state, previous);
     }
-    if (logged || dirty.size > 0) frame ??= requestAnimationFrame(paint);
+    if (logged || dirty.size > 0) schedule();
   }
 
   async function loadDevices(): Promise<void> {
@@ -274,11 +301,31 @@ export const useInputStore = defineStore('devices-input', () => {
     }
   }
 
-  function resetRanges(index: number): void {
+  /**
+   * Forgets what one controller has shown so far: the range each axis reached and which
+   * buttons were pressed. What is held right now counts again at once.
+   */
+  function startAgain(index: number): void {
     for (const key of [...ranges.keys()]) if (key.startsWith(`${index}:`)) ranges.delete(key);
     const state = states.get(index);
     state?.axes.forEach((v, i) => ranges.set(`${index}:${i}`, widen(undefined, v)));
+    tried.set(index, new Set(state?.buttons.flatMap((b, i) => (b ? [i] : [])) ?? []));
+    revisions.set(index, (revisions.get(index) ?? 0) + 1);
     versions[index] = (versions[index] ?? 0) + 1;
+    schedule();
+  }
+
+  /** The two axes the plot of a controller shows: the user's choice, else its stick. */
+  function pairFor(device: InputDevice): { x: number; y: number } | undefined {
+    const count = Math.max(device.numAxes, device.axisNames.length);
+    const chosen = pairs[device.index];
+    if (chosen && chosen.x < count && chosen.y < count) return chosen;
+    return stickPairs(device)[0];
+  }
+
+  function choosePair(index: number, pair: { x: number; y: number }): void {
+    pairs[index] = pair;
+    schedule();
   }
 
   return {
@@ -290,6 +337,9 @@ export const useInputStore = defineStore('devices-input', () => {
     versions,
     lastActivity,
     ranges,
+    histories,
+    tried,
+    revisions,
     log,
     logVersion,
     lastInput,
@@ -309,6 +359,8 @@ export const useInputStore = defineStore('devices-input', () => {
     onInput,
     setNamer,
     clearLog,
-    resetRanges,
+    startAgain,
+    pairFor,
+    choosePair,
   };
 });

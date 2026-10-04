@@ -12,26 +12,42 @@ import {
   hatLabel,
   rangeShortfall,
 } from '../core/input';
+import { HAT_POINTS } from '../core/trace';
+import AxisTrace from './AxisTrace.vue';
+import { useReducedMotion } from './canvas';
+import HatRose from './HatRose.vue';
+import StickPlot from './StickPlot.vue';
 import { useInputStore } from './store';
 
-/** One controller in full: every button, axis and hat as the game sees it. */
+/**
+ * One controller in full, as a game sees it: each axis as a live trace with the range it
+ * has reached, two axes against each other as a stick plot, hats as compass roses, and
+ * every button lit while it is down and marked once it has been pressed.
+ */
 const props = defineProps<{ device: InputDevice; raw: boolean }>();
 const input = useInputStore();
+const reduced = useReducedMotion();
 
 const state = computed(() => {
   void input.versions[props.device.index];
   return input.states.get(props.device.index);
 });
 
-const buttons = computed(() =>
-  Array.from(
+const buttons = computed(() => {
+  void input.versions[props.device.index];
+  const tried = input.tried.get(props.device.index);
+  return Array.from(
     { length: Math.max(props.device.numButtons, state.value?.buttons.length ?? 0) },
     (_, i) => ({
       i,
       pressed: state.value?.buttons[i] ?? false,
+      tried: tried?.has(i) ?? false,
     })
-  )
-);
+  );
+});
+
+/** A range is worth showing in numbers once the axis has moved more than a wobble. */
+const MOVED = 0.04;
 
 const axes = computed(() => {
   void input.versions[props.device.index];
@@ -39,15 +55,18 @@ const axes = computed(() => {
   return Array.from({ length: count }, (_, i) => {
     const value = state.value?.axes[i];
     const range = input.ranges.get(`${props.device.index}:${i}`);
+    const moved = range !== undefined && range.max - range.min > MOVED;
     return {
       i,
       label: axisLabel(props.device, i),
       game: axisGameName(props.device, i),
-      value,
       percent: value === undefined ? undefined : axisPercent(value),
       raw: value === undefined ? undefined : axisRaw(value),
-      min: range ? axisPercent(range.min) : undefined,
-      max: range ? axisPercent(range.max) : undefined,
+      reach: !moved
+        ? undefined
+        : props.raw
+          ? `${axisRaw(range.min)} to ${axisRaw(range.max)}`
+          : `${Math.round(axisPercent(range.min))} to ${Math.round(axisPercent(range.max))}%`,
       shortfall: rangeShortfall(range),
     };
   });
@@ -55,62 +74,105 @@ const axes = computed(() => {
 
 const hats = computed(() =>
   Array.from({ length: Math.max(props.device.numHats, state.value?.hats.length ?? 0) }, (_, i) => {
-    const hat = state.value?.hats[i];
+    const direction = hatDirection(state.value?.hats[i]);
     return {
       i,
       label: hatLabel(i),
-      direction: hatDirection(hat),
-      x: hat?.[0] ?? 0,
-      y: hat?.[1] ?? 0,
+      direction,
+      code: HAT_POINTS.find((p) => p.direction === direction)?.code,
     };
   })
 );
 
 const pressedCount = computed(() => buttons.value.filter((b) => b.pressed).length);
+const triedCount = computed(() => buttons.value.filter((b) => b.tried).length);
+
+// ---- two axes against each other ----
+const pair = computed(() => input.pairFor(props.device));
+const axisItems = computed(() =>
+  axes.value.map((a) => ({ title: props.raw ? a.game : a.label, value: a.i }))
+);
+function choose(which: 'x' | 'y', axis: number): void {
+  if (!pair.value) return;
+  input.choosePair(props.device.index, { ...pair.value, [which]: axis });
+}
+const position = computed(() => {
+  if (!pair.value) return undefined;
+  const x = axes.value[pair.value.x];
+  const y = axes.value[pair.value.y];
+  if (x?.percent === undefined || y?.percent === undefined) return undefined;
+  return props.raw ? `${x.raw}, ${y.raw}` : `${Math.round(x.percent)}%, ${Math.round(y.percent)}%`;
+});
 </script>
 
 <template>
-  <div class="controller" data-testid="controller-view" :data-index="device.index">
+  <div
+    class="controller"
+    :class="{ 'raw-wide': raw }"
+    data-testid="controller-view"
+    :data-index="device.index"
+    :data-motion="reduced ? 'reduced' : 'full'"
+  >
     <div v-if="!state" class="rr-muted controller-waiting">
       Waiting for input from this controller. Press a button or move an axis.
     </div>
 
-    <section v-if="axes.length" class="controller-section">
-      <h3 class="rr-section-title">Axes</h3>
-      <div v-for="a in axes" :key="a.i" class="axis" data-testid="axis" :data-axis="a.label">
-        <div class="axis-name">
-          {{ raw ? a.game : a.label }}
+    <div v-if="axes.length" class="controller-top" :class="{ 'with-plot': pair }">
+      <section v-if="pair" class="controller-section" data-testid="plot-section">
+        <h3 class="rr-section-title">Two axes together</h3>
+        <StickPlot :index="device.index" :x="pair.x" :y="pair.y" :reduced="reduced" />
+        <div class="plot-readout rr-mono" data-testid="plot-position">
+          {{ position ?? '–' }}
         </div>
-        <div class="axis-track">
-          <div
-            v-if="a.min !== undefined && a.max !== undefined"
-            class="axis-range"
-            :style="{ left: `${a.min}%`, width: `${Math.max(0.5, a.max - a.min)}%` }"
+        <div class="plot-pick">
+          <v-select
+            label="Across"
+            :items="axisItems"
+            :model-value="pair.x"
+            density="compact"
+            variant="outlined"
+            hide-details
+            data-testid="plot-x"
+            @update:model-value="choose('x', Number($event))"
           />
-          <div class="axis-centre" />
-          <div
-            v-if="a.percent !== undefined"
-            class="axis-fill"
-            :style="{ width: `${a.percent}%` }"
+          <v-select
+            label="Up and down"
+            :items="axisItems"
+            :model-value="pair.y"
+            density="compact"
+            variant="outlined"
+            hide-details
+            data-testid="plot-y"
+            @update:model-value="choose('y', Number($event))"
           />
         </div>
-        <div class="axis-value rr-mono" data-testid="axis-value">
-          <template v-if="a.percent === undefined">–</template>
-          <template v-else-if="raw"
-            >{{ a.raw }} <span class="rr-muted">· {{ a.percent.toFixed(1) }}%</span></template
-          >
-          <template v-else>{{ Math.round(a.percent) }}%</template>
+      </section>
+
+      <section class="controller-section">
+        <h3 class="rr-section-title">Axes</h3>
+        <div v-for="a in axes" :key="a.i" class="axis" data-testid="axis" :data-axis="a.label">
+          <div class="axis-name">
+            {{ raw ? a.game : a.label }}
+          </div>
+          <AxisTrace :index="device.index" :axis="a.i" :reduced="reduced" />
+          <div class="axis-numbers">
+            <div class="axis-value rr-mono" data-testid="axis-value">
+              <template v-if="a.percent === undefined">–</template>
+              <template v-else-if="raw"
+                >{{ a.raw }} <span class="rr-muted">· {{ a.percent.toFixed(1) }}%</span></template
+              >
+              <template v-else>{{ Math.round(a.percent) }}%</template>
+            </div>
+            <div v-if="a.reach" class="axis-reach rr-muted" data-testid="axis-reach">
+              {{ a.reach }}
+            </div>
+          </div>
+          <div v-if="a.shortfall" class="axis-note rr-warn" data-testid="axis-shortfall">
+            {{ a.shortfall }}
+          </div>
         </div>
-        <div v-if="a.shortfall" class="axis-note rr-warn" data-testid="axis-shortfall">
-          {{ a.shortfall }}
-        </div>
-      </div>
-      <p class="rr-muted controller-hint">
-        The shaded band is the range seen since you opened the tester. Sweep an axis end to end to
-        check it reaches both ends.
-        <a href="#" @click.prevent="input.resetRanges(device.index)">Start the sweep again</a>
-      </p>
-    </section>
+      </section>
+    </div>
 
     <section v-if="hats.length" class="controller-section">
       <h3 class="rr-section-title">Hats</h3>
@@ -122,16 +184,12 @@ const pressedCount = computed(() => buttons.value.filter((b) => b.pressed).lengt
           data-testid="hat"
           :data-direction="h.direction"
         >
-          <div class="hat-pad">
-            <span
-              class="hat-dot"
-              :style="{ transform: `translate(${h.x * 14}px, ${-h.y * 14}px)` }"
-              :class="{ on: h.direction !== 'centred' }"
-            />
-          </div>
+          <HatRose :direction="h.direction" />
           <div>
             <div>{{ raw ? `POV${h.i + 1}` : h.label }}</div>
-            <div class="rr-muted">{{ h.direction }}</div>
+            <div :class="h.direction === 'centred' ? 'rr-muted' : 'hat-on'">
+              {{ raw && h.code ? `${h.direction} · ${h.code}` : h.direction }}
+            </div>
           </div>
         </div>
       </div>
@@ -141,24 +199,42 @@ const pressedCount = computed(() => buttons.value.filter((b) => b.pressed).lengt
       <h3 class="rr-section-title">
         Buttons · {{ buttons.length
         }}<template v-if="pressedCount"> · {{ pressedCount }} pressed</template>
+        <span class="buttons-tried" data-testid="buttons-tried"
+          >{{ triedCount }} of {{ buttons.length }} tried</span
+        >
       </h3>
       <div class="buttons">
         <div
           v-for="b in buttons"
           :key="b.i"
           class="button"
-          :class="{ pressed: b.pressed, raw }"
+          :class="{ pressed: b.pressed, tried: b.tried, raw }"
           :title="`${buttonLabel(b.i)} (${buttonGameName(b.i)})`"
           data-testid="button"
           :data-button="b.i + 1"
           :data-pressed="b.pressed"
+          :data-tried="b.tried"
         >
           {{ raw ? buttonGameName(b.i).replace('JOY_', '') : b.i + 1 }}
         </div>
       </div>
     </section>
+
     <p v-if="!axes.length && !hats.length && !buttons.length" class="rr-muted">
       This controller reports no inputs.
+    </p>
+    <p v-else class="rr-muted controller-hint">
+      <template v-if="axes.length">
+        The shaded band on an axis is the range it has reached since you opened the tester: sweep it
+        end to end to check it gets to both ends.
+      </template>
+      <template v-if="buttons.length">
+        A button keeps its outline once it has been pressed, so the ones you have not tried stand
+        out.
+      </template>
+      <a href="#" data-testid="tester-start-again" @click.prevent="input.startAgain(device.index)"
+        >Start again</a
+      >
     </p>
   </div>
 </template>
@@ -169,47 +245,56 @@ const pressedCount = computed(() => buttons.value.filter((b) => b.pressed).lengt
   margin-bottom: 12px;
 }
 .controller-section {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
+  min-width: 0;
+}
+.controller-top.with-plot {
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 0 28px;
+  align-items: start;
+}
+.plot-readout {
+  margin-top: 6px;
+  text-align: center;
+  color: var(--rr-muted);
+  font-variant-numeric: tabular-nums;
+}
+.plot-pick {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+.plot-pick :deep(.v-field) {
+  font-size: 13px;
 }
 .axis {
   display: grid;
-  grid-template-columns: 120px 1fr 120px;
+  grid-template-columns: 84px minmax(0, 1fr) 76px;
   align-items: center;
-  gap: 12px;
+  gap: 2px 12px;
   padding: 4px 0;
   font-size: 13px;
 }
-.axis-track {
-  position: relative;
-  height: 12px;
-  border-radius: 6px;
-  background: var(--rr-surface-2);
+.raw-wide .axis {
+  grid-template-columns: 84px minmax(0, 1fr) 118px;
+}
+.axis-name {
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.axis-range {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: color-mix(in srgb, var(--rr-accent) 22%, transparent);
-}
-.axis-fill {
-  position: absolute;
-  left: 0;
-  top: 3px;
-  bottom: 3px;
-  border-radius: 3px;
-  background: var(--rr-accent);
-}
-.axis-centre {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--rr-border);
+.axis-numbers {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
 }
 .axis-value {
-  text-align: right;
+  font-size: 12.5px;
+}
+.axis-reach {
+  font-size: 11px;
+  white-space: nowrap;
 }
 .axis-note {
   grid-column: 2 / 4;
@@ -217,41 +302,31 @@ const pressedCount = computed(() => buttons.value.filter((b) => b.pressed).lengt
 }
 .controller-hint {
   font-size: 12px;
-  margin: 6px 0 0;
+  margin: 0;
 }
 .controller-hint a {
   color: var(--rr-accent);
 }
 .hats {
   display: flex;
-  gap: 24px;
+  gap: 28px;
   flex-wrap: wrap;
 }
 .hat {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   font-size: 13px;
 }
-.hat-pad {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid var(--rr-border);
-  background: var(--rr-surface-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.hat-on {
+  color: var(--rr-accent);
+  font-weight: 500;
 }
-.hat-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--rr-muted);
-}
-.hat-dot.on {
-  background: var(--rr-accent);
+.buttons-tried {
+  float: right;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 .buttons {
   display: grid;
@@ -269,14 +344,30 @@ const pressedCount = computed(() => buttons.value.filter((b) => b.pressed).lengt
   color: var(--rr-muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  /* Letting go fades; pressing does not wait. */
+  transition:
+    background-color 0.18s ease-out,
+    border-color 0.18s ease-out,
+    color 0.18s ease-out;
 }
 .button.raw {
   font-size: 10.5px;
 }
+.button.tried {
+  border-color: color-mix(in srgb, var(--rr-accent) 62%, transparent);
+  background: color-mix(in srgb, var(--rr-accent) 9%, var(--rr-surface-2));
+  color: var(--rr-text);
+}
 .button.pressed {
   background: var(--rr-accent);
   border-color: var(--rr-accent);
-  color: #0f1317;
+  color: var(--rr-bg);
   font-weight: 600;
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
 }
 </style>

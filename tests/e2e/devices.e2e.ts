@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { checkRow, expect, test } from './harness';
 
 /**
@@ -53,6 +53,113 @@ async function openDevices(page: Page): Promise<void> {
 
 const deviceRow = (page: Page, name: string) =>
   page.locator(`[data-testid="device-row"][data-name="${name}"]`);
+
+/**
+ * Moves a controller from inside the page 60 times a second until the returned function is
+ * called, the way a hand would: a circle on two axes and a slow sweep on a third, with some
+ * buttons and the hat held meanwhile. What is on screen while it runs (and in a screenshot)
+ * is the tester in mid-movement.
+ */
+async function startMotion(
+  page: Page,
+  c: Controller,
+  axes: { x: number; y: number; sweep?: number },
+  held: { pressed?: number[]; hat?: [number, number] } = {}
+): Promise<() => Promise<void>> {
+  await page.evaluate(
+    ({ c, axes, held }) => {
+      const scope = globalThis as unknown as {
+        rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+        rigreadyMotion?: ReturnType<typeof setInterval>;
+      };
+      let t = 0;
+      scope.rigreadyMotion = setInterval(() => {
+        t++;
+        const values = Array.from({ length: c.axes }, () => 0);
+        values[axes.x] = Math.cos(t / 13);
+        values[axes.y] = Math.sin(t / 13);
+        if (axes.sweep !== undefined) values[axes.sweep] = Math.sin(t / 45);
+        void scope.rigready.invoke('app:scenario', {
+          input: [
+            {
+              index: c.index,
+              name: c.name,
+              axes: values,
+              buttons: Array.from(
+                { length: c.buttons },
+                (_, i) => held.pressed?.includes(i + 1) ?? false
+              ),
+              hats: Array.from({ length: c.hats }, () => held.hat ?? [0, 0]),
+              timestamp: 5_000_000 + t,
+            },
+          ],
+        });
+      }, 16);
+    },
+    { c, axes, held }
+  );
+  return async () => {
+    await page.evaluate(() => {
+      const scope = globalThis as unknown as { rigreadyMotion?: ReturnType<typeof setInterval> };
+      clearInterval(scope.rigreadyMotion);
+    });
+  };
+}
+
+type Part = { left: number; top: number; right: number; bottom: number };
+
+/**
+ * How many pixels of a canvas are drawn in the accent colour inside a part of it (fractions
+ * of its width and height). The proof that a drawing shows what the numbers say. With
+ * `faint`, a fading trail counts too (but never the grey of a frame or a grid line).
+ */
+async function accentPixels(
+  canvas: Locator,
+  part: Part = { left: 0, top: 0, right: 1, bottom: 1 },
+  faint = false
+): Promise<number> {
+  return canvas.evaluate(
+    (element, { part, faint }) => {
+      const node = element as unknown as {
+        width: number;
+        height: number;
+        getContext(kind: '2d'): {
+          getImageData(x: number, y: number, w: number, h: number): { data: Uint8ClampedArray };
+        };
+      };
+      const x = Math.floor(node.width * part.left);
+      const y = Math.floor(node.height * part.top);
+      const w = Math.max(1, Math.floor(node.width * (part.right - part.left)));
+      const h = Math.max(1, Math.floor(node.height * (part.bottom - part.top)));
+      const { data } = node.getContext('2d').getImageData(x, y, w, h);
+      // The accent is a light blue: far more blue than red, and not dim.
+      const [blue, bluer] = faint ? [60, 30] : [170, 90];
+      let count = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3]! > 200 && data[i + 2]! > blue && data[i + 2]! - data[i]! > bluer) count++;
+      }
+      return count;
+    },
+    { part, faint }
+  );
+}
+
+/**
+ * Four small squares on the diagonals of the stick plot, where a full circle passes and
+ * nothing else is drawn: not the frame, not the cross, not the box of the range reached.
+ */
+const DIAGONALS: Part[] = [
+  { left: 0.12, top: 0.12, right: 0.25, bottom: 0.25 },
+  { left: 0.75, top: 0.12, right: 0.88, bottom: 0.25 },
+  { left: 0.12, top: 0.75, right: 0.25, bottom: 0.88 },
+  { left: 0.75, top: 0.75, right: 0.88, bottom: 0.88 },
+];
+
+/** In how many of the four diagonal squares of the stick plot something blue is drawn. */
+async function trailedDiagonals(plot: Locator): Promise<number> {
+  const counts = await Promise.all(DIAGONALS.map((part) => accentPixels(plot, part, true)));
+  return counts.filter((n) => n > 15).length;
+}
 
 test('devices: controllers apart from the rest, find one by pressing a button, name it, names survive a restart', async ({
   rig,
@@ -169,6 +276,19 @@ test('devices: the input tester shows buttons, axes and hats as a game sees them
   await expect(page.locator(`[data-testid="compact-controller"][data-index="9"]`)).toContainText(
     'Hat 1 up'
   );
+  // Every row carries a strip of its axes and buttons: the throttle's has button 12 lit, and
+  // the takeoff panel, which has no axes and which nobody touched, has nothing lit.
+  await expect(page.getByTestId('controller-strip')).toHaveCount(12);
+  await expect
+    .poll(() => accentPixels(throttleRow.getByTestId('controller-strip')))
+    .toBeGreaterThan(30);
+  expect(
+    await accentPixels(
+      page
+        .locator(`[data-testid="compact-controller"][data-index="4"]`)
+        .getByTestId('controller-strip')
+    )
+  ).toBe(0);
   await shot('all');
 
   // One controller: every button, axis and hat.
@@ -194,15 +314,37 @@ test('devices: the input tester shows buttons, axes and hats as a game sees them
   await expect(page.getByTestId('log-entry').filter({ hasText: 'Z axis moved' })).toHaveCount(1);
   await expect(page.getByTestId('log-entry').first()).toContainText('Z axis moved 50% → 100%');
   await expect(zAxis.getByTestId('axis-shortfall')).toHaveCount(0);
+  // The sweep is on its trace: the line climbed to the top at the right edge, the pen is at
+  // 100%, and the range it reached is written under the value.
+  const zTrace = zAxis.getByTestId('axis-trace');
+  await expect(zTrace).toHaveAttribute('data-mode', 'trace');
+  await expect(zTrace).toHaveAttribute('data-pen', '100');
+  await expect
+    .poll(async () => Number(await zTrace.getAttribute('data-points')))
+    .toBeGreaterThan(10);
+  expect(await accentPixels(zTrace, { left: 0.9, top: 0, right: 1, bottom: 0.3 })).toBeGreaterThan(
+    8
+  );
+  await expect(zAxis.getByTestId('axis-reach')).toHaveText('0 to 100%');
+  // Button 12 is down, so it is the one button tried so far.
+  await expect(view.getByTestId('buttons-tried')).toHaveText('1 of 62 tried');
+  await expect(view.locator('[data-testid="button"][data-tried="true"]')).toHaveCount(1);
   await shot('one-controller');
   await sendInput([state(CONTROLLERS.throttle, { axes: { 2: 0 } })]);
   await expect(page.getByTestId('tester-last-input')).toContainText('Button 12 released');
+  // Released, it keeps its mark: it has been tried.
+  await expect(view.locator('[data-testid="button"][data-button="12"]')).toHaveAttribute(
+    'data-tried',
+    'true'
+  );
+  await expect(view.locator('[data-testid="button"][data-pressed="true"]')).toHaveCount(0);
   // Raw: the 16-bit value Windows shows, and button names as DCS writes them.
   await page.getByTestId('tester-raw').locator('input').check();
   await expect(zAxis.getByTestId('axis-value')).toContainText('32767');
   await expect(zAxis.getByTestId('axis-value')).toContainText('50.0%');
   await expect(view.locator('[data-testid="button"][data-button="12"]')).toHaveText('BTN12');
   await expect(zAxis).toContainText('JOY_Z');
+  await expect(zAxis.getByTestId('axis-reach')).toHaveText('0 to 65535');
   await shot('raw');
 
   // An axis that is swept but never gets to its ends is pointed out.
@@ -222,6 +364,142 @@ test('devices: the input tester shows buttons, axes and hats as a game sees them
   );
   await view.locator('[data-testid="axis"][data-axis="X rotation"]').scrollIntoViewIfNeeded();
   await shot('short-axis');
+});
+
+test('devices: the tester draws a stick as a plot with a fading trail, a hat as a compass rose, and holds still when Windows asks for less motion', async ({
+  rig,
+}) => {
+  const run = await rig.launch('devices-rig', 'devices-tester-stick');
+  const { page, shot, sendInput } = run;
+  const stick = CONTROLLERS.stick;
+  await openDevices(page);
+  await page.getByTestId('devices-tab-test').click();
+  await sendInput([state(stick)]);
+  await page.locator(`[data-testid="compact-controller"][data-index="${stick.index}"]`).click();
+  const view = page.getByTestId('controller-view');
+  await expect(view).toHaveAttribute('data-motion', 'full');
+  await expect(view.getByTestId('axis-trace')).toHaveCount(6);
+
+  // The stick's X against its Y, as Windows' own panel draws it: left and back is down left.
+  const plot = view.getByTestId('stick-plot');
+  await expect(plot).toHaveAttribute('data-mode', 'trail');
+  await sendInput([state(stick, { axes: { 0: -0.5, 1: 0.5 } })]);
+  await expect(plot).toHaveAttribute('data-x', '25');
+  await expect(plot).toHaveAttribute('data-y', '75');
+  await expect(view.getByTestId('plot-position')).toHaveText('25%, 75%');
+  await expect
+    .poll(() => accentPixels(plot, { left: 0.15, top: 0.55, right: 0.45, bottom: 0.85 }))
+    .toBeGreaterThan(25);
+  expect(await accentPixels(plot, { left: 0.6, top: 0.1, right: 0.9, bottom: 0.4 })).toBe(0);
+
+  // The hat is a compass rose: pushed up and to the right, that one point is lit.
+  const hat = view.getByTestId('hat');
+  await sendInput([state(stick, { axes: { 0: -0.5, 1: 0.5 }, hat: [1, 1] })]);
+  await expect(hat).toHaveAttribute('data-direction', 'up-right');
+  await expect(hat).toContainText('up-right');
+  await expect(hat.locator('[data-point="UR"]')).toHaveAttribute('data-on', 'true');
+  await expect(hat.locator('[data-on="true"]')).toHaveCount(1);
+
+  // Buttons light while down and keep a mark afterwards.
+  await sendInput([state(stick, { axes: { 0: -0.5, 1: 0.5 }, hat: [1, 1], pressed: [2, 5] })]);
+  await expect(view.locator('[data-testid="button"][data-pressed="true"]')).toHaveCount(2);
+  await sendInput([state(stick, { axes: { 0: -0.5, 1: 0.5 }, hat: [1, 1], pressed: [5] })]);
+  await expect(view.locator('[data-testid="button"][data-pressed="true"]')).toHaveCount(1);
+  await expect(view.getByTestId('buttons-tried')).toHaveText('2 of 42 tried');
+  await shot('stick-held');
+
+  // In motion, with the trigger held and the hat pushed up: the dot draws a trail behind it
+  // and every moving axis draws its trace.
+  const stop = await startMotion(
+    page,
+    stick,
+    { x: 0, y: 1, sweep: 4 },
+    { pressed: [1], hat: [0, 1] }
+  );
+  await expect.poll(async () => Number(await plot.getAttribute('data-trail'))).toBeGreaterThan(30);
+  const xAxis = view.locator('[data-testid="axis"][data-axis="X axis"]');
+  const xTrace = xAxis.getByTestId('axis-trace');
+  await expect
+    .poll(async () => Number(await xTrace.getAttribute('data-points')))
+    .toBeGreaterThan(60);
+  // The stick goes round and the trail follows it round: it is drawn on the diagonals of the
+  // plot, where nothing else is.
+  await expect.poll(() => trailedDiagonals(plot)).toBeGreaterThanOrEqual(3);
+  // Round at full deflection reaches both ends of both axes, and the axes say so.
+  await expect(xAxis.getByTestId('axis-reach')).toHaveText('0 to 100%');
+  await expect(view.getByTestId('axis-shortfall')).toHaveCount(0);
+  await shot('stick-in-motion');
+  await stop();
+
+  // Any two axes can be plotted against each other: the twist against the lever.
+  await view.getByTestId('plot-x').click();
+  await page.getByRole('option', { name: 'Z rotation' }).click();
+  await view.getByTestId('plot-y').click();
+  await page.getByRole('option', { name: 'Slider 1' }).click();
+  await sendInput([state(stick, { axes: { 4: 1, 5: -1 } })]);
+  await expect(plot).toHaveAttribute('data-x', '100');
+  await expect(plot).toHaveAttribute('data-y', '0');
+  await expect(view.getByTestId('plot-position')).toHaveText('100%, 0%');
+  await expect
+    .poll(() => accentPixels(plot, { left: 0.8, top: 0, right: 1, bottom: 0.2 }))
+    .toBeGreaterThan(25);
+
+  // "Start again" forgets the ranges and the marks.
+  await sendInput([state(stick)]);
+  await expect(plot).toHaveAttribute('data-x', '50');
+  await expect(view.getByTestId('axis-reach').first()).toBeVisible();
+  await view.getByTestId('tester-start-again').click();
+  await expect(view.getByTestId('buttons-tried')).toHaveText('0 of 42 tried');
+  await expect(view.getByTestId('axis-reach')).toHaveCount(0);
+
+  // Windows set to show less animation: the same values, and nothing that trails or scrolls.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(view).toHaveAttribute('data-motion', 'reduced');
+  await expect(plot).toHaveAttribute('data-mode', 'still');
+  await view.getByTestId('plot-x').click();
+  await page.getByRole('option', { name: 'X axis' }).click();
+  await view.getByTestId('plot-y').click();
+  await page.getByRole('option', { name: 'Y axis' }).click();
+  const stopAgain = await startMotion(page, stick, { x: 0, y: 1, sweep: 4 });
+  const xValue = xAxis.getByTestId('axis-value');
+  // The values keep following the stick...
+  const seen = new Set<string>();
+  await expect
+    .poll(async () => {
+      seen.add((await xValue.textContent()) ?? '');
+      return seen.size;
+    })
+    .toBeGreaterThan(3);
+  // ...but there is no trail and no trace, only where things are now: the dot is on one
+  // diagonal at most, never on three.
+  await expect(plot).toHaveAttribute('data-trail', '0');
+  await expect(xTrace).toHaveAttribute('data-mode', 'gauge');
+  await expect(xTrace).toHaveAttribute('data-points', '0');
+  // (Once round, so the box of the range reached is out at the frame.)
+  await expect(xAxis.getByTestId('axis-reach')).toHaveText('0 to 100%');
+  await expect(
+    view.locator('[data-testid="axis"][data-axis="Y axis"]').getByTestId('axis-reach')
+  ).toHaveText('0 to 100%');
+  for (let look = 0; look < 5; look++) expect(await trailedDiagonals(plot)).toBeLessThanOrEqual(1);
+  await stopAgain();
+  await sendInput([
+    state(stick, { axes: { 0: 0.6, 1: -0.4, 4: 0.5 }, pressed: [1], hat: [-1, 0] }),
+  ]);
+  await expect(plot).toHaveAttribute('data-x', '80');
+  await expect(xValue).toHaveText('80%');
+  await expect(xTrace).toHaveAttribute('data-pen', '80');
+  await expect(hat.locator('[data-point="L"]')).toHaveAttribute('data-on', 'true');
+  // The dot alone, up and to the right: nothing trails behind it where the circle went.
+  await expect
+    .poll(() => accentPixels(plot, { left: 0.7, top: 0.2, right: 0.9, bottom: 0.4 }))
+    .toBeGreaterThan(25);
+  await page.getByTestId('tester-page').locator('h1').click();
+  await view.evaluate((element) =>
+    (element as unknown as { scrollIntoView(how: object): void }).scrollIntoView({
+      block: 'center',
+    })
+  );
+  await shot('less-motion');
 });
 
 test('devices: all controllers stay responsive with 16 controllers at 60 Hz', async ({ rig }) => {

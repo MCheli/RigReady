@@ -1641,6 +1641,40 @@ requirements:
       - "artifacts/screens/devices-hidhide/03-hidhide-panel.png"
 
   # ---------------------------------------------------------------------------
+  # THE FINAL PASS — the tools: troubleshooting and learning the rig
+  # ---------------------------------------------------------------------------
+
+  - id: WOW-TOOLS-001
+    title: An input tester you can read at a glance
+    job: troubleshoot
+    area: devices
+    priority: p2
+    done_means:
+      - "One controller: every axis is a live trace of the last six seconds drawn on a canvas, with the range it has reached shaded and written under the value. An axis that stands still is a flat line, a jump after a pause is a step, a movement is a line."
+      - "Two axes of the controller are plotted against each other the way Windows' own panel draws a stick, with a trail that fades behind the dot and a box for how far it has been pushed. The stick's X and Y are the default; any two axes can be chosen."
+      - "A hat is a compass rose with the point it is pushed towards lit. A button is lit while it is down and keeps a mark once it has been pressed, with a count of how many were tried; 'Start again' forgets the ranges and the marks."
+      - "All controllers: one card per controller with a strip of its axes and buttons drawn live, and in words what is held. The raw values switch still shows the 16-bit values and the names games use."
+      - "Sixteen controllers at 60 updates a second leave no frame gap over 50 ms."
+      - "With Windows set to show less animation nothing trails and nothing scrolls: each axis is a still gauge with its range and position, the plot is the dot alone, and every value keeps following the controller."
+    status: done
+    evidence:
+      - "src/features/devices/core/trace.test.ts#is a flat line across the whole strip for an axis that stands still"
+      - "src/features/devices/core/trace.test.ts#holds and then steps when the axis jumped after standing still"
+      - "src/features/devices/core/trace.test.ts#joins the samples of one continuous movement with straight lines"
+      - "src/features/devices/core/trace.test.ts#is the path of two axes with how long ago each point was"
+      - "src/features/devices/core/trace.test.ts#offers the pairs DirectInput names, the stick first"
+      - "src/features/devices/core/trace.test.ts#draws the axes as bars and then the buttons in three rows, in reading order"
+      - "tests/e2e/devices.e2e.ts#devices: the input tester shows buttons, axes and hats as a game sees them, raw values, a readable log, one or all controllers"
+      - "tests/e2e/devices.e2e.ts#devices: the tester draws a stick as a plot with a fading trail, a hat as a compass rose, and holds still when Windows asks for less motion"
+      - "tests/e2e/devices.e2e.ts#devices: all controllers stay responsive with 16 controllers at 60 Hz"
+      - "artifacts/screens/devices-tester/01-all.png"
+      - "artifacts/screens/devices-tester/02-one-controller.png"
+      - "artifacts/screens/devices-tester/03-raw.png"
+      - "artifacts/screens/devices-tester-stick/02-stick-in-motion.png"
+      - "artifacts/screens/devices-tester-stick/03-less-motion.png"
+      - "artifacts/screens/devices-tester-load/01-sixteen-controllers.png"
+
+  # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files
   # ---------------------------------------------------------------------------
 
