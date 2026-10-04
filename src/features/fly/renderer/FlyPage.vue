@@ -579,6 +579,8 @@ onBeforeUnmount(() => {
                     :to="`/configure/profiles/${fly.activeId}`"
                     data-testid="fly-edit"
                   />
+                  <!-- The three settings keep the menu open (their click stops here), so the
+                       tick is seen to change. Escape or a click elsewhere closes it. -->
                   <v-list-item
                     :prepend-icon="
                       fly.minimizeOnLaunch
@@ -587,7 +589,7 @@ onBeforeUnmount(() => {
                     "
                     title="Hide RigReady after Launch"
                     data-testid="fly-minimize-pref"
-                    @click="fly.setMinimizeOnLaunch(!fly.minimizeOnLaunch)"
+                    @click.stop="fly.setMinimizeOnLaunch(!fly.minimizeOnLaunch)"
                   />
                   <v-list-item
                     :prepend-icon="
@@ -597,7 +599,7 @@ onBeforeUnmount(() => {
                     "
                     title="Stand down when the game closes"
                     data-testid="fly-auto-stand-down"
-                    @click="fly.setAutoStandDown(!fly.autoStandDown)"
+                    @click.stop="fly.setAutoStandDown(!fly.autoStandDown)"
                   />
                   <v-list-item
                     :prepend-icon="
@@ -606,7 +608,7 @@ onBeforeUnmount(() => {
                     title="Ready tone"
                     subtitle="Two quiet notes when the rig becomes ready"
                     data-testid="fly-ready-tone"
-                    @click="toggleReadyTone"
+                    @click.stop="toggleReadyTone"
                   />
                   <v-divider class="my-1" />
                   <v-list-item
