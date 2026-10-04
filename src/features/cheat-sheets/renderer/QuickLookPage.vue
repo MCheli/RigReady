@@ -89,6 +89,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="ql"
+    :class="{ 'rr-page': !popped }"
     data-testid="quick-look"
     :data-popped="popped"
     :data-live="store.watching"
@@ -102,6 +103,7 @@ onBeforeUnmount(() => {
         density="compact"
         variant="outlined"
         hide-details
+        aria-label="Aircraft"
         data-testid="quick-aircraft"
         @update:model-value="store.choose(String($event))"
       />
@@ -112,6 +114,7 @@ onBeforeUnmount(() => {
         density="compact"
         variant="outlined"
         hide-details
+        aria-label="Device"
         data-testid="quick-device"
         @update:model-value="show(String($event))"
       />

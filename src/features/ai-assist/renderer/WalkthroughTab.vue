@@ -78,12 +78,23 @@ const position = computed(() => {
         {{ doneCount }} of {{ store.items.length }} done
         <span class="rr-muted">· saved as you go</span>
       </div>
-      <v-progress-linear
-        :model-value="store.items.length ? (100 * doneCount) / store.items.length : 0"
-        color="primary"
-        height="6"
-        rounded
-      />
+      <!-- A meter of how far the walkthrough is, not a sign that something is loading. -->
+      <div
+        class="walk-meter"
+        role="progressbar"
+        aria-label="Walkthrough progress"
+        aria-valuemin="0"
+        :aria-valuemax="store.items.length"
+        :aria-valuenow="doneCount"
+        data-testid="ai-walk-meter"
+      >
+        <div
+          class="walk-meter-fill"
+          :style="{
+            width: `${store.items.length ? (100 * doneCount) / store.items.length : 0}%`,
+          }"
+        />
+      </div>
       <v-alert
         v-if="guide.guide.drafted"
         type="info"
@@ -408,6 +419,18 @@ const position = computed(() => {
 .walk-chip.staged {
   border-color: var(--rr-accent);
   color: var(--rr-accent);
+}
+.walk-meter {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(var(--v-theme-primary), 0.18);
+  overflow: hidden;
+}
+.walk-meter-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: rgb(var(--v-theme-primary));
+  transition: width 0.2s ease;
 }
 .walk-listening {
   display: flex;
