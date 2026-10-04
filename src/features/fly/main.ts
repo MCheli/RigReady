@@ -5,6 +5,7 @@ import { flyContract } from './contract';
 import { Fly } from './core/fly';
 import { rigGlance } from './core/rig';
 import { SessionLog, SessionTracker } from './core/sessions';
+import { suggestSetup } from './core/suggest';
 import { ProfileWatcher } from './core/watch';
 import { welcome } from './core/welcome';
 
@@ -113,6 +114,7 @@ export default defineFeatureMain({
           const shown = await ctx.ports.window.showOn(on.length > 0 ? on : [WHOLE_DESKTOP]);
           return shown.ok ? ok({ shown: true }) : shown;
         },
+        suggestion: async ({ profileId }) => ok(await suggestSetup(ctx, profileId)),
       }),
     ];
   },

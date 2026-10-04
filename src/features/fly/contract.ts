@@ -41,6 +41,20 @@ export const RigGlanceSchema = z.object({
 });
 export type RigGlance = z.infer<typeof RigGlanceSchema>;
 
+/**
+ * Another setup the gear on the desk is for: every device it requires is connected, and
+ * the setup on screen is missing some of its own. An offer, never a switch.
+ */
+export const SuggestionSchema = z.object({
+  profileId: z.string(),
+  name: z.string(),
+  /** The device that gives it away: required by that setup and not by the one on screen. */
+  device: z.string(),
+  /** How many devices the setup on screen requires that are not connected. */
+  missing: z.number().int().min(1),
+});
+export type Suggestion = z.infer<typeof SuggestionSchema>;
+
 export const ProfileSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -335,6 +349,11 @@ export const flyContract = defineContract(
     openCompact: channel(noInput, z.object({ opened: z.boolean() })),
     /** Brings RigReady's main window forward, from the tray or from behind the game. */
     showMain: channel(noInput, z.object({ shown: z.boolean() })),
+    /**
+     * The setup the connected gear is for, when the one named is missing a device it
+     * requires and another setup has all of its own. Null when there is nothing to offer.
+     */
+    suggestion: channel(ProfileRef, SuggestionSchema.nullable()),
   },
   {
     /** Another setup became the one in use (chosen in a window of RigReady or from the tray). */

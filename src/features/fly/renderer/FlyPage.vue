@@ -13,6 +13,7 @@ import ReadinessDial from './ReadinessDial.vue';
 import RigStrip, { type RigDevice, type RigState } from './RigStrip.vue';
 import SafeMarkdown from './SafeMarkdown.vue';
 import SessionBanner from './SessionBanner.vue';
+import SuggestionBar from './SuggestionBar.vue';
 import WelcomePanel from './WelcomePanel.vue';
 import { listenForEnter, useHeadline, usePrimary, type ActionId } from './primary';
 import { useFlyStore } from './store';
@@ -606,6 +607,15 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
+
+        <!-- The gear on the desk is another setup's: offered, never switched by itself. -->
+        <SuggestionBar
+          v-if="fly.suggestion && fly.session.phase === 'idle'"
+          :suggestion="fly.suggestion"
+          :disabled="fly.busy !== null"
+          @switch="fly.takeSuggestion()"
+          @dismiss="fly.declineSuggestion()"
+        />
 
         <SessionBanner :session="fly.session" :kind="sessionKind" @dismiss="fly.dismissSession()" />
 

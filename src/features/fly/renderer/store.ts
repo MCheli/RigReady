@@ -14,6 +14,7 @@ import {
   type ProfileView,
   type RigGlance,
   type SessionState,
+  type Suggestion,
 } from '../contract';
 import {
   fixesLine,
@@ -93,6 +94,10 @@ export const useFlyStore = defineStore('fly', () => {
   const session = ref<SessionState>({ phase: 'idle' });
   /** The rig at a glance: the monitors as they are. Undefined until read. */
   const rig = ref<RigGlance>();
+  /** Another setup the gear on the desk is for, while this one's is not all here. */
+  const suggestion = ref<Suggestion | null>(null);
+  /** Offers answered "Not now", as "this setup>that setup". */
+  const declined = new Set<string>();
   let runId: string | undefined;
   let launchRunId: string | undefined;
   let makeReadyRunId: string | undefined;
@@ -242,6 +247,7 @@ export const useFlyStore = defineStore('fly', () => {
     fixMessages.value = {};
     activity.value = undefined;
     rig.value = undefined;
+    suggestion.value = null;
   }
 
   /** The monitors as they are now, compared with what the setup expects of them. */
@@ -321,6 +327,41 @@ export const useFlyStore = defineStore('fly', () => {
     }
     error.value = undefined;
     results.value = Object.fromEntries(result.value.results.map((r) => [r.itemId, r]));
+    void loadSuggestion();
+  }
+
+  /**
+   * Asks whether the gear on the desk is another setup's. Only worth asking while a device
+   * this setup requires is missing and there is another setup to offer; asked again with
+   * every checklist run, so the offer follows what is plugged in.
+   */
+  async function loadSuggestion(): Promise<void> {
+    const profileId = activeId.value;
+    const short = counts.value.failing.some((result) => groupOf(result.itemId) === 'devices');
+    if (!profileId || !short || profiles.value.length < 2) {
+      suggestion.value = null;
+      return;
+    }
+    const answer = await api.suggestion({ profileId });
+    if (profileId !== activeId.value) return;
+    // No answer is no offer: the checklist above says what is wrong with the machine.
+    const offer = answer.ok ? answer.value : null;
+    suggestion.value = offer && !declined.has(`${profileId}>${offer.profileId}`) ? offer : null;
+  }
+
+  /** "Not now": this offer is not made again while RigReady runs. */
+  function declineSuggestion(): void {
+    const offer = suggestion.value;
+    if (offer && activeId.value) declined.add(`${activeId.value}>${offer.profileId}`);
+    suggestion.value = null;
+  }
+
+  /** "Switch": to the setup that was offered. */
+  async function takeSuggestion(): Promise<void> {
+    const offer = suggestion.value;
+    if (!offer) return;
+    suggestion.value = null;
+    await select(offer.profileId);
   }
 
   async function checkOne(itemId: string): Promise<void> {
@@ -647,6 +688,7 @@ export const useFlyStore = defineStore('fly', () => {
     autoStandDown,
     session,
     rig,
+    suggestion,
     items,
     anyChecking,
     counts,
@@ -668,6 +710,8 @@ export const useFlyStore = defineStore('fly', () => {
     setMinimizeOnLaunch,
     setAutoStandDown,
     dismissSession,
+    declineSuggestion,
+    takeSuggestion,
     history,
     openCompact,
     watch,

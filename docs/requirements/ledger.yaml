@@ -711,6 +711,34 @@ requirements:
       - "artifacts/screens/fly-compact-held/01-stopped.png"
       - "artifacts/screens/fly-compact-needs-ok/01-left-to-the-full-window.png"
 
+  - id: WOW-FLY-006
+    title: A quiet suggestion when the gear on the desk is another setup's
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "When the setup on screen is missing a device it requires and every device another setup requires is connected, the Fly screen offers that setup in one line under the setup's name: 'Wheel connected: switch to iRacing?', with the device that gave it away and how many of this setup's devices are not here, and two buttons, Switch and Not now. It names the kind of device (wheel, pedals, stick, ...), or the device itself when its kind is not known, and the device it names is one the two setups do not share."
+      - "It only offers: nothing is switched and nothing runs by itself. Switch goes to the offered setup; Not now is the end of that offer for as long as RigReady runs. Enter on one of its buttons is that button's, not the screen's one action."
+      - "Only devices a setup requires count (optional and switched-off items decide nothing; a setup that requires no device is never offered and never contradicted). Of several setups whose devices are all here, the one used most recently is offered. The offer follows the machine: it goes when the device is unplugged and comes back when it is plugged in again."
+      - "The device list is read once for all the setups, and nothing but devices is looked at."
+    status: done
+    evidence:
+      - "src/features/fly/core/suggest.test.ts#names the kind of device that gave it away, the setup, and what is not here"
+      - "src/features/fly/core/suggest.test.ts#calls a device nobody knows the kind of by its own name"
+      - "src/features/fly/core/suggest.test.ts#offers the setup whose required devices are all connected when the one on screen is missing some"
+      - "src/features/fly/core/suggest.test.ts#says nothing while the gear of the setup on screen is here"
+      - "src/features/fly/core/suggest.test.ts#says nothing when no other setup has all of its devices either"
+      - "src/features/fly/core/suggest.test.ts#counts only the devices a setup requires: optional and switched-off ones decide nothing"
+      - "src/features/fly/core/suggest.test.ts#of several setups whose gear is here, offers the one used most recently"
+      - "src/features/fly/core/suggest.test.ts#names the device that tells the two setups apart, not one they share"
+      - "src/features/fly/core/suggest.test.ts#looks at the machine once for all the setups"
+      - "src/features/fly/core/suggest.test.ts#nothing else of a setup is looked at: only its devices"
+      - "tests/e2e/fly-suggest.e2e.ts#suggestion: with the wheel connected and the flight gear not, the Fly screen offers the racing setup, and Switch goes there"
+      - "tests/e2e/fly-suggest.e2e.ts#suggestion: Not now is the end of it for that setup, and an offer follows the gear when it is unplugged"
+      - "tests/e2e/fly-suggest.e2e.ts#suggestion: a rig whose gear is the setup on screen is offered nothing"
+      - "artifacts/screens/fly-suggest/01-the-offer.png"
+      - "artifacts/screens/fly-suggest/02-switched.png"
+
   # ---------------------------------------------------------------------------
   # CHECK TYPES
   # ---------------------------------------------------------------------------
