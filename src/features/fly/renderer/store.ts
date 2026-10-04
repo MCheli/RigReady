@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { CheckResult, NeedsYou, StepResult } from '../../../core/checks/engine';
+import { CHECK_GROUPS } from '../../../core/profile/schema';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import { flyContract, type LaunchStep, type ProfileSummary, type ProfileView } from '../contract';
+import type { SegmentState } from './dial';
 
 export type Busy = 'makeReady' | 'standDown' | 'launch' | null;
 export type ProgressState = 'pending' | 'running' | 'done' | 'failed' | 'skipped';
@@ -73,6 +75,27 @@ export const useFlyStore = defineStore('fly', () => {
       failing: list.filter((r) => r.required && missed(r)),
       optional: list.filter((r) => !r.required && r.status !== 'pass'),
     };
+  });
+
+  /**
+   * What the dial draws: one state per item in the order the checklist shows them, and
+   * how many of the items that count are met.
+   */
+  const dial = computed(() => {
+    const ordered = CHECK_GROUPS.flatMap((group) => items.value.filter((i) => i.group === group));
+    const states = ordered.map((item): SegmentState => {
+      const result = results.value[item.itemId];
+      if (result?.disabled ?? item.disabled) return 'off';
+      if (!result || checking.value[item.itemId]) return 'pending';
+      if (result.status === 'pass') return 'pass';
+      return result.required ? 'fail' : 'warn';
+    });
+    const off = states.filter((state) => state === 'off').length;
+    const met = ordered.filter((item) => {
+      const result = results.value[item.itemId];
+      return result !== undefined && !result.disabled && result.status === 'pass';
+    }).length;
+    return { states, met, total: ordered.length - off };
   });
 
   /** Ready, Ready with warnings or Not ready; undefined until every item has a result. */
@@ -413,6 +436,7 @@ export const useFlyStore = defineStore('fly', () => {
     items,
     anyChecking,
     counts,
+    dial,
     readiness,
     load,
     check,

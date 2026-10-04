@@ -5,6 +5,7 @@ import type { CommandPreview } from '../../../core/checks/registry';
 import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
 import { onMachineChanged } from '../../../renderer/machine';
 import CheckRow from './CheckRow.vue';
+import ReadinessDial from './ReadinessDial.vue';
 import SafeMarkdown from './SafeMarkdown.vue';
 import WelcomePanel from './WelcomePanel.vue';
 import { useFlyStore } from './store';
@@ -68,7 +69,7 @@ const headline = computed(() => {
   const counts = fly.counts;
   if (fly.readiness === 'notReady') {
     return {
-      tone: 'bad',
+      tone: 'bad' as const,
       icon: 'mdi-close-circle',
       title: 'Not ready',
       count: counts.failed,
@@ -79,7 +80,7 @@ const headline = computed(() => {
   }
   if (fly.readiness === 'warnings') {
     return {
-      tone: 'warn',
+      tone: 'warn' as const,
       icon: 'mdi-check-circle',
       title: 'Ready with warnings',
       count: counts.warnings,
@@ -88,7 +89,7 @@ const headline = computed(() => {
   }
   if (fly.readiness === 'ready') {
     return {
-      tone: 'ok',
+      tone: 'ok' as const,
       icon: 'mdi-check-circle',
       title: 'Ready',
       count: undefined,
@@ -99,7 +100,7 @@ const headline = computed(() => {
     };
   }
   return {
-    tone: 'idle',
+    tone: 'idle' as const,
     icon: 'mdi-timer-sand',
     title: 'Checking…',
     count: undefined,
@@ -137,6 +138,16 @@ function when(iso: string): string {
     ? `today ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
     : date.toLocaleDateString([], { day: 'numeric', month: 'short' });
 }
+
+/** Under the setup's name: the game it is for, and when it was last in use. */
+const context = computed(() => {
+  const setup = fly.active;
+  if (!setup) return [];
+  return [
+    setup.gameName ?? 'No game chosen',
+    setup.lastUsed ? `Last used ${when(setup.lastUsed)}` : 'Not used yet',
+  ];
+});
 
 // ---- actions ----
 
@@ -294,171 +305,204 @@ onBeforeUnmount(() => {
     </div>
 
     <template v-else>
-      <div class="fly-head">
-        <v-select
-          :model-value="fly.activeId"
-          :items="switcherItems"
-          item-title="title"
-          item-value="value"
-          label="Setup"
-          class="fly-switcher"
-          hide-details
-          data-testid="profile-switcher"
-          @update:model-value="fly.select($event)"
-        >
-          <template #item="{ props: itemProps, item }">
-            <!-- A broken file cannot be chosen, but says why when pointed at. -->
-            <v-tooltip v-if="item.disabled" :text="item.reason" location="end" max-width="420">
-              <template #activator="{ props: tip }">
-                <v-list-item
-                  v-bind="tip"
-                  :subtitle="item.subtitle"
-                  :title="item.title"
-                  class="switcher-invalid"
-                  aria-disabled="true"
-                  data-testid="switcher-invalid"
-                  @click.stop
-                >
-                  <template #append>
-                    <v-icon icon="mdi-file-alert-outline" class="rr-bad" size="18" />
-                  </template>
-                </v-list-item>
-              </template>
-            </v-tooltip>
-            <v-list-item
-              v-else
-              v-bind="itemProps"
-              :subtitle="item.subtitle"
-              :title="item.title"
-              data-testid="switcher-item"
-            />
-          </template>
-        </v-select>
-        <div
-          class="fly-status"
-          :class="`fly-status-${headline.tone}`"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          data-testid="fly-status"
-          :data-ready="fly.readiness === undefined ? undefined : fly.readiness !== 'notReady'"
-        >
-          <v-progress-circular
-            v-if="headline.tone === 'idle'"
-            indeterminate
-            size="30"
-            width="3"
-            aria-label="Checking"
+      <section class="rr-panel fly-hero" aria-label="Readiness" data-testid="fly-hero">
+        <div class="fly-hero-top">
+          <ReadinessDial
+            :states="fly.dial.states"
+            :met="fly.dial.met"
+            :total="fly.dial.total"
+            :tone="headline.tone"
+            :checking="fly.anyChecking"
+            data-testid="fly-dial"
           />
-          <v-icon v-else :icon="headline.icon" size="34" />
-          <div>
-            <div class="fly-status-line">
-              <span class="fly-status-title" data-testid="fly-status-title">{{
-                headline.title
-              }}</span>
-              <span
-                v-if="headline.count !== undefined"
-                class="fly-status-count"
-                data-testid="fly-status-count"
-                >({{ headline.count }})</span
-              >
+          <div class="fly-hero-main">
+            <div class="fly-identity">
+              <div class="fly-identity-text">
+                <div class="rr-section-title fly-caption" aria-hidden="true">Setup</div>
+                <v-select
+                  :model-value="fly.activeId"
+                  :items="switcherItems"
+                  item-title="title"
+                  item-value="value"
+                  aria-label="Setup"
+                  variant="plain"
+                  density="compact"
+                  class="fly-switcher"
+                  hide-details
+                  data-testid="profile-switcher"
+                  @update:model-value="fly.select($event)"
+                >
+                  <template #item="{ props: itemProps, item }">
+                    <!-- A broken file cannot be chosen, but says why when pointed at. -->
+                    <v-tooltip
+                      v-if="item.disabled"
+                      :text="item.reason"
+                      location="end"
+                      max-width="420"
+                    >
+                      <template #activator="{ props: tip }">
+                        <v-list-item
+                          v-bind="tip"
+                          :subtitle="item.subtitle"
+                          :title="item.title"
+                          class="switcher-invalid"
+                          aria-disabled="true"
+                          data-testid="switcher-invalid"
+                          @click.stop
+                        >
+                          <template #append>
+                            <v-icon icon="mdi-file-alert-outline" class="rr-bad" size="18" />
+                          </template>
+                        </v-list-item>
+                      </template>
+                    </v-tooltip>
+                    <v-list-item
+                      v-else
+                      v-bind="itemProps"
+                      :subtitle="item.subtitle"
+                      :title="item.title"
+                      data-testid="switcher-item"
+                    />
+                  </template>
+                </v-select>
+                <div class="fly-context" data-testid="fly-context">
+                  <span v-for="(part, i) in context" :key="i">{{ part }}</span>
+                </div>
+              </div>
+              <v-menu location="bottom end">
+                <template #activator="{ props: menu }">
+                  <v-btn
+                    v-bind="menu"
+                    icon="mdi-dots-vertical"
+                    variant="text"
+                    size="small"
+                    aria-label="More"
+                    data-testid="fly-more"
+                  />
+                </template>
+                <v-list density="compact">
+                  <v-list-item
+                    prepend-icon="mdi-pencil-outline"
+                    title="Edit this setup"
+                    :to="`/configure/profiles/${fly.activeId}`"
+                    data-testid="fly-edit"
+                  />
+                  <v-list-item
+                    :prepend-icon="
+                      fly.minimizeOnLaunch
+                        ? 'mdi-checkbox-marked-outline'
+                        : 'mdi-checkbox-blank-outline'
+                    "
+                    title="Hide RigReady after Launch"
+                    data-testid="fly-minimize-pref"
+                    @click="fly.setMinimizeOnLaunch(!fly.minimizeOnLaunch)"
+                  />
+                </v-list>
+              </v-menu>
             </div>
-            <div class="fly-status-sub" data-testid="fly-status-sub">{{ headline.sub }}</div>
+            <div
+              class="fly-status"
+              :class="`fly-status-${headline.tone}`"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              data-testid="fly-status"
+              :data-ready="fly.readiness === undefined ? undefined : fly.readiness !== 'notReady'"
+            >
+              <v-progress-circular
+                v-if="headline.tone === 'idle'"
+                indeterminate
+                size="20"
+                width="2"
+                class="fly-status-icon"
+                aria-label="Checking"
+              />
+              <v-icon v-else :icon="headline.icon" size="24" class="fly-status-icon" />
+              <div>
+                <div class="fly-status-line">
+                  <span class="fly-status-title" data-testid="fly-status-title">{{
+                    headline.title
+                  }}</span>
+                  <span
+                    v-if="headline.count !== undefined"
+                    class="fly-status-count"
+                    data-testid="fly-status-count"
+                    >({{ headline.count }})</span
+                  >
+                </div>
+                <div class="fly-status-sub" data-testid="fly-status-sub">{{ headline.sub }}</div>
+              </div>
+            </div>
           </div>
         </div>
-        <v-menu location="bottom end">
-          <template #activator="{ props: menu }">
-            <v-btn
-              v-bind="menu"
-              icon="mdi-dots-vertical"
-              variant="text"
-              aria-label="More"
-              data-testid="fly-more"
-            />
-          </template>
-          <v-list density="compact">
-            <v-list-item
-              prepend-icon="mdi-pencil-outline"
-              title="Edit this setup"
-              :to="`/configure/profiles/${fly.activeId}`"
-              data-testid="fly-edit"
-            />
-            <v-list-item
-              :prepend-icon="
-                fly.minimizeOnLaunch ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'
-              "
-              title="Hide RigReady after Launch"
-              data-testid="fly-minimize-pref"
-              @click="fly.setMinimizeOnLaunch(!fly.minimizeOnLaunch)"
-            />
-          </v-list>
-        </v-menu>
-      </div>
 
-      <div class="fly-actions">
-        <v-btn
-          color="primary"
-          :variant="fly.counts.fixable > 0 ? 'flat' : 'tonal'"
-          prepend-icon="mdi-wrench-check"
-          :disabled="fly.counts.fixable === 0 || fly.busy !== null"
-          :loading="fly.busy === 'makeReady'"
-          :title="fly.counts.fixable === 0 ? 'Nothing for Make ready to fix right now' : undefined"
-          data-testid="make-ready"
-          @click="makeReady"
-        >
-          Make ready
-        </v-btn>
-        <v-tooltip
-          v-if="fly.active?.canLaunch"
-          :text="fly.view?.launchLabel ? `Starts ${fly.view.launchLabel}` : 'Starts the game'"
-          location="bottom"
-        >
-          <template #activator="{ props: tip }">
-            <v-btn
-              v-bind="tip"
-              :color="fly.readiness === 'notReady' ? undefined : 'success'"
-              :variant="fly.readiness === 'notReady' ? 'tonal' : 'flat'"
-              prepend-icon="mdi-rocket-launch"
-              :disabled="fly.busy !== null"
-              :loading="fly.busy === 'launch'"
-              data-testid="launch"
-              @click="onLaunch"
-            >
-              Launch
-            </v-btn>
-          </template>
-        </v-tooltip>
-        <v-btn
-          v-else
-          variant="text"
-          prepend-icon="mdi-rocket-launch-outline"
-          :to="`/configure/profiles/${fly.activeId}`"
-          data-testid="launch-setup"
-        >
-          Choose what Launch starts
-        </v-btn>
-        <v-spacer />
-        <v-btn
-          variant="text"
-          prepend-icon="mdi-refresh"
-          :disabled="fly.busy !== null"
-          :loading="fly.anyChecking && fly.busy === null"
-          data-testid="recheck"
-          @click="fly.check()"
-        >
-          Re-check all
-        </v-btn>
-        <v-btn
-          variant="tonal"
-          prepend-icon="mdi-power-standby"
-          :disabled="fly.busy !== null"
-          :loading="fly.busy === 'standDown'"
-          data-testid="stand-down"
-          @click="onStandDown"
-        >
-          Stand down
-        </v-btn>
-      </div>
+        <div class="fly-actions">
+          <v-btn
+            color="primary"
+            :variant="fly.counts.fixable > 0 ? 'flat' : 'tonal'"
+            prepend-icon="mdi-wrench-check"
+            :disabled="fly.counts.fixable === 0 || fly.busy !== null"
+            :loading="fly.busy === 'makeReady'"
+            :title="
+              fly.counts.fixable === 0 ? 'Nothing for Make ready to fix right now' : undefined
+            "
+            data-testid="make-ready"
+            @click="makeReady"
+          >
+            Make ready
+          </v-btn>
+          <v-tooltip
+            v-if="fly.active?.canLaunch"
+            :text="fly.view?.launchLabel ? `Starts ${fly.view.launchLabel}` : 'Starts the game'"
+            location="bottom"
+          >
+            <template #activator="{ props: tip }">
+              <v-btn
+                v-bind="tip"
+                :color="fly.readiness === 'notReady' ? undefined : 'success'"
+                :variant="fly.readiness === 'notReady' ? 'tonal' : 'flat'"
+                prepend-icon="mdi-rocket-launch"
+                :disabled="fly.busy !== null"
+                :loading="fly.busy === 'launch'"
+                data-testid="launch"
+                @click="onLaunch"
+              >
+                Launch
+              </v-btn>
+            </template>
+          </v-tooltip>
+          <v-btn
+            v-else
+            variant="text"
+            prepend-icon="mdi-rocket-launch-outline"
+            :to="`/configure/profiles/${fly.activeId}`"
+            data-testid="launch-setup"
+          >
+            Choose what Launch starts
+          </v-btn>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            prepend-icon="mdi-refresh"
+            :disabled="fly.busy !== null"
+            :loading="fly.anyChecking && fly.busy === null"
+            data-testid="recheck"
+            @click="fly.check()"
+          >
+            Re-check all
+          </v-btn>
+          <v-btn
+            variant="tonal"
+            prepend-icon="mdi-power-standby"
+            :disabled="fly.busy !== null"
+            :loading="fly.busy === 'standDown'"
+            data-testid="stand-down"
+            @click="onStandDown"
+          >
+            Stand down
+          </v-btn>
+        </div>
+      </section>
 
       <div
         v-if="fly.activity"
@@ -596,8 +640,9 @@ onBeforeUnmount(() => {
         </button>
         <div v-if="group.open" class="rr-panel">
           <CheckRow
-            v-for="item in group.items"
+            v-for="(item, index) in group.items"
             :key="item.itemId"
+            :index="index"
             :item="item"
             :result="fly.results[item.itemId]"
             :checking="fly.checking[item.itemId] === true"
@@ -721,42 +766,93 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.fly-head {
+.fly-hero {
+  padding: 22px 24px 16px;
+  margin-bottom: 20px;
+}
+.fly-hero-top {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 16px;
+  gap: 28px;
+}
+.fly-hero-main {
+  flex: 1;
+  min-width: 0;
+}
+.fly-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.fly-identity-text {
+  flex: 1;
+  min-width: 0;
+}
+.fly-caption {
+  margin: 0;
 }
 .switcher-invalid {
   opacity: 0.6;
   cursor: not-allowed;
 }
+/* The setup's name is the title of the screen, and the way to switch to another. */
 .fly-switcher {
-  max-width: 320px;
-  flex: none;
-  width: 320px;
+  display: inline-grid;
+  max-width: 100%;
+  margin: -2px 0 0 -8px;
+}
+.fly-switcher :deep(.v-field) {
+  --v-field-padding-start: 8px;
+  --v-field-padding-end: 4px;
+  border-radius: 8px;
+  transition: background-color 150ms ease-out;
+}
+.fly-switcher :deep(.v-field:hover) {
+  background: var(--rr-surface-2);
+}
+.fly-switcher :deep(.v-field--focused) {
+  outline: 2px solid var(--rr-focus);
+  outline-offset: 1px;
+}
+.fly-switcher :deep(.v-field__input) {
+  min-height: 0;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+.fly-switcher :deep(.v-field__append-inner) {
+  padding-top: 0;
+  align-items: center;
+}
+.fly-context {
+  margin-top: 1px;
+  font-size: 13px;
+  color: var(--rr-muted);
+}
+.fly-context span + span::before {
+  content: '·';
+  margin: 0 7px;
 }
 .fly-status {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: var(--rr-radius);
-  border: 1px solid var(--rr-border);
-  background: var(--rr-surface);
-  min-height: 64px;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+}
+.fly-status-icon {
+  margin-top: 2px;
+  flex: none;
 }
 .fly-status-ok {
-  border-color: color-mix(in srgb, var(--rr-ok) 45%, transparent);
   color: var(--rr-ok);
 }
 .fly-status-warn {
-  border-color: color-mix(in srgb, var(--rr-warn) 45%, transparent);
   color: var(--rr-warn);
 }
 .fly-status-bad {
-  border-color: color-mix(in srgb, var(--rr-bad) 45%, transparent);
   color: var(--rr-bad);
 }
 .fly-status-idle {
@@ -769,9 +865,12 @@ onBeforeUnmount(() => {
 }
 .fly-status-title,
 .fly-status-count {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
+}
+.fly-status-count {
+  font-variant-numeric: tabular-nums;
 }
 .fly-status-sub {
   font-size: 13px;
@@ -779,8 +878,11 @@ onBeforeUnmount(() => {
 }
 .fly-actions {
   display: flex;
+  align-items: center;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rr-border);
 }
 .fly-activity {
   margin-bottom: 24px;
@@ -845,6 +947,7 @@ onBeforeUnmount(() => {
 .fly-group-count {
   margin-left: auto;
   font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
 }
 .fly-failing {
   margin: 10px 0 10px 18px;

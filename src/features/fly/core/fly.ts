@@ -142,6 +142,7 @@ export class Fly {
         title: item.title,
         group: this.ctx.checks.check(item.type)?.group ?? 'other',
         required: this.ctx.checks.check(item.type)?.advisory ? false : item.required,
+        ...(item.disabled ? { disabled: true } : {}),
       })),
       ...(launchLabel ? { launchLabel } : {}),
       actions: (['preLaunch', 'postLaunch', 'standDown'] as const).flatMap((phase) =>

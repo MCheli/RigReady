@@ -13,6 +13,8 @@ const props = defineProps<{
   /** Make ready or Stand down is running: per-item actions wait. */
   locked: boolean;
   profileId: string;
+  /** Position in its group: rows arrive one after another, not all at once. */
+  index?: number;
 }>();
 const emit = defineEmits<{ recheck: []; fix: []; acknowledge: [] }>();
 
@@ -77,6 +79,7 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
   <div
     class="rr-row check-row"
     :class="{ 'check-off': status === 'off' }"
+    :style="{ '--i': Math.min(index ?? 0, 10) }"
     data-testid="check-row"
     :data-status="status"
     :data-title="item.title"
@@ -225,6 +228,24 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
 <style scoped>
 .check-row {
   align-items: flex-start;
+  /* Rows arrive one after another, each a moment after the one above. */
+  animation: check-arrive 180ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 32ms);
+}
+@keyframes check-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .check-row {
+    animation: none;
+  }
 }
 .check-icon {
   width: 22px;

@@ -532,6 +532,36 @@ requirements:
       - "artifacts/screens/fly-live-plug/02-plugged-back.png"
 
   # ---------------------------------------------------------------------------
+  # FLY MODE — the final pass (docs/PRODUCT.md, "The final pass")
+  # ---------------------------------------------------------------------------
+
+  - id: WOW-FLY-001
+    title: The top of the Fly screen is a readiness dial, the setup's identity and the state in words
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "The top of the Fly screen is one panel: a dial, the setup's name as the title of the screen (24 px or larger; it is also the switcher), the game under it, and the state as an icon and words (Checking…, Ready, Ready with warnings, Not ready with the count)."
+      - "The dial is an SVG ring with one segment per checklist item, in checklist order, and in its middle the number of checks met out of those that count (items switched off do not), in tabular numerals. A segment lights when its result arrives; while results are outstanding, the segments still waiting animate one after another round the ring."
+      - "An item that is not met is drawn further out than the ring (a warning a little, a failure more), so the dial reads without colour. The dial is an image named '<met> of <total> checks met' for a screen reader."
+      - "Checklist rows arrive staggered: each row starts 32 ms after the one above and takes 180 ms, eased out. Becoming ready is one transition of at most 200 ms, without a bounce or a loop."
+      - "Under prefers-reduced-motion nothing animates and nothing transitions."
+      - "The screen is still usable within two seconds of starting, passes the axe scan in every state, and is operated by keyboard in the same order as before."
+    status: done
+    evidence:
+      - "src/features/fly/renderer/dial.test.ts#draws one arc per item, in order, with a gap between neighbours"
+      - "src/features/fly/renderer/dial.test.ts#a warning stands out of the ring and a failure further: shape, not colour alone"
+      - "src/features/fly/renderer/dial.test.ts#a long checklist keeps every segment visible: the gap narrows, an arc never has no length"
+      - "tests/e2e/fly-hero.e2e.ts#hero: the dial counts the checks met, a failing item stands out of the ring, and getting ready is one change of state"
+      - "tests/e2e/fly-hero.e2e.ts#hero: the dial moves while checks run, rows arrive one after another, and none of it moves under reduced motion"
+      - "tests/e2e/fly-depth.e2e.ts#fly: usable within two seconds of starting"
+      - "tests/e2e/a11y.e2e.ts#a11y: the Fly screen passes axe when ready, when not ready and while Make ready runs"
+      - "tests/e2e/keyboard.e2e.ts#keyboard: the Fly screen from Not ready through Make ready to Launch, without a mouse"
+      - "artifacts/screens/fly-hero/01-not-ready.png"
+      - "artifacts/screens/fly-hero/02-ready.png"
+      - "artifacts/screens/fly-hero-checking/01-checking.png"
+
+  # ---------------------------------------------------------------------------
   # CHECK TYPES
   # ---------------------------------------------------------------------------
 

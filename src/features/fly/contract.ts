@@ -39,6 +39,8 @@ export const SkeletonItemSchema = z.object({
   title: z.string(),
   group: CheckGroupSchema,
   required: z.boolean(),
+  /** Switched off in the setup: listed, never checked, never counted. */
+  disabled: z.boolean().optional(),
 });
 export type SkeletonItem = z.infer<typeof SkeletonItemSchema>;
 
