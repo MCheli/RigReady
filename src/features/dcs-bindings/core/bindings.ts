@@ -126,6 +126,8 @@ export interface AircraftState {
   commands: Map<string, CommandView>;
   modifiers: ModifierState[];
   warnings: string[];
+  /** Set when the controllers could not be listed: the reason, in words. */
+  controllersUnavailable?: string;
   dcsRunning: boolean;
   connected: InputDevice[];
   state: BindingsState;
@@ -177,6 +179,11 @@ export class DcsBindings {
   private readonly ids = new EngineIds();
   private readonly learnedFrom = new Set<string>();
   private readonly store: JsonStore<typeof StateSchema>;
+  /**
+   * Why the controllers could not be listed the last time it was tried; undefined when they
+   * could. Without them nothing can be said about which bindings fit what is attached.
+   */
+  inputError: string | undefined;
 
   constructor(readonly ctx: BindingsContext) {
     this.store = new JsonStore(
@@ -236,13 +243,18 @@ export class DcsBindings {
     return processes.ok && processes.value.some((p) => p.name.toLowerCase() === 'dcs.exe');
   }
 
-  /** The controllers DirectInput lists right now. Empty (with a logged warning) when that fails. */
+  /**
+   * The controllers DirectInput lists right now. Empty when that fails, with the reason in
+   * `inputError`: "none attached" and "could not look" are different answers.
+   */
   async connectedDevices(): Promise<InputDevice[]> {
     const started = await this.ctx.ports.input.start();
     if (!started.ok) {
       this.ctx.log.warn('dcs-bindings: controllers could not be listed', started.error);
+      this.inputError = started.error.message;
       return [];
     }
+    this.inputError = undefined;
     return started.value;
   }
 
@@ -549,6 +561,7 @@ export class DcsBindings {
       commands,
       modifiers: await this.modifiers(loader, profile, dir),
       warnings,
+      ...(this.inputError ? { controllersUnavailable: this.inputError } : {}),
       dcsRunning: await this.dcsRunning(),
       connected,
       state,
@@ -715,6 +728,9 @@ export function buildView(state: AircraftState): AircraftView {
       expected: new Set(state.state.expected[state.profile.id] ?? []),
     }),
     warnings: state.warnings,
+    ...(state.controllersUnavailable
+      ? { controllersUnavailable: state.controllersUnavailable }
+      : {}),
     uneditableCommands: commands.filter((c) => !c.editable).length,
     dcsRunning: state.dcsRunning,
   };

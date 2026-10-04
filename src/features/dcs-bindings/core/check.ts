@@ -53,6 +53,16 @@ export function createBindingsCheck(
       const given = names ? { names } : undefined;
       const scan = await scanMigration(service, given);
       if (!scan.ok) return { pass: false, summary: scan.error.message };
+      // Without the controller list nothing can be said about what fits what is attached:
+      // that is "could not check", never "your bindings do not match".
+      if (service.inputError) {
+        return {
+          pass: false,
+          error: true,
+          summary: 'Game controllers could not be read',
+          details: [service.inputError],
+        };
+      }
       const folder = profileFolderName(params.aircraft).toLowerCase();
       const mine = (files: { folder: string }[]): boolean =>
         files.some((f) => f.folder.toLowerCase() === folder);

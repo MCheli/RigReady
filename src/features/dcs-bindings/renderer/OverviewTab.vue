@@ -109,7 +109,15 @@ function summary(device: DeviceView): string {
 
     <div class="rr-section-title">Controllers attached now</div>
     <div class="rr-panel ov-panel">
-      <div v-if="attached.length === 0" class="rr-empty" data-testid="ov-no-devices">
+      <div
+        v-if="view.controllersUnavailable"
+        class="rr-empty rr-warn"
+        data-testid="ov-controllers-unavailable"
+      >
+        Game controllers could not be read: {{ view.controllersUnavailable }} The devices below are
+        listed from their binding files only.
+      </div>
+      <div v-else-if="attached.length === 0" class="rr-empty" data-testid="ov-no-devices">
         No game controllers are attached.
       </div>
       <div
