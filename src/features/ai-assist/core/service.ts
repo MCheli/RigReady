@@ -14,6 +14,7 @@ import {
   modelInfo,
   MODELS,
   sendMessage,
+  streamMessage,
   testKey,
   type MessageAnswer,
 } from './anthropic';
@@ -40,6 +41,7 @@ import {
   type Prepared,
   type Progress,
   type RequestKind,
+  type SendProgress,
   type Sent,
   type Staged,
   type StagedView,
@@ -47,6 +49,7 @@ import {
 } from './model';
 import { shippedPack } from './shipped';
 import { contextText, takeSnapshot, type Snapshot } from './snapshot';
+import { JsonItemCounter } from './sse';
 import {
   cleanAnswer,
   markConflicts,
@@ -63,7 +66,16 @@ export interface AiAssistContext {
   ports: Ports;
   log: Logger;
   bindings: BindingRegistry;
+  /** Told how a streamed request is coming along; the app passes it on to the page. */
+  onProgress?: (progress: SendProgress) => void;
+  /** Longest silence accepted from a streamed answer; the API module's default when absent. */
+  streamIdleMs?: number;
 }
+
+/** The long answers, which are streamed so the user sees them arrive and can cancel. */
+const STREAMED: ReadonlySet<RequestKind> = new Set(['suggest', 'draft']);
+/** Progress is reported at most this often while text arrives (and whenever an item is finished). */
+const PROGRESS_EVERY_MS = 150;
 
 const GAME = 'dcs';
 
@@ -108,6 +120,8 @@ export class AiAssist {
   private readonly progressStore: JsonStore<typeof ProgressFileSchema>;
   private readonly prepared = new Map<string, PreparedRequest>();
   private readonly rounds = new Map<string, Round>();
+  /** Streamed requests on their way, by request id, so they can be cancelled. */
+  private readonly inFlight = new Map<string, AbortController>();
   private sequence = 0;
 
   constructor(private readonly ctx: AiAssistContext) {
@@ -545,6 +559,7 @@ export class AiAssist {
       task,
       ...(schema ? { schema } : {}),
       maxTokens: MAX_TOKENS[input.kind],
+      ...(STREAMED.has(input.kind) ? { stream: true } : {}),
     });
     const requestId = this.next('r');
     this.prepared.set(requestId, {
@@ -573,6 +588,7 @@ export class AiAssist {
           : 'No guide (there is none for this aircraft)',
         question ? `Your question: "${question}"` : 'The task: what RigReady asks the model to do',
       ],
+      streamed: STREAMED.has(input.kind),
     });
   }
 
@@ -584,11 +600,30 @@ export class AiAssist {
     const request = this.prepared.get(requestId);
     if (!request) return err('ai.expired', 'That request is no longer ready. Ask again.');
     this.prepared.delete(requestId);
+    // Registered before anything is awaited, so that Cancel works from the first moment.
+    const controller = STREAMED.has(request.kind) ? new AbortController() : undefined;
+    if (controller) this.inFlight.set(requestId, controller);
+    try {
+      return await this.answer(requestId, request, controller);
+    } finally {
+      this.inFlight.delete(requestId);
+    }
+  }
+
+  private async answer(
+    requestId: string,
+    request: PreparedRequest,
+    controller: AbortController | undefined
+  ): Promise<Result<Sent>> {
     const key = await this.key();
     if (!key.ok) return key;
-    const answer = await sendMessage(this.ctx.ports.http, key.value, request.body);
+    const answer = controller
+      ? await this.sendStreamed(requestId, key.value, request.body, controller.signal)
+      : await sendMessage(this.ctx.ports.http, key.value, request.body);
     if (!answer.ok) {
-      this.ctx.log.warn(`ai-assist: ${request.kind} failed: ${answer.error.code}`);
+      if (answer.error.code === 'ai.cancelled') {
+        this.ctx.log.info(`ai-assist: ${request.kind} cancelled`);
+      } else this.ctx.log.warn(`ai-assist: ${request.kind} failed: ${answer.error.code}`);
       return answer;
     }
     const usage = this.usage(answer.value);
@@ -639,6 +674,45 @@ export class AiAssist {
     const text = cleanAnswer(answer.value.text);
     if (text.length === 0) return err('ai.empty', 'The model sent an empty answer. Try again.');
     return ok({ kind: 'answer', question: request.question, text, usage });
+  }
+
+  /**
+   * Sends a request whose answer is streamed, reporting how far it is: that the model
+   * started, then the characters and the finished items received so far. The text itself
+   * is not passed on: nothing of an answer is shown or used before it is complete and checked.
+   */
+  private async sendStreamed(
+    requestId: string,
+    key: string,
+    body: Record<string, unknown>,
+    signal: AbortSignal
+  ): Promise<Result<MessageAnswer>> {
+    const counter = new JsonItemCounter();
+    const now = (): number => this.ctx.ports.clock.now().getTime();
+    let reported = { at: Number.NEGATIVE_INFINITY, items: 0 };
+    return streamMessage(this.ctx.ports.http, key, body, {
+      signal,
+      ...(this.ctx.streamIdleMs === undefined ? {} : { idleTimeoutMs: this.ctx.streamIdleMs }),
+      onUpdate: (update) => {
+        if (update.kind === 'started') {
+          this.ctx.onProgress?.({ requestId, phase: 'started', chars: 0, items: 0 });
+          return;
+        }
+        const items = counter.push(update.delta);
+        const at = now();
+        if (items === reported.items && at - reported.at < PROGRESS_EVERY_MS) return;
+        reported = { at, items };
+        this.ctx.onProgress?.({ requestId, phase: 'receiving', chars: update.chars, items });
+      },
+    });
+  }
+
+  /** Stops a streamed request that is on its way; its `send` then fails with `ai.cancelled`. */
+  async cancel(requestId: string): Promise<Result<{ cancelled: boolean }>> {
+    const controller = this.inFlight.get(requestId);
+    if (!controller) return ok({ cancelled: false });
+    controller.abort();
+    return ok({ cancelled: true });
   }
 
   private proposalFromRound(roundId: string, selected: string[]): Result<BindingProposal> {

@@ -43,6 +43,17 @@ const selectedCount = computed(() => store.selected.size);
     >
       {{ store.aiError }}
     </v-alert>
+    <v-alert
+      v-if="store.aiNote"
+      type="info"
+      variant="tonal"
+      class="mb-4"
+      closable
+      data-testid="ai-request-note"
+      @click:close="store.aiNote = undefined"
+    >
+      {{ store.aiNote }}
+    </v-alert>
 
     <div class="rr-panel ai-block">
       <div class="ai-block-head">
@@ -65,10 +76,6 @@ const selectedCount = computed(() => store.selected.size);
         >
           Suggest a setup
         </v-btn>
-      </div>
-      <div v-if="store.sending" class="ai-sending" data-testid="ai-sending">
-        <v-progress-circular indeterminate size="16" width="2" color="primary" /> Waiting for the
-        answer. This can take a minute.
       </div>
     </div>
 
@@ -194,6 +201,7 @@ const selectedCount = computed(() => store.selected.size);
           <v-btn
             variant="tonal"
             prepend-icon="mdi-creation-outline"
+            :disabled="store.sending"
             data-testid="ai-draft"
             @click="store.prepare('draft')"
           >
@@ -227,14 +235,6 @@ const selectedCount = computed(() => store.selected.size);
   gap: 16px;
   align-items: center;
   justify-content: space-between;
-}
-.ai-sending {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--rr-accent);
 }
 .ai-round {
   padding: 4px 0 12px;

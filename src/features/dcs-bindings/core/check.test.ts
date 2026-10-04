@@ -151,6 +151,28 @@ describe('the Fly check for bindings', () => {
     ]);
   });
 
+  it('says it could not check when the controllers cannot be read, never that the bindings do not match', async () => {
+    await start();
+    const profileId = await profileWithCheck();
+    // The input reader does not start (not installed, blocked): no controller list at all.
+    app.ports.input.start = async () => ({
+      ok: false,
+      error: { code: 'input.unavailable', message: 'The input reader is not installed.' },
+    });
+    const report = await app.invoke<ChecklistReport>('fly:check', { profileId });
+    expect(report.results[0]).toMatchObject({
+      type: BINDINGS_CHECK,
+      status: 'error',
+      summary: 'Game controllers could not be read',
+      details: ['The input reader is not installed.'],
+    });
+    // The bindings page says the same, and still lists every device from its file.
+    const view = await app.invoke<AircraftView>('dcs-bindings:aircraft', { id: HORNET });
+    expect(view.controllersUnavailable).toBe('The input reader is not installed.');
+    expect(view.devices.filter((d) => d.type === 'joystick').length).toBeGreaterThan(0);
+    expect(view.devices.some((d) => d.type === 'joystick' && d.connected)).toBe(false);
+  });
+
   it('capture proposes the check for every aircraft that has binding files', async () => {
     await start();
     await useOldBindings(app.home, HUEY);

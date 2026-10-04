@@ -35,6 +35,17 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
+      # GitHub's Windows runners scan every file as it is written, which makes the temp-folder
+      # work of the tests several times slower, and their desktop is 1024x768: the app's
+      # window does not fit it, and the tests are about a normal desktop.
+      - name: Prepare the runner
+        shell: pwsh
+        run: |
+          try { Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction Stop } catch { Write-Host "virus scanner left on: $_" }
+          try { Set-DisplayResolution -Width 1920 -Height 1080 -Force -ErrorAction Stop } catch { Write-Host "screen size not changed: $_" }
+          Add-Type -AssemblyName System.Windows.Forms
+          Write-Host "screen: $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds)"
+
       - run: npm ci
 
       # Builds the app, then drives it on fixture-backed providers. No real hardware is needed.
@@ -61,6 +72,17 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+
+      # GitHub's Windows runners scan every file as it is written, which makes the temp-folder
+      # work of the tests several times slower, and their desktop is 1024x768: the app's
+      # window does not fit it, and the tests are about a normal desktop.
+      - name: Prepare the runner
+        shell: pwsh
+        run: |
+          try { Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction Stop } catch { Write-Host "virus scanner left on: $_" }
+          try { Set-DisplayResolution -Width 1920 -Height 1080 -Force -ErrorAction Stop } catch { Write-Host "screen size not changed: $_" }
+          Add-Type -AssemblyName System.Windows.Forms
+          Write-Host "screen: $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds)"
 
       - run: npm ci
 

@@ -128,6 +128,8 @@ export interface AircraftState {
   commands: Map<string, CommandView>;
   modifiers: ModifierState[];
   warnings: string[];
+  /** Set when the controllers could not be listed: the reason, in words. */
+  controllersUnavailable?: string;
   dcsRunning: boolean;
   connected: InputDevice[];
   state: BindingsState;
@@ -179,6 +181,11 @@ export class DcsBindings {
   private readonly ids = new EngineIds();
   private readonly learnedFrom = new Set<string>();
   private readonly store: JsonStore<typeof StateSchema>;
+  /**
+   * Why the controllers could not be listed the last time it was tried; undefined when they
+   * could. Without them nothing can be said about which bindings fit what is attached.
+   */
+  inputError: string | undefined;
 
   constructor(readonly ctx: BindingsContext) {
     this.store = new JsonStore(
@@ -238,14 +245,47 @@ export class DcsBindings {
     return processes.ok && processes.value.some((p) => p.name.toLowerCase() === 'dcs.exe');
   }
 
-  /** The controllers DirectInput lists right now. Empty (with a logged warning) when that fails. */
+  /**
+   * The controllers DirectInput lists right now. Empty when that fails, with the reason in
+   * `inputError`: "none attached" and "could not look" are different answers.
+   */
   async connectedDevices(): Promise<InputDevice[]> {
     const started = await this.ctx.ports.input.start();
     if (!started.ok) {
       this.ctx.log.warn('dcs-bindings: controllers could not be listed', started.error);
+      this.inputError = started.error.message;
       return [];
     }
+    this.inputError = undefined;
     return started.value;
+  }
+
+  /**
+   * How many attached controllers have a binding file of the user's own for an aircraft.
+   * Only file names are looked at. The Fly check asks this on every run and has no use for
+   * the game's defaults, which take seconds to evaluate the first time on a slow PC.
+   */
+  async ownFilesOnConnected(aircraftId: string): Promise<Result<number>> {
+    const { ports } = this.ctx;
+    const locations = await this.locations();
+    const profile = (await this.profiles(locations)).find((p) => p.id === aircraftId);
+    const dir = path.join(locations.inputDir, profileFolderName(aircraftId));
+    if (!profile?.folder && !(await ports.files.exists(dir))) {
+      return err('dcs.aircraft.unknown', `DCS has no aircraft "${aircraftId}" on this PC.`);
+    }
+    const connected = await this.connectedDevices();
+    const listed = await ports.files.list(path.join(dir, 'joystick'));
+    const files = (listed.ok ? listed.value : []).map(parseDiffFileName);
+    const withFile = connected.filter((device) =>
+      files.some(
+        (file) =>
+          file !== undefined &&
+          file.deviceName === device.name &&
+          file.guid !== undefined &&
+          sameGuid(device.guid, file.guid)
+      )
+    );
+    return ok(withFile.length);
   }
 
   readState(): Promise<Result<BindingsState>> {
@@ -551,6 +591,7 @@ export class DcsBindings {
       commands,
       modifiers: await this.modifiers(loader, profile, dir),
       warnings,
+      ...(this.inputError ? { controllersUnavailable: this.inputError } : {}),
       dcsRunning: await this.dcsRunning(),
       connected,
       state,
@@ -717,6 +758,9 @@ export function buildView(state: AircraftState): AircraftView {
       expected: new Set(state.state.expected[state.profile.id] ?? []),
     }),
     warnings: state.warnings,
+    ...(state.controllersUnavailable
+      ? { controllersUnavailable: state.controllersUnavailable }
+      : {}),
     uneditableCommands: commands.filter((c) => !c.editable).length,
     dcsRunning: state.dcsRunning,
   };

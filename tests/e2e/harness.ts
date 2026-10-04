@@ -171,6 +171,8 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
             env: isolated.env,
           });
           const page = await app.firstWindow();
+          // Clicks and fills wait 30 s by default; a shared CI runner needs longer for the same step.
+          if (process.env['CI']) page.setDefaultTimeout(90_000);
           const entry = { app, isolated, page };
           started.push(entry);
           await page.waitForLoadState('domcontentloaded');

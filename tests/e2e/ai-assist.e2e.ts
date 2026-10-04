@@ -291,3 +291,97 @@ test('ai-assist: for an aircraft without a guide, AI drafts one in the guide for
   );
   expect(saved).toContain('drafted:');
 });
+
+/** Opens the AI tab with a key stored and sends "Suggest a setup". */
+async function sendSuggest(page: Page): Promise<void> {
+  await page.getByTestId('ai-suggest').click();
+  await expect(page.getByTestId('ai-payload-dialog')).toBeVisible();
+  await page.getByTestId('ai-payload-send').click();
+}
+
+test('ai-assist: a suggested setup streams in, the progress says what has arrived, and the answer is used only when complete', async ({
+  rig,
+}) => {
+  const run = await rig.launch('ai-assist-stream', 'ai-assist-stream');
+  const { page, shot } = run;
+  await storeKey(page);
+  await openGuide(page);
+  await page.getByTestId('ai-tab-ai').click();
+
+  await page.getByTestId('ai-suggest').click();
+  await expect(page.getByTestId('ai-payload-dialog')).toBeVisible();
+  // The request that is shown says it will be streamed.
+  await page.getByTestId('ai-payload-toggle').click();
+  await expect(page.getByTestId('ai-payload-body')).toContainText('"stream": true');
+  await page.getByTestId('ai-payload-send').click();
+
+  // While it arrives: what was received so far, and a way to stop it. No suggestion is shown yet.
+  const progress = page.getByTestId('ai-progress');
+  await expect(progress).toBeVisible();
+  await expect(page.getByTestId('ai-progress-text')).toContainText(
+    /Receiving the answer: \d+ suggestions? so far \([\d,]+ characters\)/
+  );
+  await expect(progress).toHaveAttribute('data-phase', 'receiving');
+  await expect(page.getByTestId('ai-progress-elapsed')).toContainText(/^\d+ s since it was sent/);
+  await expect(page.getByTestId('ai-cancel-request')).toBeEnabled();
+  await expect(page.getByTestId('ai-suggestion')).toHaveCount(0);
+
+  // Complete: the dialog closes and the checked answer is listed, exactly as without streaming.
+  await expect(page.getByTestId('ai-round')).toBeVisible();
+  await expect(page.getByTestId('ai-payload-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('ai-suggestion')).toHaveCount(4);
+  await expect(page.getByTestId('ai-dropped')).toContainText('2 lines of the answer were left out');
+  await expect(page.getByTestId('ai-usage').first()).toContainText('tokens in');
+  await shot('answered');
+});
+
+test('ai-assist: Cancel stops a streamed request, and a stream that stalls or fails part-way says so and changes nothing', async ({
+  rig,
+}) => {
+  const run = await rig.launch('ai-assist-stream-trouble', 'ai-assist-stream-trouble');
+  const { page, shot } = run;
+  await storeKey(page);
+  await openGuide(page);
+  await page.getByTestId('ai-tab-ai').click();
+  const before = await fs.readFile(await stickFile(run), 'utf8');
+
+  // Three suggestions arrive and then nothing more: the progress stands still.
+  await sendSuggest(page);
+  await expect(page.getByTestId('ai-progress-text')).toHaveText(
+    /^Receiving the answer: 3 suggestions so far \([\d,]+ characters\)\.$/
+  );
+  await shot('three-so-far');
+  await page.getByTestId('ai-cancel-request').click();
+  await expect(page.getByTestId('ai-request-note')).toContainText(
+    'Cancelled. Nothing from the answer was used.'
+  );
+  await expect(page.getByTestId('ai-payload-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('ai-round')).toHaveCount(0);
+  await expect(page.getByTestId('ai-request-error')).toHaveCount(0);
+  await shot('cancelled');
+
+  // The next answer stalls: a plain message, and still no suggestions.
+  await sendSuggest(page);
+  await expect(page.getByTestId('ai-request-error')).toContainText(
+    'The answer stopped arriving: nothing came for 90 seconds, so nothing from it was used. Try again.'
+  );
+  await expect(page.getByTestId('ai-request-note')).toHaveCount(0);
+  await expect(page.getByTestId('ai-payload-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('ai-round')).toHaveCount(0);
+  await shot('stalled');
+
+  // The one after that fails in the middle of the answer.
+  await sendSuggest(page);
+  await expect(page.getByTestId('ai-request-error')).toContainText(
+    'The Anthropic API is busy or down right now. Try again in a few minutes.'
+  );
+  await expect(page.getByTestId('ai-round')).toHaveCount(0);
+  expect(await fs.readFile(await stickFile(run), 'utf8')).toBe(before);
+
+  // And then one arrives whole.
+  await sendSuggest(page);
+  await expect(page.getByTestId('ai-round')).toBeVisible();
+  await expect(page.getByTestId('ai-suggestion')).toHaveCount(4);
+  await expect(page.getByTestId('ai-request-error')).toHaveCount(0);
+  await shot('answered-after-retry');
+});

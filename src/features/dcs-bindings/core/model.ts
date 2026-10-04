@@ -239,6 +239,11 @@ export const AircraftViewSchema = z.object({
   problems: ProblemsSchema,
   /** Things the user should know: unreadable files, missing defaults. */
   warnings: z.array(z.string()),
+  /**
+   * Set when the game controllers could not be listed (the input reader did not start): the
+   * reason. Every device is then shown from its binding file only, as not attached.
+   */
+  controllersUnavailable: z.string().optional(),
   /** Actions RigReady can show but not edit, because the engine's number is unknown. */
   uneditableCommands: z.number().int(),
   dcsRunning: z.boolean(),

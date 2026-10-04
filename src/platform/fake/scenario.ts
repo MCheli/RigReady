@@ -356,6 +356,45 @@ export function isFileMutation(mutation: Mutation): mutation is FileMutation {
   );
 }
 
+const StreamDelay = z.number().int().min(0).max(600_000);
+
+/**
+ * A body that arrives in pieces (ports.http.stream). Each chunk is text, or one Server-Sent
+ * Event written as `{ event, data }` (sent as `event: <event>` and `data: <json>` lines
+ * followed by an empty line).
+ */
+export const HttpStreamScriptSchema = z.object({
+  chunks: z
+    .array(
+      z.union([
+        z.string(),
+        /** `delayMs`: the wait before this chunk, in milliseconds of real time. */
+        z.object({ text: z.string(), delayMs: StreamDelay.optional() }),
+        z.object({
+          event: z.string().optional(),
+          data: z.unknown(),
+          delayMs: StreamDelay.optional(),
+        }),
+      ])
+    )
+    .default([]),
+  /** The wait before every chunk that names none of its own. Default 0. */
+  delayMs: StreamDelay.default(0),
+  /**
+   * Cut the whole body again into pieces of this many bytes, so that boundaries fall
+   * anywhere: inside a line, inside a UTF-8 character. Each piece waits `delayMs`.
+   */
+  chunkBytes: z.number().int().positive().optional(),
+  /**
+   * What happens after the last chunk. `close`: the server ends the stream (the default).
+   * `hang`: nothing more arrives, until the caller's idle timeout or cancellation.
+   * `stall`: fails at once the way the idle timeout does, without the wait.
+   * `reset`: the connection breaks.
+   */
+  end: z.enum(['close', 'hang', 'stall', 'reset']).default('close'),
+});
+export type HttpStreamScript = z.infer<typeof HttpStreamScriptSchema>;
+
 /** A canned answer for ports.http. The first entry whose match fits the request is used. */
 export const HttpScriptSchema = z.object({
   match: z
@@ -374,6 +413,8 @@ export const HttpScriptSchema = z.object({
       body: z.string().optional(),
       /** Serialized as the body, with content-type application/json. */
       json: z.unknown().optional(),
+      /** The body in pieces, with content-type text/event-stream unless a header says otherwise. */
+      stream: HttpStreamScriptSchema.optional(),
     })
     .optional(),
   /** Instead of a response: fail as if the network were down. */

@@ -53,8 +53,12 @@ test('diagnostics: versions, games, devices and the recent log; copy, open the l
   await root.getByTestId('diagnostics-detailed').locator('input').check();
   await expect
     .poll(
+      // The file does not exist until the first setting is saved: not there yet is not an error.
       async () =>
-        JSON.parse(await fs.readFile(path.join(dataRoot, 'settings.json'), 'utf8')).logLevel
+        fs
+          .readFile(path.join(dataRoot, 'settings.json'), 'utf8')
+          .then((text) => JSON.parse(text).logLevel as unknown)
+          .catch(() => undefined)
     )
     .toBe('debug');
   await root.getByTestId('diagnostics-refresh').click();

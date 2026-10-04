@@ -1,0 +1,92 @@
+description: AI binding help, streamed answers that hang, stall and fail part-way
+rig: mark-full
+extends: ai-assist-hornet.yaml
+http:
+  # 1st "Suggest a setup": three suggestions arrive, then nothing more (until Cancel).
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: '"type":"json_schema"' }
+    times: 1
+    response:
+      status: 200
+      stream:
+        delayMs: 40
+        end: hang
+        chunks:
+          - { event: message_start, data: {"type":"message_start","message":{"id":"msg_scripted","type":"message","role":"assistant","model":"claude-opus-5-5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":1450,"cache_creation_input_tokens":31840,"cache_read_input_tokens":0,"output_tokens":1}}} }
+          - { event: content_block_start, data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"c2NyaXB0ZWQ="}} }
+          - { event: content_block_stop, data: {"type":"content_block_stop","index":0} }
+          - { event: ping, data: {"type":"ping"} }
+          - { event: content_block_start, data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"{\"summary\":\"Your stick and throttle already carry the fight "}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"switches. The plan adds the carrier switches you reach for o"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"n every approach: auto-throttle and cage on the stick, the g"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ear on the throttle.\",\"items\":[{\"actionId\":\"key:d3037pnilu30"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"37cd13vd1vpnilvu0\",\"device\":\"dev9\",\"input\":\"JOY_BTN7\",\"prior"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ity\":\"should\",\"reason\":\"Auto-throttle under your thumb lets "}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"you engage it on the approach without leaving the stick.\"},{"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"\"actionId\":\"key:d68pnilunilcdnilvdnilvpnilvunil\",\"device\":\"d"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ev10\",\"input\":\"JOY_BTN21\",\"priority\":\"must\",\"reason\":\"Gear o"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"n a throttle button you can find by feel; that button only s"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"alutes now.\"},{\"actionId\":\"key:d3031pnilu3031cd13vd1vpnilvu0"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"\",\"device\":\"dev9\",\"input\":\"JOY_BTN21\",\"priority\":\"should\",\"r"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"eason\":\"Cage/uncage for Sidewinder shots, next to the trigge"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"r.\"},"}} }
+  # 2nd: the same, and the stream ends the way the idle timeout ends it, without the wait.
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: '"type":"json_schema"' }
+    times: 1
+    response:
+      status: 200
+      stream:
+        delayMs: 40
+        end: stall
+        chunks:
+          - { event: message_start, data: {"type":"message_start","message":{"id":"msg_scripted","type":"message","role":"assistant","model":"claude-opus-5-5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":1450,"cache_creation_input_tokens":31840,"cache_read_input_tokens":0,"output_tokens":1}}} }
+          - { event: content_block_start, data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"c2NyaXB0ZWQ="}} }
+          - { event: content_block_stop, data: {"type":"content_block_stop","index":0} }
+          - { event: ping, data: {"type":"ping"} }
+          - { event: content_block_start, data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"{\"summary\":\"Your stick and throttle already carry the fight "}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"switches. The plan adds the carrier switches you reach for o"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"n every approach: auto-throttle and cage on the stick, the g"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ear on the throttle.\",\"items\":[{\"actionId\":\"key:d3037pnilu30"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"37cd13vd1vpnilvu0\",\"device\":\"dev9\",\"input\":\"JOY_BTN7\",\"prior"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ity\":\"should\",\"reason\":\"Auto-throttle under your thumb lets "}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"you engage it on the approach without leaving the stick.\"},{"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"\"actionId\":\"key:d68pnilunilcdnilvdnilvpnilvunil\",\"device\":\"d"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ev10\",\"input\":\"JOY_BTN21\",\"priority\":\"must\",\"reason\":\"Gear o"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"n a throttle button you can find by feel; that button only s"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"alutes now.\"},{\"actionId\":\"key:d3031pnilu3031cd13vd1vpnilvu0"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"\",\"device\":\"dev9\",\"input\":\"JOY_BTN21\",\"priority\":\"should\",\"r"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"eason\":\"Cage/uncage for Sidewinder shots, next to the trigge"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"r.\"},"}} }
+  # 3rd: an error event in the middle of the answer.
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: '"type":"json_schema"' }
+    times: 1
+    response:
+      status: 200
+      stream:
+        delayMs: 40
+        chunks:
+          - { event: message_start, data: {"type":"message_start","message":{"id":"msg_scripted","type":"message","role":"assistant","model":"claude-opus-5-5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":1450,"cache_creation_input_tokens":31840,"cache_read_input_tokens":0,"output_tokens":1}}} }
+          - { event: content_block_start, data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"c2NyaXB0ZWQ="}} }
+          - { event: content_block_stop, data: {"type":"content_block_stop","index":0} }
+          - { event: ping, data: {"type":"ping"} }
+          - { event: content_block_start, data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"{\"summary\":\"Your stick and throttle already carry the fight "}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"switches. The plan adds the carrier switches you reach for o"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"n every approach: auto-throttle and cage on the stick, the g"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ear on the throttle.\",\"items\":[{\"actionId\":\"key:d3037pnilu30"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"37cd13vd1vpnilvu0\",\"device\":\"dev9\",\"input\":\"JOY_BTN7\",\"prior"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ity\":\"should\",\"reason\":\"Auto-throttle under your thumb lets "}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"you engage it on the approach without leaving the stick.\"},{"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"\"actionId\":\"key:d68pnilunilcdnilvdnilvpnilvunil\",\"device\":\"d"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"ev10\",\"input\":\"JOY_BTN21\",\"priority\":\"must\",\"reason\":\"Gear o"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"n a throttle button you can find by feel; that button only s"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"alutes now.\"},{\"actionId\":\"key:d3031pnilu3031cd13vd1vpnilvu0"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"\",\"device\":\"dev9\",\"input\":\"JOY_BTN21\",\"priority\":\"should\",\"r"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"eason\":\"Cage/uncage for Sidewinder shots, next to the trigge"}} }
+          - { event: content_block_delta, data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"r.\"},"}} }
+          - { event: error, data: {"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}} }
+  # After that the complete answer of ai-assist-hornet.yaml is used.

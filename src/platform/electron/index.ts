@@ -1,4 +1,5 @@
 import { app, BrowserWindow, clipboard, dialog, Notification, safeStorage, screen } from 'electron';
+import type { NativeImage } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
@@ -185,6 +186,42 @@ export class ElectronRender implements Render {
     }
   }
 
+  /**
+   * The frame an offscreen window painted. Such a window hands every frame it paints to
+   * 'paint'. Asking the compositor for a copy instead (capturePage) fails with
+   * UnknownVizError whenever no frame is on its way: always on a PC without a GPU (CI
+   * runners), and now and then everywhere.
+   */
+  private frame(
+    window: BrowserWindow,
+    size: { width: number; height: number }
+  ): Promise<NativeImage> {
+    const contents = window.webContents;
+    return new Promise((resolve, reject) => {
+      let latest: NativeImage | undefined;
+      let quiet: ReturnType<typeof setTimeout> | undefined;
+      const finish = (): void => {
+        clearTimeout(limit);
+        clearTimeout(quiet);
+        contents.off('paint', onPaint);
+        if (latest) resolve(latest);
+        // Nothing was painted at all: ask the compositor, and let its error say why.
+        else contents.capturePage({ x: 0, y: 0, ...size }).then(resolve, reject);
+      };
+      const onPaint = (_event: unknown, _dirty: unknown, image: NativeImage): void => {
+        if (image.isEmpty()) return;
+        latest = image;
+        // A page without scripts paints once or twice (the text, then fonts and pictures):
+        // the frame is final when nothing more arrives for a moment.
+        clearTimeout(quiet);
+        quiet = setTimeout(finish, 150);
+      };
+      const limit = setTimeout(finish, 8000);
+      contents.on('paint', onPaint);
+      contents.invalidate();
+    });
+  }
+
   png(html: string, size: { width: number; height: number }): Promise<Result<Uint8Array>> {
     if (size.width < 1 || size.height < 1 || size.width > 8192 || size.height > 8192) {
       return Promise.resolve(
@@ -195,12 +232,7 @@ export class ElectronRender implements Render {
       try {
         const bytes = await this.withPage(html, size, async (window) => {
           window.setContentSize(size.width, size.height);
-          let image = await window.webContents.capturePage({
-            x: 0,
-            y: 0,
-            width: size.width,
-            height: size.height,
-          });
+          let image = await this.frame(window, size);
           const actual = image.getSize();
           // On a scaled display the capture is larger than asked for; bring it to the exact size.
           if (actual.width !== size.width || actual.height !== size.height) {

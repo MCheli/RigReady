@@ -9,6 +9,7 @@ import {
   PreparedSchema,
   PressSchema,
   ProgressSchema,
+  SendProgressSchema,
   RequestKindSchema,
   SentSchema,
 } from './core/model';
@@ -65,12 +66,19 @@ export const aiAssistContract = defineContract(
     ),
     /** Sends a prepared request, unchanged. */
     send: channel(z.object({ requestId: z.string() }), SentSchema),
+    /** Stops a request that is being answered. Nothing of its answer is used. */
+    cancel: channel(
+      z.object({ requestId: z.string().max(40) }),
+      z.object({ cancelled: z.boolean() })
+    ),
     reviewSuggestions: channel(Round, PlanSchema),
     applySuggestions: channel(Round, AppliedSchema),
     deleteDraft: channel(Aircraft, z.object({ deleted: z.boolean() })),
   },
   {
     pressed: PressSchema,
+    /** A request that is being answered got further. */
+    sendProgress: SendProgressSchema,
     /** The settings changed (the API key was stored or removed): `status` is worth asking again. */
     settingsChanged: z.object({}),
   }

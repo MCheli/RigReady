@@ -47,14 +47,17 @@ const staged = computed(() => store.guide?.staged ?? []);
 
 let off: (() => void) | undefined;
 let offPress: (() => void) | undefined;
+let offProgress: (() => void) | undefined;
 onMounted(() => {
   void store.load();
   off = onMachineChanged(() => void store.load());
   offPress = store.api.on('pressed', (press) => void store.pressed(press));
+  offProgress = store.api.on('sendProgress', (update) => store.progressed(update));
 });
 onBeforeUnmount(() => {
   off?.();
   offPress?.();
+  offProgress?.();
   if (store.listeningFor) void store.stopListening();
 });
 </script>

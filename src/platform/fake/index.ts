@@ -17,6 +17,7 @@ import type {
   Http,
   HttpRequest,
   HttpResponse,
+  HttpStreamRequest,
   InputProvider,
   KnownFolders,
   LoginItem,
@@ -59,6 +60,7 @@ import { solidPng } from './png';
 import { FakeUpdateFeed, UPDATE_FEED_FILE } from './updater';
 import {
   DialogScriptSchema,
+  HttpStreamScriptSchema,
   RigFixtureSchema,
   ScenarioSchema,
   applyMutations,
@@ -72,6 +74,7 @@ import {
   type DialogScript,
   type FileMutation,
   type HttpScript,
+  type HttpStreamScript,
   type Mutation,
   type RigState,
   type Scenario,
@@ -595,23 +598,168 @@ export class FakeSecrets implements Secrets {
   }
 }
 
+/** What `FakeHttp.respond` takes: a whole body, or one that arrives in pieces. */
+export interface FakeHttpResponse {
+  status?: number;
+  body?: string;
+  json?: unknown;
+  stream?: z.input<typeof HttpStreamScriptSchema>;
+}
+
+type ScriptedResponse = NonNullable<HttpScript['response']>;
+
+interface StreamPiece {
+  bytes: Uint8Array;
+  delayMs: number;
+}
+
+/** The pieces a scripted stream delivers, in order. */
+function streamPieces(script: HttpStreamScript): StreamPiece[] {
+  const encoder = new TextEncoder();
+  const pieces = script.chunks.map((chunk): StreamPiece => {
+    if (typeof chunk === 'string') return { bytes: encoder.encode(chunk), delayMs: script.delayMs };
+    const text =
+      'text' in chunk
+        ? chunk.text
+        : `${chunk.event === undefined ? '' : `event: ${chunk.event}\n`}data: ${JSON.stringify(chunk.data)}\n\n`;
+    return { bytes: encoder.encode(text), delayMs: chunk.delayMs ?? script.delayMs };
+  });
+  if (script.chunkBytes === undefined) return pieces;
+  const all = Buffer.concat(pieces.map((p) => p.bytes));
+  const cut: StreamPiece[] = [];
+  for (let at = 0; at < all.length; at += script.chunkBytes) {
+    cut.push({
+      bytes: new Uint8Array(all.subarray(at, at + script.chunkBytes)),
+      delayMs: script.delayMs,
+    });
+  }
+  return cut;
+}
+
+const lowerCased = (headers: Record<string, string>): Record<string, string> =>
+  Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
+
+/** A scripted response in one piece, as a client that does not stream gets it. */
+function wholeResponse(response: ScriptedResponse): HttpResponse {
+  const { status, headers, body, json, stream } = response;
+  const lower = lowerCased(headers);
+  if (json !== undefined) {
+    return {
+      status,
+      headers: { 'content-type': 'application/json', ...lower },
+      body: JSON.stringify(json),
+    };
+  }
+  if (stream) {
+    return {
+      status,
+      headers: { 'content-type': 'text/event-stream', ...lower },
+      body: Buffer.concat(streamPieces(stream).map((p) => p.bytes)).toString('utf8'),
+    };
+  }
+  return { status, headers: lower, body: body ?? '' };
+}
+
 /** Answers requests from a script and never touches the network. An unscripted request is an error. */
 export class FakeHttp implements Http {
-  /** Every request made, for assertions. */
+  /** Every request made, for assertions (without a stream's `signal`). */
   readonly calls: HttpRequest[] = [];
   /** Scripted answers, first match wins. Tests may push more. */
   readonly scripts: (HttpScript & { used?: number })[] = [];
 
   /** Shorthand for tests: answer requests whose URL contains `url`. */
-  respond(url: string, response: { status?: number; body?: string; json?: unknown }): void {
+  respond(url: string, response: FakeHttpResponse): void {
+    const { stream, ...rest } = response;
     this.scripts.push({
       match: { url },
-      response: { status: response.status ?? 200, headers: {}, ...response },
+      response: {
+        headers: {},
+        ...rest,
+        status: response.status ?? 200,
+        ...(stream ? { stream: HttpStreamScriptSchema.parse(stream) } : {}),
+      },
     });
   }
 
   async request(request: HttpRequest): Promise<Result<HttpResponse>> {
     this.calls.push(structuredClone(request));
+    const script = this.take(request);
+    return script.ok ? ok(wholeResponse(script.value)) : script;
+  }
+
+  /**
+   * Delivers a scripted body in its pieces, with the scripted pauses in real time; a
+   * script without `stream` arrives as one chunk. The idle timeout, the total timeout and
+   * cancellation behave as on the real port.
+   */
+  async stream(
+    request: HttpStreamRequest,
+    onChunk: (bytes: Uint8Array) => void
+  ): Promise<Result<HttpResponse>> {
+    const { signal, ...plain } = request;
+    this.calls.push(structuredClone(plain));
+    if (signal?.aborted) return err('http.cancelled', 'The request was cancelled.');
+    const script = this.take(plain);
+    if (!script.ok) return script;
+    const whole = wholeResponse(script.value);
+    if (whole.status < 200 || whole.status > 299) return ok(whole);
+    const stream = script.value.stream;
+    const pieces: StreamPiece[] = stream
+      ? streamPieces(stream)
+      : [{ bytes: new TextEncoder().encode(whole.body), delayMs: 0 }];
+
+    const idleMs = request.idleTimeoutMs ?? 60_000;
+    const started = Date.now();
+    type Outcome = 'ok' | 'idle' | 'timeout' | 'cancelled';
+    /** Waits `ms`, or less when the caller's limits or cancellation end the wait first. */
+    const wait = (ms: number): Promise<Outcome> =>
+      new Promise((resolve) => {
+        if (signal?.aborted) return resolve('cancelled');
+        const left =
+          request.timeoutMs === undefined
+            ? Number.POSITIVE_INFINITY
+            : request.timeoutMs - (Date.now() - started);
+        const limit = Math.min(ms, idleMs, left);
+        const outcome: Outcome = limit === ms ? 'ok' : limit === left ? 'timeout' : 'idle';
+        const onAbort = (): void => {
+          clearTimeout(timer);
+          resolve('cancelled');
+        };
+        const timer = setTimeout(
+          () => {
+            signal?.removeEventListener('abort', onAbort);
+            resolve(outcome);
+          },
+          Math.max(0, limit)
+        );
+        signal?.addEventListener('abort', onAbort, { once: true });
+      });
+    const failed = (outcome: Exclude<Outcome, 'ok'>): Result<never> =>
+      outcome === 'cancelled'
+        ? err('http.cancelled', 'The request was cancelled.')
+        : outcome === 'timeout'
+          ? err('http.timeout', 'The server took too long.')
+          : err('http.idle', `The server sent nothing for ${Math.round(idleMs / 1000)} seconds.`);
+
+    for (const piece of pieces) {
+      const outcome = await wait(piece.delayMs);
+      if (outcome !== 'ok') return failed(outcome);
+      if (piece.bytes.length > 0) onChunk(piece.bytes);
+    }
+    const end = stream?.end ?? 'close';
+    if (end === 'stall') return failed('idle');
+    if (end === 'reset') {
+      return err('http.network', 'Could not reach the server.', 'scripted connection reset');
+    }
+    if (end === 'hang') {
+      const outcome = await wait(Number.POSITIVE_INFINITY);
+      return failed(outcome === 'ok' ? 'idle' : outcome);
+    }
+    return ok({ ...whole, body: '' });
+  }
+
+  /** The scripted response for a request, counted as used, or the failure to return instead. */
+  private take(request: HttpRequest): Result<ScriptedResponse> {
     const method = (request.method ?? 'GET').toUpperCase();
     const script = this.scripts.find(
       (s) =>
@@ -631,16 +779,7 @@ export class FakeHttp implements Http {
     if (script.error !== undefined || !script.response) {
       return err('http.network', 'Could not reach the server.', script.error ?? 'scripted failure');
     }
-    const { status, headers, body, json } = script.response;
-    const lower = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
-    if (json !== undefined) {
-      return ok({
-        status,
-        headers: { 'content-type': 'application/json', ...lower },
-        body: JSON.stringify(json),
-      });
-    }
-    return ok({ status, headers: lower, body: body ?? '' });
+    return ok(script.response);
   }
 }
 

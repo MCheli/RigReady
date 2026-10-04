@@ -154,16 +154,21 @@ test('Start with Windows: the packaged app registers and removes its login entry
     await toggle.click();
     await expect(toggle).toBeChecked();
     await expect(page.getByTestId('login-problem')).toHaveCount(0);
-    // What Windows will run at login: this program, told to stay in the tray.
+    // What Windows will run at login: this program, told to stay in the tray. The switch
+    // moves at once and the registry follows; on a slow PC that is not the same instant.
+    await expect
+      .poll(runEntry, { message: 'HKCU Run entry after turning it on', timeout: 15_000 })
+      .toBeDefined();
     const entry = await runEntry();
-    expect(entry, 'HKCU Run entry after turning it on').toBeDefined();
     expect(entry!.toLowerCase()).toContain(exe.toLowerCase());
     expect(entry).toContain('--hidden');
     console.log(`  login entry: ${entry}`);
 
     await toggle.click();
     await expect(toggle).not.toBeChecked();
-    expect(await runEntry(), 'HKCU Run entry after turning it off').toBeUndefined();
+    await expect
+      .poll(runEntry, { message: 'HKCU Run entry after turning it off', timeout: 15_000 })
+      .toBeUndefined();
     await app.close();
 
     // Started the way Windows starts it at login: no window on screen, only the tray.
