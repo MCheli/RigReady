@@ -246,7 +246,15 @@ const isStaged = (key: string): boolean =>
               <div class="dev-binding-main">
                 <div class="dev-action-name">
                   <span v-if="modifiers(binding)" class="dev-mod">{{ modifiers(binding) }} +</span>
-                  {{ store.commandName(binding.commandId) }}
+                  {{
+                    store.commandPlain(binding.commandId) ?? store.commandName(binding.commandId)
+                  }}
+                  <span
+                    v-if="store.commandPlain(binding.commandId)"
+                    class="dev-dcs-name"
+                    data-testid="dev-dcs-name"
+                    >{{ store.commandName(binding.commandId) }}</span
+                  >
                 </div>
                 <div class="rr-row-sub">
                   {{ SOURCE[binding.source] }}
@@ -446,6 +454,12 @@ const isStaged = (key: string): boolean =>
 .dev-binding-main {
   flex: 1;
   min-width: 0;
+}
+.dev-dcs-name {
+  margin-left: 6px;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--rr-muted);
 }
 .dev-action-name {
   font-size: 14px;

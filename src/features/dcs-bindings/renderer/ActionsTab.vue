@@ -42,7 +42,8 @@ const matching = computed(() => {
     if (filter.value === 'bound' && !bound) return false;
     if (filter.value === 'unbound' && bound) return false;
     if (category.value !== 'All categories' && categoryOf(command) !== category.value) return false;
-    const text = `${command.name} ${command.category.join(' ')}`.toLowerCase();
+    const text =
+      `${command.plain ?? ''} ${command.name} ${command.category.join(' ')}`.toLowerCase();
     return words.every((word) => text.includes(word));
   });
 });
@@ -145,7 +146,12 @@ function clear(command: CommandView, occurrence: Occurrence): void {
           :data-action="command.name"
         >
           <div class="act-name">
-            <div class="rr-row-title">{{ command.name }}</div>
+            <div class="rr-row-title" data-testid="act-title">
+              {{ command.plain ?? command.name }}
+            </div>
+            <div v-if="command.plain" class="rr-row-sub" data-testid="act-dcs-name">
+              DCS calls it: {{ command.name }}
+            </div>
             <div class="rr-row-sub">
               {{ command.kind === 'axis' ? 'Axis' : 'Button' }}
               <template v-if="command.category.length > 1">

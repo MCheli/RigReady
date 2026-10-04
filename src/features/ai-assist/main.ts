@@ -2,14 +2,28 @@ import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { aiAssistContract } from './contract';
 import { listenForPresses } from './core/inputs';
+import { plainLabels } from './core/pack';
 import { AiAssist } from './core/service';
+import { shippedPack } from './core/shipped';
 
 let stopListening: (() => void) | undefined;
+let stopWatchingSettings: (() => void) | undefined;
 
 export default defineFeatureMain({
   id: 'ai-assist',
   setup(ctx) {
     const ai = new AiAssist({ ports: ctx.ports, log: ctx.log, bindings: ctx.bindings });
+    // The shipped guides' plain-language action names, for every page that lists actions.
+    ctx.bindings.registerLabels({
+      id: 'ai-assist',
+      game: 'dcs',
+      labels: async (aircraftId) => plainLabels(shippedPack(aircraftId)),
+    });
+    // The key is stored and removed on the Settings page; this feature's own section and
+    // pages follow it through an event instead of asking again on a timer.
+    stopWatchingSettings = ctx.settings.onChange(() =>
+      ctx.emit(aiAssistContract, 'settingsChanged', {})
+    );
     return [
       bind(aiAssistContract, {
         aircraft: () => ai.aircraft(),
@@ -49,6 +63,8 @@ export default defineFeatureMain({
     ];
   },
   dispose() {
+    stopWatchingSettings?.();
+    stopWatchingSettings = undefined;
     stopListening?.();
     stopListening = undefined;
   },

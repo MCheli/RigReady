@@ -161,8 +161,47 @@ export interface BindingReader {
   proposals?: BindingProposals;
 }
 
+/**
+ * Plain-language names for a game's actions ("Sensor Control Switch - Fwd" is "Sensor
+ * select: HUD"), from whoever knows them (the binding guide's shipped label files). Any
+ * feature that shows actions reads them through `ctx.bindings.labels(game, aircraftId)`
+ * and shows the game's own name beside them: a label is for reading, never for matching.
+ */
+export interface ActionLabelSource {
+  id: string;
+  /** Game module id: "dcs". */
+  game: string;
+  /** Plain label by the game's own action name, for one aircraft. Empty when it has none. */
+  labels(aircraftId: string): Promise<Record<string, string>>;
+}
+
 export class BindingRegistry {
   private readonly readers = new Map<string, BindingReader>();
+  private readonly labelSources: ActionLabelSource[] = [];
+
+  registerLabels(source: ActionLabelSource): void {
+    if (this.labelSources.some((s) => s.id === source.id)) {
+      throw new Error(`Action labels registered twice: ${source.id}`);
+    }
+    this.labelSources.push(source);
+  }
+
+  /** Plain labels of one aircraft's actions, by the game's action name. Never fails. */
+  async labels(game: string, aircraftId: string): Promise<Record<string, string>> {
+    const merged: Record<string, string> = {};
+    for (const source of this.labelSources) {
+      if (source.game !== game) continue;
+      try {
+        // The first source to name an action wins.
+        for (const [name, label] of Object.entries(await source.labels(aircraftId))) {
+          merged[name] ??= label;
+        }
+      } catch {
+        // A label source that fails leaves the game's own names in place.
+      }
+    }
+    return merged;
+  }
 
   register(reader: BindingReader): void {
     if (this.readers.has(reader.game)) {

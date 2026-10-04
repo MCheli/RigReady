@@ -227,7 +227,8 @@ onBeforeUnmount(() => void stopListening());
       <v-card-title>{{ isCurve ? 'Axis curve' : 'Bind a control' }}</v-card-title>
       <v-card-text>
         <template v-if="isCurve">
-          <div class="rr-row-title">{{ command?.name }}</div>
+          <div class="rr-row-title">{{ command?.plain ?? command?.name }}</div>
+          <div v-if="command?.plain" class="rr-row-sub">DCS calls it: {{ command.name }}</div>
           <div class="rr-row-sub mb-4">{{ label }} on {{ device?.name }}</div>
         </template>
         <template v-else>

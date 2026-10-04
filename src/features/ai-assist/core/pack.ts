@@ -107,6 +107,17 @@ export const PackSchema = z
   });
 export type Pack = z.infer<typeof PackSchema>;
 
+/** The plain label of every action a pack names exactly, by DCS's own action name. */
+export function plainLabels(pack: Pack | undefined): Record<string, string> {
+  const labels: Record<string, string> = {};
+  for (const item of pack?.items ?? []) {
+    for (const spec of item.actions) {
+      if ('name' in spec) labels[spec.name] ??= spec.label;
+    }
+  }
+  return labels;
+}
+
 function safeRegExp(source: string): RegExp | undefined {
   try {
     return new RegExp(source);

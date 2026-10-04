@@ -75,6 +75,8 @@ export const useBindingsStore = defineStore('dcs-bindings', () => {
       .sort((a, b) => Number(b.connected) - Number(a.connected) || a.name.localeCompare(b.name))
   );
   const commandName = (id: string): string => commands.value.get(id)?.name ?? id;
+  /** The action in plain language, when a label file has one for it. */
+  const commandPlain = (id: string): string | undefined => commands.value.get(id)?.plain;
 
   async function loadAircraft(id: string): Promise<void> {
     const mine = ++generation;
@@ -222,6 +224,7 @@ export const useBindingsStore = defineStore('dcs-bindings', () => {
     devices,
     controllers,
     commandName,
+    commandPlain,
     load,
     selectAircraft,
     stage,

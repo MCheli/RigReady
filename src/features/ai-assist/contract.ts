@@ -69,5 +69,9 @@ export const aiAssistContract = defineContract(
     applySuggestions: channel(Round, AppliedSchema),
     deleteDraft: channel(Aircraft, z.object({ deleted: z.boolean() })),
   },
-  { pressed: PressSchema }
+  {
+    pressed: PressSchema,
+    /** The settings changed (the API key was stored or removed): `status` is worth asking again. */
+    settingsChanged: z.object({}),
+  }
 );

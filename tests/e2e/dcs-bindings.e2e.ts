@@ -230,7 +230,9 @@ test('bindings: edit by pressing the control, stage, review, save and undo', asy
   await page.getByTestId('bind-tab-devices').click();
   await expect(row(page, 'JOY_BTN20')).toContainText('Master Arm Switch - ARM/SAFE');
   await expect(row(page, 'JOY_BTN19')).toContainText('Not bound');
-  await expect(row(page, 'JOY_BTN5')).toContainText('LCtrl + Cage/Uncage Button');
+  // In plain language, with DCS's own name beside it.
+  await expect(row(page, 'JOY_BTN5')).toContainText('LCtrl + Cage / uncage');
+  await expect(row(page, 'JOY_BTN5')).toContainText('Cage/Uncage Button');
   await shot('saved');
 
   // 5. The change is on the Safety page, and Undo here puts the file back byte for byte.
@@ -679,4 +681,37 @@ test('bindings: snapshots, compare with now, and restore', async ({ rig }) => {
   await expect(page.getByTestId('snap-same')).toContainText('No differences');
   await page.getByTestId('bind-tab-devices').click();
   await expect(row(page, 'JOY_BTN1')).toContainText('Left MDI PB 5');
+});
+
+test('bindings: actions read in plain language, with the name DCS uses beside them, and are found by either', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('dcs-bindings-hornet', 'bindings-plain-labels');
+  await openBindings(page, 'actions');
+  // Found by the plain words...
+  await page.getByTestId('act-search').locator('input').fill('trim nose');
+  const down = page.locator(
+    '[data-testid="act-row"][data-action="Trimmer Switch - PUSH(DESCEND)"]'
+  );
+  await expect(down.getByTestId('act-title')).toHaveText('Trim nose down');
+  await expect(down.getByTestId('act-dcs-name')).toHaveText(
+    'DCS calls it: Trimmer Switch - PUSH(DESCEND)'
+  );
+  await expect(page.getByTestId('act-row')).toHaveCount(2);
+  await shot('plain-labels');
+  // ...and by DCS's own.
+  await page.getByTestId('act-search').locator('input').fill('trimmer switch');
+  await expect(page.getByTestId('act-row')).toHaveCount(4);
+  // An action without a label of its own shows DCS's name alone.
+  await page.getByTestId('act-search').locator('input').fill('canopy');
+  await expect(page.getByTestId('act-row').first().getByTestId('act-dcs-name')).toHaveCount(0);
+
+  // The device view names what each control does the same way.
+  await page.getByTestId('bind-tab-overview').click();
+  await page
+    .locator(`[data-testid="ov-device"][data-device="${STICK}"]`)
+    .getByTestId('ov-open-device')
+    .click();
+  await expect(page.getByTestId('dev-dcs-name').first()).toBeVisible();
+  await shot('device-plain-labels');
 });

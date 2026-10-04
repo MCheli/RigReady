@@ -42,13 +42,13 @@ async function setModel(model: string): Promise<void> {
   } else error.value = errorText(result.error);
 }
 
-let timer: ReturnType<typeof setInterval> | undefined;
+// The key field is another section of the page: main says when the settings changed.
+let off: (() => void) | undefined;
 onMounted(() => {
   void refresh();
-  // The key field is another section of the page; follow it without a reload.
-  timer = setInterval(() => void refresh(), 1500);
+  off = api.on('settingsChanged', () => void refresh());
 });
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => off?.());
 </script>
 
 <template>

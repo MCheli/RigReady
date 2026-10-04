@@ -91,7 +91,20 @@ export default defineFeatureMain({
               : 0,
           });
         },
-        aircraft: ({ id }) => bindings.view(id),
+        async aircraft({ id }) {
+          const view = await bindings.view(id);
+          if (!view.ok) return view;
+          // Plain-language names from whoever ships them; DCS's own name stays beside them.
+          const labels = await ctx.bindings.labels('dcs', id);
+          return ok({
+            ...view.value,
+            commands: view.value.commands.map((command) =>
+              labels[command.name] && labels[command.name] !== command.name
+                ? { ...command, plain: labels[command.name] }
+                : command
+            ),
+          });
+        },
 
         async setRole({ role, ...device }) {
           const saved = await bindings.updateState((state) => ({

@@ -57,8 +57,13 @@ export const CommandSchema = z.object({
   kind: CommandKindSchema,
   /** DCS's command hash, the key of the entry in a binding file. */
   hash: z.string(),
-  /** Plain-language name of the action, from DCS's default input files. */
+  /** DCS's own name of the action, from its default input files. */
   name: z.string(),
+  /**
+   * What the action is in plain language ("Sensor select: HUD"), when a shipped label file
+   * has one (core/bindings.ts `labels`). Shown first, with `name` beside it.
+   */
+  plain: z.string().optional(),
   /** Category path, e.g. ["Stick", "HOTAS"]. Empty when DCS gives none. */
   category: z.array(z.string()),
   /**

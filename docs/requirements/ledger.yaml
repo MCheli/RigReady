@@ -2332,10 +2332,17 @@ requirements:
     done_means:
       - "Binding views and cheat sheets show plain-language labels for DCS commands (e.g. 'Sensor Control Switch - Fwd' -> 'Sensor select: HUD') from a shipped label file for F/A-18C and UH-1H, with the DCS name always available."
       - "With no API key configured, all labels and priority lists work and no AI controls are shown except a 'Set up AI help' link."
-    status: in_progress
+    notes:
+      - "2026-10-03: the binding views read the labels through core (ctx.bindings.labels(game, aircraftId), fed by the binding guide's shipped label files) and show DCS's own name beside each. The cheat-sheets feature is built on another branch and reads the same interface; its own evidence belongs to its entries."
+    status: done
     evidence:
+      - "tests/unit/actionLabels.test.ts#the bindings pages get the shipped F/A-18C labels with DCS's own name kept beside them"
+      - "tests/unit/actionLabels.test.ts#any feature reads the same labels through core, for the Hornet and the Huey; an unknown aircraft has none"
       - "src/features/ai-assist/core/pack.test.ts#shows what each item does and what it is bound to now, from the effective bindings"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: actions read in plain language, with the name DCS uses beside them, and are found by either"
       - "tests/e2e/ai-assist.e2e.ts#ai-assist: without a key the guide, priorities and walkthrough work, with only a link to set up AI"
+      - "artifacts/screens/bindings-plain-labels/01-plain-labels.png"
+      - "artifacts/screens/bindings-plain-labels/02-device-plain-labels.png"
       - "artifacts/screens/ai-assist-no-key/02-plain-labels.png"
 
   - id: AI-002
