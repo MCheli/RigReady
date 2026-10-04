@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { author, bugs, homepage, license, repository } from '../../../package.json';
+import { author, bugs, build, homepage, license, repository } from '../../../package.json';
 import { aboutFacts } from '../shell/about';
-import { aboutOpen, shortcutsOpen } from '../shell/shell';
+import { aboutOpen, returnFocus, shortcutsOpen } from '../shell/shell';
 import BrandMark from './BrandMark.vue';
 
 /**
  * About RigReady: which version this is, what it is for, the licence, and where to find
- * it. Opened from the version in the header and from the command palette.
+ * it. Opened from the version in the header and from the command palette. What it says
+ * about the licence, the author and the addresses is read from the package's own
+ * description (package.json), so it cannot disagree with what was built.
  */
-defineProps<{ version: string; dataRoot?: string; kind?: 'flight' | 'racing' }>();
+defineProps<{ version: string; dataRoot?: string | undefined; kind?: 'flight' | 'racing' }>();
 
-const facts = aboutFacts({ author, bugs, homepage, license, repository });
+const facts = aboutFacts({ author, bugs, build, homepage, license, repository });
+returnFocus(aboutOpen);
 
 const JOBS = [
   {
@@ -40,13 +43,13 @@ function showShortcuts(): void {
   <v-dialog
     v-model="aboutOpen"
     class="rr-shell-dialog"
-    max-width="600"
+    max-width="620"
     transition="rr-dialog"
     aria-label="About RigReady"
   >
     <v-card class="rr-about" data-testid="about">
       <div class="rr-about-head">
-        <BrandMark :size="44" :kind="kind ?? 'flight'" />
+        <BrandMark :size="46" :kind="kind ?? 'flight'" />
         <div>
           <h2 class="rr-about-name">RigReady</h2>
           <div class="rr-about-version">
@@ -55,10 +58,10 @@ function showShortcuts(): void {
         </div>
       </div>
       <v-card-text>
-        <p class="rr-about-lead">
+        <p class="rr-about-lead" data-testid="about-lead">
           Checks that a flight or racing sim rig is ready, fixes what is not, and launches the game.
         </p>
-        <ul class="rr-about-jobs">
+        <ul class="rr-about-jobs" data-testid="about-jobs">
           <li v-for="job in JOBS" :key="job.title">
             <v-icon :icon="job.icon" size="20" />
             <div>
@@ -72,8 +75,10 @@ function showShortcuts(): void {
           <div v-if="facts.licence" data-testid="about-licence">
             <dt>Licence</dt>
             <dd>
-              {{ facts.licence }}, open source<template v-if="facts.author">
-                · © {{ facts.author }}</template
+              {{ facts.licence }}: open source, free to use, change and share<template
+                v-if="facts.copyright"
+              >
+                <br /><span class="rr-about-quiet">{{ facts.copyright }}</span></template
               >
             </dd>
           </div>
@@ -85,7 +90,7 @@ function showShortcuts(): void {
           </div>
           <div v-if="dataRoot" data-testid="about-data">
             <dt>Data folder</dt>
-            <dd class="rr-mono">{{ dataRoot }}</dd>
+            <dd class="rr-mono rr-about-quiet">{{ dataRoot }}</dd>
           </div>
         </dl>
       </v-card-text>
@@ -110,13 +115,33 @@ function showShortcuts(): void {
 
 <style>
 .rr-about-head {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 24px 24px 4px;
+  padding: 24px 24px 20px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--rr-border);
+}
+/* The same heading tape as the window's header: the app's one instrument detail. */
+.rr-about-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--rr-border-strong) 1px, transparent 1px) center bottom / 40px 5px
+      repeat-x,
+    linear-gradient(90deg, var(--rr-border-strong) 1px, transparent 1px) center bottom / 8px 2px
+      repeat-x;
+  mask-image: linear-gradient(90deg, transparent 2%, #000 30%, #000 70%, transparent 98%);
 }
 .rr-about-name {
   margin: 0;
+  font-family: var(--rr-font-display);
   font-size: 22px;
   font-weight: 600;
   line-height: 1.2;
@@ -144,7 +169,7 @@ function showShortcuts(): void {
 .rr-about-jobs .v-icon {
   flex: none;
   margin-top: 1px;
-  color: var(--rr-accent);
+  color: var(--rr-kind, var(--rr-accent));
 }
 .rr-about-job {
   font-size: 14px;
@@ -153,14 +178,14 @@ function showShortcuts(): void {
 .rr-about-text {
   font-size: 13px;
   line-height: 1.5;
-  color: var(--rr-muted);
+  color: var(--rr-text-2);
 }
 .rr-about-facts {
   margin: 0;
   padding-top: 14px;
   border-top: 1px solid var(--rr-border);
   display: grid;
-  gap: 6px;
+  gap: 7px;
   font-size: 13px;
 }
 .rr-about-facts > div {
@@ -176,5 +201,8 @@ function showShortcuts(): void {
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.rr-about-quiet {
+  color: var(--rr-muted);
 }
 </style>

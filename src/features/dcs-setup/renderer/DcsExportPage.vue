@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { dcsSetupContract, type ExportAction, type ExportState } from '../contract';
@@ -99,7 +100,12 @@ const toolName = (tool?: string): string =>
     <div v-if="message" class="exp-message rr-ok" data-testid="export-message">
       <v-icon icon="mdi-check" size="16" /> {{ message }}
     </div>
-    <div v-if="!view && !error" class="rr-empty">Reading Export.lua…</div>
+    <PageSkeleton
+      v-if="!view && !error"
+      label="Reading the export script…"
+      shape="text"
+      :rows="5"
+    />
     <NotOnThisPc
       v-else-if="view?.dcsFound === false"
       name="DCS World"

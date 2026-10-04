@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { onMachineChanged } from '../../../renderer/machine';
 import AiTab from './AiTab.vue';
 import PayloadDialog from './PayloadDialog.vue';
@@ -88,7 +89,7 @@ onBeforeUnmount(() => {
       {{ store.error }}
     </v-alert>
 
-    <div v-if="store.loading" class="rr-panel rr-empty">Reading DCS's input files…</div>
+    <PageSkeleton v-if="store.loading" label="Reading DCS's input files…" />
 
     <div
       v-else-if="store.list && !store.list.available"

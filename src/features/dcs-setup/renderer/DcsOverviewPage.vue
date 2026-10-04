@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { dcsSetupContract, type Overview } from '../contract';
@@ -75,7 +76,7 @@ const launchLine = (launch: { exe: string; args: string[] }): string =>
       <v-icon icon="mdi-check" size="16" /> {{ message }}
     </div>
 
-    <div v-if="!view && !error" class="rr-empty">Looking for DCS…</div>
+    <PageSkeleton v-if="!view && !error" label="Looking for DCS…" />
 
     <NotOnThisPc
       v-else-if="view && !view.found"

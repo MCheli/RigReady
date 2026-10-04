@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { gamesContract, type GameSummary } from '../contract';
@@ -43,7 +44,7 @@ const sources = (g: GameSummary): string =>
     <p class="rr-page-sub">Games RigReady knows in depth, and where it found them on this PC.</p>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
-    <div v-if="!loaded" class="rr-empty">Looking for games…</div>
+    <PageSkeleton v-if="!loaded" label="Looking for games…" :rows="6" />
 
     <template v-if="loaded">
       <div v-if="found.length" class="rr-panel mb-6">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { trackIrContract, type TrackIrOverview } from '../contract';
@@ -281,7 +282,7 @@ const games = (n: number): string => `${n.toLocaleString('en-US')} ${n === 1 ? '
         Profiles window (the Titles tab): TrackIR then switches by itself when that game starts.
       </div>
     </template>
-    <div v-else-if="!error" class="rr-panel rr-empty">Checking TrackIR…</div>
+    <PageSkeleton v-else-if="!error" label="Checking TrackIR…" />
   </div>
 </template>
 

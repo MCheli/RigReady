@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter, type RouteLocationNormalizedLoaded } from 'vue-router';
 import { appContract } from '../shared/appContract';
 import AboutDialog from './components/AboutDialog.vue';
@@ -7,10 +7,17 @@ import BrandMark from './components/BrandMark.vue';
 import CommandPalette from './components/CommandPalette.vue';
 import ShortcutsOverlay from './components/ShortcutsOverlay.vue';
 import ToastHost from './components/ToastHost.vue';
-import { featureCommands, manifests } from './features';
+import { manifests } from './features';
 import { useClient } from './ipc';
 import { notifyMachineChanged } from './machine';
-import { aboutOpen, pageEpoch, paletteOpen, shortcutsOpen } from './shell/shell';
+import {
+  aboutOpen,
+  followRigKind,
+  pageEpoch,
+  paletteOpen,
+  rigKind,
+  shortcutsOpen,
+} from './shell/shell';
 import { isTyping, shortcut, shortcutFor, type FocusTarget } from './shell/shortcuts';
 
 const route = useRoute();
@@ -24,6 +31,7 @@ const notices = ref<string[]>([]);
 const shell = useClient(appContract);
 // The tray and live scenario changes act outside the renderer; screens refresh when told.
 const off = shell.on('machineChanged', () => notifyMachineChanged());
+let stopFollowing: () => void = () => undefined;
 
 /**
  * The page shown, keyed so that a command can open it afresh (pageEpoch). The Configure
@@ -41,8 +49,20 @@ const dialogWaiting = (): boolean =>
 /** A pop-out panel (the quick look) is one tool in a small window: the shell's keys are not for it. */
 const SHELL_MIN_WIDTH = 720;
 
+function closePanels(): void {
+  paletteOpen.value = false;
+  shortcutsOpen.value = false;
+  aboutOpen.value = false;
+}
+
 function onKey(event: KeyboardEvent): void {
   if (event.defaultPrevented || event.isComposing) return;
+  if (event.key === 'Escape') {
+    // The shell's own panels close on Escape from the first moment they are open. (A dialog
+    // answers Escape itself too, but only once it has finished opening.)
+    if (!dialogWaiting()) closePanels();
+    return;
+  }
   const wanted = shortcutFor(event, isTyping(event.target as FocusTarget | null));
   if (!wanted || window.innerWidth < SHELL_MIN_WIDTH) return;
   if (dialogWaiting()) return;
@@ -58,9 +78,7 @@ function onKey(event: KeyboardEvent): void {
     shortcutsOpen.value = !shortcutsOpen.value;
     return;
   }
-  paletteOpen.value = false;
-  shortcutsOpen.value = false;
-  aboutOpen.value = false;
+  closePanels();
   if (wanted !== mode.value) void router.push(wanted === 'fly' ? '/' : '/configure');
 }
 
@@ -73,22 +91,33 @@ onMounted(async () => {
     dataRoot.value = info.value.dataRoot;
     notices.value = info.value.notices;
   }
-  // The palette's commands are not needed to draw the first screen: fetched once it is up.
-  void featureCommands().catch(() => {
-    // The palette reports a command module that does not load when it is opened.
-  });
+  // What the features offer the shell is not needed to draw the first screen: fetched once
+  // it is up, for the palette and for the accent that follows the setup's kind of game.
+  stopFollowing = await followRigKind(router);
 });
 onBeforeUnmount(() => {
   off();
+  stopFollowing();
   window.removeEventListener('keydown', onKey);
 });
+
+// On the document itself, so that dialogs and menus, which are drawn outside the app's own
+// element, carry the accent too.
+watch(
+  rigKind,
+  (kind) => {
+    if (kind) document.documentElement.dataset['rigKind'] = kind;
+    else delete document.documentElement.dataset['rigKind'];
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <v-app>
     <v-app-bar flat density="comfortable" class="shell-bar">
-      <div class="shell-brand">
-        <BrandMark :size="22" />
+      <div class="shell-brand" :data-kind="rigKind ?? 'none'" data-testid="shell-brand">
+        <BrandMark :size="22" :kind="rigKind ?? 'flight'" />
         <span>RigReady</span>
       </div>
       <nav class="shell-modes" aria-label="Mode">
@@ -163,7 +192,7 @@ onBeforeUnmount(() => {
     <component :is="overlay" v-for="(overlay, index) in overlays" :key="index" />
     <CommandPalette />
     <ShortcutsOverlay />
-    <AboutDialog :version="version" :data-root="dataRoot" />
+    <AboutDialog :version="version" :data-root="dataRoot" :kind="rigKind ?? 'flight'" />
     <ToastHost />
   </v-app>
 </template>

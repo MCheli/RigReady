@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import EmptyState from '../../../renderer/components/EmptyState.vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import {
   backupContract,
@@ -208,14 +210,14 @@ const status = (entry: ItemView): { text: string; cls: string } => {
         </v-btn>
       </div>
 
-      <div
+      <EmptyState
         v-if="scope && scope.items.length === 0"
-        class="rr-panel rr-empty"
+        art="file"
+        :title="`Nothing is tracked in &quot;${scope.name}&quot; yet`"
         data-testid="tracked-empty"
       >
-        Nothing is tracked in "{{ scope.name }}" yet. Add a suggestion below, or a file or folder of
-        your own.
-      </div>
+        Add a suggestion below, or a file or folder of your own.
+      </EmptyState>
       <div v-else-if="scope" class="rr-panel">
         <div
           v-for="entry in scope.items"
@@ -284,15 +286,15 @@ const status = (entry: ItemView): { text: string; cls: string } => {
       </div>
 
       <h2 class="rr-section-title section-gap">Suggested for this PC</h2>
-      <div v-if="!suggestions" class="rr-panel rr-empty">Looking for game and tool settings…</div>
-      <div
+      <PageSkeleton v-if="!suggestions" label="Looking for game and tool settings…" :rows="3" />
+      <EmptyState
         v-else-if="suggestions.length === 0"
-        class="rr-panel rr-empty"
+        art="search"
+        title="No supported game or tool settings were found on this PC"
         data-testid="suggestions-empty"
       >
-        No supported game or tool settings were found on this PC. Add files and folders yourself
-        above.
-      </div>
+        Add files and folders yourself above.
+      </EmptyState>
       <div
         v-for="group in suggestionGroups"
         v-else

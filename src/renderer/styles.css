@@ -21,6 +21,13 @@
   /* The keyboard focus ring. */
   --rr-focus: #a8d1f5;
   --rr-radius: 10px;
+  /*
+   * A quiet accent that follows the kind of game the setup in use is for (--rr-kind, set
+   * below): the accent itself for flight, this violet for racing. Decoration only: on the
+   * mark, the header's index and the line that says where you are. Never on a control,
+   * and never a status.
+   */
+  --rr-kind-racing: #b197fc;
 
   /*
    * Depth, in two steps. 1: what lies on the page (a panel): a faint top light and a short
@@ -53,6 +60,11 @@
   --v-font-heading: var(--rr-font-display);
 
   color-scheme: dark;
+}
+
+/* Set by the shell from the setup in use; without it, var(--rr-kind, var(--rr-accent)) is the accent. */
+:root[data-rig-kind='racing'] {
+  --rr-kind: var(--rr-kind-racing);
 }
 
 html {
@@ -215,6 +227,32 @@ body {
   font-size: var(--rr-text-md);
   line-height: 1.5;
 }
+/*
+ * An empty panel looks the same everywhere (EmptyState.vue is the full form: a drawing of
+ * what is missing, a title, a sentence, one action). A panel that only says "nothing here"
+ * in words, with no drawing or icon of its own, gets the plain drawing from here: four
+ * corner marks around a dashed outline.
+ */
+.rr-panel.rr-empty {
+  padding: 40px 24px 44px;
+}
+.rr-panel.rr-empty:not(.rr-empty-state, .rr-ok, .rr-warn, .rr-bad):not(
+    :has(.v-icon, svg, .v-progress-circular)
+  )::before {
+  content: '';
+  display: block;
+  width: 76px;
+  height: 59px;
+  margin: 0 auto 12px;
+  background-color: var(--rr-border-strong);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 56' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 13V3h10M59 3h10v10M69 43v10H59M13 53H3V43'/%3E%3Crect x='22' y='17' width='28' height='22' rx='2' stroke-dasharray='3 4'/%3E%3Cpath d='M32 28h8'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.rr-empty .rr-row-title {
+  color: var(--rr-text);
+  font-size: 15px;
+  font-weight: 600;
+}
 
 /* A key as printed on the keyboard. */
 .rr-kbd {
@@ -354,6 +392,40 @@ body {
 }
 
 /*
+ * A snackbar a feature shows itself looks like the shell's toasts (ToastHost.vue): a dark
+ * raised panel with neutral words, and its tone as an icon of its own shape in front.
+ */
+.v-snackbar__wrapper {
+  background: var(--rr-surface-2);
+  color: var(--rr-text);
+  border-radius: var(--rr-radius);
+  box-shadow: var(--rr-elev-2);
+}
+.v-snackbar__wrapper .v-snackbar__content {
+  font-size: 14px;
+  letter-spacing: 0;
+}
+.v-snackbar__wrapper:is(.bg-success, .bg-warning, .bg-error) .v-snackbar__content::before {
+  font-family: 'Material Design Icons';
+  font-size: 20px;
+  line-height: 1;
+  margin-right: 10px;
+  vertical-align: -4px;
+}
+.v-snackbar__wrapper.bg-success .v-snackbar__content::before {
+  content: '\F05E0';
+  color: var(--rr-ok);
+}
+.v-snackbar__wrapper.bg-warning .v-snackbar__content::before {
+  content: '\F0026';
+  color: var(--rr-warn);
+}
+.v-snackbar__wrapper.bg-error .v-snackbar__content::before {
+  content: '\F0159';
+  color: var(--rr-bad);
+}
+
+/*
  * Vuetify's components, refined. In Vuetify's own layer for overrides: above its component
  * styles, below its utility classes and below every style a feature writes itself.
  */
@@ -389,9 +461,15 @@ body {
     border: 1px solid var(--rr-border-strong);
     font-size: 12.5px;
   }
-  /* A link in running text: the accent, underlined, so it is not told by colour alone. */
-  a:not([class]) {
+  /*
+   * A link in running text (one that has no look of its own): the accent, underlined, so it
+   * is not told by colour alone, and the same whether or not it was followed before.
+   */
+  a:not([class]),
+  a[class=''],
+  a[class^='router-link'] {
     color: var(--rr-accent);
+    text-decoration: underline;
     text-underline-offset: 2px;
   }
 }

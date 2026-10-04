@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { audioContract, type AudioDeviceView, type AudioView } from '../contract';
@@ -204,7 +205,7 @@ onBeforeUnmount(() => stop?.());
         of them says so on the Fly screen instead of picking another device.
       </p>
     </template>
-    <div v-else-if="!loadError" class="rr-empty">Reading the audio devices…</div>
+    <PageSkeleton v-else-if="!loadError" label="Reading the audio devices…" />
   </div>
 </template>
 

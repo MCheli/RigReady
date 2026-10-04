@@ -39,8 +39,9 @@ test('first run: welcome, what was found on this PC, and two clicks to a Ready D
   await expect(page.getByTestId('capture-suggested')).toContainText(
     'The flight gear is connected and DCS World has your bindings'
   );
+  // The chosen aircraft is marked the way the page marks it: aria-current on the chip.
   await expect(page.getByTestId('capture-variant-FA-18C_hornet')).toHaveAttribute(
-    'aria-pressed',
+    'aria-current',
     'true'
   );
   await expect(page.getByTestId('capture-name').locator('input')).toHaveValue('DCS F/A-18C');

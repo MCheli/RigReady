@@ -10,6 +10,8 @@ export interface PackageFacts {
   author?: { name?: string; url?: string } | string;
   repository?: { url?: string } | string;
   bugs?: { url?: string } | string;
+  /** The packaging settings: their copyright line is the one the installer carries. */
+  build?: { copyright?: string };
 }
 
 export interface AboutLink {
@@ -23,7 +25,8 @@ export interface AboutLink {
 export interface AboutFacts {
   /** "MIT". */
   licence?: string;
-  author?: string;
+  /** The copyright line as the package states it, or one made from the author's name. */
+  copyright?: string;
   links: AboutLink[];
 }
 
@@ -60,9 +63,10 @@ export function aboutFacts(pkg: PackageFacts): AboutFacts {
   add('source', 'Source code', urlOf(pkg.repository));
   add('issues', 'Report a problem', urlOf(pkg.bugs));
   const author = typeof pkg.author === 'string' ? pkg.author : pkg.author?.name;
+  const copyright = pkg.build?.copyright?.trim() || (author ? `Copyright ${author}` : undefined);
   return {
     ...(pkg.license ? { licence: pkg.license } : {}),
-    ...(author ? { author } : {}),
+    ...(copyright ? { copyright } : {}),
     links,
   };
 }

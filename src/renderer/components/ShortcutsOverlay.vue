@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { paletteOpen, shortcutsOpen } from '../shell/shell';
+import { paletteOpen, returnFocus, shortcutsOpen } from '../shell/shell';
 import { PALETTE_KEYS, SHORTCUTS } from '../shell/shortcuts';
+
+returnFocus(shortcutsOpen);
 
 /**
  * The keyboard shortcuts, shown by "?". The list is the table the key handler reads

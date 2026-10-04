@@ -191,6 +191,11 @@ export interface FeatureCommands {
    * with a quiet accent; nothing depends on it.
    */
   setupKind?: (shell: CommandShell) => Promise<GameKind | undefined>;
+  /**
+   * Calls `changed` whenever the setup in use may have become another one, so the shell
+   * asks `setupKind` again. Returns the function that stops it.
+   */
+  onSetupChanged?: (shell: CommandShell, changed: () => void) => () => void;
 }
 
 export function defineCommands(commands: FeatureCommands): FeatureCommands {

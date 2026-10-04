@@ -295,4 +295,22 @@ export default defineCommands({
     }
     return kinds.get(game);
   },
+
+  onSetupChanged(shell, changed) {
+    const api = shell.client(flyContract);
+    // The Fly screen checks the setup it shows: a result for another setup than the last
+    // one means it switched. A changed setup file may have changed the game too.
+    let shown: string | undefined;
+    const offs = [
+      api.on('result', ({ profileId }) => {
+        if (profileId === shown) return;
+        shown = profileId;
+        changed();
+      }),
+      api.on('profilesChanged', changed),
+    ];
+    return () => {
+      for (const off of offs) off();
+    };
+  },
 });

@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import BackupsView from './BackupsView.vue';
@@ -201,7 +202,7 @@ async function backupNow(): Promise<void> {
         <BackupsView ref="backupsView" :overview="overview" />
       </div>
     </template>
-    <div v-else-if="!error" class="rr-panel rr-empty">Reading your Stream Deck setup…</div>
+    <PageSkeleton v-else-if="!error" label="Reading your Stream Deck setup…" />
   </div>
 </template>
 

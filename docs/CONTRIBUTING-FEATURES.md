@@ -227,6 +227,8 @@ export default defineFeature({
   | `ConfirmChanges.vue` | The confirmation every file-writing action asks for: your words in the default slot, the list of files that will change (`:preview`, a `ChangePreview` from your `...Preview` channel), Cancel and the action. The action stays disabled until the list is there. Props: `open`, `title`, `confirm-text`, `preview`, `error`, `busy`, `blocked`, `testid`; events `cancel`, `confirm`. Test ids: `<testid>-confirm`, `<testid>-go`, `<testid>-cancel`. |
   | `ChangePreview.vue` | The list alone ("this is what will change"), for a page that shows the plan inline. Each kind of change has its own icon and word. |
   | `NotOnThisPc.vue` | The one way a page says that the game or tool it is about is not on this PC: what is missing, where RigReady looked (`:looked`), and what to do (`game-page` links to the page where the folder can be chosen by hand; the default slot and the `action` slot replace the text and add a button). |
+  | `PageSkeleton.vue` | What a page shows while it is still reading, instead of a line of text: `<PageSkeleton v-if="!view && !error" label="Reading the monitors…" />`. The label (ending in an ellipsis) is on the page for a screen reader, and the tour, the accessibility scan and the crawl all see the outline as "still loading". Props: `label`, `rows` (4), `shape` (`rows` \| `cards` \| `text`). It fades in after a moment, so a page that answers at once never flashes it. |
+  | `EmptyState.vue` | The one way a page says there is nothing to show yet: a small line drawing (`art`: `nothing`, `search`, `backup`, `snapshot`, `shield`, `monitor`, `device`, `file`, `setup`, `game`; drawn by `EmptyArt.vue`), a `title`, a sentence in the default slot, and one action in the `action` slot that leads where the thing is made. `bare` when it sits inside a panel that is already there. Never for an error and never in a status colour. A panel that only carries `rr-panel rr-empty` and words gets a plain drawing from the stylesheet, so no empty panel is bare. |
 
 - **An empty state leads somewhere.** A page with nothing to show says what is missing and what to do next, with a link or a button to the place where it is done ("No setups yet" leads to the capture page). Never an error, never a red status for hardware nobody asked for, never a blank panel. `tests/e2e/generic-rig.e2e.ts` opens every page on a PC that has nothing.
 - Every control is keyboard reachable and has a name (an `aria-label` where there is no visible text); `tests/e2e/a11y.e2e.ts` and `keyboard.e2e.ts` check it.
@@ -237,6 +239,42 @@ export default defineFeature({
 - **A small extra window.** `ctx.ports.window.openPanel({ id, route, title, width, height, alwaysOnTop? })` opens one of your routes in a window of its own, or brings it forward when a window with that id is already open. It receives the same events as the main window and closes with the app. The cheat-sheet quick look (`/configure/cheat-sheets/quick`) is the example. Work in progress: the pop-out remembers its position. <!-- verify after merge -->
 - A setting of your own that belongs on the Settings page: list it in the manifest as `settings: [{ title, component, order? }]`. Settings gives the component a titled panel below its own sections; the component reads and stores the setting through your feature's IPC (`src/features/devices/renderer/NotificationSettings.vue` is the example, shown on the Devices page too).
 - Linking to another feature's page is done by route, never by import. Two routes take parameters, validated on arrival: `/configure/devices?profile=<setup id>&item=<checklist item id>` opens the device a checklist item is about, connected or not (the Fly screen's Diagnose link), and the route a `BindingReader` gives (`ctx.bindings.get('dcs')?.route({ guid, aircraftId })`) opens a controller's bindings.
+
+### The command palette: `commands.ts`
+
+Ctrl+K opens one field over every page and over the commands features contribute. Your pages are in it already: every navigation entry, and every other route of your manifest that a link can open (named after the page it belongs to, "DCS World: Screens"). To give a page a better name, more words to be found by, or to offer something to do, add `src/features/<name>/commands.ts`; it is found by glob like the manifest (`tests/unit/selfRegistration.test.ts` proves it on the test feature):
+
+```ts
+import { commandFailed, defineCommands } from '../../shared/feature';
+import { backupContract } from './contract';
+
+export default defineCommands({
+  feature: 'backup',                                   // the folder's name
+  commands: [
+    { id: 'backup.now', title: 'Back up now', icon: 'mdi-backup-restore', keywords: ['save'],
+      async run(shell) {                               // something to do
+        shell.progress('Backing up…');                 // shown while it runs
+        const done = await shell.client(backupContract).backUp({ scope: { kind: 'full' } });
+        if (!done.ok) return commandFailed(done.error, { label: 'Open Backups', to: '/configure/backups' });
+        return { tone: 'ok', text: `Backed up ${done.value.backup.fileCount} files` };
+      } },
+    { id: 'backup.tracked', title: 'Tracked files', to: '/configure/backups?tab=tracked' },  // a page to open
+  ],
+  async list(shell) { return []; },                    // optional: one command per setup, layout, aircraft
+});
+```
+
+- An id starts with the feature's name; a command has either `to` (an in-app route) or `run`, never neither: a command that does nothing is refused by name.
+- `run` gets a `CommandShell`: `client(contract)` (the typed client, as `useClient` gives a page), `go(route)` (opens a page, afresh when it is the one on screen), `route()`, `machineChanged()` (call it after changing the machine) and `progress(text)`. It imports nothing from `src/renderer`, so `tests/unit/paletteCommands.test.ts` runs every command against the wired main side.
+- What `run` returns is shown as a toast: `tone` (`ok`, `warn`, `bad`, `info`), `text`, an optional `detail` line and an optional `action` (`{ label, to }`). Report what the channel answered, never a "done" of your own: under the sabotage of section 15 no command may come back `ok`. Nobody can be asked from the palette, so a step that needs a confirmation is reported as not run, with the way to the page where it can be confirmed.
+- A `to` command for a route that already has a page takes its place when that page is reached from inside another; for a navigation entry, which keeps its name, the command's title and `keywords` become words the entry is found by.
+- `list` is asked each time the palette opens. When the list cannot be read, throw with the error result's message: the palette names your feature with that reason, and everything else in it still works.
+
+### Toasts, motion and the tokens
+
+- The shell's toasts (`src/renderer/shell/toast.ts`: `toasts.show({ tone, text, detail?, action? })`) are how a command reports. A `v-snackbar` of your own gets the same look from the stylesheet (a dark raised panel, its `color` as an icon in front).
+- Tokens (`src/renderer/styles.css`), beyond the colours: `--rr-border-strong` (the edge of what floats), `--rr-text-2` (running explanation), `--rr-elev-1` (a panel on the page; `rr-panel` has it) and `--rr-elev-2` (a dialog, a menu, a toast), `--rr-motion-fast` (120 ms), `--rr-motion-base` (180 ms) and `--rr-ease`, `--rr-font`, `--rr-font-display`, `--rr-font-mono`, and the sizes `--rr-text-xs` to `--rr-text-xl`. Classes: `rr-kbd` (a key), `rr-num` (digits of one width, which `body` has anyway), `rr-sr-only` (for a screen reader only).
+- Animate with the two durations and the one easing, never with a number of your own: under "reduce motion" the tokens are zero and every animation and transition is cut. Pages and dialogs already arrive on them (`.rr-page`, the `rr-dialog` transition every `v-dialog` uses). `tests/unit/designSystem.test.ts` fails a `var(--rr-…)` that is not defined.
 
 ## 5. A game module
 

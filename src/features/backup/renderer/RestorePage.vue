@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import { backupContract, type RestorePreviewView, type RestoreReportView } from '../contract';
@@ -639,7 +640,7 @@ const ACTIONS = [
         </v-btn>
       </div>
     </template>
-    <div v-else-if="!error" class="rr-panel rr-empty">Reading the backup…</div>
+    <PageSkeleton v-else-if="!error" label="Reading the backup…" />
   </div>
 </template>
 

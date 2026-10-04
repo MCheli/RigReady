@@ -1,9 +1,11 @@
-import { computed, ref, shallowRef, type ComputedRef, type Ref } from 'vue';
+import { computed, ref, shallowRef, watch, type ComputedRef, type Ref } from 'vue';
 import type { Router } from 'vue-router';
 import type { CommandShell, FeatureCommands } from '../../shared/feature';
+import type { GameKind } from '../../shared/models';
 import { featureCommands, manifests } from '../features';
 import { useClient } from '../ipc';
-import { notifyMachineChanged } from '../machine';
+import { notifyMachineChanged, onMachineChanged } from '../machine';
+import { followSetupKind } from './kind';
 import { parseRecent, remember } from './palette';
 import {
   listDynamic,
@@ -25,11 +27,61 @@ export const shortcutsOpen = ref(false);
 export const aboutOpen = ref(false);
 
 /**
+ * For a panel of the shell: when it closes, the focus goes back to what had it when it
+ * opened (the button that opened it, or wherever the keyboard was). Call it once, in the
+ * panel's setup.
+ */
+export function returnFocus(open: Ref<boolean>): void {
+  let cameFrom: HTMLElement | null = null;
+  watch(
+    open,
+    (now) => {
+      if (now) {
+        const focused = document.activeElement;
+        cameFrom = focused instanceof HTMLElement && focused !== document.body ? focused : null;
+        return;
+      }
+      const target = cameFrom;
+      cameFrom = null;
+      if (target?.isConnected) target.focus({ preventScroll: true });
+    },
+    // Before the panel is drawn or removed: what has the focus now is what to go back to.
+    { flush: 'sync' }
+  );
+}
+
+/**
  * Raised to open the page shown now afresh: a command that links to the page already on
  * screen must find it reading the parameters of the link, whether or not the page watches
  * its route.
  */
 export const pageEpoch = ref(0);
+
+/**
+ * The kind of game the setup in use is for, when a feature can say (kind.ts). The shell
+ * shows it with a quiet accent and the shape of its mark; undefined is the plain accent.
+ */
+export const rigKind = ref<GameKind>();
+
+/** Starts following it. Called once, when the shell is up; returns the function that stops it. */
+export async function followRigKind(router: Router): Promise<() => void> {
+  let modules: FeatureCommands[];
+  try {
+    modules = await featureCommands();
+  } catch {
+    // A command module that does not load is reported by the palette when it is opened;
+    // the accent simply stays the plain one.
+    return () => undefined;
+  }
+  return followSetupKind(
+    modules,
+    createCommandShell(router),
+    (kind) => {
+      rigKind.value = kind;
+    },
+    onMachineChanged
+  );
+}
 
 const leaf = (matched: { path: string }[]): string | undefined => matched[matched.length - 1]?.path;
 
