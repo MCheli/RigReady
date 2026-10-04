@@ -1702,6 +1702,31 @@ requirements:
       - "artifacts/screens/devices-health-evidence/04-copied.png"
       - "artifacts/screens/devices-health/02-hands-off.png"
 
+  - id: WOW-TOOLS-003
+    title: A layout preview that moves
+    job: configure
+    area: displays
+    priority: p2
+    done_means:
+      - "The 'apply layout' dialog on Monitors draws the monitors as they are and as the layout would leave them as one map to scale, in one frame for both: each monitor slides to its new place, turns, and switches on or off. It opens on how things are and shows the change once by itself."
+      - "A Before / After toggle flips the map by hand; monitors that are off in the state shown are listed under it; a monitor the layout wants that is not connected is drawn where it would be, dashed and marked 'not connected'."
+      - "'After' is taken from the same analysis the apply uses: it is where the monitors are once the layout has been applied."
+      - "With Windows set to show less animation nothing moves: Before and After are drawn side by side, to the same scale."
+      - "The list of differences stays in the dialog, word for word."
+    status: done
+    evidence:
+      - "src/features/displays/core/previewMap.test.ts#draws \"after\" as the layout would leave them: moved, turned, switched off, a new main display"
+      - "src/features/displays/core/previewMap.test.ts#keeps the same id for a monitor in both, so a drawing can move it"
+      - "src/features/displays/core/previewMap.test.ts#shows a monitor the layout wants that is not connected only in \"after\", where it would be"
+      - "src/features/displays/core/previewMap.test.ts#uses one frame for both states, so nothing jumps when the picture changes"
+      - "src/features/displays/core/previewMap.test.ts#says what happens to each monitor"
+      - "src/features/displays/core/service.test.ts#draws the preview from the monitors as they are, and \"after\" is where they are once applied"
+      - "tests/e2e/displays.e2e.ts#monitors: the apply preview is one map that moves from how the monitors are to how they would be, and two maps side by side when Windows asks for less motion"
+      - "artifacts/screens/display-apply-preview/01-after.png"
+      - "artifacts/screens/display-apply-preview/02-before.png"
+      - "artifacts/screens/display-apply-preview/03-side-by-side.png"
+      - "artifacts/screens/display-apply-preview/04-racing-without-the-tv.png"
+
   # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files
   # ---------------------------------------------------------------------------

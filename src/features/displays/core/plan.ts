@@ -32,6 +32,11 @@ export interface LayoutAnalysis {
    * connected now, positions moved so the main display is at 0,0.
    */
   targets: DisplayTarget[];
+  /**
+   * How far the layout's own coordinates were moved to put the main display at 0,0: a
+   * monitor the layout has at x, y ends up at x - offset.x, y - offset.y.
+   */
+  offset: { x: number; y: number };
   /** Monitors that would be on, of those that are connected. */
   enabledCount: number;
   /** Label per expected monitor id (lower case). */
@@ -232,6 +237,7 @@ export function analyzeLayout(
     missing,
     problems,
     targets,
+    offset: { x: dx, y: dy },
     enabledCount: placed.length,
     labels,
   };

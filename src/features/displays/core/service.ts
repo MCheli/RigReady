@@ -15,6 +15,7 @@ import type { LayoutApplier } from './applier';
 import { describeTargets, targetFromDisplay } from './layoutCheck';
 import { monitorLabels, monitorNumbers, type MonitorNames } from './labels';
 import { analyzeLayout, joinNames } from './plan';
+import { previewMaps } from './previewMap';
 import type { MonitorNameStore, RecoveryStore, UprightStore } from './stores';
 
 type Ctx = Pick<MainContext, 'ports' | 'settings' | 'layouts'>;
@@ -238,11 +239,8 @@ export class DisplaysService {
     if (!layout.ok) return layout;
     const current = await this.ctx.ports.displays.read();
     if (!current.ok) return current;
-    const a = analyzeLayout(
-      layout.value.displays,
-      current.value.displays,
-      await this.names.readOrEmpty()
-    );
+    const names = await this.names.readOrEmpty();
+    const a = analyzeLayout(layout.value.displays, current.value.displays, names);
     const preview: ApplyPreview = {
       layoutId: id,
       name: layout.value.name,
@@ -250,6 +248,7 @@ export class DisplaysService {
       missing: a.missing,
       problems: a.problems,
       enabledCount: a.enabledCount,
+      ...previewMaps(layout.value.displays, current.value.displays, a, names),
     };
     if (a.primaryMissing) preview.primaryMissing = a.primaryMissing;
     if (a.primaryLabel) preview.primaryLabel = a.primaryLabel;

@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { axeViolations, colourOnlyStatus } from './a11y';
 import { checkRow, expect, test } from './harness';
 
 /** The Monitors page, saved layouts, the display check and its fix. */
@@ -77,6 +78,8 @@ test('monitors: map, Identify and names, then apply Flying, Racing without the T
   await expect(dialog.getByTestId('apply-changes')).toContainText(
     'MFD centre is 1024x768, expected 768x1024'
   );
+  // The picture opens on the monitors as they are and then shows the change by itself.
+  await expect(dialog.getByTestId('layout-morph')).toHaveAttribute('data-showing', 'after');
   await shot('apply-flying-preview');
   await dialog.getByTestId('apply-confirm').click();
   await expect(page.getByTestId('keep-layout')).toBeVisible();
@@ -94,6 +97,7 @@ test('monitors: map, Identify and names, then apply Flying, Racing without the T
   await card(page, 'Racing').getByTestId('layout-apply').click();
   await expect(dialog.getByTestId('apply-missing')).toContainText('TV is not connected');
   await expect(dialog.getByTestId('apply-confirm')).toHaveText('Apply without TV');
+  await expect(dialog.getByTestId('layout-morph')).toHaveAttribute('data-showing', 'after');
   await shot('racing-without-tv');
   await dialog.getByTestId('apply-confirm').click();
   await page.getByTestId('keep-layout-keep').click();
@@ -132,6 +136,113 @@ test('monitors: map, Identify and names, then apply Flying, Racing without the T
   await expect(row(second.page, 'MFD centre')).toBeVisible();
   await expect(card(second.page, 'Desk').getByTestId('layout-desk-badge')).toBeVisible();
   await expect(second.page.getByTestId('layout-card')).toHaveCount(3);
+});
+
+test('monitors: the apply preview is one map that moves from how the monitors are to how they would be, and two maps side by side when Windows asks for less motion', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('displays-layouts', 'display-apply-preview');
+  await openMonitors(page);
+  await card(page, 'Flying').getByTestId('layout-apply').click();
+  const dialog = page.getByTestId('apply-dialog');
+  await expect(dialog).toBeVisible();
+  const morph = dialog.getByTestId('layout-morph');
+  const box = (label: string) =>
+    morph.locator(`[data-testid="morph-monitor"][data-label="${label}"]`);
+  /** Where a monitor is drawn, once it has stopped moving. */
+  const settled = async (label: string) => {
+    let last = '';
+    await expect
+      .poll(async () => {
+        const now = JSON.stringify(await box(label).boundingBox());
+        const same = now === last;
+        last = now;
+        return same;
+      })
+      .toBe(true);
+    return (await box(label).boundingBox())!;
+  };
+
+  // It opens on the monitors as they are and then shows the change by itself: the Dell
+  // goes dark, the ultrawide slides to the left edge and becomes the main display, and the
+  // three MFD screens turn upright and close up beside it.
+  await expect(morph).toHaveAttribute('data-showing', 'after');
+  await expect(morph).toHaveAttribute('data-motion', 'full');
+  await expect(morph.getByTestId('morph-caption')).toHaveText('With "Flying" applied');
+  await expect(box('DELL G3223D')).toHaveAttribute('data-on', 'false');
+  await expect(box('DELL G3223D')).toHaveAttribute('data-changes', 'turns off');
+  await expect(box('LC49G95T')).toHaveClass(/primary/);
+  await expect(box('LC49G95T')).toHaveAttribute('data-changes', 'moves, becomes the main display');
+  await expect(box('USB_Monitor (1 of 3)')).toHaveAttribute('data-rotation', '90');
+  await expect(box('USB_Monitor (1 of 3)')).toHaveAttribute('data-changes', 'turns, moves');
+  await expect(box('USB_Monitor (1 of 3)')).toContainText('768x1024');
+  await expect(morph.getByTestId('morph-off-after')).toContainText('DELL G3223D · off');
+  const frame = (await morph.getByTestId('morph-frame-after').boundingBox())!;
+  const wideAfter = await settled('LC49G95T');
+  const mfdAfter = await settled('USB_Monitor (1 of 3)');
+  expect(Math.abs(wideAfter.x - frame.x)).toBeLessThan(2);
+  expect(mfdAfter.height).toBeGreaterThan(mfdAfter.width);
+  // The list of differences is still there, word for word.
+  await expect(dialog.getByTestId('apply-changes')).toContainText(
+    'DELL G3223D is on, expected off'
+  );
+  // The dialog with its picture passes the accessibility scan.
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('after');
+
+  // Before: the same map, as the monitors are now.
+  await morph.getByTestId('morph-before').click();
+  await expect(morph).toHaveAttribute('data-showing', 'before');
+  await expect(morph.getByTestId('morph-caption')).toHaveText('As the monitors are now');
+  await expect(box('DELL G3223D')).toHaveAttribute('data-on', 'true');
+  await expect(box('DELL G3223D')).toHaveClass(/primary/);
+  await expect(box('USB_Monitor (1 of 3)')).toHaveAttribute('data-rotation', '0');
+  const wideBefore = await settled('LC49G95T');
+  const mfdBefore = await settled('USB_Monitor (1 of 3)');
+  // The ultrawide was to the right of the Dell, and the MFD screen lay flat further right.
+  expect(wideBefore.x).toBeGreaterThan(wideAfter.x + 40);
+  expect(mfdBefore.width).toBeGreaterThan(mfdBefore.height);
+  expect(mfdBefore.x).toBeGreaterThan(mfdAfter.x + 40);
+  await expect(morph.getByTestId('morph-off-before')).toContainText(
+    'Every connected monitor is on'
+  );
+  await shot('before');
+
+  // Windows set to show less animation: nothing moves, both are there side by side.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(morph).toHaveAttribute('data-motion', 'reduced');
+  await expect(morph).toHaveAttribute('data-showing', 'both');
+  await expect(morph.getByTestId('morph-before')).toHaveCount(0);
+  await expect(morph.getByTestId('morph-caption-before')).toHaveText('As the monitors are now');
+  await expect(morph.getByTestId('morph-caption-after')).toHaveText('With "Flying" applied');
+  const left = (await morph.getByTestId('morph-frame-before').boundingBox())!;
+  const right = (await morph.getByTestId('morph-frame-after').boundingBox())!;
+  expect(right.x).toBeGreaterThan(left.x + left.width);
+  expect(Math.abs(right.y - left.y)).toBeLessThan(2);
+  await expect(
+    morph
+      .getByTestId('morph-frame-before')
+      .locator('[data-testid="morph-monitor"][data-label="DELL G3223D"]')
+  ).toHaveAttribute('data-on', 'true');
+  await expect(
+    morph
+      .getByTestId('morph-frame-after')
+      .locator('[data-testid="morph-monitor"][data-label="DELL G3223D"]')
+  ).toHaveAttribute('data-on', 'false');
+  await shot('side-by-side');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await dialog.getByTestId('apply-cancel').click();
+  await expect(dialog).toHaveCount(0);
+
+  // A layout with a monitor that is not connected: it is drawn where it would be, as absent.
+  await card(page, 'Racing').getByTestId('layout-apply').click();
+  await expect(morph).toHaveAttribute('data-showing', 'after');
+  await expect(box('TV')).toHaveClass(/absent/);
+  await expect(box('TV')).toContainText('not connected');
+  await expect(box('TV')).toHaveAttribute('data-changes', 'not connected');
+  await expect(box('LC49G95T')).toHaveClass(/primary/);
+  await expect(morph.getByTestId('morph-off-after')).toContainText('DELL G3223D · off');
+  await shot('racing-without-the-tv');
 });
 
 test('monitors: edit a layout by hand; overlapping monitors are refused with a reason', async ({

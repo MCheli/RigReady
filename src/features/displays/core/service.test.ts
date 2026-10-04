@@ -168,6 +168,50 @@ describe('Monitors page: saved layouts', () => {
     });
   });
 
+  it('draws the preview from the monitors as they are, and "after" is where they are once applied', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    const shape = (
+      m: { enabled: boolean; primary: boolean; x: number; y: number; rotation: number } & {
+        width: number;
+        height: number;
+      }
+    ) =>
+      m.enabled
+        ? `${m.width}x${m.height} at ${m.x},${m.y} turned ${m.rotation}${m.primary ? ' main' : ''}`
+        : 'off';
+    const now = () => app!.ports.state.displays.map((d) => shape(d));
+    const preview = await app.invoke<ApplyPreview>('displays:preview', { id: 'flying' });
+    expect(preview.before.map(shape)).toEqual(now());
+    expect(preview.before.map((m) => m.label)).toEqual([
+      'DELL G3223D',
+      'LC49G95T',
+      'USB_Monitor (1 of 3)',
+      'USB_Monitor (2 of 3)',
+      'USB_Monitor (3 of 3)',
+    ]);
+    expect(preview.after.map(shape)).toEqual([
+      'off',
+      '5120x1440 at 0,0 turned 0 main',
+      '768x1024 at 5120,0 turned 90',
+      '768x1024 at 5888,0 turned 90',
+      '768x1024 at 6656,0 turned 90',
+    ]);
+    // The picture is a promise: this is what the monitors are after applying.
+    await app.invoke('displays:applyLayout', { id: 'flying' });
+    expect(now()).toEqual(preview.after.map(shape));
+
+    // A monitor that is not connected is in "after" only, marked as absent.
+    const racing = await app.invoke<ApplyPreview>('displays:preview', { id: 'racing' });
+    expect(racing.before).toHaveLength(5);
+    expect(racing.after.filter((m) => !m.connected).map((m) => m.label)).toEqual(['TV']);
+    expect(racing.after.find((m) => m.label === 'TV')).toMatchObject({
+      enabled: true,
+      width: 3840,
+      height: 2160,
+      y: -2160,
+    });
+  });
+
   it('applies a layout whose TV is not connected only when told to go without it', async () => {
     app = await wiredApp('displays-layouts', NO_FILES);
     const before = structuredClone(app.ports.state.displays);

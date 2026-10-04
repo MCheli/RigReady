@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 import { DisplayLayoutSchema, DisplayTargetSchema, RotationSchema } from '../../shared/models';
+import { PreviewMonitorSchema } from './core/previewMap';
 
 /** A connected monitor as the Monitors page shows it. */
 export const MonitorViewSchema = z.object({
@@ -92,6 +93,9 @@ export const ApplyPreviewSchema = z.object({
   /** Reasons it cannot be applied at all. */
   problems: z.array(z.string()),
   enabledCount: z.number().int(),
+  /** Every monitor as it is now and as it would be, for the picture of the change. */
+  before: z.array(PreviewMonitorSchema).default([]),
+  after: z.array(PreviewMonitorSchema).default([]),
 });
 export type ApplyPreview = z.infer<typeof ApplyPreviewSchema>;
 

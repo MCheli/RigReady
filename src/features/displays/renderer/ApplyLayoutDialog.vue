@@ -4,6 +4,7 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import { displaysContract, type ApplyPreview } from '../contract';
 import { joinNames } from '../core/plan';
+import LayoutMorph from './LayoutMorph.vue';
 
 /**
  * "What would change" before a saved layout is applied. Monitors the layout needs that
@@ -67,7 +68,8 @@ async function apply(): Promise<void> {
 <template>
   <v-dialog
     :model-value="layoutId !== undefined"
-    max-width="560"
+    max-width="680"
+    scrollable
     @update:model-value="emit('close')"
   >
     <v-card data-testid="apply-dialog">
@@ -108,11 +110,20 @@ async function apply(): Promise<void> {
           <div v-if="nothingToDo" class="apply-same" data-testid="apply-nothing">
             <v-icon icon="mdi-check" class="rr-ok" /> The monitors already match this layout.
           </div>
-          <template v-else-if="preview.changes.length">
-            <div class="rr-section-title">What is different now</div>
-            <ul class="apply-list" data-testid="apply-changes">
-              <li v-for="line in preview.changes" :key="line">{{ line }}</li>
-            </ul>
+          <template v-else>
+            <LayoutMorph
+              v-if="preview.before.length"
+              class="apply-picture"
+              :before="preview.before"
+              :after="preview.after"
+              :name="preview.name"
+            />
+            <template v-if="preview.changes.length">
+              <div class="rr-section-title">What is different now</div>
+              <ul class="apply-list" data-testid="apply-changes">
+                <li v-for="line in preview.changes" :key="line">{{ line }}</li>
+              </ul>
+            </template>
           </template>
           <p v-if="canApply" class="rr-muted apply-note">
             The screens may flicker. You then have {{ seconds }} seconds to keep the new layout; if
@@ -147,7 +158,19 @@ async function apply(): Promise<void> {
 .apply-list {
   margin: 4px 0 8px;
   padding-left: 20px;
-  font-size: 13.5px;
+  font-size: 13px;
+  columns: 2;
+  column-gap: 32px;
+}
+.apply-list li {
+  break-inside: avoid;
+}
+.apply-picture {
+  margin-bottom: 18px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--rr-border);
+  border-radius: var(--rr-radius);
+  background: var(--rr-bg);
 }
 .apply-note {
   font-size: 13px;
