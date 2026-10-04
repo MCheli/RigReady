@@ -245,7 +245,9 @@ describe('NFR-007 a rig of impostors: every name the same, every id different', 
     console.log(
       `  NFR-007: impostor rig, check types audited: ${[...exercised].sort().join(', ')}`
     );
-  });
+    // Every check type of every feature, on a rig of impostors: seconds on a quiet PC, and
+    // several times that while other test runs share it.
+  }, 120_000);
 
   it('a name the owner gave stays with the ids it was given to, not with the product name', async () => {
     app = await wiredApp('devices-rig', { files: [] });
