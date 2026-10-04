@@ -244,6 +244,10 @@ const EDGES: Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 .smap-display-size {
   font-size: 10.5px;
 }
+/* On the tinted main screen the muted grey is too faint to read. */
+.smap-display.main .smap-display-size {
+  color: color-mix(in srgb, var(--rr-text) 75%, var(--rr-muted));
+}
 .smap-main-tag {
   position: absolute;
   inset: 0;
@@ -254,7 +258,7 @@ const EDGES: Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--rr-accent) 80%, transparent);
+  color: var(--rr-accent);
   pointer-events: none;
 }
 .smap-window {

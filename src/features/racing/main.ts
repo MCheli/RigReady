@@ -41,7 +41,7 @@ import {
   wheelSettingsCheck,
 } from './core/fanatec/wheelSettings';
 import { iracingView, previewRepairIracing, repairIracing } from './core/iracing/iracing';
-import { lmuView } from './core/lmu/lmu';
+import { lmuView, previewRepairLmu, repairLmu } from './core/lmu/lmu';
 
 export default defineFeatureMain({
   id: 'racing',
@@ -96,6 +96,11 @@ export default defineFeatureMain({
           const view = await lmuView(rctx);
           return ok({ ...view, devices: await named(view.devices) });
         },
+        async lmuRepair() {
+          const repaired = await repairLmu(rctx);
+          return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
+        },
+        lmuRepairPreview: () => previewRepairLmu(rctx),
         async beamng() {
           const view = await beamngView(rctx);
           return ok({ ...view, maps: await named(view.maps) });

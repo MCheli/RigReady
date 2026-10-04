@@ -547,6 +547,7 @@ onBeforeUnmount(() => {
                   density="compact"
                   hide-details
                   class="scr-monitor"
+                  :aria-label="`Monitor for ${row.label}`"
                   :data-testid="`screens-monitor-${row.name}`"
                   @update:model-value="setMonitor(row.name, $event)"
                 />

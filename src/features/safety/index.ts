@@ -8,7 +8,7 @@ export default defineFeature({
       icon: 'mdi-shield-check-outline',
       to: '/configure/safety',
       order: 920,
-      section: 'App',
+      section: 'RigReady',
     },
   ],
   routes: [{ path: '/configure/safety', component: () => import('./renderer/SafetyPage.vue') }],

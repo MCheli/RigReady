@@ -7,7 +7,7 @@ export default defineFeature({
       title: 'TrackIR',
       icon: 'mdi-head-sync-outline',
       to: '/configure/trackir',
-      order: 340,
+      order: 450,
       section: 'Hardware',
     },
   ],

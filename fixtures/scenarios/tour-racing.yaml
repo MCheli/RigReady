@@ -1,0 +1,6 @@
+description: Racing rig with an iRacing setup
+rig: mark-full
+extends: mark-racing.yaml
+# For the page-by-page tour (tests/e2e/tour.e2e.ts): the racing rig as a user who already has a setup sees it.
+profiles:
+  - profiles/racing-iracing.yaml

@@ -9,7 +9,7 @@ export default defineFeature({
       icon: 'mdi-stethoscope',
       to: '/configure/diagnostics',
       order: 930,
-      section: 'App',
+      section: 'RigReady',
     },
   ],
   routes: [

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DeviceTabs from './DeviceTabs.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { onMachineChanged } from '../../../renderer/machine';
@@ -211,6 +212,7 @@ watch(
         >
       </div>
     </div>
+    <DeviceTabs />
 
     <div
       v-if="identifying"

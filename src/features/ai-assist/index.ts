@@ -7,8 +7,8 @@ export default defineFeature({
       title: 'Binding guide',
       icon: 'mdi-school-outline',
       to: '/configure/ai-assist',
-      order: 220,
-      section: 'Bindings',
+      order: 310,
+      section: 'Controls',
     },
   ],
   routes: [

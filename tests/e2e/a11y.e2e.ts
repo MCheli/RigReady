@@ -19,8 +19,36 @@ const BUSY =
 
 type Problems = Record<string, unknown[]>;
 
+/**
+ * The page as the user reads it: it has stopped changing (the same text three times in a
+ * row, nothing loading). A page caught while its data arrives has half-drawn controls,
+ * which is not what anyone reads.
+ */
+async function settled(page: Page, where: string): Promise<void> {
+  let last = '';
+  let same = 0;
+  await expect
+    .poll(
+      async () => {
+        const busy = await page.locator(BUSY).count();
+        const text = await page.locator('body').innerText();
+        same = text === last && busy === 0 ? same + 1 : 0;
+        last = text;
+        return same;
+      },
+      { message: `${where} settles`, intervals: [150], timeout: 20_000 }
+    )
+    .toBeGreaterThanOrEqual(3);
+}
+
 /** The whole page, nothing excluded. */
-async function scan(page: Page, where: string, problems: Problems): Promise<void> {
+async function scan(
+  page: Page,
+  where: string,
+  problems: Problems,
+  options: { settle?: boolean } = {}
+): Promise<void> {
+  if (options.settle !== false) await settled(page, where);
   const found = [...(await axeViolations(page)), ...(await colourOnlyStatus(page))];
   if (found.length > 0) problems[where] = found;
 }
@@ -56,7 +84,8 @@ test('a11y: the Fly screen passes axe when ready, when not ready and while Make 
   // While Make ready runs: the monitor fix waits for "Keep this layout?", so the run holds still.
   await page.getByTestId('make-ready').click();
   await expect(page.getByTestId('keep-layout')).toBeVisible();
-  await scan(page, 'Fly, Make ready running, keep-layout prompt', problems);
+  // No waiting here: the prompt counts down and takes the layout back by itself.
+  await scan(page, 'Fly, Make ready running, keep-layout prompt', problems, { settle: false });
   await shot('make-ready-running');
   await page.getByTestId('keep-layout-keep').click();
   await expect(page.getByTestId('keep-layout')).toBeHidden();

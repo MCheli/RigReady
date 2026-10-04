@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import ConfirmChanges from '../../../renderer/components/ConfirmChanges.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
-import { onMachineChanged } from '../../../renderer/machine';
-import { racingContract, type LmuView } from '../contract';
+import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
+import { racingContract, type LmuView, type WritePreviewView } from '../contract';
 import BackupsPanel from './BackupsPanel.vue';
 import StateChip from './StateChip.vue';
 import './racing.css';
@@ -11,6 +12,7 @@ import './racing.css';
 const api = useClient(racingContract);
 const view = ref<LmuView>();
 const error = ref<string>();
+const message = ref<string>();
 const filter = ref('');
 
 async function load(): Promise<void> {
@@ -35,6 +37,38 @@ const rows = computed(() => {
 const offline = computed(
   () => view.value?.devices.filter((d) => d.state === 'missing' || d.state === 'other-mode') ?? []
 );
+
+/** Controllers Windows renamed that RigReady can put right; the repair covers all of them. */
+const renamed = computed(() => view.value?.devices.filter((d) => d.rename) ?? []);
+const confirming = ref(false);
+const repairing = ref(false);
+/** What the repair would change; loaded when the confirmation opens. */
+const repairPreview = ref<WritePreviewView>();
+const repairPreviewError = ref<string>();
+
+async function askRepair(): Promise<void> {
+  repairPreview.value = undefined;
+  repairPreviewError.value = undefined;
+  confirming.value = true;
+  const result = await api.lmuRepairPreview();
+  if (!confirming.value) return;
+  if (result.ok) repairPreview.value = result.value;
+  else repairPreviewError.value = errorText(result.error);
+}
+
+async function repair(): Promise<void> {
+  repairing.value = true;
+  error.value = undefined;
+  message.value = undefined;
+  const result = await api.lmuRepair();
+  repairing.value = false;
+  confirming.value = false;
+  if (result.ok) {
+    message.value = result.value.message;
+    notifyMachineChanged();
+  } else error.value = errorText(result.error);
+  await load();
+}
 </script>
 
 <template>
@@ -56,7 +90,12 @@ const offline = computed(
       >
     </div>
 
-    <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
+    <v-alert v-if="error" type="error" variant="tonal" class="mb-4" data-testid="lmu-error">{{
+      error
+    }}</v-alert>
+    <div v-if="message" class="rc-message rr-ok" data-testid="lmu-message">
+      <v-icon icon="mdi-check" size="16" /> {{ message }}
+    </div>
 
     <template v-if="view">
       <NotOnThisPc
@@ -126,6 +165,24 @@ const offline = computed(
               </div>
               <StateChip :state="d.state" />
             </div>
+            <div v-if="d.rename" class="lmu-fix" data-testid="lmu-repair-panel">
+              <p class="mb-2">
+                Windows now calls this controller <strong>{{ d.rename.name }}</strong
+                >. Le Mans Ultimate finds its controllers by name, so
+                {{
+                  d.rename.bindings === 1 ? 'the 1 binding' : `the ${d.rename.bindings} bindings`
+                }}
+                made under the old name no longer reach it. RigReady can put the new name into the
+                game's bindings file instead.
+              </p>
+              <v-btn
+                color="primary"
+                :disabled="view.running"
+                data-testid="lmu-repair"
+                @click="askRepair"
+                >Update Le Mans Ultimate…</v-btn
+              >
+            </div>
             <div v-if="d.forceFeedback.length" class="rc-grid lmu-pairs" data-testid="lmu-ffb">
               <div v-for="p in d.forceFeedback" :key="p.label" class="rc-pair">
                 <span class="rc-pair-label">{{ p.label }}</span
@@ -190,6 +247,46 @@ const offline = computed(
         @restored="load"
       />
     </template>
+
+    <ConfirmChanges
+      :open="confirming"
+      title="Put the new controller name into Le Mans Ultimate?"
+      confirm-text="Update Le Mans Ultimate"
+      :preview="repairPreview"
+      :error="repairPreviewError"
+      :busy="repairing"
+      testid="lmu-repair"
+      @cancel="confirming = false"
+      @confirm="repair"
+    >
+      <div v-for="d in renamed" :key="d.key" data-testid="lmu-repair-what">
+        <template v-if="d.rename?.exact">
+          The game already lists <strong>{{ d.rename.name }}</strong
+          >. RigReady points the {{ d.rename.bindings }} bindings made for
+          <strong>{{ d.name }}</strong> at it. Nothing else in the file changes.
+        </template>
+        <template v-else-if="d.rename">
+          RigReady replaces <strong>{{ d.name }}</strong> with
+          <strong>{{ d.rename.name }}</strong> in the controller's entry and in its
+          {{ d.rename.bindings }} bindings. Nothing else in the file changes.
+        </template>
+      </div>
+      <template #after>
+        <div
+          v-if="renamed.some((d) => d.rename && !d.rename.exact)"
+          class="rc-notice warn mt-3"
+          data-testid="lmu-unverified"
+        >
+          <v-icon icon="mdi-flask-outline" class="rr-warn" />
+          <div>
+            Not yet verified in the game. The id Le Mans Ultimate gives a controller ends in a code
+            whose origin is not known; RigReady keeps that code as it is and changes only the name
+            in front of it. If the game still shows the controls as not bound, undo this on the
+            Safety page and bind them in the game.
+          </div>
+        </div>
+      </template>
+    </ConfirmChanges>
   </div>
 </template>
 
@@ -205,5 +302,9 @@ const offline = computed(
 }
 .lmu-pairs {
   margin: 0 0 6px 36px;
+}
+.lmu-fix {
+  padding: 0 16px 14px 52px;
+  font-size: 13px;
 }
 </style>

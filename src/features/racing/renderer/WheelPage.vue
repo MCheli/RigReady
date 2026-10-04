@@ -244,10 +244,13 @@ const STATUS = {
           <h2 class="rr-section-title">Your tuning presets</h2>
           <v-spacer />
           <span v-if="dirty" class="rc-hint">Not saved yet</span>
+          <span v-else id="presets-save-hint" class="rc-hint">Nothing to save</span>
           <v-btn
             color="primary"
             size="small"
             :disabled="!dirty"
+            :title="dirty ? undefined : 'Change a value below, then save.'"
+            :aria-describedby="dirty ? undefined : 'presets-save-hint'"
             :loading="saving"
             data-testid="presets-save"
             @click="save"

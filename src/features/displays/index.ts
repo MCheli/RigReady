@@ -8,7 +8,7 @@ export default defineFeature({
       title: 'Monitors',
       icon: 'mdi-monitor-multiple',
       to: '/configure/displays',
-      order: 310,
+      order: 410,
       section: 'Hardware',
     },
   ],

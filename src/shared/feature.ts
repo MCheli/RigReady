@@ -10,9 +10,16 @@ export interface NavEntry {
   icon: string;
   /** Route path, e.g. "/configure/displays". */
   to: string;
-  /** Lower comes first. Setup 100-199, bindings 200-299, tools 300-399, settings 900+. */
+  /** Lower comes first. Setups 100s, Games 200s, Controls 300s, Hardware 400s, RigReady 900s. */
   order: number;
-  section: 'Setup' | 'Bindings' | 'Hardware' | 'App';
+  /**
+   * Setups: what you fly or race with, and keeping it safe (setups, backups, sharing).
+   * Games: the games found on this PC and what each needs set up.
+   * Controls: what the buttons do (bindings, the binding guide, cheat sheets).
+   * Hardware: the devices, monitors, audio and helper tools of the rig.
+   * RigReady: the app itself (settings, the record of changes, diagnostics).
+   */
+  section: 'Setups' | 'Games' | 'Controls' | 'Hardware' | 'RigReady';
 }
 
 /**
@@ -69,7 +76,13 @@ export function collectManifests(
     });
 }
 
-const SECTION_ORDER: NavEntry['section'][] = ['Setup', 'Bindings', 'Hardware', 'App'];
+const SECTION_ORDER: NavEntry['section'][] = [
+  'Setups',
+  'Games',
+  'Controls',
+  'Hardware',
+  'RigReady',
+];
 
 /** The Configure navigation: every feature's entries by section, in order. */
 export function navSectionsOf(

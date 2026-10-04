@@ -8,8 +8,8 @@ export default defineFeature({
       title: 'DCS bindings',
       icon: 'mdi-controller',
       to: '/configure/dcs-bindings',
-      order: 210,
-      section: 'Bindings',
+      order: 300,
+      section: 'Controls',
     },
   ],
   routes: [

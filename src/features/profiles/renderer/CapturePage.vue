@@ -513,7 +513,7 @@ onMounted(capture);
                   :color="variant === v.id ? 'primary' : undefined"
                   size="small"
                   :data-testid="`capture-variant-${v.id}`"
-                  :aria-pressed="variant === v.id"
+                  :aria-current="variant === v.id ? 'true' : undefined"
                   @click="chooseVariant(v.id)"
                   >{{ v.name }}</v-chip
                 >
@@ -919,13 +919,15 @@ onMounted(capture);
             color="primary"
             :disabled="!canSave"
             :loading="saving"
+            :title="!name.trim() ? 'Give the setup a name to create it.' : undefined"
+            :aria-describedby="!name.trim() ? 'capture-save-hint' : undefined"
             data-testid="capture-save"
             @click="save"
           >
             Create setup
           </v-btn>
         </div>
-        <div v-if="!name.trim() && !loading" class="cap-summary-hint">
+        <div v-if="!name.trim() && !loading" id="capture-save-hint" class="cap-summary-hint">
           Give the setup a name to create it.
         </div>
       </aside>

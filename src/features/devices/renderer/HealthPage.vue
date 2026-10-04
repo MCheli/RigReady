@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DeviceTabs from './DeviceTabs.vue';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { devicesContract } from '../contract';
@@ -122,6 +123,7 @@ const sections = computed(() => [
       game controller for
       {{ SECONDS }} seconds while nobody touches anything.
     </p>
+    <DeviceTabs />
 
     <div v-if="running" class="rr-panel health-running" data-testid="health-running">
       <div class="health-count">

@@ -4,9 +4,17 @@ import { navSections } from '../features';
 
 <template>
   <div class="configure">
-    <aside class="configure-nav" data-testid="configure-nav">
-      <div v-for="group in navSections" :key="group.section" class="configure-group">
-        <div class="rr-section-title configure-group-title">{{ group.section }}</div>
+    <nav class="configure-nav" data-testid="configure-nav" aria-label="Configure">
+      <div
+        v-for="group in navSections"
+        :key="group.section"
+        class="configure-group"
+        role="group"
+        :aria-label="group.section"
+      >
+        <div class="rr-section-title configure-group-title" aria-hidden="true">
+          {{ group.section }}
+        </div>
         <router-link
           v-for="entry in group.entries"
           :key="entry.to"
@@ -15,11 +23,11 @@ import { navSections } from '../features';
           active-class="active"
           :data-testid="`nav-${entry.to.split('/').pop()}`"
         >
-          <v-icon :icon="entry.icon" size="18" />
+          <v-icon :icon="entry.icon" size="17" />
           <span>{{ entry.title }}</span>
         </router-link>
       </div>
-    </aside>
+    </nav>
     <div class="configure-content">
       <router-view />
     </div>
@@ -31,33 +39,44 @@ import { navSections } from '../features';
   display: flex;
   min-height: calc(100vh - 56px);
 }
+/*
+ * Five groups, about eighteen entries: sized so all of it is visible at the default window
+ * height (tests/e2e/tour.e2e.ts checks that). A smaller window scrolls, with a thin bar.
+ */
 .configure-nav {
-  width: 216px;
+  width: 208px;
   flex-shrink: 0;
   border-right: 1px solid var(--rr-border);
   background: var(--rr-surface);
-  padding: 20px 10px;
+  padding: 14px 10px 12px;
   position: sticky;
   top: 56px;
   align-self: flex-start;
   height: calc(100vh - 56px);
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rr-border) transparent;
 }
 .configure-group {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
+}
+.configure-group:last-child {
+  margin-bottom: 0;
 }
 .configure-group-title {
   padding: 0 10px;
+  margin-bottom: 3px;
 }
 .configure-link {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 5px 10px;
   border-radius: 7px;
   color: var(--rr-muted);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13.5px;
+  line-height: 20px;
 }
 .configure-link:hover {
   color: var(--rr-text);

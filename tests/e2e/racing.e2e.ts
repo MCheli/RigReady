@@ -326,6 +326,81 @@ test('racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a 
   await shot('lmu-unplugged');
 });
 
+test('racing: Le Mans Ultimate bindings are pointed at a wheel base Windows renamed', async ({
+  rig,
+}) => {
+  const { page, shot, home, mutate } = await rig.launch(
+    'racing-lmu-renamed-wheel',
+    'racing-lmu-renamed'
+  );
+  const file = path.join(
+    home,
+    'Program Files (x86)/Steam/steamapps/common/Le Mans Ultimate/UserData/player/direct input.json'
+  );
+  const before = await fs.readFile(file, 'utf8');
+  expect(before).toContain('"product name": "Fanatec Podium DD2 Wheel Base"');
+
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-racing').click();
+  const card = page.locator('[data-testid="racing-game-card"][data-game="lmu"]');
+  await expect(card).toContainText('1 controller has a new name');
+  await shot('overview');
+
+  await card.click();
+  const device = page.getByTestId('lmu-device');
+  await expect(device).toHaveAttribute('data-state', 'renamed');
+  await expect(device.getByTestId('state-chip')).toHaveText('New name');
+  await expect(page.getByTestId('lmu-repair-panel')).toContainText(
+    'Windows now calls this controller FANATEC Podium Wheel Base DD2'
+  );
+  await expect(page.getByTestId('lmu-repair-panel')).toContainText('the 37 bindings');
+  await shot('renamed');
+
+  // While the game runs the repair is not available; closed again, it is.
+  await mutate([
+    { op: 'startProcess', name: 'Le Mans Ultimate.exe', path: 'C:\\Games\\Le Mans Ultimate.exe' },
+  ]);
+  await expect(page.getByTestId('lmu-running')).toBeVisible();
+  await expect(page.getByTestId('lmu-repair')).toBeDisabled();
+  await mutate([{ op: 'stopProcess', name: 'Le Mans Ultimate.exe' }]);
+  await expect(page.getByTestId('lmu-repair')).toBeEnabled();
+
+  await page.getByTestId('lmu-repair').click();
+  const confirm = page.getByTestId('lmu-repair-confirm');
+  await expect(confirm).toBeVisible();
+  await expect(page.getByTestId('lmu-repair-what')).toContainText(
+    'RigReady replaces Fanatec Podium DD2 Wheel Base with FANATEC Podium Wheel Base DD2'
+  );
+  await expect(confirm).toContainText('direct input.json');
+  await expect(confirm).toContainText('1 file modified');
+  await expect(page.getByTestId('lmu-unverified')).toContainText('Not yet verified in the game');
+  // Nothing is written by asking.
+  expect(await fs.readFile(file, 'utf8')).toBe(before);
+  await shot('confirm');
+
+  await page.getByTestId('lmu-repair-go').click();
+  await expect(page.getByTestId('lmu-message')).toContainText(
+    'Pointed 37 bindings at FANATEC Podium Wheel Base DD2'
+  );
+  await expect(device).toHaveAttribute('data-state', 'connected');
+  // Nothing left to repair: the offer is gone.
+  await expect(page.getByTestId('lmu-repair-panel')).toHaveCount(0);
+  await expect(page.getByTestId('lmu-repair')).toHaveCount(0);
+  await shot('repaired');
+  const after = await fs.readFile(file, 'utf8');
+  expect(after).toContain('"product name": "FANATEC Podium Wheel Base DD2"');
+  expect(after).not.toContain('Fanatec Podium DD2 Wheel Base');
+
+  // One action on the Safety page; Undo puts the file back as it was.
+  await page.getByTestId('nav-safety').click();
+  const group = page.locator('[data-testid="change-group"]').first();
+  await expect(group).toHaveAttribute(
+    'data-reason',
+    'Point Le Mans Ultimate at the new name of FANATEC Podium Wheel Base DD2'
+  );
+  await shot('safety');
+});
+
 test('racing: BeamNG.drive older user folders, per-vehicle maps and a replaced wheel base', async ({
   rig,
 }) => {

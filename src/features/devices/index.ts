@@ -8,7 +8,7 @@ export default defineFeature({
       title: 'Devices',
       icon: 'mdi-controller-classic-outline',
       to: '/configure/devices',
-      order: 300,
+      order: 400,
       section: 'Hardware',
     },
   ],

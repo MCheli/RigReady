@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DeviceTabs from './DeviceTabs.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { onMachineChanged } from '../../../renderer/machine';
@@ -126,6 +127,7 @@ watch(selected, () => (now.value = Date.now()));
       <v-spacer />
       <v-switch v-model="raw" label="Raw values" data-testid="tester-raw" class="flex-grow-0" />
     </div>
+    <DeviceTabs />
 
     <v-alert
       v-if="input.error"

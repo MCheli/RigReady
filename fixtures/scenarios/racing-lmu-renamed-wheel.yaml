@@ -1,0 +1,12 @@
+description: Racing, the wheel base has a new name since Le Mans Ultimate was set up
+rig: mark-full
+extends: mark-racing.yaml
+# Le Mans Ultimate's direct input.json was written when Windows called the wheel base
+# "Fanatec Podium DD2 Wheel Base" (a made-up older driver name); after a driver update the
+# connected base is "FANATEC Podium Wheel Base DD2", with the same vendor and product id.
+# The file is the recorded one with only that name changed (key, product name, instance
+# name and the 37 bindings).
+mutations:
+  - op: writeFile
+    path: Program Files (x86)/Steam/steamapps/common/Le Mans Ultimate/UserData/player/direct input.json
+    from: data/racing/lmu-direct-input-old-name.json

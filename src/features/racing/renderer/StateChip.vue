@@ -7,6 +7,7 @@ const props = defineProps<{ state: string }>();
 const LOOK: Record<string, { text: string; cls: string; icon: string }> = {
   connected: { text: 'Connected', cls: 'rr-ok', icon: 'mdi-check-circle' },
   moved: { text: 'New Windows id', cls: 'rr-warn', icon: 'mdi-alert' },
+  renamed: { text: 'New name', cls: 'rr-warn', icon: 'mdi-alert' },
   missing: { text: 'Not connected', cls: 'rr-bad', icon: 'mdi-close-circle' },
   'other-mode': { text: 'Compatibility mode', cls: 'rr-warn', icon: 'mdi-alert' },
   keyboard: { text: 'Keyboard', cls: 'rr-muted', icon: 'mdi-keyboard-outline' },

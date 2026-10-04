@@ -43,12 +43,7 @@ const routesOf = (page: Page): Promise<string[]> =>
  * Disabled controls the crawl meets that say nothing about why, kept here until their page
  * says it. Each is a finding, reported; the list must not grow.
  */
-const DISABLED_FOR_NOW: Record<string, string> = {
-  '/configure/profiles/capture capture-save':
-    'Save is disabled until the setup has a name; the capture page is being rebuilt (it keeps this test id)',
-  '/configure/racing/wheel presets-save':
-    'Save is disabled until a preset was changed; the page says nothing about it',
-};
+const DISABLED_FOR_NOW: Record<string, string> = {};
 
 interface Snapshot {
   exists: boolean;

@@ -7,8 +7,8 @@ export default defineFeature({
       title: 'Backups',
       icon: 'mdi-backup-restore',
       to: '/configure/backups',
-      order: 150,
-      section: 'Setup',
+      order: 120,
+      section: 'Setups',
     },
   ],
   routes: [

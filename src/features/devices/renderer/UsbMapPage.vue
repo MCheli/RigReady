@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DeviceTabs from './DeviceTabs.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { errorText, useClient } from '../../../renderer/ipc';
@@ -101,6 +102,7 @@ watch(selected, () => void reveal());
       Where everything is plugged in: each USB controller in the computer, the hubs behind it, and
       the devices on their ports. Click a device to see the way to it.
     </p>
+    <DeviceTabs />
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
 

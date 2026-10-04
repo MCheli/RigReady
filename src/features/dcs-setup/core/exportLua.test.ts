@@ -125,6 +125,22 @@ describe('Export.lua', () => {
     expect(dedupeTool(dedupeTool(text, 'dcs-bios'), 'dcs-bios')).toBe(`${line}\r\nother()\r\n`);
   });
 
+  it('removes a duplicate WinWing load together with its own helper line, and keeps the first pair', () => {
+    const pair =
+      "local wwtlfs=require('lfs')\r\ndofile(wwtlfs.writedir()..'Scripts/wwt/wwtExport.lua')\r\n";
+    const bios = 'dofile(lfs.writedir() .. [[Scripts\\DCS-BIOS\\BIOS.lua]])\n';
+    // SimAppPro put its lines at the top again while they were still further down.
+    const text = `${pair}${bios}${pair}`;
+    expect(parseExportLua(text).tools.find((t) => t.tool === 'wwt')!.active).toBe(2);
+    expect(dedupeTool(text, 'wwt')).toBe(`${pair}${bios}`);
+    // A later line of another tool that uses the second helper keeps that helper.
+    const borrowed = `${text}other(wwtlfs.writedir())\n`;
+    expect(dedupeTool(borrowed, 'wwt')).toBe(
+      `${pair}${bios}local wwtlfs=require('lfs')\r\nother(wwtlfs.writedir())\n`
+    );
+    expect(removeTool(text, 'wwt')).toBe(bios);
+  });
+
   it('shows a change as a line diff', async () => {
     const before = await owner();
     const diff = diffLines(before, addTool(removeTool(before, 'dcs-bios'), 'export-script'));

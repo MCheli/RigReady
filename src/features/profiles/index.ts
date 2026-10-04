@@ -8,7 +8,7 @@ export default defineFeature({
       icon: 'mdi-clipboard-check-outline',
       to: '/configure/profiles',
       order: 100,
-      section: 'Setup',
+      section: 'Setups',
     },
   ],
   routes: [
