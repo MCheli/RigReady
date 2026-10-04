@@ -319,16 +319,26 @@ export const flyContract = defineContract(
     /** Every recorded session, newest first, and what they add up to. */
     history: channel(noInput, HistorySchema),
     /**
-     * A window of RigReady says whether somebody is at it (on screen and in front). Sent
-     * again every few seconds while that is so: a window that stops saying so counts as
-     * gone. With nobody at a window, "welcome back" is a Windows notification.
+     * A window of RigReady says whether somebody is at it: true when the user does
+     * something in it, false when it is hidden. A window that says nothing for a minute
+     * counts as left alone. With nobody at a window, "welcome back" is a Windows
+     * notification.
      */
     presence: channel(
       z.object({ window: z.string().min(1).max(40), visible: z.boolean() }),
       z.object({ attended: z.boolean() })
     ),
+    /**
+     * Opens the compact view (the dial, the setup switcher and the one action) in a small
+     * window that stays on top, or brings it forward when it is open.
+     */
+    openCompact: channel(noInput, z.object({ opened: z.boolean() })),
+    /** Brings RigReady's main window forward, from the tray or from behind the game. */
+    showMain: channel(noInput, z.object({ shown: z.boolean() })),
   },
   {
+    /** Another setup became the one in use (chosen in a window of RigReady or from the tray). */
+    activeChanged: z.object({ profileId: z.string() }),
     /** The session changed: started, running, closed, stood down. */
     session: SessionStateSchema,
     result: z.object({ runId: z.string(), profileId: z.string(), result: CheckResultSchema }),

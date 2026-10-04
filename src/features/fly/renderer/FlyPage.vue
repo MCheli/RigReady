@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { CheckResult } from '../../../core/checks/engine';
 import type { CommandPreview } from '../../../core/checks/registry';
 import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
@@ -14,6 +14,7 @@ import RigStrip, { type RigDevice, type RigState } from './RigStrip.vue';
 import SafeMarkdown from './SafeMarkdown.vue';
 import SessionBanner from './SessionBanner.vue';
 import WelcomePanel from './WelcomePanel.vue';
+import { listenForEnter, useHeadline, usePrimary, type ActionId } from './primary';
 import { useFlyStore } from './store';
 
 const fly = useFlyStore();
@@ -141,48 +142,7 @@ async function showItem(itemId: string): Promise<void> {
   pointing = setTimeout(() => (pointedAt.value = undefined), 1300);
 }
 
-const headline = computed(() => {
-  const counts = fly.counts;
-  if (fly.readiness === 'notReady') {
-    return {
-      tone: 'bad' as const,
-      icon: 'mdi-close-circle',
-      title: 'Not ready',
-      count: counts.failed,
-      sub: `${counts.failed} required ${counts.failed === 1 ? 'item is' : 'items are'} not met${
-        counts.warnings > 0 ? ` · ${counts.warnings} optional` : ''
-      }${fly.anyChecking ? ' · still checking' : ''}`,
-    };
-  }
-  if (fly.readiness === 'warnings') {
-    return {
-      tone: 'warn' as const,
-      icon: 'mdi-check-circle',
-      title: 'Ready with warnings',
-      count: counts.warnings,
-      sub: `${counts.warnings} optional ${counts.warnings === 1 ? 'item needs' : 'items need'} attention`,
-    };
-  }
-  if (fly.readiness === 'ready') {
-    return {
-      tone: 'ok' as const,
-      icon: 'mdi-check-circle',
-      title: 'Ready',
-      count: undefined,
-      sub:
-        fly.items.length === 0
-          ? 'This setup has nothing to check'
-          : 'Everything this setup needs is in place',
-    };
-  }
-  return {
-    tone: 'idle' as const,
-    icon: 'mdi-timer-sand',
-    title: 'Checking…',
-    count: undefined,
-    sub: `${counts.checked} of ${fly.items.length} checked`,
-  };
-});
+const headline = useHeadline(fly);
 
 const locked = computed(() => fly.busy === 'makeReady' || fly.busy === 'standDown');
 
@@ -225,8 +185,7 @@ const context = computed(() => {
   ];
 });
 
-/** The session is about the setup on screen (it may be another's, after a switch). */
-const sessionHere = computed(() => fly.session.profileId === fly.activeId);
+/** The family of sims of the game in session, for the picture beside "Welcome back". */
 const sessionKind = computed(() => fly.profiles.find((p) => p.id === fly.session.profileId)?.kind);
 
 // ---- history ----
@@ -312,33 +271,8 @@ function launchAnyway(): void {
 
 // ---- the one action ----
 
-type ActionId = 'readyAndLaunch' | 'makeReady' | 'launch' | 'standDown';
-
-/**
- * What the screen is for right now, and what Enter runs. A rig that is not ready and can
- * be fixed: fix it and launch. Otherwise: launch (with the warning while something
- * required is missing). A setup with nothing to launch: Make ready, when there is
- * something to fix. While the game runs: nothing. Once it has closed: Stand down.
- */
-const primaryNow = computed<ActionId | undefined>(() => {
-  const setup = fly.active;
-  if (!setup) return undefined;
-  const session = fly.session;
-  if (sessionHere.value) {
-    // Enter must never start a second copy of a game that is running.
-    if (session.phase === 'running' || session.phase === 'starting') return undefined;
-    // The game has closed: what is left is to put the rig back, unless that already happened.
-    if (session.phase === 'ended' && !session.stoodDown) return 'standDown';
-  }
-  const fixable = fly.counts.fixable > 0;
-  if (!setup.canLaunch) return fixable ? 'makeReady' : undefined;
-  return fly.readiness === 'notReady' && fixable ? 'readyAndLaunch' : 'launch';
-});
-/** The buttons do not change places while one of them is at work. */
-const primary = ref<ActionId>();
-watchEffect(() => {
-  if (fly.busy === null) primary.value = primaryNow.value;
-});
+/** What the screen is for right now (`primaryNow`), held still while an action is at work (`primary`). */
+const { now: primaryNow, shown: primary } = usePrimary(fly);
 
 /** The buttons on the left, the primary one first. Stand down is on the right until it is the primary. */
 const actions = computed<ActionId[]>(() => {
@@ -402,22 +336,6 @@ function onLaunchClick(): void {
   else onLaunch();
 }
 
-/** A focused control keeps Enter for itself. */
-const KEEPS_ENTER =
-  'a, button, input, select, textarea, summary, [role="button"], [role="combobox"], [role="option"], [role="menuitem"], [role="tab"], [contenteditable]';
-
-function onKey(event: KeyboardEvent): void {
-  if (event.key !== 'Enter' || event.repeat || event.defaultPrevented) return;
-  if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
-  const target = event.target instanceof Element ? event.target : null;
-  if (target?.closest(KEEPS_ENTER)) return;
-  // So does an open dialog or menu: its own buttons answer.
-  if (document.querySelector('.v-overlay--active.v-dialog, .v-overlay--active.v-menu')) return;
-  if (!primaryNow.value) return;
-  event.preventDefault();
-  void runPrimary();
-}
-
 const STEP_LOOK = {
   none: { icon: 'mdi-minus', tone: 'rr-muted', says: 'nothing to fix' },
   pending: { icon: 'mdi-circle-outline', tone: 'rr-muted', says: 'waiting' },
@@ -461,7 +379,13 @@ onMounted(async () => {
   // Devices get plugged in and apps get closed while this screen is open.
   timer = setInterval(refresh, 5000);
   window.addEventListener('focus', refresh);
-  window.addEventListener('keydown', onKey);
+  // Enter runs the primary action when nothing has the focus.
+  offs.push(
+    listenForEnter(
+      () => void runPrimary(),
+      () => primaryNow.value !== undefined
+    )
+  );
   offs.push(
     onMachineChanged(() => {
       refresh();
@@ -475,7 +399,6 @@ onBeforeUnmount(() => {
   clearInterval(timer);
   clearTimeout(pointing);
   window.removeEventListener('focus', refresh);
-  window.removeEventListener('keydown', onKey);
   for (const off of offs) off();
 });
 </script>
@@ -637,6 +560,13 @@ onBeforeUnmount(() => {
                     title="History"
                     data-testid="fly-history"
                     @click="openHistory"
+                  />
+                  <v-list-item
+                    prepend-icon="mdi-dock-window"
+                    title="Compact view"
+                    subtitle="A small window that stays on top"
+                    data-testid="fly-compact"
+                    @click="fly.openCompact()"
                   />
                 </v-list>
               </v-menu>

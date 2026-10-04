@@ -85,7 +85,9 @@ test('session: the game running with its clock, Welcome back when it closes, and
   const session = page.getByTestId('fly-session');
   await expect(session).toHaveAttribute('data-phase', 'running');
   await expect(page.getByTestId('fly-session-title')).toHaveText('DCS World is running');
-  await expect(page.getByTestId('fly-session-sub')).toHaveText(/^DCS F\/A-18C · since \d\d:\d\d$/);
+  await expect(page.getByTestId('fly-session-sub')).toHaveText(
+    /^\s*DCS F\/A-18C · since \d\d:\d\d\s*$/
+  );
   const clock = page.getByTestId('fly-session-elapsed');
   await expect(clock).toHaveText(/^0:00:\d\d$/);
   const first = await clock.textContent();
@@ -102,7 +104,7 @@ test('session: the game running with its clock, Welcome back when it closes, and
   await expect(session).toHaveAttribute('data-phase', 'ended');
   await expect(page.getByTestId('fly-session-title')).toHaveText('Welcome back');
   await expect(page.getByTestId('fly-session-sub')).toHaveText(
-    /^DCS F\/A-18C · less than a minute · closed at \d\d:\d\d$/
+    /^\s*DCS F\/A-18C · less than a minute · closed\s+at \d\d:\d\d\s*$/
   );
   // Stand down is what is left to do: first, large, on Enter.
   await expect(page.getByTestId('fly-actions')).toHaveAttribute('data-primary', 'standDown');
@@ -407,7 +409,7 @@ test('session: a game started through Steam is waited for, and the session begin
   await expect(session).toHaveAttribute('data-phase', 'starting');
   await expect(page.getByTestId('fly-session-title')).toHaveText('Waiting for DCS World to start');
   await expect(page.getByTestId('fly-session-sub')).toHaveText(
-    /Steam was asked at \d\d:\d\d\. The session begins when the game itself is running\./
+    /Steam was asked at \d\d:\d\d\.\s+The session begins when the game itself is running\./
   );
   await expect(page.getByTestId('fly-actions')).toHaveAttribute('data-primary', 'none');
   await shot('waiting-for-steam');

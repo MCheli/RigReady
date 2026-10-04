@@ -195,7 +195,11 @@ export const useFlyStore = defineStore('fly', () => {
           ...(payload.message ? { message: payload.message } : {}),
         });
       }),
-      api.on('session', (payload) => takeSession(payload))
+      api.on('session', (payload) => takeSession(payload)),
+      // Another window of RigReady (or the tray) switched setups: this one follows.
+      api.on('activeChanged', (payload) => {
+        if (payload.profileId !== activeId.value) void load();
+      })
     );
   }
 
@@ -611,6 +615,12 @@ export const useFlyStore = defineStore('fly', () => {
     return api.history();
   }
 
+  /** Opens the compact view in its own small window, or brings it forward. */
+  async function openCompact(): Promise<void> {
+    const opened = await api.openCompact();
+    if (!opened.ok) error.value = errorText(opened.error);
+  }
+
   async function watch(onChange: (ids: string[]) => void): Promise<() => void> {
     const off = api.on('profilesChanged', (payload) => onChange(payload.ids));
     await api.watch();
@@ -659,6 +669,7 @@ export const useFlyStore = defineStore('fly', () => {
     setAutoStandDown,
     dismissSession,
     history,
+    openCompact,
     watch,
   };
 });

@@ -48,6 +48,8 @@ export interface FlyEvents {
     state: 'pending' | 'running' | 'done' | 'failed' | 'skipped';
     message?: string;
   }): void;
+  /** Another setup became the one in use: every window of RigReady follows. */
+  switched?(profileId: string): void;
 }
 
 /** What a session is made of: Fly says when each thing happens, the session tracker keeps it. */
@@ -268,8 +270,12 @@ export class Fly {
   /** Remembers the profile as the one in use. Writes only when it changes. */
   private async remember(id: string): Promise<void> {
     // Read each time: the setups page and the tray change it too.
-    if ((await this.ctx.profiles.lastProfileId()) === id) return;
-    await this.ctx.profiles.setLastProfileId(id, this.ctx.ports.clock.now());
+    const before = await this.ctx.profiles.lastProfileId();
+    if (before === id) return;
+    const saved = await this.ctx.profiles.setLastProfileId(id, this.ctx.ports.clock.now());
+    // From one setup to another: the other windows follow. The first setup ever noted is
+    // the one every window opened on already, so there is nothing to follow.
+    if (saved.ok && before !== undefined) this.events.switched?.(id);
   }
 
   // ---- checks ----

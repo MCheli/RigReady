@@ -71,8 +71,9 @@ const stoodDown = computed(() => {
       <v-icon icon="mdi-record-circle-outline" size="20" class="session-icon" />
       <div class="session-main">
         <div class="session-title" data-testid="fly-session-title">{{ game }} is running</div>
+        <!-- In the compact view the setup's name is right above: the line is only the time. -->
         <div class="session-sub" data-testid="fly-session-sub">
-          {{ session.profileName }} · since {{ since }}
+          <template v-if="!compact">{{ session.profileName }} · </template>since {{ since }}
         </div>
       </div>
       <!-- A clock that ticks is not read out every second: its label says what it is. -->
@@ -88,7 +89,8 @@ const stoodDown = computed(() => {
           Waiting for {{ game }} to start
         </div>
         <div class="session-sub" data-testid="fly-session-sub">
-          Steam was asked at {{ since }}. The session begins when the game itself is running.
+          Steam was asked at {{ since }}.
+          <template v-if="!compact">The session begins when the game itself is running.</template>
         </div>
       </div>
     </template>
@@ -98,7 +100,8 @@ const stoodDown = computed(() => {
       <div class="session-main" role="status">
         <div class="session-title" data-testid="fly-session-title">Welcome back</div>
         <div class="session-sub" data-testid="fly-session-sub">
-          {{ session.profileName }} · {{ length }} · closed at {{ closedAt }}
+          <template v-if="!compact">{{ session.profileName }} · </template>{{ length }} · closed at
+          {{ closedAt }}
         </div>
         <div v-if="session.standingDown" class="session-down" data-testid="fly-session-down">
           Standing down…
@@ -172,6 +175,14 @@ const stoodDown = computed(() => {
 }
 .session-compact .session-title {
   font-size: 13.5px;
+}
+/* One line each in the compact view, where the lines are short. */
+.session-compact .session-title,
+.session-compact .session-sub,
+.session-compact .session-down {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .session-sub {
   font-size: 12.5px;

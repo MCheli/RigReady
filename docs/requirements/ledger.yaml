@@ -679,6 +679,38 @@ requirements:
       - "artifacts/screens/fly-rig-plain/01-no-monitor-check.png"
       - "artifacts/screens/fly-rig-trouble/01-unplugged.png"
 
+  - id: WOW-FLY-005
+    title: Compact view - the daily routine in a small window that stays on top
+    job: fly
+    area: fly
+    priority: p2
+    done_means:
+      - "'Compact view' in the Fly menu opens one small window that stays on top of the others (asked for again, the same window comes forward). It shows the readiness dial, the setup switcher, the state in words and the one action of the Fly screen, with Re-check and Stand down at the foot; nothing in it needs scrolling."
+      - "The one action is the Fly screen's: Make ready and launch, Launch, or Stand down after a session, on Enter as well. The 'Keep this layout?' question is answered in the small window too. Launching hides the main window as the user's setting says; the small window stays, with the session and its clock, then 'Welcome back' and Stand down."
+      - "Launch on a rig that is not ready launches nothing: the button becomes 'Launch anyway', with what is not met in words and a Cancel. When Make ready and launch stops on something required, the same is offered."
+      - "A fix or a launch step that runs a program has to be shown to the user before it runs, and the small window has no room for that: the action is then disabled there, with the reason in words, and one button brings the full window back (on a monitor that is on; where it is when the monitors cannot be read)."
+      - "A setup chosen in one window is the setup in every window of RigReady: the main process says when the setup in use changes, and only then."
+    status: done
+    evidence:
+      - "src/features/fly/core/compact.test.ts#opens as one small window that stays on top, on its own route"
+      - "src/features/fly/core/compact.test.ts#brings the full window back on a monitor that is on, the main one first"
+      - "src/features/fly/core/compact.test.ts#still shows the full window, where it is, when the monitors cannot be read"
+      - "src/features/fly/core/compact.test.ts#tells every window when the setup in use changes, and only then"
+      - "src/features/fly/core/compact.test.ts#the first setup ever noted as in use is not a switch"
+      - "tests/e2e/fly-compact.e2e.ts#compact: the dial, the setup and the one action in a small window on top; the whole routine is done from there"
+      - "tests/e2e/fly-compact.e2e.ts#compact: a setup chosen in one window is the setup in the other, and the menu brings the same small window back"
+      - "tests/e2e/fly-compact.e2e.ts#compact: Launch on a rig that is not ready asks once more before it launches"
+      - "tests/e2e/fly-compact.e2e.ts#compact: Make ready and launch that stops on something required says what, launches nothing, and offers Launch once it is met"
+      - "tests/e2e/fly-compact.e2e.ts#compact: a program that has to be shown first is left to the full window, and the page is reachable in the main window too"
+      - "artifacts/screens/fly-compact/01-not-ready.png"
+      - "artifacts/screens/fly-compact/02-keep-this-layout.png"
+      - "artifacts/screens/fly-compact/03-in-session.png"
+      - "artifacts/screens/fly-compact/04-welcome-back.png"
+      - "artifacts/screens/fly-compact-switch/01-ready.png"
+      - "artifacts/screens/fly-compact-not-ready/01-launch-anyway.png"
+      - "artifacts/screens/fly-compact-held/01-stopped.png"
+      - "artifacts/screens/fly-compact-needs-ok/01-left-to-the-full-window.png"
+
   # ---------------------------------------------------------------------------
   # CHECK TYPES
   # ---------------------------------------------------------------------------
