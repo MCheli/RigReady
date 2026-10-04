@@ -1369,8 +1369,11 @@ requirements:
       - "Each device can be given a friendly name stored by its identity (VID/PID plus serial or instance) in {RIGREADY_HOME}/devices.json."
       - "The friendly name is used in the devices page, checklist items, binding views and cheat sheets."
       - "The three identical MFD panels keep their names across app restarts in fixture mark-flight."
-    status: in_progress
+    status: done
     evidence:
+      - "src/features/cheat-sheets/core/sheet.test.ts#has every controller of the rig, named as the owner named them, hands-on devices first"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "artifacts/screens/cheat-sheets-gallery/08-left-mfd.png"
       - "src/features/devices/core/store.test.ts#answers other features by the same rules: serial, port, only one of its model, or GUID"
       - "src/features/devices/core/store.test.ts#tells identical units apart by serial, and by port when the serial is shared"
       - "src/features/devices/core/deviceCheck.test.ts#leads the Fly line with the name the owner gave, connected or not, and still matches on ids"
@@ -2237,8 +2240,16 @@ requirements:
       - "For an aircraft and a device, a cheat sheet shows a picture of the device with every control labelled with its bound action in plain language (AI-001 labels or DCS names)."
       - "Unbound controls are shown as blank, modifiers are shown as a second line ('LCtrl: ...')."
       - "It reflects the current effective bindings (BIND-DCS-003); after editing a binding the sheet updates."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/sheet.test.ts#says what every control does in plain language, and which controls are empty"
+      - "src/features/cheat-sheets/core/sheet.test.ts#follows the bindings: after a binding is edited the sheet shows it on its new control"
+      - "src/features/cheat-sheets/core/sheet.test.ts#is drawn from the game defaults when the user has bound nothing"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: labels, a pressed control lights up, notes, search and by action"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the Huey gets sheets from the game defaults"
+      - "artifacts/screens/cheat-sheets-sheet/01-stick.png"
+      - "artifacts/screens/cheat-sheets-gallery/08-left-mfd.png"
+      - "artifacts/screens/cheat-sheets-huey/01-huey-stick.png"
 
   - id: SHEET-002
     title: Device layout templates
@@ -2249,8 +2260,21 @@ requirements:
       - "Device pictures come from template files (image plus control coordinates) keyed by VID/PID, shipped for the owner's devices: WinWing UFC1+HUD1, ICP, MFD1 (x3), startup panel, takeoff panel, throttle base + F15EX handles, Orion stick + grip, TPR pedals, Virpil panel."
       - "A device with no template gets a generated grid of its buttons, axes and hats, so every device has a sheet."
       - "Templates are data files validated by zod; a broken template falls back to the grid and logs why."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/layout.test.ts#cover the devices of the rig, as valid layout files"
+      - "src/features/cheat-sheets/core/layout.test.ts#keep every card on the canvas and no two cards on top of each other"
+      - "src/features/cheat-sheets/core/layout.test.ts#draw the MFD frame as twenty buttons around a screen with a rocker in each corner"
+      - "src/features/cheat-sheets/core/layout.test.ts#groups axes, the hat as a cross and buttons in rows of eight in their own numbering"
+      - "src/features/cheat-sheets/core/layout.test.ts#reads back what it writes, and says in words why a file is not a layout"
+      - "src/features/cheat-sheets/core/sheet.test.ts#generates a layout for a device without one, and keeps every binding on the picture"
+      - "src/features/cheat-sheets/core/sheet.test.ts#falls back to the shipped layout when the user’s file is broken, and says why"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "src/features/cheat-sheets/LAYOUT-FORMAT.md"
+      - "artifacts/screens/cheat-sheets-gallery/01-stick.png"
+      - "artifacts/screens/cheat-sheets-gallery/02-throttle.png"
+      - "artifacts/screens/cheat-sheets-gallery/05-winwing-f18-startup-panel.png"
+      - "artifacts/screens/cheat-sheets-gallery/10-winwing-ufc1-hud1.png"
 
   - id: SHEET-003
     title: Printable cheat sheets
@@ -2260,8 +2284,14 @@ requirements:
     done_means:
       - "'Print' produces a print layout fitting A4 and US Letter, one device per page, with aircraft and device names in the header."
       - "'Save as PDF' writes a PDF via Electron printToPDF to a user-chosen location; a test asserts page count equals the number of selected devices."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/sheet.test.ts#prints one page per device and a summary, with the aircraft and device names on top"
+      - "src/features/cheat-sheets/core/sheet.test.ts#writes a PDF where the user chose, one page per device plus the summary"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: print layout and PDF, one page per device plus a summary"
+      - "artifacts/screens/cheat-sheets-print/01-dialog.png"
+      - "artifacts/screens/cheat-sheets-print/02-printout.png"
+      - "artifacts/screens/cheat-sheets-outputs/fa-18c-cheat-sheet-a4.pdf"
 
   - id: SHEET-004
     title: Export cheat sheets as DCS kneeboard pages
@@ -2272,8 +2302,103 @@ requirements:
       - "'Export to kneeboard' writes one PNG per device at kneeboard aspect (portrait, default 768x1024) into {DCS_USER}/Kneeboard/<aircraft>/ with names prefixed 'RigReady -' so they sort together and are recognisable."
       - "Previously exported RigReady pages for that aircraft are replaced; other kneeboard files are never touched."
       - "Writes go through FileStore with backup and a description; test asserts PNG dimensions and file names."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#writes one PNG per device, sized and named for the kneeboard, into the aircraft’s folder"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#goes through FileStore: one action in the journal, and Undo takes the pages away again"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#never overwrites or removes a page that is not its own"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#replaces its own pages on the next export and removes the ones no longer wanted"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: kneeboard pages - preview, export, the user’s own pages untouched, update and remove"
+      - "artifacts/screens/cheat-sheets-kneeboard/01-preview-day.png"
+      - "artifacts/screens/cheat-sheets-kneeboard/03-exported.png"
+      - "artifacts/screens/cheat-sheets-kneeboard/04-safety.png"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-stick-day.png"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-left-mfd-day.png"
+
+  - id: SHEET-005
+    title: Layout editor, sharing and import of device layouts
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The user drags label cards, their pointers and group frames into place, labels them, and may put a photo or drawing of the device behind them; pressing a control on the device selects its card."
+      - "The layout is saved per device model under {RIGREADY_HOME}/cheat-sheets/layouts, survives a restart, and can be discarded to return to the shipped or generated one."
+      - "A layout is shared as a file in a documented open format and imported from one; a file for another device is refused with the reason."
+      - "A Joystick Diagrams SVG template the user supplies is converted (placeholders become controls on its drawing); none of those templates is shipped."
+    status: done
+    evidence:
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: layout editor - drag, label, group, photo, share, import, discard"
+      - "src/features/cheat-sheets/core/sheet.test.ts#uses the user’s layout for a device model, and the shipped one again after a reset"
+      - "src/features/cheat-sheets/core/sheet.test.ts#shares a layout as a file and imports one, refusing a file for another device"
+      - "src/features/cheat-sheets/core/sheet.test.ts#takes a photo of the device as a background, and refuses what is not a picture"
+      - "src/features/cheat-sheets/core/layout.test.ts#turns placeholders into controls at their places, over the drawing as the background"
+      - "src/features/cheat-sheets/LAYOUT-FORMAT.md"
+      - "artifacts/screens/cheat-sheets-editor/01-editor.png"
+      - "artifacts/screens/cheat-sheets-editor/02-editor-arranged.png"
+      - "artifacts/screens/cheat-sheets-editor/04-converted-template.png"
+
+  - id: SHEET-006
+    title: Live highlight, quick look and pop-out window
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "Pressing a control on the real device lights up its label and says what it does; a press on another device brings that device's sheet forward."
+      - "Quick look shows only the sheet (bound controls only), answers 'which control does X' from a search box, and can be popped out as a small window that stays on top and receives live input too."
+    status: done
+    evidence:
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: labels, a pressed control lights up, notes, search and by action"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: quick look follows the hands and pops out as a window that stays on top"
+      - "src/features/cheat-sheets/core/sheet.test.ts#sends what is held, per controller, while a window is watching"
+      - "src/features/cheat-sheets/core/sheet.test.ts#opens the quick look as a small window that stays on top"
+      - "artifacts/screens/cheat-sheets-sheet/02-pressed.png"
+      - "artifacts/screens/cheat-sheets-quick/01-quick-look.png"
+      - "artifacts/screens/cheat-sheets-quick/03-popped-out.png"
+
+  - id: SHEET-007
+    title: Notes, by-action view, search, colour-coding and flagged duplicates
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The user adds a note of their own to a control; it is kept per aircraft and shown on the sheet, in print and on kneeboard pages."
+      - "Actions are colour-coded by kind with a legend; a control that fires several actions on one press is flagged, and the same action on another control is pointed out."
+      - "A 'by action' view answers 'I want to do X: which control?', and search narrows both views."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/sheet.test.ts#keeps a note on a control, shows it on the sheet and forgets it when cleared"
+      - "src/features/cheat-sheets/core/sheet.test.ts#flags a control that fires two actions on one press"
+      - "src/features/cheat-sheets/core/sheet.test.ts#points out the same action on another control or device"
+      - "src/features/cheat-sheets/core/layout.test.ts#sorts the Hornet actions the owner has bound into kinds that mean something"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: labels, a pressed control lights up, notes, search and by action"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a control that fires two actions is flagged"
+      - "artifacts/screens/cheat-sheets-sheet/03-note.png"
+      - "artifacts/screens/cheat-sheets-sheet/05-search.png"
+      - "artifacts/screens/cheat-sheets-sheet/06-by-action.png"
+      - "artifacts/screens/cheat-sheets-conflict/01-conflict.png"
+
+  - id: SHEET-008
+    title: Kneeboard pages stay up to date - night style, manifest, check and fix
+    job: fly
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "Kneeboard pages come in a day and a night (dark, dim red) style, with an optional first page of the most important actions and optional large-print list pages."
+      - "RigReady keeps a manifest of the pages it wrote; only those are replaced or removed, and a page the user changed since is left alone."
+      - "A check 'cheat sheet kneeboard pages are up to date' (optional by default) fails when a binding, a note or a layout changed or a page is gone; its fix writes the pages again."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#writes a day and a night set, and large-print list pages when asked"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#never overwrites or removes a page that is not its own"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#passes while the pages show what is bound, and fails once a note or a binding changes"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#is proposed for a setup once pages exist, optional, with the fix that writes them again"
+      - "src/features/cheat-sheets/core/sheet.test.ts#makes kneeboard pages at 768 x 1024 in a day and a night style"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the Fly check notices stale kneeboard pages and its fix writes them again"
+      - "artifacts/screens/cheat-sheets-kneeboard/02-preview-night.png"
+      - "artifacts/screens/cheat-sheets-check/03-stale.png"
+      - "artifacts/screens/cheat-sheets-check/04-fixed.png"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-stick-night.png"
+      - "artifacts/screens/cheat-sheets-outputs/kneeboard-key-actions-night.png"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
