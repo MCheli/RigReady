@@ -43,8 +43,6 @@ export type CommandRun = z.infer<typeof CommandRunSchema>;
 export const appContract = defineContract(
   'app',
   {
-    /** The command of this start, or the last one handed over by a second start. Null: there was none. */
-    command: channel(noInput, CommandRunSchema.nullable()),
     /**
      * Keeps a `--fly` command that is still checking or making ready from launching the
      * game. Answers false when it is too late (the launch has begun) or nothing is running.
@@ -118,7 +116,10 @@ export const appContract = defineContract(
   {
     /** Something outside the renderer changed the machine (tray action, live scenario mutation). */
     machineChanged: z.object({ reason: z.string() }),
-    /** A command started, got further or ended. */
+    /**
+     * A command started, got further or ended. Sent to the main window only, and once more
+     * when its page has loaded (a command of this start may have begun before that).
+     */
     command: CommandRunSchema,
   }
 );

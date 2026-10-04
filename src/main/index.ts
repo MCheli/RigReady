@@ -42,7 +42,7 @@ import { MutationSchema } from '../platform/fake/scenario';
 import { systemClock } from '../platform/node';
 import { createWindowsPorts } from '../platform/windows';
 import { trimWorkingSets } from '../platform/windows/memory';
-import { appContract } from '../shared/appContract';
+import { appContract, type CommandRun } from '../shared/appContract';
 import { eventName } from '../shared/channels';
 import type { Envelope } from '../shared/ipc';
 import { discoverFeatures, wireFeatures } from './bootstrap';
@@ -333,6 +333,15 @@ async function start(): Promise<void> {
     if (activity.event(channel, payload)) refreshTaskbar();
     if (channel === SETUPS_CHANGED) refreshSetups();
   };
+  /**
+   * Where a command has got to is told to the main window only: the small extra windows a
+   * feature opens (a cheat sheet on the second monitor) show their own thing.
+   */
+  const COMMAND_EVENT = eventName(appContract.feature, 'command');
+  let commandEndedAt = 0;
+  const tellCommand = (run: CommandRun): void => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(COMMAND_EVENT, run);
+  };
   /** What is running right now, for the progress bar in the taskbar button. */
   const activity = new TaskbarActivity();
   const SETUPS_CHANGED = eventName('fly', 'profilesChanged');
@@ -340,7 +349,10 @@ async function start(): Promise<void> {
   // What it works with is defined further down; nothing here runs before that.
   const commands = new CommandRunner({
     call: (channel, input) => call(channel, input),
-    publish: (run) => send(eventName(appContract.feature, 'command'), run),
+    publish: (run) => {
+      if (run.outcome) commandEndedAt = Date.now();
+      tellCommand(run);
+    },
     showWindow,
     flyChanged: () => flyChanged(),
     busy: () => trayBusy || activity.busy(),
@@ -396,7 +408,6 @@ async function start(): Promise<void> {
         notices,
         ...(scenario ? { scenario } : {}),
       }),
-    command: async () => ok(commands.state()),
     cancelCommand: async () => ok({ cancelled: commands.cancel() }),
     scenario: async ({ mutations, input, change, render, labels }) => {
       if (!fake) return err('scenario.off', 'This only works in a scenario run.');
@@ -827,7 +838,7 @@ async function start(): Promise<void> {
     } else {
       log.warn(
         'Windows made the taskbar button, but did not take everything',
-        failed.map((result) => (result.ok ? '' : result.error.message))
+        failed.map((result) => (result.ok ? null : result.error))
       );
     }
   });
@@ -842,6 +853,15 @@ async function start(): Promise<void> {
     mainWindow?.hide();
   });
   mainWindow.on('closed', () => (mainWindow = undefined));
+  // A command of this start may have begun, or even ended, before the window could be told:
+  // it is told once its page is there (and again when a page that crashed was loaded anew).
+  // One that stopped stays worth telling; one that went well only for a short while.
+  mainWindow.webContents.on('did-finish-load', () => {
+    const run = commands.state();
+    if (!run) return;
+    const justEnded = Date.now() - commandEndedAt < 20_000;
+    if (!run.outcome || run.outcome === 'stopped' || justEnded) tellCommand(run);
+  });
   mainWindow.on('blur', () => (lastInFront = Date.now()));
 
   // In the tray with the window hidden, memory RigReady is not using goes back to Windows.

@@ -103,6 +103,7 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
         args: ['--fly=dcs-f-a-18c'],
         description: 'Make the rig ready for DCS F/A-18C and launch it',
         icon: self.exe,
+        cwd: path.win32.dirname(self.exe),
       },
     });
     expect(parseCommandLine([self.exe, ...(link.ok ? link.value!.args : [])])).toEqual({

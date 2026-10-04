@@ -60,6 +60,8 @@ export function expectedLink(ctx: Pick<Ctx, 'ports'>, profile: Profile): Shortcu
       ? `Make the rig ready for ${profile.name} and launch it`
       : `Make the rig ready for ${profile.name}`,
     icon: self.exe,
+    // It starts in RigReady's own folder, wherever the shortcut is.
+    cwd: path.win32.dirname(self.exe),
   };
 }
 

@@ -104,12 +104,9 @@ const off = shell.on('command', (next) => {
   run.value = next;
 });
 
-onMounted(async () => {
-  document.addEventListener('visibilitychange', onVisibility);
-  // A command of this start may have begun before the window was there to be told.
-  const current = await shell.command();
-  if (current.ok && current.value && run.value === null) run.value = current.value;
-});
+// The shell tells the main window where a command has got to, and once more when this page
+// has loaded: a command of this start may have begun before the window was there.
+onMounted(() => document.addEventListener('visibilitychange', onVisibility));
 onBeforeUnmount(() => {
   off();
   clearTimeout(timer);

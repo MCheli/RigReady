@@ -48,7 +48,7 @@ Nothing else is needed for unit and e2e work: both run on fake providers. `npm r
 | `npm run rig:smoke` | Read-only checks against the real hardware. Not for CI. |
 | `npm run rig:smoke:apply` | Also changes and restores the real monitor layout and default audio devices. Owner's PC only. |
 | `npm run pack` | Build the unpacked app into `release/win-unpacked` (never publishes). |
-| `npm run smoke:packaged` | `pack`, then against the unpacked app: enumeration, a scenario, live input, the input reader failing, the updater on a local feed, start with Windows, startup time. |
+| `npm run smoke:packaged` | `pack`, then against the unpacked app: enumeration, a scenario, live input, the input reader failing, the updater on a local feed, start with Windows, startup time, and one click (`--fly`, a second start, a real desktop shortcut, the Jump List, a hotkey). |
 | `npm run smoke:installer` | Builds a test variant of the installer ("RigReady Test": its own app id, install folder and data folder), installs it without elevation, starts it, updates it on quit, uninstalls it, and checks that a real RigReady install on the PC is untouched. |
 | `npm run dist` | Build the installer into `release/` (never publishes). `docs/RELEASING.md` has the release steps. |
 | `npm run rig:record -- <name> [--only=files,registry,...]` | Record this PC into `fixtures/rigs/<name>/` (coordinator only). |
@@ -677,7 +677,7 @@ Known limits, so you do not look for what is not there:
 - Screenshots that show paths contain the temp folder of that run, so they differ from run to run.
 - Which of the two portrait orientations (90 or 270) is upright on a monitor mounted on its side cannot be read from Windows. Monitors > Identify shows an arrow and asks "Which way is up?"; the answer is stored in the saved layouts.
 - The Fanatec base keeps its tuning presets in its own memory; no file on the PC holds them, so RigReady cannot back them up.
-- Real-hardware tests: `tests/rig/*.rig.test.ts` (`npm run rig:smoke` reads only; `npm run rig:smoke:apply` also changes and restores monitors and audio defaults: `displayApply`, `displayIdentity`, `audioApply`). The packaged smoke (`tests/packaged`) additionally writes and removes the real "start with Windows" entry and runs a real batch file, hidden and not.
+- Real-hardware tests: `tests/rig/*.rig.test.ts` (`npm run rig:smoke` reads only; `npm run rig:smoke:apply` also changes and restores monitors and audio defaults: `displayApply`, `displayIdentity`, `audioApply`). The packaged smoke (`tests/packaged`) additionally writes and removes the real "start with Windows" entry and runs a real batch file, hidden and not; and in a profile of its own under a temp folder it makes, starts and removes a real desktop shortcut, has Windows write a Jump List, and registers and gives back a hotkey (`tests/packaged/oneClick.e2e.ts`).
 
 ## 15. The audits your feature must pass
 

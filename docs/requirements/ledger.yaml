@@ -4188,6 +4188,7 @@ requirements:
       - "artifacts/screens/one-click-shortcut/02-shown-first.png"
       - "artifacts/screens/one-click-shortcut/03-on-the-desktop.png"
       - "artifacts/screens/one-click-shortcut/04-on-the-safety-page.png"
+      - "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the desktop shortcut the app makes is a .lnk Windows reads, and starting it flies the setup"
 
   - id: WOW-WIN-004
     title: Jump List tasks "Fly <setup>"
@@ -4206,6 +4207,7 @@ requirements:
       - "tests/unit/taskbar.test.ts#is told again only when it is a different thing: nothing is rewritten on every check"
       - 'tests/e2e/taskbar.e2e.ts#taskbar: the Jump List offers "Fly <setup>" for the setups used most recently and follows setups used, renamed, cloned and deleted'
       - "tests/e2e/taskbar.e2e.ts#taskbar: on a PC without setups the Jump List is empty, there is no badge, and the buttons are off"
+      - "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the Jump List is written for the setups used most recently, inside the profile RigReady runs in"
       - "artifacts/screens/taskbar-jump-list/01-three-setups.png"
 
   - id: WOW-WIN-005
@@ -4219,7 +4221,7 @@ requirements:
       - "Three buttons under the window's thumbnail, Make ready, Launch and Stand down, do what the same lines of the tray menu do, and are off when those are (no setup, nothing to launch, something already running)."
       - "Everything goes through a Taskbar port whose fake remembers what it was told; the pictures are drawn by pure, unit-tested functions and saved as a picture a person can look at."
     notes:
-      - "2026-10-04: the button pictures are light with a dark edge so they read on a dark taskbar and on a light one (artifacts/screens/taskbar-button/02-pictures.png shows each on both). Windows makes a new taskbar button when the window comes back from the tray and forgets the badge, tooltip and progress; the Electron port tells it again when Windows announces the new button (the registered TaskbarButtonCreated message)."
+      - "2026-10-04: the button pictures are light with a dark edge so they read on a dark taskbar and on a light one (artifacts/screens/taskbar-button/02-pictures.png shows each on both). Windows makes a new taskbar button when the window comes back from the tray and forgets the badge, tooltip and progress; the Electron port tells it again when Windows announces the new button (the registered TaskbarButtonCreated message). The packaged smoke proves on the real Windows that the button is made and takes all four (it reads the log line the shell writes when Windows answered); it cannot look at the taskbar itself, so what the badge and the buttons look like there was seen only as the pictures handed over."
     status: done
     evidence:
       - "tests/unit/taskbar.test.ts#the badge says the status in a shape and in words, and is absent until checks ran"
@@ -4284,6 +4286,34 @@ requirements:
       - "artifacts/screens/one-click-hotkey/03-active.png"
       - "artifacts/screens/one-click-hotkey/04-refused.png"
       - "artifacts/screens/one-click-hotkey/05-made-ready-by-the-hotkey.png"
+      - "tests/packaged/oneClick.e2e.ts#packaged, real Windows: a hotkey chosen in Settings is registered with Windows and given back when it is turned off"
+
+  - id: WOW-WIN-008
+    title: One click proven in the packaged app, on a scenario and on the real Windows
+    job: platform
+    area: one-click
+    priority: p2
+    done_means:
+      - "Packaged app on a scenario (the fake machine, never a real game): --fly on a cold start arranges the monitors, starts TrackIR and 'launches', and the real process list shows no DCS.exe or TrackIR5.exe started by it; --fly stops in front of a required item that is not met; a second RigReady.exe with --setup, --make-ready and --fly ends with exit code 0 and the one already running comes forward and does it."
+      - "Packaged app on the real Windows, in a profile of its own under a temp folder: the desktop shortcut made in the setup editor is a real .lnk (Windows' own reader says it starts this RigReady.exe with --fly=<setup id>); started the way a double-click starts it, a second RigReady hands over and the running one launches the setup's 'game' (a copy of Windows' ping.exe); the shortcut is removed again through the app."
+      - "The Jump List is written by Windows for the setups, the one used last first, each with --fly=<setup id>, inside the profile RigReady runs in; Windows makes the window's taskbar button and takes its badge, tooltip, progress and buttons; a hotkey chosen in Settings is registered with Windows and given back."
+      - "The PC is left as it was found: the test asserts, before the app writes, that its Desktop is inside the test's own folder; the real Jump List folder is compared before and after; every hotkey is given back; the fake game is ended; the temp folder is removed."
+    notes:
+      - "2026-10-04: what the real machine taught. (1) Windows writes a Jump List below the Recent folder of the profile the program sees, so a run with a redirected profile never touches the real lists (measured: with that folder present the list lands there and the real folder does not change; without it Windows refuses the list, which RigReady logs once as a warning). (2) Electron refuses thumbnail buttons that carry the flag 'enabled', although its documentation lists it: the packaged run logged 'did not take the thumbnail buttons', and a measurement showed every call with that flag answered false and every call without it true. Enabled buttons now carry no flag. (3) Copying a .lnk keeps what it says, so the link is made under the data folder and put on the desktop through FileStore."
+    status: done
+    evidence:
+      - test: 'tests/packaged/oneClick.e2e.ts#packaged --fly on a scenario: the monitors are arranged, TrackIR is started, the game "launches", and no real program is started'
+      - test: "tests/packaged/oneClick.e2e.ts#packaged --fly stops in front of a required item that is not met"
+      - test: "tests/packaged/oneClick.e2e.ts#packaged second start: RigReady already running takes --setup, --make-ready and --fly from a second start and comes forward"
+      - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the desktop shortcut the app makes is a .lnk Windows reads, and starting it flies the setup"
+      - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: the Jump List is written for the setups used most recently, inside the profile RigReady runs in"
+      - test: "tests/packaged/oneClick.e2e.ts#packaged, real Windows: a hotkey chosen in Settings is registered with Windows and given back when it is turned off"
+      - "artifacts/screens/packaged-one-click-fly/01-launched.png"
+      - "artifacts/screens/packaged-one-click-stopped/01-not-launched.png"
+      - "artifacts/screens/packaged-one-click-second-start/01-made-ready.png"
+      - "artifacts/screens/packaged-one-click-shortcut/01-on-the-desktop.png"
+      - "artifacts/screens/packaged-one-click-shortcut/02-flown-from-the-shortcut.png"
+      - "artifacts/screens/packaged-one-click-hotkey/01-active.png"
 
   # ---------------------------------------------------------------------------
   # NON-FUNCTIONAL AND SAFETY

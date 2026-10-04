@@ -414,10 +414,10 @@ export class ElectronHotkeys implements Hotkeys {
     const before = this.held.get(id);
     if (before === accelerator && globalShortcut.isRegistered(accelerator)) return ok(undefined);
     try {
-      const taken = globalShortcut.register(accelerator, () => {
+      const given = globalShortcut.register(accelerator, () => {
         for (const listener of [...this.listeners]) listener(id);
       });
-      if (!taken) return err('hotkey.taken', `Windows did not register ${accelerator}.`);
+      if (!given) return err('hotkey.taken', `Windows did not register ${accelerator}.`);
     } catch (e) {
       return err('hotkey.invalid', `${accelerator} is not a key combination.`, String(e));
     }
@@ -486,7 +486,10 @@ export class ElectronTaskbar implements Taskbar {
     if (!created) return;
     window.hookWindowMessage(created, () => {
       this.button = true;
-      made?.(this.tellAll());
+      // A moment later: Electron answers the same message by putting the thumbnail buttons
+      // it knows back on the new button, and ours (which may have changed while the window
+      // was away) must come after that.
+      setTimeout(() => made?.(this.tellAll()), 0);
     });
     const gone = (): void => {
       this.button = false;
@@ -589,7 +592,9 @@ export class ElectronTaskbar implements Taskbar {
         buttons.map((button) => ({
           tooltip: button.tooltip,
           icon: this.picture(button.icon),
-          flags: [button.enabled ? 'enabled' : 'disabled'],
+          // No flag is "enabled". Electron's documentation lists a flag of that name, but
+          // the call is refused when it is given (measured with Electron 44 on Windows 11).
+          flags: button.enabled ? [] : ['disabled'],
           click: () => {
             for (const listener of [...this.listeners]) listener(button.id);
           },
