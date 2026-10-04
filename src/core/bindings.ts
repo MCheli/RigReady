@@ -6,7 +6,9 @@ import type { Result } from './result';
  *
  * A bindings feature registers a reader for its game from its main.ts
  * (`ctx.bindings.register(reader)`); any other feature asks through `ctx.bindings`.
- * Read only: changing bindings stays inside the feature that owns the game's files.
+ * Changing bindings stays inside the feature that owns the game's files: another
+ * feature may only hand it a proposal (`reader.proposals`), which that feature previews,
+ * backs up, writes as one undoable change, and can undo.
  */
 
 /** An aircraft, car or other vehicle a game keeps a set of bindings for. */
@@ -40,6 +42,9 @@ export interface BoundInput {
   source: 'user' | 'default';
 }
 
+/** What a controller is used for in the game, as the bindings feature knows it. */
+export type BoundDeviceRole = 'stick' | 'throttle' | 'pedals' | 'panel' | 'mfd' | 'none' | 'other';
+
 /** A device as the game knows it, with what its inputs do. */
 export interface BoundDevice {
   kind: 'controller' | 'keyboard' | 'mouse' | 'other';
@@ -53,8 +58,80 @@ export interface BoundDevice {
   productId?: string;
   /** Attached right now. */
   connected: boolean;
+  /** What the device is used for (the user's choice, or the bindings feature's guess). */
+  role?: BoundDeviceRole;
+  /** The controls a controller has, when known: button and hat counts, axis names (X, RZ, SLIDER1). */
+  controls?: { buttons: number; hats: number; axes: string[] };
   /** Every binding that can fire, in the device's own input order. */
   bindings: BoundInput[];
+}
+
+/** One action an aircraft has, bound or not. */
+export interface BoundAction {
+  /** Stable id within the aircraft, the same as BoundInput.actionId. */
+  id: string;
+  /** The game's own name for it: "Sensor Control Switch - Fwd". */
+  name: string;
+  category: string[];
+  /** A button-type action (also bindable to a hat direction or a key) or an axis. */
+  kind: 'button' | 'axis';
+  /** False when the bindings feature can show the action but cannot write a binding for it. */
+  editable: boolean;
+}
+
+/**
+ * A change another feature proposes (the AI guidance, a guided walkthrough). It never
+ * writes anything itself: the bindings feature that owns the game's files previews it,
+ * writes it with a backup as one undoable change, and can undo it.
+ */
+export interface ProposedBindingChange {
+  op: 'bind' | 'unbind';
+  /** The controller (DirectInput instance GUID), or the keyboard when absent. */
+  deviceGuid?: string;
+  /** The game's input name: JOY_BTN5, JOY_BTN_POV1_U, JOY_RZ, or a key name. */
+  input: string;
+  /** The game's modifier names that must be held with it ("LCtrl"); usually none. */
+  modifiers?: string[];
+  actionId: string;
+}
+
+export interface BindingProposal {
+  aircraftId: string;
+  /** One line for the journal and the review: "Bind 4 actions from the guide (F/A-18C)". */
+  summary: string;
+  changes: ProposedBindingChange[];
+}
+
+/** Exactly what a proposal would write, file by file, before anything is written. */
+export interface ProposalPlan {
+  summary: string;
+  files: {
+    path: string;
+    action: 'create' | 'change' | 'delete' | 'rename';
+    to?: string;
+    title: string;
+    /** What changes, in plain language, one line each. */
+    lines: string[];
+    /** The exact text change. */
+    diff: { type: 'same' | 'add' | 'del' | 'gap'; text: string }[];
+  }[];
+  notes: string[];
+  /** Set when the plan cannot be applied now (the game is running), with the reason. */
+  blocked?: string;
+}
+
+export interface ProposalApplied {
+  /** The journal group, for Undo. */
+  groupId: string;
+  summary: string;
+  files: number;
+}
+
+/** The bindings feature's review-and-write path, offered to other features. */
+export interface BindingProposals {
+  plan(proposal: BindingProposal): Promise<Result<ProposalPlan>>;
+  apply(proposal: BindingProposal): Promise<Result<ProposalApplied>>;
+  undo(groupId: string): Promise<Result<void>>;
 }
 
 export interface AircraftBindings {
@@ -78,6 +155,10 @@ export interface BindingReader {
    * DirectInput instance GUID) and an aircraft when given.
    */
   route(target?: { guid?: string; aircraftId?: string }): string;
+  /** Every action the aircraft has, bound or not. Optional: not every game can list them. */
+  actions?(aircraftId: string): Promise<Result<BoundAction[]>>;
+  /** Preview, write and undo changes proposed by another feature. Optional. */
+  proposals?: BindingProposals;
 }
 
 export class BindingRegistry {

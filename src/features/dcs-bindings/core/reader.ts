@@ -1,12 +1,15 @@
 import type {
   AircraftBindings,
+  BindingProposal,
   BindingReader,
+  BoundAction,
   BoundDevice,
   BoundInput,
 } from '../../../core/bindings';
-import { ok } from '../../../core/result';
+import { err, ok, type Result } from '../../../core/result';
 import type { DcsBindings } from './bindings';
-import type { AircraftView, DeviceView } from './model';
+import { applyEdits, planEdits } from './edits';
+import type { AircraftView, BindingOp, DeviceView } from './model';
 import { describeInput } from './names';
 
 /**
@@ -47,6 +50,16 @@ export function toAircraftBindings(view: AircraftView): AircraftBindings {
       ...(device.vendorId ? { vendorId: device.vendorId } : {}),
       ...(device.productId ? { productId: device.productId } : {}),
       connected: device.connected,
+      role: device.role,
+      ...(device.type === 'joystick'
+        ? {
+            controls: {
+              buttons: device.numButtons,
+              hats: device.numHats,
+              axes: device.axisNames,
+            },
+          }
+        : {}),
       bindings: device.bindings
         // A default on a control the device does not have can never fire.
         .filter((binding) => !binding.inert)
@@ -98,5 +111,82 @@ export function createBindingReader(bindings: DcsBindings): BindingReader {
       const text = query.toString();
       return text ? `${DEVICES_ROUTE}?${text}` : DEVICES_ROUTE;
     },
+    async actions(aircraftId) {
+      const view = await bindings.view(aircraftId);
+      if (!view.ok) return view;
+      return ok(
+        view.value.commands
+          .filter((c) => !c.unmatched)
+          .map((c): BoundAction => ({
+            id: c.id,
+            name: c.name,
+            category: c.category,
+            kind: c.kind === 'axis' ? 'axis' : 'button',
+            editable: c.editable,
+          }))
+      );
+    },
+    proposals: {
+      async plan(proposal) {
+        const ops = await proposalOps(bindings, proposal);
+        return ops.ok ? planEdits(bindings, ops.value, proposal.summary) : ops;
+      },
+      async apply(proposal) {
+        const ops = await proposalOps(bindings, proposal);
+        if (!ops.ok) return ops;
+        const applied = await applyEdits(bindings, ops.value, proposal.summary);
+        if (applied.ok) bindings.ctx.log.info(`dcs-bindings: ${applied.value.summary}`);
+        return applied;
+      },
+      async undo(groupId) {
+        if (await bindings.dcsRunning()) {
+          return err(
+            'dcs.running',
+            'DCS is running. Close it before undoing a change to its bindings.'
+          );
+        }
+        const undone = await bindings.ctx.ports.files.undoGroup(groupId);
+        return undone.ok ? ok(undefined) : undone;
+      },
+    },
   };
+}
+
+/** A proposal from another feature as this feature's own edits, on the devices DCS knows. */
+async function proposalOps(
+  bindings: DcsBindings,
+  proposal: BindingProposal
+): Promise<Result<BindingOp[]>> {
+  if (proposal.changes.length === 0) return err('dcs.proposal.empty', 'Nothing to change.');
+  const view = await bindings.view(proposal.aircraftId);
+  if (!view.ok) return view;
+  const ops: BindingOp[] = [];
+  for (const change of proposal.changes) {
+    const wanted = change.deviceGuid?.replace(/[{}]/g, '').toUpperCase();
+    const device = view.value.devices.find((d) =>
+      wanted ? d.type === 'joystick' && d.guid?.toUpperCase() === wanted : d.type === 'keyboard'
+    );
+    if (!device) {
+      return err(
+        'dcs.device.unknown',
+        wanted
+          ? `DCS has no controller with the id ${wanted} for ${view.value.aircraft.name}.`
+          : `DCS has no keyboard bindings for ${view.value.aircraft.name}.`
+      );
+    }
+    if (!view.value.commands.some((c) => c.id === change.actionId)) {
+      return err(
+        'dcs.command.unknown',
+        `${view.value.aircraft.name} has no action "${change.actionId}".`
+      );
+    }
+    ops.push({
+      op: change.op,
+      aircraft: proposal.aircraftId,
+      deviceId: device.id,
+      commandId: change.actionId,
+      combo: { key: change.input, reformers: change.modifiers ?? [] },
+    });
+  }
+  return ok(ops);
 }

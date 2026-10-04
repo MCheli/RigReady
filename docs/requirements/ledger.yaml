@@ -2332,8 +2332,11 @@ requirements:
     done_means:
       - "Binding views and cheat sheets show plain-language labels for DCS commands (e.g. 'Sensor Control Switch - Fwd' -> 'Sensor select: HUD') from a shipped label file for F/A-18C and UH-1H, with the DCS name always available."
       - "With no API key configured, all labels and priority lists work and no AI controls are shown except a 'Set up AI help' link."
-    status: todo
-    evidence: []
+    status: in_progress
+    evidence:
+      - "src/features/ai-assist/core/pack.test.ts#shows what each item does and what it is bound to now, from the effective bindings"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: without a key the guide, priorities and walkthrough work, with only a link to set up AI"
+      - "artifacts/screens/ai-assist-no-key/02-plain-labels.png"
 
   - id: AI-002
     title: Store the Anthropic API key safely
@@ -2344,8 +2347,14 @@ requirements:
       - "The key is entered in Settings, encrypted with Electron safeStorage (DPAPI) and stored under the data root; it is never written to profiles, logs, backups, exports or crash reports (test greps all written files for the key)."
       - "The key is never sent to the renderer after entry; the UI shows only the last 4 characters."
       - "'Test key' makes one minimal API call and reports valid/invalid; 'Remove key' deletes it."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/service.test.ts#shows only the last four characters of the key, tests it, and keeps the model as a setting"
+      - "src/features/ai-assist/core/service.test.ts#logs what happened and the token counts, never the key or the request"
+      - "src/features/ai-assist/core/service.test.ts#shows the exact request first, sends it unchanged, and turns the answer into a reviewable list"
+      - "src/features/ai-assist/core/anthropic.test.ts#never returns the key, even when a hostile or broken server echoes it back"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: the key is entered in Settings, tested, never shown again, and what is sent is stated"
+      - "artifacts/screens/ai-assist-key/01-settings.png"
 
   - id: AI-003
     title: Suggest what to bind
@@ -2357,8 +2366,17 @@ requirements:
       - "Before sending, the user sees exactly what will be sent (no paths, serials or user names) and confirms."
       - "Responses are validated with zod; suggestions referencing unknown commands or inputs are dropped and counted."
       - "Unit test uses a recorded API response fixture; no network in CI."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/service.test.ts#shows the exact request first, sends it unchanged, and turns the answer into a reviewable list"
+      - "src/features/ai-assist/core/suggest.test.ts#names controllers by short refs, with names, roles and controls only; never ids, paths or given names"
+      - "src/features/ai-assist/core/suggest.test.ts#drops and counts anything that names an action, controller or input that does not exist"
+      - "src/features/ai-assist/core/suggest.test.ts#refuses an answer that tries to bind everything, or that is not the format asked for"
+      - "src/features/ai-assist/core/suggest.test.ts#keeps text from game files on one line inside the data, where the model is told not to follow it"
+      - "src/features/ai-assist/core/anthropic.test.ts#builds the request: cached context, structured output, refusal fallback, medium effort"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip shows what is sent, checks the answer, and applies only what is ticked after review"
+      - "artifacts/screens/ai-assist-suggest/01-payload.png"
+      - "artifacts/screens/ai-assist-suggest/02-suggestions.png"
 
   - id: AI-004
     title: User approves each AI change
@@ -2369,8 +2387,55 @@ requirements:
       - "Each suggestion has Accept and Reject; accepted suggestions become staged binding edits (BIND-DCS-006) and nothing is written until the normal Save with backup."
       - "Suggestions that conflict with existing bindings are labelled with the conflict before acceptance."
       - "API errors, timeouts and rate limits show a clear message and leave existing bindings untouched."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/service.test.ts#refuses ticked suggestions that fight over one control, and a model answer that does not check out"
+      - "src/features/ai-assist/core/suggest.test.ts#keeps valid suggestions with the plain label, the reason and what each would replace"
+      - "src/features/ai-assist/core/suggest.test.ts#flags two suggestions on one control and ticks neither"
+      - "src/features/ai-assist/core/anthropic.test.ts#turns every failure into a plain message: key, rate limit, overload, refusal, cut-off, network"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip shows what is sent, checks the answer, and applies only what is ticked after review"
+      - "artifacts/screens/ai-assist-suggest/03-review.png"
+
+  - id: AI-005
+    title: Binding guide and walkthrough without a key
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Shipped guide files (a documented data format, one per aircraft) for the F/A-18C and UH-1H: every important action in plain language with what it does, when it is used and whether it belongs on the HOTAS, a panel or the keyboard, in three priority tiers, with a plan per kind of device; a test checks every action name against DCS's default input files."
+      - "A walkthrough goes item by item and tier by tier, shows what each action is bound to now, and stages a binding when the user presses a control; staged changes are previewed with the exact file change and written through the bindings feature (backup first, one undoable change)."
+      - "Progress and staged changes are saved under the data root and survive a restart."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/pack.test.ts#every action the FA-18C_hornet guide names exists in DCS's default input files"
+      - "src/features/ai-assist/core/pack.test.ts#every action the UH-1H guide names exists in DCS's default input files"
+      - "src/features/ai-assist/core/pack.test.ts#refuses a pack file that does not fit the format, saying what is wrong"
+      - "src/features/ai-assist/core/service.test.ts#stages a pressed control, previews the exact file change, writes it through the bindings feature, and undoes it"
+      - "src/features/ai-assist/core/service.test.ts#saves progress and staged changes in its data folder, so they survive a restart"
+      - "src/features/ai-assist/core/inputs.test.ts#reports a press, a hat direction and an axis moved from where it rested, but not the resting state"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: the walkthrough binds what you press, shows the exact change, writes it with a backup and undoes it"
+      - "artifacts/screens/ai-assist-walkthrough/02-staged.png"
+      - "artifacts/screens/ai-assist-walkthrough/03-review.png"
+      - "artifacts/screens/ai-assist-walkthrough/05-progress-after-restart.png"
+      - "artifacts/screens/ai-assist-no-key/03-priorities.png"
+
+  - id: AI-006
+    title: AI questions, explanations and drafted guides
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "With a key, 'Explain' on an action and free questions about the setup return plain text (no markup rendered), with tokens and approximate cost shown."
+      - "For an aircraft without a shipped guide, AI drafts one in the same file format; only items naming real actions are kept and the rest are counted; it is saved under the data root and marked as drafted by AI wherever it is shown."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/service.test.ts#answers questions and explains actions as plain text, and drafts a guide for an aircraft without one"
+      - "src/features/ai-assist/core/suggest.test.ts#keeps only items that name real actions and saves them in the guide format, marked as drafted"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip shows what is sent, checks the answer, and applies only what is ticked after review"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: for an aircraft without a guide, AI drafts one in the guide format, marked as drafted"
+      - "artifacts/screens/ai-assist-suggest/05-answer.png"
+      - "artifacts/screens/ai-assist-suggest/06-explained.png"
+      - "artifacts/screens/ai-assist-draft/02-drafted-guide.png"
 
   # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE
