@@ -2716,8 +2716,20 @@ requirements:
     done_means:
       - "Fixture mark-racing (Fanatec DD2, racing layout ultrawide + TV, Fanatec control panel and SimHub running) supports capturing an 'iRacing' profile whose checks all pass on the unchanged fixture."
       - "Make ready applies the Racing layout and starts missing apps; Stand down returns to Desk (E2E)."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - 'tests/unit/markRacing.test.ts#mark-racing is the recorded rig without flight gear: wheel and ultrawide, Dell off'
+      - 'tests/unit/markRacing.test.ts#mark-racing-tv adds the TV above the ultrawide, and SimHub running'
+      - 'tests/unit/markRacing.test.ts#an iRacing setup captured from the rig passes every check on the unchanged rig'
+      - 'tests/unit/markRacing.test.ts#Make ready applies the racing layout and starts the missing apps; Stand down returns to Desk'
+      - 'tests/e2e/mark-racing.e2e.ts#mark-racing with the TV: an iRacing setup is captured and Ready; Make ready applies the racing layout and starts the apps; Stand down returns to Desk'
+      - 'tests/e2e/mark-racing.e2e.ts#mark-racing without the TV: the captured iRacing setup is Ready on the ultrawide alone'
+      - 'artifacts/screens/mark-racing-tv/01-capture.png'
+      - 'artifacts/screens/mark-racing-tv/02-ready.png'
+      - 'artifacts/screens/mark-racing-tv/04-at-the-desk.png'
+      - 'artifacts/screens/mark-racing-tv/05-made-ready.png'
+      - 'artifacts/screens/mark-racing-tv/06-stood-down.png'
+      - 'artifacts/screens/mark-racing/02-ready.png'
 
   - id: RACE-FANATEC-001
     title: Detect the Fanatec wheel base, rim and software
