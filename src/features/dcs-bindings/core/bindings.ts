@@ -258,6 +258,34 @@ export class DcsBindings {
     return started.value;
   }
 
+  /**
+   * How many attached controllers have a binding file of the user's own for an aircraft.
+   * Only file names are looked at. The Fly check asks this on every run and has no use for
+   * the game's defaults, which take seconds to evaluate the first time on a slow PC.
+   */
+  async ownFilesOnConnected(aircraftId: string): Promise<Result<number>> {
+    const { ports } = this.ctx;
+    const locations = await this.locations();
+    const profile = (await this.profiles(locations)).find((p) => p.id === aircraftId);
+    const dir = path.join(locations.inputDir, profileFolderName(aircraftId));
+    if (!profile?.folder && !(await ports.files.exists(dir))) {
+      return err('dcs.aircraft.unknown', `DCS has no aircraft "${aircraftId}" on this PC.`);
+    }
+    const connected = await this.connectedDevices();
+    const listed = await ports.files.list(path.join(dir, 'joystick'));
+    const files = (listed.ok ? listed.value : []).map(parseDiffFileName);
+    const withFile = connected.filter((device) =>
+      files.some(
+        (file) =>
+          file !== undefined &&
+          file.deviceName === device.name &&
+          file.guid !== undefined &&
+          sameGuid(device.guid, file.guid)
+      )
+    );
+    return ok(withFile.length);
+  }
+
   readState(): Promise<Result<BindingsState>> {
     return this.store.read();
   }

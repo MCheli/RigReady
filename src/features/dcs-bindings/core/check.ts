@@ -79,12 +79,11 @@ export function createBindingsCheck(
           ),
         };
       }
-      const view = await service.view(params.aircraft, given);
-      if (!view.ok) return { pass: false, summary: view.error.message };
-      const withFiles = view.value.devices.filter(
-        (d) => d.type === 'joystick' && d.connected && d.file.source === 'user'
-      );
-      if (withFiles.length === 0) {
+      // File names only: the whole picture of an aircraft (its defaults evaluated) is for the
+      // bindings pages, not for a check that runs every time the Fly screen opens.
+      const own = await service.ownFilesOnConnected(params.aircraft);
+      if (!own.ok) return { pass: false, summary: own.error.message };
+      if (own.value === 0) {
         return {
           pass: false,
           summary: `No bindings of your own for ${label} on the connected devices`,
@@ -92,7 +91,7 @@ export function createBindingsCheck(
       }
       return {
         pass: true,
-        summary: `${withFiles.length} connected ${withFiles.length === 1 ? 'device has' : 'devices have'} bindings for ${label}`,
+        summary: `${own.value} connected ${own.value === 1 ? 'device has' : 'devices have'} bindings for ${label}`,
       };
     },
   };
