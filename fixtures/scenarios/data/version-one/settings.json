@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "simulatorPaths": [
+    {
+      "simulator": "dcs",
+      "configPath": "C:\\Users\\Pilot\\Saved Games\\DCS",
+      "isAutoDetected": true,
+      "lastVerified": 1770517800000
+    }
+  ],
+  "autoScanOnStartup": true,
+  "theme": "dark",
+  "minimizeToTray": false,
+  "startWithWindows": false,
+  "checkForUpdates": false,
+  "profileMigrationVersion": 1
+}

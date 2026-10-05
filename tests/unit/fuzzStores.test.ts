@@ -238,7 +238,7 @@ describe('NFR-008: setups (profile YAML)', () => {
   it('missing folder: no setups, no error', async () => {
     expect(await store().listDetailed()).toEqual({
       ok: true,
-      value: { profiles: [], invalid: [] },
+      value: { profiles: [], invalid: [], earlier: [] },
     });
     expect(await store().get('nope')).toMatchObject({
       ok: false,

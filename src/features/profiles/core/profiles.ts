@@ -215,6 +215,7 @@ export async function overview(ctx: Ctx): Promise<Result<ProfileOverview>> {
       };
     }),
     invalid: listed.value.invalid,
+    earlier: listed.value.earlier,
     ...(last ? { lastProfileId: last } : {}),
   });
 }

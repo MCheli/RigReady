@@ -85,6 +85,8 @@ export const ProfileOverviewSchema = z.object({
       line: z.number().int().optional(),
     })
   ),
+  /** Setup files RigReady 1 left behind: not read, not broken, listed apart. */
+  earlier: z.array(z.object({ id: z.string(), file: z.string(), name: z.string().optional() })),
   lastProfileId: z.string().optional(),
 });
 export type ProfileOverview = z.infer<typeof ProfileOverviewSchema>;

@@ -1,0 +1,29 @@
+name: LMU
+game: lmu
+checklistItems:
+  - id: wiz-device-pygame:0
+    type: device
+    name: FANATEC Podium Wheel Base DD2
+    isRequired: true
+    category: hardware
+    config:
+      deviceName: FANATEC Podium Wheel Base DD2
+  - id: wiz-proc-TrackIR5.exe
+    type: process
+    name: TrackIR 5
+    isRequired: false
+    category: software
+    config:
+      processName: TrackIR5.exe
+      displayName: TrackIR 5
+  - id: wiz-display-Single Ultrawide
+    type: display
+    name: 'Display: Single Ultrawide'
+    isRequired: false
+    category: display
+    config:
+      configurationName: Single Ultrawide
+trackedConfigurations: []
+id: mld4nbutw9iuzu9
+createdAt: 1770517906373
+lastUsed: 1770517906373

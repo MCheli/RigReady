@@ -2,7 +2,7 @@
 
 ## 2.0.0 (not released)
 
-A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not the data in `~/.rigready`, not the update channel. Version 2.0.0 has not been published; there is no installer to download yet.
+A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not the data in `~/.rigready`, not the update channel. What version 1 left in that folder is not touched: its setup files are listed apart on the Setups page, where they can be deleted. Version 2.0.0 has not been published; there is no installer to download yet.
 
 ### What it contains
 

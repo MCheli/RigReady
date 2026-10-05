@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Single Ultrawide",
+    "timestamp": 1770517800000,
+    "displays": [
+      {
+        "name": "\\\\.\\DISPLAY1",
+        "devicePath": "\\\\.\\DISPLAY1",
+        "width": 5120,
+        "height": 1440,
+        "x": 0,
+        "y": 0,
+        "isPrimary": true,
+        "refreshRate": 60,
+        "orientation": 0,
+        "scaling": 100
+      }
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+description: First start of this version on the data folder RigReady 1.1.0 left behind
+rig: mark-full
+extends: flying-fresh.yaml
+# What version 1 wrote into ~/.rigready, as found on the owner's PC: one setup in its own
+# format, its settings, and two files this version has no use for. None of it is read as a
+# setup, and none of it is touched.
+data:
+  profiles/mld4nbutw9iuzu9.yaml: data/version-one/profile.yaml
+  settings.json: data/version-one/settings.json
+  active-profile.json: data/version-one/active-profile.json
+  display-configs.json: data/version-one/display-configs.json

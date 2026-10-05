@@ -1446,6 +1446,25 @@ requirements:
       - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'artifacts/screens/profile-add-check/01-file-check.png'
 
+  - id: CFG-PROFILE-016
+    title: Setup files left by RigReady 1 are recognised, not reported as broken
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "A file in profiles/ that RigReady 1 wrote (no schemaVersion, a checklistItems or trackedConfigurations list) is neither a setup nor a file that cannot be read: it raises no warning, and a first start on such a folder shows the welcome."
+      - "The Setups page lists such files apart, under what they are, with the name version 1 gave the setup, Show in Explorer and Delete."
+      - "Nothing version 1 left in the data folder is changed or removed by starting this version; deleting such a file is the usual, undoable deletion."
+      - "A damaged file of this version is still reported as damaged."
+    status: done
+    evidence:
+      - 'src/core/profile/earlier.test.ts#is recognised by what version 1 wrote, with the name it had'
+      - 'src/core/profile/earlier.test.ts#is not a file of this version, however broken that one is'
+      - 'src/features/profiles/core/profiles.test.ts#a setup RigReady 1 left behind is not a broken setup: listed apart, left alone, and a first start stays a first start'
+      - 'tests/e2e/first-impressions.e2e.ts#welcome: on the data folder RigReady 1 left behind, the first start is still the welcome, and the old setup is listed apart'
+      - 'artifacts/screens/welcome-after-version-one/02-listed-apart.png'
+    notes: "Found on 2026-10-04 by starting this version on a copy of the owner's real data folder: one setup of version 1.1.0 made the first start open on 'No setup can be opened'. Checked again on that copy afterwards: the welcome, no warning, no old file changed."
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------

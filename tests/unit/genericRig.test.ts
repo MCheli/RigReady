@@ -109,7 +109,11 @@ describe('the whole app on a PC that is not the owner’s', () => {
     const app = await start();
     expect(app.wiring.handlers.size).toBeGreaterThan(150);
     expect(await app.invoke('fly:state')).toEqual({ profiles: [], invalid: [] });
-    expect(await app.invoke('profiles:overview')).toEqual({ profiles: [], invalid: [] });
+    expect(await app.invoke('profiles:overview')).toEqual({
+      profiles: [],
+      invalid: [],
+      earlier: [],
+    });
     expect(app.events.filter((e) => /error/i.test(e.channel))).toEqual([]);
   });
 

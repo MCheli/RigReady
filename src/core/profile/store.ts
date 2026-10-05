@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { readDataText } from '../files/text';
 import type { FileStore } from '../ports';
 import { err, ok, type Result } from '../result';
+import { madeByVersionOne } from './earlier';
 import { migrateProfile, ProfileSchema, slugify, type Profile } from './schema';
 
 const StateSchema = z.object({
@@ -24,6 +25,14 @@ export interface InvalidProfile {
   detail?: string;
   /** 1-based line of a YAML syntax error, when known. */
   line?: number;
+}
+
+/** A setup file RigReady 1 left in the folder: not read by this version, and not a broken setup. */
+export interface EarlierProfile {
+  id: string;
+  file: string;
+  /** What version 1 called the setup, when the file says. */
+  name?: string;
 }
 
 export interface StoredProfile {
@@ -96,11 +105,14 @@ export class ProfileStore {
   }
 
   /** Every profile file: the valid ones (sorted by name) and the broken ones, each with why. */
-  async listDetailed(): Promise<Result<{ profiles: StoredProfile[]; invalid: InvalidProfile[] }>> {
+  async listDetailed(): Promise<
+    Result<{ profiles: StoredProfile[]; invalid: InvalidProfile[]; earlier: EarlierProfile[] }>
+  > {
     const entries = await this.files.listEntries(this.dir);
     if (!entries.ok) return entries;
     const profiles: StoredProfile[] = [];
     const invalid: InvalidProfile[] = [];
+    const earlier: EarlierProfile[] = [];
     for (const entry of entries.value) {
       if (entry.isDirectory || !entry.name.endsWith('.yaml')) continue;
       const id = entry.name.slice(0, -'.yaml'.length);
@@ -113,6 +125,9 @@ export class ProfileStore {
           mtimeMs: entry.mtimeMs,
           hasComments: loaded.value.hasComments,
         });
+      } else if (loaded.earlier) {
+        // Made by RigReady 1: listed apart, never as a setup that cannot be read.
+        earlier.push({ id, file: entry.path, ...loaded.earlier });
       } else {
         invalid.push({
           id,
@@ -128,7 +143,8 @@ export class ProfileStore {
         a.profile.name.localeCompare(b.profile.name) || a.profile.id.localeCompare(b.profile.id)
     );
     invalid.sort((a, b) => a.id.localeCompare(b.id));
-    return ok({ profiles, invalid });
+    earlier.sort((a, b) => a.id.localeCompare(b.id));
+    return ok({ profiles, invalid, earlier });
   }
 
   async get(id: string): Promise<Result<Profile>> {
@@ -150,11 +166,15 @@ export class ProfileStore {
     return this.files.readText(this.fileFor(id));
   }
 
-  private async load(
-    id: string
-  ): Promise<
+  private async load(id: string): Promise<
     | { ok: true; value: { profile: Profile; hasComments: boolean } }
-    | { ok: false; error: { code: string; message: string; detail?: string }; line?: number }
+    | {
+        ok: false;
+        error: { code: string; message: string; detail?: string };
+        line?: number;
+        /** The file is one RigReady 1 wrote. */
+        earlier?: { name?: string };
+      }
   > {
     if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(id))
       return err('profile.id', `Invalid profile id: ${id}`);
@@ -177,6 +197,18 @@ export class ProfileStore {
           line !== undefined ? `Line ${line}: ${reason}` : reason
         ),
         ...(line !== undefined ? { line } : {}),
+      };
+    }
+    const earlier = madeByVersionOne(raw);
+    if (earlier) {
+      return {
+        ok: false,
+        error: {
+          code: 'profile.earlier',
+          message: `The file ${path.basename(file)} was made by RigReady 1, which this version does not read.`,
+          detail: 'Create the setup again from this rig. The file is left where it is.',
+        },
+        earlier,
       };
     }
     const parsed = ProfileSchema.safeParse(migrateProfile(raw));

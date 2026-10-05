@@ -50,6 +50,46 @@ describe('profile files', () => {
     expect(state.invalid.map((i) => i.id)).toEqual(['renamed', 'schema', 'syntax']);
   });
 
+  it('a setup RigReady 1 left behind is not a broken setup: listed apart, left alone, and a first start stays a first start', async () => {
+    app = await wiredApp('first-run-after-version-one', { files: [] });
+    const dataRoot = app.ports.folders.dataRoot();
+    const old = path.join(dataRoot, 'profiles', 'mld4nbutw9iuzu9.yaml');
+    const left = ['settings.json', 'active-profile.json', 'display-configs.json'].map((name) =>
+      path.join(dataRoot, name)
+    );
+    const before = await Promise.all([old, ...left].map(sha));
+
+    const overview = await app.invoke<ProfileOverview>('profiles:overview');
+    expect(overview.profiles).toEqual([]);
+    expect(overview.invalid).toEqual([]);
+    expect(overview.earlier).toEqual([{ id: 'mld4nbutw9iuzu9', file: old, name: 'LMU' }]);
+    // The Play screen has no setup and nothing to warn about: it shows the welcome.
+    const state = await app.invoke<{ profiles: unknown[]; invalid: unknown[]; notice?: string }>(
+      'fly:state'
+    );
+    expect(state.profiles).toEqual([]);
+    expect(state.invalid).toEqual([]);
+    expect(state.notice).toBeUndefined();
+    // Asked for as a setup, it says what it is.
+    await expect(app.invoke('profiles:get', { id: 'mld4nbutw9iuzu9' })).rejects.toThrow(
+      /made by RigReady 1, which this version does not read/
+    );
+    // A setup made now stands beside it.
+    const profiles = app.wiring.context.profiles;
+    const listed = await profiles.listDetailed();
+    expect(listed.ok && listed.value.earlier.map((e) => e.id)).toEqual(['mld4nbutw9iuzu9']);
+    // Nothing version 1 wrote was touched by any of this.
+    expect(await Promise.all([old, ...left].map(sha))).toEqual(before);
+
+    // It is deleted like any setup file, with a copy kept.
+    expect(await app.invoke('profiles:remove', { id: 'mld4nbutw9iuzu9' })).toEqual({
+      removed: true,
+    });
+    expect((await app.invoke<ProfileOverview>('profiles:overview')).earlier).toEqual([]);
+    await expect(fs.access(old)).rejects.toThrow();
+    expect(await Promise.all(left.map(sha))).toEqual(before.slice(1));
+  });
+
   it('a version 1 file loads through the migration, and a newer one is reported instead of guessed', async () => {
     const v1 = yaml.load(
       await fs.readFile(

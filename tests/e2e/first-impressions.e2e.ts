@@ -319,3 +319,48 @@ test('accent: the mark and the lines that say where you are follow the kind of g
   await expect.poll(() => kindOf(page)).toBe('flight');
   expect(await colourOf(page, '.shell-brand svg')).toBe(BLUE);
 });
+
+test('welcome: on the data folder RigReady 1 left behind, the first start is still the welcome, and the old setup is listed apart', async ({
+  rig,
+}) => {
+  const run = await rig.launch('first-run-after-version-one', 'welcome-after-version-one');
+  const { page, shot, dataRoot } = run;
+  // The welcome, not a warning: the old file is not a setup that cannot be read.
+  const welcome = page.getByTestId('fly-empty');
+  await expect(welcome).toBeVisible();
+  await expect(welcome.locator('h1')).toHaveText('Welcome to RigReady');
+  await expect(page.getByTestId('app-notice')).toHaveCount(0);
+  await shot('welcome');
+
+  // The Setups page says what the file is, apart from the setups.
+  await go(page, '/configure/profiles');
+  await expect(page.getByTestId('profiles-empty')).toBeVisible();
+  const earlier = page.getByTestId('profiles-earlier');
+  await expect(earlier.locator('h2')).toHaveText('From RigReady 1');
+  await expect(page.getByTestId('profiles-earlier-note')).toContainText(
+    'does not read setups made by RigReady 1'
+  );
+  const old = earlier.getByTestId('profile-earlier');
+  await expect(old).toHaveCount(1);
+  await expect(old).toContainText('LMU');
+  await expect(old).toContainText('mld4nbutw9iuzu9.yaml · made by RigReady 1');
+  await expect(page.getByTestId('profile-invalid')).toHaveCount(0);
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('listed-apart');
+
+  // Deleting it is the usual deletion, and the section goes with the last file.
+  await old.getByTestId('profile-earlier-delete').click();
+  await expect(page.getByTestId('profile-delete-dialog')).toContainText('Delete "LMU"?');
+  await page.getByTestId('profile-delete-confirm').click();
+  await expect(page.getByTestId('profiles-message')).toContainText('Deleted "LMU"');
+  await expect(earlier).toHaveCount(0);
+  // The other files of version 1 are still there, as they were.
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  expect(await fs.readFile(path.join(dataRoot, 'active-profile.json'), 'utf8')).toBe(
+    '{"activeProfileId":null}'
+  );
+  expect(
+    JSON.parse(await fs.readFile(path.join(dataRoot, 'display-configs.json'), 'utf8'))
+  ).toMatchObject([{ name: 'Single Ultrawide' }]);
+});
