@@ -332,3 +332,36 @@ test('closed during the countdown: the next start offers the earlier layout back
   await expect(row(page, 'USB_Monitor (1 of 3)')).toContainText('Landscape');
   await shot('restored');
 });
+
+test('closed during the countdown: a change made while the earlier layout is offered takes its place, and the offer does not come back', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('displays-recovery', 'display-recovery-overtaken');
+  const offer = page.getByTestId('layout-recovery');
+  await expect(offer).toBeVisible();
+  // Something other than this question changes the layout: a start with --launch does, and
+  // so does Make ready from the tray. Here one monitor is turned.
+  interface Api {
+    invoke(channel: string, input?: unknown): Promise<{ ok: boolean; value?: unknown }>;
+  }
+  const turning = page.evaluate(async () => {
+    const api = (globalThis as unknown as { rigready: Api }).rigready;
+    const read = await api.invoke('displays:read');
+    const monitors = (read.value as { displays: { id: string; enabled: boolean }[] }).displays;
+    return api.invoke('displays:flip', { id: monitors.find((d) => d.enabled)!.id });
+  });
+  // That change has its own question. The old one is gone for good: what would be put back
+  // now is no longer what it listed.
+  await expect(page.getByTestId('keep-layout')).toBeVisible();
+  await expect(offer).toHaveCount(0);
+  await shot('its-own-question');
+  await page.getByTestId('keep-layout-keep').click();
+  await expect(page.getByTestId('keep-layout')).toHaveCount(0);
+  expect(await turning).toMatchObject({ ok: true, value: { kept: true } });
+  // Main has nothing left to offer, and the window does not ask again.
+  const left = await page.evaluate(() =>
+    (globalThis as unknown as { rigready: Api }).rigready.invoke('displays:recovery')
+  );
+  expect(left).toEqual({ ok: true, value: null });
+  await expect(offer).toHaveCount(0);
+});

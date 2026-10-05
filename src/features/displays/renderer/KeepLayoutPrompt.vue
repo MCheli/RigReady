@@ -52,6 +52,9 @@ async function answerRecovery(restore: boolean): Promise<void> {
   if (result.ok) {
     recovery.value = undefined;
     notifyMachineChanged();
+  } else if (!restore) {
+    // Nothing is left to decide here. Had it not been noted, the next start would ask again.
+    recovery.value = undefined;
   } else {
     recoveryError.value = errorText(result.error);
   }
@@ -64,8 +67,10 @@ onMounted(async () => {
   unsubscribe.push(
     api.on('applied', ({ seconds }) => {
       // A change made now has its own question. What an earlier run left is no longer what
-      // would be put back: the layout from before this change has taken its place.
-      recovery.value = undefined;
+      // would be put back: the layout from before this change has taken its place. (Putting
+      // the earlier layout back is a change too; that one is this question being answered,
+      // and if it did not go through, the reason is shown here once the countdown is over.)
+      if (!recovering.value) recovery.value = undefined;
       start(seconds);
     })
   );
