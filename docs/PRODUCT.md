@@ -64,3 +64,5 @@ Active in-game overlay, VR headset checks, a hosted sharing service (file sharin
 ## The final pass
 
 Requested by the owner on 2026-10-03, to be done only once everything above is built and proven: step back, look at the whole application as it then stands, and brainstorm as many "wow" moments as possible — visual polish, intuitive functionality, clean workflows, visual style — then build them in. Polish may be added along the way, but this thorough pass happens at the end.
+
+Done on 2026-10-04, in four parts, each recorded in the ledger with its evidence: the Play screen (WOW-FLY: the dial, one action, the session, the rig at a glance, the compact view), starting from Windows (WOW-WIN: one double-click, the taskbar, the tray, a hotkey), the tools (WOW-TOOLS: the input tester, the health check, the moving layout preview, the picture of the rig, the trainer, the USB tree) and the shell (WOW-UI: the command palette, the refined look, the welcome).
