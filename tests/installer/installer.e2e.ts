@@ -373,8 +373,13 @@ test('the installer installs per user without elevation, the app starts and upda
       const toggle = page.getByTestId('setting-start-with-windows').locator('input');
       await toggle.click();
       await expect(toggle).toBeChecked();
-      const entry = await regValue(RUN_KEY, RUN_VALUE);
-      expect(entry?.toLowerCase()).toContain(installedExe.toLowerCase());
+      // The switch moves at once and the registry follows.
+      await expect
+        .poll(async () => (await regValue(RUN_KEY, RUN_VALUE))?.toLowerCase() ?? '', {
+          message: 'HKCU Run entry after turning Start with Windows on',
+          timeout: 15_000,
+        })
+        .toContain(installedExe.toLowerCase());
       await quit(app);
     }
 

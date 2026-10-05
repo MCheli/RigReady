@@ -4,6 +4,7 @@ import { manifests } from '../../../renderer/features';
 import { errorText, useClient } from '../../../renderer/ipc';
 import type { Result } from '../../../core/result';
 import { settingsContract, type SettingsView } from '../contract';
+import { InOrder } from './inOrder';
 
 /** Sections other features add for settings of their own (manifest `settings`). */
 const featureSections = manifests
@@ -43,6 +44,37 @@ async function run(action: Promise<Result<SettingsView>>, message: string): Prom
   view.value = result.value;
   saved.value = message;
   return true;
+}
+
+const switches = new InOrder();
+
+/**
+ * A switch moves when it is clicked, and the change follows, in the order the clicks were
+ * made. The next click is then the opposite of this one also when this one has not been
+ * answered yet (it used to be sent as the same value again), and the last click holds.
+ */
+function setSwitch(key: 'startWithWindows' | 'minimizeToTray', on: boolean): void {
+  const current = view.value;
+  if (!current) return;
+  view.value = { ...current, settings: { ...current.settings, [key]: on } };
+  error.value = undefined;
+  saved.value = undefined;
+  void switches
+    .send(() => api.update({ [key]: on }))
+    .then(async ({ result, last }) => {
+      if (result.ok) {
+        // With a later click on its way, what that one answers is the state to show.
+        if (last) view.value = result.value;
+        saved.value = 'Saved';
+        return;
+      }
+      error.value = errorText(result.error);
+      if (!last) return;
+      // Refused: the switch goes back to what is stored.
+      const stored = await api.get();
+      if (stored.ok) view.value = stored.value;
+      revision.value++;
+    });
 }
 
 onMounted(async () => {
@@ -121,7 +153,7 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
             :model-value="settings.startWithWindows"
             data-testid="setting-start-with-windows"
             aria-label="Start with Windows"
-            @update:model-value="run(api.update({ startWithWindows: $event === true }), 'Saved')"
+            @update:model-value="setSwitch('startWithWindows', $event === true)"
           />
         </div>
         <div class="rr-row">
@@ -133,7 +165,7 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
             :model-value="settings.minimizeToTray"
             data-testid="setting-minimize-to-tray"
             aria-label="Keep running in the tray"
-            @update:model-value="run(api.update({ minimizeToTray: $event === true }), 'Saved')"
+            @update:model-value="setSwitch('minimizeToTray', $event === true)"
           />
         </div>
       </div>
