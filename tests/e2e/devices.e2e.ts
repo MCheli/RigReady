@@ -577,59 +577,67 @@ test('devices: the tester draws a stick as a plot with a fading trail, a hat as 
   await shot('less-motion');
 });
 
-test('devices: all controllers stay responsive with 16 controllers at 60 Hz', async ({ rig }) => {
-  const { page, shot } = await rig.launch('devices-rig', 'devices-tester-load');
-  await openDevices(page);
-  await page.getByTestId('devices-tab-test').click();
-  await expect(page.getByTestId('compact-controller')).toHaveCount(12);
+// A wall-clock measurement over three seconds: a frame held up by something else on the
+// machine says nothing about the page, so the measurement is taken again, up to three times,
+// before it counts as a failure.
+test.describe('under load', () => {
+  test.describe.configure({ retries: 2 });
+  test('devices: all controllers stay responsive with 16 controllers at 60 Hz', async ({ rig }) => {
+    const { page, shot } = await rig.launch('devices-rig', 'devices-tester-load');
+    await openDevices(page);
+    await page.getByTestId('devices-tab-test').click();
+    await expect(page.getByTestId('compact-controller')).toHaveCount(12);
 
-  // Input for 16 controllers (four more than the rig lists) 60 times a second for 3 s,
-  // sent from inside the page; every frame gap is measured meanwhile.
-  const result = await page.evaluate(async () => {
-    const bridge = (
-      globalThis as unknown as {
-        rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+    // Input for 16 controllers (four more than the rig lists) 60 times a second for 3 s,
+    // sent from inside the page; every frame gap is measured meanwhile.
+    const result = await page.evaluate(async () => {
+      const bridge = (
+        globalThis as unknown as {
+          rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+        }
+      ).rigready;
+      const raf = (
+        globalThis as unknown as { requestAnimationFrame(cb: (t: number) => void): number }
+      ).requestAnimationFrame.bind(globalThis);
+      const gaps: number[] = [];
+      let last = performance.now();
+      let measuring = true;
+      const frame = (now: number): void => {
+        gaps.push(now - last);
+        last = now;
+        if (measuring) raf(frame);
+      };
+      raf(frame);
+      const started = performance.now();
+      let sent = 0;
+      while (performance.now() - started < 3000) {
+        const t = sent++;
+        const states = Array.from({ length: 16 }, (_, index) => ({
+          index,
+          name: `Controller ${index}`,
+          axes: Array.from({ length: 8 }, (_, a) => Math.sin((t + a * 7 + index) / 9)),
+          buttons: Array.from({ length: 64 }, (_, b) => (t + b + index) % 11 === 0),
+          hats: [[Math.sign(Math.sin(t / 5)), 0]],
+          timestamp: t,
+        }));
+        void bridge.invoke('app:scenario', { input: states });
+        await new Promise((resolve) => setTimeout(resolve, 16));
       }
-    ).rigready;
-    const raf = (
-      globalThis as unknown as { requestAnimationFrame(cb: (t: number) => void): number }
-    ).requestAnimationFrame.bind(globalThis);
-    const gaps: number[] = [];
-    let last = performance.now();
-    let measuring = true;
-    const frame = (now: number): void => {
-      gaps.push(now - last);
-      last = now;
-      if (measuring) raf(frame);
-    };
-    raf(frame);
-    const started = performance.now();
-    let sent = 0;
-    while (performance.now() - started < 3000) {
-      const t = sent++;
-      const states = Array.from({ length: 16 }, (_, index) => ({
-        index,
-        name: `Controller ${index}`,
-        axes: Array.from({ length: 8 }, (_, a) => Math.sin((t + a * 7 + index) / 9)),
-        buttons: Array.from({ length: 64 }, (_, b) => (t + b + index) % 11 === 0),
-        hats: [[Math.sign(Math.sin(t / 5)), 0]],
-        timestamp: t,
-      }));
-      void bridge.invoke('app:scenario', { input: states });
-      await new Promise((resolve) => setTimeout(resolve, 16));
-    }
-    measuring = false;
-    return { sent, frames: gaps.length, worst: Math.max(...gaps.slice(1)) };
+      measuring = false;
+      return { sent, frames: gaps.length, worst: Math.max(...gaps.slice(1)) };
+    });
+    await expect(page.getByTestId('compact-controller')).toHaveCount(16);
+    // How many updates this test itself managed to send: fewer on a slow shared runner.
+    expect(result.sent).toBeGreaterThan(process.env['CI'] ? 60 : 120);
+    // No frame gap over 50 ms. A gap is a whole number of screen refreshes (16.7 ms at 60 Hz),
+    // so 50 ms is three of them and reads as 50.0 or 50.1; over 50 ms is four or more, 66.7.
+    // Measured: every frame on time except the one in which the four extra controllers first
+    // appear, which takes two or three refreshes. A shared CI runner draws without a graphics
+    // card on two cores and measures itself (62.5 ms, twice in a row): there the test only
+    // guards against a page that stops answering.
+    expect(result.worst).toBeLessThan(process.env['CI'] ? 250 : 58);
+    await shot('sixteen-controllers');
   });
-  await expect(page.getByTestId('compact-controller')).toHaveCount(16);
-  // How many updates this test itself managed to send: fewer on a slow shared runner.
-  expect(result.sent).toBeGreaterThan(process.env['CI'] ? 60 : 120);
-  // No frame may take longer than 50 ms on a PC. A shared CI runner draws without a graphics
-  // card on two cores, and what it measures is itself (its worst frame was 62.5 ms, four
-  // ticks of the Windows timer, twice in a row): there the test only guards against a page
-  // that stops answering.
-  expect(result.worst).toBeLessThan(process.env['CI'] ? 250 : 50);
-  await shot('sixteen-controllers');
 });
 
 test('devices: hands-off health check reports stuck buttons, switches, noisy axes and rogue inputs', async ({
