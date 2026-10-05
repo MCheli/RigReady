@@ -24,6 +24,7 @@ import {
   type FlightStep,
 } from '../core/flight';
 import type { SegmentState } from './dial';
+import { claimsOnLoad } from './inUse';
 
 export type Busy = 'makeReady' | 'standDown' | 'launch' | null;
 export type ProgressState = 'pending' | 'running' | 'done' | 'failed' | 'skipped';
@@ -292,12 +293,17 @@ export const useFlyStore = defineStore('fly', () => {
       if (current.ok) session.value = current.value;
     });
     void loadRig();
-    await check();
+    // Loading is not choosing: see claimsOnLoad.
+    await check(false, claimsOnLoad(state.value.profiles, activeId.value));
   }
 
-  /** Re-checks every item. Quiet: keep showing the current statuses (background refresh). */
-  async function check(quiet = false): Promise<void> {
-    const run = runCheck(quiet);
+  /**
+   * Re-checks every item. Quiet: keep showing the current statuses (background refresh).
+   * `claim`: the check also notes the setup as the one in use, which is what choosing it
+   * (the switcher, Re-check all) does and what a refresh in the background never does.
+   */
+  async function check(quiet = false, claim = !quiet): Promise<void> {
+    const run = runCheck(quiet, claim);
     checkRun = run;
     try {
       await run;
@@ -311,7 +317,7 @@ export const useFlyStore = defineStore('fly', () => {
     while (checkRun) await checkRun;
   }
 
-  async function runCheck(quiet: boolean): Promise<void> {
+  async function runCheck(quiet: boolean, claim: boolean): Promise<void> {
     const profileId = activeId.value;
     if (!profileId || busy.value === 'makeReady' || busy.value === 'standDown') return;
     const mine = newRunId('check');
@@ -319,8 +325,8 @@ export const useFlyStore = defineStore('fly', () => {
     if (!quiet) {
       checking.value = Object.fromEntries(items.value.map((i) => [i.itemId, true]));
     }
-    // A background refresh does not count as using the setup.
-    const result = await api.check({ profileId, runId: mine, remember: !quiet });
+    // A background refresh does not count as using the setup, and neither does loading.
+    const result = await api.check({ profileId, runId: mine, remember: claim });
     // A newer run, or a switch to another setup, makes this answer stale.
     if (mine !== runId || profileId !== activeId.value) return;
     checking.value = {};
