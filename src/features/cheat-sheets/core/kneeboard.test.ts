@@ -394,6 +394,11 @@ describe('the check "kneeboard pages are up to date"', () => {
     ).toBe('"DCS F/A-18C" already checks these kneeboard pages.');
     expect(await inSetup()).toHaveLength(1);
 
+    // The first reading of an aircraft's bindings is the slow one: DCS's own files are
+    // evaluated, half a second on a PC and, on a loaded two-core CI runner, more than the
+    // five seconds a check may take. Read once here, so that what is timed below is the check.
+    expect((await status(running)).state).toBe('none');
+
     // The check runs with the setup, and its fix writes the pages.
     const report = await running.invoke<{
       ready: boolean;
