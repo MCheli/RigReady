@@ -13,9 +13,9 @@ jobs:
     name: Build and release
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '24'
           cache: 'npm'
@@ -26,10 +26,13 @@ jobs:
       # feed would describe a version that is not the one inside the installer.
       - name: Tag matches package version
         shell: pwsh
+        # The tag name reaches the script as a variable, never as part of its text.
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          if ("v$version" -ne "${{ github.ref_name }}") {
-            Write-Error "Tag ${{ github.ref_name }} does not match package.json version $version"
+          if ("v$version" -ne $env:TAG) {
+            Write-Error "Tag $env:TAG does not match package.json version $version"
             exit 1
           }
 
@@ -52,7 +55,7 @@ jobs:
       # partial downloads. A draft: the release checklist (docs/RELEASING.md) is worked
       # through before a person publishes it.
       - name: Create GitHub release (draft)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           files: |
             release/*.exe
