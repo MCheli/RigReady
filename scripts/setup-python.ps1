@@ -31,7 +31,12 @@ if (Test-Runtime) {
 Write-Host "Downloading Python $pythonVersion (embeddable)..."
 $zip = Join-Path $env:TEMP "rigready-python-embed.zip"
 Invoke-WebRequest -Uri "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion-embed-amd64.zip" -OutFile $zip -UseBasicParsing
-$actual = (Get-FileHash -Algorithm SHA256 -Path $zip).Hash.ToLowerInvariant()
+# .NET rather than Get-FileHash: Windows PowerShell 5.1 started from pwsh 7 (as in CI) inherits
+# PS7's module path and cannot load Get-FileHash.
+$sha = [System.Security.Cryptography.SHA256]::Create()
+$stream = [System.IO.File]::OpenRead($zip)
+try { $actual = -join ($sha.ComputeHash($stream) | ForEach-Object { $_.ToString("x2") }) }
+finally { $stream.Dispose(); $sha.Dispose() }
 if ($actual -ne $pythonSha256) {
     Remove-Item $zip -Force
     throw "The Python download does not match its expected SHA-256 (got $actual)"
