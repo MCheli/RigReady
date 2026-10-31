@@ -4661,15 +4661,16 @@ requirements:
     priority: p0
     done_means:
       - "npm run ledger:check validates this file's schema and fails if any 'done' entry has no evidence or references a test id or screenshot path that does not exist."
-      - "npm run check (typecheck, lint, unit tests with coverage threshold, ledger check) runs in CI on every push."
+      - "npm run check (typecheck, lint, unit tests with coverage threshold, ledger check) runs in CI on every push to main and on every pull request into main."
     notes:
       - "2026-10-03: CI ran the check only for pushes to main; .github/workflows/ci.yml now runs it for a push to any branch. The check also includes the format check."
+      - "2026-10-31: the push trigger is limited to main again. Every branch reaches main through a pull request (the ruleset requires CI to pass), so the pull_request run checks it; a second push run on the same commit doubled the e2e suite, and a flaky test in either one blocked the merge."
     status: done
     evidence:
       - "tests/unit/gates.test.ts#the command exits 0 on a valid ledger and 1, naming the entry, on each kind of broken one"
       - "tests/unit/gates.test.ts#the ledger in the repository is valid, and every done entry has a test that exists"
       - "tests/unit/gates.test.ts#check is typecheck, lint, format, unit tests with coverage and the ledger check, in that order"
-      - "tests/unit/gates.test.ts#CI runs npm run check on every push to every branch, and on pull requests"
+      - "tests/unit/gates.test.ts#CI runs npm run check on every push to main, and on pull requests into main"
       - "scripts/lib/lib.test.ts#fails done without evidence, with missing evidence, or with screenshots only"
       - ".github/workflows/ci.yml"
 

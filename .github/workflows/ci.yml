@@ -1,9 +1,11 @@
 name: CI
 
 on:
-  # Every push, on every branch (PLAT-016).
+  # Pushes to main, and every pull request into main (PLAT-016). A branch with a pull request
+  # is checked once, by the pull_request run; a push run on it as well only doubled the e2e
+  # suite, and either run failing blocks the merge.
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
     branches: [main]
 

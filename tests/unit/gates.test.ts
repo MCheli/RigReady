@@ -129,17 +129,15 @@ describe('PLAT-016 npm run check, and CI', () => {
     }
   });
 
-  it('CI runs npm run check on every push to every branch, and on pull requests', async () => {
+  it('CI runs npm run check on every push to main, and on pull requests into main', async () => {
     const text = await fs.readFile(path.join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8');
     const workflow = yaml.load(text) as {
-      on: { push?: { branches?: string[] } | null; pull_request?: unknown };
+      on: { push?: { branches?: string[] } | null; pull_request?: { branches?: string[] } | null };
       jobs: Record<string, { 'runs-on': string; needs?: string; steps: { run?: string }[] }>;
     };
-    expect('push' in workflow.on).toBe(true);
-    // No branch filter, or one that lets every branch through.
-    const branches = workflow.on.push?.branches;
-    expect(branches === undefined || branches.includes('**')).toBe(true);
-    expect('pull_request' in workflow.on).toBe(true);
+    // A branch is checked by its pull request; main is checked on every push.
+    expect(workflow.on.push?.branches).toEqual(['main']);
+    expect(workflow.on.pull_request?.branches).toEqual(['main']);
     const checking = Object.values(workflow.jobs).filter((job) =>
       job.steps.some((step) => step.run === 'npm run check')
     );
