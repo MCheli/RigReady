@@ -131,7 +131,7 @@
     "@vitest/coverage-v8": "^5.0.3",
     "axe-core": "^4.13.0",
     "cross-env": "^10.0.0",
-    "electron": "^44.5.1",
+    "electron": "^44.10.1",
     "electron-builder": "^26.15.3",
     "electron-updater": "^6.8.9",
     "electron-vite": "^5.0.0",
@@ -155,6 +155,6 @@
     "vue-router": "^5.3.1",
     "vue-tsc": "^3.3.12",
     "vuetify": "^4.2.3",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   }
 }
