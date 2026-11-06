@@ -2811,9 +2811,12 @@ requirements:
       - "'Export to kneeboard' writes one PNG per device at kneeboard aspect (portrait, default 768x1024) into {DCS_USER}/Kneeboard/<aircraft>/ with names prefixed 'RigReady -' so they sort together and are recognisable."
       - "Previously exported RigReady pages for that aircraft are replaced; other kneeboard files are never touched."
       - "Writes go through FileStore with backup and a description; test asserts PNG dimensions and file names."
+      - "Like every DCS write, the export and the removal are refused while DCS runs (DCS.exe or DCS_mt.exe, the one definition in core gameRunning that dcs-setup and dcs-bindings use too) with dcs.running; the status carries the reason as `blocked`, so the dialog says why and its confirmation button stays off, and the up-to-date check's fix reports the same."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/kneeboard.test.ts#writes one PNG per device, sized and named for the kneeboard, into the aircraft’s folder"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#refuses to write or remove pages while DCS runs (DCS.exe or DCS_mt.exe), and says why in the status"
+      - "tests/unit/dcsRunning.test.ts#one definition of a running DCS: DCS.exe and DCS_mt.exe stop dcs-setup, dcs-bindings and the kneeboard alike"
       - "src/features/cheat-sheets/core/kneeboard.test.ts#goes through FileStore: one action in the journal, and Undo takes the pages away again"
       - "src/features/cheat-sheets/core/kneeboard.test.ts#never overwrites or removes a page that is not its own"
       - "src/features/cheat-sheets/core/kneeboard.test.ts#replaces its own pages on the next export and removes the ones no longer wanted"

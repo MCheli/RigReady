@@ -1,4 +1,5 @@
 import type { CheckContext } from './checks/registry';
+import type { Ports } from './ports';
 import type { Result } from './result';
 import type { GameKind, LaunchTarget } from '../shared/models';
 
@@ -98,6 +99,22 @@ export interface GameModule {
    */
   closeBeforeRestore?: { processes?: string[]; why: string };
   bindings?: BindingManager;
+}
+
+/**
+ * Whether one of the game's programs (`processes`, "DCS.exe" and "DCS_mt.exe" for DCS) is
+ * running now. The one definition every feature that refuses to write a game's files while
+ * it runs goes by, so that they cannot disagree. Image names are compared without regard to
+ * case. False when the list of programs cannot be read, and for a module that names none.
+ */
+export async function gameRunning(
+  ctx: { ports: Pick<Ports, 'processes'> },
+  module: Pick<GameModule, 'processes'> | undefined
+): Promise<boolean> {
+  const names = new Set((module?.processes ?? []).map((name) => name.toLowerCase()));
+  if (names.size === 0) return false;
+  const processes = await ctx.ports.processes.list();
+  return processes.ok && processes.value.some((p) => names.has(p.name.toLowerCase()));
 }
 
 export class GameRegistry {

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { CheckContext } from '../../../core/checks/registry';
-import type { GameInstall, GameRegistry } from '../../../core/games';
+import { gameRunning, type GameInstall, type GameRegistry } from '../../../core/games';
 import { err, ok, type Result } from '../../../core/result';
 import { MONITOR_SETUP_NAME } from './screens';
 
@@ -59,15 +59,21 @@ export async function dcsPaths(ctx: CheckContext, games: GameRegistry): Promise<
   });
 }
 
-/** DCS rewrites options.lua (and reads Export.lua and MonitorSetup) on its own schedule. */
-export async function dcsRunning(ctx: CheckContext): Promise<boolean> {
-  const processes = await ctx.ports.processes.list();
-  return processes.ok && processes.value.some((p) => /^dcs(_mt)?\.exe$/i.test(p.name));
+/**
+ * DCS rewrites options.lua (and reads Export.lua and MonitorSetup) on its own schedule. What
+ * counts as running is the DCS module's list (DCS.exe, DCS_mt.exe), through core's one
+ * definition, the same one the bindings and the kneeboard go by.
+ */
+export function dcsRunning(ctx: CheckContext, games: Pick<GameRegistry, 'get'>): Promise<boolean> {
+  return gameRunning(ctx, games.get('dcs'));
 }
 
 export const DCS_RUNNING_MESSAGE =
   'DCS is running. Close DCS first: it rewrites options.lua when it exits and reads these files only when it starts.';
 
-export async function refuseWhileRunning(ctx: CheckContext): Promise<Result<void>> {
-  return (await dcsRunning(ctx)) ? err('dcs.running', DCS_RUNNING_MESSAGE) : ok(undefined);
+export async function refuseWhileRunning(
+  ctx: CheckContext,
+  games: Pick<GameRegistry, 'get'>
+): Promise<Result<void>> {
+  return (await dcsRunning(ctx, games)) ? err('dcs.running', DCS_RUNNING_MESSAGE) : ok(undefined);
 }

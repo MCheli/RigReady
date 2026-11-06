@@ -40,6 +40,8 @@ export const KneeboardStatusSchema = z.object({
   exportedAt: z.string().optional(),
   pages: z.array(z.string()),
   options: KneeboardOptionsSchema.optional(),
+  /** Why the pages cannot be written or removed right now: the game is running. */
+  blocked: z.string().optional(),
 });
 
 export const LiveDeviceSchema = z.object({

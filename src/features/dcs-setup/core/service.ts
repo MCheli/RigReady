@@ -182,6 +182,11 @@ export class DcsSetupService {
     return dcsPaths(this.check, this.ctx.games);
   }
 
+  /** Whether DCS is running, by the DCS module's list of programs (core's one definition). */
+  dcsRunning(ctx: CheckContext = this.check): Promise<boolean> {
+    return dcsRunning(ctx, this.ctx.games);
+  }
+
   async state(): Promise<DcsSetupState> {
     const state = await this.store.read();
     if (!state.ok) this.ctx.log.warn('dcs-setup state unreadable', state.error);
@@ -290,7 +295,7 @@ export class DcsSetupService {
   // ---------------------------------------------------------------- overview
 
   async overview(): Promise<Overview> {
-    const running = await dcsRunning(this.check);
+    const running = await dcsRunning(this.check, this.ctx.games);
     const simAppPro = await findSimAppPro(this.check);
     const base: Overview = {
       found: false,
@@ -485,7 +490,7 @@ export class DcsSetupService {
       files: [],
       catalog: aircraftCatalog(),
       simAppProPlan: simAppPro.planPath !== undefined,
-      dcsRunning: await dcsRunning(this.check),
+      dcsRunning: await dcsRunning(this.check, this.ctx.games),
     };
     const paths = await this.paths();
     if (!paths.ok) {
@@ -592,7 +597,7 @@ export class DcsSetupService {
         diff: diffLines(current ?? '', generated.lua),
       },
       optionChanges,
-      dcsRunning: await dcsRunning(this.check),
+      dcsRunning: await dcsRunning(this.check, this.ctx.games),
     });
   }
 
@@ -602,7 +607,7 @@ export class DcsSetupService {
     setResolution: boolean;
     overwriteEdited: boolean;
   }): Promise<Result<{ message: string; changes: string[] }>> {
-    const refused = await refuseWhileRunning(this.check);
+    const refused = await refuseWhileRunning(this.check, this.ctx.games);
     if (!refused.ok) return refused;
     const preview = await this.previewScreens(input);
     if (!preview.ok) return preview;
@@ -719,7 +724,7 @@ export class DcsSetupService {
       tools: [],
       unknown: 0,
       streamDeckDcsPlugin: await this.ctx.ports.files.exists(plugin),
-      dcsRunning: await dcsRunning(this.check),
+      dcsRunning: await dcsRunning(this.check, this.ctx.games),
       simAppProRunning: simAppPro.running,
     };
     if (!paths.ok) {
@@ -840,7 +845,7 @@ export class DcsSetupService {
   }
 
   async applyExport(action: ExportAction): Promise<Result<{ message: string; changes: string[] }>> {
-    const refused = await refuseWhileRunning(this.check);
+    const refused = await refuseWhileRunning(this.check, this.ctx.games);
     if (!refused.ok) return refused;
     const paths = await this.paths();
     if (!paths.ok) return paths;
@@ -891,7 +896,7 @@ export class DcsSetupService {
 
   /** Adds the lines of the given tools that are missing. Fails, naming them, for tools that are not installed. */
   async repairExport(tools: ExportTool[]): Promise<Result<string>> {
-    const refused = await refuseWhileRunning(this.check);
+    const refused = await refuseWhileRunning(this.check, this.ctx.games);
     if (!refused.ok) return refused;
     const paths = await this.paths();
     if (!paths.ok) return paths;
@@ -1098,7 +1103,7 @@ export class DcsSetupService {
 
   /** Puts back what RigReady last wrote: RigReady.lua, the options.lua keys it set, the Export.lua tools it added. */
   async restoreManaged(): Promise<Result<string>> {
-    const refused = await refuseWhileRunning(this.check);
+    const refused = await refuseWhileRunning(this.check, this.ctx.games);
     if (!refused.ok) return refused;
     const plan = await this.managedPlan();
     if (!plan.ok) return plan;

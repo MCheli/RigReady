@@ -14,6 +14,7 @@ Depending on the page:
 - **DCS World > Screens**: "Close DCS first: it rewrites options.lua when it exits."
 - **DCS World > Export.lua**: "DCS is running. Close it before changing Export.lua; DCS reads it when a mission starts."
 - **Backups > Restore** and a snapshot put back: the game is listed under "Close these before restoring", and the Restore button stays off. See [restore](../protect/restore.md).
+- **Cheat sheets > Kneeboard**: "DCS is running. Close DCS first: it reads the Kneeboard folder when a mission starts, and RigReady changes no DCS file while it runs." Export and Remove both wait. See [Kneeboard pages](../dcs/kneeboard.md).
 - Undoing a binding change: "DCS is running. Close it before undoing a change to its bindings."
 
 ## What to do
