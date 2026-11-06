@@ -1389,7 +1389,7 @@ requirements:
       - 'src/features/profiles/core/profiles.test.ts#never writes a profile that fails its schema or its check types'
       - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'artifacts/screens/profile-clone-copy/01-list.png'
-      - 'artifacts/screens/profile-add-check/02-field-error.png'
+      - 'artifacts/screens/profile-add-check/03-field-error.png'
 
   - id: CFG-PROFILE-013
     title: Hand-edit a profile and reload
@@ -1447,6 +1447,9 @@ requirements:
       - 'tests/unit/pathVariablesAudit.test.ts#the parser sees the ways a module assigns a variable'
       - 'src/features/checks-generic/core/checks.test.ts#is an error, not "Missing", when the game behind the variable is not on this PC'
       - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
+      - 'src/features/profiles/core/profiles.test.ts#lists every path variable for the Variables menu, with where it points on this PC'
+      - 'src/features/profiles/renderer/insertVariable.test.ts#says the same file through the chosen variable when its folder holds it'
+      - 'artifacts/screens/profile-add-check/02-variables-menu.png'
       - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'artifacts/screens/profile-add-check/01-file-check.png'
 

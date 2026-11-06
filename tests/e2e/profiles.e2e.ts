@@ -87,6 +87,31 @@ test('setups: checks and launch steps are added through the generic form, with p
   );
   await shot('file-check');
 
+  // The Variables menu beside the path lists every variable a setup may use, says where each
+  // points on this PC, and puts the same file under the chosen one.
+  await options.getByTestId('edit-params-path-variables').click();
+  const savedGames = page.getByTestId('edit-params-path-variable-SAVED_GAMES');
+  await expect(savedGames).toContainText('Saved Games folder');
+  // A game's variable is offered whether or not the game is here, with what it means.
+  await expect(page.getByTestId('edit-params-path-variable-MSFS2024_USER')).toContainText(
+    'Microsoft Flight Simulator 2024 user folder'
+  );
+  await shot('variables-menu');
+  await savedGames.click();
+  await expect(savedGames).toBeHidden();
+  await expect(options.getByTestId('edit-params-path').locator('input')).toHaveValue(
+    '{SAVED_GAMES}/DCS/Config/options.lua'
+  );
+  // And back: the menu is opened afresh, so the item is waited for before it is chosen.
+  await options.getByTestId('edit-params-path-variables').click();
+  const dcsUser = page.getByTestId('edit-params-path-variable-DCS_USER');
+  await expect(dcsUser).toBeVisible();
+  await dcsUser.click();
+  await expect(dcsUser).toBeHidden();
+  await expect(options.getByTestId('edit-params-path').locator('input')).toHaveValue(
+    '{DCS_USER}/Config/options.lua'
+  );
+
   // A step before launch, with its options.
   await page.getByTestId('edit-add-preLaunch').click();
   const step = page.locator('[data-testid="edit-action"][data-phase="preLaunch"]');

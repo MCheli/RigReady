@@ -101,7 +101,7 @@ async function validate(ctx: Ctx, profile: Profile): Promise<Result<void>> {
     return err(
       'profile.variable',
       `Unknown path variable ${unknown.map((v) => `{${v}}`).join(', ')}.`,
-      'Use one of the variables listed in the editor, or a full path.'
+      'Choose one from the Variables menu beside the field, or use a full path.'
     );
   }
   return ok(undefined);
@@ -283,9 +283,13 @@ export async function pickers(ctx: Ctx): Promise<Result<Pickers>> {
     services: (services.ok ? services.value : [])
       .map((s) => ({ name: s.name, displayName: s.displayName, state: s.state }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName)),
-    variables: Object.entries(variables)
-      .map(([name, value]) => ({ name, path: value }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    // Every variable RigReady knows, in the order the list declares them; the ones that
+    // resolve here say where.
+    variables: Object.entries(knownPathVariables(ctx.games)).map(([name, label]) => ({
+      name,
+      label,
+      ...(variables[name] !== undefined ? { path: variables[name] } : {}),
+    })),
   });
 }
 

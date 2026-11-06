@@ -151,9 +151,17 @@ export const PickersSchema = z.object({
   ),
   processes: z.array(z.object({ name: z.string(), path: z.string().optional() })),
   services: z.array(z.object({ name: z.string(), displayName: z.string(), state: z.string() })),
-  variables: z.array(z.object({ name: z.string(), path: z.string() })),
+  /**
+   * Every path variable a setup may use, for the Variables menu beside a path field: the
+   * standard ones first, then each game's. `path` is what it resolves to on this PC, absent
+   * when the game (or Steam) is not here; the variable is accepted all the same.
+   */
+  variables: z.array(
+    z.object({ name: z.string(), label: z.string(), path: z.string().optional() })
+  ),
 });
 export type Pickers = z.infer<typeof PickersSchema>;
+export type PathVariableChoice = Pickers['variables'][number];
 
 /** A setup's desktop shortcut: whether it is there and still does what it should. */
 export const ShortcutStatusSchema = z.object({
