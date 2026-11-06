@@ -451,7 +451,7 @@ app.layoutAnswer = 'wait';                           // 'keep' (default) | 'reve
 await rig.cleanup();                                 // in afterEach
 ```
 
-- `rig.home` is the fake user folder; every `ports.folders.*` path is under it, Program Files included. A scenario copies the rig's recorded files there (section 10). Copying all of them takes about a tenth of a second per test, so pass `files` with the globs you need (or `[]`) when a test does not need everything.
+- `rig.home` is the fake user folder; every `ports.folders.*` path is under it, Program Files included. A scenario copies the rig's recorded files there (section 10). Copying all of them takes about a tenth of a second per test on a desk PC and ten times that on a CI runner, so pass `files` with the globs you need when a test does not need everything, or `[]`, which copies nothing at all: not even the recorded folders, and a scenario's `removeFile` mutations are then skipped as already done.
 - **The ports the features hold are wrapped.** `wireFeatures` gives features a copy of the ports object with `processes` wrapped by `verifiedProcesses`, so in a `wiredApp` test `app.wiring.context.ports !== rig.ports` and `ctx.ports.processes !== rig.ports.processes`. Consequences:
   - Steer a port by changing the fake port object the rig holds (`rig.ports.http.respond(...)`, `rig.ports.processes.stubborn.add('TrackIR5.exe')`, replacing a method: `rig.ports.devices.list = async () => err('x', 'nope')`). The wrapped copy shares those objects, so the features see it.
   - Replacing a whole port after wiring (`rig.ports.http = somethingElse`) is not seen by any feature: they hold the copy made at wiring.
