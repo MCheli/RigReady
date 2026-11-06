@@ -899,11 +899,9 @@ export class FakeShortcuts implements Shortcuts {
   constructor(private readonly folders: Pick<KnownFolders, 'localAppData'>) {}
 
   /** Where a per-user install of RigReady is, on the fake machine. */
-  self(): { exe: string; args: string[] } {
-    return {
-      exe: path.join(this.folders.localAppData(), 'Programs', 'RigReady', 'RigReady.exe'),
-      args: [],
-    };
+  self(): { exe: string; args: string[]; icon: string } {
+    const exe = path.join(this.folders.localAppData(), 'Programs', 'RigReady', 'RigReady.exe');
+    return { exe, args: [], icon: exe };
   }
 
   async build(link: ShortcutLink): Promise<Result<Uint8Array>> {

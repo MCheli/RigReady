@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    RigReady's mark for 16 to 32 px: the title bar, the tray, the taskbar and a browser tab.
+    The same flight path marker as rigready.svg, with strokes of a ninth of the tile instead
+    of a sixteenth, so the ring still has a hole and the wings are still bars at 16 px.
+    Rendered by scripts/icons.mjs (npm run icons); site/favicon.svg is a copy of this file.
+  -->
+  <rect width="32" height="32" rx="7" fill="#171c22"/>
+  <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" fill="none" stroke="#2a323c" stroke-width="1"/>
+  <g fill="none" stroke="#5aa9e6" stroke-width="3.6" stroke-linecap="round">
+    <circle cx="16" cy="18.5" r="5.2"/>
+    <path d="M4 18.5h7M21 18.5h7M16 13.5V6"/>
+  </g>
+</svg>

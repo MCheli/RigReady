@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "ledger:check": "tsx scripts/ledger-check.ts",
+    "icons": "electron scripts/icons.mjs",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test:coverage && npm run ledger:check",
     "test:e2e": "npm run build && playwright test",
     "rig:record": "tsx scripts/rig-record.ts",
@@ -79,6 +80,10 @@
       "createStartMenuShortcut": true,
       "shortcutName": "RigReady",
       "deleteAppDataOnUninstall": false,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
       "include": "build/installer.nsh",
       "packElevateHelper": false,
       "runAfterFinish": true

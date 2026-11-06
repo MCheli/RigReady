@@ -11,7 +11,12 @@ import {
 } from 'electron';
 import path from 'node:path';
 import { z } from 'zod';
-import trayIconPath from '../../assets/icon.ico?asset';
+// The brand mark (assets/brand, rendered by `npm run icons`): the .ico carries every size
+// Windows draws, so the window, the tray, a shortcut and the Jump List all show the same
+// mark in a development run as in the installed app, where it is also the exe's icon.
+import appIconPath from '../../assets/icon.ico?asset';
+// The tray's mark at 32 px, which the status badge is painted onto.
+import trayBadgeBasePath from '../../assets/tray-32.png?asset';
 import { parseCommandLine, type ParsedCommandLine } from '../core/commandLine';
 import { startupNotices } from '../core/dataHealth';
 import { MAKE_READY_HOTKEY } from '../core/hotkeys';
@@ -126,6 +131,7 @@ async function readPanelPlaces(): Promise<string | undefined> {
 const appWindow = new ElectronAppWindow(() => mainWindow, {
   preload: path.join(__dirname, '../preload/index.js'),
   load: loadApp,
+  icon: appIconPath,
   places: {
     read: async (id) => panelPlaces(await readPanelPlaces())[id],
     write: (id, place) => {
@@ -170,7 +176,7 @@ async function createPlatform(): Promise<Platform> {
         projectRoot,
         ...(resourcesPath ? { resourcesPath } : {}),
         app: (dataRoot) => {
-          const shortcuts = new ElectronShortcuts(dataRoot);
+          const shortcuts = new ElectronShortcuts(dataRoot, appIconPath);
           realTaskbar = new ElectronTaskbar(
             () => mainWindow,
             () => shortcuts.self()
@@ -265,6 +271,7 @@ function createWindow(
     show: false,
     autoHideMenuBar: true,
     title: 'RigReady',
+    icon: appIconPath,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -660,7 +667,9 @@ async function start(): Promise<void> {
     const key = tone ?? 'none';
     const cached = trayImages.get(key);
     if (cached) return cached;
-    const base = nativeImage.createFromPath(trayIconPath);
+    // Without a badge, the .ico: Windows takes the entry made for the tray's size. With one,
+    // the mark rendered at 32 px, so the badge goes onto the same small-size mark.
+    const base = nativeImage.createFromPath(tone ? trayBadgeBasePath : appIconPath);
     let image = base;
     if (tone && !base.isEmpty()) {
       const size = 32;
@@ -851,7 +860,7 @@ async function start(): Promise<void> {
   }
 
   try {
-    tray = new Tray(nativeImage.createFromPath(trayIconPath));
+    tray = new Tray(nativeImage.createFromPath(appIconPath));
     tray.on('click', () => onTrayIcon('click'));
     tray.on('double-click', () => onTrayIcon('double-click'));
     refreshTray();
