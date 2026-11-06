@@ -102,7 +102,7 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
         target: self.exe,
         args: ['--launch=dcs-f-a-18c'],
         description: 'Make the rig ready for DCS F/A-18C and launch it',
-        icon: self.exe,
+        icon: self.icon,
         cwd: path.win32.dirname(self.exe),
       },
     });

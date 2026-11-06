@@ -379,11 +379,19 @@ export const APP_USER_MODEL_ID = 'io.rigready.app';
 export class ElectronShortcuts implements Shortcuts {
   private counter = 0;
 
-  constructor(private readonly dataRoot: string) {}
+  constructor(
+    private readonly dataRoot: string,
+    /** RigReady's icon file (assets/icon.ico), for a run where the program is not RigReady.exe. */
+    private readonly iconFile: string
+  ) {}
 
-  self(): { exe: string; args: string[] } {
-    // In a development run the program is electron.exe, which needs to be told the app.
-    return { exe: process.execPath, args: app.isPackaged ? [] : [app.getAppPath()] };
+  self(): { exe: string; args: string[]; icon: string } {
+    // In a development run the program is electron.exe, which needs to be told the app,
+    // and whose own icon is not RigReady's.
+    const exe = process.execPath;
+    return app.isPackaged
+      ? { exe, args: [], icon: exe }
+      : { exe, args: [app.getAppPath()], icon: this.iconFile };
   }
 
   async build(link: ShortcutLink): Promise<Result<Uint8Array>> {
@@ -504,8 +512,8 @@ export class ElectronTaskbar implements Taskbar {
 
   constructor(
     private readonly window: () => BrowserWindow | undefined,
-    /** How Windows starts this copy of RigReady (Shortcuts.self). */
-    private readonly self: () => { exe: string; args: string[] }
+    /** How Windows starts this copy of RigReady, and its icon (Shortcuts.self). */
+    private readonly self: () => { exe: string; args: string[]; icon: string }
   ) {}
 
   /**
@@ -561,7 +569,7 @@ export class ElectronTaskbar implements Taskbar {
 
   async setJumpTasks(tasks: JumpTask[]): Promise<Result<void>> {
     try {
-      const { exe, args } = this.self();
+      const { exe, args, icon } = this.self();
       const taken = app.setUserTasks(
         tasks.map((task) => ({
           program: exe,
@@ -569,7 +577,7 @@ export class ElectronTaskbar implements Taskbar {
           arguments: joinWindowsArgs([...args, ...task.args]),
           title: task.title,
           description: task.description,
-          iconPath: exe,
+          iconPath: icon,
           iconIndex: 0,
         }))
       );
@@ -667,6 +675,11 @@ export interface PanelHost {
   preload: string;
   load(window: BrowserWindow, route: string): void;
   /**
+   * The window icon (assets/icon.ico). The installed app's windows carry the exe's icon
+   * without it; a development run's would carry Electron's.
+   */
+  icon?: string;
+  /**
    * Where the user left each panel, by panel id. Optional: without it every panel opens
    * at the size its feature asks for, wherever Windows puts it.
    */
@@ -712,6 +725,7 @@ export class ElectronAppWindow implements AppWindow {
           backgroundColor: '#0f1317',
           autoHideMenuBar: true,
           title: panel.title,
+          ...(this.host.icon ? { icon: this.host.icon } : {}),
           alwaysOnTop: panel.alwaysOnTop === true,
           webPreferences: {
             preload: this.host.preload,

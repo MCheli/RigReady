@@ -832,7 +832,11 @@ describe('scripted ports', () => {
       expect(result).toMatchObject({ ok: false, error: { code: 'port.unavailable' } });
     }
     // What starts this program is known without the app.
-    expect(headlessPorts.shortcuts.self()).toEqual({ exe: process.execPath, args: [] });
+    expect(headlessPorts.shortcuts.self()).toEqual({
+      exe: process.execPath,
+      args: [],
+      icon: process.execPath,
+    });
     // Nothing presses a taskbar button outside the app: subscribing is harmless.
     const pressed: string[] = [];
     headlessPorts.taskbar.subscribe((id) => pressed.push(id))();

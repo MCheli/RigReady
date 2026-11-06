@@ -383,10 +383,12 @@ export interface ShortcutLink {
  */
 export interface Shortcuts {
   /**
-   * How Windows starts this copy of RigReady: the program, and the arguments that must
-   * come before any others (none in the installed app).
+   * How Windows starts this copy of RigReady: the program, the arguments that must come
+   * before any others (none in the installed app), and the file that carries RigReady's
+   * icon for a shortcut or a Jump List (the program itself when installed; in a
+   * development run the program is Electron, so it is the icon file).
    */
-  self(): { exe: string; args: string[] };
+  self(): { exe: string; args: string[]; icon: string };
   /** The bytes of a .lnk file for a link. Changes nothing outside RigReady's data folder. */
   build(link: ShortcutLink): Promise<Result<Uint8Array>>;
   /**
