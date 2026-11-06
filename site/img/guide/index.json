@@ -1,21 +1,266 @@
 {
+  "artifacts/screens/shell-palette/01-open.png": {
+    "file": "shell-palette--01-open.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/shell-commands/03-backed-up.png": {
+    "file": "shell-commands--03-backed-up.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/diagnostics/01-this-pc.png": {
+    "file": "diagnostics--01-this-pc.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/diagnostics/04-copied.png": {
+    "file": "diagnostics--04-copied.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/errors-unexpected/01-main-error.png": {
+    "file": "errors-unexpected--01-main-error.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/shell-shortcuts/01-shortcuts.png": {
+    "file": "shell-shortcuts--01-shortcuts.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/shell-shortcuts/02-twice-the-text-size.png": {
+    "file": "shell-shortcuts--02-twice-the-text-size.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/updates/01-nothing-published.png": {
+    "file": "updates--01-nothing-published.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/updates/03-downloaded.png": {
+    "file": "updates--03-downloaded.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/updates/04-refused-while-game-runs.png": {
+    "file": "updates--04-refused-while-game-runs.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/updates-channel/01-beta-channel-automatic-off.png": {
+    "file": "updates-channel--01-beta-channel-automatic-off.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-walkthrough/01-press-the-control.png": {
+    "file": "ai-assist-walkthrough--01-press-the-control.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-suggest/01-payload.png": {
+    "file": "ai-assist-suggest--01-payload.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/bindings-problems/01-problems.png": {
+    "file": "bindings-problems--01-problems.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/bindings-problems/02-cleanup-preview.png": {
     "file": "bindings-problems--02-cleanup-preview.webp",
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/cheat-sheets-outputs/kneeboard-left-mfd-night.png": {
-    "file": "cheat-sheets-outputs--kneeboard-left-mfd-night.webp",
-    "width": 768,
-    "height": 1024
-  },
-  "artifacts/screens/devices-health/04-findings.png": {
-    "file": "devices-health--04-findings.webp",
+  "artifacts/screens/bindings-device/03-stick.png": {
+    "file": "bindings-device--03-stick.webp",
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/display-layouts/04-apply-flying-preview.png": {
-    "file": "display-layouts--04-apply-flying-preview.webp",
+  "artifacts/screens/bindings-edit/02-bind-dialog.png": {
+    "file": "bindings-edit--02-bind-dialog.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/bindings-edit/04-review.png": {
+    "file": "bindings-edit--04-review.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-sheet/02-pressed.png": {
+    "file": "cheat-sheets-sheet--02-pressed.webp",
+    "width": 1500,
+    "height": 1250
+  },
+  "artifacts/screens/cheat-sheets-quick/01-quick-look.png": {
+    "file": "cheat-sheets-quick--01-quick-look.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/bindings-copy/01-proposals.png": {
+    "file": "bindings-copy--01-proposals.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/bindings-snapshots/01-compare.png": {
+    "file": "bindings-snapshots--01-compare.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/bindings-migration/02-device-ids.png": {
+    "file": "bindings-migration--02-device-ids.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/bindings-identical/02-press-a-button-on-it.png": {
+    "file": "bindings-identical--02-press-a-button-on-it.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-export/01-needs-export-script.png": {
+    "file": "dcs-setup-export--01-needs-export-script.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-export/04-changed-outside.png": {
+    "file": "dcs-setup-export--04-changed-outside.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-overview/01-overview.png": {
+    "file": "dcs-setup-overview--01-overview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-overview/03-update-waiting.png": {
+    "file": "dcs-setup-overview--03-update-waiting.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-overview/02-aircraft.png": {
+    "file": "dcs-setup-overview--02-aircraft.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-kneeboard/02-preview-night.png": {
+    "file": "cheat-sheets-kneeboard--02-preview-night.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-check/03-stale.png": {
+    "file": "cheat-sheets-check--03-stale.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-screens/01-imported.png": {
+    "file": "dcs-setup-screens--01-imported.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-screens/05-cropped.png": {
+    "file": "dcs-setup-screens--05-cropped.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-simapppro/03-simapppro-page.png": {
+    "file": "dcs-setup-simapppro--03-simapppro-page.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-simapppro-rewrote/01-simapppro-page-changed.png": {
+    "file": "dcs-setup-simapppro-rewrote--01-simapppro-page-changed.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-trainer/04-wrong.png": {
+    "file": "cheat-sheets-trainer--04-wrong.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-trainer/06-round-over.png": {
+    "file": "cheat-sheets-trainer--06-round-over.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/generic-configure/04-games.png": {
+    "file": "generic-configure--04-games.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-games/05-assetto-corsa.png": {
+    "file": "racing-games--05-assetto-corsa.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-games/04-beamng.png": {
+    "file": "racing-games--04-beamng.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-beamng/01-replaced-wheel.png": {
+    "file": "racing-beamng--01-replaced-wheel.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-game-pages/01-games.png": {
+    "file": "racing-game-pages--01-games.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-game-pages/03-not-found.png": {
+    "file": "racing-game-pages--03-not-found.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-game-pages/02-iracing.png": {
+    "file": "racing-game-pages--02-iracing.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-iracing-repair/02-moved.png": {
+    "file": "racing-iracing-repair--02-moved.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-games/01-lmu.png": {
+    "file": "racing-games--01-lmu.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-lmu-renamed/02-renamed.png": {
+    "file": "racing-lmu-renamed--02-renamed.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-game-pages/05-msfs2024.png": {
+    "file": "racing-game-pages--05-msfs2024.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/generic-custom-game/01-other-game.png": {
+    "file": "generic-custom-game--01-other-game.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/generic-custom-game/06-tracked.png": {
+    "file": "generic-custom-game--06-tracked.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-wheel/01-wheel.png": {
+    "file": "racing-wheel--01-wheel.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-wheel/02-presets.png": {
+    "file": "racing-wheel--02-presets.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-wheel/03-recommended.png": {
+    "file": "racing-wheel--03-recommended.webp",
     "width": 1250,
     "height": 821
   },
@@ -29,13 +274,188 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/profile-capture/04-capture.png": {
+    "file": "profile-capture--04-capture.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/first-run/03-ready.png": {
     "file": "first-run--03-ready.webp",
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/fly-rig/01-problems-as-places.png": {
-    "file": "fly-rig--01-problems-as-places.webp",
+  "artifacts/screens/devices-list/02-found.png": {
+    "file": "devices-list--02-found.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-list/03-identical-named.png": {
+    "file": "devices-list--03-identical-named.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-hidhide/03-hidhide-panel.png": {
+    "file": "devices-hidhide--03-hidhide-panel.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-health/02-hands-off.png": {
+    "file": "devices-health--02-hands-off.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-health/04-findings.png": {
+    "file": "devices-health--04-findings.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-health-evidence/03-noisy-axis-trace.png": {
+    "file": "devices-health-evidence--03-noisy-axis-trace.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-list/01-list.png": {
+    "file": "devices-list--01-list.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-tester/01-all.png": {
+    "file": "devices-tester--01-all.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-tester/02-one-controller.png": {
+    "file": "devices-tester--02-one-controller.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-tester-stick/02-stick-in-motion.png": {
+    "file": "devices-tester-stick--02-stick-in-motion.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/stream-deck-health/01-health.png": {
+    "file": "stream-deck-health--01-health.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/stream-deck-backups/03-two-backups.png": {
+    "file": "stream-deck-backups--03-two-backups.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/stream-deck-restore/01-preview.png": {
+    "file": "stream-deck-restore--01-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/stream-deck-new-pc/02-setup.png": {
+    "file": "stream-deck-new-pc--02-setup.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/trackir-ready/01-ready.png": {
+    "file": "trackir-ready--01-ready.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/trackir-ready/02-map.png": {
+    "file": "trackir-ready--02-map.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/usb-map/04-what-to-unplug.png": {
+    "file": "usb-map--04-what-to-unplug.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/usb-map/01-tree.png": {
+    "file": "usb-map--01-tree.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/usb-map/02-pedals-selected.png": {
+    "file": "usb-map--02-pedals-selected.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/audio-page/01-as-recorded.png": {
+    "file": "audio-page--01-as-recorded.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/audio-default-speakers/02-fixed.png": {
+    "file": "audio-default-speakers--02-fixed.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/displays-upright/02-which-way-is-up.png": {
+    "file": "displays-upright--02-which-way-is-up.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/displays-upright/03-turned.png": {
+    "file": "displays-upright--03-turned.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-layouts/01-desk-now.png": {
+    "file": "display-layouts--01-desk-now.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-layouts/03-layouts.png": {
+    "file": "display-layouts--03-layouts.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-layouts/04-apply-flying-preview.png": {
+    "file": "display-layouts--04-apply-flying-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-layouts/07-racing-without-tv.png": {
+    "file": "display-layouts--07-racing-without-tv.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-layouts/05-keep-prompt.png": {
+    "file": "display-layouts--05-keep-prompt.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-recovery/01-offer.png": {
+    "file": "display-recovery--01-offer.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-edit/02-edited.png": {
+    "file": "display-edit--02-edited.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-edit/01-overlap-refused.png": {
+    "file": "display-edit--01-overlap-refused.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/one-click-shortcut/03-on-the-desktop.png": {
+    "file": "one-click-shortcut--03-on-the-desktop.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/one-click-shortcut/04-on-the-safety-page.png": {
+    "file": "one-click-shortcut--04-on-the-safety-page.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/one-click-hotkey/02-choosing.png": {
+    "file": "one-click-hotkey--02-choosing.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/one-click-hotkey/05-made-ready-by-the-hotkey.png": {
+    "file": "one-click-hotkey--05-made-ready-by-the-hotkey.webp",
     "width": 1250,
     "height": 821
   },
@@ -44,8 +464,93 @@
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/profile-capture/04-capture.png": {
-    "file": "profile-capture--04-capture.webp",
+  "artifacts/screens/taskbar-button/01-not-ready.png": {
+    "file": "taskbar-button--01-not-ready.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/taskbar-jump-list/01-three-setups.png": {
+    "file": "taskbar-jump-list--01-three-setups.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/tray/01-not-ready.png": {
+    "file": "tray--01-not-ready.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-compact/01-not-ready.png": {
+    "file": "fly-compact--01-not-ready.webp",
+    "width": 384,
+    "height": 297
+  },
+  "artifacts/screens/fly-rig/01-problems-as-places.png": {
+    "file": "fly-rig--01-problems-as-places.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-one-action/01-not-ready.png": {
+    "file": "fly-one-action--01-not-ready.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-make-ready-all/02-keep-prompt.png": {
+    "file": "fly-make-ready-all--02-keep-prompt.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-one-action-held/01-held.png": {
+    "file": "fly-one-action-held--01-held.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-session/02-in-session.png": {
+    "file": "fly-session--02-in-session.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-session/03-welcome-back.png": {
+    "file": "fly-session--03-welcome-back.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-history/02-history.png": {
+    "file": "fly-history--02-history.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-session/04-stood-down.png": {
+    "file": "fly-session--04-stood-down.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-stand-down-desk/02-at-the-desk.png": {
+    "file": "fly-stand-down-desk--02-at-the-desk.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-switch/02-switcher-open.png": {
+    "file": "fly-switch--02-switcher-open.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-suggest/01-the-offer.png": {
+    "file": "fly-suggest--01-the-offer.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-tone/01-the-setting.png": {
+    "file": "fly-tone--01-the-setting.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-full/04-backed-up.png": {
+    "file": "backup-full--04-backed-up.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-game-updated/02-backed-up.png": {
+    "file": "backup-game-updated--02-backed-up.webp",
     "width": 1250,
     "height": 821
   },
@@ -54,13 +559,158 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/backup-sources/04-restore-waits-for-iracing.png": {
+    "file": "backup-sources--04-restore-waits-for-iracing.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/restore/03-report.png": {
+    "file": "restore--03-report.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-restore-device-ids/01-notice-with-button.png": {
+    "file": "backup-restore-device-ids--01-notice-with-button.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/share-picture/rig-wide.png": {
     "file": "share-picture--rig-wide.webp",
     "width": 1600,
     "height": 900
   },
-  "artifacts/screens/shell-palette/01-open.png": {
-    "file": "shell-palette--01-open.webp",
+  "artifacts/screens/share-picture/rig-square.png": {
+    "file": "share-picture--rig-square.webp",
+    "width": 1080,
+    "height": 1080
+  },
+  "artifacts/screens/app-safety/02-two-changes.png": {
+    "file": "app-safety--02-two-changes.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/app-safety/03-undone.png": {
+    "file": "app-safety--03-undone.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/share-export/02-never-shared.png": {
+    "file": "share-export--02-never-shared.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/share-export/01-review.png": {
+    "file": "share-export--01-review.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/share-import/02-report.png": {
+    "file": "share-import--02-report.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/share-import/04-imported.png": {
+    "file": "share-import--04-imported.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-history/01-snapshot-taken.png": {
+    "file": "backup-history--01-snapshot-taken.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-history/02-snapshot-diff.png": {
+    "file": "backup-history--02-snapshot-diff.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-full/03-tracked.png": {
+    "file": "backup-full--03-tracked.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-full/02-editor-preview.png": {
+    "file": "backup-full--02-editor-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-history/03-what-changed.png": {
+    "file": "backup-history--03-what-changed.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profile-capture-game/02-on-fly.png": {
+    "file": "profile-capture-game--02-on-fly.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profile-clone-copy/02-copy-dialog.png": {
+    "file": "profile-clone-copy--02-copy-dialog.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profile-clone-copy/05-in-safety.png": {
+    "file": "profile-clone-copy--05-in-safety.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profile-edit-item/01-editing-trackir.png": {
+    "file": "profile-edit-item--01-editing-trackir.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profile-capture/07-setups.png": {
+    "file": "profile-capture--07-setups.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-launch-actions/02-launched.png": {
+    "file": "fly-launch-actions--02-launched.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-generic-checks/02-script-output-and-error.png": {
+    "file": "fly-generic-checks--02-script-output-and-error.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profile-hand-edit/01-broken-edit.png": {
+    "file": "profile-hand-edit--01-broken-edit.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/damaged-data-files/01-started-with-notices.png": {
+    "file": "damaged-data-files--01-started-with-notices.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/damaged-data-files/05-diagnostics.png": {
+    "file": "damaged-data-files--05-diagnostics.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/a11y-troubled-devices-tpr-hidden/01-page.png": {
+    "file": "a11y-troubled-devices-tpr-hidden--01-page.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/a11y-fly-not-ready/01-not-ready.png": {
+    "file": "a11y-fly-not-ready--01-not-ready.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/shell-commands/01-layout-applied-waiting.png": {
+    "file": "shell-commands--01-layout-applied-waiting.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/shell-commands/02-layout-refused.png": {
+    "file": "shell-commands--02-layout-refused.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/damaged-data-files/02-setups.png": {
+    "file": "damaged-data-files--02-setups.webp",
     "width": 1250,
     "height": 821
   }
