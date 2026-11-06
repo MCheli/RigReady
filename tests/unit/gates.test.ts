@@ -133,7 +133,10 @@ describe('PLAT-016 npm run check, and CI', () => {
     const text = await fs.readFile(path.join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8');
     const workflow = yaml.load(text) as {
       on: { push?: { branches?: string[] } | null; pull_request?: { branches?: string[] } | null };
-      jobs: Record<string, { 'runs-on': string; needs?: string; steps: { run?: string }[] }>;
+      jobs: Record<
+        string,
+        { 'runs-on': string; needs?: string; steps: { name?: string; run?: string }[] }
+      >;
     };
     // A branch is checked by its pull request; main is checked on every push.
     expect(workflow.on.push?.branches).toEqual(['main']);
@@ -145,8 +148,10 @@ describe('PLAT-016 npm run check, and CI', () => {
     const job = checking[0]!;
     // Windows: the app, its native bindings and half of its tests are Windows-only.
     expect(job['runs-on']).toMatch(/^windows-/);
-    // The gate waits for nothing and is skipped by nothing.
+    // The gate waits for nothing and is skipped by nothing. Besides preparing the runner (its
+    // virus scanner has timed the unit tests out), it is nothing but npm ci and npm run check.
     expect(job.needs).toBeUndefined();
-    expect(job.steps.map((s) => s.run).filter(Boolean)).toEqual(['npm ci', 'npm run check']);
+    const commands = job.steps.filter((s) => s.name !== 'Prepare the runner').map((s) => s.run);
+    expect(commands.filter(Boolean)).toEqual(['npm ci', 'npm run check']);
   });
 });
