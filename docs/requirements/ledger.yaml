@@ -4665,6 +4665,7 @@ requirements:
     notes:
       - "2026-10-03: CI ran the check only for pushes to main; .github/workflows/ci.yml now runs it for a push to any branch. The check also includes the format check."
       - "2026-10-31: the push trigger is limited to main again. Every branch reaches main through a pull request (the ruleset requires CI to pass), so the pull_request run checks it; a second push run on the same commit doubled the e2e suite, and a flaky test in either one blocked the merge."
+      - "2026-11-06: the unit tests get 120 s each on CI instead of 30 s (vitest.config.ts, as playwright.config.ts already did). The push run of #19 failed with five timeouts on a tree that had passed the same job an hour earlier: for two and a half minutes the runner's disk stalled and every one-second test running then took ten to thirty."
     status: done
     evidence:
       - "tests/unit/gates.test.ts#the command exits 0 on a valid ledger and 1, naming the entry, on each kind of broken one"
