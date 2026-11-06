@@ -121,9 +121,8 @@ describe('tracked items', () => {
   });
 
   it('a path whose game is not on this PC is flagged with the reason', async () => {
+    // Nothing copied, so no Saved Games\DCS: {DCS_USER} does not exist here.
     const app = await start('flying-all-good', []);
-    // No Saved Games\DCS: {DCS_USER} does not exist here.
-    await fs.rm(path.join(app.home, 'Saved Games'), { recursive: true });
     await expect(track(app, '@always', INPUT)).rejects.toThrow(/DCS_USER/);
   });
 

@@ -1361,31 +1361,32 @@ export async function seedScenario(
 ): Promise<void> {
   const home = ports.folders.home();
   const marker = path.join(home, SEEDED_MARKER);
-  const wanted = !options.files
-    ? undefined
-    : options.files.length === 0
-      ? () => false
-      : createMatcher(options.files, undefined);
+  const wanted = options.files ? createMatcher(options.files, undefined) : undefined;
+  // An empty list copies nothing: not even the recorded folders, empty. Walking the whole
+  // recording to copy none of it is most of what a test that wants no files pays for.
+  const none = options.files !== undefined && options.files.length === 0;
   if (!(await ports.files.exists(marker))) {
     let recorded = false;
-    try {
-      await fs.cp(loaded.filesDir, home, {
-        recursive: true,
-        force: false,
-        errorOnExist: false,
-        ...(wanted
-          ? {
-              filter: async (source: string) => {
-                if ((await fs.stat(source)).isDirectory()) return true;
-                return wanted(path.relative(loaded.filesDir, source));
-              },
-            }
-          : {}),
-      });
-      recorded = true;
-    } catch (e) {
-      // The rig recorded no files.
-      if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+    if (!none) {
+      try {
+        await fs.cp(loaded.filesDir, home, {
+          recursive: true,
+          force: false,
+          errorOnExist: false,
+          ...(wanted
+            ? {
+                filter: async (source: string) => {
+                  if ((await fs.stat(source)).isDirectory()) return true;
+                  return wanted(path.relative(loaded.filesDir, source));
+                },
+              }
+            : {}),
+        });
+        recorded = true;
+      } catch (e) {
+        // The rig recorded no files.
+        if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+      }
     }
     if (recorded) {
       let list: string[] | undefined;
@@ -1407,7 +1408,11 @@ export async function seedScenario(
         });
       }
     }
-    await applyFileMutations(loaded.fileMutations, ports);
+    // With nothing copied there is nothing to remove: a removeFile has had its effect.
+    await applyFileMutations(
+      none ? loaded.fileMutations.filter((m) => m.op !== 'removeFile') : loaded.fileMutations,
+      ports
+    );
     await fs.mkdir(home, { recursive: true });
     await fs.writeFile(marker, '');
   }
