@@ -24,7 +24,7 @@ Each PC has its own RigReady and its own data. To carry things across, make a ba
 
 ## Where is my data?
 
-In `.rigready` in your Windows user folder, normally `C:\Users\<you>\.rigready`, or wherever `RIGREADY_HOME` points. Setups are YAML files you may edit. See [the app itself](../app/index.md).
+In `~/.rigready`, the folder `.rigready` in your Windows user folder, or wherever `RIGREADY_HOME` points. Setups are YAML files you may edit. See [The app and its data folder](../app/index.md).
 
 ## Does it need the internet?
 

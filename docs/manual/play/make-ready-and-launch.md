@@ -43,7 +43,7 @@ A fix is counted as done only when its check passes afterwards. Otherwise the st
 
 ## A monitor change asks you to keep it
 
-When a fix applies a monitor layout, Windows changes the screens and RigReady asks **Keep this monitor layout?** with a countdown. **Keep it** keeps it; **Go back**, or no answer before the countdown ends, puts the previous arrangement back. Make ready waits for the answer before going on, because what comes next must know which layout is there. The countdown is 15 seconds unless you changed it in Settings. A layout that was not kept counts as a failed fix.
+When a fix applies a monitor layout, Windows changes the screens and RigReady asks **Keep this monitor layout?** with a countdown; no answer puts the previous arrangement back ([Keep it or go back](../monitors-and-audio/layouts.md#keep-it-or-go-back)). Make ready waits for the answer before going on, because what comes next must know which layout is there. The countdown is set in [Settings](../app/settings.md). A layout that was not kept counts as a failed fix.
 
 ![The question while Make ready waits](../../../artifacts/screens/fly-make-ready-all/02-keep-prompt.png)
 

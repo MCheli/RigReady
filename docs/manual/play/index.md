@@ -70,10 +70,9 @@ A check that takes too long is reported as "Timed out after 5 s" and counts as n
 
 ## When something is wrong with the setup itself
 
-- The setup file was changed by hand and no longer loads: the screen keeps the last version that loaded, with a yellow note and the error. Fix the file and the note goes. See [Hand-editing the YAML](../setups/yaml.md).
-- The setup you used last is gone (its file was removed by hand) or never loaded in this run of RigReady: the screen shows the setup changed most recently, with a note saying so. A setup deleted on the Setups page is simply replaced by the first in the list.
-- Every setup file is broken: the screen says so and sends you to Setups.
-- No setup yet: the welcome panel with what RigReady found on this PC and **Create a setup from this rig**. See [First run](../getting-started/first-run.md).
+- The setup file was changed by hand and no longer loads, or the setup you used last is gone: the screen keeps the last version that loaded, or shows another setup, with a yellow note saying so. See [A broken file](../setups/yaml.md#a-broken-file) and [Switching setups](switching-setups.md).
+- Every setup file is broken: the screen says so and sends you to [Setups](../setups/index.md).
+- No setup yet: the welcome panel with what RigReady found on this PC and **Create a setup from this rig**. See [The first run](../getting-started/first-run.md).
 
 ## The menu
 

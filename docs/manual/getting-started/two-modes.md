@@ -6,20 +6,20 @@ order: 40
 
 The window has two modes, switched at the top left or with Ctrl+1 and Ctrl+2.
 
-- **Play** is one screen: is the rig ready for the setup you used last, fix what is not, launch. After the session, Stand down.
-- **Configure** is everything else, in five groups down the left side.
+- **Play** is one screen: is the rig ready for the setup you used last, fix what is not, launch. After the session, Stand down. See [The Play screen](../play/index.md).
+- **Configure** is everything else, in five groups down the left side. Each page has its own page in this manual:
 
 | Group | Pages |
 |---|---|
-| Setups | Setups, Backups, Share |
-| Games | Games, DCS World, Racing |
-| Controls | DCS bindings, Binding guide, Cheat sheets |
-| Hardware | Devices, Monitors, Audio, Wheel, Stream Deck, TrackIR |
-| RigReady | Settings, Safety, Diagnostics |
+| Setups | [Setups](../setups/index.md), [Backups](../protect/backups.md), [Share](../protect/sharing.md) |
+| Games | [Games](../games/index.md), [DCS World](../dcs/index.md), [Racing](../games/index.md#configure-racing) |
+| Controls | [DCS bindings](../dcs/bindings.md), [Binding guide](../dcs/binding-guide-and-ai.md), [Cheat sheets](../dcs/cheat-sheets.md) |
+| Hardware | [Devices](../hardware/devices.md), [Monitors](../monitors-and-audio/index.md), [Audio](../monitors-and-audio/audio.md), [Wheel](../games/wheel.md), [Stream Deck](../hardware/stream-deck.md), [TrackIR](../hardware/trackir.md) |
+| RigReady | [Settings](../app/settings.md), [Safety](../protect/safety-page.md), [Diagnostics](../app/diagnostics.md) |
 
 ## Find or run: Ctrl+K
 
-Ctrl+K, or **Find or run** at the top right, opens one field that finds every page and runs the common actions from wherever you are: Make ready, Launch, Stand down and Re-check, switching to another setup, applying a saved monitor layout, Back up now, finding a device by pressing a button on it, and opening the bindings or the cheat sheet of an aircraft. With nothing typed it lists the commands you used last, then every page and command under its heading; type a few letters to narrow it down. The arrow keys move, Enter opens the page or runs the command, and Esc closes it and puts the focus back where it was. What an action did is reported in a message at the bottom of the window, in the words of the feature that did it.
+Ctrl+K, or **Find or run** at the top right, opens the command palette: one field that finds every page and runs the common actions from wherever you are, such as Make ready, Launch, Stand down, switching to another setup, applying a saved monitor layout, Back up now, and finding a device by pressing a button on it. Type a few letters, press Enter, and you are there or it is done. [The command palette](../app/command-palette.md) has the whole list and how the result of an action is reported.
 
 ![The command palette over the Play screen](../../../artifacts/screens/shell-palette/01-open.png)
 
@@ -31,7 +31,7 @@ Ctrl+K, or **Find or run** at the top right, opens one field that finds every pa
 | Ctrl+K | Find a page or run a command |
 | ? | Show the keyboard shortcuts (outside a text field) |
 | Enter | On the Play screen, the main action: Make ready and launch, or Launch once the rig is ready |
-| Ctrl and +, Ctrl and - | Larger text, smaller text; Ctrl+0 puts it back |
-| F11 | Full screen, and back |
 
-The version number at the top right opens **About**: the version, the licence, the data folder, and where to report a problem.
+[Keyboard shortcuts](../app/keyboard-shortcuts.md) is the complete list; [Text size](../app/text-size.md) covers Ctrl and +, Ctrl and - and F11.
+
+The version number at the top right opens **About**: the version, the licence, the data folder, and where to report a problem ([Diagnostics](../app/diagnostics.md)).

@@ -38,7 +38,7 @@ Snapshots, the "what changed" records and the automatic copies on the Safety pag
 
 ## Where the files go
 
-Backups are zip files in `backups` under RigReady's data folder, normally `C:\Users\<you>\.rigready\backups`; the folder is printed at the bottom of the page. A file is named after the date, the time and what it covers, for example `2026-10-03 14-05 Everything.zip`.
+Backups are zip files in `backups` under [RigReady's data folder](../app/index.md), `~/.rigready`; the folder is printed at the bottom of the page. A file is named after the date, the time and what it covers, for example `2026-10-03 14-05 Everything.zip`.
 
 Each backup holds a manifest with a checksum of every file. When a backup is opened again, every file is checked against it; a damaged or incomplete file is refused rather than restored.
 

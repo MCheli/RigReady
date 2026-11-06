@@ -38,9 +38,7 @@ The key is encrypted with Windows' own data protection (DPAPI, through Electron'
 
 ## Hotkey
 
-**Make ready from anywhere.** A key combination that works whatever program is in front: it brings RigReady forward and runs **Make ready** for the setup in use. It never launches. Off until you choose one. Press **Choose a hotkey** (later **Change**), then hold Ctrl, Alt or the Windows key and press a letter, digit, function key, number pad digit, arrow, Space, Home, End, Page Up, Page Down, Insert or Delete; Esc cancels. A combination without a modifier is refused, so it cannot be pressed by accident while typing or flying.
-
-The page shows the hotkey as active only when Windows has registered it for RigReady. When another program already uses it, RigReady says so and the earlier hotkey, if any, stays. **Turn off** removes it. See [the hotkey](../one-click/hotkey.md).
+**Make ready from anywhere.** A key combination that works whatever program is in front: it brings RigReady forward and runs **Make ready** for the setup in use, and never launches. Off until you choose one with **Choose a hotkey** (later **Change**); **Turn off** removes it. The combination needs Ctrl, Alt or the Windows key, and the page shows it as active only when Windows has registered it for RigReady. Which keys are allowed, what a press does and what it does not do are on [The hotkey](../one-click/hotkey.md).
 
 ## Device notifications
 

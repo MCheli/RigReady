@@ -33,7 +33,7 @@ The bindings have their own page, **Configure > DCS bindings**, and the cheat sh
 
 RigReady refuses to write DCS's files while DCS is running. DCS reads options.lua and the monitor setup when it starts and Export.lua when a mission starts, rewrites options.lua when it exits, and keeps the bindings in memory and writes them back when you press OK in its controls screen. A change made while it runs would be lost or half read.
 
-While DCS runs you can still look at everything. The buttons that write are disabled, the bindings page says that nothing can be saved, and a fix that would write a DCS file reports that DCS must be closed first. RigReady looks for DCS.exe among the running processes.
+While DCS runs you can still look at everything. The buttons that write are disabled, the bindings page says that nothing can be saved, and a fix that would write a DCS file reports that DCS must be closed first. RigReady looks for DCS.exe among the running processes. The message each page shows, and what to do, are on [RigReady will not write DCS files](../troubleshooting/dcs-files-refused.md).
 
 Kneeboard pages are the exception: writing them is not blocked, because DCS reads that folder when a mission starts, so new pages simply appear in the next mission.
 

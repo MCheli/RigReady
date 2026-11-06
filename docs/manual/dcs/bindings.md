@@ -52,7 +52,7 @@ The review shows exactly what will be written, file by file: whether a file is n
 
 ![The review](../../../artifacts/screens/bindings-edit/04-review.png)
 
-Nothing can be saved while DCS runs: DCS keeps the bindings in memory and writes them back when you press OK in its controls screen, which would overwrite the change.
+Nothing can be saved while DCS runs, because DCS writes the bindings back when you press OK in its controls screen; see [Close DCS before writing](index.md#close-dcs-before-writing).
 
 ## The .diff.lua files
 

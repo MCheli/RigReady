@@ -10,7 +10,7 @@ Nothing here touches your games. For what RigReady does to game files, see [prot
 
 ## The data folder
 
-RigReady's data folder is `.rigready` in your Windows user folder, normally `C:\Users\<you>\.rigready`. **Configure > Diagnostics** and the **About** panel (the version number at the top right) both show the exact path.
+RigReady's data folder is `~/.rigready`: the folder `.rigready` in your Windows user folder, normally `C:\Users\<you>\.rigready`. The manual writes it as `~/.rigready` throughout. **Configure > Diagnostics** and the **About** panel (the version number at the top right) both show the exact path.
 
 To keep the data somewhere else, set the environment variable `RIGREADY_HOME` to the folder you want before starting RigReady. Everything below then goes there instead.
 

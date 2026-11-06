@@ -48,4 +48,4 @@ Capturing a setup offers the check **Export.lua loads the tools this setup needs
 
 ## While DCS runs
 
-DCS reads Export.lua when a mission starts. The buttons are disabled while DCS runs, and a fix reports that DCS must be closed first.
+DCS reads Export.lua when a mission starts. The buttons are disabled while DCS runs, and a fix reports that DCS must be closed first; see [Close DCS before writing](index.md#close-dcs-before-writing).

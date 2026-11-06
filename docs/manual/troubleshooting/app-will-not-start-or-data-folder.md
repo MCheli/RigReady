@@ -12,7 +12,7 @@ RigReady starts whatever its data folder looks like. A damaged file of its own i
 
 **It is in the tray.** With **Keep running in the tray when the window is closed** on, closing the window does not quit. **Quit** is in the tray icon's menu.
 
-**It could not start.** When RigReady fails before it has a window, Windows shows a message box, "RigReady could not start", with the error, and points at the log: `logs\rigready.log` in the data folder, normally `C:\Users\<you>\.rigready`. Copy the error and the end of the log into a problem report.
+**It could not start.** When RigReady fails before it has a window, Windows shows a message box, "RigReady could not start", with the error, and points at the log: `logs\rigready.log` in [the data folder](../app/index.md), `~/.rigready`. Copy the error and the end of the log into a [problem report](../app/diagnostics.md#reporting-a-problem).
 
 **Not Windows.** RigReady runs on Windows 10 and 11 only and refuses to start anywhere else, saying so.
 
