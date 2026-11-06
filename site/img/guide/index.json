@@ -1,0 +1,47 @@
+{
+  "../artifacts/screens/first-run/01-welcome.png": {
+    "file": "first-run--01-welcome.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "../artifacts/screens/fly-rig/01-problems-as-places.png": {
+    "file": "fly-rig--01-problems-as-places.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "../artifacts/screens/one-click-fly/02-launched.png": {
+    "file": "one-click-fly--02-launched.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "../artifacts/screens/display-layouts/04-apply-flying-preview.png": {
+    "file": "display-layouts--04-apply-flying-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "../artifacts/screens/bindings-problems/02-cleanup-preview.png": {
+    "file": "bindings-problems--02-cleanup-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "../artifacts/screens/cheat-sheets-outputs/kneeboard-left-mfd-night.png": {
+    "file": "cheat-sheets-outputs--kneeboard-left-mfd-night.webp",
+    "width": 768,
+    "height": 1024
+  },
+  "../artifacts/screens/restore/02-preview.png": {
+    "file": "restore--02-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "../artifacts/screens/share-picture/rig-wide.png": {
+    "file": "share-picture--rig-wide.webp",
+    "width": 1600,
+    "height": 900
+  },
+  "../artifacts/screens/devices-health/04-findings.png": {
+    "file": "devices-health--04-findings.webp",
+    "width": 1250,
+    "height": 821
+  }
+}

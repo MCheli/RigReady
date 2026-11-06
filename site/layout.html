@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{TITLE}}</title>
+    <meta name="description" content="{{DESCRIPTION}}" />
+    <link rel="canonical" href="https://rigready.io{{PATH}}" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#0f1317" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RigReady" />
+    <meta property="og:url" content="https://rigready.io{{PATH}}" />
+    <meta property="og:title" content="{{TITLE}}" />
+    <meta property="og:description" content="{{DESCRIPTION}}" />
+    <meta property="og:image" content="https://rigready.io/img/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="preload"
+      href="/fonts/b612-latin-700-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/atkinson-hyperlegible-next-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/main.js" defer></script>
+  </head>
+  <body class="page-{{PAGE}}">
+    <a class="skip" href="#main">Skip to the content</a>
+
+    <header class="site-header">
+      <div class="wrap header-row">
+        <a class="brand" href="/" aria-label="RigReady, home">
+          <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="13" r="4.25" />
+            <path d="M2.5 13h5.25M16.25 13h5.25M12 8.75V4" />
+          </svg>
+          RigReady
+        </a>
+        <nav aria-label="Site">{{NAV}}</nav>
+      </div>
+    </header>
+
+    <main id="main">{{MAIN}}</main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-row">
+        <nav class="footer-links" aria-label="More">
+          <a href="/docs/">User guide</a>
+          <a href="/download/">Download</a>
+          <a href="/download/#changelog">Changelog</a>
+          <a href="/docs/contributing/">Contributing</a>
+          <a href="{{REPO_URL}}">GitHub</a>
+        </nav>
+        <p>
+          RigReady is made by <a href="https://www.markcheli.com">Mark Cheli</a>.
+          <a href="{{REPO_URL}}/blob/main/LICENSE">MIT License</a>, {{YEAR}}. Game and hardware
+          names belong to their owners; RigReady is not affiliated with them.
+        </p>
+      </div>
+    </footer>
+
+    <dialog class="lightbox" id="lightbox" aria-label="Screenshot">
+      <form method="dialog"><button class="lightbox-close" aria-label="Close">Close</button></form>
+      <img alt="" />
+    </dialog>
+  </body>
+</html>

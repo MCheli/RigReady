@@ -262,6 +262,7 @@
 
   function setupShowcase() {
     const img = document.getElementById('showcase-img');
+    if (!img) return;
     const buttons = document.querySelectorAll('.toggle [data-show]');
     const alts = {
       'play-not-ready':
@@ -293,8 +294,29 @@
     });
   }
 
+  // The docs contents are a fold-out list on a phone and always open beside the page otherwise.
+  function setupDocsNav() {
+    const toc = document.querySelector('.docs-toc');
+    if (!toc) return;
+    const wide = window.matchMedia('(min-width: 901px)');
+    const sync = () => {
+      toc.open = wide.matches;
+    };
+    sync();
+    wide.addEventListener('change', sync);
+  }
+
+  // The download and the changelog were sections of the home page before they had a page.
+  if (
+    location.pathname === '/' &&
+    (location.hash === '#download' || location.hash === '#changelog')
+  ) {
+    location.replace(`/download/${location.hash === '#changelog' ? '#changelog' : ''}`);
+  }
+
   const instrument = document.getElementById('instrument');
   if (instrument) setupInstrument(instrument);
   setupShowcase();
   setupLightbox();
+  setupDocsNav();
 })();
