@@ -1,5 +1,6 @@
 dist/
 release/
+_site/
 node_modules/
 resources/
 coverage/

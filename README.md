@@ -96,6 +96,7 @@ Everything RigReady keeps is in `%USERPROFILE%\.rigready` (`~/.rigready`): setup
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute. |
 | [`docs/RELEASING.md`](docs/RELEASING.md) | How a version is released, and the checklist before it is. |
 | [`docs/requirements/ledger.yaml`](docs/requirements/ledger.yaml) | Requirements, status, evidence. |
+| [`site/README.md`](site/README.md) | The rigready.io website: how it is built, and what updates by itself. |
 | [`docs/research/`](docs/research/) | Findings on game file formats and hardware. |
 
 ## License
