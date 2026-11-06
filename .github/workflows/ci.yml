@@ -25,6 +25,14 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
+      # The runner scans every file as it is written, which makes the unit tests' temp-folder
+      # work several times slower: five of them timed out at 30 s on 2026-11-06 (the suite took
+      # 694 s). The other jobs switch the scanner off below; this one does too.
+      - name: Prepare the runner
+        shell: pwsh
+        run: |
+          try { Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction Stop } catch { Write-Host "virus scanner left on: $_" }
+
       - run: npm ci
 
       - run: npm run check

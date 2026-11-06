@@ -89,11 +89,24 @@ describe('releasing', () => {
     }
     const upload = steps.find((step) => step.uses?.startsWith('softprops/action-gh-release'))!;
     expect(upload.with?.['draft']).toBe(true);
-    // The installer and the update feed files: without the .yml the updater sees no release.
+    // The installer, its block map and the update feed file: without latest.yml the updater
+    // sees no release (electron-builder writes latest.yml for every version when the publish
+    // provider is GitHub, betas included), and a file that is not there fails the step.
     const files = String(upload.with?.['files']);
-    for (const file of ['release/*.exe', 'release/latest.yml', 'release/beta.yml', 'blockmap']) {
+    for (const file of ['release/*.exe', 'release/latest.yml', 'blockmap']) {
       expect(files).toContain(file);
     }
+    expect(files).not.toContain('beta.yml');
+    expect(upload.with?.['fail_on_unmatched_files']).toBe(true);
+    // A beta tag (x.y.z-beta.n) is a GitHub pre-release; the stable channel never sees it.
+    expect(upload.with?.['prerelease']).toBe("${{ contains(github.ref_name, '-') }}");
+    // The description is the version's section of CHANGELOG.md, not GitHub's list of pull
+    // requests, and it is made before the tests so that an undated changelog fails first.
+    expect(upload.with?.['generate_release_notes']).toBeUndefined();
+    expect(upload.with?.['body_path']).toBe('artifacts/release-notes.md');
+    const notes = commands.findIndex((command) => command.includes('scripts/release-notes.mjs'));
+    expect(notes).toBeGreaterThanOrEqual(0);
+    expect(notes).toBeLessThan(commands.indexOf('npm run check'));
   });
 
   it('the release checklist records a smoke run on Windows 10 22H2 and Windows 11, and names every automated check', async () => {

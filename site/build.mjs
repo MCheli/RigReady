@@ -261,7 +261,7 @@ const releaseCard = stable
 <p class="download-version">RigReady ${esc(stable.version)}</p>
 <p class="download-meta">Released ${longDate(stable.date)}. Installer, ${megabytes(stable.installer.size)}.</p>
 <p><a class="button primary" href="${stable.installer.url}">${ICON_DOWNLOAD}Download ${esc(stable.installer.name)}</a></p>
-<p class="small">The installer is not code-signed yet, so Windows SmartScreen warns the first time it runs. Choose <em>More info</em>, then <em>Run anyway</em>. <a href="${stable.page}">Release notes</a> and every earlier version are on <a href="${REPO_URL}/releases">GitHub Releases</a>.</p>
+<p class="small">Not code-signed yet: when it starts, Windows shows "Windows protected your PC". Choose <em>More info</em>, then <em>Run anyway</em>. <a href="${stable.page}">Release notes</a> and every earlier version are on <a href="${REPO_URL}/releases">GitHub Releases</a>.</p>
 </div>
 ${betaLine}`
   : `<div class="download-card">
