@@ -175,6 +175,43 @@ describe('ProfileStore', () => {
     });
   });
 
+  it('deleting the setup in use falls back to the one used most recently whose file is still there', async () => {
+    const profiles = new ProfileStore(store, dataRoot);
+    for (const [id, name] of [
+      ['alpha', 'Alpha'],
+      ['bravo', 'Bravo'],
+      ['charlie', 'Charlie'],
+      ['delta', 'Delta'],
+    ] as const) {
+      await profiles.save(profile(id, name));
+    }
+    await profiles.setLastProfileId('bravo', new Date('2026-10-01T10:00:00Z'));
+    await profiles.setLastProfileId('charlie', new Date('2026-10-02T10:00:00Z'));
+    await profiles.setLastProfileId('alpha', new Date('2026-10-03T10:00:00Z'));
+    await profiles.setLastProfileId('delta', new Date('2026-10-04T10:00:00Z'));
+    // Charlie's file went away by hand since it was last used.
+    await fs.rm(path.join(dataRoot, 'profiles', 'charlie.yaml'));
+
+    // Not the first by name (alpha would be, by chance, so the order is checked twice).
+    await profiles.remove('delta');
+    expect(await profiles.lastProfileId()).toBe('alpha');
+    await profiles.remove('alpha');
+    expect(await profiles.lastProfileId()).toBe('bravo');
+    // Deleting a setup that is not in use leaves the choice alone.
+    await profiles.save(profile('echo', 'Echo'));
+    await profiles.remove('echo');
+    expect(await profiles.lastProfileId()).toBe('bravo');
+    // Nothing used is left: no choice, and the record of use stays for an undo.
+    await profiles.remove('bravo');
+    expect(await profiles.lastProfileId()).toBeUndefined();
+    expect(Object.keys(await profiles.lastUsed()).sort()).toEqual([
+      'alpha',
+      'bravo',
+      'charlie',
+      'delta',
+    ]);
+  });
+
   it('rejects invalid profiles and ids, and a broken file does not hide the others', async () => {
     const profiles = new ProfileStore(store, dataRoot);
     await profiles.save(profile('good', 'Good'));

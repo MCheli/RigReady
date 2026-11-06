@@ -22,7 +22,7 @@ In the editor, **Copy from another setup…** above the checklist opens a dialog
 
 ![The deleted setup on the Safety page](../../../artifacts/screens/profile-clone-copy/05-in-safety.png)
 
-If the deleted setup was the one on the Play screen, the screen moves to the first setup in the list.
+If the deleted setup was the one on the Play screen, the screen moves to the setup you used most recently before it, or to the first in the list when no other has been used yet ([Switching setups](../play/switching-setups.md)).
 
 ## What a delete leaves behind
 

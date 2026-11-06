@@ -263,10 +263,27 @@ export class ProfileStore {
     this.valid.delete(id);
     const state = await this.readState();
     if (state.lastProfileId === id) {
+      // The Play screen goes on with the setup used most recently before this one, not
+      // quietly with the first by name.
       const { lastProfileId: _gone, ...rest } = state;
-      await this.writeState(rest);
+      const next = await this.mostRecentlyUsed(rest.lastUsed, id);
+      await this.writeState(next ? { ...rest, lastProfileId: next } : rest);
     }
     return ok(undefined);
+  }
+
+  /** The profile used most recently, other than `except`, whose file is still there. */
+  private async mostRecentlyUsed(
+    lastUsed: Record<string, string>,
+    except: string
+  ): Promise<string | undefined> {
+    const byRecency = Object.entries(lastUsed)
+      .filter(([id]) => id !== except && /^[a-z0-9][a-z0-9-]{0,63}$/.test(id))
+      .sort(([, a], [, b]) => b.localeCompare(a));
+    for (const [id] of byRecency) {
+      if (await this.files.exists(this.fileFor(id))) return id;
+    }
+    return undefined;
   }
 
   /** An id derived from the name that no existing profile uses. */
