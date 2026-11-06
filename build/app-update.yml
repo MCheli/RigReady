@@ -1,6 +1,9 @@
 # Where the installed app looks for updates. electron-builder writes the same file from
 # the `publish` entry in package.json when it builds the installer; this copy puts it
 # into the unpacked build (electron-builder --dir) as well, which the packaged smoke uses.
+# No publisherName here: with one, the app would verify every update's signature against
+# it and refuse the unsigned local builds the smoke tests install. A signed release build
+# gets the publisher in its copy of this file from scripts/dist.ts (docs/RELEASING.md).
 provider: github
 owner: MCheli
 repo: rigready

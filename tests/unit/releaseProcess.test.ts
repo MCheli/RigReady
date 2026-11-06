@@ -2,13 +2,18 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
+import { SIGNING_NAMES, SIGNING_SECRETS, SIGNING_VARIABLES } from '../../scripts/lib/signing';
 import { repoRoot } from '../helpers';
 
 /** How RigReady is built, checked and released: the workflows, the build scripts, the checklist. */
 
 interface Step {
+  name?: string;
   run?: string;
   uses?: string;
+  if?: string;
+  shell?: string;
+  env?: Record<string, string>;
   with?: Record<string, unknown>;
   'continue-on-error'?: boolean;
 }
@@ -69,8 +74,13 @@ describe('releasing', () => {
     for (const [name, script] of Object.entries(pkg.scripts)) {
       if (script.includes('electron-builder')) expect(script, name).toContain('--publish never');
     }
-    const testInstaller = await read('scripts', 'build-test-installer.mjs');
-    expect(testInstaller).toContain("'--publish', 'never'");
+    // The two scripts that run electron-builder themselves pass it as an argument.
+    expect(pkg.scripts['dist']).toBe(
+      'npm run build && node scripts/check-sidecar.mjs && tsx scripts/dist.ts'
+    );
+    for (const file of ['dist.ts', 'build-test-installer.mjs']) {
+      expect(await read('scripts', file), file).toContain("'--publish', 'never'");
+    }
     // The feed the installed app reads is this repository's releases.
     expect(pkg.build.publish).toHaveLength(1);
     const feed = pkg.build.publish[0]!;
@@ -113,5 +123,76 @@ describe('releasing', () => {
       expect(doc, command).toContain(command);
     }
     expect(doc).toContain('no UAC prompt');
+  });
+});
+
+describe('code signing (PLAT-017)', () => {
+  it('the repository builds unsigned: no Azure options, no publisher in the feed, and pack and the test installer never sign', async () => {
+    const pkg = JSON.parse(await read('package.json')) as {
+      scripts: Record<string, string>;
+      build: Record<string, unknown> & {
+        win: Record<string, unknown>;
+        publish: Record<string, unknown>[];
+      };
+    };
+    // What a PC, the packaged smoke and the installer smoke build and install is unsigned, so
+    // the feed file they carry must name no publisher: with one, the installed app would
+    // refuse every unsigned update (electron-updater, NsisUpdater.verifySignature).
+    expect(pkg.build.win).not.toHaveProperty('azureSignOptions');
+    expect(pkg.build).not.toHaveProperty('forceCodeSigning');
+    expect(pkg.build.publish[0]).not.toHaveProperty('publisherName');
+    const packagedFeed = yaml.load(await read('build', 'app-update.yml')) as Record<string, string>;
+    expect(packagedFeed).not.toHaveProperty('publisherName');
+    // Only the dist script reads the signing configuration; pack and the test installer spread
+    // package.json's build as it is, whatever the environment holds.
+    const dist = await read('scripts', 'dist.ts');
+    expect(dist).toContain('signingFromEnv(process.env)');
+    expect(dist).toContain('appUpdateProblem(');
+    expect(pkg.scripts['pack']).toContain('electron-builder --dir --publish never');
+    for (const text of [pkg.scripts['pack']!, await read('scripts', 'build-test-installer.mjs')]) {
+      expect(text).not.toMatch(/RIGREADY_SIGN|AZURE_|azureSignOptions|signing/);
+    }
+  });
+
+  it('the Release workflow hands the four variables and three secrets to the build step only, and verifies a signed build before the draft is made', async () => {
+    const release = await workflow('release.yml');
+    const steps = release.jobs['release']!.steps;
+    const build = steps.find((step) => step.name === 'Build installer')!;
+    expect(build.run).toBe('npm run dist');
+    const expectedEnv: Record<string, string> = {};
+    for (const name of Object.values(SIGNING_VARIABLES)) expectedEnv[name] = `\${{ vars.${name} }}`;
+    for (const name of SIGNING_SECRETS) expectedEnv[name] = `\${{ secrets.${name} }}`;
+    expect(build.env).toEqual(expectedEnv);
+    expect(Object.keys(expectedEnv)).toEqual([...SIGNING_NAMES]);
+    for (const step of steps) {
+      if (step === build) continue;
+      for (const name of Object.keys(step.env ?? {})) expect(SIGNING_NAMES).not.toContain(name);
+    }
+    // Verified right after the build, only when a publisher is configured, and before the upload.
+    const verify = steps.find((step) => step.name === 'Verify the signatures')!;
+    expect(steps.indexOf(verify)).toBe(steps.indexOf(build) + 1);
+    expect(verify.if).toBe(`vars.${SIGNING_VARIABLES.publisher} != ''`);
+    expect(verify.shell).toBe('pwsh');
+    expect(verify.env).toEqual({ PUBLISHER: `\${{ vars.${SIGNING_VARIABLES.publisher} }}` });
+    expect(verify.run).toContain('./scripts/verify-signed-installer.ps1');
+    expect(verify.run).toContain('-Publisher $env:PUBLISHER');
+    const upload = steps.find((step) => step.uses?.startsWith('softprops/action-gh-release'))!;
+    expect(steps.indexOf(upload)).toBeGreaterThan(steps.indexOf(verify));
+    // The script checks what the installed app will check (a valid signature whose subject is
+    // the publisher) on the installer, the installed program and the uninstaller, and the
+    // publisher in the installed feed file; then it uninstalls.
+    const script = await read('scripts', 'verify-signed-installer.ps1');
+    for (const needed of [
+      'verify /pa /v',
+      'Get-AuthenticodeSignature',
+      "-ne 'Valid'",
+      "'RigReady.exe'",
+      "'Uninstall RigReady.exe'",
+      "'resources\\app-update.yml'",
+      '-ArgumentList @(\'/S\', "/D=$installDir")',
+      "-ArgumentList '/S'",
+    ]) {
+      expect(script, needed).toContain(needed);
+    }
   });
 });
