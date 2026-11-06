@@ -8,20 +8,37 @@
 //   /download/        site/pages/download.html: the newest release, how to run from source until
 //                     there is one, and CHANGELOG.md
 //   /download/latest/ a redirect to the newest installer (or to /download/ before there is one)
-//   /docs/            the user guide's introduction and its chapters (docs/USER-GUIDE.md)
-//   /docs/<chapter>/  one page per "##" chapter of the guide, named after its heading
+//   /docs/            the manual's landing page (docs/manual/index.md) and a card per section
+//   /docs/<section>/  a section's landing page (docs/manual/<section>/index.md) and a card per page
+//   /docs/<section>/<page>/  one page of the manual (docs/manual/<section>/<page>.md)
 //   /docs/contributing/  CONTRIBUTING.md
 //
 // So the site follows the project without anyone editing it: the downloads come from the
 // published GitHub releases (drafts are ignored, and so is anything older than the major version
-// in package.json: 1.x is a different app), and the changelog, guide and contributing pages are
+// in package.json: 1.x is a different app), and the changelog, manual and contributing pages are
 // the repository's own documents. .github/workflows/site.yml runs this and publishes _site.
+//
+// Every page has what a search engine needs: a title, a description, a canonical URL and Open
+// Graph tags (site/layout.html), and the manual's pages a BreadcrumbList; sitemap.xml and
+// robots.txt list the whole site. The build fails on a page of the manual without front matter,
+// a title or a description, a section folder without index.md, a link to a page of the manual
+// that does not exist, and any link to a page or file of the site that was not built.
 
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { esc, inline, render, sections, slugify, summary } from './lib/markdown.mjs';
+import {
+  DESCRIPTION_LENGTH,
+  MANUAL_DIR,
+  MANUAL_URL,
+  breadcrumbs,
+  buildManual,
+  repoPath,
+  siteLink,
+  tidiedName,
+} from './lib/manual.mjs';
+import { esc, inline, render, sections, slugify } from './lib/markdown.mjs';
 import { loadReleases, parseVersion, pickReleases } from './lib/releases.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +47,10 @@ const OUT = path.join(ROOT, '_site');
 const REPO = 'MCheli/RigReady';
 const REPO_URL = 'https://github.com/MCheli/rigready';
 const DOMAIN = 'rigready.io';
+/** What the manual is called in the sidebar and the breadcrumbs. */
+const MANUAL_TITLE = 'Manual';
+/** The end of every docs page's <title>. */
+const DOCS_SUFFIX = ' - RigReady docs';
 
 const read = (file) => readFile(path.join(ROOT, file), 'utf8');
 const pkg = JSON.parse(await read('package.json'));
@@ -74,27 +95,33 @@ try {
 const { stable, beta } = releases;
 
 // ---------------------------------------------------------------------------------------------
-// Links between the repository's documents become links between pages
+// The manual: docs/manual/**, read here, put in order by lib/manual.mjs
 
-/** A link target as written in `fromFile` (a repository path) -> the URL the site uses. */
-function docLink(fromFile) {
-  return (href) => {
-    if (/^(https?:|mailto:|#)/.test(href)) return href;
-    const [file, hash] = href.split('#');
-    const target = path.posix.normalize(path.posix.join(path.posix.dirname(fromFile), file));
-    const pages = {
-      'docs/USER-GUIDE.md': '/docs/',
-      'CONTRIBUTING.md': '/docs/contributing/',
-      'CHANGELOG.md': '/download/#changelog',
-    };
-    if (pages[target])
-      return pages[target] + (hash && !pages[target].includes('#') ? `#${hash}` : '');
-    return `${REPO_URL}/blob/main/${target}${hash ? `#${hash}` : ''}`;
-  };
+async function manualFiles() {
+  const dir = path.join(ROOT, MANUAL_DIR);
+  const names = (await readdir(dir, { recursive: true })).filter((n) => n.endsWith('.md'));
+  const files = new Map();
+  for (const name of names.sort()) {
+    files.set(name.split(path.sep).join('/'), await readFile(path.join(dir, name), 'utf8'));
+  }
+  return files;
 }
 
+const manual = buildManual(await manualFiles());
+for (const p of manual.pages) {
+  const n = p.description.length;
+  if (n < DESCRIPTION_LENGTH.min || n > DESCRIPTION_LENGTH.max) {
+    console.warn(
+      `${MANUAL_DIR}/${p.file}: the description is ${n} characters; ${DESCRIPTION_LENGTH.min} to ${DESCRIPTION_LENGTH.max} reads best in search results`
+    );
+  }
+}
+
+/** Links written in a repository document -> the URLs the site uses (lib/manual.mjs). */
+const docLink = (fromFile) => siteLink(fromFile, manual, REPO_URL);
+
 // ---------------------------------------------------------------------------------------------
-// The guide's pictures: tidied copies from site/tools/screens.py, else the raw capture
+// The manual's pictures: tidied copies from site/tools/screens.py, else the raw capture
 
 const guideImages = JSON.parse(await read('site/img/guide/index.json'));
 const rawImages = []; // [source, target] copied after the output folder exists
@@ -106,27 +133,28 @@ function pngSize(file) {
     : null;
 }
 
-function guideImage(src, alt) {
-  let url;
-  let size;
-  if (guideImages[src]) {
-    url = `/img/guide/${guideImages[src].file}`;
-    size = guideImages[src];
-  } else {
-    const source = path.join(ROOT, 'docs', src);
-    if (!existsSync(source)) throw new Error(`docs/USER-GUIDE.md: picture not found: ${src}`);
-    const name = path
-      .relative(path.join(ROOT, 'artifacts', 'screens'), source)
-      .split(path.sep)
-      .join('--');
-    url = `/img/guide-raw/${name}`;
-    size = pngSize(source);
-    rawImages.push([source, path.join(OUT, 'img', 'guide-raw', name)]);
-    console.warn(`docs/USER-GUIDE.md: ${src} has no tidied copy; run python site/tools/screens.py`);
-  }
-  const dims = size ? ` width="${size.width}" height="${size.height}"` : '';
-  const tall = size && size.height > size.width ? ' tall' : '';
-  return `<figure class="frame doc-figure${tall}"><button type="button" class="shot" data-lightbox><img src="${url}"${dims} loading="lazy" alt="${esc(alt)}" /></button><figcaption>${esc(alt)}</figcaption></figure>`;
+/** The HTML for a picture on its own line of `fromFile` (a repository path). */
+function docImage(fromFile) {
+  return (src, alt) => {
+    const file = repoPath(fromFile, src);
+    let url;
+    let size;
+    if (guideImages[file]) {
+      url = `/img/guide/${guideImages[file].file}`;
+      size = guideImages[file];
+    } else {
+      const source = path.join(ROOT, file);
+      if (!existsSync(source)) throw new Error(`${fromFile}: picture not found: ${src}`);
+      const name = tidiedName(file, path.extname(file));
+      url = `/img/guide-raw/${name}`;
+      size = pngSize(source);
+      rawImages.push([source, path.join(OUT, 'img', 'guide-raw', name)]);
+      console.warn(`${fromFile}: ${src} has no tidied copy; run python site/tools/screens.py`);
+    }
+    const dims = size ? ` width="${size.width}" height="${size.height}"` : '';
+    const tall = size && size.height > size.width ? ' tall' : '';
+    return `<figure class="frame doc-figure${tall}"><button type="button" class="shot" data-lightbox><img src="${url}"${dims} loading="lazy" alt="${esc(alt)}" /></button><figcaption>${esc(alt)}</figcaption></figure>`;
+  };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -138,7 +166,7 @@ const pages = []; // { path, html }
 function nav(active) {
   const items = [
     ['/#features', 'Features', 'home'],
-    ['/docs/', 'Guide', 'docs'],
+    [MANUAL_URL, 'Docs', 'docs'],
     [REPO_URL, 'GitHub', null],
   ];
   const links = items
@@ -151,7 +179,7 @@ function nav(active) {
   return `${links}<a class="nav-download" href="/download/"${current}>Download</a>`;
 }
 
-function page({ path: urlPath, page: kind, title, description, main }) {
+function page({ path: urlPath, page: kind, title, description, main, head = '' }) {
   const html = fill(
     layout,
     {
@@ -160,6 +188,7 @@ function page({ path: urlPath, page: kind, title, description, main }) {
       PATH: urlPath,
       PAGE: kind,
       NAV: nav(kind),
+      HEAD: head,
       MAIN: main,
       REPO_URL,
       YEAR: String(new Date().getUTCFullYear()),
@@ -171,12 +200,13 @@ function page({ path: urlPath, page: kind, title, description, main }) {
 
 // Home --------------------------------------------------------------------------------------
 
+const START = `${MANUAL_URL}getting-started/`;
 const heroActions = stable
   ? `<a class="button primary" href="${stable.installer.url}">${ICON_DOWNLOAD}Download for Windows</a>
-<a class="button" href="/docs/">${ICON_BOOK}Read the guide</a>
+<a class="button" href="${MANUAL_URL}">${ICON_BOOK}Read the docs</a>
 <p class="hero-note">Version ${esc(stable.version)}, ${megabytes(stable.installer.size)}, for Windows 10 and 11. Free and <a href="${REPO_URL}">open source</a>.</p>`
   : `<a class="button primary" href="/download/">${ICON_DOWNLOAD}Get version 2.0</a>
-<a class="button" href="/docs/">${ICON_BOOK}Read the guide</a>
+<a class="button" href="${MANUAL_URL}">${ICON_BOOK}Read the docs</a>
 <p class="hero-note">Version 2.0 is in final testing; the installer is not published yet. Windows 10 and 11, free and <a href="${REPO_URL}">open source</a>.</p>`;
 
 const getNote = stable
@@ -186,7 +216,7 @@ const getActions = stable
   ? `<a class="button primary" href="${stable.installer.url}">${ICON_DOWNLOAD}Download for Windows</a>
 <a class="button" href="/download/">All downloads and the changelog</a>`
   : `<a class="button primary" href="/download/">${ICON_DOWNLOAD}Get version 2.0</a>
-<a class="button" href="/docs/create-your-first-setup/">${ICON_BOOK}Read the guide</a>`;
+<a class="button" href="${START}">${ICON_BOOK}Getting started</a>`;
 
 page({
   path: '/',
@@ -264,49 +294,93 @@ page({
     : 'Where RigReady 2.0 stands, how to run it from source today, and what changed in each version.',
   main: fill(
     await read('site/pages/download.html'),
-    { RELEASE: releaseCard, SOURCE: fromSource, CHANGELOG: changelog(), REPO_URL },
+    { RELEASE: releaseCard, SOURCE: fromSource, CHANGELOG: changelog(), START, REPO_URL },
     'site/pages/download.html'
   ),
 });
 
-// Docs: the user guide, one page per chapter, and the contributing guide ---------------------
+// Docs: the manual, section by section, and the contributing guide --------------------------
 
-const guide = sections(await read('docs/USER-GUIDE.md'));
-const chapters = guide.sections.map((s) => {
-  const number = /^(\d+)\.\s+/.exec(s.title)?.[1] ?? null;
-  const title = s.title.replace(/^\d+\.\s+/, '');
-  return { number, title, slug: slugify(title), body: s.body, summary: summary(s.body) };
-});
 const docsTemplate = await read('site/pages/docs.html');
-const guideLink = docLink('docs/USER-GUIDE.md');
 
-function sidebar(current) {
-  const item = (href, label, number, key) =>
-    `<li><a href="${href}"${key === current ? ' aria-current="page"' : ''}>${number ? `<span class="n">${number}</span>` : ''}${esc(label)}</a></li>`;
-  return `<p class="docs-nav-title"><a href="/docs/"${current === 'index' ? ' aria-current="page"' : ''}>User guide</a></p>
-<ul class="docs-list">${chapters.map((c) => item(`/docs/${c.slug}/`, c.title, c.number, c.slug)).join('')}</ul>
+/** The contents: the manual as a tree, open at the current section, and the project's pages. */
+function sidebar(currentFile) {
+  const a = (p, current) =>
+    `<a href="${p.url}"${current ? ` aria-current="${current}"` : ''}>${esc(p.title)}</a>`;
+  const openSection = currentFile?.includes('/') ? currentFile.split('/')[0] : null;
+  const tree = manual.sections
+    .map((s) => {
+      const open = s.slug === openSection;
+      const pages =
+        open && s.pages.length
+          ? `<ul>${s.pages.map((p) => `<li>${a(p, p.file === currentFile ? 'page' : '')}</li>`).join('')}</ul>`
+          : '';
+      const current = s.file === currentFile ? 'page' : open ? 'location' : '';
+      return `<li${open ? ' class="open"' : ''}>${a(s, current)}${pages}</li>`;
+    })
+    .join('');
+  const item = (href, label, key) =>
+    `<li><a href="${href}"${key && key === currentFile ? ' aria-current="page"' : ''}>${esc(label)}</a></li>`;
+  return `<p class="docs-nav-title"><a href="${MANUAL_URL}"${currentFile === 'index.md' ? ' aria-current="page"' : ''}>${MANUAL_TITLE}</a></p>
+<ul class="docs-tree">${tree}</ul>
 <p class="docs-nav-title">Project</p>
-<ul class="docs-list">${item('/docs/contributing/', 'Contributing', null, 'contributing')}${item('/download/#changelog', 'Changelog', null, null)}${item(`${REPO_URL}/tree/main/docs`, 'Developer documents', null, null)}</ul>`;
+<ul class="docs-list">${item('/docs/contributing/', 'Contributing', 'contributing')}${item('/download/#changelog', 'Changelog')}${item(`${REPO_URL}/tree/main/docs`, 'Developer documents')}</ul>`;
+}
+
+/** The trail above a page, and the same trail for search engines (schema.org BreadcrumbList). */
+function crumbs(trail) {
+  if (!trail || trail.length < 2) return { html: '', head: '' };
+  const html = `<nav class="crumbs" aria-label="Breadcrumb"><ol>${trail
+    .map((c, i) =>
+      i === trail.length - 1
+        ? `<li aria-current="page">${esc(c.title)}</li>`
+        : `<li><a href="${c.url}">${esc(c.title)}</a></li>`
+    )
+    .join('')}</ol></nav>`;
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: trail.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.title,
+      item: `https://${DOMAIN}${c.url}`,
+    })),
+  };
+  const head = `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
+  return { html, head };
 }
 
 function pager(prev, next) {
-  const a = (c, rel) =>
-    c
-      ? `<a class="pager-${rel}" href="${c.href}" rel="${rel}"><span>${rel === 'prev' ? 'Previous' : 'Next'}</span>${esc(c.title)}</a>`
+  const a = (p, rel) =>
+    p
+      ? `<a class="pager-${rel}" href="${p.url}" rel="${rel}"><span>${rel === 'prev' ? 'Previous' : 'Next'}</span>${esc(p.title)}</a>`
       : '<span></span>';
-  return `<nav class="pager" aria-label="Chapters">${a(prev, 'prev')}${a(next, 'next')}</nav>`;
+  return `<nav class="pager" aria-label="Pages">${a(prev, 'prev')}${a(next, 'next')}</nav>`;
 }
 
-function docsPage({ path: urlPath, key, title, description, article, prev, next, source }) {
+/** Cards for the pages of a section, or the sections of the manual. */
+const cards = (items) =>
+  `<ul class="cards">${items
+    .map(
+      (p) =>
+        `<li><a href="${p.url}"><strong>${esc(p.title)}</strong><span class="summary">${esc(p.description)}</span></a></li>`
+    )
+    .join('')}</ul>`;
+
+function docsPage({ path: urlPath, key, title, description, article, trail, prev, next, source }) {
+  const crumb = crumbs(trail);
   page({
     path: urlPath,
     page: 'docs',
     title,
     description,
+    head: crumb.head,
     main: fill(
       docsTemplate,
       {
         SIDEBAR: sidebar(key),
+        CRUMBS: crumb.html,
         ARTICLE: article,
         PAGER: pager(prev, next),
         EDIT_URL: `${REPO_URL}/edit/main/${source}`,
@@ -316,55 +390,48 @@ function docsPage({ path: urlPath, key, title, description, article, prev, next,
   });
 }
 
-const chapterLink = (c) => c && { href: `/docs/${c.slug}/`, title: c.title };
+const contributing = {
+  url: '/docs/contributing/',
+  title: sections(await read('CONTRIBUTING.md')).title ?? 'Contributing',
+};
+/** The manual in reading order, then the contributing guide. */
+const reading = [...manual.pages, contributing];
 
-docsPage({
-  path: '/docs/',
-  key: 'index',
-  title: 'RigReady user guide',
-  description:
-    'How to use RigReady, task by task: setups, the Play screen, monitors, DCS, bindings, cheat sheets, backups, sharing and hardware.',
-  source: 'docs/USER-GUIDE.md',
-  article: `<h1>${esc(guide.title ?? 'User guide')}</h1>
-${render(guide.preamble, { link: guideLink })}
-<ol class="chapters">${chapters
-    .map(
-      (c) =>
-        `<li><a href="/docs/${c.slug}/"><span class="n">${c.number ?? ''}</span><strong>${esc(c.title)}</strong><span class="summary">${esc(c.summary)}</span></a></li>`
-    )
-    .join('')}</ol>
+manual.pages.forEach((p, i) => {
+  const source = `${MANUAL_DIR}/${p.file}`;
+  const options = { link: docLink(source), image: docImage(source) };
+  let article = `<h1>${esc(p.title)}</h1>\n${render(p.body, options)}`;
+  if (p.file === 'index.md') {
+    article += `\n${cards(manual.sections)}
 <h2>For contributors</h2>
-<p>The <a href="/docs/contributing/">contributing guide</a> covers setup and the rules. The developer documents live with the code: <a href="${REPO_URL}/blob/main/docs/PRODUCT.md">what the product is</a>, <a href="${REPO_URL}/blob/main/docs/ARCHITECTURE.md">how it is put together</a>, <a href="${REPO_URL}/blob/main/docs/CONTRIBUTING-FEATURES.md">how to add a feature</a> and <a href="${REPO_URL}/blob/main/docs/requirements/ledger.yaml">every requirement with its evidence</a>.</p>`,
-  prev: null,
-  next: chapterLink(chapters[0]),
-});
-
-chapters.forEach((c, i) => {
+<p>The <a href="${contributing.url}">contributing guide</a> covers setup and the rules. The developer documents live with the code: <a href="${REPO_URL}/blob/main/docs/PRODUCT.md">what the product is</a>, <a href="${REPO_URL}/blob/main/docs/ARCHITECTURE.md">how it is put together</a>, <a href="${REPO_URL}/blob/main/docs/CONTRIBUTING-FEATURES.md">how to add a feature</a> and <a href="${REPO_URL}/blob/main/docs/requirements/ledger.yaml">every requirement with its evidence</a>.</p>`;
+  } else if (p.isIndex) {
+    article += `\n${cards(p.pages)}`;
+  }
   docsPage({
-    path: `/docs/${c.slug}/`,
-    key: c.slug,
-    title: `${c.title} | RigReady user guide`,
-    description: c.summary || `${c.title}, from the RigReady user guide.`,
-    source: 'docs/USER-GUIDE.md',
-    article: `<p class="chapter-of">${c.number ? `Chapter ${c.number} of the ` : 'From the '}<a href="/docs/">user guide</a></p>
-<h1>${esc(c.title)}</h1>
-${render(c.body, { shift: -1, link: guideLink, image: guideImage })}`,
-    prev: i === 0 ? { href: '/docs/', title: 'User guide' } : chapterLink(chapters[i - 1]),
-    next: chapterLink(chapters[i + 1]),
+    path: p.url,
+    key: p.file,
+    title: p.file === 'index.md' ? p.title : `${p.title}${DOCS_SUFFIX}`,
+    description: p.description,
+    source,
+    trail: breadcrumbs(manual, p, MANUAL_TITLE),
+    article,
+    prev: reading[i - 1] ?? null,
+    next: reading[i + 1] ?? null,
   });
 });
 
-const contributing = sections(await read('CONTRIBUTING.md'));
 docsPage({
-  path: '/docs/contributing/',
+  path: contributing.url,
   key: 'contributing',
   title: 'Contributing to RigReady',
   description:
     'How to set up RigReady for development, the rules a change follows, and how a pull request is checked.',
   source: 'CONTRIBUTING.md',
-  article: `<h1>${esc(contributing.title ?? 'Contributing')}</h1>
+  trail: null,
+  article: `<h1>${esc(contributing.title)}</h1>
 ${render(await read('CONTRIBUTING.md').then((md) => md.replace(/^#\s+.*\n/, '')), { link: docLink('CONTRIBUTING.md') })}`,
-  prev: chapterLink(chapters[chapters.length - 1]),
+  prev: reading[reading.length - 2],
   next: null,
 });
 
@@ -421,6 +488,6 @@ for (const p of pages) {
 if (broken.length) throw new Error(`Broken links:\n  ${broken.join('\n  ')}`);
 
 console.log(
-  `Built _site: ${pages.length} pages; ${stable ? `download ${stable.version} (${stable.installer.name})` : 'no release of this major version yet'}` +
+  `Built _site: ${pages.length} pages (${manual.sections.length} sections of the manual); ${stable ? `download ${stable.version} (${stable.installer.name})` : 'no release of this major version yet'}` +
     `${beta ? `, beta ${beta.version}` : ''}.`
 );

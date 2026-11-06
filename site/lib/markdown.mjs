@@ -1,7 +1,7 @@
 // The markdown the project's documents use, and nothing more: headings, paragraphs, "-" and "1."
-// lists (a line indented under an item continues it), fenced code, a picture on a line of its
-// own, and inline code, links, <autolinks>, bold and italics. No dependencies, so the site build
-// needs no npm install.
+// lists (a line indented under an item continues it), fenced code, "|" tables, ">" quotes, a
+// picture on a line of its own, and inline code, links, <autolinks>, bold and italics. No
+// dependencies, so the site build needs no npm install.
 
 export const esc = (s) =>
   String(s).replace(
@@ -40,6 +40,17 @@ export function inline(text, { link = (href) => href } = {}) {
     .join('');
 }
 
+/** The cells of a table row: "| a | b |" -> ["a", "b"]; a "\|" inside a cell is a "|". */
+const cells = (line) =>
+  line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/(?<!\\)\|$/, '')
+    .split(/(?<!\\)\|/)
+    .map((c) => c.trim().replace(/\\\|/g, '|'));
+const isTableRow = (line) => /^\s*\|/.test(line ?? '');
+const isTableRule = (line) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line ?? '');
+
 /**
  * Block markdown to HTML.
  * - `shift`: added to every heading level (a "##" chapter heading rendered as a page's h1 is -1).
@@ -53,6 +64,7 @@ export function render(markdown, { shift = 0, boldLineHeading = false, link, ima
   let para = [];
   let list = null; // { tag: 'ul' | 'ol', items: [] }
   const opts = { link };
+  const options = { shift, boldLineHeading, link, image };
 
   const flush = () => {
     if (para.length) html.push(`<p>${inline(para.join(' '), opts)}</p>`);
@@ -81,6 +93,25 @@ export function render(markdown, { shift = 0, boldLineHeading = false, link, ima
     } else if ((m = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(line.trim()))) {
       flush();
       html.push(image ? image(m[2], m[1]) : `<p><img src="${esc(m[2])}" alt="${esc(m[1])}"></p>`);
+    } else if (isTableRow(line) && isTableRule(lines[i + 1])) {
+      flush();
+      const head = cells(line);
+      const rows = [];
+      i += 1;
+      while (isTableRow(lines[i + 1])) rows.push(cells(lines[++i]));
+      const row = (cs, tag) =>
+        `<tr>${cs.map((c) => `<${tag}>${inline(c, opts)}</${tag}>`).join('')}</tr>`;
+      html.push(
+        `<table><thead>${row(head, 'th')}</thead><tbody>${rows.map((r) => row(r, 'td')).join('')}</tbody></table>`
+      );
+    } else if (/^\s*>/.test(line)) {
+      flush();
+      const quoted = [];
+      for (; i < lines.length && /^\s*>/.test(lines[i]); i++) {
+        quoted.push(lines[i].replace(/^\s*>\s?/, ''));
+      }
+      i -= 1;
+      html.push(`<blockquote>\n${render(quoted.join('\n'), options)}\n</blockquote>`);
     } else if (boldLineHeading && /^\*\*[^*]+\*\*$/.test(line.trim())) {
       flush();
       html.push(`<h5>${inline(line.trim().slice(2, -2), opts)}</h5>`);
@@ -125,51 +156,4 @@ export function sections(markdown, level = 2) {
   for (const s of out.sections) s.body = s.lines.join('\n');
   out.preamble = out.preamble.join('\n');
   return out;
-}
-
-const plainText = (md) =>
-  md
-    .replace(/\s+/g, ' ')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .trim();
-
-const joinNames = (names) =>
-  names.length > 1
-    ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
-    : (names[0] ?? '');
-
-/**
- * A chapter's summary, as plain text: its opening paragraph, and when that is only a few words
- * ("Configure > Backups."), what follows: the names of a list's items when they start with one in
- * bold ("Back up now, Restore and Snapshots."), else the first sentence of the next block.
- */
-export function summary(markdown, { min = 60, max = 230 } = {}) {
-  const blocks = String(markdown)
-    .split(/\n\s*\n/)
-    .map((b) => b.trim())
-    .filter((b) => b && !/^(#|!\[|```)/.test(b));
-  let text = '';
-  for (const block of blocks) {
-    if (text.length >= min) break;
-    const items = block.split('\n').filter((l) => /^\s*(?:[-*]|\d+\.)\s+/.test(l));
-    let part;
-    if (items.length) {
-      const names = items.map((l) =>
-        /^\s*(?:[-*]|\d+\.)\s+\*\*([^*]+?)\*\*/.exec(l)?.[1]?.replace(/[:.]$/, '')
-      );
-      part = names.every(Boolean)
-        ? `${joinNames(names)}.`
-        : plainText(items[0].replace(/^\s*(?:[-*]|\d+\.)\s+/, ''));
-    } else {
-      part = plainText(block);
-    }
-    if (text) part = /^(.+?[.!?])(\s|$)/.exec(part)?.[1] ?? part;
-    text = text ? `${text} ${part}` : part;
-  }
-  if (text.length <= max) return text;
-  const cut = text.slice(0, max);
-  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? '), cut.lastIndexOf('! '));
-  return end > min ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(' '))}…`;
 }
