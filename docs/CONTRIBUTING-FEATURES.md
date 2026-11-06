@@ -629,7 +629,7 @@ test('audio: wrong default device is fixed by Make ready', async ({ rig }) => {
 | `page`, `app` | Playwright page and Electron app |
 | `shot(name)` | Numbered screenshot in `artifacts/screens/<flow>/`; waits for fonts and for dialogs to finish appearing |
 | `dataRoot`, `home` | The data root and the fake user folder on disk, for arranging and asserting files with `node:fs` |
-| `mutate([...])` | Scenario mutations applied while the app runs; screens refresh by themselves |
+| `mutate([...])` | Scenario mutations applied while the app runs (in the main process, so also while the window is hidden in the tray); screens refresh by themselves |
 | `sendInput([{ index, name, axes, buttons, hats, timestamp }])` | Controller input as if the user pressed something |
 | `changeFiles(reason, [{ path, content }])` | A journaled change through FileStore, as a feature would make it |
 | `render(html, { width, height })` | Calls the real Render port; returns PNG size and PDF header |
