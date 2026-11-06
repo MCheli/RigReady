@@ -761,6 +761,9 @@ async function start(): Promise<void> {
   if (fake) {
     // Scenario runs only: lets an end-to-end test read and use the tray like a user would.
     const hooks = globalThis as unknown as Record<string, unknown>;
+    // A change to the fake machine, made here rather than through the window's page: the
+    // page may be hidden in the tray, loading again, or gone, and the machine is not the page.
+    hooks['__rigreadyScenario'] = (input: unknown) => call('app:scenario', input);
     hooks['__rigreadyTray'] = () => ({
       tooltip: trayTooltip(trayStatus, trayBusy),
       tone: trayTone(trayStatus) ?? null,

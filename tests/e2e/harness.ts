@@ -82,7 +82,8 @@ export interface RunningApp {
   shot(name: string): Promise<string>;
   /**
    * Changes the fake machine while the app runs, with the same mutations a scenario file
-   * uses: await mutate([{ op: 'unplugDevice', match: { productId: 'B68F' } }]).
+   * uses: await mutate([{ op: 'unplugDevice', match: { productId: 'B68F' } }]). Made in the
+   * main process, so it works while the window is hidden in the tray.
    */
   mutate(mutations: unknown[]): Promise<void>;
   /** Delivers controller input as if the user moved or pressed something. */
@@ -193,14 +194,18 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
           // Every scenario run says so on screen; this also proves the app is on fake providers.
           await expect(page.getByTestId('scenario-banner')).toBeVisible();
 
+          // A change to the fake machine is made in the main process, where the fake machine
+          // lives: it never goes through the window's page. A page whose window is hidden in
+          // the tray does not always answer on GitHub's runner (nor would one that is loading
+          // again after a crash), and the machine changing has nothing to do with the page.
           const scenarioCall = async (input: unknown): Promise<Record<string, unknown>> => {
-            const result = (await page.evaluate(
-              (payload) =>
+            const result = (await app.evaluate(
+              (_electron, payload) =>
                 (
                   globalThis as unknown as {
-                    rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+                    __rigreadyScenario(input: unknown): Promise<unknown>;
                   }
-                ).rigready.invoke('app:scenario', payload),
+                ).__rigreadyScenario(payload),
               input
             )) as {
               ok: boolean;
@@ -282,13 +287,35 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
 
     await use(rig);
 
+    const failed = testInfo.status !== testInfo.expectedStatus;
     const roots = new Set<IsolatedEnv>();
     for (const { app, isolated, page } of started) {
-      if (testInfo.status !== testInfo.expectedStatus) {
-        await page.screenshot({ path: testInfo.outputPath('failure.png') }).catch(() => undefined);
+      if (failed) {
+        // A window hidden in the tray cannot be captured, and waiting on it would only hold up
+        // the next test: it is brought out first, briefly, and the capture is given a bound.
+        await Promise.race([
+          app
+            .evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.show())
+            .catch(() => undefined),
+          new Promise((resolve) => setTimeout(resolve, 5_000)),
+        ]);
+        await page
+          .screenshot({ path: testInfo.outputPath('failure.png'), timeout: 20_000 })
+          .catch(() => undefined);
       }
       await app.close().catch(() => undefined);
       roots.add(isolated);
+    }
+    if (failed) {
+      // The app's own log says what the main process saw: it is kept with the failure output.
+      let n = 0;
+      for (const isolated of roots) {
+        n++;
+        const name = roots.size > 1 ? `rigready-${n}.log` : 'rigready.log';
+        await fs
+          .copyFile(path.join(isolated.dataRoot, 'logs', 'rigready.log'), testInfo.outputPath(name))
+          .catch(() => undefined);
+      }
     }
     for (const isolated of roots) await isolated.cleanup().catch(() => undefined);
   },
