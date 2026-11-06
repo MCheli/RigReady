@@ -24,7 +24,7 @@ Three things are made to leave the PC, each on your decision, and each is cleane
 - A **picture of a setup** is built from names only and scanned with everything removed. See [a picture of your rig](../protect/rig-picture.md).
 - The **diagnostics** report and export have the same details removed before they are copied or written, plus anything that looks like a key or a password masked. See [diagnostics](diagnostics.md).
 
-A **backup** is not cleaned: it is your own copy of your own files, meant for this PC or your next one. Credential files are never put in one.
+A [backup](../protect/backups.md) is not cleaned: it is your own copy of your own files, meant for this PC or your next one. Credential files are never put in one.
 
 ## What stays private on the PC
 

@@ -25,16 +25,16 @@ RigReady sets the default the way the Sound panel does and then reads it back; i
 
 ## The check in a setup
 
-When a setup is created from the rig, the capture screen proposes **Sound output: <device>** and **Microphone: <device>** for the current defaults, selected and required. When the calls device differs from the default, **Sound output for calls: <device>** (or the microphone equivalent) is offered as well, optional and not selected. Each check records the device's Windows id and its name. See [checks](../setups/checks.md).
+When a setup is created from the rig, the [capture screen](../setups/capture.md) proposes **Sound output: <device>** and **Microphone: <device>** for the current defaults, selected and required. When the calls device differs from the default, **Sound output for calls: <device>** (or the microphone equivalent) is offered as well, optional and not selected. Each check records the device's Windows id and its name. See [checks](../setups/checks.md).
 
-On the Play screen the check passes with "Default output", "Default output for calls" or "Default output, also for calls". It fails with:
+On the [Play screen](../play/index.md) the check passes with "Default output", "Default output for calls" or "Default output, also for calls". It fails with:
 
 - "<device> is not connected", plus "Windows is using <other> instead" when it can say so;
 - "Default is <other>" or "Default for calls is <other>" when the device is there but not chosen.
 
 If Windows gave the device a new id since the setup was made (a driver reinstall, another USB port), the check finds it by its exact name, as long as only one device of that kind has that name, and notes "Found by name: Windows now lists <device> under a different id."
 
-The fix, **Make <device> the default output** or **Make <device> the default for calls**, is what Make ready runs. It fails if the device is not connected.
+The fix, **Make <device> the default output** or **Make <device> the default for calls**, is what [Make ready](../play/make-ready-and-launch.md) runs. It fails if the device is not connected.
 
 ![An audio check fixed](../../../artifacts/screens/audio-default-speakers/02-fixed.png)
 

@@ -8,7 +8,7 @@ SimAppPro is WinWing's own app. It configures DCS for the WinWing MFD screens an
 
 ## What RigReady knows about SimAppPro
 
-The tab says whether SimAppPro is installed, which version, and whether it is running now. RigReady reads one file of SimAppPro's: its MFD screen plan, to start the [screen setup](screens.md) from. SimAppPro's settings file, which holds your WinWing account password, is never read, copied or backed up.
+The tab says whether SimAppPro is installed, which version, and whether it is running now. RigReady reads one file of SimAppPro's: its MFD screen plan, to start the screen setup from. SimAppPro's settings file, which holds your WinWing account password, is never read, copied or backed up.
 
 ![The SimAppPro tab](../../../artifacts/screens/dcs-setup-simapppro/03-simapppro-page.png)
 
@@ -32,18 +32,18 @@ Three things talk to the WinWing hardware with WinWing's own protocol while you 
 - **UFC / ICP displays**: the text on the UFC and the ICP.
 - **Vibration**: the throttle handles shaking with the aircraft.
 
-For each DCS setup, tick the ones it uses and **Save**. A setup with at least one ticked gets a required check, **SimAppPro running**, with the fix **Start SimAppPro**, so Make ready starts it and waits for it; a setup with none ticked never asks for SimAppPro. See [checks](../setups/checks.md).
+For each DCS setup, tick the ones it uses and **Save**. A setup with at least one ticked gets a required check, **SimAppPro running**, with the fix **Start SimAppPro**, so [Make ready](../play/make-ready-and-launch.md) starts it and waits for it; a setup with none ticked never asks for SimAppPro. See [checks](../setups/checks.md).
 
-What replacing these would take is written up in `docs/research/winwing-direct-control.md` in RigReady's source. In short: the lighting and the displays are reachable over one documented USB channel for most of the devices, but that channel also carries the commands that update firmware and calibration, one wrong byte can disable a device, three of the devices on the first rig have no public documentation, and nothing can be built before the traffic is captured on a real rig. Until then there is no button or setting for it in RigReady.
+What replacing these would take is written up in [docs/research/winwing-direct-control.md](../../research/winwing-direct-control.md) in RigReady's source. In short: the lighting and the displays are reachable over one documented USB channel for most of the devices, but that channel also carries the commands that update firmware and calibration, one wrong byte can disable a device, three of the devices on the first rig have no public documentation, and nothing can be built before the traffic is captured on a real rig. Until then there is no button or setting for it in RigReady.
 
 ## The DCS files RigReady manages
 
 Once RigReady has written a screen setup or an Export.lua line, it watches those files: `RigReady.lua`, the options.lua keys it set, and the Export.lua tools it added. The bottom of the tab shows each as **As RigReady left it**, **Changed outside RigReady** or **Deleted**, with what differs. SimAppPro rewrites Export.lua every time it starts and options.lua when its MFD wizard is applied, which is the usual cause.
 
-**Restore RigReady's version…** shows which files would be written and then puts back what RigReady last set. Lines other tools added to Export.lua stay. The same is on the Play screen as the check **DCS files RigReady manages are unchanged** with the fix **Restore RigReady's version**, and as a warning at the top of the DCS World overview.
+**Restore RigReady's version…** shows which files would be written and then puts back what RigReady last set. Lines other tools added to Export.lua stay. The same is on the [Play screen](../play/index.md) as the check **DCS files RigReady manages are unchanged** with the fix **Restore RigReady's version**, and as a warning at the top of the [DCS World overview](index.md).
 
 ![Export.lua rewritten by SimAppPro](../../../artifacts/screens/dcs-setup-simapppro-rewrote/01-simapppro-page-changed.png)
 
 ## Not yet verified
 
-The MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not yet been looked at in the real game. [MFD screens and the monitor setup](screens.md) says what to check the first time.
+The MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not yet been verified in the real game: they passed their tests on recorded data from one rig, and the [changelog](../../../CHANGELOG.md) lists this under known limitations. [MFD screens and the monitor setup](screens.md#what-to-check-in-dcs) says what to check the first time.

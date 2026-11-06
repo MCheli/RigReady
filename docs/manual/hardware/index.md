@@ -10,7 +10,7 @@ The Hardware section of **Configure** is where you look at the gear itself: ever
 
 The Devices page has four tabs, each a tool:
 
-- [Devices](devices.md): every controller and USB device, with the names you give them, found by pressing a button, with their place on the USB tree, the setups that need them, and HidHide.
+- [Devices](devices.md): every controller and USB device, with the names you give them, found by pressing a button, with their place on the USB tree, the setups that need them, and [HidHide](devices.md#hidhide).
 - [Input tester](input-tester.md): buttons, axes and hats as a game reads them, one controller in full or all at once, with an activity log.
 - [Health check](health-check.md): ten seconds with your hands off, then a report of stuck buttons, inputs that fire by themselves and noisy axes.
 - [USB map](usb-map.md): the tree from each USB controller of the computer through the hubs to every device, and what could be unplugged.
@@ -37,6 +37,6 @@ The Stream Deck and TrackIR pages add what those programs keep on disk: Stream D
 - A device is recognised by its vendor and product id, narrowed by its serial number or, failing that, by the USB port it is on. Never by its name: two devices can share a name, and a name can change with a driver update.
 - When several identical devices have no usable serial, RigReady cannot tell from the device tree which DirectInput controller belongs to which unit. The Devices page says so and offers **Find a device**: press a button, and the controller that answers is the one you pressed.
 - A controller that Windows does not list as a USB device of its own (a virtual controller, or a wireless one) is shown by its DirectInput id only.
-- Which of several identical devices a setup needs is a decision you make once, by naming them; see [devices](devices.md).
+- Which of several identical devices a setup needs is a decision you make once, by naming them; see [Identical devices](devices.md#identical-devices). When a check still says Not connected, [A device is not found](../troubleshooting/device-not-found.md) goes through the causes.
 - RigReady does not change HidHide, does not write to the Fanatec base, and cannot switch TrackIR's profile. Each page says what to do instead.
 - The names you give devices are shown everywhere in RigReady, but a check always matches on the identity, never on the name.

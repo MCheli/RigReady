@@ -21,12 +21,12 @@ What is in it:
 | `profiles\` | Your setups, one YAML file each. You may edit them by hand; see [setups as YAML](../setups/yaml.md). |
 | `settings.json` | The [settings](settings.md). |
 | `displays\layouts.json` | Your saved monitor layouts. |
-| `backup\` | The **Always back up** list, the backup preferences, the snapshot index, the "what changed" records, and the stored file contents they share. |
-| `backups\` | The backup files you made, as zip files, and under `backups\auto` the automatic copies of every file RigReady changed. |
+| `backup\` | The [Always back up](../protect/tracked-files.md) list, the backup preferences, the [snapshot](../protect/snapshots.md) index, the [what changed](../protect/what-changed.md) records, and the stored file contents they share. |
+| `backups\` | The [backup files](../protect/backups.md) you made, as zip files, and under `backups\auto` the automatic copies of every file RigReady changed. |
 | `journal.jsonl` | The change journal the [Safety page](../protect/safety-page.md) reads. |
 | `logs\rigready.log` | The log, with up to four older files beside it (`rigready.log.1` and so on); each is at most 5 MB. |
 | `secrets\` | The Anthropic API key, encrypted for your Windows account. |
-| `window.json`, `panels.json`, `state.json` | Where the window and the pop-out panels were left, and which setup was used last. |
+| `window.json`, `panels.json`, `state.json` | Where the window and the pop-out panels were left, and which [setup was used last](../play/switching-setups.md). |
 
 The program itself is installed under `%LOCALAPPDATA%\Programs\RigReady`, and a downloaded update waits in `%LOCALAPPDATA%\rigready-updater` until it is installed.
 

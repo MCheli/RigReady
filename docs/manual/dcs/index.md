@@ -35,7 +35,7 @@ RigReady refuses to write DCS's files while DCS is running. DCS reads options.lu
 
 While DCS runs you can still look at everything. The buttons that write are disabled, the bindings page says that nothing can be saved, and a fix that would write a DCS file reports that DCS must be closed first. RigReady looks for DCS.exe among the running processes. The message each page shows, and what to do, are on [RigReady will not write DCS files](../troubleshooting/dcs-files-refused.md).
 
-Kneeboard pages are the exception: writing them is not blocked, because DCS reads that folder when a mission starts, so new pages simply appear in the next mission.
+[Kneeboard pages](kneeboard.md) are the exception: writing them is not blocked, because DCS reads that folder when a mission starts, so new pages simply appear in the next mission.
 
 ## Where DCS keeps things
 
@@ -55,13 +55,13 @@ The aircraft folder names are DCS's input profile keys, for example `FA-18C_horn
 
 ## Every change is backed up
 
-Nothing outside RigReady's own folder is written without a copy being kept first and the change being described. Every DCS file RigReady writes is listed under **Configure > Safety** with Undo, and before a write you see what will change, as a plain-language list and as the exact text. See [Backups](../protect/backups.md) for the whole-rig backup that includes the DCS files.
+Nothing outside RigReady's own folder is written without a copy being kept first and the change being described. Every DCS file RigReady writes is listed under **Configure > Safety** ([The Safety page](../protect/safety-page.md)) with Undo, and before a write you see what will change, as a plain-language list and as the exact text. See [Backups](../protect/backups.md) for the whole-rig backup that includes the DCS files.
 
 ## Not yet verified in the real game
 
-Two things have passed their tests on recorded data from one rig but have not been looked at inside DCS itself:
+Two things have not yet been verified in the real game: they passed their tests on recorded data from one rig, but have not been looked at inside DCS itself. The [changelog](../../../CHANGELOG.md) lists them under known limitations.
 
-- A binding written by RigReady has not been checked in DCS's own controls screen. See [Bindings](bindings.md).
+- A binding written by RigReady has not been checked in DCS's own controls screen. See [DCS bindings](bindings.md).
 - The MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not been looked at. See [MFD screens and the monitor setup](screens.md).
 
 Both pages say what to look at the first time.

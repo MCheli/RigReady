@@ -4,7 +4,7 @@ description: The Monitors page draws your screens to scale as Windows reports th
 order: 50
 ---
 
-This section covers the two pages under **Configure** that deal with what you see and hear: **Monitors** and **Audio**. Both read the real state from Windows every time they open, and both feed the checklist on the Play screen, so a setup can check the monitor arrangement and the default sound devices and put them right with Make ready.
+This section covers the two pages under **Configure** that deal with what you see and hear: **Monitors** and **Audio**. Both read the real state from Windows every time they open, and both feed the checklist on the Play screen, so a setup can check the monitor arrangement and the default sound devices and put them right with [Make ready](../play/make-ready-and-launch.md).
 
 The Monitors page is described here. The pages that follow cover [saved layouts](layouts.md), [Identify and sideways screens](identify.md), [editing a layout by hand](rotation-and-position.md) and [the Audio page](audio.md).
 

@@ -14,7 +14,7 @@ The button at the top right opens the setup's file **in your editor** or shows i
 
 ## Setup
 
-- **Name**: what the Play screen, the tray and the shortcut call it, up to 80 characters. The id in the file name does not change when you rename.
+- **Name**: what the [Play screen](../play/index.md), the [tray](../one-click/tray.md) and the shortcut call it, up to 80 characters. The id in the file name does not change when you rename.
 - **Game**: no particular game, a game RigReady knows (marked "not found on this PC" when it is not installed), or **Other game…** with a **Game name**. Choosing a known game fills in what Launch starts, when nothing was chosen yet.
 - **Install this setup uses**: shown when the game is installed more than once (DCS stable and open beta). Its folders are then what `{DCS_INSTALL}` and `{DCS_USER}` mean for this setup's checks, fixes and launch; see [Path variables](path-variables.md).
 - **Notes**: a line or two for yourself.
@@ -33,7 +33,7 @@ The checks, in the order the Play screen shows them within each group. Each line
 
 - Arrows to move it up or down.
 - Its name, its kind ("App running", "Config file content") and its fix, if any.
-- **On** / **Off**. An item that is off stays in the setup but is not checked, not counted, not fixed by Make ready and left alone by Stand down. The Play screen shows it as "off".
+- **On** / **Off**. An item that is off stays in the setup but is not checked, not counted, not fixed by Make ready and left alone by [Stand down](../play/stand-down.md). The Play screen shows it as "off".
 - **Required** / **Optional**. A check that only ever warns (such as the game-updated check) has this greyed.
 - **Edit** opens the item; **Done** closes it. The bin removes it.
 
@@ -41,14 +41,14 @@ The checks, in the order the Play screen shows them within each group. Each line
 
 An open item has:
 
-- **Name shown in the checklist**, and **Timeout (seconds)** for this item in place of the limit in Settings.
-- Pickers for the common kinds: **Pick a connected device** (identical devices get their serial number or USB port added, so they are told apart) and **Press a button on it** for a device check; **Pick a running app** for an app check, which also fills in the fix with the app's path; **Pick a service** for a Windows service.
+- **Name shown in the checklist**, and **Timeout (seconds)** for this item in place of the limit in [Settings](../app/settings.md#safety-and-limits).
+- Pickers for the common kinds: **Pick a connected device** (identical devices get their serial number or USB port added, so they are told apart; see [Devices](../hardware/devices.md)) and **Press a button on it** for a device check; **Pick a running app** for an app check, which also fills in the fix with the app's path; **Pick a service** for a Windows service.
 - **What to check**: the fields of the check type. The path, program and folder fields have **Browse…**, which stores the path with a variable where one applies.
-- **Fix**: **What Make ready does when this is not met**, chosen from the fixes that suit this check type, and the fix's own fields. Some fixes have a helper button, for example **Keep a copy of the file as it is now** for a restore, which saves a known-good copy the fix can later put back.
+- **Fix**: **What Make ready does when this is not met** ([Make ready and launch](../play/make-ready-and-launch.md)), chosen from the fixes that suit this check type, and the fix's own fields. Some fixes have a helper button, for example **Keep a copy of the file as it is now** for a restore, which saves a known-good copy the fix can later put back.
 
 ## Before launch, After launch, At Stand down
 
-Three lists of steps, each with **Add step**. A step is any fix type that does something: start a program, run a script, apply a monitor layout, set the default audio device, start TrackIR. Each step has a name, what it does and its fields, plus:
+Three lists of steps, each with **Add step**. A step is any fix type that does something: start a program, run a [script](scripts.md), apply a monitor layout, set the default audio device, start TrackIR. Each step has a name, what it does and its fields, plus:
 
 - **Go on if it fails**, on by default. Off: a failure before launch pauses the launch and asks.
 - **Wait until it finishes**: scripts wait by default, programs do not.

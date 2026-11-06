@@ -6,17 +6,17 @@ order: 10
 
 **Configure > Settings** holds everything about how RigReady itself behaves. Each setting is saved the moment you change it, and the page says "Saved". A change that cannot be made is refused with the reason, and the control goes back to what is stored.
 
-The settings are kept in `settings.json` in RigReady's [data folder](index.md). A full backup includes them, and a restore brings back the desk layout, the retention and the limits; Start with Windows and the API key are never restored, because they belong to one PC and one Windows account.
+The settings are kept in `settings.json` in RigReady's [data folder](index.md). A full [backup](../protect/backups.md) includes them, and a [restore](../protect/restore.md) brings back the desk layout, the retention and the limits; Start with Windows and the API key are never restored, because they belong to one PC and one Windows account.
 
 ## Startup
 
 **Start with Windows.** RigReady starts in the tray when you sign in, without opening its window. It is off by default. The switch shows what Windows actually has: when Windows will not accept the entry, or has it switched off, the page says so. See [Start with Windows is off](../troubleshooting/start-with-windows-off.md).
 
-**Keep running in the tray when the window is closed.** On by default: closing the window hides RigReady to the tray, and **Quit** in the tray icon's menu ends it. Off: closing the window quits.
+**Keep running in the tray when the window is closed.** On by default: closing the window hides RigReady to the [tray](../one-click/tray.md), and **Quit** in the tray icon's menu ends it. Off: closing the window quits.
 
 ## Monitor layouts
 
-**Desk layout.** The saved layout that **Stand down** puts the monitors back into. "None" means Stand down leaves the monitors alone. The layouts are listed under it, each with how many monitors it switches on and off, with **Rename** and **Delete**; deleting the desk layout clears the choice. **Save current monitors as a layout** stores the arrangement as it is now under a name. The same layouts are managed on **Configure > Monitors**; see [layouts](../monitors-and-audio/layouts.md).
+**Desk layout.** The saved layout that [Stand down](../play/stand-down.md) puts the monitors back into. "None" means Stand down leaves the monitors alone. The layouts are listed under it, each with how many monitors it switches on and off, with **Rename** and **Delete**; deleting the desk layout clears the choice. **Save current monitors as a layout** stores the arrangement as it is now under a name. The same layouts are managed on **Configure > Monitors**; see [layouts](../monitors-and-audio/layouts.md).
 
 ## Safety and limits
 
@@ -24,9 +24,9 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 **Monitor layout revert timer.** How many seconds a newly applied layout waits for you to keep it before it goes back by itself: 15 by default, 5 to 120.
 
-**Check timeout.** How many seconds one check may run before it is reported as timed out: 5 by default, 1 to 60.
+**Check timeout.** How many seconds one check may run before it is reported as timed out: 5 by default, 1 to 60. A check can have its own limit in [the setup editor](../setups/editor.md).
 
-**Largest import.** The biggest shared setup or backup file RigReady will open, in megabytes: 200 by default, up to 4096. Larger files are refused before they are read.
+**Largest import.** The biggest [shared setup](../protect/sharing.md) or backup file RigReady will open, in megabytes: 200 by default, up to 4096. Larger files are refused before they are read.
 
 ## AI assistance
 
@@ -56,4 +56,4 @@ The version, the update channel it follows, and that RigReady is open source und
 
 - **The log level.** The **Detailed log** switch is on the [Diagnostics](diagnostics.md) page. The environment variable `RIGREADY_LOG_LEVEL` (debug, info, warn or error) overrides it for a run.
 - **How many backups are kept.** On the [Backups](../protect/backups.md) page, above the list.
-- **Play screen options** such as standing down when the game closes, hiding RigReady after launch and the ready tone are in the Play screen's own menu; see [play](../play/index.md).
+- **Play screen options** such as standing down when the game closes, hiding RigReady after launch and the ready tone are in the Play screen's own menu; see [The Play menu](../play/the-menu.md).

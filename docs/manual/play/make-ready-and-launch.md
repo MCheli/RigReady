@@ -12,7 +12,7 @@ The Play screen has one main action, drawn large with "Enter" on it. Which actio
 
 - The rig is **Not ready** and something can be fixed: **Make ready and launch**.
 - Otherwise: **Launch**. It turns green once the rig is known to be ready, and never before.
-- The setup has nothing to launch: **Make ready**, when there is something to fix. In place of Launch there is a link, **Choose what Launch starts**, to the setup editor.
+- The setup has nothing to launch: **Make ready**, when there is something to fix. In place of Launch there is a link, **Choose what Launch starts**, to the [setup editor](../setups/editor.md).
 - While the game runs: none. Enter never starts a second copy of a game.
 - Once the game has closed: **Stand down**.
 
@@ -24,15 +24,15 @@ Enter presses the main button when nothing else has the keyboard: a focused text
 
 ## What is asked first
 
-Before anything runs, every fix and every launch step that starts a program you have to confirm is shown to you, one at a time: **Run this program?** with the program, each argument as it will be passed, and the folder. **Run it** or **Skip**. Only then does the run go through by itself. A skipped fix is listed as "Skipped by you" and ends up under **Needs you**.
+Before anything runs, every fix and every launch step that starts a program you have to confirm is shown to you, one at a time: **Run this program?** with the program, each argument as it will be passed, and the folder. **Run it** or **Skip** ([Scripts](../setups/scripts.md)). Only then does the run go through by itself. A skipped fix is listed as "Skipped by you" and ends up under **Needs you**.
 
 ## The order of the fixes
 
-Make ready runs every available fix in this order, so that each phase can count on the one before:
+Make ready runs every available fix ([Checks and fixes](../setups/checks.md)) in this order, so that each phase can count on the one before:
 
 1. **Monitors**, so helper apps open on the right screens.
 2. **Audio**.
-3. **Files**: restore a config file, put back Export.lua lines, set DCS options.
+3. **Files**: restore a config file, put back [Export.lua](../dcs/export-lua.md) lines, set DCS options.
 4. **Devices**.
 5. **Apps**: start programs. A Windows service has no automatic fix.
 6. **Scripts**.
@@ -66,7 +66,7 @@ With **Make ready and launch**, the game starts only when every required check i
 1. The setup's steps **Before launch** run in order. A step set to stop the launch when it fails does just that: the dialog **A step before launch failed** shows what it printed, and you choose **Launch anyway** (the launch goes on after that step) or **Cancel**.
 2. The game is started: a program, or Steam is asked to start it (see [Launch targets and steps](../setups/launch.md)). RigReady waits up to 30 seconds for the program to appear; "Launched DCS.exe" or "Asked Steam to start DCS F/A-18C" is said only then.
 3. The steps **After launch** run in the background, each at its delay after the start. A failure there is reported and logged, and never touches the game.
-4. The window gets out of the way when **Hide RigReady after Launch** is on, as it is by default: it goes to the tray. See [The Play menu](the-menu.md).
+4. The window gets out of the way when **Hide RigReady after Launch** is on, as it is by default: it goes to the tray. See [The Play menu](the-menu.md). A [desktop shortcut](../one-click/desktop-shortcut.md) or the [hotkey](../one-click/hotkey.md) runs the same Make ready without opening the window first.
 
 From then on the screen shows the session: [Sessions and history](sessions.md).
 

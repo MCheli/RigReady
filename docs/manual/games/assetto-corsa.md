@@ -12,9 +12,9 @@ The game is found through Steam (app 244210) when `AssettoCorsa.exe` is in the f
 
 ## Files worth backing up
 
-From `Documents\Assetto Corsa\cfg`: the whole folder as one item, and separately `controls.ini` (bindings and force feedback), `video.ini`, `gameplay.ini`, `assists.ini`, `audio.ini` and the `controllers\savedsetups` folder with your saved control presets. The Content Manager settings folder under `%LOCALAPPDATA%\AcTools Content Manager` is listed as a settings folder when it exists.
+From `Documents\Assetto Corsa\cfg`, offered on the [Backups page](../protect/tracked-files.md): the whole folder as one item, and separately `controls.ini` (bindings and force feedback), `video.ini`, `gameplay.ini`, `assists.ini`, `audio.ini` and the `controllers\savedsetups` folder with your saved control presets. The Content Manager settings folder under `%LOCALAPPDATA%\AcTools Content Manager` is listed as a settings folder when it exists.
 
-Assetto Corsa and Content Manager write `controls.ini` while they are open, so a restore is refused while any of them runs. The path variables `{AC_USER}` (the `Documents\Assetto Corsa` folder) and `{AC_INSTALL}` are available in a setup.
+Assetto Corsa and Content Manager write `controls.ini` while they are open, so a [restore](../protect/restore.md) is refused while any of them runs. The [path variables](../setups/path-variables.md) `{AC_USER}` (the `Documents\Assetto Corsa` folder) and `{AC_INSTALL}` are available in a setup.
 
 ## The bindings and controllers page
 
@@ -32,4 +32,4 @@ When a controller the bindings use is not connected under its stored id, a notic
 
 ## Backups and checks
 
-The **Backups** section keeps quick copies of `controls.ini`, with the preview, Undo and **Use in a setup** described on the [iRacing page](iracing.md). A racing setup for Assetto Corsa gets the common racing checks described under [Games](index.md); there is no wheel settings comparison for this game.
+The **Backups** section keeps quick copies of `controls.ini`, with the preview, Undo and **Use in a setup** described on the [iRacing page](iracing.md). A racing setup for Assetto Corsa gets the common racing checks described under [Games](index.md); there is no [wheel settings](wheel.md#recommended-settings) comparison for this game.

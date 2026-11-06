@@ -6,11 +6,11 @@ order: 40
 
 A snapshot keeps one tracked item exactly as it is at one moment: the bindings of an aircraft before you rebind the throttle, a game's settings before you try new graphics options. Later you compare it with the files as they are, line by line, or put it back.
 
-Snapshots are on the **Snapshots** tab of **Configure > Backups**. They are smaller and quicker than a backup, and they are about one item only.
+Snapshots are on the **Snapshots** tab of **Configure > Backups** ([Backups](backups.md)). They are smaller and quicker than a backup, and they are about one item only. The DCS bindings page keeps snapshots of its own, of the binding files only: see [Copy between aircraft and snapshots](../dcs/copy-and-snapshots.md).
 
 ## Take a snapshot
 
-Under **Take a snapshot**, choose the tracked item (each is listed with the list it belongs to), give the snapshot a name of up to 80 characters, and press **Take snapshot**. Every file the item covers is copied into RigReady's data folder; the page confirms the name and the number of files.
+Under **Take a snapshot**, choose the tracked item (each is listed with the list it belongs to), give the snapshot a name of up to 80 characters, and press **Take snapshot**. Every file the item covers is copied into [RigReady's data folder](../app/index.md); the page confirms the name and the number of files.
 
 An item that is tracked but has no files on this PC cannot be snapshotted, and an item whose folder cannot be found says why. If nothing is tracked yet, the tab sends you to [Tracked files](tracked-files.md) first.
 
@@ -28,7 +28,7 @@ An item that is tracked but has no files on this PC cannot be snapshotted, and a
 
 Every file is read back after writing and compared with the snapshot. The result line says how many files were put back and how many newer files were left as they are.
 
-A put-back is refused while the game or tool that owns the files is running, because it would write them again on exit: "Close it first. Nothing was put back."
+A put-back is refused while the game or tool that owns the files is running, because it would write them again on exit: "Close it first. Nothing was put back." ([Close the game first](restore.md#close-the-game-first))
 
 ## Rename and delete
 

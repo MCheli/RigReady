@@ -21,7 +21,7 @@ The **Launch** section says what the Launch button will start: the program, its 
 Each section lists what RigReady found, ticked where a setup like this one usually keeps it, with **Required** or **Optional** beside each item that stays. A required item that is not met makes the rig Not ready; an optional one only warns. [Checks and fixes](../setups/checks.md) lists every kind of check and what its fix does.
 
 - **Devices**: the game controllers, kept, each as a "connected" check. **Which one is it? Press a button** lights up the row of the controller you press, and the pencil renames a device for this setup (Left MFD rather than WINWING MFD1-L). Identical devices are separate rows, told apart by serial number or USB port; see [Devices](../hardware/devices.md).
-- **Apps**: the sim helpers running now, kept. [Make ready](../play/make-ready-and-launch.md) starts the ones that are missing, and some are closed again at [Stand down](../play/stand-down.md) (the row says so). **Find an app** searches everything that is running.
+- **Apps**: the sim helpers running now, kept. Make ready starts the ones that are missing, and some are closed again at [Stand down](../play/stand-down.md) (the row says so). **Find an app** searches everything that is running.
 - **Monitors**: the arrangement as it is right now, drawn to scale. Make ready puts it back. You can save the arrangement as a named layout here, shared by every setup that uses it; see [Monitor layouts](../monitors-and-audio/layouts.md).
 - **Audio**: the default output and input devices as they are now. Make ready sets them again; see [Audio](../monitors-and-audio/audio.md).
 - **Game files**: the game's files that are checked before every launch, so a missing or changed file shows before the game loads.

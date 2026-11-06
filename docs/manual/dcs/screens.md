@@ -36,7 +36,7 @@ The page refuses to write a setup with a problem (a display placed twice, a moni
 
 **What "Use in DCS" will do** lists the change before it happens: create, update or keep RigReady.lua, and which options.lua keys change (the monitor setup, and with **Also size the DCS window to W × H, windowed** ticked, the width, height, aspect ratio and full screen off). **Show the file** shows the Lua that will be written. **Use in DCS** writes both files as one change, reads them back, and reports that DCS will use the setup the next time it starts. The button reads **In use** when nothing needs changing.
 
-If RigReady.lua was changed outside RigReady since it last wrote it, writing shows the differences first and asks whether to keep their version or replace it. The file is backed up either way and can be put back from **Configure > Safety**.
+If RigReady.lua was changed outside RigReady since it last wrote it, writing shows the differences first and asks whether to keep their version or replace it. The file is backed up either way and can be put back from **Configure > Safety** ([The Safety page](../protect/safety-page.md)).
 
 ## The files DCS can choose
 
@@ -52,10 +52,10 @@ A DCS setup can carry three checks about this; capturing a setup offers them. Se
 
 ## What to check in DCS
 
-The displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not yet been looked at in the real game. The first time, with the MFD screens connected:
+The displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not yet been verified in the real game: they passed their tests on recorded data from one rig. The [changelog](../../../CHANGELOG.md) lists this under known limitations. The first time, with the MFD screens connected:
 
 1. Close SimAppPro (its tray icon, then Exit) and keep it closed, because its MFD wizard rewrites options.lua.
-2. Under **Configure > Monitors**, apply the flying layout and keep it. Use **Identify** to tell identical USB screens apart and to say which way is up on a sideways screen.
+2. Under **Configure > Monitors**, apply the flying layout and keep it. Use **Identify** ([Identify and which way is up](../monitors-and-audio/identify.md)) to tell identical USB screens apart and to say which way is up on a sideways screen.
 3. On the Screens tab, choose that layout, place the displays, and use the setup in DCS.
 4. Start DCS and a mission with the aircraft powered. Each display should appear on its own screen, upright and not cut off.
 

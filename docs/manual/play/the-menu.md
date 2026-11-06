@@ -14,7 +14,7 @@ Opens the setup in use in the setup editor ([The setup editor](../setups/editor.
 
 ## Hide RigReady after Launch
 
-On by default. After a successful launch the window goes to the tray, out of the way of the game. Off: the window stays where it is. Without a tray icon the window is minimized instead.
+On by default. After a successful launch the window goes to the [tray](../one-click/tray.md), out of the way of the game. Off: the window stays where it is. Without a tray icon the window is minimized instead.
 
 ## Stand down when the game closes
 
@@ -22,7 +22,7 @@ Off by default. On: when the game closes, Stand down runs by itself, without ask
 
 ## Ready tone
 
-Off by default. On: two short, quiet notes are played the moment the rig becomes ready (from Not ready, or from still checking, to Ready or Ready with warnings). The notes are made on the spot, there is no sound file, and they are quiet next to a game. Switching the tone on plays it once, so you know what to expect. When it cannot be played (no audio device, or the sound system refused) a note on the screen says why. The sound has passed tests but has not yet been heard on real hardware; `CHANGELOG.md` lists it under known limitations.
+Off by default. On: two short, quiet notes are played the moment the rig becomes ready (from Not ready, or from still checking, to Ready or Ready with warnings). The notes are made on the spot, there is no sound file, and they are quiet next to a game. Switching the tone on plays it once, so you know what to expect. When it cannot be played (no audio device, or the sound system refused) a note on the screen says why. The sound has not yet been verified on real hardware: it passed its tests, but nobody has heard it on a real rig. The [changelog](../../../CHANGELOG.md) lists it under known limitations.
 
 ## History
 

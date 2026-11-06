@@ -10,7 +10,7 @@ A script is anything Windows can run: a `.cmd` or `.bat` file, a PowerShell `.ps
 
 ## How a script runs
 
-- **Program**: the file to run, with a path variable or absolute. A `.ps1` file is run through PowerShell. A file that is not there gives "Script not found".
+- **Program**: the file to run, with a [path variable](path-variables.md) or absolute. A `.ps1` file is run through PowerShell. A file that is not there gives "Script not found".
 - **Arguments**: a list; each is passed as it is. Nothing from the setup is ever joined into a command line, so a value with a space or a quote needs no escaping.
 - **Working folder**, optional.
 - **No console window**, on by default. A program started without waiting always gets its own window.
@@ -19,13 +19,13 @@ A script is anything Windows can run: a `.cmd` or `.bat` file, a PowerShell `.ps
 
 ## As a check: Script succeeds
 
-The script is run every time the checklist runs and must finish within its **timeout** (10 seconds by default, 600 at most; this takes the place of the limit in Settings). It passes when its exit code is one of **Success exit codes** (0 by default). Otherwise the row says "Exit code 2" and the last 50 lines it printed are under **Program output**. A script that times out is an error: "Timed out after 10 s". Keep a check script quick and quiet; it runs every few seconds while the Play screen is open.
+The script is run every time the checklist runs and must finish within its **timeout** (10 seconds by default, 600 at most; this takes the place of the limit in [Settings](../app/settings.md#safety-and-limits)). It passes when its exit code is one of **Success exit codes** (0 by default). Otherwise the row says "Exit code 2" and the last 50 lines it printed are under **Program output**. A script that times out is an error: "Timed out after 10 s". Keep a check script quick and quiet; it runs every few seconds while the [Play screen](../play/index.md) is open.
 
 ## As a fix or a step: Run a script
 
 - **Wait until it finishes**, on by default: the script runs to the end, its exit code is judged against the success codes, and the last 200 lines it printed are kept with the step, success or not. Off: the script is started and RigReady goes on at once; the step says "Started warmup.cmd" and nothing more is known about it.
 - **Timeout**: 30 seconds by default, up to an hour. At the timeout the script is killed and the step fails.
-- **Ask before running** (`requiresConfirmation`), on by default: before the script runs, RigReady shows **Run this program?** with the program, every argument and the folder, and you choose **Run it** or **Skip**. With Make ready and launch every such script is asked about first, then the run goes through by itself. From the tray, the taskbar, the command palette, a shortcut or the hotkey nobody can be asked, so the script is not run and the step says so. Switch it off for a script you trust to run unattended. Steps at Stand down are never asked about: pressing Stand down is the OK.
+- **Ask before running** (`requiresConfirmation`), on by default: before the script runs, RigReady shows **Run this program?** with the program, every argument and the folder, and you choose **Run it** or **Skip**. With [Make ready and launch](../play/make-ready-and-launch.md) every such script is asked about first, then the run goes through by itself. From the [tray](../one-click/tray.md), the [taskbar](../one-click/taskbar.md), the [command palette](../app/command-palette.md), a [shortcut](../one-click/desktop-shortcut.md) or the [hotkey](../one-click/hotkey.md) nobody can be asked, so the script is not run and the step says so. Switch it off for a script you trust to run unattended. Steps at [Stand down](../play/stand-down.md) are never asked about: pressing Stand down is the OK.
 
 ## Examples
 
@@ -80,4 +80,4 @@ actions:
       params: { exe: '{USER}/Scripts/warmup.cmd', args: ['--off'], requiresConfirmation: false }
 ```
 
-Scripts are never included when a setup is shared as a file; the other person is told what to add.
+Scripts are never included when a setup is [shared as a file](../protect/sharing.md); the other person is told what to add.

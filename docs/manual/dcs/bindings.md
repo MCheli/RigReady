@@ -16,7 +16,7 @@ Defaults on controls the device does not have, a hat on a panel without one for 
 
 ## Overview tab
 
-Four tiles count the problems (see [Binding problems](binding-problems.md)). Under **Controllers attached now** each device shows how many bindings are yours and how many are DCS defaults, and a dropdown for what the device is: **Stick**, **Throttle**, **Pedals**, **Panel or button box**, **MFD frame**, **Not used in DCS** or **Something else**. RigReady guesses from the name and says so; the role decides which defaults count as unwanted, and is remembered per device model. Devices that have a binding file but are not attached are listed below, with a way to the Device IDs tab. The keyboard and mouse are listed for reference; they are changed in DCS. Modifiers that live on a device button are listed last.
+Four tiles count the problems (see [Binding problems](binding-problems.md)). Under **Controllers attached now** each device shows how many bindings are yours and how many are DCS defaults, and a dropdown for what the device is: **Stick**, **Throttle**, **Pedals**, **Panel or button box**, **MFD frame**, **Not used in DCS** or **Something else**. RigReady guesses from the name and says so; the role decides which defaults count as unwanted, and is remembered per device model. Devices that have a binding file but are not attached are listed below, with a way to the Device IDs tab. The names shown are the ones you gave on the [Devices page](../hardware/devices.md). The keyboard and mouse are listed for reference; they are changed in DCS. Modifiers that live on a device button are listed last.
 
 ## Devices tab
 
@@ -48,7 +48,7 @@ When the control already does something else on that device, the dialog says so:
 
 Changes are staged, not written. The bar at the bottom lists them in plain words, with a way to drop one, **Discard** for all, and **Review and save**.
 
-The review shows exactly what will be written, file by file: whether a file is new, changed, deleted or renamed, the device and aircraft it is for, each change in plain language (for example "Gun Trigger - SECOND DETENT: bind Button 5" or "View Left slow: cancel DCS's default Hat 1 left"), and under **Show the exact text** the lines that are added and removed. Notes say what could not be done. **Write the change** writes every file as one change, backed up first, and reads it back. A line at the bottom then says what was saved, with **Undo**; the change is also under **Configure > Safety**.
+The review shows exactly what will be written, file by file: whether a file is new, changed, deleted or renamed, the device and aircraft it is for, each change in plain language (for example "Gun Trigger - SECOND DETENT: bind Button 5" or "View Left slow: cancel DCS's default Hat 1 left"), and under **Show the exact text** the lines that are added and removed. Notes say what could not be done. **Write the change** writes every file as one change, backed up first, and reads it back. A line at the bottom then says what was saved, with **Undo**; the change is also under **Configure > Safety** ([The Safety page](../protect/safety-page.md)).
 
 ![The review](../../../artifacts/screens/bindings-edit/04-review.png)
 
@@ -58,7 +58,7 @@ Nothing can be saved while DCS runs, because DCS writes the bindings back when y
 
 DCS keeps your changes per aircraft and device in `Saved Games\DCS\Config\Input\<aircraft>\joystick\<Device name> {device ID}.diff.lua`. Each entry is keyed by the action's command hash and lists the controls added, the defaults removed, and the default axes whose curve changed. RigReady writes the file in DCS's own format, with the same ordering, indentation and number format, so a file read and written back is byte for byte the same. When a device has no file yet and DCS ships a template for it, the new file starts from the template, because DCS stops using the template the moment your file exists. When nothing is left in a file, RigReady deletes it, as DCS does, and the device is back on its defaults.
 
-A binding written by RigReady has not yet been checked in DCS's own controls screen. The first time, bind one action to a free button, save, then start DCS and open its controls screen for the aircraft: the button should be shown in that device's column for that action, with no new conflict marking. If it is not, the file as it was before the change is on the Safety page.
+A binding written by RigReady has not yet been verified in the real game: it passed its tests on recorded data from one rig, but has not been checked in DCS's own controls screen. The [changelog](../../../CHANGELOG.md) lists this under known limitations. The first time, bind one action to a free button, save, then start DCS and open its controls screen for the aircraft: the button should be shown in that device's column for that action, with no new conflict marking. If it is not, the file as it was before the change is on the Safety page.
 
 ## Actions marked "bind in DCS"
 

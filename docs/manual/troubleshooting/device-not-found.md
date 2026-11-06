@@ -25,15 +25,15 @@ The details can add:
 
 ## Unplugged, or on another hub
 
-Plug it in, wait a moment, and press the check's re-check. Devices are noticed as they are plugged in; the Play screen re-checks by itself. **Configure > Devices > USB map** draws where every device hangs and names what the current setup needs; a hub that lost power takes everything on it with it.
+Plug it in, wait a moment, and press the check's re-check. Devices are noticed as they are plugged in; the [Play screen](../play/index.md#re-check) re-checks by itself. **Configure > Devices > USB map** ([USB map](../hardware/usb-map.md)) draws where every device hangs and names what the current setup needs; a hub that lost power takes everything on it with it.
 
 ## It moved to another port
 
-A check that identifies a device by its port (needed for identical devices without serial numbers) fails when the device is on another port. Either plug it back where it was, or edit the setup's check for the device so it names the device where it is now. See [devices](../hardware/devices.md) and [checks](../setups/checks.md).
+A check that identifies a device by its port (needed for identical devices without serial numbers) fails when the device is on another port. Either plug it back where it was, or edit the setup's check for the device so it names the device where it is now. See [Identical devices](../hardware/devices.md#identical-devices) and [Checks and fixes](../setups/checks.md).
 
 ## It is another unit of the same model
 
-The check names a serial number and a different unit is connected. If the new unit is the one you want, capture it again in the setup. If several identical devices are connected and you are not sure which is which, **Find a device** on the Devices page highlights whatever you press a button on.
+The check names a serial number and a different unit is connected. If the new unit is the one you want, pick it again in [the setup editor](../setups/editor.md). If several identical devices are connected and you are not sure which is which, **Find a device** on the Devices page ([Find a device by pressing a button](../hardware/devices.md#find-a-device-by-pressing-a-button)) highlights whatever you press a button on.
 
 ## Hidden by HidHide
 
@@ -43,4 +43,4 @@ HidHide hides devices from every program that is not on its allow list, which is
 
 ## Windows renamed it
 
-Windows sometimes shows a device under another name after a driver update or on another port. Because the check matches by IDs, a renamed device still passes. The name RigReady shows is the one you gave it on the Devices page; see [devices](../hardware/devices.md). What does change on a new port or a new PC is the ID DCS uses for its binding files; that is a different problem, solved under [device IDs](../dcs/device-ids.md).
+Windows sometimes shows a device under another name after a driver update or on another port. Because the check matches by IDs, a renamed device still passes. The name RigReady shows is the one you gave it on the Devices page. What does change on a new port or a new PC is the ID DCS uses for its binding files; that is a different problem, solved under [device IDs](../dcs/device-ids.md).

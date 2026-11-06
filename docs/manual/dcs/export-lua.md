@@ -12,7 +12,7 @@ Every tool that reads data out of DCS while you fly adds one line to `Saved Game
 |---|---|---|
 | **WinWing (SimAppPro)** | Sends cockpit data to SimAppPro for WinWing backlights, UFC and ICP displays and vibration | `Scripts\wwt\wwtExport.lua` (installed by SimAppPro) |
 | **DCS-BIOS** | Cockpit data for home-built panels and tools that drive hardware without SimAppPro | `Scripts\DCS-BIOS\BIOS.lua` |
-| **DCS-ExportScript** | Feeds the Stream Deck "DCS Interface" plugin, so lamps and displays work on Stream Deck keys | `Scripts\DCS-ExportScript\ExportScript.lua` |
+| **DCS-ExportScript** | Feeds the [Stream Deck](../hardware/stream-deck.md) "DCS Interface" plugin, so lamps and displays work on Stream Deck keys | `Scripts\DCS-ExportScript\ExportScript.lua` |
 | **SRS (SimpleRadio Standalone)** | Radio frequencies for SimpleRadio voice comms | `Mods\Services\DCS-SRS\Scripts\DCS-SimpleRadioStandalone.lua` (or the older `Scripts\DCS-SimpleRadioStandalone.lua`) |
 | **Tacview** | Flight recording with older Tacview versions; current ones install as a mod and need no line | `Scripts\TacviewGameExport.lua` |
 | **Helios** | Virtual cockpit gauges on extra screens | `Scripts\Helios\HeliosExport16.lua` |
@@ -27,7 +27,7 @@ Under **Tools**, each tool shows whether it is loaded, commented out, or loaded 
 - **Remove** deletes every line of that tool, active or commented out, and a `local x=require('lfs')` helper line that nothing else uses.
 - **Remove duplicates** keeps the first active line of a tool and deletes the others.
 
-Every change is shown first as the file before and after, line by line. Only then does **Change Export.lua** write it, with a backup; the line endings of every other line stay what they were, and a line that starts with `--` is never touched. The list under **The file** shows each line with its tool and its ending (CRLF or LF).
+Every change is shown first as the file before and after, line by line. Only then does **Change Export.lua** write it, with a backup and Undo on [the Safety page](../protect/safety-page.md); the line endings of every other line stay what they were, and a line that starts with `--` is never touched. The list under **The file** shows each line with its tool and its ending (CRLF or LF).
 
 ![Export.lua needs the DCS-ExportScript line for the Stream Deck](../../../artifacts/screens/dcs-setup-export/01-needs-export-script.png)
 
@@ -44,7 +44,7 @@ RigReady remembers Export.lua as it last wrote it, or as you last accepted it. S
 
 ## In a setup
 
-Capturing a setup offers the check **Export.lua loads the tools this setup needs**, with the tools that are loaded at that moment. Before you fly, the check says which of them is missing, and its fix, **Put back the missing Export.lua lines**, adds them. A tool whose script is not installed under Saved Games cannot be added by the fix; the check names it. The same change also shows through the **DCS files RigReady manages are unchanged** check, described on [SimAppPro](simapppro.md). See [checks](../setups/checks.md).
+Capturing a setup offers the check **Export.lua loads the tools this setup needs**, with the tools that are loaded at that moment. Before you fly, the check says which of them is missing, and its fix, **Put back the missing Export.lua lines**, adds them when [Make ready](../play/make-ready-and-launch.md) runs. A tool whose script is not installed under Saved Games cannot be added by the fix; the check names it. The same change also shows through the **DCS files RigReady manages are unchanged** check, described on [SimAppPro](simapppro.md). See [checks](../setups/checks.md).
 
 ## While DCS runs
 

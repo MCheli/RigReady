@@ -10,17 +10,17 @@ The Launch section of a setup says what the Launch button starts. The three list
 
 ## A program
 
-The program's path (a path variable such as `{DCS_INSTALL}/bin/DCS.exe` keeps it portable), its arguments, and a working folder. Each argument is passed as it is; nothing from the setup is ever joined into a command line. For a game RigReady knows, the editor offers the program it found with **Use it**.
+The program's path (a path variable such as `{DCS_INSTALL}/bin/DCS.exe` keeps it portable), its arguments, and a working folder. Each argument is passed as it is; nothing from the setup is ever joined into a command line ([Path variables](path-variables.md) says what `{DCS_INSTALL}` and the others mean). For a game RigReady knows, the editor offers the program it found with **Use it**.
 
 Launch starts the program and waits up to 30 seconds for it to appear in the list of running programs. Only then does it say "Launched DCS.exe". A program that is not where the setup says fails with "DCS.exe not found at ...". When the setup names an install that is gone, Launch says so and never starts another install in its place.
 
 ## Through Steam
 
-A **Steam app id** (the number in the game's store address, 223750 for DCS World) makes Launch ask Steam to start the game, through `steam://rungameid/<id>`. Steam must be installed. The result is "Asked Steam to start DCS F/A-18C": Steam does the rest, after an update or a sign-in if it needs one. RigReady then waits for the game's own program, which it knows from the game module, for up to fifteen minutes before it gives up on the session. A launch program whose file is `steam.exe` counts the same way.
+A **Steam app id** (the number in the game's store address, 223750 for DCS World) makes Launch ask Steam to start the game, through `steam://rungameid/<id>`. Steam must be installed. The result is "Asked Steam to start DCS F/A-18C": Steam does the rest, after an update or a sign-in if it needs one. RigReady then waits for the game's own program, which it knows from the [game module](../games/index.md), for up to fifteen minutes before it gives up on the session ([Sessions and history](../play/sessions.md)). A launch program whose file is `steam.exe` counts the same way.
 
 ## Nothing
 
-A setup with nothing to launch has no Launch button; Make ready is its main action, and its desktop shortcut only makes the rig ready.
+A setup with nothing to launch has no Launch button; Make ready is its main action, and its [desktop shortcut](../one-click/desktop-shortcut.md) only makes the rig ready.
 
 ## Steps before launch
 
@@ -31,19 +31,19 @@ They run in order, before the game starts. Each step is a fix type that does som
 - **Timeout (seconds)**, 30 by default, up to an hour. A step past its timeout counts as failed.
 - **Close it at Stand down**, for a program, on by default: Stand down closes what the step started.
 
-A step that runs a script you have to confirm is shown to you before the run starts ([Scripts](scripts.md)); from the tray or a shortcut such a step is skipped and reported.
+A step that runs a script you have to confirm is shown to you before the run starts ([Scripts](scripts.md)); from the [tray](../one-click/tray.md) or a shortcut such a step is skipped and reported.
 
 ## Steps after launch
 
-They run once the game is running, each at its **Seconds after the game starts**, in the background. The Play screen lists them as they go. A failure is reported and logged, and never touches the game.
+They run once the game is running, each at its **Seconds after the game starts**, in the background. The [Play screen](../play/index.md) lists them as they go. A failure is reported and logged, and never touches the game.
 
 ## Steps at Stand down
 
-They run when you stand down, after the apps are closed and before the desk layout is applied, in order. Pressing Stand down counts as your OK, so a script here is not asked about again.
+They run when you [stand down](../play/stand-down.md), after the apps are closed and before the desk layout is applied, in order. Pressing Stand down counts as your OK, so a script here is not asked about again.
 
 ## Holding a launch
 
-- **Do not launch** in the strip at the bottom of the window, while a shortcut, the Jump List or `--launch` is making the rig ready: the fixes finish, the game is not started.
+- **Do not launch** in the strip at the bottom of the window, while a shortcut, the [Jump List](../one-click/taskbar.md) or `--launch` ([The command line](../one-click/command-line.md)) is making the rig ready: the fixes finish, the game is not started.
 - **Cancel** in the paused-step dialog.
 - After **Make ready and launch** stopped because something required is still missing, nothing happens until you press **Launch anyway** or fix the item. See [Make ready and launch](../play/make-ready-and-launch.md).
 

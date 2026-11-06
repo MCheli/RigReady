@@ -13,7 +13,7 @@ Setups are YAML files in `profiles` under RigReady's data folder, and you may ed
   - "The profile file <name>.yaml is not valid YAML." with the line and the reason, for example a missing colon or wrong indentation.
   - "The profile file <name>.yaml is not valid." with which value is wrong, for example a check without a type.
   - "Its id "..." does not match the file name; rename one to match the other."
-- **Diagnostics** lists the file under RigReady's own files: "3 setups; 1 file cannot be read (...)".
+- [Diagnostics](../app/diagnostics.md) lists the file under RigReady's own files: "3 setups; 1 file cannot be read (...)".
 
 ![Setups that cannot be read](../../../artifacts/screens/damaged-data-files/02-setups.png)
 

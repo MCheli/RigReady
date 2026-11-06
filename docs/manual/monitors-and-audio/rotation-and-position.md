@@ -26,7 +26,7 @@ The dialog shows a compact map of the layout as you edit it, and a table with on
 
 ## Size and refresh rate
 
-The desktop size of each monitor comes from when the layout was saved (or from the connected monitor, when the layout does not say) and is not typed in here. It turns with the orientation. A layout can carry a refresh rate for a monitor, but only when a setup or a hand-edited layout file gives one; the edit dialog does not set it. When a layout does ask for a size or refresh rate the monitor does not offer, applying it is refused before anything changes, and the setup's check lists the difference as, for example, "Samsung runs at 60 Hz, expected 120 Hz".
+The desktop size of each monitor comes from when the layout was saved (or from the connected monitor, when the layout does not say) and is not typed in here. It turns with the orientation. A layout can carry a refresh rate for a monitor, but only when a setup or a hand-edited layout file (`displays\layouts.json` in [the data folder](../app/index.md)) gives one; the edit dialog does not set it. When a layout does ask for a size or refresh rate the monitor does not offer, applying it is refused before anything changes, and the setup's check ([Checks and fixes](../setups/checks.md)) lists the difference as, for example, "Samsung runs at 60 Hz, expected 120 Hz".
 
 ## Monitors that are not connected
 

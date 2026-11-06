@@ -34,4 +34,4 @@ Ctrl+K, or **Find or run** at the top right, opens the command palette: one fiel
 
 [Keyboard shortcuts](../app/keyboard-shortcuts.md) is the complete list; [Text size](../app/text-size.md) covers Ctrl and +, Ctrl and - and F11.
 
-The version number at the top right opens **About**: the version, the licence, the data folder, and where to report a problem ([Diagnostics](../app/diagnostics.md)).
+The version number at the top right opens **About**: the version, the licence, the data folder, and where to report a problem.

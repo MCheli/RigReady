@@ -10,7 +10,7 @@ RigReady's installer is not code-signed yet. Signing needs a certificate and is 
 
 ## What to do
 
-1. Make sure the file came from the project's own download page or its releases page on GitHub, and nowhere else. The release page lists the installer with its size.
+1. Make sure the file came from the project's own [download page](https://rigready.io/download/) or its [releases page on GitHub](https://github.com/MCheli/rigready/releases), and nowhere else. The release page lists the installer with its size.
 2. In the SmartScreen box, choose **More info**, then **Run anyway**.
 3. The installer runs without asking for administrator rights: it installs for your user only, under `%LOCALAPPDATA%\Programs\RigReady`, and never offers "for all users". If you see a Windows prompt for administrator permission, stop: that is not RigReady's installer.
 
