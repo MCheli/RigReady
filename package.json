@@ -24,7 +24,7 @@
     "pack": "npm run build && node scripts/check-sidecar.mjs && electron-builder --dir --publish never",
     "smoke:packaged": "npm run pack && playwright test --config playwright.packaged.config.ts",
     "smoke:installer": "npm run build && node scripts/check-sidecar.mjs && node scripts/build-test-installer.mjs && playwright test --config playwright.installer.config.ts",
-    "dist": "npm run build && node scripts/check-sidecar.mjs && electron-builder --win --publish never",
+    "dist": "npm run build && node scripts/check-sidecar.mjs && tsx scripts/dist.ts",
     "prepare": "husky",
     "format:check": "prettier --check \"src/**/*.{ts,vue,css,html}\" \"tests/**/*.ts\" \"scripts/**/*.{ts,mjs}\" \"*.{ts,mjs}\""
   },

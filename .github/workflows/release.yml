@@ -67,9 +67,34 @@ jobs:
       # The unpacked app is started for real before anything is released.
       - run: npm run smoke:packaged
 
-      # electron-builder never publishes (--publish never); the step below does.
+      # electron-builder never publishes (--publish never); the release step below does.
+      # The build is signed through Azure Artifact Signing when the repository has the four
+      # RIGREADY_SIGN_* variables and the three AZURE_* secrets, and is the plain unsigned
+      # build when it has none of them; anything in between fails here with a message
+      # (docs/RELEASING.md, "Code signing"). Only this step sees these values.
       - name: Build installer
         run: npm run dist
+        env:
+          RIGREADY_SIGN_ENDPOINT: ${{ vars.RIGREADY_SIGN_ENDPOINT }}
+          RIGREADY_SIGN_ACCOUNT: ${{ vars.RIGREADY_SIGN_ACCOUNT }}
+          RIGREADY_SIGN_PROFILE: ${{ vars.RIGREADY_SIGN_PROFILE }}
+          RIGREADY_SIGN_PUBLISHER: ${{ vars.RIGREADY_SIGN_PUBLISHER }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+      # A signed build is checked the way an installed RigReady will check it as an update:
+      # signtool and Get-AuthenticodeSignature on the installer, then on the program and the
+      # uninstaller it installs (silently, into a temporary folder, removed again), and the
+      # publisher in the feed file it carries. A failure here stops the release.
+      - name: Verify the signatures
+        if: vars.RIGREADY_SIGN_PUBLISHER != ''
+        shell: pwsh
+        env:
+          PUBLISHER: ${{ vars.RIGREADY_SIGN_PUBLISHER }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          ./scripts/verify-signed-installer.ps1 -Installer "release/RigReady-Setup-$version.exe" -Publisher $env:PUBLISHER
 
       # The installer, its block map (partial downloads) and latest.yml, the feed file the
       # installed app reads. electron-builder names the feed file latest.yml for every

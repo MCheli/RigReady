@@ -212,23 +212,73 @@ What the 2.0.0 installer does on a PC that has 1.1.0, from electron-builder's NS
 
 Will 1.1.0 installs update themselves to 2.0.0 once it is published? No. 1.1.0's updater (`src/main/services/updateService.ts` at tag `v1.1.0`) read the same GitHub feed (`publish: github, MCheli/RigReady`, so `/releases/latest` and its `latest.yml`), but it only checked on start when its "Check for updates" setting was on (off by default), it never downloaded by itself (`autoDownload = false`, and nothing in its interface called the download), and all it ever showed was "Update available: v2.0.0" on its Settings page after a check. So a 1.1.0 copy with the check on sees that line, and nothing else happens; the person installs 2.0.0 from the download page, as above. That is acceptable: 2.0.0 does not migrate version 1 data, so an unattended update would gain nobody anything, and a deliberate install is the right moment to read that the setups are not carried over.
 
-## Code signing
-
-The installer and the app are not signed; there is no certificate. What that means today, on Windows 11 and 10:
-
-- An installer downloaded by a browser carries the mark of the web. Starting it shows Microsoft Defender SmartScreen's blue dialog, "Windows protected your PC": "Microsoft Defender SmartScreen prevented an unrecognized app from starting", app `RigReady-Setup-<version>.exe`, publisher Unknown. "Run anyway" appears only after "More info". Edge and Chrome may also hold the download ("isn't commonly downloaded", "may be dangerous"): Keep, then Keep anyway.
-- The update the installed app downloads is started by the app, not from a browser, so it carries no mark of the web, SmartScreen does not ask, and it installs silently.
-- SmartScreen's reputation builds up as more people run the very same file; every new installer starts over.
-- The download page says so (`site/pages/download.html` and the download card in `site/build.mjs`), so nobody reads the dialog as a verdict on the app.
-
-Signing needs a certificate (an OV or EV code-signing certificate, or Azure Trusted Signing) and the signing step in `npm run dist`; it is a separate decision, and nothing in the workflow is prepared for it.
-
 ## What the tools do and do not do
 
 - `npm run pack` builds the unpacked app in `release/win-unpacked` (what `smoke:packaged` runs). `npm run dist` builds the installer, its block map and `latest.yml` in `release/`. Both pass `--publish never`: electron-builder uploads nothing, ever. The only upload is the workflow's release step, and it makes a draft.
+- `npm run dist` signs the installer when the signing configuration is in the environment and builds it unsigned when none of it is ("Code signing" below). `npm run pack` and the installer smoke's test variant never sign.
 - `scripts/release-notes.mjs <version> <file>` writes the version's changelog section to a file, and refuses a heading that still says "(not released)". The Release workflow runs it before the tests.
 - `npm run smoke:installer` builds a variant called "RigReady Test" (`scripts/build-test-installer.mjs`): another app id, name, shortcut, install folder, update cache and data folder (`%USERPROFILE%\.rigready-installer-test`), so it can be installed and removed on a PC that has a real RigReady without touching it. The test checks that the real install, its shortcuts, its uninstall entry, its data folder and the Windows startup list are byte for byte the same afterwards.
 - The update feed can be pointed at a folder served on the same PC with `RIGREADY_UPDATE_FEED=http://127.0.0.1:<port>/` (the smoke tests do). Any other address is ignored: an environment variable cannot make the app download from somewhere else.
 - A silent uninstall keeps the data: `"Uninstall RigReady.exe" /S`. To remove it too: `"Uninstall RigReady.exe" /S --remove-data`. Only a folder that has RigReady's log in it is ever removed.
 - CI (`.github/workflows/ci.yml`) runs the checks, the scenario end-to-end tests and the packaged smoke on `windows-latest`, on pull requests and on `main`. A runner has no game controller and no desktop session of a user, so the tests that need those skip themselves there; they run on the rig.
 - RigReady is built for Windows only (the build configuration has no other target), and the app refuses to start anywhere else with a message that says so.
+
+## Code signing
+
+The Release workflow signs the installer through Azure Artifact Signing (Microsoft's signing service, called Trusted Signing until 2025; the PowerShell module and some portal pages still carry that name) when the repository holds the signing configuration, and builds the plain unsigned installer when it holds none of it. `npm run dist` (`scripts/dist.ts`, with the decision in `scripts/lib/signing.ts`) reads the configuration from the environment, writes the electron-builder configuration it composed to `release/electron-builder.config.json`, prints `code signing: off` or `code signing: on (<publisher>, <account>/<profile>)`, and after the build reads the feed file inside the package (`release/win-unpacked/resources/app-update.yml`): a signed build must name the publisher there and an unsigned build must not, or the build fails. `npm run pack` and the installer smoke's test variant never sign, whatever the environment holds.
+
+### The configuration
+
+Repository variables (Settings > Secrets and variables > Actions) and secrets, with exactly these names:
+
+| Name | Kind | Value |
+|---|---|---|
+| `RIGREADY_SIGN_ENDPOINT` | variable | The account's endpoint, `https://<region>.codesigning.azure.net` (East US: `https://eus.codesigning.azure.net`) |
+| `RIGREADY_SIGN_ACCOUNT` | variable | The Artifact Signing account's name |
+| `RIGREADY_SIGN_PROFILE` | variable | The certificate profile's name |
+| `RIGREADY_SIGN_PUBLISHER` | variable | The certificate's subject CN: the legal name the identity validation verified, exactly as the certificate carries it |
+| `AZURE_TENANT_ID` | secret | The Entra directory (tenant) id |
+| `AZURE_CLIENT_ID` | secret | The app registration's application (client) id |
+| `AZURE_CLIENT_SECRET` | secret | The app registration's client secret |
+
+Either all seven are set or none of them. With all seven the build is signed; with none it is unsigned; with anything in between `npm run dist` stops with a message naming what is set and what is not, so a release meant to be signed is never built unsigned by accident and a signing attempt never starts half configured. The workflow passes the seven to the "Build installer" step and to no other. The three secrets are what the TrustedSigning PowerShell module reads to sign in (Azure.Identity's environment credential); electron-builder installs that module on the runner and runs `Invoke-TrustedSigning` on each file it signs (`win.azureSignOptions` in the composed configuration), and nothing else needs installing there.
+
+### What signing does, and what it does not
+
+- The installer, `RigReady.exe` and `Uninstall RigReady.exe` carry a signature with a timestamp, chained to a Microsoft root. Windows shows the certificate's subject as the publisher: in SmartScreen's dialog, in the file's properties and in the uninstall prompt. For an individual's certificate that is the person's verified legal name, not "RigReady".
+- The installed app verifies every update before it is installed. electron-updater reads the publisher from `resources/app-update.yml` (electron-builder writes it there for a signed build), runs `Get-AuthenticodeSignature` on the downloaded installer and requires a valid signature whose subject CN is that name (`NsisUpdater.verifySignature` and `windowsExecutableCodeSignatureVerifier.js` in electron-updater). Anything else, an unsigned file or another name, is refused with `ERR_UPDATER_INVALID_SIGNATURE` and deleted; Settings > Updates shows the error, the log has it, and the next check tries again. An installed copy with no publisher in its feed file (every build from before signing) verifies nothing and takes a signed update like any other.
+- SmartScreen is not satisfied by the signature alone. Reputation accrues to the certificate's identity and to each file as people download and run it; a signed installer from a new identity can still get "Windows protected your PC" for a while, now with the publisher's name in the dialog instead of "Unknown publisher". The service's certificates are short-lived and renewed by itself; Microsoft states that reputation follows the validated identity from one certificate to the next.
+- Who can sign: whoever holds the app registration's secret and the Certificate Profile Signer role on the account. The secret lives only in the repository's secrets, and a signed build runs only in the Release workflow, on a `v*` tag. A client secret expires (two years at most): make a new one in Azure and in the repository before then, or the next release build fails at signing.
+
+### The rule that never changes: a signed release is never followed by an unsigned one
+
+An installed signed copy carries the publisher in its feed file and refuses every update that is not signed under that name. If a release were ever published unsigned after signed ones, every installed copy would download it, refuse it, and keep refusing until a signed release appeared; the only way forward for a user would be to download and install by hand. So, from the first signed release on:
+
+- The seven values are never removed from the repository, and the variables keep their values. A new certificate profile or account is fine as long as the certificate's subject stays the same name. A change of the name (a company instead of the person, say) needs a release signed under the old name whose feed file accepts both names first, which is work not done yet.
+- A withdrawn release is withdrawn, not replaced by an unsigned build.
+- The other direction is free: an unsigned install (every copy from before signing) takes a signed update.
+
+### Setup in Azure, for an individual
+
+Microsoft's own pages are the source for the current screens; this is the shape of it.
+
+1. A subscription: pay-as-you-go, created with a billing account of type Individual. Identity validation checks the subscription's billing profile against the ID, so the billing account has to be an individual one in the same legal name, not an organization's.
+2. Register the resource provider `Microsoft.CodeSigning` on the subscription (the subscription's Resource providers page).
+3. Create an Artifact Signing (Trusted Signing) account: a resource group, a region that offers the service (East US gives the endpoint `https://eus.codesigning.azure.net`; each region has its own `<region>.codesigning.azure.net`), the Basic SKU. The account name is `RIGREADY_SIGN_ACCOUNT`.
+4. On the account's Access control (IAM), give yourself the Artifact Signing Identity Verifier role (the subscription's Owner does not have it by default; the portal may still list it under the Trusted Signing name).
+5. Identity validation: Public Trust, Individual. The legal name and address as on the government ID, a contact e-mail, then Microsoft's identity check (a photo of the ID and a face check, on a phone). It can take days, and Microsoft may ask for more. The name it verifies is the certificate's subject: `RIGREADY_SIGN_PUBLISHER`, exactly as the completed validation shows it.
+6. A certificate profile: type Public Trust, bound to the validation. Its name is `RIGREADY_SIGN_PROFILE`.
+7. An app registration (Microsoft Entra ID > App registrations > New registration; single tenant, no redirect). Note its Application (client) ID and the Directory (tenant) ID; under Certificates & secrets make a client secret and note its value and expiry. On the signing account's IAM, give the app's service principal the Artifact Signing Certificate Profile Signer role.
+8. In the GitHub repository, the four variables and the three secrets. Then tag a release: the build step prints `code signing: on (...)` and the "Verify the signatures" step runs.
+
+### Verifying a draft
+
+- The workflow's "Verify the signatures" step runs after a signed build (`scripts/verify-signed-installer.ps1`): `signtool verify /pa /v` and `Get-AuthenticodeSignature` (status Valid, subject CN equal to the publisher, compared the way electron-updater compares them) on the installer; a silent install into a temporary folder; the same checks on `RigReady.exe` and `Uninstall RigReady.exe` there and the publisher in `resources\app-update.yml` there; a silent uninstall. No draft is made when it fails.
+- By hand, on the installer downloaded from the draft: `signtool verify /pa /v RigReady-Setup-<version>.exe` (signtool comes with the Windows SDK, under `C:\Program Files (x86)\Windows Kits\10\bin\<version>\x64`), or the file's Properties > Digital Signatures. The script does the same with `pwsh scripts/verify-signed-installer.ps1 -Installer <file> -Publisher "<the name>" -SignaturesOnly`; without `-SignaturesOnly` it installs and uninstalls the real RigReady for the account that runs it, and it refuses to do that on a PC where RigReady is installed.
+- On the rig: the previous version, left running, updates to the draft through a local feed (the checklist above), and the log has no `ERR_UPDATER_INVALID_SIGNATURE`.
+
+### When the first signed release goes out
+
+- Say so in `CHANGELOG.md` and in the release notes, with the name the dialogs show.
+- `site/build.mjs`, the download card: it says SmartScreen may warn until the installer has earned a reputation, which is true before and after signing. Once SmartScreen stops warning on a fresh PC, drop the sentence; until then it can also name the publisher so people know what to expect in the dialog.
+- The user guide has no SmartScreen or installation troubleshooting page today. If one is written, it should say which name the dialog shows and that "Unknown publisher" on a RigReady installer means a download that is not from GitHub Releases or rigready.io, or a version from before signing.

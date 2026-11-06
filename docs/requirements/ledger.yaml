@@ -4675,6 +4675,31 @@ requirements:
       - "scripts/lib/lib.test.ts#fails done without evidence, with missing evidence, or with screenshots only"
       - ".github/workflows/ci.yml"
 
+  - id: PLAT-017
+    title: Signed releases through Azure Artifact Signing
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "The Release workflow signs the installer, RigReady.exe and the uninstaller through Azure Artifact Signing when the repository has the four variables RIGREADY_SIGN_ENDPOINT, RIGREADY_SIGN_ACCOUNT, RIGREADY_SIGN_PROFILE and RIGREADY_SIGN_PUBLISHER and the three secrets AZURE_TENANT_ID, AZURE_CLIENT_ID and AZURE_CLIENT_SECRET; builds today's unsigned installer when it has none of them; and fails with a message naming what is missing on anything in between. Only the build step sees them. npm run pack and the installer smoke's test variant are never signed."
+      - "A signed build's resources/app-update.yml names the publisher, so the installed app verifies every update's signature against it (electron-updater, NsisUpdater.verifySignature) and refuses an installer that is unsigned or signed under another name; an unsigned build's names none, so unsigned local builds update each other. npm run dist checks the file after every build and fails on the wrong state."
+      - "The workflow verifies a signed build before the draft is made: signtool verify /pa and Get-AuthenticodeSignature (status Valid, subject CN equal to the publisher, as electron-updater compares them) on the installer, then on the program and the uninstaller it installs silently into a temporary folder, and the publisher in the installed feed file; then the silent uninstall. A failure stops the release."
+      - "docs/RELEASING.md says what signing does and does not do, the Azure setup for an individual, the exact variable and secret names, that a signed release is never followed by an unsigned one, and how to verify a draft."
+    notes:
+      - "2026-11-06: the build path, the workflow steps, the verification script and the documentation are in place and unit-tested, and an unsigned npm run dist through the new script produced the installer with no publisher in its feed file. A signed build has not run yet: the owner's identity validation in Azure is in progress, so no variable or secret is set. Done means one signed draft built by the workflow with the verify step green, and an installed unsigned copy updating to it on the rig."
+    status: in_progress
+    evidence:
+      - "scripts/lib/signing.test.ts#nothing set, or everything blank, is an unsigned build; other variables do not count"
+      - "scripts/lib/signing.test.ts#all seven set is a signed build with the four values, trimmed"
+      - "scripts/lib/signing.test.ts#missing from the other six fails, naming it"
+      - "scripts/lib/signing.test.ts#a signed build selects Azure signing as app-builder-lib reads it, requires it, and names the publisher in the feed"
+      - "scripts/lib/signing.test.ts#an unsigned build must not name a publisher: the installed app would refuse every update"
+      - "scripts/lib/signing.test.ts#a signed build must name exactly the publisher, as a list"
+      - "tests/unit/releaseProcess.test.ts#the repository builds unsigned: no Azure options, no publisher in the feed, and pack and the test installer never sign"
+      - "tests/unit/releaseProcess.test.ts#the Release workflow hands the four variables and three secrets to the build step only, and verifies a signed build before the draft is made"
+      - "scripts/verify-signed-installer.ps1"
+      - ".github/workflows/release.yml"
+
   # ---------------------------------------------------------------------------
   # WINDOWS INTEGRATION — flying in one double-click (the final pass, 2026-10-04)
   # ---------------------------------------------------------------------------
