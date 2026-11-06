@@ -84,6 +84,7 @@ describe('profile files', () => {
     // It is deleted like any setup file, with a copy kept.
     expect(await app.invoke('profiles:remove', { id: 'mld4nbutw9iuzu9' })).toEqual({
       removed: true,
+      shortcutRemoved: false,
     });
     expect((await app.invoke<ProfileOverview>('profiles:overview')).earlier).toEqual([]);
     await expect(fs.access(old)).rejects.toThrow();
@@ -274,7 +275,10 @@ describe('editing', () => {
     await app.invoke('profiles:use', { id: P });
     const file = app.wiring.context.profiles.fileFor(P);
     const content = await fs.readFile(file, 'utf8');
-    expect(await app.invoke('profiles:remove', { id: P })).toEqual({ removed: true });
+    expect(await app.invoke('profiles:remove', { id: P })).toEqual({
+      removed: true,
+      shortcutRemoved: false,
+    });
     await expect(fs.access(file)).rejects.toThrow();
     const journal = await app.ports.files.journal();
     if (!journal.ok) throw new Error('no journal');
