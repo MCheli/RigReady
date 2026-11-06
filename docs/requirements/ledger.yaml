@@ -452,12 +452,13 @@ requirements:
     area: fly
     priority: p0
     done_means:
-      - "Settings name one display layout as the desk layout; Stand down applies it with the same timed-revert behaviour as FIX-002."
+      - "One saved display layout is the desk layout, chosen with 'Use as desk layout' on the Monitors page or under 'Desk layout' in Settings (one setting); Stand down applies it with the same timed-revert behaviour as FIX-002."
       - "Scenario mark-flight with flying layout active: after Stand down the fake DisplayProvider holds the desk layout (Dell on, MFD screens off or as recorded) and the summary says 'Applied desk layout'."
-      - "If no desk layout is defined, Stand down skips this step and says so instead of reporting success."
+      - "If no desk layout is defined, Stand down skips this step and says so instead of reporting success, naming both places where one is chosen; a desk layout that was deleted since fails the step with the same two places."
     status: done
     evidence:
       - 'tests/unit/settings.test.ts#applies the desk layout named in the settings, with the keep-or-revert countdown'
+      - 'src/features/fly/core/fly.test.ts#never closes the game unless asked, closes what launch actions started, and runs its own actions'
       - 'tests/unit/app.test.ts#desk state: Make ready fixes the layout; Go back restores the desk; Stand down does too and closes TrackIR'
       - 'tests/e2e/fly-depth.e2e.ts#fly: Stand down applies the desk layout chosen in Settings, with the keep prompt'
       - 'artifacts/screens/fly-stand-down-desk/01-desk-applied.png'

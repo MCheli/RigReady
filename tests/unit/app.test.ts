@@ -230,7 +230,9 @@ describe('Fly, end to end on scenarios', () => {
     // Nothing left to stand down; it says why the monitors were not touched.
     expect(
       (await app.invoke<ActionReport>('fly:standDown', P)).steps.map((s) => s.message)
-    ).toEqual(['No desk layout is chosen in Settings, so the monitors were left as they are']);
+    ).toEqual([
+      'No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are',
+    ]);
   });
 
   it('Launch starts the game whether or not the setup is ready', async () => {
