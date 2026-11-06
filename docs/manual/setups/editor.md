@@ -1,0 +1,64 @@
+---
+title: The setup editor
+description: "Every part of Configure > Setups > Edit: name and game, what Launch starts, the desktop shortcut, the checklist and fixes, the launch and stand-down steps."
+order: 20
+---
+
+**Configure > Setups > Edit** opens a setup. Everything a setup holds is on this one page, top to bottom. Nothing is written until **Save**.
+
+![Editing a check](../../../artifacts/screens/profile-edit-item/01-editing-trackir.png)
+
+## YAML file
+
+The button at the top right opens the setup's file **in your editor** or shows it **in Explorer**. RigReady picks up a change to the file when you save it there; see [Hand-editing the YAML](yaml.md).
+
+## Setup
+
+- **Name**: what the Play screen, the tray and the shortcut call it, up to 80 characters. The id in the file name does not change when you rename.
+- **Game**: no particular game, a game RigReady knows (marked "not found on this PC" when it is not installed), or **Other game…** with a **Game name**. Choosing a known game fills in what Launch starts, when nothing was chosen yet.
+- **Install this setup uses**: shown when the game is installed more than once (DCS stable and open beta). Its folders are then what `{DCS_INSTALL}` and `{DCS_USER}` mean for this setup's checks, fixes and launch; see [Path variables](path-variables.md).
+- **Notes**: a line or two for yourself.
+
+## Launch
+
+**A program**, **Through Steam** or **Nothing**. For a program: the executable (path variables allowed, **Browse…**), the arguments as a list, and the working folder; "Found on this PC" offers the game's own program with **Use it**. For Steam: the **Steam app id**, the number in the game's store address. With Nothing the Play screen has no Launch button. Details on [Launch targets and steps](launch.md).
+
+## Desktop shortcut
+
+Whether this setup has a shortcut on the desktop, and the buttons to make, update or remove it. It takes the name and the launch from the saved setup, so it waits for a save after you change either. See [Desktop shortcut](../one-click/desktop-shortcut.md).
+
+## Checklist
+
+The checks, in the order the Play screen shows them within each group. Each line has:
+
+- Arrows to move it up or down.
+- Its name, its kind ("App running", "Config file content") and its fix, if any.
+- **On** / **Off**. An item that is off stays in the setup but is not checked, not counted, not fixed by Make ready and left alone by Stand down. The Play screen shows it as "off".
+- **Required** / **Optional**. A check that only ever warns (such as the game-updated check) has this greyed.
+- **Edit** opens the item; **Done** closes it. The bin removes it.
+
+**Add check** lists every check type by group ([Checks](checks.md)). **Copy from another setup…** brings checks and steps over from another setup ([Clone, copy and delete](clone-copy-delete.md)).
+
+An open item has:
+
+- **Name shown in the checklist**, and **Timeout (seconds)** for this item in place of the limit in Settings.
+- Pickers for the common kinds: **Pick a connected device** (identical devices get their serial number or USB port added, so they are told apart) and **Press a button on it** for a device check; **Pick a running app** for an app check, which also fills in the fix with the app's path; **Pick a service** for a Windows service.
+- **What to check**: the fields of the check type. The path, program and folder fields have **Browse…**, which stores the path with a variable where one applies.
+- **Fix**: **What Make ready does when this is not met**, chosen from the fixes that suit this check type, and the fix's own fields. Some fixes have a helper button, for example **Keep a copy of the file as it is now** for a restore, which saves a known-good copy the fix can later put back.
+
+## Before launch, After launch, At Stand down
+
+Three lists of steps, each with **Add step**. A step is any fix type that does something: start a program, run a script, apply a monitor layout, set the default audio device, start TrackIR. Each step has a name, what it does and its fields, plus:
+
+- **Go on if it fails**, on by default. Off: a failure before launch pauses the launch and asks.
+- **Wait until it finishes**: scripts wait by default, programs do not.
+- **No console window**, for scripts, on by default.
+- **Close it at Stand down**, for programs, on by default.
+- **Timeout (seconds)**, 30 by default.
+- **Seconds after the game starts**, for a step after launch.
+
+What each list means is on [Launch targets and steps](launch.md).
+
+## Saving
+
+**Save** is enabled once something changed; "Unsaved changes" says so at the bottom. A save checks every field: a check or step whose fields are wrong is opened and the problems are listed ("c3 "TrackIR" fix: exe: Too small"), and a path with an unknown variable is refused. A file that holds hand-written YAML comments warns **Your comments will be lost** before it is overwritten. **Cancel** asks before discarding changes. The Play screen picks up a saved setup at once.
