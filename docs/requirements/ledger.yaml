@@ -1446,11 +1446,11 @@ requirements:
       - 'tests/unit/pathVariablesAudit.test.ts#knownPathVariables has the standard variables, STEAM included, and every module’s'
       - 'tests/unit/pathVariablesAudit.test.ts#the parser sees the ways a module assigns a variable'
       - 'src/features/checks-generic/core/checks.test.ts#is an error, not "Missing", when the game behind the variable is not on this PC'
-      - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
       - 'src/features/profiles/core/profiles.test.ts#lists every path variable for the Variables menu, with where it points on this PC'
       - 'src/features/profiles/renderer/insertVariable.test.ts#says the same file through the chosen variable when its folder holds it'
       - 'artifacts/screens/profile-add-check/02-variables-menu.png'
       - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
+      - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
       - 'artifacts/screens/profile-add-check/01-file-check.png'
 
   - id: CFG-PROFILE-016
@@ -4394,7 +4394,7 @@ requirements:
     area: platform
     priority: p0
     done_means:
-      - "The installer installs per-user (no UAC prompt, no 'for all users' choice) and creates Start menu entries; uninstall removes the start-with-Windows entry and leaves {RIGREADY_HOME} unless the user answers Yes to 'Also remove your RigReady data?' (default No; a silent uninstall keeps it; --remove-data removes it)."
+      - "The installer installs per-user (no UAC prompt, no 'for all users' choice) and creates Start menu entries; uninstall removes the start-with-Windows entry and the desktop shortcuts of setups ('<setup> - RigReady.lnk', found by that ending: electron-builder's NSIS has no ShellLink plugin to read a link), and leaves {RIGREADY_HOME} unless the user answers Yes to 'Also remove your RigReady data?' (default No; a silent uninstall keeps it; --remove-data removes it)."
       - "The installer smoke (npm run smoke:installer) installs the installer on the rig from a process without elevation, starts the installed app, and uninstalls it."
     notes:
       - "2026-10-03: 'ticks remove my data' became a Yes/No question with No as the default: the NSIS uninstaller has no page to put a tick box on without a custom page, and a question cannot be missed. 'Rig smoke on a standard user account' became the installer smoke run from a not elevated process (medium integrity token, checked by the test): the owner's account is an administrator account, so a true standard account was not available unattended; the release checklist (docs/RELEASING.md) asks for the Windows 10 run on a standard account."
@@ -4760,6 +4760,7 @@ requirements:
     evidence:
       - "src/features/profiles/core/shortcut.test.ts#is the setup name with what a file name cannot hold replaced"
       - "src/features/profiles/core/shortcut.test.ts#is shown first, written through FileStore, and read back before it is called made"
+      - "Deleting a setup on the Setups page removes its desktop shortcut (under its current name or an earlier one) and then the setup file under one journal group, 'Delete setup \"<name>\"', so one Undo on the Safety page brings both back; the delete dialog and the message afterwards say so, and a shortcut that is still there afterwards is an error that leaves the setup alone. The uninstaller removes every '<setup> - RigReady.lnk' on the desktop; the installer smoke's test variant looks for another ending and never touches a real one, and a unit test keeps the NSIS ending equal to the app's SHORTCUT_SUFFIX."
       - "src/features/profiles/core/shortcut.test.ts#is removed through FileStore, shown first, and can be put back from the journal"
       - "src/features/profiles/core/shortcut.test.ts#never says it is made when the file is not there afterwards"
       - "src/features/profiles/core/shortcut.test.ts#never says it is made when what was written starts something else"
@@ -4767,6 +4768,8 @@ requirements:
       - "src/features/profiles/core/shortcut.test.ts#leaves a file that merely has the name alone until the user replaces it, with a copy kept"
       - "src/features/profiles/core/shortcut.test.ts#says so when the shortcut starts another copy of RigReady or asks for the wrong thing"
       - "src/features/profiles/core/shortcut.test.ts#a setup that launches nothing gets a shortcut that only makes the rig ready"
+      - "src/features/profiles/core/shortcut.test.ts#goes with its setup: deleting the setup removes it in the same action, and one Undo brings both back"
+      - "src/features/profiles/core/shortcut.test.ts#the uninstaller removes setup shortcuts by the ending the app gives them, and the test variant never touches a real one"
       - "src/features/profiles/core/shortcut.test.ts#other shortcuts and files on the desktop are not touched or mistaken for ours"
       - "src/core/windowsArgs.test.ts#reads back exactly the values that were written, whatever is in them"
       - "src/core/windowsArgs.test.ts#a real program started with the written text gets the same values"

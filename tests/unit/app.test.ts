@@ -351,7 +351,10 @@ describe('Profiles: create by capturing the current state', () => {
     await expect(app.invoke('profiles:create', { name: '   ', checks: [] })).rejects.toThrow(
       /ipc.input/
     );
-    expect(await app.invoke('profiles:remove', { id: 'dcs-f-a-18c' })).toEqual({ removed: true });
+    expect(await app.invoke('profiles:remove', { id: 'dcs-f-a-18c' })).toEqual({
+      removed: true,
+      shortcutRemoved: false,
+    });
     expect(await app.invoke('profiles:list')).toEqual([]);
   });
 });

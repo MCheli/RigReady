@@ -10,10 +10,10 @@ import { parseCommandLine } from '../../../core/commandLine';
 import type { JournalGroup } from '../../../core/ports';
 import type { Profile } from '../../../core/profile/schema';
 import type { ChangePreview } from '../../../shared/changePreview';
-import { wiredApp, type WiredApp } from '../../../../tests/helpers';
+import { repoRoot, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import { sabotage } from '../../../../tests/sabotage';
 import type { ShortcutStatus } from '../contract';
-import { shortcutFileName } from './shortcut';
+import { SHORTCUT_SUFFIX, shortcutFileName } from './shortcut';
 
 let app: WiredApp | undefined;
 afterEach(async () => {
@@ -163,6 +163,89 @@ describe('WOW-WIN-003 a desktop shortcut for a setup', () => {
       error: { code: 'shortcut.none' },
     });
     expect((await groups(a)).length).toBe(before);
+  });
+
+  it('goes with its setup: deleting the setup removes it in the same action, and one Undo brings both back', async () => {
+    const a = await start();
+    const file = path.join(desktop(a), NAME);
+    const setupFile = a.wiring.context.profiles.fileFor(ID);
+    await a.invoke('profiles:createShortcut', { id: ID });
+    // Renamed since: the shortcut under the earlier name goes too.
+    await rename(a, 'Hornet');
+    await a.invoke('profiles:createShortcut', { id: ID });
+    const earlier = file;
+    const current = path.join(desktop(a), 'Hornet - RigReady.lnk');
+    await a.ports.files.undo((await groups(a))[0]!.entries.find((e) => e.action === 'remove')!.id);
+    expect(await exists(earlier)).toBe(true);
+    expect(await exists(current)).toBe(true);
+
+    expect(await a.invoke('profiles:remove', { id: ID })).toEqual({
+      removed: true,
+      shortcutRemoved: true,
+    });
+    expect(await exists(earlier)).toBe(false);
+    expect(await exists(current)).toBe(false);
+    expect(await exists(setupFile)).toBe(false);
+    // One action in the journal: the shortcuts, then the setup file.
+    const journal = await groups(a);
+    expect(journal[0]).toMatchObject({ reason: 'Delete setup "Hornet"', undone: false });
+    expect(journal[0]!.entries.map((e) => [e.path, e.action])).toEqual([
+      [earlier, 'remove'],
+      [current, 'remove'],
+      [setupFile, 'remove'],
+    ]);
+
+    // Undo on the Safety page brings the setup and its shortcuts back together.
+    const undone = await a.ports.files.undoGroup(journal[0]!.id);
+    expect(undone.ok).toBe(true);
+    expect(await a.invoke<Profile>('profiles:get', { id: ID })).toMatchObject({ name: 'Hornet' });
+    expect(await status(a)).toMatchObject({ state: 'outdated', file: current });
+    expect(await exists(earlier)).toBe(true);
+
+    // A setup without a shortcut: only its file goes, and the answer says so.
+    await a.invoke('profiles:removeShortcut', { id: ID });
+    expect(await a.invoke('profiles:remove', { id: ID })).toEqual({
+      removed: true,
+      shortcutRemoved: false,
+    });
+    expect((await groups(a))[0]!.entries.map((e) => e.path)).toEqual([setupFile]);
+  });
+
+  it('is not called removed with the setup when it is still there, and the setup then stays', async () => {
+    const a = await start();
+    const file = path.join(desktop(a), NAME);
+    const setupFile = a.wiring.context.profiles.fileFor(ID);
+    await a.invoke('profiles:createShortcut', { id: ID });
+    const broken = sabotage(a.ports);
+    const removed = await a.wiring.handlers.get('profiles:remove')!({ id: ID });
+    broken.restore();
+    expect(removed).toMatchObject({ ok: false, error: { code: 'shortcut.notRemoved' } });
+    expect(broken.attempts).toEqual([`files.remove ${file}`]);
+    expect(await exists(file)).toBe(true);
+    expect(await exists(setupFile)).toBe(true);
+    expect(await a.invoke<Profile[]>('profiles:list')).toHaveLength(1);
+  });
+
+  it('the uninstaller removes setup shortcuts by the ending the app gives them, and the test variant never touches a real one', async () => {
+    const nsh = await fs.readFile(path.join(repoRoot, 'build', 'installer.nsh'), 'utf8');
+    const suffix = /!define RIGREADY_SHORTCUT_SUFFIX "([^"]+)"/.exec(nsh)?.[1];
+    expect(suffix).toBe(SHORTCUT_SUFFIX);
+    // Overridable, and used on the desktop's shortcuts in the uninstaller.
+    expect(nsh).toMatch(/!ifndef RIGREADY_SHORTCUT_SUFFIX/);
+    expect(nsh).toMatch(/FindFirst \$R7 \$R8 "\$DESKTOP\\\*\.lnk"/);
+    expect(nsh).toMatch(/StrCmp \$R9 "\$\{RIGREADY_SHORTCUT_SUFFIX\}"/);
+    expect(nsh).toMatch(/Delete "\$DESKTOP\\\$R8"/);
+
+    const test = await fs.readFile(path.join(repoRoot, 'build', 'installer-test.nsh'), 'utf8');
+    const testSuffix = /!define RIGREADY_SHORTCUT_SUFFIX "([^"]+)"/.exec(test)?.[1];
+    expect(testSuffix).toBeDefined();
+    expect(testSuffix).not.toBe(SHORTCUT_SUFFIX);
+    // No shortcut the app makes ends the way the test variant looks for, in any case.
+    const name = shortcutFileName('Any setup').toLowerCase();
+    expect(name.endsWith(testSuffix!.toLowerCase())).toBe(false);
+    expect(SHORTCUT_SUFFIX.toLowerCase().endsWith(testSuffix!.toLowerCase())).toBe(false);
+    // The override comes before the include, or it would not take.
+    expect(test.indexOf('RIGREADY_SHORTCUT_SUFFIX')).toBeLessThan(test.indexOf('!include'));
   });
 
   it('never says it is made when the file is not there afterwards', async () => {

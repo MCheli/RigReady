@@ -194,8 +194,11 @@ export const profilesContract = defineContract('profiles', {
   ),
   /** Replaces an existing profile. Paths with unknown variables are refused. */
   save: channel(ProfileSchema, ProfileSchema),
-  /** Removes the profile file; it is backed up first and can be put back from Safety. */
-  remove: channel(ProfileId, z.object({ removed: z.boolean() })),
+  /**
+   * Removes the profile file and the setup's desktop shortcut, when it has one, as one
+   * journaled action: both are backed up first and the Safety page puts both back together.
+   */
+  remove: channel(ProfileId, z.object({ removed: z.boolean(), shortcutRemoved: z.boolean() })),
   /** Makes this the setup the Play screen shows. */
   use: channel(ProfileId, z.object({ used: z.boolean() })),
   /** A deep copy under a new id, named "<name> (copy)". */

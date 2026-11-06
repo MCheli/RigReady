@@ -15,6 +15,12 @@
   ; The name of the per-user Run entry the app writes (ElectronLoginItem).
   !define RIGREADY_RUN_VALUE "RigReady"
 !endif
+!ifndef RIGREADY_SHORTCUT_SUFFIX
+  ; How the name of a setup's desktop shortcut ends: "<setup name> - RigReady.lnk"
+  ; (SHORTCUT_SUFFIX in src/features/profiles/core/shortcut.ts; a unit test keeps the two
+  ; the same). The test variant defines another, so it never removes a real setup's shortcut.
+  !define RIGREADY_SHORTCUT_SUFFIX " - RigReady.lnk"
+!endif
 
 !macro customInstallMode
   StrCpy $isForceCurrentInstall "1"
@@ -43,6 +49,24 @@
         RMDir /r "$LOCALAPPDATA\${APP_PACKAGE_NAME}-updater"
       ${endIf}
     !endif
+
+    ; ---- the desktop shortcuts of setups ("<setup> - RigReady.lnk"): they start this app ----
+    ; No ShellLink plugin comes with electron-builder's NSIS, so the link is not read; the
+    ; name is enough: only a file whose name ends in the suffix the app gives them goes.
+    StrLen $R6 "${RIGREADY_SHORTCUT_SUFFIX}"
+    IntOp $R6 0 - $R6
+    FindFirst $R7 $R8 "$DESKTOP\*.lnk"
+    rigreadySetupShortcut:
+      StrCmp $R8 "" rigreadySetupShortcutsDone
+      StrCpy $R9 $R8 "" $R6
+      StrCmp $R9 "${RIGREADY_SHORTCUT_SUFFIX}" 0 rigreadySetupShortcutNext
+        Delete "$DESKTOP\$R8"
+      rigreadySetupShortcutNext:
+      FindNext $R7 $R8
+      Goto rigreadySetupShortcut
+    rigreadySetupShortcutsDone:
+    StrCmp $R7 "" +2
+      FindClose $R7
 
     ; ---- the user's data: kept unless asked otherwise ----
     ReadEnvStr $R7 "RIGREADY_HOME"

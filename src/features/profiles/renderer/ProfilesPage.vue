@@ -67,7 +67,10 @@ async function confirmDelete(): Promise<void> {
   deleting.value = undefined;
   const result = await api.remove({ id: target.id });
   if (!result.ok) error.value = errorText(result.error);
-  else message.value = `Deleted "${target.name}". The Safety page can bring it back.`;
+  else
+    message.value = result.value.shortcutRemoved
+      ? `Deleted "${target.name}" and its desktop shortcut. The Safety page can bring both back.`
+      : `Deleted "${target.name}". The Safety page can bring it back.`;
   await load();
 }
 
@@ -277,8 +280,9 @@ onBeforeUnmount(() => off?.());
       <v-card data-testid="profile-delete-dialog">
         <v-card-title>Delete "{{ deleting?.name }}"?</v-card-title>
         <v-card-text>
-          The setup is removed from RigReady; a copy is kept and the Safety page can bring it back.
-          Nothing on the rig or in any game changes, and monitor layouts and backups stay.
+          The setup is removed from RigReady, and so is its desktop shortcut when it has one. Copies
+          are kept, and the Safety page can bring both back together. Nothing on the rig or in any
+          game changes, and monitor layouts and backups stay.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
