@@ -15,6 +15,8 @@ const dcs: GameModule = {
 
   processes: ['DCS.exe'],
 
+  pathVariableLabels: { DCS_INSTALL: 'DCS install', DCS_USER: 'DCS user folder' },
+
   detect: (ctx) => detectInstalls(ctx),
 
   async configLocations(ctx) {

@@ -78,6 +78,14 @@ export interface GameModule {
    */
   pathVariables?(ctx: CheckContext, installDir?: string): Promise<Result<Record<string, string>>>;
   /**
+   * What each variable of `pathVariables` means, in words ({ DCS_USER: 'DCS user folder' }).
+   * Every variable the module can hand out is listed here, so that a setup may name it on a
+   * PC where the game is not installed, and the editor can offer it. core/pathVariables.ts
+   * `knownPathVariables` collects them; tests/unit/pathVariablesAudit.test.ts checks that no
+   * variable is handed out without a label.
+   */
+  pathVariableLabels?: Record<string, string>;
+  /**
    * Image names that mean the game is running ("DCS.exe"). Used to tell whether a game
    * started through Steam is up, and by backup: the game must be closed before a restore.
    */

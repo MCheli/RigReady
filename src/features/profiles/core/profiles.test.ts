@@ -151,6 +151,27 @@ describe('profile files', () => {
       launch: { exe: '{IRACING_USER}/x.exe', args: [] },
     });
     expect(saved.launch?.exe).toBe('{IRACING_USER}/x.exe');
+    // Every variable a game module can provide is accepted, from the module's own list: the
+    // ones a hand-kept list once left out (Flight Simulator, Assetto Corsa, the installs) too.
+    for (const name of [
+      'MSFS2024_USER',
+      'AC_USER',
+      'AC_INSTALL',
+      'IRACING_INSTALL',
+      'LMU_INSTALL',
+      'BEAMNG_INSTALL',
+      'STEAM',
+    ]) {
+      const kept = await app.invoke<Profile>('profiles:save', {
+        ...profile,
+        launch: { exe: `{${name}}/x.exe`, args: [] },
+      });
+      expect(kept.launch?.exe).toBe(`{${name}}/x.exe`);
+    }
+    // The retired name is not quietly kept.
+    await expect(
+      app.invoke('profiles:save', { ...profile, launch: { exe: '{MSFS_USER}/x.exe', args: [] } })
+    ).rejects.toThrow(/Unknown path variable \{MSFS_USER\}/);
   });
 
   it('path variables resolve under the user folder of this run, never the real one', async () => {

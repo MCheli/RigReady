@@ -1434,7 +1434,8 @@ requirements:
     area: profiles
     priority: p0
     done_means:
-      - "Profile paths may use {USER}, {APPDATA}, {LOCALAPPDATA}, {DOCUMENTS}, {SAVED_GAMES}, {STEAM}, {RIGREADY_HOME} and game variables ({DCS_USER}, {DCS_INSTALL}, {IRACING_USER}, {LMU_USER}, {BEAMNG_USER})."
+      - "Profile paths may use {USER}, {APPDATA}, {LOCALAPPDATA}, {DOCUMENTS}, {SAVED_GAMES}, {PROGRAM_FILES}, {PROGRAM_FILES_X86}, {STEAM}, {RIGREADY_HOME} and the variables of every game module ({DCS_USER}, {DCS_INSTALL}, {IRACING_USER}, {IRACING_INSTALL}, {LMU_USER}, {LMU_INSTALL}, {BEAMNG_USER}, {BEAMNG_INSTALL}, {AC_USER}, {AC_INSTALL}, {MSFS2024_USER}), whether or not the game is installed on this PC."
+      - "There is one list of known variables (core knownPathVariables: the standard ones plus each module's pathVariableLabels); the editor's acceptance and the 'not found' labels both read it, and an audit fails a module that hands out a variable it does not declare."
       - "All variables are resolved only by KnownFolders and game modules; with USERPROFILE pointed at a temp dir, {USER} resolves there (unit test)."
       - "Capture and editor write paths with variables where a prefix matches, e.g. C:/Users/Owner/Saved Games/DCS becomes {DCS_USER}."
       - "An unknown variable fails schema validation with the variable name."
@@ -1442,6 +1443,9 @@ requirements:
     evidence:
       - 'src/features/profiles/core/profiles.test.ts#path variables resolve under the user folder of this run, never the real one'
       - 'src/features/profiles/core/profiles.test.ts#refuses unknown path variables by name, and keeps game variables of games not installed'
+      - 'tests/unit/pathVariablesAudit.test.ts#knownPathVariables has the standard variables, STEAM included, and every module’s'
+      - 'tests/unit/pathVariablesAudit.test.ts#the parser sees the ways a module assigns a variable'
+      - 'src/features/checks-generic/core/checks.test.ts#is an error, not "Missing", when the game behind the variable is not on this PC'
       - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
       - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'artifacts/screens/profile-add-check/01-file-check.png'

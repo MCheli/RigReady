@@ -1,7 +1,12 @@
 import path from 'node:path';
 import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
-import { allPathVariables, collapsePath, variableOf } from '../../../core/pathVariables';
+import {
+  allPathVariables,
+  collapsePath,
+  knownPathVariables,
+  variableOf,
+} from '../../../core/pathVariables';
 import type { CheckItem, Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
 import { storedPathKey, trackedExtension, trackedSuggestions } from './capture';
@@ -32,7 +37,7 @@ function strings(value: unknown, at: string, out: { at: string; text: string }[]
  */
 export async function unknownVariables(ctx: Ctx, profile: Profile): Promise<string[]> {
   const known = new Set(Object.keys(await allPathVariables(ctx, ctx.games)));
-  for (const name of KNOWN_GAME_VARIABLES) known.add(name);
+  for (const name of Object.keys(knownPathVariables(ctx.games))) known.add(name);
   const found: { at: string; text: string }[] = [];
   strings({ launch: profile.launch, checks: profile.checks, actions: profile.actions }, '', found);
   const unknown = new Set<string>();
@@ -42,17 +47,6 @@ export async function unknownVariables(ctx: Ctx, profile: Profile): Promise<stri
   }
   return [...unknown].sort();
 }
-
-/** Game variables that exist on a PC where the game is installed. */
-const KNOWN_GAME_VARIABLES = [
-  'STEAM',
-  'DCS_USER',
-  'DCS_INSTALL',
-  'IRACING_USER',
-  'LMU_USER',
-  'BEAMNG_USER',
-  'MSFS_USER',
-];
 
 /** Field problems of every item and action whose type is registered, one line each. */
 export function paramProblems(ctx: Pick<Ctx, 'checks'>, profile: Profile): string[] {

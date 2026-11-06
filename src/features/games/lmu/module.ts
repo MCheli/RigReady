@@ -59,6 +59,10 @@ const lmu: GameModule = {
   closeBeforeRestore: {
     why: 'Le Mans Ultimate rewrites its player files when it starts and when it exits.',
   },
+  pathVariableLabels: {
+    LMU_INSTALL: 'Le Mans Ultimate install',
+    LMU_USER: 'Le Mans Ultimate user folder',
+  },
 
   async detect(ctx) {
     const install = await findInstall(ctx);

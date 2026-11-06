@@ -37,6 +37,7 @@ const assettoCorsa: GameModule = {
   closeBeforeRestore: {
     why: 'Assetto Corsa and Content Manager write controls.ini and the other settings while they are open.',
   },
+  pathVariableLabels: { AC_INSTALL: 'Assetto Corsa install', AC_USER: 'Assetto Corsa user folder' },
 
   async detect(ctx) {
     const install = await findInstall(ctx);
