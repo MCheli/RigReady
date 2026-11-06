@@ -1,14 +1,17 @@
 name: Website
 
 # rigready.io: site/ built by site/build.mjs and published to GitHub Pages. It is rebuilt when the
-# site, the changelog or the version changes on main, and when a release is published, edited or
-# withdrawn, so the download button and the changelog always match GitHub Releases and CHANGELOG.md.
+# site, the changelog, the user guide, the contributing guide or the version changes on main, and
+# when a release is published, edited or withdrawn, so the downloads, the changelog and the guide
+# always match GitHub Releases and the repository's documents.
 on:
   push:
     branches: [main]
     paths:
       - 'site/**'
       - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'docs/USER-GUIDE.md'
       - 'package.json'
       - '.github/workflows/site.yml'
   release:
