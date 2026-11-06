@@ -1,17 +1,21 @@
 import path from 'node:path';
-import type { HoldingProgram } from '../../../core/backupSources';
-import { isWithin } from '../../../core/paths';
-import { expandPath } from '../../../core/pathVariables';
-import type { ProcessInfo } from '../../../shared/models';
-import { err, ok, type Result } from '../../../core/result';
-import { pathVariables, type Ctx } from './store';
+import type { HoldingProgram } from './backupSources';
+import type { MainContext } from './feature';
+import { isWithin } from './paths';
+import { allPathVariables, expandPath } from './pathVariables';
+import { err, ok, type Result } from './result';
+import type { ProcessInfo } from '../shared/models';
 
 /**
  * Games and tools that write their settings when they quit (or keep them open) undo a
- * restore made while they run. Game modules say so with `processes` and
- * `closeBeforeRestore`; tools with `program` on their backup source. This is where a
- * restore finds out which of them hold the files it is about to write.
+ * restore made while they run, and an undo from the Safety page just the same. Game
+ * modules say so with `processes` and `closeBeforeRestore`; tools with `program` on their
+ * backup source. This is where a restore, a snapshot put back and an undo find out which
+ * of them hold the files about to be written: one detection, one wording.
  */
+
+/** What finding the holders needs: the ports, the game modules and the backup sources. */
+export type HoldersContext = Pick<MainContext, 'ports' | 'log' | 'games' | 'backupSources'>;
 
 interface Holder {
   id: string;
@@ -49,8 +53,8 @@ export interface RestoreTarget {
 
 const overlaps = (a: string, b: string): boolean => isWithin(a, b) || isWithin(b, a);
 
-async function holders(ctx: Ctx): Promise<Holder[]> {
-  const variables = await pathVariables(ctx);
+async function holders(ctx: HoldersContext): Promise<Holder[]> {
+  const variables = await allPathVariables(ctx, ctx.games);
   const out: Holder[] = [];
   for (const module of ctx.games.all()) {
     const processes = module.closeBeforeRestore?.processes ?? module.processes ?? [];
@@ -111,7 +115,7 @@ const runningOf = (program: HoldingProgram, processes: ProcessInfo[]): ProcessIn
  * running programs cannot be read: a restore must not go ahead on a guess.
  */
 export async function runningHolders(
-  ctx: Ctx,
+  ctx: HoldersContext,
   targets: RestoreTarget[]
 ): Promise<Result<RunningProgram[]>> {
   if (targets.length === 0) return ok([]);
@@ -163,7 +167,7 @@ export interface Reopen {
  * Resolves with the tools to start again afterwards.
  */
 export async function closeHolders(
-  ctx: Ctx,
+  ctx: HoldersContext,
   programs: RunningProgram[],
   waitMs = 15_000
 ): Promise<Result<Reopen[]>> {
@@ -203,7 +207,10 @@ export async function closeHolders(
 }
 
 /** Starts the tools a restore closed. A game is never started here. */
-export async function reopenHolders(ctx: Ctx, reopen: Reopen[]): Promise<ClosedProgram[]> {
+export async function reopenHolders(
+  ctx: HoldersContext,
+  reopen: Reopen[]
+): Promise<ClosedProgram[]> {
   const out: ClosedProgram[] = [];
   for (const program of reopen) {
     if (!program.exe) {

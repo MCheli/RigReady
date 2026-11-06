@@ -1450,8 +1450,8 @@ requirements:
       - 'src/features/profiles/core/profiles.test.ts#lists every path variable for the Variables menu, with where it points on this PC'
       - 'src/features/profiles/renderer/insertVariable.test.ts#says the same file through the chosen variable when its folder holds it'
       - 'artifacts/screens/profile-add-check/02-variables-menu.png'
-      - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
+      - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'artifacts/screens/profile-add-check/01-file-check.png'
 
   - id: CFG-PROFILE-016
@@ -3420,9 +3420,11 @@ requirements:
       - "Undo restores every file in the group to its pre-change content; if a file changed since, the user is told and asked before overwriting it."
       - "Undo itself is journalled and can be undone."
       - "Unit test: write, modify externally, undo -> prompt; write, undo -> original bytes."
+      - "Undo refuses, with the words a restore uses, while a game or tool that holds the files of the action is running (the game modules' processes and closeBeforeRestore, the backup sources' program; core runningPrograms, shared with restore and snapshots), and nothing is undone; once it is closed the same undo goes through."
     status: done
     evidence:
       - "tests/unit/fileStoreGroups.test.ts#writes and removes under beginGroup are one action; a lone change is its own group"
+      - "src/features/safety/core/safety.test.ts#refuses to undo files a running game holds, with the same words as a restore, and undoes them once it is closed"
       - "tests/unit/fileStoreGroups.test.ts#refuses to undo a file that changed since, unless forced; the undo can itself be undone"
       - "tests/unit/settings.test.ts#lists every change by action with what happened to each file, and undoes a whole action"
       - "tests/e2e/app.e2e.ts#safety: changes are listed by action with their files, and Undo puts the files back"
@@ -4758,22 +4760,22 @@ requirements:
       - "Success is reported only after the link was read back and starts this RigReady with this setup: under sabotage (the file written and put back, a link to another program handed back) the answer is an error."
       - "Started with its own arguments, the shortcut flies the setup (E2E: a second start with the arguments of the link that was made runs the fix and launches)."
       - "Through a Shortcuts port: Electron's shell.writeShortcutLink / readShortcutLink in the app, a recording fake in scenario runs. Arguments are a list of values, turned into the one text a shortcut stores by Windows' own quoting rules (unit tests, including a real program started with that text)."
+      - "Deleting a setup on the Setups page removes its desktop shortcut (under its current name or an earlier one) and then the setup file under one journal group, 'Delete setup \"<name>\"', so one Undo on the Safety page brings both back; the delete dialog and the message afterwards say so, and a shortcut that is still there afterwards is an error that leaves the setup alone. The uninstaller removes every '<setup> - RigReady.lnk' on the desktop; the installer smoke's test variant looks for another ending and never touches a real one, and a unit test keeps the NSIS ending equal to the app's SHORTCUT_SUFFIX."
     notes:
       - "2026-10-04: decisions. (1) The shortcut names the setup by id, which a rename keeps, so an old shortcut keeps working; the panel then offers to give it the new name. (2) The link is made by Windows in a file of its own under the data folder and put on the desktop through FileStore: copying a .lnk keeps what it says (measured with Electron on this PC), and this way the desktop file is backed up, journaled and undoable like every other change. (3) The Desktop folder comes from KnownFolders (Windows is asked, so a Desktop kept in OneDrive is found); a run with a redirected profile stays under its own home and can never reach the real desktop (unit test). (4) While the setup's name or its launch choice has unsaved changes the panel asks to save first: the shortcut is made from the saved setup."
     status: done
     evidence:
       - "src/features/profiles/core/shortcut.test.ts#is the setup name with what a file name cannot hold replaced"
       - "src/features/profiles/core/shortcut.test.ts#is shown first, written through FileStore, and read back before it is called made"
-      - "Deleting a setup on the Setups page removes its desktop shortcut (under its current name or an earlier one) and then the setup file under one journal group, 'Delete setup \"<name>\"', so one Undo on the Safety page brings both back; the delete dialog and the message afterwards say so, and a shortcut that is still there afterwards is an error that leaves the setup alone. The uninstaller removes every '<setup> - RigReady.lnk' on the desktop; the installer smoke's test variant looks for another ending and never touches a real one, and a unit test keeps the NSIS ending equal to the app's SHORTCUT_SUFFIX."
       - "src/features/profiles/core/shortcut.test.ts#is removed through FileStore, shown first, and can be put back from the journal"
+      - "src/features/profiles/core/shortcut.test.ts#goes with its setup: deleting the setup removes it in the same action, and one Undo brings both back"
+      - "src/features/profiles/core/shortcut.test.ts#the uninstaller removes setup shortcuts by the ending the app gives them, and the test variant never touches a real one"
       - "src/features/profiles/core/shortcut.test.ts#never says it is made when the file is not there afterwards"
       - "src/features/profiles/core/shortcut.test.ts#never says it is made when what was written starts something else"
       - "src/features/profiles/core/shortcut.test.ts#follows a renamed setup: the old shortcut is found, and updating replaces it"
       - "src/features/profiles/core/shortcut.test.ts#leaves a file that merely has the name alone until the user replaces it, with a copy kept"
       - "src/features/profiles/core/shortcut.test.ts#says so when the shortcut starts another copy of RigReady or asks for the wrong thing"
       - "src/features/profiles/core/shortcut.test.ts#a setup that launches nothing gets a shortcut that only makes the rig ready"
-      - "src/features/profiles/core/shortcut.test.ts#goes with its setup: deleting the setup removes it in the same action, and one Undo brings both back"
-      - "src/features/profiles/core/shortcut.test.ts#the uninstaller removes setup shortcuts by the ending the app gives them, and the test variant never touches a real one"
       - "src/features/profiles/core/shortcut.test.ts#other shortcuts and files on the desktop are not touched or mistaken for ours"
       - "src/core/windowsArgs.test.ts#reads back exactly the values that were written, whatever is in them"
       - "src/core/windowsArgs.test.ts#a real program started with the written text gets the same values"

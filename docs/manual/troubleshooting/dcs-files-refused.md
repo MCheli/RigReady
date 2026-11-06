@@ -1,6 +1,6 @@
 ---
 title: RigReady will not write DCS files
-description: Bindings, screens, Export.lua and restores are refused with "DCS is running", because DCS rewrites those files itself when it exits or when you press OK.
+description: Bindings, screens, Export.lua, kneeboard pages, restores and undo are refused with "DCS is running", because DCS rewrites those files itself when it exits.
 order: 40
 ---
 
@@ -16,6 +16,9 @@ Depending on the page:
 - **Backups > Restore** and a snapshot put back: the game is listed under "Close these before restoring", and the Restore button stays off. See [restore](../protect/restore.md).
 - **Cheat sheets > Kneeboard**: "DCS is running. Close DCS first: it reads the Kneeboard folder when a mission starts, and RigReady changes no DCS file while it runs." Export and Remove both wait. See [Kneeboard pages](../dcs/kneeboard.md).
 - Undoing a binding change: "DCS is running. Close it before undoing a change to its bindings."
+- **Safety > Undo** of any change in DCS's folders: "DCS World is running (DCS.exe). DCS World may write its settings again when it exits, which would undo the restore. Close it first. Nothing was undone." See [the Safety page](../protect/safety-page.md).
+
+Every page uses the same test: DCS counts as running while `DCS.exe` or `DCS_mt.exe` is in the list of running programs.
 
 ## What to do
 
