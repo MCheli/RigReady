@@ -4,11 +4,12 @@
 
 Writes two sets:
 - site/img/screens/<name>.webp for the pages, from site/screens.json (output name -> screenshot).
-- site/img/guide/<folder>--<file>.webp for every screenshot docs/USER-GUIDE.md shows, with
-  site/img/guide/index.json (the guide's image path -> file, width, height) for the build.
+- site/img/guide/<folder>--<file>.webp for every screenshot the manual (docs/manual/**/*.md)
+  shows, with site/img/guide/index.json (the picture's repository path -> file, width, height)
+  for the build. A tidied copy the manual no longer shows is removed.
 
-Run it when those scenario screenshots or the guide's pictures change, look at the results, and
-commit them. A guide picture without a tidied copy still appears on the site, as the raw capture.
+Run it when those scenario screenshots or the manual's pictures change, look at the results, and
+commit them. A picture without a tidied copy still appears on the site, as the raw capture.
 
 App window captures (1264 x 821) are tidied:
 - the test-only parts of the header are painted over: the amber "Scenario: ..." banner and the
@@ -27,7 +28,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 SCREENS = ROOT / "site" / "img" / "screens"
 GUIDE = ROOT / "site" / "img" / "guide"
-GUIDE_MD = ROOT / "docs" / "USER-GUIDE.md"
+MANUAL = ROOT / "docs" / "manual"
 
 WINDOW = (1264, 821)
 HEADER_ROWS = 45  # the header's content; the ruler below it stays
@@ -76,12 +77,20 @@ def main():
         make(ROOT / source, SCREENS / f"{name}.webp")
 
     index = {}
-    for ref in re.findall(r"!\[[^\]]*\]\(([^)\s]+)\)", GUIDE_MD.read_text()):
-        source = (GUIDE_MD.parent / ref).resolve()
-        rel = source.relative_to(ROOT / "artifacts" / "screens")
-        file = f"{'--'.join(rel.with_suffix('').parts)}.webp"
-        width, height = make(source, GUIDE / file)
-        index[ref] = {"file": file, "width": width, "height": height}
+    for page in sorted(MANUAL.rglob("*.md")):
+        for ref in re.findall(r"!\[[^\]]*\]\(([^)\s]+)\)", page.read_text(encoding="utf-8")):
+            source = (page.parent / ref).resolve()
+            key = source.relative_to(ROOT).as_posix()
+            if key in index:
+                continue
+            rel = source.relative_to(ROOT / "artifacts" / "screens")
+            file = f"{'--'.join(rel.with_suffix('').parts)}.webp"
+            width, height = make(source, GUIDE / file)
+            index[key] = {"file": file, "width": width, "height": height}
+    for stale in GUIDE.glob("*.webp"):
+        if stale.name not in {entry["file"] for entry in index.values()}:
+            stale.unlink()
+            print(f"removed {stale.relative_to(ROOT)}: the manual no longer shows it")
     (GUIDE / "index.json").write_text(json.dumps(index, indent=2) + "\n")
 
 
