@@ -30,7 +30,7 @@ The version in the repository between releases is a `-dev.N` version. It is olde
 
 ## Steps
 
-1. On `main`, with a clean tree: set `version` in `package.json` (and `package-lock.json`: `npm version <version> --no-git-tag-version`).
+1. On `main`, with a clean tree: set `version` in `package.json` (and `package-lock.json`: `npm version <version> --no-git-tag-version`), and in `CHANGELOG.md` replace "(not released)" in the version's heading with the date.
 2. `npm run check`, `npm run test:e2e`.
 3. On the rig (a PC with controllers, not a CI runner), from a normal (not elevated) terminal:
    - `npm run rig:smoke`
@@ -38,7 +38,7 @@ The version in the repository between releases is a `-dev.N` version. It is olde
    - `npm run smoke:installer`
 4. Commit, tag `v<version>`, push the tag. The Release workflow runs the checks again, builds the installer (`npm run dist`, which never publishes) and creates a **draft** GitHub release with the installer, the block map and the feed file.
 5. Work through the checklist below against the installer from the draft.
-6. Publish the draft. From that moment installed apps on the channel find it.
+6. Publish the draft. From that moment installed apps on the channel find it, and rigready.io rebuilds itself: its download buttons and `/download` point at the new installer within a few minutes (`.github/workflows/site.yml`, `site/README.md`).
 
 To withdraw a release: delete it (or mark it as a draft again) on GitHub. Installed apps then see the previous one, which is not newer than what they run, and do nothing. An app that already updated stays on the withdrawn version until a newer one is published; there is no downgrade.
 
