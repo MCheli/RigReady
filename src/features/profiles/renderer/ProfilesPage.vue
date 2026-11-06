@@ -155,6 +155,13 @@ onBeforeUnmount(() => off?.());
             <span v-if="entry.profile.id === overview.lastProfileId" class="profiles-chip"
               >on the Play screen</span
             >
+            <span
+              v-if="entry.hasComments"
+              class="profiles-chip"
+              title="The file has YAML comments, which a save from the editor drops."
+              data-testid="profile-comments"
+              >YAML comments</span
+            >
           </div>
           <div class="rr-row-sub">{{ describe(entry) }} · {{ used(entry.lastUsed) }}</div>
         </div>

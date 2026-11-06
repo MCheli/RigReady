@@ -90,7 +90,7 @@ A check has `id`, `type`, `title`, `required` (true unless said otherwise), `par
 
 ## Comments and anchors
 
-RigReady reads a file with comments without complaint, and leaves them in place as long as the file is only read. But RigReady writes the whole file when a setup is saved from the editor, when a check's **Mark verified** button stores a new version, and when another feature keeps its data with the setup. A save from the editor warns first: **Your comments will be lost**. If you keep notes in the file, keep a copy of them elsewhere, or use the setup's **Notes** field instead.
+RigReady reads a file with comments without complaint, and leaves them in place as long as the file is only read. But RigReady writes the whole file when a setup is saved from the editor, when a check's **Mark verified** button stores a new version, and when another feature keeps its data with the setup. A save from the editor warns first: **Your comments will be lost**. If you keep notes in the file, keep a copy of them elsewhere, or use the setup's **Notes** field instead. The Setups page marks such a file with "YAML comments", so you know before you open the editor.
 
 YAML anchors and aliases (`&layout` and `*layout`) are read; a file RigReady writes is written out in full, without them.
 
