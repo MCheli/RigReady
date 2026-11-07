@@ -295,6 +295,82 @@ describe('Monitors page: saved layouts', () => {
     expect(v.deskLayoutId).toBeUndefined();
   });
 
+  it('saves the refresh rate of each monitor, shows it, says when it differs, and applies it; a layout without one still applies', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    const ultrawide = () => app.ports.state.displays.find((d) => d.name === 'LC49G95T')!;
+    const file = path.join(app.ports.folders.dataRoot(), 'displays', 'layouts.json');
+    const stored = async (id: string) =>
+      JSON.parse(await fs.readFile(file, 'utf8')).layouts.find((l: { id: string }) => l.id === id)
+        .displays as { name: string; enabled: boolean; refreshHz?: number; rotation: number }[];
+
+    // Saved: what Windows reports for every monitor that is on.
+    let v = await app.invoke<DisplaysView>('displays:saveLayout', { name: 'Desk now' });
+    const saved = layout(v, 'Desk now');
+    const rates = (await stored(saved.id)).map((d) => [d.name, d.enabled, d.refreshHz]);
+    expect(rates).toEqual(
+      app.ports.state.displays.map((d) => [d.name, d.enabled, d.enabled ? d.refreshHz : undefined])
+    );
+    expect(rates).toContainEqual(['LC49G95T', true, 120]);
+    // Shown on the layout's monitors.
+    expect(saved.monitors.find((m) => m.name === 'LC49G95T')!.refreshHz).toBe(120);
+
+    // Windows drops the ultrawide to 60 Hz: the layout says so, and so does the preview.
+    ultrawide().refreshHz = 60;
+    v = await view();
+    expect(layout(v, 'Desk now')).toMatchObject({
+      status: 'different',
+      differences: ['LC49G95T runs at 60 Hz, expected 120 Hz'],
+    });
+    const preview = await app.invoke<ApplyPreview>('displays:preview', { id: saved.id });
+    expect(preview.changes).toEqual(['LC49G95T runs at 60 Hz, expected 120 Hz']);
+    expect(preview.before.find((m) => m.label === 'LC49G95T')!.refreshHz).toBe(60);
+    expect(preview.after.find((m) => m.label === 'LC49G95T')!.refreshHz).toBe(120);
+
+    // Applied: the rate goes to the display port with the rest, and is read back.
+    const apply = app.ports.displays.apply.bind(app.ports.displays);
+    const handed: { name: string; refreshHz?: number }[][] = [];
+    app.ports.displays.apply = async (targets) => {
+      handed.push(targets);
+      return apply(targets);
+    };
+    expect(await app.invoke('displays:applyLayout', { id: saved.id })).toEqual({
+      message: 'Applied "Desk now"',
+    });
+    await app.invoke('displays:keep');
+    expect(handed.at(-1)!.find((t) => t.name === 'LC49G95T')!.refreshHz).toBe(120);
+    expect(ultrawide().refreshHz).toBe(120);
+    expect(layout(await view(), 'Desk now').status).toBe('current');
+
+    // Saving the edit dialog sends each monitor with its rate, and the rate is kept.
+    await app.invoke('displays:editLayout', { id: saved.id, displays: await stored(saved.id) });
+    expect((await stored(saved.id)).find((d) => d.name === 'LC49G95T')!.refreshHz).toBe(120);
+
+    // A layout without rates (from before rates were saved): applied, the rate left to Windows.
+    const old = JSON.parse(await fs.readFile(file, 'utf8'));
+    for (const l of old.layouts) {
+      if (l.id !== saved.id) continue;
+      for (const d of l.displays) {
+        delete d.refreshHz;
+        if (d.name === 'LC49G95T') d.rotation = 0;
+      }
+    }
+    await fs.writeFile(file, JSON.stringify(old));
+    ultrawide().refreshHz = 60;
+    v = await view();
+    expect(layout(v, 'Desk now').status).toBe('current');
+    expect(
+      layout(v, 'Desk now').monitors.find((m) => m.name === 'LC49G95T')!.refreshHz
+    ).toBeUndefined();
+    await app.invoke('displays:applyLayout', { id: 'flying' });
+    await app.invoke('displays:keep');
+    const back = await app.invoke<{ message: string }>('displays:applyLayout', { id: saved.id });
+    expect(back.message).toBe('Applied "Desk now"');
+    await app.invoke('displays:keep');
+    expect(handed.at(-1)!.find((t) => t.name === 'LC49G95T')!.refreshHz).toBeUndefined();
+    expect(ultrawide().refreshHz).toBe(60);
+    expect(layout(await view(), 'Desk now').status).toBe('current');
+  });
+
   it('reports a damaged layouts file without losing the monitor list', async () => {
     app = await wiredApp('displays-layouts', NO_FILES);
     await fs.writeFile(

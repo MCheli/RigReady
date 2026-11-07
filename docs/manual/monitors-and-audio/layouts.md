@@ -12,7 +12,9 @@ This page covers saving, applying and the keep-or-revert countdown. Editing a la
 
 Arrange the monitors the way you want them, in Windows or with RigReady's own tools, then on **Configure > Monitors** choose **Save current as layout** and give it a name. The layout stores, for every connected monitor, whether it is on, its position, its desktop size, its rotation and whether it is the main display. It also stores what identifies each monitor (its serial number, or the serial of its USB device), so the layout finds the right screen again on another connector.
 
-A refresh rate is not stored by this button. A layout only carries one when a setup file or a hand-edited layout asks for it, and then it is compared and applied like the rest.
+The layout also stores the refresh rate Windows reports for each monitor that is on, for example 120 Hz for a gaming monitor. It is compared and applied like the rest: if Windows later runs that monitor at another rate, the card lists the difference ("LC49G95T runs at 60 Hz, expected 120 Hz") and applying the layout sets the saved rate again. A layout saved before RigReady stored rates has none, and applying it leaves each monitor's rate as Windows has it.
+
+![A layout with the refresh rate it was saved with](../../../artifacts/screens/display-refresh-rate/01-rate-in-layout.png)
 
 Each saved layout is a card with a small map and a status line:
 
@@ -26,13 +28,15 @@ The card's menu has **Rename**, **Edit arrangement**, **Replace with the monitor
 
 ## Apply a layout
 
-**Apply…** on a card opens a dialog that first shows what would change. A map draws the monitors as they are now and then, after a moment, as they would be: boxes slide to their new places, turn, and fade out when they will be off. **Before** and **After** flip the picture by hand. If Windows is set to reduce motion ([Motion](../app/text-size.md#motion)), the two states are drawn side by side instead. Under the map, **What is different now** lists every change in words.
+**Apply…** on a card opens a dialog that first shows what would change. A map draws the monitors as they are now and then, after a moment, as they would be: boxes slide to their new places, turn, and fade out when they will be off. **Before** and **After** flip the picture by hand. If Windows is set to reduce motion ([Motion](../app/text-size.md#motion)), the two states are drawn side by side instead. Under the map, **What is different now** lists every change in words. A refresh rate that would change is named on the monitor in the picture ("changes to 120 Hz") and in the list.
 
 ![Applying the flying layout](../../../artifacts/screens/display-layouts/04-apply-flying-preview.png)
 
 Then press **Apply**. RigReady changes everything in as few steps as Windows allows: monitors that were off are turned on, sizes are set, and positions, rotations and the main display are applied in one call. Windows requires the main display at 0,0, so every position in the layout is shifted so that it is.
 
-Some layouts cannot be applied, and the dialog says so before anything happens: two monitors would overlap, a monitor does not offer the size asked for, or every monitor would end up off.
+Some layouts cannot be applied, and the dialog says so before anything happens: two monitors would overlap, a monitor does not offer the size and refresh rate asked for, or every monitor would end up off.
+
+![Applying a layout that puts the refresh rate back](../../../artifacts/screens/display-refresh-rate/02-apply-rate-preview.png)
 
 ### Monitors that are not connected
 

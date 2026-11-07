@@ -1527,10 +1527,14 @@ requirements:
       - "Fixtures provide three layouts matching the owner's rig: Flying (ultrawide + three MFD screens, Dell off), Racing (ultrawide + TV), Desk (Dell + ultrawide, MFD screens off)."
       - "Layouts can be renamed, deleted and set as the desk layout used by Stand down."
       - "Each layout shows a scaled diagram with rotation and names (screenshot artifacts/screens/display-layouts/)."
+      - "The full arrangement includes the refresh rate Windows reports for each monitor that is on, shown on the layout's monitor rows (edit dialog) and kept by an edit; a layout without rates (saved before, or a hand-written setup) still applies and leaves the rate to Windows."
     status: done
     evidence:
       - "src/features/displays/core/service.test.ts#shows each saved layout with whether the monitors match it now"
       - "src/features/displays/core/service.test.ts#creates, renames, edits, updates, sets as desk layout and deletes layouts"
+      - "src/features/displays/core/service.test.ts#saves the refresh rate of each monitor, shows it, says when it differs, and applies it; a layout without one still applies"
+      - "tests/e2e/displays.e2e.ts#monitors: a saved layout keeps each refresh rate, says when Windows runs another, and puts it back"
+      - "artifacts/screens/display-refresh-rate/01-rate-in-layout.png"
       - "tests/e2e/displays.e2e.ts#monitors: map, Identify and names, then apply Flying, Racing without the TV, and manage layouts"
       - "fixtures/scenarios/data/displays/layouts.json"
       - "artifacts/screens/display-layouts/03-layouts.png"
@@ -1599,8 +1603,14 @@ requirements:
     done_means:
       - "A layout may specify resolution and refresh rate per monitor; apply sets them only if the mode is in the monitor's supported mode list, otherwise it reports which monitor/mode is unsupported and applies nothing."
       - "Unit test with fake DisplayProvider modes covers supported and unsupported modes."
+      - "A layout saved from the monitors carries each one's refresh rate: a monitor running at another rate is a difference on the card and in the apply preview (words and the picture: 'changes to 120 Hz'), and applying hands the rate to the display port and reads it back."
     status: done
     evidence:
+      - "src/features/displays/core/service.test.ts#saves the refresh rate of each monitor, shows it, says when it differs, and applies it; a layout without one still applies"
+      - "src/features/displays/core/layoutCheck.test.ts#compares the refresh rate only when the layout gives one"
+      - "tests/e2e/displays.e2e.ts#monitors: a saved layout keeps each refresh rate, says when Windows runs another, and puts it back"
+      - "artifacts/screens/display-refresh-rate/02-apply-rate-preview.png"
+      - "artifacts/screens/display-refresh-rate/03-rate-applied.png"
       - "src/features/displays/core/modes.test.ts#applies a mode the monitor lists, and the check then compares the refresh rate too"
       - "src/features/displays/core/modes.test.ts#refuses a mode the monitor does not list, names the monitor and the mode, and applies nothing"
       - "src/features/displays/core/modes.test.ts#the provider itself refuses an unlisted mode and leaves every monitor as it was"
