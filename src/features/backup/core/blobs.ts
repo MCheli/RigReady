@@ -3,6 +3,10 @@ import { sha256 } from '../../../core/files/fileStore';
 import type { FileStore } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
 
+/** Where a stored copy lives below the data root, forward slashes: the same path inside a backup. */
+export const blobRelativePath = (hash: string): string =>
+  `backup/blobs/${hash.slice(0, 2)}/${hash}`;
+
 /**
  * File contents stored once by hash under <data root>/backup/blobs, so snapshots and
  * "last worked" fingerprints can show and put back old versions without copying the
@@ -15,7 +19,7 @@ export class BlobStore {
   ) {}
 
   private fileFor(hash: string): string {
-    return path.join(this.dataRoot, 'backup', 'blobs', hash.slice(0, 2), hash);
+    return path.join(this.dataRoot, ...blobRelativePath(hash).split('/'));
   }
 
   async put(bytes: Uint8Array): Promise<Result<string>> {

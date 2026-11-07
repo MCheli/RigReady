@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { zipSync } from 'fflate';
 import { afterEach, describe, expect, it } from 'vitest';
+import { sha256 } from '../../../core/files/fileStore';
 import { readZip } from '../../../core/files/zip';
 import type { GameModule } from '../../../core/games';
 import { ok } from '../../../core/result';
@@ -847,6 +848,17 @@ describe('untrusted backup files', () => {
         }),
       })
     ).toMatch(/not valid/);
+    // A stored copy of a snapshot file is found again by its name, so the name must be its content's hash.
+    const copy = text('local x = 1\n');
+    const misnamed = `backup/blobs/aa/${'a'.repeat(64)}`;
+    expect(
+      await offer(app, {
+        'manifest.json': manifest({
+          rigready: [{ path: misnamed, size: copy.length, sha256: sha256(copy) }],
+        }),
+        [`rigready/${misnamed}`]: copy,
+      })
+    ).toMatch(/not named by its content/);
     await app.wiring.context.settings.update({ importMaxMegabytes: 1 });
     expect(
       await offer(app, { 'manifest.json': manifest(), 'big.bin': new Uint8Array(2 * 1024 * 1024) })
@@ -978,5 +990,260 @@ describe('what changed since it last worked', () => {
     });
     expect(marked.knownGood?.reason).toBe('Marked as working');
     expect(marked.comparison?.changes).toEqual([]);
+  });
+});
+
+describe('snapshots and "what changed" records in a full backup', () => {
+  /** Scripts tracked in the always list with a snapshot, and the Hornet setup recorded as working. */
+  async function withHistory(): Promise<{ app: WiredApp; snapshotId: string }> {
+    const app = await start();
+    await track(app, '@always', { label: 'Scripts', path: '{DCS_USER}/Scripts', kind: 'folder' });
+    await track(app, 'dcs-f-a-18c', OPTIONS);
+    const overview = await app.invoke<Overview>('backup:overview');
+    const itemId = overview.scopes[0]!.items[0]!.item.id;
+    const snap = await app.invoke<{ id: string }>('backup:takeSnapshot', {
+      scope: '@always',
+      itemId,
+      name: 'Known good',
+    });
+    await app.invoke('backup:markWorking', { profileId: 'dcs-f-a-18c' });
+    return { app, snapshotId: snap.id };
+  }
+  const dataFile = (app: WiredApp, ...parts: string[]): string =>
+    path.join(app.ports.folders.dataRoot(), ...parts);
+  interface Files {
+    files: { path?: string; sha256: string }[];
+  }
+  interface SnapshotsIndex {
+    snapshots: (Files & { name: string })[];
+  }
+  interface RecordsIndex {
+    profiles: Record<string, Files>;
+  }
+  interface ManifestJson {
+    rigready: { path: string }[];
+    records: unknown[];
+  }
+  const readJson = async <T>(file: string): Promise<T> =>
+    JSON.parse(await fs.readFile(file, 'utf8')) as T;
+  const decode = <T>(bytes: Uint8Array | undefined): T =>
+    JSON.parse(new TextDecoder().decode(bytes)) as T;
+  const BLOB = /^rigready\/backup\/blobs\/([0-9a-f]{2})\/([0-9a-f]{64})$/;
+  const backUp = (app: WiredApp): Promise<BackupOutcomeView> =>
+    app.invoke<BackupOutcomeView>('backup:backUp', { scope: { kind: 'full' } });
+  const previewOf = (app: WiredApp, id: string): Promise<RestorePreviewView> =>
+    app.invoke<RestorePreviewView>('backup:previewRestore', { id });
+  const restore = (
+    app: WiredApp,
+    id: string,
+    choices: Record<string, 'overwrite' | 'keepBoth'>
+  ): Promise<RestoreReportView> => app.invoke<RestoreReportView>('backup:restore', { id, choices });
+  const snapshotNames = async (app: WiredApp): Promise<string[]> =>
+    (await app.invoke<{ name: string }[]>('backup:snapshots')).map((s) => s.name).sort();
+
+  it('a full backup holds the snapshots and the records with the stored copies of their files, inside the 2 GB cap', async () => {
+    const { app } = await withHistory();
+    const outcome = await backUp(app);
+    expect(outcome.skipped).toEqual([]);
+    expect(outcome.backup.snapshots).toEqual(['Known good']);
+    expect(outcome.backup.changeRecords).toEqual(['DCS F/A-18C']);
+    const entries = await archiveEntries(app, outcome.backup);
+    const own = [...entries.keys()].filter((k) => k.startsWith('rigready/'));
+    // The two indexes exactly as they are on disk.
+    for (const index of ['snapshots.json', 'fingerprints.json']) {
+      expect(own).toContain(`rigready/backup/${index}`);
+      expect(Buffer.from(entries.get(`rigready/backup/${index}`)!)).toEqual(
+        await fs.readFile(dataFile(app, 'backup', index))
+      );
+    }
+    // Every stored copy the two refer to (the snapshot's five files, the record's six: five
+    // are the same files), once each and named by its content.
+    const snapshots = await readJson<SnapshotsIndex>(dataFile(app, 'backup', 'snapshots.json'));
+    const records = await readJson<RecordsIndex>(dataFile(app, 'backup', 'fingerprints.json'));
+    const wanted = new Set<string>([
+      ...snapshots.snapshots.flatMap((s) => s.files.map((f) => f.sha256)),
+      ...Object.values(records.profiles).flatMap((r) => r.files.map((f) => f.sha256)),
+    ]);
+    expect(wanted.size).toBe(6);
+    const copies = own.filter((k) => BLOB.test(k));
+    expect(copies.map((k) => BLOB.exec(k)![2]).sort()).toEqual([...wanted].sort());
+    for (const key of copies) {
+      const [, prefix, hash] = BLOB.exec(key)!;
+      expect(sha256(entries.get(key)!)).toBe(hash);
+      expect(hash!.startsWith(prefix!)).toBe(true);
+      expect(Buffer.from(entries.get(key)!)).toEqual(
+        await fs.readFile(dataFile(app, 'backup', 'blobs', prefix!, hash!))
+      );
+    }
+    const manifest = decode<ManifestJson>(entries.get('manifest.json'));
+    expect(manifest.rigready.filter((f) => f.path.startsWith('backup/blobs/'))).toHaveLength(6);
+    // Every entry but the manifest and the registry records (kept as data, never restored).
+    expect(outcome.backup.fileCount).toBe(entries.size - 1 - manifest.records.length);
+
+    // The stored copies count towards what one backup can hold, before anything is read.
+    const stat = app.ports.files.stat.bind(app.ports.files);
+    app.ports.files.stat = async (file) => {
+      const real = await stat(file);
+      return real.ok && real.value && /backup[\\/]blobs[\\/]/.test(file)
+        ? ok({ ...real.value, size: 400 * 1024 ** 2 })
+        : real;
+    };
+    await expect(backUp(app)).rejects.toThrow(
+      /The tracked files and the stored copies of snapshots and records add up to 2\.3 GB, more than one backup can hold \(2 GB\)\. Snapshots and records hold 2\.3 GB of that\. The largest is ".*": leave its big folders out with patterns, or delete snapshots you no longer need\./
+    );
+  });
+
+  it('restores a snapshot and a record like a setup: new on a fresh PC, same when there, keep both or replace when it differs', async () => {
+    const { app, snapshotId } = await withHistory();
+    const backup = (await backUp(app)).backup;
+    const snapshotRef = `snapshot:${snapshotId}`;
+    // Since then: Export.lua rewritten, and RigReady's own history gone (a fresh install).
+    const exportFile = dcsUser(app, 'Scripts', 'Export.lua');
+    await fs.writeFile(exportFile, '-- rewritten\n');
+    await fs.rm(dataFile(app, 'backup', 'snapshots.json'));
+    await fs.rm(dataFile(app, 'backup', 'fingerprints.json'));
+    await fs.rm(dataFile(app, 'backup', 'blobs'), { recursive: true });
+    expect(await snapshotNames(app)).toEqual([]);
+
+    let preview = await previewOf(app, backup.id);
+    expect(preview.own).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: snapshotRef,
+          kind: 'snapshot',
+          label: 'Snapshot "Known good" of Scripts',
+          status: 'new',
+          detail: '5 files of {DCS_USER}/Scripts',
+        }),
+        expect.objectContaining({
+          ref: 'changes:dcs-f-a-18c',
+          kind: 'changes',
+          label: '"What changed" record of DCS F/A-18C',
+          status: 'new',
+          detail: '6 files as they were when it last worked (Marked as working)',
+        }),
+      ])
+    );
+    let report = await restore(app, backup.id, {
+      [snapshotRef]: 'overwrite',
+      'changes:dcs-f-a-18c': 'overwrite',
+    });
+    expect(report.failed).toEqual([]);
+    expect(report.restored.map((r) => r.ref).sort()).toEqual(['changes:dcs-f-a-18c', snapshotRef]);
+    // Nothing outside RigReady's folder was written and nothing was replaced: no safety backup, no undo.
+    expect(report.safetyBackup).toBeUndefined();
+    expect(report.groupId).toBeUndefined();
+    // The snapshot is back with its copies: compared with the files now, it shows the rewrite.
+    expect(await app.invoke('backup:snapshots')).toEqual([
+      expect.objectContaining({ id: snapshotId, name: 'Known good', fileCount: 5 }),
+    ]);
+    const compared = await app.invoke<{
+      comparison: { unchanged: number; changes: { key: string; status: string }[] };
+    }>('backup:compareSnapshot', { id: snapshotId });
+    expect(compared.comparison.unchanged).toBe(4);
+    expect(compared.comparison.changes).toEqual([
+      expect.objectContaining({ key: 'Export.lua', status: 'changed' }),
+    ]);
+    // So is the record: "what changed" shows the rewrite against the last time it worked.
+    const changes = await app.invoke<ChangesViewData>('backup:changes', {
+      profileId: 'dcs-f-a-18c',
+    });
+    expect(changes.knownGood).toMatchObject({ reason: 'Marked as working', fileCount: 6 });
+    expect(changes.comparison!.changes.map((c) => [c.key, c.status])).toEqual([
+      ['{DCS_USER}/Scripts/Export.lua', 'changed'],
+    ]);
+
+    // Restored again: already the same.
+    preview = await previewOf(app, backup.id);
+    expect(preview.own.find((o) => o.ref === snapshotRef)!.status).toBe('same');
+    expect(preview.own.find((o) => o.ref === 'changes:dcs-f-a-18c')!.status).toBe('same');
+
+    // Renamed here and recorded again since: the backup's versions differ.
+    await app.invoke('backup:renameSnapshot', { id: snapshotId, name: 'Known good 2' });
+    await app.invoke('backup:markWorking', { profileId: 'dcs-f-a-18c' });
+    preview = await previewOf(app, backup.id);
+    expect(preview.own.find((o) => o.ref === snapshotRef)!.status).toBe('different');
+    expect(preview.own.find((o) => o.ref === 'changes:dcs-f-a-18c')!.status).toBe('different');
+    report = await restore(app, backup.id, {
+      [snapshotRef]: 'keepBoth',
+      'changes:dcs-f-a-18c': 'overwrite',
+    });
+    expect(report.failed).toEqual([]);
+    expect(report.keptBoth).toEqual([
+      expect.objectContaining({ ref: snapshotRef, detail: 'Saved as "Known good (restored)"' }),
+    ]);
+    expect(report.restored.map((r) => r.ref)).toEqual(['changes:dcs-f-a-18c']);
+    expect(await snapshotNames(app)).toEqual(['Known good (restored)', 'Known good 2']);
+    const again = await app.invoke<ChangesViewData>('backup:changes', { profileId: 'dcs-f-a-18c' });
+    expect(again.comparison!.changes.map((c) => c.key)).toEqual(['{DCS_USER}/Scripts/Export.lua']);
+    // What the restore replaced was saved first: the record as it was, with its copies; no
+    // snapshot, since none was replaced.
+    expect(report.safetyBackup).toMatch(/^Before restoring /);
+    const safety = await archiveEntries(app, { id: `${report.safetyBackup}.zip` } as BackupView);
+    const savedRecords = decode<RecordsIndex>(safety.get('rigready/backup/fingerprints.json'));
+    expect(Object.keys(savedRecords.profiles)).toEqual(['dcs-f-a-18c']);
+    expect(savedRecords.profiles['dcs-f-a-18c']!.files).toHaveLength(6);
+    expect(safety.has('rigready/backup/snapshots.json')).toBe(false);
+    expect([...safety.keys()].filter((k) => BLOB.test(k))).toHaveLength(6);
+
+    // Replacing the renamed snapshot saves it first, and that safety backup brings it back.
+    report = await restore(app, backup.id, { [snapshotRef]: 'overwrite' });
+    expect(report.failed).toEqual([]);
+    expect(report.restored.map((r) => r.ref)).toEqual([snapshotRef]);
+    expect(await snapshotNames(app)).toEqual(['Known good', 'Known good (restored)']);
+    const safetyId = `${report.safetyBackup}.zip`;
+    const saved = await archiveEntries(app, { id: safetyId } as BackupView);
+    expect(
+      decode<SnapshotsIndex>(saved.get('rigready/backup/snapshots.json')).snapshots.map(
+        (s) => s.name
+      )
+    ).toEqual(['Known good 2']);
+    expect([...saved.keys()].filter((k) => BLOB.test(k))).toHaveLength(5);
+    const fromSafety = await previewOf(app, safetyId);
+    expect(fromSafety.own).toEqual([
+      expect.objectContaining({ ref: snapshotRef, kind: 'snapshot', status: 'different' }),
+    ]);
+    report = await restore(app, safetyId, { [snapshotRef]: 'overwrite' });
+    expect(report.failed).toEqual([]);
+    expect(await snapshotNames(app)).toEqual(['Known good (restored)', 'Known good 2']);
+  });
+
+  it('reports a stored copy that is gone, and the restore preview says which snapshot and record it leaves short', async () => {
+    const { app, snapshotId } = await withHistory();
+    const index = await readJson<SnapshotsIndex>(dataFile(app, 'backup', 'snapshots.json'));
+    const hash = index.snapshots[0]!.files.find((f) => f.path === 'Export.lua')!.sha256;
+    const copy = dataFile(app, 'backup', 'blobs', hash.slice(0, 2), hash);
+    await fs.rm(copy);
+    const outcome = await backUp(app);
+    expect(outcome.skipped).toEqual([
+      { path: copy, reason: 'The stored copy is missing (snapshot "Known good", Export.lua).' },
+    ]);
+    expect(outcome.backup.snapshots).toEqual(['Known good']);
+    // On a PC without the history, both are listed but cannot be restored from this backup.
+    await fs.rm(dataFile(app, 'backup', 'snapshots.json'));
+    await fs.rm(dataFile(app, 'backup', 'fingerprints.json'));
+    const preview = await previewOf(app, outcome.backup.id);
+    const snapshotRef = `snapshot:${snapshotId}`;
+    expect(preview.own.find((o) => o.ref === snapshotRef)).toMatchObject({
+      status: 'new',
+      problem: '1 of its 5 files is not in the backup.',
+    });
+    expect(preview.own.find((o) => o.ref === 'changes:dcs-f-a-18c')).toMatchObject({
+      status: 'new',
+      problem: '1 of its 6 stored files is not in the backup.',
+    });
+    const report = await restore(app, outcome.backup.id, {
+      [snapshotRef]: 'overwrite',
+      'changes:dcs-f-a-18c': 'overwrite',
+    });
+    expect(report.restored).toEqual([]);
+    expect(report.failed).toEqual([]);
+    expect(report.skipped.map((s) => [s.ref, s.detail])).toEqual(
+      expect.arrayContaining([
+        [snapshotRef, '1 of its 5 files is not in the backup.'],
+        ['changes:dcs-f-a-18c', '1 of its 6 stored files is not in the backup.'],
+      ])
+    );
+    expect(await snapshotNames(app)).toEqual([]);
   });
 });

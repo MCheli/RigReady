@@ -24,13 +24,16 @@ const FingerprintSchema = z.object({
 });
 export type Fingerprint = z.infer<typeof FingerprintSchema>;
 
-const FileSchema = z.object({ profiles: z.record(z.string(), FingerprintSchema).default({}) });
+/** The "what changed" records by setup id, as kept on disk and as carried in a full backup. */
+export const FingerprintFileSchema = z.object({
+  profiles: z.record(z.string(), FingerprintSchema).default({}),
+});
 
 export const fingerprintStore = (ctx: Pick<Ctx, 'ports'>) =>
   new JsonStore(
     ctx.ports.files,
     path.join(ctx.ports.folders.dataRoot(), 'backup', 'fingerprints.json'),
-    FileSchema
+    FingerprintFileSchema
   );
 
 /** Every tracked file of a setup as it is now, keyed by its stored path. */

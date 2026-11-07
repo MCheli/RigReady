@@ -23,13 +23,14 @@ const SnapshotSchema = z.object({
 });
 export type Snapshot = z.infer<typeof SnapshotSchema>;
 
-const IndexSchema = z.object({ snapshots: z.array(SnapshotSchema).default([]) });
+/** The snapshots index, as kept on disk and as carried in a full backup. */
+export const SnapshotIndexSchema = z.object({ snapshots: z.array(SnapshotSchema).default([]) });
 
 export const snapshotStore = (ctx: Pick<Ctx, 'ports'>) =>
   new JsonStore(
     ctx.ports.files,
     path.join(ctx.ports.folders.dataRoot(), 'backup', 'snapshots.json'),
-    IndexSchema
+    SnapshotIndexSchema
   );
 
 export const blobsOf = (ctx: Pick<Ctx, 'ports'>): BlobStore =>

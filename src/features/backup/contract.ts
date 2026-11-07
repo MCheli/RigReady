@@ -46,6 +46,10 @@ export const BackupViewSchema = z.object({
   /** Settings kept as data (registry values): readable, never restored. */
   records: z.array(z.object({ label: z.string(), from: z.string() })).default([]),
   profiles: z.array(z.string()),
+  /** Snapshots in the backup, by name. */
+  snapshots: z.array(z.string()).default([]),
+  /** Setups whose "what changed" record is in the backup, by name. */
+  changeRecords: z.array(z.string()).default([]),
   imported: z.boolean(),
   damaged: z.string().optional(),
 });
@@ -153,10 +157,12 @@ const PreviewSchema = z.object({
   own: z.array(
     z.object({
       ref: z.string(),
-      kind: z.enum(['profile', 'layout', 'settings', 'tracked']),
+      kind: z.enum(['profile', 'layout', 'settings', 'tracked', 'snapshot', 'changes']),
       label: z.string(),
       status: FileStatusSchema,
       detail: z.string().optional(),
+      /** Set when it cannot be restored from this backup: why. */
+      problem: z.string().optional(),
     })
   ),
   notInBackup: z.array(PathReason),
