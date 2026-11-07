@@ -3,6 +3,7 @@ import { computed, getCurrentInstance, onBeforeUnmount, onMounted, ref } from 'v
 import { useRouter } from 'vue-router';
 import { useClient } from '../../../renderer/ipc';
 import { diagnosticsContract, type ErrorReportView } from '../contract';
+import { isBenignWindowError } from './benign';
 
 /**
  * The notice for errors nobody expected, on every screen. It never blocks: the app
@@ -74,6 +75,7 @@ async function report(thrown: unknown, context?: string): Promise<void> {
 }
 
 const onError = (event: ErrorEvent): void => {
+  if (isBenignWindowError(event.message, event.error)) return;
   void report(event.error ?? event.message, `${event.filename}:${event.lineno}`);
 };
 const onRejection = (event: PromiseRejectionEvent): void => {

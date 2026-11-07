@@ -213,6 +213,9 @@ onMounted(async () => {
             <div>
               <div>{{ status.summary }}</div>
               <div v-if="status.folder" class="rr-row-sub rr-mono">{{ status.folder }}</div>
+              <div v-if="status.blocked" class="rr-row-sub rr-warn" data-testid="kneeboard-blocked">
+                <v-icon icon="mdi-alert" size="14" /> {{ status.blocked }}
+              </div>
             </div>
           </div>
 
@@ -396,6 +399,7 @@ onMounted(async () => {
     :preview="changes"
     :error="changesError"
     :busy="busy"
+    :blocked="!!status?.blocked"
     :testid="asking === 'remove' ? 'kneeboard-remove' : 'kneeboard-export'"
     @cancel="asking = undefined"
     @confirm="confirmed"
@@ -408,6 +412,11 @@ onMounted(async () => {
       The pages for {{ store.sheet?.aircraft.name }} are written to the DCS kneeboard folder. Pages
       from an earlier export that are no longer needed are removed; your own pages are never
       touched.
+    </template>
+    <template v-if="status?.blocked" #after>
+      <p class="rr-warn kb-blocked" data-testid="kneeboard-confirm-blocked">
+        <v-icon icon="mdi-alert" size="16" /> {{ status.blocked }}
+      </p>
     </template>
   </ConfirmChanges>
 </template>

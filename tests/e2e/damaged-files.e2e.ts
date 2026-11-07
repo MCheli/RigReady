@@ -68,9 +68,13 @@ test('damaged files: the app starts with a damaged settings file, setups, monito
     }
   );
 
-  // The notices can be closed and the app is usable behind them.
-  for (let i = 0; i < 4; i++) await notices.first().getByRole('button', { name: /close/i }).click();
-  await expect(notices).toHaveCount(0);
+  // The notices can be closed and the app is usable behind them. A closed notice collapses
+  // over a moment before it leaves the page, so each one is gone before the next is closed:
+  // a click meanwhile would land on the one still collapsing and close nothing.
+  for (let left = 4; left > 0; left--) {
+    await notices.first().getByRole('button', { name: /close/i }).click();
+    await expect(notices).toHaveCount(left - 1);
+  }
 
   // Setups: the two damaged files are listed with why, next to the good one.
   await page.getByTestId('mode-configure').click();

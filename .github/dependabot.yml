@@ -25,3 +25,13 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  # The workflows pin every action to a commit; this keeps those pins moving with
+  # the actions' releases, one grouped pull request a week.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"

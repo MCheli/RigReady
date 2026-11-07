@@ -439,7 +439,7 @@ export const headlessPorts: {
     subscribe: () => () => {},
   },
   shortcuts: {
-    self: () => ({ exe: process.execPath, args: [] }),
+    self: () => ({ exe: process.execPath, args: [], icon: process.execPath }),
     build: async () => unavailable('Making a shortcut'),
     read: async () => unavailable('Reading a shortcut'),
   },

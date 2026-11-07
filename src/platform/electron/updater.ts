@@ -3,6 +3,7 @@ import electronUpdater, { type AppUpdater } from 'electron-updater';
 import type { Logger } from '../../core/logger';
 import type { UpdateChannel, UpdateFeed, UpdateOffer } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
+import { isSecurityRelease } from '../../core/updateMarker';
 
 /** The variable that points the updater at a feed on this PC instead of GitHub (tests only). */
 export const UPDATE_FEED_ENV = 'RIGREADY_UPDATE_FEED';
@@ -102,7 +103,14 @@ export class ElectronUpdateFeed implements UpdateFeed {
               .trim()
               .slice(0, 300)
           : '';
-      return ok({ version: result.updateInfo.version, ...(notes ? { notes } : {}) });
+      // GitHub's provider names the release after its title; a security release says so there or in its notes.
+      const name = result.updateInfo.releaseName;
+      const security = isSecurityRelease(typeof name === 'string' ? name : undefined, notes);
+      return ok({
+        version: result.updateInfo.version,
+        ...(notes ? { notes } : {}),
+        ...(security ? { security: true } : {}),
+      });
     } catch (e) {
       const text = firstLine(e);
       if (OFFLINE.test(text)) {

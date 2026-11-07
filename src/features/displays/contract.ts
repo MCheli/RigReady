@@ -52,6 +52,8 @@ export const LayoutMonitorSchema = z.object({
   width: z.number().int(),
   height: z.number().int(),
   rotation: RotationSchema,
+  /** The refresh rate the layout asks for; absent when it leaves the rate to Windows. */
+  refreshHz: z.number().positive().optional(),
   connected: z.boolean(),
 });
 export type LayoutMonitor = z.infer<typeof LayoutMonitorSchema>;

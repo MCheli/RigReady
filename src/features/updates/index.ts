@@ -1,8 +1,13 @@
 import { defineFeature } from '../../shared/feature';
+import SecurityUpdateNotice from './renderer/SecurityUpdateNotice.vue';
 
-/** Updates of RigReady itself: two sections at the end of the Settings page. */
+/**
+ * Updates of RigReady itself: two sections at the end of the Settings page, and on every
+ * screen the notice for a security release.
+ */
 export default defineFeature({
   id: 'updates',
+  overlays: [SecurityUpdateNotice],
   settings: [
     {
       title: 'Updates',

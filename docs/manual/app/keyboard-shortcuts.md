@@ -40,6 +40,6 @@ See [text size](text-size.md).
 
 ## On the Play screen
 
-Enter presses the main action: **Make ready and launch** when something needs fixing, **Launch** when the rig is ready. Every control on the screen can be reached with Tab, and the groups of the checklist open with Enter. See [make ready and launch](../play/make-ready-and-launch.md).
+Enter presses the main action on the [Play screen](../play/index.md): **Make ready and launch** when something needs fixing, **Launch** when the rig is ready. Every control on the screen can be reached with Tab, and the groups of the checklist open with Enter. See [make ready and launch](../play/make-ready-and-launch.md).
 
 ![The shortcuts overlay](../../../artifacts/screens/shell-shortcuts/01-shortcuts.png)

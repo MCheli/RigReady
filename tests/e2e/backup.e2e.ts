@@ -386,4 +386,30 @@ test('backup: snapshots compare line by line and can be put back; "what changed"
   await optionsChange.getByTestId('diff-toggle').click();
   await expect(optionsChange.getByTestId('diff-lines')).toContainText('["fullScreen"] = true');
   await shot('what-changed');
+
+  // A full backup carries the snapshot and the record, with the stored copies of their files.
+  await page.getByTestId('backups-tab-backups').click();
+  await page.getByTestId('backup-all').click();
+  await expect(page.getByTestId('backup-outcome-title')).toContainText('Backed up');
+  await page.getByTestId('backup-toggle').click();
+  await expect(page.getByTestId('backup-snapshots')).toHaveText('Before Tacview');
+  await expect(page.getByTestId('backup-change-records')).toHaveText('DCS F/A-18C');
+  await shot('backup-with-history');
+  const dir = path.join(run.dataRoot, 'backups');
+  const [name] = (await fs.readdir(dir)).filter((f) => f.endsWith('.zip'));
+  const entries = Object.keys(unzipSync(new Uint8Array(await fs.readFile(path.join(dir, name!)))));
+  expect(entries).toContain('rigready/backup/snapshots.json');
+  expect(entries).toContain('rigready/backup/fingerprints.json');
+  expect(
+    entries.filter((e) => /^rigready\/backup\/blobs\/[0-9a-f]{2}\/[0-9a-f]{64}$/.test(e)).length
+  ).toBeGreaterThan(0);
+  // The restore page lists them beside the setups, each with its state.
+  await page.getByTestId('backup-restore').click();
+  const snapshotRow = page.locator('[data-testid="restore-own"][data-kind="snapshot"]');
+  await expect(snapshotRow).toContainText('Snapshot "Before Tacview" of DCS export scripts');
+  await expect(snapshotRow).toHaveAttribute('data-status', 'same');
+  await expect(page.locator('[data-testid="restore-own"][data-kind="changes"]')).toContainText(
+    '"What changed" record of DCS F/A-18C'
+  );
+  await shot('restore-with-history');
 });

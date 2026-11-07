@@ -1,5 +1,5 @@
 import path from 'node:path';
-import * as yaml from 'js-yaml';
+import { loadDataYaml } from '../../../core/files/yaml';
 import { z } from 'zod';
 import { credentialReason, isProgramFile } from '../../../core/credentials';
 import { sameGuid } from '../../../core/directInput';
@@ -105,7 +105,7 @@ export function validateBundle(bytes: Uint8Array, maxTotalBytes: number): Result
   }
   let profileRaw: unknown;
   try {
-    profileRaw = yaml.load(new TextDecoder().decode(data.get('profile.yaml')!));
+    profileRaw = loadDataYaml(new TextDecoder().decode(data.get('profile.yaml')!));
   } catch (e) {
     return err('share.yaml', 'The setup in the file is not valid YAML.', String(e));
   }

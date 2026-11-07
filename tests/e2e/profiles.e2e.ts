@@ -87,6 +87,31 @@ test('setups: checks and launch steps are added through the generic form, with p
   );
   await shot('file-check');
 
+  // The Variables menu beside the path lists every variable a setup may use, says where each
+  // points on this PC, and puts the same file under the chosen one.
+  await options.getByTestId('edit-params-path-variables').click();
+  const savedGames = page.getByTestId('edit-params-path-variable-SAVED_GAMES');
+  await expect(savedGames).toContainText('Saved Games folder');
+  // A game's variable is offered whether or not the game is here, with what it means.
+  await expect(page.getByTestId('edit-params-path-variable-MSFS2024_USER')).toContainText(
+    'Microsoft Flight Simulator 2024 user folder'
+  );
+  await shot('variables-menu');
+  await savedGames.click();
+  await expect(savedGames).toBeHidden();
+  await expect(options.getByTestId('edit-params-path').locator('input')).toHaveValue(
+    '{SAVED_GAMES}/DCS/Config/options.lua'
+  );
+  // And back: the menu is opened afresh, so the item is waited for before it is chosen.
+  await options.getByTestId('edit-params-path-variables').click();
+  const dcsUser = page.getByTestId('edit-params-path-variable-DCS_USER');
+  await expect(dcsUser).toBeVisible();
+  await dcsUser.click();
+  await expect(dcsUser).toBeHidden();
+  await expect(options.getByTestId('edit-params-path').locator('input')).toHaveValue(
+    '{DCS_USER}/Config/options.lua'
+  );
+
   // A step before launch, with its options.
   await page.getByTestId('edit-add-preLaunch').click();
   const step = page.locator('[data-testid="edit-action"][data-phase="preLaunch"]');
@@ -122,7 +147,7 @@ test('setups: checks and launch steps are added through the generic form, with p
 test('setups: clone, copy items from another setup, delete with a confirm; broken files are listed with the reason', async ({
   rig,
 }) => {
-  const { page, shot } = await rig.launch('fly-two-setups', 'profile-clone-copy');
+  const { page, shot, home } = await rig.launch('fly-two-setups', 'profile-clone-copy');
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-profiles').click();
   const broken = page.getByTestId('profile-invalid');
@@ -172,19 +197,34 @@ test('setups: clone, copy items from another setup, delete with a confirm; broke
   await expect(checkRow(page, 'Stream Deck')).toHaveAttribute('data-status', 'pass');
   await shot('copied-on-fly');
 
-  // Delete asks first, names the setup, and Fly falls back to another.
+  // Delete asks first, names the setup, takes its desktop shortcut with it, and Fly falls
+  // back to another.
   await page.getByTestId('mode-configure').click();
+  await page
+    .locator('[data-testid="profile-row"][data-name="DCS UH-1H"]')
+    .getByTestId('profile-edit')
+    .click();
+  await page.getByTestId('shortcut-create').click();
+  await expect(page.getByTestId('shortcut-confirm')).toBeVisible();
+  await page.getByTestId('shortcut-go').click();
+  await expect(page.getByTestId('shortcut-state')).toContainText('On the desktop');
+  const link = path.join(home, 'Desktop', 'DCS UH-1H - RigReady.lnk');
+  await fs.access(link);
+  await page.getByTestId('nav-profiles').click();
   await page
     .locator('[data-testid="profile-row"][data-name="DCS UH-1H"]')
     .getByTestId('profile-more')
     .click();
   await page.getByTestId('profile-delete').click();
-  await expect(page.getByTestId('profile-delete-dialog')).toContainText('Delete "DCS UH-1H"?');
+  const dialog = page.getByTestId('profile-delete-dialog');
+  await expect(dialog).toContainText('Delete "DCS UH-1H"?');
+  await expect(dialog).toContainText('and so is its desktop shortcut');
   await shot('delete-confirm');
   await page.getByTestId('profile-delete-confirm').click();
   await expect(page.getByTestId('profiles-message')).toContainText(
-    'Deleted "DCS UH-1H". The Safety page can bring it back.'
+    'Deleted "DCS UH-1H" and its desktop shortcut. The Safety page can bring both back.'
   );
+  await expect(fs.access(link)).rejects.toThrow();
   await page.getByTestId('mode-fly').click();
   await expect(page.getByTestId('profile-switcher')).toContainText('DCS F/A-18C');
   // And Safety lists the deletion, ready to undo.

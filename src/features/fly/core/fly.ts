@@ -676,6 +676,10 @@ export class Fly {
 
     const steps = [...report.steps];
     const settings = await this.ctx.settings.get();
+    // The desk layout is chosen on the Monitors page ("Use as desk layout") or in Settings
+    // ("Desk layout"); the skipped step says where, so that nobody looks in only one of them.
+    const NO_DESK_LAYOUT =
+      'No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are';
     const deskLayout = settings.ok ? settings.value.deskLayoutId : undefined;
     if (!deskLayout && !steps.some((s) => /layout/i.test(s.message))) {
       steps.push({
@@ -683,7 +687,7 @@ export class Fly {
         title: 'Desk monitor layout',
         ok: true,
         skipped: true,
-        message: 'No desk layout is chosen in Settings, so the monitors were left as they are',
+        message: NO_DESK_LAYOUT,
       });
     }
     const closed = steps.filter((s) => s.ok && s.message.startsWith('Closed ')).length;

@@ -67,6 +67,8 @@ export class UpdateController {
   private message: string | undefined;
   private blockedBy: string | undefined;
   private installsOnQuit = false;
+  /** The version found is a security release: the window says so on every screen. */
+  private security = false;
   private timerHandle: unknown;
   private unsubscribe: (() => void) | undefined;
   private working: Promise<void> | undefined;
@@ -86,6 +88,7 @@ export class UpdateController {
       channel: this.channel,
       automatic: this.automatic,
       installsOnQuit: this.installsOnQuit,
+      security: this.security,
       ...(this.version !== undefined ? { version: this.version } : {}),
       ...(this.notes !== undefined ? { notes: this.notes } : {}),
       ...(this.percent !== undefined ? { percent: this.percent } : {}),
@@ -103,6 +106,7 @@ export class UpdateController {
     if (phase !== 'ready' && phase !== 'downloading' && phase !== 'installing') {
       this.version = undefined;
       this.notes = undefined;
+      this.security = false;
     }
     this.installsOnQuit = phase === 'ready' && this.automatic;
     this.options.onStatus?.(this.status());
@@ -220,6 +224,7 @@ export class UpdateController {
     log.info(`update check (${reason}): downloading ${offer.version} from the ${channel} channel`);
     this.version = offer.version;
     this.notes = offer.notes;
+    this.security = offer.security === true;
     this.set('downloading', { percent: 0 });
     const downloaded = await feed.download((percent) => {
       if (stale() || this.phase !== 'downloading') return;

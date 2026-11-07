@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    RigReady's mark: the flight path marker a head-up display draws where the aircraft is
+    going, on the app's dark surface. The geometry is the flight mark of
+    src/renderer/components/BrandMark.vue at nineteen times its size, and the colours are the
+    tokens of src/renderer/styles.css: the tile is the surface (#171c22) with a faint edge,
+    the mark is the accent (#5aa9e6).
+
+    This is the master for every icon of 48 px and more. Sizes of 32 px and less come from
+    rigready-small.svg, the same mark with heavier strokes. Run `npm run icons`
+    (scripts/icons.mjs) after changing either: it renders every icon file from them.
+  -->
+  <rect width="512" height="512" rx="112" fill="#171c22"/>
+  <rect x="3" y="3" width="506" height="506" rx="109" fill="none" stroke="#2a323c" stroke-width="6"/>
+  <g fill="none" stroke="#5aa9e6" stroke-width="33" stroke-linecap="round">
+    <circle cx="256" cy="284" r="81"/>
+    <path d="M76 284h99M337 284h99M256 204v-90"/>
+  </g>
+</svg>

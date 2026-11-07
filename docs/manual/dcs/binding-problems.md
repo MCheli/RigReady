@@ -12,14 +12,14 @@ The **Problems** tab of **Configure > DCS bindings** looks through an aircraft's
 
 DCS binds pitch, roll, rudder and throttle, and the view hat, on every game controller it does not know; the UH-1H also puts the radio trigger, weapon release and trim on the first buttons of every device. On a panel, an MFD frame or a wheel that means a bumped knob flies the aircraft.
 
-Which defaults are unwanted follows from what each device is, as set on the Overview tab or in the dropdown beside the device here:
+Which defaults are unwanted follows from what each device is, as set on the [Overview tab](bindings.md#overview-tab) or in the dropdown beside the device here:
 
 - a **Panel or button box**, an **MFD frame** or a device **Not used in DCS** should have none of them;
 - a **Stick** keeps pitch, roll, the views and the default buttons, and keeps rudder when there are no pedals and throttle when there is no throttle;
 - a **Throttle** keeps the throttle, and **Pedals** keep rudder and wheel brakes;
 - **Something else** keeps everything.
 
-Each unwanted default is listed with its reason, for example "Pitch on an MFD frame", and a tick. **Clean up N for <aircraft>** writes a cancellation for each ticked one into that device's file for this aircraft. **Clean up every aircraft** does the same for every aircraft DCS has defaults for, in one change. A default whose action RigReady cannot write yet is skipped.
+Each unwanted default is listed with its reason, for example "Pitch on an MFD frame", and a tick. **Clean up N for <aircraft>** writes a cancellation for each ticked one into that device's file for this aircraft. **Clean up every aircraft** does the same for every aircraft DCS has defaults for, in one change. A default whose action RigReady cannot write yet ([bind in DCS](bindings.md#actions-marked-bind-in-dcs)) is skipped.
 
 ![The cleanup preview](../../../artifacts/screens/bindings-problems/02-cleanup-preview.png)
 

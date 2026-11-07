@@ -1,17 +1,17 @@
 ---
-title: Wheel
+title: Wheel (Fanatec wheel base)
 description: The Wheel page: your Fanatec base as Windows sees it, its software, the tuning presets you record by hand, and recommended settings per game next to the files.
 order: 80
 ---
 
-**Configure > Wheel** (also under Hardware, and reached from the Racing overview) is the page for a Fanatec wheel base. It shows whether the base is connected and in which mode, which Fanatec software is installed and running, and a record of the tuning presets the base keeps in its own memory, which RigReady cannot read. It also puts the recommended settings for each game next to what can be read from the game's files.
+**Configure > Wheel** (also under Hardware, and reached from the [Racing overview](index.md#configure-racing)) is the page for a Fanatec wheel base. It shows whether the base is connected and in which mode, which Fanatec software is installed and running, and a record of the tuning presets the base keeps in its own memory, which RigReady cannot read. It also puts the recommended settings for each game next to what can be read from the game's files.
 
 ## The wheel base
 
-The top panel says which base is connected (the name you gave it on the Devices page, with the name it reports), its mode, its vendor and product id, and what it is connected through:
+The top panel says which base is connected (the name you gave it on the [Devices page](../hardware/devices.md), with the name it reports), its mode, its vendor and product ID, and what it is connected through:
 
 - **PC (red) mode**: the base reports itself as what it is, for example 0EB7:0007 for a Podium DD2.
-- **Compatibility (yellow) mode**: the base reports itself as a ClubSport Wheel Base V2.5 (0EB7:0004). A warning says that bindings saved in PC mode do not match it in iRacing, Le Mans Ultimate or BeamNG.drive, and to switch the base to PC mode in its menu or in the Fanatec App.
+- **Compatibility (yellow) mode**: the base reports itself as a ClubSport Wheel Base V2.5 (0EB7:0004). A warning says that bindings saved in PC mode do not match it in [iRacing](iracing.md), [Le Mans Ultimate](le-mans-ultimate.md) or [BeamNG.drive](beamng.md), and to switch the base to PC mode in its menu or in the Fanatec App.
 
 Games see a Podium base as two controllers with the same name. The page says how many controllers Windows makes of the base and that both are the base, not a duplicate; games use the first. Fanatec accessories on USB (pedals, the shifter or handbrake adapter) are listed as "Also connected".
 
@@ -48,10 +48,10 @@ Each row says whether the setting is **on the wheel** or **in the game**, the re
 
 ![Recommended settings](../../../artifacts/screens/racing-wheel/03-recommended.png)
 
-The optional check **wheel settings as recommended**, offered when a setup for Le Mans Ultimate or BeamNG.drive is captured, runs the same comparison on the Play screen and lists the settings that differ.
+The optional check **wheel settings as recommended**, offered when a setup for Le Mans Ultimate or BeamNG.drive is captured, runs the same comparison on the [Play screen](../play/index.md) and lists the settings that differ ([Checks and fixes](../setups/checks.md)).
 
 ## Backups
 
-The **Backups** section at the bottom keeps copies of the Fanatec App's own settings file (`shared_preferences.json` under its application data folder), and records the Fanatec Service settings from the registry as a file in every backup. The registry record is kept as a record only: RigReady never writes the registry, so a restore puts back the App's settings file and shows the registry values for you to compare. Restoring needs the Fanatec App closed; if it is open, RigReady offers to close it, restore, and start it again.
+The **Backups** section at the bottom keeps copies of the Fanatec App's own settings file (`shared_preferences.json` under its application data folder), and records the Fanatec Service settings from the registry as a file in every backup. The registry record is kept as a record only: RigReady never writes the registry, so a restore puts back the App's settings file and shows the registry values for you to compare. [Restoring](../protect/restore.md) needs the Fanatec App closed; if it is open, RigReady offers to close it, restore, and start it again.
 
 The same two items are offered for a full backup on the Backups page: see [backups](../protect/backups.md).

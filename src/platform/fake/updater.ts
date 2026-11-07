@@ -2,11 +2,27 @@ import { promises as fs } from 'node:fs';
 import { z } from 'zod';
 import type { UpdateChannel, UpdateFeed, UpdateOffer } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
+import { isSecurityRelease } from '../../core/updateMarker';
 
 /** The file in the fake user folder a test writes to steer the fake update feed of a running app. */
 export const UPDATE_FEED_FILE = 'rigready-update-feed.json';
 
-const OfferSchema = z.object({ version: z.string(), notes: z.string().optional() });
+const OfferSchema = z.object({
+  version: z.string(),
+  notes: z.string().optional(),
+  /** Marked as a security release. Without it the notes decide, as they do for a real release. */
+  security: z.boolean().optional(),
+});
+
+/** The offer as the real feed would hand it over. */
+function offerOf(offer: z.infer<typeof OfferSchema>): UpdateOffer {
+  const security = offer.security ?? isSecurityRelease(undefined, offer.notes);
+  return {
+    version: offer.version,
+    ...(offer.notes !== undefined ? { notes: offer.notes } : {}),
+    ...(security ? { security: true } : {}),
+  };
+}
 
 /** What the steering file may say. Every field is optional; a missing file is an empty feed. */
 export const FakeUpdateFeedSchema = z.object({
@@ -71,8 +87,8 @@ export class FakeUpdateFeed implements UpdateFeed {
       return err('update.check', 'Could not check for updates.', this.feed.checkError);
     }
     const offer = this.feed[channel];
-    this.found = offer ? { ...offer } : undefined;
-    return ok(offer ? { ...offer } : null);
+    this.found = offer ? offerOf(offer) : undefined;
+    return ok(offer ? offerOf(offer) : null);
   }
 
   async download(onProgress: (percent: number) => void): Promise<Result<void>> {

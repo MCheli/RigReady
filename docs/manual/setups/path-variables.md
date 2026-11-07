@@ -45,8 +45,18 @@ For a game installed more than once, **Install this setup uses** in the setup de
 - A variable is written in capitals inside braces, at the start of the path, followed by a slash: `{SAVED_GAMES}/DCS/Config`. Forward slashes are the stored form; backslashes are accepted.
 - The path may not climb out of the variable's folder: `{USER}/../../Windows` is refused.
 - A path without a variable must be absolute.
-- The setup editor refuses to save a path whose variable RigReady does not know: "Unknown path variable {FOO}". The variables of the games RigReady knows are accepted whether or not the game is installed here.
+- The setup editor refuses to save a path whose variable RigReady does not know: "Unknown path variable {FOO}". Every variable in the two tables above is accepted, whether or not the game is installed here; the list comes from the game modules themselves, so it cannot drift from what they provide.
 - A game variable on a PC where the game is not installed makes the check an error ("DCS user folder not found") rather than a failure; the setup is still valid.
 - **Browse…** in the editor and the capture store a chosen path with the longest matching variable, so `C:\Users\Owner\Saved Games\DCS\Config` becomes `{DCS_USER}/Config` rather than `{SAVED_GAMES}/DCS/Config`.
+
+## The Variables menu
+
+Every path field in the setup editor (a file or folder to check, a program, a script, the launch program and its working folder) has a **Variables** button next to **Browse…**. It lists every variable above with what it means and where it points on this PC, or "not on this PC" for a game that is not installed here. Choosing one puts the field's path under that variable:
+
+- A path that already starts with a variable is said through the chosen one when its folder holds the file: `{DCS_USER}/Config/options.lua` becomes `{SAVED_GAMES}/DCS/Config/options.lua`, and back again. Otherwise the variable is swapped and the rest of the path is kept.
+- A full path below the variable's folder is shortened to it: `C:\Users\Owner\Saved Games\DCS\Config` becomes `{DCS_USER}/Config`. A full path elsewhere is replaced by the variable alone.
+- Anything else, or an empty field, gets the variable in front, ready for the rest to be typed.
+
+![The Variables menu beside a path field](../../../artifacts/screens/profile-add-check/02-variables-menu.png)
 
 Where variables can be used: the launch program and its working folder, every path field of a check or fix (a file, a program, a script, a folder), and the paths of tracked files. Arguments are passed as they are and are not expanded.

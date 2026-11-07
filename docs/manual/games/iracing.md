@@ -1,10 +1,10 @@
 ---
 title: iRacing
-description: How iRacing is found and launched, which files are backed up, the controllers and bindings page, the device id repair, and the checks a racing setup gets.
+description: How iRacing is found and launched, which files are backed up, the controllers and bindings page, the device ID repair, and the checks a racing setup gets.
 order: 10
 ---
 
-iRacing is a standalone install, not a Steam game, even when it is in your Steam library. RigReady finds the real install, reads the bindings and the wheel calibration from `Documents\iRacing`, matches the controllers iRacing knows to the ones connected now, and can point iRacing at a wheel whose Windows id has changed.
+iRacing is a standalone install, not a Steam game, even when it is in your Steam library. RigReady finds the real install, reads the bindings and the wheel calibration from `Documents\iRacing`, matches the controllers iRacing knows to the ones connected now, and can point iRacing at a wheel whose Windows ID has changed.
 
 ## Detection and install locations
 
@@ -18,7 +18,7 @@ The version comes from `version_system.txt` in the install folder (or `updater\v
 
 ## Files worth backing up
 
-The settings live in `Documents\iRacing`. The game page and the Backups page offer:
+The settings live in `Documents\iRacing`. The game page and the [Backups page](../protect/tracked-files.md) offer:
 
 - the whole folder as one item, limited to bindings, calibration, `.ini` options, HUD profiles, radio scripts and car setups (replays, telemetry, logs and paint are left out);
 - `controls.cfg` (bindings), `joyCalib.yaml` (wheel and pedal calibration), `app.ini` (audio, force feedback and options), `core.ini`, `camera.ini`, `fueldata.ini`, the `profiles` and `scripts` folders, and every `rendererDX11*.ini` graphics file;
@@ -34,10 +34,10 @@ The setup path variables `{IRACING_USER}` (the Documents folder) and `{IRACING_I
 
 **Configure > Racing > iRacing** (also reached with **Bindings and controllers** on the game page) reads two files and shows them matched to what is connected now.
 
-**Controllers iRacing knows** comes from `joyCalib.yaml` and `controls.cfg`. Each controller shows the name you gave it on the Devices page, the name iRacing stored, how many bindings use it, whether it is calibrated and which axes, a short form of its id, and a state:
+**Controllers iRacing knows** comes from `joyCalib.yaml` and `controls.cfg`. Each controller shows the name you gave it on the [Devices page](../hardware/devices.md), the name iRacing stored, how many bindings use it, whether it is calibrated and which axes, a short form of its id, and a state:
 
-- **Connected**: the stored id is a controller attached now.
-- **New Windows id**: no controller has the stored id, but one of the same model is attached. iRacing will treat it as new and ask you to calibrate again. The repair below applies.
+- **Connected**: the stored ID is a controller attached now.
+- **New Windows id**: no controller has the stored ID, but one of the same model is attached. iRacing will treat it as new and ask you to calibrate again. The repair below applies.
 - **Not connected**: no controller of that model is attached.
 - **Unknown**: the connected controllers could not be read.
 
@@ -47,24 +47,24 @@ The setup path variables `{IRACING_USER}` (the Documents folder) and `{IRACING_I
 
 **Force feedback options in app.ini** is read only. It shows the `[Force Feedback]` keys with their values and iRacing's own comment for each. Strength and wheel force are kept by iRacing per car and are not in this file.
 
-## Repair: a wheel with a new Windows id
+## Repair: a wheel with a new Windows ID
 
-Windows gives every game controller an instance id. When it changes, usually after the wheel was moved to another USB port or the PC was reinstalled, iRacing's files still name the old id, and iRacing asks you to calibrate everything again.
+Windows gives every game controller an instance ID. When it changes, usually after the wheel was moved to another USB port or the PC was reinstalled, iRacing's files still name the old ID, and iRacing asks you to calibrate everything again.
 
-A controller in the **New Windows id** state shows a panel with the connected controllers it could now be. When exactly one controller of that model is attached (or exactly one with the same collection number, for a base that Windows lists as two controllers with the same name), it is suggested; otherwise you choose, and RigReady does not guess. **Update iRacing…** opens a confirmation that lists the files that will change. On **Update iRacing**, the old id is replaced by the new one, 16 bytes at a time, in `controls.cfg`, as text in `joyCalib.yaml`, and in any per-car copies, as one journaled change with a backup of each file first. The files are read back afterwards, and Undo is on the Safety page. The repair is refused while the simulator runs.
+A controller in the **New Windows id** state shows a panel with the connected controllers it could now be. When exactly one controller of that model is attached (or exactly one with the same collection number, for a base that Windows lists as two controllers with the same name), it is suggested; otherwise you choose, and RigReady does not guess. **Update iRacing…** opens a confirmation that lists the files that will change. On **Update iRacing**, the old ID is replaced by the new one, 16 bytes at a time, in `controls.cfg`, as text in `joyCalib.yaml`, and in any per-car copies, as one journaled change with a backup of each file first. The files are read back afterwards, and Undo is on [the Safety page](../protect/safety-page.md). The repair is refused while the simulator runs.
 
-![A wheel with a new Windows id](../../../artifacts/screens/racing-iracing-repair/02-moved.png)
+![A wheel with a new Windows ID](../../../artifacts/screens/racing-iracing-repair/02-moved.png)
 
-This repair has not yet been verified on real hardware. It follows the file layout decoded from a real `controls.cfg`, and it passed its tests on recorded data, but nobody has yet moved a wheel, run the repair and started iRacing. The dialog says so. If iRacing still asks to calibrate afterwards, undo the change on the Safety page and calibrate in iRacing. `CHANGELOG.md` lists this under known limitations (RACE-IRACING-005).
+This repair has not yet been verified on real hardware: it follows the file layout decoded from a real `controls.cfg` and passed its tests on recorded data from one rig, but nobody has yet moved a wheel, run the repair and started iRacing. The dialog says so. If iRacing still asks to calibrate afterwards, undo the change on the Safety page and calibrate in iRacing. The [changelog](../../../CHANGELOG.md) lists this under known limitations (RACE-IRACING-005).
 
 ## Backups
 
-The **Backups** section at the bottom of the page keeps quick copies of `controls.cfg`, `joyCalib.yaml`, `app.ini` and the per-car files, named if you like ("Formula rim"). **Restore…** shows, file by file, whether each is new, changed or the same as now, backs up the current files first, and is refused while the simulator runs. **Use in a setup** makes a setup expect exactly the bindings of a backup: the setup then has a required check **Racing bindings are the saved set**, and Make ready restores the binding files when they differ. Deleting a backup leaves your game files alone.
+The **Backups** section at the bottom of the page keeps quick copies of `controls.cfg`, `joyCalib.yaml`, `app.ini` and the per-car files, named if you like ("Formula rim"). **Restore…** shows, file by file, whether each is new, changed or the same as now, backs up the current files first, and is refused while the simulator runs. **Use in a setup** makes a setup expect exactly the bindings of a backup: the setup then has a required check **Racing bindings are the saved set** ([Checks and fixes](../setups/checks.md)), and [Make ready](../play/make-ready-and-launch.md) restores the binding files when they differ. Deleting a backup leaves your game files alone.
 
 ## Checks
 
 A racing setup for iRacing gets, when captured from the rig:
 
-- **Wheel base in PC mode** and the helper apps, as for every racing game (see [Games](index.md)).
+- **Wheel base in PC mode** ([Wheel](wheel.md)) and the helper apps, as for every racing game (see [Games](index.md)).
 - **iRacing helper service running**: the Windows service `iRacingService`, which iRacing needs to start a session. RigReady cannot start it, because that needs administrator rights; the check says to start it from Windows Services.
-- **iRacing knows the connected controllers**: fails when a controller iRacing uses has a new Windows id ("new Windows id, iRacing will ask to recalibrate") or is not connected, and sends you to this page.
+- **iRacing knows the connected controllers**: fails when a controller iRacing uses has a new Windows ID ("new Windows ID, iRacing will ask to recalibrate") or is not connected, and sends you to this page.

@@ -67,7 +67,10 @@ async function confirmDelete(): Promise<void> {
   deleting.value = undefined;
   const result = await api.remove({ id: target.id });
   if (!result.ok) error.value = errorText(result.error);
-  else message.value = `Deleted "${target.name}". The Safety page can bring it back.`;
+  else
+    message.value = result.value.shortcutRemoved
+      ? `Deleted "${target.name}" and its desktop shortcut. The Safety page can bring both back.`
+      : `Deleted "${target.name}". The Safety page can bring it back.`;
   await load();
 }
 
@@ -151,6 +154,13 @@ onBeforeUnmount(() => off?.());
             {{ entry.profile.name }}
             <span v-if="entry.profile.id === overview.lastProfileId" class="profiles-chip"
               >on the Play screen</span
+            >
+            <span
+              v-if="entry.hasComments"
+              class="profiles-chip"
+              title="The file has YAML comments, which a save from the editor drops."
+              data-testid="profile-comments"
+              >YAML comments</span
             >
           </div>
           <div class="rr-row-sub">{{ describe(entry) }} · {{ used(entry.lastUsed) }}</div>
@@ -277,8 +287,9 @@ onBeforeUnmount(() => off?.());
       <v-card data-testid="profile-delete-dialog">
         <v-card-title>Delete "{{ deleting?.name }}"?</v-card-title>
         <v-card-text>
-          The setup is removed from RigReady; a copy is kept and the Safety page can bring it back.
-          Nothing on the rig or in any game changes, and monitor layouts and backups stay.
+          The setup is removed from RigReady, and so is its desktop shortcut when it has one. Copies
+          are kept, and the Safety page can bring both back together. Nothing on the rig or in any
+          game changes, and monitor layouts and backups stay.
         </v-card-text>
         <v-card-actions>
           <v-spacer />

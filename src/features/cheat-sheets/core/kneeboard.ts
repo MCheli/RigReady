@@ -209,6 +209,8 @@ export interface KneeboardStatus {
   exportedAt?: string;
   pages: string[];
   options?: KneeboardOptions;
+  /** Why nothing can be written or removed right now (the game is running), when so. */
+  blocked?: string;
 }
 
 export class Kneeboard {

@@ -1,5 +1,5 @@
 ---
-title: Learn your controls
+title: Learn your controls (the trainer)
 description: The trainer names an action and you press its control on the device: rounds of ten, right or wrong at once, missed cards come back, progress per aircraft.
 order: 100
 ---
@@ -8,7 +8,7 @@ order: 100
 
 ## What is asked
 
-A card is one action that a button or a hat direction of a connected controller does when pressed on its own. Axes are not pressed, a control that needs a modifier is two things to learn at once, and keyboard keys are not on a controller, so none of those make cards. When you have bindings of your own for the aircraft, only those are asked; what DCS binds by default on every device is not what anyone flies with. Each card shows the plain-language name from the binding guide where there is one, and what DCS calls it.
+A card is one action that a button or a hat direction of a connected controller ([Devices](../hardware/devices.md)) does when pressed on its own. Axes are not pressed, a control that needs a modifier is two things to learn at once, and keyboard keys are not on a controller, so none of those make cards. When you have bindings of your own for the aircraft, only those are asked; what DCS binds by default on every device is not what anyone flies with. Each card shows the plain-language name from the [binding guide](binding-guide-and-ai.md) where there is one, and what DCS calls it.
 
 **Practise** narrows a round to one device or takes all of them. A device of the sheet that is not connected is left out and named.
 
@@ -28,4 +28,4 @@ At the end the page says how many of the cards were right first time and lists t
 
 ## What is remembered
 
-For each game and aircraft, RigReady keeps in its own folder how often each card was right and wrong, how many times running it was right first time, and how many rounds were played to the end. A card is learned when it was right first time twice running. The bar at the top shows how many of the current cards are learned and how many have been asked at all; it is still there after a restart, and a card whose binding is gone no longer counts.
+For each game and aircraft (the [racing games](../games/index.md) have cards too), RigReady keeps in [its own folder](../app/index.md) how often each card was right and wrong, how many times running it was right first time, and how many rounds were played to the end. A card is learned when it was right first time twice running. The bar at the top shows how many of the current cards are learned and how many have been asked at all; it is still there after a restart, and a card whose binding is gone no longer counts.

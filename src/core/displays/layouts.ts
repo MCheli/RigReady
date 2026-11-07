@@ -40,6 +40,8 @@ export function layoutToTargets(layout: DisplayLayout): DisplayTarget[] {
           width: d.width,
           height: d.height,
           rotation: d.rotation,
+          // The refresh rate Windows reports now, so applying the layout brings it back.
+          ...(d.refreshHz !== undefined && d.refreshHz > 0 ? { refreshHz: d.refreshHz } : {}),
           ...identity,
         }
       : {

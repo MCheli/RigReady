@@ -139,3 +139,58 @@ test('updates: the beta channel and the off switch are choices that survive a re
   await page.getByTestId('about-section').scrollIntoViewIfNeeded();
   await second.shot('after-restart');
 });
+
+test('updates: a security release is said on every screen, with the install one click away, and still never while a game runs', async ({
+  rig,
+}) => {
+  const run = await rig.launch('flying-all-good', 'updates-security');
+  const { page, shot } = run;
+  const notice = page.getByTestId('security-update-notice');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  // An ordinary release says nothing outside Settings.
+  await expect(notice).toHaveCount(0);
+
+  // The release's notes start with the marker: the Play screen says so, without a visit to Settings.
+  await publish(run, {
+    stable: { version: '2.0.1', notes: '[security] Fixes how an imported setup file is checked.' },
+  });
+  await openUpdates(page);
+  await page.getByTestId('update-check').click();
+  await expect(notice).toBeVisible();
+  await expect(page.getByTestId('security-update-text')).toHaveText(
+    'Version 2.0.1 fixes a security problem in RigReady. Restart RigReady now to install it.'
+  );
+  await expect(page.getByTestId('update-status')).toHaveText(
+    'Security update: Version 2.0.1 is downloaded. It is installed when you restart RigReady here, or the next time you quit it.'
+  );
+  // The release's own words, without the marker.
+  await expect(page.getByTestId('security-update-notes')).toHaveText(
+    'Fixes how an imported setup file is checked.'
+  );
+  await shot('security-update-ready');
+  await page.getByTestId('mode-fly').click();
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await expect(notice).toBeVisible();
+  await shot('on-the-play-screen');
+
+  // A game is running: the install from the notice is refused like any other, and says why.
+  await run.mutate([{ op: 'startProcess', name: 'DCS.exe', path: 'C:\\Games\\DCS\\bin\\DCS.exe' }]);
+  await page.getByTestId('security-update-install').click();
+  await expect(page.getByTestId('security-update-text')).toHaveText(
+    'Version 2.0.1 fixes a security problem in RigReady. DCS.exe is running, so it was not installed: quit the game, then restart RigReady.'
+  );
+  await shot('refused-while-game-runs');
+
+  // Later puts it away for this run; Settings still says it.
+  await page.getByTestId('security-update-later').click();
+  await expect(notice).toHaveCount(0);
+  await openUpdates(page);
+  await expect(page.getByTestId('update-status')).toContainText(
+    'Security update: DCS.exe is running'
+  );
+
+  // The game is closed: the install goes through from Settings.
+  await run.mutate([{ op: 'stopProcess', name: 'DCS.exe' }]);
+  await page.getByTestId('update-install').click();
+  await expect(page.getByTestId('updates-section')).toHaveAttribute('data-phase', 'installing');
+});

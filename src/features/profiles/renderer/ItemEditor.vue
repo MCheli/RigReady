@@ -343,6 +343,7 @@ function pickService(service: Pickers['services'][number]): void {
           :schema="type?.schema"
           :model-value="item.params"
           testid="edit-params"
+          :variables="pickers?.variables"
           @update:model-value="update({ params: $event })"
         />
 
@@ -366,6 +367,7 @@ function pickService(service: Pickers['services'][number]): void {
             :schema="fixType.schema"
             :model-value="item.remediation.params"
             testid="edit-fix-params"
+            :variables="pickers?.variables"
             @update:model-value="
               update({ remediation: { type: item.remediation!.type, params: $event } })
             "

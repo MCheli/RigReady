@@ -20,13 +20,13 @@ Each proposal shows the control, the action it would get in the other aircraft, 
 
 ## Snapshots
 
-A snapshot is a copy of the binding files, kept under RigReady's own folder (`snapshots\dcs` under the data folder): every `.diff.lua` file plus `modifiers.lua`, `disabled.lua` and `wizard.lua`, for one aircraft or for all of them. With it RigReady records the date, the DCS version from the log, and the devices with their IDs. Take one before a big change or a DCS update.
+A snapshot is a copy of the binding files, kept under RigReady's own folder (`snapshots\dcs` under [the data folder](../app/index.md)): every `.diff.lua` file plus `modifiers.lua`, `disabled.lua` and `wizard.lua`, for one aircraft or for all of them. With it RigReady records the date, the DCS version from the log ([Installs and aircraft](installs.md)), and the devices with their IDs. Take one before a big change or a DCS update.
 
 - **Take snapshot** needs a name and a scope: this aircraft (only when it has files of its own) or all aircraft.
 - **Compare** sets a snapshot against the bindings DCS has now, or against another snapshot. Devices are matched by name, so a changed device ID alone is not a difference. For each device that differs it lists what is only on one side and which axes changed their curve.
-- **Restore** puts the files of the covered aircraft folders back as they were and removes files in those folders that were not in the snapshot. **Put files under the device IDs the attached devices have now** is on by default: a device whose ID changed since the snapshot gets its file under the current ID, so DCS finds it; when several attached devices share a name, those files stay under the old ID for the [Device IDs](device-ids.md) tab. You see every file before anything is written, and the change can be undone.
+- **Restore** puts the files of the covered aircraft folders back as they were and removes files in those folders that were not in the snapshot. **Put files under the device IDs the attached devices have now** is on by default: a device whose ID changed since the snapshot gets its file under the current ID, so DCS finds it; when several attached devices share a name, those files stay under the old ID for the [Device IDs](device-ids.md) tab. You see every file before anything is written, and the change can be undone on [the Safety page](../protect/safety-page.md).
 - **Rename** and **Delete** do what they say; deleting a snapshot never touches the current bindings.
 
 ![Comparing a snapshot with now](../../../artifacts/screens/bindings-snapshots/01-compare.png)
 
-A snapshot is narrower than a [backup](../protect/backups.md): it holds the binding files only, and lives on this PC in RigReady's folder.
+A snapshot is narrower than a [backup](../protect/backups.md): it holds the binding files only, and lives on this PC in RigReady's folder. The Backups page has [snapshots](../protect/snapshots.md) of any tracked item, DCS bindings included.

@@ -8,9 +8,9 @@ Assetto Corsa EVO and Assetto Corsa Rally are supported as game modules: RigRead
 
 ## Assetto Corsa EVO
 
-The game is found through Steam (app 3058630), or through **Choose folder…** for a folder that contains `AssettoCorsaEVO.exe`. **Launch** asks Steam to start it, and the game counts as running when `AssettoCorsaEVO.exe` is running. The version is the Steam build.
+The game is found through Steam (app 3058630), or through **Choose folder…** ([How a game is found](index.md#how-a-game-is-found)) for a folder that contains `AssettoCorsaEVO.exe`. **Launch** asks Steam to start it, and the game counts as running when `AssettoCorsaEVO.exe` is running. The version is the Steam build.
 
-Its settings folder is `Documents\ACE`, offered for backup as a whole ("Everything in Documents\ACE: controls, graphics and saved setups") when it exists. The game page notes that Assetto Corsa EVO is in early access: RigReady detects and launches it and backs up its settings folder, but does not read its bindings yet.
+Its settings folder is `Documents\ACE`, offered for [backup](../protect/tracked-files.md) as a whole ("Everything in Documents\ACE: controls, graphics and saved setups") when it exists. The game page notes that Assetto Corsa EVO is in early access: RigReady detects and launches it and backs up its settings folder, but does not read its bindings yet.
 
 ## Assetto Corsa Rally
 
@@ -23,6 +23,6 @@ It is an Unreal Engine game, and its settings are under `%LOCALAPPDATA%\acr\Save
 
 ## Setups
 
-A setup for either game is a racing setup: by default it keeps the racing gear and helper apps, and the common racing checks apply (the wheel base in PC mode, the helper apps). See [Games](index.md) and [setups](../setups/index.md). Neither game appears on the Racing overview, because there is nothing about its bindings to show there.
+A setup for either game is a racing setup: by default it keeps the racing gear and helper apps, and the common racing checks apply (the wheel base in PC mode, the helper apps). See [Games](index.md) and [setups](../setups/index.md). Neither game appears on the [Racing overview](index.md#configure-racing), because there is nothing about its bindings to show there.
 
 ![The games list on a PC with the Assetto Corsa titles](../../../artifacts/screens/generic-configure/04-games.png)

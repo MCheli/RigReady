@@ -451,6 +451,7 @@ export function layoutView(
       width,
       height,
       rotation: t.rotation,
+      ...(t.enabled && t.refreshHz !== undefined ? { refreshHz: t.refreshHz } : {}),
       connected: have !== undefined,
     };
   });

@@ -15,7 +15,13 @@ import {
   prepareFix,
   updateProfile,
 } from './core/profiles';
-import { createShortcut, previewShortcut, removeShortcut, shortcutStatus } from './core/shortcut';
+import {
+  createShortcut,
+  previewShortcut,
+  removeShortcut,
+  removeShortcutIfAny,
+  shortcutStatus,
+} from './core/shortcut';
 
 export default defineFeatureMain({
   id: 'profiles',
@@ -37,8 +43,16 @@ export default defineFeatureMain({
         },
         save: (profile) => updateProfile(ctx, profile),
         remove: async ({ id }) => {
-          const removed = await ctx.profiles.remove(id);
-          return removed.ok ? ok({ removed: true }) : removed;
+          // One action: the setup's desktop shortcut, then its file, undone together.
+          const loaded = await ctx.profiles.get(id);
+          if (!loaded.ok && loaded.error.code === 'profile.id') return loaded;
+          const name = loaded.ok ? loaded.value.name : id;
+          const group = ctx.ports.files.beginGroup(`Delete setup "${name}"`);
+          const shortcuts = await removeShortcutIfAny(ctx, id, group);
+          if (!shortcuts.ok) return shortcuts;
+          const removed = await ctx.profiles.remove(id, group);
+          if (!removed.ok) return removed;
+          return ok({ removed: true, shortcutRemoved: shortcuts.value.length > 0 });
         },
         use: async ({ id }) => {
           const found = await ctx.profiles.get(id);

@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
@@ -76,7 +77,7 @@ async function snapshot(dir: string): Promise<Snapshot> {
 test('nfr: the renderer is isolated and sandboxed, held by its CSP, and reaches main only through validated channels', async ({
   rig,
 }) => {
-  const { page, app, shot } = await rig.launch('flying-all-good', 'nfr-hardening');
+  const { page, app, shot, render } = await rig.launch('flying-all-good', 'nfr-hardening');
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
 
   // What Electron actually applied to the window, not what the source says.
@@ -181,6 +182,55 @@ test('nfr: the renderer is isolated and sandboxed, held by its CSP, and reaches 
   expect(csp.evalRefused).toBe(true);
   expect(csp.violations.some((v) => v.includes('inline'))).toBe(true);
   expect(csp.violations.some((v) => v.includes('example.invalid'))).toBe(true);
+
+  // Nothing a page may ask Windows for is granted: the location is refused outright
+  // (PERMISSION_DENIED, never "unavailable"), and a permission query says denied.
+  const permissions = await page.evaluate(async () => {
+    const scope = globalThis as unknown as {
+      navigator: {
+        permissions: { query(d: { name: string }): Promise<{ state: string }> };
+        geolocation: {
+          getCurrentPosition(
+            ok: () => void,
+            fail: (e: { code: number }) => void,
+            options: { timeout: number }
+          ): void;
+        };
+      };
+    };
+    const notifications = (await scope.navigator.permissions.query({ name: 'notifications' }))
+      .state;
+    const location = await new Promise<string>((resolve) =>
+      scope.navigator.geolocation.getCurrentPosition(
+        () => resolve('granted'),
+        (e) => resolve(e.code === 1 ? 'denied' : `failed with code ${e.code}`),
+        { timeout: 5000 }
+      )
+    );
+    return { notifications, location };
+  });
+  expect(permissions).toEqual({ notifications: 'denied', location: 'denied' });
+
+  // A page RigReady draws by itself (a cheat sheet, the picture of a setup) is kept off the
+  // network: an address in it is never fetched, and the page is drawn all the same.
+  let hits = 0;
+  const server = http.createServer((_request, response) => {
+    hits++;
+    response.statusCode = 404;
+    response.end();
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = (server.address() as { port: number }).port;
+  try {
+    const drawn = await render(
+      `<html><body><img src="http://127.0.0.1:${port}/pixel.png" alt=""><p>drawn</p></body></html>`,
+      { width: 200, height: 100 }
+    );
+    expect(drawn.pngBytes).toBeGreaterThan(0);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+  expect(hits).toBe(0);
 
   // Main answers only channels of a contract, only with valid input.
   const invoke = (

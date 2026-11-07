@@ -20,6 +20,9 @@ const checkedAt = computed(() => {
   return ` Checked ${time.toLocaleDateString()} ${time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`;
 });
 
+/** A security release is named as one wherever its version is named. */
+const security = computed(() => (status.value?.security ? 'Security update: ' : ''));
+
 /** One line that says where things are, with an icon so it never rests on colour. */
 const line = computed((): { icon: string; tone: string; text: string } => {
   const s = status.value;
@@ -47,24 +50,24 @@ const line = computed((): { icon: string; tone: string; text: string } => {
       };
     case 'downloading':
       return {
-        icon: 'mdi-download-outline',
-        tone: 'rr-muted',
-        text: `Version ${s.version} is being downloaded in the background… ${s.percent ?? 0}%`,
+        icon: s.security ? 'mdi-shield-alert-outline' : 'mdi-download-outline',
+        tone: s.security ? 'rr-warn' : 'rr-muted',
+        text: `${security.value}Version ${s.version} is being downloaded in the background… ${s.percent ?? 0}%`,
       };
     case 'ready':
       if (s.blockedBy) {
         return {
           icon: 'mdi-alert-outline',
           tone: 'rr-warn',
-          text: `${s.blockedBy} is running, so version ${s.version} was not installed. Nothing is installed while a game is running. Quit the game first.`,
+          text: `${security.value}${s.blockedBy} is running, so version ${s.version} was not installed. Nothing is installed while a game is running. Quit the game first.`,
         };
       }
       return {
-        icon: 'mdi-download-circle-outline',
-        tone: 'rr-ok',
+        icon: s.security ? 'mdi-shield-alert-outline' : 'mdi-download-circle-outline',
+        tone: s.security ? 'rr-warn' : 'rr-ok',
         text: s.installsOnQuit
-          ? `Version ${s.version} is downloaded. It is installed when you restart RigReady here, or the next time you quit it.`
-          : `Version ${s.version} is downloaded. It is installed when you restart RigReady here.`,
+          ? `${security.value}Version ${s.version} is downloaded. It is installed when you restart RigReady here, or the next time you quit it.`
+          : `${security.value}Version ${s.version} is downloaded. It is installed when you restart RigReady here.`,
       };
     case 'installing':
       return {

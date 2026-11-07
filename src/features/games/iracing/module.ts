@@ -83,6 +83,7 @@ const iracing: GameModule = {
     processes: ['iRacingSim64DX11.exe'],
     why: 'iRacing writes these files when the simulator exits, which would undo the restore.',
   },
+  pathVariableLabels: { IRACING_INSTALL: 'iRacing install', IRACING_USER: 'iRacing user folder' },
 
   async detect(ctx) {
     const install = await findInstall(ctx);

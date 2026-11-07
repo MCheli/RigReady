@@ -1,7 +1,12 @@
 import path from 'node:path';
 import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
-import { allPathVariables, collapsePath, variableOf } from '../../../core/pathVariables';
+import {
+  allPathVariables,
+  collapsePath,
+  knownPathVariables,
+  variableOf,
+} from '../../../core/pathVariables';
 import type { CheckItem, Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
 import { storedPathKey, trackedExtension, trackedSuggestions } from './capture';
@@ -32,7 +37,7 @@ function strings(value: unknown, at: string, out: { at: string; text: string }[]
  */
 export async function unknownVariables(ctx: Ctx, profile: Profile): Promise<string[]> {
   const known = new Set(Object.keys(await allPathVariables(ctx, ctx.games)));
-  for (const name of KNOWN_GAME_VARIABLES) known.add(name);
+  for (const name of Object.keys(knownPathVariables(ctx.games))) known.add(name);
   const found: { at: string; text: string }[] = [];
   strings({ launch: profile.launch, checks: profile.checks, actions: profile.actions }, '', found);
   const unknown = new Set<string>();
@@ -42,17 +47,6 @@ export async function unknownVariables(ctx: Ctx, profile: Profile): Promise<stri
   }
   return [...unknown].sort();
 }
-
-/** Game variables that exist on a PC where the game is installed. */
-const KNOWN_GAME_VARIABLES = [
-  'STEAM',
-  'DCS_USER',
-  'DCS_INSTALL',
-  'IRACING_USER',
-  'LMU_USER',
-  'BEAMNG_USER',
-  'MSFS_USER',
-];
 
 /** Field problems of every item and action whose type is registered, one line each. */
 export function paramProblems(ctx: Pick<Ctx, 'checks'>, profile: Profile): string[] {
@@ -107,7 +101,7 @@ async function validate(ctx: Ctx, profile: Profile): Promise<Result<void>> {
     return err(
       'profile.variable',
       `Unknown path variable ${unknown.map((v) => `{${v}}`).join(', ')}.`,
-      'Use one of the variables listed in the editor, or a full path.'
+      'Choose one from the Variables menu beside the field, or use a full path.'
     );
   }
   return ok(undefined);
@@ -289,9 +283,13 @@ export async function pickers(ctx: Ctx): Promise<Result<Pickers>> {
     services: (services.ok ? services.value : [])
       .map((s) => ({ name: s.name, displayName: s.displayName, state: s.state }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName)),
-    variables: Object.entries(variables)
-      .map(([name, value]) => ({ name, path: value }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    // Every variable RigReady knows, in the order the list declares them; the ones that
+    // resolve here say where.
+    variables: Object.entries(knownPathVariables(ctx.games)).map(([name, label]) => ({
+      name,
+      label,
+      ...(variables[name] !== undefined ? { path: variables[name] } : {}),
+    })),
   });
 }
 

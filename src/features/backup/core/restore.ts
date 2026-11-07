@@ -1,11 +1,11 @@
 import path from 'node:path';
-import * as yaml from 'js-yaml';
+import { loadDataYaml } from '../../../core/files/yaml';
 import { z } from 'zod';
 import { isProgramFile } from '../../../core/credentials';
 import { sameGuid } from '../../../core/directInput';
 import { NamedLayoutSchema, type NamedLayout } from '../../../core/displays/layouts';
 import { sha256 } from '../../../core/files/fileStore';
-import { isWithin } from '../../../core/paths';
+import { isWithin, startsByItself } from '../../../core/paths';
 import { expandPath } from '../../../core/pathVariables';
 import { ProfileSchema, type Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
@@ -14,14 +14,19 @@ import { TrackedItemSchema, trackedFileTarget, unknownVariableText } from '../..
 import {
   backupFile,
   describeBackup,
+  FINGERPRINTS_FILE,
   openArchive,
+  SNAPSHOTS_FILE,
   writeArchive,
   type BackupView,
   type Manifest,
   type ManifestItem,
   type OpenedArchive,
 } from './archive';
+import { blobRelativePath } from './blobs';
+import { FingerprintFileSchema, fingerprintStore, type Fingerprint } from './fingerprints';
 import { MAX_RECORD_ROWS, recordRows, type RecordRow } from './records';
+import { blobsOf, SnapshotIndexSchema, snapshotStore, type Snapshot } from './snapshots';
 import {
   closeHolders,
   reopenHolders,
@@ -31,7 +36,7 @@ import {
   type Reopen,
   type RestoreTarget,
   type RunningProgram,
-} from './programs';
+} from '../../../core/runningPrograms';
 import { sameItem } from './suggestions';
 import { globalStore, pathVariables, type Ctx, type MachineIdentity } from './store';
 
@@ -67,10 +72,12 @@ export interface RestoreItemView {
 
 export interface RestoreOwnView {
   ref: string;
-  kind: 'profile' | 'layout' | 'settings' | 'tracked';
+  kind: 'profile' | 'layout' | 'settings' | 'tracked' | 'snapshot' | 'changes';
   label: string;
   status: FileStatus;
   detail?: string;
+  /** Set when it cannot be restored from this backup: why. */
+  problem?: string;
 }
 
 export interface RestorePreview {
@@ -172,7 +179,7 @@ const statusOf = async (ctx: Ctx, target: string, hash: string): Promise<FileSta
 function parseYamlProfile(bytes: Uint8Array): Result<Profile> {
   let raw: unknown;
   try {
-    raw = yaml.load(new TextDecoder().decode(bytes));
+    raw = loadDataYaml(new TextDecoder().decode(bytes));
   } catch (e) {
     return err('restore.profile', 'The setup in the backup is not valid YAML.', String(e));
   }
@@ -198,6 +205,32 @@ function parseJson<S extends z.ZodType>(bytes: Uint8Array, schema: S): z.output<
 
 const layoutSame = (a: NamedLayout, b: NamedLayout): boolean =>
   a.name === b.name && JSON.stringify(a.displays) === JSON.stringify(b.displays);
+
+const snapshotSame = (a: Snapshot, b: Snapshot): boolean =>
+  a.name === b.name &&
+  a.createdAt === b.createdAt &&
+  a.scope === b.scope &&
+  JSON.stringify(a.item) === JSON.stringify(b.item) &&
+  JSON.stringify(a.files) === JSON.stringify(b.files);
+
+const recordSame = (a: Fingerprint, b: Fingerprint): boolean =>
+  a.time === b.time && a.reason === b.reason && JSON.stringify(a.files) === JSON.stringify(b.files);
+
+const plural = (n: number, word: string): string => `${n} ${n === 1 ? word : `${word}s`}`;
+
+/** The stored copies the archive does not hold, of those a snapshot or record needs. */
+function copiesMissing(opened: OpenedArchive, hashes: string[]): number {
+  return hashes.filter((hash) => !opened.data.has(`rigready/${blobRelativePath(hash)}`)).length;
+}
+
+/** What a setup is called: in the backup, else here, else its id. */
+async function setupName(ctx: Ctx, opened: OpenedArchive, id: string): Promise<string> {
+  const stored = opened.data.get(`rigready/profiles/${id}.yaml`);
+  const parsed = stored ? parseYamlProfile(stored) : undefined;
+  if (parsed?.ok) return parsed.value.name;
+  const current = await ctx.profiles.get(id);
+  return current.ok ? current.value.name : id;
+}
 
 interface Planned {
   item: ManifestItem;
@@ -236,6 +269,20 @@ async function planItems(ctx: Ctx, manifest: Manifest): Promise<Planned[]> {
           target,
           restorable: false,
           problem: "RigReady's own folder is restored through setups and settings.",
+          files: [],
+        },
+      });
+      continue;
+    }
+    if (startsByItself(ctx.ports.folders, target)) {
+      planned.push({
+        item,
+        view: {
+          ...base,
+          target,
+          restorable: false,
+          problem:
+            'Windows starts what is in this folder by itself (the Start menu or its Startup folder), so a backup never writes there.',
           files: [],
         },
       });
@@ -334,6 +381,50 @@ async function planOwn(ctx: Ctx, opened: OpenedArchive): Promise<RestoreOwnView[
             ? 'Every item is already on the list'
             : `Adds ${missing.length} ${missing.length === 1 ? 'item' : 'items'}`,
       });
+    } else if (file.path === SNAPSHOTS_FILE) {
+      const parsed = parseJson(data, SnapshotIndexSchema);
+      const current = await snapshotStore(ctx).read();
+      const here = current.ok ? current.value.snapshots : [];
+      for (const snapshot of parsed?.snapshots ?? []) {
+        const existing = here.find((s) => s.id === snapshot.id);
+        const missing = copiesMissing(
+          opened,
+          snapshot.files.map((f) => f.sha256)
+        );
+        const view: RestoreOwnView = {
+          ref: `snapshot:${snapshot.id}`,
+          kind: 'snapshot',
+          label: `Snapshot "${snapshot.name}" of ${snapshot.item.label}`,
+          status: !existing ? 'new' : snapshotSame(existing, snapshot) ? 'same' : 'different',
+          detail: `${plural(snapshot.files.length, 'file')} of ${snapshot.item.path}`,
+        };
+        if (missing > 0) {
+          view.problem = `${missing} of its ${plural(snapshot.files.length, 'file')} ${missing === 1 ? 'is' : 'are'} not in the backup.`;
+        }
+        own.push(view);
+      }
+    } else if (file.path === FINGERPRINTS_FILE) {
+      const parsed = parseJson(data, FingerprintFileSchema);
+      const current = await fingerprintStore(ctx).read();
+      for (const [profileId, record] of Object.entries(parsed?.profiles ?? {})) {
+        const existing = current.ok ? current.value.profiles[profileId] : undefined;
+        const kept = record.files.filter((f) => f.stored);
+        const missing = copiesMissing(
+          opened,
+          kept.map((f) => f.sha256)
+        );
+        const view: RestoreOwnView = {
+          ref: `changes:${profileId}`,
+          kind: 'changes',
+          label: `"What changed" record of ${await setupName(ctx, opened, profileId)}`,
+          status: !existing ? 'new' : recordSame(existing, record) ? 'same' : 'different',
+          detail: `${plural(record.files.length, 'file')} as they were when it last worked (${record.reason})`,
+        };
+        if (missing > 0) {
+          view.problem = `${missing} of its ${plural(kept.length, 'stored file')} ${missing === 1 ? 'is' : 'are'} not in the backup.`;
+        }
+        own.push(view);
+      }
     }
   }
   return own;
@@ -470,8 +561,27 @@ export async function applyRestore(
   }
   const safetyOwn: Manifest['rigready'] = [];
   const root = ctx.ports.folders.dataRoot();
+  // The snapshots and records being replaced: saved as indexes of their own, with their copies.
+  const replacedSnapshots: Snapshot[] = [];
+  const replacedRecords: Record<string, Fingerprint> = {};
   for (const entry of own) {
-    if (entry.status !== 'different' || choices[entry.ref] !== 'overwrite') continue;
+    if (entry.status !== 'different' || choices[entry.ref] !== 'overwrite' || entry.problem)
+      continue;
+    if (entry.kind === 'snapshot') {
+      const current = await snapshotStore(ctx).read();
+      const found = current.ok
+        ? current.value.snapshots.find((s) => s.id === entry.ref.slice('snapshot:'.length))
+        : undefined;
+      if (found) replacedSnapshots.push(found);
+      continue;
+    }
+    if (entry.kind === 'changes') {
+      const current = await fingerprintStore(ctx).read();
+      const id = entry.ref.slice('changes:'.length);
+      const found = current.ok ? current.value.profiles[id] : undefined;
+      if (found) replacedRecords[id] = found;
+      continue;
+    }
     const relative =
       entry.kind === 'profile'
         ? `profiles/${entry.ref.slice('profile:'.length)}.yaml`
@@ -485,6 +595,27 @@ export async function applyRestore(
     if (!bytes.ok) continue;
     safetyEntries.push({ path: `rigready/${relative}`, data: bytes.value });
     safetyOwn.push({ path: relative, size: bytes.value.length, sha256: sha256(bytes.value) });
+  }
+  const safetyIndex = (relative: string, value: unknown): void => {
+    const data = new TextEncoder().encode(JSON.stringify(value, null, 2) + '\n');
+    safetyEntries.push({ path: `rigready/${relative}`, data });
+    safetyOwn.push({ path: relative, size: data.length, sha256: sha256(data) });
+  };
+  if (replacedSnapshots.length > 0) safetyIndex(SNAPSHOTS_FILE, { snapshots: replacedSnapshots });
+  if (Object.keys(replacedRecords).length > 0)
+    safetyIndex(FINGERPRINTS_FILE, { profiles: replacedRecords });
+  const replacedCopies = new Set<string>([
+    ...replacedSnapshots.flatMap((s) => s.files.map((f) => f.sha256)),
+    ...Object.values(replacedRecords).flatMap((r) =>
+      r.files.filter((f) => f.stored).map((f) => f.sha256)
+    ),
+  ]);
+  for (const hash of replacedCopies) {
+    const bytes = await blobsOf(ctx).get(hash);
+    // A copy that is already gone cannot be saved; the safety backup says so when restored.
+    if (!bytes.ok) continue;
+    safetyEntries.push({ path: `rigready/${blobRelativePath(hash)}`, data: bytes.value });
+    safetyOwn.push({ path: blobRelativePath(hash), size: bytes.value.length, sha256: hash });
   }
   if (safetyEntries.length > 0) {
     const safety = await writeArchive(
@@ -597,6 +728,10 @@ export async function applyRestore(
   // 3. RigReady's own data.
   for (const entry of own) {
     const action = choices[entry.ref];
+    if (entry.problem) {
+      report.skipped.push({ ref: entry.ref, label: entry.label, detail: entry.problem });
+      continue;
+    }
     if (!action) {
       report.skipped.push({ ref: entry.ref, label: entry.label, detail: 'Not selected' });
       continue;
@@ -693,6 +828,67 @@ async function restoreOwn(
     });
     return updated.ok ? ok({}) : updated;
   }
+  if (entry.kind === 'snapshot') {
+    const index = parseJson(opened.data.get(`rigready/${SNAPSHOTS_FILE}`)!, SnapshotIndexSchema);
+    const snapshot = index?.snapshots.find((s) => s.id === entry.ref.slice('snapshot:'.length));
+    if (!snapshot) return err('restore.snapshot', 'The snapshot is not in the backup.');
+    const copies = await storeCopies(
+      ctx,
+      opened,
+      snapshot.files.map((f) => f.sha256)
+    );
+    if (!copies.ok) return copies;
+    let next = snapshot;
+    if (keepBoth) {
+      const name = `${snapshot.name} (restored)`.slice(0, 80);
+      const now = ctx.ports.clock.now();
+      next = {
+        ...snapshot,
+        id: `${now.getTime().toString(36)}-${sha256(name + snapshot.item.id).slice(0, 6)}`,
+        name,
+      };
+    }
+    const saved = await snapshotStore(ctx).update((current) => ({
+      snapshots: current.snapshots.some((s) => s.id === next.id)
+        ? current.snapshots.map((s) => (s.id === next.id ? next : s))
+        : [...current.snapshots, next],
+    }));
+    if (!saved.ok) return saved;
+    const back = await snapshotStore(ctx).read();
+    if (!back.ok) return back;
+    const found = back.value.snapshots.find((s) => s.id === next.id);
+    if (!found || !snapshotSame(found, next)) {
+      return err('restore.snapshot', 'The snapshot is not in the list after writing.');
+    }
+    return ok(keepBoth ? { keptBoth: `Saved as "${next.name}"` } : {});
+  }
+  if (entry.kind === 'changes') {
+    const index = parseJson(
+      opened.data.get(`rigready/${FINGERPRINTS_FILE}`)!,
+      FingerprintFileSchema
+    );
+    const profileId = entry.ref.slice('changes:'.length);
+    const record = index?.profiles[profileId];
+    if (!record) return err('restore.changes', 'The record is not in the backup.');
+    const copies = await storeCopies(
+      ctx,
+      opened,
+      record.files.filter((f) => f.stored).map((f) => f.sha256)
+    );
+    if (!copies.ok) return copies;
+    // One record per setup: there is nothing to keep side by side, so it is replaced.
+    const saved = await fingerprintStore(ctx).update((current) => ({
+      profiles: { ...current.profiles, [profileId]: record },
+    }));
+    if (!saved.ok) return saved;
+    const back = await fingerprintStore(ctx).read();
+    if (!back.ok) return back;
+    const found = back.value.profiles[profileId];
+    if (!found || !recordSame(found, record)) {
+      return err('restore.changes', 'The record is not there after writing.');
+    }
+    return ok({});
+  }
   const parsed = parseJson(opened.data.get('rigready/backup/tracked.json')!, TrackedFileSchema);
   if (!parsed)
     return err('restore.tracked', 'The "Always back up" list in the backup is not valid.');
@@ -707,6 +903,28 @@ async function restoreOwn(
     return { ...current, items };
   });
   return merged.ok ? ok({}) : merged;
+}
+
+/**
+ * Puts the stored copies a snapshot or record needs into the blob store, from the archive,
+ * each read back by its content id afterwards. The archive was checked on opening: every
+ * copy's name is the hash of its content.
+ */
+async function storeCopies(
+  ctx: Ctx,
+  opened: OpenedArchive,
+  hashes: string[]
+): Promise<Result<void>> {
+  const blobs = blobsOf(ctx);
+  for (const hash of new Set(hashes)) {
+    const data = opened.data.get(`rigready/${blobRelativePath(hash)}`);
+    if (!data) return err('restore.copies', 'A stored copy of a file is not in the backup.');
+    const put = await blobs.put(data);
+    if (!put.ok) return put;
+    const back = await blobs.get(hash);
+    if (!back.ok) return back;
+  }
+  return ok(undefined);
 }
 
 function parseId(opened: OpenedArchive, file: string): string | undefined {

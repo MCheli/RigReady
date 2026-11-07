@@ -580,6 +580,22 @@ describe('hostile .rigready files', () => {
     });
   });
 
+  it('rejects a setup whose YAML multiplies itself through aliases, at once and before it is saved', async () => {
+    const app = await start('flying-fresh', ['Saved Games/DCS/Config/**']);
+    // Nine levels of ten aliases: a few hundred bytes that stand for a billion values once
+    // the setup is written out again (RigReady writes YAML without aliases).
+    let bomb = 'l0: &l0 [x, x, x, x, x, x, x, x, x, x]\n';
+    for (let i = 1; i < 9; i++) {
+      bomb += `l${i}: &l${i} [${Array.from({ length: 10 }, () => `*l${i - 1}`).join(', ')}]\n`;
+    }
+    const started = Date.now();
+    expect(
+      await offer(app, bundle({ profile: `${bomb}${baseProfile}\nextensions: {x: *l8}\n` }))
+    ).toMatch(/not valid YAML/);
+    expect(Date.now() - started).toBeLessThan(5000);
+    expect((await app.wiring.context.profiles.list()).ok).toBe(true);
+  });
+
   it('rejects malformed manifests and setups, damaged files and programs', async () => {
     const app = await start('flying-fresh', ['Saved Games/DCS/Config/**']);
     expect(await offer(app, bundle({ manifest: { format: 'something-else' } }))).toMatch(

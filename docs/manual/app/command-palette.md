@@ -16,7 +16,7 @@ With nothing typed:
 - The actions, under the heading of the area they belong to (Play, Backups, Monitors, Devices and so on), six per heading; the rest are found by typing.
 - **Go to**: every page, in the order of the side navigation. A page reached from inside another is named after it, for example "DCS World: Screens".
 
-Type, and the list becomes the matches, best first; letters you typed are highlighted in the names. A command you used recently gets a small head start in a near tie, never in a clear one. Pages are also found by other words: "undo" finds Safety, "restore" and "new pc" find Backups, "bug" finds the diagnostics report.
+Type, and the list becomes the matches, best first; letters you typed are highlighted in the names. A command you used recently gets a small head start in a near tie, never in a clear one. Pages are also found by other words: "undo" finds [Safety](../protect/safety-page.md), "restore" and "new pc" find Backups, "bug" finds the diagnostics report.
 
 ![The palette open](../../../artifacts/screens/shell-palette/01-open.png)
 
@@ -24,13 +24,13 @@ Type, and the list becomes the matches, best first; letters you typed are highli
 
 Among the actions:
 
-- **Make ready**, **Launch** and **Stand down** for the setup in use, and switching to another setup.
-- **Apply a monitor layout** by name. The layout is applied and the "Keep this monitor layout?" question is asked, as on the Monitors page.
-- **Back up now**: the same full backup as the button on the Backups page.
-- **Find a device**: press a button on any controller and RigReady names it.
-- Open the bindings or the cheat sheet of an aircraft.
-- **Copy the diagnostics report**: the report on the clipboard without opening the page.
-- **Keyboard shortcuts** and **About RigReady**.
+- **Make ready**, **Launch** and **Stand down** ([Make ready and launch](../play/make-ready-and-launch.md), [Stand down](../play/stand-down.md)) for the setup in use, and [switching to another setup](../play/switching-setups.md).
+- **Apply a monitor layout** by name. The layout is applied and the "Keep this monitor layout?" question is asked, as on the Monitors page ([Monitor layouts](../monitors-and-audio/layouts.md)).
+- **Back up now**: the same full backup as the button on the [Backups page](../protect/backups.md).
+- **Find a device**: press a button on any controller and RigReady names it ([Devices](../hardware/devices.md#find-a-device-by-pressing-a-button)).
+- Open the [bindings](../dcs/bindings.md) or the [cheat sheet](../dcs/cheat-sheets.md) of an aircraft.
+- **Copy the diagnostics report**: the report on the clipboard without opening the [page](diagnostics.md).
+- **Keyboard shortcuts** ([the whole list](keyboard-shortcuts.md)) and **About RigReady**.
 
 A page opens and nothing more is said. An action reports what happened in a toast at the bottom of the window, in the feature's own words: "Backed up 340 files (12.4 MB) as "2026-10-03 14-05 Everything"", with a second line for what was skipped and a button to the page it concerns. An action that takes more than a moment shows that it is running, with its progress, until the result replaces it.
 

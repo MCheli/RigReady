@@ -137,7 +137,10 @@ describe('a layout that asks for a resolution or refresh rate', () => {
     const before = structuredClone(rig.ports.state.displays);
     for (const [change, message] of [
       [{ refreshHz: 240 }, `${ULTRAWIDE} does not offer 5120x1440 at 240 Hz.`],
-      [{ width: 1234, height: 777 }, `${ULTRAWIDE} does not offer 1234x777.`],
+      // A layout saved from the monitors carries the rate they had (120 Hz here).
+      [{ width: 1234, height: 777 }, `${ULTRAWIDE} does not offer 1234x777 at 120 Hz.`],
+      // One that leaves the rate to Windows names the size alone.
+      [{ width: 1234, height: 777, refreshHz: undefined }, `${ULTRAWIDE} does not offer 1234x777.`],
       // A resolution it has, at a rate it only has for another resolution.
       [
         { width: 3840, height: 1080, refreshHz: 240 },

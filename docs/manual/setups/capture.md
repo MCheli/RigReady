@@ -4,7 +4,7 @@ description: "New setup from this rig reads the rig as it is and proposes the ch
 order: 10
 ---
 
-A setup is captured, not typed in. Get the rig the way you fly or race: gear plugged in, helper apps running, monitors arranged, the right headset as the default. Then **Configure > Setups > New setup from this rig** reads the machine and lists what it found, section by section. Everything that stays ticked becomes a check on the Play screen, with a fix where RigReady has one.
+A setup is captured, not typed in. Get the rig the way you fly or race: gear plugged in, helper apps running, monitors arranged, the right headset as the default. Then **Configure > Setups > New setup from this rig** reads the machine and lists what it found, section by section. Everything that stays ticked becomes a check on the [Play screen](../play/index.md), with a fix where RigReady has one. The first capture is walked through on [Your first setup](../getting-started/first-setup.md).
 
 ![Capturing the rig](../../../artifacts/screens/profile-capture/04-capture.png)
 
@@ -14,18 +14,18 @@ The games RigReady found on this PC are tiles; one says "running now" when it is
 
 RigReady suggests a game when the PC says so clearly: the game that is running, the only installed sim of the family your controllers belong to (flight or racing), or the only one you have bindings for. The reason is written under the tiles.
 
-A known game brings its launch program, its aircraft or cars (from your bindings, as chips: choose one and the setup is named after it, for example "DCS F/A-18C"), its config files and its own checks. For a game installed more than once, **Install this setup uses** picks one. The **Launch** fields (Program, Arguments, Working folder, with **Browse…**) can be changed or cleared; without a program the Play screen has no Launch button.
+A known game brings its launch program, its aircraft or cars (from your bindings, as chips: choose one and the setup is named after it, for example "DCS F/A-18C"), its config files and its own checks. For a game installed more than once, **Install this setup uses** picks one. The **Launch** fields (Program, Arguments, Working folder, with **Browse…**) can be changed or cleared; without a program the Play screen has no Launch button. See [Launch targets and steps](launch.md), and [Path variables](path-variables.md) for what **Install this setup uses** changes.
 
 ## The sections
 
 Each section lists what was found, with a tick per line and a count of what is kept.
 
-- **Devices**: game controllers are kept, and each becomes a "connected" check. Keyboards, mice and other USB devices are behind **Show N other USB devices**. Identical devices are marked "1 of 3 identical" and told apart by serial number or, failing that, by USB port. **Which one is it? Press a button** lights up the line of the controller you press. A kept device can be renamed with the pencil; the name is what the Play screen shows.
-- **Apps**: sim helpers that are running now (TrackIR, SimAppPro, SimHub, Crew Chief, VoiceAttack and the like) are listed first and kept; voice chat, streaming and overlay programs are listed but not kept; everything else that is running is behind **Show N other running apps**. **Find an app** searches all of them. A helper that is only useful in the sim is marked "closed at Stand down". Make ready starts a kept app when it is missing, from the path it was found at.
-- **Monitors**: the arrangement as it is now, drawn to scale. Make ready puts it back. When the arrangement is not already one of your saved layouts, the line has a field, **Save this arrangement as a layout named**: with a name, the arrangement is also saved on the Monitors page, so other setups can share it and a change to the saved layout reaches every setup that uses it. When it is a saved layout already, the line says which.
-- **Audio**: the default playback and recording devices as they are now. Make ready sets them again.
+- **Devices**: game controllers are kept, and each becomes a "connected" check. Keyboards, mice and other USB devices are behind **Show N other USB devices**. Identical devices are marked "1 of 3 identical" and told apart by serial number or, failing that, by USB port. **Which one is it? Press a button** lights up the line of the controller you press ([Devices](../hardware/devices.md)). A kept device can be renamed with the pencil; the name is what the Play screen shows.
+- **Apps**: sim helpers that are running now (TrackIR, SimAppPro, SimHub, Crew Chief, VoiceAttack and the like) are listed first and kept; voice chat, streaming and overlay programs are listed but not kept; everything else that is running is behind **Show N other running apps**. **Find an app** searches all of them. A helper that is only useful in the sim is marked "closed at Stand down" ([Stand down](../play/stand-down.md)). [Make ready](../play/make-ready-and-launch.md) starts a kept app when it is missing, from the path it was found at.
+- **Monitors**: the arrangement as it is now, drawn to scale. Make ready puts it back. When the arrangement is not already one of your saved layouts, the line has a field, **Save this arrangement as a layout named**: with a name, the arrangement is also saved on the Monitors page ([Monitor layouts](../monitors-and-audio/layouts.md)), so other setups can share it and a change to the saved layout reaches every setup that uses it. When it is a saved layout already, the line says which.
+- **Audio**: the default playback and recording devices as they are now. Make ready sets them again ([Audio](../monitors-and-audio/audio.md)).
 - **Game files**: the config files the chosen game's module tracks, checked before every launch so a missing file shows before the game loads.
-- **Game checks**: what only this game needs, for example SimAppPro for WinWing panels, the Export.lua tools, the DCS monitor setup, the iRacing helper service, or "not updated since verified".
+- **Game checks**: what only this game needs, for example [SimAppPro](../dcs/simapppro.md) for WinWing panels, the [Export.lua](../dcs/export-lua.md) tools, the [DCS monitor setup](../dcs/screens.md), the [iRacing](../games/iracing.md) helper service, or "not updated since verified". [Checks and fixes](checks.md) lists every kind.
 
 What belongs to another game, or to another aircraft or car, is not shown. A helper of the other family (a wheel app in a flight setup) is listed but not kept unless you tick it. Ticks you set by hand stay when you change the game.
 
@@ -35,7 +35,7 @@ Every kept line has **Required** or **Optional**. A required check that is not m
 
 ## Back up with this setup
 
-Below the checks: the files and folders the Backups page can keep for this setup. The game's own settings folder is kept by default; what helper tools keep is one click away. Nothing is copied now; see [Protect](../protect/index.md).
+Below the checks: the files and folders the Backups page can keep for this setup. The game's own settings folder is kept by default; what helper tools keep is one click away. Nothing is copied now; see [Tracked files](../protect/tracked-files.md).
 
 ## The summary and Create setup
 

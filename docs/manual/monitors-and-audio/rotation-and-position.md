@@ -1,18 +1,18 @@
 ---
-title: Rotation and position
+title: Edit a layout by hand
 description: Edit a saved layout by hand: which monitors are on, the main display, the orientation of each and its position in desktop pixels, with a live map.
 order: 30
 ---
 
 A saved layout is normally made from the monitors as they are. **Edit arrangement**, in the menu of a layout card on **Configure > Monitors**, lets you change one without first arranging the monitors in Windows: turn the MFD screens portrait, move the TV, or switch a monitor off for this layout.
 
-This page covers the edit dialog. Saving and applying layouts is on [saved layouts](layouts.md).
+This page covers the edit dialog. Saving and applying layouts is on [Monitor layouts](layouts.md).
 
 ## The edit dialog
 
 The dialog shows a compact map of the layout as you edit it, and a table with one row per monitor of the layout:
 
-- **Monitor**: the name RigReady uses for it and its desktop size. A monitor the layout contains that is not plugged in right now is marked "not connected"; it stays in the layout and is skipped when the layout is applied without it.
+- **Monitor**: the name RigReady uses for it, its desktop size and, for a monitor that is on, the refresh rate the layout asks for. A monitor the layout contains that is not plugged in right now is marked "not connected"; it stays in the layout and is skipped when the layout is applied without it.
 - **On**: whether the layout turns this monitor on. A monitor that is off has no position, no rotation and cannot be the main display.
 - **Main**: one monitor must be the main display. Windows keeps the main display at 0,0, so when the layout is applied every position is shifted to put it there.
 - **Orientation**: Landscape (0°), Portrait (90°), Landscape (flipped) (180°) or Portrait (flipped) (270°). Turning a monitor a quarter turn swaps its width and height in the layout, and the map redraws it tall or wide at once. Which of the two portrait settings is upright on a given screen is explained under [Identify](identify.md).
@@ -26,7 +26,7 @@ The dialog shows a compact map of the layout as you edit it, and a table with on
 
 ## Size and refresh rate
 
-The desktop size of each monitor comes from when the layout was saved (or from the connected monitor, when the layout does not say) and is not typed in here. It turns with the orientation. A layout can carry a refresh rate for a monitor, but only when a setup or a hand-edited layout file gives one; the edit dialog does not set it. When a layout does ask for a size or refresh rate the monitor does not offer, applying it is refused before anything changes, and the setup's check lists the difference as, for example, "Samsung runs at 60 Hz, expected 120 Hz".
+The desktop size of each monitor comes from when the layout was saved (or from the connected monitor, when the layout does not say) and is not typed in here. It turns with the orientation. The refresh rate comes from the save too: **Save current as layout** and **Replace with the monitors as they are now** store the rate Windows reports for each monitor that is on. The edit dialog shows it and keeps it when you save, but does not change it; to store another rate, set it in Windows and replace the layout with the monitors as they are now. A setup or a hand-edited layout file (`displays\layouts.json` in [the data folder](../app/index.md)) can also give one, or leave it out to let Windows choose. When a layout does ask for a size or refresh rate the monitor does not offer, applying it is refused before anything changes, and the setup's check ([Checks and fixes](../setups/checks.md)) lists the difference as, for example, "Samsung runs at 60 Hz, expected 120 Hz".
 
 ## Monitors that are not connected
 

@@ -4,6 +4,7 @@ import { GameRegistry } from '../src/core/games';
 import { nullLogger } from '../src/core/logger';
 import type { FakePorts } from '../src/platform/fake';
 import { DcsBindings } from '../src/features/dcs-bindings/core/bindings';
+import dcs from '../src/features/games/dcs/module';
 
 /**
  * Helpers for this feature's tests: a DcsBindings on a test rig's fake ports, and the
@@ -30,9 +31,15 @@ export const fixtureData = path.resolve(
   'dcs-bindings'
 );
 
-/** A DcsBindings that finds DCS without the game module (the fallback path). */
+/**
+ * A DcsBindings on a test rig's ports, with the DCS game module registered as the app has
+ * it: whether DCS is running is the module's list of programs (DCS.exe, DCS_mt.exe), through
+ * core's one definition.
+ */
 export function bindingsFor(rig: { ports: FakePorts }): DcsBindings {
-  return new DcsBindings({ ports: rig.ports, log: nullLogger, games: new GameRegistry() });
+  const games = new GameRegistry();
+  games.register(dcs);
+  return new DcsBindings({ ports: rig.ports, log: nullLogger, games });
 }
 
 export function inputDir(home: string): string {
