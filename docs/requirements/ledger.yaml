@@ -2759,7 +2759,7 @@ requirements:
     priority: p2
     done_means:
       - "Device pictures come from template files (image plus control coordinates) keyed by VID/PID, shipped for the owner's devices: WinWing UFC1+HUD1, ICP, MFD1 (x3), startup panel, takeoff panel, throttle base + F15EX handles, Orion stick + grip, TPR pedals, Virpil panel."
-      - "A device with no template gets a generated grid of its buttons, axes and hats, so every device has a sheet."
+      - "A device with no template gets a generated grid of its buttons, axes and hats, so every device has a sheet. (Since 2.0 such a device is shown as a list of its controls in blocks, SHEET-016; the generated grid remains the layout the card editor starts from.)"
       - "Templates are data files validated by zod; a broken template falls back to the grid and logs why."
     status: done
     evidence:
@@ -2964,6 +2964,8 @@ requirements:
       - "Label text is measured with the advance widths of the font it is drawn in, and rows are counted the way the browser breaks them, so the same picture fits on screen, in the PDF and in the kneeboard PNG, where no script can correct it afterwards."
       - "The size steps down while that makes everything fit, to a smallest size that still reads; text that does not fit even then is shown as the whole rows there is room for, ending in an ellipsis. The card is marked as shortened and the full text stays in its tooltip, the detail panel and the by-action list."
       - "No label of the owner's own bindings on the recorded rig is shortened, on screen, on paper or on a kneeboard page, and in the app no card needs correcting after it is drawn."
+    notes:
+      - "2026-11-07: on a device drawing (SHEET-016) a label block wraps its text at the same measured widths, up to three lines per row, then ends it with an ellipsis at the same size; the e2e test asks the browser that every line sits inside its block."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/labels.test.ts#is measured per character, so wide and narrow letters are not counted alike"
@@ -2971,7 +2973,7 @@ requirements:
       - "src/features/cheat-sheets/core/labels.test.ts#is drawn in a card whose style breaks a long word instead of letting it stick out"
       - "src/features/cheat-sheets/core/labels.test.ts#never shortens a label of the recorded rig, on screen, on paper or on a kneeboard page"
       - "src/features/cheat-sheets/core/sheet.test.ts#sizes label text to its card"
-      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a label too long for its card is shortened with an ellipsis, never clipped"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a label too long for its block wraps, and is shortened with an ellipsis, never clipped"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
       - "artifacts/screens/cheat-sheets-long-label/01-long-note.png"
       - "artifacts/screens/cheat-sheets-long-label/02-long-note-on-the-kneeboard-page.png"
@@ -3051,6 +3053,44 @@ requirements:
       - "tests/unit/windowPlace.test.ts#keeps only the size when the screen it was on is gone, so the window opens where one is"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the pop-out opens where it was left and as large as it was, also after a restart"
       - "artifacts/screens/cheat-sheets-popout-place/01-where-it-was-left.png"
+
+  - id: SHEET-016
+    title: Device drawings with automatic callouts, and drawings of the user's own
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The devices the owner looks at most (the WinWing Orion stick with the F-16EX grip and with the F/A-18 grip, the Orion throttle with the F-15EX handles, the MFD1 frames) are drawn as the device, with one label block per physical control and a leader line from the block to the control; no two leader lines cross, every block is inside the picture, every anchor is on the drawn device, and every bound input is on the sheet (on a block, or listed under the drawing)."
+      - "The same picture is used on screen, in the pop-out, in the trainer, in the PDF and on the kneeboard pages; on a kneeboard or printed page the text is made as large as fits while the label columns end beside the drawing, in day and night styles."
+      - "A layout of cards the user saved before keeps its places; a device with a shipped layout and no drawing is drawn as cards; a device nothing is known about is a list of its controls."
+      - "Edit drawing: the user moves a control's anchor, chooses the side of its label, renames it, puts a photo in place of the silhouette, or goes back to cards; saved per device model in the data folder, discarded with Discard my layout."
+      - "User-supplied drawings: a drawing is made from a photo of the device (a dot per control to drag into place), or imported from a drawing file (rigready-device-drawing, documented in LAYOUT-FORMAT.md), checked like any import."
+    notes:
+      - "2026-11-07: the owner asked for better drawings ('a little blobby', leader lines that do not make sense) and whether users can supply their own; the design and what is left are in docs/research/controller-drawings.md. The pedals, panels, UFC, ICP and Fanatec wheel are still drawn as cards."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the two grips, the throttle and the MFD frames, with every control anchored on the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#is found by the name the grip reports, numbered as WinWing numbers it, with every bound control on the drawing"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#trades two blocks whose leaders would cross so that none do"
+      - "src/features/cheat-sheets/core/picture.test.ts#is RigReady’s drawing where there is one, the cards of a layout where not, and a layout of the user’s keeps its cards"
+      - "src/features/cheat-sheets/core/picture.test.ts#applies what the user changed on the drawing: where a control is, its side and its name"
+      - "src/features/cheat-sheets/core/picture.test.ts#lays a kneeboard page out as large as fits, every label inside the page, no leader crossing"
+      - "src/features/cheat-sheets/core/picture.test.ts#has every control that does something on it to be lit, with nothing written on it"
+      - "src/features/cheat-sheets/core/picture.test.ts#is a list of its controls in blocks, every binding on it, a run of free buttons one line"
+      - "src/features/cheat-sheets/core/picture.test.ts#is imported from a drawing file, checked like any import, and drawn round its photo"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: drawing editor - move a control, its side and name, a photo, a drawing of my own"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a label too long for its block wraps, and is shortened with an ellipsis, never clipped"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: kneeboard pages - preview, export, the user’s own pages untouched, update and remove"
+      - "src/features/cheat-sheets/LAYOUT-FORMAT.md"
+      - "artifacts/screens/cheat-sheets-gallery/01-stick.png"
+      - "artifacts/screens/cheat-sheets-gallery/02-throttle.png"
+      - "artifacts/screens/cheat-sheets-gallery/08-left-mfd.png"
+      - "artifacts/screens/cheat-sheets-kneeboard/02-preview-night.png"
+      - "artifacts/screens/cheat-sheets-drawing-editor/01-drawing-editor.png"
+      - "artifacts/screens/cheat-sheets-drawing-editor/02-own-drawing.png"
+      - "artifacts/screens/cheat-sheets-drawing-editor/03-photo-drawing.png"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE

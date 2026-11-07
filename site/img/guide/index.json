@@ -99,6 +99,16 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/cheat-sheets-drawing-editor/01-drawing-editor.png": {
+    "file": "cheat-sheets-drawing-editor--01-drawing-editor.webp",
+    "width": 1500,
+    "height": 1250
+  },
+  "artifacts/screens/cheat-sheets-drawing-editor/03-photo-drawing.png": {
+    "file": "cheat-sheets-drawing-editor--03-photo-drawing.webp",
+    "width": 1500,
+    "height": 1250
+  },
   "artifacts/screens/bindings-copy/01-proposals.png": {
     "file": "bindings-copy--01-proposals.webp",
     "width": 1250,
