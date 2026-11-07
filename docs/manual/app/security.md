@@ -43,7 +43,7 @@ No telemetry, no crash reporting, no account. [Privacy](privacy.md) lists exactl
 
 ## What it reads from games and files
 
-Game files (DCS Lua, iRacing and other games' settings), imported `.rigready` files and backups are treated as untrusted. Lua that is data is read by a strict parser that refuses anything that is a program; the few Lua files that are programs (DCS input defaults, MonitorSetup) run in a sandbox with no file, process or network access and a limit on how long they may run. Imported files and backups are checked for size, for links, for paths that point outside the target folder, for YAML that would multiply itself into millions of values, and for anything that runs, before a byte is written.
+Game files (DCS Lua, iRacing and other games' settings), imported `.rigready` files and backups are treated as untrusted. Lua that is data is read by a strict parser that refuses anything that is a program; the few Lua files that are programs (DCS input defaults, MonitorSetup) run in a sandbox with no file, process or network access and limits on how long they may run and how much memory they may use (256 MB; a file that needs more is not read). Imported files and backups are checked for size, for links, for paths that point outside the target folder, for YAML that would multiply itself into millions of values, and for anything that runs, before a byte is written.
 
 ## Updates are checked before they are installed
 

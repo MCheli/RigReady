@@ -5714,5 +5714,9 @@ requirements:
     done_means:
       - "The Lua sandbox stops a chunk that allocates more than a set amount of memory (strings built by concatenation or string.rep included), as it already stops one that runs too long."
     notes:
-      - "2026-11-07: open. The sandbox bounds instructions, not memory: a few lines doubling a string reach a gigabyte in under 300 ms (measured: 1 GB in 287 ms, string.rep of 1.5 GB accepted). Fengari has no allocation hook; a fix needs a guard in the count hook plus a capped string.rep, or running the evaluation in a worker with a heap limit. The Lua evaluated comes from the DCS installation and Saved Games, so the effect is a crash of RigReady, not access to anything."
-    status: todo
+      - "2026-11-07: found. The sandbox bounded instructions, not memory: 1 GB in 287 ms by doubling a string, string.rep of 1.5 GB accepted."
+      - "2026-11-07: done. src/core/lua/memoryGuard.ts refuses an evaluation that holds more than 256 MB, with lua.memory and '<file> used more than 256 MB and was not read.', surfaced the way the instruction limit is. A worker with a heap limit was measured and rejected: Lua strings are Uint8Arrays outside the heap, and a worker capped at 64 MB allocated 2 GB of them. Instead every new Uint8Array is counted while a chunk runs, string.sub/match/find/gmatch count the substrings they copy, table.unpack and string.byte return at most 2,000 values and the stack is held to 2,000 slots (DCS's defaults use about 160), and the hook measures heap plus array buffers every 200 instructions. A chunk that catches the error with pcall stays refused. FA-18C and UH-1H defaults evaluate in the same time within noise (interleaved medians, old/new: 39.0/40.3, 98.1/95.3, 35.6/35.4, 51.4/53.3 ms)."
+    status: done
+    evidence:
+      - "tests/unit/lua.test.ts#refuses a file that builds strings or tables beyond the memory limit, quickly (SEC-004)"
+      - "tests/unit/lua.test.ts#evaluates the real F/A-18C and UH-1H joystick defaults from the recorded DCS install"

@@ -8,7 +8,12 @@ declare module 'fengari' {
   export type LuaFunction = (L: LuaState) => number;
 
   export function to_luastring(text: string): LuaBytes;
-  export function to_jsstring(bytes: LuaBytes): string;
+  export function to_jsstring(
+    bytes: LuaBytes,
+    from?: number,
+    to?: number,
+    replacementChar?: boolean
+  ): string;
 
   export const lua: {
     LUA_OK: number;
@@ -28,6 +33,7 @@ declare module 'fengari' {
     lua_tonumber(L: LuaState, index: number): number;
     lua_tojsstring(L: LuaState, index: number): string;
     lua_tostring(L: LuaState, index: number): LuaBytes | null;
+    lua_rawlen(L: LuaState, index: number): number;
     lua_pushnil(L: LuaState): void;
     lua_pushboolean(L: LuaState, value: boolean): void;
     lua_pushnumber(L: LuaState, value: number): void;
