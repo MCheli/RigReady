@@ -47,14 +47,14 @@ A start that hands over to the running RigReady exits with 0 straight away; the 
 A Stream Deck button: add a **System > Open** action and put the program and its argument in its field, with the id form so there is only one pair of quotes:
 
 ```
-"C:\Program Files\RigReady\RigReady.exe" --launch=dcs-f-a-18c
+"C:\Users\<you>\AppData\Local\Programs\RigReady\RigReady.exe" --launch=dcs-f-a-18c
 ```
 
 A batch file on the desktop or in a macro program:
 
 ```
 @echo off
-"C:\Program Files\RigReady\RigReady.exe" --launch "DCS F/A-18C"
+"C:\Users\<you>\AppData\Local\Programs\RigReady\RigReady.exe" --launch "DCS F/A-18C"
 ```
 
-Replace the path with where RigReady.exe is on your PC.
+Replace the path with where RigReady.exe is on your PC: the installer puts it under `%LOCALAPPDATA%\Programs\RigReady` unless you chose another folder ([Install RigReady](../getting-started/install.md)).
