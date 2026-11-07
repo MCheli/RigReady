@@ -11,7 +11,9 @@ import type { ProfileStore } from '../../../core/profile/store';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChangePreview } from '../../../shared/changePreview';
 import type { InputDevice } from '../../../shared/models';
+import { builtinLayoutFor } from './builtin';
 import { convertJoystickDiagrams } from './convert';
+import { DRAWING_FORMAT, drawingMatches, parseDrawing } from './drawings';
 import {
   Kneeboard,
   KneeboardOptionsSchema,
@@ -23,6 +25,8 @@ import {
 } from './kneeboard';
 import {
   LAYOUT_EXTENSION,
+  LAYOUT_FORMAT,
+  LAYOUT_VERSION,
   layoutMatches,
   MAX_BACKGROUND_CHARS,
   parseLayout,
@@ -245,17 +249,17 @@ export class CheatSheets {
   async importLayout(device: { vendorId: string; productId: string; name: string }): Promise<
     Result<{
       layout: DeviceLayout | null;
-      from?: 'rigready' | 'joystick-diagrams';
+      from?: 'rigready' | 'rigready-drawing' | 'joystick-diagrams';
       skipped: string[];
       file?: string;
     }>
   > {
     const { dialogs, files } = this.ctx.ports;
     const picked = await dialogs.open({
-      title: 'Import a device layout',
+      title: 'Import a device layout or drawing',
       filters: [
         {
-          name: 'Device layouts (RigReady .json, Joystick Diagrams .svg)',
+          name: 'Device layouts and drawings (RigReady .json, Joystick Diagrams .svg)',
           extensions: ['json', 'svg'],
         },
       ],
@@ -282,6 +286,8 @@ export class CheatSheets {
         file: fileName,
       });
     }
+    const drawing = this.drawingFromFile(text.value, device, fileName);
+    if (drawing) return drawing;
     const parsed = parseLayout(text.value);
     if (!parsed.ok) {
       return err('sheet.import', `${fileName} is not a usable layout.`, parsed.reason);
@@ -295,6 +301,55 @@ export class CheatSheets {
       );
     }
     return ok({ layout: parsed.layout, from: 'rigready', skipped: [], file: fileName });
+  }
+
+  /**
+   * A drawing file (`rigready-device-drawing`: a silhouette or a photo with the controls
+   * placed on it) as the user's own layout for the device: the layout it has now, drawn
+   * from the imported drawing. Undefined when the text is not a drawing file at all.
+   */
+  private drawingFromFile(
+    textContent: string,
+    device: { vendorId: string; productId: string; name: string },
+    fileName: string
+  ):
+    | Result<{ layout: DeviceLayout; from: 'rigready-drawing'; skipped: string[]; file: string }>
+    | undefined {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(textContent);
+    } catch {
+      // Not JSON: not a drawing either; the layout parser says what is wrong with it.
+      return undefined;
+    }
+    if ((raw as { format?: unknown } | null)?.format !== DRAWING_FORMAT) return undefined;
+    const parsed = parseDrawing(raw);
+    if (!parsed.ok) {
+      return err('sheet.import', `${fileName} is not a usable drawing.`, parsed.reason);
+    }
+    const custom = parsed.drawing;
+    if (!drawingMatches(custom, device)) {
+      return err(
+        'sheet.import',
+        `${fileName} is a drawing of another device.`,
+        `It is of "${custom.name}"; this device is ${device.vendorId.toUpperCase()}:${device.productId.toUpperCase()} (${device.name}).`
+      );
+    }
+    const base: DeviceLayout = builtinLayoutFor(device.vendorId, device.productId) ?? {
+      format: LAYOUT_FORMAT,
+      version: LAYOUT_VERSION,
+      name: custom.name,
+      match: {
+        vendorId: device.vendorId.toUpperCase(),
+        productIds: [device.productId.toUpperCase()],
+      },
+      canvas: { width: 1000, height: 600 },
+      shapes: [],
+      groups: [],
+      controls: [],
+    };
+    const layout = { ...base, drawing: { anchors: {}, sides: {}, names: {}, custom } };
+    return ok({ layout, from: 'rigready-drawing', skipped: [], file: fileName });
   }
 
   async pickBackground(): Promise<Result<{ image: string | null }>> {

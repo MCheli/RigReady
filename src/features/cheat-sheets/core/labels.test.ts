@@ -2,6 +2,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import { kindsOn, kneeboardDevicePage, kneeboardListPage, printDocument } from './pages';
+import { renderPictureSvg } from './picture';
 import { fitText, renderDeviceSvg, textWidth, wrappedRows } from './render';
 import {
   actionIndex,
@@ -74,9 +75,13 @@ describe('plain-language names from the binding guide (AI-001)', () => {
     expect(unnamed.plain).toBeUndefined();
     expect(unnamed.short.length).toBeLessThanOrEqual(unnamed.action.length);
 
-    // The sheet view: the card says it plainly, the tooltip has both names.
+    // The sheet view: the card says it plainly, the tooltip has both names; the same
+    // in the drawing the stick is drawn with.
     const svg = renderDeviceSvg(stick, { theme: 'dark' });
     expect(svg).toContain('>Sensor select: HUD</div>');
+    expect(svg).toContain('Sensor select: HUD (Sensor Control Switch - Fwd)');
+    const drawn = renderPictureSvg(stick, { theme: 'dark' });
+    expect(drawn).toContain('</tspan> Sensor select: HUD</tspan>');
     expect(svg).toContain('Sensor select: HUD (Sensor Control Switch - Fwd)');
 
     // "Which control does X": the entry carries both names.
@@ -85,10 +90,10 @@ describe('plain-language names from the binding guide (AI-001)', () => {
 
     // Print / PDF and the kneeboard pages (device page and list page).
     const print = printDocument(sheet, [stick], { paper: 'A4', summary: true, stamp: 's' });
-    expect(print.html).toContain('>Sensor select: HUD</div>');
+    expect(print.html).toContain('</tspan> Sensor select: HUD</tspan>');
     expect(print.html).toContain('<span class="what">Pickle: release weapon</span>');
     const page = kneeboardDevicePage(sheet, stick, { style: 'night', stamp: 's' });
-    expect(page).toContain('>Sensor select: HUD</div>');
+    expect(page).toContain('</tspan> Sensor select: HUD</tspan>');
     const list = kneeboardListPage(sheet, 'Stick', actionIndex(sheet, [stick.key]), {
       style: 'light',
       stamp: 's',

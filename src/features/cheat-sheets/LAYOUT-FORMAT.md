@@ -45,6 +45,7 @@ A layout contains only rectangles, shapes, text and an optional picture. Nothing
 | `shapes` | The drawing of the device. Each has a `role` (`body`, `panel`, `screen`, `line`, `accent`) that picks its colour from the theme, so one layout works on a dark screen, on white paper and on a night kneeboard page. Types: `rect` (`x y w h r`), `ellipse` (`cx cy rx ry`), `line` (`points`: x1 y1 x2 y2 ..., `closed`), `text` (`x y text size`, centred on x). |
 | `groups` | Labelled frames around controls that belong together: `label`, `x`, `y`, `w`, `h`. A control inside a frame carries the frame's name ("FLAP AUTO"). |
 | `controls` | The label cards. See below. A control may appear only once in a layout. |
+| `drawing` | Optional. The device is drawn from a drawing rather than from the cards, with the changes the user made in the editor. See "Drawings" below. A layout without it is drawn as cards. |
 
 ## Controls
 
@@ -67,3 +68,37 @@ Controls that do something in the chosen aircraft but are not in the layout are 
 ## Joystick Diagrams templates
 
 RigReady ships none of the Joystick Diagrams templates (that project is GPL-2.0 and the licences of its templates are not stated). If you have one of its SVG templates, "Import" converts it: the drawing becomes the background, and every placeholder text (`BUTTON_12`, `AXIS_X`, `AXIS_SLIDER_1`, `POV_1_U`) becomes a control at the same place. Modifier placeholders are skipped and reported. Check the result in the editor and save it.
+
+## Drawings (format `rigready-device-drawing`, version 1)
+
+A drawing is a silhouette of one controller model with its physical controls marked on it. The labels are not part of it: RigReady places one label block per physical control in a column left or right of the drawing (or a row above or below), with a leader line from the control to the block, and makes the text as large as the page allows. The schema is `DeviceDrawingSchema` in `core/drawings/silhouette.ts`. RigReady ships drawings for the WinWing Orion 2 stick with the F-16EX grip, the Orion sticks with the F/A-18 grip, the Orion throttle with the F-15EX handles and the MFD1 frames (`core/drawings/builtin.ts`, CC0). Other devices with a shipped layout are drawn as cards until they are drawn; a device with neither is shown as a list of its controls.
+
+```json
+{
+  "format": "rigready-device-drawing",
+  "version": 1,
+  "name": "My button box",
+  "match": { "vendorId": "1234", "productIds": ["ABCD"], "names": [] },
+  "size": { "width": 500, "height": 380 },
+  "image": "data:image/jpeg;base64,...",
+  "paths": [],
+  "controls": [
+    { "id": "red", "name": "Red button", "glyph": "button", "at": { "x": 120, "y": 90 }, "side": "left",
+      "inputs": [{ "id": "button:1" }] },
+    { "id": "hat", "name": "Hat", "glyph": "hat", "at": { "x": 380, "y": 200 },
+      "inputs": [{ "id": "hat:1:U", "tag": "↑" }, { "id": "hat:1:D", "tag": "↓" }] }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `match` | `vendorId`, and `productIds` and/or `names` (parts of the name the hardware reports, any case, for a grip whose product id is shared or not known). |
+| `size` | The drawing's own units; `at` and `paths` are in them. |
+| `paths` | SVG path data (absolute `M L H V C Q A Z`) with a colour `role`: `body`, `panel`, `screen`, `line`, `accent`, `shade`, `key`; `dashed` for a face the view does not show. |
+| `image` | Optional photo or traced picture (`data:image/png`, `jpeg`, `webp` or `svg+xml`, about 6 MB at most), stretched over `size`. With one, `paths` may be empty. |
+| `texts` | Text printed on the device: `x`, `y`, `text`, `size`. |
+| `controls` | The physical controls: `id`, `name`, `glyph` (`hat`, `switch`, `button`, `stick`, `lever`, `rocker`, `knob`, `key`, `axis`, `slide`, `axes`, `none`), `at`, optional `side`, `inputs` (control ids as above, each with an optional `tag`, the word its row starts with: "↑", "IDLE", "2nd"), `hidden` (drawn dashed), `assumed` (the numbers are a guess; the label shows "?"). An input may be on one control only. |
+| `columnWidth` | Room for the label columns, 120 to 400 canvas units (default 300). |
+
+In a layout, `drawing` holds the user's changes to a drawing: `anchors` (where a control really is, by control `id`), `sides`, `names`, and `custom`, a whole drawing of their own. The editor writes it: "Make a drawing from a photo" makes a `custom` drawing from a photo with a dot for every control to drag into place, and "Import" accepts a drawing file as well as a layout file.

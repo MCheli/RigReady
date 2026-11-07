@@ -101,14 +101,14 @@ export const cheatSheetsContract = defineContract(
       { describe: 'Opens a save dialog to share a layout as a file.', tier: 'off' }
     ),
     /**
-     * Asks for a layout file (a RigReady layout or a Joystick Diagrams SVG template) and
-     * returns it as a layout for this device model. Nothing is saved until the user saves.
+     * Asks for a layout file (a RigReady layout or drawing, or a Joystick Diagrams SVG
+     * template) and returns it as a layout for this device model. Nothing is saved until the user saves.
      */
     importLayout: channel(
       model.extend({ name: z.string() }),
       z.object({
         layout: DeviceLayoutSchema.nullable(),
-        from: z.enum(['rigready', 'joystick-diagrams']).optional(),
+        from: z.enum(['rigready', 'rigready-drawing', 'joystick-diagrams']).optional(),
         /** Placeholders of a converted template that were not understood. */
         skipped: z.array(z.string()),
         file: z.string().optional(),
