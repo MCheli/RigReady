@@ -73,6 +73,8 @@ async function save(): Promise<void> {
       width: r.width,
       height: r.height,
       rotation: r.rotation,
+      // Kept as saved: the rate is not edited here.
+      ...(r.refreshHz !== undefined ? { refreshHz: r.refreshHz } : {}),
     })),
   });
   saving.value = false;
@@ -107,9 +109,10 @@ async function save(): Promise<void> {
           >
             <div class="edit-name">
               <div>{{ row.label }}</div>
-              <div class="rr-row-sub">
+              <div class="rr-row-sub" data-testid="edit-mode">
                 {{ row.width }}x{{ row.height
-                }}<template v-if="!row.connected"> · not connected</template>
+                }}<template v-if="row.enabled && row.refreshHz"> · {{ row.refreshHz }} Hz</template
+                ><template v-if="!row.connected"> · not connected</template>
               </div>
             </div>
             <v-switch

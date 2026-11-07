@@ -1527,10 +1527,14 @@ requirements:
       - "Fixtures provide three layouts matching the owner's rig: Flying (ultrawide + three MFD screens, Dell off), Racing (ultrawide + TV), Desk (Dell + ultrawide, MFD screens off)."
       - "Layouts can be renamed, deleted and set as the desk layout used by Stand down."
       - "Each layout shows a scaled diagram with rotation and names (screenshot artifacts/screens/display-layouts/)."
+      - "The full arrangement includes the refresh rate Windows reports for each monitor that is on, shown on the layout's monitor rows (edit dialog) and kept by an edit; a layout without rates (saved before, or a hand-written setup) still applies and leaves the rate to Windows."
     status: done
     evidence:
       - "src/features/displays/core/service.test.ts#shows each saved layout with whether the monitors match it now"
       - "src/features/displays/core/service.test.ts#creates, renames, edits, updates, sets as desk layout and deletes layouts"
+      - "src/features/displays/core/service.test.ts#saves the refresh rate of each monitor, shows it, says when it differs, and applies it; a layout without one still applies"
+      - "tests/e2e/displays.e2e.ts#monitors: a saved layout keeps each refresh rate, says when Windows runs another, and puts it back"
+      - "artifacts/screens/display-refresh-rate/01-rate-in-layout.png"
       - "tests/e2e/displays.e2e.ts#monitors: map, Identify and names, then apply Flying, Racing without the TV, and manage layouts"
       - "fixtures/scenarios/data/displays/layouts.json"
       - "artifacts/screens/display-layouts/03-layouts.png"
@@ -1599,8 +1603,14 @@ requirements:
     done_means:
       - "A layout may specify resolution and refresh rate per monitor; apply sets them only if the mode is in the monitor's supported mode list, otherwise it reports which monitor/mode is unsupported and applies nothing."
       - "Unit test with fake DisplayProvider modes covers supported and unsupported modes."
+      - "A layout saved from the monitors carries each one's refresh rate: a monitor running at another rate is a difference on the card and in the apply preview (words and the picture: 'changes to 120 Hz'), and applying hands the rate to the display port and reads it back."
     status: done
     evidence:
+      - "src/features/displays/core/service.test.ts#saves the refresh rate of each monitor, shows it, says when it differs, and applies it; a layout without one still applies"
+      - "src/features/displays/core/layoutCheck.test.ts#compares the refresh rate only when the layout gives one"
+      - "tests/e2e/displays.e2e.ts#monitors: a saved layout keeps each refresh rate, says when Windows runs another, and puts it back"
+      - "artifacts/screens/display-refresh-rate/02-apply-rate-preview.png"
+      - "artifacts/screens/display-refresh-rate/03-rate-applied.png"
       - "src/features/displays/core/modes.test.ts#applies a mode the monitor lists, and the check then compares the refresh rate too"
       - "src/features/displays/core/modes.test.ts#refuses a mode the monitor does not list, names the monitor and the mode, and applies nothing"
       - "src/features/displays/core/modes.test.ts#the provider itself refuses an unlisted mode and leaves every monitor as it was"
@@ -3264,12 +3274,17 @@ requirements:
       - "'Back up now' creates one backup of all profiles, RigReady settings, display layouts and every tracked item, with progress, and reports file count and size."
       - "The backup is a zip under {RIGREADY_HOME}/backups/ named with date and time; a test unpacks it and finds every tracked file from the fixture."
       - "Files that could not be read (locked, permission) are listed in the result; the backup is not reported as complete if any were skipped, but as 'completed with n skipped'."
+      - "A full backup also holds the snapshots index, the 'what changed' records and the stored copies of the files they refer to (rigready/backup/snapshots.json, fingerprints.json and blobs/<2>/<sha256>, each copy once and named by its content); the backups list names the snapshots and the setups with a record. The copies count towards the 2 GB cap, checked before anything is read; a copy that is gone is listed as skipped with the snapshot or record it belongs to. The journal's automatic copies (BACKUP-010) stay out: the restore wizard cannot use them, they belong to this PC's undo."
     status: done
     evidence:
       - "src/features/backup/core/backup.test.ts#backs up everything into one zip named by date, and every tracked file is inside"
       - "src/features/backup/core/backup.test.ts#reports files it could not read and says the backup completed with them skipped"
+      - "src/features/backup/core/backup.test.ts#a full backup holds the snapshots and the records with the stored copies of their files, inside the 2 GB cap"
+      - "src/features/backup/core/backup.test.ts#reports a stored copy that is gone, and the restore preview says which snapshot and record it leaves short"
       - "tests/e2e/backup.e2e.ts#backup: choose what to track, back up everything in one click, see what is inside, export it"
+      - "tests/e2e/backup.e2e.ts#backup: snapshots compare line by line and can be put back; \"what changed\" since it last worked"
       - "artifacts/screens/backup-full/04-backed-up.png"
+      - "artifacts/screens/backup-history/04-backup-with-history.png"
 
   - id: BACKUP-005
     title: Scoped backups
@@ -3313,13 +3328,18 @@ requirements:
       - "Restore lets the user pick a backup, shows its manifest, and lists every entry with its resolved target path on this machine and whether the target exists, is identical, or differs."
       - "The user can tick entries (whole tracked item or individual files) to restore."
       - "Entries whose path variable cannot be resolved here (game not installed) are shown as not restorable with the reason."
+      - "Each snapshot and each setup's 'what changed' record in the backup is a row beside the setups (snapshot:<id>, changes:<profile id>), new, same or different compared with this PC's; one whose stored copies are not all in the backup says so and cannot be ticked, and the restore skips it with that reason."
     status: done
     evidence:
       - "src/features/backup/core/backup.test.ts#previews every entry with its target here and whether it is new, identical or different"
       - "src/features/backup/core/backup.test.ts#marks entries whose path variable does not exist here as not restorable, with the reason"
+      - "src/features/backup/core/backup.test.ts#restores a snapshot and a record like a setup: new on a fresh PC, same when there, keep both or replace when it differs"
+      - "src/features/backup/core/backup.test.ts#reports a stored copy that is gone, and the restore preview says which snapshot and record it leaves short"
       - "tests/e2e/backup.e2e.ts#restore: a backup from this rig onto a freshly installed PC, with a preview, choices and a report"
+      - "tests/e2e/backup.e2e.ts#backup: snapshots compare line by line and can be put back; \"what changed\" since it last worked"
       - "artifacts/screens/restore/02-preview.png"
       - "artifacts/screens/restore-no-dcs/01-not-restorable.png"
+      - "artifacts/screens/backup-history/05-restore-with-history.png"
 
   - id: BACKUP-008
     title: Restore conflict choices
@@ -3330,10 +3350,12 @@ requirements:
       - "For each differing target, the user chooses overwrite, skip, or keep both (restored copy written next to it with suffix ' (restored YYYY-MM-DD)'), with an 'apply to all' option."
       - "Overwrite snapshots the existing file first (BACKUP-010) so the restore can be undone."
       - "Profiles in the backup that already exist get the same three choices, with keep both creating '<name> (restored)'."
+      - "Snapshots get the same three choices (keep both creates '<name> (restored)'); a 'what changed' record, one per setup, is replaced or skipped. Restoring either puts the stored copies of its files back, each read back by its content id. A replaced snapshot or record is saved first in the 'Before restoring' backup as an index of just the replaced ones with their copies, which restores through the same page."
     status: done
     evidence:
       - "src/features/backup/core/backup.test.ts#overwrite, skip and keep both per file; replaced files are saved first and the restore is one undo"
       - "src/features/backup/core/backup.test.ts#restores setups with overwrite or keep both, settings and the always list"
+      - "src/features/backup/core/backup.test.ts#restores a snapshot and a record like a setup: new on a fresh PC, same when there, keep both or replace when it differs"
       - "tests/e2e/backup.e2e.ts#restore: a backup from this rig onto a freshly installed PC, with a preview, choices and a report"
       - "artifacts/screens/restore/02-preview.png"
 

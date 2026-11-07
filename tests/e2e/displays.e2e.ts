@@ -277,6 +277,54 @@ test('monitors: edit a layout by hand; overlapping monitors are refused with a r
   await shot('edited');
 });
 
+test('monitors: a saved layout keeps each refresh rate, says when Windows runs another, and puts it back', async ({
+  rig,
+}) => {
+  const run = await rig.launch('displays-layouts', 'display-refresh-rate');
+  const { page, shot } = run;
+  await openMonitors(page);
+  await page.getByTestId('layout-save-open').click();
+  await page.getByTestId('layout-save-name').locator('input').fill('Desk at 120 Hz');
+  await page.getByTestId('layout-save').click();
+  await expect(card(page, 'Desk at 120 Hz')).toHaveAttribute('data-status', 'current');
+
+  // The layout's monitor rows show the rate it was saved with.
+  await menu(page, 'Desk at 120 Hz', 'layout-edit');
+  const edit = page.getByTestId('edit-dialog');
+  await expect(
+    edit.locator('[data-testid="edit-row"][data-label="LC49G95T"]').getByTestId('edit-mode')
+  ).toHaveText('5120x1440 · 120 Hz');
+  await shot('rate-in-layout');
+  await edit.getByRole('button', { name: 'Cancel' }).click();
+  await expect(edit).toHaveCount(0);
+
+  // Windows drops the ultrawide to 60 Hz (a driver update, a cable): the layout says so.
+  await run.mutate([{ op: 'setDisplay', match: { name: 'LC49G95T' }, set: { refreshHz: 60 } }]);
+  await expect(row(page, 'LC49G95T')).toContainText('60 Hz');
+  await expect(card(page, 'Desk at 120 Hz')).toHaveAttribute('data-status', 'different');
+  await card(page, 'Desk at 120 Hz').getByTestId('layout-status').click();
+  await expect(card(page, 'Desk at 120 Hz').getByTestId('layout-differences')).toHaveText(
+    'LC49G95T runs at 60 Hz, expected 120 Hz'
+  );
+
+  // The apply preview names it, in words and on the picture, and Apply puts it back.
+  await card(page, 'Desk at 120 Hz').getByTestId('layout-apply').click();
+  const dialog = page.getByTestId('apply-dialog');
+  await expect(dialog.getByTestId('apply-changes')).toHaveText(
+    'LC49G95T runs at 60 Hz, expected 120 Hz'
+  );
+  await expect(
+    dialog.locator('[data-testid="morph-monitor"][data-label="LC49G95T"]')
+  ).toHaveAttribute('data-changes', 'changes to 120 Hz');
+  await expect(dialog.getByTestId('layout-morph')).toHaveAttribute('data-showing', 'after');
+  await shot('apply-rate-preview');
+  await dialog.getByTestId('apply-confirm').click();
+  await page.getByTestId('keep-layout-keep').click();
+  await expect(card(page, 'Desk at 120 Hz')).toHaveAttribute('data-status', 'current');
+  await expect(row(page, 'LC49G95T')).toContainText('120 Hz');
+  await shot('rate-applied');
+});
+
 test('fix-display: an MFD screen back in landscape fails by name, Fix then Keep makes it pass', async ({
   rig,
 }) => {

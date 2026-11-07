@@ -27,3 +27,7 @@ Choose a setup with the chips. The panel says when the setup last worked, why it
 ## Getting the old version back
 
 This tab compares; it does not restore. To put an earlier version back, use a [snapshot](snapshots.md) you took, or [restore](restore.md) the file from a backup. The comparison tells you which file to look for.
+
+## The record in a backup
+
+A full [backup](backups.md) holds the record of every setup, with the stored copies of the text files it kept, so "what changed" still works after a move to another PC or a fresh install. On the [restore page](restore.md) each record is a row under **Setups, settings, snapshots and records**, named after its setup and compared with the record on this PC. There is one record per setup, so a record that differs can be replaced or skipped; there is no keeping both.

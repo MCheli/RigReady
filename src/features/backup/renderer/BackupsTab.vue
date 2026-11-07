@@ -479,7 +479,27 @@ const kindIcon = (b: BackupView): string =>
               backup.profiles.join(', ')
             }}</span>
           </div>
-          <div v-if="backup.items.length === 0 && backup.profiles.length === 0" class="rr-muted">
+          <div v-if="backup.snapshots.length" class="content-line">
+            <span>Snapshots</span>
+            <span class="rr-muted" data-testid="backup-snapshots">{{
+              backup.snapshots.join(', ')
+            }}</span>
+          </div>
+          <div v-if="backup.changeRecords.length" class="content-line">
+            <span>"What changed" records</span>
+            <span class="rr-muted" data-testid="backup-change-records">{{
+              backup.changeRecords.join(', ')
+            }}</span>
+          </div>
+          <div
+            v-if="
+              backup.items.length === 0 &&
+              backup.profiles.length === 0 &&
+              backup.snapshots.length === 0 &&
+              backup.changeRecords.length === 0
+            "
+            class="rr-muted"
+          >
             RigReady settings only.
           </div>
         </div>

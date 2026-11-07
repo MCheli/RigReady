@@ -165,15 +165,21 @@ describe('display.layout check', () => {
 
   it('compares the refresh rate only when the layout gives one', async () => {
     rig = await scenarioRig('flying-all-good', NO_FILES);
-    const good = await currentLayout(rig);
+    const captured = await currentLayout(rig);
+    // A capture stores the rate Windows reports now...
+    expect(captured.displays.find((d) => d.name === 'LC49G95T')!.refreshHz).toBe(120);
+    const good = {
+      displays: captured.displays.map((d) => {
+        const { refreshHz: _rate, ...rest } = d;
+        return rest;
+      }),
+    };
     const check = createLayoutCheck(depsFor(rig));
-    // The capture does not store refresh rates, so a different rate does not matter...
+    // ...but a layout without one (a setup file written by hand, an older layout) does not mind...
     rig.ports.state.displays.find((d) => d.name === 'LC49G95T')!.refreshHz = 60;
     expect((await check.run(good, rig.ctx)).pass).toBe(true);
-    // ...unless the layout asks for one.
-    const wants120 = good.displays.map((d) =>
-      d.name === 'LC49G95T' ? { ...d, refreshHz: 120 } : d
-    );
+    // ...and one that asks for a rate is compared on it.
+    const wants120 = captured.displays;
     expect(await check.run({ displays: wants120 }, rig.ctx)).toMatchObject({
       pass: false,
       summary: 'LC49G95T runs at 60 Hz, expected 120 Hz',

@@ -21,6 +21,8 @@ export const PreviewMonitorSchema = z.object({
   width: z.number().int(),
   height: z.number().int(),
   rotation: RotationSchema,
+  /** The refresh rate in this state, when it is known. */
+  refreshHz: z.number().optional(),
   /** False for a monitor the layout wants that is not connected: it stays where it is, absent. */
   connected: z.boolean(),
 });
@@ -83,6 +85,7 @@ export function previewMaps(
     width: d.enabled ? d.width : 0,
     height: d.enabled ? d.height : 0,
     rotation: d.rotation,
+    ...(d.enabled && d.refreshHz !== undefined ? { refreshHz: d.refreshHz } : {}),
     connected: true,
   }));
 
@@ -94,6 +97,8 @@ export function previewMaps(
       return { ...before[i]!, enabled: false, primary: false, x: 0, y: 0, width: 0, height: 0 };
     }
     const rotation = target.rotation;
+    // The layout's rate when it gives one; otherwise Windows keeps the one it has.
+    const refreshHz = target.refreshHz ?? (d.enabled ? d.refreshHz : undefined);
     return {
       id: d.id,
       label: labelOf(d),
@@ -103,6 +108,7 @@ export function previewMaps(
       y: target.y,
       ...sizeAt(d, rotation, target),
       rotation,
+      ...(refreshHz !== undefined ? { refreshHz } : {}),
       connected: true,
     };
   });
@@ -192,6 +198,13 @@ export function morphOf(maps: PreviewMaps): Morph {
     else if (a && b && onBefore && onAfter) {
       if (a.rotation !== b.rotation) changes.push('turns');
       else if (a.width !== b.width || a.height !== b.height) changes.push('changes size');
+      if (
+        a.refreshHz !== undefined &&
+        b.refreshHz !== undefined &&
+        Math.abs(a.refreshHz - b.refreshHz) >= 0.5
+      ) {
+        changes.push(`changes to ${b.refreshHz} Hz`);
+      }
       if (a.x !== b.x || a.y !== b.y) changes.push('moves');
       if (!a.primary && b.primary) changes.push('becomes the main display');
     }

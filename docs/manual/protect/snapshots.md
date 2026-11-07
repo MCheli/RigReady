@@ -36,4 +36,6 @@ A put-back is refused while the game or tool that owns the files is running, bec
 
 ## Where snapshots live
 
-Snapshots are kept in RigReady's data folder, with each file stored once by its content, so ten snapshots of the same unchanged file take the space of one. They are not part of a backup file and are not carried to another PC; for that, make a [backup](backups.md).
+Snapshots are kept in RigReady's data folder, with each file stored once by its content, so ten snapshots of the same unchanged file take the space of one.
+
+Every full [backup](backups.md) holds your snapshots with the stored copies of their files, so they travel to another PC with the rest. On the [restore page](restore.md) each snapshot is a row of its own under **Setups, settings, snapshots and records**, new, the same or different compared with the snapshots on this PC, with the same choices as a setup: replace, skip, or keep both under its name with "(restored)" added. The stored copies count towards the 2 GB one backup can hold.

@@ -71,7 +71,7 @@ onMounted(async () => {
     if (item.files.length <= 6) open.value.add(item.key);
   }
   for (const own of result.value.own) {
-    sel[own.ref] = own.status !== 'same';
+    sel[own.ref] = own.status !== 'same' && !own.problem;
     act[own.ref] = 'overwrite';
   }
   selected.value = sel;
@@ -80,8 +80,11 @@ onMounted(async () => {
 
 const allRows = computed<Row[]>(() => [
   ...(preview.value?.items ?? []).flatMap((i) => (i.restorable ? i.files : [])),
-  ...(preview.value?.own ?? []),
+  ...(preview.value?.own ?? []).filter((o) => !o.problem),
 ]);
+
+/** The kinds that can be kept side by side under a name with "(restored)" added. */
+const KEEP_BOTH_KINDS = new Set(['profile', 'layout', 'snapshot']);
 const conflicts = computed(() => allRows.value.filter((r) => r.status === 'different'));
 
 const plan = computed(() => {
@@ -400,7 +403,7 @@ const ACTIONS = [
       </div>
 
       <template v-if="preview.own.length">
-        <h2 class="rr-section-title section-gap">Setups and RigReady settings</h2>
+        <h2 class="rr-section-title section-gap">Setups, settings, snapshots and records</h2>
         <div class="rr-panel">
           <div
             v-for="own in preview.own"
@@ -408,11 +411,12 @@ const ACTIONS = [
             class="rr-row"
             data-testid="restore-own"
             :data-ref="own.ref"
+            :data-kind="own.kind"
             :data-status="own.status"
           >
             <v-checkbox-btn
               v-model="selected[own.ref]"
-              :disabled="own.status === 'same'"
+              :disabled="own.status === 'same' || !!own.problem"
               density="compact"
               :aria-label="`Restore ${own.label}`"
               data-testid="restore-own-check"
@@ -420,10 +424,13 @@ const ACTIONS = [
             <div class="rr-row-main">
               <div class="rr-row-title">{{ own.label }}</div>
               <div v-if="own.detail" class="rr-row-sub">{{ own.detail }}</div>
+              <div v-if="own.problem" class="rr-row-sub rr-warn" data-testid="restore-own-problem">
+                Cannot be restored from this backup: {{ own.problem }}
+              </div>
             </div>
             <span class="status" :class="`status-${own.status}`">{{ STATUS[own.status] }}</span>
             <v-select
-              v-if="own.status === 'different' && (own.kind === 'profile' || own.kind === 'layout')"
+              v-if="own.status === 'different' && !own.problem && KEEP_BOTH_KINDS.has(own.kind)"
               v-model="actions[own.ref]"
               :items="ACTIONS"
               :disabled="!selected[own.ref]"
