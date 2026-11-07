@@ -5491,3 +5491,22 @@ requirements:
       - "tests/e2e/look.e2e.ts#look: an empty state has a drawing, says what is missing, and leads somewhere"
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
+
+  # ---------------------------------------------------------------------------
+  # SECURITY (docs/research/security-review-2026-11.md, SECURITY.md)
+  # ---------------------------------------------------------------------------
+
+  - id: SEC-002
+    title: Windows are refused every permission, drawing windows stay off the network, and a second start is validated
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "Every permission request and permission check from any page of the default session is refused (location, notifications, media, clipboard through the page)."
+      - "The offscreen renders and the Identify labels run on their own session that cancels every http, https, ws and ftp request and refuses every permission; an address in a drawn page is never fetched."
+      - "What a second start hands to the running app is checked with a schema before it is acted on; anything that does not fit is read from the arguments instead."
+    status: done
+    evidence:
+      - "tests/e2e/nfr.e2e.ts#nfr: the renderer is isolated and sandboxed, held by its CSP, and reaches main only through validated channels"
+      - "src/core/commandLine.test.ts#is taken only when it is a parsed command line, whatever process sent it"
+      - "artifacts/screens/nfr-hardening/01-still-the-app.png"

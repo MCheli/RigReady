@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { commandArgs, parseCommandLine, resolveSetup } from './commandLine';
+import {
+  commandArgs,
+  parseCommandLine,
+  ParsedCommandLineSchema,
+  resolveSetup,
+} from './commandLine';
 
 describe('the command line', () => {
   it('reads --launch, --make-ready and --setup with the setup as the next argument', () => {
@@ -80,6 +85,37 @@ describe('the command line', () => {
     expect(parseCommandLine(['RigReady.exe', '--launch=a', '--launch=b'])).toMatchObject({
       kind: 'problem',
     });
+  });
+});
+
+describe('what a second start hands over', () => {
+  it('is taken only when it is a parsed command line, whatever process sent it', () => {
+    for (const argv of [
+      ['RigReady.exe'],
+      ['RigReady.exe', '--launch', 'DCS F/A-18C'],
+      ['RigReady.exe', '--launch', '--hidden'],
+      ['RigReady.exe', '--launch=a', '--setup=b'],
+    ]) {
+      const parsed = parseCommandLine(argv);
+      expect(ParsedCommandLineSchema.safeParse(parsed), argv.join(' ')).toMatchObject({
+        success: true,
+        data: parsed,
+      });
+    }
+    for (const junk of [
+      undefined,
+      null,
+      'launch',
+      { kind: 'launch' },
+      { kind: 'command' },
+      { kind: 'command', command: { action: 'run', setup: 'x' } },
+      { kind: 'command', command: { action: 'fly', setup: '' } },
+      { kind: 'command', command: { action: 'fly', setup: 42 } },
+      { kind: 'command', command: { action: 'fly', setup: 'x'.repeat(501) } },
+      { kind: 'problem' },
+    ]) {
+      expect(ParsedCommandLineSchema.safeParse(junk).success, JSON.stringify(junk)).toBe(false);
+    }
   });
 });
 
