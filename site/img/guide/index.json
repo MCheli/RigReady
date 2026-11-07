@@ -404,6 +404,11 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/display-refresh-rate/01-rate-in-layout.png": {
+    "file": "display-refresh-rate--01-rate-in-layout.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/display-layouts/03-layouts.png": {
     "file": "display-layouts--03-layouts.webp",
     "width": 1250,
@@ -411,6 +416,11 @@
   },
   "artifacts/screens/display-layouts/04-apply-flying-preview.png": {
     "file": "display-layouts--04-apply-flying-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-refresh-rate/02-apply-rate-preview.png": {
+    "file": "display-refresh-rate--02-apply-rate-preview.webp",
     "width": 1250,
     "height": 821
   },
@@ -549,6 +559,11 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/backup-history/04-backup-with-history.png": {
+    "file": "backup-history--04-backup-with-history.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/backup-game-updated/02-backed-up.png": {
     "file": "backup-game-updated--02-backed-up.webp",
     "width": 1250,
@@ -556,6 +571,11 @@
   },
   "artifacts/screens/restore/02-preview.png": {
     "file": "restore--02-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/backup-history/05-restore-with-history.png": {
+    "file": "backup-history--05-restore-with-history.webp",
     "width": 1250,
     "height": 821
   },
@@ -666,6 +686,11 @@
   },
   "artifacts/screens/fly-launch-actions/02-launched.png": {
     "file": "fly-launch-actions--02-launched.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profile-add-check/02-variables-menu.png": {
+    "file": "profile-add-check--02-variables-menu.webp",
     "width": 1250,
     "height": 821
   },
