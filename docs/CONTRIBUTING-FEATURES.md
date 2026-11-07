@@ -451,7 +451,7 @@ app.layoutAnswer = 'wait';                           // 'keep' (default) | 'reve
 await rig.cleanup();                                 // in afterEach
 ```
 
-- `rig.home` is the fake user folder; every `ports.folders.*` path is under it, Program Files included. A scenario copies the rig's recorded files there (section 10). Copying all of them takes about a tenth of a second per test, so pass `files` with the globs you need (or `[]`) when a test does not need everything.
+- `rig.home` is the fake user folder; every `ports.folders.*` path is under it, Program Files included. A scenario copies the rig's recorded files there (section 10). Copying all of them takes about a tenth of a second per test on a desk PC and ten times that on a CI runner, so pass `files` with the globs you need when a test does not need everything, or `[]`, which copies nothing at all: not even the recorded folders, and a scenario's `removeFile` mutations are then skipped as already done.
 - **The ports the features hold are wrapped.** `wireFeatures` gives features a copy of the ports object with `processes` wrapped by `verifiedProcesses`, so in a `wiredApp` test `app.wiring.context.ports !== rig.ports` and `ctx.ports.processes !== rig.ports.processes`. Consequences:
   - Steer a port by changing the fake port object the rig holds (`rig.ports.http.respond(...)`, `rig.ports.processes.stubborn.add('TrackIR5.exe')`, replacing a method: `rig.ports.devices.list = async () => err('x', 'nope')`). The wrapped copy shares those objects, so the features see it.
   - Replacing a whole port after wiring (`rig.ports.http = somethingElse`) is not seen by any feature: they hold the copy made at wiring.
@@ -629,7 +629,7 @@ test('audio: wrong default device is fixed by Make ready', async ({ rig }) => {
 | `page`, `app` | Playwright page and Electron app |
 | `shot(name)` | Numbered screenshot in `artifacts/screens/<flow>/`; waits for fonts and for dialogs to finish appearing |
 | `dataRoot`, `home` | The data root and the fake user folder on disk, for arranging and asserting files with `node:fs` |
-| `mutate([...])` | Scenario mutations applied while the app runs; screens refresh by themselves |
+| `mutate([...])` | Scenario mutations applied while the app runs (in the main process, so also while the window is hidden in the tray); screens refresh by themselves |
 | `sendInput([{ index, name, axes, buttons, hats, timestamp }])` | Controller input as if the user pressed something |
 | `changeFiles(reason, [{ path, content }])` | A journaled change through FileStore, as a feature would make it |
 | `render(html, { width, height })` | Calls the real Render port; returns PNG size and PDF header |
@@ -647,7 +647,7 @@ These specs find routes from the running app's router and navigation, so a new p
 
 | Spec | What it does | What your page must do |
 |---|---|---|
-| `tour.e2e.ts` | Visits every page on four rigs (`flying-all-good`, `tour-racing`, `generic-fresh`, and `flying-fresh` as a first run) and saves one screenshot per page to `artifacts/screens/tour-flying`, `tour-racing`, `tour-generic` and `tour-first-run` (the user guide takes its pictures from there). | Have an `.rr-page` root, an `.rr-page-title` of at least three characters and an `.rr-page-sub` of at least fifteen; settle (the same text three times in a row, nothing loading) within 20 seconds on each rig; and leave the navigation fitting the window without scrolling. A tool panel that has no heading by design goes on the spec's `NO_HEADING` list with its reason (only the quick-look sheet is there). |
+| `tour.e2e.ts` | Visits every page on four rigs (`flying-all-good`, `tour-racing`, `generic-fresh`, and `flying-fresh` as a first run) and saves one screenshot per page to `artifacts/screens/tour-flying`, `tour-racing`, `tour-generic` and `tour-first-run` (the manual takes its pictures from there). | Have an `.rr-page` root, an `.rr-page-title` of at least three characters and an `.rr-page-sub` of at least fifteen; settle (the same text three times in a row, nothing loading) within 20 seconds on each rig; and leave the navigation fitting the window without scrolling. A tool panel that has no heading by design goes on the spec's `NO_HEADING` list with its reason (only the quick-look sheet is there). |
 | `generic-rig.e2e.ts` | Every Configure page on a PC with one joystick and no sim. | Be on its `PAGES` list (section 10); show an honest empty state, no error element (`[data-testid$="-error"]`, an error alert), nothing still loading. |
 | `generic-second-pc.e2e.ts` | Capture, Make ready, Launch, Stand down, backup, restore, share and import on a second generic PC; every route renders. | Work with a moved Saved Games folder and a second Steam library: take every path from `ctx.ports.folders` and the game modules. |
 | `nfr.e2e.ts` | Crawls every route of every feature: renders, no "nothing at this address", no error alert, no visible control that is a stub, no disabled control that does not say why. Also proves the renderer sandbox and CSP, that a scenario run never touches the real `~/.rigready`, and that the window answers within 100 ms while a long backup runs. | Give every visible control a working handler; say why a control is disabled. |

@@ -24,7 +24,7 @@
     "pack": "npm run build && node scripts/check-sidecar.mjs && electron-builder --dir --publish never",
     "smoke:packaged": "npm run pack && playwright test --config playwright.packaged.config.ts",
     "smoke:installer": "npm run build && node scripts/check-sidecar.mjs && node scripts/build-test-installer.mjs && playwright test --config playwright.installer.config.ts",
-    "dist": "npm run build && node scripts/check-sidecar.mjs && electron-builder --win --publish never",
+    "dist": "npm run build && node scripts/check-sidecar.mjs && tsx scripts/dist.ts",
     "prepare": "husky",
     "format:check": "prettier --check \"src/**/*.{ts,vue,css,html}\" \"tests/**/*.ts\" \"scripts/**/*.{ts,mjs}\" \"*.{ts,mjs}\""
   },
@@ -132,7 +132,7 @@
     "axe-core": "^4.13.0",
     "cross-env": "^10.0.0",
     "electron": "^44.10.1",
-    "electron-builder": "^26.15.3",
+    "electron-builder": "^26.18.1",
     "electron-updater": "^6.8.9",
     "electron-vite": "^5.0.0",
     "eslint": "^10.12.0",

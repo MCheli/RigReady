@@ -98,7 +98,7 @@ export class ElectronUpdateFeed implements UpdateFeed {
         typeof raw === 'string'
           ? raw
               .replace(/<[^>]+>/g, ' ')
-              .replace(/s+/g, ' ')
+              .replace(/\s+/g, ' ')
               .trim()
               .slice(0, 300)
           : '';

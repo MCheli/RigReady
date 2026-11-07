@@ -154,7 +154,8 @@ describe('profile files', () => {
   });
 
   it('path variables resolve under the user folder of this run, never the real one', async () => {
-    app = await wiredApp('flying-all-good', { files: [] });
+    // One DCS file, so that Saved Games\DCS exists and {DCS_USER} is a variable here.
+    app = await wiredApp('flying-all-good', { files: ['Saved Games/DCS/Config/options.lua'] });
     const variables = await allPathVariables(app.ctx, app.wiring.context.games);
     expect(variables['USER']).toBe(app.home);
     expect(expandPath('{USER}/Saved Games/DCS', variables)).toEqual({

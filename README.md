@@ -88,7 +88,7 @@ Everything RigReady keeps is in `%USERPROFILE%\.rigready` (`~/.rigready`): setup
 
 | | |
 |---|---|
-| [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) | How to use the app, task by task. |
+| [`docs/manual/`](docs/manual/index.md) | The manual: how to use the app, section by section. Published at [rigready.io/docs](https://rigready.io/docs/). |
 | [`CHANGELOG.md`](CHANGELOG.md) | What each version contains. |
 | [`docs/PRODUCT.md`](docs/PRODUCT.md) | What the product is. Source of truth. |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Layers, ports, test harness, safety rules. |

@@ -20,6 +20,18 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
+      # The same preparation as CI gives its jobs: the runner's virus scanner scans every
+      # file as it is written, which makes the tests' temp-folder work several times slower
+      # (the unit tests have timed out on it), and its 1024x768 desktop does not fit the
+      # app's window, which the end-to-end and packaged runs below need.
+      - name: Prepare the runner
+        shell: pwsh
+        run: |
+          try { Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction Stop } catch { Write-Host "virus scanner left on: $_" }
+          try { Set-DisplayResolution -Width 1920 -Height 1080 -Force -ErrorAction Stop } catch { Write-Host "screen size not changed: $_" }
+          Add-Type -AssemblyName System.Windows.Forms
+          Write-Host "screen: $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds)"
+
       - run: npm ci
 
       # The tag and the version in package.json must be the same version, or the update
@@ -36,6 +48,15 @@ jobs:
             exit 1
           }
 
+      # The release's description is the version's section of CHANGELOG.md, whose heading
+      # must carry the date by now. First, so that an undated changelog fails in seconds and
+      # not after the forty minutes of tests below.
+      - name: Release notes from CHANGELOG.md
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-notes.mjs $env:TAG artifacts/release-notes.md
+
       - run: npm run check
 
       - run: npm run test:e2e
@@ -46,14 +67,41 @@ jobs:
       # The unpacked app is started for real before anything is released.
       - run: npm run smoke:packaged
 
-      # electron-builder never publishes (--publish never); the step below does.
+      # electron-builder never publishes (--publish never); the release step below does.
+      # The build is signed through Azure Artifact Signing when the repository has the four
+      # RIGREADY_SIGN_* variables and the three AZURE_* secrets, and is the plain unsigned
+      # build when it has none of them; anything in between fails here with a message
+      # (docs/RELEASING.md, "Code signing"). Only this step sees these values.
       - name: Build installer
         run: npm run dist
+        env:
+          RIGREADY_SIGN_ENDPOINT: ${{ vars.RIGREADY_SIGN_ENDPOINT }}
+          RIGREADY_SIGN_ACCOUNT: ${{ vars.RIGREADY_SIGN_ACCOUNT }}
+          RIGREADY_SIGN_PROFILE: ${{ vars.RIGREADY_SIGN_PROFILE }}
+          RIGREADY_SIGN_PUBLISHER: ${{ vars.RIGREADY_SIGN_PUBLISHER }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
 
-      # The installer plus the update feed the installed app reads: latest.yml for a
-      # release, beta.yml for a version tagged x.y.z-beta.n, and the block map for
-      # partial downloads. A draft: the release checklist (docs/RELEASING.md) is worked
-      # through before a person publishes it.
+      # A signed build is checked the way an installed RigReady will check it as an update:
+      # signtool and Get-AuthenticodeSignature on the installer, then on the program and the
+      # uninstaller it installs (silently, into a temporary folder, removed again), and the
+      # publisher in the feed file it carries. A failure here stops the release.
+      - name: Verify the signatures
+        if: vars.RIGREADY_SIGN_PUBLISHER != ''
+        shell: pwsh
+        env:
+          PUBLISHER: ${{ vars.RIGREADY_SIGN_PUBLISHER }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          ./scripts/verify-signed-installer.ps1 -Installer "release/RigReady-Setup-$version.exe" -Publisher $env:PUBLISHER
+
+      # The installer, its block map (partial downloads) and latest.yml, the feed file the
+      # installed app reads. electron-builder names the feed file latest.yml for every
+      # version when the publish provider is GitHub; a beta is told apart by the pre-release
+      # flag, and the app's beta channel reads latest.yml from the newest pre-release.
+      # A draft: the release checklist (docs/RELEASING.md) is worked through before a person
+      # publishes it.
       - name: Create GitHub release (draft)
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
@@ -61,9 +109,9 @@ jobs:
             release/*.exe
             release/*.exe.blockmap
             release/latest.yml
-            release/beta.yml
+          fail_on_unmatched_files: true
+          body_path: artifacts/release-notes.md
           draft: true
-          prerelease: ${{ contains(github.ref, '-') }}
-          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

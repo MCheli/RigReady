@@ -4,7 +4,7 @@ import { expect, test } from './harness';
 /**
  * The whole app, page by page, on each kind of PC: the flying rig, the racing rig, a PC
  * that is not the owner's, and a first run. One screenshot per page lands in
- * artifacts/screens/tour-<rig>/ (the user guide takes its pictures from there), and every
+ * artifacts/screens/tour-<rig>/ (the manual takes its pictures from there), and every
  * page must look like part of one application: a title, a line that says what the page is
  * for, nothing still loading, and a navigation that fits the window without scrolling.
  */

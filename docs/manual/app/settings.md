@@ -1,0 +1,61 @@
+---
+title: Settings
+description: A reference of every setting on the Settings page, from Start with Windows to the hotkey, the update channel and how the AI key is stored.
+order: 10
+---
+
+**Configure > Settings** holds everything about how RigReady itself behaves. Each setting is saved the moment you change it, and the page says "Saved". A change that cannot be made is refused with the reason, and the control goes back to what is stored.
+
+The settings are kept in `settings.json` in RigReady's [data folder](index.md). A full backup includes them, and a restore brings back the desk layout, the retention and the limits; Start with Windows and the API key are never restored, because they belong to one PC and one Windows account.
+
+## Startup
+
+**Start with Windows.** RigReady starts in the tray when you sign in, without opening its window. It is off by default. The switch shows what Windows actually has: when Windows will not accept the entry, or has it switched off, the page says so. See [Start with Windows is off](../troubleshooting/start-with-windows-off.md).
+
+**Keep running in the tray when the window is closed.** On by default: closing the window hides RigReady to the tray, and **Quit** in the tray icon's menu ends it. Off: closing the window quits.
+
+## Monitor layouts
+
+**Desk layout.** The saved layout that **Stand down** puts the monitors back into. "None" means Stand down leaves the monitors alone. The layouts are listed under it, each with how many monitors it switches on and off, with **Rename** and **Delete**; deleting the desk layout clears the choice. **Save current monitors as a layout** stores the arrangement as it is now under a name. The same layouts are managed on **Configure > Monitors**; see [layouts](../monitors-and-audio/layouts.md).
+
+## Safety and limits
+
+**Keep automatic backups for.** How many days the automatic copies of changed files are kept (30 by default, 1 to 3650), and how many of the newest changes are always kept whatever their age (50 by default). Older copies are removed when RigReady starts. See [the Safety page](../protect/safety-page.md).
+
+**Monitor layout revert timer.** How many seconds a newly applied layout waits for you to keep it before it goes back by itself: 15 by default, 5 to 120.
+
+**Check timeout.** How many seconds one check may run before it is reported as timed out: 5 by default, 1 to 60.
+
+**Largest import.** The biggest shared setup or backup file RigReady will open, in megabytes: 200 by default, up to 4096. Larger files are refused before they are read.
+
+## AI assistance
+
+**Anthropic API key.** Optional. Paste a key and press **Store key**; the page then says "An Anthropic API key is stored" and offers **Remove key**. The key is never shown again, and the field only accepts a replacement.
+
+The key is encrypted with Windows' own data protection (DPAPI, through Electron's safeStorage) and written to `secrets\` in the data folder. Only your Windows account on this PC can decrypt it; the file is useless on another PC or to another user. The key is never written to the settings file, the log, a backup, a shared setup or a picture. If Windows cannot encrypt for your account at that moment, the key is refused rather than stored in plain text.
+
+**AI binding help** below it, added by the AI feature: the last four characters of the stored key, **Test key**, which asks Anthropic whether the key works and names the model, the **Model** choice (Opus or Sonnet, with their prices per million tokens), and **Exactly what is sent**, the list of what every request contains and what never leaves the PC. Everything except the AI help works without a key. See [the binding guide and AI](../dcs/binding-guide-and-ai.md) and [privacy](privacy.md).
+
+## Hotkey
+
+**Make ready from anywhere.** A key combination that works whatever program is in front: it brings RigReady forward and runs **Make ready** for the setup in use. It never launches. Off until you choose one. Press **Choose a hotkey** (later **Change**), then hold Ctrl, Alt or the Windows key and press a letter, digit, function key, number pad digit, arrow, Space, Home, End, Page Up, Page Down, Insert or Delete; Esc cancels. A combination without a modifier is refused, so it cannot be pressed by accident while typing or flying.
+
+The page shows the hotkey as active only when Windows has registered it for RigReady. When another program already uses it, RigReady says so and the earlier hotkey, if any, stays. **Turn off** removes it. See [the hotkey](../one-click/hotkey.md).
+
+## Device notifications
+
+While RigReady is in the tray, which plug and unplug events it tells you about: **Game controllers** (sticks, throttles, pedals, panels, wheels, and anything a setup needs), **Only what the current setup needs**, **Every USB device**, or **Off**. The same choice is on the Devices page; see [devices](../hardware/devices.md).
+
+## Updates
+
+**Check for updates automatically** (on by default) and the **Channel**, Stable or Beta, with a status line and **Check now** or **Restart to install**. All of it is explained on [updates](updates.md).
+
+## About
+
+The version, the update channel it follows, and that RigReady is open source under the MIT licence. The fuller **About** panel opens from the version number at the top right of the window, with the licence, the website, the source code, where to report a problem, and the data folder.
+
+## Not on this page
+
+- **The log level.** The **Detailed log** switch is on the [Diagnostics](diagnostics.md) page. The environment variable `RIGREADY_LOG_LEVEL` (debug, info, warn or error) overrides it for a run.
+- **How many backups are kept.** On the [Backups](../protect/backups.md) page, above the list.
+- **Play screen options** such as standing down when the game closes, hiding RigReady after launch and the ready tone are in the Play screen's own menu; see [play](../play/index.md).
