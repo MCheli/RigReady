@@ -5,15 +5,52 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
-    # Major versions are deliberate migrations: Electron's version is chosen by
-    # the owner, Vuetify 4 is a migration. Other majors arrive as their own PRs.
+    # Major versions are deliberate migrations, made by a person on a branch of their own,
+    # not weekly pull requests. Patch and minor updates still arrive, grouped (below).
     ignore:
+      # Chosen by the owner: Electron's version, and with it the Node the app runs on.
       - dependency-name: "electron"
+        update-types: ["version-update:semver-major"]
+      # The types describe the Node inside Electron (Electron 44: Node 24). Types for a
+      # newer Node let code compile against APIs the app does not have at runtime. Raise
+      # this major together with Electron's.
+      - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
       - dependency-name: "vuetify"
         update-types: ["version-update:semver-major"]
+      # TypeScript 7 (the native compiler) has no compiler API for vue-tsc and
+      # typescript-eslint to use (typescript-eslint 8 wants typescript <6.1). Lift this
+      # when both support it.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # Build and test toolchain: no majors until 2.0.0 is out, so the release is built
+      # by the tools it was tested with. Remove this block after the 2.0.0 release.
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "electron-vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite-plugin-vuetify"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "electron-builder"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "electron-updater"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@playwright/test"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vue-tsc"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript-eslint"
+        update-types: ["version-update:semver-major"]
     # Patch and minor updates are grouped (one PR for dev, one for prod).
-    # Anything not matched by a group, i.e. majors, gets its own PR.
+    # Anything not matched by a group, i.e. majors that are not ignored above, gets its own PR.
     groups:
       dev-dependencies:
         dependency-type: "development"
@@ -25,8 +62,10 @@ updates:
         update-types:
           - "minor"
           - "patch"
-  # The workflows pin every action to a commit; this keeps those pins moving with
-  # the actions' releases, one grouped pull request a week.
+  # The workflows pin every action to a commit; this keeps those pins moving with the
+  # actions' releases. Minor and patch updates come as one grouped pull request a week;
+  # a major (a new runtime, changed inputs) comes as its own pull request, so it can be
+  # read and taken on its own.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -35,3 +74,6 @@ updates:
       actions:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
