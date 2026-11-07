@@ -11,7 +11,8 @@ import {
   shell,
 } from 'electron';
 import type { NativeImage } from 'electron';
-import { promises as fs } from 'node:fs';
+import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
+import type { Readable, Writable } from 'node:stream';
 import path from 'node:path';
 import type {
   AppWindow,
@@ -859,4 +860,16 @@ export class ElectronOverlays implements Overlays {
       return err('overlay.show', 'Could not show the labels on the monitors.', String(e));
     }
   }
+}
+
+/**
+ * Standard input and output of this process as streams. In Electron's main process on
+ * Windows `process.stdin` ends at once even when a parent gave the process a pipe, so a
+ * stdio protocol (RigReady.exe --mcp) reads and writes the handles directly.
+ */
+export function processStdio(): { input: Readable; output: Writable } {
+  return {
+    input: createReadStream('', { fd: 0, autoClose: false }),
+    output: createWriteStream('', { fd: 1, autoClose: false }),
+  };
 }

@@ -10,9 +10,37 @@ export { channelName, eventName, CHANNEL_PATTERN, EVENT_PATTERN } from './channe
  * from it, and nobody writes a channel string by hand.
  */
 
+/**
+ * What a channel may do, for anything that acts for the user from outside the window (the
+ * MCP server offers every channel to an assistant as a tool, and gates it by this):
+ *
+ * - `read`: changes nothing a user would want to be asked about. Machine reads, checks,
+ *   previews and plans, and RigReady's own bookkeeping (the setup in use, progress marks).
+ * - `change`: writes a file anywhere (setups included), starts or closes a program, changes
+ *   monitors or audio, deletes something. Offered only to a paired assistant, and the
+ *   user's confirm policy applies.
+ * - `launch`: starts a game. As `change`, with its own line in the confirm policy.
+ * - `off`: not offered at all. For a channel that only makes sense for a window of the app
+ *   (live input for a page, "the window is visible") or that hands out a secret.
+ *
+ * A channel without a tier is treated as `change`: the safe side until its owner says more.
+ */
+export type ChannelTier = 'read' | 'change' | 'launch' | 'off';
+
+/** What a channel says about itself, beyond its schemas. */
+export interface ChannelMeta {
+  /**
+   * One or two sentences for an assistant: what the channel does and when to use it. The
+   * MCP tool description. A channel without one is described by its name alone.
+   */
+  describe?: string;
+  tier?: ChannelTier;
+}
+
 export interface ChannelDef<I extends z.ZodType = z.ZodType, O extends z.ZodType = z.ZodType> {
   input: I;
   output: O;
+  meta?: ChannelMeta;
 }
 
 export type ChannelMap = Record<string, ChannelDef>;
@@ -26,9 +54,10 @@ export interface Contract<C extends ChannelMap = ChannelMap, E extends EventMap 
 
 export function channel<I extends z.ZodType, O extends z.ZodType>(
   input: I,
-  output: O
+  output: O,
+  meta?: ChannelMeta
 ): ChannelDef<I, O> {
-  return { input, output };
+  return meta ? { input, output, meta } : { input, output };
 }
 
 /** For channels that take no input. */
