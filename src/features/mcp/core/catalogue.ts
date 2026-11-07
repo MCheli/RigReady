@@ -278,7 +278,8 @@ export function renderCatalogue(catalogue: Catalogue): string {
     '| Tool | Kind | Tier | Description |',
     '|---|---|---|---|',
   ];
-  const cell = (text: string): string => text.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  const cell = (text: string): string =>
+    text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
   for (const tool of catalogue.tools) {
     lines.push(`| \`${tool.name}\` | ${tool.kind} | ${tool.tier} | ${cell(tool.description)} |`);
   }

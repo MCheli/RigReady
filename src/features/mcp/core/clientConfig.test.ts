@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLIENT_KINDS, clientConfig } from './clientConfig';
+import { CLIENT_KINDS, clientConfig, quote } from './clientConfig';
 
 const exe = 'C:\Users\Pilot One\AppData\Local\Programs\RigReady\RigReady.exe';
 const token = `rr_${'a'.repeat(64)}`;
@@ -33,5 +33,20 @@ describe('MCP-005 what to paste into each assistant', () => {
       clientConfig('claude-desktop', { exe: 'electron.exe', args: ['C:\repo'], port: 1 })
     ) as { mcpServers: { rigready: { args: string[] } } };
     expect(dev.mcpServers.rigready.args).toEqual(['C:\repo', '--mcp']);
+  });
+});
+
+describe('quoting an argument for a Windows command line', () => {
+  const bs = String.fromCharCode(92);
+  it('leaves a plain argument alone and keeps the single backslashes of a path', () => {
+    expect(quote('--mcp')).toBe('--mcp');
+    const path = ['C:', 'Program Files', 'RigReady', 'RigReady.exe'].join(bs);
+    expect(quote(path)).toBe(`"${path}"`);
+  });
+
+  it('escapes a quote, doubles the backslashes before it, and doubles a trailing run', () => {
+    expect(quote('say "hi"')).toBe(`"say ${bs}"hi${bs}""`);
+    expect(quote(`a${bs}"b c`)).toBe(`"a${bs}${bs}${bs}"b c"`);
+    expect(quote(`C:${bs}My Folder${bs}`)).toBe(`"C:${bs}My Folder${bs}${bs}"`);
   });
 });

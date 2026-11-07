@@ -83,7 +83,16 @@ export function clientConfig(kind: ClientKind, inputs: ConfigInputs): string {
   }
 }
 
-/** A command-line argument for a shell that takes double quotes (cmd.exe, PowerShell). */
-function quote(value: string): string {
-  return /[\s"]/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
+/**
+ * A command-line argument quoted the way Windows splits a command line
+ * (CommandLineToArgvW): backslashes are literal except in a run before a double quote,
+ * where each must be doubled, as must a run at the very end inside the quotes. Windows
+ * paths keep their single backslashes.
+ */
+export function quote(value: string): string {
+  if (!/[\s"]/.test(value)) return value;
+  const escaped = value
+    .replace(/(\\*)"/g, (_m, slashes: string) => `${slashes}${slashes}\\"`)
+    .replace(/(\\+)$/, (_m, slashes: string) => `${slashes}${slashes}`);
+  return `"${escaped}"`;
 }
