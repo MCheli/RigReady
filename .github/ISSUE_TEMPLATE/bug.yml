@@ -1,0 +1,58 @@
+name: Something went wrong
+description: RigReady did something you did not expect, or did not do something it should have.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting it. A security problem goes through the Security tab instead (see SECURITY.md).
+
+        Before you attach anything, check it for personal details. The diagnostics report removes user names, PC names, serial numbers and paths; a screenshot or a log file you copy by hand does not.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version number at the top right of the window, or Settings > About.
+      placeholder: 2.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: what-you-did
+    attributes:
+      label: What you did
+      description: The steps, in order, from the screen you started on.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: The exact message, if there was one. A screenshot helps.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Configure > Diagnostics > Copy diagnostics, pasted here; or Export diagnostics and attach the zip.
+      render: text
+  - type: dropdown
+    id: files
+    attributes:
+      label: Did it change a game or tool file?
+      description: If it did, the Safety page lists the change and can undo it.
+      options:
+        - 'No, or I do not know'
+        - 'Yes, and Undo on the Safety page put it back'
+        - 'Yes, and Undo did not put it back'
+  - type: input
+    id: game
+    attributes:
+      label: Game, and aircraft or car, if it matters
+      placeholder: DCS World, F/A-18C

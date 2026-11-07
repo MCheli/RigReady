@@ -31,6 +31,16 @@ Use `npm run dev:scenario -- <scenario>` to run the app while developing. It run
 
 Keep them small. `npm run check` and `npm run test:e2e` must pass (CI runs both on Windows). Say what you tested and, for anything on screen, attach the screenshot the scenario run produced.
 
+The maintainer reads every pull request before it is merged, against the rules above: writes go through `FileStore`, programs start with an argument array, the ledger entry and its evidence are in the same pull request. A green CI run is needed, not sufficient.
+
+## AI-assisted contributions
+
+Most of RigReady was written by AI coding agents directed by the maintainer ([how this was built](https://rigready.io/how-it-was-built/)), so a pull request written with one is welcome. The same rules apply to it, plus three:
+
+- Say so in the pull request: which tool, and which parts it wrote.
+- You must be able to explain every change in it. A pull request whose author cannot answer a question about its own diff is closed.
+- The evidence is the test and the screenshot, not the agent's summary. "The agent says it works" is not evidence; a test that exercises the real code path is.
+
 ## Reporting a problem
 
-Open an issue at <https://github.com/MCheli/rigready/issues> with what you did, what you expected, what happened, and the log from `%USERPROFILE%\.rigready\logs\rigready.log`. Remove anything personal first.
+Open an issue at <https://github.com/MCheli/rigready/issues/new/choose>: there is a form for something that went wrong and one for a report of how RigReady does on your hardware. Paste the diagnostics report (Configure > Diagnostics > Copy diagnostics), which has personal details removed. A security problem is reported privately, as `SECURITY.md` describes.

@@ -22,6 +22,16 @@ Nothing under Program Files is changed. A setup you import, or a backup you rest
 
 The game, the helper programs you chose, and the scripts you put in a setup. Each is started as a program with a list of arguments, never as a command line, so a name or a path in a setup cannot become a command. A script runs as you and only when you asked for it: a fix that runs a script shows the exact program and arguments first. A shared setup never carries scripts or launch commands; they are removed when it is made and again when it is imported, and the list of what was removed is shown.
 
+A small Python program that ships inside RigReady reads live controller input through Windows' DirectInput. It uses only Python's standard library and opens no network connection.
+
+## What it closes
+
+**Stand down** asks each helper app to close the way its window's close button would, and waits up to ten seconds. It does not force a program to quit unless the setup says it may; a program that is still running is reported, not killed. Closing TrackIR at stand down, when you switch that on, stops it after the wait if it has not closed by then. A restore that would write files a running game or tool owns stops and says so, and closes the program only when you let it.
+
+## What it reads from Windows
+
+Devices, monitors, audio devices and running programs through Windows' own interfaces. From the registry: where Steam is, the list of installed programs (to find games and tools), the names and calibration Windows keeps for each game controller, where TrackIR's game interface is, and the Fanatec driver settings a backup records. None of these is changed.
+
 ## What leaves the PC
 
 Two things, and nothing else:

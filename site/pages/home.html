@@ -321,30 +321,49 @@
   </div>
 </section>
 
-<section class="safety" aria-labelledby="safety-title">
+<section class="safety" id="safety" aria-labelledby="safety-title">
   <div class="wrap safety-grid">
     <div>
-      <h2 id="safety-title">Careful with the files that took you hours</h2>
+      <h2 id="safety-title">How it keeps your PC safe</h2>
       <p>
-        Bindings, options and monitor setups take a long time to get right. These rules hold
-        everywhere in the app.
+        RigReady reads your hardware and changes game files, so it should say exactly what it does.
+        These rules hold everywhere in the app.
       </p>
       <p>
-        In the manual: <a href="/docs/protect/safety-page/">The Safety page</a> lists every change
-        and its undo.
+        The details, with the checks behind each one, are on the
+        <a href="/docs/app/security/">security page</a> of the manual and in
+        <a href="{{REPO_URL}}/blob/main/SECURITY.md">SECURITY.md</a> on GitHub.
       </p>
     </div>
     <ul class="promises">
       <li>
-        Nothing outside RigReady's own folder is changed without a backup first and a description of
-        the change. Every change is listed on the Safety page and can be undone.
+        It installs for your Windows user only and never asks for administrator rights: not to
+        install, not to run, not for a fix or an update.
+      </li>
+      <li>
+        Every change to a game or tool file is backed up first. Each one is listed on the
+        <a href="/docs/protect/safety-page/">Safety page</a>, where it can be undone.
+      </li>
+      <li>
+        Only two things leave your PC: the update check to GitHub, and AI requests you send yourself
+        with your own Anthropic key. There is no account, no telemetry and no crash reporting.
+      </li>
+      <li>
+        A shared setup never carries scripts or launch commands. An imported file is checked for
+        size and cannot write outside the game and document folders.
+      </li>
+      <li>
+        Updates come only from the project's GitHub releases, are checked against their published
+        checksum before they install, and never install while a game is running. A security fix is
+        announced on every screen.
       </li>
       <li>A monitor layout you apply goes back by itself unless you keep it.</li>
-      <li>It never asks for administrator rights.</li>
       <li>It never reports success for something that did not happen.</li>
       <li>
-        Shared setups never contain scripts or launch commands, and nothing from a setup is ever
-        placed into a command line.
+        The source is open, the whole app was reviewed for security before version 2.0, and a
+        problem can be reported privately through the project's
+        <a href="{{REPO_URL}}/security">Security tab</a> on GitHub. Fixes are named in the release
+        notes.
       </li>
     </ul>
   </div>
@@ -375,11 +394,15 @@
     </div>
     <ul class="links">
       <li>
-        <a href="{{REPO_URL}}/issues/new">Report a problem</a>
+        <a href="{{REPO_URL}}/issues/new/choose">Report a problem or your hardware</a>
         <span
-          >Include the log from <code>%USERPROFILE%\.rigready\logs</code>, with anything personal
-          removed.</span
+          >A form for each. Paste the diagnostics report (Configure, Diagnostics), which has
+          personal details removed.</span
         >
+      </li>
+      <li>
+        <a href="/how-it-was-built/">How this was built</a>
+        <span>One developer and AI coding agents: who did what, and what is not verified yet.</span>
       </li>
       <li>
         <a href="/docs/contributing/">Read the contributing guide</a>
