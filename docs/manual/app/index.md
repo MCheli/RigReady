@@ -29,14 +29,3 @@ What is in it:
 | `window.json`, `panels.json`, `state.json` | Where the window and the pop-out panels were left, and which [setup was used last](../play/switching-setups.md). |
 
 The program itself is installed under `%LOCALAPPDATA%\Programs\RigReady`, and a downloaded update waits in `%LOCALAPPDATA%\rigready-updater` until it is installed.
-
-## Pages in this section
-
-- [Settings](settings.md): every setting, section by section.
-- [Updates](updates.md): how RigReady updates itself, and when it never does.
-- [The command palette](command-palette.md): Ctrl+K, every page and the common actions.
-- [Keyboard shortcuts](keyboard-shortcuts.md): the whole list.
-- [Text size](text-size.md): larger, smaller, full screen.
-- [Diagnostics](diagnostics.md): the log, the report with personal details removed, where to report a problem.
-- [Privacy](privacy.md): what leaves the PC, and what never does.
-- [Uninstall](uninstall.md): removing RigReady, with or without its data.

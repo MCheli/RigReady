@@ -6,16 +6,6 @@ order: 60
 
 For DCS World RigReady goes further than for any other game: it finds the installs, reads DCS's own files, shows what they say in plain language, and writes them for you when you ask it to. This section covers everything RigReady does with DCS: installs and aircraft, the MFD screens, Export.lua, the bindings and their problems, cheat sheets and kneeboard pages, the binding guide, and what still needs SimAppPro.
 
-Pages in this section:
-
-- [Installs and aircraft](installs.md): how RigReady finds the Steam and standalone editions, a waiting update, and the aircraft you have.
-- [MFD screens and the monitor setup](screens.md): putting the main view and the cockpit displays on your monitors.
-- [Export.lua](export-lua.md): the lines that load WinWing, DCS-BIOS, SRS and the other tools.
-- [DCS bindings](bindings.md), [Binding problems](binding-problems.md), [Device IDs changed](device-ids.md) and [Copy between aircraft and snapshots](copy-and-snapshots.md): the DCS bindings page.
-- [Cheat sheets](cheat-sheets.md), [Kneeboard pages](kneeboard.md) and [Learn your controls](trainer.md): a picture of every device with what each control does.
-- [Binding guide and AI help](binding-guide-and-ai.md): what matters in an aircraft, and optional help from an AI model.
-- [SimAppPro](simapppro.md): what RigReady does in its place, and what still needs it.
-
 ## The DCS World page
 
 **Configure > DCS World** has four tabs.

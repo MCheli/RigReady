@@ -16,7 +16,7 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 ## Monitor layouts
 
-**Desk layout.** The saved layout that [Stand down](../play/stand-down.md) puts the monitors back into. "None" means Stand down leaves the monitors alone. The layouts are listed under it, each with how many monitors it switches on and off, with **Rename** and **Delete**; deleting the desk layout clears the choice. **Save current monitors as a layout** stores the arrangement as it is now under a name. The same layouts are managed on **Configure > Monitors**; see [layouts](../monitors-and-audio/layouts.md).
+**Desk layout.** The saved layout that [Stand down](../play/stand-down.md) puts the monitors back into. "None" means Stand down only puts back the arrangement from before Make ready changed it, and leaves the monitors alone when nothing was changed. The layouts are listed under it, each with how many monitors it switches on and off, with **Rename** and **Delete**; deleting the desk layout clears the choice. **Save current monitors as a layout** stores the arrangement as it is now under a name. The same layouts are managed on **Configure > Monitors**; see [layouts](../monitors-and-audio/layouts.md).
 
 ## Safety and limits
 

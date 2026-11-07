@@ -19,15 +19,3 @@ Next to a failing item there is its fix, when RigReady has one (start the app, a
 ## Reporting a problem
 
 When a page here does not solve it, open **Configure > Diagnostics**, press **Copy diagnostics**, and paste the result into a report on the project's issues page (the **Report a problem** link in the About panel). The report has personal details removed; read it first if you like. Say what you did, what you expected, and what happened instead. See [diagnostics](../app/diagnostics.md).
-
-## Pages in this section
-
-- [Game controllers could not be read](controllers-not-read.md): the input reader did not start.
-- [A device is not found](device-not-found.md): unplugged, on another port, hidden by HidHide, or renamed by Windows.
-- [The monitor layout went back by itself](monitor-layout-reverted.md): the countdown, a dark screen, and the question at the next start.
-- [RigReady will not write DCS files](dcs-files-refused.md): DCS is running.
-- [A setup file cannot be read](setup-file-cannot-be-read.md): damaged YAML, and files from RigReady 1.
-- [Start with Windows is off](start-with-windows-off.md): Task Manager's startup apps.
-- [Windows SmartScreen warns about the installer](smartscreen-warning.md).
-- [RigReady will not start, or a data file is damaged](app-will-not-start-or-data-folder.md).
-- [Questions and answers (FAQ)](faq.md).
