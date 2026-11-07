@@ -4,7 +4,7 @@ description: "Five ways to make the rig ready and launch without opening RigRead
 order: 30
 ---
 
-Once a setup works, a session need not start in RigReady's window. The same Make ready and Launch of the Play screen can be asked for from the desktop, the taskbar, the tray, a key combination and the command line.
+Once a setup works, a session need not start in RigReady's window. This section covers the five ways the same Make ready and Launch of the [Play screen](../play/make-ready-and-launch.md) can be asked for without opening it: a desktop shortcut, the taskbar button, the tray icon, a hotkey and the command line.
 
 ![Started with --launch: the rig was made ready and the game launched](../../../artifacts/screens/one-click-fly/02-launched.png)
 
@@ -22,9 +22,9 @@ A shortcut, a Jump List entry, the hotkey and the command line all run the same 
 
 1. RigReady's window comes to the front, and a strip at the bottom of it says what is happening: "Looking for DCS F/A-18C", "Checking DCS F/A-18C", "Making DCS F/A-18C ready" with the steps as they go, "Launching DCS F/A-18C".
 2. The setup is checked and becomes the setup in use.
-3. Make ready runs every fix, in the same order as on the Play screen. A monitor change still asks **Keep this monitor layout?**. A fix that runs a program you would have to confirm is not run, since nobody can be asked; it is listed with what still needs you.
+3. Make ready runs every fix, in the same order as on the Play screen. A monitor change still asks **Keep this monitor layout?** ([Monitor layouts](../monitors-and-audio/layouts.md#keep-it-or-go-back)). A fix that runs a program you would have to confirm ([Scripts](../setups/scripts.md)) is not run, since nobody can be asked; it is listed with what still needs you.
 4. The game is launched only when every required check is met. Otherwise nothing is launched: the strip says "DCS F/A-18C was not launched: 2 required items are not met", with the reasons, and stays until you put it away. The Play screen behind it shows the same.
-5. After a launch the window goes to the tray when **Hide RigReady after Launch** is on.
+5. After a launch the window goes to the tray when **Hide RigReady after Launch** is on ([The Play menu](../play/the-menu.md)).
 
 While the rig is being made ready, the strip has **Do not launch**: the fixes finish, the game is not started, and the strip says "DCS F/A-18C is ready. Not launched, as you asked".
 

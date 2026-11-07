@@ -16,7 +16,7 @@ A changed ID breaks two things: the binding files for that device in every aircr
 
 - The bindings page shows a warning at the top: bindings for one or more devices belong to an old device ID, with **Fix device IDs**.
 - The Overview tab lists the files under **Binding files for devices that are not attached**, and marks a modifier that points at a device ID that is not attached.
-- A setup made from the rig carries the check **DCS bindings match the connected devices** for its aircraft. It warns on the Play screen, never blocks a launch, and its fix, **Review device ID changes**, opens this tab. See [Make ready and launch](../play/make-ready-and-launch.md).
+- A setup made from the rig carries the check **DCS bindings match the connected devices** ([Checks and fixes](../setups/checks.md)) for its aircraft. It warns on the Play screen, never blocks a launch, and its fix, **Review device ID changes**, opens this tab. See [Make ready and launch](../play/make-ready-and-launch.md).
 
 ![Bindings under an old device ID](../../../artifacts/screens/bindings-migration/02-device-ids.png)
 
@@ -38,7 +38,7 @@ When the chosen device already has a binding file under its current ID in the sa
 
 ## The move
 
-**Preview moving N devices** shows every file that will be renamed, in every aircraft and device type folder, and every `modifiers.lua`, `disabled.lua` and `wizard.lua` whose references are rewritten to the new ID. Writing it is one change, backed up first, with Undo; it is refused while DCS runs, and nothing is written if a file changed after the preview was made.
+**Preview moving N devices** shows every file that will be renamed, in every aircraft and device type folder, and every `modifiers.lua`, `disabled.lua` and `wizard.lua` whose references are rewritten to the new ID. Writing it is one change, backed up first, with Undo on [the Safety page](../protect/safety-page.md); it is refused while DCS runs ([Close DCS before writing](index.md#close-dcs-before-writing)), and nothing is written if a file changed after the preview was made.
 
 ## Modifiers
 

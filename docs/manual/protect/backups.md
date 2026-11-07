@@ -30,15 +30,15 @@ The same full backup can be started from anywhere with the [command palette](../
 - Every tracked item of the **Always back up** list and of every setup, with its files. An item tracked in two places is stored once.
 - Every setup file (`profiles\*.yaml`).
 - RigReady's settings, your saved monitor layouts and the **Always back up** list itself.
-- Settings that live in the Windows registry rather than in files, when a tool provides them. Today that is the Fanatec driver settings. These are kept as data to read later; nothing writes them back, and the list marks them "kept as a record, not restored".
+- Settings that live in the Windows registry rather than in files, when a tool provides them. Today that is the Fanatec driver settings ([Wheel](../games/wheel.md#backups)). These are kept as data to read later; nothing writes them back, and the list marks them "kept as a record, not restored".
 
 A backup of one setup holds that setup's tracked items and its setup file only. A backup of selected items (made from the [Tracked files](tracked-files.md) tab) holds just those items.
 
-Snapshots, the "what changed" records and the automatic copies on the Safety page are not part of a backup file. They stay on the PC they were made on.
+[Snapshots](snapshots.md), the [what changed](what-changed.md) records and the automatic copies on the Safety page are not part of a backup file. They stay on the PC they were made on.
 
 ## Where the files go
 
-Backups are zip files in `backups` under RigReady's data folder, normally `C:\Users\<you>\.rigready\backups`; the folder is printed at the bottom of the page. A file is named after the date, the time and what it covers, for example `2026-10-03 14-05 Everything.zip`.
+Backups are zip files in `backups` under [RigReady's data folder](../app/index.md), `~/.rigready`; the folder is printed at the bottom of the page. A file is named after the date, the time and what it covers, for example `2026-10-03 14-05 Everything.zip`.
 
 Each backup holds a manifest with a checksum of every file. When a backup is opened again, every file is checked against it; a damaged or incomplete file is refused rather than restored.
 
@@ -66,6 +66,6 @@ A backup can also be refused because it would be empty: no setups and no tracked
 
 ## A backup before a game update
 
-When a setup's check for the game's version notices that the game was updated since you last verified it, the fix it offers is **Back up the game's settings and bindings**. That makes one backup of everything known about the game: what you track for it and what its game module suggests. It appears on the Backups page like any other, named after the game. The warning itself goes away only when you mark the new version as verified.
+When a setup's check for the game's version ([Checks and fixes](../setups/checks.md#game-updated-since-you-last-verified-game-updated)) notices that the game was updated since you last verified it, the fix it offers is **Back up the game's settings and bindings**. That makes one backup of everything known about the game: what you track for it and what its game module suggests. It appears on the Backups page like any other, named after the game. The warning itself goes away only when you mark the new version as verified.
 
 ![After a game update](../../../artifacts/screens/backup-game-updated/02-backed-up.png)

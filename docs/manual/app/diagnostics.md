@@ -4,7 +4,7 @@ description: The Diagnostics page shows what RigReady knows about this PC and it
 order: 60
 ---
 
-**Configure > Diagnostics** is where you look when something is wrong, and what you send when you ask for help. It shows what RigReady knows about this PC, the state of its own files, and the recent log. Nothing on it leaves the PC unless you copy or export it.
+**Configure > Diagnostics** is where you look when something is wrong, and what you send when you ask for help. It shows what RigReady knows about this PC, the state of its own files, and the recent log. Nothing on it leaves the PC unless you copy or export it ([Privacy](privacy.md)).
 
 Unexpected errors are shown on every screen as a small notice; this page keeps them and the log.
 
@@ -12,7 +12,7 @@ Unexpected errors are shown on every screen as a small notice; this page keeps t
 
 **This PC**: the RigReady version, what it is built on (Electron, Chromium, Node), the Windows version, the data folder and the log folder.
 
-**Games**: every game RigReady found, from which source (Steam or standalone) and where; the games it knows that are not on this PC; and a game whose detection itself failed, with the reason.
+**Games**: every game RigReady found ([Games](../games/index.md)), from which source (Steam or standalone) and where; the games it knows that are not on this PC; and a game whose detection itself failed, with the reason.
 
 **Devices and monitors**: every game controller and input device with its vendor and product ID, how many USB devices there are in all and how many are hubs, and every monitor with its size, position, rotation and whether it is the main one. When the devices or the monitors could not be read, the page says so with the reason instead of showing nothing.
 
@@ -26,7 +26,7 @@ Unexpected errors are shown on every screen as a small notice; this page keeps t
 
 **Copy diagnostics** puts a text report on the clipboard: the versions, the data folder and log level, the games, the devices and monitors, RigReady's own files, every unexpected error of this run, and the newest 200 log entries. The same report is available from the [command palette](command-palette.md) as **Copy the diagnostics report**.
 
-Before it is copied, personal details are removed the same way as for a shared setup: your folders become variables such as `{DOCUMENTS}`, your Windows user name, the PC name, device serial numbers, device instance paths and audio device ids are replaced, and anything that looks like a key or a password is masked. The confirmation says how many characters were copied and that this was done.
+Before it is copied, personal details are removed the same way as for a [shared setup](../protect/sharing.md#the-privacy-review): your folders become variables such as `{DOCUMENTS}`, your Windows user name, the PC name, device serial numbers, device instance paths and audio device IDs are replaced, and anything that looks like a key or a password is masked. The confirmation says how many characters were copied and that this was done.
 
 **Export diagnostics…** writes the same report as a zip, together with every log file and the settings file, all scrubbed the same way. The default name is `RigReady-diagnostics-<date>.zip` in Documents. **Open log folder** opens the folder in Explorer; the files there are the raw log, which already writes your user folder as `~` and masks keys, but is not scrubbed of serial numbers and device paths.
 
@@ -38,7 +38,7 @@ The log is `logs\rigready.log` in the [data folder](index.md). When it reaches 5
 
 ## Unexpected errors
 
-When something fails that nothing expected, an error in RigReady's own code, a window that stopped working, or a helper process that died, a notice appears at the bottom right of the window: "Something went wrong", with the message, **Copy details** and **Open diagnostics**. RigReady keeps running; the notice does not block the app. The same error happening again only counts up. A window that stopped working is loaded again by itself, up to three times a minute.
+When something fails that nothing expected, an error in RigReady's own code, a window that stopped working, or a helper process that died, a notice appears at the bottom right of the window: "Something went wrong", with the message, **Copy details** and **Open diagnostics**. RigReady keeps running; the notice does not block the app. The same error happening again only counts up. A window that stopped working is loaded again by itself, up to three times a minute ([The window stopped working](../troubleshooting/app-will-not-start-or-data-folder.md#the-window-stopped-working)).
 
 ![An unexpected error](../../../artifacts/screens/errors-unexpected/01-main-error.png)
 

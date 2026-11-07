@@ -4,9 +4,9 @@ description: "A setup file, annotated: every field and what it does, what happen
 order: 70
 ---
 
-Every setup is a YAML file in `~/.rigready/profiles`, written by RigReady and readable by you. **Configure > Setups > Edit > YAML file > Open in your editor** opens it. Anything the editor can do, the file can do too, and a few things only the file can: an exact layout copied from another setup, a field the form does not show.
+Every setup is a YAML file in `~/.rigready/profiles`, written by RigReady and readable by you. **Configure > Setups > Edit > YAML file > Open in your editor** opens it ([The setup editor](editor.md)). Anything the editor can do, the file can do too, and a few things only the file can: an exact layout copied from another setup, a field the form does not show.
 
-RigReady watches the folder. A change you save shows up on the Play screen and the Setups page within about two seconds, without a restart.
+RigReady watches the folder. A change you save shows up on the [Play screen](../play/index.md) and the [Setups page](index.md) within about two seconds, without a restart.
 
 ## An annotated example
 
@@ -86,11 +86,11 @@ actions:                         # steps around the launch; each list may be emp
 extensions: {}                   # data other features keep with the setup, for example backup
 ```
 
-A check has `id`, `type`, `title`, `required` (true unless said otherwise), `params`, and may have `remediation` (`type` and `params`), `timeoutSeconds` (1 to 600) and `disabled`. A step has `id`, `title`, `type`, `params`, and may have `continueOnError` (true unless said otherwise), `delaySeconds` (after launch only), `waitForCompletion`, `hidden`, `timeoutSeconds` (1 to 3600) and `closeOnStandDown`. The fields of each type are on [Checks](checks.md).
+A check has `id`, `type`, `title`, `required` (true unless said otherwise), `params`, and may have `remediation` (`type` and `params`), `timeoutSeconds` (1 to 600) and `disabled`. A step has `id`, `title`, `type`, `params`, and may have `continueOnError` (true unless said otherwise), `delaySeconds` (after launch only), `waitForCompletion`, `hidden`, `timeoutSeconds` (1 to 3600) and `closeOnStandDown`. The fields of each type are on [Checks and fixes](checks.md).
 
 ## Comments and anchors
 
-RigReady reads a file with comments without complaint, and leaves them in place as long as the file is only read. But RigReady writes the whole file when a setup is saved from the editor, when a check's **Mark verified** button stores a new version, and when another feature keeps its data with the setup. A save from the editor warns first: **Your comments will be lost**. If you keep notes in the file, keep a copy of them elsewhere, or use the setup's **Notes** field instead. The Setups page marks such a file with "YAML comments", so you know before you open the editor.
+RigReady reads a file with comments without complaint, and leaves them in place as long as the file is only read. But RigReady writes the whole file when a setup is saved from the editor, when a check's **Mark verified** button ([Checks and fixes](checks.md#game-updated-since-you-last-verified-game-updated)) stores a new version, and when another feature keeps its data with the setup. A save from the editor warns first: **Your comments will be lost**. If you keep notes in the file, keep a copy of them elsewhere, or use the setup's **Notes** field instead. The Setups page marks such a file with "YAML comments", so you know before you open the editor.
 
 YAML anchors and aliases (`&layout` and `*layout`) are read; a file RigReady writes is written out in full, without them.
 
@@ -98,8 +98,8 @@ YAML anchors and aliases (`&layout` and `*layout`) are read; a file RigReady wri
 
 A file that is not valid YAML, that does not fit the format, or whose `id` does not match its file name is not hidden, and does not stop the other setups from loading:
 
-- **Configure > Setups** lists it with the error (and the line of a YAML error), with **Open file**, **Show in Explorer** and **Delete**.
-- The Play screen's switcher lists it greyed out, with the reason in its tooltip.
+- **Configure > Setups** lists it with the error (and the line of a YAML error), with **Open file**, **Show in Explorer** and **Delete** ([A setup file cannot be read](../troubleshooting/setup-file-cannot-be-read.md)).
+- The Play screen's [switcher](../play/switching-setups.md) lists it greyed out, with the reason in its tooltip.
 - If it was the setup on the Play screen when it broke, the screen keeps the last version that loaded, with a yellow note, **The setup file has a problem**, and the error, until the file is fixed. If it was the setup used last and RigReady was started after it broke, the screen shows another setup with a note.
 - The editor can still save over a broken file.
 
@@ -109,4 +109,4 @@ A field that fails the type's own rules (a `vendorId` that is not four hex digit
 
 ## Files from RigReady 1
 
-RigReady 1 kept its setups in the same folder in another format (a `checklistItems` list and no `schemaVersion`). This version does not read them and does not count them as broken: the Setups page lists them apart under **From RigReady 1** with their name, with **Show in Explorer** and **Delete**. Create the setup again with **New setup from this rig**; the old file stays where it is until you delete it.
+RigReady 1 kept its setups in the same folder in another format (a `checklistItems` list and no `schemaVersion`). This version does not read them and does not count them as broken: the Setups page lists them apart under **From RigReady 1** with their name, with **Show in Explorer** and **Delete**. Create the setup again with **New setup from this rig** ([Creating a setup from the rig](capture.md)); the old file stays where it is until you delete it.

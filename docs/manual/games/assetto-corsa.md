@@ -12,17 +12,17 @@ The game is found through Steam (app 244210) when `AssettoCorsa.exe` is in the f
 
 ## Files worth backing up
 
-From `Documents\Assetto Corsa\cfg`: the whole folder as one item, and separately `controls.ini` (bindings and force feedback), `video.ini`, `gameplay.ini`, `assists.ini`, `audio.ini` and the `controllers\savedsetups` folder with your saved control presets. The Content Manager settings folder under `%LOCALAPPDATA%\AcTools Content Manager` is listed as a settings folder when it exists.
+From `Documents\Assetto Corsa\cfg`, offered on the [Backups page](../protect/tracked-files.md): the whole folder as one item, and separately `controls.ini` (bindings and force feedback), `video.ini`, `gameplay.ini`, `assists.ini`, `audio.ini` and the `controllers\savedsetups` folder with your saved control presets. The Content Manager settings folder under `%LOCALAPPDATA%\AcTools Content Manager` is listed as a settings folder when it exists.
 
-Assetto Corsa and Content Manager write `controls.ini` while they are open, so a restore is refused while any of them runs. The path variables `{AC_USER}` (the `Documents\Assetto Corsa` folder) and `{AC_INSTALL}` are available in a setup.
+Assetto Corsa and Content Manager write `controls.ini` while they are open, so a [restore](../protect/restore.md) is refused while any of them runs. The [path variables](../setups/path-variables.md) `{AC_USER}` (the `Documents\Assetto Corsa` folder) and `{AC_INSTALL}` are available in a setup.
 
 ## The bindings and controllers page
 
 **Configure > Racing > Assetto Corsa** reads `controls.ini`.
 
-**Controllers** lists the `[CONTROLLERS]` section: each controller's index and name as the game stored them, a short form of its Windows instance id, whether any binding uses it, and a state matched against the connected controllers: **Connected** (the stored instance id is attached), **New Windows id** (a controller of the same model is attached under another id), **Not connected**, or **Unknown**. The input method from the file's header is shown beside the heading. A wheel base can show up as two controllers with the same name; the one without bindings is expected.
+**Controllers** lists the `[CONTROLLERS]` section: each controller's index and name as the game stored them, a short form of its Windows instance ID, whether any binding uses it, and a state matched against the connected controllers: **Connected** (the stored instance ID is attached), **New Windows id** (a controller of the same model is attached under another id), **Not connected**, or **Unknown**. The input method from the file's header is shown beside the heading. A wheel base can show up as two controllers with the same name; the one without bindings is expected.
 
-When a controller the bindings use is not connected under its stored id, a notice says that Assetto Corsa refers to controllers by their Windows id, and that you should bind it again in the game or in Content Manager, or restore a backup taken while it worked. RigReady does not rewrite `controls.ini`.
+When a controller the bindings use is not connected under its stored ID, a notice says that Assetto Corsa refers to controllers by their Windows ID, and that you should bind it again in the game or in Content Manager, or restore a backup taken while it worked. RigReady does not rewrite `controls.ini`.
 
 **Bindings** lists each action in plain language (Steering, Throttle, Brake, Shift up, Brake balance forward, Look left, and so on, including the sections Content Manager and Custom Shaders Patch add), with its axis or button and the controller, and keyboard bindings where the file has them.
 
@@ -32,4 +32,4 @@ When a controller the bindings use is not connected under its stored id, a notic
 
 ## Backups and checks
 
-The **Backups** section keeps quick copies of `controls.ini`, with the preview, Undo and **Use in a setup** described on the [iRacing page](iracing.md). A racing setup for Assetto Corsa gets the common racing checks described under [Games](index.md); there is no wheel settings comparison for this game.
+The **Backups** section keeps quick copies of `controls.ini`, with the preview, Undo and **Use in a setup** described on the [iRacing page](iracing.md). A racing setup for Assetto Corsa gets the common racing checks described under [Games](index.md); there is no [wheel settings](wheel.md#recommended-settings) comparison for this game.

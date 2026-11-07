@@ -1,12 +1,12 @@
 ---
-title: Saved layouts
+title: Monitor layouts
 description: Save the monitor arrangement under a name, apply it with a preview that moves, keep it within the countdown, and let Stand down return to the desk layout.
 order: 10
 ---
 
 A layout is a saved arrangement of your monitors: which are on, where each one sits, how it is turned, and which is the main display. You save one for each way you use the rig, for example Flying, Racing and Desk. A setup checks that the right layout is in place, Make ready applies it, and Stand down puts the desk layout back.
 
-This page covers saving, applying and the keep-or-revert countdown. Editing a layout by hand is on [rotation and position](rotation-and-position.md).
+This page covers saving, applying and the keep-or-revert countdown. Editing a layout by hand is on [Edit a layout by hand](rotation-and-position.md).
 
 ## Save the arrangement you have now
 
@@ -26,7 +26,7 @@ The card's menu has **Rename**, **Edit arrangement**, **Replace with the monitor
 
 ## Apply a layout
 
-**Apply…** on a card opens a dialog that first shows what would change. A map draws the monitors as they are now and then, after a moment, as they would be: boxes slide to their new places, turn, and fade out when they will be off. **Before** and **After** flip the picture by hand. If Windows is set to reduce motion, the two states are drawn side by side instead. Under the map, **What is different now** lists every change in words.
+**Apply…** on a card opens a dialog that first shows what would change. A map draws the monitors as they are now and then, after a moment, as they would be: boxes slide to their new places, turn, and fade out when they will be off. **Before** and **After** flip the picture by hand. If Windows is set to reduce motion ([Motion](../app/text-size.md#motion)), the two states are drawn side by side instead. Under the map, **What is different now** lists every change in words.
 
 ![Applying the flying layout](../../../artifacts/screens/display-layouts/04-apply-flying-preview.png)
 
@@ -46,7 +46,7 @@ The moment a layout is applied, a prompt appears on whatever screen is open: **K
 
 ![The keep prompt](../../../artifacts/screens/display-layouts/05-keep-prompt.png)
 
-The countdown is 15 seconds unless you change **Monitor layout revert timer** in [Settings](../app/settings.md) (5 to 120 seconds). The prompt is there because a wrong layout can leave you looking at a dark screen: you need not find the window, only wait.
+The countdown is 15 seconds unless you change **Monitor layout revert timer** in [Settings](../app/settings.md) (5 to 120 seconds). The prompt is there because a wrong layout can leave you looking at a dark screen: you need not find the window, only wait. [The monitor layout went back by itself](../troubleshooting/monitor-layout-reverted.md) is the troubleshooting page for it.
 
 Before any change, RigReady moves its own window onto a monitor that stays on, so the prompt is never on a screen that is about to go dark. If Windows reports that it applied the layout but the monitors are not arranged as the layout says, RigReady says so and leaves the prompt open so you can decide.
 
@@ -60,9 +60,9 @@ The arrangement from before a change is written to disk before the change is mad
 
 ## Layouts in a setup
 
-When a setup is created from the rig, the monitor arrangement is one of the proposed checks. If it matches a saved layout exactly, the check refers to that layout by name, and changing the saved layout later changes what every setup that uses it expects. If it matches none, the capture screen offers to save the arrangement as a layout under a name you type. See [checks](../setups/checks.md).
+When a setup is created from the rig, the monitor arrangement is one of the proposed checks. If it matches a saved layout exactly, the check refers to that layout by name, and changing the saved layout later changes what every setup that uses it expects. If it matches none, the [capture screen](../setups/capture.md) offers to save the arrangement as a layout under a name you type. See [Checks and fixes](../setups/checks.md).
 
-On the Play screen the check reads, for example, "Arranged as "Flying" (4 monitors on)" or lists the differences. Its fix applies the layout and then waits for your answer to the keep prompt. Make ready only continues when the layout is kept; if it goes back, the fix reports that the new layout was not kept. See [Make ready and launch](../play/make-ready-and-launch.md).
+On the [Play screen](../play/index.md) the check reads, for example, "Arranged as "Flying" (4 monitors on)" or lists the differences. Its fix applies the layout and then waits for your answer to the keep prompt. Make ready only continues when the layout is kept; if it goes back, the fix reports that the new layout was not kept. See [Make ready and launch](../play/make-ready-and-launch.md).
 
 ## The desk layout and Stand down
 
@@ -70,4 +70,4 @@ Mark one layout with **Use as desk layout**. It gets a "Desk layout" badge, and 
 
 Without a desk layout, Stand down puts back the arrangement from before Make ready changed it, if RigReady made such a change in this session; otherwise it leaves the monitors alone.
 
-Applying a saved layout is also in the command palette (Ctrl+K, "Apply layout: Flying"). From there the result is only reported as applied once the keep prompt has been answered with Keep.
+Applying a saved layout is also in the [command palette](../app/command-palette.md) (Ctrl+K, "Apply layout: Flying"). From there the result is only reported as applied once the keep prompt has been answered with Keep.

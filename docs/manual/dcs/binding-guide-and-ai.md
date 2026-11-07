@@ -24,11 +24,11 @@ The whole guide at a glance: the summary, each tier with its items and a dot for
 
 The items in order of importance, one at a time. For the current item you see what it does, when you use it, where it belongs, a tip when there is one, and each of its actions with what it is bound to now (your bindings and DCS defaults, keyboard included; a binding on a device marked as not used in DCS is shown struck through and does not count).
 
-**Bind** on an action starts listening: press the control you want on any controller and the change is staged. An axis action needs an axis and a button action a button or a hat; a press of the wrong kind is refused with a note. Actions RigReady cannot write yet say **Bind in DCS**; see [Bindings](bindings.md). **Done, next** and **Skip** move on and are remembered, so the walkthrough carries on where you left it after a restart; **Mark not done** reopens an item.
+**Bind** on an action starts listening: press the control you want on any controller and the change is staged. An axis action needs an axis and a button action a button or a hat; a press of the wrong kind is refused with a note. Actions RigReady cannot write yet say **Bind in DCS**; see [DCS bindings](bindings.md#actions-marked-bind-in-dcs). **Done, next** and **Skip** move on and are remembered, so the walkthrough carries on where you left it after a restart; **Mark not done** reopens an item.
 
 ![Press the control for the current action](../../../artifacts/screens/ai-assist-walkthrough/01-press-the-control.png)
 
-The bar at the bottom lists the staged changes, with what each one would replace and whether two of them use the same control. **Review and write** shows exactly what will be written to DCS's binding files, the same review as on the bindings page, and **Write the change** writes it, backed up first and with Undo. Nothing is written before that.
+The bar at the bottom lists the staged changes, with what each one would replace and whether two of them use the same control. **Review and write** shows exactly what will be written to DCS's binding files, the same review as on the bindings page, and **Write the change** writes it, backed up first and with Undo on [the Safety page](../protect/safety-page.md). Nothing is written before that.
 
 ## AI help
 
@@ -43,7 +43,7 @@ With a key the Binding guide page gets an **AI help** tab, and the walkthrough g
 
 ### What is sent
 
-Before each request a dialog shows what will be sent: the model, the size in characters and tokens and the approximate cost of reading it, what is in it, and under **Show the exact request** the request body itself. Sent are the aircraft's name, DCS's list of its actions with what each is bound to now, for each controller used in DCS its product name, role, number of buttons and hats and axis names, RigReady's guide when there is one, and your question. Never sent are file paths, device IDs, serial numbers, the names you gave devices, your Windows user or PC name, or the contents of your files. The key goes only to api.anthropic.com, in a request header. Nothing leaves the PC until you press **Send**.
+Before each request a dialog shows what will be sent: the model, the size in characters and tokens and the approximate cost of reading it, what is in it, and under **Show the exact request** the request body itself. Sent are the aircraft's name, DCS's list of its actions with what each is bound to now, for each controller used in DCS its product name, role, number of buttons and hats and axis names, RigReady's guide when there is one, and your question. Never sent are file paths, device IDs, serial numbers, the names you gave devices, your Windows user or PC name, or the contents of your files. The key goes only to api.anthropic.com, in a request header. Nothing leaves the PC until you press **Send**. [Privacy](../app/privacy.md) lists everything that ever leaves the PC.
 
 ![What will be sent](../../../artifacts/screens/ai-assist-suggest/01-payload.png)
 

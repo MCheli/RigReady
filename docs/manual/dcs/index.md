@@ -4,14 +4,14 @@ description: What RigReady does for DCS World, the Configure > DCS World page an
 order: 60
 ---
 
-RigReady is a Windows app that checks a sim rig is ready, fixes what is not, and launches the game. For DCS World it goes further than for any other game: it reads DCS's own files, shows what they say in plain language, and writes them for you when you ask it to. This section covers everything RigReady does with DCS.
+For DCS World RigReady goes further than for any other game: it finds the installs, reads DCS's own files, shows what they say in plain language, and writes them for you when you ask it to. This section covers everything RigReady does with DCS: installs and aircraft, the MFD screens, Export.lua, the bindings and their problems, cheat sheets and kneeboard pages, the binding guide, and what still needs SimAppPro.
 
 Pages in this section:
 
 - [Installs and aircraft](installs.md): how RigReady finds the Steam and standalone editions, a waiting update, and the aircraft you have.
 - [MFD screens and the monitor setup](screens.md): putting the main view and the cockpit displays on your monitors.
 - [Export.lua](export-lua.md): the lines that load WinWing, DCS-BIOS, SRS and the other tools.
-- [Bindings](bindings.md), [Binding problems](binding-problems.md), [Device IDs changed](device-ids.md) and [Copy between aircraft and snapshots](copy-and-snapshots.md): the DCS bindings page.
+- [DCS bindings](bindings.md), [Binding problems](binding-problems.md), [Device IDs changed](device-ids.md) and [Copy between aircraft and snapshots](copy-and-snapshots.md): the DCS bindings page.
 - [Cheat sheets](cheat-sheets.md), [Kneeboard pages](kneeboard.md) and [Learn your controls](trainer.md): a picture of every device with what each control does.
 - [Binding guide and AI help](binding-guide-and-ai.md): what matters in an aircraft, and optional help from an AI model.
 - [SimAppPro](simapppro.md): what RigReady does in its place, and what still needs it.
@@ -33,9 +33,9 @@ The bindings have their own page, **Configure > DCS bindings**, and the cheat sh
 
 RigReady refuses to write DCS's files while DCS is running. DCS reads options.lua and the monitor setup when it starts and Export.lua when a mission starts, rewrites options.lua when it exits, and keeps the bindings in memory and writes them back when you press OK in its controls screen. A change made while it runs would be lost or half read.
 
-While DCS runs you can still look at everything. The buttons that write are disabled, the bindings page says that nothing can be saved, and a fix that would write a DCS file reports that DCS must be closed first. RigReady looks for DCS.exe among the running processes.
+While DCS runs you can still look at everything. The buttons that write are disabled, the bindings page says that nothing can be saved, and a fix that would write a DCS file reports that DCS must be closed first. RigReady looks for DCS.exe among the running processes. The message each page shows, and what to do, are on [RigReady will not write DCS files](../troubleshooting/dcs-files-refused.md).
 
-Kneeboard pages are the exception: writing them is not blocked, because DCS reads that folder when a mission starts, so new pages simply appear in the next mission.
+[Kneeboard pages](kneeboard.md) are the exception: writing them is not blocked, because DCS reads that folder when a mission starts, so new pages simply appear in the next mission.
 
 ## Where DCS keeps things
 
@@ -55,13 +55,13 @@ The aircraft folder names are DCS's input profile keys, for example `FA-18C_horn
 
 ## Every change is backed up
 
-Nothing outside RigReady's own folder is written without a copy being kept first and the change being described. Every DCS file RigReady writes is listed under **Configure > Safety** with Undo, and before a write you see what will change, as a plain-language list and as the exact text. See [Backups](../protect/backups.md) for the whole-rig backup that includes the DCS files.
+Nothing outside RigReady's own folder is written without a copy being kept first and the change being described. Every DCS file RigReady writes is listed under **Configure > Safety** ([The Safety page](../protect/safety-page.md)) with Undo, and before a write you see what will change, as a plain-language list and as the exact text. See [Backups](../protect/backups.md) for the whole-rig backup that includes the DCS files.
 
 ## Not yet verified in the real game
 
-Two things have passed their tests on recorded data from one rig but have not been looked at inside DCS itself:
+Two things have not yet been verified in the real game: they passed their tests on recorded data from one rig, but have not been looked at inside DCS itself. The [changelog](../../../CHANGELOG.md) lists them under known limitations.
 
-- A binding written by RigReady has not been checked in DCS's own controls screen. See [Bindings](bindings.md).
+- A binding written by RigReady has not been checked in DCS's own controls screen. See [DCS bindings](bindings.md).
 - The MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not been looked at. See [MFD screens and the monitor setup](screens.md).
 
 Both pages say what to look at the first time.

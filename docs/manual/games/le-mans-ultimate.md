@@ -10,16 +10,16 @@ Le Mans Ultimate is a Steam game whose settings live inside the game folder, in 
 
 The game is found through Steam (app 2399420) when its manifest says it is installed and `Le Mans Ultimate.exe` is in the folder. Otherwise the game page offers **Choose folder…**.
 
-**Launch** asks Steam to start it, so Easy Anti-Cheat and the Steam sign-in work. The game counts as running when `Le Mans Ultimate.exe` or `start_protected_game.exe` is running. The version is the Steam build; when Steam has an update queued, the page and the Racing overview say "update waiting", because the game may not start until it is done. The game page also says "Last run as version 1.3000 (game log)" from the newest trace log.
+**Launch** asks Steam to start it, so Easy Anti-Cheat and the Steam sign-in work. The game counts as running when `Le Mans Ultimate.exe` or `start_protected_game.exe` is running. The version is the Steam build; when Steam has an update queued, the page and the [Racing overview](index.md#configure-racing) say "update waiting", because the game may not start until it is done. The game page also says "Last run as version 1.3000 (game log)" from the newest trace log.
 
 ## Files worth backing up
 
-Because `UserData` is inside the game folder, uninstalling the game can delete it. The game page and the Backups page offer:
+Because `UserData` is inside the game folder, uninstalling the game can delete it. The game page and the [Backups page](../protect/tracked-files.md) offer:
 
 - the whole of `UserData` as one item, limited to the player files, the car setups and the display mode (logs left out);
 - `player\direct input.json` (bindings and force feedback), `player\current controls.json` (control options), `player\Settings.JSON` (game, graphics and sound), `player\Multiplayer.JSON`, `player\CustomPluginVariables.JSON`, `player\FavoriteAndFixedSetups.gal`, the `player\Settings` folder (car setups per track), any `keyboard*.json`, and every `Config_DX11*.ini` (display mode).
 
-The game rewrites its player files every time it starts and exits, so a restore is refused while it runs. After a restore, start the game once and check that the bindings are still there; the restore confirmation says so too.
+The game rewrites its player files every time it starts and exits, so a [restore](../protect/restore.md) is refused while it runs. After a restore, start the game once and check that the bindings are still there; the restore confirmation says so too.
 
 The path variables `{LMU_INSTALL}` and `{LMU_USER}` are available in a setup; see [path variables](../setups/path-variables.md).
 
@@ -27,9 +27,9 @@ The path variables `{LMU_INSTALL}` and `{LMU_USER}` are available in a setup; se
 
 **Configure > Racing > Le Mans Ultimate** reads `direct input.json` and `current controls.json`.
 
-**Controllers** lists each controller the game has set up, with the name you gave it on the Devices page, the game's name for it, its type ("Wheel"), how many bindings use it, its vendor and product id, and a state:
+**Controllers** lists each controller the game has set up, with the name you gave it on the [Devices page](../hardware/devices.md), the game's name for it, its type ("Wheel"), how many bindings use it, its vendor and product ID, and a state:
 
-- **Connected**: a controller with the same vendor and product id is attached.
+- **Connected**: a controller with the same vendor and product ID is attached.
 - **New name**: the controller is attached, but Windows now gives it another name than the game stored. The repair below applies.
 - **Not connected**: no controller of that model is attached.
 - **Compatibility mode**: a Fanatec base is attached, but in compatibility (yellow) mode, where it reports itself as a ClubSport V2.5 and the stored entry does not match it.
@@ -46,14 +46,14 @@ Le Mans Ultimate names each controller with a key that ends in a code whose orig
 
 ## Repair: a renamed controller
 
-A driver or firmware update can change the name Windows gives a controller. The game finds controllers by name, so the bindings made under the old name stop reaching it, while the vendor and product id stay the same. That is the one case RigReady repairs.
+A driver or firmware update can change the name Windows gives a controller. The game finds controllers by name, so the bindings made under the old name stop reaching it, while the vendor and product ID stay the same. That is the one case RigReady repairs.
 
 A controller in the **New name** state shows the name Windows uses now and offers **Update Le Mans Ultimate…**. The confirmation lists what changes in `direct input.json`. There are two cases:
 
 - The game has already made an entry under the new name (it ran once since the rename). RigReady points the bindings at that entry; the key is the game's own, and nothing else in the file changes.
 - There is no such entry. RigReady replaces the old name with the new one in the controller's key, in its "product name" and "instance name" fields and in every binding. The code at the end of the key is kept exactly as it was.
 
-The change is made to the text of the file, so every other byte stays as it was, and the result is only written when reading it back gives exactly the intended change. The file is backed up first, read back after, and Undo is on the Safety page. The repair is refused while the game runs. The message afterwards asks you to start the game once and check the bindings.
+The change is made to the text of the file, so every other byte stays as it was, and the result is only written when reading it back gives exactly the intended change. The file is backed up first, read back after, and Undo is on [the Safety page](../protect/safety-page.md). The repair is refused while the game runs. The message afterwards asks you to start the game once and check the bindings.
 
 ![A renamed controller](../../../artifacts/screens/racing-lmu-renamed/02-renamed.png)
 

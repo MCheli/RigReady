@@ -6,14 +6,14 @@ order: 70
 
 RigReady knows a fixed set of games. For each one it can find the install, read its version, launch it, and name the files worth backing up. For some it goes further: it reads the bindings as the game's files hold them, matches the controllers the game knows to the ones connected now, and repairs or copies binding files. Any other game still works with a setup of its own.
 
-This page lists the games and what each gets, and describes **Configure > Games** and **Configure > Racing**. The pages that follow cover each game.
+This section covers every game other than DCS World, which has [its own section](../dcs/index.md): this page lists the games and what each gets, describes **Configure > Games** and **Configure > Racing** and the checks a racing setup gets, and the pages that follow cover each game and the Fanatec wheel.
 
 ## Support by game
 
 | Game | What RigReady does |
 |---|---|
-| DCS World | The deepest: installs, the Saved Games folder, screen setup, Export.lua, bindings with editing, cleanup, device id repair, copying between aircraft and snapshots, cheat sheets, kneeboard pages and binding guides. See [DCS World](../dcs/index.md). |
-| [iRacing](iracing.md) | Detection, launch, files to back up, a page with the controllers and bindings from `controls.cfg` and `joyCalib.yaml`, a device id repair, quick backups, checks for a racing setup. |
+| DCS World | The deepest: installs, the Saved Games folder, screen setup, Export.lua, bindings with editing, cleanup, device ID repair, copying between aircraft and snapshots, cheat sheets, kneeboard pages and binding guides. See [DCS World](../dcs/index.md). |
+| [iRacing](iracing.md) | Detection, launch, files to back up, a page with the controllers and bindings from `controls.cfg` and `joyCalib.yaml`, a device ID repair, quick backups, checks for a racing setup. |
 | [Le Mans Ultimate](le-mans-ultimate.md) | Detection, launch through Steam, files to back up, a page with controllers, force feedback and bindings from `direct input.json`, a repair for a renamed controller, quick backups, checks. |
 | [BeamNG.drive](beamng.md) | Detection, launch through Steam, the versioned user folder, a page with one binding map per controller, copying bindings from an older version or to a replacement controller, quick backups, checks. |
 | [Assetto Corsa](assetto-corsa.md) | Detection, launch through Steam, files to back up, a page with the controllers, bindings and force feedback from `controls.ini`, quick backups. |
@@ -21,14 +21,14 @@ This page lists the games and what each gets, and describes **Configure > Games*
 | [Assetto Corsa EVO and Assetto Corsa Rally](assetto-corsa-evo-and-rally.md) | Detection, launch through Steam, files to back up. |
 | [Any other game](other-games.md) | A setup with a checklist, a launch target you give, and tracked files. |
 
-The four racing games with a bindings page also supply their bindings to the cheat sheets, the trainer and the input tester, so the picture of a wheel can show what every button does in iRacing or in BeamNG.drive. See [cheat sheets](../dcs/cheat-sheets.md).
+The four racing games with a bindings page also supply their bindings to the [cheat sheets](../dcs/cheat-sheets.md), the [trainer](../dcs/trainer.md) and the [input tester](../hardware/input-tester.md), so the picture of a wheel can show what every button does in iRacing or in BeamNG.drive.
 
 ## How a game is found
 
 RigReady looks in the places a game installs itself and never asks you unless it has to:
 
 - **Steam.** Every Steam library on the PC is read (from Steam's own library list), and a game counts as installed when its manifest says so and, for most games, its program file is there. Steam games are started by asking Steam, with `steam.exe -applaunch`, so anti-cheat and sign-in work. When Steam has an update queued for a game, the page says "Steam has an update waiting" and the Racing overview marks it, because the game may not start until the update is done.
-- **Standalone installs.** iRacing is found through its entry in Windows' list of installed programs, or in `Program Files (x86)\iRacing`. DCS World standalone installs are found through their own registry entries.
+- **Standalone installs.** iRacing is found through its entry in Windows' list of installed programs, or in `Program Files (x86)\iRacing`. DCS World standalone installs are found through their own registry entries ([Installs and aircraft](../dcs/installs.md)).
 - **Microsoft Store.** Flight Simulator 2024 from the Store is recognised by its package folder.
 - **Choose folder.** When a game is not found, its page offers **Choose folder…**. You pick the game's folder; RigReady checks that the game's program is in it and refuses a folder without it. The choice is remembered and can be forgotten again with **Forget**.
 
@@ -56,16 +56,16 @@ Each game's page has the same sections:
 The Racing page is the overview for the wheel and the racing games:
 
 - **Wheel**: the Fanatec wheel base, its mode (PC or compatibility), how many game controllers Windows makes of it and what it is connected through. It leads to [the Wheel page](wheel.md).
-- **Games**: one card per racing game with its version, "update waiting in Steam", a **Running** chip and one line about its bindings: "17 bindings · controllers connected", "1 controller has a new Windows id", "1 controller not connected", "No bindings yet" or "Default bindings". A card with something to look at is marked. Installed games open their own page.
+- **Games**: one card per racing game with its version, "update waiting in Steam", a **Running** chip and one line about its bindings: "17 bindings · controllers connected", "1 controller has a new Windows ID", "1 controller not connected", "No bindings yet" or "Default bindings". A card with something to look at is marked. Installed games open their own page.
 - **Helper apps**: Fanatec Service, SimHub, Crew Chief and the trophi.ai coach, when they are installed or running, and whether each is running now. To have a setup check or start them, keep them when you create the setup from the rig.
 
 ## Checks a racing setup gets
 
-When a setup is created from the rig with a racing game chosen, the capture screen proposes, besides the usual devices, apps, monitors and audio:
+When a setup is created from the rig ([Creating a setup from the rig](../setups/capture.md)) with a racing game chosen, the capture screen proposes, besides the usual devices, apps, monitors and audio:
 
 - **Wheel base in PC mode** (required): the Fanatec base is connected and not in compatibility (yellow) mode.
-- Each helper app found, selected when it is running now. Fanatec Service is left running at Stand down; the others are closed.
+- Each helper app found, selected when it is running now. Fanatec Service is left running at [Stand down](../play/stand-down.md); the others are closed.
 - For iRacing: **iRacing helper service** (the Windows service iRacing needs) and **iRacing knows the wheel** (warns before iRacing asks you to calibrate again).
 - For Le Mans Ultimate and BeamNG.drive: **wheel settings as recommended** (optional), which compares the force feedback settings RigReady can read in the game's files with the recommendations on the Wheel page.
 
-A setup can also expect one particular set of bindings, restored by Make ready: see **Use in a setup** on the game pages. Everything else about setups is under [setups](../setups/index.md).
+A setup can also expect one particular set of bindings, restored by [Make ready](../play/make-ready-and-launch.md): see **Use in a setup** on the game pages. Every check is described under [Checks and fixes](../setups/checks.md), and everything else about setups under [Setups](../setups/index.md).
