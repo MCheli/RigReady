@@ -36,6 +36,10 @@ The key is encrypted with Windows' own data protection (DPAPI, through Electron'
 
 **AI binding help** below it, added by the AI feature: the last four characters of the stored key, **Test key**, which asks Anthropic whether the key works and names the model, the **Model** choice (Opus or Sonnet, with their prices per million tokens), and **Exactly what is sent**, the list of what every request contains and what never leaves the PC. Everything except the AI help works without a key. See [the binding guide and AI](../dcs/binding-guide-and-ai.md) and [privacy](privacy.md).
 
+## AI assistants (MCP)
+
+**Let AI assistants use RigReady.** Off by default. When on, an AI assistant on this PC that speaks the Model Context Protocol (Claude Desktop, Claude Code, Cursor, VS Code and others) can check the rig, make it ready, help with bindings and read this manual, while RigReady runs. Below the switch: **When RigReady asks you first** (always, before a launch only, or never), **What the assistant sees**, the text to paste into each assistant with **Copy**, **Pair** for an assistant that connects to the address, the paired assistants with **Forget**, and **What assistants did** in this run. See [Connect an assistant](../ai/mcp-server.md) and [Safety with an assistant](../ai/safety.md).
+
 ## Hotkey
 
 **Make ready from anywhere.** A key combination that works whatever program is in front: it brings RigReady forward and runs **Make ready** for the setup in use. It never launches. Off until you choose one. Press **Choose a hotkey** (later **Change**), then hold Ctrl, Alt or the Windows key and press a letter, digit, function key, number pad digit, arrow, Space, Home, End, Page Up, Page Down, Insert or Delete; Esc cancels. A combination without a modifier is refused, so it cannot be pressed by accident while typing or flying.
