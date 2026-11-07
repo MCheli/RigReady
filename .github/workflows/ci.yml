@@ -8,11 +8,19 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # The Release workflow runs these same jobs on a tag (release.yml, `uses:`), so what is
+  # tested before a release is exactly what is tested on every pull request.
+  workflow_call:
 
 # Nothing here writes to the repository; the token can only read it.
 permissions:
   contents: read
 
+# The three jobs are independent: each checks out, installs and builds for itself, and none
+# waits for another. Together they took the time of the check job plus the longest of the
+# other two; side by side they take the longest one. The scenario suite is split into three
+# shards on three runners (the Playwright config reads E2E_SHARD), and the job named
+# "Scenario end-to-end", the name the branch ruleset requires, sums the shards up.
 jobs:
   check:
     name: Check (typecheck, lint, format, unit tests, ledger)
@@ -38,9 +46,14 @@ jobs:
       - run: npm run check
 
   e2e:
-    name: Scenario end-to-end
+    name: Scenario end-to-end (shard ${{ matrix.shard }} of 3)
     runs-on: windows-latest
-    needs: check
+    strategy:
+      # One shard failing must not stop the others: their results say whether the failure is
+      # one test or the runner.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -62,23 +75,41 @@ jobs:
 
       - run: npm ci
 
-      # Builds the app, then drives it on fixture-backed providers. No real hardware is needed.
+      # Builds the app, then drives this shard's third of the scenario flows on fixture-backed
+      # providers. No real hardware is needed.
       - run: npm run test:e2e
+        env:
+          E2E_SHARD: ${{ matrix.shard }}/3
 
       - name: Upload screenshots and failure output
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: e2e-artifacts
+          name: e2e-artifacts-shard-${{ matrix.shard }}
           path: |
             artifacts/screens/
             artifacts/playwright/
           retention-days: 14
 
+  # The one check the ruleset on main requires under this name: green only when every shard
+  # passed. It runs whatever happened to the shards, so a cancelled or failed shard shows up
+  # here as a failure and not as a check that never reported.
+  e2e-result:
+    name: Scenario end-to-end
+    runs-on: ubuntu-latest
+    needs: e2e
+    if: always()
+    steps:
+      - name: Every shard passed
+        env:
+          RESULT: ${{ needs.e2e.result }}
+        run: |
+          echo "shards: $RESULT"
+          test "$RESULT" = success
+
   packaged:
     name: Packaged smoke (the unpacked app, as built for release)
     runs-on: windows-latest
-    needs: check
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 

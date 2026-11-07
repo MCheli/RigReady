@@ -4569,7 +4569,7 @@ requirements:
       - "tests/packaged/packaged.e2e.ts#the packaged app enumerates the real machine: devices, displays, processes, audio, DirectInput"
       - "tests/packaged/packaged.e2e.ts#the packaged app runs a scenario: TrackIR not running, Make ready, Ready"
       - "tests/packaged/packaged.e2e.ts#the packaged app shows a usable Play screen within two seconds of starting"
-      - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, and none of them may fail quietly"
+      - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, side by side, and none of them may fail quietly"
       - "artifacts/screens/packaged-smoke/01-made-ready.png"
       - "artifacts/screens/packaged-startup-time/01-usable.png"
 
@@ -4745,7 +4745,7 @@ requirements:
       - "2026-10-03: the checklist is docs/RELEASING.md; its table for the two Windows versions is filled in per release. Every smoke in this repository ran on Windows 11 (build 26200) only: no Windows 10 machine was available, so the first Windows 10 22H2 run is still to be done by a person before a release, as the checklist says. Both halves of the second criterion hold: the build configuration has a Windows target only, and the app checks the platform before anything else and stops with a message."
     status: done
     evidence:
-      - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, and none of them may fail quietly"
+      - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, side by side, and none of them may fail quietly"
       - "tests/unit/releaseProcess.test.ts#the release checklist records a smoke run on Windows 10 22H2 and Windows 11, and names every automated check"
       - "tests/unit/noAdmin.test.ts#on Windows there is nothing to say; anywhere else the app says why it cannot start"
       - "tests/unit/noAdmin.test.ts#the app checks the platform before anything else starts, and only a Windows build is produced"
