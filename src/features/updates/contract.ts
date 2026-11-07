@@ -36,6 +36,8 @@ export const UpdateStatusSchema = z.object({
   /** The newer version, from "downloading" on. */
   version: z.string().optional(),
   notes: z.string().optional(),
+  /** The newer version is a security release (its release is marked [security]): said more insistently. */
+  security: z.boolean(),
   percent: z.number().optional(),
   /** ISO time of the last finished check. */
   checkedAt: z.string().optional(),

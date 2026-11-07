@@ -5496,6 +5496,27 @@ requirements:
   # SECURITY (docs/research/security-review-2026-11.md, SECURITY.md)
   # ---------------------------------------------------------------------------
 
+  - id: SEC-001
+    title: A security release is announced on every screen and installed with one click
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "A release whose title, or the start of whose notes, carries [security] is told apart from an ordinary one by the update feed (src/core/updateMarker.ts), and the update status says so from the first status that names the version."
+      - "While such a version downloads or waits to be installed, a notice on every screen says that it fixes a security problem, with Restart to install. Later puts it away for the session; Settings > Updates still says Security update. The rules of installing do not change: never while a game runs, and the notice says which game."
+      - "docs/RELEASING.md has the runbook for a security fix and states the worst-case time from publishing to installed, and what keeps a fix from arriving."
+    notes:
+      - "2026-11-07: the marker is the only signal; nothing on GitHub has to be configured. The notice shows the release's first line without the marker."
+    status: done
+    evidence:
+      - "src/core/updateMarker.test.ts#is [security] in the title, whatever the capitals"
+      - "src/core/updateMarker.test.ts#or at the start of the notes: the first line, or the first 300 characters of one long line"
+      - "src/features/updates/core/updates.test.ts#a security release is told apart from the first status on, and forgotten with the version"
+      - "tests/e2e/updates.e2e.ts#updates: a security release is said on every screen, with the install one click away, and still never while a game runs"
+      - "artifacts/screens/updates-security/01-security-update-ready.png"
+      - "artifacts/screens/updates-security/02-on-the-play-screen.png"
+      - "artifacts/screens/updates-security/03-refused-while-game-runs.png"
+
   - id: SEC-002
     title: Windows are refused every permission, drawing windows stay off the network, and a second start is validated
     job: platform

@@ -37,6 +37,16 @@ An update is never installed while a game is running, whether RigReady launched 
 
 ![Refused while a game runs](../../../artifacts/screens/updates/04-refused-while-game-runs.png)
 
+## Security releases
+
+A release that fixes a security problem is marked as one, and RigReady treats it differently in one way: it says so on every screen, not only under Settings, as soon as the version is found, with **Restart to install** right there. **Later** puts the notice away for this run; Settings > Updates still says "Security update" until it is installed. The rules do not change otherwise: it is downloaded in the background, installed only when you restart or quit, and never while a game is running.
+
+![A security update, said on the Play screen](../../../artifacts/screens/updates-security/02-on-the-play-screen.png)
+
+## What is checked before an update is installed
+
+The download's SHA-512 checksum is compared with the release feed's, and a file that does not match is discarded and fetched again at the next check. Once releases are signed, the installer's Authenticode signature is checked against the publisher name built into the app: an unsigned installer, or one signed by someone else, is refused and never run. See [security](security.md).
+
 ## Channels
 
 - **Stable** offers released versions only.
