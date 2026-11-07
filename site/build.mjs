@@ -12,6 +12,8 @@
 //   /docs/<section>/  a section's landing page (docs/manual/<section>/index.md) and a card per page
 //   /docs/<section>/<page>/  one page of the manual (docs/manual/<section>/<page>.md)
 //   /docs/contributing/  CONTRIBUTING.md
+//   /how-it-was-built/   site/pages/built.html: who did what, how it is checked, and what is not
+//                     verified yet (the counts and the open requirements read from the ledger)
 //
 // So the site follows the project without anyone editing it: the downloads come from the
 // published GitHub releases (drafts are ignored, and so is anything older than the major version
@@ -296,6 +298,63 @@ page({
     await read('site/pages/download.html'),
     { RELEASE: releaseCard, SOURCE: fromSource, CHANGELOG: changelog(), START, REPO_URL },
     'site/pages/download.html'
+  ),
+});
+
+// How this was built ------------------------------------------------------------------------
+//
+// The requirement counts and the list of what is not verified yet are read from the ledger at
+// build time, so the page cannot claim more than the ledger does. Security entries are left out
+// of the list (the repository is public; open security work is not published).
+
+function ledgerSummary() {
+  const text = readFileSync(path.join(ROOT, 'docs/requirements/ledger.yaml'), 'utf8');
+  const entries = text
+    .split(/\n {2}- id: /)
+    .slice(1)
+    .map((chunk) => ({
+      id: chunk.split(/\r?\n/)[0].trim(),
+      title:
+        /\n {4}title: (.+)/
+          .exec(chunk)?.[1]
+          .trim()
+          .replace(/^['"]|['"]$/g, '') ?? '',
+      status: /\n {4}status: (\w+)/.exec(chunk)?.[1] ?? 'todo',
+    }));
+  if (entries.length === 0) throw new Error('docs/requirements/ledger.yaml: no requirements read');
+  const done = entries.filter((e) => e.status === 'done').length;
+  const open = entries.filter((e) => e.status !== 'done' && !e.id.startsWith('SEC-'));
+  const status = { in_progress: 'in progress', todo: 'to do' };
+  return {
+    total: String(entries.length),
+    done: String(done),
+    open: open.length
+      ? `<ul class="facts">${open
+          .map(
+            (e) =>
+              `<li><strong>${esc(e.title)}</strong> (${esc(e.id)}, ${status[e.status] ?? esc(e.status)})</li>`
+          )
+          .join('')}</ul>`
+      : '<p>Every requirement in the ledger is done.</p>',
+  };
+}
+
+const ledger = ledgerSummary();
+page({
+  path: '/how-it-was-built/',
+  page: 'built',
+  title: 'How RigReady was built',
+  description:
+    'RigReady is built by one developer directing AI coding agents. Who did what, how the work is checked, what was tested on real hardware, and what is not verified yet.',
+  main: fill(
+    await read('site/pages/built.html'),
+    {
+      LEDGER_TOTAL: ledger.total,
+      LEDGER_DONE: ledger.done,
+      LEDGER_OPEN: ledger.open,
+      REPO_URL,
+    },
+    'site/pages/built.html'
   ),
 });
 

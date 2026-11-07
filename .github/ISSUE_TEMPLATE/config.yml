@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: A security problem
+    url: https://github.com/MCheli/rigready/security
+    about: Report it privately through the Security tab (Report a vulnerability), not as a public issue. SECURITY.md says why.
+  - name: How to use RigReady
+    url: https://rigready.io/docs/
+    about: The manual, section by section, including troubleshooting.
