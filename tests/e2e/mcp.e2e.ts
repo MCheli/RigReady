@@ -1,0 +1,128 @@
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
+import { expect, repoRoot, test } from './harness';
+
+/**
+ * Settings > AI assistants: the MCP server turned on, an assistant paired and its client
+ * configuration copied, then a real MCP client (the official SDK, from this test) asking
+ * for Make ready, the question in RigReady's window, and what the assistant did.
+ */
+
+test('mcp: turned on in Settings, an assistant paired, its change asked in the window and listed', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('mcp-settings', 'mcp-settings');
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-settings').click();
+  const section = page.getByTestId('mcp-settings');
+  await section.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('mcp-state')).toContainText('Off');
+  await shot('off');
+
+  await page.getByTestId('mcp-enable').locator('input').check();
+  await expect(page.getByTestId('mcp-state')).toHaveAttribute('data-running', 'true');
+  const state = await page.getByTestId('mcp-state').innerText();
+  const url = /http:\/\/127\.0\.0\.1:\d+\/mcp/.exec(state)?.[0];
+  expect(url, state).toBeTruthy();
+  // The stdio form needs nothing but the path of RigReady and --mcp.
+  await expect(page.getByTestId('mcp-client-config')).toContainText('"--mcp"');
+  await page.getByTestId('mcp-copy').click();
+  await expect(page.getByTestId('mcp-copied')).toBeVisible();
+  await shot('on');
+
+  await page.getByTestId('mcp-pair-name').locator('input').fill('Claude Code');
+  await page.getByTestId('mcp-pair').click();
+  await expect(page.getByTestId('mcp-fresh-token')).toBeVisible();
+  const token = /rr_[0-9a-f]{64}/.exec(await page.getByTestId('mcp-fresh-token').innerText())?.[0];
+  expect(token).toBeTruthy();
+  await expect(page.getByTestId('mcp-client-config')).toContainText(token!);
+  await expect(page.getByTestId('mcp-pairing')).toContainText('Claude Code');
+  await shot('paired');
+
+  const client = new Client({ name: 'e2e-assistant', version: '1.0.0' });
+  await client.connect(
+    new StreamableHTTPClientTransport(new URL(url!), {
+      requestInit: { headers: { Authorization: `Bearer ${token}` } },
+    })
+  );
+  try {
+    const listed = await client.callTool({ name: 'setups_list', arguments: {} });
+    const setup = (listed.structuredContent as { setups: { id: string }[] }).setups[0]!.id;
+    const call = client.callTool({ name: 'rig_make_ready', arguments: { setup } });
+    const question = page.getByTestId('mcp-question');
+    await expect(question).toBeVisible();
+    await expect(question).toContainText('Claude Code asks');
+    await expect(page.getByTestId('mcp-question-summary')).toContainText('ready');
+    await shot('question');
+    await page.getByTestId('mcp-question-allow').click();
+    const result = await call;
+    expect(result.isError).toBeFalsy();
+    await expect(page.getByTestId('mcp-done')).toContainText('Claude Code');
+    await expect(page.getByTestId('mcp-activity').first()).toContainText('Claude Code');
+    await expect(page.getByTestId('mcp-activity').first()).toContainText('Done');
+    await shot('activity');
+  } finally {
+    await client.close();
+  }
+
+  // Forgetting the pairing ends its access at once.
+  await page.getByTestId('mcp-forget').click();
+  await expect(page.getByTestId('mcp-pairing')).toHaveCount(0);
+  const again = new Client({ name: 'e2e-assistant', version: '1.0.0' });
+  await expect(
+    again.connect(
+      new StreamableHTTPClientTransport(new URL(url!), {
+        requestInit: { headers: { Authorization: `Bearer ${token}` } },
+      })
+    )
+  ).rejects.toThrow();
+
+  await page.getByTestId('mcp-enable').locator('input').uncheck();
+  await expect(page.getByTestId('mcp-state')).toContainText('Off');
+});
+
+test('mcp: RigReady.exe --mcp is a stdio bridge to the running RigReady, and says so when it is not', async ({
+  rig,
+}) => {
+  const { page, dataRoot } = await rig.launch('mcp-settings', 'mcp-bridge');
+  // The same isolated profile as the running app: the bridge decrypts the token it stored.
+  const root = path.dirname(dataRoot);
+  const user = path.join(root, 'user');
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) if (value !== undefined) env[key] = value;
+  delete env['ELECTRON_RUN_AS_NODE'];
+  delete env['RIGREADY_SCENARIO'];
+  Object.assign(env, {
+    USERPROFILE: user,
+    APPDATA: path.join(user, 'AppData', 'Roaming'),
+    LOCALAPPDATA: path.join(user, 'AppData', 'Local'),
+    RIGREADY_HOME: dataRoot,
+  });
+  const electron = createRequire(__filename)('electron') as unknown as string;
+  const bridge = (): StdioClientTransport =>
+    new StdioClientTransport({ command: electron, args: [repoRoot, '--mcp'], env, stderr: 'pipe' });
+
+  // Before the server is on: a plain answer, no crash.
+  const early = new Client({ name: 'e2e-stdio', version: '1.0.0' });
+  await expect(early.connect(bridge())).rejects.toThrow(/RigReady is not running/);
+  await early.close().catch(() => undefined);
+
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-settings').click();
+  await page.getByTestId('mcp-enable').locator('input').check();
+  await expect(page.getByTestId('mcp-state')).toHaveAttribute('data-running', 'true');
+
+  const client = new Client({ name: 'e2e-stdio', version: '1.0.0' });
+  await client.connect(bridge());
+  try {
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).toContain('rig_check');
+    const check = await client.callTool({ name: 'rig_check', arguments: {} });
+    expect(check.isError).toBeFalsy();
+    await expect(page.getByTestId('mcp-activity').first()).toContainText('RigReady.exe --mcp');
+  } finally {
+    await client.close();
+  }
+});
