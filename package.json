@@ -134,7 +134,7 @@
     "@modelcontextprotocol/node": "2.1.2",
     "@modelcontextprotocol/server": "2.4.0",
     "@playwright/test": "^1.63.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.6",
     "@vitejs/plugin-vue": "^6.0.9",
     "@vitest/coverage-v8": "^5.0.3",
     "axe-core": "^4.13.0",
