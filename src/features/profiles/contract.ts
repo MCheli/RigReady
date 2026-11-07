@@ -183,39 +183,88 @@ export const ShortcutStatusSchema = z.object({
 export type ShortcutStatus = z.infer<typeof ShortcutStatusSchema>;
 
 export const profilesContract = defineContract('profiles', {
-  list: channel(noInput, z.array(ProfileSchema)),
+  list: channel(noInput, z.array(ProfileSchema), {
+    describe: 'Answers with every setup that loads, in full. Changes nothing.',
+    tier: 'read',
+  }),
   /** Every profile with its file, and the files that could not be loaded. */
-  overview: channel(noInput, ProfileOverviewSchema),
-  get: channel(ProfileId, ProfileSchema),
+  overview: channel(noInput, ProfileOverviewSchema, {
+    describe:
+      'Answers with every setup and the file it lives in, plus the setup files that could not be loaded and why. Changes nothing.',
+    tier: 'read',
+  }),
+  get: channel(ProfileId, ProfileSchema, {
+    describe:
+      'Answers with one setup in full. id is a setup id from profiles:list or fly:state. Changes nothing.',
+    tier: 'read',
+  }),
   /** For the editor: the profile plus whether a save would drop hand-written comments. */
   edit: channel(
     ProfileId,
-    z.object({ profile: ProfileSchema, file: z.string(), hasComments: z.boolean() })
+    z.object({ profile: ProfileSchema, file: z.string(), hasComments: z.boolean() }),
+    {
+      describe:
+        'Answers with one setup as the editor loads it, its file, and whether saving would drop comments written by hand in the file. id comes from profiles:list. Changes nothing.',
+      tier: 'read',
+    }
   ),
   /** Replaces an existing profile. Paths with unknown variables are refused. */
-  save: channel(ProfileSchema, ProfileSchema),
+  save: channel(ProfileSchema, ProfileSchema, {
+    describe:
+      'Replaces an existing setup with the one given and writes its file (backed up first). Paths with unknown variables are refused. Read it with profiles:edit first and warn the user when hasComments is true.',
+    tier: 'change',
+  }),
   /**
    * Removes the profile file and the setup's desktop shortcut, when it has one, as one
    * journaled action: both are backed up first and the Safety page puts both back together.
    */
-  remove: channel(ProfileId, z.object({ removed: z.boolean(), shortcutRemoved: z.boolean() })),
+  remove: channel(ProfileId, z.object({ removed: z.boolean(), shortcutRemoved: z.boolean() }), {
+    describe:
+      "Deletes a setup's file and its desktop shortcut, if it has one. Both are backed up first and can be put back together from the Safety page. id comes from profiles:list. Ask the user first.",
+    tier: 'change',
+  }),
   /** Makes this the setup the Play screen shows. */
-  use: channel(ProfileId, z.object({ used: z.boolean() })),
+  use: channel(ProfileId, z.object({ used: z.boolean() }), {
+    describe:
+      "Makes a setup the one the Play screen shows. id comes from profiles:list. Only RigReady's own note of the setup in use changes.",
+    tier: 'read',
+  }),
   /** A deep copy under a new id, named "<name> (copy)". */
-  clone: channel(ProfileId, ProfileSchema),
+  clone: channel(ProfileId, ProfileSchema, {
+    describe:
+      'Copies a setup under a new id, named "<name> (copy)", and writes the new file. id comes from profiles:list.',
+    tier: 'change',
+  }),
   /** Looks at the machine as it is now and proposes checks. */
-  capture: channel(noInput, CaptureResultSchema),
-  create: channel(NewProfileSchema, ProfileSchema),
+  capture: channel(noInput, CaptureResultSchema, {
+    describe:
+      'Looks at the PC as it is now (games, devices, programs, files worth backing up) and proposes checks for a new setup. Use it before profiles:create. Changes nothing.',
+    tier: 'read',
+  }),
+  create: channel(NewProfileSchema, ProfileSchema, {
+    describe:
+      'Creates a new setup from a name, game and launch target and writes its file. Use profiles:capture and profiles:games first to choose the game and what to check.',
+    tier: 'change',
+  }),
   /** Every registered check and fix type, with the schema its params form is built from. */
   types: channel(
     noInput,
     z.object({
       checks: z.array(CheckTypeInfoSchema),
       remediations: z.array(RemediationTypeInfoSchema),
-    })
+    }),
+    {
+      describe:
+        'Answers with every check and fix type a setup can use, each with the JSON Schema of its params. Use it before writing checklist items for profiles:save. Changes nothing.',
+      tier: 'read',
+    }
   ),
   /** What is connected and running now, for "pick from this PC" in the editor. */
-  pickers: channel(noInput, PickersSchema),
+  pickers: channel(noInput, PickersSchema, {
+    describe:
+      'Answers with the devices connected, programs running, services and path variables on this PC, to fill in checklist items. Changes nothing.',
+    tier: 'read',
+  }),
   /** Waits for a button press on any game controller and names the device ("press a button on it"). */
   waitForPress: channel(
     z.object({ timeoutSeconds: z.number().int().min(1).max(60).default(15) }),
@@ -223,33 +272,71 @@ export const profilesContract = defineContract('profiles', {
       device: z
         .object({ name: z.string(), vendorId: z.string(), productId: z.string() })
         .optional(),
-    })
+    }),
+    {
+      describe:
+        'Waits up to timeoutSeconds for a button press on any game controller and names the device pressed. Ask the user to press a button on it first. Changes nothing.',
+      tier: 'read',
+    }
   ),
   /** Detected games and their installs, for the game choice and the launch target. */
-  games: channel(noInput, z.array(DetectedGameSchema)),
+  games: channel(noInput, z.array(DetectedGameSchema), {
+    describe:
+      "Answers with the games found on this PC and their installs, for choosing a setup's game and launch target. Changes nothing.",
+    tier: 'read',
+  }),
   /** A file or folder picker; the answer uses path variables where one applies. */
   browse: channel(
     z.object({ kind: z.enum(['file', 'folder', 'program']), title: z.string().optional() }),
-    z.object({ path: z.string().optional() })
+    z.object({ path: z.string().optional() }),
+    { describe: 'Opens a native file or folder picker.', tier: 'off' }
   ),
   /** The editor's helper action of a fix type (e.g. keep a copy of a file now). */
   prepareFix: channel(
     z.object({ type: z.string(), params: z.record(z.string(), z.unknown()) }),
-    z.object({ message: z.string() })
+    z.object({ message: z.string() }),
+    {
+      describe:
+        'Runs the helper action of a fix type from the setup editor, such as keeping a copy of a file now. type comes from profiles:types and params follow its schema. Ask the user first.',
+      tier: 'change',
+    }
   ),
   /** Opens the profile's YAML file in the program Windows uses for it. */
-  openFile: channel(ProfileId, z.object({ opened: z.boolean() })),
+  openFile: channel(ProfileId, z.object({ opened: z.boolean() }), {
+    describe: "Opens a setup's YAML file in the program Windows uses for it.",
+    tier: 'off',
+  }),
   /** Opens Explorer with the profile's file selected. */
-  showFile: channel(ProfileId, z.object({ opened: z.boolean() })),
+  showFile: channel(ProfileId, z.object({ opened: z.boolean() }), {
+    describe: "Opens Explorer with a setup's file selected.",
+    tier: 'off',
+  }),
   /** The setup's desktop shortcut, as it is now. */
-  shortcut: channel(ProfileId, ShortcutStatusSchema),
+  shortcut: channel(ProfileId, ShortcutStatusSchema, {
+    describe:
+      "Says whether a setup's desktop shortcut is there and still starts this setup. id comes from profiles:list. Changes nothing.",
+    tier: 'read',
+  }),
   /** What making or removing the shortcut would do to the desktop, before anything is written. */
   shortcutPreview: channel(
     ProfileId.extend({ action: z.enum(['create', 'remove']) }),
-    ChangePreviewSchema
+    ChangePreviewSchema,
+    {
+      describe:
+        "Shows what making or removing a setup's desktop shortcut would do, before anything is written. Show it to the user before profiles:createShortcut or profiles:removeShortcut. Changes nothing.",
+      tier: 'read',
+    }
   ),
   /** Writes the shortcut; answers only after reading it back and finding it starts this setup. */
-  createShortcut: channel(ProfileId, ShortcutStatusSchema),
+  createShortcut: channel(ProfileId, ShortcutStatusSchema, {
+    describe:
+      "Writes a setup's desktop shortcut and checks it starts this setup. Call profiles:shortcutPreview with action create first and show the user.",
+    tier: 'change',
+  }),
   /** Removes the shortcut; answers only after finding it gone. */
-  removeShortcut: channel(ProfileId, ShortcutStatusSchema),
+  removeShortcut: channel(ProfileId, ShortcutStatusSchema, {
+    describe:
+      "Removes a setup's desktop shortcut and checks it is gone. Call profiles:shortcutPreview with action remove first and show the user.",
+    tier: 'change',
+  }),
 });

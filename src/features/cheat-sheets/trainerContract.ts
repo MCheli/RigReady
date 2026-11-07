@@ -29,7 +29,11 @@ export type TrainerDeck = z.infer<typeof TrainerDeckSchema>;
 
 export const trainerChannels = {
   /** The cards of one aircraft and what is remembered about them. */
-  trainerDeck: channel(aircraft, TrainerDeckSchema),
+  trainerDeck: channel(aircraft, TrainerDeckSchema, {
+    describe:
+      'The trainer cards of one aircraft (a control and what it does), which devices they need, and what the user got right so far. The aircraft id comes from cheat-sheets:overview.',
+    tier: 'read',
+  }),
   /**
    * Keeps answers (and, with `finished`, a round played to the end) under the data root.
    * Answers with the progress as it is in the file afterwards.
@@ -41,6 +45,11 @@ export const trainerChannels = {
         .max(500),
       finished: z.boolean().default(false),
     }),
-    AircraftProgressSchema
+    AircraftProgressSchema,
+    {
+      describe:
+        "Keeps the user's trainer answers for one aircraft in RigReady's own folder. Only for answers the user really gave; never invent them.",
+      tier: 'read',
+    }
   ),
 };

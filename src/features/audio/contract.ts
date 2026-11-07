@@ -21,10 +21,19 @@ export type AudioView = z.infer<typeof AudioViewSchema>;
 
 export const audioContract = defineContract('audio', {
   /** Every active playback and recording device, with Windows' defaults marked. */
-  view: channel(noInput, AudioViewSchema),
+  view: channel(noInput, AudioViewSchema, {
+    describe:
+      "Answers with every active playback and recording device and which are Windows' default and default communication devices. Device ids come from here. Changes nothing.",
+    tier: 'read',
+  }),
   /** Makes a device a Windows default and reads it back. */
   setDefault: channel(
     z.object({ id: z.string().min(1), role: DefaultRoleSchema }),
-    z.object({ view: AudioViewSchema, message: z.string() })
+    z.object({ view: AudioViewSchema, message: z.string() }),
+    {
+      describe:
+        'Makes an audio device a Windows default (role default, communications or both) and reads it back. id is a device id from audio:view.',
+      tier: 'change',
+    }
   ),
 });

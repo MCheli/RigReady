@@ -10,6 +10,13 @@ export const TrackIrOverviewSchema = z.object({
 export type TrackIrOverview = z.infer<typeof TrackIrOverviewSchema>;
 
 export const trackIrContract = defineContract('trackir', {
-  overview: channel(noInput, TrackIrOverviewSchema),
-  start: channel(noInput, z.object({ message: z.string() })),
+  overview: channel(noInput, TrackIrOverviewSchema, {
+    describe:
+      'Answers with whether TrackIR is installed and running, its profiles, and where to download it. Changes nothing.',
+    tier: 'read',
+  }),
+  start: channel(noInput, z.object({ message: z.string() }), {
+    describe: 'Starts the TrackIR program and says what happened.',
+    tier: 'change',
+  }),
 });

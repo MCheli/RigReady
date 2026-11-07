@@ -32,13 +32,22 @@ export type SafetyView = z.infer<typeof SafetyViewSchema>;
 
 export const safetyContract = defineContract('safety', {
   /** Every change RigReady made outside its own folder, newest first, by user action. */
-  journal: channel(noInput, SafetyViewSchema),
+  journal: channel(noInput, SafetyViewSchema, {
+    describe:
+      'Every change RigReady made outside its own folder, newest first, grouped by user action, with whether each can be undone. Group ids are what undo takes.',
+    tier: 'read',
+  }),
   /**
    * Puts every file of one action back the way it was. Fails with `journal.changed` when
    * a file was changed again since; `force` undoes anyway.
    */
   undo: channel(
     z.object({ groupId: z.string(), force: z.boolean().default(false) }),
-    SafetyViewSchema
+    SafetyViewSchema,
+    {
+      describe:
+        'Puts every file of one action back the way it was. groupId comes from safety:journal. Fails when a file was changed again since unless force is set; ask the user before forcing.',
+      tier: 'change',
+    }
   ),
 });

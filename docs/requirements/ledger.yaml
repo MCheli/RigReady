@@ -3212,6 +3212,124 @@ requirements:
       - "artifacts/screens/ai-assist-draft/02-drafted-guide.png"
 
   # ---------------------------------------------------------------------------
+  # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)
+  # ---------------------------------------------------------------------------
+
+  - id: MCP-001
+    title: Every feature channel is offered to an assistant, derived from its contract
+    job: platform
+    area: ai
+    priority: p2
+    done_means:
+      - "Every channel of every feature contract appears exactly once in the MCP catalogue, named ipc_<feature>_<key>, with a JSON Schema converted from its zod input, a description and a tier (read, change, launch, off) taken from the contract's own metadata; a feature exposes a new channel by writing its contract, with no shared-code edit."
+      - "Every channel has a description and a tier (the test fails on one without), and channels that hand out a secret, use the user's API key, open dialogs or only serve a window are off and never offered."
+      - "The guided surface (the default) offers the task-level tools plus rigready_channels (the reference) and rigready_call, which reaches every offered channel through the same gate; the full surface also lists every channel as its own tool."
+    status: done
+    evidence:
+      - "src/features/mcp/core/catalogue.test.ts#every channel of every real contract appears exactly once, with a sound schema and words"
+      - "src/features/mcp/core/catalogue.test.ts#derives a tool per channel, named from the channel, with its schema, description and tier"
+      - "src/features/mcp/core/catalogue.test.ts#the channels still without metadata are exactly the known ones"
+      - "src/features/mcp/core/catalogue.test.ts#a channel that would hand an assistant a secret is off"
+      - "src/features/mcp/core/catalogue.test.ts#a task-level tool a feature registers is offered on both surfaces, before the built-ins"
+
+  - id: MCP-002
+    title: The running app serves MCP over HTTP on 127.0.0.1, only to paired assistants
+    job: platform
+    area: ai
+    priority: p2
+    done_means:
+      - "Off by default. When turned on, RigReady listens on 127.0.0.1 only (Streamable HTTP, /mcp) and every request needs a bearer token of a pairing: none or a revoked one gets 401; a foreign Origin is refused before the token is looked at."
+      - "Only the SHA-256 of a token is stored in mcp.json; an HTTP client's token is shown once; the bridge's lives in its own file under the data root."
+      - "The official MCP client SDK lists the tools, calls a read tool, reads resources and gets prompts against the real wired app; it starts listening again at startup when it was left on."
+    notes:
+      - "2026-11-07: the bridge token is a plain file in the data folder, not safeStorage: a second process opening the app's Chromium profile could not decrypt and could have overwritten the app's key (seen in the e2e run). Encrypting it with a direct DPAPI call is an open question in docs/research/mcp-server.md."
+    status: done
+    evidence:
+      - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
+      - "src/features/mcp/server/server.test.ts#answers nothing without a token, or with a revoked one"
+      - "src/features/mcp/server/server.test.ts#a page served elsewhere cannot reach it: another Origin is refused"
+      - "src/features/mcp/server/server.test.ts#keeps the bridge token in a file of its own and only its hash in mcp.json"
+      - "src/features/mcp/server/server.test.ts#listens again when RigReady starts with the server left on, and not before every feature is wired"
+
+  - id: MCP-003
+    title: RigReady.exe --mcp is a stdio bridge to the running app
+    job: platform
+    area: ai
+    priority: p2
+    done_means:
+      - "A client that starts a program (Claude Desktop, Cursor, VS Code, Claude Code over stdio) starts RigReady.exe --mcp; it opens no window, takes no lock, uses a Chromium profile of its own, and passes every message to the running app's endpoint with the bridge's token."
+      - "When RigReady is not running or its server is off, every request is answered with an error that says so and how to fix it; the next request tries again."
+    status: done
+    evidence:
+      - "src/features/mcp/bridge/proxy.test.ts#passes a whole session through with the bridge token"
+      - "src/features/mcp/bridge/proxy.test.ts#says plainly that RigReady is not running, and does not crash"
+      - "tests/e2e/mcp.e2e.ts#mcp: RigReady.exe --mcp is a stdio bridge to the running RigReady, and says so when it is not"
+
+  - id: MCP-004
+    title: What an assistant may do, and the user's say in RigReady's own window
+    job: platform
+    area: ai
+    priority: p2
+    done_means:
+      - "Reads run; a change or a launch is asked in RigReady's window under the user's policy (always ask, launches only, never); a no, or no answer in 60 seconds, ends the call with mcp.denied or mcp.timeout; an off channel is refused even through rigready_call."
+      - "Calls go through the app's validated channels and safeguards (FileStore backups, the monitor keep-or-revert countdown, DCS must be closed); one change at a time across assistants; a rate limit and size limits per pairing."
+      - "Every call is recorded with the pairing's name, how it ended and the Safety page actions it left, and shown on the Settings page; a change or launch also shows a short line on every screen."
+    status: done
+    evidence:
+      - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "src/features/mcp/server/server.test.ts#refuses a channel that is not offered, even through rigready_call"
+      - "src/features/mcp/core/catalogue.test.ts#the gate runs reads, asks for changes under the default policy, and refuses what is off"
+      - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
+      - "artifacts/screens/mcp-settings/04-question.png"
+      - "artifacts/screens/mcp-settings/05-activity.png"
+
+  - id: MCP-005
+    title: Settings > AI assistants turns the server on and connects assistants
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "A switch turns the server on and off and says where it listens; the confirm policy and the surface are chosen there."
+      - "For Claude Desktop, Claude Code, Cursor, VS Code and any other client the page shows the text to paste (RigReady.exe --mcp, or the address with a token) and copies it; Pair makes a token for an HTTP client under a name, shown once; Forget ends a pairing at once; the bridge's token can be renewed."
+    status: done
+    evidence:
+      - "src/features/mcp/core/clientConfig.test.ts#gives every client the text that reaches this RigReady, stdio through --mcp and HTTP with the token"
+      - "src/features/mcp/core/clientConfig.test.ts#shows a placeholder where a token belongs until one is paired, and passes the arguments a dev build needs"
+      - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
+      - "artifacts/screens/mcp-settings/01-off.png"
+      - "artifacts/screens/mcp-settings/02-on.png"
+      - "artifacts/screens/mcp-settings/03-paired.png"
+
+  - id: MCP-006
+    title: Task-level tools, resources, prompts and the manual for an assistant
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Task-level tools for what a user does on the Play screen and the Setups page (setups_list, rig_check, check_explain, rig_make_ready, rig_launch, rig_stand_down, setup_create_from_rig, device_find_by_press, manual_search); any feature can register more on ctx.mcp."
+      - "Resources: rigready://guide (operating rules), every manual page as rigready://docs/<section>/<page> with its front-matter title and description, the channel reference, the rig state, the setups as YAML, the log, the Safety journal and the activity."
+      - "Prompts for first setup, fixing bindings, why the rig is not ready, and a new PC."
+      - "The manual has an AI assistants section: connecting each client, what the assistant can do, and safety."
+    notes:
+      - "2026-11-07: device_find_by_press is exercised only through profiles:waitForPress's own tests, not yet through an MCP call."
+    status: done
+    evidence:
+      - "src/features/mcp/server/server.test.ts#every task-level tool does what its page does, under the \"never ask\" policy"
+      - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
+      - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "tests/unit/siteManual.test.ts#has a landing page, a Getting started section, and front matter the site build accepts"
+
+  - id: MCP-007
+    title: The Safety page names the assistant beside the change it made
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "A change made through an assistant shows the pairing's name on the Safety page, from the journal itself, not only in the activity list of this run."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE
   # ---------------------------------------------------------------------------
 

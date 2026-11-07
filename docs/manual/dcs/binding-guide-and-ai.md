@@ -8,6 +8,8 @@ order: 110
 
 Choose the aircraft at the top right; each one says **Guide included**, **Guide drafted by AI** or **No guide yet**.
 
+An AI assistant of your own (Claude Desktop, Claude Code, Cursor and others) can also help with bindings through RigReady's MCP server, without an API key in RigReady; see [AI assistants](../ai/index.md).
+
 ## The guides
 
 RigReady ships guides for the F/A-18C Hornet and the UH-1H Huey. A guide is a plain data file in RigReady's source (`packs/FA-18C_hornet.yaml` and `UH-1H.yaml`); anyone can add an aircraft by writing one in the same format. Each item in a guide has a title, what it does, when you use it, a tier (**Must have to fly and fight**, **Should have**, **Nice to have**), where it belongs (**On the stick, throttle or pedals**, **On a panel or button box**, **Fine on the keyboard**), and the DCS actions it stands for, each with a plain-language label. The guide also has a plan per kind of device: what to put on the stick, the throttle, the pedals, the MFD frames, the panels and the keyboard, in order.

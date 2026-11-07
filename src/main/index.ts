@@ -58,6 +58,7 @@ import { eventName } from '../shared/channels';
 import type { Envelope } from '../shared/ipc';
 import { appMenu } from './appMenu';
 import { discoverFeatures, wireFeatures } from './bootstrap';
+import { MCP_BRIDGE_ARG, runMcpBridge } from './mcpBridge';
 import { runDiagnose } from './diagnose';
 import { unsupportedPlatformMessage } from './platformGuard';
 import { CommandRunner } from './rigCommand';
@@ -436,7 +437,15 @@ async function start(): Promise<void> {
     deviceTimer = setTimeout(() => machineChanged('devices'), 400);
   });
 
-  const wiring = wireFeatures({ features: discoverFeatures(), ports, log, send });
+  const wiring = wireFeatures({
+    features: discoverFeatures(),
+    ports,
+    log,
+    send,
+    // What acts for the user from outside the window (the MCP server) goes the way the tray
+    // does, so the taskbar and the tray follow it. Used only after `call` exists (start below).
+    invoke: (channel, input) => call(channel, input),
+  });
   const { settings } = wiring.context;
 
   const notices: string[] = [];
@@ -952,6 +961,13 @@ async function start(): Promise<void> {
   runCommand(startCommand.kind === 'none' && handedOver ? handedOver : startCommand);
   handedOver = undefined;
 
+  // Everything is wired and calls can be taken: features that wait for that start now.
+  for (const feature of wiring.features) {
+    void Promise.resolve()
+      .then(() => feature.start?.())
+      .catch((e: unknown) => log.error(`start ${feature.id}`, e));
+  }
+
   app.on('window-all-closed', () => app.quit());
   let disposed = false;
   app.on('before-quit', (event) => {
@@ -985,12 +1001,29 @@ async function start(): Promise<void> {
 
 installProcessErrorHooks();
 
+const bridgeMode = process.argv.includes(MCP_BRIDGE_ARG);
+
 const refusal = unsupportedPlatformMessage(process.platform);
 if (refusal) {
   // RigReady reads and changes Windows itself; anywhere else it says so and stops.
   console.error(refusal);
   dialog.showErrorBox('RigReady', refusal);
   app.exit(1);
+} else if (bridgeMode) {
+  // A stdio client started this to reach the running RigReady: no window, no lock, no tray,
+  // and a Chromium profile of its own, so the app's (its safeStorage key, its caches) is
+  // never opened by a second process.
+  app.setPath('userData', path.join(app.getPath('temp'), 'rigready-mcp-bridge'));
+  app.on('window-all-closed', () => undefined);
+  void app
+    .whenReady()
+    .then(() => runMcpBridge())
+    .then(() => app.exit(0))
+    .catch((error: unknown) => {
+      process.stderr.write(`rigready bridge: ${String(error)}
+`);
+      app.exit(1);
+    });
 } else if (!app.requestSingleInstanceLock({ command: startCommand }) && !argValue('--diagnose')) {
   // RigReady is already running: it was handed what this start asked for, and does it.
   app.quit();

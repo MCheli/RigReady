@@ -223,34 +223,93 @@ export type SimAppProState = z.infer<typeof SimAppProStateSchema>;
 
 export const dcsSetupContract = defineContract('dcs-setup', {
   /** Everything about DCS at a glance. */
-  overview: channel(noInput, OverviewSchema),
+  overview: channel(noInput, OverviewSchema, {
+    describe:
+      'Everything about DCS at a glance: where it is installed, its version, the Saved Games folder, the monitor setup in use, Export.lua tools, SimAppPro, files RigReady manages that were changed outside it, and whether DCS is running. Changes nothing.',
+    tier: 'read',
+  }),
   /** The screen editor's starting point. */
-  screens: channel(noInput, ScreensStateSchema),
+  screens: channel(noInput, ScreensStateSchema, {
+    describe:
+      'The starting point for the DCS screen setup: monitor layouts (desktop ids), the saved screen setup, monitor setup files, options.lua values, the aircraft catalog and whether DCS is running. Changes nothing.',
+    tier: 'read',
+  }),
   /** SimAppPro's MFD plan as a screen setup for one of the monitor layouts. */
   importSimAppPro: channel(
     z.object({ desktopId: z.string() }),
-    z.object({ setup: ScreenSetupSchema, unmatched: z.array(z.string()), catalog: CatalogSchema })
+    z.object({ setup: ScreenSetupSchema, unmatched: z.array(z.string()), catalog: CatalogSchema }),
+    {
+      describe:
+        "Turns SimAppPro's MFD plan into a screen setup for one monitor layout, with the screens it could not place. desktopId comes from dcs-setup:screens. Nothing is saved; pass the setup to previewScreens and applyScreens.",
+      tier: 'read',
+    }
   ),
-  previewScreens: channel(ApplyScreensSchema, ScreensPreviewSchema),
+  previewScreens: channel(ApplyScreensSchema, ScreensPreviewSchema, {
+    describe:
+      'Shows what applying a screen setup would write (RigReady.lua and the options.lua keys), with errors found and files edited outside RigReady. Nothing is changed. Call it before dcs-setup:applyScreens and show the user.',
+    tier: 'read',
+  }),
   /** Writes RigReady.lua and selects it in options.lua, as one undoable change. */
-  applyScreens: channel(ApplyScreensSchema, MessageSchema),
-  exportLua: channel(noInput, ExportStateSchema),
+  applyScreens: channel(ApplyScreensSchema, MessageSchema, {
+    describe:
+      'Writes RigReady.lua and selects it in options.lua (and sets the resolution when setResolution) as one change that can be undone. Call dcs-setup:previewScreens first and show the user. DCS must be closed.',
+    tier: 'change',
+  }),
+  exportLua: channel(noInput, ExportStateSchema, {
+    describe:
+      "The state of DCS's Export.lua: which tools (such as WinWing or DCS-BIOS) are loaded, installed or loaded twice, and whether it changed since RigReady last saw it. Changes nothing.",
+    tier: 'read',
+  }),
   previewExport: channel(
     ExportActionSchema,
-    z.object({ diff: z.array(LineDiffSchema), changed: z.boolean() })
+    z.object({ diff: z.array(LineDiffSchema), changed: z.boolean() }),
+    {
+      describe:
+        'Shows the line by line change to Export.lua that adding, removing or deduplicating a tool (or restoring) would make. Tool names come from dcs-setup:exportLua. Nothing is changed. Call it before dcs-setup:applyExport and show the user.',
+      tier: 'read',
+    }
   ),
-  applyExport: channel(ExportActionSchema, MessageSchema),
+  applyExport: channel(ExportActionSchema, MessageSchema, {
+    describe:
+      "Changes Export.lua: adds, removes or deduplicates one tool's lines, or restores the kept version. Call dcs-setup:previewExport first and show the user. DCS must be closed.",
+    tier: 'change',
+  }),
   /** Takes Export.lua as it is now as the version to keep. */
-  acceptExport: channel(noInput, MessageSchema),
-  simAppPro: channel(noInput, SimAppProStateSchema),
+  acceptExport: channel(noInput, MessageSchema, {
+    describe:
+      "Takes Export.lua as it is now as the version RigReady keeps and compares with, so changes made outside RigReady stop being reported. Only RigReady's own record changes.",
+    tier: 'change',
+  }),
+  simAppPro: channel(noInput, SimAppProStateSchema, {
+    describe:
+      'The state of SimAppPro (WinWing): installed, version, running, whether its MFD plan exists, each setup with the WinWing features it needs, and the DCS files SimAppPro manages. Changes nothing.',
+    tier: 'read',
+  }),
   setRuntimeFeatures: channel(
     z.object({ profileId: z.string(), features: z.array(RuntimeFeatureSchema) }),
-    MessageSchema
+    MessageSchema,
+    {
+      describe:
+        'Sets which WinWing features (backlight, displays, vibration) a setup needs SimAppPro running for, adding or taking out that checklist item. profileId comes from the profiles in dcs-setup:simAppPro.',
+      tier: 'change',
+    }
   ),
   /** Puts back RigReady.lua, the options.lua keys and the Export.lua tools RigReady last set. */
-  restoreManaged: channel(noInput, MessageSchema),
+  restoreManaged: channel(noInput, MessageSchema, {
+    describe:
+      'Puts back RigReady.lua, the options.lua keys and the Export.lua tools RigReady last set, after something else changed them. Call dcs-setup:restoreManagedPreview first and show the user. DCS must be closed.',
+    tier: 'change',
+  }),
   /** Which files that restore would change and how. Reads only. */
-  restoreManagedPreview: channel(noInput, ChangePreviewSchema),
+  restoreManagedPreview: channel(noInput, ChangePreviewSchema, {
+    describe:
+      'Shows which files dcs-setup:restoreManaged would change and how. Nothing is changed.',
+    tier: 'read',
+  }),
   /** Remembers the installed DCS version as one that works. */
-  markVerified: channel(noInput, MessageSchema),
+  markVerified: channel(noInput, MessageSchema, {
+    describe:
+      "Remembers the installed DCS version as one that works, so a later update is noticed. Only RigReady's own record changes.",
+    tier: 'change',
+  }),
 });
