@@ -58,7 +58,18 @@ describe('icons: the committed icon files are what scripts/icons.mjs renders', (
   });
 
   it('the website favicon is the small master', async () => {
-    const strip = (svg: string): string => svg.replace(/<!--[\s\S]*?-->\s*/g, '').trim();
+    // Comments are dropped by cutting at the markers, not by a pattern (CodeQL flags a
+    // one-pass replace as incomplete sanitising, although these are our own files).
+    const strip = (svg: string): string => {
+      let out = '';
+      let rest = svg;
+      for (let open = rest.indexOf('<!--'); open >= 0; open = rest.indexOf('<!--')) {
+        const close = rest.indexOf('-->', open + 4);
+        out += rest.slice(0, open);
+        rest = close < 0 ? '' : rest.slice(close + 3).replace(/^\s+/, '');
+      }
+      return (out + rest).trim();
+    };
     expect(strip(await text('site/favicon.svg'))).toBe(
       strip(await text('assets/brand/rigready-small.svg'))
     );
