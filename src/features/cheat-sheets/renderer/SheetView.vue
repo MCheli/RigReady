@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { renderDeviceSvg, type ThemeName } from '../core/render';
+import { renderPictureSvg } from '../core/picture';
+import type { ThemeName } from '../core/render';
 import type { SheetDevice } from '../core/sheet';
 
 /**
@@ -34,7 +35,7 @@ const emit = defineEmits<{ control: [id: string] }>();
 
 const host = ref<HTMLElement>();
 const svg = computed(() =>
-  renderDeviceSvg(props.device, { theme: props.theme, showEmpty: props.showEmpty })
+  renderPictureSvg(props.device, { theme: props.theme, showEmpty: props.showEmpty })
 );
 
 function paint(): void {

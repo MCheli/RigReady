@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { renderDeviceSvg } from '../core/render';
+import { renderPictureSvg } from '../core/picture';
 import type { SheetDevice } from '../core/sheet';
 
 /**
@@ -28,8 +28,8 @@ const props = withDefaults(
 const host = ref<HTMLElement>();
 const svg = computed(() => {
   const shown = new Set(props.reveal);
-  return renderDeviceSvg(
-    { layout: props.device.layout, controls: props.device.controls.filter((c) => shown.has(c.id)) },
+  return renderPictureSvg(
+    { ...props.device, controls: props.device.controls.filter((c) => shown.has(c.id)) },
     { theme: 'dark', showEmpty: true }
   );
 });
@@ -80,31 +80,36 @@ onMounted(paint);
   border-radius: 10px;
 }
 /* The words beside the picture say which is which; these outlines show where. */
-.trainer-picture :deep(.cs-ctl .cs-card) {
+.trainer-picture :deep(.cs-ctl .cs-card),
+.trainer-picture :deep(.cs-ctl .cs-row) {
   transition:
     stroke 0.15s ease-out,
     fill 0.15s ease-out;
 }
-.trainer-picture :deep(.cs-ctl.tr-target .cs-card) {
+.trainer-picture :deep(.cs-ctl.tr-target .cs-card),
+.trainer-picture :deep(.cs-ctl.tr-target .cs-row) {
   fill: color-mix(in srgb, var(--rr-accent) 22%, transparent);
   stroke: var(--rr-accent);
   stroke-width: 2.6;
   stroke-dasharray: none;
 }
-.trainer-picture :deep(.cs-ctl.tr-right .cs-card) {
+.trainer-picture :deep(.cs-ctl.tr-right .cs-card),
+.trainer-picture :deep(.cs-ctl.tr-right .cs-row) {
   fill: color-mix(in srgb, var(--rr-ok) 20%, transparent);
   stroke: var(--rr-ok);
   stroke-width: 2.6;
   stroke-dasharray: none;
 }
-.trainer-picture :deep(.cs-ctl.tr-wrong .cs-card) {
+.trainer-picture :deep(.cs-ctl.tr-wrong .cs-card),
+.trainer-picture :deep(.cs-ctl.tr-wrong .cs-row) {
   fill: color-mix(in srgb, var(--rr-bad) 16%, transparent);
   stroke: var(--rr-bad);
   stroke-width: 2.6;
   stroke-dasharray: 5 3;
 }
 @media (prefers-reduced-motion: reduce) {
-  .trainer-picture :deep(.cs-ctl .cs-card) {
+  .trainer-picture :deep(.cs-ctl .cs-card),
+  .trainer-picture :deep(.cs-ctl .cs-row) {
     transition: none;
   }
 }

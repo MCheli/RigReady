@@ -1,5 +1,6 @@
 import { CATEGORIES, CATEGORY_IDS, type CategoryId } from './categories';
-import { categorySwatch, escapeHtml, renderDeviceSvg, THEMES, type ThemeName } from './render';
+import { renderPictureSvg } from './picture';
+import { categorySwatch, escapeHtml, THEMES, type ThemeName } from './render';
 import {
   summaryActions,
   actionIndex,
@@ -101,7 +102,7 @@ function deviceBlock(
       : '';
   return (
     header(sheet, device.title, sub, stamp) +
-    `<div class="pic">${renderDeviceSvg(device, { theme, fontScale })}</div>` +
+    `<div class="pic">${renderPictureSvg(device, { theme, fontScale, fill: PRINT_FILL, maxFontScale: Math.max(fontScale, 1.3) })}</div>` +
     `<div class="foot">${legendHtml(kindsOn(device), theme)}${conflicts}</div>`
   );
 }
@@ -161,6 +162,13 @@ function listBlock(
 
 /** A kneeboard page: portrait 3:4, the size DCS kneeboard pages are usually made at. */
 export const KNEEBOARD_SIZE = { width: 768, height: 1024 } as const;
+/**
+ * The height of the picture area of a kneeboard page in canvas units (1000 wide): what a
+ * drawing grows to fill, and what its labels are made as large as fits in.
+ */
+export const KNEEBOARD_FILL = 1230;
+/** The same for a printed page, A4 or Letter. */
+export const PRINT_FILL = 1280;
 
 function kneeboardDocument(style: PageStyle, body: string): string {
   const theme = themeOf(style);
@@ -186,7 +194,7 @@ export function kneeboardDevicePage(
     .join(' · ');
   const body =
     header(sheet, device.title, sub, options.stamp) +
-    `<div class="pic">${renderDeviceSvg(device, { theme, fontScale: 1.12, showEmpty: false })}</div>` +
+    `<div class="pic">${renderPictureSvg(device, { theme, fontScale: 1.12, showEmpty: false, fill: KNEEBOARD_FILL, maxFontScale: 1.55 })}</div>` +
     `<div class="foot">${legendHtml(kindsOn(device), theme)}</div>`;
   return kneeboardDocument(options.style, body);
 }
