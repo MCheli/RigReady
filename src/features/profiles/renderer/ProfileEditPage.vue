@@ -571,6 +571,7 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
             :schema="LAUNCH_SCHEMA"
             :model-value="launchParams"
             testid="edit-launch"
+            :variables="pickers?.variables"
             @update:model-value="setLaunch"
           />
         </template>
@@ -678,6 +679,7 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
             :action="action"
             :phase="phase.key"
             :remediations="remediations"
+            :pickers="pickers"
             :index="index"
             :count="actions[phase.key].length"
             :problems="problemsOf(action.id)"

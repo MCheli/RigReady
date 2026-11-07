@@ -1,6 +1,6 @@
 ---
 title: Clone, copy and delete
-description: "Cloning a setup, copying checks from one setup into another, deleting a setup and bringing it back from the Safety page, and the shortcut left behind."
+description: "Cloning a setup, copying checks from one setup into another, deleting a setup together with its desktop shortcut, and bringing both back from the Safety page."
 order: 80
 ---
 
@@ -18,14 +18,13 @@ In the editor, **Copy from another setup…** above the checklist opens a dialog
 
 ## Delete
 
-**Delete…** in a setup's menu on the Setups page asks first: "The setup is removed from RigReady; a copy is kept and the Safety page can bring it back. Nothing on the rig or in any game changes, and monitor layouts and backups stay." The file is removed, and the removal is recorded like any change RigReady makes, so **Configure > Safety** lists it with **Undo** ([Protect](../protect/index.md)). A broken file and a file from RigReady 1 can be deleted the same way.
+**Delete…** in a setup's menu on the Setups page asks first: "The setup is removed from RigReady, and so is its desktop shortcut when it has one. Copies are kept, and the Safety page can bring both back together. Nothing on the rig or in any game changes, and monitor layouts and backups stay." The setup's desktop shortcut goes first, when there is one (under the setup's current name or an earlier one, see [Desktop shortcut](../one-click/desktop-shortcut.md)), then the file. Both are recorded as one action, "Delete setup "<name>"", so **Configure > Safety** lists them together and one **Undo** brings both back ([Protect](../protect/index.md)). The message afterwards says whether a shortcut went with the setup. When the shortcut cannot be removed, nothing is deleted. A broken file and a file from RigReady 1 can be deleted the same way.
 
 ![The deleted setup on the Safety page](../../../artifacts/screens/profile-clone-copy/05-in-safety.png)
 
-If the deleted setup was the one on the Play screen, the screen moves to the first setup in the list.
+If the deleted setup was the one on the Play screen, the screen moves to the setup you used most recently before it, or to the first in the list when no other has been used yet ([Switching setups](../play/switching-setups.md)).
 
 ## What a delete leaves behind
 
-- The desktop shortcut, if the setup had one. Deleting a setup does not touch the desktop. Remove the shortcut in the editor before deleting, or delete the `.lnk` file by hand; a double-click on it afterwards opens RigReady with "There is no setup ..." ([Desktop shortcut](../one-click/desktop-shortcut.md)).
 - The saved monitor layouts and the backups the setup used; other setups may use them.
 - The session history: sessions of the deleted setup stay in History under its name.

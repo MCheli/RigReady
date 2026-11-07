@@ -51,7 +51,7 @@ What is suggested, when it is found:
 
 **Add file or folder** opens the editor. Give the item a name, pick the game it belongs to if any, and enter a path or use **Folder…** or **File…** to choose one.
 
-Paths are stored with a variable where one fits, so the item means the same place on another PC or under another Windows account: `{DOCUMENTS}`, `{SAVED_GAMES}`, `{APPDATA}`, `{LOCALAPPDATA}`, `{USER}`, `{PROGRAM_FILES}`, `{PROGRAM_FILES_X86}`, `{STEAM}` (the first Steam library), `{RIGREADY_HOME}`, and the ones games add, such as `{DCS_USER}` for `Saved Games\DCS` and `{DCS_INSTALL}`. A full path you type is turned into one of these when it can be. You can type a variable yourself, for example `{SAVED_GAMES}/DCS/Config/Input`.
+Paths are stored with a variable where one fits, so the item means the same place on another PC or under another Windows account: `{DCS_USER}/Config/Input` rather than `C:\Users\you\Saved Games\DCS\Config\Input`. A full path you type is turned into one of these when it can be, and you can type a variable yourself. [Path variables](../setups/path-variables.md) lists them all.
 
 Below the fields, a preview lists the files the item covers right now with their sizes. A path that does not exist yet is accepted: "Nothing is there on this PC right now. It is still saved and backed up when it appears." Credential files in the folder are named as never backed up.
 

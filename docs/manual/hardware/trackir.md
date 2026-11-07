@@ -28,12 +28,12 @@ Every profile in TrackIR's data folder is listed by name, file and description. 
 
 ## Switching profiles
 
-TrackIR has no command line switch or other way for another program to change its active profile, so RigReady does not offer one. Pick the profile in the TrackIR window, or map a game to a profile on the Titles tab of TrackIR's Profiles window: TrackIR then switches by itself when that game starts. `CHANGELOG.md` lists this under "by design, for now".
+TrackIR has no command line switch or other way for another program to change its active profile, so RigReady does not offer one. Pick the profile in the TrackIR window, or map a game to a profile on the Titles tab of TrackIR's Profiles window: TrackIR then switches by itself when that game starts. The [changelog](../../../CHANGELOG.md) lists this under "by design, for now".
 
 ## Checks in a setup
 
-When a setup is captured from the rig with TrackIR running, it is offered as **TrackIR software**, a required check whose fix starts TrackIR, and which closes TrackIR at Stand down because it is only useful in the sim. The check passes with "Running" and, when games cannot find TrackIR, adds that as a detail. With the camera connected, **TrackIR camera** is offered: any NaturalPoint camera on any USB port.
+When a setup is [captured from the rig](../setups/capture.md) with TrackIR running, it is offered as **TrackIR software**, a required check whose fix starts TrackIR, and which closes TrackIR at [Stand down](../play/stand-down.md) because it is only useful in the sim ([Checks and fixes](../setups/checks.md)). The check passes with "Running" and, when games cannot find TrackIR, adds that as a detail. With the camera connected, **TrackIR camera** is offered: any NaturalPoint camera on any USB port.
 
 ## Backups
 
-TrackIR's `Settings.xml`, its game-to-profile map `ProfileMap.dat` and every profile under `Profiles` are offered for a full backup, together as one item or one by one. Restoring them needs TrackIR closed, because it writes its settings and profiles when it closes; the restore wizard closes it and starts it again. See [backups](../protect/backups.md).
+TrackIR's `Settings.xml`, its game-to-profile map `ProfileMap.dat` and every profile under `Profiles` are offered for a full backup, together as one item or one by one. Restoring them needs TrackIR closed, because it writes its settings and profiles when it closes; the [restore wizard](../protect/restore.md) closes it and starts it again. See [backups](../protect/backups.md).

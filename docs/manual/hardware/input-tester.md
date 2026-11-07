@@ -8,7 +8,7 @@ The **Input tester** tab of **Configure > Devices** shows what every game contro
 
 ## Choosing what to see
 
-A row of chips at the top has **All controllers** and one chip per controller, by the name you gave it. A chip lights up while its controller is being used, so an unlabelled box identifies itself when you press something on it.
+A row of chips at the top has **All controllers** and one chip per controller, by the name you gave it on the [Devices](devices.md) tab. A chip lights up while its controller is being used, so an unlabelled box identifies itself when you press something on it.
 
 **Raw values** switches every reading to the form games and binding files use: axes as the unsigned 16-bit number Windows shows (0 to 65535, centre 32767) beside the percentage, axes and buttons by their DirectInput names (JOY_X, JOY_RZ, JOY_SLIDER1, BTN12), hats as POV1 with direction codes.
 
@@ -20,7 +20,7 @@ With **All controllers** chosen, each controller is a card with a strip that sho
 
 ## One controller
 
-The single view shows the controller's name and instance id, and three sections:
+The single view shows the controller's name and instance ID, and three sections:
 
 - **Axes**: each axis as a strip chart of the last six seconds, running right to left, with the pen at the right edge where the axis is now. A shaded band is the range the axis has reached since you opened the tester: sweep an axis end to end to check it gets to both ends. The number on the right is the current value, with the reached range under it once the axis has moved ("3 to 96%"). An axis that never reaches an end after a full sweep is marked: "Only reaches 3% to 96%: never gets to either end".
 - **Hats**: each hat as a compass rose with the direction it is pushed towards lit, and the direction written beside it.
@@ -32,11 +32,11 @@ The single view shows the controller's name and instance id, and three sections:
 
 ![A stick in motion](../../../artifacts/screens/devices-tester-stick/02-stick-in-motion.png)
 
-If Windows is set to reduce motion, the traces become still gauges and the stick plot has no trail.
+If Windows is set to reduce motion ([Motion](../app/text-size.md#motion)), the traces become still gauges and the stick plot has no trail.
 
 ## What a control does in a game
 
-The panel under the chips shows the **Last input** ("Throttle: Button 12 pressed"). When RigReady can read the bindings of a game on this PC, the field **Show what it does in** lists each game and aircraft or car: DCS aircraft, and iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa. Choose one, press a control, and the panel names the action bound to it, with the modifiers it needs, its category, and whether it is yours or the game's default. A control that does several things at once in that aircraft is marked, and **Open its bindings** goes to the page where it can be changed. "Nothing is bound to it" means just that.
+The panel under the chips shows the **Last input** ("Throttle: Button 12 pressed"). When RigReady can read the bindings of a game on this PC, the field **Show what it does in** lists each game and aircraft or car: [DCS aircraft](../dcs/bindings.md), and [iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa](../games/index.md). Choose one, press a control, and the panel names the action bound to it, with the modifiers it needs, its category, and whether it is yours or the game's default. A control that does several things at once in that aircraft is marked, and **Open its bindings** goes to the page where it can be changed. "Nothing is bound to it" means just that.
 
 ## The activity log
 
@@ -44,4 +44,4 @@ The panel under the chips shows the **Last input** ("Throttle: Button 12 pressed
 
 ## When nothing shows
 
-The tester depends on RigReady's input reader, a small program it starts when needed. If the reader is not installed or did not start, a warning says so and the controllers cannot be read; the Devices tab still lists the USB devices. A controller that HidHide hides from programs not on its allow list is invisible here too, unless RigReady is on that list; see [devices](devices.md).
+The tester depends on RigReady's input reader, a small program it starts when needed. If the reader is not installed or did not start, a warning says so and the controllers cannot be read; the Devices tab still lists the USB devices. See [Game controllers could not be read](../troubleshooting/controllers-not-read.md). A controller that HidHide hides from programs not on its allow list is invisible here too, unless RigReady is on that list; see [HidHide](devices.md#hidhide).

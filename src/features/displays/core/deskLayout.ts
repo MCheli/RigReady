@@ -14,7 +14,8 @@ export async function deskLayoutId(ctx: Ctx): Promise<string | undefined> {
 }
 
 /**
- * Stand down applies the desk layout named in the settings, with the same keep-or-revert
+ * Stand down applies the desk layout (chosen on the Monitors page with "Use as desk layout"
+ * or in Settings under "Desk layout"; the setting is the same), with the same keep-or-revert
  * countdown as any other layout change. Monitors of the desk layout that are not connected
  * are left out. Without a desk layout it does nothing (and the per-setup stand-down puts
  * back the layout from before Make ready instead).
@@ -35,7 +36,7 @@ export function createDeskLayoutStep(
       if (!layout.ok) {
         return err(
           'display.deskLayout',
-          'The desk layout chosen in Settings no longer exists.',
+          'The desk layout no longer exists. Choose another on the Monitors page ("Use as desk layout") or in Settings ("Desk layout").',
           layout.error.message
         );
       }

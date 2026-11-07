@@ -16,6 +16,31 @@ export type PathVariables = Record<string, string>;
 
 const VARIABLE = /^\{([A-Z][A-Z0-9_]*)\}(?:[\\/](.*))?$/;
 
+/** What each standard variable means, in words, in the order the editor lists them. */
+export const STANDARD_VARIABLE_LABELS: Record<string, string> = {
+  USER: 'Your user folder',
+  DOCUMENTS: 'Documents folder',
+  SAVED_GAMES: 'Saved Games folder',
+  APPDATA: 'AppData folder',
+  LOCALAPPDATA: 'Local AppData folder',
+  PROGRAM_FILES: 'Program Files folder',
+  PROGRAM_FILES_X86: 'Program Files (x86) folder',
+  RIGREADY_HOME: 'RigReady data folder',
+  STEAM: 'Steam library',
+};
+
+/**
+ * Every variable RigReady knows, with its label: the standard ones (STEAM included, whether or
+ * not Steam is here) and every variable a game module can provide (`pathVariableLabels`),
+ * whether or not the game is installed on this PC. A setup may use any of these; whether one
+ * resolves here is `allPathVariables`' answer.
+ */
+export function knownPathVariables(games: Pick<GameRegistry, 'all'>): Record<string, string> {
+  const known: Record<string, string> = { ...STANDARD_VARIABLE_LABELS };
+  for (const module of games.all()) Object.assign(known, module.pathVariableLabels ?? {});
+  return known;
+}
+
 /** The variables every PC has. STEAM (the first Steam library) is present only when Steam is. */
 export async function standardPathVariables(ports: {
   folders: KnownFolders;

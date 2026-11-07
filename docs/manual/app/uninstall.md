@@ -12,7 +12,7 @@ Your game files, bindings and settings are yours and are not touched by an unins
 
 1. Quit RigReady from the tray icon's menu.
 2. Open Windows Settings, **Apps**, **Installed apps**, find RigReady and choose **Uninstall**.
-3. The uninstaller removes the program, its Start menu and desktop shortcuts, its **Start with Windows** entry, and the copy of the installer that was kept for updates.
+3. The uninstaller removes the program, its Start menu and desktop shortcuts, the desktop shortcuts of your setups (every "<setup> - RigReady" on the desktop, which only start RigReady), its **Start with Windows** entry, and the copy of the installer that was kept for updates.
 4. It then asks: "Also remove your RigReady data? Your setups, backups, settings and logs are in: <folder>. Choose No to keep them, for example to install RigReady again later." **No** is the default.
 
 With **No**, the data folder stays where it is, and installing RigReady again later finds everything as it was. With **Yes**, the folder is removed, and with it your setups, every backup you made and the automatic copies, the snapshots, the change journal, the log and the stored API key. Export the backups you want to keep somewhere else first.
@@ -31,5 +31,5 @@ For a script or a deployment tool, from the install folder:
 - Your data folder, when you chose to keep it.
 - Backups you exported elsewhere and `.rigready` files you saved.
 - Everything RigReady wrote for a game on your request, such as `RigReady.lua` in DCS's monitor setups, kneeboard pages, lines in `Export.lua` and restored bindings. Undo them on the [Safety page](../protect/safety-page.md) before uninstalling if you do not want them.
-- Desktop shortcuts you made for individual setups ("<setup> - RigReady"). The uninstaller removes only its own shortcuts; delete these by hand.
+- A setup shortcut you renamed so that its name no longer ends in " - RigReady". The uninstaller knows the shortcuts by that ending; delete a renamed one by hand.
 - HidHide, SimAppPro, Stream Deck and the other tools: RigReady never installed or changed them.

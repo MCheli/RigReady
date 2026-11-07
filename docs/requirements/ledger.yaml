@@ -452,12 +452,13 @@ requirements:
     area: fly
     priority: p0
     done_means:
-      - "Settings name one display layout as the desk layout; Stand down applies it with the same timed-revert behaviour as FIX-002."
+      - "One saved display layout is the desk layout, chosen with 'Use as desk layout' on the Monitors page or under 'Desk layout' in Settings (one setting); Stand down applies it with the same timed-revert behaviour as FIX-002."
       - "Scenario mark-flight with flying layout active: after Stand down the fake DisplayProvider holds the desk layout (Dell on, MFD screens off or as recorded) and the summary says 'Applied desk layout'."
-      - "If no desk layout is defined, Stand down skips this step and says so instead of reporting success."
+      - "If no desk layout is defined, Stand down skips this step and says so instead of reporting success, naming both places where one is chosen; a desk layout that was deleted since fails the step with the same two places."
     status: done
     evidence:
       - 'tests/unit/settings.test.ts#applies the desk layout named in the settings, with the keep-or-revert countdown'
+      - 'src/features/fly/core/fly.test.ts#never closes the game unless asked, closes what launch actions started, and runs its own actions'
       - 'tests/unit/app.test.ts#desk state: Make ready fixes the layout; Go back restores the desk; Stand down does too and closes TrackIR'
       - 'tests/e2e/fly-depth.e2e.ts#fly: Stand down applies the desk layout chosen in Settings, with the keep prompt'
       - 'artifacts/screens/fly-stand-down-desk/01-desk-applied.png'
@@ -1389,7 +1390,7 @@ requirements:
       - 'src/features/profiles/core/profiles.test.ts#never writes a profile that fails its schema or its check types'
       - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'artifacts/screens/profile-clone-copy/01-list.png'
-      - 'artifacts/screens/profile-add-check/02-field-error.png'
+      - 'artifacts/screens/profile-add-check/03-field-error.png'
 
   - id: CFG-PROFILE-013
     title: Hand-edit a profile and reload
@@ -1434,7 +1435,8 @@ requirements:
     area: profiles
     priority: p0
     done_means:
-      - "Profile paths may use {USER}, {APPDATA}, {LOCALAPPDATA}, {DOCUMENTS}, {SAVED_GAMES}, {STEAM}, {RIGREADY_HOME} and game variables ({DCS_USER}, {DCS_INSTALL}, {IRACING_USER}, {LMU_USER}, {BEAMNG_USER})."
+      - "Profile paths may use {USER}, {APPDATA}, {LOCALAPPDATA}, {DOCUMENTS}, {SAVED_GAMES}, {PROGRAM_FILES}, {PROGRAM_FILES_X86}, {STEAM}, {RIGREADY_HOME} and the variables of every game module ({DCS_USER}, {DCS_INSTALL}, {IRACING_USER}, {IRACING_INSTALL}, {LMU_USER}, {LMU_INSTALL}, {BEAMNG_USER}, {BEAMNG_INSTALL}, {AC_USER}, {AC_INSTALL}, {MSFS2024_USER}), whether or not the game is installed on this PC."
+      - "There is one list of known variables (core knownPathVariables: the standard ones plus each module's pathVariableLabels); the editor's acceptance and the 'not found' labels both read it, and an audit fails a module that hands out a variable it does not declare."
       - "All variables are resolved only by KnownFolders and game modules; with USERPROFILE pointed at a temp dir, {USER} resolves there (unit test)."
       - "Capture and editor write paths with variables where a prefix matches, e.g. C:/Users/Owner/Saved Games/DCS becomes {DCS_USER}."
       - "An unknown variable fails schema validation with the variable name."
@@ -1442,6 +1444,12 @@ requirements:
     evidence:
       - 'src/features/profiles/core/profiles.test.ts#path variables resolve under the user folder of this run, never the real one'
       - 'src/features/profiles/core/profiles.test.ts#refuses unknown path variables by name, and keeps game variables of games not installed'
+      - 'tests/unit/pathVariablesAudit.test.ts#knownPathVariables has the standard variables, STEAM included, and every module’s'
+      - 'tests/unit/pathVariablesAudit.test.ts#the parser sees the ways a module assigns a variable'
+      - 'src/features/checks-generic/core/checks.test.ts#is an error, not "Missing", when the game behind the variable is not on this PC'
+      - 'src/features/profiles/core/profiles.test.ts#lists every path variable for the Variables menu, with where it points on this PC'
+      - 'src/features/profiles/renderer/insertVariable.test.ts#says the same file through the chosen variable when its folder holds it'
+      - 'artifacts/screens/profile-add-check/02-variables-menu.png'
       - 'src/features/processes/core/processCheck.test.ts#lists sim helpers first and ticked, never Windows or RigReady itself, each with a launch fix'
       - 'tests/e2e/profiles.e2e.ts#setups: checks and launch steps are added through the generic form, with pickers, Browse and field errors'
       - 'artifacts/screens/profile-add-check/01-file-check.png'
@@ -2803,9 +2811,12 @@ requirements:
       - "'Export to kneeboard' writes one PNG per device at kneeboard aspect (portrait, default 768x1024) into {DCS_USER}/Kneeboard/<aircraft>/ with names prefixed 'RigReady -' so they sort together and are recognisable."
       - "Previously exported RigReady pages for that aircraft are replaced; other kneeboard files are never touched."
       - "Writes go through FileStore with backup and a description; test asserts PNG dimensions and file names."
+      - "Like every DCS write, the export and the removal are refused while DCS runs (DCS.exe or DCS_mt.exe, the one definition in core gameRunning that dcs-setup and dcs-bindings use too) with dcs.running; the status carries the reason as `blocked`, so the dialog says why and its confirmation button stays off, and the up-to-date check's fix reports the same."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/kneeboard.test.ts#writes one PNG per device, sized and named for the kneeboard, into the aircraft’s folder"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#refuses to write or remove pages while DCS runs (DCS.exe or DCS_mt.exe), and says why in the status"
+      - "tests/unit/dcsRunning.test.ts#one definition of a running DCS: DCS.exe and DCS_mt.exe stop dcs-setup, dcs-bindings and the kneeboard alike"
       - "src/features/cheat-sheets/core/kneeboard.test.ts#goes through FileStore: one action in the journal, and Undo takes the pages away again"
       - "src/features/cheat-sheets/core/kneeboard.test.ts#never overwrites or removes a page that is not its own"
       - "src/features/cheat-sheets/core/kneeboard.test.ts#replaces its own pages on the next export and removes the ones no longer wanted"
@@ -3409,9 +3420,11 @@ requirements:
       - "Undo restores every file in the group to its pre-change content; if a file changed since, the user is told and asked before overwriting it."
       - "Undo itself is journalled and can be undone."
       - "Unit test: write, modify externally, undo -> prompt; write, undo -> original bytes."
+      - "Undo refuses, with the words a restore uses, while a game or tool that holds the files of the action is running (the game modules' processes and closeBeforeRestore, the backup sources' program; core runningPrograms, shared with restore and snapshots), and nothing is undone; once it is closed the same undo goes through."
     status: done
     evidence:
       - "tests/unit/fileStoreGroups.test.ts#writes and removes under beginGroup are one action; a lone change is its own group"
+      - "src/features/safety/core/safety.test.ts#refuses to undo files a running game holds, with the same words as a restore, and undoes them once it is closed"
       - "tests/unit/fileStoreGroups.test.ts#refuses to undo a file that changed since, unless forced; the undo can itself be undone"
       - "tests/unit/settings.test.ts#lists every change by action with what happened to each file, and undoes a whole action"
       - "tests/e2e/app.e2e.ts#safety: changes are listed by action with their files, and Undo puts the files back"
@@ -4387,7 +4400,7 @@ requirements:
     area: platform
     priority: p0
     done_means:
-      - "The installer installs per-user (no UAC prompt, no 'for all users' choice) and creates Start menu entries; uninstall removes the start-with-Windows entry and leaves {RIGREADY_HOME} unless the user answers Yes to 'Also remove your RigReady data?' (default No; a silent uninstall keeps it; --remove-data removes it)."
+      - "The installer installs per-user (no UAC prompt, no 'for all users' choice) and creates Start menu entries; uninstall removes the start-with-Windows entry and the desktop shortcuts of setups ('<setup> - RigReady.lnk', found by that ending: electron-builder's NSIS has no ShellLink plugin to read a link), and leaves {RIGREADY_HOME} unless the user answers Yes to 'Also remove your RigReady data?' (default No; a silent uninstall keeps it; --remove-data removes it)."
       - "The installer smoke (npm run smoke:installer) installs the installer on the rig from a process without elevation, starts the installed app, and uninstalls it."
     notes:
       - "2026-10-03: 'ticks remove my data' became a Yes/No question with No as the default: the NSIS uninstaller has no page to put a tick box on without a custom page, and a question cannot be missed. 'Rig smoke on a standard user account' became the installer smoke run from a not elevated process (medium integrity token, checked by the test): the owner's account is an administrator account, so a true standard account was not available unattended; the release checklist (docs/RELEASING.md) asks for the Windows 10 run on a standard account."
@@ -4772,6 +4785,7 @@ requirements:
       - "Success is reported only after the link was read back and starts this RigReady with this setup: under sabotage (the file written and put back, a link to another program handed back) the answer is an error."
       - "Started with its own arguments, the shortcut flies the setup (E2E: a second start with the arguments of the link that was made runs the fix and launches)."
       - "Through a Shortcuts port: Electron's shell.writeShortcutLink / readShortcutLink in the app, a recording fake in scenario runs. Arguments are a list of values, turned into the one text a shortcut stores by Windows' own quoting rules (unit tests, including a real program started with that text)."
+      - "Deleting a setup on the Setups page removes its desktop shortcut (under its current name or an earlier one) and then the setup file under one journal group, 'Delete setup \"<name>\"', so one Undo on the Safety page brings both back; the delete dialog and the message afterwards say so, and a shortcut that is still there afterwards is an error that leaves the setup alone. The uninstaller removes every '<setup> - RigReady.lnk' on the desktop; the installer smoke's test variant looks for another ending and never touches a real one, and a unit test keeps the NSIS ending equal to the app's SHORTCUT_SUFFIX."
     notes:
       - "2026-10-04: decisions. (1) The shortcut names the setup by id, which a rename keeps, so an old shortcut keeps working; the panel then offers to give it the new name. (2) The link is made by Windows in a file of its own under the data folder and put on the desktop through FileStore: copying a .lnk keeps what it says (measured with Electron on this PC), and this way the desktop file is backed up, journaled and undoable like every other change. (3) The Desktop folder comes from KnownFolders (Windows is asked, so a Desktop kept in OneDrive is found); a run with a redirected profile stays under its own home and can never reach the real desktop (unit test). (4) While the setup's name or its launch choice has unsaved changes the panel asks to save first: the shortcut is made from the saved setup."
     status: done
@@ -4779,6 +4793,8 @@ requirements:
       - "src/features/profiles/core/shortcut.test.ts#is the setup name with what a file name cannot hold replaced"
       - "src/features/profiles/core/shortcut.test.ts#is shown first, written through FileStore, and read back before it is called made"
       - "src/features/profiles/core/shortcut.test.ts#is removed through FileStore, shown first, and can be put back from the journal"
+      - "src/features/profiles/core/shortcut.test.ts#goes with its setup: deleting the setup removes it in the same action, and one Undo brings both back"
+      - "src/features/profiles/core/shortcut.test.ts#the uninstaller removes setup shortcuts by the ending the app gives them, and the test variant never touches a real one"
       - "src/features/profiles/core/shortcut.test.ts#never says it is made when the file is not there afterwards"
       - "src/features/profiles/core/shortcut.test.ts#never says it is made when what was written starts something else"
       - "src/features/profiles/core/shortcut.test.ts#follows a renamed setup: the old shortcut is found, and updating replaces it"

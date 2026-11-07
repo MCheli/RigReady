@@ -4,7 +4,7 @@ description: "How RigReady follows a session from launch to the game closing, th
 order: 30
 ---
 
-A session is the time the game runs. RigReady notices the game's program in the list of running programs, and keeps a record of every session it launched: how long it was, how long the rig took to be ready, and what had to be fixed first.
+A session is the time the game runs. RigReady notices the game's program in the list of running programs ([Games](../games/index.md) says how each game is recognised), and keeps a record of every session it launched: how long it was, how long the rig took to be ready, and what had to be fixed first.
 
 ![In session](../../../artifacts/screens/fly-session/02-in-session.png)
 
@@ -24,7 +24,7 @@ When the game closes the screen says **Welcome back**, with the setup, how long 
 
 ![Welcome back](../../../artifacts/screens/fly-session/03-welcome-back.png)
 
-With **Stand down when the game closes** on, the line says "Standing down…" and then what Stand down did (see [Stand down](stand-down.md)). If nobody is at a window of RigReady (nothing was done in it for a minute, or it is hidden), the welcome is a Windows notification instead: "DCS F/A-18C: 1 h 42 min. Stand down when you are done."
+With **Stand down when the game closes** on, the line says "Standing down…" and then what Stand down did (see [Stand down](stand-down.md)). If nobody is at a window of RigReady (nothing was done in it for a minute, or it is hidden), the welcome is a Windows notification instead ([the tray icon](../one-click/tray.md)): "DCS F/A-18C: 1 h 42 min. Stand down when you are done."
 
 ## Last session
 
@@ -32,7 +32,7 @@ Under the setup's name the Play screen says when the last session was and how lo
 
 ## History
 
-**History** in the Play menu opens every session RigReady recorded, newest first.
+**History** in [the Play menu](the-menu.md) opens every session RigReady recorded, newest first.
 
 ![History](../../../artifacts/screens/fly-history/02-history.png)
 
@@ -43,4 +43,4 @@ Under the setup's name the Play screen says when the last session was and how lo
 
 "Ready in" counts from the first check after you open or switch to the setup until the moment every required check passes. Coming back to the window after more than two minutes away starts that clock again.
 
-The record is kept in `fly/sessions.json` in RigReady's data folder; the newest thousand sessions are kept. A damaged file is left as it is and the history continues in the next one; the dialog says so.
+The record is kept in `fly\sessions.json` in [RigReady's data folder](../app/index.md); the newest thousand sessions are kept. A damaged file is left as it is and the history continues in the next one; the dialog says so.

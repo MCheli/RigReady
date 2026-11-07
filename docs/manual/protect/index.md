@@ -1,5 +1,5 @@
 ---
-title: Protect your configuration
+title: Backups, sharing and safety
 description: How RigReady keeps copies of your bindings, game settings and setups, and how to get any of them back when something goes wrong.
 order: 80
 ---
@@ -21,15 +21,3 @@ A fourth tool watches rather than copies: each time a setup's game starts, RigRe
 ## What is never copied
 
 Files that hold credentials are never read into a backup, a snapshot, a shared setup or an import, whatever folder you track: SimAppPro's config file with your WinWing account, DCS's saved login (`network.vault`, `steam_authdata.bin`), Steam sign-in files, browser password stores, private keys and certificates. They are listed as left out, with the reason, wherever they would have been included.
-
-## Pages in this section
-
-- [Backups](backups.md): Back up now, what a backup contains, where the files go, how many are kept, the 2 GB limit.
-- [Tracked files](tracked-files.md): what is backed up, the suggestions per game and tool, adding your own files and folders.
-- [Restore a backup](restore.md): the wizard, what goes where, replace, skip or keep both, closing a game first.
-- [Snapshots](snapshots.md): a named copy of one item, compared and put back.
-- [What changed](what-changed.md): the files compared with the last time the game started.
-- [Share a setup](sharing.md): the `.rigready` file, the privacy review, importing.
-- [A picture of your rig](rig-picture.md): one image of a setup to show people.
-- [The Safety page](safety-page.md): every change outside RigReady's folder, with Undo.
-- [Moving to a new PC](new-pc.md): the steps in order.

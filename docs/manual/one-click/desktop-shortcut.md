@@ -39,4 +39,6 @@ The panel reads the shortcut each time and says what is wrong:
 
 ## Removing it
 
-**Remove shortcut** shows what will be removed, then removes the shortcut (and one left under an earlier name). The setup itself is not touched. Deleting a setup does not remove its shortcut: remove the shortcut first, or delete the file on the desktop by hand. A shortcut to a setup that no longer exists opens RigReady with "There is no setup ..." and the names of the setups on this PC.
+**Remove shortcut** shows what will be removed, then removes the shortcut (and one left under an earlier name). The setup itself is not touched.
+
+Deleting the setup on the Setups page removes its shortcut too, in the same action, so one **Undo** on the Safety page brings the setup and its shortcut back together ([Clone, copy and delete](../setups/clone-copy-delete.md)). Uninstalling RigReady removes every setup shortcut on the desktop ([Uninstall](../app/uninstall.md)). A shortcut to a setup whose file was removed by hand opens RigReady with "There is no setup ..." and the names of the setups on this PC.

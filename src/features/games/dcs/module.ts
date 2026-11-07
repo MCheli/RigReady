@@ -13,7 +13,10 @@ const dcs: GameModule = {
   id: 'dcs',
   name: 'DCS World',
 
-  processes: ['DCS.exe'],
+  // The multithreaded build is DCS_mt.exe; both rewrite options.lua and the bindings on exit.
+  processes: ['DCS.exe', 'DCS_mt.exe'],
+
+  pathVariableLabels: { DCS_INSTALL: 'DCS install', DCS_USER: 'DCS user folder' },
 
   detect: (ctx) => detectInstalls(ctx),
 

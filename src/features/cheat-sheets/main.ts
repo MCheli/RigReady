@@ -82,7 +82,7 @@ function setup(ctx: MainContext) {
       removeKneeboardPreview: ({ aircraftId }) => service.removeKneeboardPreview(aircraftId),
       exportKneeboard: ({ game, aircraftId, options }) =>
         service.exportKneeboard(game, aircraftId, options),
-      removeKneeboard: ({ aircraftId }) => service.kneeboard.remove(aircraftId),
+      removeKneeboard: ({ aircraftId }) => service.removeKneeboard(aircraftId),
 
       kneeboardSetups: ({ game, aircraftId }) => kneeboardSetups(setups, game, aircraftId),
       async addKneeboardCheck({ game, aircraftId, profileId }) {

@@ -71,6 +71,7 @@ const msfs2024: GameModule = {
   closeBeforeRestore: {
     why: 'Flight Simulator writes its options when it exits, and Steam Cloud syncs the controller profiles while it runs.',
   },
+  pathVariableLabels: { MSFS2024_USER: 'Microsoft Flight Simulator 2024 user folder' },
 
   detect: async (ctx) => ok(await findInstalls(ctx)),
 

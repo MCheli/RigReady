@@ -23,11 +23,11 @@ Findings are grouped, worst first:
 - **Noisy axes**: an axis whose values spread over more than one percent of its travel while untouched. An axis that covered a quarter of its travel or more is called out as more than noise: either something was touched, or it is drifting.
 - **Held (switch?)**: a button held down on a device that looks like a panel (many buttons, at most two axes, no hat). A toggle switch that is on reads as a held button, which is normal on a panel, so these are listed apart from stuck buttons.
 
-Each finding names the controller (by the name you gave it) and the input, says what was recorded ("Held down for the whole 10 s test", "Pressed 3 times and released 3 times with nobody touching it", "Wandered over 2.5% of its travel while untouched"), and shows how bad it is as a number with a bar: seconds held out of the window, how many times it fired, or the percent of travel with the one percent limit marked on the bar.
+Each finding names the controller (by the name you gave it on the [Devices](devices.md) tab) and the input, says what was recorded ("Held down for the whole 10 s test", "Pressed 3 times and released 3 times with nobody touching it", "Wandered over 2.5% of its travel while untouched"), and shows how bad it is as a number with a bar: seconds held out of the window, how many times it fired, or the percent of travel with the one percent limit marked on the bar.
 
 ![Findings](../../../artifacts/screens/devices-health/04-findings.png)
 
-Under each finding is the evidence. For an axis it is the trace of the ten seconds, zoomed in on where the axis rested, with the band it is allowed to tremble in drawn behind the line and the highest and lowest values marked. For a button or a hat it is a time line with the stretches it was on lit. Then two lines in plain words: **In a game**, what the fault does there, and **What to do**, for example to give a noisy axis a dead zone a little larger than the noise, to reseat a cable, or to clear the binding of a button that keeps firing until the switch is repaired.
+Under each finding is the evidence. For an axis it is the trace of the ten seconds, zoomed in on where the axis rested, with the band it is allowed to tremble in drawn behind the line and the highest and lowest values marked. For a button or a hat it is a time line with the stretches it was on lit. Then two lines in plain words: **In a game**, what the fault does there, and **What to do**, for example to give a noisy axis a dead zone a little larger than the noise ([DCS bindings](../dcs/bindings.md) has the curve settings), to reseat a cable, or to clear the binding of a button that keeps firing until the switch is repaired.
 
 ![A noisy axis](../../../artifacts/screens/devices-health-evidence/03-noisy-axis-trace.png)
 
@@ -37,4 +37,4 @@ A panel switch that is on is not a fault. **It's a switch that is on** on a held
 
 ## What is recorded
 
-The check records every state the input reader sends during the window, for every controller, and analyses it when the window ends. Nothing is stored except the marks for switches. The report shows the window length, the number of controllers checked and the findings; the copied text has the same, line by line, with the recorded ranges and times.
+The check records every state the [input reader](input-tester.md#when-nothing-shows) sends during the window, for every controller, and analyses it when the window ends. Nothing is stored except the marks for switches. The report shows the window length, the number of controllers checked and the findings; the copied text has the same, line by line, with the recorded ranges and times.

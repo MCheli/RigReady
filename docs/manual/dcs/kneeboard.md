@@ -17,6 +17,8 @@ The dialog shows the state of the pages for this aircraft, where they go, and th
 
 **Export to kneeboard** (or **Write the pages again** once pages exist) first shows what will be written and removed in the Kneeboard folder, then writes. **Remove RigReady's pages** takes them out again, also with a preview.
 
+While DCS is running (`DCS.exe` or `DCS_mt.exe`), neither is done: the dialog says "DCS is running. Close DCS first: it reads the Kneeboard folder when a mission starts, and RigReady changes no DCS file while it runs", the confirmation's button stays off, and the up-to-date check's fix reports the same. This is the one rule every DCS write follows; see [RigReady will not write DCS files](../troubleshooting/dcs-files-refused.md).
+
 ![A night page](../../../artifacts/screens/cheat-sheets-kneeboard/02-preview-night.png)
 
 ## The files

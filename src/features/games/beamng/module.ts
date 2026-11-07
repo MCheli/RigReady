@@ -129,6 +129,10 @@ const beamng: GameModule = {
   closeBeforeRestore: {
     why: 'BeamNG.drive saves its bindings and settings while it runs and when it exits.',
   },
+  pathVariableLabels: {
+    BEAMNG_INSTALL: 'BeamNG.drive install',
+    BEAMNG_USER: 'BeamNG.drive user folder',
+  },
 
   async detect(ctx) {
     const install = await findInstall(ctx);

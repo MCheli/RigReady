@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
-import { profilesContract } from '../contract';
+import { profilesContract, type PathVariableChoice } from '../contract';
+import { variableSubtitle, withVariable } from './insertVariable';
 import { fieldsOf, type Field } from './schemaForm';
 
 const props = defineProps<{
@@ -9,6 +10,8 @@ const props = defineProps<{
   modelValue: Record<string, unknown>;
   /** Prefix for data-testid of each control: `${testid}-${key}`. */
   testid: string;
+  /** The path variables a path field may start with (from the pickers); without them no Variables menu. */
+  variables?: PathVariableChoice[] | undefined;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [Record<string, unknown>] }>();
 
@@ -89,6 +92,14 @@ async function browse(field: Field): Promise<void> {
 
 const asText = (value: unknown): string =>
   value === undefined || value === null ? '' : String(value);
+
+/** The Variables menu: the field's path said through the chosen variable. */
+function insertVariable(field: Field, variable: PathVariableChoice): void {
+  set(
+    field.key,
+    withVariable(asText(props.modelValue[field.key]), variable, props.variables ?? [])
+  );
+}
 </script>
 
 <template>
@@ -145,6 +156,29 @@ const asText = (value: unknown): string =>
         @update:model-value="set(field.key, $event)"
       >
         <template v-if="field.browse" #append-inner>
+          <v-menu v-if="variables && variables.length > 0">
+            <template #activator="{ props: menu }">
+              <v-btn
+                v-bind="menu"
+                size="small"
+                variant="text"
+                :aria-label="`Start ${field.label} with a path variable`"
+                :data-testid="`${testid}-${field.key}-variables`"
+                >Variables</v-btn
+              >
+            </template>
+            <v-list density="compact" max-height="380" class="params-variables">
+              <v-list-subheader>Start the path with</v-list-subheader>
+              <v-list-item
+                v-for="variable in variables"
+                :key="variable.name"
+                :title="`{${variable.name}}`"
+                :subtitle="variableSubtitle(variable)"
+                :data-testid="`${testid}-${field.key}-variable-${variable.name}`"
+                @click="insertVariable(field, variable)"
+              />
+            </v-list>
+          </v-menu>
           <v-btn
             size="small"
             variant="text"
@@ -268,6 +302,9 @@ const asText = (value: unknown): string =>
   align-items: center;
   gap: 4px;
   margin-bottom: 4px;
+}
+.params-variables :deep(.v-list-item-title) {
+  font-family: var(--rr-font-mono);
 }
 .rr-mono-input :deep(input),
 .rr-mono-input :deep(textarea) {

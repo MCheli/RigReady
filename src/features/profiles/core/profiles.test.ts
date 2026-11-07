@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { expandPath, allPathVariables } from '../../../core/pathVariables';
 import { migrateProfile, ProfileSchema, type Profile } from '../../../core/profile/schema';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
-import type { CheckTypeInfo, ProfileOverview, RemediationTypeInfo } from '../contract';
+import type { CheckTypeInfo, Pickers, ProfileOverview, RemediationTypeInfo } from '../contract';
 import { fieldsOf } from '../renderer/schemaForm';
 import { isDuplicate, nextId, targetOf } from './duplicates';
 import { waitForPress } from './identify';
@@ -84,6 +84,7 @@ describe('profile files', () => {
     // It is deleted like any setup file, with a copy kept.
     expect(await app.invoke('profiles:remove', { id: 'mld4nbutw9iuzu9' })).toEqual({
       removed: true,
+      shortcutRemoved: false,
     });
     expect((await app.invoke<ProfileOverview>('profiles:overview')).earlier).toEqual([]);
     await expect(fs.access(old)).rejects.toThrow();
@@ -151,6 +152,27 @@ describe('profile files', () => {
       launch: { exe: '{IRACING_USER}/x.exe', args: [] },
     });
     expect(saved.launch?.exe).toBe('{IRACING_USER}/x.exe');
+    // Every variable a game module can provide is accepted, from the module's own list: the
+    // ones a hand-kept list once left out (Flight Simulator, Assetto Corsa, the installs) too.
+    for (const name of [
+      'MSFS2024_USER',
+      'AC_USER',
+      'AC_INSTALL',
+      'IRACING_INSTALL',
+      'LMU_INSTALL',
+      'BEAMNG_INSTALL',
+      'STEAM',
+    ]) {
+      const kept = await app.invoke<Profile>('profiles:save', {
+        ...profile,
+        launch: { exe: `{${name}}/x.exe`, args: [] },
+      });
+      expect(kept.launch?.exe).toBe(`{${name}}/x.exe`);
+    }
+    // The retired name is not quietly kept.
+    await expect(
+      app.invoke('profiles:save', { ...profile, launch: { exe: '{MSFS_USER}/x.exe', args: [] } })
+    ).rejects.toThrow(/Unknown path variable \{MSFS_USER\}/);
   });
 
   it('path variables resolve under the user folder of this run, never the real one', async () => {
@@ -198,6 +220,30 @@ describe('editing', () => {
     expect(await app.wiring.context.profiles.lastProfileId()).toBe(P);
   });
 
+  it('lists every path variable for the Variables menu, with where it points on this PC', async () => {
+    app = await wiredApp('flying-all-good', { files: ['Saved Games/DCS/Config/options.lua'] });
+    const { variables } = await app.invoke<Pickers>('profiles:pickers');
+    const byName = Object.fromEntries(variables.map((v) => [v.name, v]));
+    // The standard ones first, then each game's, every one with a label.
+    expect(variables[0]).toEqual({ name: 'USER', label: 'Your user folder', path: app.home });
+    expect(variables.every((v) => v.label.length > 0)).toBe(true);
+    expect(byName['DCS_USER']).toEqual({
+      name: 'DCS_USER',
+      label: 'DCS user folder',
+      path: path.join(app.home, 'Saved Games', 'DCS'),
+    });
+    // A game that is not on this PC: offered all the same, with its label and without a path.
+    const absent = variables.filter((v) => v.path === undefined);
+    expect(absent.map((v) => v.name)).toContain('LMU_INSTALL');
+    for (const v of absent) expect(v.label.length, v.name).toBeGreaterThan(0);
+    expect(byName['AC_USER']).toMatchObject({ label: 'Assetto Corsa user folder' });
+    expect(byName['MSFS2024_USER']).toMatchObject({
+      label: 'Microsoft Flight Simulator 2024 user folder',
+    });
+    expect(byName['STEAM']).toMatchObject({ label: 'Steam library' });
+    expect(byName['MSFS_USER']).toBeUndefined();
+  });
+
   it('says when a hand-edited file has comments a save would drop', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
     const file = app.wiring.context.profiles.fileFor(P);
@@ -229,7 +275,10 @@ describe('editing', () => {
     await app.invoke('profiles:use', { id: P });
     const file = app.wiring.context.profiles.fileFor(P);
     const content = await fs.readFile(file, 'utf8');
-    expect(await app.invoke('profiles:remove', { id: P })).toEqual({ removed: true });
+    expect(await app.invoke('profiles:remove', { id: P })).toEqual({
+      removed: true,
+      shortcutRemoved: false,
+    });
     await expect(fs.access(file)).rejects.toThrow();
     const journal = await app.ports.files.journal();
     if (!journal.ok) throw new Error('no journal');

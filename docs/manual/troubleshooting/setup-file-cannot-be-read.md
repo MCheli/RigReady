@@ -13,7 +13,7 @@ Setups are YAML files in `profiles` under RigReady's data folder, and you may ed
   - "The profile file <name>.yaml is not valid YAML." with the line and the reason, for example a missing colon or wrong indentation.
   - "The profile file <name>.yaml is not valid." with which value is wrong, for example a check without a type.
   - "Its id "..." does not match the file name; rename one to match the other."
-- **Diagnostics** lists the file under RigReady's own files: "3 setups; 1 file cannot be read (...)".
+- [Diagnostics](../app/diagnostics.md) lists the file under RigReady's own files: "3 setups; 1 file cannot be read (...)".
 
 ![Setups that cannot be read](../../../artifacts/screens/damaged-data-files/02-setups.png)
 
@@ -29,4 +29,4 @@ The YAML format is described under [setups as YAML](../setups/yaml.md).
 
 ## Files from RigReady 1
 
-RigReady 1 kept its setups in the same folder, in a format this version does not read. Such a file is not a damaged setup: it is listed under **From RigReady 1** on the Setups page, with its name, and the note "This version starts from scratch and does not read setups made by RigReady 1. Create them again with New setup from this rig. The old files stay where they are until you delete them." **Show in Explorer** and **Delete** are offered; nothing is converted. See [your first setup](../getting-started/first-setup.md).
+RigReady 1 kept its setups in the same folder, in a format this version does not read. Such a file is not a damaged setup: it is listed under **From RigReady 1** on the Setups page, with its name, and the note "This version starts from scratch and does not read setups made by RigReady 1. Create them again with New setup from this rig. The old files stay where they are until you delete them." **Show in Explorer** and **Delete** are offered; nothing is converted. See [Files from RigReady 1](../setups/yaml.md#files-from-rigready-1) and [Creating a setup from the rig](../setups/capture.md).

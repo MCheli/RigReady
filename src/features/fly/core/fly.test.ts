@@ -676,9 +676,11 @@ describe('Stand down', () => {
     ]);
     const running = await app.ports.processes.list();
     expect(running.ok && running.value.some((p) => p.name === 'StreamDeck.exe')).toBe(true);
+    // Where it is chosen: both places, since the Monitors page and Settings share the setting.
     expect(down.ok && down.value.steps.at(-1)).toMatchObject({
       skipped: true,
-      message: 'No desk layout is chosen in Settings, so the monitors were left as they are',
+      message:
+        'No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are',
     });
   });
 
@@ -725,7 +727,7 @@ describe('Stand down', () => {
     expect(down.ok && down.value.steps.map((s) => s.message)).toEqual([
       'Closed VoiceAttack.exe',
       'Ran after.cmd',
-      'No desk layout is chosen in Settings, so the monitors were left as they are',
+      'No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are',
     ]);
     expect(await f.gameStatus('p')).toEqual(ok({ running: true, name: 'DCS.exe' }));
     const withGame = await f.standDown('p', { closeGame: true });

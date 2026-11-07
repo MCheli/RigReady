@@ -2,7 +2,7 @@ import path from 'node:path';
 import type { BindingRegistry } from '../../../core/bindings';
 import type { CheckContext } from '../../../core/checks/registry';
 import { changePreview } from '../../../core/files/preview';
-import type { GameRegistry } from '../../../core/games';
+import { gameRunning, type GameRegistry } from '../../../core/games';
 import type { Logger } from '../../../core/logger';
 import type { NameRegistry } from '../../../core/names';
 import { allPathVariables } from '../../../core/pathVariables';
@@ -48,9 +48,18 @@ export interface ServiceContext {
   profiles?: Pick<ProfileStore, 'list' | 'lastProfileId'>;
 }
 
-/** Games whose cheat sheets can be exported as kneeboard pages, with the folder under the user folder. */
-const KNEEBOARD_GAMES: Record<string, { variable: string; folder: string }> = {
-  dcs: { variable: 'DCS_USER', folder: 'Kneeboard' },
+/**
+ * Games whose cheat sheets can be exported as kneeboard pages: the folder under the user
+ * folder, and why nothing is written there while the game runs (the rule every write into a
+ * game's folders follows; whether it runs is core's `gameRunning`, from the game module).
+ */
+const KNEEBOARD_GAMES: Record<string, { variable: string; folder: string; running: string }> = {
+  dcs: {
+    variable: 'DCS_USER',
+    folder: 'Kneeboard',
+    running:
+      'DCS is running. Close DCS first: it reads the Kneeboard folder when a mission starts, and RigReady changes no DCS file while it runs.',
+  },
 };
 
 /** How long a sheet waits for the DirectInput reader before drawing without it. */
@@ -383,6 +392,13 @@ export class CheatSheets {
     return ok(path.join(user, folder, aircraftId));
   }
 
+  /** Why the game's kneeboard folder cannot be written now (the game is running), or undefined. */
+  private async kneeboardBlocked(game: string): Promise<string | undefined> {
+    const target = KNEEBOARD_GAMES[game];
+    if (!target) return undefined;
+    return (await gameRunning(this.ctx, this.ctx.games.get(game))) ? target.running : undefined;
+  }
+
   async kneeboardStatus(
     game: string,
     aircraftId: string,
@@ -392,9 +408,12 @@ export class CheatSheets {
     if (!sheet.ok) return sheet;
     const status = await this.kneeboard.status(sheet.value);
     if (!status.ok) return status;
-    if (status.value.folder) return status;
+    const blocked = await this.kneeboardBlocked(game);
+    const told = (value: KneeboardStatus): KneeboardStatus =>
+      blocked ? { ...value, blocked } : value;
+    if (status.value.folder) return ok(told(status.value));
     const folder = await this.kneeboardFolder(game, aircraftId, check);
-    return ok(folder.ok ? { ...status.value, folder: folder.value } : status.value);
+    return ok(told(folder.ok ? { ...status.value, folder: folder.value } : status.value));
   }
 
   async exportKneeboard(
@@ -403,11 +422,24 @@ export class CheatSheets {
     options: KneeboardOptions,
     check?: CheckContext
   ): Promise<Result<ExportOutcome>> {
+    const blocked = await this.kneeboardBlocked(game);
+    if (blocked) return err(`${game}.running`, blocked);
     const folder = await this.kneeboardFolder(game, aircraftId, check);
     if (!folder.ok) return folder;
     const sheet = await this.sheet(game, aircraftId);
     if (!sheet.ok) return sheet;
     return this.kneeboard.export(sheet.value, folder.value, options);
+  }
+
+  /** Removes the pages RigReady wrote for an aircraft; refused while the game runs. */
+  async removeKneeboard(
+    aircraftId: string
+  ): Promise<Result<{ removed: string[]; kept: string[] }>> {
+    for (const game of Object.keys(KNEEBOARD_GAMES)) {
+      const blocked = await this.kneeboardBlocked(game);
+      if (blocked) return err(`${game}.running`, blocked);
+    }
+    return this.kneeboard.remove(aircraftId);
   }
 
   /** What exporting would change in the kneeboard folder: nothing is written. */

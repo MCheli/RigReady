@@ -4,13 +4,13 @@ description: Export a setup as a .rigready file after a privacy review, and impo
 order: 60
 ---
 
-**Configure > Share** gives a setup to a friend or a squadron as one `.rigready` file, and brings in a file you were given. Personal details are reviewed before anything leaves this PC, and nothing that runs a program is ever shared or imported.
+**Configure > Share** gives a setup to a friend or a squadron as one `.rigready` file, and brings in a file you were given. Personal details are reviewed before anything leaves this PC, and nothing that runs a program is ever shared or imported. [Privacy](../app/privacy.md) sums up what leaves the PC and what never does.
 
 The page has three modes: **Share a setup**, **Import a shared setup** and **Save a picture of this setup**. The picture is described on [its own page](rig-picture.md).
 
 ## What a shared setup contains
 
-The setup's checks (devices, apps, monitor layout, audio, files) and its monitor layout are always included. Its config files are optional: the tracked items of the setup are listed under **1. What to share**, each with its file count, and you tick the ones to send along. A setup that tracks no files says so and points to Tracked files.
+The setup's checks (devices, apps, monitor layout, audio, files) and its monitor layout are always included. Its config files are optional: the tracked items of the setup are listed under **1. What to share**, each with its file count, and you tick the ones to send along. A setup that tracks no files says so and points to [Tracked files](tracked-files.md).
 
 The file also carries a compatibility summary read from the checks, so the other PC can say what it is missing: the hardware by vendor and product ID, the game and the helper apps, and the monitors.
 
@@ -21,7 +21,7 @@ Anything that could run a program is removed before export and listed under **Ne
 - the launch command,
 - checks that run a script or a command,
 - fixes that start a program,
-- steps before or after launch and at Stand down that run a program.
+- steps before or after launch and at Stand down that run a program ([Scripts](../setups/scripts.md)).
 
 They are named so the other person knows what to set up themselves. Files that are programs or scripts (`.exe`, `.bat`, `.ps1`, `.py`, `.dll` and the like) and credential files are left out of the config files too.
 
@@ -37,8 +37,8 @@ They are named so the other person knows what to set up themselves. Files that a
 | PC name | Remove | Replaced with "my-pc" |
 | Serial number | Remove | Removed; the check then matches the device by vendor and product ID |
 | Device instance path | Remove | Removed; it only identifies the device on this PC |
-| Folder path | Remove | Replaced with a variable such as `{DCS_USER}` that means the same folder on the other PC, inside config files too |
-| Audio device id | Keep | Removed; the audio check then matches by name only |
+| Folder path | Remove | Replaced with a [variable](../setups/path-variables.md) such as `{DCS_USER}` that means the same folder on the other PC, inside config files too |
+| Audio device ID | Keep | Removed; the audio check then matches by name only |
 | Controller id in a file name | Keep | The file is left out. DCS names binding files after each controller id; keep them or the bindings cannot be used |
 | File that cannot be checked | Keep | The file is left out. Not a text file, so RigReady cannot look inside it |
 
@@ -50,7 +50,7 @@ Tick **I reviewed this** and press **Save .rigready file**. The footer sums up: 
 
 ## Importing
 
-**Open .rigready file** picks a file. It is checked completely before anything is shown: the size against the **Largest import** setting, the number of entries, a manifest that lists every file with its checksum, a valid setup, and no program or script inside. A file that fails any of this is refused with the reason, for example "The shared setup contains a program or script".
+**Open .rigready file** picks a file. It is checked completely before anything is shown: the size against the **Largest import** [setting](../app/settings.md#safety-and-limits), the number of entries, a manifest that lists every file with its checksum, a valid setup, and no program or script inside. A file that fails any of this is refused with the reason, for example "The shared setup contains a program or script".
 
 The report then shows:
 
@@ -69,6 +69,6 @@ The setup is added under its name, or with "(shared)" added when you already hav
 
 Everything an import writes is one change on [the Safety page](safety-page.md). **Undo this import** takes all of it back in one step: the files and the setup. When a file was edited since, it asks before undoing.
 
-Imported DCS binding files that name controllers this PC does not use are reported with a button to **Bindings > Device IDs**, as after a [restore](restore.md).
+Imported DCS binding files that name controllers this PC does not use are reported with a button to **Bindings > Device IDs** ([Device IDs changed](../dcs/device-ids.md)), as after a [restore](restore.md).
 
 ![An import done](../../../artifacts/screens/share-import/04-imported.png)

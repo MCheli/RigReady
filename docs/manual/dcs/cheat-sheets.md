@@ -4,15 +4,15 @@ description: A picture of each device with what every control does: press a cont
 order: 80
 ---
 
-**Configure > Cheat sheets** draws every controller with what each control does in the aircraft you choose. For DCS the labels come from the same effective bindings as the [bindings page](bindings.md), with the plain-language names of the [binding guide](binding-guide-and-ai.md) where it has one. The same page serves the racing games; this page is about using it for DCS.
+**Configure > Cheat sheets** draws every controller with what each control does in the aircraft you choose. For DCS the labels come from the same effective bindings as the [bindings page](bindings.md), with the plain-language names of the [binding guide](binding-guide-and-ai.md) where it has one. The same page serves the [racing games](../games/index.md); this page is about using it for DCS.
 
-Choose the aircraft under **Aircraft or car**. The page opens on the game of the setup in use.
+Choose the aircraft under **Aircraft or car**. The page opens on the game of the [setup in use](../play/switching-setups.md).
 
 ## By device
 
-The devices are listed on the left, with the name you gave each one, how many of its controls are bound, and a warning count. The picture shows a card for every control: buttons, hats as crosses, and axes with a bar that follows the real axis. A card reads the control's number, what is printed on the device where the layout knows it, and the action; the colour says the kind of action, and the legend under the picture names the kinds and filters by one. An exclamation mark marks a control that fires several actions on one press, **×2** an action that is also somewhere else, and a dashed card a control with nothing bound; **Unbound controls** hides those.
+The devices are listed on the left, with the name you gave each one on the [Devices page](../hardware/devices.md), how many of its controls are bound, and a warning count. The picture shows a card for every control: buttons, hats as crosses, and axes with a bar that follows the real axis. A card reads the control's number, what is printed on the device where the layout knows it, and the action; the colour says the kind of action, and the legend under the picture names the kinds and filters by one. An exclamation mark marks a control that fires several actions on one press, **×2** an action that is also somewhere else, and a dashed card a control with nothing bound; **Unbound controls** hides those.
 
-Press a control on the device and its card lights up and is selected. Clicking a card does the same. The panel on the right shows every binding on it: the plain name, what DCS calls it, modifiers, category, whether it is yours or a default, and where else the action is. **Your note** keeps up to 120 characters of your own words for that control, for example "hold for weapon release"; notes live in RigReady's folder and appear on the printed and kneeboard pages. **Bindings** opens the bindings page on that device.
+Press a control on the device and its card lights up and is selected. Clicking a card does the same. The panel on the right shows every binding on it: the plain name, what DCS calls it, modifiers, category, whether it is yours or a default, and where else the action is. **Your note** keeps up to 120 characters of your own words for that control, for example "hold for weapon release"; notes live in [RigReady's folder](../app/index.md) and appear on the printed and kneeboard pages. **Bindings** opens the bindings page on that device.
 
 Controls the device reports that are not on the picture are counted, and bindings on inputs that have no place on a controller picture are listed under the picture. The search box finds a control by action, label or note, and shows how many matches each device has.
 
