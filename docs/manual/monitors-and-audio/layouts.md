@@ -1,12 +1,12 @@
 ---
-title: Saved layouts
+title: Monitor layouts
 description: Save the monitor arrangement under a name, apply it with a preview that moves, keep it within the countdown, and let Stand down return to the desk layout.
 order: 10
 ---
 
 A layout is a saved arrangement of your monitors: which are on, where each one sits, how it is turned, and which is the main display. You save one for each way you use the rig, for example Flying, Racing and Desk. A setup checks that the right layout is in place, Make ready applies it, and Stand down puts the desk layout back.
 
-This page covers saving, applying and the keep-or-revert countdown. Editing a layout by hand is on [rotation and position](rotation-and-position.md).
+This page covers saving, applying and the keep-or-revert countdown. Editing a layout by hand is on [Edit a layout by hand](rotation-and-position.md).
 
 ## Save the arrangement you have now
 

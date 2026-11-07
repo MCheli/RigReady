@@ -26,7 +26,7 @@ Unexpected errors are shown on every screen as a small notice; this page keeps t
 
 **Copy diagnostics** puts a text report on the clipboard: the versions, the data folder and log level, the games, the devices and monitors, RigReady's own files, every unexpected error of this run, and the newest 200 log entries. The same report is available from the [command palette](command-palette.md) as **Copy the diagnostics report**.
 
-Before it is copied, personal details are removed the same way as for a [shared setup](../protect/sharing.md#the-privacy-review): your folders become variables such as `{DOCUMENTS}`, your Windows user name, the PC name, device serial numbers, device instance paths and audio device ids are replaced, and anything that looks like a key or a password is masked. The confirmation says how many characters were copied and that this was done.
+Before it is copied, personal details are removed the same way as for a [shared setup](../protect/sharing.md#the-privacy-review): your folders become variables such as `{DOCUMENTS}`, your Windows user name, the PC name, device serial numbers, device instance paths and audio device IDs are replaced, and anything that looks like a key or a password is masked. The confirmation says how many characters were copied and that this was done.
 
 **Export diagnostics…** writes the same report as a zip, together with every log file and the settings file, all scrubbed the same way. The default name is `RigReady-diagnostics-<date>.zip` in Documents. **Open log folder** opens the folder in Explorer; the files there are the raw log, which already writes your user folder as `~` and masks keys, but is not scrubbed of serial numbers and device paths.
 

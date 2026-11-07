@@ -1,5 +1,5 @@
 ---
-title: Bindings
+title: DCS bindings
 description: What every control does in an aircraft, DCS's defaults plus your changes: bind by pressing a control, review the file change, and the .diff.lua files.
 order: 40
 ---

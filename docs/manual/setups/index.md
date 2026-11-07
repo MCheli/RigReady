@@ -4,14 +4,14 @@ description: "What a setup is, one per aircraft or car, what it holds, where its
 order: 40
 ---
 
-A setup is one "ready state": one aircraft or car, with everything the rig needs before you launch it. The [Play screen](../play/index.md) checks a setup, [Make ready](../play/make-ready-and-launch.md) fixes what it can, and Launch starts what the setup says. You make one per aircraft or car, because a Hornet and an iRacing evening want different gear, helper apps, monitors and files. A session can also start from a [desktop shortcut](../one-click/desktop-shortcut.md) per setup.
+This section covers setups: what one holds, how it is captured from the rig, the editor, every kind of check and fix, launch targets and steps, scripts, path variables, the YAML file, and cloning, copying and deleting. A setup is one "ready state": one aircraft or car, with everything the rig needs before you launch it. The [Play screen](../play/index.md) checks a setup, [Make ready](../play/make-ready-and-launch.md) fixes what it can, and Launch starts what the setup says. You make one per aircraft or car, because a Hornet and an iRacing evening want different gear, helper apps, monitors and files. A session can also start from a [desktop shortcut](../one-click/desktop-shortcut.md) per setup.
 
 ![The Setups page](../../../artifacts/screens/profile-capture/07-setups.png)
 
 ## What a setup holds
 
 - A name, the game it is for (a game RigReady knows, "other" with a name of your own, or no particular game), notes, and for a game installed more than once the install it uses.
-- **Checks**, grouped as the Play screen shows them: devices connected, apps and services, monitors, audio, config files, other. Each is required or optional, can be switched off, and may carry a fix. [Checks](checks.md) lists every kind.
+- **Checks**, grouped as the Play screen shows them: devices connected, apps and services, monitors, audio, config files, other. Each is required or optional, can be switched off, and may carry a fix. [Checks and fixes](checks.md) lists every kind.
 - What **Launch** starts: a program with arguments, a Steam app id, or nothing. See [Launch targets and steps](launch.md).
 - Steps **Before launch**, **After launch** and **At Stand down** ([Stand down](../play/stand-down.md) says what runs at the end of a session).
 - The files and folders the Backups page keeps for this setup ([Tracked files](../protect/tracked-files.md)), and other data features keep with it.
@@ -32,7 +32,7 @@ The file is yours to read and edit; RigReady notices a change within about two s
 
 - [Creating a setup from the rig](capture.md)
 - [The setup editor](editor.md)
-- [Checks](checks.md)
+- [Checks and fixes](checks.md)
 - [Launch targets and steps](launch.md)
 - [Scripts](scripts.md)
 - [Path variables](path-variables.md)

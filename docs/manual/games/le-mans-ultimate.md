@@ -27,9 +27,9 @@ The path variables `{LMU_INSTALL}` and `{LMU_USER}` are available in a setup; se
 
 **Configure > Racing > Le Mans Ultimate** reads `direct input.json` and `current controls.json`.
 
-**Controllers** lists each controller the game has set up, with the name you gave it on the [Devices page](../hardware/devices.md), the game's name for it, its type ("Wheel"), how many bindings use it, its vendor and product id, and a state:
+**Controllers** lists each controller the game has set up, with the name you gave it on the [Devices page](../hardware/devices.md), the game's name for it, its type ("Wheel"), how many bindings use it, its vendor and product ID, and a state:
 
-- **Connected**: a controller with the same vendor and product id is attached.
+- **Connected**: a controller with the same vendor and product ID is attached.
 - **New name**: the controller is attached, but Windows now gives it another name than the game stored. The repair below applies.
 - **Not connected**: no controller of that model is attached.
 - **Compatibility mode**: a Fanatec base is attached, but in compatibility (yellow) mode, where it reports itself as a ClubSport V2.5 and the stored entry does not match it.
@@ -46,7 +46,7 @@ Le Mans Ultimate names each controller with a key that ends in a code whose orig
 
 ## Repair: a renamed controller
 
-A driver or firmware update can change the name Windows gives a controller. The game finds controllers by name, so the bindings made under the old name stop reaching it, while the vendor and product id stay the same. That is the one case RigReady repairs.
+A driver or firmware update can change the name Windows gives a controller. The game finds controllers by name, so the bindings made under the old name stop reaching it, while the vendor and product ID stay the same. That is the one case RigReady repairs.
 
 A controller in the **New name** state shows the name Windows uses now and offers **Update Le Mans Ultimate…**. The confirmation lists what changes in `direct input.json`. There are two cases:
 

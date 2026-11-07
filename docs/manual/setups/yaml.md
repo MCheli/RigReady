@@ -86,7 +86,7 @@ actions:                         # steps around the launch; each list may be emp
 extensions: {}                   # data other features keep with the setup, for example backup
 ```
 
-A check has `id`, `type`, `title`, `required` (true unless said otherwise), `params`, and may have `remediation` (`type` and `params`), `timeoutSeconds` (1 to 600) and `disabled`. A step has `id`, `title`, `type`, `params`, and may have `continueOnError` (true unless said otherwise), `delaySeconds` (after launch only), `waitForCompletion`, `hidden`, `timeoutSeconds` (1 to 3600) and `closeOnStandDown`. The fields of each type are on [Checks](checks.md).
+A check has `id`, `type`, `title`, `required` (true unless said otherwise), `params`, and may have `remediation` (`type` and `params`), `timeoutSeconds` (1 to 600) and `disabled`. A step has `id`, `title`, `type`, `params`, and may have `continueOnError` (true unless said otherwise), `delaySeconds` (after launch only), `waitForCompletion`, `hidden`, `timeoutSeconds` (1 to 3600) and `closeOnStandDown`. The fields of each type are on [Checks and fixes](checks.md).
 
 ## Comments and anchors
 

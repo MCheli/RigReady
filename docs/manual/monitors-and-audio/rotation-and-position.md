@@ -1,12 +1,12 @@
 ---
-title: Rotation and position
+title: Edit a layout by hand
 description: Edit a saved layout by hand: which monitors are on, the main display, the orientation of each and its position in desktop pixels, with a live map.
 order: 30
 ---
 
 A saved layout is normally made from the monitors as they are. **Edit arrangement**, in the menu of a layout card on **Configure > Monitors**, lets you change one without first arranging the monitors in Windows: turn the MFD screens portrait, move the TV, or switch a monitor off for this layout.
 
-This page covers the edit dialog. Saving and applying layouts is on [saved layouts](layouts.md).
+This page covers the edit dialog. Saving and applying layouts is on [Monitor layouts](layouts.md).
 
 ## The edit dialog
 

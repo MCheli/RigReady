@@ -25,7 +25,7 @@ RigReady sets the default the way the Sound panel does and then reads it back; i
 
 ## The check in a setup
 
-When a setup is created from the rig, the [capture screen](../setups/capture.md) proposes **Sound output: <device>** and **Microphone: <device>** for the current defaults, selected and required. When the calls device differs from the default, **Sound output for calls: <device>** (or the microphone equivalent) is offered as well, optional and not selected. Each check records the device's Windows id and its name. See [checks](../setups/checks.md).
+When a setup is created from the rig, the [capture screen](../setups/capture.md) proposes **Sound output: <device>** and **Microphone: <device>** for the current defaults, selected and required. When the calls device differs from the default, **Sound output for calls: <device>** (or the microphone equivalent) is offered as well, optional and not selected. Each check records the device's Windows ID and its name. See [checks](../setups/checks.md).
 
 On the [Play screen](../play/index.md) the check passes with "Default output", "Default output for calls" or "Default output, also for calls". It fails with:
 

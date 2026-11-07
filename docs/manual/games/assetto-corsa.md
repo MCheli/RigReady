@@ -20,9 +20,9 @@ Assetto Corsa and Content Manager write `controls.ini` while they are open, so a
 
 **Configure > Racing > Assetto Corsa** reads `controls.ini`.
 
-**Controllers** lists the `[CONTROLLERS]` section: each controller's index and name as the game stored them, a short form of its Windows instance id, whether any binding uses it, and a state matched against the connected controllers: **Connected** (the stored instance id is attached), **New Windows id** (a controller of the same model is attached under another id), **Not connected**, or **Unknown**. The input method from the file's header is shown beside the heading. A wheel base can show up as two controllers with the same name; the one without bindings is expected.
+**Controllers** lists the `[CONTROLLERS]` section: each controller's index and name as the game stored them, a short form of its Windows instance ID, whether any binding uses it, and a state matched against the connected controllers: **Connected** (the stored instance ID is attached), **New Windows id** (a controller of the same model is attached under another id), **Not connected**, or **Unknown**. The input method from the file's header is shown beside the heading. A wheel base can show up as two controllers with the same name; the one without bindings is expected.
 
-When a controller the bindings use is not connected under its stored id, a notice says that Assetto Corsa refers to controllers by their Windows id, and that you should bind it again in the game or in Content Manager, or restore a backup taken while it worked. RigReady does not rewrite `controls.ini`.
+When a controller the bindings use is not connected under its stored ID, a notice says that Assetto Corsa refers to controllers by their Windows ID, and that you should bind it again in the game or in Content Manager, or restore a backup taken while it worked. RigReady does not rewrite `controls.ini`.
 
 **Bindings** lists each action in plain language (Steering, Throttle, Brake, Shift up, Brake balance forward, Look left, and so on, including the sections Content Manager and Custom Shaders Patch add), with its axis or button and the controller, and keyboard bindings where the file has them.
 

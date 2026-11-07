@@ -20,7 +20,7 @@ With **All controllers** chosen, each controller is a card with a strip that sho
 
 ## One controller
 
-The single view shows the controller's name and instance id, and three sections:
+The single view shows the controller's name and instance ID, and three sections:
 
 - **Axes**: each axis as a strip chart of the last six seconds, running right to left, with the pen at the right edge where the axis is now. A shaded band is the range the axis has reached since you opened the tester: sweep an axis end to end to check it gets to both ends. The number on the right is the current value, with the reached range under it once the axis has moved ("3 to 96%"). An axis that never reaches an end after a full sweep is marked: "Only reaches 3% to 96%: never gets to either end".
 - **Hats**: each hat as a compass rose with the direction it is pushed towards lit, and the direction written beside it.

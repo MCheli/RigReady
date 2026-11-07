@@ -24,4 +24,4 @@ Nothing is changed by looking. If the PC could not be read just now, the screen 
 - **Restore from a backup** goes to **Configure > Backups**, for a backup RigReady made on another PC or before a reinstall. See [Restore a backup](../protect/restore.md) and [Moving to a new PC](../protect/new-pc.md).
 - **Import a shared setup** goes to **Configure > Share**, for a `.rigready` file somebody sent you. See [Share a setup](../protect/sharing.md).
 
-The line at the bottom holds on every screen: Ctrl+K opens [the command palette](../app/command-palette.md), which finds any page or command from anywhere, and ? lists the [keyboard shortcuts](../app/keyboard-shortcuts.md). [Play and Configure](two-modes.md) explains the two modes of the window.
+The line at the bottom holds on every screen: Ctrl+K opens [the command palette](../app/command-palette.md), which finds any page or command from anywhere, and ? lists the [keyboard shortcuts](../app/keyboard-shortcuts.md). [Play and Configure, the two modes](two-modes.md) explains them.

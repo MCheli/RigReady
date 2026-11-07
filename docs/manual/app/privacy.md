@@ -20,7 +20,7 @@ That is all. Everything else, including every check, every backup and the diagno
 
 Three things are made to leave the PC, each on your decision, and each is cleaned first:
 
-- A **shared setup** (`.rigready`) goes through a privacy review that lists every personal detail found and lets you remove or keep each: user name, PC name, serial numbers, device instance paths, folder paths, audio device ids. Nothing that runs a program is ever included. See [share a setup](../protect/sharing.md).
+- A **shared setup** (`.rigready`) goes through a privacy review that lists every personal detail found and lets you remove or keep each: user name, PC name, serial numbers, device instance paths, folder paths, audio device IDs. Nothing that runs a program is ever included. See [share a setup](../protect/sharing.md).
 - A **picture of a setup** is built from names only and scanned with everything removed. See [a picture of your rig](../protect/rig-picture.md).
 - The **diagnostics** report and export have the same details removed before they are copied or written, plus anything that looks like a key or a password masked. See [diagnostics](diagnostics.md).
 

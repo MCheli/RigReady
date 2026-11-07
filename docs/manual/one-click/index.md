@@ -4,7 +4,7 @@ description: "Five ways to make the rig ready and launch without opening RigRead
 order: 30
 ---
 
-Once a setup works, a session need not start in RigReady's window. The same Make ready and Launch of the [Play screen](../play/make-ready-and-launch.md) can be asked for from the desktop, the taskbar, the tray, a key combination and the command line.
+Once a setup works, a session need not start in RigReady's window. This section covers the five ways the same Make ready and Launch of the [Play screen](../play/make-ready-and-launch.md) can be asked for without opening it: a desktop shortcut, the taskbar button, the tray icon, a hotkey and the command line.
 
 ![Started with --launch: the rig was made ready and the game launched](../../../artifacts/screens/one-click-fly/02-launched.png)
 

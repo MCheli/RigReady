@@ -18,7 +18,7 @@ Rest the pointer on the icon: "RigReady - DCS F/A-18C: Not ready (2 problems): T
 
 ## One click and a double-click
 
-One click does the sensible thing: it brings the window out when it is hidden, minimized or behind another window, and puts it away when it is the window you are looking at. A double-click always opens the window. After a single click the window waits a moment before going away, so the first click of a double-click does not make it blink.
+One click does the sensible thing: it brings the window out when it is hidden, minimised or behind another window, and puts it away when it is the window you are looking at. A double-click always opens the window. After a single click the window waits a moment before going away, so the first click of a double-click does not make it blink.
 
 ## The menu
 

@@ -1,5 +1,5 @@
 ---
-title: Checks
+title: Checks and fixes
 description: "Every kind of check a setup can hold, by group: what it looks at, its fields, and the fix Make ready can run for it. Also the fix types on their own."
 order: 30
 ---
@@ -12,7 +12,7 @@ A check that is not met is red when required and yellow when optional. A check t
 
 ### Device connected (`device.connected`)
 
-A USB device is present. It is known by its vendor and product id, never by its name; with identical devices a serial number or the USB port tells them apart. Fields: `vendorId` and `productId` (four hex digits each), `serial`, `instanceId` (the USB port; moving the device breaks the check), `count` (how many must be present). No fix: plug it in. When [HidHide](../hardware/devices.md#hidhide) hides the device from the game the check fails with "Hidden by HidHide" and says what to change in HidHide; RigReady does not change HidHide settings. The row has **Diagnose**, which opens the Devices page ([A device is not found](../troubleshooting/device-not-found.md)).
+A USB device is present. It is known by its vendor and product ID, never by its name; with identical devices a serial number or the USB port tells them apart. Fields: `vendorId` and `productId` (four hex digits each), `serial`, `instanceId` (the USB port; moving the device breaks the check), `count` (how many must be present). No fix: plug it in. When [HidHide](../hardware/devices.md#hidhide) hides the device from the game the check fails with "Hidden by HidHide" and says what to change in HidHide; RigReady does not change HidHide settings. The row has **Diagnose**, which opens the Devices page ([A device is not found](../troubleshooting/device-not-found.md)).
 
 ### Wheel base connected in the right mode (`racing.wheelBase`)
 
@@ -66,7 +66,7 @@ DCS's options.lua selects the expected monitor setup, and DCS's window matches w
 
 ### Default audio device (`audio.defaultDevice`)
 
-A device is Windows' default. Fields: `flow`, playback or recording; `id`, the Windows endpoint id; `name`, used when the id is no longer found; `role`: `default` (the device Windows uses for everything), `communications` (the one voice chat apps use), or `both`. Fix: **Set the default audio device** (`audio.setDefault`); see [Audio](../monitors-and-audio/audio.md). Stand down puts the earlier default back when the fix changed it and you have not changed it since.
+A device is Windows' default. Fields: `flow`, playback or recording; `id`, the Windows endpoint ID; `name`, used when the id is no longer found; `role`: `default` (the device Windows uses for everything), `communications` (the one voice chat apps use), or `both`. Fix: **Set the default audio device** (`audio.setDefault`); see [Audio](../monitors-and-audio/audio.md). Stand down puts the earlier default back when the fix changed it and you have not changed it since.
 
 ## Config files
 
@@ -92,11 +92,11 @@ The DCS files RigReady wrote (its monitor setup, its Export.lua lines, its optio
 
 ### DCS bindings match the connected devices (`dcs-bindings.deviceIds`)
 
-The aircraft's binding files belong to the device ids Windows has now, and the connected devices have bindings of your own for it. Fields: `aircraft` (DCS's folder name, `FA-18C_hornet`), `aircraftName`. Fix: **Review device ID changes** (`dcs-bindings.openMigration`), which opens Bindings > Device IDs ([Device IDs changed](../dcs/device-ids.md)) with a preview; nothing is moved until you apply it there, so Make ready lists it under Needs you ([Make ready and launch](../play/make-ready-and-launch.md)).
+The aircraft's binding files belong to the device IDs Windows has now, and the connected devices have bindings of your own for it. Fields: `aircraft` (DCS's folder name, `FA-18C_hornet`), `aircraftName`. Fix: **Review device ID changes** (`dcs-bindings.openMigration`), which opens Bindings > Device IDs ([Device IDs changed](../dcs/device-ids.md)) with a preview; nothing is moved until you apply it there, so Make ready lists it under Needs you ([Make ready and launch](../play/make-ready-and-launch.md)).
 
 ### iRacing knows the connected controllers (`racing.iracingDevices`)
 
-The controllers in iRacing's own files are connected, and none has a new Windows id. No fields, no fix; the row points to Configure > Racing > iRacing ([Repair: a wheel with a new Windows ID](../games/iracing.md#repair-a-wheel-with-a-new-windows-id)).
+The controllers in iRacing's own files are connected, and none has a new Windows ID. No fields, no fix; the row points to Configure > Racing > iRacing ([Repair: a wheel with a new Windows ID](../games/iracing.md#repair-a-wheel-with-a-new-windows-id)).
 
 ### Racing bindings are the saved set (`racing.bindingSet`)
 

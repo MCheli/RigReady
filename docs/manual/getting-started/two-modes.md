@@ -1,5 +1,5 @@
 ---
-title: Play and Configure
+title: Play and Configure, the two modes
 description: The two modes of the window, the keys that switch them, the Ctrl+K field that finds every page and runs the common actions, and the other keys.
 order: 40
 ---

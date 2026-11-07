@@ -1,5 +1,5 @@
 ---
-title: Wheel
+title: Wheel (Fanatec wheel base)
 description: The Wheel page: your Fanatec base as Windows sees it, its software, the tuning presets you record by hand, and recommended settings per game next to the files.
 order: 80
 ---
@@ -8,7 +8,7 @@ order: 80
 
 ## The wheel base
 
-The top panel says which base is connected (the name you gave it on the [Devices page](../hardware/devices.md), with the name it reports), its mode, its vendor and product id, and what it is connected through:
+The top panel says which base is connected (the name you gave it on the [Devices page](../hardware/devices.md), with the name it reports), its mode, its vendor and product ID, and what it is connected through:
 
 - **PC (red) mode**: the base reports itself as what it is, for example 0EB7:0007 for a Podium DD2.
 - **Compatibility (yellow) mode**: the base reports itself as a ClubSport Wheel Base V2.5 (0EB7:0004). A warning says that bindings saved in PC mode do not match it in [iRacing](iracing.md), [Le Mans Ultimate](le-mans-ultimate.md) or [BeamNG.drive](beamng.md), and to switch the base to PC mode in its menu or in the Fanatec App.

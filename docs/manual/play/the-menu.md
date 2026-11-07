@@ -14,7 +14,7 @@ Opens the setup in use in the setup editor ([The setup editor](../setups/editor.
 
 ## Hide RigReady after Launch
 
-On by default. After a successful launch the window goes to the [tray](../one-click/tray.md), out of the way of the game. Off: the window stays where it is. Without a tray icon the window is minimized instead.
+On by default. After a successful launch the window goes to the [tray](../one-click/tray.md), out of the way of the game. Off: the window stays where it is. Without a tray icon the window is minimised instead.
 
 ## Stand down when the game closes
 

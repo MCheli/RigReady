@@ -1,5 +1,5 @@
 ---
-title: Learn your controls
+title: Learn your controls (the trainer)
 description: The trainer names an action and you press its control on the device: rounds of ten, right or wrong at once, missed cards come back, progress per aircraft.
 order: 100
 ---

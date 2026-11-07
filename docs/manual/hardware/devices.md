@@ -8,7 +8,7 @@ The **Devices** tab of **Configure > Devices** lists everything plugged in as Ri
 
 ## The list
 
-**Game controllers** come first: every USB device that Windows classes as a game controller, or that DirectInput lists. Each row shows the name (yours, or the one the device reports, with the reported name in smaller type when you have named it), where it is plugged in ("Port 2 on USB2.1 Hub") with the port numbers from the computer down ("6 › 4 › 2 › 2"), and the vendor and product id. Chips mark a device that is **Hidden by HidHide**, one of several identical devices ("3 identical · told apart by serial"), and a device **Needed by** a setup.
+**Game controllers** come first: every USB device that Windows classes as a game controller, or that DirectInput lists. Each row shows the name (yours, or the one the device reports, with the reported name in smaller type when you have named it), where it is plugged in ("Port 2 on USB2.1 Hub") with the port numbers from the computer down ("6 › 4 › 2 › 2"), and the vendor and product ID. Chips mark a device that is **Hidden by HidHide**, one of several identical devices ("3 identical · told apart by serial"), and a device **Needed by** a setup.
 
 **Other USB devices** (keyboards, mice, headsets, screens) are hidden until you choose **Show**. Hubs are on the [USB map](usb-map.md).
 
@@ -20,9 +20,9 @@ Opening a row shows its details:
 
 - **Name**, with **Name it** or **Rename**. A name is shown everywhere in RigReady: on the [Play screen](../play/index.md), in the [bindings pages](../dcs/bindings.md), on the USB map, on the [racing pages](../games/index.md) and in the [health check](health-check.md). Leave it empty to use the name the device reports.
 - **Reports itself as**, the manufacturer, **Vendor : product**, the **Serial number** or "none", the **Instance path** Windows uses.
-- **Recognised by**: vendor and product id; the serial number when there are identical devices; the USB port when identical devices have no usable serial (moving it to another port then changes its identity); or the DirectInput instance id for a controller with no USB device of its own.
+- **Recognised by**: vendor and product ID; the serial number when there are identical devices; the USB port when identical devices have no usable serial (moving it to another port then changes its identity); or the DirectInput instance ID for a controller with no USB device of its own.
 - **Plugged into**, with how many hubs deep it is. At four hubs the row warns that it is one short of the USB limit; at five, that it may stop working.
-- **Game controllers**: the DirectInput controllers that belong to this device, each with its axes, buttons and hats and its instance id. A wheel base that Windows lists as two controllers with the same name is explained as built that way, not a duplicate.
+- **Game controllers**: the DirectInput controllers that belong to this device, each with its axes, buttons and hats and its instance ID. A wheel base that Windows lists as two controllers with the same name is explained as built that way, not a duplicate.
 - **Needed by**: the setups whose checklist has this device.
 - **HidHide**, when it is installed: whether the device is on the hidden list.
 

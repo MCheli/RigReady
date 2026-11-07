@@ -30,4 +30,4 @@ When a page here does not solve it, open **Configure > Diagnostics**, press **Co
 - [Start with Windows is off](start-with-windows-off.md): Task Manager's startup apps.
 - [Windows SmartScreen warns about the installer](smartscreen-warning.md).
 - [RigReady will not start, or a data file is damaged](app-will-not-start-or-data-folder.md).
-- [Questions and answers](faq.md).
+- [Questions and answers (FAQ)](faq.md).

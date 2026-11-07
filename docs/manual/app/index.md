@@ -1,12 +1,12 @@
 ---
-title: The app itself
+title: The app and its data folder
 description: Where RigReady keeps its own data and logs, how to move that folder, and the pages about settings, updates, the command palette, diagnostics and privacy.
 order: 100
 ---
 
-Everything RigReady keeps for itself lives in one folder, and everything it does to your PC is described in this section: its settings, how it updates itself, the command palette and the keyboard, where its log is, what leaves the PC, and how to remove it.
+This section covers RigReady itself rather than your rig: the one folder where it keeps its own data, its settings, how it updates itself, the command palette and the keyboard, the text size, where its log is, what leaves the PC, and how to remove it.
 
-Nothing here touches your games. For what RigReady does to game files, see [protect your configuration](../protect/index.md).
+Nothing here touches your games. For what RigReady does to game files, see [Backups, sharing and safety](../protect/index.md).
 
 ## The data folder
 

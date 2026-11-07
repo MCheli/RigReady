@@ -38,7 +38,7 @@ They are named so the other person knows what to set up themselves. Files that a
 | Serial number | Remove | Removed; the check then matches the device by vendor and product ID |
 | Device instance path | Remove | Removed; it only identifies the device on this PC |
 | Folder path | Remove | Replaced with a [variable](../setups/path-variables.md) such as `{DCS_USER}` that means the same folder on the other PC, inside config files too |
-| Audio device id | Keep | Removed; the audio check then matches by name only |
+| Audio device ID | Keep | Removed; the audio check then matches by name only |
 | Controller id in a file name | Keep | The file is left out. DCS names binding files after each controller id; keep them or the bindings cannot be used |
 | File that cannot be checked | Keep | The file is left out. Not a text file, so RigReady cannot look inside it |
 

@@ -1,5 +1,5 @@
 ---
-title: Protect your configuration
+title: Backups, sharing and safety
 description: How RigReady keeps copies of your bindings, game settings and setups, and how to get any of them back when something goes wrong.
 order: 80
 ---

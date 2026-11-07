@@ -4,7 +4,7 @@ description: How BeamNG.drive and its user folder are found, what is backed up, 
 order: 30
 ---
 
-BeamNG.drive keeps one binding file per controller model, named after the controller's vendor and product id, so moving a wheel to another USB port never breaks its bindings. RigReady finds the game and its user folder, backs up the settings, shows each controller's effective bindings with your changes marked, and copies bindings between user folders and between controllers.
+BeamNG.drive keeps one binding file per controller model, named after the controller's vendor and product ID, so moving a wheel to another USB port never breaks its bindings. RigReady finds the game and its user folder, backs up the settings, shows each controller's effective bindings with your changes marked, and copies bindings between user folders and between controllers.
 
 ## Detection and launch
 
@@ -35,7 +35,7 @@ From the `settings` folder of the current user folder, offered on the [Backups p
 
 **Older user folders** appears when an earlier version's folder still holds binding files. **Copy into current…** shows which files would be created and which replaced, copies them with a backup of each replaced file, and offers Undo on [the Safety page](../protect/safety-page.md).
 
-**Controllers** has one panel per binding file. The title is the name you gave the controller on the [Devices page](../hardware/devices.md), with the game's name for it, "only in <vehicle>" for a per-vehicle map, the file name and the vendor and product id. The state is **Connected**, **Not connected**, **Compatibility mode** (a Fanatec base is attached in yellow mode, so the game uses the ClubSport V2.5 map instead of this one) or, for the keyboard map, nothing.
+**Controllers** has one panel per binding file. The title is the name you gave the controller on the [Devices page](../hardware/devices.md), with the game's name for it, "only in <vehicle>" for a per-vehicle map, the file name and the vendor and product ID. The state is **Connected**, **Not connected**, **Compatibility mode** (a Fanatec base is attached in yellow mode, so the game uses the ClubSport V2.5 map instead of this one) or, for the keyboard map, nothing.
 
 The table under it is the effective map: the game's factory bindings for that controller, read from the game folder, merged with your changes. A binding you made or changed is marked "changed by you", a dead zone, inversion or steering rotation is shown as detail, and a default binding you removed is struck through with "default binding removed". Action names come from the game's own labels ("Throttle", "Shift Up"). When the factory map is not in the game folder, the panel shows your changes only and says so.
 

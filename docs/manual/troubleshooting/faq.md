@@ -1,5 +1,5 @@
 ---
-title: Questions and answers
+title: Questions and answers (FAQ)
 description: Short answers about administrator rights, what RigReady changes, using it without DCS, several PCs, where the data is, internet use and the licence.
 order: 90
 ---

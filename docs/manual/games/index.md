@@ -6,14 +6,14 @@ order: 70
 
 RigReady knows a fixed set of games. For each one it can find the install, read its version, launch it, and name the files worth backing up. For some it goes further: it reads the bindings as the game's files hold them, matches the controllers the game knows to the ones connected now, and repairs or copies binding files. Any other game still works with a setup of its own.
 
-This page lists the games and what each gets, and describes **Configure > Games** and **Configure > Racing**. The pages that follow cover each game.
+This section covers every game other than DCS World, which has [its own section](../dcs/index.md): this page lists the games and what each gets, describes **Configure > Games** and **Configure > Racing** and the checks a racing setup gets, and the pages that follow cover each game and the Fanatec wheel.
 
 ## Support by game
 
 | Game | What RigReady does |
 |---|---|
-| DCS World | The deepest: installs, the Saved Games folder, screen setup, Export.lua, bindings with editing, cleanup, device id repair, copying between aircraft and snapshots, cheat sheets, kneeboard pages and binding guides. See [DCS World](../dcs/index.md). |
-| [iRacing](iracing.md) | Detection, launch, files to back up, a page with the controllers and bindings from `controls.cfg` and `joyCalib.yaml`, a device id repair, quick backups, checks for a racing setup. |
+| DCS World | The deepest: installs, the Saved Games folder, screen setup, Export.lua, bindings with editing, cleanup, device ID repair, copying between aircraft and snapshots, cheat sheets, kneeboard pages and binding guides. See [DCS World](../dcs/index.md). |
+| [iRacing](iracing.md) | Detection, launch, files to back up, a page with the controllers and bindings from `controls.cfg` and `joyCalib.yaml`, a device ID repair, quick backups, checks for a racing setup. |
 | [Le Mans Ultimate](le-mans-ultimate.md) | Detection, launch through Steam, files to back up, a page with controllers, force feedback and bindings from `direct input.json`, a repair for a renamed controller, quick backups, checks. |
 | [BeamNG.drive](beamng.md) | Detection, launch through Steam, the versioned user folder, a page with one binding map per controller, copying bindings from an older version or to a replacement controller, quick backups, checks. |
 | [Assetto Corsa](assetto-corsa.md) | Detection, launch through Steam, files to back up, a page with the controllers, bindings and force feedback from `controls.ini`, quick backups. |
@@ -56,7 +56,7 @@ Each game's page has the same sections:
 The Racing page is the overview for the wheel and the racing games:
 
 - **Wheel**: the Fanatec wheel base, its mode (PC or compatibility), how many game controllers Windows makes of it and what it is connected through. It leads to [the Wheel page](wheel.md).
-- **Games**: one card per racing game with its version, "update waiting in Steam", a **Running** chip and one line about its bindings: "17 bindings · controllers connected", "1 controller has a new Windows id", "1 controller not connected", "No bindings yet" or "Default bindings". A card with something to look at is marked. Installed games open their own page.
+- **Games**: one card per racing game with its version, "update waiting in Steam", a **Running** chip and one line about its bindings: "17 bindings · controllers connected", "1 controller has a new Windows ID", "1 controller not connected", "No bindings yet" or "Default bindings". A card with something to look at is marked. Installed games open their own page.
 - **Helper apps**: Fanatec Service, SimHub, Crew Chief and the trophi.ai coach, when they are installed or running, and whether each is running now. To have a setup check or start them, keep them when you create the setup from the rig.
 
 ## Checks a racing setup gets

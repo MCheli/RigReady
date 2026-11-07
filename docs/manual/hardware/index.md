@@ -4,7 +4,7 @@ description: Configure > Devices and its four tools, plus the Stream Deck and Tr
 order: 90
 ---
 
-The Hardware section of **Configure** is where you look at the gear itself: every USB device and game controller, what each one reports when you touch it, whether anything moves by itself, and where everything is plugged in. Two more pages cover a Stream Deck and TrackIR, and the Fanatec wheel has [its own page](../games/wheel.md).
+This section covers the hardware tools under **Configure**: every USB device and game controller, what each one reports when you touch it, whether anything moves by itself, and where everything is plugged in. Two more pages cover a Stream Deck and TrackIR, and the Fanatec wheel has [its own page](../games/wheel.md).
 
 ## Configure > Devices
 
@@ -26,15 +26,15 @@ The Devices page has four tabs, each a tool:
 
 RigReady reads hardware from three sources and nowhere else:
 
-- **The Windows device tree.** For every USB device that is present: its vendor and product id, the name it reports, its manufacturer, its serial number when it has one, and the chain of hubs between it and the computer. Windows invents an id for a device without a serial number from the port it is on, which is why such a device changes identity when it is moved.
-- **DirectInput, through RigReady's input reader.** The game controllers exactly as a game lists them: each one's instance id, its name, and its axes, buttons and hats, with their live state. The reader is a small program shipped with RigReady; when it cannot start, the pages that need it say so and the other information is still shown.
+- **The Windows device tree.** For every USB device that is present: its vendor and product ID, the name it reports, its manufacturer, its serial number when it has one, and the chain of hubs between it and the computer. Windows invents an id for a device without a serial number from the port it is on, which is why such a device changes identity when it is moved.
+- **DirectInput, through RigReady's input reader.** The game controllers exactly as a game lists them: each one's instance ID, its name, and its axes, buttons and hats, with their live state. The reader is a small program shipped with RigReady; when it cannot start, the pages that need it say so and the other information is still shown.
 - **HidHide's command line tool**, when HidHide is installed: whether cloaking is on, which devices are hidden and which programs are allowed to see them. RigReady only reads this.
 
 The Stream Deck and TrackIR pages add what those programs keep on disk: Stream Deck's profile and plugin folders and TrackIR's settings, profiles and game map.
 
 ## What RigReady can and cannot know
 
-- A device is recognised by its vendor and product id, narrowed by its serial number or, failing that, by the USB port it is on. Never by its name: two devices can share a name, and a name can change with a driver update.
+- A device is recognised by its vendor and product ID, narrowed by its serial number or, failing that, by the USB port it is on. Never by its name: two devices can share a name, and a name can change with a driver update.
 - When several identical devices have no usable serial, RigReady cannot tell from the device tree which DirectInput controller belongs to which unit. The Devices page says so and offers **Find a device**: press a button, and the controller that answers is the one you pressed.
 - A controller that Windows does not list as a USB device of its own (a virtual controller, or a wireless one) is shown by its DirectInput id only.
 - Which of several identical devices a setup needs is a decision you make once, by naming them; see [Identical devices](devices.md#identical-devices). When a check still says Not connected, [A device is not found](../troubleshooting/device-not-found.md) goes through the causes.

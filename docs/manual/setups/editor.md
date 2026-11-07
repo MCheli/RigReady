@@ -37,7 +37,7 @@ The checks, in the order the Play screen shows them within each group. Each line
 - **Required** / **Optional**. A check that only ever warns (such as the game-updated check) has this greyed.
 - **Edit** opens the item; **Done** closes it. The bin removes it.
 
-**Add check** lists every check type by group ([Checks](checks.md)). **Copy from another setup…** brings checks and steps over from another setup ([Clone, copy and delete](clone-copy-delete.md)).
+**Add check** lists every check type by group ([Checks and fixes](checks.md)). **Copy from another setup…** brings checks and steps over from another setup ([Clone, copy and delete](clone-copy-delete.md)).
 
 An open item has:
 
