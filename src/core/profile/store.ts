@@ -2,6 +2,7 @@ import path from 'node:path';
 import * as yaml from 'js-yaml';
 import { z } from 'zod';
 import { readDataText } from '../files/text';
+import { loadDataYaml } from '../files/yaml';
 import type { FileStore } from '../ports';
 import { err, ok, type Result } from '../result';
 import { madeByVersionOne } from './earlier';
@@ -185,7 +186,7 @@ export class ProfileStore {
     if (!text.ok) return text;
     let raw: unknown;
     try {
-      raw = yaml.load(text.value);
+      raw = loadDataYaml(text.value);
     } catch (e) {
       const mark = (e as { mark?: { line?: number } }).mark;
       const reason = (e as { reason?: string }).reason ?? String(e);

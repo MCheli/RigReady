@@ -5531,3 +5531,21 @@ requirements:
       - "tests/e2e/nfr.e2e.ts#nfr: the renderer is isolated and sandboxed, held by its CSP, and reaches main only through validated channels"
       - "src/core/commandLine.test.ts#is taken only when it is a parsed command line, whatever process sent it"
       - "artifacts/screens/nfr-hardening/01-still-the-app.png"
+
+  - id: SEC-003
+    title: Archives and YAML from elsewhere cannot hang the app or start something at sign-in
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "YAML read from a file (setups, shared setups, backups) is refused when it stands for more than a million values once its aliases are followed, before anything walks it or writes it out again."
+      - "A backup restore never writes into the Start menu, its Startup folder, or the per-user WindowsApps folder, whatever the backup says and whatever is ticked."
+      - "Files that start something when opened (.url, .pif, .scf, .appref-ms and the like, besides programs and scripts) are never shared, and are flagged and not pre-ticked in a restore."
+    notes:
+      - "2026-11-07: found in the security review. Before the fix a 520-byte setup.yaml inside a .rigready file would have made the import write out a billion values; a backup zip could put a .url file into the Startup folder, ticked by default."
+    status: done
+    evidence:
+      - "src/core/files/yaml.test.ts#refuses a document that multiplies itself through aliases, at once"
+      - "src/core/files/yaml.test.ts#reads what RigReady writes, and a hand-edited file with anchors"
+      - "src/features/sharing/core/sharing.test.ts#rejects a setup whose YAML multiplies itself through aliases, at once and before it is saved"
+      - "src/features/backup/core/backup.test.ts#never writes into the Startup folder or the Start menu, and flags launchers that are not programs"

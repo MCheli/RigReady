@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { unzipSync } from 'fflate';
-import * as yaml from 'js-yaml';
+import { loadDataYaml } from '../../../core/files/yaml';
 import { z } from 'zod';
 import { sha256 } from '../../../core/files/fileStore';
 import { createZipInSteps, readZip, type ZipEntry } from '../../../core/files/zip';
@@ -594,7 +594,7 @@ function profileNamesIn(bytes: Uint8Array, manifest: Manifest): Map<string, stri
     });
     for (const [name, data] of Object.entries(unzipped)) {
       try {
-        const raw: unknown = yaml.load(new TextDecoder().decode(data));
+        const raw: unknown = loadDataYaml(new TextDecoder().decode(data));
         const given = (raw as { name?: unknown } | null)?.name;
         if (typeof given === 'string' && given.trim())
           names.set(profileIdOf(name.slice('rigready/'.length)), given.trim().slice(0, 120));

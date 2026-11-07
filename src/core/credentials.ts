@@ -97,6 +97,20 @@ export const PROGRAM_EXTENSIONS: readonly string[] = [
   '.reg',
   '.hta',
   '.cpl',
+  // Not programs, but each starts one when opened or placed where Windows looks.
+  '.url',
+  '.pif',
+  '.msc',
+  '.msp',
+  '.vb',
+  '.ws',
+  '.wsh',
+  '.scf',
+  '.appref-ms',
+  '.application',
+  '.psd1',
+  '.ps1xml',
+  '.xll',
 ];
 
 export function isProgramFile(file: string): boolean {

@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { zipSync } from 'fflate';
 import { afterEach, describe, expect, it } from 'vitest';
+import { sha256 } from '../../../core/files/fileStore';
 import { readZip } from '../../../core/files/zip';
 import type { GameModule } from '../../../core/games';
 import { ok } from '../../../core/result';
@@ -853,6 +854,54 @@ describe('untrusted backup files', () => {
     ).toMatch(/more than 1 MB/);
     const overview = await app.invoke<Overview>('backup:overview');
     expect(overview.backups).toHaveLength(1);
+  });
+
+  it('never writes into the Startup folder or the Start menu, and flags launchers that are not programs', async () => {
+    const app = await start('flying-fresh', []);
+    const launcher = text('[InternetShortcut]\r\nURL=file:///C:/Users/Public/x.exe\r\n');
+    const entry = (key: string, at: string) => ({
+      id: key,
+      label: `Item ${key}`,
+      path: at,
+      kind: 'folder',
+      key,
+      source: '@always',
+      sourceName: 'Always',
+      absolute: false,
+      files: [{ path: 'run.url', size: launcher.length, sha256: sha256(launcher) }],
+    });
+    const startup = '{APPDATA}/Microsoft/Windows/Start Menu/Programs/Startup';
+    const added = await (async () => {
+      const bytes = zipSync({
+        'manifest.json': manifest({
+          items: [entry('0', startup), entry('1', '{DOCUMENTS}/Elsewhere')],
+          totals: { files: 2, bytes: launcher.length * 2 },
+        }),
+        'items/0/run.url': launcher,
+        'items/1/run.url': launcher,
+      } as never);
+      await fs.mkdir(path.join(app.home, 'Downloads'), { recursive: true });
+      await fs.writeFile(path.join(app.home, 'Downloads', 'startup.zip'), bytes);
+      app.ports.dialogs.script.open.push(['Downloads/startup.zip']);
+      return app.invoke<BackupView>('backup:openFile');
+    })();
+    const preview = await app.invoke<RestorePreviewView>('backup:previewRestore', {
+      id: added.id,
+    });
+    const [inStartup, elsewhere] = [preview.items[0]!, preview.items[1]!];
+    expect(inStartup).toMatchObject({ restorable: false, files: [] });
+    expect(inStartup.problem).toMatch(/Windows starts what is in this folder by itself/);
+    // A shortcut to a program runs something too: it is shown as one, and not ticked.
+    expect(elsewhere.files[0]).toMatchObject({ relativePath: 'run.url', program: true });
+
+    // Asked for anyway (the page never offers it), nothing is written there.
+    const report = await app.invoke<RestoreReportView>('backup:restore', {
+      id: added.id,
+      choices: { 'item:0:run.url': 'overwrite' },
+    });
+    expect(report.restored).toEqual([]);
+    const target = path.join(app.ports.folders.appData(), ...startup.split('/').slice(1));
+    await expect(fs.access(path.join(target, 'run.url'))).rejects.toThrow();
   });
 });
 

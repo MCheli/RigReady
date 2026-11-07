@@ -47,3 +47,17 @@ export async function allowedRoots(ports: { folders: KnownFolders }): Promise<st
   if (libraries.ok) roots.push(...libraries.value);
   return [...new Map(roots.map((r) => [path.resolve(r).toLowerCase(), path.resolve(r)])).values()];
 }
+
+/**
+ * Folders whose contents Windows starts or finds by itself: the Start menu (with the
+ * Startup folder in it, whose files run at every sign-in) and the per-user folder on the
+ * PATH. A file put there by a restore or an import from someone else's archive would run
+ * without anyone starting it, so nothing from an archive is ever written there, whatever
+ * its extension. Writing them deliberately (a shortcut the user asks for) goes elsewhere.
+ */
+export function startsByItself(folders: KnownFolders, target: string): boolean {
+  return [
+    path.join(folders.appData(), 'Microsoft', 'Windows', 'Start Menu'),
+    path.join(folders.localAppData(), 'Microsoft', 'WindowsApps'),
+  ].some((root) => isWithin(root, target));
+}
