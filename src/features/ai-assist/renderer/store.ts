@@ -61,6 +61,8 @@ export const useAiStore = defineStore('ai-assist', () => {
   const explanations = ref<Record<string, Answer>>({});
   let explaining: string | undefined;
   let generation = 0;
+  /** Bumped by every progress write, so a guide read that started earlier cannot undo it. */
+  let progressWrites = 0;
 
   const items = computed<ItemView[]>(() => (guide.value?.tiers ?? []).flatMap((t) => t.items));
   const item = computed(() => items.value.find((i) => i.id === itemId.value) ?? items.value[0]);
@@ -68,6 +70,7 @@ export const useAiStore = defineStore('ai-assist', () => {
 
   async function loadGuide(id: string): Promise<void> {
     const mine = ++generation;
+    const writesBefore = progressWrites;
     aircraftId.value = id;
     const result = await api.guide({ aircraftId: id });
     if (mine !== generation) return;
@@ -77,7 +80,10 @@ export const useAiStore = defineStore('ai-assist', () => {
       return;
     }
     error.value = undefined;
-    guide.value = result.value;
+    // A reload (after a file changed) can be answered after Done was pressed: the
+    // bindings it read are new, but the progress it read is older than that write.
+    const kept = writesBefore !== progressWrites ? guide.value?.progress : undefined;
+    guide.value = kept ? { ...result.value, progress: kept } : result.value;
     const known = items.value.some((i) => i.id === itemId.value);
     if (!known) itemId.value = result.value.progress.current ?? items.value[0]?.id;
   }
@@ -125,6 +131,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     ]);
     const next =
       [...all.slice(at + 1), ...all.slice(0, at)].find((i) => !settled.has(i.id)) ?? all[at + 1];
+    progressWrites++;
     const result = await api.setProgress({
       aircraftId: aircraftId.value,
       itemId: current.id,
@@ -148,6 +155,7 @@ export const useAiStore = defineStore('ai-assist', () => {
 
   async function reopen(id: string): Promise<void> {
     if (!aircraftId.value || !guide.value) return;
+    progressWrites++;
     const result = await api.setProgress({
       aircraftId: aircraftId.value,
       itemId: id,
