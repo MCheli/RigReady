@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0-beta.1 (2026-11-07)
+
+A test build of 2.0.0, for checking the installer and the app on a real rig before the release. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). This build is not code signed; 2.0.0 will be. It is offered only to people who chose the beta channel in Settings > Updates.
+
 ## 2.0.0 (not released)
 
 A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not the data in `~/.rigready`, not the update channel. What version 1 left in that folder is not touched: its setup files are listed apart on the Setups page, where they can be deleted. Version 2.0.0 has not been published; there is no installer to download yet.
