@@ -8,5 +8,7 @@
   "cheat-sheets": "artifacts/screens/tour-flying/10-cheat-sheets.png",
   "input-tester": "artifacts/screens/devices-tester-stick/02-stick-in-motion.png",
   "palette": "artifacts/screens/shell-palette/01-open.png",
-  "rig-picture": "artifacts/screens/share-picture/rig-wide.png"
+  "rig-picture": "artifacts/screens/share-picture/rig-wide.png",
+  "ai-explain": "artifacts/screens/ai-assist-suggest/06-explained.png",
+  "mcp-question": "artifacts/screens/mcp-settings/04-question.png"
 }
