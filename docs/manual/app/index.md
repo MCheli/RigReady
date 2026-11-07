@@ -39,4 +39,5 @@ The program itself is installed under `%LOCALAPPDATA%\Programs\RigReady`, and a 
 - [Text size](text-size.md): larger, smaller, full screen.
 - [Diagnostics](diagnostics.md): the log, the report with personal details removed, where to report a problem.
 - [Privacy](privacy.md): what leaves the PC, and what never does.
+- [Security](security.md): what RigReady writes and starts, why it needs no administrator rights, how updates are checked, how to verify an installer.
 - [Uninstall](uninstall.md): removing RigReady, with or without its data.

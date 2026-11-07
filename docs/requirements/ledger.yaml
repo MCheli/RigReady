@@ -5549,3 +5549,14 @@ requirements:
       - "src/core/files/yaml.test.ts#reads what RigReady writes, and a hand-edited file with anchors"
       - "src/features/sharing/core/sharing.test.ts#rejects a setup whose YAML multiplies itself through aliases, at once and before it is saved"
       - "src/features/backup/core/backup.test.ts#never writes into the Startup folder or the Start menu, and flags launchers that are not programs"
+
+  - id: SEC-004
+    title: A Lua file cannot exhaust the app's memory
+    job: platform
+    area: nfr
+    priority: p3
+    done_means:
+      - "The Lua sandbox stops a chunk that allocates more than a set amount of memory (strings built by concatenation or string.rep included), as it already stops one that runs too long."
+    notes:
+      - "2026-11-07: open. The sandbox bounds instructions, not memory: a few lines doubling a string reach a gigabyte in under 300 ms (measured: 1 GB in 287 ms, string.rep of 1.5 GB accepted). Fengari has no allocation hook; a fix needs a guard in the count hook plus a capped string.rep, or running the evaluation in a worker with a heap limit. The Lua evaluated comes from the DCS installation and Saved Games, so the effect is a crash of RigReady, not access to anything."
+    status: todo
