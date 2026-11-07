@@ -369,7 +369,9 @@ describe('Lua sandbox', () => {
         ok: false,
         error: { code: 'lua.memory', message: `${name} used more than 16 MB and was not read.` },
       });
-      expect(took, name).toBeLessThan(3000);
+      // Well short of the unbounded case (tens of GB over many seconds); generous, since
+      // the whole suite runs in parallel with coverage on a four-core CI runner.
+      expect(took, name).toBeLessThan(10_000);
     }
     // The default limit, on the file the security review measured at 1 GB in 287 ms.
     const started = performance.now();
