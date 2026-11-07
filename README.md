@@ -49,6 +49,8 @@ RigReady was built on one real rig. Nothing in the code is tied to it (a test en
 - No success message for something that did not happen.
 - Shared setups never contain scripts or launch commands, and nothing from a setup is ever placed into a command line.
 
+How these are kept, what the app touches and how to report a security problem: [`SECURITY.md`](SECURITY.md), and the [security page](docs/manual/app/security.md) of the manual.
+
 ## Run from source
 
 Windows 10 or 11, Node.js 22.12 or newer.
@@ -94,7 +96,8 @@ Everything RigReady keeps is in `%USERPROFILE%\.rigready` (`~/.rigready`): setup
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Layers, ports, test harness, safety rules. |
 | [`docs/CONTRIBUTING-FEATURES.md`](docs/CONTRIBUTING-FEATURES.md) | How to add a feature, everything the shared foundation provides, and the audits a feature must pass. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute. |
-| [`docs/RELEASING.md`](docs/RELEASING.md) | How a version is released, and the checklist before it is. |
+| [`docs/RELEASING.md`](docs/RELEASING.md) | How a version is released, the checklist before it is, and the runbook for a security fix. |
+| [`SECURITY.md`](SECURITY.md) | Reporting a vulnerability, supported versions, what the app touches, how a fix reaches users. |
 | [`docs/requirements/ledger.yaml`](docs/requirements/ledger.yaml) | Requirements, status, evidence. |
 | [`site/README.md`](site/README.md) | The rigready.io website: how it is built, and what updates by itself. |
 | [`docs/research/`](docs/research/) | Findings on game file formats and hardware. |

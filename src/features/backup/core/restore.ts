@@ -1,11 +1,11 @@
 import path from 'node:path';
-import * as yaml from 'js-yaml';
+import { loadDataYaml } from '../../../core/files/yaml';
 import { z } from 'zod';
 import { isProgramFile } from '../../../core/credentials';
 import { sameGuid } from '../../../core/directInput';
 import { NamedLayoutSchema, type NamedLayout } from '../../../core/displays/layouts';
 import { sha256 } from '../../../core/files/fileStore';
-import { isWithin } from '../../../core/paths';
+import { isWithin, startsByItself } from '../../../core/paths';
 import { expandPath } from '../../../core/pathVariables';
 import { ProfileSchema, type Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
@@ -179,7 +179,7 @@ const statusOf = async (ctx: Ctx, target: string, hash: string): Promise<FileSta
 function parseYamlProfile(bytes: Uint8Array): Result<Profile> {
   let raw: unknown;
   try {
-    raw = yaml.load(new TextDecoder().decode(bytes));
+    raw = loadDataYaml(new TextDecoder().decode(bytes));
   } catch (e) {
     return err('restore.profile', 'The setup in the backup is not valid YAML.', String(e));
   }
@@ -269,6 +269,20 @@ async function planItems(ctx: Ctx, manifest: Manifest): Promise<Planned[]> {
           target,
           restorable: false,
           problem: "RigReady's own folder is restored through setups and settings.",
+          files: [],
+        },
+      });
+      continue;
+    }
+    if (startsByItself(ctx.ports.folders, target)) {
+      planned.push({
+        item,
+        view: {
+          ...base,
+          target,
+          restorable: false,
+          problem:
+            'Windows starts what is in this folder by itself (the Start menu or its Startup folder), so a backup never writes there.',
           files: [],
         },
       });

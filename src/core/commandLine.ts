@@ -9,6 +9,7 @@
  * Pure: the same functions read the arguments of a cold start and of a second start that
  * hands over to the RigReady already running.
  */
+import { z } from 'zod';
 
 export type RigAction = 'fly' | 'makeReady' | 'select';
 
@@ -23,6 +24,22 @@ export type ParsedCommandLine =
   | { kind: 'command'; command: RigCommand }
   /** The arguments ask for something but cannot be followed; `message` says why. */
   | { kind: 'problem'; message: string };
+
+/**
+ * What a second start hands to the running RigReady, checked like any other message from
+ * outside before it is acted on: what does not fit is read from the arguments instead.
+ */
+export const ParsedCommandLineSchema: z.ZodType<ParsedCommandLine> = z.union([
+  z.object({ kind: z.literal('none') }),
+  z.object({
+    kind: z.literal('command'),
+    command: z.object({
+      action: z.enum(['fly', 'makeReady', 'select']),
+      setup: z.string().min(1).max(500),
+    }),
+  }),
+  z.object({ kind: z.literal('problem'), message: z.string().max(2000) }),
+]);
 
 const FLAGS: Record<RigAction, string> = {
   fly: '--launch',

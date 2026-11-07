@@ -1,6 +1,6 @@
 # Releasing RigReady
 
-How a version gets from the repository to the people who use it, the checklist that is worked through before it does, and the runbook for 2.0.0, the first release of the rebuilt app. Nothing here is automatic past the draft: a person publishes the release.
+How a version gets from the repository to the people who use it, the checklist that is worked through before it does, the runbook for a security fix, and the runbook for 2.0.0, the first release of the rebuilt app. Nothing here is automatic past the draft: a person publishes the release.
 
 ## What a release is
 
@@ -199,6 +199,60 @@ The coordinator does not run the real installer, touch `%LOCALAPPDATA%\Programs\
 3. Windows 10 22H2 on a second PC or a virtual machine, with a standard user account: that part of the checklist.
 4. Publish the draft (step 6 of "Steps, for any release"). Then, on the rig, Settings > Updates > Check now says the app is up to date: 2.0.0 is not newer than 2.0.0.
 5. Tell the people who have 1.1.0: it does not update itself, the download page has the installer, and version 1 setups are not carried over.
+
+## Security fixes
+
+How a fix for a security problem gets to installed copies as fast as the release path allows, and what can keep it from arriving. `SECURITY.md` is the public side of this (how a problem is reported, which versions get fixes).
+
+### How a fix reaches an installed copy, and how long it can take
+
+From the moment the release is published (step 6 above):
+
+| Step | When | Where it is decided |
+|---|---|---|
+| The app asks GitHub for the newest release on its channel | 5 seconds after every start, then every 24 hours while it runs | `FIRST_CHECK_DELAY_MS`, `CHECK_INTERVAL_MS` in `src/features/updates/core/controller.ts` |
+| The installer is downloaded in the background | Right after the check finds it; about 130 MB | `UpdateController.checkAndDownload` |
+| Its SHA-512 is compared with `latest.yml`; once releases are signed, its Authenticode signature with the publisher in `app-update.yml` | Before it is offered | electron-updater (`NsisUpdater`) |
+| The window says so. A `[security]` release says so on every screen, with **Restart to install** | As soon as the download starts | `SecurityUpdateNotice.vue`, `src/core/updateMarker.ts` |
+| It is installed | When the user presses Restart to install, or when RigReady quits; never while a game runs | `UpdateController.install`, `UpdateController.beforeQuit` |
+
+So, for a copy with automatic checks on:
+
+- Started fresh for each session (the common case): the session after publication finds it 5 seconds in; it is installed when that session ends, and the session after runs the fix. With the notice, sooner if the user presses the button.
+- Left running in the tray for days (start with Windows): up to 24 hours until the next check, then until the user presses the button or RigReady quits (a Windows restart counts only if RigReady is quit cleanly on the way; not verified). Whether the 24-hour timer counts time the PC spends asleep is not verified either; if it does not, a PC that sleeps rather than shuts down checks later than that.
+
+Worst case with automatic checks on: about 24 hours plus however long the user leaves RigReady running after the notice. What never gets the fix by itself:
+
+- **Automatic checks switched off.** Nothing is checked. Only **Check now** in Settings, the website, or the release notes reach these users.
+- **1.1.0 and earlier.** Version 1 never downloads an update ("Upgrading from 1.1.0" below). The download page is the only path.
+- **A signed copy offered an unsigned release** (or one signed under another name): refused with `ERR_UPDATER_INVALID_SIGNATURE`, every time, until a correctly signed release exists. See "The rule that never changes" under Code signing. A security fix must never be the release that breaks this.
+- **No connection to GitHub** (offline, a firewall that blocks `github.com` or `objects.githubusercontent.com`). The check fails quietly and is tried again at the next start or after 24 hours.
+- **A release without `latest.yml`**, or a draft, or a pre-release on the stable channel: invisible to the updater.
+- **A downgrade.** Never taken. A fix for an old line must have a higher version than every release it replaces.
+
+### Runbook
+
+The aim is a published release within a few hours of a confirmed fix, without skipping anything that protects users from a broken update.
+
+1. **Keep it private until it ships.** A problem reported through the repository's private reporting stays in its draft security advisory (Security > Advisories). Work on the fix in the advisory's temporary private fork, or on a local branch that is not pushed, so the fix is not public before installers are. The commit message and the changelog line say what is fixed in plain terms, without a recipe for exploiting it.
+2. **Make the patch version.** From the newest release tag, not from `main` if `main` has unreleased work: `git checkout -b release/<x.y.z+1> v<x.y.z>`, apply the fix, `npm version <x.y.z+1> --no-git-tag-version`. The changelog section starts with the marker, so the installed app announces it:
+   ```
+   ## 2.0.1 (2026-11-20)
+
+   [security] Fixes how an imported setup file is checked. Update now.
+   ```
+   The marker (`[security]`, any capitals) counts in the release title or at the start of the notes (the first line, within its first 300 characters). `scripts/release-notes.mjs` copies the section into the release's description; the release title may carry it too ("RigReady 2.0.1 [security]").
+3. **Checks.** `npm run check` and the scenario end-to-end tests of what the fix touches, on the rig. The pull request runs the three CI jobs (about 35 minutes); merge when they are green. `main` takes the fix by the same pull request, or by a second one if the release branch was cut from a tag.
+4. **Tag and build.** Tag the merge commit and push the tag (step 3 above). The Release workflow (about 45 minutes) runs `npm run check`, the end-to-end tests and the packaged smoke, builds the installer, signs it when signing is configured and verifies the signature, and makes the draft. Nothing of this is skipped for a security release: a broken update would be worse than a late one.
+5. **Verify the draft** (above). For a signed line, also: the signature status is `Valid` and the subject is the same publisher as the release before. If it is not, do not publish; fix the signing first.
+6. **Check the update itself** before publishing: the previous release, installed on the rig, pointed at the draft's files with a local feed (`RIGREADY_UPDATE_FEED=http://127.0.0.1:<port>/`), finds the version, shows the security notice on the Play screen, and installs it on Restart to install. This is the one check by hand that matters most here, because an update that does not install leaves every user on the vulnerable version.
+7. **Publish** (step 6 above) with "Set as the latest release" ticked. From that moment every copy on the stable channel finds it at its next check.
+8. **Publish the advisory** on GitHub with the fixed version, and credit the reporter when they want it. Then tell people who will not get it by themselves: a pinned issue or discussion post, and the places RigReady was announced, saying which version fixes it and that copies with automatic checks off need **Check now**.
+9. **Afterwards**, the next development version on `main` as usual.
+
+Timing, from a fix that is ready: about 35 minutes of CI, about 45 minutes of the Release workflow, and the checks by hand in steps 5 and 6: roughly two hours to a published release. Then up to a day until most running copies have it.
+
+If the fix itself breaks something: withdraw the release (above) and publish a newer one. Installed copies that already took the broken version move on only to a higher version, never back.
 
 ## Upgrading from 1.1.0
 

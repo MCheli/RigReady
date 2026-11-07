@@ -473,6 +473,8 @@ export type UpdateChannel = 'stable' | 'beta';
 export interface UpdateOffer {
   version: string;
   notes?: string;
+  /** The release is marked as a security release (src/core/updateMarker.ts). */
+  security?: boolean;
 }
 
 /**

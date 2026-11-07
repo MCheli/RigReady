@@ -413,6 +413,49 @@ describe('UpdateController', () => {
     expect(!result.ok && result.error.code).toBe('update.install');
     expect(controller.status().phase).toBe('ready');
   });
+
+  it('a security release is told apart from the first status on, and forgotten with the version', async () => {
+    const { feed, timer, controller, statuses } = await harness();
+    feed.feed = {
+      stable: { version: '2.0.1', notes: '[security] Fixes how imported files are checked.' },
+    };
+    await controller.start();
+    expect(controller.status().security).toBe(false);
+    await timer.fire();
+    expect(controller.status()).toMatchObject({
+      phase: 'ready',
+      version: '2.0.1',
+      security: true,
+      notes: '[security] Fixes how imported files are checked.',
+    });
+    // Every status that named the version named it as a security release.
+    const named = statuses.filter((s) => s.version !== undefined);
+    expect(new Set(named.map((s) => s.phase))).toEqual(new Set(['downloading', 'ready']));
+    expect(named.every((s) => s.security)).toBe(true);
+    // Another channel: the version goes, and with it the mark.
+    await controller.setPreferences({ channel: 'beta' });
+    expect(controller.status()).toMatchObject({ phase: 'idle', security: false });
+    expect(controller.status().version).toBeUndefined();
+
+    // An ordinary release is not one, and the feed's own mark counts without the notes.
+    feed.feed = {
+      stable: { version: '2.1.0', notes: 'Faster checks.' },
+      beta: { version: '2.2.0-beta.1', security: true },
+    };
+    await timer.fire();
+    expect(controller.status()).toMatchObject({
+      phase: 'ready',
+      version: '2.2.0-beta.1',
+      security: true,
+    });
+    await controller.setPreferences({ channel: 'stable' });
+    await timer.fire();
+    expect(controller.status()).toMatchObject({
+      phase: 'ready',
+      version: '2.1.0',
+      security: false,
+    });
+  });
 });
 
 describe('the fake update feed', () => {

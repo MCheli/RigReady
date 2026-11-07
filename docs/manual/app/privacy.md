@@ -4,7 +4,7 @@ description: What leaves the PC when RigReady runs, which is update checks and A
 order: 70
 ---
 
-RigReady is a desktop program that reads your PC and changes files on it. It has no account, no telemetry and no crash reporting. This page lists the only things that leave the PC, and what is taken out of the things you choose to send.
+RigReady is a desktop program that reads your PC and changes files on it. It has no account, no telemetry and no crash reporting. This page lists the only things that leave the PC, and what is taken out of the things you choose to send. What it does on the PC itself, and how updates are checked, is on the [security](security.md) page.
 
 ## What leaves the PC
 

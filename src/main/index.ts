@@ -6,6 +6,7 @@ import {
   Menu,
   nativeImage,
   screen,
+  session,
   shell,
   Tray,
 } from 'electron';
@@ -17,7 +18,11 @@ import { z } from 'zod';
 import appIconPath from '../../assets/icon.ico?asset';
 // The tray's mark at 32 px, which the status badge is painted onto.
 import trayBadgeBasePath from '../../assets/tray-32.png?asset';
-import { parseCommandLine, type ParsedCommandLine } from '../core/commandLine';
+import {
+  parseCommandLine,
+  ParsedCommandLineSchema,
+  type ParsedCommandLine,
+} from '../core/commandLine';
 import { startupNotices } from '../core/dataHealth';
 import { MAKE_READY_HOTKEY } from '../core/hotkeys';
 import { bind } from '../core/feature';
@@ -330,6 +335,8 @@ function showWindow(): void {
 
 /** What this start was asked to do (--launch, --make-ready, --setup), read before anything else. */
 const startCommand = parseCommandLine(process.argv);
+/** What a second start sends along with the single-instance lock (requestSingleInstanceLock). */
+const HandedOverSchema = z.object({ command: ParsedCommandLineSchema });
 /** What a second start handed over before this one had finished starting. */
 let handedOver: ParsedCommandLine | undefined;
 /** Set once the features are wired: runs what a start asks for. */
@@ -338,9 +345,10 @@ let runCommand: ((parsed: ParsedCommandLine) => void) | undefined;
 /** A second start (a desktop shortcut, a Jump List task) while RigReady is already running. */
 function onSecondInstance(argv: string[], handed: unknown): void {
   // The second start read its own arguments and sent what it found: Chromium may reorder
-  // the raw ones it passes along, which would part a flag from its setup.
-  const sent = (handed as { command?: ParsedCommandLine } | null | undefined)?.command;
-  const parsed = sent && typeof sent.kind === 'string' ? sent : parseCommandLine(argv);
+  // the raw ones it passes along, which would part a flag from its setup. Any process of
+  // this user can send such a message, so it is checked before it is acted on.
+  const sent = HandedOverSchema.safeParse(handed);
+  const parsed = sent.success ? sent.data.command : parseCommandLine(argv);
   if (parsed.kind === 'none') showWindow();
   else if (runCommand) runCommand(parsed);
   else handedOver = parsed;
@@ -359,6 +367,13 @@ async function start(): Promise<void> {
   }
 
   app.setAppUserModelId(APP_USER_MODEL_ID);
+  // No page of RigReady asks for what a web page may ask for (the camera, the location,
+  // notifications from the page, the clipboard through the page): every such request is
+  // refused, whichever window asks. Without a handler Electron would grant them all.
+  session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) =>
+    callback(false)
+  );
+  session.defaultSession.setPermissionCheckHandler(() => false);
   // RigReady's own keys in place of Electron's menu, and no menu bar in any window (appMenu.ts).
   Menu.setApplicationMenu(Menu.buildFromTemplate(appMenu(app.isPackaged)));
   app.on('browser-window-created', (_event, window) => {

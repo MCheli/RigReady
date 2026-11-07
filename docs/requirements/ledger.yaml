@@ -5529,3 +5529,72 @@ requirements:
       - "tests/e2e/look.e2e.ts#look: an empty state has a drawing, says what is missing, and leads somewhere"
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
+
+  # ---------------------------------------------------------------------------
+  # SECURITY (docs/research/security-review-2026-11.md, SECURITY.md)
+  # ---------------------------------------------------------------------------
+
+  - id: SEC-001
+    title: A security release is announced on every screen and installed with one click
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "A release whose title, or the start of whose notes, carries [security] is told apart from an ordinary one by the update feed (src/core/updateMarker.ts), and the update status says so from the first status that names the version."
+      - "While such a version downloads or waits to be installed, a notice on every screen says that it fixes a security problem, with Restart to install. Later puts it away for the session; Settings > Updates still says Security update. The rules of installing do not change: never while a game runs, and the notice says which game."
+      - "docs/RELEASING.md has the runbook for a security fix and states the worst-case time from publishing to installed, and what keeps a fix from arriving."
+    notes:
+      - "2026-11-07: the marker is the only signal; nothing on GitHub has to be configured. The notice shows the release's first line without the marker."
+    status: done
+    evidence:
+      - "src/core/updateMarker.test.ts#is [security] in the title, whatever the capitals"
+      - "src/core/updateMarker.test.ts#or at the start of the notes: the first line, or the first 300 characters of one long line"
+      - "src/features/updates/core/updates.test.ts#a security release is told apart from the first status on, and forgotten with the version"
+      - "tests/e2e/updates.e2e.ts#updates: a security release is said on every screen, with the install one click away, and still never while a game runs"
+      - "artifacts/screens/updates-security/01-security-update-ready.png"
+      - "artifacts/screens/updates-security/02-on-the-play-screen.png"
+      - "artifacts/screens/updates-security/03-refused-while-game-runs.png"
+
+  - id: SEC-002
+    title: Windows are refused every permission, drawing windows stay off the network, and a second start is validated
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "Every permission request and permission check from any page of the default session is refused (location, notifications, media, clipboard through the page)."
+      - "The offscreen renders and the Identify labels run on their own session that cancels every http, https, ws and ftp request and refuses every permission; an address in a drawn page is never fetched."
+      - "What a second start hands to the running app is checked with a schema before it is acted on; anything that does not fit is read from the arguments instead."
+    status: done
+    evidence:
+      - "tests/e2e/nfr.e2e.ts#nfr: the renderer is isolated and sandboxed, held by its CSP, and reaches main only through validated channels"
+      - "src/core/commandLine.test.ts#is taken only when it is a parsed command line, whatever process sent it"
+      - "artifacts/screens/nfr-hardening/01-still-the-app.png"
+
+  - id: SEC-003
+    title: Archives and YAML from elsewhere cannot hang the app or start something at sign-in
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "YAML read from a file (setups, shared setups, backups) is refused when it stands for more than a million values once its aliases are followed, before anything walks it or writes it out again."
+      - "A backup restore never writes into the Start menu, its Startup folder, or the per-user WindowsApps folder, whatever the backup says and whatever is ticked."
+      - "Files that start something when opened (.url, .pif, .scf, .appref-ms and the like, besides programs and scripts) are never shared, and are flagged and not pre-ticked in a restore."
+    notes:
+      - "2026-11-07: found in the security review. Before the fix a 520-byte setup.yaml inside a .rigready file would have made the import write out a billion values; a backup zip could put a .url file into the Startup folder, ticked by default."
+    status: done
+    evidence:
+      - "src/core/files/yaml.test.ts#refuses a document that multiplies itself through aliases, at once"
+      - "src/core/files/yaml.test.ts#reads what RigReady writes, and a hand-edited file with anchors"
+      - "src/features/sharing/core/sharing.test.ts#rejects a setup whose YAML multiplies itself through aliases, at once and before it is saved"
+      - "src/features/backup/core/backup.test.ts#never writes into the Startup folder or the Start menu, and flags launchers that are not programs"
+
+  - id: SEC-004
+    title: A Lua file cannot exhaust the app's memory
+    job: platform
+    area: nfr
+    priority: p3
+    done_means:
+      - "The Lua sandbox stops a chunk that allocates more than a set amount of memory (strings built by concatenation or string.rep included), as it already stops one that runs too long."
+    notes:
+      - "2026-11-07: open. The sandbox bounds instructions, not memory: a few lines doubling a string reach a gigabyte in under 300 ms (measured: 1 GB in 287 ms, string.rep of 1.5 GB accepted). Fengari has no allocation hook; a fix needs a guard in the count hook plus a capped string.rep, or running the evaluation in a worker with a heap limit. The Lua evaluated comes from the DCS installation and Saved Games, so the effect is a crash of RigReady, not access to anything."
+    status: todo

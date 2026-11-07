@@ -8,9 +8,10 @@ import {
   Notification,
   safeStorage,
   screen,
+  session,
   shell,
 } from 'electron';
-import type { NativeImage } from 'electron';
+import type { NativeImage, Session } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
@@ -154,6 +155,29 @@ export class ElectronDialogs implements Dialogs {
   }
 }
 
+/** A request to somewhere else than this PC's disk and the page itself. */
+const NETWORK_URL = /^(?:https?|wss?|ftp):/i;
+let drawing: Session | undefined;
+
+/**
+ * The session of the windows that only draw: the offscreen renders (cheat sheets, the
+ * kneeboard pages, the picture of a setup) and the Identify labels. Their pages are built
+ * by RigReady out of names from game files and devices, with scripts off and every value
+ * escaped; this keeps such a page off the network altogether (an address put into a name
+ * is never fetched) and refuses every permission a page could ask for.
+ */
+export function drawingSession(): Session {
+  if (drawing) return drawing;
+  const isolated = session.fromPartition('rigready-drawing', { cache: false });
+  isolated.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  isolated.setPermissionCheckHandler(() => false);
+  isolated.webRequest.onBeforeRequest((details, callback) =>
+    callback({ cancel: NETWORK_URL.test(details.url) })
+  );
+  drawing = isolated;
+  return drawing;
+}
+
 /**
  * Renders HTML in a hidden, sandboxed window with JavaScript off. The HTML is loaded
  * from a temp file under the data root (data: URLs are size-limited), which is removed
@@ -195,6 +219,7 @@ export class ElectronRender implements Render {
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
+        session: drawingSession(),
       },
     });
     try {
@@ -845,7 +870,12 @@ export class ElectronOverlays implements Overlays {
           skipTaskbar: true,
           alwaysOnTop: true,
           show: false,
-          webPreferences: { javascript: false, sandbox: true, contextIsolation: true },
+          webPreferences: {
+            javascript: false,
+            sandbox: true,
+            contextIsolation: true,
+            session: drawingSession(),
+          },
         });
         window.setIgnoreMouseEvents(true);
         window.setAlwaysOnTop(true, 'screen-saver');
