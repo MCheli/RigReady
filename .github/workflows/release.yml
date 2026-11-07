@@ -8,31 +8,16 @@ on:
 permissions:
   contents: write
 
+# Three stages. `prepare` fails an undated changelog or a mismatched tag in seconds; `tests`
+# is CI's own workflow (the check, the three scenario shards and the packaged smoke, side by
+# side on their own runners); `release` builds the installer once those are green. Before,
+# one job ran everything one after the other and took about 45 minutes.
 jobs:
-  release:
-    name: Build and release
-    runs-on: windows-latest
+  prepare:
+    name: Tag and release notes
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      # The same preparation as CI gives its jobs: the runner's virus scanner scans every
-      # file as it is written, which makes the tests' temp-folder work several times slower
-      # (the unit tests have timed out on it), and its 1024x768 desktop does not fit the
-      # app's window, which the end-to-end and packaged runs below need.
-      - name: Prepare the runner
-        shell: pwsh
-        run: |
-          try { Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction Stop } catch { Write-Host "virus scanner left on: $_" }
-          try { Set-DisplayResolution -Width 1920 -Height 1080 -Force -ErrorAction Stop } catch { Write-Host "screen size not changed: $_" }
-          Add-Type -AssemblyName System.Windows.Forms
-          Write-Host "screen: $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds)"
-
-      - run: npm ci
 
       # The tag and the version in package.json must be the same version, or the update
       # feed would describe a version that is not the one inside the installer.
@@ -50,22 +35,51 @@ jobs:
 
       # The release's description is the version's section of CHANGELOG.md, whose heading
       # must carry the date by now. First, so that an undated changelog fails in seconds and
-      # not after the forty minutes of tests below.
+      # not after the tests below. The script needs nothing installed.
       - name: Release notes from CHANGELOG.md
         shell: pwsh
         env:
           TAG: ${{ github.ref_name }}
         run: node scripts/release-notes.mjs $env:TAG artifacts/release-notes.md
 
-      - run: npm run check
+  tests:
+    name: Tests
+    needs: prepare
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
 
-      - run: npm run test:e2e
+  release:
+    name: Build and release
+    runs-on: windows-latest
+    needs: [prepare, tests]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      # The runner's virus scanner scans every file as it is written, which makes npm ci and
+      # the build several times slower; the tests had it off too (ci.yml).
+      - name: Prepare the runner
+        shell: pwsh
+        run: |
+          try { Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction Stop } catch { Write-Host "virus scanner left on: $_" }
+
+      - run: npm ci
+
+      # The same section of CHANGELOG.md the prepare job checked, written again here for the
+      # draft's description: the file does not travel between jobs.
+      - name: Release notes from CHANGELOG.md
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-notes.mjs $env:TAG artifacts/release-notes.md
 
       # The DirectInput sidecar needs its Python runtime inside the installer.
       - run: npm run setup:python
-
-      # The unpacked app is started for real before anything is released.
-      - run: npm run smoke:packaged
 
       # electron-builder never publishes (--publish never); the release step below does.
       # The build is signed through Azure Artifact Signing when the repository has the four

@@ -80,8 +80,9 @@ describe('release notes from the changelog', () => {
     expect(workflow).toContain(
       'node scripts/release-notes.mjs $env:TAG artifacts/release-notes.md'
     );
+    // The tests are CI's workflow, run as a job of this one; the notes come before it.
     expect(workflow.indexOf('scripts/release-notes.mjs')).toBeLessThan(
-      workflow.indexOf('npm run check')
+      workflow.indexOf('uses: ./.github/workflows/ci.yml')
     );
   });
 });

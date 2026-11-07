@@ -53,7 +53,7 @@ The version in the repository between releases is a `-dev.N` version (`2.0.0-dev
    git tag -a v<version> -m "RigReady <version>"
    git push origin v<version>
    ```
-4. The Release workflow (`.github/workflows/release.yml`, about 45 minutes on GitHub's Windows runner) checks the tag against `package.json`, makes the release notes, runs `npm run check`, `npm run test:e2e` and `npm run smoke:packaged`, builds the installer (`npm run dist`, which never publishes) and creates a **draft** GitHub release with the three files. Follow it with `gh run list --repo MCheli/RigReady --workflow release.yml` and `gh run watch`. If it fails: fix on `main` through a pull request, delete the tag (`git push --delete origin v<version>`, `git tag -d v<version>`) and tag the fixed commit. A draft it had already created is deleted by hand on GitHub.
+4. The Release workflow (`.github/workflows/release.yml`, about 20 minutes on GitHub's runners) checks the tag against `package.json` and makes the release notes (seconds, so a wrong tag or an undated changelog fails first), runs CI's own workflow (`npm run check`, `npm run test:e2e` in three shards and `npm run smoke:packaged`, side by side on their own runners), then builds the installer (`npm run dist`, which never publishes) and creates a **draft** GitHub release with the three files. Follow it with `gh run list --repo MCheli/RigReady --workflow release.yml` and `gh run watch`. If it fails: fix on `main` through a pull request, delete the tag (`git push --delete origin v<version>`, `git tag -d v<version>`) and tag the fixed commit. A draft it had already created is deleted by hand on GitHub.
 5. Verify the draft (next section) and work through the checklist against its installer.
 6. Publish the draft: on its GitHub page, Edit, make sure "Set as the latest release" is ticked and "Set as a pre-release" is not (for a beta the other way round), Publish release. Or `gh release edit v<version> --repo MCheli/RigReady --draft=false --latest`. From that moment installed apps on the channel find it, and rigready.io rebuilds itself: the release event starts a build of `main` (`.github/workflows/site.yml`), which reads the published releases, so the download buttons, the changelog's link and `/download/latest/` point at the new installer within a few minutes (`site/README.md`).
 7. Afterwards, a pull request that moves `main` to the next development version: `npm version <next>-dev.0 --no-git-tag-version` (`2.1.0-dev.0` after 2.0.0; `2.0.1-dev.0` if the next one will be a patch). The changelog gets its `## <next> (not released)` heading with the first change that lands, not before: the website shows the changelog's first section open.
@@ -156,7 +156,7 @@ The release day is the `<date>` below. Everything before "Part C" can be done ah
    git push -u origin release/2.0.0
    gh pr create --repo MCheli/RigReady --fill
    ```
-   CI runs the three checks on the pull request (about 35 minutes: the check job, then the end-to-end and packaged jobs side by side). Merge when they are green. The merge rebuilds the website (package.json changed), which still says 2.0 is coming: there is no release yet.
+   CI runs the three checks on the pull request (about 15 minutes: the check job, the three end-to-end shards and the packaged job, all side by side). Merge when they are green. The merge rebuilds the website (package.json changed), which still says 2.0 is coming: there is no release yet.
 2. After Part B's runs on the merge commit, the tag:
    ```
    git checkout main && git pull --ff-only
@@ -166,7 +166,7 @@ The release day is the `<date>` below. Everything before "Part C" can be done ah
    gh run list --repo MCheli/RigReady --workflow release.yml --limit 1
    gh run watch --repo MCheli/RigReady
    ```
-   The Release workflow: tag check, release notes, `npm run check`, `npm run test:e2e`, `npm run setup:python`, `npm run smoke:packaged`, `npm run dist`, draft release with `RigReady-Setup-2.0.0.exe`, `RigReady-Setup-2.0.0.exe.blockmap`, `latest.yml`, and the changelog section as its description. About 45 minutes.
+   The Release workflow: tag check and release notes; then CI's jobs side by side (`npm run check`, `npm run test:e2e` in three shards, `npm run setup:python` and `npm run smoke:packaged`); then `npm run setup:python`, `npm run dist`, draft release with `RigReady-Setup-2.0.0.exe`, `RigReady-Setup-2.0.0.exe.blockmap`, `latest.yml`, and the changelog section as its description. About 20 minutes.
 3. Verify the draft as described above. Nothing is published yet: a 2.0.0 install from the draft's installer that checks for updates sees v1.1.0 as GitHub's latest release and says it is up to date.
 4. After the owner publishes (Part C): `gh run list --repo MCheli/RigReady --workflow site.yml --limit 3` shows the release event's run and the build of `main` it started. A few minutes later https://rigready.io/download/ shows "RigReady 2.0.0" with the installer's size and date, the home page's button says "Download for Windows", https://rigready.io/download/latest/ lands on `RigReady-Setup-2.0.0.exe` on GitHub, and the changelog's 2.0.0 entry links to the release. Nothing on the site is edited by hand.
 5. The day after: a pull request with `npm version 2.1.0-dev.0 --no-git-tag-version` (or `2.0.1-dev.0`).
