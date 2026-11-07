@@ -1465,6 +1465,25 @@ td {
   cursor: pointer;
 }
 
+/* How this was built ------------------------------------------------------------------------ */
+
+.built > section {
+  padding: calc(var(--section) * 0.5) 0;
+  border-top: 1px solid var(--border);
+}
+.built > section:last-child {
+  padding-bottom: var(--section);
+}
+.built h2 {
+  font-size: 1.45rem;
+}
+.built .facts {
+  margin-bottom: 1.2em;
+}
+.built .facts li {
+  margin-bottom: 10px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

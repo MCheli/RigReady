@@ -2777,7 +2777,7 @@ requirements:
     priority: p2
     done_means:
       - "Device pictures come from template files (image plus control coordinates) keyed by VID/PID, shipped for the owner's devices: WinWing UFC1+HUD1, ICP, MFD1 (x3), startup panel, takeoff panel, throttle base + F15EX handles, Orion stick + grip, TPR pedals, Virpil panel."
-      - "A device with no template gets a generated grid of its buttons, axes and hats, so every device has a sheet."
+      - "A device with no template gets a generated grid of its buttons, axes and hats, so every device has a sheet. (Since 2.0 such a device is shown as a list of its controls in blocks, SHEET-016; the generated grid remains the layout the card editor starts from.)"
       - "Templates are data files validated by zod; a broken template falls back to the grid and logs why."
     status: done
     evidence:
@@ -2985,6 +2985,8 @@ requirements:
       - "Label text is measured with the advance widths of the font it is drawn in, and rows are counted the way the browser breaks them, so the same picture fits on screen, in the PDF and in the kneeboard PNG, where no script can correct it afterwards."
       - "The size steps down while that makes everything fit, to a smallest size that still reads; text that does not fit even then is shown as the whole rows there is room for, ending in an ellipsis. The card is marked as shortened and the full text stays in its tooltip, the detail panel and the by-action list."
       - "No label of the owner's own bindings on the recorded rig is shortened, on screen, on paper or on a kneeboard page, and in the app no card needs correcting after it is drawn."
+    notes:
+      - "2026-11-07: on a device drawing (SHEET-016) a label block wraps its text at the same measured widths, up to three lines per row, then ends it with an ellipsis at the same size; the e2e test asks the browser that every line sits inside its block."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/labels.test.ts#is measured per character, so wide and narrow letters are not counted alike"
@@ -2992,7 +2994,7 @@ requirements:
       - "src/features/cheat-sheets/core/labels.test.ts#is drawn in a card whose style breaks a long word instead of letting it stick out"
       - "src/features/cheat-sheets/core/labels.test.ts#never shortens a label of the recorded rig, on screen, on paper or on a kneeboard page"
       - "src/features/cheat-sheets/core/sheet.test.ts#sizes label text to its card"
-      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a label too long for its card is shortened with an ellipsis, never clipped"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a label too long for its block wraps, and is shortened with an ellipsis, never clipped"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
       - "artifacts/screens/cheat-sheets-long-label/01-long-note.png"
       - "artifacts/screens/cheat-sheets-long-label/02-long-note-on-the-kneeboard-page.png"
@@ -3072,6 +3074,44 @@ requirements:
       - "tests/unit/windowPlace.test.ts#keeps only the size when the screen it was on is gone, so the window opens where one is"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the pop-out opens where it was left and as large as it was, also after a restart"
       - "artifacts/screens/cheat-sheets-popout-place/01-where-it-was-left.png"
+
+  - id: SHEET-016
+    title: Device drawings with automatic callouts, and drawings of the user's own
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The devices the owner looks at most (the WinWing Orion stick with the F-16EX grip and with the F/A-18 grip, the Orion throttle with the F-15EX handles, the MFD1 frames) are drawn as the device, with one label block per physical control and a leader line from the block to the control; no two leader lines cross, every block is inside the picture, every anchor is on the drawn device, and every bound input is on the sheet (on a block, or listed under the drawing)."
+      - "The same picture is used on screen, in the pop-out, in the trainer, in the PDF and on the kneeboard pages; on a kneeboard or printed page the text is made as large as fits while the label columns end beside the drawing, in day and night styles."
+      - "A layout of cards the user saved before keeps its places; a device with a shipped layout and no drawing is drawn as cards; a device nothing is known about is a list of its controls."
+      - "Edit drawing: the user moves a control's anchor, chooses the side of its label, renames it, puts a photo in place of the silhouette, or goes back to cards; saved per device model in the data folder, discarded with Discard my layout."
+      - "User-supplied drawings: a drawing is made from a photo of the device (a dot per control to drag into place), or imported from a drawing file (rigready-device-drawing, documented in LAYOUT-FORMAT.md), checked like any import."
+    notes:
+      - "2026-11-07: the owner asked for better drawings ('a little blobby', leader lines that do not make sense) and whether users can supply their own; the design and what is left are in docs/research/controller-drawings.md. The pedals, panels, UFC, ICP and Fanatec wheel are still drawn as cards."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the two grips, the throttle and the MFD frames, with every control anchored on the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#is found by the name the grip reports, numbered as WinWing numbers it, with every bound control on the drawing"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#trades two blocks whose leaders would cross so that none do"
+      - "src/features/cheat-sheets/core/picture.test.ts#is RigReady’s drawing where there is one, the cards of a layout where not, and a layout of the user’s keeps its cards"
+      - "src/features/cheat-sheets/core/picture.test.ts#applies what the user changed on the drawing: where a control is, its side and its name"
+      - "src/features/cheat-sheets/core/picture.test.ts#lays a kneeboard page out as large as fits, every label inside the page, no leader crossing"
+      - "src/features/cheat-sheets/core/picture.test.ts#has every control that does something on it to be lit, with nothing written on it"
+      - "src/features/cheat-sheets/core/picture.test.ts#is a list of its controls in blocks, every binding on it, a run of free buttons one line"
+      - "src/features/cheat-sheets/core/picture.test.ts#is imported from a drawing file, checked like any import, and drawn round its photo"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: drawing editor - move a control, its side and name, a photo, a drawing of my own"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a label too long for its block wraps, and is shortened with an ellipsis, never clipped"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: kneeboard pages - preview, export, the user’s own pages untouched, update and remove"
+      - "src/features/cheat-sheets/LAYOUT-FORMAT.md"
+      - "artifacts/screens/cheat-sheets-gallery/01-stick.png"
+      - "artifacts/screens/cheat-sheets-gallery/02-throttle.png"
+      - "artifacts/screens/cheat-sheets-gallery/08-left-mfd.png"
+      - "artifacts/screens/cheat-sheets-kneeboard/02-preview-night.png"
+      - "artifacts/screens/cheat-sheets-drawing-editor/01-drawing-editor.png"
+      - "artifacts/screens/cheat-sheets-drawing-editor/02-own-drawing.png"
+      - "artifacts/screens/cheat-sheets-drawing-editor/03-photo-drawing.png"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
@@ -3210,6 +3250,124 @@ requirements:
       - "artifacts/screens/ai-assist-suggest/05-answer.png"
       - "artifacts/screens/ai-assist-suggest/06-explained.png"
       - "artifacts/screens/ai-assist-draft/02-drafted-guide.png"
+
+  # ---------------------------------------------------------------------------
+  # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)
+  # ---------------------------------------------------------------------------
+
+  - id: MCP-001
+    title: Every feature channel is offered to an assistant, derived from its contract
+    job: platform
+    area: ai
+    priority: p2
+    done_means:
+      - "Every channel of every feature contract appears exactly once in the MCP catalogue, named ipc_<feature>_<key>, with a JSON Schema converted from its zod input, a description and a tier (read, change, launch, off) taken from the contract's own metadata; a feature exposes a new channel by writing its contract, with no shared-code edit."
+      - "Every channel has a description and a tier (the test fails on one without), and channels that hand out a secret, use the user's API key, open dialogs or only serve a window are off and never offered."
+      - "The guided surface (the default) offers the task-level tools plus rigready_channels (the reference) and rigready_call, which reaches every offered channel through the same gate; the full surface also lists every channel as its own tool."
+    status: done
+    evidence:
+      - "src/features/mcp/core/catalogue.test.ts#every channel of every real contract appears exactly once, with a sound schema and words"
+      - "src/features/mcp/core/catalogue.test.ts#derives a tool per channel, named from the channel, with its schema, description and tier"
+      - "src/features/mcp/core/catalogue.test.ts#the channels still without metadata are exactly the known ones"
+      - "src/features/mcp/core/catalogue.test.ts#a channel that would hand an assistant a secret is off"
+      - "src/features/mcp/core/catalogue.test.ts#a task-level tool a feature registers is offered on both surfaces, before the built-ins"
+
+  - id: MCP-002
+    title: The running app serves MCP over HTTP on 127.0.0.1, only to paired assistants
+    job: platform
+    area: ai
+    priority: p2
+    done_means:
+      - "Off by default. When turned on, RigReady listens on 127.0.0.1 only (Streamable HTTP, /mcp) and every request needs a bearer token of a pairing: none or a revoked one gets 401; a foreign Origin is refused before the token is looked at."
+      - "Only the SHA-256 of a token is stored in mcp.json; an HTTP client's token is shown once; the bridge's lives in its own file under the data root."
+      - "The official MCP client SDK lists the tools, calls a read tool, reads resources and gets prompts against the real wired app; it starts listening again at startup when it was left on."
+    notes:
+      - "2026-11-07: the bridge token is a plain file in the data folder, not safeStorage: a second process opening the app's Chromium profile could not decrypt and could have overwritten the app's key (seen in the e2e run). Encrypting it with a direct DPAPI call is an open question in docs/research/mcp-server.md."
+    status: done
+    evidence:
+      - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
+      - "src/features/mcp/server/server.test.ts#answers nothing without a token, or with a revoked one"
+      - "src/features/mcp/server/server.test.ts#a page served elsewhere cannot reach it: another Origin is refused"
+      - "src/features/mcp/server/server.test.ts#keeps the bridge token in a file of its own and only its hash in mcp.json"
+      - "src/features/mcp/server/server.test.ts#listens again when RigReady starts with the server left on, and not before every feature is wired"
+
+  - id: MCP-003
+    title: RigReady.exe --mcp is a stdio bridge to the running app
+    job: platform
+    area: ai
+    priority: p2
+    done_means:
+      - "A client that starts a program (Claude Desktop, Cursor, VS Code, Claude Code over stdio) starts RigReady.exe --mcp; it opens no window, takes no lock, uses a Chromium profile of its own, and passes every message to the running app's endpoint with the bridge's token."
+      - "When RigReady is not running or its server is off, every request is answered with an error that says so and how to fix it; the next request tries again."
+    status: done
+    evidence:
+      - "src/features/mcp/bridge/proxy.test.ts#passes a whole session through with the bridge token"
+      - "src/features/mcp/bridge/proxy.test.ts#says plainly that RigReady is not running, and does not crash"
+      - "tests/e2e/mcp.e2e.ts#mcp: RigReady.exe --mcp is a stdio bridge to the running RigReady, and says so when it is not"
+
+  - id: MCP-004
+    title: What an assistant may do, and the user's say in RigReady's own window
+    job: platform
+    area: ai
+    priority: p2
+    done_means:
+      - "Reads run; a change or a launch is asked in RigReady's window under the user's policy (always ask, launches only, never); a no, or no answer in 60 seconds, ends the call with mcp.denied or mcp.timeout; an off channel is refused even through rigready_call."
+      - "Calls go through the app's validated channels and safeguards (FileStore backups, the monitor keep-or-revert countdown, DCS must be closed); one change at a time across assistants; a rate limit and size limits per pairing."
+      - "Every call is recorded with the pairing's name, how it ended and the Safety page actions it left, and shown on the Settings page; a change or launch also shows a short line on every screen."
+    status: done
+    evidence:
+      - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "src/features/mcp/server/server.test.ts#refuses a channel that is not offered, even through rigready_call"
+      - "src/features/mcp/core/catalogue.test.ts#the gate runs reads, asks for changes under the default policy, and refuses what is off"
+      - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
+      - "artifacts/screens/mcp-settings/04-question.png"
+      - "artifacts/screens/mcp-settings/05-activity.png"
+
+  - id: MCP-005
+    title: Settings > AI assistants turns the server on and connects assistants
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "A switch turns the server on and off and says where it listens; the confirm policy and the surface are chosen there."
+      - "For Claude Desktop, Claude Code, Cursor, VS Code and any other client the page shows the text to paste (RigReady.exe --mcp, or the address with a token) and copies it; Pair makes a token for an HTTP client under a name, shown once; Forget ends a pairing at once; the bridge's token can be renewed."
+    status: done
+    evidence:
+      - "src/features/mcp/core/clientConfig.test.ts#gives every client the text that reaches this RigReady, stdio through --mcp and HTTP with the token"
+      - "src/features/mcp/core/clientConfig.test.ts#shows a placeholder where a token belongs until one is paired, and passes the arguments a dev build needs"
+      - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
+      - "artifacts/screens/mcp-settings/01-off.png"
+      - "artifacts/screens/mcp-settings/02-on.png"
+      - "artifacts/screens/mcp-settings/03-paired.png"
+
+  - id: MCP-006
+    title: Task-level tools, resources, prompts and the manual for an assistant
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Task-level tools for what a user does on the Play screen and the Setups page (setups_list, rig_check, check_explain, rig_make_ready, rig_launch, rig_stand_down, setup_create_from_rig, device_find_by_press, manual_search); any feature can register more on ctx.mcp."
+      - "Resources: rigready://guide (operating rules), every manual page as rigready://docs/<section>/<page> with its front-matter title and description, the channel reference, the rig state, the setups as YAML, the log, the Safety journal and the activity."
+      - "Prompts for first setup, fixing bindings, why the rig is not ready, and a new PC."
+      - "The manual has an AI assistants section: connecting each client, what the assistant can do, and safety."
+    notes:
+      - "2026-11-07: device_find_by_press is exercised only through profiles:waitForPress's own tests, not yet through an MCP call."
+    status: done
+    evidence:
+      - "src/features/mcp/server/server.test.ts#every task-level tool does what its page does, under the \"never ask\" policy"
+      - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
+      - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "tests/unit/siteManual.test.ts#has a landing page, a Getting started section, and front matter the site build accepts"
+
+  - id: MCP-007
+    title: The Safety page names the assistant beside the change it made
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "A change made through an assistant shows the pairing's name on the Safety page, from the journal itself, not only in the activity list of this run."
+    status: todo
+    evidence: []
 
   # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE
@@ -4451,7 +4609,7 @@ requirements:
       - "tests/packaged/packaged.e2e.ts#the packaged app enumerates the real machine: devices, displays, processes, audio, DirectInput"
       - "tests/packaged/packaged.e2e.ts#the packaged app runs a scenario: TrackIR not running, Make ready, Ready"
       - "tests/packaged/packaged.e2e.ts#the packaged app shows a usable Play screen within two seconds of starting"
-      - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, and none of them may fail quietly"
+      - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, side by side, and none of them may fail quietly"
       - "artifacts/screens/packaged-smoke/01-made-ready.png"
       - "artifacts/screens/packaged-startup-time/01-usable.png"
 
@@ -4627,7 +4785,7 @@ requirements:
       - "2026-10-03: the checklist is docs/RELEASING.md; its table for the two Windows versions is filled in per release. Every smoke in this repository ran on Windows 11 (build 26200) only: no Windows 10 machine was available, so the first Windows 10 22H2 run is still to be done by a person before a release, as the checklist says. Both halves of the second criterion hold: the build configuration has a Windows target only, and the app checks the platform before anything else and stops with a message."
     status: done
     evidence:
-      - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, and none of them may fail quietly"
+      - "tests/unit/releaseProcess.test.ts#runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, side by side, and none of them may fail quietly"
       - "tests/unit/releaseProcess.test.ts#the release checklist records a smoke run on Windows 10 22H2 and Windows 11, and names every automated check"
       - "tests/unit/noAdmin.test.ts#on Windows there is nothing to say; anywhere else the app says why it cannot start"
       - "tests/unit/noAdmin.test.ts#the app checks the platform before anything else starts, and only a Windows build is produced"
@@ -5596,5 +5754,9 @@ requirements:
     done_means:
       - "The Lua sandbox stops a chunk that allocates more than a set amount of memory (strings built by concatenation or string.rep included), as it already stops one that runs too long."
     notes:
-      - "2026-11-07: open. The sandbox bounds instructions, not memory: a few lines doubling a string reach a gigabyte in under 300 ms (measured: 1 GB in 287 ms, string.rep of 1.5 GB accepted). Fengari has no allocation hook; a fix needs a guard in the count hook plus a capped string.rep, or running the evaluation in a worker with a heap limit. The Lua evaluated comes from the DCS installation and Saved Games, so the effect is a crash of RigReady, not access to anything."
-    status: todo
+      - "2026-11-07: found. The sandbox bounded instructions, not memory: 1 GB in 287 ms by doubling a string, string.rep of 1.5 GB accepted."
+      - "2026-11-07: done. src/core/lua/memoryGuard.ts refuses an evaluation that holds more than 256 MB, with lua.memory and '<file> used more than 256 MB and was not read.', surfaced the way the instruction limit is. A worker with a heap limit was measured and rejected: Lua strings are Uint8Arrays outside the heap, and a worker capped at 64 MB allocated 2 GB of them. Instead every new Uint8Array is counted while a chunk runs, string.sub/match/find/gmatch count the substrings they copy, table.unpack and string.byte return at most 2,000 values and the stack is held to 2,000 slots (DCS's defaults use about 160), and the hook measures heap plus array buffers every 200 instructions. A chunk that catches the error with pcall stays refused. FA-18C and UH-1H defaults evaluate in the same time within noise (interleaved medians, old/new: 39.0/40.3, 98.1/95.3, 35.6/35.4, 51.4/53.3 ms)."
+    status: done
+    evidence:
+      - "tests/unit/lua.test.ts#refuses a file that builds strings or tables beyond the memory limit, quickly (SEC-004)"
+      - "tests/unit/lua.test.ts#evaluates the real F/A-18C and UH-1H joystick defaults from the recorded DCS install"

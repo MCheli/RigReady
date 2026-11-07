@@ -22,6 +22,16 @@ Nothing under Program Files is changed. A setup you import, or a backup you rest
 
 The game, the helper programs you chose, and the scripts you put in a setup. Each is started as a program with a list of arguments, never as a command line, so a name or a path in a setup cannot become a command. A script runs as you and only when you asked for it: a fix that runs a script shows the exact program and arguments first. A shared setup never carries scripts or launch commands; they are removed when it is made and again when it is imported, and the list of what was removed is shown.
 
+A small Python program that ships inside RigReady reads live controller input through Windows' DirectInput. It uses only Python's standard library and opens no network connection.
+
+## What it closes
+
+**Stand down** asks each helper app to close the way its window's close button would, and waits up to ten seconds. It does not force a program to quit unless the setup says it may; a program that is still running is reported, not killed. Closing TrackIR at stand down, when you switch that on, stops it after the wait if it has not closed by then. A restore that would write files a running game or tool owns stops and says so, and closes the program only when you let it.
+
+## What it reads from Windows
+
+Devices, monitors, audio devices and running programs through Windows' own interfaces. From the registry: where Steam is, the list of installed programs (to find games and tools), the names and calibration Windows keeps for each game controller, where TrackIR's game interface is, and the Fanatec driver settings a backup records. None of these is changed.
+
 ## What leaves the PC
 
 Two things, and nothing else:
@@ -33,7 +43,7 @@ No telemetry, no crash reporting, no account. [Privacy](privacy.md) lists exactl
 
 ## What it reads from games and files
 
-Game files (DCS Lua, iRacing and other games' settings), imported `.rigready` files and backups are treated as untrusted. Lua that is data is read by a strict parser that refuses anything that is a program; the few Lua files that are programs (DCS input defaults, MonitorSetup) run in a sandbox with no file, process or network access and a limit on how long they may run. Imported files and backups are checked for size, for links, for paths that point outside the target folder, for YAML that would multiply itself into millions of values, and for anything that runs, before a byte is written.
+Game files (DCS Lua, iRacing and other games' settings), imported `.rigready` files and backups are treated as untrusted. Lua that is data is read by a strict parser that refuses anything that is a program; the few Lua files that are programs (DCS input defaults, MonitorSetup) run in a sandbox with no file, process or network access and limits on how long they may run and how much memory they may use (256 MB; a file that needs more is not read). Imported files and backups are checked for size, for links, for paths that point outside the target folder, for YAML that would multiply itself into millions of values, and for anything that runs, before a byte is written.
 
 ## Updates are checked before they are installed
 

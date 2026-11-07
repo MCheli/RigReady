@@ -321,36 +321,83 @@ const BackupName = z.string().trim().max(80);
 const BackupRef = z.object({ game: BackupGameSchema, id: z.string().regex(/^[\w-]+$/) });
 
 export const racingContract = defineContract('racing', {
-  overview: channel(noInput, RacingOverviewSchema),
-  iracing: channel(noInput, IracingViewSchema),
+  overview: channel(noInput, RacingOverviewSchema, {
+    describe:
+      'The racing games and wheel software RigReady knows, which are installed, and the problems found with their bindings. Changes nothing.',
+    tier: 'read',
+  }),
+  iracing: channel(noInput, IracingViewSchema, {
+    describe:
+      "iRacing's controllers and bindings, whether it is running, and controllers whose Windows ids changed (old and new GUIDs for racing:iracingRepair). Changes nothing.",
+    tier: 'read',
+  }),
   /** Points iRacing at controllers' new Windows ids (old instance GUID -> new). */
   iracingRepair: channel(
     z.object({ mapping: z.array(z.object({ from: z.string(), to: z.string() })).min(1) }),
-    Message
+    Message,
+    {
+      describe:
+        "Points iRacing's bindings at controllers' new Windows ids, from old instance GUID to new, as found by racing:iracing. Call racing:iracingRepairPreview first and show the user. iRacing must be closed.",
+      tier: 'change',
+    }
   ),
   /** Which iRacing files that repair would change and how. Reads only. */
   iracingRepairPreview: channel(
     z.object({ mapping: z.array(z.object({ from: z.string(), to: z.string() })).min(1) }),
-    WritePreviewSchema
+    WritePreviewSchema,
+    {
+      describe:
+        'Shows which iRacing files racing:iracingRepair would change and how. Nothing is changed.',
+      tier: 'read',
+    }
   ),
-  lmu: channel(noInput, LmuViewSchema),
+  lmu: channel(noInput, LmuViewSchema, {
+    describe:
+      "Le Mans Ultimate's controllers and bindings, whether it is running, and controllers that were renamed. Changes nothing.",
+    tier: 'read',
+  }),
   /** Puts the new name of every renamed controller into Le Mans Ultimate's bindings file. */
-  lmuRepair: channel(noInput, Message),
+  lmuRepair: channel(noInput, Message, {
+    describe:
+      "Puts the new name of every renamed controller into Le Mans Ultimate's bindings file. Call racing:lmuRepairPreview first and show the user. Le Mans Ultimate must be closed.",
+    tier: 'change',
+  }),
   /** What that repair would change in direct input.json. Reads only. */
-  lmuRepairPreview: channel(noInput, WritePreviewSchema),
-  beamng: channel(noInput, BeamngViewSchema),
-  beamngCopyOlder: channel(z.object({ version: z.string().regex(/^[\d.]+$/) }), Message),
+  lmuRepairPreview: channel(noInput, WritePreviewSchema, {
+    describe: 'Shows what racing:lmuRepair would change in direct input.json. Nothing is changed.',
+    tier: 'read',
+  }),
+  beamng: channel(noInput, BeamngViewSchema, {
+    describe:
+      "BeamNG.drive's binding files per controller and per game version, whether it is running, and older versions whose bindings could be copied. Changes nothing.",
+    tier: 'read',
+  }),
+  beamngCopyOlder: channel(z.object({ version: z.string().regex(/^[\d.]+$/) }), Message, {
+    describe:
+      'Copies the binding files of an older BeamNG.drive version (version from racing:beamng) into the current one. Call racing:beamngCopyOlderPreview first and show the user. BeamNG.drive must be closed.',
+    tier: 'change',
+  }),
   /** Which binding files that copy would create and replace. Reads only. */
   beamngCopyOlderPreview: channel(
     z.object({ version: z.string().regex(/^[\d.]+$/) }),
-    WritePreviewSchema
+    WritePreviewSchema,
+    {
+      describe:
+        'Shows which binding files racing:beamngCopyOlder would create and replace. Nothing is changed.',
+      tier: 'read',
+    }
   ),
   beamngCopyToController: channel(
     z.object({
       file: z.string().regex(/^[\w ./-]+\.diff$/),
       to: z.string().regex(/^[0-9a-f]{8}$/i),
     }),
-    Message
+    Message,
+    {
+      describe:
+        'Copies one BeamNG.drive binding file (file from racing:beamng) to another controller, given by its 8 digit product id (to). Call racing:beamngCopyToControllerPreview first and show the user. BeamNG.drive must be closed.',
+      tier: 'change',
+    }
   ),
   /** The binding file that copy would create. Reads only. */
   beamngCopyToControllerPreview: channel(
@@ -358,26 +405,79 @@ export const racingContract = defineContract('racing', {
       file: z.string().regex(/^[\w ./-]+\.diff$/),
       to: z.string().regex(/^[0-9a-f]{8}$/i),
     }),
-    WritePreviewSchema
+    WritePreviewSchema,
+    {
+      describe:
+        'Shows the binding file racing:beamngCopyToController would create. Nothing is changed.',
+      tier: 'read',
+    }
   ),
-  assettoCorsa: channel(noInput, AcViewSchema),
-  wheel: channel(noInput, WheelViewSchema),
-  savePresets: channel(WheelPresetsSchema, WheelPresetsSchema),
-  backups: channel(GameRef, z.array(BindingBackupSchema)),
-  backup: channel(GameRef.extend({ name: BackupName.optional() }), BindingBackupSchema),
+  assettoCorsa: channel(noInput, AcViewSchema, {
+    describe:
+      "Assetto Corsa's controller settings and bindings as RigReady reads them. Changes nothing.",
+    tier: 'read',
+  }),
+  wheel: channel(noInput, WheelViewSchema, {
+    describe:
+      'The Fanatec wheel base status, the five tuning presets noted in RigReady and how the active one compares with the recommended values. Changes nothing.',
+    tier: 'read',
+  }),
+  savePresets: channel(WheelPresetsSchema, WheelPresetsSchema, {
+    describe:
+      "Saves the user's notes of the five Fanatec tuning presets and which one is active, replacing what RigReady kept. The wheel base itself is not changed. Send all five presets as racing:wheel gave them, with the edits.",
+    tier: 'change',
+  }),
+  backups: channel(GameRef, z.array(BindingBackupSchema), {
+    describe:
+      "Lists RigReady's binding backups of one game (iracing, lmu, beamng, assetto-corsa or fanatec). Backup ids for the other racing backup channels come from here. Changes nothing.",
+    tier: 'read',
+  }),
+  backup: channel(GameRef.extend({ name: BackupName.optional() }), BindingBackupSchema, {
+    describe:
+      "Backs up the binding files of one game into RigReady's folder now, under an optional name. The game's files are only read.",
+    tier: 'change',
+  }),
   /** Gives a backup a name ("Formula rim"), or with an empty one takes it away. */
-  nameBackup: channel(BackupRef.extend({ name: BackupName }), BindingBackupSchema),
+  nameBackup: channel(BackupRef.extend({ name: BackupName }), BindingBackupSchema, {
+    describe:
+      'Gives a racing binding backup a name (such as Formula rim), or takes it away with an empty name. game and id come from racing:backups.',
+    tier: 'change',
+  }),
   /** The setups for this game, with the binding backup each expects (rim variants). */
   backupSetups: channel(
     GameRef,
-    z.array(z.object({ id: z.string(), name: z.string(), backupId: z.string().optional() }))
+    z.array(z.object({ id: z.string(), name: z.string(), backupId: z.string().optional() })),
+    {
+      describe:
+        'The setups for one game, with the binding backup each expects (for example one per wheel rim). Changes nothing.',
+      tier: 'read',
+    }
   ),
   /** Makes a setup expect the bindings of this backup: a checklist item with its fix. */
-  useBackupInSetup: channel(BackupRef.extend({ profileId: z.string().min(1) }), Message),
+  useBackupInSetup: channel(BackupRef.extend({ profileId: z.string().min(1) }), Message, {
+    describe:
+      'Makes a setup expect the bindings of a backup, as a checklist item whose fix restores them. game and id come from racing:backups, profileId from racing:backupSetups.',
+    tier: 'change',
+  }),
   /** Takes that item out of the setup again. */
-  stopUsingBackup: channel(GameRef.extend({ profileId: z.string().min(1) }), Message),
-  restore: channel(BackupRef.extend({ closeApp: z.boolean().default(false) }), Message),
+  stopUsingBackup: channel(GameRef.extend({ profileId: z.string().min(1) }), Message, {
+    describe:
+      'Takes the expected-bindings item for one game out of a setup again. profileId comes from racing:backupSetups.',
+    tier: 'change',
+  }),
+  restore: channel(BackupRef.extend({ closeApp: z.boolean().default(false) }), Message, {
+    describe:
+      'Puts the files of a racing binding backup back. The game must be closed; for the Fanatec App, closeApp lets RigReady close it and start it again. Call racing:restorePreview first and show the user.',
+    tier: 'change',
+  }),
   /** What restoring that backup would change, file by file. Reads only. */
-  restorePreview: channel(BackupRef, WritePreviewSchema),
-  deleteBackup: channel(BackupRef, z.object({ deleted: z.boolean() })),
+  restorePreview: channel(BackupRef, WritePreviewSchema, {
+    describe: 'Shows what racing:restore would change, file by file. Nothing is changed.',
+    tier: 'read',
+  }),
+  deleteBackup: channel(BackupRef, z.object({ deleted: z.boolean() }), {
+    describe:
+      "Deletes a racing binding backup from RigReady's folder for good. game and id come from racing:backups. Ask the user first.",
+    tier: 'change',
+  }),
 });

@@ -12,7 +12,7 @@ The dialog shows the state of the pages for this aircraft, where they go, and th
 
 - **Pages**: tick the devices to export; those with something bound are ticked to begin with. **First page: the most important actions** adds a summary page of your own bindings, hands-on controls first. **Large-print list pages after each device** adds pages that list the device's actions in type large enough for the cockpit.
 - **Style**: **Day**, **Night** (dark with dim red, for a dark cockpit) or **Both**; with both, the night pages come after the day pages.
-- The preview on the right shows any page exactly as it will be written, in either style.
+- The preview on the right shows any page exactly as it will be written, in either style. A device page shows only what does something, with the text as large as the page allows: a drawn device grows to fill the page, and its labels are made as large as they can be while they still sit beside the drawing, so the leader lines stay short.
 - **Check before flying**: the setups the up-to-date check can go into; see below.
 
 **Export to kneeboard** (or **Write the pages again** once pages exist) first shows what will be written and removed in the Kneeboard folder, then writes. **Remove RigReady's pages** takes them out again, also with a preview.

@@ -1,0 +1,42 @@
+---
+title: Safety with an assistant
+description: What RigReady asks you before an assistant changes the rig or launches a game, what it never offers, and how to see and undo what an assistant did.
+order: 30
+---
+
+An assistant works in your name, on your rig. RigReady keeps the same safeguards for it as for you, and adds a few of its own.
+
+## RigReady asks you, in its own window
+
+When an assistant wants to change the rig or launch a game, RigReady's window comes forward and asks: "Claude Code asks: Change the rig: Make DCS F/A-18C ready". **Allow** runs it; **No** stops it, and the assistant is told you said no. A question nobody answers within a minute is a no. The assistant cannot answer for you.
+
+![RigReady asks before an assistant makes the rig ready](../../../artifacts/screens/mcp-settings/04-question.png)
+
+**When RigReady asks you first** on the Settings page decides when it asks:
+
+| Choice | Changes to the rig | Launching a game |
+|---|---|---|
+| **Always ask** (the default) | Asks | Asks |
+| **Ask before a launch only** | Runs at once | Asks |
+| **Never ask** | Runs at once | Runs at once |
+
+Reading never asks: checks, previews, the bindings, the log and this manual.
+
+## The same safeguards as in the window
+
+- Every file RigReady changes is backed up first and listed on the [Safety page](../protect/safety-page.md), where **Undo** puts it back.
+- A monitor layout goes back by itself unless you press **Keep** in RigReady.
+- Binding files are not written while DCS is running.
+- One change at a time: while one runs, another assistant's change is refused with "RigReady is still busy".
+
+## What is never offered
+
+Your Anthropic API key and the AI binding help that uses it, the AI assistant settings themselves (turning the server on or off, pairing, tokens), file dialogs, the clipboard, and RigReady's own window controls.
+
+## See what was done
+
+**What assistants did** on the Settings page lists every call of this run: who asked, what, and how it ended. A call that changed files says so, and the change is on the Safety page under the action it caused. RigReady also shows a short line at the bottom right after an assistant changed something or launched a game.
+
+## Who can connect
+
+The server listens only on this PC and is off until you turn it on. Every request needs a token: the one RigReady keeps in its data folder for `RigReady.exe --mcp`, or one you made with **Pair**. A web page in your browser cannot reach it. **Forget** a pairing, or **New token** for `RigReady.exe --mcp`, and the old token stops working at once.

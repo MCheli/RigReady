@@ -12,6 +12,7 @@ on:
       - 'CHANGELOG.md'
       - 'CONTRIBUTING.md'
       - 'docs/manual/**'
+      - 'docs/requirements/ledger.yaml'
       - 'package.json'
       - '.github/workflows/site.yml'
   release:

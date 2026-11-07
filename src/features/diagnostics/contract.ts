@@ -95,16 +95,34 @@ export type LogView = z.infer<typeof LogViewSchema>;
 export const diagnosticsContract = defineContract(
   'diagnostics',
   {
-    overview: channel(noInput, OverviewSchema),
+    overview: channel(noInput, OverviewSchema, {
+      describe:
+        "Versions, Windows, games found, devices, monitors and RigReady's own data files. Use it first when troubleshooting.",
+      tier: 'read',
+    }),
     /** The newest entries of the log file. */
     log: channel(
       z.object({ limit: z.number().int().min(1).max(2000).default(400) }).optional(),
-      LogViewSchema
+      LogViewSchema,
+      {
+        describe:
+          "The newest entries of RigReady's log file, newest last; limit is how many. Use it to find out why something failed.",
+        tier: 'read',
+      }
     ),
-    setLogLevel: channel(z.object({ level: LogLevelSchema }), z.object({ level: LogLevelSchema })),
+    setLogLevel: channel(z.object({ level: LogLevelSchema }), z.object({ level: LogLevelSchema }), {
+      describe: 'Sets how much RigReady writes to its log.',
+      tier: 'change',
+    }),
     /** Puts the diagnostics text (versions, hardware, recent log; personal details removed) on the clipboard. */
-    copy: channel(noInput, z.object({ characters: z.number().int() })),
-    openLogFolder: channel(noInput, z.object({ opened: z.boolean() })),
+    copy: channel(noInput, z.object({ characters: z.number().int() }), {
+      describe: 'Puts the diagnostics text on the clipboard.',
+      tier: 'off',
+    }),
+    openLogFolder: channel(noInput, z.object({ opened: z.boolean() }), {
+      describe: 'Opens the log folder in Explorer.',
+      tier: 'off',
+    }),
     /** Asks where to save, then writes the diagnostics zip. `saved: false` when the user cancelled. */
     export: channel(
       noInput,
@@ -113,21 +131,37 @@ export const diagnosticsContract = defineContract(
         path: z.string().optional(),
         files: z.array(z.string()).default([]),
         bytes: z.number().int().default(0),
-      })
+      }),
+      {
+        describe: 'Asks where to save with a dialog, then writes the diagnostics zip.',
+        tier: 'off',
+      }
     ),
     /** Unexpected errors the user has not dismissed yet, oldest first. */
-    errors: channel(noInput, z.array(ErrorReportSchema)),
+    errors: channel(noInput, z.array(ErrorReportSchema), {
+      describe: 'Unexpected errors the user has not dismissed yet, oldest first.',
+      tier: 'read',
+    }),
     /** An unexpected error in the window (an exception nobody caught, a failed component). */
     report: channel(
       z.object({ message: z.string().max(2000), detail: z.string().max(20_000).optional() }),
-      ErrorReportSchema
+      ErrorReportSchema,
+      { describe: 'Reports an unexpected error in the app window.', tier: 'off' }
     ),
     dismissErrors: channel(
       z.object({ ids: z.array(z.string()).optional() }).optional(),
-      z.object({ remaining: z.number().int() })
+      z.object({ remaining: z.number().int() }),
+      {
+        describe:
+          'Dismisses error notices by id from diagnostics:errors, or all of them when no ids are given.',
+        tier: 'read',
+      }
     ),
     /** "Copy details" of one error. */
-    copyError: channel(z.object({ id: z.string() }), z.object({ characters: z.number().int() })),
+    copyError: channel(z.object({ id: z.string() }), z.object({ characters: z.number().int() }), {
+      describe: 'Puts the details of one error on the clipboard.',
+      tier: 'off',
+    }),
   },
   {
     /** An unexpected error was reported (from main, the window or a helper process). */

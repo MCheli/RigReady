@@ -264,11 +264,23 @@ export const flyContract = defineContract(
   'fly',
   {
     /** What the Play screen needs to draw itself before any check has run. */
-    state: channel(noInput, FlyStateSchema),
+    state: channel(noInput, FlyStateSchema, {
+      describe:
+        'Lists every setup, the files that could not be loaded, and the setup in use with its checklist not yet checked. Start here: the profileId used by the other fly channels is a setup id from this list. Changes nothing.',
+      tier: 'read',
+    }),
     /** First run: the games, controllers and monitors found on this PC. */
-    welcome: channel(noInput, WelcomeSchema),
+    welcome: channel(noInput, WelcomeSchema, {
+      describe:
+        'Answers with the games, game controllers and monitors RigReady found on this PC, as the first-run screen shows them. Changes nothing.',
+      tier: 'read',
+    }),
     /** One profile's checklist skeleton, for switching without waiting for checks. */
-    view: channel(ProfileRef, ProfileViewSchema),
+    view: channel(ProfileRef, ProfileViewSchema, {
+      describe:
+        "Answers with one setup's checklist items and its Make ready, launch and Stand down actions, before any check runs. profileId is a setup id from fly:state. Changes nothing.",
+      tier: 'read',
+    }),
     /**
      * Runs the profile's checklist and remembers it as the last used profile. Results are
      * also sent one by one as `result` events tagged with runId while the run goes on.
@@ -279,14 +291,28 @@ export const flyContract = defineContract(
         /** Remember it as the setup in use. Off for background refreshes. */
         remember: z.boolean().default(true),
       }),
-      ChecklistReportSchema
+      ChecklistReportSchema,
+      {
+        describe:
+          'Runs the checklist of one setup against the rig as it is now and answers with every item, met or not, and its fix. profileId comes from fly:state; remember (default true) also makes it the setup in use. Changes nothing on the rig.',
+        tier: 'read',
+      }
     ),
     /** Runs one item's check again. */
-    checkItem: channel(ProfileRef.extend({ itemId: z.string() }), CheckResultSchema),
+    checkItem: channel(ProfileRef.extend({ itemId: z.string() }), CheckResultSchema, {
+      describe:
+        'Runs the check of one checklist item again and answers with its result. profileId comes from fly:state and itemId from fly:check or fly:view. Changes nothing.',
+      tier: 'read',
+    }),
     /** Runs one item's fix, then its check: ok only when the check passes afterwards. */
     fix: channel(
       ProfileRef.extend({ itemId: z.string(), confirmed: z.boolean().default(false) }),
-      z.object({ step: StepResultSchema, result: CheckResultSchema })
+      z.object({ step: StepResultSchema, result: CheckResultSchema }),
+      {
+        describe:
+          'Runs the fix of one checklist item, then checks it again; ok only when the check passes afterwards. Fixes that run a program run only with confirmed true, after the user agreed to the program named in the item. ids come from fly:check.',
+        tier: 'change',
+      }
     ),
     /**
      * Every available fix in order, then a full re-check. Fixes that run a program run only
@@ -298,16 +324,31 @@ export const flyContract = defineContract(
         /** Absent (the tray): nobody can be asked, so such fixes are not run. */
         approved: z.array(z.string()).optional(),
       }),
-      ActionReportSchema
+      ActionReportSchema,
+      {
+        describe:
+          'Make ready: runs every available fix of a setup in order, then checks everything again. Fixes that run a program run only when their item id is in approved; ask the user first. Call fly:check first and show the user what would be fixed.',
+        tier: 'change',
+      }
     ),
     /** Whether the game this setup launches is running (Stand down asks before closing it). */
     gameStatus: channel(
       ProfileRef,
-      z.object({ running: z.boolean(), name: z.string().optional() })
+      z.object({ running: z.boolean(), name: z.string().optional() }),
+      {
+        describe:
+          'Says whether the game a setup launches is running now, and its name. Use it before fly:standDown to ask the user about closing the game. profileId comes from fly:state.',
+        tier: 'read',
+      }
     ),
     standDown: channel(
       ProfileRef.extend({ closeGame: z.boolean().default(false) }),
-      ActionReportSchema.extend({ headline: z.string() })
+      ActionReportSchema.extend({ headline: z.string() }),
+      {
+        describe:
+          "Stand down: runs a setup's Stand down actions, such as closing helper programs and putting the monitors back, and answers with what was done. closeGame true also closes the game; ask the user first and check fly:gameStatus.",
+        tier: 'change',
+      }
     ),
     /**
      * Pre-launch actions, the game, then post-launch actions in the background. Never
@@ -319,22 +360,58 @@ export const flyContract = defineContract(
         resumeAfter: z.number().int().optional(),
         approved: z.array(z.string()).default([]),
       }),
-      LaunchResultSchema
+      LaunchResultSchema,
+      {
+        describe:
+          "Play: runs a setup's pre-launch actions, starts the game, then runs post-launch actions in the background. Not blocked by failing checks, so run fly:check first. approved lists action ids the user agreed to run; resumeAfter continues after a paused action.",
+        tier: 'launch',
+      }
     ),
     /** The item's own confirm action ("Mark verified"); stores the new params, re-checks. */
-    acknowledge: channel(ProfileRef.extend({ itemId: z.string() }), CheckResultSchema),
-    preferences: channel(noInput, PreferencesSchema),
-    setPreferences: channel(PreferencesPatchSchema, PreferencesSchema),
+    acknowledge: channel(ProfileRef.extend({ itemId: z.string() }), CheckResultSchema, {
+      describe:
+        "Runs a checklist item's own confirm action (such as Mark verified), which stores new values in the setup file, then checks it again. ids come from fly:check. Ask the user first.",
+      tier: 'change',
+    }),
+    preferences: channel(noInput, PreferencesSchema, {
+      describe:
+        'Answers with the Play screen preferences: hide RigReady after a launch, Stand down by itself when the game closes, and the ready tone. Changes nothing.',
+      tier: 'read',
+    }),
+    setPreferences: channel(PreferencesPatchSchema, PreferencesSchema, {
+      describe:
+        'Changes the Play screen preferences; only the fields given change. See fly:preferences for the current values.',
+      tier: 'change',
+    }),
     /** Starts watching the profiles folder; `profilesChanged` fires within about 2 s of a change. */
-    watch: channel(noInput, z.object({ watching: z.boolean() })),
+    watch: channel(noInput, z.object({ watching: z.boolean() }), {
+      describe:
+        'Starts watching the setups folder so a window of the app hears about changed setups.',
+      tier: 'off',
+    }),
     /** The monitors as they are now, each with what is different from what the setup expects. */
-    rig: channel(ProfileRef, RigGlanceSchema),
+    rig: channel(ProfileRef, RigGlanceSchema, {
+      describe:
+        'Answers with the monitors as they are now, each with what is different from what the setup expects, and the monitors it wants that are missing. profileId comes from fly:state. Changes nothing.',
+      tier: 'read',
+    }),
     /** The session of the moment: none, a game running, or one that just closed. */
-    session: channel(noInput, SessionStateSchema),
+    session: channel(noInput, SessionStateSchema, {
+      describe:
+        'Answers with the session of the moment: none, a game starting or running, or one that just closed. Changes nothing.',
+      tier: 'read',
+    }),
     /** "Welcome back" was read: back to normal without standing down. */
-    dismissSession: channel(noInput, SessionStateSchema),
+    dismissSession: channel(noInput, SessionStateSchema, {
+      describe: 'Dismisses the welcome back notice of a closed session without running Stand down.',
+      tier: 'read',
+    }),
     /** Every recorded session, newest first, and what they add up to. */
-    history: channel(noInput, HistorySchema),
+    history: channel(noInput, HistorySchema, {
+      describe:
+        'Answers with every recorded session, newest first, and the totals: time played, what had to be fixed most often, and the usual time to a ready rig. Changes nothing.',
+      tier: 'read',
+    }),
     /**
      * A window of RigReady says whether somebody is at it: true when the user does
      * something in it, false when it is hidden. A window that says nothing for a minute
@@ -343,20 +420,35 @@ export const flyContract = defineContract(
      */
     presence: channel(
       z.object({ window: z.string().min(1).max(40), visible: z.boolean() }),
-      z.object({ attended: z.boolean() })
+      z.object({ attended: z.boolean() }),
+      {
+        describe:
+          'A window of the app says whether somebody is at it, to choose between an in-app notice and a Windows notification.',
+        tier: 'off',
+      }
     ),
     /**
      * Opens the compact view (the dial, the setup switcher and the one action) in a small
      * window that stays on top, or brings it forward when it is open.
      */
-    openCompact: channel(noInput, z.object({ opened: z.boolean() })),
+    openCompact: channel(noInput, z.object({ opened: z.boolean() }), {
+      describe: 'Opens the compact view of the Play screen in a small window that stays on top.',
+      tier: 'off',
+    }),
     /** Brings RigReady's main window forward, from the tray or from behind the game. */
-    showMain: channel(noInput, z.object({ shown: z.boolean() })),
+    showMain: channel(noInput, z.object({ shown: z.boolean() }), {
+      describe: "Brings RigReady's main window forward.",
+      tier: 'off',
+    }),
     /**
      * The setup the connected gear is for, when the one named is missing a device it
      * requires and another setup has all of its own. Null when there is nothing to offer.
      */
-    suggestion: channel(ProfileRef, SuggestionSchema.nullable()),
+    suggestion: channel(ProfileRef, SuggestionSchema.nullable(), {
+      describe:
+        'When the named setup is missing a device it requires and another setup has all of its own connected, answers with that other setup; null otherwise. profileId comes from fly:state. An offer only; changes nothing.',
+      tier: 'read',
+    }),
   },
   {
     /** Another setup became the one in use (chosen in a window of RigReady or from the tray). */

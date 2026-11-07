@@ -268,40 +268,97 @@ export const backupContract = defineContract(
   'backup',
   {
     /** Tracked items of every scope with what they cover now, and the backups list. */
-    overview: channel(noInput, OverviewSchema),
-    suggestions: channel(noInput, z.array(SuggestionSchema)),
+    overview: channel(noInput, OverviewSchema, {
+      describe:
+        'The Backups page: every tracked item by scope ("@always" for the Always back up list, else a setup id) with the files it covers now, and the list of backups. Backup ids here are what restore, rename and remove take.',
+      tier: 'read',
+    }),
+    suggestions: channel(noInput, z.array(SuggestionSchema), {
+      describe:
+        'Files and folders on this PC worth tracking (game settings, bindings, tool configs) and which scopes already track them. Use it to propose items for saveItem.',
+      tier: 'read',
+    }),
     /** Which files an item would cover, before it is saved. */
-    previewItem: channel(ItemDraftSchema, ItemPreviewSchema),
-    saveItem: channel(z.object({ scope: ScopeRef, item: ItemDraftSchema }), OverviewSchema),
-    removeItem: channel(z.object({ scope: ScopeRef, id: z.string() }), OverviewSchema),
+    previewItem: channel(ItemDraftSchema, ItemPreviewSchema, {
+      describe:
+        'Which files a tracked item draft would cover, and which are withheld because they hold credentials, before it is saved. Call it before saveItem and show the user.',
+      tier: 'read',
+    }),
+    saveItem: channel(z.object({ scope: ScopeRef, item: ItemDraftSchema }), OverviewSchema, {
+      describe:
+        'Adds or updates a tracked item in a scope ("@always" or a setup id from profiles:list). Call previewItem first and show the user which files it covers.',
+      tier: 'change',
+    }),
+    removeItem: channel(z.object({ scope: ScopeRef, id: z.string() }), OverviewSchema, {
+      describe:
+        'Stops tracking one item in a scope. The item id comes from backup:overview. Existing backups are kept.',
+      tier: 'change',
+    }),
     /** A native picker; null when cancelled. */
     browse: channel(
       z.object({ kind: z.enum(['file', 'folder']) }),
-      z.object({ path: z.string(), label: z.string() }).nullable()
+      z.object({ path: z.string(), label: z.string() }).nullable(),
+      {
+        describe: 'A native file or folder picker for choosing what to track; null when cancelled.',
+        tier: 'off',
+      }
     ),
-    backUp: channel(z.object({ scope: ScopeSchema }), OutcomeSchema),
+    backUp: channel(z.object({ scope: ScopeSchema }), OutcomeSchema, {
+      describe:
+        'Writes a new backup: the full set, one setup (profileId from profiles:list) or a custom list of items from backup:overview. Older backups beyond the keep count are removed.',
+      tier: 'change',
+    }),
     /**
      * Stops the backup that is running, before anything is written: `backUp` then answers
      * with `backup.cancelled`. `cancelling` is false when no backup is running.
      */
-    cancelBackUp: channel(noInput, z.object({ cancelling: z.boolean() })),
+    cancelBackUp: channel(noInput, z.object({ cancelling: z.boolean() }), {
+      describe:
+        'Stops the backup that is running before anything is written. cancelling is false when no backup is running.',
+      tier: 'change',
+    }),
     /** Whether a backup is running now, and how far it is: for a screen that opens meanwhile. */
     backUpStatus: channel(
       noInput,
       z.object({
         running: z.boolean(),
         progress: z.object({ done: z.number(), total: z.number(), label: z.string() }).optional(),
-      })
+      }),
+      { describe: 'Whether a backup is running now and how far it is.', tier: 'read' }
     ),
-    rename: channel(z.object({ id: z.string(), name: z.string().max(200) }), BackupViewSchema),
-    remove: channel(Id, z.object({ removed: z.boolean() })),
+    rename: channel(z.object({ id: z.string(), name: z.string().max(200) }), BackupViewSchema, {
+      describe: 'Renames a backup. The id comes from backup:overview.',
+      tier: 'change',
+    }),
+    remove: channel(Id, z.object({ removed: z.boolean() }), {
+      describe:
+        'Deletes a backup file. The id comes from backup:overview. This cannot be undone, so ask the user first.',
+      tier: 'change',
+    }),
     /** Copies a backup to a place the user picks; null when cancelled. */
-    exportBackup: channel(Id, z.object({ path: z.string() }).nullable()),
-    reveal: channel(Id, z.object({ shown: z.boolean() })),
+    exportBackup: channel(Id, z.object({ path: z.string() }).nullable(), {
+      describe: 'Copies a backup to a place the user picks with a dialog; null when cancelled.',
+      tier: 'off',
+    }),
+    reveal: channel(Id, z.object({ shown: z.boolean() }), {
+      describe: 'Shows a backup file in Explorer.',
+      tier: 'off',
+    }),
     /** Adds a backup file from elsewhere to the list, after checking it; null when cancelled. */
-    openFile: channel(noInput, BackupViewSchema.nullable()),
-    setKeep: channel(z.object({ keepBackups: z.number().int() }), OverviewSchema),
-    previewRestore: channel(Id, PreviewSchema),
+    openFile: channel(noInput, BackupViewSchema.nullable(), {
+      describe:
+        'Asks the user for a backup file from elsewhere with a dialog, checks it and adds it to the list; null when cancelled.',
+      tier: 'off',
+    }),
+    setKeep: channel(z.object({ keepBackups: z.number().int() }), OverviewSchema, {
+      describe: 'Sets how many backups RigReady keeps; older ones are removed at the next backup.',
+      tier: 'change',
+    }),
+    previewRestore: channel(Id, PreviewSchema, {
+      describe:
+        'What restoring a backup would do: each file new, same or different, programs that hold the files, and what cannot be restored. The id comes from backup:overview. Call it before restore and show the user.',
+      tier: 'read',
+    }),
     restore: channel(
       z.object({
         id: z.string(),
@@ -309,12 +366,26 @@ export const backupContract = defineContract(
         /** Ask the games and tools that hold the files to close first (never by force). */
         closePrograms: z.boolean().default(false),
       }),
-      ReportSchema
+      ReportSchema,
+      {
+        describe:
+          'Puts a backup back. choices maps file refs from backup:previewRestore to overwrite or keepBoth; closePrograms asks the programs holding the files to close. Call previewRestore first and show the user. Undo is on the Safety page.',
+        tier: 'change',
+      }
     ),
-    snapshots: channel(noInput, z.array(SnapshotViewSchema)),
+    snapshots: channel(noInput, z.array(SnapshotViewSchema), {
+      describe:
+        'Snapshots of single tracked items, newest first. Snapshot ids here are what compareSnapshot, restoreSnapshot, renameSnapshot and removeSnapshot take.',
+      tier: 'read',
+    }),
     takeSnapshot: channel(
       z.object({ scope: ScopeRef, itemId: z.string(), name: z.string().max(200) }),
-      SnapshotViewSchema
+      SnapshotViewSchema,
+      {
+        describe:
+          'Saves a named snapshot of one tracked item. scope is "@always" or a setup id and itemId comes from backup:overview.',
+        tier: 'change',
+      }
     ),
     compareSnapshot: channel(
       Id,
@@ -322,23 +393,49 @@ export const backupContract = defineContract(
         snapshot: SnapshotViewSchema,
         comparison: ComparisonSchema,
         folder: z.string().optional(),
-      })
+      }),
+      {
+        describe:
+          'How a snapshot differs from the files on disk now, file by file. The id comes from backup:snapshots.',
+        tier: 'read',
+      }
     ),
     restoreSnapshot: channel(
       Id,
-      z.object({ written: z.number(), leftAlone: z.number(), groupId: z.string().optional() })
+      z.object({ written: z.number(), leftAlone: z.number(), groupId: z.string().optional() }),
+      {
+        describe:
+          'Puts a snapshot back over the files on disk. Call restoreSnapshotPreview first and show the user. Undo it on the Safety page with the groupId it returns.',
+        tier: 'change',
+      }
     ),
     /** Which files putting that snapshot back would change and how. Reads only. */
-    restoreSnapshotPreview: channel(Id, ChangePreviewSchema),
+    restoreSnapshotPreview: channel(Id, ChangePreviewSchema, {
+      describe:
+        'Which files putting a snapshot back would change and how. The id comes from backup:snapshots. Reads only.',
+      tier: 'read',
+    }),
     renameSnapshot: channel(
       z.object({ id: z.string(), name: z.string().max(200) }),
-      SnapshotViewSchema
+      SnapshotViewSchema,
+      { describe: 'Renames a snapshot. The id comes from backup:snapshots.', tier: 'change' }
     ),
-    removeSnapshot: channel(Id, z.object({ removed: z.boolean() })),
+    removeSnapshot: channel(Id, z.object({ removed: z.boolean() }), {
+      describe: 'Deletes a snapshot. The id comes from backup:snapshots. Ask the user first.',
+      tier: 'change',
+    }),
     /** What differs now from the last time the setup worked. */
-    changes: channel(z.object({ profileId: z.string() }), ChangesSchema),
+    changes: channel(z.object({ profileId: z.string() }), ChangesSchema, {
+      describe:
+        "What differs in a setup's tracked files since the last time the setup worked. profileId comes from profiles:list. Use it when a setup stopped working.",
+      tier: 'read',
+    }),
     /** Records the setup's tracked files as working, now. */
-    markWorking: channel(z.object({ profileId: z.string() }), ChangesSchema),
+    markWorking: channel(z.object({ profileId: z.string() }), ChangesSchema, {
+      describe:
+        "Records a setup's tracked files as working now, replacing the earlier record that changes compares against. profileId comes from profiles:list.",
+      tier: 'change',
+    }),
   },
   {
     progress: z.object({ done: z.number(), total: z.number(), label: z.string() }),

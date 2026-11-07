@@ -1,0 +1,45 @@
+name: Hardware or game report
+description: How RigReady does with your controllers, monitors, helper apps or game, working or not. Reports from rigs other than the one it was built on help most.
+labels: ['hardware report']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        RigReady was built and tested on one rig. A report that something works on yours is as useful as one that it does not.
+
+        Device names and vendor and product IDs are fine to share. Serial numbers and device instance paths are not needed; the diagnostics report removes them.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 2.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Your hardware and software
+      description: Controllers, wheel base, monitors, head tracking, and the helper apps you run (for example SimAppPro, Joystick Gremlin, vJoy, HidHide, SimHub, OpenTrack).
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game
+      placeholder: DCS World (Steam), iRacing, Le Mans Ultimate, ...
+  - type: textarea
+    id: right
+    attributes:
+      label: What RigReady got right
+      description: Devices, monitors, games and apps it found and named correctly; checks and fixes that worked.
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What it missed or got wrong
+      description: A device it did not see or named wrongly, a monitor in the wrong place, a game it did not find, a check that failed while the rig was fine.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Configure > Diagnostics > Copy diagnostics, pasted here; or Export diagnostics and attach the zip.
+      render: text

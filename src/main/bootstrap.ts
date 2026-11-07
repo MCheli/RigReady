@@ -1,14 +1,17 @@
 import { BackupSourceRegistry } from '../core/backupSources';
 import { BindingRegistry } from '../core/bindings';
 import { CheckRegistry } from '../core/checks/registry';
+import { ContractRegistry } from '../core/contracts';
 import { DisplayLayoutStore } from '../core/displays/layouts';
 import type { FeatureMain, IpcBinding, MainContext } from '../core/feature';
 import { GameRegistry } from '../core/games';
 import type { Logger } from '../core/logger';
+import { McpRegistry } from '../core/mcp';
 import { NameRegistry } from '../core/names';
 import type { Ports } from '../core/ports';
 import { verifiedProcesses } from '../core/processes';
 import { ProfileStore } from '../core/profile/store';
+import { err } from '../core/result';
 import { SettingsStore } from '../core/settings';
 import { channelName, eventName } from '../shared/channels';
 import { createInvoker, type Envelope } from '../shared/ipc';
@@ -46,10 +49,24 @@ export function wireFeatures(options: {
   ports: Ports;
   log: Logger;
   send: (channel: string, payload: unknown) => void;
+  /**
+   * How `ctx.invoke` reaches a channel. The shell passes the same path the tray and the
+   * command line use (so the taskbar and the tray follow what was done); without one, the
+   * handlers wired here are called directly.
+   */
+  invoke?: (channel: string, input: unknown) => Promise<Envelope>;
 }): Wiring {
   const { log } = options;
   // A close is believed only when the process is gone from the list (NFR-006).
   const ports: Ports = { ...options.ports, processes: verifiedProcesses(options.ports.processes) };
+  const handlers = new Map<string, (rawInput: unknown) => Promise<Envelope>>();
+  const contracts = new ContractRegistry();
+  const invokeHere = async (channel: string, input: unknown): Promise<Envelope> => {
+    const handler = handlers.get(channel);
+    if (!handler) return err('ipc.unknown', `Unknown channel ${channel}.`);
+    return handler(input);
+  };
+  const invoke = options.invoke ?? invokeHere;
   const context: MainContext = {
     ports,
     log,
@@ -61,6 +78,9 @@ export function wireFeatures(options: {
     names: new NameRegistry(log),
     bindings: new BindingRegistry(),
     backupSources: new BackupSourceRegistry(),
+    contracts,
+    mcp: new McpRegistry(),
+    invoke: (channel, input) => invoke(channel, input),
     emit(contract, event, payload) {
       const schema = contract.events[event];
       if (!schema) throw new Error(`Unknown event ${contract.feature}:${event}`);
@@ -68,13 +88,13 @@ export function wireFeatures(options: {
     },
   };
 
-  const handlers = new Map<string, (rawInput: unknown) => Promise<Envelope>>();
   const seen = new Set<string>();
   for (const feature of options.features) {
     if (seen.has(feature.id)) throw new Error(`Feature id used twice: ${feature.id}`);
     seen.add(feature.id);
     const bindings: IpcBinding[] = feature.setup({ ...context, log: log.child(feature.id) }) ?? [];
     for (const binding of bindings) {
+      contracts.register(binding.contract);
       const invoke = createInvoker(binding.contract, binding.handlers as never, (name, error) =>
         log.error(`ipc ${name}`, error)
       );

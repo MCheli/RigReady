@@ -337,6 +337,60 @@ describe('Lua sandbox', () => {
     });
   });
 
+  it('refuses a file that builds strings or tables beyond the memory limit, quickly (SEC-004)', () => {
+    // Each of these reached a gigabyte or more in under a second before the limit existed.
+    const bombs: Record<string, string> = {
+      'doubling.lua': 'local s = "x" for i = 1, 40 do s = s .. s end return #s',
+      'wide-concat.lua':
+        'local s = string.rep("x", 1000000) local t = {} for i = 1, 5000 do t[i] = s .. s .. s .. s .. s .. i end',
+      'rep.lua': 'return #string.rep("x", 1500000000)',
+      'rep-sep.lua': 'return #string.rep("abc", 100000000, ",")',
+      'concat.lua':
+        'local t = {} for i = 1, 100 do t[i] = string.rep("y", 1000000) end local all = {} for i = 1, 100 do all[i] = table.concat(t) end',
+      'sub.lua':
+        'local s = string.rep("z", 4000000) local t = {} for i = 1, 1000 do t[i] = s:sub(i) end',
+      'match.lua':
+        'local s = string.rep("z", 8000000) local t = {} for i = 1, 1000 do t[i] = { s:match("(.*)(.*)(.*)(.*)") } end',
+      'table.lua': 'local t = {} for i = 1, 100000000 do t[i] = { i, i, i } end',
+      'varargs.lua': `local big = {} for i = 1, 400000 do big[i] = i end
+        local function f(...) local r = {} for i = 1, 40 do r[i] = { ... } end end
+        f(table.unpack(big))`,
+      'recursion.lua':
+        'local function f(n) if n == 0 then return end return n, f(n - 1) end return select("#", f(500000))',
+      'pcall.lua': 'local s = "x" for i = 1, 40 do pcall(function() s = s .. s end) end return #s',
+      'gsub.lua':
+        'local s = string.rep("x", 1000) for i = 1, 30 do s = s:gsub("x", "xx") end return #s',
+    };
+    for (const [name, source] of Object.entries(bombs)) {
+      const started = performance.now();
+      const result = runLua(source, { name, maxMemoryMb: 16, maxInstructions: 200_000_000 });
+      const took = performance.now() - started;
+      expect(result, name).toEqual({
+        ok: false,
+        error: { code: 'lua.memory', message: `${name} used more than 16 MB and was not read.` },
+      });
+      // Well short of the unbounded case (tens of GB over many seconds); generous, since
+      // the whole suite runs in parallel with coverage on a four-core CI runner.
+      expect(took, name).toBeLessThan(10_000);
+    }
+    // The default limit, on the file the security review measured at 1 GB in 287 ms.
+    const started = performance.now();
+    expect(runLua(bombs['doubling.lua']!, { name: 'doubling.lua' })).toEqual({
+      ok: false,
+      error: {
+        code: 'lua.memory',
+        message: 'doubling.lua used more than 256 MB and was not read.',
+      },
+    });
+    expect(performance.now() - started).toBeLessThan(5000);
+    // The same sandbox still runs ordinary files, and strings and tables of a few megabytes.
+    expect(runLua('return #string.rep("x", 1000000), #table.concat({ "a", "b" })')).toMatchObject({
+      ok: true,
+      value: { returned: [1000000, 2] },
+    });
+    expect(globalThis.Uint8Array.name).toBe('Uint8Array');
+  });
+
   it('dofile loads only what the caller hands out', () => {
     const files: Record<string, string> = {
       'devices.lua': 'devices = { HOTAS = 13 }',

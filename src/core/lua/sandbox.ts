@@ -1,6 +1,14 @@
-import { lauxlib, lua, lualib, to_luastring, type LuaState } from 'fengari';
+import { lauxlib, lua, lualib, to_jsstring, to_luastring, type LuaState } from 'fengari';
 import { err, ok, type Result } from '../result';
 import { LuaTable, type LuaValue } from './data';
+import {
+  CHECK_EVERY,
+  GUARD_PRELUDE,
+  MEMORY_LIMIT_MB,
+  MemoryGuard,
+  STACK_SLOTS,
+  isMemoryLimit,
+} from './memoryGuard';
 
 /**
  * Runs Lua that is a real program (DCS input defaults with join() and
@@ -9,7 +17,9 @@ import { LuaTable, type LuaValue } from './data';
  *
  * The sandbox has the base, table, string and math libraries and nothing else: no io,
  * no os, no package, no debug, no loading of files except through the `files` callback.
- * It stops after a fixed number of VM instructions, so a file cannot hang the app.
+ * It stops after a fixed number of VM instructions, so a file cannot hang the app, and
+ * when the chunk holds more than a set amount of memory (memoryGuard.ts), so a file
+ * cannot exhaust it.
  * Functions that DCS provides to these files (`_`, `join`, `external_profile`, ...) are
  * written in Lua by the caller and passed as `prelude`.
  */
@@ -26,6 +36,8 @@ export interface LuaRunOptions {
   read?: string[];
   /** VM instruction budget. Default 20 million. */
   maxInstructions?: number;
+  /** Memory the chunk may hold, in megabytes. Default {@link MEMORY_LIMIT_MB}. */
+  maxMemoryMb?: number;
 }
 
 export interface LuaRunResult {
@@ -93,8 +105,12 @@ function readValue(L: LuaState, index: number, depth: number): LuaValue {
   return table;
 }
 
+/** Longest error text kept. A chunk can raise any string, or leave a huge one behind. */
+const MAX_ERROR_TEXT = 2000;
+
 function errorText(L: LuaState): string {
-  const text = lua.lua_type(L, -1) === lua.LUA_TSTRING ? lua.lua_tojsstring(L, -1) : 'error';
+  const bytes = lua.lua_type(L, -1) === lua.LUA_TSTRING ? lua.lua_tostring(L, -1) : null;
+  const text = bytes ? to_jsstring(bytes, 0, MAX_ERROR_TEXT, true) : 'error';
   lua.lua_pop(L, 1);
   return text;
 }
@@ -102,13 +118,24 @@ function errorText(L: LuaState): string {
 /** The programs DCS and its tools ship are well under a megabyte; compiling tens of megabytes takes seconds. */
 const MAX_LUA_SOURCE = 8 * 1024 * 1024;
 
-/** Runs a Lua chunk in the sandbox. Fails with `lua.run` (and the Lua error text) or `lua.limit`. */
+/**
+ * Runs a Lua chunk in the sandbox. Fails with `lua.run` (and the Lua error text),
+ * `lua.limit` (too many instructions) or `lua.memory` (too much memory).
+ */
 export function runLua(source: string, options: LuaRunOptions = {}): Result<LuaRunResult> {
   if (source.length > MAX_LUA_SOURCE) {
     return err('lua.tooLarge', 'The Lua file is too large to be evaluated.');
   }
+  const limitMb = options.maxMemoryMb ?? MEMORY_LIMIT_MB;
+  const guard = new MemoryGuard(limitMb);
+  const tooMuchMemory = () =>
+    err(
+      'lua.memory',
+      `${options.name ?? 'The Lua file'} used more than ${limitMb} MB and was not read.`
+    );
   const L = lauxlib.luaL_newstate();
   let exhausted = false;
+  guard.start();
   try {
     for (const [name, open] of [
       ['_G', lualib.luaopen_base],
@@ -155,11 +182,13 @@ export function runLua(source: string, options: LuaRunOptions = {}): Result<LuaR
     }
 
     const budget = options.maxInstructions ?? 20_000_000;
-    const step = 10_000;
+    const step = CHECK_EVERY;
     let used = 0;
     lua.lua_sethook(
       L,
       (state) => {
+        // fengari's lua_State keeps its stack as an array; its length is the slots allocated.
+        guard.check((state as unknown as { stack: unknown[] }).stack.length);
         used += step;
         if (used < budget) return;
         exhausted = true;
@@ -181,13 +210,34 @@ export function runLua(source: string, options: LuaRunOptions = {}): Result<LuaR
     };
 
     const name = options.name ?? 'chunk';
+    if (
+      lauxlib.luaL_loadbuffer(L, to_luastring(GUARD_PRELUDE), null, to_luastring('@guard')) !==
+      lua.LUA_OK
+    ) {
+      return err('lua.run', 'The Lua prelude failed.', errorText(L));
+    }
+    lua.lua_pushjsfunction(L, () => guard.trip());
+    lua.lua_pushnumber(L, STACK_SLOTS);
+    lua.lua_pushjsfunction(L, (state) => {
+      const count = lua.lua_gettop(state);
+      for (let index = 1; index <= count; index++) {
+        if (lua.lua_type(state, index) === lua.LUA_TSTRING) {
+          guard.allocate(lua.lua_rawlen(state, index));
+        }
+      }
+      return count;
+    });
+    const guarded = lua.lua_pcall(L, 3, 0, 0) === lua.LUA_OK ? undefined : errorText(L);
     const failure =
+      guarded ??
       run(COMPATIBILITY, 'compatibility', 0) ??
       (options.prelude !== undefined ? run(options.prelude, 'prelude', 0) : undefined);
+    if (guard.exceeded) return tooMuchMemory();
     if (failure !== undefined) return err('lua.run', 'The Lua prelude failed.', failure);
 
     const before = lua.lua_gettop(L);
     const problem = run(source, name, lua.LUA_MULTRET);
+    if (guard.exceeded) return tooMuchMemory();
     if (problem !== undefined) {
       return exhausted
         ? err('lua.limit', `${name} ran for too long and was stopped.`)
@@ -205,8 +255,10 @@ export function runLua(source: string, options: LuaRunOptions = {}): Result<LuaR
       globals[global] = readValue(L, -1, 0);
       lua.lua_pop(L, 1);
     }
+    if (guard.exceeded) return tooMuchMemory();
     return ok({ returned, globals });
   } catch (e) {
+    if (guard.exceeded || isMemoryLimit(e)) return tooMuchMemory();
     return exhausted
       ? err('lua.limit', `${options.name ?? 'The Lua file'} ran for too long and was stopped.`)
       : err(
@@ -215,6 +267,7 @@ export function runLua(source: string, options: LuaRunOptions = {}): Result<LuaR
           e instanceof Error ? e.message : String(e)
         );
   } finally {
+    guard.stop();
     lua.lua_sethook(L, null, 0, 0);
     lua.lua_close(L);
   }

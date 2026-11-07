@@ -17,27 +17,43 @@ interface Step {
   with?: Record<string, unknown>;
   'continue-on-error'?: boolean;
 }
+interface Job {
+  name?: string;
+  'runs-on'?: string;
+  needs?: string | string[];
+  if?: string;
+  /** A job that runs another workflow (the Release workflow runs CI's). */
+  uses?: string;
+  strategy?: { matrix?: Record<string, unknown[]> };
+  steps?: Step[];
+  'continue-on-error'?: boolean;
+}
 interface Workflow {
-  jobs: Record<
-    string,
-    { 'runs-on': string; needs?: string; steps: Step[]; 'continue-on-error'?: boolean }
-  >;
+  on: Record<string, unknown>;
+  jobs: Record<string, Job>;
 }
 
 const read = (...parts: string[]): Promise<string> =>
   fs.readFile(path.join(repoRoot, ...parts), 'utf8');
 const workflow = async (name: string): Promise<Workflow> =>
   yaml.load(await read('.github', 'workflows', name)) as Workflow;
-const runs = (steps: Step[]): string[] => steps.flatMap((step) => (step.run ? [step.run] : []));
+const runs = (steps: Step[] = []): string[] =>
+  steps.flatMap((step) => (step.run ? [step.run] : []));
+const needs = (job: Job): string[] =>
+  job.needs === undefined ? [] : Array.isArray(job.needs) ? job.needs : [job.needs];
 
 describe('continuous integration', () => {
-  it('runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, and none of them may fail quietly', async () => {
+  it('runs the checks, the scenario end-to-end tests and the packaged smoke on Windows, side by side, and none of them may fail quietly', async () => {
     const ci = await workflow('ci.yml');
     const commands = new Map<string, string[]>();
     for (const [name, job] of Object.entries(ci.jobs)) {
-      expect(job['runs-on'], name).toBe('windows-latest');
+      // Everything that runs the code runs on Windows: the app, its native bindings and half
+      // of its tests are Windows-only. (A job that only sums other jobs up runs anywhere.)
+      if (runs(job.steps).some((command) => /\bnpm\b/.test(command))) {
+        expect(job['runs-on'], name).toBe('windows-latest');
+      }
       expect(job['continue-on-error'], name).toBeUndefined();
-      for (const step of job.steps) expect(step['continue-on-error'], name).toBeUndefined();
+      for (const step of job.steps ?? []) expect(step['continue-on-error'], name).toBeUndefined();
       commands.set(name, runs(job.steps));
     }
     const all = [...commands.values()].flat();
@@ -49,6 +65,36 @@ describe('continuous integration', () => {
     expect(packaged.indexOf('npm run smoke:packaged')).toBeGreaterThan(
       packaged.indexOf('npm run setup:python')
     );
+    // Nothing waits for the check job: the jobs take the time of the longest, not the sum
+    // (the check job, then the end-to-end suite after it, was 25 to 33 minutes).
+    for (const [name, job] of Object.entries(ci.jobs)) {
+      expect(needs(job), name).not.toContain('check');
+    }
+  });
+
+  it('the scenario suite runs as shards on separate runners, and one check named "Scenario end-to-end" sums them up for the ruleset', async () => {
+    const ci = await workflow('ci.yml');
+    const [shardId, shards] = Object.entries(ci.jobs).find(([, job]) =>
+      runs(job.steps).includes('npm run test:e2e')
+    )!;
+    // Three shards: 238 flows on one runner took 16 to 18 minutes; a third of them takes about
+    // six. The Playwright config reads which third from E2E_SHARD; the command is unchanged.
+    const total = shards.strategy?.matrix?.['shard']?.length ?? 0;
+    expect(total).toBeGreaterThanOrEqual(2);
+    const run = shards.steps!.find((step) => step.run === 'npm run test:e2e')!;
+    expect(run.env?.['E2E_SHARD']).toBe(`\${{ matrix.shard }}/${total}`);
+    expect(shards.name).toContain('${{ matrix.shard }}');
+    // The branch ruleset requires a check with exactly this name; it must report whatever
+    // became of the shards (a cancelled shard is a failure, not a check that never came).
+    const sum = Object.values(ci.jobs).find((job) => job.name === 'Scenario end-to-end')!;
+    expect(sum, 'a job named "Scenario end-to-end"').toBeDefined();
+    expect(needs(sum)).toEqual([shardId]);
+    expect(sum.if).toBe('always()');
+    const check = (sum.steps ?? [])
+      .flatMap((step) => [step.run ?? '', ...Object.values(step.env ?? {})])
+      .join('\n');
+    expect(check).toContain(`needs.${shardId}.result`);
+    expect(check).toMatch(/= success/);
   });
 
   it('`npm run check` is what the ledger says it is, and the packaged smoke builds what it tests', async () => {
@@ -90,13 +136,19 @@ describe('releasing', () => {
     expect(packagedFeed).toMatchObject({ provider: 'github', owner: feed.owner, repo: feed.repo });
 
     const release = await workflow('release.yml');
-    const steps = release.jobs['release']!.steps;
+    // Checked, end-to-end tested and started as a package before the installer is built:
+    // the tests are CI's own workflow, run as a job the build waits for, so a release is
+    // tested by exactly what tests every pull request, and the jobs run side by side (the
+    // one job that ran them one after the other took about 45 minutes).
+    const tests = Object.entries(release.jobs).find(([, job]) => job.uses !== undefined)!;
+    expect(tests[1].uses).toBe('./.github/workflows/ci.yml');
+    expect((await workflow('ci.yml')).on).toHaveProperty('workflow_call');
+    const build = release.jobs['release']!;
+    expect(needs(build)).toContain(tests[0]);
+    const steps = build.steps!;
     const commands = runs(steps);
-    // Checked, end-to-end tested and started as a package before the installer is built.
-    for (const needed of ['npm run check', 'npm run test:e2e', 'npm run smoke:packaged']) {
-      expect(commands.indexOf(needed), needed).toBeGreaterThanOrEqual(0);
-      expect(commands.indexOf(needed), needed).toBeLessThan(commands.indexOf('npm run dist'));
-    }
+    expect(commands.indexOf('npm run setup:python')).toBeGreaterThanOrEqual(0);
+    expect(commands.indexOf('npm run setup:python')).toBeLessThan(commands.indexOf('npm run dist'));
     const upload = steps.find((step) => step.uses?.startsWith('softprops/action-gh-release'))!;
     expect(upload.with?.['draft']).toBe(true);
     // The installer, its block map and the update feed file: without latest.yml the updater
@@ -111,12 +163,25 @@ describe('releasing', () => {
     // A beta tag (x.y.z-beta.n) is a GitHub pre-release; the stable channel never sees it.
     expect(upload.with?.['prerelease']).toBe("${{ contains(github.ref_name, '-') }}");
     // The description is the version's section of CHANGELOG.md, not GitHub's list of pull
-    // requests, and it is made before the tests so that an undated changelog fails first.
+    // requests. It is made in a job of its own that the tests wait for, with the tag check,
+    // so that an undated changelog or a wrong tag fails in seconds and not after the tests;
+    // and again in the build job, for the draft (a file does not travel between jobs).
     expect(upload.with?.['generate_release_notes']).toBeUndefined();
     expect(upload.with?.['body_path']).toBe('artifacts/release-notes.md');
-    const notes = commands.findIndex((command) => command.includes('scripts/release-notes.mjs'));
+    const isNotes = (command: string): boolean => command.includes('scripts/release-notes.mjs');
+    const notes = commands.findIndex(isNotes);
     expect(notes).toBeGreaterThanOrEqual(0);
-    expect(notes).toBeLessThan(commands.indexOf('npm run check'));
+    expect(notes).toBeLessThan(steps.indexOf(upload));
+    const prepare = Object.entries(release.jobs).find(([, job]) => runs(job.steps).some(isNotes))!;
+    expect(prepare[0]).not.toBe('release');
+    expect(needs(prepare[1])).toEqual([]);
+    expect(needs(tests[1])).toEqual([prepare[0]]);
+    expect(needs(build)).toContain(prepare[0]);
+    const first = runs(prepare[1].steps);
+    expect(first.some((command) => command.includes('does not match package.json version'))).toBe(
+      true
+    );
+    expect(first.some((command) => /\bnpm\b/.test(command))).toBe(false);
   });
 
   it('the release checklist records a smoke run on Windows 10 22H2 and Windows 11, and names every automated check', async () => {
@@ -169,7 +234,7 @@ describe('code signing (PLAT-017)', () => {
 
   it('the Release workflow hands the four variables and three secrets to the build step only, and verifies a signed build before the draft is made', async () => {
     const release = await workflow('release.yml');
-    const steps = release.jobs['release']!.steps;
+    const steps = release.jobs['release']!.steps!;
     const build = steps.find((step) => step.name === 'Build installer')!;
     expect(build.run).toBe('npm run dist');
     const expectedEnv: Record<string, string> = {};

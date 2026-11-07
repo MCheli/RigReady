@@ -53,14 +53,30 @@ export type UpdatePhase = z.infer<typeof UpdatePhaseSchema>;
 export const updatesContract = defineContract(
   'updates',
   {
-    status: channel(noInput, UpdateStatusSchema),
+    status: channel(noInput, UpdateStatusSchema, {
+      describe:
+        'The installed version, the update channel, whether RigReady checks by itself, and where an update stands.',
+      tier: 'read',
+    }),
     /** Checks now, whatever the automatic setting says; a newer version is downloaded. */
-    check: channel(noInput, UpdateStatusSchema),
+    check: channel(noInput, UpdateStatusSchema, {
+      describe: 'Checks for a newer RigReady now and downloads it when there is one.',
+      tier: 'change',
+    }),
     /** "Restart to install": refused (update.gameRunning) while a game is running. */
-    install: channel(noInput, UpdateStatusSchema),
+    install: channel(noInput, UpdateStatusSchema, {
+      describe:
+        'Restarts RigReady to install the downloaded update. Refused while a game is running. Ask the user first.',
+      tier: 'change',
+    }),
     setPreferences: channel(
       z.object({ automatic: z.boolean().optional(), channel: UpdateChannelSchema.optional() }),
-      UpdateStatusSchema
+      UpdateStatusSchema,
+      {
+        describe:
+          'Sets whether RigReady checks for updates by itself and which update channel it follows.',
+        tier: 'change',
+      }
     ),
   },
   { status: UpdateStatusSchema }

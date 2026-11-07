@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import type { BoundControl } from '../../../core/bindings';
+import { CONTROL_ID, ControlIdSchema } from './controlId';
+import { DrawingChangesSchema } from './drawings/silhouette';
 
 /**
  * The RigReady device layout format: where the controls of one controller model sit on a
@@ -15,14 +17,7 @@ export const LAYOUT_FORMAT = 'rigready-device-layout';
 export const LAYOUT_VERSION = 1;
 export const LAYOUT_EXTENSION = 'rrlayout.json';
 
-/**
- * A control of the device, named the way DirectInput numbers it, whatever the game:
- * `button:12` (Button 12, the first is 1), `axis:X` (X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2),
- * `hat:1:U` (hat 1 pushed up; U, UR, R, DR, D, DL, L, UL).
- */
-export const CONTROL_ID =
-  /^(button:[1-9]\d{0,2}|axis:[A-Z][A-Z0-9]{0,7}|hat:[1-9]:(U|UR|R|DR|D|DL|L|UL))$/;
-export const ControlIdSchema = z.string().regex(CONTROL_ID);
+export { CONTROL_ID, ControlIdSchema };
 
 export const HAT_DIRECTIONS = ['U', 'UR', 'R', 'DR', 'D', 'DL', 'L', 'UL'] as const;
 export type HatDirection = (typeof HAT_DIRECTIONS)[number];
@@ -145,6 +140,12 @@ export const DeviceLayoutSchema = z.object({
   shapes: z.array(LayoutShapeSchema).max(400).default([]),
   groups: z.array(LayoutGroupSchema).max(200).default([]),
   controls: z.array(LayoutControlSchema).max(600),
+  /**
+   * The device is drawn from a drawing (RigReady's, or `custom`, the user's own) rather
+   * than from the cards above, with these changes. A layout without it is drawn as cards:
+   * every layout saved before drawings existed keeps the places its owner gave the cards.
+   */
+  drawing: DrawingChangesSchema.optional(),
 });
 export type DeviceLayout = z.infer<typeof DeviceLayoutSchema>;
 export type DeviceLayoutInput = z.input<typeof DeviceLayoutSchema>;

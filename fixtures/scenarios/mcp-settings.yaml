@@ -1,0 +1,5 @@
+description: Flying, everything ready; the MCP server is off and set to take any free port (so a test never collides with another run)
+rig: mark-full
+extends: flying-all-good.yaml
+data:
+  mcp.json: data/mcp/any-port.json

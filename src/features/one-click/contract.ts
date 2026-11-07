@@ -13,10 +13,18 @@ export const HotkeyStateSchema = z.object({
 export type HotkeyState = z.infer<typeof HotkeyStateSchema>;
 
 export const oneClickContract = defineContract('one-click', {
-  hotkey: channel(noInput, HotkeyStateSchema),
+  hotkey: channel(noInput, HotkeyStateSchema, {
+    describe:
+      'The hotkey that brings RigReady forward and runs Make ready, and whether Windows has it registered now.',
+    tier: 'read',
+  }),
   /**
    * Chooses the hotkey ("Ctrl+Alt+R") or, with null, turns it off. Answers only after
    * Windows was asked what it has registered.
    */
-  setHotkey: channel(z.object({ hotkey: z.string().max(60).nullable() }), HotkeyStateSchema),
+  setHotkey: channel(z.object({ hotkey: z.string().max(60).nullable() }), HotkeyStateSchema, {
+    describe:
+      'Chooses the Make ready hotkey, written like "Ctrl+Alt+R", or turns it off with null.',
+    tier: 'change',
+  }),
 });

@@ -174,6 +174,9 @@ describe('no background writes', () => {
  * show the change first (checked against the contract).
  */
 const REASONED: Record<string, { why: string; previews?: Record<string, string> }> = {
+  mcp: {
+    why: 'Its only write is the token of RigReady.exe --mcp, a file of its own inside the data folder (mcp/bridge-token), made when the user turns the MCP server on. Everything an assistant changes goes through the channels of the other features and their previews.',
+  },
   'ai-assist': {
     why: 'Its own writes are inside the data folder (the guide a model drafted, kept as a YAML file there). Changes to binding files are not written by this feature: they go to the bindings feature as proposals (core/bindings.ts), whose plan is shown in the review dialog before Apply.',
   },
