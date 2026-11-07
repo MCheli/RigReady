@@ -21,40 +21,96 @@ export const aiAssistContract = defineContract(
   'ai-assist',
   {
     /** The aircraft DCS has bindings for, and which have a guide. */
-    aircraft: channel(noInput, AircraftListSchema),
+    aircraft: channel(noInput, AircraftListSchema, {
+      describe:
+        'The aircraft DCS has bindings for, and which have a binding guide. Aircraft ids here are what the other ai-assist channels take.',
+      tier: 'read',
+    }),
     /** The guide for one aircraft with what is bound now, progress and staged changes. */
-    guide: channel(Aircraft, GuideViewSchema),
+    guide: channel(Aircraft, GuideViewSchema, {
+      describe:
+        'The binding guide for one aircraft with what is bound now, progress and staged changes. aircraftId comes from ai-assist:aircraft.',
+      tier: 'read',
+    }),
     setProgress: channel(
       Aircraft.extend({
         itemId: z.string(),
         state: z.enum(['done', 'skipped', 'open']),
         current: z.string().optional(),
       }),
-      ProgressSchema
+      ProgressSchema,
+      {
+        describe:
+          "Marks one guide item done, skipped or open. Only the guide's progress is kept; no bindings are written.",
+        tier: 'read',
+      }
     ),
-    setCurrent: channel(Aircraft.extend({ itemId: z.string() }), ProgressSchema),
-    resetProgress: channel(Aircraft, ProgressSchema),
+    setCurrent: channel(Aircraft.extend({ itemId: z.string() }), ProgressSchema, {
+      describe: "Moves the guide to one item. Only the guide's progress is kept.",
+      tier: 'read',
+    }),
+    resetProgress: channel(Aircraft, ProgressSchema, {
+      describe: "Clears the guide's progress for one aircraft. No bindings are written.",
+      tier: 'read',
+    }),
     /** Stages binding an action to a control. Nothing is written. */
     stage: channel(
       Aircraft.extend({ actionId: z.string(), deviceGuid: z.string(), input: z.string().max(40) }),
-      GuideViewSchema
+      GuideViewSchema,
+      {
+        describe:
+          'Stages binding an action from the guide to a control (deviceGuid and input). Nothing is written until applyStaged.',
+        tier: 'read',
+      }
     ),
     /** Removes one staged change, or all of them when no id is given. */
-    unstage: channel(Aircraft.extend({ id: z.string().optional() }), GuideViewSchema),
+    unstage: channel(Aircraft.extend({ id: z.string().optional() }), GuideViewSchema, {
+      describe:
+        'Removes one staged change, or all of them when no id is given. Nothing is written.',
+      tier: 'read',
+    }),
     /** Exactly what the staged changes would write. Nothing is written. */
-    reviewStaged: channel(Aircraft, PlanSchema),
+    reviewStaged: channel(Aircraft, PlanSchema, {
+      describe:
+        'Exactly what the staged changes would write to the DCS bindings. Call it before applyStaged and show the user.',
+      tier: 'read',
+    }),
     /** Writes the staged changes as one undoable change, through the bindings feature. */
-    applyStaged: channel(Aircraft, AppliedSchema),
-    undo: channel(z.object({ groupId: z.string() }), z.object({ undone: z.boolean() })),
+    applyStaged: channel(Aircraft, AppliedSchema, {
+      describe:
+        'Writes the staged changes to the DCS bindings as one change. Call reviewStaged first and show the user. Undo is on the Safety page.',
+      tier: 'change',
+    }),
+    undo: channel(z.object({ groupId: z.string() }), z.object({ undone: z.boolean() }), {
+      describe:
+        'Undoes bindings written from the guide. groupId comes from the applyStaged result or safety:journal.',
+      tier: 'change',
+    }),
     /** Starts reporting presses on any controller as `pressed` events. */
-    listenStart: channel(noInput, z.object({ listening: z.boolean() })),
-    listenStop: channel(noInput, z.object({ listening: z.boolean() })),
+    listenStart: channel(noInput, z.object({ listening: z.boolean() }), {
+      describe: 'Starts reporting presses on any controller to the page.',
+      tier: 'off',
+    }),
+    listenStop: channel(noInput, z.object({ listening: z.boolean() }), {
+      describe: 'Stops reporting controller presses.',
+      tier: 'off',
+    }),
 
     /** Whether a key is stored (its last four characters only), the model, what is sent. */
-    status: channel(noInput, AiStatusSchema),
-    setModel: channel(z.object({ model: z.string() }), AiStatusSchema),
+    status: channel(noInput, AiStatusSchema, {
+      describe:
+        'Whether an Anthropic API key is stored (its last four characters only), the model, and what is sent.',
+      tier: 'read',
+    }),
+    setModel: channel(z.object({ model: z.string() }), AiStatusSchema, {
+      describe: "Chooses the model used with the user's Anthropic API key.",
+      tier: 'off',
+    }),
     /** One free request that only succeeds with a valid key. */
-    testKey: channel(noInput, z.object({ valid: z.boolean(), message: z.string() })),
+    testKey: channel(noInput, z.object({ valid: z.boolean(), message: z.string() }), {
+      describe: 'Sends one request to check the stored Anthropic API key.',
+      tier: 'off',
+    }),
     /** Builds a request and returns exactly what would be sent. Nothing is sent. */
     prepare: channel(
       Aircraft.extend({
@@ -62,18 +118,34 @@ export const aiAssistContract = defineContract(
         question: z.string().max(2000).optional(),
         actionId: z.string().optional(),
       }),
-      PreparedSchema
+      PreparedSchema,
+      { describe: 'Builds a request to the AI and shows exactly what would be sent.', tier: 'off' }
     ),
     /** Sends a prepared request, unchanged. */
-    send: channel(z.object({ requestId: z.string() }), SentSchema),
+    send: channel(z.object({ requestId: z.string() }), SentSchema, {
+      describe: "Sends a prepared request with the user's Anthropic API key.",
+      tier: 'off',
+    }),
     /** Stops a request that is being answered. Nothing of its answer is used. */
     cancel: channel(
       z.object({ requestId: z.string().max(40) }),
-      z.object({ cancelled: z.boolean() })
+      z.object({ cancelled: z.boolean() }),
+      { describe: 'Stops a request that is being answered.', tier: 'off' }
     ),
-    reviewSuggestions: channel(Round, PlanSchema),
-    applySuggestions: channel(Round, AppliedSchema),
-    deleteDraft: channel(Aircraft, z.object({ deleted: z.boolean() })),
+    reviewSuggestions: channel(Round, PlanSchema, {
+      describe:
+        'What the chosen AI suggestions of one round would write to the DCS bindings. roundId and suggestion ids come from an AI answer. Call it before applySuggestions.',
+      tier: 'read',
+    }),
+    applySuggestions: channel(Round, AppliedSchema, {
+      describe:
+        'Writes the chosen AI suggestions of one round to the DCS bindings as one change. Call reviewSuggestions first and show the user. Undo is on the Safety page.',
+      tier: 'change',
+    }),
+    deleteDraft: channel(Aircraft, z.object({ deleted: z.boolean() }), {
+      describe: 'Deletes the binding guide the AI drafted for one aircraft.',
+      tier: 'change',
+    }),
   },
   {
     pressed: PressSchema,
