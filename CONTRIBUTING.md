@@ -4,7 +4,7 @@ Thank you for helping. RigReady changes files that take people many hours to rec
 
 ## Before you start
 
-Read `docs/PRODUCT.md` (what the app is), `docs/ARCHITECTURE.md` (how it is put together) and `docs/CONTRIBUTING-FEATURES.md` (how to add a feature, step by step, and what the shared code already provides).
+Read `docs/PRODUCT.md` (what the app is), `docs/ARCHITECTURE.md` (how it is put together) and `docs/CONTRIBUTING-FEATURES.md` (how to add a feature, step by step, and what the shared code already provides). The manual in `docs/manual/` describes the app as a user sees it and is published at <https://rigready.io/docs/>; a change to what the app does changes its page too (`site/README.md` says how the manual is built and checked).
 
 ## Setup
 
