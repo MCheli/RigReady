@@ -7,7 +7,7 @@ import {
   identityForGuid,
   sameGuid,
 } from '../../../core/directInput';
-import type { GameRegistry } from '../../../core/games';
+import { gameRunning, type GameRegistry } from '../../../core/games';
 import { JsonStore } from '../../../core/jsonStore';
 import type { DeviceNames } from '../../../core/names';
 import { LuaDocument, LuaTable, parseLuaData } from '../../../core/lua/data';
@@ -240,9 +240,9 @@ export class DcsBindings {
     };
   }
 
-  async dcsRunning(): Promise<boolean> {
-    const processes = await this.ctx.ports.processes.list();
-    return processes.ok && processes.value.some((p) => p.name.toLowerCase() === 'dcs.exe');
+  /** Whether DCS (DCS.exe or DCS_mt.exe) is running: core's one definition, from the DCS module. */
+  dcsRunning(): Promise<boolean> {
+    return gameRunning(this.ctx, this.ctx.games.get('dcs'));
   }
 
   /**

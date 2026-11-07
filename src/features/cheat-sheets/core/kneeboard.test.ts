@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { wiredApp, type WiredApp } from '../../../../tests/helpers';
+import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { Render } from '../../../core/ports';
 import type { CheckItem, Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
@@ -62,6 +62,34 @@ const exportPages = (running: WiredApp, options: Record<string, unknown> = {}): 
   running.invoke<Outcome>('cheat-sheets:exportKneeboard', { ...HORNET, options });
 const status = (running: WiredApp): Promise<Status> =>
   running.invoke<Status>('cheat-sheets:kneeboardStatus', HORNET);
+
+describe('while DCS runs', () => {
+  it('refuses to write or remove pages while DCS runs (DCS.exe or DCS_mt.exe), and says why in the status', async () => {
+    const { app: running, folder } = await start();
+    await exportPages(running);
+    const before = (await fs.readdir(folder)).sort();
+    expect(before.length).toBeGreaterThan(0);
+    const reason =
+      'DCS is running. Close DCS first: it reads the Kneeboard folder when a mission starts, and RigReady changes no DCS file while it runs.';
+    for (const name of ['DCS.exe', 'DCS_mt.exe']) {
+      await mutate(running, [{ op: 'startProcess', name, path: `C:\\DCS\\bin\\${name}` }]);
+      // The status carries the reason, so the dialog can say it and keep its button off.
+      expect(await status(running)).toMatchObject({ state: 'current', blocked: reason });
+      await expect(exportPages(running)).rejects.toThrow(/dcs\.running/);
+      await expect(running.invoke('cheat-sheets:removeKneeboard', HORNET)).rejects.toThrow(
+        /dcs\.running/
+      );
+      expect((await fs.readdir(folder)).sort()).toEqual(before);
+      await mutate(running, [{ op: 'stopProcess', name }]);
+    }
+    expect(await status(running)).not.toHaveProperty('blocked');
+    const removed = await running.invoke<{ removed: string[] }>(
+      'cheat-sheets:removeKneeboard',
+      HORNET
+    );
+    expect(removed.removed).toHaveLength(before.length);
+  });
+});
 
 describe('exporting kneeboard pages', () => {
   it('writes one PNG per device, sized and named for the kneeboard, into the aircraft’s folder', async () => {

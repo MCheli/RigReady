@@ -2,7 +2,7 @@ import path from 'node:path';
 import * as yaml from 'js-yaml';
 import { z } from 'zod';
 import { readDataText } from '../files/text';
-import type { FileStore } from '../ports';
+import type { ChangeGroup, FileStore } from '../ports';
 import { err, ok, type Result } from '../result';
 import { madeByVersionOne } from './earlier';
 import { migrateProfile, ProfileSchema, slugify, type Profile } from './schema';
@@ -244,7 +244,12 @@ export class ProfileStore {
     return ok(parsed.data);
   }
 
-  async remove(id: string): Promise<Result<void>> {
+  /**
+   * Removes the profile file. `group` is the journal group of the user action this belongs
+   * to (deleting a setup also removes its desktop shortcut), so that the Safety page lists
+   * the two together and undoes them together.
+   */
+  async remove(id: string, group?: ChangeGroup): Promise<Result<void>> {
     const existing = await this.get(id);
     if (!existing.ok && existing.error.code === 'profile.id') return existing;
     // Journaled although it is inside the data root: the Safety page can bring it back.
@@ -252,15 +257,33 @@ export class ProfileStore {
     const removed = await this.files.remove(this.fileFor(id), {
       reason: `Delete setup "${name}"`,
       journal: true,
+      ...(group ? { group } : {}),
     });
     if (!removed.ok) return removed;
     this.valid.delete(id);
     const state = await this.readState();
     if (state.lastProfileId === id) {
+      // The Play screen goes on with the setup used most recently before this one, not
+      // quietly with the first by name.
       const { lastProfileId: _gone, ...rest } = state;
-      await this.writeState(rest);
+      const next = await this.mostRecentlyUsed(rest.lastUsed, id);
+      await this.writeState(next ? { ...rest, lastProfileId: next } : rest);
     }
     return ok(undefined);
+  }
+
+  /** The profile used most recently, other than `except`, whose file is still there. */
+  private async mostRecentlyUsed(
+    lastUsed: Record<string, string>,
+    except: string
+  ): Promise<string | undefined> {
+    const byRecency = Object.entries(lastUsed)
+      .filter(([id]) => id !== except && /^[a-z0-9][a-z0-9-]{0,63}$/.test(id))
+      .sort(([, a], [, b]) => b.localeCompare(a));
+    for (const [id] of byRecency) {
+      if (await this.files.exists(this.fileFor(id))) return id;
+    }
+    return undefined;
   }
 
   /** An id derived from the name that no existing profile uses. */

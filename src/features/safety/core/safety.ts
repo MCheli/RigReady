@@ -1,10 +1,11 @@
 import path from 'node:path';
 import type { MainContext } from '../../../core/feature';
 import type { JournalEntry } from '../../../core/ports';
-import { ok, type Result } from '../../../core/result';
+import { err, ok, type Result } from '../../../core/result';
+import { runningHolders, runningText } from '../../../core/runningPrograms';
 import type { SafetyView } from '../contract';
 
-type Ctx = Pick<MainContext, 'ports' | 'settings' | 'log'>;
+type Ctx = Pick<MainContext, 'ports' | 'settings' | 'log' | 'games' | 'backupSources'>;
 
 function kindOf(entry: JournalEntry): 'created' | 'changed' | 'deleted' {
   if (entry.action === 'remove') return 'deleted';
@@ -38,11 +39,32 @@ export async function readSafety(ctx: Ctx): Promise<Result<SafetyView>> {
   });
 }
 
+/**
+ * Puts the files of one action back. Not while a game or tool that holds them is running:
+ * it would write them again on exit, as it would after a restore, so the same detection
+ * refuses with the same words, and `force` (for a file changed since) is no way past it.
+ */
 export async function undoGroup(
   ctx: Ctx,
   groupId: string,
   force: boolean
 ): Promise<Result<SafetyView>> {
+  const groups = await ctx.ports.files.journalGroups();
+  if (!groups.ok) return groups;
+  const group = groups.value.find((g) => g.id === groupId);
+  const holding = await runningHolders(
+    ctx,
+    (group?.entries ?? [])
+      .filter((e) => !e.undone)
+      .map((e) => ({ label: path.basename(e.path), target: e.path }))
+  );
+  if (!holding.ok) return holding;
+  if (holding.value.length > 0) {
+    return err(
+      'restore.running',
+      `${runningText(holding.value)} Close ${holding.value.length === 1 ? 'it' : 'them'} first. Nothing was undone.`
+    );
+  }
   const undone = await ctx.ports.files.undoGroup(groupId, { force });
   if (!undone.ok) return undone;
   ctx.log.info(`undid "${undone.value.reason}"`, {

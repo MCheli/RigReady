@@ -2,7 +2,7 @@ import path from 'node:path';
 import { commandArgs, parseCommandLine } from '../../../core/commandLine';
 import type { MainContext } from '../../../core/feature';
 import { changePreview, type PlannedWrite } from '../../../core/files/preview';
-import type { ShortcutLink } from '../../../core/ports';
+import type { ChangeGroup, ShortcutLink } from '../../../core/ports';
 import type { Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChangePreview } from '../../../shared/changePreview';
@@ -95,6 +95,33 @@ interface Found {
   others: string[];
 }
 
+/**
+ * Every shortcut on the desktop named like ours that asks for this setup (under its current
+ * name or an earlier one), except the file `except`. Found by what the link says, so it needs
+ * no setup file: a setup whose file no longer loads still has its shortcuts found.
+ */
+async function shortcutsFor(
+  ctx: Pick<Ctx, 'ports'>,
+  id: string,
+  except?: string
+): Promise<Result<string[]>> {
+  const desktop = ctx.ports.folders.desktop();
+  const names = await ctx.ports.files.list(desktop);
+  if (!names.ok) return names;
+  const found: string[] = [];
+  const candidates = names.value
+    .filter((name) => name.toLowerCase().endsWith(SHORTCUT_SUFFIX.toLowerCase()))
+    .filter((name) => except === undefined || !samePath(path.join(desktop, name), except))
+    .sort()
+    .slice(0, MOST_SHORTCUTS_READ);
+  for (const name of candidates) {
+    const file = path.join(desktop, name);
+    const said = await ctx.ports.shortcuts.read(file);
+    if (said.ok && said.value && isFor(said.value, id)) found.push(file);
+  }
+  return ok(found);
+}
+
 async function look(ctx: Ctx, id: string): Promise<Result<Found>> {
   const loaded = await ctx.profiles.get(id);
   if (!loaded.ok) return loaded;
@@ -105,26 +132,15 @@ async function look(ctx: Ctx, id: string): Promise<Result<Found>> {
   // Something that is not a shortcut may have the name: it is in the way, not ours.
   const read = exists ? await ctx.ports.shortcuts.read(file) : undefined;
   const link = read?.ok ? read.value : undefined;
-  const names = await ctx.ports.files.list(desktop);
-  if (!names.ok) return names;
-  const others: string[] = [];
-  const candidates = names.value
-    .filter((name) => name.toLowerCase().endsWith(SHORTCUT_SUFFIX.toLowerCase()))
-    .filter((name) => !samePath(path.join(desktop, name), file))
-    .sort()
-    .slice(0, MOST_SHORTCUTS_READ);
-  for (const name of candidates) {
-    const other = path.join(desktop, name);
-    const said = await ctx.ports.shortcuts.read(other);
-    if (said.ok && said.value && isFor(said.value, profile.id)) others.push(other);
-  }
+  const others = await shortcutsFor(ctx, profile.id, file);
+  if (!others.ok) return others;
   return ok({
     profile,
     expected: expectedLink(ctx, profile),
     file,
     exists,
     ...(link ? { link } : {}),
-    others,
+    others: others.value,
   });
 }
 
@@ -219,6 +235,16 @@ export async function previewShortcut(
 async function apply(ctx: Ctx, { planned, reason }: Plan): Promise<Result<void>> {
   const { files } = ctx.ports;
   const group = files.beginGroup(reason);
+  return applyUnder(ctx, planned, reason, group);
+}
+
+async function applyUnder(
+  ctx: Pick<Ctx, 'ports'>,
+  planned: PlannedWrite[],
+  reason: string,
+  group: ChangeGroup
+): Promise<Result<void>> {
+  const { files } = ctx.ports;
   for (const write of planned) {
     const done =
       'remove' in write
@@ -262,6 +288,12 @@ export async function createShortcut(ctx: Ctx, id: string): Promise<Result<Short
   return after;
 }
 
+/** A removal is believed only when the files are gone: the first that is still there, if any. */
+async function stillThere(ctx: Pick<Ctx, 'ports'>, files: string[]): Promise<string | undefined> {
+  for (const file of files) if (await ctx.ports.files.exists(file)) return file;
+  return undefined;
+}
+
 /** Removes the setup's shortcut (and one left under an earlier name), then looks again. */
 export async function removeShortcut(ctx: Ctx, id: string): Promise<Result<ShortcutStatus>> {
   const planned = await plan(ctx, id, 'remove');
@@ -271,14 +303,50 @@ export async function removeShortcut(ctx: Ctx, id: string): Promise<Result<Short
   }
   const applied = await apply(ctx, planned.value);
   if (!applied.ok) return applied;
-  for (const write of planned.value.planned) {
-    if (await ctx.ports.files.exists(write.path)) {
-      return err(
-        'shortcut.notRemoved',
-        'The shortcut is still on the desktop.',
-        `${write.path} could not be removed.`
-      );
-    }
+  const left = await stillThere(
+    ctx,
+    planned.value.planned.map((write) => write.path)
+  );
+  if (left) {
+    return err(
+      'shortcut.notRemoved',
+      'The shortcut is still on the desktop.',
+      `${left} could not be removed.`
+    );
   }
   return shortcutStatus(ctx, id);
+}
+
+/**
+ * Deleting a setup takes its desktop shortcut with it: every shortcut on the desktop that
+ * asks for the setup (under its current name or an earlier one) is removed under the
+ * caller's journal group, the one the setup file is removed under, so the Safety page lists
+ * the two together and one Undo brings both back. Resolves with the files removed; none when
+ * there was nothing to remove, which is not an error. A file that is still there afterwards
+ * is an error, and the caller leaves the setup alone.
+ */
+export async function removeShortcutIfAny(
+  ctx: Pick<Ctx, 'ports'>,
+  id: string,
+  group: ChangeGroup
+): Promise<Result<string[]>> {
+  const found = await shortcutsFor(ctx, id);
+  if (!found.ok) return found;
+  const planned = found.value.map((file): PlannedWrite => ({ path: file, remove: true }));
+  const applied = await applyUnder(
+    ctx,
+    planned,
+    `Remove the desktop shortcut of setup ${id}`,
+    group
+  );
+  if (!applied.ok) return applied;
+  const left = await stillThere(ctx, found.value);
+  if (left) {
+    return err(
+      'shortcut.notRemoved',
+      'The desktop shortcut is still on the desktop, so the setup was not deleted.',
+      `${left} could not be removed.`
+    );
+  }
+  return ok(found.value);
 }

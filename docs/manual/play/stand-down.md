@@ -21,7 +21,7 @@ Then it closes the programs that launch steps started (each step has **Close it 
 
 ## The desk layout
 
-On **Configure > Monitors**, one saved layout can be marked as the desk layout. Stand down applies it last, with the same **Keep this monitor layout?** countdown as any layout change. When no desk layout is chosen, the step is listed as skipped ("No desk layout is chosen in Settings, so the monitors were left as they are") and the monitor check's own revert is what puts the screens back. See [Monitors and audio](../monitors-and-audio/index.md).
+One saved layout can be the desk layout: choose it with **Use as desk layout** on **Configure > Monitors**, or under **Desk layout** on **Configure > Settings**; the two are the same choice. Stand down applies it last, with the same **Keep this monitor layout?** countdown as any layout change. When no desk layout is chosen, the step is listed as skipped ("No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are") and the monitor check's own revert is what puts the screens back. When the chosen layout was deleted since, the step fails and says to choose another in either place. See [Monitors and audio](../monitors-and-audio/index.md).
 
 ![Back at the desk](../../../artifacts/screens/fly-stand-down-desk/02-at-the-desk.png)
 

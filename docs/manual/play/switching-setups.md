@@ -34,4 +34,4 @@ The offer is made only between setups that have required device checks, only whe
 
 ## When the last setup cannot be opened
 
-If the file of the setup you used last was removed by hand, the Play screen opens on the setup changed most recently and says so in a note; a setup deleted on the Setups page is simply replaced by the first in the list. If the file no longer loads, the screen keeps showing the last version that loaded, with a yellow note and the error, until the file is fixed.
+If the file of the setup you used last was removed by hand, the Play screen opens on the setup changed most recently and says so in a note. A setup deleted on the Setups page is replaced by the setup you used most recently before it, whose file is still there; when none was used yet, by the first in the list. If the file no longer loads, the screen keeps showing the last version that loaded, with a yellow note and the error, until the file is fixed.

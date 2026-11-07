@@ -130,7 +130,14 @@ describe('file.exists', () => {
       params: { path: '{DCS_USER}/Config/options.lua' },
     });
     expect(result).toMatchObject({ status: 'error', summary: 'DCS user folder not found' });
-    expect(variableLabel('SOMETHING')).toBe('{SOMETHING}');
+    const games = app.wiring.context.games;
+    expect(variableLabel('SOMETHING', games)).toBe('{SOMETHING}');
+    // The label comes from the game module, for every variable it can hand out.
+    expect(variableLabel('MSFS2024_USER', games)).toBe(
+      'Microsoft Flight Simulator 2024 user folder'
+    );
+    expect(variableLabel('AC_INSTALL', games)).toBe('Assetto Corsa install');
+    expect(variableLabel('STEAM', games)).toBe('Steam library');
   });
 });
 

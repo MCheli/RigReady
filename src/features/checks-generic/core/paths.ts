@@ -1,28 +1,17 @@
 import path from 'node:path';
 import type { CheckContext } from '../../../core/checks/registry';
 import type { GameRegistry } from '../../../core/games';
-import { allPathVariables, expandPath, variableOf } from '../../../core/pathVariables';
+import {
+  allPathVariables,
+  expandPath,
+  knownPathVariables,
+  variableOf,
+} from '../../../core/pathVariables';
 import { err, type Result } from '../../../core/result';
 
 /** What a path variable means, in words, for "DCS user folder not found". */
-const LABELS: Record<string, string> = {
-  USER: 'Your user folder',
-  DOCUMENTS: 'Documents folder',
-  SAVED_GAMES: 'Saved Games folder',
-  APPDATA: 'AppData folder',
-  LOCALAPPDATA: 'Local AppData folder',
-  PROGRAM_FILES: 'Program Files folder',
-  PROGRAM_FILES_X86: 'Program Files (x86) folder',
-  RIGREADY_HOME: 'RigReady data folder',
-  STEAM: 'Steam library',
-  DCS_USER: 'DCS user folder',
-  DCS_INSTALL: 'DCS install',
-  IRACING_USER: 'iRacing user folder',
-  LMU_USER: 'Le Mans Ultimate user folder',
-  BEAMNG_USER: 'BeamNG.drive user folder',
-};
-
-export const variableLabel = (name: string): string => LABELS[name] ?? `{${name}}`;
+export const variableLabel = (name: string, games: Pick<GameRegistry, 'all'>): string =>
+  knownPathVariables(games)[name] ?? `{${name}}`;
 
 /** A stored path ({DCS_USER}/Config/options.lua or an absolute one) made absolute for this PC. */
 export async function resolveStored(
@@ -35,7 +24,7 @@ export async function resolveStored(
   if (!expanded.ok && expanded.error.code === 'path.variable' && variable) {
     return err(
       'path.variable',
-      `${variableLabel(variable)} not found`,
+      `${variableLabel(variable, games)} not found`,
       ctx.profile?.install
         ? `This setup uses the install at ${ctx.profile.install}, which is gone. Choose another install in the setup, or install it again.`
         : `{${variable}} is not available on this PC: the program that provides it was not detected.`

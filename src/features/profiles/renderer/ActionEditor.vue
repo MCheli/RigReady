@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { LaunchAction } from '../../../core/profile/schema';
-import type { RemediationTypeInfo } from '../contract';
+import type { Pickers, RemediationTypeInfo } from '../contract';
 import ParamsForm from './ParamsForm.vue';
 import { defaultsOf } from './schemaForm';
 
@@ -9,6 +9,8 @@ const props = defineProps<{
   action: LaunchAction;
   phase: 'preLaunch' | 'postLaunch' | 'standDown';
   remediations: RemediationTypeInfo[];
+  /** What the editor read from this PC; the path variables for the Variables menu. */
+  pickers: Pickers | undefined;
   index: number;
   count: number;
   problems: string[];
@@ -103,6 +105,7 @@ function setNumber(key: 'timeoutSeconds' | 'delaySeconds', raw: string): void {
         :schema="schema"
         :model-value="action.params"
         testid="edit-action-params"
+        :variables="pickers?.variables"
         @update:model-value="update({ params: $event })"
       />
       <div class="action-options">

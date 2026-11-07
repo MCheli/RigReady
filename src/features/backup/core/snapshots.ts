@@ -9,7 +9,7 @@ import type { ChangePreview } from '../../../shared/changePreview';
 import { BlobStore } from './blobs';
 import { compareFiles, type Comparison } from './compare';
 import { fingerprintStore } from './fingerprints';
-import { runningHolders, runningText } from './programs';
+import { runningHolders, runningText } from '../../../core/runningPrograms';
 import { itemsOf, pathVariables, type Ctx } from './store';
 
 const SnapshotSchema = z.object({

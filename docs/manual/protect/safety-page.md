@@ -36,7 +36,7 @@ If a file was changed again after the action, by you, by a game or by another pr
 
 - It works on files. A change RigReady makes elsewhere is not here: applying a monitor layout has its own countdown and revert, and the Start with Windows entry is switched in Settings. RigReady never changes HidHide settings.
 - RigReady's own data (setups, settings, layouts, snapshots) is not journaled, with one exception: a setup created by an import is, so undoing the import removes it. Setups are protected differently, by backups and by their YAML being editable.
-- It does not close a game. A game that is running may write the file again on exit; close it first, as for a [restore](restore.md).
+- It does not close a game. While a game or tool that writes the files is running, Undo refuses and names it, as a [restore](restore.md) does: "DCS World is running (DCS.exe). DCS World may write its settings again when it exits, which would undo the restore. Close it first. Nothing was undone." Close the game, then undo.
 - It needs the kept copy. Copies are removed after the retention period, and a change whose copy is gone reports "The backup file is missing".
 - It does not undo what a program did after it was started, or what a game wrote itself.
 

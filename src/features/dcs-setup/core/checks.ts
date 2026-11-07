@@ -7,7 +7,7 @@ import type {
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import { err, ok } from '../../../core/result';
-import { dcsRunning } from './dcsPaths';
+
 import { EXPORT_TOOLS, ExportToolSchema, hasTool, parseExportLua, TOOL_INFO } from './exportLua';
 import {
   describeChange,
@@ -252,7 +252,7 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
         .map((k) => OPTION_LABELS[k])
         .join(', ')} in options.lua`,
     async run(params, ctx) {
-      if (await dcsRunning(ctx))
+      if (await service.dcsRunning(ctx))
         return err(
           'dcs.running',
           'DCS is running. Close DCS first: it rewrites options.lua when it exits.'

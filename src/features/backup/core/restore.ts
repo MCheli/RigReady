@@ -31,7 +31,7 @@ import {
   type Reopen,
   type RestoreTarget,
   type RunningProgram,
-} from './programs';
+} from '../../../core/runningPrograms';
 import { sameItem } from './suggestions';
 import { globalStore, pathVariables, type Ctx, type MachineIdentity } from './store';
 
