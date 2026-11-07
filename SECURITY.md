@@ -24,12 +24,9 @@ Say what you found, which version, and how to reproduce it. A diagnostics report
 - **Leaves the PC:** the update check (GitHub Releases) and, only with your own Anthropic API key and only when you press Send, AI requests to `api.anthropic.com`. Nothing else. No telemetry, no crash reporting.
 - **Reads untrusted input** (game Lua files, imported `.rigready` files, backup zips, controller names) through strict parsers with size caps; Lua runs in a sandbox with no file or process access and a limit on how long it runs. A restore or an import never writes into the Start menu or its Startup folder.
 
-## Known open items
+## How findings are handled
 
-From the last review (`docs/research/security-review-2026-11.md`):
-
-- Releases are not code-signed yet. Until they are, an update is checked against the SHA-512 in the release feed, and its integrity rests on GitHub and on the maintainer's account. Signing is set up in the release workflow and waits for the publisher's identity validation.
-- The Lua sandbox limits time, not memory: a hostile Lua file can make RigReady run out of memory and close. It cannot read or write files or start programs.
+Problems found by a review or reported privately are tracked privately until a release that fixes them is published. A fixed problem is then described in the release notes and in the review documents under `docs/research/`. Open problems are not listed here.
 
 ## How a fix reaches you
 
