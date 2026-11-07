@@ -69,29 +69,63 @@ async function choose(page: Page, testId: string, option: string | RegExp): Prom
 }
 
 /**
- * How the label text of the sheet on screen fits its cards, asked of the browser itself:
- * a card whose text is taller than its box would be cut off by it, and one the page had
- * to make smaller after drawing was measured wrongly before.
+ * How the label text of the sheet on screen fits, asked of the browser itself, in the font
+ * this PC draws it with. On a card: text taller than its box would be cut off by it, and
+ * a card the page had to make smaller was measured wrongly before. On a drawing: a line
+ * of text that reaches outside its label block; a label shortened ends with an ellipsis.
  */
 async function labelFit(
   page: Page
-): Promise<{ cards: number; clipped: string[]; refitted: string[]; shortened: string[] }> {
+): Promise<{ labels: number; clipped: string[]; refitted: string[]; shortened: string[] }> {
   return page
     .getByTestId('sheet-view')
     .first()
     .evaluate((root) => {
       // (The specs are compiled without the browser's own types.)
-      interface Card {
+      interface Box {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }
+      interface Node {
         scrollHeight: number;
         clientHeight: number;
         textContent: string | null;
         dataset: Record<string, string | undefined>;
+        classList: { contains(name: string): boolean };
+        getBBox(): Box;
+        querySelector(selector: string): Node | null;
+        querySelectorAll(selector: string): Iterable<Node>;
       }
-      const view = root as unknown as { querySelectorAll(selector: string): Iterable<Card> };
+      const view = root as unknown as Node;
+      const text = (el: Node): string => el.textContent ?? '';
+      if (view.querySelector('svg')?.classList.contains('cs-v2')) {
+        const labels: Node[] = [];
+        const clipped: string[] = [];
+        for (const block of view.querySelectorAll('.cs-callout')) {
+          const frame = block.querySelector('.cs-block')!.getBBox();
+          for (const line of block.querySelectorAll('text.cs-row-text, text.cs-bhead')) {
+            if (line.classList.contains('cs-row-text')) labels.push(line);
+            const b = line.getBBox();
+            const inside =
+              b.x >= frame.x - 1 &&
+              b.y >= frame.y - 1 &&
+              b.x + b.width <= frame.x + frame.width + 1 &&
+              b.y + b.height <= frame.y + frame.height + 1;
+            if (!inside) clipped.push(text(line));
+          }
+        }
+        return {
+          labels: labels.length,
+          clipped,
+          refitted: [],
+          shortened: labels.map(text).filter((t) => t.endsWith('…')),
+        };
+      }
       const cards = [...view.querySelectorAll('.cs-t')];
-      const text = (el: Card): string => el.textContent ?? '';
       return {
-        cards: cards.length,
+        labels: cards.length,
         clipped: cards.filter((el) => el.scrollHeight > el.clientHeight + 0.5).map(text),
         refitted: cards.filter((el) => el.dataset['fitted'] === 'true').map(text),
         shortened: cards.filter((el) => el.dataset['shortened'] === 'true').map(text),
@@ -128,23 +162,36 @@ test('cheat sheets: every device of the rig has a picture', async ({ rig }) => {
   for (const title of titles) {
     await device(page, title).click();
     await expect(page.getByTestId('sheet-title')).toHaveText(title);
-    // Ten devices have a hand-arranged layout; none is a bare grid.
+    // Ten devices have a hand-arranged layout; none is a bare grid. The stick, the throttle
+    // and the three MFDs are drawn: a silhouette with a label block per physical control.
     await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute('data-source', 'builtin');
-    // Every label of the owner's own bindings is whole, and fits its card as it was measured.
+    const drawn = ['Stick', 'Throttle', 'Left MFD', 'Centre MFD', 'Right MFD'].includes(title);
+    await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute(
+      'data-picture',
+      drawn ? 'drawing' : 'cards'
+    );
+    // Every label of the owner's own bindings is whole, and fits its card or block.
     const fit = await labelFit(page);
-    expect(fit.cards, title).toBeGreaterThan(0);
+    expect(fit.labels, title).toBeGreaterThan(0);
     expect(fit, title).toMatchObject({ clipped: [], refitted: [], shortened: [] });
     await shot(title.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase());
   }
-  // The MFD frame: each button is drawn once, as its label card on the bezel. Nothing on
-  // the picture is a second, bare key with the same number.
+  // The MFD frame: each key has one label block, above, below or beside it, with a leader
+  // to the key, named as printed on the bezel with the number the frame reports.
   await device(page, 'Left MFD').click();
   await expect(page.getByTestId('sheet-title')).toHaveText('Left MFD');
   const picture = page.locator('[data-testid="sheet-view"] svg');
   await expect(picture.locator('text').filter({ hasText: /^\d+$/ })).toHaveCount(0);
-  await expect(picture.locator('.cs-num').filter({ hasText: /^42$/ })).toHaveCount(1);
-  await expect(control(page, 'button:42')).toContainText('OSB 1');
+  const osb1 = picture.locator('[data-anchor="osb-1"]');
+  await expect(osb1).toHaveCount(1);
+  await expect(osb1).toHaveAttribute('data-side', 'top');
+  await expect(osb1.locator('.cs-bhead')).toHaveText('OSB 1 · 42');
+  await expect(osb1.locator('polyline.cs-lead2')).toHaveCount(1);
   await expect(control(page, 'button:42')).toContainText('Left MDI PB 6');
+  // The pedals have no drawing yet: their shipped layout of cards, as before.
+  await device(page, 'Pedals').click();
+  await expect(page.getByTestId('sheet-layout-source')).toHaveText('Shipped layout');
+  await expect(picture.locator('.cs-t').first()).toBeVisible();
 });
 
 test('cheat sheets: labels, a pressed control lights up, notes, search and by action', async ({
@@ -164,8 +211,11 @@ test('cheat sheets: labels, a pressed control lights up, notes, search and by ac
   await expect(control(page, 'button:5')).toContainText('Trigger: fire');
   await expect(control(page, 'hat:1:U')).toContainText('Trim nose down');
   await expect(control(page, 'axis:SLIDER1')).toContainText('Both brakes, one axis');
-  await expect(control(page, 'button:1')).toHaveClass(/cs-empty/);
+  // The trigger's first detent is on the drawing but does nothing in the Hornet.
+  await expect(control(page, 'button:4')).toHaveClass(/cs-empty/);
   await expect(control(page, 'button:20')).toHaveClass(/cs-bound/);
+  await expect(page.getByTestId('sheet-layout-source')).toHaveText('RigReady drawing');
+  await expect(page.getByTestId('sheet-edit-layout')).toContainText('Edit drawing');
   await shot('stick');
 
   // Press the weapon release on the real stick: its label lights up and says what it does.
@@ -424,6 +474,10 @@ test('cheat sheets: layout editor - drag, label, group, photo, share, import, di
   await page.getByTestId('sheet-edit-layout').click();
   const editor = page.getByTestId('layout-editor');
   await expect(editor).toHaveAttribute('data-dirty', 'false');
+  // The throttle has a drawing; arranging cards by hand, as in 1.x, is one click away.
+  await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'drawing');
+  await page.getByTestId('editor-use-cards').click();
+  await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'cards');
   await shot('editor');
 
   // Press a button on the device: its card is selected.
@@ -473,6 +527,7 @@ test('cheat sheets: layout editor - drag, label, group, photo, share, import, di
   expect(shared.background.image).toMatch(/^data:image\/png;base64,/);
   await page.getByTestId('editor-save').click();
   await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute('data-source', 'user');
+  await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute('data-picture', 'cards');
   await expect(control(page, 'button:16')).toContainText('Cage');
   const saved = path.join(run.dataRoot, 'cheat-sheets', 'layouts', '4098-BD26.rrlayout.json');
   expect(JSON.parse(await fs.readFile(saved, 'utf8')).name).toContain('throttle');
@@ -526,11 +581,117 @@ test('cheat sheets: layout editor - drag, label, group, photo, share, import, di
   await again.shot('converted-template');
   await page2.getByTestId('editor-cancel').click();
 
-  // Discard: the shipped layout is back.
+  // Discard: the shipped drawing is back.
   await page2.getByTestId('sheet-edit-layout').click();
   await page2.getByTestId('editor-reset').click();
   await expect(page2.getByTestId('sheet-layout-source')).toHaveAttribute('data-source', 'builtin');
+  await expect(page2.getByTestId('sheet-layout-source')).toHaveAttribute('data-picture', 'drawing');
   await expect(fs.access(saved)).rejects.toThrow();
+});
+
+test('cheat sheets: drawing editor - move a control, its side and name, a photo, a drawing of my own', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-drawing-editor', {
+    dialogs: { open: [['Documents/stick-photo.png'], ['Documents/pedals-photo.png']] },
+  });
+  const { page, shot, sendInput } = run;
+  await page.setViewportSize({ width: 1500, height: 1250 });
+  const docs = path.join(run.home, 'Documents');
+  await fs.mkdir(docs, { recursive: true });
+  await fs.writeFile(path.join(docs, 'stick-photo.png'), PHOTO);
+  await fs.writeFile(path.join(docs, 'pedals-photo.png'), PHOTO);
+  await openSheets(page);
+  await device(page, 'Stick').click();
+  await page.getByTestId('sheet-edit-layout').click();
+  const editor = page.getByTestId('layout-editor');
+  await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'drawing');
+  await expect(editor).toHaveAttribute('data-dirty', 'false');
+
+  // Press the weapon release on the stick: its control is picked, and renamed.
+  await sendInput([state(CONTROLLERS.stick)]);
+  await sendInput([state(CONTROLLERS.stick, { pressed: [20] })]);
+  const name = page.getByTestId('editor-control-name').locator('input');
+  await expect(name).toHaveValue('Pickle');
+  await expect(page.getByTestId('editor-control-inputs')).toHaveText('Button 20');
+  await sendInput([state(CONTROLLERS.stick)]);
+  await name.fill('Weapon release');
+  const canvas = page.getByTestId('editor-canvas');
+  await expect(canvas.locator('[data-anchor="pickle"] .cs-bhead')).toHaveText(
+    'Weapon release · 20'
+  );
+
+  // The trim hat: drag its dot down the grip, and put its label on the left.
+  await canvas.locator('[data-anchor="trim"] .cs-bhead').click();
+  await expect(name).toHaveValue('TRIM hat');
+  const handle = canvas.locator('[data-anchor-handle="trim"]');
+  const from = (await handle.boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x - 40, from.y + 60, { steps: 4 });
+  await page.mouse.move(from.x - 60, from.y + 120, { steps: 4 });
+  await page.mouse.up();
+  await expect(editor).toHaveAttribute('data-dirty', 'true');
+  const to = (await handle.boundingBox())!;
+  expect(to.y).toBeGreaterThan(from.y + 80);
+  await page.getByTestId('editor-side-left').click();
+  await expect(canvas.locator('[data-anchor="trim"]')).toHaveAttribute('data-side', 'left');
+  await shot('drawing-editor');
+
+  // A photo of the stick in place of the drawing.
+  await page.getByTestId('editor-background').click();
+  await expect(page.getByTestId('editor-message')).toContainText(
+    'Picture added in place of the drawing'
+  );
+  await expect(canvas.locator('svg image')).toHaveCount(1);
+  await expect(canvas.locator('.cs-drawing .cs-s-body')).toHaveCount(0);
+  await page.getByTestId('editor-background-remove').click();
+
+  // Saved for the stick: the sheet shows the drawing with the owner's changes.
+  await page.getByTestId('editor-save').click();
+  const source = page.getByTestId('sheet-layout-source');
+  await expect(source).toHaveAttribute('data-source', 'user');
+  await expect(source).toHaveAttribute('data-picture', 'drawing');
+  await expect(source).toHaveText('RigReady drawing, your changes');
+  const sheet = page.getByTestId('sheet-view');
+  await expect(sheet.locator('[data-anchor="trim"]')).toHaveAttribute('data-side', 'left');
+  await expect(sheet.locator('[data-anchor="pickle"] .cs-bhead')).toHaveText('Weapon release · 20');
+  const saved = JSON.parse(
+    await fs.readFile(
+      path.join(run.dataRoot, 'cheat-sheets', 'layouts', '4098-BEA8.rrlayout.json'),
+      'utf8'
+    )
+  ) as { drawing: { anchors: Record<string, unknown>; sides: Record<string, string> } };
+  expect(Object.keys(saved.drawing.anchors)).toEqual(['trim']);
+  expect(saved.drawing.sides).toEqual({ trim: 'left' });
+  await shot('own-drawing');
+
+  // The pedals have no drawing: make one from a photo, with a dot per control to place.
+  await device(page, 'Pedals').click();
+  await page.getByTestId('sheet-edit-layout').click();
+  await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'cards');
+  await page.getByTestId('editor-photo-drawing').click();
+  await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'drawing');
+  await expect(page.getByTestId('editor-message')).toContainText('Drag each onto its control');
+  await expect(canvas.locator('svg image')).toHaveCount(1);
+  const rudder = canvas.locator('[data-anchor-handle="axis-Z"]');
+  const at = (await rudder.boundingBox())!;
+  await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(at.x + 30, at.y + 40, { steps: 4 });
+  await page.mouse.up();
+  await shot('photo-drawing');
+  await page.getByTestId('editor-save').click();
+  await expect(source).toHaveText('Your drawing');
+  await expect(sheet.locator('svg image')).toHaveCount(1);
+  await expect(control(page, 'axis:Z')).toBeVisible();
+
+  // Discard on the stick: RigReady's drawing as it ships.
+  await device(page, 'Stick').click();
+  await page.getByTestId('sheet-edit-layout').click();
+  await page.getByTestId('editor-reset').click();
+  await expect(source).toHaveText('RigReady drawing');
+  await expect(sheet.locator('[data-anchor="trim"]')).toHaveAttribute('data-side', 'right');
 });
 
 test('cheat sheets: print layout and PDF, one page per device plus a summary', async ({ rig }) => {
@@ -836,7 +997,7 @@ test('cheat sheets: the kneeboard check is added to a setup from the kneeboard d
   await expect(row).toHaveCount(0);
 });
 
-test('cheat sheets: a label too long for its card is shortened with an ellipsis, never clipped', async ({
+test('cheat sheets: a label too long for its block wraps, and is shortened with an ellipsis, never clipped', async ({
   rig,
 }) => {
   const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-long-label');
@@ -847,27 +1008,29 @@ test('cheat sheets: a label too long for its card is shortened with an ellipsis,
   const card = control(page, 'button:20');
   await card.click();
 
-  // A short note sits under the action at full size.
+  // A short note sits under the action, at the size of every label.
   await page.getByTestId('note-input').locator('input').fill('hold until the bomb is off');
   await page.getByTestId('note-save').click();
   await expect(page.getByTestId('note-saved')).toBeVisible();
-  await expect(card.locator('.cs-note')).toHaveText('✎ hold until the bomb is off');
-  await expect(card.locator('.cs-t')).not.toHaveAttribute('data-shortened');
-  await expect(card.locator('.cs-t')).toHaveAttribute('style', /font-size:\s*14px/);
+  const action = card.locator('text.cs-row-text').first();
+  const noteText = card.locator('text.cs-note');
+  await expect(noteText).toHaveText('✎ hold until the bomb is off');
+  await expect(noteText).toHaveAttribute('font-size', '14');
 
-  // A note that no readable size can hold: the type steps down as far as it may, and the
-  // rest is shortened. The action stays whole; the note gives way and ends in an ellipsis.
+  // A note longer than three lines of its block: it wraps, and the rest is shortened. The
+  // action stays whole; the note gives way and ends in an ellipsis, at the same size.
   const note =
     'hold through the whole countdown and two seconds after release, or the bomb stays on the rack and the run is wasted';
   await page.getByTestId('note-input').locator('input').fill(note);
   await page.getByTestId('note-save').click();
   await expect(page.getByTestId('note-saved')).toBeVisible();
-  await expect(card.locator('.cs-t')).toHaveAttribute('data-shortened', 'true');
-  await expect(card.locator('.cs-t')).toHaveAttribute('style', /font-size:\s*10\.2px/);
-  await expect(card.locator('.cs-act')).toHaveText('Pickle: release weapon');
-  await expect(card.locator('.cs-note')).toHaveText(/^✎ hold through the whole countdown .+…$/);
-  await expect(card.locator('.cs-note')).not.toContainText('wasted');
-  // Nothing sticks out of any card, and the page did not have to make any text smaller.
+  await expect(action).toHaveText('Pickle: release weapon');
+  await expect(noteText.locator('tspan')).toHaveCount(3);
+  // (Its lines are the text's tspans, read here without the spaces between them.)
+  await expect(noteText).toHaveText(/^✎ hold through the whole countdown.+…$/);
+  await expect(noteText).not.toContainText('wasted');
+  await expect(noteText).toHaveAttribute('font-size', '14');
+  // Nothing sticks out of any block, and the page did not have to make any text smaller.
   const fit = await labelFit(page);
   expect(fit.clipped).toEqual([]);
   expect(fit.refitted).toEqual([]);
@@ -921,8 +1084,8 @@ test('cheat sheets: an open sheet follows the bindings page - the pop-out redraw
   await page.setViewportSize({ width: 1500, height: 1250 });
   await openSheets(page);
   await device(page, 'Stick').click();
-  // Button 1 of the stick does nothing yet.
-  await expect(control(page, 'button:1')).toHaveClass(/cs-empty/);
+  // Button 1 of the stick does nothing yet, and is not on the drawing: it is not on the sheet.
+  await expect(control(page, 'button:1')).toHaveCount(0);
 
   // The quick look, popped out: the small window that stays open beside the game.
   await page.getByTestId('sheet-quick').click();
@@ -986,6 +1149,7 @@ test('cheat sheets: an open sheet follows the bindings page - the pop-out redraw
   await page.getByTestId('nav-cheat-sheets').click();
   await expect(page.getByTestId('cheat-sheets-page')).toHaveAttribute('data-ready', 'true');
   await device(page, 'Stick').click();
+  // Under the drawing, with the other bound controls it does not place.
   await expect(control(page, 'button:1')).toContainText('Canopy: OPEN');
   await expect(control(page, 'button:1')).toHaveClass(/cs-bound/);
   await control(page, 'button:1').click();

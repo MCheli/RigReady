@@ -55,6 +55,9 @@ function extraCss(t: Theme): string {
 .cs-svg .cs-row{fill:transparent;stroke:none}
 .cs-svg .cs-ctl.cs-on .cs-row{fill:${t.accentFill};stroke:${t.accent};stroke-width:1.6}
 .cs-svg .cs-ctl.cs-sel .cs-row{stroke:${t.accent};stroke-width:1.2}
+.cs-svg .cs-ctl.cs-conflict .cs-row{stroke:${t.warn};stroke-width:1.4}
+.cs-svg .cs-flag2{fill:${t.warn};font-weight:800}
+.cs-svg .cs-ctl.cs-hit .cs-row{stroke:${t.accent};stroke-width:1.2}
 .cs-svg .cs-lead2{stroke:${t.line};stroke-width:1.4;fill:none;stroke-linejoin:round}
 .cs-svg .cs-anchor{stroke:${t.bg};stroke-width:1.5}
 .cs-svg text.cs-print{fill:${t.muted};font-weight:700;letter-spacing:.06em}
@@ -71,25 +74,19 @@ function markSvg(x: number, y: number, kind: CategoryId | undefined, theme: Them
 }
 
 /** One row of a block: the kind mark, the text with its tag in bold, a title for the tooltip. */
+/** One row of a block: the kind mark and the text with its tag in bold. */
 function rowSvg(
   row: Row,
   x: number,
   y: number,
   w: number,
   size: number,
-  byId: Map<string, SheetControl>,
-  theme: ThemeName,
-  first: boolean
+  theme: ThemeName
 ): { svg: string; h: number } {
   const h = row.lines.length * size * LINE_HEIGHT + 2;
-  const classes = ['cs-ctl', row.dim && !row.note ? 'cs-empty' : 'cs-bound'];
   const textClass = ['cs-row-text', row.dim ? 'cs-dim' : '', row.note ? 'cs-note' : '']
     .filter(Boolean)
     .join(' ');
-  const control = byId.get(row.id);
-  const title = control
-    ? `${control.name}: ${control.bindings.map((b) => (b.modifiers.length ? `${b.modifiers.join('+')}: ` : '') + (b.plain ? `${b.plain} (${b.action})` : b.action)).join(' / ')}${control.note ? ` (${control.note})` : ''}`
-    : `${controlName(row.id)}: nothing bound`;
   const lines = row.lines.map((line, i) => {
     const dy = i === 0 ? size : size * LINE_HEIGHT;
     let content = escapeHtml(line);
@@ -111,17 +108,66 @@ function rowSvg(
     }
     return `<tspan x="${n(x + MARK + 6)}" dy="${n(dy)}">${content}</tspan>`;
   });
-  const dataKind = row.kind ? ` data-kind="${row.kind}"` : '';
   return {
     h,
     svg:
-      `<g class="${classes.join(' ')}" data-control="${row.id}"${dataKind}${first ? ' data-first="true"' : ''}>` +
-      `<title>${escapeHtml(title)}</title>` +
       `<rect class="cs-row" x="${n(x - 3)}" y="${n(y)}" width="${n(w + 6)}" height="${n(h)}" rx="3"/>` +
       markSvg(x, y + size * 0.55 - MARK / 2 + 1, row.kind, theme) +
-      `<text class="${textClass}" x="${n(x + MARK + 6)}" y="${n(y)}" font-size="${n(size)}">${lines.join('')}</text>` +
-      `</g>`,
+      `<text class="${textClass}" x="${n(x + MARK + 6)}" y="${n(y)}" font-size="${n(size)}">${lines.join('')}</text>`,
   };
+}
+
+/**
+ * Rows stacked down from y, the rows of one input (its plain press and the modifier
+ * variants) in one element: the one the page lights when the control is pressed, with
+ * the tooltip that names both the plain and the game's wording.
+ */
+function rowsSvg(
+  rows: Row[],
+  x: number,
+  y: number,
+  w: number,
+  size: number,
+  byId: Map<string, SheetControl>,
+  theme: ThemeName
+): { svg: string; h: number } {
+  const out: string[] = [];
+  let top = y;
+  for (let i = 0; i < rows.length;) {
+    const id = rows[i]!.id;
+    const own: Row[] = [];
+    while (i < rows.length && rows[i]!.id === id) own.push(rows[i++]!);
+    const inner: string[] = [];
+    const start = top;
+    for (const row of own) {
+      const made = rowSvg(row, x, top, w, size, theme);
+      inner.push(made.svg);
+      top += made.h;
+    }
+    if (!id) {
+      out.push(`<g class="cs-row-idle">${inner.join('')}</g>`);
+      continue;
+    }
+    const control = byId.get(id);
+    const bound = own.some((row) => !row.dim || row.note);
+    const classes = ['cs-ctl', bound ? 'cs-bound' : 'cs-empty'];
+    if (control?.conflict) {
+      classes.push('cs-conflict');
+      // The same mark as on a card: "!" at the end of its first line.
+      inner.push(
+        `<text class="cs-flag2" text-anchor="end" x="${n(x + w)}" y="${n(start + size)}" font-size="${n(size)}">!</text>`
+      );
+    }
+    const kind = own.find((row) => row.kind)?.kind;
+    const title = control
+      ? `${control.name}: ${control.bindings.map((b) => (b.modifiers.length ? `${b.modifiers.join('+')}: ` : '') + (b.plain ? `${b.plain} (${b.action})` : b.action)).join(' / ')}${control.note ? ` (${control.note})` : ''}`
+      : `${controlName(id)}: nothing bound`;
+    out.push(
+      `<g class="${classes.join(' ')}" data-control="${id}"${kind ? ` data-kind="${kind}"` : ''}>` +
+        `<title>${escapeHtml(title)}</title>${inner.join('')}</g>`
+    );
+  }
+  return { svg: out.join(''), h: top - y };
 }
 
 function calloutSvg(
@@ -145,21 +191,10 @@ function calloutSvg(
   out.push(
     `<text class="cs-bhead" x="${n(callout.x + PAD)}" y="${n(headY)}">${escapeHtml(callout.head)}</text>`
   );
-  let y = callout.y + PAD + HEAD_SIZE * LINE_HEIGHT + 3;
-  callout.rows.forEach((row, i) => {
-    const made = rowSvg(
-      row,
-      callout.x + PAD,
-      y,
-      callout.w - 2 * PAD,
-      callout.size,
-      byId,
-      theme,
-      i === 0
-    );
-    out.push(made.svg);
-    y += made.h;
-  });
+  const y = callout.y + PAD + HEAD_SIZE * LINE_HEIGHT + 3;
+  out.push(
+    rowsSvg(callout.rows, callout.x + PAD, y, callout.w - 2 * PAD, callout.size, byId, theme).svg
+  );
   // The dot where the leader meets the control, in the colour of what it does.
   const hollow = first?.kind ? categoryPattern(first.kind, theme) === 'dashed' : false;
   if (pointed) {
@@ -286,17 +321,12 @@ function extrasSvg(
   );
   const colW = (box.w - (box.columns - 1) * LAYOUT_METRICS.GAP) / box.columns;
   const perColumn = Math.ceil(plan.extras.length / box.columns);
-  plan.extras.forEach((row, i) => {
-    const column = Math.floor(i / perColumn);
-    const index = i % perColumn;
+  for (let column = 0; column < box.columns; column++) {
+    const rows = plan.extras.slice(column * perColumn, (column + 1) * perColumn);
     const x = box.x + PAD + column * (colW + LAYOUT_METRICS.GAP);
-    let y = box.y + PAD + HEAD_SIZE * LINE_HEIGHT + 3;
-    for (let k = 0; k < index; k++) {
-      const above = plan.extras[column * perColumn + k]!;
-      y += above.lines.length * size * LINE_HEIGHT + 2;
-    }
-    out.push(rowSvg(row, x, y, colW - 2 * PAD, size, byId, theme, index === 0).svg);
-  });
+    const y = box.y + PAD + HEAD_SIZE * LINE_HEIGHT + 3;
+    out.push(rowsSvg(rows, x, y, colW - 2 * PAD, size, byId, theme).svg);
+  }
   return out.join('');
 }
 

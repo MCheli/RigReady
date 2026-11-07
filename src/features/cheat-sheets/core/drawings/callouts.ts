@@ -116,6 +116,11 @@ export interface PlanOptions {
    * to their minimum width. Without it the drawing takes the width the columns leave.
    */
   fill?: number;
+  /**
+   * Inputs listed under the drawing even with nothing to say (the trainer leaves every
+   * label off, but each control that has an answer must still be on the picture to light).
+   */
+  listed?: string[];
 }
 
 /** Text wrapped at spaces to a width; a word wider than the box is broken, as a browser would. */
@@ -509,8 +514,21 @@ export function planCallouts(
   // What is bound but has no place on the drawing: a list under it, never left out.
   const drawn = new Set(drawing.controls.flatMap((c) => c.inputs.map((i) => i.id)));
   const extras: Row[] = [];
-  for (const control of [...controls].sort((a, b) => compareControlIds(a.id, b.id))) {
+  const quiet = (options.listed ?? [])
+    .filter((id) => !byId.has(id))
+    .map((id): SheetControl => ({ id, name: id, bindings: [], conflict: false }));
+  for (const control of [...controls, ...quiet].sort((a, b) => compareControlIds(a.id, b.id))) {
     if (drawn.has(control.id)) continue;
+    if (control.bindings.length === 0 && !control.note && options.listed?.includes(control.id)) {
+      extras.push({
+        id: control.id,
+        tag: controlShort(control.id),
+        text: `${controlShort(control.id)} —`,
+        lines: [],
+        dim: true,
+      });
+      continue;
+    }
     for (const binding of control.bindings) {
       const bold = binding.modifiers.length > 0 ? `${binding.modifiers.join('+')}:` : undefined;
       extras.push({

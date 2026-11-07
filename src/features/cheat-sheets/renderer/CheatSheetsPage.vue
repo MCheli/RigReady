@@ -5,6 +5,7 @@ import { onMachineChanged } from '../../../renderer/machine';
 import { CATEGORIES, CATEGORY_IDS, categoryTrail, type CategoryId } from '../core/categories';
 import { controlName } from '../core/layout';
 import { kindsOn } from '../core/pages';
+import { pictureFor } from '../core/picture';
 import { actionIndex, physicalLabels, type SheetDevice } from '../core/sheet';
 import KneeboardDialog from './KneeboardDialog.vue';
 import LayoutEditor from './LayoutEditor.vue';
@@ -174,6 +175,28 @@ const SOURCE_TEXT = {
   builtin: 'Shipped layout',
   generated: 'Generated layout',
 } as const;
+
+/** How the picture is drawn: RigReady's drawing, the user's, cards, or a list. */
+const picture = computed(() => (device.value ? pictureFor(device.value) : undefined));
+const pictureText = computed(() => {
+  const now = picture.value;
+  if (!now || !device.value) return '';
+  if (now.kind === 'drawing') {
+    return now.source === 'custom'
+      ? 'Your drawing'
+      : now.source === 'changed'
+        ? 'RigReady drawing, your changes'
+        : 'RigReady drawing';
+  }
+  if (now.kind === 'list') return 'Controls list (no drawing of this device yet)';
+  return SOURCE_TEXT[device.value.layoutSource];
+});
+/** What the sheet says about its picture: the drawing's notes, or the layout's. */
+const pictureNotes = computed(() => {
+  const now = picture.value;
+  if (now?.kind === 'drawing') return now.source === 'custom' ? undefined : now.drawing.notes;
+  return device.value?.layoutSource !== 'user' ? device.value?.layout.notes : undefined;
+});
 
 async function popOut(): Promise<void> {
   popError.value = '';
@@ -411,10 +434,13 @@ onBeforeUnmount(() => {
                 <div class="cs-title" data-testid="sheet-title">{{ device.title }}</div>
                 <div class="rr-row-sub">
                   <span v-if="device.givenName">{{ device.name }} · </span>
-                  <span data-testid="sheet-layout-source" :data-source="device.layoutSource">{{
-                    SOURCE_TEXT[device.layoutSource]
-                  }}</span>
-                  <span v-if="device.counts.hidden > 0">
+                  <span
+                    data-testid="sheet-layout-source"
+                    :data-source="device.layoutSource"
+                    :data-picture="picture?.kind"
+                    >{{ pictureText }}</span
+                  >
+                  <span v-if="picture?.kind === 'cards' && device.counts.hidden > 0">
                     · {{ device.counts.hidden }} more buttons the device reports are not on this
                     layout (none is bound)</span
                   >
@@ -435,7 +461,7 @@ onBeforeUnmount(() => {
                 data-testid="sheet-edit-layout"
                 :disabled="!device.vendorId || !device.productId"
                 @click="startEditing"
-                >Edit layout</v-btn
+                >{{ picture?.kind === 'drawing' ? 'Edit drawing' : 'Edit layout' }}</v-btn
               >
               <v-btn
                 size="small"
@@ -456,8 +482,8 @@ onBeforeUnmount(() => {
             >
               {{ device.layoutProblem }}
             </v-alert>
-            <div v-if="device.layout.notes && device.layoutSource !== 'user'" class="cs-notes">
-              <v-icon icon="mdi-information-outline" size="15" /> {{ device.layout.notes }}
+            <div v-if="pictureNotes" class="cs-notes" data-testid="sheet-picture-notes">
+              <v-icon icon="mdi-information-outline" size="15" /> {{ pictureNotes }}
             </div>
 
             <div class="cs-sheet-row">

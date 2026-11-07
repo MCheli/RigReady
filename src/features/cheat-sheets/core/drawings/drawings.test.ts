@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { wiredApp, type WiredApp } from '../../../../../tests/helpers';
+import { generateLayout } from '../generate';
 import { kneeboardDevicePage, KNEEBOARD_SIZE } from '../pages';
 import { pictureFor, planPicture, renderPictureSvg, type PictureOptions } from '../picture';
 import { textWidth, THEMES } from '../render';
@@ -90,8 +91,18 @@ function bound(
  * this sheet is made from the stick's with the grip and the bindings changed.
  */
 function f18Device(stick: SheetDevice): SheetDevice {
+  // RigReady 1.x had no layout of this grip: it drew the generated grid of cards.
+  const layout = generateLayout({
+    name: 'WINWING JOYSTICK BASE2 + F18 GRIP',
+    vendorId: '4098',
+    productId: 'BE01',
+    buttons: 32,
+    axes: ['X', 'Y', 'RZ'],
+    hats: 1,
+  });
   return {
     ...stick,
+    layout,
     key: '4098:F18',
     name: 'WINWING JOYSTICK BASE2 + F18 GRIP',
     title: 'F/A-18 grip',

@@ -68,12 +68,16 @@ export interface PictureOptions {
    */
   fill?: number;
   maxFontScale?: number;
+  /** Inputs listed under a drawing even with nothing to say (the trainer). */
+  listed?: string[];
   /** The layout editor. */
   edit?: boolean;
 }
 
 /** How far label columns may run on below the drawing before the text is made smaller. */
 const OVERFLOW_ALLOWED = 30;
+/** A height no drawing reaches: grow it as far as the label columns allow. */
+const GROWN = 5000;
 
 /** The plan of a device drawn as a drawing or a list; undefined when it is drawn as cards. */
 export function planPicture(
@@ -89,9 +93,17 @@ export function planPicture(
           showEmpty,
           fontScale,
           ...(fill !== undefined ? { fill } : {}),
+          ...(options.listed ? { listed: options.listed } : {}),
         })
       : planList(device.controls, device.reports, { showEmpty, fontScale });
   const least = options.fontScale ?? 1;
+  if (options.fill === undefined && picture.kind === 'drawing') {
+    // No page to fill (the app): the drawing at its own size, or grown as far as the
+    // columns allow when that brings the columns' ends nearer the drawing's.
+    const own = plan(least, undefined);
+    const grown = plan(least, GROWN);
+    return grown.overflow < own.overflow - OVERFLOW_ALLOWED ? grown : own;
+  }
   if (options.fill === undefined || options.maxFontScale === undefined) {
     return plan(least, options.fill);
   }

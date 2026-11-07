@@ -718,7 +718,7 @@ function f18Grip(name: string, names: string[], recce: number): DeviceDrawingInp
         name: 'Twist',
         glyph: 'axis',
         at: { x: 180, y: 556 },
-        side: 'left',
+        side: 'right',
         inputs: [{ id: 'axis:RZ' }],
       },
       {

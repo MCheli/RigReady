@@ -28,9 +28,10 @@ const props = withDefaults(
 const host = ref<HTMLElement>();
 const svg = computed(() => {
   const shown = new Set(props.reveal);
+  // Every control that does something stays on the picture (to be lit), its words left off.
   return renderPictureSvg(
     { ...props.device, controls: props.device.controls.filter((c) => shown.has(c.id)) },
-    { theme: 'dark', showEmpty: true }
+    { theme: 'dark', showEmpty: true, listed: props.device.controls.map((c) => c.id) }
   );
 });
 
