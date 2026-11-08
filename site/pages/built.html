@@ -2,9 +2,8 @@
   <div class="wrap narrow">
     <h1>How this was built</h1>
     <p class="lead">
-      RigReady is built by one developer directing AI coding agents. This page says who did what,
-      how the work is checked before it counts as done, what was tested on real hardware, and what
-      has not been verified yet.
+      RigReady is written with AI coding agents. This page says how, so you can decide for
+      yourself what that means to you.
     </p>
   </div>
 </section>
@@ -12,107 +11,63 @@
 <div class="built">
   <section aria-labelledby="who-title">
     <div class="wrap narrow">
-      <h2 id="who-title">Who did what</h2>
+      <h2 id="who-title">Who made it</h2>
       <p>
-        <strong>Mark Cheli</strong>, the developer, owns the project and the rig it was built on. He
-        decided what the product is and what comes first (written down in
-        <a href="{{REPO_URL}}/blob/main/docs/PRODUCT.md">docs/PRODUCT.md</a>), set the safety rules,
-        agreed what each requirement must do before it was built, looked at the screenshots the
-        tests produce, ran the hardware tests on his own PC, and decides what is released. He did
-        not write the code by hand.
+        RigReady is a side project by <a href="https://www.markcheli.com">Mark Cheli</a>, a
+        software engineer by profession for more than ten years, built for his own flight and
+        racing rig and shared because other people have the same problem.
       </p>
       <p>
-        <strong>AI coding agents</strong> (Anthropic's Claude, working in Claude Code) wrote the
-        code, the tests, the manual and this website, researched the game file formats and the
-        hardware (<a href="{{REPO_URL}}/tree/main/docs/research">docs/research</a>), and recorded
-        the evidence for each requirement. Several agents worked at once, each in its own feature
-        folder on its own branch; a branch was merged only after the full check passed.
-      </p>
-      <p>
-        What stands behind the code is the set of checks below, not a line-by-line human review of
-        every file. If that is not enough for you, the source and the tests are public and you can
-        judge them yourself.
-      </p>
-      <p>
-        Version 1 of RigReady was built with AI agents too, without these rules. When it was checked
-        in October 2026, its record of what worked was wrong: parts that existed but were not wired
-        up, a button that reported success for something it did not do. Version 2 was rebuilt from
-        scratch around the rules below so that a claim like that cannot be recorded.
+        The code, the tests, the manual and this website were written by AI coding agents
+        (Anthropic's Claude, in Claude Code), working from his direction. Mark decided what the
+        product is and what it must and must not do (written down in
+        <a href="{{REPO_URL}}/blob/main/docs/PRODUCT.md">docs/PRODUCT.md</a>), set the safety
+        rules, reviewed the results and the screenshots, tested it on his own PC, and decides what
+        is released. He did not write the code by hand, and not every line has been read by a
+        person.
       </p>
     </div>
   </section>
 
-  <section aria-labelledby="done-title">
+  <section aria-labelledby="method-title">
     <div class="wrap narrow">
-      <h2 id="done-title">What "done" means here</h2>
+      <h2 id="method-title">How the work was checked</h2>
       <p>
-        Every requirement is an entry in
-        <a href="{{REPO_URL}}/blob/main/docs/requirements/ledger.yaml">the requirements ledger</a>
-        with acceptance criteria written before the work. An entry can be marked done only with
-        evidence: the name of a test that exercises the real code path and, for anything on screen,
-        a screenshot from a test run. The build fails if a done entry has no evidence, or if a test
-        or screenshot it names does not exist.
-      </p>
-      <p>
-        Some tests check the whole codebase rather than one feature, so a new feature is covered the
-        moment it exists:
+        Care went into how the work was checked, because a computer full of games, settings and
+        hardware is not a place to be careless. The methods:
       </p>
       <ul class="facts">
         <li>
-          Any write outside RigReady's own folder that does not go through the one class that backs
-          up and journals first fails the build.
+          Every feature is a written requirement with its acceptance criteria, in
+          <a href="{{REPO_URL}}/blob/main/docs/requirements/ledger.yaml">the requirements ledger</a>.
+          It counts as done only with a test of the real code and, for anything on screen, a
+          screenshot from a test run. <strong>{{LEDGER_DONE}} of {{LEDGER_TOTAL}}</strong> are done
+          today.
         </li>
         <li>
-          A "sabotage" test makes the simulated PC accept every change and carry out none, then runs
-          every fix and every action: none may report success.
+          About 1,800 unit tests, and about 240 scenario tests that start the real app on a
+          recorded copy of a rig with something changed ("pedals unplugged", "a screen rotated")
+          and use it as a person would. Both run on a clean Windows machine in
+          <a href="{{REPO_URL}}/actions/workflows/ci.yml">GitHub Actions</a> for every change.
         </li>
         <li>
-          Programs must be started as a program plus a list of arguments; a command line built from
-          text fails the build.
+          Safety rules the tests enforce across the whole code: any file outside RigReady's own
+          folder is backed up before it is changed and the change can be undone; programs are never
+          started from a command line built out of text; no message may claim success for
+          something that did not happen.
         </li>
         <li>
-          Anything tied to the developer's own hardware (a device ID, a serial number, a monitor
-          name) fails the build.
-        </li>
-        <li>
-          Every message between the window and the rest of the app is sent malformed and hostile
-          input, and must refuse it.
-        </li>
-        <li>A visible control with nothing behind it fails the build.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section aria-labelledby="numbers-title">
-    <div class="wrap narrow">
-      <h2 id="numbers-title">The numbers</h2>
-      <ul class="facts">
-        <li>
-          <strong>{{LEDGER_DONE}} of {{LEDGER_TOTAL}}</strong> requirements are done, each with its
-          evidence (counted from the ledger when this page was built).
-        </li>
-        <li>
-          <strong>1,775 unit tests</strong> run on every pull request, most of them against a
-          simulated PC and real files in a temporary folder (counted on 7 November 2026).
-        </li>
-        <li>
-          <strong>240 scenario tests</strong> start the built app on a recorded rig with a change
-          applied ("pedals unplugged", "an MFD screen rotated", "SimAppPro rewrote a file"), drive
-          it as a user would, check the result and save screenshots (counted on 7 November 2026).
-        </li>
-        <li>
-          Both run on a clean Windows machine in
-          <a href="{{REPO_URL}}/actions/workflows/ci.yml">GitHub Actions</a> for every pull request
-          and every change to the main branch, together with a check of the app as it is packaged
-          for release.
+          A security review of the whole app, with what was found fixed and tested, and a
+          <a href="/docs/app/security/">security page</a> that says what it touches.
         </li>
       </ul>
+      <p>None of this makes it free of mistakes. It is how they are kept small and found early.</p>
     </div>
   </section>
 
   <section aria-labelledby="hardware-title">
     <div class="wrap narrow">
-      <h2 id="hardware-title">What was tested on real hardware</h2>
+      <h2 id="hardware-title">What it was tested on</h2>
       <p>
         One rig: a Samsung 49-inch ultrawide, three small USB screens used for aircraft displays, a
         Dell desk monitor, WinWing devices (joystick, throttle, three display frames, UFC, ICP and
@@ -120,67 +75,39 @@
         and a Fanatec Podium DD2 wheel base, with DCS World, iRacing, Le Mans Ultimate,
         BeamNG.drive, Microsoft Flight Simulator 2024 and the Assetto Corsa games installed.
       </p>
-      <p>On that PC, as an ordinary user without administrator rights, tests have:</p>
-      <ul class="facts">
-        <li>
-          read every USB device, game controller, monitor, audio device, running program and the
-          registry values RigReady uses, and checked them against what the app expects;
-        </li>
-        <li>
-          rotated, moved, switched off and changed the refresh rate of the real monitors, including
-          the three USB screens in portrait, and put the layout back exactly as it was;
-        </li>
-        <li>switched the default playback and recording devices, and put them back;</li>
-        <li>read live input from the controllers, and closed a program politely;</li>
-        <li>timed the checklist and the device scan against the real hardware.</li>
-      </ul>
       <p>
-        Everything that changes game files (bindings, the DCS screen setup, Export.lua, backups and
-        restores, shared setups, the iRacing repair) was tested on recorded copies of that rig's
-        files in a temporary folder, not on the live game files. A second, hand-written test PC with
-        one joystick and one monitor checks that nothing depends on the developer's rig.
+        On that PC, tests read the real devices, monitors, audio and controllers, and changed and
+        restored the real monitor layout and audio devices. Changes to game files (bindings, the
+        DCS screen setup, backups and restores, the iRacing repair) were tested on copies of that
+        rig's files, not the live ones.
+      </p>
+      <p>
+        It has been used on one rig, so reports from other hardware help most, through the
+        <a href="{{REPO_URL}}/issues/new/choose">hardware report form</a>.
       </p>
     </div>
   </section>
 
   <section aria-labelledby="open-title">
     <div class="wrap narrow">
-      <h2 id="open-title">What is not verified yet</h2>
-      <p>
-        These requirements are not done. The ledger has, for each, what is missing and the steps to
-        check it on a real rig:
-      </p>
+      <h2 id="open-title">Not verified yet</h2>
+      <p>These requirements are still open:</p>
       {{LEDGER_OPEN}}
       <p>
-        Also tested only on recorded data or in automated runs: restoring a Stream Deck backup file
-        by file, and how the taskbar badge, the ready tone and a real press of the global hotkey
-        look and sound. The binding guides were written from general knowledge of the aircraft and
-        have not been reviewed by a pilot. The
-        <a href="/download/#changelog">changelog</a> lists every known limitation of the current
-        version.
-      </p>
-      <p>
-        Most important of all: it has been used on one rig. Reports from other hardware are what it
-        needs most, through the
-        <a href="{{REPO_URL}}/issues/new/choose">hardware report form</a>.
+        The binding guides were written from general knowledge of the aircraft and have not been
+        reviewed by a pilot. The <a href="/download/#changelog">changelog</a> lists the known
+        limitations of the current version.
       </p>
     </div>
   </section>
 
   <section aria-labelledby="review-title">
     <div class="wrap narrow">
-      <h2 id="review-title">How contributions are reviewed</h2>
+      <h2 id="review-title">Contributing</h2>
       <p>
-        A pull request goes through the same checks as the developer's own work: the full check and
-        the scenario tests on Windows, a ledger entry with its evidence, and a screenshot for
-        anything on screen. Then the developer reads it against the safety rules before it is
-        merged. Contributions written with an AI tool are welcome if they say so and their author
-        can explain every change. The
+        Pull requests go through the same tests, and Mark reads each one before it is merged.
+        Contributions written with an AI tool are welcome if they say so. The
         <a href="/docs/contributing/">contributing guide</a> has the details.
-      </p>
-      <p>
-        How the app protects your PC, and how to report a security problem privately, is on the
-        <a href="/docs/app/security/">security page</a>.
       </p>
     </div>
   </section>

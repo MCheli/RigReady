@@ -345,7 +345,7 @@ page({
   page: 'built',
   title: 'How RigReady was built',
   description:
-    'RigReady is built by one developer directing AI coding agents. Who did what, how the work is checked, what was tested on real hardware, and what is not verified yet.',
+    'RigReady is written with AI coding agents, as a side project by a professional software engineer. How the work was checked, what it was tested on, and what is not verified yet.',
   main: fill(
     await read('site/pages/built.html'),
     {
