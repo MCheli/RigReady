@@ -63,6 +63,17 @@ test('mcp: turned on in Settings, an assistant paired, its change asked in the w
     await expect(page.getByTestId('mcp-activity').first()).toContainText('Claude Code');
     await expect(page.getByTestId('mcp-activity').first()).toContainText('Done');
     await shot('activity');
+
+    // "Allow, and stop asking": this change goes ahead, and the next one is not asked about.
+    const second = client.callTool({ name: 'rig_make_ready', arguments: { setup } });
+    await expect(question).toBeVisible();
+    await shot('question-stop-asking');
+    await page.getByTestId('mcp-question-allow-always').click();
+    expect((await second).isError).toBeFalsy();
+    await expect(page.getByTestId('mcp-confirm-launchOnly').locator('input')).toBeChecked();
+    const third = await client.callTool({ name: 'rig_make_ready', arguments: { setup } });
+    expect(third.isError).toBeFalsy();
+    await expect(question).toBeHidden();
   } finally {
     await client.close();
   }

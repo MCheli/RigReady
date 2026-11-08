@@ -20,6 +20,10 @@ When an assistant wants to change the rig or launch a game, RigReady's window co
 | **Ask before a launch only** | Runs at once | Asks |
 | **Never ask** | Runs at once | Runs at once |
 
+When an assistant is setting the rig up, it makes many changes in a row. The question it raises has a third answer for that: **Allow, and stop asking** allows the change and switches to **Ask before a launch only**, so the next changes run at once and a launch still asks. Choose **Always ask** in Settings to go back.
+
+![The question, with Allow, and stop asking](../../../artifacts/screens/mcp-settings/06-question-stop-asking.png)
+
 Reading never asks: checks, previews, the bindings, the log and this manual.
 
 ## The same safeguards as in the window
