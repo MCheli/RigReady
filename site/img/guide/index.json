@@ -1,4 +1,19 @@
 {
+  "artifacts/screens/mcp-settings/03-paired.png": {
+    "file": "mcp-settings--03-paired.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/mcp-settings/04-question.png": {
+    "file": "mcp-settings--04-question.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/mcp-settings/06-question-stop-asking.png": {
+    "file": "mcp-settings--06-question-stop-asking.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/shell-palette/01-open.png": {
     "file": "shell-palette--01-open.webp",
     "width": 1250,
