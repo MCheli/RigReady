@@ -37,7 +37,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - Export.lua managed one tool at a time; overwrites by other programs are noticed.
 - Bindings: effective bindings (defaults plus your changes) for the F/A-18C and UH-1H, editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots.
 - Cheat sheets with a picture of every device, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
-- Drawings of the WinWing Orion stick (F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles and the MFD frames, with a label block and leader line per control placed so that no two lines cross. A drawing can be corrected or shown over a photo of the device; for a device RigReady has not drawn, a drawing can be made from a photo or imported from a file.
+- Simple outline drawings of the WinWing Orion stick (F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles and the MFD frames, with a label block and leader line per control placed so that no two lines cross. A drawing can be corrected or shown over a photo of the device; for any device, a drawing can be made from a photo of your own hardware or imported from a file. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
 - A binding guide for the F/A-18C and UH-1H, and optional AI help with your own Anthropic API key.
 
 **AI assistants**
