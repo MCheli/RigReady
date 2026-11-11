@@ -55,16 +55,28 @@ export interface PictureModel {
 }
 
 // The order matters: a throttle with "handle" in its name is not a stick, pedals with
-// "rudder" are not a panel.
+// "rudder" are not a panel. Moza's AB9 is a flight base although Moza makes wheels, and
+// a yoke is drawn as a stick.
 const KINDS: [DeviceKind, RegExp][] = [
   ['deck', /stream ?deck|loupedeck/i],
   ['tracker', /track ?ir|tobii|head ?track|smoothtrack|opentrack/i],
-  ['wheel', /wheel|podium|fanatec|simucube|moza|\bdd ?\d|clubsport|\bcsl\b|simagic/i],
-  ['pedals', /pedal|rudder|\btpr\b|crosswind|slaw/i],
-  ['throttle', /throttle|collective|quadrant|\btqs\b/i],
+  [
+    'stick',
+    /moza ab\d|\bmh16\b|vpc stick|warbrd|mongoos|sidestick|t\.?a320 (co)?pilot|\byoke\b|alpha flight controls/i,
+  ],
+  ['panel', /\bmtlp\b/i],
+  ['pedals', /pedal|rudder|\btpr\b|crosswind|slaw|\bt-?lcm\b|\bt3pa\b/i],
+  ['throttle', /throttle|collective|quadrant|\btqs\b|\bstecs\b|\bq-?eng\b/i],
+  [
+    'wheel',
+    /wheel|podium|fanatec|simucube|moza|\bdd ?\d|clubsport|\bcsl\b|simagic|cammus|asetek|invicta|velocity ?one race|\bt\d{3}(rs|gt|x)?\b|\bt-?gt\b|\bts-?(pc|xw)\b|\btmx\b|\bg(25|27|29|920|923)\b|driving force/i,
+  ],
   ['screen', /\bmfd|display|\bscreen|monitor/i],
   ['panel', /panel|\bufc|\bicp\b|\bhud\b|button ?box|\bbox\b|\bvpc\b|\bpto\b|switch|keypad/i],
-  ['stick', /stick|gladiator|warthog|hotas|\bgrip\b|jgrip|cyclic|orion|alpha|constellation/i],
+  [
+    'stick',
+    /stick|gladiator|warthog|hotas|\bgrip\b|jgrip|cyclic|orion|alpha|constellation|velocity ?one flight/i,
+  ],
 ];
 
 /** What kind of gear a device is, from what it is called. */
