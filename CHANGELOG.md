@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0-beta.3 (2026-11-12)
+
+The second signed test build. New since beta 2: binding guides for 27 DCS aircraft; MFD screen setup for every installed aircraft that exports displays; named controls and drawings for the Thrustmaster Warthog, T.16000M and Saitek X52 Pro; 13 more games (MSFS 2020, X-Plane 12 and 11, IL-2, Falcon BMS, ACC, rFactor 2, AMS2, EA WRC, F1 24 and 25, DiRT Rally 2.0, RaceRoom, ACE COMBAT 8); a Wheel page for every major wheelbase brand; an Assetto Corsa controller repair; about 60 more devices recognised; the built-in assistant on every screen with OpenAI, Gemini, OpenRouter, Mistral and local models as well as Anthropic; one-button connection for AI assistants over MCP; a virtual controller for gamepad-only games and emulators; links from every screen to its manual page. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
+
 ## 2.0.0-beta.2 (2026-11-11)
 
 The first signed test build of 2.0.0. The installer, RigReady.exe and the uninstaller carry a code signature with the publisher "Mark Cheli", issued through Microsoft's Artifact Signing service; installed copies check that signature before they install an update. Also new since beta 1: an answer to an assistant's question that stops further questions about changes, and the Safety page naming the assistant beside a change it made. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
