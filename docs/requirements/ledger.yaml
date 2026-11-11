@@ -3119,6 +3119,30 @@ requirements:
       - "artifacts/screens/cheat-sheets-drawing-editor/02-own-drawing.png"
       - "artifacts/screens/cheat-sheets-drawing-editor/03-photo-drawing.png"
 
+  - id: SHEET-017
+    title: Popular controllers without a drawing have their controls named
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "A controller RigReady has no drawing or shipped layout of, but whose controls it knows (the Thrustmaster HOTAS Warthog stick and throttle, the T.16000M stick, the Saitek/Logitech X52 Pro), is found by its USB vendor and product id, or by the name it reports, and its sheet is the controls list with one block per physical control, named the way the maker names it (hats as one block, axes named), instead of buttons in runs of eight."
+      - "Every input the map leaves out still has a place on the list; every map's inputs are unique and inside what the device reports."
+      - "The detail panel and By action name the physical control (\"S2 weapon release\"); drawings, shipped layouts and the user's own layouts and drawings are used as before."
+      - "The numbers come from the per-device default bindings DCS World ships, cross-checked with a public source, cited in docs/research/device-control-names.md; the manual lists the devices covered."
+    notes:
+      - "2026-11-11: gap 2 of the coverage audit (cheat sheets name controls only for the owner's hardware). TWCS, T.Flight HOTAS X, X-56, VKB and Virpil have DCS default files but no numbered public map to cross-check, so they are not shipped yet (research doc)."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/known/known.test.ts#all pass their schema"
+      - "src/features/cheat-sheets/core/known/known.test.ts#names each control once and each input once, inside what the device reports"
+      - "src/features/cheat-sheets/core/known/known.test.ts#is found by its USB ids and by the name it reports"
+      - "src/features/cheat-sheets/core/known/known.test.ts#the Warthog stick: TG1 is button 1, S2 is 2, H2 is 7–10, H4 is 15–19, H1 the POV"
+      - "src/features/cheat-sheets/core/known/known.test.ts#a list of a known device has a block per physical control, and the others after it"
+      - "src/features/cheat-sheets/core/known/known.test.ts#gets the controls list named for it, with DCS’s Hornet defaults on its controls"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a Warthog stick shows its controls by name"
+      - "docs/research/device-control-names.md"
+      - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
+
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
   # ---------------------------------------------------------------------------

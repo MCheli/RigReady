@@ -14,6 +14,12 @@ The devices are listed on the left, with the name you gave each one on the [Devi
 
 - **RigReady drawing**: the WinWing Orion stick with the F-16EX or the F/A-18 grip, the Orion throttle with the F-15EX handles and the MFD1 frames have a simple outline drawing, with one label block per control you put your hand on (a hat is one block with a line per direction) and a leader line from the block to the control. The labels place themselves beside the drawing so that no two lines cross. A block's head names the control and its input numbers; a **?** there means the numbers are assumed until you check them by pressing the control. The outlines are schematic, not pictures of the real hardware, and only these few devices have one so far. For a picture that looks like your own device, use a photo of it (see [A drawing of your own](#a-drawing-of-your-own) below, or **Choose a photo or drawing…** in the editor).
 - **Shipped layout**: the other devices RigReady knows (pedals, panels, UFC, the Fanatec wheel) are drawn as cards on a simple outline, as before: buttons, hats as crosses, and axes with a bar that follows the real axis.
+- **Controls named for the device**: a few popular controllers have no drawing yet, but RigReady knows what each of their buttons is. Their sheet is a list with one block per control, named the way the maker names it ("H2 TMS hat", "S2 weapon release"), a hat as one block and the axes named. These are:
+  - Thrustmaster HOTAS Warthog joystick and throttle
+  - Thrustmaster T.16000M stick (the base buttons by bank: left 5–10, right 11–16)
+  - Saitek / Logitech X52 Pro
+
+  They are found by the device's USB id, or by the name it reports. The numbers are the device's own, without a TARGET profile or other remapping software; press a control to check that its row lights.
 - **Controls list**: a device RigReady knows nothing about is a list of its controls, in blocks (the axes, each hat, buttons in runs of eight).
 - **Your layout** or **Your drawing**: what you made in the editor, see below.
 
