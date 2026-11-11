@@ -1,0 +1,288 @@
+# RigReady binding guide: Christen Eagle II. Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: Christen Eagle II
+  name: Christen Eagle II
+summary: >-
+  A small two-seat aerobatic biplane with a fixed landing gear and no flaps: stick, rudder,
+  throttle and propeller are almost all you need. Bind those and the brakes first, then the
+  trim and the smoke; the engine switches are fine with the mouse.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the Christen Eagle II's controls (stick,
+    rudder pedals with toe brakes, throttle, propeller and mixture levers, elevator trim,
+    smoke) and of how they work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from its default input files for the
+    Christen Eagle II; a test checks each one against those files so a DCS update that
+    renames an action is caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: Pitch and roll, elevator trim on a hat or rotary, and the smoke on a button.
+    items: [pitch-roll, trim, smoke, autopilot]
+  throttle:
+    summary: >-
+      Throttle on the main lever, propeller and mixture on second and third levers or
+      sliders if you have them; the radio menu on a throttle button.
+    items: [throttle, propeller, radio, mixture]
+  pedals:
+    summary: Rudder on the rudder axis, the two toe brakes on their own axes.
+    items: [rudder, wheel-brakes]
+  panel:
+    summary: The start-up switches, if your panels have spare ones; otherwise the mouse is fine.
+    items: [magnetos, fuel-pump, battery, alternator, lights]
+  keyboard:
+    summary: Start-up, canopy, views, kneeboard and bailing out can stay on the keyboard.
+    items: [auto-start, canopy, view-center, zoom, kneeboard, bailout]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the nose up and down and rolls the aircraft; the Eagle rolls very quickly.
+    when: All the time.
+    actions:
+      - { name: Pitch, label: 'Pitch (stick forward and back)' }
+      - { name: Roll, label: 'Roll (stick left and right)' }
+
+  - id: rudder
+    title: Rudder
+    tier: must
+    place: hotas
+    role: pedals
+    what: Yaws the nose; on the ground it steers the tail wheel.
+    when: Taxiing, take-off and landing, and in most aerobatic figures.
+    actions:
+      - { name: Rudder, label: 'Rudder (pedals or stick twist)' }
+
+  - id: throttle
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Engine power.
+    when: All the time.
+    actions:
+      - { name: Thrust, label: 'Throttle (axis)' }
+      - { name: Throttle Up, label: 'Throttle up' }
+      - { name: Throttle Down, label: 'Throttle down' }
+
+  - id: propeller
+    title: Propeller
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Sets the propeller's speed. Forward for take-off, landing and aerobatics.
+    when: Before take-off and in cruise.
+    actions:
+      - { name: Propeller, label: 'Propeller (axis)' }
+      - { name: Propeller pitch +, label: 'Propeller up' }
+      - { name: Propeller pitch -, label: 'Propeller down' }
+
+  - id: wheel-brakes
+    title: Wheel brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Brakes the main wheels; braking one side turns the aircraft on the ground.
+    when: Taxiing, landing roll-out.
+    note: Best on the toe brakes of the pedals (left and right axes); otherwise buttons.
+    actions:
+      - { name: Wheel brake left, label: 'Left toe brake' }
+      - { name: Wheel brake right, label: 'Right toe brake' }
+      - { name: Wheel brake axis, label: 'Both brakes, one axis' }
+      - { name: Brakes, label: 'Both brakes, one button' }
+
+  - id: trim
+    title: Elevator trim
+    tier: must
+    place: hotas
+    role: stick
+    need: any
+    what: Trims the nose so the aircraft holds its pitch without pressure on the stick.
+    when: After take-off, in cruise and on approach.
+    actions:
+      - { name: Trim, label: 'Elevator trim (axis)' }
+      - { name: 'Trim: Nose Up', label: 'Trim nose up' }
+      - { name: 'Trim: Nose Down', label: 'Trim nose down' }
+
+  - id: radio
+    title: Radio menu
+    tier: must
+    place: hotas
+    role: throttle
+    what: Opens DCS's radio menu for the tower and other aircraft.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    actions:
+      - { name: Communication menu, label: 'Radio menu' }
+
+  # ---------------------------------------------------------------- should have
+  - id: smoke
+    title: Smoke
+    tier: should
+    place: hotas
+    role: stick
+    need: any
+    what: Switches the aerobatic smoke trail on and off.
+    when: Displays and formation aerobatics.
+    actions:
+      - { name: Smoke, label: 'Smoke: toggle' }
+      - { name: Smoke ON, label: 'Smoke on' }
+      - { name: Smoke OFF, label: 'Smoke off' }
+
+  - id: mixture
+    title: Mixture
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: The fuel mixture. Rich for start-up, take-off and landing; fully lean stops the engine.
+    when: Start-up, shutdown, and at altitude.
+    actions:
+      - { name: Mixture, label: 'Mixture (axis)' }
+      - { name: Mixture rich, label: 'Mixture richer' }
+      - { name: Mixture lean, label: 'Mixture leaner' }
+
+  - id: auto-start
+    title: Auto start
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: DCS starts the engine for you.
+    when: At the start of a flight, until you learn the start-up.
+    actions:
+      - { name: Autostart Procedure, label: 'Auto start' }
+
+  - id: canopy
+    title: Canopy
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: Opens, closes and locks the canopy.
+    when: Before taxiing and after landing.
+    actions:
+      - { name: Canopy open, label: 'Canopy open' }
+      - { name: Canopy close, label: 'Canopy close' }
+      - { name: Canopy lock, label: 'Canopy lock' }
+      - { name: Canopy unlock, label: 'Canopy unlock' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: autopilot
+    title: Auto level
+    tier: nice
+    place: hotas
+    role: stick
+    what: A helper that levels the aircraft for you; disengage it to fly by hand again.
+    when: When you need both hands for something else for a moment.
+    actions:
+      - { name: Autopilot Auto Level, label: 'Auto level on' }
+      - { name: Autopilot Disengage, label: 'Auto level off' }
+
+  - id: magnetos
+    title: Magnetos
+    tier: nice
+    place: panel
+    role: panel
+    what: Steps the ignition (magneto) switch through its positions; both on for flight.
+    when: Start-up and shutdown.
+    actions:
+      - { name: Magnets +, label: 'Magnetos: next' }
+      - { name: Magnets -, label: 'Magnetos: previous' }
+
+  - id: fuel-pump
+    title: Fuel pump
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: The electric fuel pump, used for start-up.
+    when: Start-up.
+    actions:
+      - { name: Fuel pump, label: 'Fuel pump (axis)' }
+      - { name: Fuel pump +, label: 'Fuel pump up' }
+      - { name: Fuel pump -, label: 'Fuel pump down' }
+
+  - id: battery
+    title: Battery
+    tier: nice
+    place: panel
+    role: panel
+    what: Switches the battery on and off.
+    when: Start-up and shutdown.
+    actions:
+      - { name: Battery ON, label: 'Battery on' }
+      - { name: Battery OFF, label: 'Battery off' }
+
+  - id: alternator
+    title: Alternator
+    tier: nice
+    place: panel
+    role: panel
+    what: Switches the engine-driven alternator on and off.
+    when: Start-up and shutdown.
+    actions:
+      - { name: Alternator ON, label: 'Alternator on' }
+      - { name: Alternator OFF, label: 'Alternator off' }
+
+  - id: lights
+    title: Lights
+    tier: nice
+    place: panel
+    role: panel
+    what: Switches the navigation and landing lights.
+    when: Flying at dusk or night.
+    actions:
+      - { name: Navigation Lights ON, label: 'Navigation lights on' }
+      - { name: Navigation Lights OFF, label: 'Navigation lights off' }
+      - { name: Landing Lights ON, label: 'Landing lights on' }
+      - { name: Landing Lights OFF, label: 'Landing lights off' }
+
+  - id: view-center
+    title: Center view
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Recenters the head position, needed with head tracking or VR.
+    when: Whenever the view has drifted.
+    actions:
+      - { name: View Center, label: 'Center view' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Zooms the view in to read instruments or spot other aircraft.
+    when: Reading small gauges, spotting traffic.
+    actions:
+      - { name: Zoom in slow, label: 'Zoom in' }
+      - { name: Zoom out slow, label: 'Zoom out' }
+      - { name: Zoom normal, label: 'Zoom normal' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's notes and maps.
+    when: Checking frequencies and headings.
+    actions:
+      - { name: Kneeboard ON/OFF, label: 'Kneeboard on/off' }
+
+  - id: bailout
+    title: Bail out
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Leaves the aircraft by parachute. Press it three times.
+    when: Only when the aircraft cannot be saved.
+    actions:
+      - { name: Eject (3 times), label: 'Bail out (press three times)' }
