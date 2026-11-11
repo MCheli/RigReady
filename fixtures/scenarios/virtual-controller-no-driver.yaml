@@ -1,0 +1,3 @@
+description: A PC that is not the owner's, without the ViGEmBus driver or HidHide
+rig: generic-rig
+extends: generic-fresh.yaml

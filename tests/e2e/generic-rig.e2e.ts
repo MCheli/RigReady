@@ -275,6 +275,13 @@ const PAGES: ConfigurePage[] = [
     ],
     never: ['WINWING', 'F/A-18C', 'Start a round'],
   },
+  {
+    name: 'virtual-controller',
+    route: '/configure/virtual-controller',
+    testId: 'vc-page',
+    says: ['Not installed', 'No profiles of your own yet', 'Install the ViGEmBus driver'],
+    never: ['WINWING'],
+  },
 ];
 
 /** Something still loading. */
@@ -304,7 +311,7 @@ test('generic rig: every Configure page renders an honest empty state, never an 
   await page.getByTestId('mode-configure').click();
   // Every page the navigation offers is in the list above.
   const links = page.getByTestId('configure-nav').locator('a');
-  await expect(links).toHaveCount(18);
+  await expect(links).toHaveCount(19);
   const offered = await links.evaluateAll((all) =>
     all.map((a) => (a.getAttribute('href') ?? '').replace(/^#/, ''))
   );

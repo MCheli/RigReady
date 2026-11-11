@@ -51,7 +51,8 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **Racing and other games**
 - iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore.
-- Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
+- Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally, ACE COMBAT 8: detection, launch, files to back up.
+- A virtual controller for games and emulators that read only a gamepad: a virtual Xbox 360 controller or DualShock 4 driven by a stick, wheel, pedals or throttle, with deadzones, curves, a steering range and a throttle split over both triggers, started by hand or by a setup, optionally hiding the real controllers with HidHide. Needs the ViGEmBus driver, which you install yourself.
 - A Fanatec wheel page; any other game works generically.
 
 **Protecting your configuration**

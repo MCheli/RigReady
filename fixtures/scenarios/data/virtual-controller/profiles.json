@@ -1,0 +1,96 @@
+{
+  "profiles": [
+    {
+      "id": "my-ace-combat-stick",
+      "name": "My Ace Combat stick",
+      "kind": "xbox360",
+      "sticks": {
+        "lx": {
+          "source": {
+            "device": {
+              "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+              "guid": "806DDF00-B756-11F0-8023-444553540000"
+            },
+            "input": "JOY_X"
+          },
+          "deadzone": 0.03,
+          "hint": "Roll: the stick left and right"
+        },
+        "ly": {
+          "source": {
+            "device": {
+              "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+              "guid": "806DDF00-B756-11F0-8023-444553540000"
+            },
+            "input": "JOY_Y"
+          },
+          "invert": true,
+          "deadzone": 0.03,
+          "hint": "Pitch: pull back to climb"
+        },
+        "rx": {
+          "source": {
+            "device": {
+              "name": "T-Pendular-Rudder",
+              "guid": "7F3956A0-B756-11F0-801B-444553540000"
+            },
+            "input": "JOY_Z"
+          },
+          "deadzone": 0.05,
+          "hint": "Yaw: rudder pedals or the stick twist"
+        },
+        "ry": {}
+      },
+      "throttle": {
+        "source": {
+          "device": {
+            "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
+            "guid": "806DDF00-B756-11F0-8022-444553540000"
+          },
+          "input": "JOY_X"
+        },
+        "split": 0.5,
+        "deadzone": 0.05,
+        "hint": "Throttle: forward accelerates (RT), back slows down (LT)"
+      },
+      "buttons": {
+        "a": {
+          "source": {
+            "device": {
+              "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+              "guid": "806DDF00-B756-11F0-8023-444553540000"
+            },
+            "input": "JOY_BTN1"
+          }
+        },
+        "b": {
+          "source": {
+            "device": {
+              "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+              "guid": "806DDF00-B756-11F0-8023-444553540000"
+            },
+            "input": "JOY_BTN2"
+          }
+        },
+        "up": {
+          "source": {
+            "device": {
+              "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+              "guid": "806DDF00-B756-11F0-8023-444553540000"
+            },
+            "input": "JOY_BTN_POV1_U"
+          }
+        },
+        "down": {
+          "source": {
+            "device": {
+              "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
+              "guid": "806DDF00-B756-11F0-8023-444553540000"
+            },
+            "input": "JOY_BTN_POV1_D"
+          }
+        }
+      }
+    }
+  ]
+}

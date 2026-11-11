@@ -19,6 +19,7 @@ This section covers every game other than DCS World, which has [its own section]
 | [Assetto Corsa](assetto-corsa.md) | Detection, launch through Steam, files to back up, a page with the controllers, bindings and force feedback from `controls.ini`, quick backups. |
 | [Microsoft Flight Simulator 2024](msfs-2024.md) | Detection of the Steam and Microsoft Store editions, launch of the Steam edition, files to back up. |
 | [Assetto Corsa EVO and Assetto Corsa Rally](assetto-corsa-evo-and-rally.md) | Detection, launch through Steam, files to back up. |
+| [ACE COMBAT 8](ace-combat-8.md) | Detection, launch through Steam, files to back up, and a starting profile for flying it with your own stick through a [virtual controller](../hardware/virtual-controller.md). |
 | [Any other game](other-games.md) | A setup with a checklist, a launch target you give, and tracked files. |
 
 The four racing games with a bindings page also supply their bindings to the [cheat sheets](../dcs/cheat-sheets.md), the [trainer](../dcs/trainer.md) and the [input tester](../hardware/input-tester.md), so the picture of a wheel can show what every button does in iRacing or in BeamNG.drive.
