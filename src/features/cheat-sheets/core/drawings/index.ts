@@ -52,7 +52,14 @@ export {
   numbersOf,
   LAYOUT_METRICS,
 } from './callouts';
-export type { CalloutPlan, Callout, Row, PlanOptions, ReportedShape } from './callouts';
+export type {
+  CalloutPlan,
+  Callout,
+  Row,
+  PlanOptions,
+  ReportedShape,
+  NamedControl,
+} from './callouts';
 export { renderPlanSvg } from './renderDrawing';
 export type { RenderDrawingOptions } from './renderDrawing';
 export {

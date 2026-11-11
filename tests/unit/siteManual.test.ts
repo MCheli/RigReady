@@ -6,9 +6,12 @@ import {
   breadcrumbs,
   buildManual,
   manualUrl,
+  pageHeadings,
   pageOf,
   parseFrontMatter,
   repoPath,
+  searchIndex,
+  sidebarTree,
   siteLink,
   tidiedName,
 } from '../../site/lib/manual.mjs';
@@ -196,5 +199,43 @@ describe('docs/manual as it is', () => {
         );
       }
     }
+  });
+
+  it('lists every page in the sidebar of every page, the current one marked', async () => {
+    const manual = buildManual(await read());
+    for (const here of manual.pages) {
+      const html = sidebarTree(manual, here.file);
+      for (const p of manual.pages) {
+        expect(html, `${here.file} -> ${p.url}`).toContain(`href="${p.url}"`);
+      }
+      expect(html.match(/aria-current="page"/g), here.file).toHaveLength(1);
+      expect(html, here.file).toContain(`<a href="${here.url}" aria-current="page">`);
+      // One fold-out group per section; only the current page's section is open.
+      expect(html.match(/<details/g)).toHaveLength(manual.sections.length);
+      expect(html.match(/<details open>/g) ?? [], here.file).toHaveLength(here.section ? 1 : 0);
+    }
+  });
+
+  it('puts every page in the search index, with its section', async () => {
+    const manual = buildManual(await read());
+    const index = searchIndex(manual);
+    expect(index.map((e) => e.url)).toEqual(manual.pages.map((p) => p.url));
+    for (const e of index) {
+      expect(e.title, e.url).toBeTruthy();
+      expect(e.section, e.url).toBeTruthy();
+      expect(e.description, e.url).toBeTruthy();
+    }
+    expect(index.find((e) => e.url === '/docs/dcs/kneeboard/')?.section).toBe('DCS World');
+  });
+});
+
+describe('docs search headings', () => {
+  it('reads the headings outside code, with the ids the renderer gives them', () => {
+    const body =
+      '## The `Play` screen\n\n```\n## not this\n```\n### A [link](x.md) here\n#### too deep\n';
+    expect(pageHeadings(body)).toEqual([
+      { text: 'The Play screen', id: 'the-play-screen' },
+      { text: 'A link here', id: 'a-link-x-md-here' },
+    ]);
   });
 });

@@ -12,6 +12,8 @@
 //   /docs/<section>/  a section's landing page (docs/manual/<section>/index.md) and a card per page
 //   /docs/<section>/<page>/  one page of the manual (docs/manual/<section>/<page>.md)
 //   /docs/contributing/  CONTRIBUTING.md
+//   /docs/search.json    what the docs search box looks through (titles, sections, descriptions,
+//                     headings), loaded by site/main.js the first time the box is used
 //   /how-it-was-built/   site/pages/built.html: who did what, how it is checked, and what is not
 //                     verified yet (the counts and the open requirements read from the ledger)
 //
@@ -37,6 +39,8 @@ import {
   breadcrumbs,
   buildManual,
   repoPath,
+  searchIndex,
+  sidebarTree,
   siteLink,
   tidiedName,
 } from './lib/manual.mjs';
@@ -362,26 +366,11 @@ page({
 
 const docsTemplate = await read('site/pages/docs.html');
 
-/** The contents: the manual as a tree, open at the current section, and the project's pages. */
+/** The contents: every section of the manual with its pages (lib/manual.mjs), and the project's. */
 function sidebar(currentFile) {
-  const a = (p, current) =>
-    `<a href="${p.url}"${current ? ` aria-current="${current}"` : ''}>${esc(p.title)}</a>`;
-  const openSection = currentFile?.includes('/') ? currentFile.split('/')[0] : null;
-  const tree = manual.sections
-    .map((s) => {
-      const open = s.slug === openSection;
-      const pages =
-        open && s.pages.length
-          ? `<ul>${s.pages.map((p) => `<li>${a(p, p.file === currentFile ? 'page' : '')}</li>`).join('')}</ul>`
-          : '';
-      const current = s.file === currentFile ? 'page' : open ? 'location' : '';
-      return `<li${open ? ' class="open"' : ''}>${a(s, current)}${pages}</li>`;
-    })
-    .join('');
   const item = (href, label, key) =>
     `<li><a href="${href}"${key && key === currentFile ? ' aria-current="page"' : ''}>${esc(label)}</a></li>`;
-  return `<p class="docs-nav-title"><a href="${MANUAL_URL}"${currentFile === 'index.md' ? ' aria-current="page"' : ''}>${MANUAL_TITLE}</a></p>
-<ul class="docs-tree">${tree}</ul>
+  return `${sidebarTree(manual, currentFile, MANUAL_TITLE)}
 <p class="docs-nav-title">Project</p>
 <ul class="docs-list">${item('/docs/contributing/', 'Contributing', 'contributing')}${item('/download/#changelog', 'Changelog')}${item(`${REPO_URL}/tree/main/docs`, 'Developer documents')}</ul>`;
 }
@@ -522,6 +511,19 @@ for (const p of pages) {
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, 'index.html'), p.html);
 }
+// The docs search (site/main.js) loads this the first time the search box is used.
+const search = [
+  ...searchIndex(manual, MANUAL_TITLE),
+  {
+    title: contributing.title,
+    section: 'Project',
+    description:
+      'How to set up RigReady for development, the rules a change follows, and how a pull request is checked.',
+    url: contributing.url,
+    headings: [],
+  },
+];
+await writeFile(path.join(OUT, 'docs', 'search.json'), JSON.stringify(search));
 await mkdir(path.join(OUT, 'download', 'latest'), { recursive: true });
 await writeFile(path.join(OUT, 'download', 'latest', 'index.html'), redirect);
 await writeFile(path.join(OUT, 'CNAME'), `${DOMAIN}\n`);

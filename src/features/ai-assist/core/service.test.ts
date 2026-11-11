@@ -115,6 +115,33 @@ describe('the binding guide without a key', () => {
     expect(gunner.guide).toBeNull();
   });
 
+  it('shows the shipped guide for an aircraft beyond the Hornet and the Huey, from its own input files', async () => {
+    app = await wiredApp('ai-assist-viper', { files: BINDING_FILES });
+    const list = await app.invoke<{ aircraft: { id: string; guide: string | null }[] }>(
+      'ai-assist:aircraft'
+    );
+    const guided = list.aircraft.filter((a) => a.guide === 'shipped').map((a) => a.id);
+    // Only aircraft whose input files are in the install are listed: here these three.
+    expect(guided.sort()).toEqual(['F-16C_50', HORNET, 'UH-1H']);
+    expect(list.aircraft.find((a) => a.id === 'UH-1H_Gunner')?.guide).toBeNull();
+
+    const guide = await app.invoke<GuideView>('ai-assist:guide', { aircraftId: 'F-16C_50' });
+    expect(guide.guide).toMatchObject({ kind: 'shipped' });
+    const items = guide.tiers.flatMap((t) => t.items);
+    // Every item names actions that exist in this install; none is bound, as nothing is yet.
+    expect(items.filter((i) => i.status === 'missing').map((i) => i.id)).toEqual([]);
+    expect(new Set(items.map((i) => i.status))).toEqual(new Set(['unbound']));
+    const tms = items.find((i) => i.id === 'tms')!;
+    expect(tms.actions.map((a) => [a.label, a.dcsName])[0]).toEqual([
+      'TMS up: lock / designate',
+      'Target Management Switch - Up',
+    ]);
+    expect(items.find((i) => i.id === 'left-mfd')!.actions).toHaveLength(20);
+    // The cheat sheets and the bindings pages read the same plain names through core.
+    const labels = await app.wiring.context.bindings.labels('dcs', 'F-16C_50');
+    expect(labels['Display Management Switch - Up']).toBe('DMS up: HUD is the sensor of interest');
+  });
+
   it('stages a pressed control, previews the exact file change, writes it through the bindings feature, and undoes it', async () => {
     await start();
     const file = await diffFile(app.home, 'WINWING Orion Joystick');

@@ -39,8 +39,8 @@ Setting up bindings for a rig full of controllers takes hours. RigReady helps yo
 
 - **Capture a setup.** Record the controllers, apps, layout and audio as they are now, then edit. [Capture](docs/manual/setups/capture.md)
 - **DCS bindings.** See the bindings in effect, edit them with a preview, clear the defaults DCS adds to every device, and copy controls between aircraft. [DCS bindings](docs/manual/dcs/bindings.md)
-- **Cheat sheets.** What every control does, for DCS aircraft and four racing games, printable and exportable as DCS kneeboard pages. WinWing Orion sticks, throttle and MFD frames have drawings; any other controller is a labelled list of its controls until you add a photo of it and drop the labels on. [Cheat sheets](docs/manual/dcs/cheat-sheets.md)
-- **Learn them.** A trainer names an action and you press the control; binding guides for the F/A-18C and UH-1H walk through what to bind first. [Trainer](docs/manual/dcs/trainer.md)
+- **Cheat sheets.** What every control does, for DCS aircraft and the racing games, printable and exportable as DCS kneeboard pages. WinWing Orion sticks, throttle and MFD frames have drawings; the Thrustmaster Warthog, T.16000M and Saitek X52 Pro have their controls named; any other controller is a labelled list of its controls until you add a photo of it and drop the labels on. [Cheat sheets](docs/manual/dcs/cheat-sheets.md)
+- **Learn them.** A trainer names an action and you press the control; binding guides for twenty aircraft, from the F/A-18C, F-16C, A-10C and F-14 to the Ka-50, UH-1H and P-51D, walk through what to bind first. [Trainer](docs/manual/dcs/trainer.md)
 - **Back up and restore.** One click backs up setups, game files and settings; a restore shows what will change before it does. [Backups](docs/manual/protect/backups.md), [moving to a new PC](docs/manual/protect/new-pc.md)
 - **Share it.** Share a setup as a file with personal details reviewed and removed, or make a picture of the rig to show people. [Sharing](docs/manual/protect/sharing.md)
 
@@ -77,7 +77,7 @@ Any game works with a checklist, launch, tracked files and backups. These get mo
 
 | | Support |
 |---|---|
-| DCS World | The deepest: installs (Steam and standalone), MFD screen setup (MonitorSetup; from SimAppPro's plan, or without it for the aircraft listed in the [manual](docs/manual/dcs/screens.md)), Export.lua, options, bindings for every aircraft (view, edit, clean up, device ID repair, copy between aircraft, snapshots), cheat sheets, kneeboard pages, binding guides for the aircraft listed in the [manual](docs/manual/dcs/binding-guide-and-ai.md). |
+| DCS World | The deepest: installs (Steam and standalone), MFD screen setup (MonitorSetup; from SimAppPro's plan, or without it for every installed aircraft that exports displays, see the [manual](docs/manual/dcs/screens.md)), Export.lua, options, bindings for every aircraft (view, edit, clean up, device ID repair, copy between aircraft, snapshots), cheat sheets, kneeboard pages, binding guides for twenty aircraft (F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H, the Flaming Cliffs jets, warbirds and more; listed in the [manual](docs/manual/dcs/binding-guide-and-ai.md)). |
 | iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | A page per game with its bindings and controllers as the game's files have them, cheat sheets and the trainer, backup and restore, and checks for a racing setup (wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive). |
 | Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally | A game module: detection, config locations, backup suggestions, launch. |
 | Any other game | Works generically: a checklist, launch, tracked files, backup. |

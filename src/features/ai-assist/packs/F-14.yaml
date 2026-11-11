@@ -1,0 +1,564 @@
+# RigReady binding guide: F-14 Tomcat, pilot. Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: F-14
+  name: F-14A/B Tomcat (pilot)
+summary: >-
+  A two-seat carrier fighter. The pilot flies, fires the gun and the missiles and drops
+  bombs; the radar is the RIO's job (Jester, the AI back-seater, when you fly alone). Bind
+  the stick, throttle and pedals first, then Jester's menu, then the switches you use a few
+  times per flight.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the F-14's pilot controls (the stick
+    with trigger, bomb button, weapon selector and trim, the throttles with the DLC
+    thumbwheel, speed brake and radio buttons) and of how they work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from Heatblur's default input files for the
+    F-14 pilot seat; a test checks each one against those files so a DCS update that
+    renames an action is caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      The Tomcat stick: trigger, bomb button, the weapon selector, the trim hat, the
+      autopilot reference and nose wheel steering button and the paddle. If your grip is
+      not a Tomcat grip, map by feel: trigger to trigger, bomb button to the top thumb
+      button, trim to the top hat.
+    items: [pitch-roll, trigger, bomb, weapon-select, trim, nws, paddle, acm-modes]
+  throttle:
+    summary: >-
+      One throttle axis, or two for split throttles. On the throttle: radio and intercom
+      buttons, speed brake, DLC and countermeasures, cage/seam, wing sweep and the exterior
+      lights master switch. Jester's menu needs a spare four-way hat and a button.
+    items:
+      [
+        thrust,
+        comm-uhf1,
+        speed-brake,
+        dlc-dispense,
+        jester-menu,
+        cage-seam,
+        comm-uhf2,
+        intercom,
+        wing-sweep,
+        exterior-lights,
+      ]
+  pedals:
+    summary: Rudder on the rudder axis, the two toe brakes on their own axes.
+    items: [rudder, wheel-brakes]
+  panel:
+    summary: >-
+      Gear, flaps, hook, master arm and the carrier switches first, then display modes,
+      the ACM cover, start-up and lights if your panels have spare switches.
+    items:
+      [
+        gear,
+        flaps,
+        hook,
+        master-arm,
+        catapult,
+        display-mode,
+        acm-cover,
+        parking-brake,
+        master-caution,
+        antiskid-spoiler,
+        refuel-probe,
+        crank,
+        taxi-light,
+        jettison,
+      ]
+  keyboard:
+    summary: >-
+      Things you do rarely or once per flight can stay on DCS's keyboard defaults: views,
+      kneeboard, canopy, ejection.
+    items: [view-center, zoom, kneeboard, canopy, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the nose up and down and banks the jet.
+    when: All the time.
+    actions:
+      - { name: 'Pitch', label: 'Pitch (stick forward and back)' }
+      - { name: 'Roll', label: 'Roll (stick left and right)' }
+
+  - id: rudder
+    title: Rudder
+    tier: must
+    place: hotas
+    role: pedals
+    what: >-
+      Yaws the nose; on the ground it steers once nose wheel steering is on. At high angles
+      of attack the Tomcat is rolled with rudder more than with the stick.
+    when: Take-off and landing roll, crosswinds, taxiing, slow-speed fights.
+    actions:
+      - { name: 'Rudder', label: 'Rudder (pedals or stick twist)' }
+
+  - id: thrust
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Engine power. One axis for both engines, or one per engine on a split throttle.
+    when: All the time. Full forward past the detent is afterburner.
+    note: Bind either Throttle Both, or Throttle Left and Throttle Right, not both.
+    actions:
+      - { name: 'Throttle Both', label: 'Throttle, both engines' }
+      - { name: 'Throttle Left', label: 'Throttle, left engine' }
+      - { name: 'Throttle Right', label: 'Throttle, right engine' }
+
+  - id: wheel-brakes
+    title: Wheel brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Slows the jet on the ground. Toe brakes on pedals, or one button for both wheels.
+    when: Taxiing, landing roll-out, holding before take-off.
+    note: Best on the toe brakes of the pedals (left and right axes); otherwise one button.
+    actions:
+      - { name: 'Wheel Brake Left', label: 'Left toe brake' }
+      - { name: 'Wheel Brake Right', label: 'Right toe brake' }
+      - { name: 'Wheel Brake both', label: 'Both brakes' }
+
+  - id: trim
+    title: Trim hat
+    tier: must
+    place: hotas
+    role: stick
+    what: Trims the jet so it holds its attitude without pressure on the stick.
+    when: After every change of speed or configuration, and on every approach.
+    actions:
+      - { name: 'Trim Pitch Down', label: 'Trim nose down' }
+      - { name: 'Trim Pitch Up', label: 'Trim nose up' }
+      - { name: 'Trim Roll Left Wing Down', label: 'Trim left wing down' }
+      - { name: 'Trim Roll Right Wing Down', label: 'Trim right wing down' }
+
+  - id: trigger
+    title: Gun and missile trigger
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the gun or the selected air-to-air missile.
+    when: Air combat and strafing.
+    actions:
+      - { name: 'Trigger', label: 'Trigger: fire' }
+
+  - id: bomb
+    title: Bomb button
+    tier: must
+    place: hotas
+    role: stick
+    what: Releases bombs and other air-to-ground stores.
+    when: Every air-to-ground attack.
+    actions:
+      - { name: 'Store Release', label: 'Bomb button: release' }
+
+  - id: weapon-select
+    title: Weapon selector
+    tier: must
+    place: hotas
+    role: stick
+    need: any
+    what: >-
+      Picks the air-to-air weapon: gun, Sidewinder, or Sparrow and Phoenix. Pressing it
+      cycles the weapon of the selected type.
+    when: Air combat, before every shot.
+    note: Gun, Sidewinder and Sparrow/Phoenix on a four-way hat, or up and down to step.
+    actions:
+      - { name: 'Weapon Selector Gun', label: 'Weapon select: gun' }
+      - { name: 'Weapon Selector Sidewinder Missiles', label: 'Weapon select: Sidewinder' }
+      - { name: 'Weapon Selector Sparrow or Phoenix Missiles', label: 'Weapon select: Sparrow / Phoenix' }
+      - { name: 'Weapon Selector up', label: 'Weapon select: step up' }
+      - { name: 'Weapon Selector down', label: 'Weapon select: step down' }
+      - { name: 'Weapon Selector press', label: 'Weapon select: press' }
+
+  - id: nws
+    title: Nose wheel steering / autopilot reference
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      On the ground it switches nose wheel steering on and off. In the air it engages the
+      autopilot hold modes that are selected on the panel.
+    when: Every taxi, and when you want the autopilot to hold altitude or heading.
+    actions:
+      - { name: 'Autopilot Reference / Nosewheel Steering Toggle', label: 'Nose wheel steering / autopilot reference' }
+
+  - id: comm-uhf1
+    title: Radio 1 (call the radio menu)
+    tier: must
+    place: hotas
+    role: throttle
+    what: Talks on the main UHF radio and opens DCS's radio menu for the tower, the carrier, tankers and wingmen.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    actions:
+      - { name: 'Mic Button UHF1 (ARC-159)', label: 'Talk on UHF 1 / radio menu' }
+
+  - id: speed-brake
+    title: Speed brake
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Extends the speed brakes to slow down quickly.
+    when: In the break before landing, joining up, staying behind a slower aircraft.
+    actions:
+      - { name: 'Speed brake extend', label: 'Speed brake out' }
+      - { name: 'Speed brake retract', label: 'Speed brake in' }
+      - { name: 'Speed brake toggle', label: 'Speed brake: toggle' }
+
+  - id: dlc-dispense
+    title: DLC and countermeasures
+    tier: must
+    place: hotas
+    role: throttle
+    what: >-
+      With the gear down it engages Direct Lift Control, which makes small glide path
+      corrections on approach with the thumbwheel. With the gear up the same button
+      releases chaff and flares.
+    when: Every approach (DLC) and whenever a missile is fired at you.
+    actions:
+      - { name: 'DLC Toggle / Countermeasure Dispense', label: 'DLC on/off, or dispense countermeasures' }
+
+  - id: jester-menu
+    title: Jester menu
+    tier: must
+    place: hotas
+    role: throttle
+    what: >-
+      Opens the menu of Jester, the AI back-seater, and picks items in it: radar modes,
+      locking a target, radio frequencies, the TACAN, the LANTIRN pod.
+    when: Whenever you fly without a human RIO; you talk to Jester through this menu all the time.
+    note: The context action opens and closes the menu; a four-way hat moves in it.
+    actions:
+      - { name: 'Jester Context Action (short, hold, double click)', label: 'Jester: open menu / select' }
+      - { name: 'Jester Menu Up', label: 'Jester menu: up' }
+      - { name: 'Jester Menu Down', label: 'Jester menu: down' }
+      - { name: 'Jester Menu Left', label: 'Jester menu: left' }
+      - { name: 'Jester Menu Right', label: 'Jester menu: right' }
+
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    note: One button toggles; a two-position switch or lever uses up and down.
+    actions:
+      - { name: 'Gears Toggle', label: 'Gear: toggle' }
+      - { name: 'Gears Up', label: 'Gear up' }
+      - { name: 'Gears Down', label: 'Gear down' }
+
+  - id: flaps
+    title: Flaps
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Lowers the flaps and slats for take-off and landing.
+    when: Before take-off and before landing; up after take-off.
+    note: Up and down on two buttons or a two-position switch, or the flap lever on an axis.
+    actions:
+      - { name: 'Flaps Up', label: 'Flaps up' }
+      - { name: 'Flaps Down', label: 'Flaps down' }
+      - { name: 'Flap Lever', label: 'Flap lever (axis)' }
+
+  - id: master-arm
+    title: Master Arm
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Arms the weapons. Nothing fires while it is off. The switch sits under a cover.
+    when: Before the fight; off again before landing.
+    note: A two-position switch can use the combined actions that open the cover and arm in one go.
+    actions:
+      - { name: 'Master Arm On and Cover Open, else Safe and Closed', label: 'Master Arm: ARM, else SAFE (two-position switch)' }
+      - { name: 'Master arm on and cover open', label: 'Master Arm: ARM' }
+      - { name: 'Master arm off and cover close', label: 'Master Arm: SAFE' }
+
+  # ---------------------------------------------------------------- should have
+  - id: paddle
+    title: Autopilot disconnect paddle
+    tier: should
+    place: hotas
+    role: stick
+    what: Disconnects the autopilot at once.
+    when: Whenever the autopilot does something you did not want, and before landing.
+    actions:
+      - { name: 'Autopilot Emergency Disconnect Paddle', label: 'Paddle: autopilot off' }
+
+  - id: cage-seam
+    title: Cage / seam
+    tier: should
+    place: hotas
+    role: throttle
+    what: Uncages the Sidewinder seeker so it locks on a target on its own.
+    when: Short-range missile shots.
+    actions:
+      - { name: 'CAGE-SEAM button', label: 'Cage / seam' }
+
+  - id: comm-uhf2
+    title: Radio 2
+    tier: should
+    place: hotas
+    role: throttle
+    what: Talks on the second radio (VHF/UHF) and opens the radio menu.
+    when: Talking to your flight while radio 1 is on the tower or the carrier.
+    actions:
+      - { name: 'Mic Button UHF2 (ARC-182)', label: 'Talk on UHF 2 / radio menu' }
+
+  - id: intercom
+    title: Intercom
+    tier: should
+    place: hotas
+    role: throttle
+    what: Talks to the RIO over the intercom; with Jester it is how voice commands reach him.
+    when: Flying with a human RIO.
+    actions:
+      - { name: 'Mic Button ICS', label: 'Talk on the intercom' }
+
+  - id: wing-sweep
+    title: Wing sweep
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: >-
+      The wings sweep on their own in AUTO. Forward and aft move them by hand, and BOMB sets
+      the sweep for bombing.
+    when: AUTO nearly always; by hand only when you have a reason to.
+    actions:
+      - { name: 'Wing Sweep Auto Mode', label: 'Wing sweep: AUTO' }
+      - { name: 'Wing Sweep Forward', label: 'Wing sweep: forward' }
+      - { name: 'Wing Sweep Aft', label: 'Wing sweep: aft' }
+      - { name: 'Wing Sweep Bomb Mode', label: 'Wing sweep: BOMB' }
+
+  - id: hook
+    title: Arresting hook
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Lowers the hook that catches the wire on the carrier.
+    when: Before every carrier landing.
+    actions:
+      - { name: 'Hook Toggle', label: 'Hook: toggle' }
+      - { name: 'Hook Extend', label: 'Hook down' }
+      - { name: 'Hook Retract', label: 'Hook up' }
+
+  - id: catapult
+    title: Catapult hook-up and salute
+    tier: should
+    place: panel
+    role: panel
+    what: >-
+      Hooks the jet to the catapult once you are taxied onto it, and the salute tells the
+      deck crew you are ready to launch.
+    when: Every carrier take-off.
+    actions:
+      - { name: 'Catapult Hook up', label: 'Hook up to the catapult' }
+      - { name: 'Catapult Salute', label: 'Salute: ready to launch' }
+
+  - id: display-mode
+    title: Display modes
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Sets the HUD and the attitude display for take-off, cruise, air-to-air, air-to-ground or landing.
+    when: At each phase of the flight; air-to-ground before every bombing run.
+    actions:
+      - { name: 'Display mode takeoff', label: 'Display: take-off' }
+      - { name: 'Display mode cruise', label: 'Display: cruise' }
+      - { name: 'Display mode air to air', label: 'Display: air-to-air' }
+      - { name: 'Display mode air to ground', label: 'Display: air-to-ground' }
+      - { name: 'Display mode landing', label: 'Display: landing' }
+
+  - id: acm-cover
+    title: ACM cover
+    tier: should
+    place: panel
+    role: panel
+    what: Lifting the ACM cover sets the jet up for a dogfight and gives access to the ACM jettison button.
+    when: Merging with an enemy at close range.
+    actions:
+      - { name: 'ACM cover toggle', label: 'ACM cover: toggle' }
+
+  - id: acm-modes
+    title: Pilot lock modes (PAL, VSL, PLM)
+    tier: should
+    place: hotas
+    role: stick
+    need: any
+    what: >-
+      Lets the pilot lock a target with the radar without the RIO: PAL locks the first
+      target in a wide area ahead, VSL searches a vertical line, PLM a line along the
+      wings.
+    when: Close-in fights, especially with Jester in the back.
+    note: Any spare hat on the stick works well.
+    actions:
+      - { name: 'Target designate fwd / PAL', label: 'Lock mode: PAL' }
+      - { name: 'Target designate up / VSL HI', label: 'Lock mode: VSL high' }
+      - { name: 'Target designate down / VSL LO', label: 'Lock mode: VSL low' }
+      - { name: 'PLM button', label: 'Lock mode: PLM' }
+
+  - id: parking-brake
+    title: Parking brake
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Holds the jet still without the toe brakes.
+    when: Start-up and before taxiing.
+    actions:
+      - { name: 'Parking brake pull', label: 'Parking brake on' }
+      - { name: 'Parking brake stow', label: 'Parking brake off' }
+      - { name: 'Parking brake enabled, else disabed', label: 'Parking brake (two-position switch)' }
+
+  - id: master-caution
+    title: Master caution reset
+    tier: should
+    place: panel
+    role: panel
+    what: Acknowledges the master caution light so the next warning shows.
+    when: After reading a caution.
+    actions:
+      - { name: 'Master Caution Reset', label: 'Master caution reset' }
+
+  - id: view-center
+    title: Center the view
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: Puts your head back to the default position, needed with head tracking or VR.
+    when: Whenever your view drifts.
+    actions:
+      - { name: 'View Center', label: 'Center the view' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: exterior-lights
+    title: Exterior lights master switch
+    tier: nice
+    place: hotas
+    role: throttle
+    need: any
+    what: Turns the exterior lights on and off together.
+    when: At night and in formation.
+    actions:
+      - { name: 'Exterior Lights Master Switch Toggle', label: 'Exterior lights: toggle' }
+      - { name: 'Exterior Lights Master Switch ON', label: 'Exterior lights on' }
+      - { name: 'Exterior Lights Master Switch OFF', label: 'Exterior lights off' }
+
+  - id: antiskid-spoiler
+    title: Anti-skid and spoiler brakes
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Sets the anti-skid and the spoilers that dump lift on the runway.
+    when: Before landing on a runway.
+    actions:
+      - { name: 'Antiskid & Spoiler BK - Both', label: 'Anti-skid and spoiler brakes on' }
+      - { name: 'Antiskid & Spoiler BK - Off', label: 'Anti-skid and spoiler brakes off' }
+      - { name: 'Antiskid & Spoiler BK - Toggle', label: 'Anti-skid and spoiler brakes: step' }
+
+  - id: refuel-probe
+    title: Refuelling probe
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Extends the probe for refuelling from a tanker.
+    when: Air-to-air refuelling.
+    actions:
+      - { name: 'Refuel Probe extend, Refuel All', label: 'Probe out, refuel all tanks' }
+      - { name: 'Refuel Probe Retract', label: 'Probe in' }
+
+  - id: crank
+    title: Engine crank
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Cranks an engine for start-up; the throttle is then moved to idle.
+    when: Once per flight, at start-up.
+    actions:
+      - { name: 'Crank Left Engine', label: 'Crank left engine' }
+      - { name: 'Crank Right Engine', label: 'Crank right engine' }
+
+  - id: taxi-light
+    title: Taxi light
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Turns the taxi light on and off.
+    when: Taxiing at night.
+    actions:
+      - { name: 'Lights Taxi Toggle', label: 'Taxi light: toggle' }
+      - { name: 'Lights Taxi ON', label: 'Taxi light on' }
+      - { name: 'Lights Taxi OFF', label: 'Taxi light off' }
+
+  - id: jettison
+    title: Emergency jettison
+    tier: nice
+    place: panel
+    role: panel
+    what: Drops all external stores at once.
+    when: Emergencies only, such as an engine failure on take-off.
+    actions:
+      - { name: 'Emergency Jettison', label: 'Emergency jettison' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Zooms the view in and out, to read gauges or spot aircraft.
+    when: Reading small displays and spotting traffic.
+    actions:
+      - { name: 'Zoom View', label: 'Zoom (axis)' }
+      - { name: 'Zoom in slow', label: 'Zoom in' }
+      - { name: 'Zoom out slow', label: 'Zoom out' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's frequencies, waypoints and notes.
+    when: Before start-up and whenever you need a frequency.
+    actions:
+      - { name: 'Kneeboard ON/OFF', label: 'Kneeboard on/off' }
+
+  - id: canopy
+    title: Canopy
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens and closes the canopy.
+    when: Before start-up and after shutdown.
+    actions:
+      - { name: 'Toggle Canopy', label: 'Canopy: open/close' }
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Ejects. DCS needs the key pressed three times so it does not happen by accident.
+    when: Only when the jet cannot be saved.
+    actions:
+      - { name: 'Eject (3 times)', label: 'Eject (press three times)' }

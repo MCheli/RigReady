@@ -129,7 +129,10 @@ export const ScreensStateSchema = z.object({
     editedOutside: z.boolean(),
     selected: z.boolean(),
   }),
+  /** Every installed aircraft with exportable displays (read from its cockpit scripts), or the built-in list. */
   catalog: CatalogSchema,
+  /** The unit of the aircraft the setup in use is for, when its name says: the editor starts on it. */
+  aircraftInUse: z.string().optional(),
   simAppProPlan: z.boolean(),
   dcsRunning: z.boolean(),
 });

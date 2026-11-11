@@ -1,0 +1,506 @@
+# RigReady binding guide: A-10C II and A-10C Warthog. Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: A-10C II
+  name: A-10C II Warthog
+  also: [A-10C]
+summary: >-
+  A close air support jet with a full HOTAS: the stick and throttle carry three four-way
+  switches, a slew control and a coolie hat that pick sensors, designate targets and run the
+  countermeasures. Bind the stick and throttle like the real jet first; the panels and the
+  keyboard cover the rest. The same guide fits the older A-10C, which names these controls
+  the same way.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the real jet's HOTAS (the stick and
+    throttle switch layout the A-10C is known for) and of how the switches work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from its default input files for the
+    A-10C II and the A-10C; a test checks each one against those files so a DCS update that
+    renames an action is caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      The real Warthog stick: the gun trigger, the weapon release button, the trim hat, the
+      three four-way switches (DMS, TMS and CMS), the master mode button and the nose wheel
+      steering button. On another grip, map by feel: trigger to trigger, weapon release to
+      the top thumb button, trim to the top hat.
+    items: [pitch-roll, trigger, pickle, trim, tms, dms, cms, master-mode, nws]
+  throttle:
+    summary: >-
+      Two throttle axes (or one for both), then the switches your left hand needs: the slew
+      control and its press, the coolie hat, the microphone switch, the speed brake, the
+      china hat and the boat switch.
+    items: [thrust, slew, coolie, mic, speed-brake, china-hat, boat]
+  pedals:
+    summary: Rudder on the rudder axis, the two toe brakes on their own axes.
+    items: [rudder, wheel-brakes]
+  mfd:
+    summary: >-
+      Each MFD frame's 20 buttons to the matching MFCD's OSBs, in the same order (OSB 1 is
+      the left end of the top row, counting clockwise; check one).
+    items: [left-mfcd, right-mfcd]
+  panel:
+    summary: >-
+      Switches you use a few times per flight: gear, flaps, the armament panel (master arm,
+      gun arm, laser arm), the autopilot, then start-up and lights if your panels have them.
+    items:
+      [
+        gear,
+        flaps,
+        master-arm,
+        gun-arm,
+        laser-arm,
+        autopilot,
+        master-caution,
+        apu-engines,
+        anti-skid,
+        ldg-light,
+      ]
+  keyboard:
+    summary: >-
+      Things you do rarely or once per flight can stay on DCS's keyboard defaults: views,
+      kneeboard, canopy, eject, night vision goggles.
+    items: [view-center, zoom, canopy, kneeboard, nvg, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the nose up and down and banks the jet.
+    when: All the time.
+    actions:
+      - { name: Pitch, label: 'Pitch (stick forward and back)' }
+      - { name: Roll, label: 'Roll (stick left and right)' }
+
+  - id: rudder
+    title: Rudder
+    tier: must
+    place: hotas
+    role: pedals
+    what: Yaws the nose; on the ground it also steers once nose wheel steering is on.
+    when: Take-off roll, landing roll-out, crosswinds, taxiing, and to line up a gun run.
+    actions:
+      - { name: Rudder, label: 'Rudder (pedals or stick twist)' }
+
+  - id: thrust
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Engine power. One axis for both engines, or one per engine on a split throttle.
+    when: All the time.
+    note: Bind either Throttle Both, or Throttle Left and Throttle Right, not both.
+    actions:
+      - { name: Throttle Both, label: 'Throttle, both engines' }
+      - { name: Throttle Left, label: 'Throttle, left engine' }
+      - { name: Throttle Right, label: 'Throttle, right engine' }
+
+  - id: wheel-brakes
+    title: Wheel brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Slows the jet on the ground. Toe brakes on pedals, or one button for both wheels.
+    when: Taxiing, landing roll-out, holding before take-off.
+    note: Best on the toe brakes of the pedals (left and right axes); otherwise one button.
+    actions:
+      - { name: Wheel Brake Left, label: 'Left toe brake' }
+      - { name: Wheel Brake Right, label: 'Right toe brake' }
+      - { name: Wheel Brake, label: 'Both brakes, one axis' }
+      - { name: Wheel Brake On/Off, label: 'Both brakes, one button (hold)' }
+
+  - id: trim
+    title: Trim hat
+    tier: must
+    place: hotas
+    role: stick
+    what: Trims the jet so it holds its attitude without pressure on the stick.
+    when: After every change of speed or configuration; the Warthog needs trim often.
+    actions:
+      - { name: 'Trim: Nose Down', label: 'Trim nose down' }
+      - { name: 'Trim: Nose Up', label: 'Trim nose up' }
+      - { name: 'Trim: Left Wing Down', label: 'Trim left wing down' }
+      - { name: 'Trim: Right Wing Down', label: 'Trim right wing down' }
+
+  - id: trigger
+    title: Gun trigger
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the 30 mm gun.
+    when: Every gun run.
+    actions:
+      - { name: Gun Trigger, label: 'Trigger: fire gun' }
+
+  - id: pickle
+    title: Weapon release
+    tier: must
+    place: hotas
+    role: stick
+    what: Releases bombs and fires missiles and rockets.
+    when: Every weapon release except the gun.
+    actions:
+      - { name: Weapon release, label: 'Weapon release' }
+
+  - id: tms
+    title: Target management switch (TMS)
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      Works on the sensor of interest. Forward designates or tracks what is under the
+      cursor (for example a point track with the targeting pod); aft goes back to area
+      tracking or cancels; left and right do further functions of that sensor.
+    when: Every time you mark or track a target.
+    actions:
+      - { name: HOTAS TMS Forward, label: 'TMS forward: designate / track' }
+      - { name: HOTAS TMS Aft, label: 'TMS aft' }
+      - { name: HOTAS TMS Left, label: 'TMS left' }
+      - { name: HOTAS TMS Right, label: 'TMS right' }
+
+  - id: dms
+    title: Data management switch (DMS)
+    tier: must
+    place: hotas
+    role: stick
+    what: Works on the sensor of interest. Left and right step through the pages of an MFCD; forward and aft change what the sensor shows.
+    when: Changing MFCD pages without taking your hand off the stick.
+    actions:
+      - { name: HOTAS DMS Forward, label: 'DMS forward' }
+      - { name: HOTAS DMS Aft, label: 'DMS aft' }
+      - { name: HOTAS DMS Left, label: 'DMS left' }
+      - { name: HOTAS DMS Right, label: 'DMS right' }
+
+  - id: cms
+    title: Countermeasures management switch (CMS)
+    tier: must
+    place: hotas
+    role: stick
+    what: Releases chaff and flares. Forward dispenses the selected program; the other directions select and stop programs.
+    when: When a missile is fired at you.
+    note: If your grip has fewer hats, forward matters most.
+    actions:
+      - { name: HOTAS CMS Forward, label: 'CMS forward: dispense' }
+      - { name: HOTAS CMS Aft, label: 'CMS aft' }
+      - { name: HOTAS CMS Left, label: 'CMS left' }
+      - { name: HOTAS CMS Right, label: 'CMS right' }
+
+  - id: slew
+    title: Slew control (cursor)
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Moves the cursor on the sensor of interest, such as the targeting pod, a Maverick or the HUD.
+    when: Aiming the targeting pod, placing markpoints, picking a target.
+    note: A mini-stick on the throttle as two axes is best; four buttons or a hat works too.
+    actions:
+      - { name: HOTAS Slew Horizontal, label: 'Slew left/right (axis)' }
+      - { name: HOTAS Slew Vertical, label: 'Slew up/down (axis)' }
+      - { name: HOTAS Slew Up, label: 'Slew up' }
+      - { name: HOTAS Slew Down, label: 'Slew down' }
+      - { name: HOTAS Slew Left, label: 'Slew left' }
+      - { name: HOTAS Slew Right, label: 'Slew right' }
+
+  - id: coolie
+    title: Coolie hat (sensor of interest)
+    tier: must
+    place: hotas
+    role: throttle
+    what: Chooses the sensor of interest, the display the slew control and the stick switches work on. Up is the HUD; left and right are the two MFCDs.
+    when: Constantly, every time you change from the HUD to the targeting pod or a map.
+    actions:
+      - { name: HOTAS Coolie Switch Up, label: 'Coolie up: HUD' }
+      - { name: HOTAS Coolie Switch Left, label: 'Coolie left: left MFCD' }
+      - { name: HOTAS Coolie Switch Right, label: 'Coolie right: right MFCD' }
+      - { name: HOTAS Coolie Switch Down, label: 'Coolie down' }
+
+  - id: mic
+    title: Microphone switch (call the radio menu)
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Talks on one of the three radios, one per direction, and opens DCS's radio menu for the tower, tankers and wingmen.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    note: One direction is enough to start with.
+    actions:
+      - { name: HOTAS MIC Switch Forward (call radio menu), label: 'Mic forward / radio menu' }
+      - { name: HOTAS MIC Switch Aft (call radio menu), label: 'Mic aft / radio menu' }
+      - { name: HOTAS MIC Switch Down (call radio menu), label: 'Mic down / radio menu' }
+
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    note: One button toggles; a two-position switch or lever uses Up and Down.
+    actions:
+      - { name: Landing Gear Up/Down, label: 'Gear: toggle' }
+      - { name: Landing Gear Up, label: 'Gear up' }
+      - { name: Landing Gear Down, label: 'Gear down' }
+
+  - id: flaps
+    title: Flaps
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Up for flying, the middle position for take-off, down for landing.
+    when: Before take-off and before landing.
+    actions:
+      - { name: Flaps Up, label: 'Flaps one step up' }
+      - { name: Flaps Down, label: 'Flaps one step down' }
+
+  - id: master-arm
+    title: Master Arm
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Arms the weapons. SAFE keeps everything safe; TRAIN lets you practise without releasing.
+    when: Before the attack; SAFE again before landing.
+    actions:
+      - { name: Master switch ARM, label: 'Master Arm: ARM' }
+      - { name: Master switch SAFE, label: 'Master Arm: SAFE' }
+      - { name: Master switch TRAIN, label: 'Master Arm: TRAIN' }
+
+  # ---------------------------------------------------------------- should have
+  - id: speed-brake
+    title: Speed brake
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Opens the split rudders at the wing tips to slow down quickly. Aft opens them; forward closes them.
+    when: Descending onto a target, slowing for the approach.
+    actions:
+      - { name: HOTAS Speed Brake Switch Aft, label: 'Speed brake out' }
+      - { name: HOTAS Speed Brake Switch Forward, label: 'Speed brake in' }
+
+  - id: master-mode
+    title: Master mode button
+    tier: should
+    place: hotas
+    role: stick
+    what: Steps through the HUD's master modes, such as navigation, gun and the bombing modes.
+    when: Before each attack.
+    actions:
+      - { name: HOTAS Master Mode Control Button, label: 'Next master mode' }
+
+  - id: nws
+    title: Nose wheel steering / laser
+    tier: should
+    place: hotas
+    role: stick
+    what: On the ground it switches nose wheel steering on and off; in the air, held, it fires the targeting pod's laser.
+    when: Taxiing, and when lasing for laser-guided bombs.
+    actions:
+      - { name: HOTAS Nosewheel Steering Button, label: 'Nose wheel steering / fire laser' }
+
+  - id: china-hat
+    title: China hat
+    tier: should
+    place: hotas
+    role: throttle
+    what: A two-way switch under your index finger. Held forward it slaves all sensors to the target point; other uses depend on the sensor of interest.
+    when: After designating a target, to point the targeting pod and Mavericks at it.
+    actions:
+      - { name: HOTAS China Hat Forward, label: 'China hat forward' }
+      - { name: HOTAS China Hat Aft, label: 'China hat aft' }
+
+  - id: boat
+    title: Boat switch
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: A three-position slide on the throttle that changes the view of the targeting pod or a Maverick, such as its field of view.
+    when: Finding and identifying targets with the pod or a Maverick.
+    actions:
+      - { name: HOTAS Boat Switch Forward, label: 'Boat switch forward' }
+      - { name: HOTAS Boat Switch Center, label: 'Boat switch centre' }
+      - { name: HOTAS Boat Switch Aft, label: 'Boat switch aft' }
+
+  - id: left-mfcd
+    title: Left MFCD buttons
+    tier: should
+    place: panel
+    role: mfd
+    what: The 20 buttons (OSBs) around the left display, which choose its pages and options.
+    when: All through the flight.
+    note: On an MFD frame, bind the buttons in the same order as the display's.
+    actions:
+      - re: '^Left MFCD OSB (0[1-9]|1[0-9]|20)$'
+
+  - id: right-mfcd
+    title: Right MFCD buttons
+    tier: should
+    place: panel
+    role: mfd
+    what: The 20 buttons (OSBs) around the right display.
+    when: All through the flight.
+    actions:
+      - re: '^Right MFCD OSB (0[1-9]|1[0-9]|20)$'
+
+  - id: gun-arm
+    title: Gun arm
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Arms the gun. SAFE keeps it from firing even with the master arm on.
+    when: Before a gun run.
+    actions:
+      - { name: GUN/PAC switch ARM, label: 'Gun arm: ARM' }
+      - { name: GUN/PAC switch SAFE, label: 'Gun arm: SAFE' }
+      - { name: GUN/PAC switch GUNARM, label: 'Gun arm: GUN ARM' }
+
+  - id: laser-arm
+    title: Laser arm
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Arms the targeting pod's laser so it can guide laser bombs and mark for others.
+    when: Before a laser-guided bomb attack.
+    actions:
+      - { name: LASER switch ARM, label: 'Laser: ARM' }
+      - { name: LASER switch SAFE, label: 'Laser: SAFE' }
+      - { name: LASER switch TRAIN, label: 'Laser: TRAIN' }
+
+  - id: autopilot
+    title: Autopilot
+    tier: should
+    place: panel
+    role: panel
+    what: Engages the low-altitude autopilot, which holds your path, your altitude and heading, or your altitude and bank.
+    when: Long transits and while you work the targeting pod.
+    note: The autopilot needs the stability augmentation (EAC) armed.
+    actions:
+      - { name: LAAP Engage/Disengage, label: 'Autopilot on / off' }
+      - { name: LAAP Path Hold, label: 'Autopilot mode: path hold' }
+      - { name: LAAP Altitude/Heading Hold, label: 'Autopilot mode: altitude and heading' }
+      - { name: LAAP Altitude/Bank Hold, label: 'Autopilot mode: altitude and bank' }
+      - { name: EAC Arm, label: 'EAC arm' }
+
+  - id: view-center
+    title: Centre the view
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: Puts your head back to the normal position in the cockpit.
+    when: When head tracking has drifted.
+    actions:
+      - { name: View Center, label: 'Centre the view' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: master-caution
+    title: Master caution reset
+    tier: nice
+    place: panel
+    role: panel
+    what: Silences the master caution light after a caution, so the next one can light it again.
+    when: After you have read a caution.
+    actions:
+      - { name: UFC Master Caution Key, label: 'Master caution reset' }
+
+  - id: apu-engines
+    title: APU and engine start
+    tier: nice
+    place: panel
+    role: panel
+    what: Starts the APU, which then starts the engines.
+    when: Once per flight, during start-up.
+    actions:
+      - { name: APU Start, label: 'APU start' }
+      - { name: APU Off, label: 'APU off' }
+      - { name: Engine Start Left, label: 'Start left engine' }
+      - { name: Engine Start Right, label: 'Start right engine' }
+
+  - id: anti-skid
+    title: Anti-skid
+    tier: nice
+    place: panel
+    role: panel
+    what: Stops the wheels from locking when you brake hard.
+    when: On before landing.
+    actions:
+      - { name: Anti-Skid ON/OFF, label: 'Anti-skid on / off' }
+
+  - id: ldg-light
+    title: Landing and taxi lights
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Turns on the landing light or the taxi light.
+    when: Taxiing, take-off and landing, at night.
+    actions:
+      - { name: Landing Lights On, label: 'Landing light on' }
+      - { name: Taxi Lights On, label: 'Taxi light on' }
+      - { name: Landing/Taxi Lights Off, label: 'Landing and taxi lights off' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Zooms the view in and out, to read a display or spot a target.
+    when: Whenever something is too small to read.
+    actions:
+      - { name: Zoom in slow, label: 'Zoom in' }
+      - { name: Zoom out slow, label: 'Zoom out' }
+
+  - id: canopy
+    title: Canopy
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens and closes the canopy.
+    when: Before taxi and after shut-down.
+    actions:
+      - { name: Canopy Open/Close, label: 'Canopy open / close' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's pages and your own.
+    when: Checking frequencies, target areas and notes.
+    actions:
+      - { name: Kneeboard ON/OFF, label: 'Kneeboard show / hide' }
+      - { name: Kneeboard Next Page, label: 'Kneeboard next page' }
+      - { name: Kneeboard Previous Page, label: 'Kneeboard previous page' }
+
+  - id: nvg
+    title: Night vision goggles
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Puts the night vision goggles on and takes them off.
+    when: Night missions.
+    actions:
+      - { name: Toggle goggles, label: 'Night vision goggles on / off' }
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Leaves the jet.
+    when: Only when it cannot be saved.
+    actions:
+      - { name: Eject, label: 'Eject' }

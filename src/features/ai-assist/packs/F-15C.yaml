@@ -1,0 +1,473 @@
+# RigReady binding guide: F-15C Eagle (Flaming Cliffs). Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: F-15C
+  name: F-15C Eagle
+summary: >-
+  An air superiority fighter with Flaming Cliffs' simpler controls: no clickable cockpit, so
+  everything you need is a binding. Put the radar and weapon controls on the stick and
+  throttle first (lock, unlock, the target designator, weapon change and the combat modes);
+  gear, flaps and lights can go on a panel or stay on the keyboard.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the F-15C and of how the Flaming Cliffs
+    version works in DCS (radar modes, the close combat modes, the target designator).
+  - >-
+    Every action name below is DCS's own, taken from its default input files for the F-15C;
+    a test checks each one against those files so a DCS update that renames an action is
+    caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      Trigger to Weapon Fire, the trim hat to trim, and the buttons under your thumb to weapon
+      change, the cannon and the close combat modes. The F-15C stick also has a pickle button
+      (Weapon Release) and nose wheel steering.
+    items: [pitch-roll, trigger, trim, weapon-change, close-combat, pickle, cannon, nws, autopilot]
+  throttle:
+    summary: >-
+      Throttle axis (one or two), then what your left hand runs the radar with: the target
+      designator as a mini-stick or hat, lock and unlock, the radar range and elevation, and
+      countermeasures, airbrake and the radio menu.
+    items:
+      [
+        thrust,
+        tdc,
+        lock,
+        unlock,
+        dispense,
+        airbrake,
+        comms,
+        bvr,
+        radar-range,
+        radar-elevation,
+        radar-mode,
+        ecm,
+      ]
+  pedals:
+    summary: Rudder on the rudder axis, the two toe brakes on their own axes.
+    items: [rudder, wheel-brakes]
+  panel:
+    summary: >-
+      Gear, flaps and the radar power switch first, then lights, start-up and the jettison
+      buttons if your panels have spare switches.
+    items: [gear, flaps, radar-power, nav-mode, waypoints, lights, engines, jettison]
+  keyboard:
+    summary: Views, zoom, kneeboard and the ejection seat can stay on the keyboard.
+    items: [view-center, zoom, kneeboard, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the nose up and down and banks the jet.
+    when: All the time.
+    actions:
+      - { name: Pitch, label: 'Pitch (stick forward and back)' }
+      - { name: Roll, label: 'Roll (stick left and right)' }
+
+  - id: rudder
+    title: Rudder
+    tier: must
+    place: hotas
+    role: pedals
+    what: Yaws the nose; on the ground it also steers once nose wheel steering is on.
+    when: Take-off roll, landing roll-out, crosswinds, taxiing.
+    actions:
+      - { name: Rudder, label: 'Rudder (pedals or stick twist)' }
+
+  - id: thrust
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Engine power. One axis for both engines, or one per engine on a split throttle.
+    when: All the time. The last part of the travel is afterburner.
+    note: Bind either Thrust, or Thrust Left and Thrust Right, not both.
+    actions:
+      - { name: Thrust, label: 'Throttle, both engines' }
+      - { name: Thrust Left, label: 'Throttle, left engine' }
+      - { name: Thrust Right, label: 'Throttle, right engine' }
+
+  - id: wheel-brakes
+    title: Wheel brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Slows the jet on the ground. Toe brakes on pedals, or one button for both wheels.
+    when: Taxiing, landing roll-out, holding before take-off.
+    note: Best on the toe brakes of the pedals (left and right axes); otherwise one button.
+    actions:
+      - { name: Wheel Brake Left, label: 'Left toe brake' }
+      - { name: Wheel Brake Right, label: 'Right toe brake' }
+      - { name: Wheel Brake, label: 'Both brakes, one axis' }
+      - { name: Wheel Brake On, label: 'Both brakes, one button (hold)' }
+
+  - id: trim
+    title: Trim hat
+    tier: must
+    place: hotas
+    role: stick
+    what: Trims the jet so it holds its attitude without pressure on the stick.
+    when: After every change of speed or load, and on approach.
+    actions:
+      - { name: 'Trim: Nose Down', label: 'Trim nose down' }
+      - { name: 'Trim: Nose Up', label: 'Trim nose up' }
+      - { name: 'Trim: Left Wing Down', label: 'Trim left wing down' }
+      - { name: 'Trim: Right Wing Down', label: 'Trim right wing down' }
+
+  - id: trigger
+    title: Weapon fire (trigger)
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the selected weapon, the gun or a missile.
+    when: Every shot.
+    actions:
+      - { name: Weapon Fire, label: 'Trigger: fire the selected weapon' }
+
+  - id: tdc
+    title: Target designator (cursor)
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: >-
+      Moves the target designator, the cursor on the radar display, over the contact you want
+      to lock.
+    when: Every radar lock in the beyond visual range modes.
+    note: A mini-stick on the throttle as two axes is best; four buttons or a hat works too.
+    actions:
+      - { name: TDC Slew Horizontal, label: 'Designator left/right (axis)' }
+      - { name: TDC Slew Vertical, label: 'Designator up/down (axis)' }
+      - { name: Target Designator Up, label: 'Designator up' }
+      - { name: Target Designator Down, label: 'Designator down' }
+      - { name: Target Designator Left, label: 'Designator left' }
+      - { name: Target Designator Right, label: 'Designator right' }
+
+  - id: lock
+    title: Target lock
+    tier: must
+    place: hotas
+    role: throttle
+    what: Locks the contact under the designator, or in a close combat mode the target the radar finds.
+    when: Before every radar missile shot, and for a gun solution.
+    actions:
+      - { name: Target Lock, label: 'Lock the target' }
+
+  - id: unlock
+    title: Unlock (return to search)
+    tier: must
+    place: hotas
+    role: throttle
+    what: Drops the lock and puts the radar back to searching.
+    when: When the lock is on the wrong target or you want to see the whole picture again.
+    actions:
+      - { name: Radar - Return To Search/NDTWS, label: 'Unlock, back to search' }
+
+  - id: weapon-change
+    title: Weapon change
+    tier: must
+    place: hotas
+    role: stick
+    what: Steps to the next weapon type, for example from AIM-120 to AIM-7 to AIM-9.
+    when: Before a shot, to pick the missile that suits the range.
+    actions:
+      - { name: Weapon Change, label: 'Next weapon' }
+
+  - id: dispense
+    title: Countermeasures
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Releases chaff (against radar missiles) and flares (against heat seekers).
+    when: When a missile is fired at you.
+    note: Countermeasures Release drops chaff and flares together in one press.
+    actions:
+      - { name: Countermeasures Chaff Dispense, label: 'Dispense chaff' }
+      - { name: Countermeasures Flares Dispense, label: 'Dispense flares' }
+      - { name: Countermeasures Release, label: 'Dispense chaff and flares' }
+
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    note: One button toggles; a two-position switch or lever uses Up and Down.
+    actions:
+      - { name: Landing Gear Up/Down, label: 'Gear: toggle' }
+      - { name: Landing Gear Up, label: 'Gear up' }
+      - { name: Landing Gear Down, label: 'Gear down' }
+
+  - id: flaps
+    title: Flaps
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Lowers the flaps for slower flight on take-off and landing.
+    when: Before take-off and before landing; up after take-off.
+    note: One button toggles; a two-position switch uses Landing Position and Up.
+    actions:
+      - { name: Flaps Up/Down, label: 'Flaps: toggle' }
+      - { name: Flaps Landing Position, label: 'Flaps down' }
+      - { name: Flaps Up, label: 'Flaps up' }
+
+  - id: airbrake
+    title: Speed brake
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Extends the big speed brake on the jet's back to slow down quickly.
+    when: Descending, joining up, slowing for the landing.
+    actions:
+      - { name: Airbrake, label: 'Speed brake: toggle' }
+      - { name: Airbrake On, label: 'Speed brake out' }
+      - { name: Airbrake Off, label: 'Speed brake in' }
+
+  - id: comms
+    title: Radio menu
+    tier: must
+    place: hotas
+    role: throttle
+    what: Opens DCS's radio menu for the tower, tankers, AWACS and wingmen.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    actions:
+      - { name: Communication menu, label: 'Radio menu' }
+
+  # ---------------------------------------------------------------- should have
+  - id: close-combat
+    title: Close combat radar modes
+    tier: should
+    place: hotas
+    role: stick
+    need: any
+    what: >-
+      Radar modes that lock the first target they see without the designator: vertical scan
+      (a tall narrow column ahead), boresight (straight ahead) and flood (for an AIM-7 shot
+      without a lock).
+    when: Dogfights and any fight inside about ten miles.
+    actions:
+      - { name: (3) Close Air Combat Vertical Scan Mode, label: 'Close combat: vertical scan' }
+      - { name: (4) Close Air Combat Bore Mode, label: 'Close combat: boresight' }
+      - { name: (6) Longitudinal Missile Aiming Mode/FLOOD mode, label: 'Flood mode' }
+
+  - id: bvr
+    title: Beyond visual range mode
+    tier: should
+    place: hotas
+    role: throttle
+    what: The normal radar search mode for long-range missiles, with the designator and lock.
+    when: Going back to the long-range fight from a close combat mode.
+    actions:
+      - { name: (2) Air-to-Air Beyond Visual Range Modes, label: 'BVR mode' }
+
+  - id: cannon
+    title: Gun
+    tier: should
+    place: hotas
+    role: stick
+    what: Selects the gun and its sight.
+    when: Close in, when the missiles cannot get a shot.
+    actions:
+      - { name: Cannon, label: 'Select gun' }
+
+  - id: pickle
+    title: Weapon release (pickle)
+    tier: should
+    place: hotas
+    role: stick
+    what: The release button of the real stick, separate from the trigger.
+    when: If your stick has a thumb button where the real one is; otherwise Weapon Fire is enough.
+    actions:
+      - { name: Weapon Release, label: 'Pickle: release weapon' }
+
+  - id: radar-range
+    title: Radar range
+    tier: should
+    place: hotas
+    role: throttle
+    what: Changes the range scale of the radar display.
+    when: Zooming in on a group of contacts, or out to see further.
+    actions:
+      - { name: Display Zoom In, label: 'Radar range shorter' }
+      - { name: Display Zoom Out, label: 'Radar range longer' }
+
+  - id: radar-elevation
+    title: Radar elevation
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Points the radar's scan higher or lower so it covers the altitude of the targets.
+    when: Searching for contacts well above or below you.
+    note: An axis or a rotary is easiest; two buttons work too.
+    actions:
+      - { name: Radar Vertical, label: 'Radar elevation (axis)' }
+      - { name: Scan Zone Up, label: 'Scan zone up' }
+      - { name: Scan Zone Down, label: 'Scan zone down' }
+
+  - id: radar-mode
+    title: Radar mode
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Switches between range-while-search and track-while-scan, and the pulse repeat frequency.
+    when: Setting the radar up for the fight you expect.
+    actions:
+      - { name: Radar RWS/TWS Mode Select, label: 'RWS / TWS' }
+      - { name: Radar Pulse Repeat Frequency Select, label: 'Pulse repeat frequency' }
+
+  - id: radar-power
+    title: Radar on and off
+    tier: should
+    place: panel
+    role: panel
+    what: Turns the radar on, or off so it does not give you away.
+    when: After take-off, and off when you want to stay quiet.
+    actions:
+      - { name: Radar On/Off, label: 'Radar on/off' }
+
+  - id: ecm
+    title: Jammer (ECM)
+    tier: should
+    place: hotas
+    role: throttle
+    what: Turns the electronic countermeasures on and off.
+    when: When enemy radars track you; it also makes you easier to find, so not all the time.
+    actions:
+      - { name: ECM, label: 'Jammer on/off' }
+
+  - id: nws
+    title: Nose wheel steering
+    tier: should
+    place: hotas
+    role: stick
+    what: Lets the rudder pedals steer the nose wheel.
+    when: Taxiing.
+    actions:
+      - { name: Nose Wheel Steering, label: 'Nose wheel steering' }
+
+  - id: autopilot
+    title: Autopilot
+    tier: should
+    place: hotas
+    role: stick
+    need: any
+    what: Holds the attitude or the altitude; the disengage button hands the jet back to you.
+    when: Long transits, reading the map, talking on the radio.
+    actions:
+      - { name: Autopilot - Attitude Hold, label: 'Autopilot: attitude hold' }
+      - { name: Autopilot - Altitude Hold, label: 'Autopilot: altitude hold' }
+      - { name: Autopilot Disengage, label: 'Autopilot off' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: nav-mode
+    title: Navigation mode
+    tier: nice
+    place: panel
+    role: panel
+    what: Puts the HUD in navigation mode, with the steering to the next waypoint or airfield.
+    when: Flying the route and coming home to land.
+    actions:
+      - { name: (1) Navigation Modes, label: 'Navigation mode' }
+
+  - id: waypoints
+    title: Waypoints
+    tier: nice
+    place: panel
+    role: panel
+    what: Steps the navigation steering to the next or previous waypoint, airfield or target.
+    when: Flying a route, or choosing the airfield to land at.
+    actions:
+      - { name: 'Next Waypoint, Airfield Or Target', label: 'Next waypoint' }
+      - { name: 'Previous Waypoint, Airfield Or Target', label: 'Previous waypoint' }
+
+  - id: lights
+    title: Lights
+    tier: nice
+    place: panel
+    role: panel
+    what: Navigation lights, the landing light and the anti-collision light.
+    when: Night flights, and before taxi and landing.
+    actions:
+      - { name: Navigation lights, label: 'Navigation lights' }
+      - { name: Gear Light Near/Far/Off, label: 'Landing light' }
+      - { name: Anti-collision lights, label: 'Anti-collision lights' }
+
+  - id: engines
+    title: Engine start and stop
+    tier: nice
+    place: panel
+    role: panel
+    what: Starts or stops both engines.
+    when: At the start and the end of a flight from cold.
+    actions:
+      - { name: Engines Start, label: 'Start engines' }
+      - { name: Engines Stop, label: 'Stop engines' }
+
+  - id: jettison
+    title: Jettison
+    tier: nice
+    place: panel
+    role: panel
+    what: Drops the external fuel tanks, or all stores.
+    when: Before a dogfight when the tanks are empty, or in an emergency.
+    actions:
+      - { name: Jettison Fuel Tanks, label: 'Jettison fuel tanks' }
+      - { name: Weapons Jettison, label: 'Jettison all stores' }
+
+
+  - id: view-center
+    title: Center view
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Recenters the head-tracking or cockpit view.
+    when: After moving in your seat, or when the view drifted.
+    actions:
+      - { name: View Center, label: 'Center the view' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Zooms the cockpit view in and out to read a gauge or spot a distant aircraft.
+    when: Spotting traffic and reading small displays.
+    actions:
+      - { name: Zoom in slow, label: 'Zoom in' }
+      - { name: Zoom out slow, label: 'Zoom out' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's notes and maps.
+    when: Checking frequencies and the plan.
+    actions:
+      - { name: Kneeboard ON/OFF, label: 'Kneeboard on/off' }
+
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Ejects from the jet. Press three times quickly, so it cannot happen by accident.
+    when: When the jet cannot be saved.
+    actions:
+      - { name: Eject (3 times), label: 'Eject (press three times)' }

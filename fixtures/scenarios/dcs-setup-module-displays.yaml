@@ -1,0 +1,91 @@
+description: Flying rig without SimAppPro, the Viper setup used last, cockpit scripts that name each module's displays
+rig: mark-full
+extends: dcs-setup-no-simapppro.yaml
+# The recorded install has entry.lua for every module but none of their cockpit scripts.
+# These are the few lines of each script that name an exportable display (fixtures copied
+# from DCS World on the owner's PC, docs/research/dcs.md 3.3): F/A-18C, F-16C, A-10C II,
+# F-15E, F-14 and Ka-50. The other installed modules have none, as on the real PC.
+mutations:
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/A-10C_2/Cockpit/Scripts/MFCD/indicator/MFCD_init.lua'
+    from: 'data/dcs-setup/cockpit/A-10C_2/Cockpit/Scripts/MFCD/indicator/MFCD_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-15E/Cockpit/Bake/MFDG/Bake_FCC_init.lua'
+    from: 'data/dcs-setup/cockpit/F-15E/Cockpit/Bake/MFDG/Bake_FCC_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-15E/Cockpit/Bake/MFDG/Bake_FCL_init.lua'
+    from: 'data/dcs-setup/cockpit/F-15E/Cockpit/Bake/MFDG/Bake_FCL_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-15E/Cockpit/Bake/MFDG/Bake_FCR_init.lua'
+    from: 'data/dcs-setup/cockpit/F-15E/Cockpit/Bake/MFDG/Bake_FCR_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-15E/Cockpit/Bake/MFDG/Bake_RCLI_init.lua'
+    from: 'data/dcs-setup/cockpit/F-15E/Cockpit/Bake/MFDG/Bake_RCLI_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-15E/Cockpit/Bake/MFDG/Bake_RCLO_init.lua'
+    from: 'data/dcs-setup/cockpit/F-15E/Cockpit/Bake/MFDG/Bake_RCLO_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-15E/Cockpit/Bake/MFDG/Bake_RCRI_init.lua'
+    from: 'data/dcs-setup/cockpit/F-15E/Cockpit/Bake/MFDG/Bake_RCRI_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-15E/Cockpit/Bake/MFDG/Bake_RCRO_init.lua'
+    from: 'data/dcs-setup/cockpit/F-15E/Cockpit/Bake/MFDG/Bake_RCRO_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-15E/Cockpit/UFC/Indicator/UFC_Front_init.lua'
+    from: 'data/dcs-setup/cockpit/F-15E/Cockpit/UFC/Indicator/UFC_Front_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-16C/Cockpit/Scripts/Displays/EHSI/indicator/EHSI_init.lua'
+    from: 'data/dcs-setup/cockpit/F-16C/Cockpit/Scripts/Displays/EHSI/indicator/EHSI_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-16C/Cockpit/Scripts/Displays/MFD/indicator/MFD_left_init.lua'
+    from: 'data/dcs-setup/cockpit/F-16C/Cockpit/Scripts/Displays/MFD/indicator/MFD_left_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-16C/Cockpit/Scripts/Displays/MFD/indicator/MFD_right_init.lua'
+    from: 'data/dcs-setup/cockpit/F-16C/Cockpit/Scripts/Displays/MFD/indicator/MFD_right_init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/DetailDataDisplay/Indicator/init.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/DetailDataDisplay/Indicator/init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/ElectronicCounterMeasureDisplay/Indicator/init.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/ElectronicCounterMeasureDisplay/Indicator/init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/HorizontalSituationDisplay/Indicator/init.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/HorizontalSituationDisplay/Indicator/init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/JesterAI/JesterAI_Page.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/JesterAI/JesterAI_Page.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/JesterAI/JesterSubtitle_Page.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/JesterAI/JesterSubtitle_Page.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/TacticalInformationDisplay/Indicator/init.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/TacticalInformationDisplay/Indicator/init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/UHF_Radio/Indicator/Main/init.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/UHF_Radio/Indicator/Main/init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/VHF_Radio/Indicator/Main/init.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/VHF_Radio/Indicator/Main/init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F14/Cockpit/Scripts/VerticalDisplayIndicator/Indicator/init.lua'
+    from: 'data/dcs-setup/cockpit/F14/Cockpit/Scripts/VerticalDisplayIndicator/Indicator/init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/FA-18C/Cockpit/Scripts/Multipurpose_Display_Group/AMPCD/indicator/AMPCD_viewport_cfg.lua'
+    from: 'data/dcs-setup/cockpit/FA-18C/Cockpit/Scripts/Multipurpose_Display_Group/AMPCD/indicator/AMPCD_viewport_cfg.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/FA-18C/Cockpit/Scripts/Multipurpose_Display_Group/MDI_IP1556A/indicator/MDI_left_viewport_cfg.lua'
+    from: 'data/dcs-setup/cockpit/FA-18C/Cockpit/Scripts/Multipurpose_Display_Group/MDI_IP1556A/indicator/MDI_left_viewport_cfg.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/FA-18C/Cockpit/Scripts/Multipurpose_Display_Group/MDI_IP1556A/indicator/MDI_right_viewport_cfg.lua'
+    from: 'data/dcs-setup/cockpit/FA-18C/Cockpit/Scripts/Multipurpose_Display_Group/MDI_IP1556A/indicator/MDI_right_viewport_cfg.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/Ka-50/Cockpit/Scripts/ABRIS/BAKE/init.lua'
+    from: 'data/dcs-setup/cockpit/Ka-50/Cockpit/Scripts/ABRIS/BAKE/init.lua'
+  - op: writeFile
+    path: 'Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/Ka-50/Cockpit/Scripts/SHKVAL/BAKE/init.lua'
+    from: 'data/dcs-setup/cockpit/Ka-50/Cockpit/Scripts/SHKVAL/BAKE/init.lua'
+profiles:
+  - profiles/dcs-setup-hornet.yaml
+  - profiles/dcs-setup-viper.yaml
+data:
+  state.json: data/dcs-setup/state-viper-last.json

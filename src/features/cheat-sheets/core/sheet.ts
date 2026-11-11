@@ -3,6 +3,7 @@ import type { AircraftBindings, BoundDevice } from '../../../core/bindings';
 import type { InputDevice } from '../../../shared/models';
 import { categorize, CATEGORY_IDS, shortAction, type CategoryId } from './categories';
 import { appendUnplaced, generateLayout, shapeFromControls, type DeviceShape } from './generate';
+import { knownDeviceFor, knownLabels } from './known';
 import {
   compareControlIds,
   controlIdFor,
@@ -398,6 +399,22 @@ export function physicalLabels(layout: DeviceLayout): Map<string, string> {
   return labels;
 }
 
+/**
+ * What each control of a device is called: the names of a known device (./known) unless a
+ * shipped layout names its controls, with the user's own layout's names over both.
+ */
+export function deviceLabels(
+  device: Pick<SheetDevice, 'layout' | 'layoutSource' | 'vendorId' | 'productId' | 'name'>
+): Map<string, string> {
+  const labels = physicalLabels(device.layout);
+  if (device.layoutSource === 'builtin') return labels;
+  const known = knownDeviceFor(device);
+  if (!known) return labels;
+  const merged = knownLabels(known);
+  if (device.layoutSource === 'user') for (const [id, label] of labels) merged.set(id, label);
+  return merged;
+}
+
 export interface ActionPlace {
   deviceKey: string;
   device: string;
@@ -427,7 +444,7 @@ export function actionIndex(sheet: Sheet, deviceKeys?: string[]): ActionEntry[] 
   const entries = new Map<string, ActionEntry>();
   for (const device of sheet.devices) {
     if (deviceKeys && !deviceKeys.includes(device.key)) continue;
-    const physical = physicalLabels(device.layout);
+    const physical = deviceLabels(device);
     for (const control of device.controls) {
       for (const binding of control.bindings) {
         let entry = entries.get(binding.actionId);

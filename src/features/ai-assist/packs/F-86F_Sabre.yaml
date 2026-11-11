@@ -1,0 +1,363 @@
+# RigReady binding guide: F-86F Sabre. Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: F-86F Sabre
+  name: F-86F Sabre
+summary: >-
+  An early jet fighter with six machine guns and a radar-ranging gunsight. The stick carries
+  the trigger, the bomb and rocket button, the trim switch and nose wheel steering; the
+  throttle carries the radio, the speed brake and the gunsight's ranging and caging. Bind
+  the stick and throttle first; the rest is fine with the mouse.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the F-86F's controls (stick grip with
+    trigger, bomb-rocket button and trim switch; throttle with microphone button, speed
+    brake switch and gunsight twist grip) and of how they work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from its default input files for the F-86F;
+    a test checks each one against those files so a DCS update that renames an action is
+    caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      Pitch and roll, the gun trigger, the bomb and rocket release on the thumb, the trim
+      switch on a four-way hat, nose wheel steering and the radar target selector.
+    items: [pitch-roll, trigger, trim, nosewheel-steering, release, radar-target-select]
+  throttle:
+    summary: >-
+      Throttle on the main lever. The radio and speed brake go on throttle buttons; a rotary
+      or twist ranges the gunsight, and a button cages it.
+    items: [thrust, radio, speed-brake, gunsight-range, gunsight-cage, wingspan]
+  pedals:
+    summary: Rudder on the rudder axis, the two toe brakes on their own axes.
+    items: [rudder, wheel-brakes, rudder-trim]
+  panel:
+    summary: >-
+      Gear and flaps, then the armament switches you set before a fight: the gun and missile
+      selector and the sight function. Drop tank jettison and lights if you have spare
+      switches.
+    items: [gear, flaps, gun-missile-selector, sight-function, drop-tanks, landing-lights]
+  keyboard:
+    summary: Start-up, canopy, views, kneeboard and ejection can stay on the keyboard.
+    items: [auto-start, canopy, view-center, zoom, kneeboard, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the nose up and down and banks the jet.
+    when: All the time.
+    actions:
+      - { name: Pitch, label: 'Pitch (stick forward and back)' }
+      - { name: Roll, label: 'Roll (stick left and right)' }
+
+  - id: rudder
+    title: Rudder
+    tier: must
+    place: hotas
+    role: pedals
+    what: Yaws the nose; on the ground it steers the nose wheel while steering is engaged.
+    when: Take-off and landing roll, crosswinds, taxiing.
+    actions:
+      - { name: Rudder, label: 'Rudder (pedals or stick twist)' }
+
+  - id: thrust
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    what: Engine power. The early jet engine responds slowly, so plan power changes ahead.
+    when: All the time.
+    actions:
+      - { name: Thrust, label: 'Throttle (axis)' }
+
+  - id: wheel-brakes
+    title: Wheel brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Brakes the main wheels.
+    when: Taxiing, landing roll-out, holding before take-off.
+    note: Best on the toe brakes of the pedals (left and right axes); otherwise one button.
+    actions:
+      - { name: Wheel Brake Left, label: 'Left toe brake' }
+      - { name: Wheel Brake Right, label: 'Right toe brake' }
+      - { name: Wheel Brake, label: 'Both brakes, one axis' }
+      - { name: Wheel Brake On, label: 'Both brakes, one button' }
+
+  - id: trim
+    title: Trim switch
+    tier: must
+    place: hotas
+    role: stick
+    what: Trims the jet so it holds its attitude without pressure on the stick.
+    when: After every change of speed, and on approach.
+    actions:
+      - { name: Trim Up, label: 'Trim nose up' }
+      - { name: Trim Down, label: 'Trim nose down' }
+      - { name: Trim Left, label: 'Trim left wing down' }
+      - { name: Trim Right, label: 'Trim right wing down' }
+
+  - id: trigger
+    title: Gun trigger
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the six machine guns (and the missiles when they are selected).
+    when: Air combat and strafing.
+    actions:
+      - { name: Trigger - SECOND DETENT(Gun Fire), label: 'Trigger: fire' }
+
+  - id: nosewheel-steering
+    title: Nose wheel steering
+    tier: must
+    place: hotas
+    role: stick
+    what: Engages nose wheel steering while you hold it, so the rudder pedals steer on the ground.
+    when: Taxiing and the start of the take-off roll.
+    actions:
+      - { name: Nosewheel Steering Button, label: 'Nose wheel steering (hold)' }
+
+  - id: speed-brake
+    title: Speed brake
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Extends the speed brakes on the fuselage to slow down quickly.
+    when: Before landing, joining up, staying behind a slower aircraft in a fight.
+    actions:
+      - { name: Speed Brake Switch - OUT, label: 'Speed brake out' }
+      - { name: Speed Brake Switch - IN, label: 'Speed brake in' }
+      - { name: Speed Brake Switch - HOLD, label: 'Speed brake hold' }
+
+  - id: radio
+    title: Radio (call the radio menu)
+    tier: must
+    place: hotas
+    role: throttle
+    what: Talks on the radio and opens DCS's radio menu for the tower and your flight.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    actions:
+      - { name: Microphone Button (call radio menu), label: 'Talk / radio menu' }
+
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    actions:
+      - { name: Landing Gear Up/Down, label: 'Gear: toggle' }
+      - { name: Landing Gear Up, label: 'Gear up' }
+      - { name: Landing Gear Down, label: 'Gear down' }
+
+  - id: flaps
+    title: Flaps
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Lowers the flaps for more lift at low speed.
+    when: Before landing.
+    actions:
+      - { name: Flaps Up/Down, label: 'Flaps: toggle' }
+      - { name: Flaps Up, label: 'Flaps up' }
+      - { name: Flaps Down, label: 'Flaps down' }
+      - { name: Flaps Stop, label: 'Flaps stop where they are' }
+
+  # ---------------------------------------------------------------- should have
+  - id: release
+    title: Bomb and rocket release
+    tier: should
+    place: hotas
+    role: stick
+    what: Releases bombs and fires rockets, as set on the armament panel.
+    when: Every air-to-ground attack with bombs or rockets.
+    actions:
+      - { name: Weapon Release, label: 'Release bombs / fire rockets' }
+
+  - id: gun-missile-selector
+    title: Gun and missile selector
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Arms the guns or the missiles, or only the gunsight camera and radar. Nothing fires while it is OFF.
+    when: Before the fight; OFF again before landing.
+    actions:
+      - { name: Gun-Missile Selector Switch - GUNS, label: 'Arm guns' }
+      - { name: Gun-Missile Selector Switch - MISSILE, label: 'Arm missiles' }
+      - { name: Gun-Missile Selector Switch - SIGHT CAMERA & RADAR, label: 'Sight, camera and radar only' }
+      - { name: Gun-Missile Selector Switch - OFF, label: 'Armament off' }
+      - { name: Gun-Missile Selector Switch - CW, label: 'Gun and missile selector: next' }
+
+  - id: sight-function
+    title: Sight function
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Sets the gunsight for guns, rockets or bombs, so it shows the right aiming point.
+    when: Before each kind of attack.
+    actions:
+      - { name: Variable Sight Selector Unit - Sight Function Selector Lever - GUN, label: 'Sight: guns' }
+      - { name: Variable Sight Selector Unit - Sight Function Selector Lever - ROCKET, label: 'Sight: rockets' }
+      - { name: Variable Sight Selector Unit - Sight Function Selector Lever - BOMB, label: 'Sight: bombs' }
+
+  - id: gunsight-range
+    title: Gunsight manual ranging
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: >-
+      Sets the range on the gunsight by hand when the ranging radar has no lock, so the
+      reticle leads the target correctly.
+    when: Gun attacks without a radar lock.
+    note: In the real jet this is the throttle's twist grip; a rotary or slider works.
+    actions:
+      - { name: Manual Range, label: 'Manual range (axis)' }
+      - { name: A-4 Sight Manual Ranging Control (Throttle Twist Grip) - CCW/Increase, label: 'Range longer' }
+      - { name: A-4 Sight Manual Ranging Control (Throttle Twist Grip) - CW/Decrease, label: 'Range shorter' }
+
+  - id: gunsight-cage
+    title: Gunsight caging
+    tier: should
+    place: hotas
+    role: throttle
+    what: Cages the gunsight's moving reticle so it stays fixed while you hold it.
+    when: Finding the target in the sight before tracking it.
+    actions:
+      - { name: A-4 Sight Electrical Caging Button (On Throttle), label: 'Cage gunsight (hold)' }
+
+  - id: radar-target-select
+    title: Radar target selector
+    tier: should
+    place: hotas
+    role: stick
+    what: Tells the ranging radar to drop the target it has and look for the next one.
+    when: When the radar ranges on the wrong target.
+    actions:
+      - { name: A-4 Sight Radar Target Selector Button, label: 'Radar: next target' }
+
+  - id: rudder-trim
+    title: Rudder trim
+    tier: should
+    place: hotas
+    role: pedals
+    what: Trims the rudder so the jet flies straight without pedal.
+    when: After big changes of speed, and with asymmetric stores.
+    actions:
+      - { name: Rudder Trim Switch - LEFT, label: 'Rudder trim left' }
+      - { name: Rudder Trim Switch - RIGHT, label: 'Rudder trim right' }
+
+  - id: auto-start
+    title: Auto start
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: DCS starts the engine for you.
+    when: At the start of a flight, until you learn the start-up.
+    actions:
+      - { name: Auto Start, label: 'Auto start' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: wingspan
+    title: Gunsight target wingspan
+    tier: nice
+    place: hotas
+    role: throttle
+    need: any
+    what: Sets the target's wingspan on the gunsight, used when ranging by hand.
+    when: Before a fight, for the kind of aircraft you expect.
+    actions:
+      - { name: Wing Span, label: 'Target wingspan (axis)' }
+      - { name: A-4 Sight Wing Span Adjustment Knob - Wing Span Increase, label: 'Wingspan larger' }
+      - { name: A-4 Sight Wing Span Adjustment Knob - Wing Span Decrease, label: 'Wingspan smaller' }
+
+  - id: drop-tanks
+    title: Drop tank jettison
+    tier: nice
+    place: panel
+    role: panel
+    what: Drops the external fuel tanks.
+    when: Before a fight, so the jet is lighter and faster.
+    actions:
+      - { name: Drop Tank Jettison Button, label: 'Jettison drop tanks' }
+
+  - id: landing-lights
+    title: Landing and taxi lights
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Extends and switches on the landing and taxi lights, or retracts them.
+    when: Landing and taxiing at night.
+    actions:
+      - { name: Landing & Taxi Lights Switch - EXTEND & ON, label: 'Landing lights out and on' }
+      - { name: Landing & Taxi Lights Switch - OFF, label: 'Landing lights off' }
+      - { name: Landing & Taxi Lights Switch - RETRACT, label: 'Landing lights retract' }
+
+  - id: canopy
+    title: Canopy
+    tier: nice
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Opens and closes the canopy.
+    when: Before taxiing and after landing.
+    actions:
+      - { name: Canopy Switch - OPEN/CLOSE, label: 'Canopy: toggle' }
+      - { name: Canopy Switch - OPEN, label: 'Canopy open' }
+      - { name: Canopy Switch - CLOSE, label: 'Canopy close' }
+
+  - id: view-center
+    title: Center view
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Recenters the head position, needed with head tracking or VR.
+    when: Whenever the view has drifted.
+    actions:
+      - { name: View Center, label: 'Center view' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Zooms the view in to read instruments or spot other aircraft.
+    when: Reading small gauges, spotting targets.
+    actions:
+      - { name: Zoom in slow, label: 'Zoom in' }
+      - { name: Zoom out slow, label: 'Zoom out' }
+      - { name: Zoom normal, label: 'Zoom normal' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's notes and maps.
+    when: Checking frequencies, headings and targets.
+    actions:
+      - { name: Kneeboard ON/OFF, label: 'Kneeboard on/off' }
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Fires the ejection seat. Press it three times.
+    when: Only when the jet cannot be saved.
+    actions:
+      - { name: Eject (3 times), label: 'Eject (press three times)' }
