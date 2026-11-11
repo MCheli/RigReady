@@ -31,6 +31,7 @@ Among the actions:
 - Open the [bindings](../dcs/bindings.md) or the [cheat sheet](../dcs/cheat-sheets.md) of an aircraft.
 - **Copy the diagnostics report**: the report on the clipboard without opening the [page](diagnostics.md).
 - **Keyboard shortcuts** ([the whole list](keyboard-shortcuts.md)) and **About RigReady**.
+- **Open the manual** and **Open the manual page for this screen**: the manual's front page, or its page about the screen you are on, in your browser (the same as the question mark in the header).
 
 A page opens and nothing more is said. An action reports what happened in a toast at the bottom of the window, in the feature's own words: "Backed up 340 files (12.4 MB) as "2026-10-03 14-05 Everything"", with a second line for what was skipped and a button to the page it concerns. An action that takes more than a moment shows that it is running, with its progress, until the result replaces it.
 

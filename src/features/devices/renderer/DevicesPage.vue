@@ -2,6 +2,7 @@
 import DeviceTabs from './DeviceTabs.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { onMachineChanged } from '../../../renderer/machine';
 import type { InputState } from '../../../shared/models';
@@ -297,6 +298,7 @@ watch(
       class="mb-4"
     >
       Game controller details are not available: {{ store.overview.inputError }}
+      <ManualLink topic="controllersNotRead" />
     </v-alert>
     <v-alert
       v-if="hidHide?.state === 'ok' && hidHide.cloak && hiddenCount > 0"
@@ -428,6 +430,7 @@ watch(
                   appears here within a couple of seconds of being plugged in. If it stays away, the
                   USB map shows whether its hub is still there.
                 </template>
+                <ManualLink topic="deviceNotFound">More causes and what to do</ManualLink>
               </p>
               <div class="d-flex ga-2">
                 <v-btn

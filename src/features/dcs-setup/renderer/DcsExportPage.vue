@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
@@ -125,6 +126,7 @@ const toolName = (tool?: string): string =>
 
       <v-alert v-if="view.dcsRunning" type="info" variant="tonal" class="mb-4">
         DCS is running. Close it before changing Export.lua; DCS reads it when a mission starts.
+        <ManualLink topic="dcsFilesRefused" />
       </v-alert>
 
       <div v-if="view.changedOutside" class="rr-panel exp-changed" data-testid="export-changed">
