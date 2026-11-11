@@ -10,6 +10,7 @@ import {
   trayStatusLine,
   trayTone,
   trayTooltip,
+  virtualControllerFrom,
 } from '../../src/main/trayModel';
 
 describe('tray', () => {
@@ -232,5 +233,47 @@ describe('tray', () => {
     expect(trayClick('click', behind)).toBe('show');
     // What the user is looking at: put away.
     expect(trayClick('click', inFront)).toBe('hide');
+  });
+
+  it('shows the virtual controller that runs, with Stop, and a Start for each profile', () => {
+    const base = { profileId: 'a', profileName: 'A', ready: true, warnings: 0 };
+    // Nothing to start or stop: the menu is as it was.
+    expect(trayMenu({ ...base, virtualController: { profiles: [] } }).map((i) => i.id)).toEqual(
+      trayMenu(base).map((i) => i.id)
+    );
+    const vc = virtualControllerFrom('virtual-controller:event:changed', {
+      running: { profileName: 'Stick' },
+      profiles: [
+        { id: 'stick', name: 'Stick' },
+        { id: 'wheel', name: 'Wheel' },
+        { id: 7, name: 'not a profile' },
+      ],
+    });
+    expect(vc).toEqual({
+      running: 'Stick',
+      profiles: [
+        { id: 'stick', name: 'Stick' },
+        { id: 'wheel', name: 'Wheel' },
+      ],
+    });
+    const menu = trayMenu({ ...base, virtualController: vc! });
+    const entry = menu.find((i) => i.id === 'virtualController');
+    expect(entry?.label).toBe('Virtual controller on: Stick');
+    expect(entry?.submenu?.map((i) => [i.id, i.label])).toEqual([
+      ['vcStop', 'Stop the virtual controller'],
+      ['vc:wheel', 'Start Wheel'],
+    ]);
+    expect(trayTooltip({ ...base, virtualController: vc! })).toBe(
+      'RigReady - A: Ready (virtual controller on)'
+    );
+    const idle = virtualControllerFrom('virtual-controller:running', {
+      running: null,
+      profiles: [{ id: 'wheel', name: 'Wheel' }],
+    });
+    expect(
+      trayMenu({ ...base, virtualController: idle! }).find((i) => i.id === 'virtualController')
+        ?.label
+    ).toBe('Virtual controller');
+    expect(virtualControllerFrom('fly:state', {})).toBeUndefined();
   });
 });

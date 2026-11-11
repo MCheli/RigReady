@@ -45,6 +45,7 @@ import type {
   TaskbarImage,
   TaskbarProgress,
   ThumbButton,
+  VirtualPads,
 } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
 import { findSteamLibraries } from '../../core/steam';
@@ -59,10 +60,13 @@ import type {
   InputDevice,
   InputState,
   LaunchTarget,
+  PadReport,
   ProcessInfo,
   RegistryHive,
   RegistryValue,
   ServiceInfo,
+  VirtualPadKind,
+  VirtualPadStatus,
 } from '../../shared/models';
 import { NodeRawFs, systemClock } from '../node';
 import { solidPng } from './png';
@@ -395,6 +399,73 @@ export class FakeInputProvider implements InputProvider {
   }
 }
 
+/**
+ * A virtual controller on the fake machine: plugging in works when the rig has the ViGEmBus
+ * service running, as the real driver must be there. Reports are kept for tests to read.
+ */
+export class FakeVirtualPads implements VirtualPads {
+  /** Every plug and unplug, in order ("plug xbox360", "unplug"). */
+  readonly calls: string[] = [];
+  /** The reports handed over since the last plug, newest last (at most 500). */
+  readonly reports: PadReport[] = [];
+  private current: VirtualPadStatus = { plugged: false, reports: 0 };
+  private listeners = new Set<(status: VirtualPadStatus) => void>();
+  constructor(
+    private readonly state: RigState,
+    private readonly reader: string
+  ) {}
+
+  async plug(kind: VirtualPadKind, label: string): Promise<Result<void>> {
+    this.calls.push(`plug ${kind}`);
+    const bus = this.state.services.find((s) => s.name.toLowerCase() === 'vigembus');
+    if (!bus || bus.state !== 'running') {
+      return err(
+        'pad.driver',
+        'The ViGEmBus driver is not installed or not running.',
+        'vigem_connect: VIGEM_ERROR_BUS_NOT_FOUND'
+      );
+    }
+    this.reports.length = 0;
+    this.current = { plugged: true, kind, label, reports: 0 };
+    return ok(undefined);
+  }
+
+  send(report: PadReport): Result<void> {
+    if (!this.current.plugged) return err('pad.notPlugged', 'No virtual controller is plugged in.');
+    this.reports.push(structuredClone(report));
+    if (this.reports.length > 500) this.reports.shift();
+    this.current = { ...this.current, reports: this.current.reports + 1, last: report };
+    return ok(undefined);
+  }
+
+  async unplug(): Promise<Result<void>> {
+    this.calls.push('unplug');
+    this.current = { plugged: false, reports: 0 };
+    return ok(undefined);
+  }
+
+  async status(): Promise<Result<VirtualPadStatus>> {
+    return ok(structuredClone(this.current));
+  }
+
+  subscribe(listener: (status: VirtualPadStatus) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  readerProgram(): string | undefined {
+    return this.reader;
+  }
+
+  /** Test hook: the helper that holds the controller stopped by itself. */
+  lose(reason: string): void {
+    this.current = { plugged: false, reports: 0, lost: reason };
+    for (const listener of this.listeners) listener(structuredClone(this.current));
+  }
+}
+
 /** The recorded registry keys. Lookups ignore case, as Windows does. */
 export class FakeRegistry implements Registry {
   constructor(private readonly state: RigState) {}
@@ -579,6 +650,9 @@ export class FakeShell implements Shell {
       } else if (save && arg === '--app-reg' && args[i + 1] !== undefined) {
         const target = args[++i]!;
         if (!hidHide.apps.includes(target)) hidHide.apps.push(target);
+      } else if (save && arg === '--app-unreg' && args[i + 1] !== undefined) {
+        const target = args[++i]!.toLowerCase();
+        hidHide.apps = hidHide.apps.filter((a) => a.toLowerCase() !== target);
       }
     }
     return ok({ code: 0, stdout: lines.join('\r\n') + (lines.length ? '\r\n' : ''), stderr: '' });
@@ -1048,6 +1122,7 @@ export interface FakePorts extends Ports {
   shortcuts: FakeShortcuts;
   taskbar: FakeTaskbar;
   hotkeys: FakeHotkeys;
+  pads: FakeVirtualPads;
   /** The mutable machine state behind the providers. */
   state: RigState;
 }
@@ -1108,6 +1183,10 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     shortcuts: new FakeShortcuts(folders),
     taskbar: new FakeTaskbar(),
     hotkeys: new FakeHotkeys(),
+    pads: new FakeVirtualPads(
+      state,
+      path.join(folders.localAppData(), 'Programs', 'RigReady', 'resources', 'python', 'python.exe')
+    ),
   };
 }
 

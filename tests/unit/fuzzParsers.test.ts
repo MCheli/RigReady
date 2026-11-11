@@ -12,7 +12,7 @@ import { runLua } from '../../src/core/lua/sandbox';
 import { hasYamlComments } from '../../src/core/profile/store';
 import { parseAppManifest } from '../../src/core/steam';
 import { parseVdf, steamLibraryPaths } from '../../src/core/vdf';
-import { parseGaming } from '../../src/features/devices/core/hidhide';
+import { parseGaming } from '../../src/core/hidhide';
 import { parseIni } from '../../src/features/racing/core/assettoCorsa';
 import { parseRelaxedJson } from '../../src/features/racing/core/beamng/beamng';
 import { parseControlsCfg } from '../../src/features/racing/core/iracing/controlsCfg';

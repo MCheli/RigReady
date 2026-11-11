@@ -23,12 +23,28 @@ export interface TrayStatus {
   problems?: string[];
   /** The optional items that are not met, by title. */
   warningNames?: string[];
+  /** The virtual controller: the profile running now, and the user's profiles to start one. */
+  virtualController?: TrayVirtualController;
+}
+
+export interface TrayVirtualController {
+  /** The name of the profile running now. */
+  running?: string;
+  profiles: { id: string; name: string }[];
 }
 
 export type TrayAction = 'open' | 'makeReady' | 'launch' | 'standDown' | 'quit';
 
 export interface TrayMenuItem {
-  id: TrayAction | 'status' | 'separator' | 'setups' | `profile:${string}`;
+  id:
+    | TrayAction
+    | 'status'
+    | 'separator'
+    | 'setups'
+    | 'virtualController'
+    | 'vcStop'
+    | `profile:${string}`
+    | `vc:${string}`;
   label: string;
   enabled: boolean;
   /** For a setup in the quick switch: the one in use. */
@@ -74,7 +90,8 @@ function someOf(names: string[], room: number): string {
  * something runs it says so.
  */
 export function trayTooltip(status: TrayStatus, busy = false): string {
-  const line = `RigReady - ${trayStatusLine(status)}`;
+  const vc = status.virtualController?.running ? ' (virtual controller on)' : '';
+  const line = `RigReady - ${trayStatusLine(status)}${vc}`;
   if (busy && status.profileName) return `RigReady - ${status.profileName}: working...`;
   const names =
     status.ready === false
@@ -237,9 +254,60 @@ export function trayMenu(status: TrayStatus, busy = false): TrayMenuItem[] {
     },
     { id: 'launch', label: 'Launch', enabled: !busy && hasSetup && canLaunch },
     { id: 'standDown', label: 'Stand down', enabled: !busy && hasSetup },
+    ...virtualControllerMenu(status.virtualController),
     { id: 'separator', label: '', enabled: false },
     { id: 'quit', label: 'Quit', enabled: true },
   ];
+}
+
+/**
+ * The virtual controller's entry: what runs, a Stop, and a Start for each profile. Absent
+ * when there is nothing to start or stop.
+ */
+function virtualControllerMenu(vc: TrayVirtualController | undefined): TrayMenuItem[] {
+  if (!vc || (!vc.running && vc.profiles.length === 0)) return [];
+  const submenu: TrayMenuItem[] = [];
+  if (vc.running)
+    submenu.push({ id: 'vcStop', label: 'Stop the virtual controller', enabled: true });
+  for (const p of vc.profiles) {
+    if (p.name === vc.running) continue;
+    submenu.push({ id: `vc:${p.id}`, label: `Start ${p.name}`, enabled: true });
+  }
+  return [
+    {
+      id: 'virtualController',
+      label: vc.running ? `Virtual controller on: ${vc.running}` : 'Virtual controller',
+      enabled: true,
+      submenu,
+    },
+  ];
+}
+
+/**
+ * The virtual controller's state out of what the shell sees go by: its feature's `changed`
+ * event or its `running` answer. Undefined for anything else.
+ */
+export function virtualControllerFrom(
+  channel: string,
+  value: unknown
+): TrayVirtualController | undefined {
+  if (channel !== 'virtual-controller:event:changed' && channel !== 'virtual-controller:running') {
+    return undefined;
+  }
+  const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const running = record['running'] as { profileName?: unknown } | null | undefined;
+  const list = Array.isArray(record['profiles']) ? (record['profiles'] as unknown[]) : [];
+  const profiles: { id: string; name: string }[] = [];
+  for (const entry of list) {
+    const p = entry as { id?: unknown; name?: unknown } | null;
+    if (typeof p?.id === 'string' && typeof p.name === 'string') {
+      profiles.push({ id: p.id, name: p.name });
+    }
+  }
+  return {
+    ...(running && typeof running.profileName === 'string' ? { running: running.profileName } : {}),
+    profiles,
+  };
 }
 
 /** Picks tray status out of an IPC answer from the fly feature, when it is one. */

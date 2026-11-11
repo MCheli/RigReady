@@ -25,6 +25,7 @@ import { WindowsKnownFolders } from './knownFolders';
 import { WindowsProcessProvider } from './processes';
 import { WindowsRegistry } from './registry';
 import { WindowsServiceProvider } from './services';
+import { SidecarVirtualPads, locatePadHelper } from './virtualPads';
 
 /** The ports only the Electron app can provide (src/platform/electron). */
 export interface AppPorts {
@@ -78,6 +79,14 @@ export function createWindowsPorts(options: WindowsPlatformOptions): Ports {
     shell,
     clock: systemClock,
     http: new NodeHttp(),
+    pads: new SidecarVirtualPads(
+      () => locatePadHelper(location),
+      () => {
+        const reader = locateSidecar(location);
+        return reader.ok ? reader.value.python : undefined;
+      },
+      options.log.child('pads')
+    ),
     ...(options.app ? options.app(folders.dataRoot()) : headlessPorts),
   };
 }

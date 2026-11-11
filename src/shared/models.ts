@@ -196,6 +196,54 @@ export const ServiceInfoSchema = z.object({
 });
 export type ServiceInfo = z.infer<typeof ServiceInfoSchema>;
 
+/** The kinds of virtual controller RigReady can plug in (through the ViGEmBus driver). */
+export const VirtualPadKindSchema = z.enum(['xbox360', 'ds4']);
+export type VirtualPadKind = z.infer<typeof VirtualPadKindSchema>;
+
+/**
+ * What a virtual controller reports, in XInput's terms whatever the kind: sticks from -1 to
+ * 1 with up and right positive, triggers from 0 to 1, and the buttons as the XInput bit
+ * mask (A 0x1000, B 0x2000, X 0x4000, Y 0x8000, LB 0x100, RB 0x200, Back 0x20, Start 0x10,
+ * L3 0x40, R3 0x80, Guide 0x400, d-pad up 0x1, down 0x2, left 0x4, right 0x8). A DualShock 4
+ * gets the same report with Cross for A, Circle for B, Square for X and Triangle for Y.
+ */
+export const PadReportSchema = z.object({
+  lx: z.number().min(-1).max(1),
+  ly: z.number().min(-1).max(1),
+  rx: z.number().min(-1).max(1),
+  ry: z.number().min(-1).max(1),
+  lt: z.number().min(0).max(1),
+  rt: z.number().min(0).max(1),
+  buttons: z.number().int().min(0).max(0xffff),
+});
+export type PadReport = z.infer<typeof PadReportSchema>;
+
+/** Sticks centred, triggers released, nothing pressed. */
+export const NEUTRAL_PAD_REPORT: PadReport = {
+  lx: 0,
+  ly: 0,
+  rx: 0,
+  ry: 0,
+  lt: 0,
+  rt: 0,
+  buttons: 0,
+};
+
+/** What the virtual controller port says is plugged in right now. */
+export const VirtualPadStatusSchema = z.object({
+  plugged: z.boolean(),
+  kind: VirtualPadKindSchema.optional(),
+  /** What it was plugged in for, in words ("Flight stick to gamepad"). */
+  label: z.string().optional(),
+  /** Reports handed to the driver since it was plugged in. */
+  reports: z.number().int().min(0),
+  /** The last report handed over. */
+  last: PadReportSchema.optional(),
+  /** Why it is not plugged in when it went away by itself (the helper stopped). */
+  lost: z.string().optional(),
+});
+export type VirtualPadStatus = z.infer<typeof VirtualPadStatusSchema>;
+
 export const RegistryHiveSchema = z.enum(['HKCU', 'HKLM']);
 export type RegistryHive = z.infer<typeof RegistryHiveSchema>;
 

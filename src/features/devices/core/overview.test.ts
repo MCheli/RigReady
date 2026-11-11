@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Profile } from '../../../core/profile/schema';
 import type { DeviceInfo, InputDevice } from '../../../shared/models';
-import type { HidHideInfo } from './hidhide';
+import type { HidHideInfo } from '../../../core/hidhide';
 import { buildOverview, requirements, type OverviewInputs } from './overview';
 import { DevicesDataSchema, HistorySchema } from './store';
 import { buildUsbMap, USB_ADDRESS_LIMIT } from './usbMap';

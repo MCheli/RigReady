@@ -72,6 +72,13 @@ export function sabotage(ports: FakePorts): Sabotage {
     return ok(undefined);
   });
 
+  // A virtual controller the driver says it plugged in and that never shows up.
+  replace(ports.pads, 'plug', async (kind) => {
+    ports.pads.calls.push(`plug ${kind}`);
+    attempts.push(`pads.plug ${kind}`);
+    return ok(undefined);
+  });
+
   // File changes that are made and then put back (another program restored its own copy).
   const files = ports.files;
   const snapshot = async (file: string): Promise<() => Promise<void>> => {

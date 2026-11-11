@@ -6,7 +6,7 @@ import {
   matchesDevice,
   type DeviceParams,
 } from './deviceCheck';
-import { canSeeHidden, hiddenDeviceIds, onAppList, type HidHideInfo } from './hidhide';
+import { canSeeHidden, hiddenDeviceIds, onAppList, type HidHideInfo } from '../../../core/hidhide';
 import {
   formatWhen,
   hubNames,
