@@ -671,6 +671,7 @@ requirements:
       - "src/features/fly/core/rig.test.ts#says why when Windows does not report the monitors"
       - "src/features/fly/core/deviceKind.test.ts#knows the gear of a flying rig by its names"
       - "src/features/fly/core/deviceKind.test.ts#knows the gear of a racing rig"
+      - "src/features/fly/core/deviceKind.test.ts#knows the gear of the common brands by its names"
       - "src/features/fly/core/deviceKind.test.ts#leaves out the word most of the devices begin with: their maker"
       - "src/features/fly/renderer/rigDrawing.test.ts#fits the whole desktop in the box, every monitor at its place and in proportion"
       - "tests/e2e/fly-rig.e2e.ts#rig: the monitors are drawn to scale and the devices are chips; a problem is a place, and choosing it leads to its row"
