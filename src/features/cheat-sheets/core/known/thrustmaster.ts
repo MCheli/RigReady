@@ -9,7 +9,7 @@ import type { KnownDeviceInput } from './schema';
 
 const TM = '044F';
 
-const warthogStick: KnownDeviceInput = {
+export const warthogStick: KnownDeviceInput = {
   id: 'tm-warthog-stick',
   name: 'Thrustmaster HOTAS Warthog joystick',
   match: { vendorId: TM, productIds: ['0402'], names: ['Joystick - HOTAS Warthog'] },
@@ -34,7 +34,7 @@ const warthogStick: KnownDeviceInput = {
   ],
 };
 
-const warthogThrottle: KnownDeviceInput = {
+export const warthogThrottle: KnownDeviceInput = {
   id: 'tm-warthog-throttle',
   name: 'Thrustmaster HOTAS Warthog throttle',
   match: { vendorId: TM, productIds: ['0404'], names: ['Throttle - HOTAS Warthog'] },
@@ -111,7 +111,7 @@ const warthogThrottle: KnownDeviceInput = {
   ],
 };
 
-const t16000m: KnownDeviceInput = {
+export const t16000m: KnownDeviceInput = {
   id: 'tm-t16000m',
   name: 'Thrustmaster T.16000M stick',
   match: { vendorId: TM, productIds: ['B10A'], names: ['T.16000M'] },

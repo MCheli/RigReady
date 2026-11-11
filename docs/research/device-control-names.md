@@ -1,6 +1,6 @@
 # Control names for popular controllers
 
-Date: 2026-11-11. Where the button numbers of the "known devices" in `src/features/cheat-sheets/core/known/` come from. A known device has no drawing; its cheat sheet is the controls list with a block per physical control, named the way the maker names it.
+Date: 2026-11-11. Where the button numbers of the "known devices" in `src/features/cheat-sheets/core/known/` come from. A known device without a drawing gets the controls list with a block per physical control, named the way the maker names it. The four devices below also have a drawing since 2026-11-11 (`controller-drawings.md`, section 7), whose controls take their names and numbers from these maps.
 
 ## Method
 

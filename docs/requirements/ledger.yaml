@@ -3096,7 +3096,7 @@ requirements:
       - "2026-11-07: the owner asked for better drawings ('a little blobby', leader lines that do not make sense) and whether users can supply their own; the design and what is left are in docs/research/controller-drawings.md. The pedals, panels, UFC, ICP and Fanatec wheel are still drawn as cards."
     status: done
     evidence:
-      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the two grips, the throttle and the MFD frames, with every control anchored on the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the WinWing grips, throttle and MFD frames and the popular Thrustmaster and Saitek controllers, with every control anchored on the device"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#is found by the name the grip reports, numbered as WinWing numbers it, with every bound control on the drawing"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#trades two blocks whose leaders would cross so that none do"
@@ -3130,6 +3130,7 @@ requirements:
       - "The detail panel and By action name the physical control (\"S2 weapon release\"); drawings, shipped layouts and the user's own layouts and drawings are used as before."
       - "The numbers come from the per-device default bindings DCS World ships, cross-checked with a public source, cited in docs/research/device-control-names.md; the manual lists the devices covered."
     notes:
+      - "2026-11-11: since SHEET-018 these four devices have a drawing; the named maps give the drawings their names and numbers, and the named list is what a device with a map but no drawing gets."
       - "2026-11-11: gap 2 of the coverage audit (cheat sheets name controls only for the owner's hardware). TWCS, T.Flight HOTAS X, X-56, VKB and Virpil have DCS default files but no numbered public map to cross-check, so they are not shipped yet (research doc)."
     status: done
     evidence:
@@ -3138,10 +3139,43 @@ requirements:
       - "src/features/cheat-sheets/core/known/known.test.ts#is found by its USB ids and by the name it reports"
       - "src/features/cheat-sheets/core/known/known.test.ts#the Warthog stick: TG1 is button 1, S2 is 2, H2 is 7–10, H4 is 15–19, H1 the POV"
       - "src/features/cheat-sheets/core/known/known.test.ts#a list of a known device has a block per physical control, and the others after it"
-      - "src/features/cheat-sheets/core/known/known.test.ts#gets the controls list named for it, with DCS’s Hornet defaults on its controls"
-      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a Warthog stick shows its controls by name"
+      - "src/features/cheat-sheets/core/known/known.test.ts#gets its drawing with the controls named for it, and DCS’s Hornet defaults on them"
       - "docs/research/device-control-names.md"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: the popular Thrustmaster and Saitek controllers have a drawing"
       - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
+
+  - id: SHEET-018
+    title: The popular Thrustmaster and Saitek controllers have a drawing
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The Thrustmaster HOTAS Warthog stick (the grip from behind) and throttle (from above), the T.16000M stick (from behind) and the Saitek/Logitech X52 Pro (stick and throttle in one drawing, since they report as one device) are drawn in the same flat schematic style as the WinWing drawings: simple outlines, not photos, CC0, made from scratch."
+      - "Every control the device's named map has (SHEET-017) is anchored on its drawing where it is on the device, with the maker's name and the same inputs, so the drawing and the named list cannot disagree; where the places come from is cited in docs/research/controller-drawings.md, and places that are approximate say so on the sheet."
+      - "The picture chooser gives these devices 'RigReady drawing' instead of the named list; the user's changes in Edit drawing, a photo of their own and a layout of cards they arranged before still win."
+      - "For DCS's own Hornet defaults and for every input bound, no two leader lines cross, every label block is inside the page and every anchor is on the drawn device; each has a sheet and a kneeboard page by day and by night."
+    notes:
+      - "2026-11-11: Thrustmaster is the biggest flight brand (market research); these are its and Logitech's most common sticks. The column planner now also tries ordering a column along the slope its leaders take when it runs on below the drawing, which untangles a dense switch panel. Before and after pictures: rigready-ops/drawings/compare-warthog-stick.png and the three others."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#keeps the user’s changes to a drawing, and a layout of cards they arranged before"
+      - "src/features/cheat-sheets/core/known/known.test.ts#gets its drawing with the controls named for it, and DCS’s Hornet defaults on them"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: the popular Thrustmaster and Saitek controllers have a drawing"
+      - "docs/research/controller-drawings.md"
+      - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
+      - "artifacts/screens/cheat-sheets-known-devices/02-warthog-stick-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/03-warthog-stick-kneeboard-night-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/05-warthog-throttle-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/06-warthog-throttle-kneeboard-night-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/07-t16000m.png"
+      - "artifacts/screens/cheat-sheets-known-devices/08-t16000m-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/09-t16000m-kneeboard-night-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/10-x52-pro.png"
+      - "artifacts/screens/cheat-sheets-known-devices/11-x52-pro-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/12-x52-pro-kneeboard-night-page.png"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE

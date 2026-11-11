@@ -1,9 +1,11 @@
-description: Cheat sheets, a Thrustmaster HOTAS Warthog stick added to the owner's rig
+description: Cheat sheets, the popular Thrustmaster and Saitek controllers added to the owner's rig
 rig: mark-full
 extends: cheat-sheets-hornet.yaml
-# A Warthog stick RigReady has no drawing of, but knows the controls of. DCS's own
-# default bindings for it (Mods/aircraft/FA-18C/.../Joystick - HOTAS Warthog.diff.lua,
-# in the recorded install) give it something to show in the Hornet.
+# Controllers RigReady ships a drawing of besides the owner's own: the Thrustmaster HOTAS
+# Warthog stick and throttle, the T.16000M and the Saitek X52 Pro. DCS's own default
+# bindings for the first three (Mods/aircraft/FA-18C/.../<device name>.diff.lua, in the
+# recorded install) give them something to show in the Hornet; the X52 Pro has none
+# there, so its sheet shows its controls with nothing bound.
 mutations:
   - op: plugDevice
     device:
@@ -27,3 +29,69 @@ mutations:
       numButtons: 19
       numHats: 1
       axisNames: [X, Y]
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_044F&PID_0404\6&2c41a7f0&0&5'
+      vendorId: 044F
+      productId: '0404'
+      name: Throttle - HOTAS Warthog
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Thrustmaster
+    controller:
+      name: Throttle - HOTAS Warthog
+      guid: 3A7C1E21-7A11-11EF-8002-444553540000
+      productGuid: 0404044F-0000-0000-0000-504944564944
+      vendorId: 044F
+      productId: '0404'
+      numAxes: 5
+      numButtons: 32
+      numHats: 1
+      axisNames: [X, Y, Z, RZ, SLIDER1]
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_044F&PID_B10A\6&2c41a7f0&0&6'
+      vendorId: 044F
+      productId: B10A
+      name: T.16000M
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Thrustmaster
+    controller:
+      name: T.16000M
+      guid: 3A7C1E22-7A11-11EF-8003-444553540000
+      productGuid: B10A044F-0000-0000-0000-504944564944
+      vendorId: 044F
+      productId: B10A
+      numAxes: 4
+      numButtons: 16
+      numHats: 1
+      axisNames: [X, Y, RZ, SLIDER1]
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_06A3&PID_0762\6&2c41a7f0&0&7'
+      vendorId: 06A3
+      productId: '0762'
+      name: Saitek X52 Pro Flight Controller
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Saitek
+    controller:
+      name: Saitek X52 Pro Flight Controller
+      guid: 3A7C1E23-7A11-11EF-8004-444553540000
+      productGuid: 076206A3-0000-0000-0000-504944564944
+      vendorId: 06A3
+      productId: '0762'
+      numAxes: 7
+      numButtons: 39
+      numHats: 1
+      axisNames: [X, Y, Z, RX, RY, RZ, SLIDER1]
