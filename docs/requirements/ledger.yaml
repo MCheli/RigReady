@@ -671,6 +671,7 @@ requirements:
       - "src/features/fly/core/rig.test.ts#says why when Windows does not report the monitors"
       - "src/features/fly/core/deviceKind.test.ts#knows the gear of a flying rig by its names"
       - "src/features/fly/core/deviceKind.test.ts#knows the gear of a racing rig"
+      - "src/features/fly/core/deviceKind.test.ts#knows the gear of the common brands by its names"
       - "src/features/fly/core/deviceKind.test.ts#leaves out the word most of the devices begin with: their maker"
       - "src/features/fly/renderer/rigDrawing.test.ts#fits the whole desktop in the box, every monitor at its place and in proportion"
       - "tests/e2e/fly-rig.e2e.ts#rig: the monitors are drawn to scale and the devices are chips; a problem is a place, and choosing it leads to its row"
@@ -4219,7 +4220,7 @@ requirements:
     priority: p3
     done_means:
       - "Each is found from its Steam app manifest in any Steam library (Assetto Corsa also needs AssettoCorsa.exe), with its build, and is launched through Steam."
-      - "Assetto Corsa's Documents\\Assetto Corsa\\cfg (and Content Manager's folder when present), EVO's Documents\\ACE when present and Rally's %LOCALAPPDATA%\\acr\\Saved are listed, with their settings files suggested for tracking."
+      - "Assetto Corsa's Documents\\Assetto Corsa\\cfg (and Content Manager's folder when present), EVO's Saved Games\\ACE (and, after it, the Documents\\ACE of builds before 0.5.2) when present and Rally's %LOCALAPPDATA%\\acr\\Saved are listed, with their settings files suggested for tracking."
       - "When a game is not found, a folder chosen by hand is accepted only if it holds the game's program."
     status: done
     evidence:

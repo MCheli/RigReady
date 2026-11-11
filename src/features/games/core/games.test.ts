@@ -253,6 +253,28 @@ describe('game modules', () => {
       '-applaunch',
       '3058630',
     ]);
+    // EVO's settings are in Saved Games\ACE on the recorded rig (build 0.5.2 and later).
+    const evoSaved = path.join(app.ports.folders.savedGames(), 'ACE');
+    const evoDocuments = path.join(app.ports.folders.documents(), 'ACE');
+    let evo = await get(app, 'assetto-corsa-evo');
+    expect(evo.configLocations).toEqual([
+      { id: 'saved-games', label: 'Saved Games\\ACE', path: evoSaved },
+    ]);
+    expect(evo.trackedFiles.map((f) => [f.label, f.path])).toEqual([
+      ['Settings (Saved Games\\ACE)', evoSaved],
+    ]);
+    // A PC that still has the folder of builds before 0.5.2 gets both, newest first.
+    await fs.mkdir(evoDocuments, { recursive: true });
+    evo = await get(app, 'assetto-corsa-evo');
+    expect(evo.configLocations.map((l) => l.path)).toEqual([evoSaved, evoDocuments]);
+    expect(evo.trackedFiles.map((f) => f.label)).toEqual([
+      'Settings (Saved Games\\ACE)',
+      'Settings (Documents\\ACE)',
+    ]);
+    // Only the old folder: it is still found.
+    await fs.rm(evoSaved, { recursive: true });
+    evo = await get(app, 'assetto-corsa-evo');
+    expect(evo.configLocations.map((l) => l.id)).toEqual(['documents']);
     const rally = await get(app, 'assetto-corsa-rally');
     expect(rally.installs).toHaveLength(1);
     const saved = path.join(app.ports.folders.localAppData(), 'acr', 'Saved', 'SaveGames');
