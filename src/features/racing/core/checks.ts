@@ -268,16 +268,19 @@ export async function racingOverview(ctx: RacingContext): Promise<RacingOverview
       } else {
         const view = await acView(ctx);
         running = view.running;
-        const off = view.controllers.filter(
-          (c) => c.used && c.state !== 'connected' && c.state !== 'unknown'
+        const off = view.controllers.filter((c) => c.used && c.state === 'missing').length;
+        const moved = view.controllers.filter(
+          (c) => c.used && (c.state === 'reordered' || c.state === 'moved')
         ).length;
-        attention = off > 0;
+        attention = off > 0 || moved > 0;
         bindings =
           view.bindings.length === 0
             ? 'No bindings yet'
             : off > 0
-              ? `${off} controller${off === 1 ? '' : 's'} not found under the stored id`
-              : `${view.bindings.length} bindings · controllers connected`;
+              ? `${off} controller${off === 1 ? '' : 's'} not connected`
+              : moved > 0
+                ? `${moved} controller${moved === 1 ? ' is' : 's are'} at another number now`
+                : `${view.bindings.length} bindings · controllers connected`;
       }
     }
     games.push({

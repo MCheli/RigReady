@@ -4188,6 +4188,21 @@ requirements:
       - "tests/e2e/racing.e2e.ts#racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a backup and restore"
       - "artifacts/screens/racing-games/05-assetto-corsa.png"
 
+  - id: RACE-AC-001
+    title: Assetto Corsa controller repair (controllers in another order, or with a new Windows id)
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "Research note in docs/research/ records how controls.ini names controllers (JOY=n, [CONTROLLERS] CONn/PGUIDn/__IGUIDn), with sources, and whether Assetto Corsa Competizione needs the same repair."
+      - "The Assetto Corsa page matches each listed controller to a connected one (instance GUID, then model; never guessing between identical ones), says which are at a new number or have a new Windows id, and shows per binding which connected controller the game will really use now."
+      - "A repair renumbers JOY, JOY_MODIFICATOR and __CM_ALT_JOY and rewrites [CONTROLLERS] (new number and instance GUID; a controller that is not connected moved past the connected ones), keeping every other line; shown first with the change preview, written through FileStore with a backup as one journaled action, read back, refused while Assetto Corsa or Content Manager runs. Identical controllers are asked for, and one controller cannot be chosen twice."
+      - "Assetto Corsa accepts the rewritten file: after a controller moved to another USB port and the repair ran, steering, pedals and buttons work in a session without binding again."
+    notes:
+      - "2026-11-11: status todo; what is missing is the last criterion, which needs the real rig. Done in code: docs/research/assetto-corsa-controls.md (format from Content Manager's source; ACC keys devices by product GUID, so no repair there); python/input_server.py now reports each controller's DirectInput enumeration position (InputDevice.enumerationIndex), since the list it returns is sorted by name; src/features/racing/core/acRepair.ts; racing:acRepairPreview / racing:acRepair; the page's repair panel with the 'Not yet verified on real hardware' notice. Evidence so far: src/features/racing/core/acRepair.test.ts (moved index, swapped two devices, missing device, identical twins refused and asked, new Windows id, a file without instance GUIDs, order unknown), tests/unit/writeAudit.test.ts 'Assetto Corsa: renumbering the controllers in controls.ini to Windows' order', tests/e2e/racing-ac-repair.e2e.ts and artifacts/screens/racing-ac-repair/. Owner's check: back up controls.ini (Racing > Assetto Corsa > Back up now), plug the pedals or a button box into another USB port (or plug in a controller that enumerates before the wheel), confirm the page shows 'New number' and an 'Acts on now' column naming the wrong device, run 'Update controls.ini…', start a practice session from Content Manager with its 'Check and fix controls order' option off: steering, pedals and the paddles must work without binding again. Store before/after screenshots of the RigReady page under artifacts/rig/RACE-AC-001/ and one line in docs/research/assetto-corsa-controls.md section 3. If the game still uses the wrong controller: Undo on the Safety page, and withdraw the repair from the page (rule 2)."
+    status: todo
+    evidence: []
+
   - id: GAME-PAGES-001
     title: Game pages with status at a glance
     job: configure
