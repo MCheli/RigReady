@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
@@ -96,6 +97,7 @@ const launchLine = (launch: { exe: string; args: string[] }): string =>
       >
         DCS is running. RigReady will not change DCS files until it closes: DCS rewrites options.lua
         when it exits.
+        <ManualLink topic="dcsFilesRefused" />
       </v-alert>
       <v-alert
         v-if="view.managedChanged.length"

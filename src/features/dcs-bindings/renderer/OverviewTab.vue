@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { DEVICE_ROLES, ROLE_LABELS, type DeviceView } from '../core/model';
 import { useBindingsStore } from './store';
 
@@ -116,6 +117,7 @@ function summary(device: DeviceView): string {
       >
         Game controllers could not be read: {{ view.controllersUnavailable }} The devices below are
         listed from their binding files only.
+        <ManualLink topic="controllersNotRead" />
       </div>
       <div v-else-if="attached.length === 0" class="rr-empty" data-testid="ov-no-devices">
         No game controllers are attached.

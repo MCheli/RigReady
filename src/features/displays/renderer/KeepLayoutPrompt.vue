@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import { displaysContract, type RecoveryView } from '../contract';
@@ -136,6 +137,7 @@ onBeforeUnmount(() => {
         <ul class="recovery-list">
           <li v-for="line in recovery.lines" :key="line">{{ line }}</li>
         </ul>
+        <ManualLink topic="layoutReverted" />
         <v-alert
           v-if="recoveryError"
           type="error"

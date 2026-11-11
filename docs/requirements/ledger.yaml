@@ -5970,6 +5970,31 @@ requirements:
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
 
+  - id: WOW-UI-012
+    title: The app links to its manual, page by page
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "One map (src/shared/manualLinks.ts) gives every route of every feature the page of docs/manual that explains it, and some tabs and games a page of their own. A unit test fails when a route has no entry, when an entry is for a route that no longer exists, or when a page it names is not in docs/manual; the address it builds is the one site/lib/manual.mjs gives the page (https://rigready.io/docs/<section>/<page>/)."
+      - "A help button (?) in the header of every screen, named and with the tooltip 'Open the manual page for this screen', opens that page in the browser through the window's https-only link handler; the app window never navigates."
+      - "The command palette has 'Open the manual' and 'Open the manual page for this screen'. About and Settings have a link to the manual."
+      - "Notices with a troubleshooting page link to it: controllers that could not be read (Devices, Input tester, DCS bindings), a device not found (Devices), the earlier monitor layout (the question at start), DCS files RigReady will not write (DCS bindings, DCS World, Export.lua), a setup file that cannot be read (Setups and the notice at start), Start with Windows (Settings), and damaged data files (the notices at start)."
+      - "The manual says so: Getting started > Play and Configure, and The command palette."
+    status: done
+    evidence:
+      - "tests/unit/manualLinks.test.ts#has a manual page for every route of the app"
+      - "tests/unit/manualLinks.test.ts#names only pages that exist in docs/manual"
+      - "tests/unit/manualLinks.test.ts#builds the address the website gives each page"
+      - "tests/e2e/manual-links.e2e.ts#manual links: the help button opens the manual page of the screen shown"
+      - "tests/e2e/manual-links.e2e.ts#manual links: notices about damaged files lead to their troubleshooting pages"
+      - "tests/e2e/manual-links.e2e.ts#manual links: DCS running links to why RigReady will not write its files"
+      - "artifacts/screens/manual-links/01-play-header.png"
+      - "artifacts/screens/manual-links/02-devices-header.png"
+      - "artifacts/screens/manual-links/03-palette.png"
+      - "artifacts/screens/manual-links-notices/01-notices.png"
+      - "artifacts/screens/manual-links-dcs/01-dcs-running.png"
+
   # ---------------------------------------------------------------------------
   # SECURITY (docs/research/security-review-2026-11.md, SECURITY.md)
   # ---------------------------------------------------------------------------

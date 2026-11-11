@@ -23,6 +23,16 @@ Ctrl+K, or **Find or run** at the top right, opens the command palette: one fiel
 
 ![The command palette over the Play screen](../../../artifacts/screens/shell-palette/01-open.png)
 
+## Help for the screen you are on
+
+The question mark at the top right, next to **Find or run**, opens the page of this manual about the screen you are on, in your browser. It knows the tab you are on as well: on **Backups > Tracked files** it opens [Tracked files](../protect/tracked-files.md), on a game's page that game's page. The command palette has the same as **Open the manual page for this screen**, and **Open the manual** for the front page; **About** and **Settings** link to the manual too.
+
+A notice about something that went wrong (controllers that could not be read, a DCS file RigReady will not write, a setup file that cannot be read, a damaged data file) has a **What to do** link to its page under [Troubleshooting](../troubleshooting/index.md).
+
+The manual is on the website, so these links need a connection; without one the browser says so and RigReady is not affected.
+
+![The help button in the header, with its tooltip](../../../artifacts/screens/manual-links/02-devices-header.png)
+
 ## Other keys
 
 | Keys | What they do |

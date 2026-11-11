@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { author, bugs, build, homepage, license, repository } from '../../../package.json';
+import { manualUrl } from '../../shared/manualLinks';
 import { aboutFacts } from '../shell/about';
 import { aboutOpen, returnFocus, shortcutsOpen } from '../shell/shell';
 import BrandMark from './BrandMark.vue';
@@ -13,6 +14,9 @@ import BrandMark from './BrandMark.vue';
 defineProps<{ version: string; dataRoot?: string | undefined; kind?: 'flight' | 'racing' }>();
 
 const facts = aboutFacts({ author, bugs, build, homepage, license, repository });
+/** The manual, on the website. */
+const manual = manualUrl();
+const manualShown = manual.replace(/^https:\/\//, '');
 returnFocus(aboutOpen);
 
 const JOBS = [
@@ -80,6 +84,12 @@ function showShortcuts(): void {
               >
                 <br /><span class="rr-about-quiet">{{ facts.copyright }}</span></template
               >
+            </dd>
+          </div>
+          <div data-testid="about-manual">
+            <dt>Manual</dt>
+            <dd>
+              <a :href="manual" target="_blank" rel="noopener noreferrer">{{ manualShown }}</a>
             </dd>
           </div>
           <div v-for="link in facts.links" :key="link.id" :data-testid="`about-${link.id}`">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { onMachineChanged } from '../../../renderer/machine';
@@ -133,6 +134,7 @@ onBeforeUnmount(() => off?.());
       >
         DCS is running. You can look around, but nothing can be saved until it is closed: DCS would
         overwrite the change.
+        <ManualLink topic="dcsFilesRefused" />
       </v-alert>
       <v-alert
         v-if="store.overview.staleDeviceIds > 0 && tab !== 'device-ids'"
