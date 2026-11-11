@@ -4166,7 +4166,7 @@ requirements:
     priority: p3
     done_means:
       - "Each is found from its Steam app manifest in any Steam library (Assetto Corsa also needs AssettoCorsa.exe), with its build, and is launched through Steam."
-      - "Assetto Corsa's Documents\\Assetto Corsa\\cfg (and Content Manager's folder when present), EVO's Documents\\ACE when present and Rally's %LOCALAPPDATA%\\acr\\Saved are listed, with their settings files suggested for tracking."
+      - "Assetto Corsa's Documents\\Assetto Corsa\\cfg (and Content Manager's folder when present), EVO's Saved Games\\ACE (and, after it, the Documents\\ACE of builds before 0.5.2) when present and Rally's %LOCALAPPDATA%\\acr\\Saved are listed, with their settings files suggested for tracking."
       - "When a game is not found, a folder chosen by hand is accepted only if it holds the game's program."
     status: done
     evidence:

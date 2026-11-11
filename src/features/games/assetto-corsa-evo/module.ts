@@ -1,6 +1,11 @@
 import path from 'node:path';
 import type { CheckContext } from '../../../core/checks/registry';
-import type { GameInstall, GameModule } from '../../../core/games';
+import type {
+  ConfigLocation,
+  GameInstall,
+  GameModule,
+  TrackedFileSuggestion,
+} from '../../../core/games';
 import { ok } from '../../../core/result';
 import {
   existingFiles,
@@ -13,8 +18,14 @@ import {
 
 /**
  * Assetto Corsa EVO (Steam app 3058630, early access). Detection, launch and version
- * only; the settings folder (Documents\ACE) is tracked when it exists, but its format
- * has not been researched.
+ * only; the settings folder is tracked when it exists, but its files are binary and
+ * their format has not been researched.
+ *
+ * Where the settings live: builds before 0.5.2 used Documents\ACE; the 0.5.2 patch
+ * notes (505 Games support, "Assetto Corsa EVO 0.5.2 Patch Notes") move it to
+ * Saved Games\ACE, and that is where the owner's rig keeps input_devices.
+ * inputdeviceconfiguration, input_settings.inputsettings, ProfileData and SavedCars.
+ * Both are looked for, newest first; a PC that still has the old folder gets both.
  */
 
 const APP_ID = '3058630';
@@ -26,7 +37,19 @@ async function findInstall(ctx: CheckContext): Promise<GameInstall | undefined> 
   return manualInstall(ctx, 'assetto-corsa-evo', EXE);
 }
 
-const userFolder = (ctx: CheckContext): string => path.join(ctx.ports.folders.documents(), 'ACE');
+/** Newest location first. */
+const settingsFolders = (ctx: CheckContext): ConfigLocation[] => [
+  {
+    id: 'saved-games',
+    label: 'Saved Games\\ACE',
+    path: path.join(ctx.ports.folders.savedGames(), 'ACE'),
+  },
+  {
+    id: 'documents',
+    label: 'Documents\\ACE',
+    path: path.join(ctx.ports.folders.documents(), 'ACE'),
+  },
+];
 
 const evo: GameModule = {
   id: 'assetto-corsa-evo',
@@ -38,23 +61,22 @@ const evo: GameModule = {
     return ok(install ? [install] : []);
   },
 
-  configLocations: async (ctx) =>
-    ok(
-      await existingLocations(ctx, [
-        { id: 'documents', label: 'Documents\\ACE', path: userFolder(ctx) },
-      ])
-    ),
+  configLocations: async (ctx) => ok(await existingLocations(ctx, settingsFolders(ctx))),
 
   trackedFiles: async (ctx) =>
     ok(
-      await existingFiles(ctx, [
-        {
-          label: 'Settings (Documents\\ACE)',
-          path: userFolder(ctx),
+      await existingFiles(
+        ctx,
+        settingsFolders(ctx).map((f): TrackedFileSuggestion => ({
+          label: `Settings (${f.label})`,
+          path: f.path,
           kind: 'folder',
-          description: 'Everything in Documents\\ACE: controls, graphics and saved setups.',
-        },
-      ])
+          description:
+            f.id === 'documents'
+              ? `Everything in ${f.label}, where builds before 0.5.2 kept controls, graphics and saved setups.`
+              : `Everything in ${f.label}: controls, graphics and saved setups.`,
+        }))
+      )
     ),
 
   installedVersion: (ctx) => steamVersion(ctx, APP_ID),
