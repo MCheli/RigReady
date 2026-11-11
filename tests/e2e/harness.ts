@@ -185,8 +185,10 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
               : { args: [repoRoot, ...extra] }),
             env: isolated.env,
           });
-          const page = await app.firstWindow();
-          // Clicks and fills wait 30 s by default; a shared CI runner needs longer for the same step.
+          // The window, clicks and fills are waited for 30 s by default; a shared CI runner needs
+          // longer for the same step. (A runner once took over 30 s to open any window for a
+          // minute and a half, which failed two tests and their retries and with them a release.)
+          const page = await app.firstWindow(process.env['CI'] ? { timeout: 120_000 } : {});
           if (process.env['CI']) page.setDefaultTimeout(90_000);
           const entry = { app, isolated, page };
           started.push(entry);
