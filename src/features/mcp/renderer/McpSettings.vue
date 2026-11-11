@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { errorText, useClient } from '../../../renderer/ipc';
+import ConnectAssistants from './ConnectAssistants.vue';
 import { mcpContract, type McpStatus } from '../contract';
 import type { ActivityEntry } from '../core/activity';
 import { CLIENT_KINDS, type ClientKind } from '../core/clientConfig';
@@ -141,8 +143,15 @@ const outcomeWord: Record<ActivityEntry['outcome'], string> = {
 
 let offChanged: (() => void) | undefined;
 let offActivity: (() => void) | undefined;
+const route = useRoute();
+const root = ref<HTMLElement>();
 onMounted(() => {
-  void load();
+  // Opened from the welcome screen's "Use an AI assistant" step: this section comes into view.
+  void load().then(async () => {
+    if (route.query['connect'] === undefined) return;
+    await nextTick();
+    root.value?.scrollIntoView({ block: 'start' });
+  });
   offChanged = api.on('changed', () => {
     void api.status().then((got) => {
       if (got.ok) status.value = got.value;
@@ -159,11 +168,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mcp" data-testid="mcp-settings">
+  <div ref="root" class="mcp" data-testid="mcp-settings">
     <p>
-      Let an AI assistant on this PC (Claude Desktop, Claude Code, Cursor, VS Code and others that
-      speak MCP) check the rig, make it ready, help with bindings and read this manual. It only
-      reaches RigReady while RigReady runs, and only from this PC.
+      Let an AI assistant on this PC (Claude Desktop, LM Studio, AnythingLLM, Jan, Claude Code,
+      Cursor, VS Code and others that speak MCP) check the rig, make it ready, help with bindings
+      and read this manual. It only reaches RigReady while RigReady runs, and only from this PC.
     </p>
     <p v-if="!status && !error" class="rr-muted">Reading the server's state…</p>
     <template v-if="status">
@@ -190,6 +199,8 @@ onBeforeUnmount(() => {
         </template>
         <template v-else>Off. Nothing listens and no assistant can reach RigReady.</template>
       </p>
+
+      <ConnectAssistants class="mt-4" />
 
       <template v-if="status.enabled">
         <div class="rr-section-title mt-4">When RigReady asks you first</div>
@@ -238,7 +249,11 @@ onBeforeUnmount(() => {
           </v-radio>
         </v-radio-group>
 
-        <div class="rr-section-title mt-4">Connect an assistant</div>
+        <div class="rr-section-title mt-4">Set it up by hand</div>
+        <p class="rr-row-sub">
+          For an assistant not listed above, or to connect it yourself: pick it, copy the text and
+          paste it where the hint says.
+        </p>
         <v-select
           v-model="kind"
           :items="kinds"

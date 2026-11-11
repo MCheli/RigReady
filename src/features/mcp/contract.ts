@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 import { ActivityEntrySchema } from './core/activity';
+import { CLIENT_KIND_IDS } from './core/clientConfig';
+import { ConnectClientSchema, DetectedClientSchema } from './core/connectSchema';
+import { ChangePreviewSchema } from '../../shared/changePreview';
 import { ConfirmRequestSchema } from './core/confirm';
 import { ConfirmPolicySchema, PairingSchema, SurfaceSchema } from './core/store';
 
@@ -50,15 +53,7 @@ export const McpStatusSchema = z.object({
 });
 export type McpStatus = z.infer<typeof McpStatusSchema>;
 
-export const ClientKindSchema = z.enum([
-  'claude-desktop',
-  'claude-code',
-  'claude-code-http',
-  'cursor',
-  'cursor-http',
-  'vscode',
-  'http',
-]);
+export const ClientKindSchema = z.enum(CLIENT_KIND_IDS);
 
 export const mcpContract = defineContract(
   'mcp',
@@ -116,6 +111,36 @@ export const mcpContract = defineContract(
       z.object({ kind: ClientKindSchema, token: z.string().max(120).optional() }),
       z.object({ copied: z.boolean() }),
       { describe: 'Copies the configuration text for one client.', tier: 'off' }
+    ),
+    /** The AI assistants found on this PC, and whether RigReady is in each one's settings. */
+    clients: channel(noInput, z.object({ clients: z.array(DetectedClientSchema) }), {
+      describe:
+        'The AI assistant programs found on this PC and whether RigReady is in their settings. Only the Settings page uses it.',
+      tier: 'off',
+    }),
+    /** What connecting a client by a file change would write, before it is written. */
+    connectPreview: channel(z.object({ client: ConnectClientSchema }), ChangePreviewSchema, {
+      describe: "Shows the change to an assistant's settings file that Connect would make.",
+      tier: 'off',
+    }),
+    /**
+     * Connects one assistant: turns the server on when needed, then writes its settings file
+     * (backed up, undoable), opens its install link, or runs Claude Code's command.
+     */
+    connect: channel(
+      z.object({ client: ConnectClientSchema }),
+      z.object({
+        client: ConnectClientSchema,
+        done: z.enum(['written', 'already', 'linkOpened', 'commandRan']),
+        message: z.string(),
+        file: z.string().optional(),
+        output: z.string().optional(),
+        status: McpStatusSchema,
+      }),
+      {
+        describe: 'Connects an assistant to RigReady. Only the Settings page does this.',
+        tier: 'off',
+      }
     ),
     /** What assistants did in this run, newest first. */
     activity: channel(

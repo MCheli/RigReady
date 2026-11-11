@@ -39,6 +39,7 @@ import type {
   TaskbarProgress,
   ThumbButton,
 } from '../../core/ports';
+import { isOpenableLink } from '../../core/links';
 import { loginEntryEnabled, RUN_KEY, STARTUP_APPROVED_KEY } from '../../core/loginItem';
 import { err, ok, type Result } from '../../core/result';
 import { placeOnScreens, type WindowPlace } from '../../core/windowPlace';
@@ -832,6 +833,22 @@ export class ElectronAppWindow implements AppWindow {
       return ok({ moved: !inside });
     } catch (e) {
       return err('window.show', 'Could not move the RigReady window.', String(e));
+    }
+  }
+
+  async openLink(url: string): Promise<Result<{ opened: boolean }>> {
+    if (!isOpenableLink(url)) {
+      return err('window.link', 'RigReady does not open this kind of link.');
+    }
+    try {
+      await shell.openExternal(url);
+      return ok({ opened: true });
+    } catch (e) {
+      return err(
+        'window.link',
+        'Windows could not open the link. Is the program it belongs to installed?',
+        String(e)
+      );
     }
   }
 }

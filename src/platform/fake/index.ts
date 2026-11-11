@@ -46,6 +46,7 @@ import type {
   TaskbarProgress,
   ThumbButton,
 } from '../../core/ports';
+import { isOpenableLink } from '../../core/links';
 import { err, ok, type Result } from '../../core/result';
 import { findSteamLibraries } from '../../core/steam';
 import { joinWindowsArgs, splitWindowsArgs } from '../../core/windowsArgs';
@@ -881,6 +882,15 @@ export class FakeAppWindow implements AppWindow {
   readonly panels: PanelWindow[] = [];
   async openPanel(panel: PanelWindow): Promise<Result<{ opened: boolean }>> {
     this.panels.push({ ...panel });
+    return ok({ opened: true });
+  }
+  /** Every link openLink() handed on, for assertions; a link it refuses is not listed. */
+  readonly links: string[] = [];
+  async openLink(url: string): Promise<Result<{ opened: boolean }>> {
+    if (!isOpenableLink(url)) {
+      return err('window.link', 'RigReady does not open this kind of link.');
+    }
+    this.links.push(url);
     return ok({ opened: true });
   }
 }

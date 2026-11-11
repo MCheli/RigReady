@@ -8,7 +8,8 @@ describe('MCP-005 what to paste into each assistant', () => {
   it('gives every client the text that reaches this RigReady, stdio through --mcp and HTTP with the token', () => {
     for (const { kind } of CLIENT_KINDS) {
       const text = clientConfig(kind, { exe, args: [], port: 29170, token });
-      if (kind.startsWith('claude-desktop') || kind === 'cursor' || kind === 'vscode') {
+      const json = ['claude-desktop', 'lm-studio', 'anythingllm', 'windsurf', 'cursor', 'vscode'];
+      if (json.includes(kind)) {
         const parsed = JSON.parse(text) as Record<
           string,
           Record<string, { command: string; args: string[] }>
@@ -17,8 +18,16 @@ describe('MCP-005 what to paste into each assistant', () => {
         expect(server.command, kind).toBe(exe);
         expect(server.args, kind).toEqual(['--mcp']);
         expect(text, kind).not.toContain(token);
+      } else if (kind === 'msty') {
+        expect(JSON.parse(text)).toEqual({ command: exe, args: ['--mcp'] });
+      } else if (kind === 'jan' || kind === 'goose') {
+        expect(text, kind).toContain(kind === 'goose' ? JSON.stringify(exe) : exe);
+        expect(text, kind).toContain('--mcp');
+        expect(text, kind).not.toContain(token);
       } else if (kind === 'claude-code') {
-        expect(text).toBe(`claude mcp add --transport stdio rigready -- "${exe}" --mcp`);
+        expect(text).toBe(
+          `claude mcp add --transport stdio --scope user rigready -- "${exe}" --mcp`
+        );
       } else {
         expect(text, kind).toContain('http://127.0.0.1:29170/mcp');
         expect(text, kind).toContain(`Bearer ${token}`);

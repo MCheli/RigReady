@@ -14,6 +14,20 @@ import { McpHost, type Listening } from '../server/host';
 import { ActivityLog, type ActivityEntry } from './activity';
 import { buildCatalogue, catalogueProblems, type Catalogue, type Surface } from './catalogue';
 import { clientConfig, CLIENT_KINDS, type ClientKind } from './clientConfig';
+import {
+  claudeCodeAddArgs,
+  claudeCodeRemoveArgs,
+  clientDef,
+  configPlan,
+  connectedIn,
+  detectClient,
+  detectClients,
+  installLink,
+  type ConnectClient,
+  type DetectedClient,
+} from './connect';
+import { changePreview } from '../../../core/files/preview';
+import type { ChangePreview } from '../../../shared/changePreview';
 import { Confirmations, type ConfirmOutcome, type ConfirmRequest } from './confirm';
 import { builtinTools } from './curated';
 import { Gate } from './gate';
@@ -364,6 +378,153 @@ export class McpService {
       }),
       hint: entry.sub,
     });
+  }
+
+  private env() {
+    return { files: this.deps.ports.files, folders: this.deps.ports.folders };
+  }
+
+  private self(): { exe: string; args: string[] } {
+    const self = this.deps.ports.shortcuts.self();
+    return { exe: self.exe, args: self.args };
+  }
+
+  /** The AI assistants found on this PC and whether RigReady is in each. Reads only. */
+  async clients(): Promise<Result<{ clients: DetectedClient[] }>> {
+    return ok({ clients: await detectClients(this.env(), this.self()) });
+  }
+
+  /** What connecting a client that is connected by a file change would write. */
+  async connectPreview(id: ConnectClient): Promise<Result<ChangePreview>> {
+    const plan = await configPlan(this.env(), id, this.self());
+    if (!plan.ok) return plan;
+    return changePreview(
+      this.deps.ports.files,
+      [{ path: plan.value.file, content: plan.value.text }],
+      () => `${plan.value.title}'s MCP servers, with RigReady added`
+    );
+  }
+
+  /**
+   * Connects one assistant: turns the server on when it is off (the bridge is paired with
+   * it), then does what that assistant takes. Never says it is connected unless the file
+   * reads back with RigReady in it; a link is handed over, and says only that.
+   */
+  async connect(id: ConnectClient): Promise<
+    Result<{
+      client: ConnectClient;
+      done: 'written' | 'already' | 'linkOpened' | 'commandRan';
+      message: string;
+      file?: string;
+      output?: string;
+      status: McpStatus;
+    }>
+  > {
+    const def = clientDef(id);
+    const env = this.env();
+    const self = this.self();
+    const detected = await detectClient(env, def, self);
+    if (!detected) return err('mcp.connect', `${def.title} was not found on this PC.`);
+    if (def.method === 'paste') {
+      return err(
+        'mcp.connect',
+        `${def.title} is connected by pasting the text into its own settings.`
+      );
+    }
+    if (detected.problem) return err('mcp.clientFile', detected.problem);
+    const data = await this.store.read();
+    if (!data.ok) return data;
+    if (!data.value.enabled || !this.host.current()) {
+      const on = await this.enable();
+      if (!on.ok) return on;
+    }
+    const finish = async (
+      done: 'written' | 'already' | 'linkOpened' | 'commandRan',
+      message: string,
+      extra: { file?: string; output?: string } = {}
+    ) => {
+      const status = await this.status();
+      if (!status.ok) return status;
+      return ok({ client: id, done, message, ...extra, status: status.value });
+    };
+
+    switch (def.method) {
+      case 'config': {
+        const plan = await configPlan(env, id, self);
+        if (!plan.ok) return plan;
+        const { file, text, changed } = plan.value;
+        if (!changed)
+          return finish('already', `RigReady is already in ${def.title}'s settings.`, { file });
+        const group = this.deps.ports.files.beginGroup(`Connect ${def.title} to RigReady`);
+        const written = await this.deps.ports.files.write(file, text, {
+          reason: `Add RigReady to ${def.title}'s MCP servers`,
+          group,
+        });
+        if (!written.ok) return written;
+        if (!(await connectedIn(env, id, self))) {
+          return err(
+            'mcp.connect',
+            `${file} does not hold RigReady after the change. Another program may have put it back; is ${def.title} open?`
+          );
+        }
+        return finish('written', `Added RigReady to ${def.title}. ${def.after}`, { file });
+      }
+      case 'link': {
+        if (detected.state === 'connected') {
+          return finish('already', `RigReady is already in ${def.title}'s settings.`);
+        }
+        const link = installLink(id, self);
+        if (!link) return err('mcp.connect', `${def.title} has no install link.`);
+        const opened = await this.deps.ports.window.openLink(link);
+        if (!opened.ok) return opened;
+        return finish('linkOpened', `Asked ${def.title} to add RigReady. ${def.after}`);
+      }
+      case 'command': {
+        if (detected.state === 'connected') {
+          return finish('already', `RigReady is already in ${def.title}'s settings.`);
+        }
+        if (!detected.cli) {
+          return err(
+            'mcp.connect',
+            `The ${def.title} program was not found. Copy the command and run it in a terminal.`
+          );
+        }
+        const outputs: string[] = [];
+        if (detected.state === 'different') {
+          const removed = await this.deps.ports.shell.run(detected.cli, claudeCodeRemoveArgs(), {
+            timeoutMs: 60_000,
+          });
+          if (!removed.ok) return removed;
+          outputs.push(removed.value.stdout, removed.value.stderr);
+        }
+        const ran = await this.deps.ports.shell.run(detected.cli, claudeCodeAddArgs(self), {
+          timeoutMs: 60_000,
+        });
+        if (!ran.ok) return ran;
+        outputs.push(ran.value.stdout, ran.value.stderr);
+        const output = outputs
+          .map((o) => o.trim())
+          .filter(Boolean)
+          .join('\n');
+        if (ran.value.code !== 0) {
+          return err(
+            'mcp.connect',
+            `${def.title} answered with exit code ${ran.value.code}.`,
+            output
+          );
+        }
+        if (!(await connectedIn(env, id, self))) {
+          return err(
+            'mcp.connect',
+            `${def.title} ran, but RigReady is not in its settings afterwards.`,
+            output
+          );
+        }
+        return finish('commandRan', `Claude Code added RigReady for every folder. ${def.after}`, {
+          output,
+        });
+      }
+    }
   }
 
   answer(id: string, allow: boolean): boolean {
