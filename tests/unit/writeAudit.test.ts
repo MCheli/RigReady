@@ -292,6 +292,7 @@ describe('the source rule: a feature that writes files shows the change first', 
       'racing:beamngCopyToController': 'racing:beamngCopyToControllerPreview',
       'racing:iracingRepair': 'racing:iracingRepairPreview',
       'racing:lmuRepair': 'racing:lmuRepairPreview',
+      'racing:acRepair': 'racing:acRepairPreview',
       'profiles:createShortcut': 'profiles:shortcutPreview',
       'profiles:removeShortcut': 'profiles:shortcutPreview',
     };
@@ -358,6 +359,17 @@ describe('a preview says exactly what is then written', () => {
     ]);
     const target = app;
     const written = await during(target, () => target.invoke('racing:lmuRepair'));
+    expectSame(preview, written, target.ports.folders.dataRoot());
+  });
+
+  it("Assetto Corsa: renumbering the controllers in controls.ini to Windows' order", async () => {
+    app = await wiredApp('racing-ac-moved-controllers');
+    const input = { choices: [] };
+    const preview = await app.invoke<ChangePreview>('racing:acRepairPreview', input);
+    expect(await journal(app)).toEqual([]);
+    expect(preview.files.map((f) => f.change)).toEqual(['modified']);
+    const target = app;
+    const written = await during(target, () => target.invoke('racing:acRepair', input));
     expectSame(preview, written, target.ports.folders.dataRoot());
   });
 

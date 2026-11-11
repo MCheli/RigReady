@@ -51,6 +51,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **Racing and other games**
 - iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
+- Assetto Corsa controller repair: when Windows lists the controllers in another order than when `controls.ini` was saved (a USB port change, a controller added), the page shows which controller each binding really acts on now and renumbers the file after a preview, with a backup and Undo. Identical controllers are asked for, never guessed.
 - Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
 - A Fanatec wheel page (other wheel bases work as controllers; their software and modes are not read); any other game works generically.
 
@@ -75,6 +76,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - A binding written by RigReady has not been checked in DCS's own controls screen (BIND-DCS-008).
 - MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not been looked at (SAP-001).
 - The iRacing device ID repair has not been tried with a wheel whose Windows ID really changed (RACE-IRACING-005).
+- The Assetto Corsa controller repair has not been tried in the game with a controller that really moved (RACE-AC-001).
 - Which way is up on sideways-mounted screens cannot be read from Windows; Monitors > Identify asks once.
 - Restoring a Stream Deck backup file by file, and closing the Stream Deck app, were only exercised against recorded data.
 - The taskbar badge, progress bar and thumbnail buttons were accepted by Windows in tests, but nobody has looked at them on a real taskbar; the ready tone's sound and a real press of the global hotkey are untested too.

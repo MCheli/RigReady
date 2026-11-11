@@ -1,7 +1,6 @@
 import path from 'node:path';
 import type { AcView } from '../contract';
 import {
-  cleanGuid,
   installOf,
   isRunning,
   liveControllers,
@@ -9,32 +8,18 @@ import {
   racingGame,
   type RacingContext,
 } from './context';
+import { bindingCounts, listedControllers, matchControllers, orderKnown } from './acRepair';
+import { parseIni } from './acIni';
 import { axisName, vidPidFromProductGuid } from './devices';
 
 /**
  * Assetto Corsa's Documents\Assetto Corsa\cfg\controls.ini: [CONTROLLERS] lists each
  * controller (CONn name, __IGUIDn instance GUID, PGUIDn product GUID); every action is a
- * section with JOY (controller index), AXLE (axis) or BUTTON, and KEY. Read only.
+ * section with JOY (controller number), AXLE (axis) or BUTTON, and KEY. Read here; the one
+ * change RigReady makes is renumbering the controllers (acRepair.ts).
  */
 
-export type Ini = Map<string, Map<string, { value: string; comment: string }>>;
-
-export function parseIni(text: string): Ini {
-  const ini: Ini = new Map();
-  let section: Map<string, { value: string; comment: string }> | undefined;
-  for (const line of text.split(/\r?\n/)) {
-    const head = /^\s*\[(.+?)\]\s*$/.exec(line);
-    if (head) {
-      section = new Map();
-      ini.set(head[1]!.toUpperCase(), section);
-      continue;
-    }
-    const pair = /^\s*([^=;]+?)\s*=\s*([^;]*?)\s*(?:;\s*(.*))?$/.exec(line);
-    if (pair && section)
-      section.set(pair[1]!.toUpperCase(), { value: pair[2]!, comment: (pair[3] ?? '').trim() });
-  }
-  return ini;
-}
+export { parseIni, type Ini } from './acIni';
 
 const ACTIONS: Record<string, string> = {
   STEER: 'Steering',
@@ -90,11 +75,15 @@ export function acActionLabel(section: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19, 23)}`;
+
 export async function acView(ctx: RacingContext): Promise<AcView> {
   const install = await installOf(ctx, 'assetto-corsa');
   const view: AcView = {
     installed: install !== undefined,
     running: await isRunning(ctx, racingGame('assetto-corsa').processes),
+    orderKnown: false,
+    repairNeeded: false,
     problems: [],
     controllers: [],
     bindings: [],
@@ -113,30 +102,51 @@ export async function acView(ctx: RacingContext): Promise<AcView> {
   const ini = parseIni(text.value);
   view.inputMethod = ini.get('HEADER')?.get('INPUT_METHOD')?.value;
   const live = await liveControllers(ctx);
-  const controllers = ini.get('CONTROLLERS') ?? new Map();
-  for (const [key, entry] of controllers) {
-    const index = /^CON(\d+)$/.exec(key)?.[1];
-    if (index === undefined) continue;
-    const instanceGuid = cleanGuid(controllers.get(`__IGUID${index}`)?.value ?? '');
-    const productGuid = cleanGuid(controllers.get(`PGUID${index}`)?.value ?? '');
-    const ids = vidPidFromProductGuid(productGuid);
-    const state: AcView['controllers'][number]['state'] = !live
-      ? 'unknown'
-      : live.some((d) => cleanGuid(d.guid) === instanceGuid)
-        ? 'connected'
-        : live.some((d) => cleanGuid(d.productGuid) === productGuid)
-          ? 'moved'
-          : 'missing';
+  view.orderKnown = live !== undefined && orderKnown(live);
+  const counts = bindingCounts(ini);
+  const label = (d: {
+    name: string;
+    guid: string;
+    numButtons: number;
+    enumerationIndex?: number;
+  }) =>
+    `${d.name.trim()} · ${d.numButtons} buttons · number ${d.enumerationIndex ?? '?'} · id ${shortId(d.guid)}`;
+  for (const m of matchControllers(listedControllers(ini), live)) {
+    const ids = vidPidFromProductGuid(m.listed.productGuid);
+    const bindingCount = counts.get(m.listed.index) ?? 0;
     view.controllers.push({
-      index: Number(index),
-      name: entry.value,
-      instanceGuid,
-      productGuid,
+      index: m.listed.index,
+      name: m.listed.name,
+      instanceGuid: m.listed.instanceGuid,
+      productGuid: m.listed.productGuid,
       ...(ids ? { vendorId: ids.vendorId, productId: ids.productId } : {}),
-      state,
-      used: false,
+      state: m.state,
+      used: bindingCount > 0,
+      bindingCount,
+      ...(m.target
+        ? {
+            now: {
+              guid: m.target.guid,
+              name: m.target.name.trim(),
+              ...(m.target.enumerationIndex !== undefined
+                ? { number: m.target.enumerationIndex }
+                : {}),
+            },
+          }
+        : {}),
+      candidates: m.candidates.map((d) => ({ guid: d.guid, label: label(d) })),
     });
   }
+  view.repairNeeded =
+    view.orderKnown &&
+    view.controllers.some(
+      (c) =>
+        c.used &&
+        (c.state === 'reordered' ||
+          c.state === 'moved' ||
+          // Not connected, but its number is a connected controller's: its bindings act on that one.
+          (c.state === 'missing' && live!.some((d) => d.enumerationIndex === c.index)))
+    );
   for (const [section, values] of ini) {
     const joy = Number.parseInt(values.get('JOY')?.value ?? '', 10);
     const axle = Number.parseInt(values.get('AXLE')?.value ?? '', 10);
@@ -150,11 +160,17 @@ export async function acView(ctx: RacingContext): Promise<AcView> {
     if (joy >= 0 && button >= 0) inputs.push(`Button ${button + 1}`);
     if (inputs.length > 0) {
       if (controller) controller.used = true;
+      // What the game will really use: the controller at that number in Windows' order now.
+      const actsOn = view.orderKnown
+        ? (live!.find((d) => d.enumerationIndex === joy)?.name.trim() ?? 'Nothing connected')
+        : undefined;
       view.bindings.push({
         action: section,
         label: acActionLabel(section),
         controller: controller?.name ?? `Controller ${joy}`,
         input: inputs.join(', '),
+        number: joy,
+        ...(actsOn !== undefined ? { actsOn } : {}),
       });
     }
     if (key && key.value !== '-1' && key.value !== '' && values.has('BUTTON')) {
