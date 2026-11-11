@@ -34,7 +34,7 @@ npx serve _site                         # or any static server
 RELEASES_JSON=file.json node site/build.mjs   # offline, with a saved copy of the releases list
 ```
 
-`{{SLOTS}}` in the HTML files are filled by `build.mjs`. `lib/markdown.mjs` renders the markdown the project's documents use (no dependencies, so the build needs no `npm install`); `lib/manual.mjs` reads the front matter, puts the manual in order and rewrites its links (`tests/unit/siteManual.test.ts` covers it); `lib/releases.mjs` picks the releases. `main.js` is the working model of the Play screen on the home page, the before/after switch, the screenshot viewer and the docs contents on a phone. `style.css` uses the app's own colours.
+`{{SLOTS}}` in the HTML files are filled by `build.mjs`. `lib/markdown.mjs` renders the markdown the project's documents use (no dependencies, so the build needs no `npm install`); `lib/manual.mjs` reads the front matter, puts the manual in order and rewrites its links (`tests/unit/siteManual.test.ts` covers it); `lib/releases.mjs` picks the releases. `main.js` is the working model of the Play screen on the home page, the screenshot viewer and the docs contents on a phone. `style.css` uses the app's own colours.
 
 ## Screenshots
 
