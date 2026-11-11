@@ -66,8 +66,4 @@ export interface SearchEntry {
 
 export function pageHeadings(body: string): Heading[];
 export function searchIndex(manual: Manual, rootTitle?: string): SearchEntry[];
-export function sidebarTree(
-  manual: Manual,
-  currentFile: string | null,
-  rootTitle?: string
-): string;
+export function sidebarTree(manual: Manual, currentFile: string | null, rootTitle?: string): string;
