@@ -8,10 +8,13 @@ import type {
   InputDevice,
   InputState,
   LaunchTarget,
+  PadReport,
   ProcessInfo,
   RegistryHive,
   RegistryValue,
   ServiceInfo,
+  VirtualPadKind,
+  VirtualPadStatus,
 } from '../../shared/models';
 
 /** Everything that touches the machine goes through one of these interfaces. */
@@ -51,6 +54,41 @@ export interface InputProvider {
    * device. Returns an unsubscribe function.
    */
   subscribe(listener: (states: InputState[]) => void): () => void;
+}
+
+/**
+ * A virtual game controller (an Xbox 360 controller or a DualShock 4) that games and
+ * emulators see as if it were plugged in, fed by RigReady from the user's real controllers.
+ * It needs the ViGEmBus driver, which the user installs; RigReady never installs a driver.
+ * One at a time.
+ *
+ * The controller goes away when it is unplugged, when RigReady quits, and when RigReady
+ * stops in any other way: the helper that holds it ends with RigReady (its input closes),
+ * and the driver removes what a program that ended had plugged in.
+ */
+export interface VirtualPads {
+  /**
+   * Plugs a virtual controller in, in place of one that is plugged in already. Fails with
+   * `pad.driver` when the driver is not there. Read status() to know it is there.
+   */
+  plug(kind: VirtualPadKind, label: string): Promise<Result<void>>;
+  /** Hands the controller's new state to the driver. The newest report wins. */
+  send(report: PadReport): Result<void>;
+  /** Takes the virtual controller away. Nothing to do when none is plugged in. */
+  unplug(): Promise<Result<void>>;
+  /** What is plugged in right now, as the helper that holds it says. */
+  status(): Promise<Result<VirtualPadStatus>>;
+  /**
+   * Calls the listener when the controller went away without being unplugged (the helper
+   * stopped). Returns the unsubscribe function.
+   */
+  subscribe(listener: (status: VirtualPadStatus) => void): () => void;
+  /**
+   * The program that reads the real controllers for RigReady (the input reader). When the
+   * real controllers are hidden from games with HidHide, this program must stay allowed to
+   * see them. Undefined when it is not known.
+   */
+  readerProgram(): string | undefined;
 }
 
 export interface DisplayApplyOutcome {
@@ -722,4 +760,5 @@ export interface Ports {
   shortcuts: Shortcuts;
   taskbar: Taskbar;
   hotkeys: Hotkeys;
+  pads: VirtualPads;
 }

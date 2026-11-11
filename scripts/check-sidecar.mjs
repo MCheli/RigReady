@@ -16,6 +16,11 @@ const fail = (message) => {
 
 if (!existsSync(script)) fail(`${script} is missing`);
 if (!existsSync(python)) fail(`${python} is missing`);
+// The virtual controller helper and the client library it loads (the driver is the user's).
+const padScript = path.join(root, 'python', 'pad_server.py');
+const client = path.join(root, 'resources', 'vigem', 'ViGEmClient.dll');
+if (!existsSync(padScript)) fail(`${padScript} is missing`);
+if (!existsSync(client)) fail(`${client} is missing`);
 // The sidecar uses only the standard library; ctypes is what reaches DirectInput.
 const probe = spawnSync(
   python,

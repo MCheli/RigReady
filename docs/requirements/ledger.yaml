@@ -1023,9 +1023,9 @@ requirements:
     status: done
     evidence:
       - "src/features/devices/core/deviceCheck.test.ts#fails a required device that HidHide hides from the game, and only that one"
-      - "src/features/devices/core/hidhide.test.ts#traces a hidden HID node to its USB device: the pedals, and only the pedals"
-      - "src/features/devices/core/hidhide.test.ts#says nothing when HidHide is not installed, and reports a CLI that fails"
-      - "src/features/devices/core/hidhide.test.ts#reads the recorded rig without changing anything: every query ends with --cancel"
+      - "src/core/hidhide.test.ts#traces a hidden HID node to its USB device: the pedals, and only the pedals"
+      - "src/core/hidhide.test.ts#says nothing when HidHide is not installed, and reports a CLI that fails"
+      - "src/core/hidhide.test.ts#reads the recorded rig without changing anything: every query ends with --cancel"
       - "tests/e2e/devices.e2e.ts#devices: HidHide hiding the pedals is shown on the device and fails its check"
       - "artifacts/screens/devices-hidhide/01-fly.png"
 
@@ -1914,7 +1914,7 @@ requirements:
     evidence:
       - "tests/e2e/devices.e2e.ts#devices: HidHide hiding the pedals is shown on the device and fails its check"
       - "src/features/devices/core/overview.test.ts#summarises HidHide for RigReady and the games the setups launch"
-      - "src/features/devices/core/hidhide.test.ts#traces a hidden HID node to its USB device: the pedals, and only the pedals"
+      - "src/core/hidhide.test.ts#traces a hidden HID node to its USB device: the pedals, and only the pedals"
       - "artifacts/screens/devices-hidhide/02-devices.png"
       - "artifacts/screens/devices-hidhide/03-hidhide-panel.png"
 
@@ -4647,6 +4647,118 @@ requirements:
       - "tests/e2e/racing.e2e.ts#racing: game pages show status at a glance, launch, and a folder chosen by hand"
       - "artifacts/screens/racing-game-pages/01-games.png"
       - "artifacts/screens/racing-game-pages/02-iracing.png"
+
+  - id: GAME-AC8-001
+    title: Detect ACE COMBAT 8 and its settings
+    job: configure
+    area: games
+    priority: p3
+    done_means:
+      - "ACE COMBAT 8: WINGS OF THEVE (Steam app 2288340) is found from its app manifest in any Steam library, with its build; a folder chosen by hand is accepted only when it holds Game\\Binaries\\Win64\\AceCombat8.exe."
+      - "Its settings (%LOCALAPPDATA%\\BANDAI NAMCO Entertainment\\ACE COMBAT 8\\Saved\\Config\\Windows) and saves are listed and suggested for tracking only when they exist; the path variables AC8_INSTALL and AC8_USER are offered."
+      - "The game page says the game reads only a gamepad and two licensed sticks, points at the virtual controller, and says to try a virtual controller offline first (Easy Anti-Cheat)."
+    status: done
+    evidence:
+      - "src/features/games/ace-combat-8/module.test.ts#finds the Steam install, its settings, its build and its path variables"
+      - "src/features/games/ace-combat-8/module.test.ts#a PC without the game finds nothing and suggests nothing"
+    notes:
+      - "2026-11-11: the settings folder and the program path come from community guides (docs/research/gamepad-emulation.md); the game was not on the rig when it was recorded, so the scenario virtual-controller-ready writes them by hand."
+
+  # ---------------------------------------------------------------------------
+  # VIRTUAL CONTROLLER (gamepad emulation)
+  # ---------------------------------------------------------------------------
+
+  - id: VPAD-001
+    title: Virtual controller driver and HidHide, detected read-only, with install guidance
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "Configure > Virtual controller says whether the ViGEmBus driver is installed and running (the ViGEmBus service, read only) and whether HidHide is installed."
+      - "Without the driver the page explains that the user installs it, that its setup asks for administrator rights and RigReady never does, and links to the official releases page, opened only after a confirmation; nothing can be started."
+      - "A setup check 'Virtual controller driver installed' fails without it, with instructions and no automatic fix."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/main.test.ts#a PC without the driver is told so, and the driver check fails with instructions"
+      - "src/features/virtual-controller/main.test.ts#says what is installed and lists the starting points, the user profiles and the controllers"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: without the driver it says how to install it, and nothing can start"
+      - "artifacts/screens/virtual-controller-no-driver/01-no-driver.png"
+    notes:
+      - "Research: docs/research/gamepad-emulation.md (ViGEmBus 1.22.0 is retired but signed and installable; HidHide's CLI needs no elevation)."
+
+  - id: VPAD-002
+    title: Virtual controller profiles and the mapping editor
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "A profile maps any connected controller's axes, buttons and hat directions onto the left and right sticks, the triggers, the buttons and the d-pad of a virtual Xbox 360 controller or DualShock 4; each part is chosen by pressing or moving the control."
+      - "Each axis has invert, deadzone, a response curve and a range (full output reached early, for a wheel's steering lock, with a helper from the wheel's rotation); a pedal or throttle onto a trigger has the same; one throttle axis can be split over LT and RT at a chosen point with its own deadzone; an axis can act as a button past half its travel."
+      - "The editor shows live what a game would get. Profiles belong to no game and are kept in RigReady's data folder; three starting points (flight stick for ACE COMBAT 8, HOTAS, wheel and pedals for driving games and console emulators) say what each part is for, map nothing, and are copied, never changed."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/mapping.test.ts#a deadzone gives nothing inside it and starts from zero at its edge, not with a jump"
+      - "src/features/virtual-controller/core/mapping.test.ts#range reaches full output early (a wheel turned a third of its way is full lock)"
+      - "src/features/virtual-controller/core/mapping.test.ts#one throttle split over both triggers at the idle detent"
+      - "src/features/virtual-controller/core/mapping.test.ts#a whole report from a flight stick and pedals, with what is missing named"
+      - "src/features/virtual-controller/core/profile.test.ts#refuses inputs DirectInput does not have, values out of range and unsafe ids"
+      - "src/features/virtual-controller/core/profile.test.ts#the starting points are valid, map nothing yet and say what each part is for"
+      - "src/features/virtual-controller/core/profile.test.ts#stores the user own profiles, copies starting points, never changes or deletes one"
+      - "src/features/virtual-controller/main.test.ts#detects the control the user moves, and sends the live view for an edited profile"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat starting point, mapped by moving the stick, with live bars"
+      - "artifacts/screens/virtual-controller-editor/01-page.png"
+      - "artifacts/screens/virtual-controller-editor/02-editor.png"
+
+  - id: VPAD-003
+    title: A setup starts the virtual controller and Stand down stops it
+    job: fly
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "A step before launch 'Start a virtual controller' names a profile and may hide the real controllers from games with HidHide; the launch says which profile runs and what was hidden."
+      - "Stand down stops a virtual controller a setup started and shows hidden controllers to games again; one started by hand (the page, the tray, the command palette) keeps running until stopped or RigReady quits. A step 'Stop the virtual controller' exists for Stand down lists too."
+      - "While one runs, every screen (the Play screen included) and the tray say so and offer Stop; the tray also starts a profile."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/main.test.ts#a setup starts it before launch with the real controllers hidden, and Stand down stops it and shows them again"
+      - "src/features/virtual-controller/main.test.ts#one started by hand stays at Stand down, and stops when RigReady quits"
+      - "tests/unit/tray.test.ts#shows the virtual controller that runs, with Stop, and a Start for each profile"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, and Stand down stops it"
+      - "artifacts/screens/virtual-controller-launch/01-launched.png"
+      - "artifacts/screens/virtual-controller-launch/02-running.png"
+      - "artifacts/screens/virtual-controller-launch/03-stood-down.png"
+
+  - id: VPAD-004
+    title: No virtual controller or hidden device is left behind
+    job: platform
+    area: virtual-controller
+    priority: p1
+    done_means:
+      - "Everything runs as the user. Hiding is refused without HidHide or in HidHide's inverse mode, and RigReady's own input reader is kept on HidHide's allow list; only what RigReady added is taken away again, and HidHide is read back after every change."
+      - "The virtual controller is unplugged when it is stopped, at Stand down, when RigReady quits, and when its helper stops by itself (the user is told); a driver that says it plugged in and did not is reported as a failure."
+      - "What RigReady hid is written to its data folder first and shown to games again at the next start after a crash."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/emulator.test.ts#hides the real controllers with HidHide while it runs, keeps the reader allowed, and puts it all back"
+      - "src/features/virtual-controller/core/emulator.test.ts#refuses to hide anything without HidHide, and plugs nothing in then"
+      - "src/features/virtual-controller/core/emulator.test.ts#a driver that says it plugged in and did not is reported, and HidHide is put back"
+      - "src/features/virtual-controller/core/emulator.test.ts#when the helper stops by itself, it says so and shows the controllers to games again"
+      - "src/features/virtual-controller/core/emulator.test.ts#after a crash, the next start shows hidden controllers to games again"
+      - "src/features/virtual-controller/core/emulator.test.ts#refuses without the driver, with nothing mapped, and with none of its controllers connected"
+
+  - id: VPAD-005
+    title: The virtual controller on the real driver and in a real game
+    job: platform
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "On the owner's rig, with ViGEmBus installed by the owner, the manual rig test plugs in an Xbox 360 controller that DirectInput lists, feeds it reports and unplugs it."
+      - "ACE COMBAT 8 (or an emulator) is played with a profile made in the editor: the stick, rudder and throttle drive the aircraft as mapped; with hiding on, the game does not also see the real stick; after Stand down HidHide's lists are as they were."
+      - "A DualShock 4 profile is tried once in a program that reads one (DuckStation or PCSX2), the Y axes the right way up."
+    status: in_progress
+    evidence: []
+    notes:
+      - "2026-11-11: unverified on hardware. Everything above runs against the fake machine; the helper (python/pad_server.py) and ViGEmClient.dll have never driven the real driver. For the owner, with every game closed: (1) npm run setup:python (fetches ViGEmClient.dll, hash-checked); (2) cross-env RIGREADY_RIG_PAD=1 npx vitest run --config vitest.rig.config.ts tests/rig/virtualController.rig.test.ts, and open joy.cpl meanwhile to see 'Controller (XBOX 360 For Windows)' come and go; (3) in the app, copy the Ace Combat starting point, map the stick, rudder and throttle, Start, and check the axes in joy.cpl, then in the game offline; (4) the same with 'Hide the real controllers' on, then Stop, and check HidHide's window shows the lists as before. Add the rig test id and screenshots to evidence and set done."
 
   # ---------------------------------------------------------------------------
   # STREAM DECK

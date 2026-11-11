@@ -136,6 +136,8 @@ export const MANUAL_LINKS: Record<string, ManualLink> = {
   '/configure/stream-deck': { page: 'hardware/stream-deck' },
   '/configure/stream-deck/setup': { page: 'hardware/stream-deck' },
   '/configure/trackir': { page: 'hardware/trackir' },
+  '/configure/virtual-controller': { page: 'hardware/virtual-controller' },
+  '/configure/virtual-controller/edit': { page: 'hardware/virtual-controller' },
 
   // RigReady
   '/configure/settings': { page: 'app/settings' },

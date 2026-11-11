@@ -13,7 +13,7 @@ import {
 } from './core/deviceCheck';
 import { boundInputsOf, type BindingSource } from './core/bound';
 import { analyzeHealth, healthText, type HealthReport, type Sample } from './core/health';
-import { hidHideCached } from './core/hidhide';
+import { hidHideCached } from '../../core/hidhide';
 import type { Overview } from './core/model';
 import { ConnectionNotifier, diffDevices } from './core/notifier';
 import { buildOverview, requirements } from './core/overview';

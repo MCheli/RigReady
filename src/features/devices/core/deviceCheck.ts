@@ -9,7 +9,12 @@ import type { Ports } from '../../../core/ports';
 import { ProfileStore } from '../../../core/profile/store';
 import { ok } from '../../../core/result';
 import type { DeviceInfo } from '../../../shared/models';
-import { canSeeHidden, hiddenDeviceIds, hidHideCached, type HidHideInfo } from './hidhide';
+import {
+  canSeeHidden,
+  hiddenDeviceIds,
+  hidHideCached,
+  type HidHideInfo,
+} from '../../../core/hidhide';
 import {
   formatWhen,
   hubNames,

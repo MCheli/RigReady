@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mutate, scenarioRig, type TestRig } from '../../../../tests/helpers';
+import { mutate, scenarioRig, type TestRig } from '../../tests/helpers';
 import {
   canSeeHidden,
   findHidHideCli,

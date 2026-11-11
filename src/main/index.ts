@@ -90,6 +90,7 @@ import {
   type TrayMenuItem,
   type TrayStatus,
   type TrayWindowState,
+  virtualControllerFrom,
 } from './trayModel';
 
 /**
@@ -404,7 +405,15 @@ async function start(): Promise<void> {
     // So does the taskbar button; and a setup made, renamed or deleted changes its Jump List.
     if (activity.event(channel, payload)) refreshTaskbar();
     if (channel === SETUPS_CHANGED) refreshSetups();
+    followVirtualController(channel, payload);
   };
+  /** The tray follows the virtual controller: what runs, and the profiles to start. */
+  function followVirtualController(channel: string, value: unknown): void {
+    const vc = virtualControllerFrom(channel, value);
+    if (!vc) return;
+    trayStatus = { ...trayStatus, virtualController: vc };
+    refreshTray();
+  }
   /**
    * Where a command has got to is told to the main window only: the small extra windows a
    * feature opens (a cheat sheet on the second monitor) show their own thing.
@@ -580,6 +589,7 @@ async function start(): Promise<void> {
     const quiet = (input as { remember?: unknown } | undefined)?.remember === false;
     if (envelope.ok && SETUP_CHANGERS.has(channel) && !quiet) refreshSetups();
     if (envelope.ok) {
+      followVirtualController(channel, envelope.value);
       const next = statusFromFlyResponse(channel, envelope.value, trayStatus);
       if (next) {
         trayStatus = next;
@@ -682,6 +692,32 @@ async function start(): Promise<void> {
             : { title: 'Stand down failed', body: result.error.message }
         );
       }),
+    vcStop: async () => {
+      const result = await call('virtual-controller:stop');
+      await ports.notifications.notify(
+        result.ok
+          ? {
+              title: 'Virtual controller',
+              body: (result.value as { message: string | null }).message ?? 'None was running',
+            }
+          : { title: 'Virtual controller not stopped', body: result.error.message }
+      );
+      machineChanged('tray');
+    },
+  };
+
+  /** A virtual controller started from the tray, without hiding anything. */
+  const startFromTray = async (id: string): Promise<void> => {
+    const result = await call('virtual-controller:start', { id, hide: false });
+    await ports.notifications.notify(
+      result.ok
+        ? {
+            title: 'Virtual controller on',
+            body: (result.value as { profileName: string }).profileName,
+          }
+        : { title: 'Virtual controller not started', body: result.error.message }
+    );
+    machineChanged('tray');
   };
 
   const switchFromTray = async (profileId: string): Promise<void> => {
@@ -727,6 +763,10 @@ async function start(): Promise<void> {
           enabled: item.enabled,
           click: () => void switchFromTray(item.id.slice('profile:'.length)),
         };
+      }
+      if (item.id.startsWith('vc:')) {
+        const id = item.id.slice('vc:'.length);
+        return { label: item.label, enabled: item.enabled, click: () => void startFromTray(id) };
       }
       return {
         label: item.label,
@@ -854,6 +894,7 @@ async function start(): Promise<void> {
     };
     hooks['__rigreadyTrayClick'] = async (id: string) => {
       if (id.startsWith('profile:')) await switchFromTray(id.slice('profile:'.length));
+      else if (id.startsWith('vc:')) await startFromTray(id.slice('vc:'.length));
       else await trayActions[id]?.();
     };
   }
@@ -899,6 +940,7 @@ async function start(): Promise<void> {
     refreshTray();
     // Fill in the setup name before the window has asked for it (started hidden at login).
     void call('fly:state');
+    void call('virtual-controller:running');
   } catch (e) {
     log.error('could not create the tray icon', e);
   }
@@ -997,6 +1039,11 @@ async function start(): Promise<void> {
         }
       }
       await within(ports.input.stop(), 3000);
+      // No virtual controller outlives RigReady (its helper also ends when RigReady does).
+      await within(
+        ports.pads.unplug().then(() => undefined),
+        2000
+      );
       tray?.destroy();
       tray = undefined;
       await logging.flush();

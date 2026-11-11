@@ -23,6 +23,55 @@ function Test-Runtime {
     return $LASTEXITCODE -eq 0
 }
 
+# ViGEmClient.dll, for the virtual controller helper (python/pad_server.py). Nefarius does not
+# publish the client library as a DLL; the vgamepad package (MIT) ships one built from
+# ViGEmClient (MIT). Only that file is taken out of the pinned source archive; nothing in it is
+# run, and its ViGEmBus installer is left alone: the user installs the driver themselves.
+$vgamepadVersion = "0.1.0"
+$vgamepadUrl = "https://files.pythonhosted.org/packages/8a/54/0eaddc33f84247963af078f364b37153d09fcd6cdc398f243ec3e8842c56/vgamepad-0.1.0.tar.gz"
+$vgamepadSha256 = "57f6bd01aec0c172947517fb782d150ef9b285f7f4d524c317374fa5c24a89de"
+$clientSha256 = "2bf0cb1d809039573c922737d298a1653d4dbc61408060ff45a9bcfde82e97d2"
+$vigemDir = Join-Path $PSScriptRoot "..\resources\vigem"
+$clientDll = Join-Path $vigemDir "ViGEmClient.dll"
+
+function Get-Sha256([string]$file) {
+    # .NET rather than Get-FileHash: see the note on the Python download below.
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($file)
+    try { return -join ($sha.ComputeHash($stream) | ForEach-Object { $_.ToString("x2") }) }
+    finally { $stream.Dispose(); $sha.Dispose() }
+}
+
+function Install-VigemClient {
+    if ((Test-Path $clientDll) -and ((Get-Sha256 $clientDll) -eq $clientSha256)) {
+        Write-Host "resources/vigem is ready."
+        return
+    }
+    Write-Host "Downloading ViGEmClient.dll (from vgamepad $vgamepadVersion)..."
+    $work = Join-Path $env:TEMP ("rigready-vgamepad-" + [guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Force -Path $work | Out-Null
+    try {
+        $archive = Join-Path $work "vgamepad.tar.gz"
+        Invoke-WebRequest -Uri $vgamepadUrl -OutFile $archive -UseBasicParsing
+        $actual = Get-Sha256 $archive
+        if ($actual -ne $vgamepadSha256) { throw "The vgamepad download does not match its expected SHA-256 (got $actual)" }
+        $inside = "vgamepad-$vgamepadVersion/vgamepad/win/vigem/client/x64/ViGEmClient.dll"
+        $license = "vgamepad-$vgamepadVersion/LICENSE"
+        & tar.exe -xzf $archive -C $work $inside $license
+        if ($LASTEXITCODE -ne 0) { throw "ViGEmClient.dll could not be taken out of the archive" }
+        $dll = Join-Path $work $inside
+        $actual = Get-Sha256 $dll
+        if ($actual -ne $clientSha256) { throw "ViGEmClient.dll does not match its expected SHA-256 (got $actual)" }
+        New-Item -ItemType Directory -Force -Path $vigemDir | Out-Null
+        Copy-Item $dll $clientDll -Force
+        Copy-Item (Join-Path $work $license) (Join-Path $vigemDir "LICENSE-vgamepad.txt") -Force
+        Write-Host "resources/vigem is ready."
+    }
+    finally { Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue }
+}
+
+Install-VigemClient
+
 if (Test-Runtime) {
     Write-Host "resources/python is ready."
     exit 0

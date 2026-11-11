@@ -58,7 +58,8 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 **Racing and other games**
 - iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
 - Assetto Corsa controller repair: when Windows lists the controllers in another order than when `controls.ini` was saved (a USB port change, a controller added), the page shows which controller each binding really acts on now and renumbers the file after a preview, with a backup and Undo. Identical controllers are asked for, never guessed.
-- Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
+- Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally, ACE COMBAT 8: detection, launch, files to back up.
+- A virtual controller for games and emulators that read only a gamepad: a virtual Xbox 360 controller or DualShock 4 driven by a stick, wheel, pedals or throttle, with deadzones, curves, a steering range and a throttle split over both triggers, started by hand or by a setup, optionally hiding the real controllers with HidHide. Needs the ViGEmBus driver, which you install yourself.
 - A Wheel page for every major wheelbase brand (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek SimSports, Cammus): base, pedals and axes, the PC mode where the USB ID shows it, the maker's software with a "running" check that starts it, backups of profile files where they are plain files, and the maker's own per-game settings where it publishes any. Any other game works generically.
 
 **Protecting your configuration**

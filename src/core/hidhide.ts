@@ -1,5 +1,5 @@
-import type { Ports } from '../../../core/ports';
-import type { DeviceInfo } from '../../../shared/models';
+import type { Ports } from './ports';
+import type { DeviceInfo } from '../shared/models';
 
 /**
  * HidHide (Nefarius) can hide a device from every program that is not on its allow
