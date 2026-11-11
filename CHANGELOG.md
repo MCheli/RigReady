@@ -37,10 +37,10 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **DCS World**
 - Installs across Steam libraries and standalone; update waiting; aircraft list.
-- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one.
+- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one; without SimAppPro, for the aircraft listed in the manual.
 - Export.lua managed one tool at a time; overwrites by other programs are noticed.
-- Bindings: effective bindings (defaults plus your changes) for the F/A-18C and UH-1H, editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots.
-- Cheat sheets with a picture of every device, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
+- Bindings for every DCS aircraft: effective bindings (defaults plus your changes), editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots. Binding guides and curated priority lists exist for the aircraft listed in the manual.
+- Cheat sheets of what every control does, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
 - Simple outline drawings of the WinWing Orion stick (F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles and the MFD frames, with a label block and leader line per control placed so that no two lines cross. A drawing can be corrected or shown over a photo of the device; for any device, a drawing can be made from a photo of your own hardware or imported from a file. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
 - Twenty binding guides, covering the F/A-18C, F-16C, A-10C II and A-10C, A-10A, F-14 (pilot and RIO), F-15E (pilot and WSO), F-15C, MiG-29, Su-27 and J-11A, Su-33, Su-25T, Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. For any other aircraft, optional AI help drafts one with your own key.
 - Optional AI help in the binding guide with your own key from Anthropic (the default), OpenAI, or any OpenAI-compatible service: presets for Google Gemini, OpenRouter, Mistral, and Ollama and LM Studio on your own PC. Each provider keeps its own encrypted key, gets a Test button and a model you can type, and only its one host is contacted (https, or http to this PC only).
@@ -51,9 +51,9 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - Guided conversations for first setup, fixing bindings, a rig that is not ready and a new PC.
 
 **Racing and other games**
-- iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore.
+- iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
 - Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
-- A Fanatec wheel page; any other game works generically.
+- A Fanatec wheel page (other wheel bases work as controllers; their software and modes are not read); any other game works generically.
 
 **Protecting your configuration**
 - One-click backup, a restore wizard with a preview and per-item choices, snapshots, "what changed since it last worked".

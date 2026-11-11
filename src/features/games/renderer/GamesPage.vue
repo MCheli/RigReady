@@ -76,7 +76,9 @@ const sources = (g: GameSummary): string =>
             </div>
             <div class="rr-row-sub">
               {{ sources(game)
-              }}<template v-if="game.version"> · {{ game.version.version }}</template>
+              }}<template v-if="game.version && game.version.version !== 'unknown'">
+                · {{ game.version.version }}</template
+              >
               <span v-if="game.version?.updatePending" class="rr-warn"> · update waiting</span>
               <template v-if="game.trackedFiles.length">
                 · {{ game.trackedFiles.length }} settings

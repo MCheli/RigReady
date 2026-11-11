@@ -31,5 +31,6 @@ As in `mark-full`, process paths are left as they would be on the PC (`C:\Users\
 | `generic-fresh` | Nothing: the rig as written, no setups |
 | `generic-custom-game` | A game RigReady has no module for ("Star Hauler"): `Games/Star Hauler/StarHauler.exe` and its settings, controls and a save under `Documents/Star Hauler` |
 | `generic-dcs` | The standalone (not Steam) edition of DCS World: the Eagle Dynamics registry key, `Program Files/Eagle Dynamics/DCS World/bin/DCS.exe`, and `Saved Games/DCS/Config/options.lua`. Still no flight gear |
+| `generic-more-sims` | The games added in November 2026 (`docs/research/game-modules-2026-11.md`): Steam with a second library, eleven of them installed there, a standalone X-Plane 11 listed in `AppData/Local/x-plane_install_11.txt`, Falcon BMS through its `Benchmark Sims` registry key, and small synthetic settings files in each game's layout. F1 24 is not installed |
 
 To change the rig, edit the JSON by hand and keep `meta.json`'s counts and `usb-tree.json` in step (the tree is what `buildUsbTree(devices)` in `src/core/usb.ts` returns).
