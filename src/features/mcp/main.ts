@@ -45,6 +45,9 @@ export default defineFeatureMain({
           const copied = await ctx.ports.clipboard.writeText(text.value.text);
           return copied.ok ? ok({ copied: true }) : copied;
         },
+        clients: () => mcp.clients(),
+        connectPreview: ({ client }) => mcp.connectPreview(client),
+        connect: ({ client }) => mcp.connect(client),
         activity: async (input) => ok({ entries: mcp.activity.list(input?.limit ?? 50) }),
         catalogue: async () => ok({ tools: mcp.catalogue().tools.map(toolLine) }),
         answer: async ({ id, allow }) => ok({ answered: mcp.answer(id, allow) }),

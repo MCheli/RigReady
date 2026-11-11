@@ -96,7 +96,7 @@ Prompts: `first_setup`, `fix_my_bindings`, `why_not_ready`, `new_pc`.
 ## Pairing flow
 
 1. The user turns the server on in Settings > AI assistants. The bridge gets its pairing (its token into `mcp/bridge-token`), the listener starts, `endpoint.json` is written.
-2. Stdio clients: the page shows the text to paste for Claude Desktop, Claude Code, Cursor and VS Code (`RigReady.exe --mcp`), with a Copy button. Nothing else is needed.
+2. Stdio clients: **Connect an assistant** lists the assistants found on this PC with one button each (a previewed, undoable write of the settings file, the assistant's install link, or Claude Code's command), and turns the server on first when it is off; see `docs/research/mcp-one-click.md`. **Set it up by hand** shows the text to paste (`RigReady.exe --mcp`), with a Copy button.
 3. HTTP clients: **Pair** takes a name and shows the token once, with the client configuration filled in. The page lists pairings with their last use and call count; **Forget** revokes one at once. **New token** (beside RigReady.exe --mcp) rotates the bridge's.
 
 ## Error model

@@ -3429,6 +3429,51 @@ requirements:
       - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
       - "artifacts/screens/mcp-settings/07-safety-by-assistant.png"
 
+  - id: MCP-011
+    title: Connect an assistant with one button
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Settings > AI assistants lists the assistants found on this PC (read-only detection of their folders and settings files), everyday assistants first (Claude Desktop, LM Studio, AnythingLLM, Jan, Msty Studio, Goose) and developer tools after (Claude Code, Cursor, VS Code, Windsurf), each with whether RigReady is already in its settings and one button."
+      - "Claude Desktop and AnythingLLM: RigReady's entry is merged into the assistant's JSON settings file through FileStore after a preview of the change, under one journal group the Safety page undoes; every other server and key is kept, a second press writes nothing, a file that is not valid JSON (or whose server list is not an object) is refused and left alone, and the result is read back before it says connected. The Microsoft Store version of Claude Desktop gets the file in its package folder."
+      - "Cursor, VS Code and LM Studio: their documented install link, built from a fixed stdio entry, is handed to Windows only through AppWindow.openLink, which refuses every scheme but https, cursor, vscode, vscode-insiders, lmstudio and goose; the answer says it asked, not that it is done."
+      - "Claude Code: the one command (user scope) with a Copy button, and Run it when the CLI is found, through Shell.run with an argument array, believed only when ~/.claude.json then holds RigReady. Jan, Msty Studio, Goose and Windsurf: the text to paste."
+      - "Connecting turns the server on when it is off (the bridge is paired with it) and leaves the confirm policy at Always ask. ChatGPT, Perplexity for Windows and Windows' agent connectors are not offered; the page and the manual say why (docs/research/mcp-one-click.md)."
+    status: done
+    evidence:
+      - "src/features/mcp/core/connect.test.ts#adds RigReady and keeps every other server and setting"
+      - "src/features/mcp/core/connect.test.ts#is idempotent: a second merge changes nothing"
+      - "src/features/mcp/core/connect.test.ts#refuses a file that is not valid JSON, not an object, or whose server list is not one"
+      - "src/features/mcp/core/connect.test.ts#builds the documented install links from the fixed entry"
+      - "src/features/mcp/core/connect.test.ts#opens only the schemes it knows"
+      - "src/features/mcp/core/connect.test.ts#finds installed assistants by their folders, general ones first, with their state"
+      - "src/features/mcp/core/connect.test.ts#writes the Store version of Claude Desktop where that version reads it"
+      - "src/features/mcp/core/connect.test.ts#previews, turns the server on, merges, reads back, journals, and undoes"
+      - "src/features/mcp/core/connect.test.ts#does not say it is connected when the file does not hold RigReady afterwards"
+      - "src/features/mcp/core/connect.test.ts#hands Cursor its install link and says only that it asked"
+      - "src/features/mcp/core/connect.test.ts#runs Claude Code with an argument array and believes it only after reading its settings"
+      - "tests/unit/writeAudit.test.ts#MCP: connecting Claude Desktop writes the one settings file the preview named"
+      - "tests/e2e/mcp-connect.e2e.ts#mcp-connect: Claude Desktop connected with one button, its other server kept, undone from Safety; Cursor gets its link"
+      - "artifacts/screens/mcp-connect/01-found.png"
+      - "artifacts/screens/mcp-connect/02-preview.png"
+      - "artifacts/screens/mcp-connect/03-connected.png"
+      - "artifacts/screens/mcp-connect/04-cursor-link.png"
+      - "artifacts/screens/mcp-connect/05-safety.png"
+
+  - id: MCP-012
+    title: The welcome screen offers an assistant as an optional step
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "The first-run welcome screen ends with an optional, quiet step, \"Use an AI assistant with RigReady?\", that opens Settings > AI assistants at Connect an assistant. Following it turns nothing on; Not now hides it on this PC."
+    status: done
+    evidence:
+      - test: "tests/e2e/mcp-connect.e2e.ts#mcp-connect: the welcome screen offers an assistant as an optional step, and Not now puts it away"
+      - "artifacts/screens/mcp-welcome/01-welcome-step.png"
+      - "artifacts/screens/mcp-welcome/02-welcome-to-settings.png"
+
   # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE
   # ---------------------------------------------------------------------------

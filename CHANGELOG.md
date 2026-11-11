@@ -46,6 +46,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **AI assistants**
 - An MCP server inside RigReady, off by default, so that an assistant on the same PC (Claude Desktop, Claude Code, Cursor, VS Code and other MCP clients) can check the rig, make it ready, read and change bindings with a preview, apply a monitor layout, make a backup, read the log and read the manual. `RigReady.exe --mcp` connects assistants that start a program; others pair from Settings.
+- Connect an assistant with one button: Settings > AI assistants lists the assistants found on this PC (Claude Desktop, LM Studio, AnythingLLM, Jan, Msty Studio, Goose, then Claude Code, Cursor, VS Code, Windsurf). Claude Desktop and AnythingLLM get RigReady added to their settings file after a preview, with a backup and Undo on the Safety page; Cursor, VS Code and LM Studio get their own install link; Claude Code gets its command, run on request. The welcome screen offers it as an optional last step.
 - RigReady asks in its own window before an assistant changes the rig or launches a game (Always ask, Ask before a launch only, or Never ask). Changes go through the same backups and Undo, and Settings lists what assistants did. The Anthropic API key and the AI settings are never offered to an assistant.
 - Guided conversations for first setup, fixing bindings, a rig that is not ready and a new PC.
 

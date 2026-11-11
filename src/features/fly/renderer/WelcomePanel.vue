@@ -20,6 +20,26 @@ onMounted(async () => {
   looked.value = true;
 });
 
+/** "Not now" on the optional assistant step: it stays away on this PC. */
+const SKIP_KEY = 'rigready.welcome.assistantSkipped';
+const readSkipped = (): boolean => {
+  try {
+    return window.localStorage.getItem(SKIP_KEY) === '1';
+  } catch {
+    // Storage is unavailable: the step shows, and "Not now" hides it for this visit.
+    return false;
+  }
+};
+const assistantSkipped = ref(readSkipped());
+function skipAssistant(): void {
+  assistantSkipped.value = true;
+  try {
+    window.localStorage.setItem(SKIP_KEY, '1');
+  } catch {
+    // Storage is unavailable: hidden for this visit only, which is all "Not now" promises.
+  }
+}
+
 const list = (names: string[], max: number): string =>
   names.length <= max
     ? names.join(', ')
@@ -187,6 +207,24 @@ const facts = computed(() => {
       Get the rig the way you fly or race first (gear plugged in, helper apps running, monitors
       arranged) and RigReady captures it as it is.
     </p>
+    <div v-if="!assistantSkipped" class="welcome-assistant" data-testid="welcome-assistant">
+      <v-icon icon="mdi-robot-outline" size="18" />
+      <span class="welcome-assistant-text">
+        <b>Optional: use an AI assistant with RigReady?</b> Claude Desktop, LM Studio and others can
+        check the rig, make it ready and help with bindings, and RigReady asks you before they
+        change anything. Nothing is turned on until you connect one.
+      </span>
+      <v-btn
+        size="small"
+        variant="tonal"
+        to="/configure/settings?connect=assistant"
+        data-testid="welcome-assistant-connect"
+        >Connect an assistant</v-btn
+      >
+      <v-btn size="small" variant="text" data-testid="welcome-assistant-skip" @click="skipAssistant"
+        >Not now</v-btn
+      >
+    </div>
     <p class="welcome-keys" data-testid="welcome-keys">
       <kbd class="rr-kbd">Ctrl</kbd><kbd class="rr-kbd">K</kbd> finds any page or command from
       anywhere; <kbd class="rr-kbd">?</kbd> lists the keyboard shortcuts.
@@ -325,6 +363,26 @@ const facts = computed(() => {
   margin: 14px 0 0;
   font-size: 12.5px;
   color: var(--rr-muted);
+}
+.welcome-assistant {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--rr-border);
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--rr-muted);
+}
+.welcome-assistant b {
+  color: var(--rr-text);
+  font-weight: 600;
+}
+.welcome-assistant-text {
+  flex: 1 1 320px;
 }
 .welcome-keys {
   margin: 18px -40px 0;
