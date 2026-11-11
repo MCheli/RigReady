@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0-beta.2 (2026-11-11)
+
+The first signed test build of 2.0.0. The installer, RigReady.exe and the uninstaller carry a code signature with the publisher "Mark Cheli", issued through Microsoft's Artifact Signing service; installed copies check that signature before they install an update. Also new since beta 1: an answer to an assistant's question that stops further questions about changes, and the Safety page naming the assistant beside a change it made. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
+
 ## 2.0.0-beta.1 (2026-11-07)
 
 A test build of 2.0.0, for checking the installer and the app on a real rig before the release. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). This build is not code signed; 2.0.0 will be. It is offered only to people who chose the beta channel in Settings > Updates.
