@@ -299,10 +299,16 @@ onBeforeUnmount(() => off?.());
           :items="status.models.map((m) => m.id)"
           aria-label="Model"
           data-testid="ai-model"
+          menu-icon=""
           @keydown.enter="saveModel"
           @blur="saveModel"
           @update:menu="menuToggled"
-        />
+        >
+          <!-- Vuetify's own menu icon is a nameless button; the field itself opens the list. -->
+          <template #append-inner>
+            <v-icon icon="mdi-menu-down" aria-hidden="true" />
+          </template>
+        </v-combobox>
       </div>
 
       <div class="rr-row">
