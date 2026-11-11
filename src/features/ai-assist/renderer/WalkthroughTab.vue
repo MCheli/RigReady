@@ -53,8 +53,9 @@ const position = computed(() => {
     <v-icon icon="mdi-book-open-blank-variant" size="36" class="mb-3" />
     <div class="rr-row-title">There is no guide for the {{ guide.aircraftName }} yet</div>
     <div class="rr-row-sub">
-      RigReady ships guides for the F/A-18C and the UH-1H. Guides are plain data files anyone can
-      write (see the packs folder in RigReady's source).
+      RigReady ships guides for the F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H and a dozen
+      more, but not yet for this one. Guides are plain data files anyone can write (see the packs
+      folder in RigReady's source).
       <template v-if="store.aiReady">
         With your API key, AI help can draft one from this aircraft's own list of actions.
       </template>

@@ -1,0 +1,19 @@
+description: Binding guide for an aircraft beyond the owner's two, the F-16C, with its input files in the install
+rig: mark-full
+extends: dcs-bindings-hornet.yaml
+# The recording holds input files for the Hornet and the Huey only. These are minimal F-16C input
+# definitions made from the recorded action list (fixtures/dcs-actions/F-16C_50.json): the actions
+# the shipped F-16C guide names, with their real ids. There are no user bindings for the F-16C,
+# so the guide shows every item as not bound yet.
+mutations:
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-16C/Input/F-16C/name.lua"
+    from: "data/ai-assist/F-16C/name.lua"
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-16C/Input/F-16C/joystick/default.lua"
+    from: "data/ai-assist/F-16C/joystick/default.lua"
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/DCSWorld/Mods/aircraft/F-16C/Input/F-16C/keyboard/default.lua"
+    from: "data/ai-assist/F-16C/keyboard/default.lua"
+profiles:
+  - profiles/dcs-bindings-hornet.yaml

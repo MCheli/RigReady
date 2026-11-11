@@ -6,7 +6,7 @@ import { CATEGORIES, CATEGORY_IDS, categoryTrail, type CategoryId } from '../cor
 import { controlName } from '../core/layout';
 import { kindsOn } from '../core/pages';
 import { pictureFor } from '../core/picture';
-import { actionIndex, physicalLabels, type SheetDevice } from '../core/sheet';
+import { actionIndex, deviceLabels, type SheetDevice } from '../core/sheet';
 import KneeboardDialog from './KneeboardDialog.vue';
 import LayoutEditor from './LayoutEditor.vue';
 import PrintDialog from './PrintDialog.vue';
@@ -34,7 +34,7 @@ const device = computed(() => store.device);
 const needle = computed(() => search.value.trim().toLowerCase());
 
 function matches(target: SheetDevice): Set<string> {
-  const labels = physicalLabels(target.layout);
+  const labels = deviceLabels(target);
   const keep = new Set<string>();
   for (const control of target.controls) {
     const hay = [
@@ -78,7 +78,7 @@ const selectedControl = computed(() => {
   return {
     id: selected.value,
     name: controlName(selected.value),
-    physical: physicalLabels(d.layout).get(selected.value),
+    physical: deviceLabels(d).get(selected.value),
     bindings: entry?.bindings ?? [],
     conflict: entry?.conflict ?? false,
     note: entry?.note ?? '',
@@ -188,13 +188,18 @@ const pictureText = computed(() => {
         ? 'RigReady drawing, your changes'
         : 'RigReady drawing';
   }
-  if (now.kind === 'list') return 'Controls list (no drawing of this device yet)';
+  if (now.kind === 'list') {
+    return now.known
+      ? `Controls named for the ${now.known.name} (no drawing of it yet)`
+      : 'Controls list (no drawing of this device yet)';
+  }
   return SOURCE_TEXT[device.value.layoutSource];
 });
 /** What the sheet says about its picture: the drawing's notes, or the layout's. */
 const pictureNotes = computed(() => {
   const now = picture.value;
   if (now?.kind === 'drawing') return now.source === 'custom' ? undefined : now.drawing.notes;
+  if (now?.kind === 'list' && now.known) return now.known.notes;
   return device.value?.layoutSource !== 'user' ? device.value?.layout.notes : undefined;
 });
 

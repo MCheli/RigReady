@@ -1,6 +1,6 @@
 ---
 title: Binding guide and AI help
-description: The F/A-18C and UH-1H guides, the walkthrough that binds with you, and optional AI help with your own key, with what is sent shown first.
+description: Binding guides for twenty DCS aircraft, the walkthrough that binds with you, and optional AI help with your own key, what is sent shown first.
 order: 110
 ---
 
@@ -12,7 +12,19 @@ An AI assistant of your own (Claude Desktop, Claude Code, Cursor and others) can
 
 ## The guides
 
-RigReady ships guides for the F/A-18C Hornet and the UH-1H Huey. A guide is a plain data file in RigReady's source (`packs/FA-18C_hornet.yaml` and `UH-1H.yaml`); anyone can add an aircraft by writing one in the same format. Each item in a guide has a title, what it does, when you use it, a tier (**Must have to fly and fight**, **Should have**, **Nice to have**), where it belongs (**On the stick, throttle or pedals**, **On a panel or button box**, **Fine on the keyboard**), and the DCS actions it stands for, each with a plain-language label. The guide also has a plan per kind of device: what to put on the stick, the throttle, the pedals, the MFD frames, the panels and the keyboard, in order.
+RigReady ships guides for these aircraft:
+
+| Kind | Aircraft |
+|---|---|
+| Fighters and strike jets | F/A-18C Hornet, F-16C Viper, F-14A/B Tomcat (pilot, and a separate guide for the RIO), F-15E Strike Eagle (pilot, and a separate guide for the WSO) |
+| Attack jets | A-10C II Warthog and A-10C (one guide for both), A-10A, Su-25T, Su-25 |
+| Flaming Cliffs fighters | F-15C, MiG-29 (A, S and G, one guide), Su-27 and J-11A (one guide), Su-33 |
+| Helicopters | Ka-50 III and Ka-50 Black Shark (one guide), UH-1H Huey (pilot) |
+| Warbirds and trainers | P-51D Mustang, TF-51D, F-86F Sabre, Christen Eagle II |
+
+An aircraft without a guide, such as a gunner's seat or a module not on this list, says **No guide yet**; with your own key, AI help can draft one (see below).
+
+A guide is a plain data file in RigReady's source (`packs/`, one file per aircraft, for example `FA-18C_hornet.yaml`); anyone can add an aircraft by writing one in the same format. Each item in a guide has a title, what it does, when you use it, a tier (**Must have to fly and fight**, **Should have**, **Nice to have**), where it belongs (**On the stick, throttle or pedals**, **On a panel or button box**, **Fine on the keyboard**), and the DCS actions it stands for, each with a plain-language label. The guide also has a plan per kind of device: what to put on the stick, the throttle, the pedals, the MFD frames, the panels and the keyboard, in order.
 
 The guides were written from general knowledge of the aircraft and of how their switches work in DCS. They have not been reviewed by a pilot and are not affiliated with Eagle Dynamics. What is checked, by a test, is that every action name in a guide exists in DCS's own input files for the aircraft, so a DCS update that renames an action is caught. **Where this guide comes from** at the bottom of the Priorities tab says the same.
 

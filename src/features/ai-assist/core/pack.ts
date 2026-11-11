@@ -74,6 +74,11 @@ export const PackSchema = z
       /** DCS's input profile id (the Saved Games folder name): "FA-18C_hornet". */
       id: text(80),
       name: text(80),
+      /**
+       * Other input profiles the same guide is right for, word for word: the variants of
+       * one aircraft whose controls DCS names the same ("Ka-50 III" next to "Ka-50").
+       */
+      also: z.array(text(80)).max(10).optional(),
     }),
     summary: text(800),
     /** Where the knowledge comes from, in plain words. */
@@ -152,7 +157,11 @@ export function shippedPacks(files: Record<string, string>): Map<string, Pack> {
   for (const [file, source] of Object.entries(files)) {
     const pack = parsePack(source, file);
     if (!pack.ok) throw new Error(`${pack.error.message}\n${pack.error.detail ?? ''}`);
-    packs.set(pack.value.aircraft.id.toLowerCase(), pack.value);
+    for (const id of [pack.value.aircraft.id, ...(pack.value.aircraft.also ?? [])]) {
+      const key = id.toLowerCase();
+      if (packs.has(key)) throw new Error(`${file}: another binding guide is already for ${id}.`);
+      packs.set(key, pack.value);
+    }
   }
   return packs;
 }

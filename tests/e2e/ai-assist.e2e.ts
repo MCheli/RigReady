@@ -262,6 +262,38 @@ test('ai-assist: a suggestion round trip shows what is sent, checks the answer, 
   expect(await allText(run.dataRoot)).not.toContain(KEY);
 });
 
+test('ai-assist: an aircraft beyond the Hornet and the Huey has its own shipped guide, walkthrough and plain names', async ({
+  rig,
+}) => {
+  const run = await rig.launch('ai-assist-viper', 'ai-assist-viper');
+  const { page, shot } = run;
+  await openGuide(page);
+  await page.getByTestId('ai-aircraft').click();
+  await page.getByRole('option', { name: /^F-16C/ }).click();
+  await expect(page.getByTestId('ai-aircraft')).toContainText('F-16C');
+
+  await expect(page.getByTestId('ai-current-item')).toHaveAttribute('data-item', 'pitch-roll');
+  await page.getByTestId('ai-item-tms').click();
+  const tmsUp = page.locator(
+    '[data-testid="ai-action"][data-action="Target Management Switch - Up"]'
+  );
+  await expect(tmsUp).toContainText('TMS up: lock / designate');
+  await shot('walkthrough');
+
+  await page.getByTestId('ai-tab-priorities').click();
+  await expect(page.getByTestId('ai-tier-must')).toContainText('Target management switch (TMS)');
+  // Nothing is bound for the F-16C on this rig yet, and every item is in this DCS version.
+  await expect(page.locator('[data-testid="ai-priority-item"][data-item="tms"]')).toHaveAttribute(
+    'data-status',
+    'unbound'
+  );
+  await expect(page.locator('[data-testid="ai-priority-item"][data-status="missing"]')).toHaveCount(
+    0
+  );
+  await expect(page.getByTestId('ai-sources')).toContainText('Not affiliated with or reviewed');
+  await shot('priorities');
+});
+
 test('ai-assist: for an aircraft without a guide, AI drafts one in the guide format, marked as drafted', async ({
   rig,
 }) => {

@@ -61,6 +61,22 @@ const choices = computed<DesktopChoice[]>(() => {
   return list;
 });
 
+/**
+ * The aircraft a new setup starts with: the one the setup in use is for, else the first
+ * installed aircraft with exportable displays. None when there is no such aircraft.
+ */
+function startingAircraft(): ScreenSetup['aircraft'] {
+  const catalog = state.value?.catalog ?? [];
+  const entry = catalog.find((c) => c.unit === state.value?.aircraftInUse) ?? catalog[0];
+  return entry ? [{ unit: entry.unit, label: entry.label, placements: [] }] : [];
+}
+
+/** Opens the chip of the aircraft the setup in use is for, when the setup has it. */
+function showAircraftInUse(): void {
+  const index = setup.value?.aircraft.findIndex((a) => a.unit === state.value?.aircraftInUse);
+  aircraftIndex.value = index !== undefined && index >= 0 ? index : 0;
+}
+
 async function load(initial = false): Promise<void> {
   const result = await api.screens();
   if (!result.ok) {
@@ -71,6 +87,7 @@ async function load(initial = false): Promise<void> {
   if (!initial) return;
   if (result.value.saved) {
     setup.value = structuredClone(result.value.saved);
+    showAircraftInUse();
     desktopId.value = 'saved';
     started.value = undefined;
     return;
@@ -81,7 +98,7 @@ async function load(initial = false): Promise<void> {
   const primary = current.displays.find((d) => d.primary) ?? current.displays[0]!;
   setup.value = {
     mainDisplayIds: [primary.id],
-    aircraft: [{ unit: 'FA-18C_hornet', label: 'F/A-18C Hornet', placements: [] }],
+    aircraft: startingAircraft(),
     desktop: current.displays,
     desktopLabel: current.label,
   };
@@ -113,12 +130,9 @@ async function importPlan(automatic = false): Promise<boolean> {
   if (state.value) state.value.catalog = fallback.catalog;
   setup.value = fallback.setup.aircraft.length
     ? fallback.setup
-    : {
-        ...fallback.setup,
-        aircraft: [{ unit: 'FA-18C_hornet', label: 'F/A-18C Hornet', placements: [] }],
-      };
+    : { ...fallback.setup, aircraft: startingAircraft() };
   desktopId.value = fallback.id;
-  aircraftIndex.value = 0;
+  showAircraftInUse();
   notes.value = fallback.unmatched;
   const planes = fallback.setup.aircraft.map((a) => a.label).join(', ');
   started.value = planes
@@ -513,7 +527,7 @@ onBeforeUnmount(() => {
                   v-for="c in addable"
                   :key="c.unit"
                   :title="c.label"
-                  :subtitle="c.displays.join(', ')"
+                  :subtitle="c.displays.map((d) => displayLabel(c.unit, d)).join(', ')"
                   @click="addAircraft(c.unit)"
                 />
               </v-list>

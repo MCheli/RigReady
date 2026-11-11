@@ -22,13 +22,18 @@ When SimAppPro has an MFD plan on this PC, RigReady reads it, and only it (SimAp
 
 - **Monitor layout the coordinates are for**: the monitors as they are now, the layout of any setup, any saved layout from [Monitors](../monitors-and-audio/layouts.md), or the layout saved with this screen setup. The coordinates only fit one arrangement, so choose the one you fly with.
 - **Main view on**: tick one or more monitors. The 3D view spans them.
-- **Aircraft**: one chip per aircraft. RigReady knows the displays of the F/A-18C Hornet (Left DDI, Right DDI, AMPCD), the F-16C Viper and the A-10C II, and adds whatever SimAppPro's plan knows. An aircraft without exportable displays, such as the UH-1H, uses the main view only.
+- **Aircraft**: one chip per aircraft. **+ Aircraft** lists every aircraft installed in DCS that can draw a display on another screen, with the displays it can export. RigReady reads them from each module's own cockpit scripts (the names a display asks the monitor setup for, such as `LEFT_MFCD`, `EHSI`, `F14_TID` or the Ka-50's `ABRIS` and `Shkval`), so a module you install later appears on its own. The scripts are only read, never run. An aircraft without exportable displays, such as the UH-1H, is not listed and uses the main view only. If a module's scripts cannot be read, RigReady falls back to what it knows of the F/A-18C, F-16C, A-10C and A-10C II, F-15E, F-14 and Ka-50, and adds whatever SimAppPro's plan knows about installed aircraft.
+- A new setup starts on the aircraft of the setup you used last, when its name says which one (a setup called "DCS F-16C" starts on the Viper), and otherwise on the first aircraft in the list. A saved setup or SimAppPro's plan starts with the aircraft it already has.
 - For each display, choose the monitor or **Not shown**, then set the **Crop** in pixels from the left, top, right and bottom edges to leave out the bezel. On the map you can also drag a display onto a screen and drag its edges.
 - The dashed outline on the map is the DCS window: the box around every monitor the setup uses. Its size is what options.lua must say.
 
 When two aircraft put the same display in different places, RigReady writes a per-aircraft section that DCS applies when that cockpit loads.
 
 The page refuses to write a setup with a problem (a display placed twice, a monitor that is not in the layout, a crop that leaves almost nothing) and warns about things that work but are worth knowing: a display drawn over the main view, or monitors that do not start at the top left of the main Windows display.
+
+![Every installed aircraft that can export a display](../../../artifacts/screens/dcs-setup-module-displays/02-installed-aircraft.png)
+
+![The F-15E's six displays, one placed on an MFD screen](../../../artifacts/screens/dcs-setup-module-displays/03-f-15e-placed.png)
 
 ![Cropping a bezel](../../../artifacts/screens/dcs-setup-screens/05-cropped.png)
 

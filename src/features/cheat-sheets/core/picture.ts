@@ -1,5 +1,6 @@
 import { drawingFor, planCallouts, planList, renderPlanSvg, applyChanges } from './drawings';
 import type { CalloutPlan, DeviceDrawing } from './drawings';
+import { knownDeviceFor, type KnownDevice } from './known';
 import { renderDeviceSvg, type ThemeName } from './render';
 import type { SheetDevice } from './sheet';
 
@@ -11,7 +12,8 @@ import type { SheetDevice } from './sheet';
  *   the silhouette with a label block per physical control and a leader to it.
  * - **cards**: the user arranged a layout of their own (their places are kept), or the
  *   device has a shipped layout but no drawing yet.
- * - **list**: nothing is known about the device: its controls as blocks, no picture.
+ * - **list**: no picture of the device: its controls as blocks. For a device RigReady
+ *   knows the controls of (`known`, see ./known), a block per physical control, named.
  */
 export type Picture =
   | {
@@ -22,7 +24,7 @@ export type Picture =
       background?: { image: string; opacity: number };
     }
   | { kind: 'cards' }
-  | { kind: 'list' };
+  | { kind: 'list'; known?: KnownDevice };
 
 type PictureDevice = Pick<
   SheetDevice,
@@ -53,7 +55,9 @@ export function pictureFor(device: Omit<PictureDevice, 'controls' | 'reports'>):
     };
   }
   if (builtin) return { kind: 'drawing', drawing: builtin, source: 'builtin' };
-  return device.layoutSource === 'builtin' ? { kind: 'cards' } : { kind: 'list' };
+  if (device.layoutSource === 'builtin') return { kind: 'cards' };
+  const known = knownDeviceFor(device);
+  return known ? { kind: 'list', known } : { kind: 'list' };
 }
 
 export interface PictureOptions {
@@ -95,7 +99,11 @@ export function planPicture(
           ...(fill !== undefined ? { fill } : {}),
           ...(options.listed ? { listed: options.listed } : {}),
         })
-      : planList(device.controls, device.reports, { showEmpty, fontScale });
+      : planList(device.controls, device.reports, {
+          showEmpty,
+          fontScale,
+          ...(picture.kind === 'list' && picture.known ? { named: picture.known.controls } : {}),
+        });
   const least = options.fontScale ?? 1;
   if (options.fill === undefined && picture.kind === 'drawing') {
     // No page to fill (the app): the drawing at its own size, or grown as far as the

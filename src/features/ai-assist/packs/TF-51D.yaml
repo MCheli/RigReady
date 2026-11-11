@@ -1,0 +1,327 @@
+# RigReady binding guide: TF-51D Mustang. Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: TF-51D
+  name: TF-51D Mustang
+summary: >-
+  The two-seat, unarmed trainer version of the P-51D, flown from the front seat: one big
+  piston engine whose throttle and propeller speed you manage yourself, and strong torque on
+  take-off that needs a lot of rudder and rudder trim. Bind the stick, rudder, throttle and
+  propeller lever first, then the trims, gear and flaps; engine switches are fine with the
+  mouse. It has no guns or weapons to bind.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the P-51D's controls (stick, throttle
+    quadrant with propeller and mixture levers, trim wheels), which the TF-51D shares, and of
+    how they work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from its default input files for the TF-51D;
+    a test checks each one against those files so a DCS update that renames an action is
+    caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: Pitch and roll; a hat can take the elevator and aileron trim.
+    items: [pitch-roll, trim-elevator, trim-aileron]
+  throttle:
+    summary: >-
+      Throttle on the main lever and the propeller (engine RPM) on a second lever or slider.
+      The radio button goes on the throttle.
+    items: [throttle, propeller, radio, mixture]
+  pedals:
+    summary: >-
+      Rudder on the rudder axis, toe brakes on their own axes; rudder trim on a rotary if you
+      have one.
+    items: [rudder, wheel-brakes, trim-rudder]
+  panel:
+    summary: >-
+      Gear, flaps and the switches you set a few times per flight: supercharger, radiators,
+      fuel booster and fuel selector.
+    items: [gear, flaps, supercharger, radiators, fuel-booster, fuel-selector, landing-light]
+  keyboard:
+    summary: Start-up, canopy, views, kneeboard and bailing out can stay on the keyboard.
+    items: [auto-start, canopy, view-center, zoom, kneeboard, bailout]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the nose up and down and banks the aircraft.
+    when: All the time.
+    actions:
+      - { name: Pitch, label: 'Pitch (stick forward and back)' }
+      - { name: Roll, label: 'Roll (stick left and right)' }
+
+  - id: rudder
+    title: Rudder
+    tier: must
+    place: hotas
+    role: pedals
+    what: >-
+      Yaws the nose. The engine's torque pulls the nose to the left on take-off, so you need
+      a lot of right rudder; on the ground the rudder also steers the tail wheel.
+    when: Every take-off and landing, and to keep the ball centred in flight.
+    note: The tail wheel steers with the stick held back and swivels freely with the stick pushed forward.
+    actions:
+      - { name: Rudder, label: 'Rudder (pedals or stick twist)' }
+
+  - id: throttle
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    what: Sets the manifold pressure, the engine's power.
+    when: All the time. Move it smoothly; sudden power on take-off swings the nose.
+    actions:
+      - { name: Throttle, label: 'Throttle (axis)' }
+
+  - id: propeller
+    title: Propeller (engine RPM)
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Sets the engine and propeller speed. Forward for take-off, landing and combat; back to cruise.
+    when: Before take-off, in cruise, before aerobatics and before landing.
+    note: A second lever or slider as an axis is best.
+    actions:
+      - { name: Engine RPM Setting, label: 'Propeller RPM (axis)' }
+      - { name: Engine RPM Increase, label: 'Propeller RPM up' }
+      - { name: Engine RPM Decrease, label: 'Propeller RPM down' }
+
+  - id: wheel-brakes
+    title: Wheel brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: >-
+      Brakes the main wheels. Braking one side turns the aircraft on the ground, which you need
+      because the long nose blocks the view ahead.
+    when: Taxiing (in S-turns to see ahead), after landing.
+    note: Best on the toe brakes of the pedals (left and right axes); otherwise buttons.
+    actions:
+      - { name: Wheel Brake Left, label: 'Left toe brake' }
+      - { name: Wheel Brake Right, label: 'Right toe brake' }
+      - { name: Wheel Brake, label: 'Both brakes, one axis' }
+      - { name: Wheel brake Both, label: 'Both brakes, one button' }
+
+  - id: trim-rudder
+    title: Rudder trim
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Trims the rudder so you do not have to hold it; set it to the right before take-off.
+    when: Before take-off, and after every big change of speed or power.
+    actions:
+      - { name: Trim Rudder, label: 'Rudder trim (axis)' }
+      - { name: Trim Rudder Left, label: 'Rudder trim left' }
+      - { name: Trim Rudder Right, label: 'Rudder trim right' }
+
+  - id: trim-elevator
+    title: Elevator trim
+    tier: must
+    place: hotas
+    role: stick
+    need: any
+    what: Trims the nose so the aircraft holds its pitch without pressure on the stick.
+    when: After every change of speed or power, and on approach.
+    actions:
+      - { name: Trim Elevator, label: 'Elevator trim (axis)' }
+      - { name: Trim Elevator Up, label: 'Trim nose up' }
+      - { name: Trim Elevator Down, label: 'Trim nose down' }
+
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    actions:
+      - { name: Landing Gear Up/Down, label: 'Gear: toggle' }
+      - { name: Landing Gear Up, label: 'Gear up' }
+      - { name: Landing Gear Down, label: 'Gear down' }
+
+  - id: flaps
+    title: Flaps
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Lowers the flaps for more lift at low speed.
+    when: Before landing, and sometimes a little for take-off.
+    actions:
+      - { name: Flaps, label: 'Flaps (axis)' }
+      - { name: Flaps Up, label: 'Flaps up' }
+      - { name: Flaps Down, label: 'Flaps down' }
+
+  - id: radio
+    title: Radio (call the radio menu)
+    tier: must
+    place: hotas
+    role: throttle
+    what: Talks on the radio and opens DCS's radio menu for the tower and your flight.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    actions:
+      - { name: COMM Push to talk (call radio menu), label: 'Talk / radio menu' }
+
+  # ---------------------------------------------------------------- should have
+  - id: trim-aileron
+    title: Aileron trim
+    tier: should
+    place: hotas
+    role: stick
+    need: any
+    what: Trims the wings level so you do not have to hold the stick to the side.
+    when: In cruise, after fuel has burned unevenly.
+    actions:
+      - { name: Trim Aileron, label: 'Aileron trim (axis)' }
+      - { name: Trim Aileron Left, label: 'Aileron trim left' }
+      - { name: Trim Aileron Right, label: 'Aileron trim right' }
+
+  - id: mixture
+    title: Mixture
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: The fuel mixture. RUN for flying, IDLE CUT OFF to stop the engine.
+    when: Start-up and shutdown.
+    actions:
+      - { name: Mixture RUN, label: 'Mixture RUN' }
+      - { name: Mixture IDLE CUT OFF, label: 'Mixture IDLE CUT OFF' }
+      - { name: Mixture control (rotary), label: 'Mixture: next position' }
+
+  - id: auto-start
+    title: Auto start
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: DCS starts the engine for you.
+    when: At the start of a flight, until you learn the start-up.
+    actions:
+      - { name: Start Procedure, label: 'Auto start' }
+
+  - id: canopy
+    title: Canopy
+    tier: should
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Opens and closes the canopy.
+    when: Before taxiing and after landing.
+    actions:
+      - { name: Canopy Opening, label: 'Canopy open' }
+      - { name: Canopy Closing, label: 'Canopy close' }
+      - { name: Canopy Crank, label: 'Canopy crank (axis)' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: supercharger
+    title: Supercharger
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: The supercharger's speed. AUTO lets it change to high blower at altitude by itself.
+    when: Check it is in AUTO before take-off.
+    actions:
+      - { name: Supercharger switch AUTO, label: 'Supercharger AUTO' }
+      - { name: Supercharger switch LOW, label: 'Supercharger LOW' }
+      - { name: Supercharger switch HIGH, label: 'Supercharger HIGH' }
+
+  - id: radiators
+    title: Radiators
+    tier: nice
+    place: panel
+    role: panel
+    what: The coolant and oil radiator doors. AUTO keeps the engine at the right temperature.
+    when: Check they are in AUTO before take-off; open them if the engine runs hot.
+    actions:
+      - { name: Radiator coolant Auto, label: 'Coolant radiator AUTO' }
+      - { name: Radiator oil Auto, label: 'Oil radiator AUTO' }
+
+  - id: fuel-booster
+    title: Fuel booster pump
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Switches the electric fuel booster pump, needed for start-up, take-off and landing.
+    when: Start-up, take-off and landing.
+    actions:
+      - { name: Fuel Booster, label: 'Fuel booster: toggle' }
+      - { name: Fuel Booster ON, label: 'Fuel booster on' }
+      - { name: Fuel Booster OFF, label: 'Fuel booster off' }
+
+  - id: fuel-selector
+    title: Fuel tank selector
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Chooses which fuel tank the engine draws from.
+    when: Start-up and while managing fuel on longer flights.
+    actions:
+      - { name: Fuel selector Left Main Tank, label: 'Fuel: left main tank' }
+      - { name: Fuel selector Right Main Tank, label: 'Fuel: right main tank' }
+      - { name: Fuel selector Fuselage Tank, label: 'Fuel: fuselage tank' }
+      - { name: Fuel selector valve (rotary), label: 'Fuel selector: next' }
+
+  - id: landing-light
+    title: Landing light
+    tier: nice
+    place: panel
+    role: panel
+    what: Switches the landing light.
+    when: Landing at night.
+    actions:
+      - { name: Landing Light, label: 'Landing light' }
+
+  - id: view-center
+    title: Center view
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Recenters the head position, needed with head tracking or VR.
+    when: Whenever the view has drifted.
+    actions:
+      - { name: View Center, label: 'Center view' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Zooms the view in to read instruments or spot other aircraft.
+    when: Reading small gauges, spotting targets.
+    actions:
+      - { name: Zoom in slow, label: 'Zoom in' }
+      - { name: Zoom out slow, label: 'Zoom out' }
+      - { name: Zoom normal, label: 'Zoom normal' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's notes and maps.
+    when: Checking frequencies, headings and targets.
+    actions:
+      - { name: Kneeboard ON/OFF, label: 'Kneeboard on/off' }
+
+  - id: bailout
+    title: Bail out
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Leaves the aircraft by parachute.
+    when: Only when the aircraft cannot be saved.
+    actions:
+      - { name: Bailout, label: 'Bail out' }

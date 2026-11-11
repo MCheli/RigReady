@@ -2239,9 +2239,15 @@ requirements:
     evidence:
       - "src/features/dcs-setup/core/screens.test.ts#imports SimAppPro's plan for the flying layout and generates the same viewports"
       - "src/features/dcs-setup/core/screens.test.ts#writes per-aircraft overrides when two aircraft place the same display differently"
+      - "src/features/dcs-setup/core/cockpitDisplays.test.ts#finds the viewport names a cockpit script asks for, without running it"
+      - "src/features/dcs-setup/core/cockpitDisplays.test.ts#lists every installed aircraft with the displays its cockpit scripts name, built-in ones where they name none"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the screen editor offers every installed aircraft with the displays its cockpit scripts name, starting on the setup in use"
       - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
       - "artifacts/screens/dcs-setup-screens/01-imported.png"
       - "artifacts/screens/dcs-setup-screens/03-file-preview.png"
+      - "artifacts/screens/dcs-setup-module-displays/01-viper-in-use.png"
+      - "artifacts/screens/dcs-setup-module-displays/02-installed-aircraft.png"
+      - "artifacts/screens/dcs-setup-module-displays/03-f-15e-placed.png"
 
   - id: DCS-MON-003
     title: Never clobber user MonitorSetup edits
@@ -3113,6 +3119,30 @@ requirements:
       - "artifacts/screens/cheat-sheets-drawing-editor/02-own-drawing.png"
       - "artifacts/screens/cheat-sheets-drawing-editor/03-photo-drawing.png"
 
+  - id: SHEET-017
+    title: Popular controllers without a drawing have their controls named
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "A controller RigReady has no drawing or shipped layout of, but whose controls it knows (the Thrustmaster HOTAS Warthog stick and throttle, the T.16000M stick, the Saitek/Logitech X52 Pro), is found by its USB vendor and product id, or by the name it reports, and its sheet is the controls list with one block per physical control, named the way the maker names it (hats as one block, axes named), instead of buttons in runs of eight."
+      - "Every input the map leaves out still has a place on the list; every map's inputs are unique and inside what the device reports."
+      - "The detail panel and By action name the physical control (\"S2 weapon release\"); drawings, shipped layouts and the user's own layouts and drawings are used as before."
+      - "The numbers come from the per-device default bindings DCS World ships, cross-checked with a public source, cited in docs/research/device-control-names.md; the manual lists the devices covered."
+    notes:
+      - "2026-11-11: gap 2 of the coverage audit (cheat sheets name controls only for the owner's hardware). TWCS, T.Flight HOTAS X, X-56, VKB and Virpil have DCS default files but no numbered public map to cross-check, so they are not shipped yet (research doc)."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/known/known.test.ts#all pass their schema"
+      - "src/features/cheat-sheets/core/known/known.test.ts#names each control once and each input once, inside what the device reports"
+      - "src/features/cheat-sheets/core/known/known.test.ts#is found by its USB ids and by the name it reports"
+      - "src/features/cheat-sheets/core/known/known.test.ts#the Warthog stick: TG1 is button 1, S2 is 2, H2 is 7–10, H4 is 15–19, H1 the POV"
+      - "src/features/cheat-sheets/core/known/known.test.ts#a list of a known device has a block per physical control, and the others after it"
+      - "src/features/cheat-sheets/core/known/known.test.ts#gets the controls list named for it, with DCS’s Hornet defaults on its controls"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a Warthog stick shows its controls by name"
+      - "docs/research/device-control-names.md"
+      - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
+
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
   # ---------------------------------------------------------------------------
@@ -3252,6 +3282,29 @@ requirements:
       - "artifacts/screens/ai-assist-draft/02-drafted-guide.png"
 
   - id: AI-007
+    title: Binding guides for every installed aircraft with a pilot's seat
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "A shipped guide, in the AI-005 format and depth (three tiers, plain names, what, when and where, a plan per device), for every aircraft input profile in the owner's DCS install with a seat worth guiding: F/A-18C, F-16C, A-10C II and A-10C, A-10A, F-14 pilot and RIO, F-15E pilot and WSO, F-15C, MiG-29 (three versions), Su-27 and J-11A, Su-33, Su-25T, Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. Each says it is not affiliated with or reviewed by Eagle Dynamics; the manual says none was reviewed by a pilot."
+      - "Variants whose controls DCS names the same share one file through `aircraft.also`; two shipped files may not claim the same profile."
+      - "Every action a guide names is checked by a test against that aircraft's real action list (each action's id and DCS's name, recorded from the install with the app's own Lua evaluation into fixtures/dcs-actions; the recording matches what the app reads from the recorded rig)."
+      - "The app shows the guide, the walkthrough and the plain names (bindings pages, cheat sheets) for these aircraft; an aircraft without one still offers the AI-drafted guide (AI-006)."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/pack.test.ts#ships a guide for every aircraft in the list, by its DCS input profile id"
+      - "src/features/ai-assist/core/pack.test.ts#the recorded action lists are what the app reads from the install"
+      - "src/features/ai-assist/core/pack.test.ts#refuses two shipped guides for the same aircraft"
+      - "src/features/ai-assist/core/service.test.ts#shows the shipped guide for an aircraft beyond the Hornet and the Huey, from its own input files"
+      - "tests/unit/actionLabels.test.ts#any feature reads the same labels through core, for the Hornet and the Huey; an unknown aircraft has none"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: an aircraft beyond the Hornet and the Huey has its own shipped guide, walkthrough and plain names"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: for an aircraft without a guide, AI drafts one in the guide format, marked as drafted"
+      - "artifacts/screens/ai-assist-viper/01-walkthrough.png"
+      - "artifacts/screens/ai-assist-viper/02-priorities.png"
+      - "artifacts/screens/ai-assist-draft/01-no-guide.png"
+
+  - id: AI-008
     title: AI help with other providers (OpenAI, OpenAI-compatible, local servers)
     job: configure
     area: ai
