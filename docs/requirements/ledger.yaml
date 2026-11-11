@@ -2239,9 +2239,15 @@ requirements:
     evidence:
       - "src/features/dcs-setup/core/screens.test.ts#imports SimAppPro's plan for the flying layout and generates the same viewports"
       - "src/features/dcs-setup/core/screens.test.ts#writes per-aircraft overrides when two aircraft place the same display differently"
+      - "src/features/dcs-setup/core/cockpitDisplays.test.ts#finds the viewport names a cockpit script asks for, without running it"
+      - "src/features/dcs-setup/core/cockpitDisplays.test.ts#lists every installed aircraft with the displays its cockpit scripts name, built-in ones where they name none"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the screen editor offers every installed aircraft with the displays its cockpit scripts name, starting on the setup in use"
       - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
       - "artifacts/screens/dcs-setup-screens/01-imported.png"
       - "artifacts/screens/dcs-setup-screens/03-file-preview.png"
+      - "artifacts/screens/dcs-setup-module-displays/01-viper-in-use.png"
+      - "artifacts/screens/dcs-setup-module-displays/02-installed-aircraft.png"
+      - "artifacts/screens/dcs-setup-module-displays/03-f-15e-placed.png"
 
   - id: DCS-MON-003
     title: Never clobber user MonitorSetup edits

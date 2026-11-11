@@ -185,6 +185,63 @@ test('dcs-setup: screens are imported from SimAppPro, written as RigReady.lua an
   await shot('moved-to-main');
 });
 
+test('dcs-setup: the screen editor offers every installed aircraft with the displays its cockpit scripts name, starting on the setup in use', async ({
+  rig,
+}) => {
+  const run = await rig.launch('dcs-setup-module-displays', 'dcs-setup-module-displays');
+  const { page, shot } = run;
+  await openDcs(page, 'screens');
+  // No SimAppPro plan and no saved setup: it starts on the Viper, the setup used last.
+  await expect(page.getByTestId('screens-aircraft-F-16C_50')).toBeVisible();
+  await expect(page.locator('[data-testid^="screens-aircraft-"]')).toHaveCount(1);
+  const rows = page.getByTestId('screens-display-row');
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toHaveAttribute('data-name', 'LEFT_MFCD');
+  await expect(rows.nth(1)).toHaveAttribute('data-name', 'RIGHT_MFCD');
+  await expect(rows.nth(2)).toHaveAttribute('data-name', 'EHSI');
+  await expect(rows.nth(0)).toContainText('Left MFD');
+  await shot('viper-in-use');
+
+  // Every installed aircraft that can export a display, read from its own scripts.
+  await page.getByTestId('screens-add-aircraft').click();
+  const menu = page.locator('.v-overlay--active .v-list');
+  for (const label of [
+    'A-10C II Tank Killer',
+    'A-10C Warthog',
+    'F-14A/B (F-14B)',
+    'F-15E Suite 4+',
+    'F/A-18C',
+    'Ka-50 Black Shark',
+    'Ka-50 Black Shark 3',
+  ])
+    await expect(menu.getByText(label, { exact: true })).toBeVisible();
+  await expect(menu.getByText('UH-1H', { exact: false })).toHaveCount(0);
+  await expect(menu.getByText('P-51D', { exact: false })).toHaveCount(0);
+  await shot('installed-aircraft');
+
+  await menu.getByText('F-15E Suite 4+', { exact: true }).click();
+  await expect(page.getByTestId('screens-aircraft-F-15ESE')).toBeVisible();
+  await expect(rows).toHaveCount(6);
+  await expect(
+    page.locator('[data-testid="screens-display-row"][data-name="OUTER_LEFT_MFCD"]')
+  ).toContainText('Outer left MPD (rear)');
+  // A display of the new aircraft goes on a screen as any other.
+  await page.getByTestId('screens-monitor-OUTER_LEFT_MFCD').click();
+  await page.getByRole('option', { name: 'USB_Monitor (1 of 3)' }).click();
+  await expect(page.getByTestId('screen-map-box')).toHaveCount(1);
+  await page.getByTestId('screens-show-lua').click();
+  await expect(page.getByTestId('screens-lua')).toContainText('OUTER_LEFT_MFCD =');
+  await expect(page.getByTestId('screens-lua')).toContainText('x = 5120;');
+  await shot('f-15e-placed');
+
+  // The Ka-50's own names, not the MFCD names it falls back to.
+  await page.getByTestId('screens-add-aircraft').click();
+  await menu.getByText('Ka-50 Black Shark', { exact: true }).click();
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toHaveAttribute('data-name', 'ABRIS');
+  await expect(rows.nth(1)).toHaveAttribute('data-name', 'Shkval');
+});
+
 test('dcs-setup: Export.lua gets the DCS-ExportScript line the Stream Deck plugin needs; a rewrite is noticed and put right', async ({
   rig,
 }) => {

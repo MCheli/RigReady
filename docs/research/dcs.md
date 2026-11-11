@@ -447,6 +447,19 @@ CENTER_MFCD =
   - `AMPCD\indicator\AMPCD_viewport_cfg.lua` → `"CENTER_MFCD"`
 
   `try_find_assigned_viewport(name)` (in `Scripts\Aircrafts\_Common\Cockpit\ViewportHandling.lua`) copies `x,y,width,height` into `dedicated_viewport` and forces the display to render always. **There is no "AMPCD" name.**
+- **Every installed module** (read on the owner's PC, Nov 2026, Steam install; `src/features/dcs-setup/core/cockpitDisplays.ts` does the same scan) [verified]. The full helper is `try_find_assigned_viewport(exactly_name, abstract_name)`: `find_viewport(exactly_name) or find_viewport(abstract_name)`, so the second name is only a fallback. A few scripts call `find_viewport(name)` directly. The calls sit in each module's `Cockpit` folder, not always under `Cockpit\Scripts` (the F-15E's are in `Cockpit\Bake\MFDG` and `Cockpit\UFC\Indicator`). Compiled scripts would hide them; none of these are.
+
+  | Module (units) | Names |
+  |---|---|
+  | FA-18C (`FA-18C_hornet`) | `LEFT_MFCD`, `CENTER_MFCD`, `RIGHT_MFCD` |
+  | F-16C (`F-16C_50`) | `LEFT_MFCD`, `RIGHT_MFCD` (`MFD_left_init.lua`, `MFD_right_init.lua`), `EHSI` (`EHSI_init.lua`) |
+  | A-10C (`A-10C`), A-10C_2 (`A-10C_2`) | `LEFT_MFCD`, `RIGHT_MFCD` (`MFCD\indicator\MFCD_init.lua`, by `disposition`) |
+  | F-15E (`F-15ESE`) | front `LEFT_MFCD`, `CENTER_MFCD`, `RIGHT_MFCD`; rear `LEFT_MFCD` and `RIGHT_MFCD` (inner MPCDs, the same names as the front), `OUTER_LEFT_MFCD`, `OUTER_RIGHT_MFCD`; `UFC` (front and rear) |
+  | F14 (`F-14A-95-GR`, `F-14A-135-GR-Early`, `F-14A-135-GR`, `F-14B`) | `F14_TID`, `F14_DDD`, `F14_ECMD`, `F14_HSD`, `F14_VDI`, `F14_UHF_ARC159`, `F14_VHF_ARC182`; `find_viewport("F14_JESTER_MENU")` for the Jester menu |
+  | Ka-50, Ka-50_3 | `try_find_assigned_viewport("ABRIS","RIGHT_MFCD")`, `("Shkval","LEFT_MFCD")`: own names first, the MFCD names as fallback |
+  | A-10A, F-15C, MiG-29, Su-25A, Su-25T, Su-27, Su-33 (Flaming Cliffs), Christen Eagle II, F-86, P-51D, TF-51D, UH-1H | none |
+
+  `CoreMods\aircraft` holds no such call (its AH-64D, AV-8B, M-2000C and other folders on this PC are AI models without cockpits). `GU_MAIN_VIEWPORT` also appears in `find_viewport` calls; it is the main view, not a display.
 - **UH-1H:** no exportable display. The only viewport script (`CARGO_CAM_init.lua`) uses `make_viewport` with no `try_find_assigned_viewport` [verified]. A Huey setup needs only `Center`, `UIMainView` and `GU_MAIN_VIEWPORT`.
 
 ### 3.4 How the three USB screens are addressed (this rig)
