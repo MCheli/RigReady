@@ -10,7 +10,7 @@ Assetto Corsa EVO and Assetto Corsa Rally are supported as game modules: RigRead
 
 The game is found through Steam (app 3058630), or through **Choose folder…** ([How a game is found](index.md#how-a-game-is-found)) for a folder that contains `AssettoCorsaEVO.exe`. **Launch** asks Steam to start it, and the game counts as running when `AssettoCorsaEVO.exe` is running. The version is the Steam build.
 
-Its settings folder is `Documents\ACE`, offered for [backup](../protect/tracked-files.md) as a whole ("Everything in Documents\ACE: controls, graphics and saved setups") when it exists. The game page notes that Assetto Corsa EVO is in early access: RigReady detects and launches it and backs up its settings folder, but does not read its bindings yet.
+Its settings folder is `Saved Games\ACE`, offered for [backup](../protect/tracked-files.md) as a whole ("Everything in Saved Games\ACE: controls, graphics and saved setups") when it exists. Builds before 0.5.2 kept the same files in `Documents\ACE`; if that folder is still there, it is offered too, after the new one. The files in it (`input_devices.inputdeviceconfiguration` and the others) are binary, so RigReady backs them up but cannot list them. The game page notes that Assetto Corsa EVO is in early access: RigReady detects and launches it and backs up its settings folder, but does not read its bindings yet.
 
 ## Assetto Corsa Rally
 

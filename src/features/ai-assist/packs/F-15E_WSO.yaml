@@ -1,0 +1,413 @@
+# RigReady binding guide: F-15E Strike Eagle, WSO (back seat). Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: F-15E_WSO
+  name: F-15E Strike Eagle (WSO)
+summary: >-
+  The Weapon Systems Officer runs the targeting pod, the radar and the bombs from the back
+  seat, mostly with two hand controllers beside the seat and four displays. Put the right
+  hand controller on your joystick and the left one on your throttle; the back seat's own
+  stick, throttle and pedals come after that.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the F-15E's rear cockpit (two hand
+    controllers with TDC, castle, coolie and trigger, four displays, and a stick, throttle
+    and pedals of its own) and of how it works in DCS.
+  - >-
+    Every action name below is DCS's own, taken from Razbam's default input files for the
+    F-15E WSO seat; a test checks each one against those files so a DCS update that renames
+    an action is caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      Your joystick becomes the right hand controller: TDC, trigger, laser and the castle
+      and coolie switches. Pitch and roll for flying from the back seat can share the same
+      stick's axes.
+    items: [rhc-tdc, rhc-tdc-press, rhc-trigger, rhc-laser, rhc-castle, rhc-coolie, rhc-auto-acq, pitch-roll, pickle]
+  throttle:
+    summary: >-
+      Your throttle takes the left hand controller's TDC, castle and trigger, the radios
+      and countermeasures. The back seat's throttle axis comes last.
+    items: [lhc-tdc, lhc-tdc-press, comm, dispense, lhc-castle, lhc-trigger, lhc-coolie, thrust]
+  pedals:
+    summary: >-
+      The back seat has its own rudder pedals. You only need them when you fly from the back
+      seat; DCS lets you bind them on the same pedals as the front seat.
+    items: [rudder, wheel-brakes]
+  mfd:
+    summary: >-
+      Each MFD frame's 20 buttons to the matching display's pushbuttons. The WSO has four
+      displays: the two in the middle and one on each side.
+    items: [mpd-left, mpd-right, mpcd-left, mpcd-right]
+  panel:
+    summary: >-
+      The targeting pod's power and laser, and the controller swap if you want the two hand
+      controllers the other way round.
+    items: [tgp-power, tgp-laser, hand-swap]
+  keyboard:
+    summary: Views, zoom, the kneeboard and ejection can stay on DCS's keyboard defaults.
+    items: [view-center, zoom, kneeboard, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: rhc-tdc
+    title: Right hand controller TDC (cursor)
+    tier: must
+    place: hotas
+    role: stick
+    need: any
+    what: >-
+      Moves the cursor on the display the right hand controller works on: the targeting pod
+      picture, the radar map, the moving map.
+    when: Every attack, to find the target, aim the pod and place the cursor on it.
+    note: Two axes are best, such as a mini-stick or the stick itself; a four-way hat works too.
+    actions:
+      - { name: 'RHC - TDC Slew Horizontal', label: 'Right TDC left/right (axis)' }
+      - { name: 'RHC - TDC Slew Vertical', label: 'Right TDC up/down (axis)' }
+      - { name: 'RHC - TDC Switch UP', label: 'Right TDC up' }
+      - { name: 'RHC - TDC Switch DOWN', label: 'Right TDC down' }
+      - { name: 'RHC - TDC Switch LEFT', label: 'Right TDC left' }
+      - { name: 'RHC - TDC Switch RIGHT', label: 'Right TDC right' }
+
+  - id: rhc-tdc-press
+    title: Right TDC press (designate)
+    tier: must
+    place: hotas
+    role: stick
+    what: Pushing the TDC in designates or selects what is under the cursor.
+    when: Every target designation.
+    actions:
+      - { name: 'RHC - TDC Switch PRESS', label: 'Right TDC press: designate' }
+
+  - id: rhc-trigger
+    title: Right hand controller trigger
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      A two-stage trigger. Half and full action command the sensor under the cursor, such
+      as making the targeting pod track or the radar lock.
+    when: Every time you track or lock a target.
+    note: A two-stage trigger maps directly; otherwise use two buttons.
+    actions:
+      - { name: 'RHC - Trigger HA (Half)', label: 'Right trigger half action' }
+      - { name: 'RHC - Trigger FA (FUll', label: 'Right trigger full action' }
+
+  - id: rhc-castle
+    title: Right castle switch
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the right hand controller between the displays and changes what the display under it shows.
+    when: Constantly; it is how you pick which display you are working on.
+    actions:
+      - { name: 'RHC - Castle Switch FWD', label: 'Right castle forward' }
+      - { name: 'RHC - Castle Switch AFT', label: 'Right castle aft' }
+      - { name: 'RHC - Castle Switch LEFT', label: 'Right castle left' }
+      - { name: 'RHC - Castle Switch RIGHT', label: 'Right castle right' }
+      - { name: 'RHC - Castle Switch PRESS', label: 'Right castle press' }
+
+  - id: rhc-laser
+    title: Laser fire
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the targeting pod's laser, which laser-guided bombs follow to the target.
+    when: In the last seconds before a laser-guided bomb hits.
+    actions:
+      - { name: 'RHC - Laser Fire', label: 'Right controller: fire laser' }
+
+  - id: comm
+    title: Radios (call the radio menu)
+    tier: must
+    place: hotas
+    role: throttle
+    what: Talks on radio 1 or radio 2 and opens DCS's radio menu.
+    when: Whenever you talk to the tower, the tanker or the flight.
+    actions:
+      - { name: 'MIC Switch FWD (Call Radio 1 Menu)', label: 'Talk on radio 1 / radio menu' }
+      - { name: 'MIC Switch AFT (Call Radio 2 Menu)', label: 'Talk on radio 2 / radio menu' }
+
+  - id: dispense
+    title: Countermeasures
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Releases chaff and flares with the two manual programs, from the left hand controller.
+    when: When a missile is fired at you.
+    actions:
+      - { name: 'LHC - CMD Switch UP (Manual 2 Dispense)', label: 'Countermeasures: manual program 2' }
+      - { name: 'LHC - CMD Switch DOWN (Manual 1 Dispense)', label: 'Countermeasures: manual program 1' }
+
+  - id: tgp-laser
+    title: Targeting pod laser arm
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Arms the targeting pod's laser. Nothing is lased while it is SAFE.
+    when: Before a laser-guided bomb attack; SAFE afterwards.
+    actions:
+      - { name: 'TGP Laser Switch: ARM', label: 'Laser: ARM' }
+      - { name: 'TGP Laser Switch: SAFE', label: 'Laser: SAFE' }
+
+  # ---------------------------------------------------------------- should have
+  - id: lhc-tdc
+    title: Left hand controller TDC
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: The same cursor control as on the right hand controller, for the left hand and the displays it works on.
+    when: Working two displays at once, such as the radar on one and the pod on the other.
+    actions:
+      - { name: 'LHC - TDC Slew Horizontal', label: 'Left TDC left/right (axis)' }
+      - { name: 'LHC - TDC Slew Vertical', label: 'Left TDC up/down (axis)' }
+      - { name: 'LHC - TDC Switch UP', label: 'Left TDC up' }
+      - { name: 'LHC - TDC Switch DOWN', label: 'Left TDC down' }
+      - { name: 'LHC - TDC Switch LEFT', label: 'Left TDC left' }
+      - { name: 'LHC - TDC Switch RIGHT', label: 'Left TDC right' }
+
+  - id: lhc-tdc-press
+    title: Left TDC press
+    tier: should
+    place: hotas
+    role: throttle
+    what: Designates or selects what is under the left cursor.
+    when: Along with the left TDC.
+    actions:
+      - { name: 'LHC - TDC Switch PRESS', label: 'Left TDC press: designate' }
+
+  - id: lhc-castle
+    title: Left castle switch
+    tier: should
+    place: hotas
+    role: throttle
+    what: Moves the left hand controller between the displays and changes what the display under it shows.
+    when: Working with the left hand controller.
+    actions:
+      - { name: 'LHC - Castle Switch FWD', label: 'Left castle forward' }
+      - { name: 'LHC - Castle Switch AFT', label: 'Left castle aft' }
+      - { name: 'LHC - Castle Switch LEFT', label: 'Left castle left' }
+      - { name: 'LHC - Castle Switch RIGHT', label: 'Left castle right' }
+      - { name: 'LHC - Castle Switch PRESS', label: 'Left castle press' }
+
+  - id: rhc-coolie
+    title: Right coolie switch
+    tier: should
+    place: hotas
+    role: stick
+    what: A four-way hat on the right hand controller; what it does depends on the display in use.
+    when: As you learn the pod and radar pages; bind it now so it is there.
+    actions:
+      - { name: 'RHC - Coolie Switch UP', label: 'Right coolie up' }
+      - { name: 'RHC - Coolie Switch DOWN', label: 'Right coolie down' }
+      - { name: 'RHC - Coolie Switch LEFT', label: 'Right coolie left' }
+      - { name: 'RHC - Coolie Switch RIGHT', label: 'Right coolie right' }
+
+  - id: mpd-left
+    title: Left middle display buttons
+    tier: should
+    place: panel
+    role: mfd
+    what: The 20 pushbuttons around the left of the two middle displays.
+    when: Changing pages and settings.
+    note: Best on an MFD frame; the mouse works too.
+    actions:
+      - re: '^MPDL Push Button +([1-9]|1[0-9]|20)$'
+
+  - id: mpd-right
+    title: Right middle display buttons
+    tier: should
+    place: panel
+    role: mfd
+    what: The 20 pushbuttons around the right of the two middle displays.
+    when: Changing pages and settings.
+    note: Best on an MFD frame; the mouse works too.
+    actions:
+      - re: '^MPDR Push Button +([1-9]|1[0-9]|20)$'
+
+  - id: tgp-power
+    title: Targeting pod power
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Turns the targeting pod on; it needs a few minutes to cool down before the picture is good.
+    when: Early in the flight, well before the target.
+    actions:
+      - { name: 'TGP Power Switch ON', label: 'Pod on' }
+      - { name: 'TGP Power Switch STBY', label: 'Pod standby' }
+      - { name: 'TGP Power Switch OFF', label: 'Pod off' }
+
+  - id: pickle
+    title: Weapon release (pickle)
+    tier: should
+    place: hotas
+    role: stick
+    what: Releases bombs from the back seat.
+    when: Attacks where the WSO releases the bombs.
+    actions:
+      - { name: 'Weapon Release (Pickle)', label: 'Pickle: release weapon' }
+
+  - id: view-center
+    title: Center the view
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: Puts your head back to the default position, needed with head tracking or VR.
+    when: Whenever your view drifts.
+    actions:
+      - { name: 'View Center', label: 'Center the view' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: lhc-trigger
+    title: Left hand controller trigger
+    tier: nice
+    place: hotas
+    role: throttle
+    what: The left hand controller's two-stage trigger, for the sensor under the left cursor.
+    when: Working with the left hand controller.
+    actions:
+      - { name: 'LHC - Trigger HA (Half)', label: 'Left trigger half action' }
+      - { name: 'LHC - Trigger FA (FUll', label: 'Left trigger full action' }
+
+  - id: lhc-coolie
+    title: Left coolie switch
+    tier: nice
+    place: hotas
+    role: throttle
+    what: A four-way hat on the left hand controller; what it does depends on the display in use.
+    when: As you learn the displays.
+    actions:
+      - { name: 'LHC - Coolie Switch UP', label: 'Left coolie up' }
+      - { name: 'LHC - Coolie Switch DOWN', label: 'Left coolie down' }
+      - { name: 'LHC - Coolie Switch LEFT', label: 'Left coolie left' }
+      - { name: 'LHC - Coolie Switch RIGHT', label: 'Left coolie right' }
+
+  - id: rhc-auto-acq
+    title: Auto acquisition switch
+    tier: nice
+    place: hotas
+    role: stick
+    what: The radar's automatic lock modes, from the right hand controller.
+    when: Helping the pilot find air targets.
+    actions:
+      - { name: 'RHC - Auto Acquisition Switch FWD', label: 'Auto acquisition forward' }
+      - { name: 'RHC - Auto Acquisition Switch AFT', label: 'Auto acquisition aft' }
+      - { name: 'RHC - Auto Acquisition Switch PRESS', label: 'Auto acquisition press' }
+
+  - id: mpcd-left
+    title: Left side display buttons
+    tier: nice
+    place: panel
+    role: mfd
+    what: The 20 pushbuttons around the colour display on the left.
+    when: Changing its page, often the moving map.
+    actions:
+      - re: '^MPCDL Push Button +([1-9]|1[0-9]|20)$'
+
+  - id: mpcd-right
+    title: Right side display buttons
+    tier: nice
+    place: panel
+    role: mfd
+    what: The 20 pushbuttons around the colour display on the right.
+    when: Changing its page.
+    actions:
+      - re: '^MPCDR Push Button +([1-9]|1[0-9]|20)$'
+
+  - id: hand-swap
+    title: Swap hand controllers
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Swaps what the left and right hand controllers do.
+    when: When you prefer to work the main display with your other hand.
+    actions:
+      - { name: 'Toggle hand controller swap', label: 'Swap hand controllers' }
+      - { name: 'Set hand controller swap', label: 'Hand controllers swapped' }
+
+  - id: pitch-roll
+    title: Pitch and roll (back seat)
+    tier: nice
+    place: hotas
+    role: stick
+    what: Flies the jet from the back seat, which has its own stick.
+    when: Only when the WSO takes the controls.
+    actions:
+      - { name: 'Pitch', label: 'Pitch (stick forward and back)' }
+      - { name: 'Roll', label: 'Roll (stick left and right)' }
+
+  - id: thrust
+    title: Throttle (back seat)
+    tier: nice
+    place: hotas
+    role: throttle
+    need: any
+    what: Engine power from the back seat's own throttles.
+    when: Only when the WSO takes the controls.
+    actions:
+      - { name: 'Thrust', label: 'Throttle, both engines' }
+      - { name: 'Thrust Left', label: 'Throttle, left engine' }
+      - { name: 'Thrust Right', label: 'Throttle, right engine' }
+
+  - id: rudder
+    title: Rudder (back seat)
+    tier: nice
+    place: hotas
+    role: pedals
+    what: Yaws the nose from the back seat's own pedals.
+    when: Only when the WSO takes the controls.
+    actions:
+      - { name: 'Rudder', label: 'Rudder (pedals or stick twist)' }
+
+  - id: wheel-brakes
+    title: Wheel brakes (back seat)
+    tier: nice
+    place: hotas
+    role: pedals
+    need: any
+    what: Brakes on the back seat's pedals.
+    when: Only when the WSO takes the controls on the ground.
+    actions:
+      - { name: 'Wheel Brake Left', label: 'Left toe brake' }
+      - { name: 'Wheel Brake Right', label: 'Right toe brake' }
+      - { name: 'Wheel Brake', label: 'Both brakes, one axis' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Zooms the view in and out, to read the displays.
+    when: Reading small displays.
+    actions:
+      - { name: 'Zoom View', label: 'Zoom (axis)' }
+      - { name: 'Zoom in slow', label: 'Zoom in' }
+      - { name: 'Zoom out slow', label: 'Zoom out' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's frequencies, waypoints and notes.
+    when: Before start-up and whenever you need a frequency or target coordinates.
+    actions:
+      - { name: 'Kneeboard ON/OFF', label: 'Kneeboard on/off' }
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Ejects from the jet.
+    when: Only when the jet cannot be saved.
+    actions:
+      - { name: 'Eject', label: 'Eject' }

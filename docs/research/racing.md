@@ -589,6 +589,12 @@ Legacy FanaLab (for users who still have it) **[W]**: profiles are in `%LOCALAPP
 
 ---
 
+### Assetto Corsa EVO settings folder (2026-11-11)
+
+- Measured on the owner's PC (read-only listing): `C:\Users\<user>\Saved Games\ACE` holds `input_devices.inputdeviceconfiguration`, `input_keyboard.keyboardinputconfiguration`, `input_settings.inputsettings`, `video.videosettings`, `audio.audiosettings`, `ProfileData`, `SavedCars`, `MoTec`, `Replay`, `Results` and `Logs`. `Documents\ACE` does not exist there. The input files are binary (protobuf-like), not text.
+- The 0.5.2 patch notes say the folder moves from `Documents\ACE` to `Saved Games\ACE` "as per Microsoft standard recommendation", logs included. A 0.2.2 log posted by a user shows `Documents\ACE`. RigReady therefore looks in `Saved Games\ACE` first and `Documents\ACE` second.
+- Sources: https://support.505games.com/support/solutions/articles/150000221632-assetto-corsa-evo-0-5-2-patch-notes ; https://www.scribd.com/document/892131280/Log ; https://steamcommunity.com/app/3058630/discussions/0/595139814470237892
+
 ## 6. Implementation checklists
 
 ### iRacing (`src/features/games/iracing/`)

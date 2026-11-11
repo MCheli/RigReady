@@ -37,12 +37,12 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **DCS World**
 - Installs across Steam libraries and standalone; update waiting; aircraft list.
-- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one.
+- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one; without SimAppPro, for the aircraft listed in the manual.
 - Export.lua managed one tool at a time; overwrites by other programs are noticed.
-- Bindings: effective bindings (defaults plus your changes) for the F/A-18C and UH-1H, editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots.
-- Cheat sheets with a picture of every device, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
+- Bindings for every DCS aircraft: effective bindings (defaults plus your changes), editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots. Binding guides and curated priority lists exist for the aircraft listed in the manual.
+- Cheat sheets of what every control does, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
 - Simple outline drawings of the WinWing Orion stick (F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles and the MFD frames, with a label block and leader line per control placed so that no two lines cross. A drawing can be corrected or shown over a photo of the device; for any device, a drawing can be made from a photo of your own hardware or imported from a file. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
-- A binding guide for the F/A-18C and UH-1H, and optional AI help with your own Anthropic API key.
+- Twenty binding guides, covering the F/A-18C, F-16C, A-10C II and A-10C, A-10A, F-14 (pilot and RIO), F-15E (pilot and WSO), F-15C, MiG-29, Su-27 and J-11A, Su-33, Su-25T, Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. For any other aircraft, optional AI help with your own Anthropic API key drafts one.
 
 **AI assistants**
 - An MCP server inside RigReady, off by default, so that an assistant on the same PC (Claude Desktop, Claude Code, Cursor, VS Code and other MCP clients) can check the rig, make it ready, read and change bindings with a preview, apply a monitor layout, make a backup, read the log and read the manual. `RigReady.exe --mcp` connects assistants that start a program; others pair from Settings.
@@ -50,7 +50,8 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - Guided conversations for first setup, fixing bindings, a rig that is not ready and a new PC.
 
 **Racing and other games**
-- iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore.
+- iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
+- Assetto Corsa controller repair: when Windows lists the controllers in another order than when `controls.ini` was saved (a USB port change, a controller added), the page shows which controller each binding really acts on now and renumbers the file after a preview, with a backup and Undo. Identical controllers are asked for, never guessed.
 - Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
 - A Wheel page for every major wheelbase brand (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek SimSports, Cammus): base, pedals and axes, the PC mode where the USB ID shows it, the maker's software with a "running" check that starts it, backups of profile files where they are plain files, and the maker's own per-game settings where it publishes any. Any other game works generically.
 
@@ -76,6 +77,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not been looked at (SAP-001).
 - The iRacing device ID repair has not been tried with a wheel whose Windows ID really changed (RACE-IRACING-005).
 - The Wheel page has only been tried on a real Fanatec base. Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek and Cammus bases were tested on recorded data made from their published USB IDs; the page says so and links the hardware report form (RACE-WHEEL-001).
+- The Assetto Corsa controller repair has not been tried in the game with a controller that really moved (RACE-AC-001).
 - Which way is up on sideways-mounted screens cannot be read from Windows; Monitors > Identify asks once.
 - Restoring a Stream Deck backup file by file, and closing the Stream Deck app, were only exercised against recorded data.
 - The taskbar badge, progress bar and thumbnail buttons were accepted by Windows in tests, but nobody has looked at them on a real taskbar; the ready tone's sound and a real press of the global hotkey are untested too.

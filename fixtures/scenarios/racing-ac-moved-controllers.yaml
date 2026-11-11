@@ -1,0 +1,32 @@
+description: Racing, Assetto Corsa's controllers are in another order and the pedals have a new Windows id
+rig: mark-full
+extends: racing-fresh.yaml
+# controls.ini was saved when the pedals were controller 0 and the DD2 controller 1. Now
+# Windows lists the DD2 first and the pedals second, under a new instance GUID, so every
+# JOY= number in the file points at the other device.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_0EB7&PID_183B\7&1c2d3e4f&0&4'
+      vendorId: 0EB7
+      productId: 183B
+      name: Fanatec ClubSport Pedals V3
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Fanatec
+    controller:
+      name: Fanatec ClubSport Pedals V3
+      guid: 5E6F7A80-1111-11F1-8003-444553540000
+      productGuid: 183B0EB7-0000-0000-0000-504944564944
+      vendorId: 0EB7
+      productId: 183B
+      numAxes: 3
+      numButtons: 0
+      numHats: 0
+      axisNames: [X, Y, Z]
+  - op: writeFile
+    path: Documents/Assetto Corsa/cfg/controls.ini
+    from: data/racing/ac-controls-two.ini

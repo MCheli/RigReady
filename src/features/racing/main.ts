@@ -3,6 +3,7 @@ import { ok } from '../../core/result';
 import { isToolBackup, racingContract, type BackupGame } from './contract';
 import { racingBindingReaders } from './core/bindingReaders';
 import { acView } from './core/assettoCorsa';
+import { previewRepairAc, repairAc } from './core/acRepair';
 import {
   backupNow,
   brandBackupSource,
@@ -131,7 +132,15 @@ export default defineFeatureMain({
           changed('beamng', await copyBindingsToController(rctx, file, to)),
         beamngCopyToControllerPreview: ({ file, to }) =>
           previewCopyBindingsToController(rctx, file, to),
-        assettoCorsa: async () => ok(await acView(rctx)),
+        async assettoCorsa() {
+          const view = await acView(rctx);
+          return ok({ ...view, controllers: await named(view.controllers) });
+        },
+        async acRepair({ choices }) {
+          const repaired = changed('assetto-corsa', await repairAc(rctx, choices));
+          return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
+        },
+        acRepairPreview: ({ choices }) => previewRepairAc(rctx, choices),
         async wheel() {
           const presets = await readPresets(rctx);
           return ok({

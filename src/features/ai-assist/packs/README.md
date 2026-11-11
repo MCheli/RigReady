@@ -7,8 +7,18 @@ priority tiers, with a plan per kind of device. RigReady's Binding guide page an
 walkthrough are built from these files. They need no AI key.
 
 One YAML file per aircraft, named after DCS's input profile id (the folder name under
-`Saved Games\DCS\Config\Input`, for example `FA-18C_hornet.yaml`). To add an aircraft,
-copy one of the existing files and change it; nothing else needs to change.
+`Saved Games\DCS\Config\Input`, for example `FA-18C_hornet.yaml`; a space in the id becomes
+`_`, as in `A-10C_II.yaml`). To add an aircraft, copy one of the existing files and change
+it, and add the aircraft's id to the list in `pack.test.ts`; nothing else needs to change.
+
+Variants of one aircraft whose controls DCS names the same share a file through
+`aircraft.also` (the A-10C next to the A-10C II, the Ka-50 next to the Ka-50 III, the
+MiG-29's three versions, the J-11A next to the Su-27). The test checks the file against the
+action list of every profile it is for.
+
+Shipped today (none reviewed by a pilot yet): F/A-18C, F-16C, A-10C II and A-10C, A-10A,
+F-14 pilot and RIO, F-15E pilot and WSO, F-15C, MiG-29, Su-27 and J-11A, Su-33, Su-25T,
+Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II.
 
 ## Format
 
@@ -17,6 +27,7 @@ format: 1                       # always 1 for now
 aircraft:
   id: FA-18C_hornet             # DCS's input profile id (case does not matter)
   name: F/A-18C Hornet          # shown to the user
+  also: [...]                   # optional: other profile ids the same guide is right for
 summary: >-                     # two or three sentences: how to approach this aircraft
   ...
 sources:                        # where the knowledge comes from, in plain words
@@ -50,7 +61,11 @@ Rules the loader enforces (a shipped file that breaks one fails the tests):
 - Every id in `roles` must be an item of the file, and every item should appear in a plan.
 - Every `name` and `re` must match at least one action in DCS's default input files for the
   aircraft (`src/features/ai-assist/core/pack.test.ts` checks the shipped guides against the
-  recorded DCS install).
+  recorded DCS install, and against the action lists in `fixtures/dcs-actions`: each action's
+  id and DCS's name, recorded from a real install by
+  `tests/unit/dcsActionLists.record.test.ts`; run it again after a DCS update or for a new
+  module).
+- Two shipped files may not be for the same profile id.
 - Text is plain: no HTML or Markdown is rendered.
 
 DCS's own name is always shown next to the plain label, so a user can find the action in

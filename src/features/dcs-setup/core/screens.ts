@@ -92,9 +92,29 @@ export interface KnownAircraft {
   displays: KnownDisplay[];
 }
 
+const MFCD_PAIR: KnownDisplay[] = [
+  { name: 'LEFT_MFCD', label: 'Left MFCD' },
+  { name: 'RIGHT_MFCD', label: 'Right MFCD' },
+];
+const F14_DISPLAYS: KnownDisplay[] = [
+  { name: 'F14_DDD', label: 'DDD (RIO)' },
+  { name: 'F14_ECMD', label: 'ECM display (RIO)' },
+  { name: 'F14_HSD', label: 'HSD (pilot)' },
+  { name: 'F14_JESTER_MENU', label: 'Jester menu' },
+  { name: 'F14_TID', label: 'TID (RIO)' },
+  { name: 'F14_UHF_ARC159', label: 'UHF radio ARC-159' },
+  { name: 'F14_VDI', label: 'VDI (pilot)' },
+  { name: 'F14_VHF_ARC182', label: 'VHF/UHF radio ARC-182' },
+];
+const KA50_DISPLAYS: KnownDisplay[] = [
+  { name: 'ABRIS', label: 'ABRIS' },
+  { name: 'Shkval', label: 'Shkval' },
+];
+
 /**
- * Aircraft whose exportable displays are known. F/A-18C from its cockpit scripts
- * (docs/research/dcs.md 3.3); the others from SimAppPro's aircraft list.
+ * The built-in table: what the editor offers when the installed modules' cockpit scripts
+ * name no display (core/cockpitDisplays.ts reads them), and the labels for the names it
+ * finds. Each entry was read from the module's own scripts (docs/research/dcs.md 3.3).
  */
 export const KNOWN_AIRCRAFT: KnownAircraft[] = [
   {
@@ -102,8 +122,8 @@ export const KNOWN_AIRCRAFT: KnownAircraft[] = [
     label: 'F/A-18C Hornet',
     displays: [
       { name: 'LEFT_MFCD', label: 'Left DDI' },
-      { name: 'RIGHT_MFCD', label: 'Right DDI' },
       { name: 'CENTER_MFCD', label: 'AMPCD' },
+      { name: 'RIGHT_MFCD', label: 'Right DDI' },
     ],
   },
   {
@@ -112,26 +132,50 @@ export const KNOWN_AIRCRAFT: KnownAircraft[] = [
     displays: [
       { name: 'LEFT_MFCD', label: 'Left MFD' },
       { name: 'RIGHT_MFCD', label: 'Right MFD' },
+      { name: 'EHSI', label: 'EHSI' },
     ],
   },
+  { unit: 'A-10C_2', label: 'A-10C II', displays: MFCD_PAIR },
+  { unit: 'A-10C', label: 'A-10C', displays: MFCD_PAIR },
   {
-    unit: 'A-10C_2',
-    label: 'A-10C II',
+    unit: 'F-15ESE',
+    label: 'F-15E Strike Eagle',
     displays: [
-      { name: 'LEFT_MFCD', label: 'Left MFCD' },
-      { name: 'RIGHT_MFCD', label: 'Right MFCD' },
+      { name: 'LEFT_MFCD', label: 'Left MFD (front), inner left MPCD (rear)' },
+      { name: 'CENTER_MFCD', label: 'Centre MPCD (front)' },
+      { name: 'RIGHT_MFCD', label: 'Right MFD (front), inner right MPCD (rear)' },
+      { name: 'OUTER_LEFT_MFCD', label: 'Outer left MPD (rear)' },
+      { name: 'OUTER_RIGHT_MFCD', label: 'Outer right MPD (rear)' },
+      { name: 'UFC', label: 'UFC (front and rear)' },
     ],
   },
+  { unit: 'F-14B', label: 'F-14B Tomcat', displays: F14_DISPLAYS },
+  { unit: 'F-14A-135-GR', label: 'F-14A Tomcat', displays: F14_DISPLAYS },
+  { unit: 'F-14A-135-GR-Early', label: 'F-14A Tomcat (early)', displays: F14_DISPLAYS },
+  { unit: 'F-14A-95-GR', label: 'F-14A-95 Tomcat', displays: F14_DISPLAYS },
+  { unit: 'Ka-50', label: 'Ka-50 Black Shark 2', displays: KA50_DISPLAYS },
+  { unit: 'Ka-50_3', label: 'Ka-50 Black Shark 3', displays: KA50_DISPLAYS },
 ];
 
 /** Aircraft with no exportable display: the main view is all they use. */
 export const MAIN_VIEW_ONLY: Record<string, string> = { 'UH-1H': 'UH-1H Huey' };
 
+const UPPER = new Set(['left', 'right', 'center', 'centre', 'outer', 'inner', 'front', 'rear']);
+
+/** "OUTER_LEFT_MFCD" as "Outer left MFCD", "F14_TID" as "TID": for a name no table labels. */
+export function humanizeViewport(name: string): string {
+  const words = name
+    .replace(/^[A-Z]+[0-9]+[A-Z]?_(?=.)/, '')
+    .split('_')
+    .filter(Boolean)
+    .map((w) => (UPPER.has(w.toLowerCase()) ? w.toLowerCase() : w));
+  const text = words.join(' ') || name;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 export function displayLabel(unit: string, name: string): string {
-  return (
-    KNOWN_AIRCRAFT.find((a) => a.unit === unit)?.displays.find((d) => d.name === name)?.label ??
-    name
-  );
+  const own = KNOWN_AIRCRAFT.find((a) => a.unit === unit)?.displays.find((d) => d.name === name);
+  return own?.label ?? humanizeViewport(name);
 }
 
 export function cropRect(display: Rect, crop: Crop): Rect {

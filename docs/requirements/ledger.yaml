@@ -16,7 +16,8 @@
 #                           prove nothing is hardcoded. One Logitech joystick, a keyboard and a
 #                           mouse, one 1920x1080 monitor, onboard audio, no sim, no HidHide, no
 #                           Steam. Scenarios: generic-fresh.yaml, generic-custom-game.yaml (a game
-#                           without a module), generic-dcs.yaml (standalone DCS installed).
+#                           without a module), generic-dcs.yaml (standalone DCS installed),
+#                           generic-more-sims.yaml (the game modules added in November 2026).
 #                           It has ONE monitor and no DCS in a Steam library: entries that ask for
 #                           two monitors, a non-default Steam library or a redirected Saved Games
 #                           folder on generic-rig (NFR-009) are not covered by it yet.
@@ -671,6 +672,7 @@ requirements:
       - "src/features/fly/core/rig.test.ts#says why when Windows does not report the monitors"
       - "src/features/fly/core/deviceKind.test.ts#knows the gear of a flying rig by its names"
       - "src/features/fly/core/deviceKind.test.ts#knows the gear of a racing rig"
+      - "src/features/fly/core/deviceKind.test.ts#knows the gear of the common brands by its names"
       - "src/features/fly/core/deviceKind.test.ts#leaves out the word most of the devices begin with: their maker"
       - "src/features/fly/renderer/rigDrawing.test.ts#fits the whole desktop in the box, every monitor at its place and in proportion"
       - "tests/e2e/fly-rig.e2e.ts#rig: the monitors are drawn to scale and the devices are chips; a problem is a place, and choosing it leads to its row"
@@ -2239,9 +2241,15 @@ requirements:
     evidence:
       - "src/features/dcs-setup/core/screens.test.ts#imports SimAppPro's plan for the flying layout and generates the same viewports"
       - "src/features/dcs-setup/core/screens.test.ts#writes per-aircraft overrides when two aircraft place the same display differently"
+      - "src/features/dcs-setup/core/cockpitDisplays.test.ts#finds the viewport names a cockpit script asks for, without running it"
+      - "src/features/dcs-setup/core/cockpitDisplays.test.ts#lists every installed aircraft with the displays its cockpit scripts name, built-in ones where they name none"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the screen editor offers every installed aircraft with the displays its cockpit scripts name, starting on the setup in use"
       - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
       - "artifacts/screens/dcs-setup-screens/01-imported.png"
       - "artifacts/screens/dcs-setup-screens/03-file-preview.png"
+      - "artifacts/screens/dcs-setup-module-displays/01-viper-in-use.png"
+      - "artifacts/screens/dcs-setup-module-displays/02-installed-aircraft.png"
+      - "artifacts/screens/dcs-setup-module-displays/03-f-15e-placed.png"
 
   - id: DCS-MON-003
     title: Never clobber user MonitorSetup edits
@@ -3113,6 +3121,30 @@ requirements:
       - "artifacts/screens/cheat-sheets-drawing-editor/02-own-drawing.png"
       - "artifacts/screens/cheat-sheets-drawing-editor/03-photo-drawing.png"
 
+  - id: SHEET-017
+    title: Popular controllers without a drawing have their controls named
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "A controller RigReady has no drawing or shipped layout of, but whose controls it knows (the Thrustmaster HOTAS Warthog stick and throttle, the T.16000M stick, the Saitek/Logitech X52 Pro), is found by its USB vendor and product id, or by the name it reports, and its sheet is the controls list with one block per physical control, named the way the maker names it (hats as one block, axes named), instead of buttons in runs of eight."
+      - "Every input the map leaves out still has a place on the list; every map's inputs are unique and inside what the device reports."
+      - "The detail panel and By action name the physical control (\"S2 weapon release\"); drawings, shipped layouts and the user's own layouts and drawings are used as before."
+      - "The numbers come from the per-device default bindings DCS World ships, cross-checked with a public source, cited in docs/research/device-control-names.md; the manual lists the devices covered."
+    notes:
+      - "2026-11-11: gap 2 of the coverage audit (cheat sheets name controls only for the owner's hardware). TWCS, T.Flight HOTAS X, X-56, VKB and Virpil have DCS default files but no numbered public map to cross-check, so they are not shipped yet (research doc)."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/known/known.test.ts#all pass their schema"
+      - "src/features/cheat-sheets/core/known/known.test.ts#names each control once and each input once, inside what the device reports"
+      - "src/features/cheat-sheets/core/known/known.test.ts#is found by its USB ids and by the name it reports"
+      - "src/features/cheat-sheets/core/known/known.test.ts#the Warthog stick: TG1 is button 1, S2 is 2, H2 is 7–10, H4 is 15–19, H1 the POV"
+      - "src/features/cheat-sheets/core/known/known.test.ts#a list of a known device has a block per physical control, and the others after it"
+      - "src/features/cheat-sheets/core/known/known.test.ts#gets the controls list named for it, with DCS’s Hornet defaults on its controls"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a Warthog stick shows its controls by name"
+      - "docs/research/device-control-names.md"
+      - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
+
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
   # ---------------------------------------------------------------------------
@@ -3250,6 +3282,29 @@ requirements:
       - "artifacts/screens/ai-assist-suggest/05-answer.png"
       - "artifacts/screens/ai-assist-suggest/06-explained.png"
       - "artifacts/screens/ai-assist-draft/02-drafted-guide.png"
+
+  - id: AI-007
+    title: Binding guides for every installed aircraft with a pilot's seat
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "A shipped guide, in the AI-005 format and depth (three tiers, plain names, what, when and where, a plan per device), for every aircraft input profile in the owner's DCS install with a seat worth guiding: F/A-18C, F-16C, A-10C II and A-10C, A-10A, F-14 pilot and RIO, F-15E pilot and WSO, F-15C, MiG-29 (three versions), Su-27 and J-11A, Su-33, Su-25T, Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. Each says it is not affiliated with or reviewed by Eagle Dynamics; the manual says none was reviewed by a pilot."
+      - "Variants whose controls DCS names the same share one file through `aircraft.also`; two shipped files may not claim the same profile."
+      - "Every action a guide names is checked by a test against that aircraft's real action list (each action's id and DCS's name, recorded from the install with the app's own Lua evaluation into fixtures/dcs-actions; the recording matches what the app reads from the recorded rig)."
+      - "The app shows the guide, the walkthrough and the plain names (bindings pages, cheat sheets) for these aircraft; an aircraft without one still offers the AI-drafted guide (AI-006)."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/pack.test.ts#ships a guide for every aircraft in the list, by its DCS input profile id"
+      - "src/features/ai-assist/core/pack.test.ts#the recorded action lists are what the app reads from the install"
+      - "src/features/ai-assist/core/pack.test.ts#refuses two shipped guides for the same aircraft"
+      - "src/features/ai-assist/core/service.test.ts#shows the shipped guide for an aircraft beyond the Hornet and the Huey, from its own input files"
+      - "tests/unit/actionLabels.test.ts#any feature reads the same labels through core, for the Hornet and the Huey; an unknown aircraft has none"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: an aircraft beyond the Hornet and the Huey has its own shipped guide, walkthrough and plain names"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: for an aircraft without a guide, AI drafts one in the guide format, marked as drafted"
+      - "artifacts/screens/ai-assist-viper/01-walkthrough.png"
+      - "artifacts/screens/ai-assist-viper/02-priorities.png"
+      - "artifacts/screens/ai-assist-draft/01-no-guide.png"
 
   # ---------------------------------------------------------------------------
   # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)
@@ -3819,6 +3874,93 @@ requirements:
       - "src/features/games/core/games.test.ts#says iRacing is not installed, and accepts a folder the user chooses only when it holds iRacing"
       - "tests/e2e/racing.e2e.ts#racing: game pages show status at a glance, launch, and a folder chosen by hand"
       - "artifacts/screens/racing-game-pages/02-iracing.png"
+
+  - id: GAME-MORE-001
+    title: Find, launch and back up Microsoft Flight Simulator (2020)
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "The Steam edition (app 1250410) is found from its app manifest in any Steam library, with its build, and launched through steam.exe -applaunch 1250410; the Microsoft Store edition is recognised by its Microsoft.FlightSimulator_8wekyb3d8bbwe package folder and the page says RigReady cannot launch it."
+      - "%APPDATA%\\Microsoft Flight Simulator (UserCfg.opt, FlightSimulator.CFG), the Store package's LocalCache and the Steam Cloud folder userdata\\<account>\\1250410\\remote are listed and offered for backup; the page says the controller profiles are backed up as files and their bindings are not listed."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#Microsoft Flight Simulator (2020): Steam settings, Steam Cloud profiles, and the Store edition"
+      - "src/features/games/core/moreGames.test.ts#launches each Steam game through Steam with its own app id"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/01-games.png"
+
+  - id: GAME-MORE-002
+    title: Find, launch and back up X-Plane 12 and X-Plane 11
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "Each version is found in Steam (12: app 2014780, 11: app 269950; X-Plane.exe must be in the folder) and as a standalone install from every folder listed in %LOCALAPPDATA%\\x-plane_install_<version>.txt that still holds X-Plane.exe. Steam installs launch through Steam, standalone ones by starting X-Plane.exe."
+      - "Output\\preferences of each install is listed; the *.prf files and the control profiles folder are offered for backup."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#X-Plane: preferences and control profiles in Steam, and a standalone install from its install list"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/01-games.png"
+
+  - id: GAME-MORE-003
+    title: Find, launch and back up IL-2 Sturmovik Great Battles
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "The game is found in Steam (app 307960) when bin\\game\\Il-2.exe is in its folder, and launched through Steam; a folder chosen by hand must hold bin\\game\\Il-2.exe."
+      - "data\\input is listed; the folder, current.actions, current.map, current.responses, current.devices, devices.txt, curves.cfg, data\\startup.cfg and storeddevices.txt are offered for backup when present."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#IL-2 Great Battles: the bindings in the data input folder and the options file"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/01-games.png"
+
+  - id: GAME-MORE-004
+    title: Find, launch and back up Falcon BMS
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "Every HKLM\\SOFTWARE\\WOW6432Node\\Benchmark Sims\\Falcon BMS <version> key whose baseDir holds Bin\\x64\\Falcon BMS.exe is an install, newest version first, with that version; Launch starts <baseDir>\\Launcher.exe."
+      - "User\\Config is listed and offered for backup (settings, keyfiles, axis setup, controller order; the launcher's Backup folder left out), with its main files one by one. When Falcon 4.0 (Steam app 429530) is in the Steam library the page says so."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#Falcon BMS: found through its registry key, started through its launcher, its config folder backed up"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/02-falcon-bms.png"
+
+  - id: GAME-MORE-005
+    title: Find, launch and back up Assetto Corsa Competizione, rFactor 2 and Automobilista 2
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "Each is found in Steam (805550, 365960, 1066890) and launched through Steam; the page counts it running by its own program (AC2-Win64-Shipping.exe, rFactor2.exe, AMS2AVX.exe)."
+      - "ACC: Documents\\Assetto Corsa Competizione\\Config with controls.json and menuSettings.json, Customs\\Controls and Setups are offered. rFactor 2: UserData (player files, Controller.JSON, player.JSON, Config.ini, controller profiles, car setups; logs and replays left out). AMS2: Documents\\Automobilista 2 and each default.controllersettings file."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#Assetto Corsa Competizione, rFactor 2 and Automobilista 2: settings and bindings files"
+      - "src/features/games/core/moreGames.test.ts#a game counts as running by its own program, and a folder chosen by hand must hold that program"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/03-acc.png"
+
+  - id: GAME-MORE-006
+    title: Find, launch and back up EA SPORTS WRC, F1 25 and F1 24, DiRT Rally 2.0 and RaceRoom
+    job: configure
+    area: games
+    priority: p3
+    done_means:
+      - "Each is found in Steam (1849250, 3059520, 2488620, 690790, 211500) and launched through Steam; DiRT Rally 2.0 from the Microsoft Store is recognised by its package folder."
+      - "EA SPORTS WRC: the INI files in %LOCALAPPDATA%\\WRC\\Saved\\Config\\WindowsNoEditor and the telemetry config.json; F1: Documents\\My Games\\F1 <yy>\\hardwaresettings; DiRT Rally 2.0: its hardwaresettings and the binding maps in the game's input\\actionmaps; RaceRoom: its UserData folder. Where RigReady does not know where a game keeps its bindings, the page says so."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#EA SPORTS WRC, F1 25, DiRT Rally 2.0 and RaceRoom: settings files, with what is not backed up said plainly"
+      - "src/features/games/core/moreGames.test.ts#lists every new game, found where the fixture put it, and F1 24 as not found"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/01-games.png"
       - "artifacts/screens/racing-game-pages/03-not-found.png"
       - "artifacts/screens/racing-game-pages/04-folder-chosen.png"
       - "tests/unit/genericRig.test.ts#every Configure page gets an answer it can draw as an empty state, never an error"
@@ -4241,7 +4383,7 @@ requirements:
     priority: p3
     done_means:
       - "Each is found from its Steam app manifest in any Steam library (Assetto Corsa also needs AssettoCorsa.exe), with its build, and is launched through Steam."
-      - "Assetto Corsa's Documents\\Assetto Corsa\\cfg (and Content Manager's folder when present), EVO's Documents\\ACE when present and Rally's %LOCALAPPDATA%\\acr\\Saved are listed, with their settings files suggested for tracking."
+      - "Assetto Corsa's Documents\\Assetto Corsa\\cfg (and Content Manager's folder when present), EVO's Saved Games\\ACE (and, after it, the Documents\\ACE of builds before 0.5.2) when present and Rally's %LOCALAPPDATA%\\acr\\Saved are listed, with their settings files suggested for tracking."
       - "When a game is not found, a folder chosen by hand is accepted only if it holds the game's program."
     status: done
     evidence:
@@ -4262,6 +4404,21 @@ requirements:
       - "src/features/racing/core/checks.test.ts#reads Assetto Corsa controllers and bindings from controls.ini"
       - "tests/e2e/racing.e2e.ts#racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a backup and restore"
       - "artifacts/screens/racing-games/05-assetto-corsa.png"
+
+  - id: RACE-AC-001
+    title: Assetto Corsa controller repair (controllers in another order, or with a new Windows id)
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "Research note in docs/research/ records how controls.ini names controllers (JOY=n, [CONTROLLERS] CONn/PGUIDn/__IGUIDn), with sources, and whether Assetto Corsa Competizione needs the same repair."
+      - "The Assetto Corsa page matches each listed controller to a connected one (instance GUID, then model; never guessing between identical ones), says which are at a new number or have a new Windows id, and shows per binding which connected controller the game will really use now."
+      - "A repair renumbers JOY, JOY_MODIFICATOR and __CM_ALT_JOY and rewrites [CONTROLLERS] (new number and instance GUID; a controller that is not connected moved past the connected ones), keeping every other line; shown first with the change preview, written through FileStore with a backup as one journaled action, read back, refused while Assetto Corsa or Content Manager runs. Identical controllers are asked for, and one controller cannot be chosen twice."
+      - "Assetto Corsa accepts the rewritten file: after a controller moved to another USB port and the repair ran, steering, pedals and buttons work in a session without binding again."
+    notes:
+      - "2026-11-11: status todo; what is missing is the last criterion, which needs the real rig. Done in code: docs/research/assetto-corsa-controls.md (format from Content Manager's source; ACC keys devices by product GUID, so no repair there); python/input_server.py now reports each controller's DirectInput enumeration position (InputDevice.enumerationIndex), since the list it returns is sorted by name; src/features/racing/core/acRepair.ts; racing:acRepairPreview / racing:acRepair; the page's repair panel with the 'Not yet verified on real hardware' notice. Evidence so far: src/features/racing/core/acRepair.test.ts (moved index, swapped two devices, missing device, identical twins refused and asked, new Windows id, a file without instance GUIDs, order unknown), tests/unit/writeAudit.test.ts 'Assetto Corsa: renumbering the controllers in controls.ini to Windows' order', tests/e2e/racing-ac-repair.e2e.ts and artifacts/screens/racing-ac-repair/. Owner's check: back up controls.ini (Racing > Assetto Corsa > Back up now), plug the pedals or a button box into another USB port (or plug in a controller that enumerates before the wheel), confirm the page shows 'New number' and an 'Acts on now' column naming the wrong device, run 'Update controls.ini…', start a practice session from Content Manager with its 'Check and fix controls order' option off: steering, pedals and the paddles must work without binding again. Store before/after screenshots of the RigReady page under artifacts/rig/RACE-AC-001/ and one line in docs/research/assetto-corsa-controls.md section 3. If the game still uses the wrong controller: Undo on the Safety page, and withdraw the repair from the page (rule 2)."
+    status: todo
+    evidence: []
 
   - id: GAME-PAGES-001
     title: Game pages with status at a glance

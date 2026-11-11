@@ -154,22 +154,51 @@ export const AcViewSchema = z.object({
   running: z.boolean(),
   controlsFile: z.string().optional(),
   inputMethod: z.string().optional(),
+  /** Whether the order in which Windows lists the controllers is known (it decides JOY=n). */
+  orderKnown: z.boolean(),
+  /** A controller that bindings use is at another number or has a new Windows id. */
+  repairNeeded: z.boolean(),
   problems: z.array(z.string()),
   controllers: z.array(
     z.object({
+      /** Its number in controls.ini (CONn; the bindings say JOY=n). */
       index: z.number(),
       name: z.string(),
+      /** The name the owner gave the device on the Devices page, shown before `name`. */
+      givenName: z.string().optional(),
+      /** Empty when the file has none (Content Manager writes it, the game alone does not). */
       instanceGuid: z.string(),
       productGuid: z.string(),
       vendorId: z.string().optional(),
       productId: z.string().optional(),
-      state: z.enum(['connected', 'moved', 'missing', 'unknown']),
+      /**
+       * connected: attached at its number. reordered: attached, at another number now.
+       * moved: a controller of the same model is attached under a new Windows id. missing:
+       * nothing of that model is attached. unknown: the controllers could not be read.
+       */
+      state: z.enum(['connected', 'reordered', 'moved', 'missing', 'unknown']),
       /** At least one binding uses it. */
       used: z.boolean(),
+      bindingCount: z.number(),
+      /** The connected controller RigReady is sure it is now, and its number in Windows' order. */
+      now: z
+        .object({ guid: z.string(), name: z.string(), number: z.number().optional() })
+        .optional(),
+      /** When RigReady is not sure: the connected controllers of that model it could be. */
+      candidates: z.array(z.object({ guid: z.string(), label: z.string() })),
     })
   ),
   bindings: z.array(
-    z.object({ action: z.string(), label: z.string(), controller: z.string(), input: z.string() })
+    z.object({
+      action: z.string(),
+      label: z.string(),
+      controller: z.string(),
+      input: z.string(),
+      /** JOY=n of the binding; absent for a key. */
+      number: z.number().optional(),
+      /** The controller at that number in Windows' order now: what the game will really use. */
+      actsOn: z.string().optional(),
+    })
   ),
   forceFeedback: z.array(Pair),
 });
@@ -383,6 +412,18 @@ export const WritePreviewSchema = ChangePreviewSchema;
 export type WritePreviewView = z.infer<typeof WritePreviewSchema>;
 
 const GameRef = z.object({ game: BackupGameSchema });
+/** Assetto Corsa's repair: controller number in controls.ini -> instance GUID of the one it is now. */
+const AcChoices = z
+  .array(
+    z.object({
+      index: z.number().int().min(0).max(63),
+      guid: z
+        .string()
+        .regex(/^\{?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}?$/i),
+    })
+  )
+  .max(64)
+  .default([]);
 const BackupName = z.string().trim().max(80);
 const BackupRef = z.object({ game: BackupGameSchema, id: z.string().regex(/^[\w-]+$/) });
 
@@ -480,7 +521,18 @@ export const racingContract = defineContract('racing', {
   ),
   assettoCorsa: channel(noInput, AcViewSchema, {
     describe:
-      "Assetto Corsa's controller settings and bindings as RigReady reads them. Changes nothing.",
+      "Assetto Corsa's controller settings and bindings as RigReady reads them, and controllers that are at another number or have a new Windows id (for racing:acRepair). Changes nothing.",
+    tier: 'read',
+  }),
+  /** Renumbers Assetto Corsa's controllers in controls.ini to the order Windows lists them now. */
+  acRepair: channel(z.object({ choices: AcChoices }), Message, {
+    describe:
+      "Points Assetto Corsa's bindings in controls.ini at the controllers where Windows lists them now: renumbers JOY=n and puts in a new Windows id. choices names, for a controller RigReady cannot place by itself (candidates from racing:assettoCorsa), which connected one it is. Call racing:acRepairPreview first and show the user. Assetto Corsa and Content Manager must be closed.",
+    tier: 'change',
+  }),
+  /** What that repair would change in controls.ini. Reads only. */
+  acRepairPreview: channel(z.object({ choices: AcChoices }), WritePreviewSchema, {
+    describe: 'Shows what racing:acRepair would change in controls.ini. Nothing is changed.',
     tier: 'read',
   }),
   wheel: channel(noInput, WheelViewSchema, {
