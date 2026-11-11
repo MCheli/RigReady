@@ -1,0 +1,16 @@
+schemaVersion: 1
+id: dcs-setup-viper
+name: DCS F-16C
+game: dcs
+createdAt: '2026-10-03T12:00:00.000Z'
+updatedAt: '2026-10-03T12:00:00.000Z'
+launch:
+  exe: C:\Program Files (x86)\Steam\steamapps\common\DCSWorld\bin\DCS.exe
+  args: []
+checks:
+  - id: c1
+    type: dcs.options
+    title: DCS graphics options
+    required: false
+    params: { fullScreen: false, vr: false }
+    remediation: { type: dcs.setOptions, params: { fullScreen: false, vr: false } }

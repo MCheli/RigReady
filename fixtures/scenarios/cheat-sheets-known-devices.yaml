@@ -1,0 +1,29 @@
+description: Cheat sheets, a Thrustmaster HOTAS Warthog stick added to the owner's rig
+rig: mark-full
+extends: cheat-sheets-hornet.yaml
+# A Warthog stick RigReady has no drawing of, but knows the controls of. DCS's own
+# default bindings for it (Mods/aircraft/FA-18C/.../Joystick - HOTAS Warthog.diff.lua,
+# in the recorded install) give it something to show in the Hornet.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_044F&PID_0402\6&2c41a7f0&0&4'
+      vendorId: 044F
+      productId: '0402'
+      name: Joystick - HOTAS Warthog
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Thrustmaster
+    controller:
+      name: Joystick - HOTAS Warthog
+      guid: 3A7C1E20-7A11-11EF-8001-444553540000
+      productGuid: 0402044F-0000-0000-0000-504944564944
+      vendorId: 044F
+      productId: '0402'
+      numAxes: 2
+      numButtons: 19
+      numHats: 1
+      axisNames: [X, Y]

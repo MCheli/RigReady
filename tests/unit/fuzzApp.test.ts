@@ -54,6 +54,19 @@ const GAMES = [
   'assetto-corsa',
   'assetto-corsa-evo',
   'assetto-corsa-rally',
+  'msfs2020',
+  'x-plane-12',
+  'x-plane-11',
+  'il2-great-battles',
+  'falcon-bms',
+  'acc',
+  'rfactor2',
+  'ams2',
+  'ea-wrc',
+  'f1-25',
+  'f1-24',
+  'dirt-rally-2',
+  'raceroom',
 ];
 
 /** Requests with input that read files: what the pages ask for after their first load. */

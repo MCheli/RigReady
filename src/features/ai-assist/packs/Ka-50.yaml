@@ -1,0 +1,537 @@
+# RigReady binding guide: Ka-50 Black Shark (Ka-50 III and Ka-50). Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: Ka-50 III
+  name: Ka-50 Black Shark
+  also: [Ka-50]
+summary: >-
+  A single-seat attack helicopter with coaxial rotors and a strong autopilot: you fly with
+  cyclic, collective and pedals, trim often, and let the autopilot channels hold the
+  attitude while you work the Shkval targeting system. Bind the flight controls and trimmer
+  first, then the targeting and weapon controls; most panel switches are fine with the
+  mouse. The Ka-50 III adds a few controls of its own that this guide leaves out; everything
+  here is the same in both versions.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the Ka-50's controls (cyclic with trimmer,
+    collective, pedals, the autopilot channels and the Shkval targeting system) and of how
+    they work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from its default input files for the Ka-50
+    and the Ka-50 III; a test checks each one against those files so a DCS update that
+    renames an action is caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      The cyclic: pitch and roll axes, the trimmer on a thumb button, weapon release on the
+      trigger, then the Shkval controls (slew, uncage, lock, reset) on a hat and buttons, the
+      radio, the wheel brake and the autopilot emergency off.
+    items:
+      [
+        cyclic,
+        trimmer,
+        weapon-release,
+        shkval-slew,
+        shkval-uncage,
+        lock-target,
+        target-reset,
+        radio,
+        wheel-brake,
+        autopilot-off,
+        shkval-zoom,
+        target-frame,
+      ]
+  throttle:
+    summary: >-
+      Your throttle lever becomes the collective (usually inverted so forward is collective
+      up). Buttons nearby take the collective brake, hover mode and route mode; a second
+      lever or slider can be the engine power levers.
+    items: [collective, collective-brake, countermeasures, hover, route-mode, engine-levers]
+  pedals:
+    summary: Yaw on the rudder axis; a toe brake axis can be the wheel brake.
+    items: [pedals]
+  panel:
+    summary: >-
+      Gear, master arm, the weapon and cannon selectors, the autopilot channel buttons and the
+      targeting system power if your panels have spare switches; otherwise the mouse is fine.
+    items:
+      [
+        gear,
+        master-arm,
+        cannon-select,
+        stations,
+        autopilot-channels,
+        altitude-hold,
+        laser-standby,
+        hms,
+        targeting-power,
+        sight-mode,
+        flight-director,
+        parking-brake,
+        master-caution,
+        landing-light,
+        rotor-brake,
+      ]
+  keyboard:
+    summary: Start-up, views, zoom, kneeboard, the cockpit door and ejection can stay on the keyboard.
+    items: [auto-start, view-center, zoom, kneeboard, door, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: cyclic
+    title: Cyclic pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Tilts the rotor discs forward, back and sideways, which moves the helicopter that way.
+    when: All the time.
+    actions:
+      - { name: Flight Control Cyclic Pitch, label: 'Cyclic forward and back' }
+      - { name: Flight Control Cyclic Roll, label: 'Cyclic left and right' }
+
+  - id: pedals
+    title: Pedals (yaw)
+    tier: must
+    place: hotas
+    role: pedals
+    what: >-
+      Turns the nose by changing the pitch of the two rotors against each other. There is no
+      tail rotor, so the Ka-50 needs less pedal on power changes than most helicopters.
+    when: Turning in the hover, keeping the nose straight on take-off and landing.
+    actions:
+      - { name: Flight Control Rudder, label: 'Pedals (yaw)' }
+
+  - id: collective
+    title: Collective
+    tier: must
+    place: hotas
+    role: throttle
+    what: Changes the pitch of all rotor blades together, so the helicopter climbs or descends.
+    when: All the time. Up is more lift and more power.
+    note: Usually your throttle axis, inverted so that forward is collective up. Set it in DCS's axis tune if it moves the wrong way.
+    actions:
+      - { name: Flight Control Collective, label: 'Collective up and down' }
+
+  - id: trimmer
+    title: Trimmer
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      Sets where the cyclic and pedals rest. Hold it while you move to a new attitude and let
+      go: the autopilot channels then hold that attitude, and the stick stays there without
+      pressure.
+    when: Constantly; after every change of speed or attitude.
+    note: >-
+      Without a force feedback stick, check DCS's special options for the Ka-50 trimmer mode;
+      a spring stick that returns to the centre needs one of the central position modes.
+    actions:
+      - { name: Trimmer, label: 'Trimmer: hold, move, release' }
+
+  - id: weapon-release
+    title: Weapon release
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the selected weapon, whether cannon, rockets, missiles or bombs.
+    when: Every attack.
+    actions:
+      - { name: Release weapons, label: 'Fire the selected weapon' }
+
+  - id: shkval-slew
+    title: Shkval slew
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the Shkval targeting camera's view and the target frame onto a target.
+    when: Finding and aiming at targets before a shot.
+    note: A four-way hat; some prefer a thumb hat on the throttle for it.
+    actions:
+      - { name: KU-31 Shkval slew up, label: 'Slew Shkval up' }
+      - { name: KU-31 Shkval slew down, label: 'Slew Shkval down' }
+      - { name: KU-31 Shkval slew left, label: 'Slew Shkval left' }
+      - { name: KU-31 Shkval slew right, label: 'Slew Shkval right' }
+
+  - id: shkval-uncage
+    title: Uncage Shkval
+    tier: must
+    place: hotas
+    role: stick
+    what: Uncages the Shkval so it can be slewed off the nose and designates the target point.
+    when: At the start of every targeting run.
+    actions:
+      - { name: 'Uncage SHKVAL, designate target', label: 'Uncage Shkval / designate' }
+
+  - id: lock-target
+    title: Lock target
+    tier: must
+    place: hotas
+    role: stick
+    what: Starts the Shkval's automatic tracking of what is in the target frame.
+    when: Before a missile or a precise cannon shot.
+    actions:
+      - { name: Lock target, label: 'Lock target (auto-tracking)' }
+
+  - id: target-reset
+    title: Targeting mode reset
+    tier: must
+    place: hotas
+    role: stick
+    what: Drops the lock and returns the Shkval to its starting position.
+    when: When a lock is wrong or after an attack, to start again.
+    actions:
+      - { name: Button Targeting mode reset, label: 'Reset targeting' }
+
+  - id: radio
+    title: Radio (call the radio menu)
+    tier: must
+    place: hotas
+    role: stick
+    what: Talks on the selected radio and opens DCS's radio menu for the tower and your flight.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    actions:
+      - { name: SPU-9 PTT (call radio menu), label: 'Talk / radio menu' }
+
+  - id: countermeasures
+    title: Countermeasures
+    tier: must
+    place: hotas
+    role: throttle
+    what: Releases flares from the UV-26 dispensers.
+    when: When an infrared missile is fired at you.
+    actions:
+      - { name: UV-26 Start dispensing, label: 'Dispense flares' }
+
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    note: One button toggles; a two-position switch uses up and down.
+    actions:
+      - { name: Gear lever, label: 'Gear: toggle' }
+      - { name: Gear up, label: 'Gear up' }
+      - { name: Gear down, label: 'Gear down' }
+
+  - id: master-arm
+    title: Master arm
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Arms the weapons. Nothing fires while it is off.
+    when: Before the fight; off again before landing.
+    actions:
+      - { name: Master arm on/off, label: 'Master arm: toggle' }
+      - { name: 'Master arm : ON', label: 'Master arm on' }
+      - { name: 'Master arm : OFF', label: 'Master arm off' }
+
+  # ---------------------------------------------------------------- should have
+  - id: wheel-brake
+    title: Wheel brake
+    tier: should
+    place: hotas
+    role: stick
+    need: any
+    what: Brakes the wheels on the ground.
+    when: Taxiing and after landing.
+    note: In the real helicopter it is a lever on the cyclic; a button or a toe brake axis works.
+    actions:
+      - { name: Wheel brake (press and hold), label: 'Wheel brake (hold)' }
+      - { name: Wheel Brake, label: 'Wheel brake (axis)' }
+
+  - id: collective-brake
+    title: Collective brake
+    tier: should
+    place: hotas
+    role: throttle
+    what: >-
+      The collective's brake lever. Pressing it frees the collective and tells the altitude
+      hold channel to take your new height when you let go.
+    when: Whenever you change height with the altitude hold channel on.
+    actions:
+      - { name: Collective brake - Assign altitude lever, label: 'Collective brake / new altitude' }
+
+  - id: autopilot-off
+    title: Autopilot emergency off
+    tier: should
+    place: hotas
+    role: stick
+    what: Switches all autopilot channels off at once.
+    when: When the autopilot fights you or after a failure.
+    actions:
+      - { name: Autopilot Emergency Off, label: 'Autopilot off (all channels)' }
+
+  - id: hover
+    title: Hover mode
+    tier: should
+    place: hotas
+    role: throttle
+    what: Lets the autopilot hold a hover over one spot on the ground.
+    when: Waiting in a hover, for example behind cover before a shot.
+    actions:
+      - { name: Hover On/Off, label: 'Hover mode on/off' }
+
+  - id: shkval-zoom
+    title: Shkval zoom
+    tier: should
+    place: hotas
+    role: stick
+    what: Switches the Shkval camera between its wide and narrow (more zoomed) view.
+    when: Searching wide, then zooming in to identify and aim.
+    actions:
+      - { name: Shkval Wide View 7x, label: 'Shkval wide view' }
+      - { name: Shkval Narrow View 23x, label: 'Shkval narrow view' }
+
+  - id: target-frame
+    title: Target frame size
+    tier: should
+    place: hotas
+    role: stick
+    what: Makes the Shkval's target frame bigger or smaller to fit the target before locking.
+    when: Before locking a target of a different size.
+    actions:
+      - { name: TV Target frame Increase size, label: 'Target frame bigger' }
+      - { name: TV Target frame Decrease size, label: 'Target frame smaller' }
+
+  - id: cannon-select
+    title: Cannon select
+    tier: should
+    place: panel
+    role: panel
+    what: Selects the cannon as the weapon the trigger fires.
+    when: Before a cannon attack.
+    actions:
+      - { name: Gun Select, label: 'Select the cannon' }
+
+  - id: stations
+    title: Weapon stations
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Chooses which pylons the selected weapon comes from, the inner ones, the outer ones or all.
+    when: Choosing between the missiles, rockets and bombs you carry.
+    actions:
+      - { name: Weapon selection inward stations, label: 'Inner stations' }
+      - { name: Weapon selection outward stations, label: 'Outer stations' }
+      - { name: Weapon selection all stations, label: 'All stations' }
+
+  - id: autopilot-channels
+    title: Autopilot channels
+    tier: should
+    place: panel
+    role: panel
+    what: Switches the bank, pitch and heading hold channels on and off; normally all three are on.
+    when: After start-up, and to fly by hand in one axis.
+    actions:
+      - { name: Autopilot Bank hold, label: 'Bank hold' }
+      - { name: Autopilot Pitch hold, label: 'Pitch hold' }
+      - { name: Autopilot Heading hold, label: 'Heading hold' }
+
+  - id: altitude-hold
+    title: Altitude hold
+    tier: should
+    place: panel
+    role: panel
+    what: Lets the autopilot hold your height with the collective.
+    when: Cruising and while working the targeting system.
+    actions:
+      - { name: Autopilot Altitude hold, label: 'Altitude hold' }
+
+  - id: laser-standby
+    title: Laser standby
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Powers the laser rangefinder and designator the guided missiles need.
+    when: Before a missile attack.
+    actions:
+      - { name: Laser standby On/Off switch, label: 'Laser standby: toggle' }
+      - { name: 'Laser standby On/Off switch : ON', label: 'Laser standby on' }
+      - { name: 'Laser standby On/Off switch : OFF', label: 'Laser standby off' }
+
+  - id: hms
+    title: Helmet-mounted sight
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Turns on the helmet sight, so the Shkval can be pointed where you look.
+    when: Finding targets quickly off the nose.
+    actions:
+      - { name: Helmet-mounted system On/Off, label: 'Helmet sight: toggle' }
+      - { name: 'Helmet-mounted system : ON', label: 'Helmet sight on' }
+      - { name: 'Helmet-mounted system : OFF', label: 'Helmet sight off' }
+
+  - id: targeting-power
+    title: Targeting system power
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Powers the K-041 targeting and navigation system; the Shkval and the weapons need it.
+    when: Once, during start-up.
+    actions:
+      - { name: K-041 Targeting system power switch, label: 'Targeting system power: toggle' }
+      - { name: 'K-041 Targeting-Navigation System Power 2-pos Switch : ON<>OFF', label: 'Targeting system power (two-position switch)' }
+
+  - id: auto-start
+    title: Auto start
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: DCS starts the engines and systems for you.
+    when: At the start of a flight, until you learn the start-up.
+    actions:
+      - { name: Auto Start, label: 'Auto start' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: route-mode
+    title: Route mode
+    tier: nice
+    place: hotas
+    role: throttle
+    what: Lets the autopilot steer along the route of waypoints.
+    when: Long transits.
+    actions:
+      - { name: Engage/Disengage Route Mode, label: 'Route mode on/off' }
+
+  - id: engine-levers
+    title: Engine power levers
+    tier: nice
+    place: hotas
+    role: throttle
+    need: any
+    what: >-
+      The two engine levers. They stay at AUTO in flight, where the governor keeps the rotor
+      speed; you move them at start-up and shutdown.
+    when: Start-up and shutdown.
+    actions:
+      - { name: Throttle, label: 'Engine levers (axis)' }
+      - { name: Throttle up (Idle-Medium-Auto-Full), label: 'Engine levers one step up' }
+      - { name: Throttle down (Idle-Medium-Auto-Full), label: 'Engine levers one step down' }
+
+  - id: sight-mode
+    title: Auto-tracking or gunsight mode
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Switches between automatic target tracking and a fixed gunsight reticle.
+    when: When you want to aim the cannon or rockets by eye.
+    actions:
+      - { name: Auto-Tracking/Gun Sight Reticle Mode - AT/RET, label: 'Auto-tracking / reticle: toggle' }
+      - { name: 'Auto-Tracking/Gun Sight Reticle Mode : AT', label: 'Auto-tracking' }
+      - { name: 'Auto-Tracking/Gun Sight Reticle Mode : RET', label: 'Gunsight reticle' }
+
+  - id: flight-director
+    title: Flight director
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      Switches the autopilot to flight director mode, where it no longer holds the attitude
+      for you.
+    when: Flying by hand for a while, for example in aggressive manoeuvring.
+    actions:
+      - { name: Autopilot Director control, label: 'Flight director on/off' }
+
+  - id: parking-brake
+    title: Parking brake
+    tier: nice
+    place: panel
+    role: panel
+    what: Holds the wheel brakes on while parked.
+    when: Start-up and shutdown.
+    actions:
+      - { name: Parking brake, label: 'Parking brake' }
+
+  - id: master-caution
+    title: Master caution
+    tier: nice
+    place: panel
+    role: panel
+    what: Acknowledges the master caution light.
+    when: After a caution, once you have seen what it is.
+    actions:
+      - { name: Master caution push-light, label: 'Master caution reset' }
+
+  - id: landing-light
+    title: Landing and search light
+    tier: nice
+    place: panel
+    role: panel
+    what: Steps the landing and search light through on, retracted and off.
+    when: Landing at night.
+    actions:
+      - { name: 'Light landing search On/Retraction/Off : NEXT', label: 'Landing light: next' }
+      - { name: 'Light landing search On/Retraction/Off : PREV', label: 'Landing light: previous' }
+
+  - id: rotor-brake
+    title: Rotor brake
+    tier: nice
+    place: panel
+    role: panel
+    what: Stops the rotors after shutdown; it must be off before start-up.
+    when: Start-up and shutdown.
+    actions:
+      - { name: Rotor brake, label: 'Rotor brake' }
+
+  - id: view-center
+    title: Center view
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Recenters the head position, needed with head tracking or VR.
+    when: Whenever the view has drifted.
+    actions:
+      - { name: Center View, label: 'Center view' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Zooms the view in to read instruments or spot targets.
+    when: Reading small gauges, spotting targets.
+    actions:
+      - { name: Zoom in slow, label: 'Zoom in' }
+      - { name: Zoom out slow, label: 'Zoom out' }
+      - { name: Zoom normal, label: 'Zoom normal' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's notes and maps.
+    when: Checking frequencies, waypoints and targets.
+    actions:
+      - { name: Kneeboard ON/OFF, label: 'Kneeboard on/off' }
+
+  - id: door
+    title: Cockpit door
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens and closes the cockpit door.
+    when: Before start-up and after shutdown.
+    actions:
+      - { name: Cockpit door open/close, label: 'Cockpit door' }
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Fires the ejection seat (the rotor blades are blown off first). Press it three times.
+    when: Only when the helicopter cannot be saved.
+    actions:
+      - { name: Eject (3 times), label: 'Eject (press three times)' }

@@ -35,7 +35,11 @@ describe('plain-language action labels across features', () => {
     const hornet = await bindings.labels('dcs', 'FA-18C_hornet');
     expect(hornet['Trimmer Switch - PUSH(DESCEND)']).toBe('Trim nose down');
     expect(Object.keys(await bindings.labels('dcs', 'UH-1H')).length).toBeGreaterThan(20);
-    expect(await bindings.labels('dcs', 'Su-27')).toEqual({});
+    // Every aircraft with a shipped guide has them, variants listed with it included.
+    expect((await bindings.labels('dcs', 'A-10C'))['HOTAS Coolie Switch Up']).toBe(
+      'Coolie up: HUD'
+    );
+    expect(await bindings.labels('dcs', 'AH-64D_BLK_II')).toEqual({});
     expect(await bindings.labels('msfs2024', 'FA-18C_hornet')).toEqual({});
   });
 

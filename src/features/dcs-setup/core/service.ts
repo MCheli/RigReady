@@ -17,6 +17,12 @@ import type {
   SimAppProState,
 } from '../contract';
 import { listAircraft } from './aircraft';
+import {
+  aircraftNamedIn,
+  builtInCatalog,
+  installedDisplayCatalog,
+  type CatalogEntry,
+} from './cockpitDisplays';
 import { dcsPaths, dcsRunning, refuseWhileRunning, type DcsPaths } from './dcsPaths';
 import {
   addTool,
@@ -480,6 +486,50 @@ export class DcsSetupService {
     return choices;
   }
 
+  /** The installed aircraft with exportable displays; rescanned when a module folder changes. */
+  private displayCache: { key: string; catalog: CatalogEntry[]; units: Set<string> } | undefined;
+
+  /**
+   * What the screen editor offers: every installed aircraft whose cockpit scripts name an
+   * exportable display (core/cockpitDisplays.ts), the built-in table when DCS is not
+   * found or no module names one, plus SimAppPro's aircraft that are installed.
+   */
+  async screenCatalog(
+    paths: DcsPaths | undefined,
+    simAppPro: CatalogEntry[] = []
+  ): Promise<CatalogEntry[]> {
+    const installDir = paths?.install?.installDir;
+    if (!installDir) return aircraftCatalog(simAppPro);
+    const modules = await this.ctx.ports.files.listEntries(
+      path.join(installDir, 'Mods', 'aircraft')
+    );
+    const key = JSON.stringify([
+      installDir,
+      ...(modules.ok ? modules.value : []).map((m) => [m.name, m.mtimeMs]),
+    ]);
+    if (this.displayCache?.key !== key) {
+      const aircraft = await listAircraft(this.check, installDir, undefined);
+      this.displayCache = {
+        key,
+        catalog: await installedDisplayCatalog(this.check, installDir, aircraft),
+        units: new Set(aircraft.map((a) => a.unit)),
+      };
+    }
+    const { catalog, units } = this.displayCache;
+    return catalog.length
+      ? aircraftCatalog(simAppPro, catalog, units)
+      : aircraftCatalog(simAppPro, builtInCatalog());
+  }
+
+  /** The aircraft of the setup in use: the last one used, when it is a DCS setup whose name names one. */
+  private async aircraftInUse(catalog: CatalogEntry[]): Promise<string | undefined> {
+    const id = await this.ctx.profiles.lastProfileId();
+    if (!id) return undefined;
+    const profile = await this.ctx.profiles.get(id);
+    if (!profile.ok || profile.value.game !== 'dcs') return undefined;
+    return aircraftNamedIn(profile.value.name, catalog);
+  }
+
   async screens(): Promise<ScreensState> {
     const state = await this.state();
     const simAppPro = await findSimAppPro(this.check);
@@ -488,14 +538,17 @@ export class DcsSetupService {
       desktops,
       ...(state.screens ? { saved: state.screens } : {}),
       files: [],
-      catalog: aircraftCatalog(),
       simAppProPlan: simAppPro.planPath !== undefined,
       dcsRunning: await dcsRunning(this.check, this.ctx.games),
     };
     const paths = await this.paths();
     if (!paths.ok) {
+      const catalog = await this.screenCatalog(undefined);
+      const inUse = await this.aircraftInUse(catalog);
       return {
         ...base,
+        catalog,
+        ...(inUse ? { aircraftInUse: inUse } : {}),
         problem: paths.error.message,
         ...(paths.error.code === 'dcs.notFound' ? { dcsFound: false } : {}),
         rigReady: { path: '', exists: false, editedOutside: false, selected: false },
@@ -503,15 +556,18 @@ export class DcsSetupService {
     }
     const { options } = await this.options(paths.value);
     const current = await this.readText(paths.value.rigReadyLua);
-    let catalog = base.catalog;
+    let fromPlan: CatalogEntry[] = [];
     if (simAppPro.planPath) {
       const plan = await readSimAppProPlan(this.check);
       const imported = plan.ok ? importSimAppPro(plan.value, []) : undefined;
-      if (imported?.ok) catalog = aircraftCatalog(imported.plan.catalog);
+      if (imported?.ok) fromPlan = imported.plan.catalog;
     }
+    const catalog = await this.screenCatalog(paths.value, fromPlan);
+    const inUse = await this.aircraftInUse(catalog);
     return {
       ...base,
       catalog,
+      ...(inUse ? { aircraftInUse: inUse } : {}),
       files: await this.monitorFiles(paths.value, options),
       ...(options ? { options } : {}),
       rigReady: {
@@ -525,9 +581,7 @@ export class DcsSetupService {
 
   async importFromSimAppPro(
     desktopId: string
-  ): Promise<
-    Result<{ setup: ScreenSetup; unmatched: string[]; catalog: ReturnType<typeof aircraftCatalog> }>
-  > {
+  ): Promise<Result<{ setup: ScreenSetup; unmatched: string[]; catalog: CatalogEntry[] }>> {
     const desktop = (await this.desktops()).find((d) => d.id === desktopId);
     if (!desktop) return err('dcs.screens.layout', 'That monitor layout is no longer available.');
     const json = await readSimAppProPlan(this.check);
@@ -535,6 +589,7 @@ export class DcsSetupService {
     const imported = importSimAppPro(json.value, desktop.displays);
     if (!imported.ok) return err('simapppro.plan', imported.message);
     const primary = desktop.displays.find((d) => d.primary) ?? desktop.displays[0]!;
+    const paths = await this.paths();
     return ok({
       setup: {
         mainDisplayIds: imported.plan.mainDisplayIds.length
@@ -545,7 +600,7 @@ export class DcsSetupService {
         desktopLabel: desktop.label,
       },
       unmatched: imported.plan.unmatched,
-      catalog: aircraftCatalog(imported.plan.catalog),
+      catalog: await this.screenCatalog(paths.ok ? paths.value : undefined, imported.plan.catalog),
     });
   }
 

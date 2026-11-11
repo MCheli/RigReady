@@ -1,0 +1,576 @@
+# RigReady binding guide: F-15E Strike Eagle, pilot. Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: F-15E
+  name: F-15E Strike Eagle (pilot)
+summary: >-
+  A two-seat strike fighter with a full HOTAS: the pilot flies, fights air-to-air and drops
+  bombs from the front seat, the WSO (or you, switching seats) runs the targeting pod and
+  the radar in the back. Bind the stick and throttle like the real jet first, then the
+  displays' buttons, then the panel switches.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the F-15E's front seat HOTAS (the stick
+    with trigger, pickle, castle and auto acquisition switches, the throttles with the
+    weapon mode switch, TDC, countermeasures and radio switches) and of how it works in DCS.
+  - >-
+    Every action name below is DCS's own, taken from Razbam's default input files for the
+    F-15E pilot seat; a test checks each one against those files so a DCS update that
+    renames an action is caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      The Eagle stick: trigger, pickle, trim hat, castle switch, auto acquisition switch,
+      the nose wheel steering button and the paddle. If your grip is not an F-15 grip, map
+      by feel: trigger to trigger, pickle to the top thumb button, trim to the top hat.
+    items: [pitch-roll, trigger, pickle, trim, castle, auto-acq, nws, paddle]
+  throttle:
+    summary: >-
+      One throttle axis, or two for split throttles, then the switches your left hand needs
+      in a fight: the TDC, the weapon mode switch, countermeasures, speed brake, the radio,
+      radar elevation, and the coolie and boat switches.
+    items:
+      [
+        thrust,
+        tdc-slew,
+        tdc-press,
+        weapon-mode,
+        dispense,
+        speed-brake,
+        comm,
+        radar-elevation,
+        coolie,
+        boat,
+      ]
+  pedals:
+    summary: Rudder on the rudder axis, the two toe brakes on their own axes.
+    items: [rudder, wheel-brakes]
+  mfd:
+    summary: >-
+      Each MFD frame's 20 buttons to the matching display's pushbuttons, in the same order
+      (button 1 is the top-left of the top row, counting clockwise on most frames; check one).
+    items: [left-mpd, right-mpd, mpcd]
+  panel:
+    summary: >-
+      Switches you use a few times per flight: gear, flaps, master arm and the master mode
+      buttons, then the hook, start-up and lights if your panels have them.
+    items:
+      [
+        gear,
+        flaps,
+        master-arm,
+        master-mode,
+        hook,
+        master-caution,
+        jfs,
+        engine-master,
+        parking-brake,
+        landing-light,
+        anti-collision,
+        jettison,
+      ]
+  keyboard:
+    summary: >-
+      Things you do rarely or once per flight can stay on DCS's keyboard defaults: views,
+      kneeboard, throttle detents, canopy, eject.
+    items: [view-center, zoom, throttle-idle, kneeboard, canopy, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the nose up and down and banks the jet.
+    when: All the time.
+    actions:
+      - { name: 'Pitch', label: 'Pitch (stick forward and back)' }
+      - { name: 'Roll', label: 'Roll (stick left and right)' }
+
+  - id: rudder
+    title: Rudder
+    tier: must
+    place: hotas
+    role: pedals
+    what: Yaws the nose; on the ground it steers once nose wheel steering is on.
+    when: Take-off roll, landing roll-out, crosswinds, taxiing.
+    actions:
+      - { name: 'Rudder', label: 'Rudder (pedals or stick twist)' }
+
+  - id: thrust
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Engine power. One axis for both engines, or one per engine on a split throttle.
+    when: All the time. Full forward past the detent is afterburner.
+    note: Bind either Thrust, or Thrust Left and Thrust Right, not both.
+    actions:
+      - { name: 'Thrust', label: 'Throttle, both engines' }
+      - { name: 'Thrust Left', label: 'Throttle, left engine' }
+      - { name: 'Thrust Right', label: 'Throttle, right engine' }
+
+  - id: wheel-brakes
+    title: Wheel brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Slows the jet on the ground. Toe brakes on pedals, or one button for both wheels.
+    when: Taxiing, landing roll-out, holding before take-off.
+    note: Best on the toe brakes of the pedals (left and right axes); otherwise one button.
+    actions:
+      - { name: 'Wheel Brake Left', label: 'Left toe brake' }
+      - { name: 'Wheel Brake Right', label: 'Right toe brake' }
+      - { name: 'Wheel Brake', label: 'Both brakes, one axis' }
+      - { name: 'Wheel Brake - ON/OFF', label: 'Both brakes, one button (hold)' }
+
+  - id: trim
+    title: Trim hat
+    tier: must
+    place: hotas
+    role: stick
+    what: Trims the jet so it holds its attitude without pressure on the stick.
+    when: After every change of speed or configuration, and on every approach.
+    actions:
+      - { name: 'Trim Nose Down', label: 'Trim nose down' }
+      - { name: 'Trim Nose Up', label: 'Trim nose up' }
+      - { name: 'Trim Left Wing Down', label: 'Trim left wing down' }
+      - { name: 'Trim Right Wing Down', label: 'Trim right wing down' }
+
+  - id: trigger
+    title: Gun and missile trigger
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the gun and air-to-air missiles.
+    when: Air combat and strafing.
+    actions:
+      - { name: 'Trigger', label: 'Trigger: fire' }
+
+  - id: pickle
+    title: Weapon release (pickle)
+    tier: must
+    place: hotas
+    role: stick
+    what: Releases bombs and fires air-to-ground weapons.
+    when: Every air-to-ground attack.
+    actions:
+      - { name: 'Weapon Release (Pickle)', label: 'Pickle: release weapon' }
+
+  - id: castle
+    title: Castle switch
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      The four-way switch under your thumb. It moves the TDC (the cursor on the throttle)
+      between the HUD and the displays and changes what the display under it shows.
+    when: Constantly when working the radar and the displays.
+    actions:
+      - { name: 'Castle Switch FWD', label: 'Castle forward' }
+      - { name: 'Castle Switch AFT', label: 'Castle aft' }
+      - { name: 'Castle Switch LEFT', label: 'Castle left' }
+      - { name: 'Castle Switch RIGHT', label: 'Castle right' }
+      - { name: 'Castle Switch PRESS', label: 'Castle press' }
+
+  - id: tdc-slew
+    title: TDC (cursor)
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: >-
+      The Target Designator Control on the throttle moves the cursor on the display that has
+      it: the radar, the targeting pod picture, the HUD.
+    when: Locking targets, aiming sensors, picking items on the displays.
+    note: A mini-stick on the throttle as two axes is best; four buttons or a hat works too.
+    actions:
+      - { name: 'TDC Slew Horizontal', label: 'TDC left/right (axis)' }
+      - { name: 'TDC Slew Vertical', label: 'TDC up/down (axis)' }
+      - { name: 'TDC Switch UP', label: 'TDC up' }
+      - { name: 'TDC Switch DOWN', label: 'TDC down' }
+      - { name: 'TDC Switch LEFT', label: 'TDC left' }
+      - { name: 'TDC Switch RIGHT', label: 'TDC right' }
+
+  - id: tdc-press
+    title: TDC press (designate)
+    tier: must
+    place: hotas
+    role: throttle
+    what: Pushing the TDC in designates or locks what is under the cursor.
+    when: Every radar lock and every ground target designation.
+    actions:
+      - { name: 'TDC Switch PRESS', label: 'TDC press: designate / lock' }
+
+  - id: weapon-mode
+    title: Weapon mode switch
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: >-
+      Picks the air-to-air weapon and puts the jet in air-to-air mode: forward medium range
+      missiles (AMRAAM, Sparrow), centre short range missiles (Sidewinder), aft gun.
+    when: Air combat; selecting a weapon here is the fastest way into air-to-air mode.
+    note: A three-position switch uses FWD, CNT and AFT; one button can cycle.
+    actions:
+      - { name: 'Weapons/Mode Switch FWD (MRM)', label: 'Weapon mode: medium range missile' }
+      - { name: 'Weapons/Mode Switch CNT (SRM)', label: 'Weapon mode: short range missile' }
+      - { name: 'Weapons/Mode Switch AFT (GUN)', label: 'Weapon mode: gun' }
+      - { name: 'Weapons/Mode Switch Cycle Loop (GUN-SRM-MRM-GUN)', label: 'Weapon mode: cycle' }
+
+  - id: dispense
+    title: Countermeasures
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Releases chaff and flares with the two manual programs.
+    when: When a missile is fired at you.
+    actions:
+      - { name: 'CMD Switch UP (Manual 2 Dispense)', label: 'Countermeasures: manual program 2' }
+      - { name: 'CMD Switch DOWN (Manual 1 Dispense)', label: 'Countermeasures: manual program 1' }
+
+  - id: comm
+    title: Radios (call the radio menu)
+    tier: must
+    place: hotas
+    role: throttle
+    what: >-
+      Talks on radio 1 (forward) or radio 2 (aft) and opens DCS's radio menu for the tower,
+      tankers and wingmen.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    actions:
+      - { name: 'MIC Switch FWD (Call Radio 1 Menu)', label: 'Talk on radio 1 / radio menu' }
+      - { name: 'MIC Switch AFT (Call Radio 2 Menu)', label: 'Talk on radio 2 / radio menu' }
+
+  - id: nws
+    title: Nose wheel steering / weapons button
+    tier: must
+    place: hotas
+    role: stick
+    what: On the ground it switches nose wheel steering on; in the air it has weapon functions.
+    when: Every taxi.
+    actions:
+      - { name: 'NWS/Weapons Button', label: 'Nose wheel steering / weapons' }
+
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    note: One button toggles; a two-position switch or lever uses up and down.
+    actions:
+      - { name: 'Landing Gear Lever Toggle: LG UP/LG DOWN', label: 'Gear: toggle' }
+      - { name: 'Landing Gear Lever - LG UP', label: 'Gear up' }
+      - { name: 'Landing Gear Lever - LG DOWN', label: 'Gear down' }
+
+  - id: flaps
+    title: Flaps
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Lowers the flaps for take-off and landing.
+    when: Before take-off and before landing; up after take-off.
+    actions:
+      - { name: 'Flaps Toggle Up/Down', label: 'Flaps: toggle' }
+      - { name: 'Flaps Up', label: 'Flaps up' }
+      - { name: 'Flaps Down', label: 'Flaps down' }
+
+  - id: master-arm
+    title: Master Arm
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Arms the weapons. Nothing fires while it is SAFE.
+    when: Before the fight; SAFE again before landing.
+    actions:
+      - { name: 'Master Arm Switch ARM else SAFE', label: 'Master Arm: ARM, else SAFE (two-position switch)' }
+      - { name: 'Master Arm Switch ARM', label: 'Master Arm: ARM' }
+      - { name: 'Master Arm Switch SAFE', label: 'Master Arm: SAFE' }
+
+  - id: master-mode
+    title: Master modes
+    tier: must
+    place: panel
+    role: panel
+    what: Switches the displays and weapons between air-to-air, air-to-ground, navigation and instrument modes.
+    when: Before every attack on the ground; air-to-air is also selected by the weapon mode switch.
+    actions:
+      - { name: 'Master Mode A/A Selector', label: 'Master mode: air-to-air' }
+      - { name: 'Master Mode A/G Selector', label: 'Master mode: air-to-ground' }
+      - { name: 'Master Mode NAV Selector', label: 'Master mode: navigation' }
+      - { name: 'Master Mode INST Selector', label: 'Master mode: instruments' }
+
+  # ---------------------------------------------------------------- should have
+  - id: speed-brake
+    title: Speed brake
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Extends the speed brake to slow down quickly.
+    when: In the break before landing, joining up, staying behind a slower aircraft.
+    actions:
+      - { name: 'Speed Brake AFT (Extend)', label: 'Speed brake out' }
+      - { name: 'Speed Brake FWD (Retract)', label: 'Speed brake in' }
+      - { name: 'Speed Brake Switch - Toggle On/Off', label: 'Speed brake: toggle' }
+
+  - id: auto-acq
+    title: Auto acquisition switch
+    tier: should
+    place: hotas
+    role: stick
+    what: Puts the radar in its close-in lock modes, which lock the first target they find.
+    when: Dogfights, when there is no time to lock with the TDC.
+    actions:
+      - { name: 'Auto Acquisition Switch FWD', label: 'Auto acquisition forward' }
+      - { name: 'Auto Acquisition Switch AFT', label: 'Auto acquisition aft' }
+      - { name: 'Auto Acquisition Switch PRESS', label: 'Auto acquisition press' }
+
+  - id: radar-elevation
+    title: Radar elevation
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Points the radar's scan up and down.
+    when: Searching for air targets above or below you.
+    actions:
+      - { name: 'Radar Antenna Elevation', label: 'Radar elevation (axis)' }
+      - { name: 'Radar Antenna Elevation UP', label: 'Radar elevation up' }
+      - { name: 'Radar Antenna Elevation DOWN', label: 'Radar elevation down' }
+
+  - id: paddle
+    title: Paddle switch
+    tier: should
+    place: hotas
+    role: stick
+    what: Disconnects the autopilot while you hold it.
+    when: Whenever the autopilot does something you did not want.
+    actions:
+      - { name: 'Paddle Switch', label: 'Paddle' }
+
+  - id: left-mpd
+    title: Left display buttons
+    tier: should
+    place: panel
+    role: mfd
+    what: The 20 pushbuttons around the left display.
+    when: Changing pages, radar and weapon settings.
+    note: Best on an MFD frame; the mouse works too.
+    actions:
+      - re: '^MPDL Push Button +([1-9]|1[0-9]|20)$'
+
+  - id: right-mpd
+    title: Right display buttons
+    tier: should
+    place: panel
+    role: mfd
+    what: The 20 pushbuttons around the right display.
+    when: Changing pages, radar and weapon settings.
+    note: Best on an MFD frame; the mouse works too.
+    actions:
+      - re: '^MPDR Push Button +([1-9]|1[0-9]|20)$'
+
+  - id: hook
+    title: Arresting hook
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Lowers the hook that catches an arresting cable on the runway.
+    when: Emergencies, such as brake failure or a short runway.
+    actions:
+      - { name: 'Arresting Hook Handle Toggle', label: 'Hook: toggle' }
+      - { name: 'Arresting Hook Handle DOWN', label: 'Hook down' }
+      - { name: 'Arresting Hook Handle UP', label: 'Hook up' }
+
+  - id: master-caution
+    title: Master caution reset
+    tier: should
+    place: panel
+    role: panel
+    what: Acknowledges the master caution light so the next warning shows.
+    when: After reading a caution.
+    actions:
+      - { name: 'Master Caution Reset', label: 'Master caution reset' }
+
+  - id: view-center
+    title: Center the view
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: Puts your head back to the default position, needed with head tracking or VR.
+    when: Whenever your view drifts.
+    actions:
+      - { name: 'View Center', label: 'Center the view' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: coolie
+    title: Coolie switch
+    tier: nice
+    place: hotas
+    role: throttle
+    what: A four-way hat on the throttle; what it does depends on the mode and the display in use.
+    when: As you learn the radar and the displays; bind it now so it is there.
+    actions:
+      - { name: 'Coolie Switch UP', label: 'Coolie up' }
+      - { name: 'Coolie Switch DOWN', label: 'Coolie down' }
+      - { name: 'Coolie Switch LEFT', label: 'Coolie left' }
+      - { name: 'Coolie Switch RIGHT', label: 'Coolie right' }
+
+  - id: boat
+    title: Boat switch
+    tier: nice
+    place: hotas
+    role: throttle
+    what: A fore and aft slide switch on the throttle; what it does depends on the mode.
+    when: As you learn the radar modes; bind it now so it is there.
+    actions:
+      - { name: 'Boat Switch FWD', label: 'Boat switch forward' }
+      - { name: 'Boat Switch AFT', label: 'Boat switch aft' }
+
+  - id: mpcd
+    title: Centre display buttons
+    tier: nice
+    place: panel
+    role: mfd
+    what: The 20 pushbuttons around the colour display below the front panel.
+    when: Changing its page, often the map or the armament page.
+    actions:
+      - re: '^MPCD Push Button +([1-9]|1[0-9]|20)$'
+
+  - id: jfs
+    title: Jet fuel starter
+    tier: nice
+    place: panel
+    role: panel
+    what: Pulling the JFS handle starts the small engine that then starts the main engines.
+    when: Once per flight, at start-up.
+    actions:
+      - { name: 'JFS Control Handle Handle PULL', label: 'Jet fuel starter: pull' }
+
+  - id: engine-master
+    title: Engine master switches
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Give each engine fuel and power for start-up.
+    when: Start-up and shutdown.
+    actions:
+      - { name: 'Left Engine Master Switch ON', label: 'Left engine master on' }
+      - { name: 'Left Engine Master Switch OFF', label: 'Left engine master off' }
+      - { name: 'Right Engine Master Switch ON', label: 'Right engine master on' }
+      - { name: 'Right Engine Master Switch OFF', label: 'Right engine master off' }
+
+  - id: parking-brake
+    title: Parking brake
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Holds the jet still without the toe brakes.
+    when: Start-up and before taxiing.
+    actions:
+      - { name: 'Parking Brake Switch Toggle', label: 'Parking brake: toggle' }
+      - { name: 'Parking Brake Switch ON', label: 'Parking brake on' }
+      - { name: 'Parking Brake Switch OFF', label: 'Parking brake off' }
+
+  - id: landing-light
+    title: Landing and taxi light
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Turns the landing or taxi light on.
+    when: Taxi, take-off and landing at night.
+    actions:
+      - { name: 'Landing/Taxi Light LNDG/OFF/TAXI', label: 'Landing/taxi light: step' }
+      - { name: 'Landing/Taxi Light TAXI/OFF/LNDG', label: 'Landing/taxi light: step back' }
+
+  - id: anti-collision
+    title: Anti-collision lights
+    tier: nice
+    place: panel
+    role: panel
+    what: Turns the anti-collision lights on and off.
+    when: Start-up, and off in formation at night or in combat.
+    actions:
+      - { name: 'Anti-collision Lights ON/OFF', label: 'Anti-collision lights: toggle' }
+
+  - id: jettison
+    title: Emergency jettison
+    tier: nice
+    place: panel
+    role: panel
+    what: Drops all external stores at once.
+    when: Emergencies only, such as an engine failure on take-off.
+    actions:
+      - { name: 'Emergency Jettison Button', label: 'Emergency jettison' }
+
+  - id: throttle-idle
+    title: Throttle to idle / off
+    tier: nice
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Moves a throttle between OFF and IDLE, over the detent.
+    when: Start-up (to IDLE) and shutdown (to OFF).
+    actions:
+      - { name: 'Throttle (Left) - OFF/IDLE', label: 'Left throttle: OFF / IDLE' }
+      - { name: 'Throttle (Right) - OFF/IDLE', label: 'Right throttle: OFF / IDLE' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Zooms the view in and out, to read gauges or spot aircraft.
+    when: Reading small displays and spotting traffic.
+    actions:
+      - { name: 'Zoom View', label: 'Zoom (axis)' }
+      - { name: 'Zoom in slow', label: 'Zoom in' }
+      - { name: 'Zoom out slow', label: 'Zoom out' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's frequencies, waypoints and notes.
+    when: Before start-up and whenever you need a frequency.
+    actions:
+      - { name: 'Kneeboard ON/OFF', label: 'Kneeboard on/off' }
+
+  - id: canopy
+    title: Canopy
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens and closes the canopy.
+    when: Before start-up and after shutdown.
+    actions:
+      - { name: 'Canopy - OPEN/CLOSE', label: 'Canopy: open/close' }
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Ejects from the jet.
+    when: Only when the jet cannot be saved.
+    actions:
+      - { name: 'Eject', label: 'Eject' }

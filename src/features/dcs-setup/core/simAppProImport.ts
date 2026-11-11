@@ -1,11 +1,6 @@
 import { z } from 'zod';
-import {
-  KNOWN_AIRCRAFT,
-  type AircraftScreens,
-  type DesktopDisplay,
-  type Placement,
-  type Rect,
-} from './screens';
+import { builtInCatalog, type CatalogEntry } from './cockpitDisplays';
+import { type AircraftScreens, type DesktopDisplay, type Placement, type Rect } from './screens';
 
 /**
  * Reads SimAppPro's MFD plan (%APPDATA%\SimAppPro\GameExtendDisplay\MFD\DCS_config.json,
@@ -160,17 +155,21 @@ export function importSimAppPro(
   return { ok: true, plan: { aircraft, mainDisplayIds, unmatched, catalog } };
 }
 
-/** Known aircraft plus whatever SimAppPro knows, without duplicates. */
+/**
+ * The aircraft the editor offers (the installed ones, core/cockpitDisplays.ts, or the
+ * built-in table) plus what SimAppPro's plan knows, without duplicates. When the installed
+ * units are known, SimAppPro's other aircraft (modules not on this PC) are left out.
+ */
 export function aircraftCatalog(
-  simAppPro: SimAppProPlan['catalog'] = []
-): { unit: string; label: string; displays: string[] }[] {
-  const out = KNOWN_AIRCRAFT.map((a) => ({
-    unit: a.unit,
-    label: a.label,
-    displays: a.displays.map((d) => d.name),
-  }));
+  simAppPro: SimAppProPlan['catalog'] = [],
+  base: CatalogEntry[] = builtInCatalog(),
+  installed?: Set<string>
+): CatalogEntry[] {
+  const out = base.map((a) => ({ ...a, displays: [...a.displays] }));
   for (const entry of simAppPro) {
-    if (!out.some((a) => a.unit === entry.unit) && entry.displays.length > 0) out.push(entry);
+    if (entry.displays.length === 0 || out.some((a) => a.unit === entry.unit)) continue;
+    if (installed && installed.size > 0 && !installed.has(entry.unit)) continue;
+    out.push(entry);
   }
   return out.sort((a, b) => a.label.localeCompare(b.label));
 }

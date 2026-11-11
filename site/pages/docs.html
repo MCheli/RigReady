@@ -1,9 +1,28 @@
 <div class="wrap docs">
   <nav class="docs-nav" aria-label="Documentation">
-    <details class="docs-toc" open>
+    <div class="docs-search" role="search" data-index="/docs/search.json" hidden>
+      <label class="visually-hidden" for="docs-q">Search the docs</label>
+      <input
+        id="docs-q"
+        type="search"
+        placeholder="Search the docs"
+        autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="go"
+        aria-controls="docs-results"
+      />
+      <kbd class="docs-search-key" aria-hidden="true">/</kbd>
+      <p class="visually-hidden" id="docs-search-status" aria-live="polite"></p>
+      <div class="docs-results" id="docs-results" hidden></div>
+    </div>
+    <details class="docs-toc" id="docs-contents" open>
       <summary>Contents</summary>
-      {{SIDEBAR}}
+      <div class="docs-toc-body">{{SIDEBAR}}</div>
     </details>
+    <script>
+      if (matchMedia('(max-width: 900px)').matches)
+        document.currentScript.previousElementSibling.open = false;
+    </script>
   </nav>
   <article class="prose">
     {{CRUMBS}} {{ARTICLE}} {{PAGER}}

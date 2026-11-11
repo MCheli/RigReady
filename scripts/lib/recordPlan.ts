@@ -156,6 +156,11 @@ export const PLACEHOLDER_FILES: { root: RecordRoot; path: string }[] = [
   { root: 'programFiles', path: 'Fanatec\\FanatecService\\Service\\FanatecService.exe' },
   { root: 'programFiles', path: 'Elgato\\StreamDeck\\StreamDeck.exe' },
   { root: 'localAppData', path: 'SimAppPro\\SimAppPro.exe' },
+  // Assetto Corsa EVO's settings (Saved Games\ACE since build 0.5.2) are binary: only
+  // their presence is recorded, so the folder is found and offered for backup.
+  { root: 'savedGames', path: 'ACE\\input_devices.inputdeviceconfiguration' },
+  { root: 'savedGames', path: 'ACE\\input_settings.inputsettings' },
+  { root: 'savedGames', path: 'ACE\\video.videosettings' },
 ];
 
 export interface RegistrySource {
