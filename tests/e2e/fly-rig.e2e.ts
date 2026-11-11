@@ -83,6 +83,13 @@ test('rig: the monitors are drawn to scale and the devices are chips; a problem 
     'USB_Monitor (2 of 3): rotated 0°, expected 90°',
     'DELL G3223D is off',
   ]);
+  // A box too narrow for its name carries a letter, and the key under the drawing says whose.
+  await expect(page.getByTestId('rig-monitor')).toHaveText(['LC49G95T', 'A', 'B', 'C']);
+  await expect(page.getByTestId('rig-key').locator('li')).toHaveText([
+    'A USB_Monitor (1 of 3)',
+    'B USB_Monitor (2 of 3)',
+    'C USB_Monitor (3 of 3)',
+  ]);
   await expect(page.getByTestId('rig-monitors')).toHaveAttribute('data-state', 'fail');
   await expect(page.getByTestId('rig-desk')).toHaveAttribute(
     'aria-label',

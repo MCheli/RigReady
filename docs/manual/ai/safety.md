@@ -8,7 +8,7 @@ An assistant works in your name, on your rig. RigReady keeps the same safeguards
 
 ## RigReady asks you, in its own window
 
-When an assistant wants to change the rig or launch a game, RigReady's window comes forward and asks: "Claude Code asks: Change the rig: Make DCS F/A-18C ready". **Allow** runs it; **No** stops it, and the assistant is told you said no. A question nobody answers within a minute is a no. The assistant cannot answer for you.
+When an assistant wants to change the rig or launch a game, RigReady's window comes forward and asks: "Claude Code asks to change the rig: Make DCS F/A-18C ready". A setup is named by its name, whichever way the assistant named it. When an assistant calls one of the app's channels directly, the question says in a sentence what that channel does, with the call itself in small type under it. **Allow** runs it; **No** stops it, and the assistant is told you said no. A question nobody answers within a minute is a no. The assistant cannot answer for you.
 
 ![RigReady asks before an assistant makes the rig ready](../../../artifacts/screens/mcp-settings/04-question.png)
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { drawDesk } from './rigDrawing';
+import { drawDesk, keyLetters, ROOM_FOR_NAME } from './rigDrawing';
 
 const monitor = (
   id: string,
@@ -60,6 +60,26 @@ describe('the monitors drawn to scale', () => {
     const drawing = drawDesk([monitor('only', 0, 0, 1920, 1080)], 300, 86)!;
     expect(drawing.height).toBe(86);
     expect(drawing.width).toBeCloseTo(86 * (1920 / 1080), 0);
+  });
+
+  it('gives a letter to every box too narrow for its name, in the order they are drawn', () => {
+    // The desk arrangement of the dry run of 11 Nov 2026: only the ultrawide had room for a name.
+    const desk = [
+      monitor('wide', -5120, 0, 5120, 1440),
+      monitor('dell', 0, 0, 2560, 1440),
+      monitor('mfd1', 2560, 0, 1024, 768),
+      monitor('mfd2', 3584, 0, 1024, 768),
+      monitor('mfd3', 4608, 0, 1024, 768),
+    ];
+    const drawing = drawDesk(desk, 330, 96)!;
+    expect(drawing.boxes[0]!.width).toBeGreaterThanOrEqual(ROOM_FOR_NAME);
+    expect(drawing.boxes[1]!.width).toBeLessThan(ROOM_FOR_NAME);
+    expect(keyLetters(drawing.boxes)).toEqual([undefined, 'A', 'B', 'C', 'D']);
+    // Every box with room for its name: no letters, so no key.
+    expect(keyLetters([{ width: 200 }, { width: 80 }])).toEqual([undefined, undefined]);
+    // More narrow boxes than letters: they go on as numbers.
+    const many = keyLetters(Array.from({ length: 28 }, () => ({ width: 10 })));
+    expect(many.slice(24)).toEqual(['Y', 'Z', '27', '28']);
   });
 
   it('with no monitor on there is nothing to draw', () => {

@@ -141,16 +141,20 @@ export class Pairings {
     return matchToken(data.value.pairings, token);
   }
 
-  /** Records a call under a pairing. Best effort: a failure to write is not the call's problem. */
-  async noteCall(id: string): Promise<void> {
+  /**
+   * Records a call under a pairing, and says whether there was one to record it under. Best
+   * effort: a failure to write is not the call's problem.
+   */
+  async noteCall(id: string): Promise<boolean> {
     // The built-in assistant has no pairing: nothing to note, and nothing is written.
     const current = await this.store.read();
-    if (!current.ok || !current.value.pairings.some((p) => p.id === id)) return;
-    await this.store.update((current) => ({
+    if (!current.ok || !current.value.pairings.some((p) => p.id === id)) return false;
+    const written = await this.store.update((current) => ({
       ...current,
       pairings: current.pairings.map((p) =>
         p.id === id ? { ...p, lastUsedAt: this.clock.now().toISOString(), calls: p.calls + 1 } : p
       ),
     }));
+    return written.ok;
   }
 }

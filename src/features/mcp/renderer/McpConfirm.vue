@@ -71,10 +71,14 @@ onBeforeUnmount(() => {
 <template>
   <v-dialog :model-value="current !== undefined" max-width="480" persistent>
     <v-card v-if="current" data-testid="mcp-question">
-      <v-card-title>{{ current.client }} asks</v-card-title>
+      <v-card-title class="text-wrap">
+        {{ current.client }} asks to
+        {{ current.tier === 'launch' ? 'launch a game' : 'change the rig' }}
+      </v-card-title>
       <v-card-text>
-        <p class="mb-2" data-testid="mcp-question-summary">
-          {{ current.tier === 'launch' ? 'Launch' : 'Change the rig' }}: {{ current.summary }}
+        <p class="mcp-ask" data-testid="mcp-question-summary">{{ current.summary }}</p>
+        <p v-if="current.detail" class="rr-mono mcp-ask-call" data-testid="mcp-question-detail">
+          {{ current.detail }}
         </p>
         <p class="rr-row-sub">
           Files RigReady changes are backed up first and can be undone on the Safety page. Without
@@ -105,3 +109,20 @@ onBeforeUnmount(() => {
     <template v-if="done">{{ done.client }}: {{ done.summary }}. {{ done.message }}</template>
   </v-snackbar>
 </template>
+
+<style scoped>
+/* What is asked, in words: the line the answer is about. */
+.mcp-ask {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--rr-text);
+  overflow-wrap: anywhere;
+}
+/* The call as the assistant made it, for whoever wants to see exactly what would run. */
+.mcp-ask-call {
+  margin: -2px 0 10px;
+  color: var(--rr-muted);
+  overflow-wrap: anywhere;
+}
+</style>

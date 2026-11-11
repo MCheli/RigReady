@@ -253,8 +253,29 @@ Header (159 bytes), then a `LRTC` chunk with the records:
 | +8 | u32 | binding type: `0` unbound, `1` joystick axis, `2` joystick button, `4` keyboard |
 | type 1 (axis) | | `+12` u32 iRacing axis index (matches `joyCalib.yaml` `Axis`); `+16` u32 0; **`+20` instance GUID (16 B)**; **`+36` product GUID (16 B)**; `+52` u32 direction (`SteerRight` = 1, `SteerLeft` = 0) |
 | type 2 (button) | | `+12` 16-byte button **bitmask** (bit n = DirectInput button n; `Gear1` = `0x2000` = button 13, `ShiftUp` = `0x10` = button 4, `Reset` = `0x02000000` = button 25); **`+36` instance GUID**; **`+52` product GUID** |
-| type 4 (key) | | `+12` u32 key code. Letters, digits, arrows (`0x25–0x28`) and Pause (`0x13`) are Windows virtual-key codes. F-keys appear as `0xC5–0xD0` **[?]**. Byte `+18` holds modifiers (`AutoFFB` has `0x0C` there) **[?]**. |
+| type 4 (key) | | `+12` u32 key code. iRacing has its own key codes: see "Key codes" below **[V]**. Byte `+18` holds modifiers (`AutoFFB` has `0x0C` there) **[?]**. |
 
+**Key codes [V, 2026-11-11].** The simulator program (`iRacingSim64DX11.exe`, the build of April 2026 installed here) holds a table of 16-byte entries, a u32 code followed by a short name. Read from the file, never changed. Every keyboard binding in the recorded `controls.cfg` (166 of them) has its code in this table.
+
+| Code | iRacing's name | Key |
+|---|---|---|
+| 8, 9, 13, 19, 20, 27, 32 | `BKSP` `TAB` `ENTER` `PAUSE` `CAPLK` `ESC` `SPACE` | as Windows virtual-key codes |
+| 16, 17, 18 | `LSHFT` `LCTRL` `LALT` | left Shift, Ctrl, Alt |
+| 33 to 40, 44, 45, 46 | `PGUP` `PGDN` `END` `HOME` `LEFT` `UP` `RIGHT` `DOWN` `PRSCR` `INS` `DEL` | as Windows virtual-key codes |
+| 48 to 57, 65 to 90 | `0` to `9`, `A` to `Z` | ASCII |
+| 91, 92, 93 | `LWIN` `RWIN` `MENU` | |
+| 96 to 127 | ``! " # $ % & ' ( ) * + , - . / : ; < = > ? @ [  ] ^ _ ` { | } ~`` | punctuation, in this order (`=` is 114, `-` 108, `[` 118, `]` 120, `;` 112) |
+| 128 to 172 | `¡¢£¤¥¦§¨ªº²³´µ¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖÙÚÛÜÝßÿ` | characters of other keyboard layouts, in this order |
+| 12 | `KP_5` | number pad 5 |
+| 176 to 185 | `KPGUP` `KPGDN` `KEND` `KHOME` `KLEFT` `KUP` `KRITE` `KDOWN` `KINS` `KDEL` | number pad 9, 3, 1, 7, 4, 8, 6, 2, 0 and `.` |
+| 186 to 190 | `KSLSH` `KSTAR` `KMNUS` `KPLUS` `KENTR` | number pad `/`, `*`, `-`, `+`, Enter |
+| 191 to 196 | `BKTAB` `RSHFT` `RCTRL` `RALT` `NUMLK` `SCRLK` | |
+| 197 to 212 | `F1` to `F16` | |
+| 213 to 217, 224, 225 | `BBack` `BFwd` `BRef` `BStop` `BSearch` `BFav` `BHome` | browser keys |
+| 226 to 233 | `VMute` `VDown` `VUp` `MNext` `MPrev` `MStop` `MPlay` `LMail` | volume and media keys |
+| 240, 241, 242 | `LMS` `LApp1` `LApp2` | media select, app keys |
+
+The replay keys of the recorded file sit on the number pad: start and end on 7 and 1, a frame back and forward on 4 and 6, play and pause on 5. `src/features/racing/core/iracing/labels.ts` names keys from this table and shows a code it does not hold as its number.
 Excerpt (the `Throttle` record, bound to Accelerator, axis 2 of the DD2):
 
 ```

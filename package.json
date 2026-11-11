@@ -1,6 +1,6 @@
 {
   "name": "rigready",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0-beta.4",
   "description": "Verifies a sim rig is ready, fixes what is not, and launches the game",
   "main": "dist/main/index.js",
   "scripts": {

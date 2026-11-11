@@ -185,6 +185,126 @@ test('dcs-setup: screens are imported from SimAppPro, written as RigReady.lua an
   await shot('moved-to-main');
 });
 
+/**
+ * The texts of the screen map that lie on top of each other or under a viewport, as "a / b".
+ * Each text is measured as drawn: what a parent cuts off does not count.
+ */
+const mapClashes = (page: Page): Promise<string[]> =>
+  page.getByTestId('screen-map').evaluate((root) => {
+    // (The specs are compiled without the browser's own types.)
+    interface Edges {
+      left: number;
+      top: number;
+      right: number;
+      bottom: number;
+    }
+    interface Node {
+      textContent: string | null;
+      parentElement: Node | null;
+      contains(other: Node): boolean;
+      closest(selector: string): Node | null;
+      getAttribute(name: string): string | null;
+      getBoundingClientRect(): Edges;
+      querySelectorAll(selector: string): Iterable<Node>;
+    }
+    const { document, getComputedStyle } = globalThis as unknown as {
+      document: {
+        createRange(): { selectNodeContents(node: Node): void; getClientRects(): Iterable<Edges> };
+      };
+      getComputedStyle(node: Node): { overflow: string };
+    };
+    const map = root as unknown as Node;
+    const seen = (el: Node): Edges[] => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const out: Edges[] = [];
+      for (const r of range.getClientRects()) {
+        let box = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+        for (let p = el.parentElement; p && map.contains(p); p = p.parentElement) {
+          if (getComputedStyle(p).overflow === 'visible') continue;
+          const c = p.getBoundingClientRect();
+          box = {
+            left: Math.max(box.left, c.left),
+            top: Math.max(box.top, c.top),
+            right: Math.min(box.right, c.right),
+            bottom: Math.min(box.bottom, c.bottom),
+          };
+        }
+        if (box.right - box.left >= 1 && box.bottom - box.top >= 1) out.push(box);
+      }
+      return out;
+    };
+    // Two lines of one text touch by a pixel or two (a letter box is taller than its line).
+    const meet = (a: Edges, b: Edges): boolean =>
+      a.left < b.right - 0.5 &&
+      b.left < a.right - 0.5 &&
+      a.top < b.bottom - 3 &&
+      b.top < a.bottom - 3;
+    const said = (el: Node): string => (el.textContent ?? '').trim();
+    const texts = [
+      ...map.querySelectorAll(
+        '.smap-display-name, .smap-display-size, .smap-box-monitor-name, .smap-box-label, .smap-box-name'
+      ),
+    ].map((el) => ({ el, rects: seen(el) }));
+    const clashes: string[] = [];
+    // No two texts on top of each other.
+    texts.forEach((one, i) => {
+      for (const other of texts.slice(i + 1))
+        if (one.rects.some((a) => other.rects.some((b) => meet(a, b))))
+          clashes.push(`${said(one.el)} / ${said(other.el)}`);
+    });
+    // No monitor name or size under a viewport.
+    for (const { el, rects } of texts) {
+      if (!el.closest('.smap-caption')) continue;
+      for (const box of map.querySelectorAll('[data-testid="screen-map-box"]')) {
+        const under = box.getBoundingClientRect();
+        if (rects.some((a) => meet(a, under)))
+          clashes.push(`${said(el)} / under ${box.getAttribute('data-name')}`);
+      }
+    }
+    return clashes;
+  });
+
+test('dcs-setup: a monitor name on the screen map never lies under a viewport or over its text', async ({
+  rig,
+}) => {
+  const run = await rig.launch('dcs-setup-flying', 'dcs-setup-screen-names');
+  const { page, shot } = run;
+  await openDcs(page, 'screens');
+  await expect(page.getByTestId('screen-map-box')).toHaveCount(3);
+  const names = page.getByTestId('screen-map-display-name');
+  const left = page.locator('[data-testid="screen-map-box"][data-name="LEFT_MFCD"]');
+  // The left DDI is on the second of the three small screens.
+  const leftMonitor = page.locator(
+    '[data-testid="screen-map-display"][data-name="USB_Monitor (2 of 3)"]'
+  );
+  // Every monitor is named once, wherever its name is drawn.
+  await expect(names).toHaveCount(4);
+  // The top of each small screen is cropped off: its name has that room to itself.
+  await expect(leftMonitor.getByTestId('screen-map-display-name')).toHaveText(
+    'USB_Monitor (2 of 3)'
+  );
+  await expect(left.getByTestId('screen-map-display-name')).toHaveCount(0);
+  await expect.poll(() => mapClashes(page)).toEqual([]);
+  await shot('above-the-viewport');
+
+  // With nothing cropped off, the viewport covers its monitor from the top: it shows the name.
+  await page.locator('[data-testid="screens-crop-LEFT_MFCD-top"] input').fill('0');
+  await expect(left.getByTestId('screen-map-display-name')).toHaveText('USB_Monitor (2 of 3)');
+  await expect(leftMonitor.getByTestId('screen-map-display-name')).toHaveCount(0);
+  await expect(left).toContainText('LEFT_MFCD');
+  await expect(names).toHaveCount(4);
+  await expect.poll(() => mapClashes(page)).toEqual([]);
+  await shot('inside-the-viewport');
+
+  // The file SimAppPro wrote, with its own view over the main screen.
+  await page.getByTestId('screens-view-wwtMonitor').click();
+  await expect(page.getByTestId('screen-map-box')).toHaveCount(4);
+  await expect(names).toHaveCount(4);
+  await expect.poll(() => mapClashes(page)).toEqual([]);
+  await shot('simapppro-file');
+});
+
 test('dcs-setup: the screen editor offers every installed aircraft with the displays its cockpit scripts name, starting on the setup in use', async ({
   rig,
 }) => {

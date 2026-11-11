@@ -15,6 +15,7 @@ import {
   renderFeatureReference,
 } from './catalogue';
 import { channelInputFrom, inputJsonSchema, takesNoInput } from './jsonSchema';
+import { plainLine } from './dispatch';
 import { channelOfToolName, channelToolName } from './names';
 import { annotationsFor, gateDecision, tierOf } from './tiers';
 
@@ -112,6 +113,30 @@ describe('MCP-001 every channel of every contract becomes one tool, from the con
     });
     expect(guided.tools.map((t) => t.kind)).toEqual(['builtin', 'builtin']);
     expect(guided.reference.length).toBe(channels.length);
+  });
+
+  it('every channel the user can be asked about has a sentence to ask with', () => {
+    expect(plainLine('Deletes a setup. It cannot be undone.')).toBe('Deletes a setup');
+    expect(plainLine('  Starts the game  ')).toBe('Starts the game');
+    expect(plainLine('Is it on? Yes.')).toBe('Is it on?');
+    expect(plainLine(undefined)).toBeUndefined();
+    expect(plainLine(' . ')).toBeUndefined();
+    const asked = contracts().flatMap((c) =>
+      Object.entries(c.channels)
+        .filter(([, def]) => ['change', 'launch'].includes(tierOf(def)))
+        .map(([key, def]) => ({
+          channel: `${c.feature}:${key}`,
+          line: plainLine(def.meta?.describe),
+        }))
+    );
+    expect(asked.length).toBeGreaterThan(100);
+    for (const { channel, line } of asked) {
+      // In words (not the channel's own name), and short enough for the question to show whole.
+      expect(line, channel).toBeDefined();
+      expect(line!.length, channel).toBeGreaterThan(15);
+      expect(line!.length, channel).toBeLessThanOrEqual(200);
+      expect(line!, channel).toMatch(/^[A-Z]/);
+    }
   });
 
   it('a channel that would hand an assistant a secret is off', () => {

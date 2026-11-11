@@ -305,4 +305,27 @@ describe('node platform', () => {
     await raw.remove(path.join(dir, 'x', 'a.txt'));
     expect(await raw.exists(path.join(dir, 'x', 'a.txt'))).toBe(false);
   });
+
+  it('NodeRawFs puts a file in place though something has it open for a moment, and leaves nothing behind when it cannot', async () => {
+    const raw = new NodeRawFs();
+    const file = path.join(dir, 'held', 'mcp.json');
+    await raw.writeBytes(file, 'first');
+    // Windows refuses to replace a file that is open, for reading too. A page that read a file
+    // the moment it was written cost an assistant's pairing the count of a call this way.
+    const reader = await fs.open(file, 'r');
+    const released = new Promise<void>((resolve) => {
+      setTimeout(() => void reader.close().then(resolve), 40);
+    });
+    await raw.writeBytes(file, 'second');
+    await released;
+    expect(await fs.readFile(file, 'utf8')).toBe('second');
+    expect(await raw.exists(`${file}.rigready-tmp`)).toBe(false);
+
+    // A write that can never be put in place fails, and takes its half-written copy away.
+    const folder = path.join(dir, 'held', 'a-folder');
+    await fs.mkdir(folder);
+    await expect(new NodeRawFs([1, 1]).writeBytes(folder, 'x')).rejects.toThrow();
+    expect(await raw.exists(`${folder}.rigready-tmp`)).toBe(false);
+    expect((await raw.stat(folder))?.isDirectory).toBe(true);
+  });
 });

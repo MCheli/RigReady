@@ -92,6 +92,16 @@ async function targetSetup(ctx: McpCallContext, asked?: string): Promise<Result<
   return ok(active);
 }
 
+/**
+ * A setup as a question names it: by its name, whichever way the assistant named it. One
+ * that cannot be found is named as it was asked for; the call then says why it cannot run.
+ */
+async function setupLabel(ctx: McpCallContext, asked?: string): Promise<string> {
+  const setup = await targetSetup(ctx, asked);
+  if (setup.ok) return setup.value.name;
+  return asked !== undefined && asked.trim() !== '' ? `"${asked.trim()}"` : 'the setup in use';
+}
+
 const ItemOut = z.object({
   itemId: z.string(),
   title: z.string(),
@@ -191,7 +201,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     }),
     output: ReportOut,
     tier: 'read',
-    summarize: (input) => `Check ${input.setup ?? 'the setup in use'}`,
+    summarize: async (input, ctx) => `Check ${await setupLabel(ctx, input.setup)}`,
     run: async (input, ctx) => {
       const setup = await targetSetup(ctx, input.setup);
       if (!setup.ok) return setup;
@@ -293,7 +303,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
       ),
     }),
     tier: 'change',
-    summarize: (input) => `Make ${input.setup ?? 'the setup in use'} ready`,
+    summarize: async (input, ctx) => `Make ${await setupLabel(ctx, input.setup)} ready`,
     run: async (input, ctx) => {
       const setup = await targetSetup(ctx, input.setup);
       if (!setup.ok) return setup;
@@ -347,7 +357,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
       ),
     }),
     tier: 'launch',
-    summarize: (input) => `Launch ${input.setup ?? 'the setup in use'}`,
+    summarize: async (input, ctx) => `Launch ${await setupLabel(ctx, input.setup)}`,
     run: async (input, ctx) => {
       const setup = await targetSetup(ctx, input.setup);
       if (!setup.ok) return setup;
@@ -395,8 +405,8 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
       steps: z.array(StepOut),
     }),
     tier: 'change',
-    summarize: (input) =>
-      `Stand down ${input.setup ?? 'the setup in use'}${input.closeGame ? ' and close the game' : ''}`,
+    summarize: async (input, ctx) =>
+      `Stand down ${await setupLabel(ctx, input.setup)}${input.closeGame ? ' and close the game' : ''}`,
     run: async (input, ctx) => {
       const setup = await targetSetup(ctx, input.setup);
       if (!setup.ok) return setup;

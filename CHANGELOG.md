@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.0.0-beta.3 (2026-11-12)
+## 2.0.0-beta.4 (2026-11-11)
+
+The third signed test build. Fixed since beta 3, all found by running the test plan against it: on the DCS screen map a monitor's name no longer sits on top of a viewport's; the question RigReady asks before an assistant changes something names a setup by its name, and says in a sentence what a directly called channel does, with the call itself under it; the count of calls beside a paired assistant no longer falls behind the list (on Windows a settings file could not be replaced while the page was reading it; such a write now waits a moment and tries again); iRacing keyboard bindings show the name of the key for the number pad, punctuation, F13 to F16 and the media keys; in the trainer the control asked for stands out from switches that are simply left on; the Play screen's drawing of the monitors names every monitor, small ones by a letter and a key. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
+
+## 2.0.0-beta.3 (2026-11-11)
 
 The second signed test build. New since beta 2: binding guides for 27 DCS aircraft; MFD screen setup for every installed aircraft that exports displays; named controls and drawings for the Thrustmaster Warthog, T.16000M and Saitek X52 Pro; 13 more games (MSFS 2020, X-Plane 12 and 11, IL-2, Falcon BMS, ACC, rFactor 2, AMS2, EA WRC, F1 24 and 25, DiRT Rally 2.0, RaceRoom, ACE COMBAT 8); a Wheel page for every major wheelbase brand; an Assetto Corsa controller repair; about 60 more devices recognised; the built-in assistant on every screen with OpenAI, Gemini, OpenRouter, Mistral and local models as well as Anthropic; one-button connection for AI assistants over MCP; a virtual controller for gamepad-only games and emulators; links from every screen to its manual page. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
 

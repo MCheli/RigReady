@@ -1,3 +1,4 @@
+import type { McpCallContext } from '../../../core/mcp';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChannelDef, ChannelTier } from '../../../shared/ipc';
 import {
@@ -27,6 +28,18 @@ export interface DispatchDeps {
   channelDef(channel: string): ChannelDef | undefined;
 }
 
+/**
+ * What a channel does, as the line of a question: the first sentence its contract describes
+ * it with, without the full stop. Undefined for a channel with no description.
+ */
+export function plainLine(describe: string | undefined): string | undefined {
+  const first = describe
+    ?.trim()
+    .split(/(?<=[.!?])\s/)[0]
+    ?.replace(/[.\s]+$/, '');
+  return first ? first : undefined;
+}
+
 function channelCall(
   deps: DispatchDeps,
   channel: string,
@@ -36,11 +49,16 @@ function channelCall(
 ): ToolCall {
   const def = deps.channelDef(channel);
   const input = def ? channelInputFrom(def.input, args) : args;
+  // The call as it was made. It used to be the whole question ('safety:undo {"groupId":...}').
+  const made = `${channel}${input === undefined ? '' : ` ${JSON.stringify(input).slice(0, 120)}`}`;
+  const plain = plainLine(def?.meta?.describe);
   return {
     tool,
     tier,
     channel,
-    summary: `${channel}${input === undefined ? '' : ` ${JSON.stringify(input).slice(0, 120)}`}`,
+    // In words where the channel has them, with the call itself kept in sight under them.
+    summary: plain ?? made,
+    ...(plain ? { detail: made } : {}),
     work: async (c) => c.invoke(channel, input),
   };
 }
@@ -56,11 +74,13 @@ export function planToolCall(spec: ToolSpec, args: unknown, deps: DispatchDeps):
     if (!parsed.success) {
       return err('mcp.input', `Invalid arguments for ${spec.name}.`, parsed.error.message);
     }
-    const summary = curated.summarize ? curated.summarize(parsed.data) : curated.title;
+    const summarize = curated.summarize;
     return ok({
       tool: spec.name,
       tier: spec.tier,
-      summary,
+      // The title, until the gate has the tool's own line worked out (it may look a name up).
+      summary: curated.title,
+      ...(summarize ? { describe: async (c: McpCallContext) => summarize(parsed.data, c) } : {}),
       work: async (c) => {
         const result = await curated.run(parsed.data, c);
         if (!result.ok || !curated.output) return result;

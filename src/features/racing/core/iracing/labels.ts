@@ -151,12 +151,22 @@ export function iracingActionGroup(
   return 'Interface and chat';
 }
 
-const VK: Record<number, string> = {
+/**
+ * iRacing's own key codes, as its program lists them (docs/research/racing.md 2.4). Letters,
+ * digits, arrows and the editing keys are Windows virtual-key codes; punctuation is 96 to 127,
+ * the number pad 176 to 190 (and 12 for its 5), F1 to F16 197 to 212.
+ */
+const KEYS: Record<number, string> = {
   8: 'Backspace',
   9: 'Tab',
   12: 'Num 5',
   13: 'Enter',
+  16: 'Left Shift',
+  17: 'Left Ctrl',
+  18: 'Left Alt',
   19: 'Pause',
+  20: 'Caps Lock',
+  27: 'Esc',
   32: 'Space',
   33: 'Page Up',
   34: 'Page Down',
@@ -169,27 +179,78 @@ const VK: Record<number, string> = {
   44: 'Print Screen',
   45: 'Insert',
   46: 'Delete',
+  91: 'Left Win',
+  92: 'Right Win',
+  93: 'Menu',
+  176: 'Num 9',
+  177: 'Num 3',
+  178: 'Num 1',
+  179: 'Num 7',
+  180: 'Num 4',
+  181: 'Num 8',
+  182: 'Num 6',
+  183: 'Num 2',
+  184: 'Num 0',
+  185: 'Num .',
+  186: 'Num /',
+  187: 'Num *',
+  188: 'Num -',
+  189: 'Num +',
+  190: 'Num Enter',
+  191: 'Back Tab',
+  192: 'Right Shift',
+  193: 'Right Ctrl',
+  194: 'Right Alt',
+  195: 'Num Lock',
+  196: 'Scroll Lock',
+  213: 'Browser Back',
+  214: 'Browser Forward',
+  215: 'Browser Refresh',
+  216: 'Browser Stop',
+  217: 'Browser Search',
+  224: 'Browser Favorites',
+  225: 'Browser Home',
+  226: 'Volume Mute',
+  227: 'Volume Down',
+  228: 'Volume Up',
+  229: 'Next Track',
+  230: 'Previous Track',
+  231: 'Media Stop',
+  232: 'Play/Pause',
+  233: 'Mail',
+  240: 'Media Select',
+  241: 'App 1',
+  242: 'App 2',
 };
 
+/** Codes 96 to 127: the punctuation keys, in iRacing's order. */
+const PUNCTUATION = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
+/** Codes 128 to 172: the letters and signs of other keyboard layouts, in iRacing's order. */
+const OTHER_LAYOUTS = '¡¢£¤¥¦§¨ªº²³´µ¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖÙÚÛÜÝßÿ';
+
+function keyName(keyCode: number): string {
+  if ((keyCode >= 48 && keyCode <= 57) || (keyCode >= 65 && keyCode <= 90)) {
+    return String.fromCharCode(keyCode);
+  }
+  if (keyCode >= 197 && keyCode <= 212) return `F${keyCode - 196}`;
+  const named =
+    KEYS[keyCode] ??
+    (keyCode >= 96 ? PUNCTUATION[keyCode - 96] : undefined) ??
+    (keyCode >= 128 ? OTHER_LAYOUTS[keyCode - 128] : undefined);
+  // A code iRacing's own table does not have is shown as its number.
+  return named ?? `Key ${keyCode}`;
+}
+
 /**
- * Key names for iRacing's key codes. Letters, digits, arrows and the editing keys are
- * Windows virtual-key codes; F1 to F12 appear as 197 to 208. Modifier bits are read as
+ * The key of an iRacing keyboard binding, with its modifiers. Modifier bits are read as
  * Shift 0x03, Ctrl 0x0C, Alt 0x30 (inferred from iRacing's documented defaults such as
- * Ctrl+Alt+Shift+S for a screenshot). Anything else is shown as its number.
+ * Ctrl+Alt+Shift+S for a screenshot).
  */
 export function iracingKeyLabel(keyCode: number, modifiers: number): string {
-  let key: string;
-  if ((keyCode >= 48 && keyCode <= 57) || (keyCode >= 65 && keyCode <= 90)) {
-    key = String.fromCharCode(keyCode);
-  } else if (keyCode >= 197 && keyCode <= 208) {
-    key = `F${keyCode - 196}`;
-  } else {
-    key = VK[keyCode] ?? `Key ${keyCode}`;
-  }
   const parts: string[] = [];
   if (modifiers & 0x0c) parts.push('Ctrl');
   if (modifiers & 0x30) parts.push('Alt');
   if (modifiers & 0x03) parts.push('Shift');
-  parts.push(key);
+  parts.push(keyName(keyCode));
   return parts.join('+');
 }

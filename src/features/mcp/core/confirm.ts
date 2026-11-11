@@ -14,6 +14,8 @@ export const ConfirmRequestSchema = z.object({
   tool: z.string(),
   /** What it would do, in one line. */
   summary: z.string(),
+  /** The call as the assistant made it (a channel and its input), when the line above is in words. */
+  detail: z.string().optional(),
   tier: z.enum(['change', 'launch']),
   /** Seconds until an unanswered question is a no. */
   seconds: z.number().int().min(1),

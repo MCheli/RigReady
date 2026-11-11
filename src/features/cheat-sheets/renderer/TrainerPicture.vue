@@ -87,12 +87,26 @@ onMounted(paint);
     stroke 0.15s ease-out,
     fill 0.15s ease-out;
 }
+/*
+ * A switch that is on stays held for the whole round. On a cheat sheet a held control is lit in
+ * the accent; here that made it look like the answer. It is drawn quietly instead, so that the
+ * control asked for, the one pressed and the one missed are the only ones that stand out.
+ * (These come before the three below: a held control that is one of those takes their look.)
+ */
+.trainer-picture :deep(.cs-ctl.cs-on .cs-card),
+.trainer-picture :deep(.cs-ctl.cs-on .cs-row) {
+  fill: color-mix(in srgb, var(--rr-text) 6%, transparent);
+  stroke: color-mix(in srgb, var(--rr-text) 42%, transparent);
+  stroke-width: 1.2;
+  stroke-dasharray: none;
+}
 .trainer-picture :deep(.cs-ctl.tr-target .cs-card),
 .trainer-picture :deep(.cs-ctl.tr-target .cs-row) {
-  fill: color-mix(in srgb, var(--rr-accent) 22%, transparent);
+  fill: color-mix(in srgb, var(--rr-accent) 34%, transparent);
   stroke: var(--rr-accent);
-  stroke-width: 2.6;
+  stroke-width: 3.2;
   stroke-dasharray: none;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--rr-accent) 85%, transparent));
 }
 .trainer-picture :deep(.cs-ctl.tr-right .cs-card),
 .trainer-picture :deep(.cs-ctl.tr-right .cs-row) {

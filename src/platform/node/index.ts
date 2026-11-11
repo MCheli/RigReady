@@ -33,7 +33,19 @@ import { err, ok, type Result } from '../../core/result';
 
 export const systemClock: Clock = { now: () => new Date() };
 
+/**
+ * How long a write waits, in milliseconds, before each new try at putting its file in place.
+ * Windows refuses to replace a file while anything has it open, for reading too: RigReady's own
+ * page reading a file the moment it is written, a virus scanner, a backup tool. Such a hold
+ * lasts a moment, so the write waits it out (about a second in all) before it gives up.
+ */
+const REPLACE_WAITS: readonly number[] = [5, 10, 20, 40, 80, 160, 320, 400];
+/** What Windows answers while a file is held open by something else. */
+const HELD = new Set(['EPERM', 'EACCES', 'EBUSY']);
+
 export class NodeRawFs implements RawFs {
+  constructor(private readonly replaceWaits: readonly number[] = REPLACE_WAITS) {}
+
   readText(file: string): Promise<string> {
     return fs.readFile(file, 'utf8');
   }
@@ -67,7 +79,20 @@ export class NodeRawFs implements RawFs {
     // Write to a sibling and rename so a crash never leaves a half-written file.
     const temp = `${file}.rigready-tmp`;
     await fs.writeFile(temp, data);
-    await fs.rename(temp, file);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await fs.rename(temp, file);
+        return;
+      } catch (e) {
+        const wait = this.replaceWaits[attempt];
+        if (wait === undefined || !HELD.has((e as NodeJS.ErrnoException).code ?? '')) {
+          // The file stays as it was, and the half of this write that happened is taken away.
+          await fs.rm(temp, { force: true }).catch(() => undefined);
+          throw e;
+        }
+        await new Promise((resolve) => setTimeout(resolve, wait));
+      }
+    }
   }
   async appendText(file: string, text: string): Promise<void> {
     await fs.mkdir(path.dirname(file), { recursive: true });

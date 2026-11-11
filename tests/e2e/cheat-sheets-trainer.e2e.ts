@@ -311,6 +311,71 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await restarted.shot('after-restart');
 });
 
+test('trainer: a switch that stays held is drawn quietly, so the control asked for stands out', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-trainer-held');
+  const { page, shot } = run;
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-cheat-sheets').click();
+  await page.getByTestId('sheet-learn').click();
+  const trainer = page.getByTestId('trainer-page');
+  await trainer.getByTestId('trainer-device').click();
+  await page.getByRole('option', { name: /^Stick · / }).click();
+
+  const controllers = await invoke<Controller[]>(page, 'devices:inputDevices');
+  const deck = await invoke<{ cards: Card[]; devices: { key: string; title: string }[] }>(
+    page,
+    'cheat-sheets:trainerDeck',
+    HORNET
+  );
+  const stickKey = deck.devices.find((d) => d.title === 'Stick')!.key;
+  const answers = deck.cards.flatMap((c) => c.answers.filter((a) => a.deviceKey === stickKey));
+  const stick = controllers.find((c) => c.guid.toUpperCase() === answers[0]!.guid)!;
+  // Three buttons are down before the round starts and stay down, as switches left on do.
+  const resting = [...new Set(answers.map((a) => a.control))]
+    .filter((control) => control.startsWith('button:'))
+    .slice(0, 3);
+  expect(resting).toHaveLength(3);
+  await run.sendInput([stateOf(stick, resting)]);
+  await expect(trainer).toHaveAttribute('data-live', 'true');
+  await trainer.getByTestId('trainer-start').click();
+
+  const card = trainer.getByTestId('trainer-card');
+  const verdict = trainer.getByTestId('trainer-verdict');
+  const picture = trainer.getByTestId('trainer-picture');
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+  // What rests is not taken for an answer.
+  await expect(card.getByTestId('trainer-count')).toHaveText('0 of 10 done');
+  await trainer.getByTestId('trainer-show').click();
+  await expect(verdict).toHaveAttribute('data-phase', 'shown');
+  const target = (await picture.getAttribute('data-target')) ?? '';
+  expect(target).not.toBe('');
+
+  const outline = (control: string) =>
+    picture
+      .locator(
+        `.cs-ctl[data-control="${control}"] .cs-card, .cs-ctl[data-control="${control}"] .cs-row`
+      )
+      .first();
+  // The control asked for: a heavy outline with a glow.
+  await expect(picture.locator(`.cs-ctl[data-control="${target}"]`)).toHaveClass(/tr-target/);
+  await expect(outline(target)).toHaveCSS('stroke-width', '3.2px');
+  await expect(outline(target)).not.toHaveCSS('filter', 'none');
+  // The switches that are simply on: still marked as held, with a thin outline and no glow.
+  const quiet = resting.filter((control) => control !== target);
+  expect(quiet.length).toBeGreaterThanOrEqual(2);
+  for (const control of quiet) {
+    const held = picture.locator(`.cs-ctl[data-control="${control}"]`);
+    await expect(held).toHaveClass(/cs-on/);
+    await expect(held).not.toHaveClass(/tr-target/);
+    await expect(outline(control)).toHaveCSS('stroke-width', '1.2px');
+    await expect(outline(control)).toHaveCSS('filter', 'none');
+  }
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('held-and-shown');
+});
+
 test('trainer: a racing game is asked the same way, on the buttons of the wheel', async ({
   rig,
 }) => {
