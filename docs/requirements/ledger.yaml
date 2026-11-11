@@ -5368,7 +5368,7 @@ requirements:
     evidence:
       - "tests/unit/scenarioMode.test.ts#the recorded rig and the generic rig load, and the scenarios the ledger calls mark-flight, mark-racing and generic-rig exist"
       - "tests/unit/scenarioMode.test.ts#every scenario file starts: its rig exists, every mutation matches something, every profile and data file is there"
-      - "tests/unit/scenarioMode.test.ts#every mutation the ledger names is a scenario file, and that scenario has the effect"
+      - "tests/unit/scenarioMode.test.ts#the ledger names known mutations, and every one has a scenario that shows it"
       - "tests/unit/scenarioMode.test.ts#a live mutation changes the fake machine, notifies device subscribers and the next check sees it"
       - "tests/e2e/nfr.e2e.ts#nfr: a scenario run shows its badge and never touches the real ~/.rigready"
       - "artifacts/screens/nfr-isolation/01-scenario-badge.png"
