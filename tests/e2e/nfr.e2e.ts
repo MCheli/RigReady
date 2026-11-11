@@ -418,6 +418,11 @@ test('nfr: every route of every feature renders, and no visible control is a stu
       let count = 0;
       for (const el of scope.document.querySelectorAll('button, a.v-btn, [role="button"]')) {
         if (!visible(el)) continue;
+        // Part of a labelled field, hidden from assistive technology and out of the tab order
+        // (the open-menu arrow of a combobox): the field is the control, and it has the name.
+        if (el.getAttribute('aria-hidden') === 'true' && el.getAttribute('tabindex') === '-1') {
+          continue;
+        }
         count++;
         const label = (
           el.getAttribute('data-testid') ??
