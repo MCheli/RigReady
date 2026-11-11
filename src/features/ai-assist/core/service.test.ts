@@ -3,7 +3,13 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Logger } from '../../../core/logger';
 import { BINDING_FILES, diffFile, HORNET } from '../../../../tests/dcsBindings';
-import { messageEvents, streamedMessage, streamOf } from '../../../../tests/aiStream';
+import {
+  chatAnswer,
+  chatStream,
+  messageEvents,
+  streamedMessage,
+  streamOf,
+} from '../../../../tests/aiStream';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type {
   AiStatus,
@@ -292,9 +298,13 @@ describe('AI help with a key', () => {
 
     const sonnet = await app.invoke<AiStatus>('ai-assist:setModel', { model: 'claude-sonnet-5-5' });
     expect(sonnet.model).toBe('claude-sonnet-5-5');
-    await expect(app.invoke('ai-assist:setModel', { model: 'gpt-x' })).rejects.toThrow(
-      /Unknown model/
+    // Any model id may be typed (a newer one than RigReady lists); its price is then not known.
+    const typed = await app.invoke<AiStatus>('ai-assist:setModel', { model: 'claude-next-1' });
+    expect(typed.model).toBe('claude-next-1');
+    await expect(app.invoke('ai-assist:setModel', { model: 'not a model id' })).rejects.toThrow(
+      /not a model id/
     );
+    await app.invoke('ai-assist:setModel', { model: 'claude-sonnet-5-5' });
 
     await app.invoke('settings:clearAiKey');
     expect((await app.invoke<AiStatus>('ai-assist:status')).keyPresent).toBe(false);
@@ -765,5 +775,203 @@ describe('a streamed request: progress, cancel, and answers that never complete'
     ]);
     const journal = await app.ports.files.journalGroups();
     expect(journal.ok && journal.value).toEqual([]);
+  });
+});
+
+describe('other providers: OpenAI and OpenAI-compatible servers', () => {
+  const OPENAI_KEY = 'sk-proj-SECRETSECRETSECRET-wxyz';
+  const ROUTER_KEY = 'sk-or-v1-SECRETSECRETSECRET-qrst';
+  const ITEMS = [
+    { actionId: IDS.atc, device: 'dev9', input: 'JOY_BTN7', priority: 'should', reason: 'Thumb.' },
+    { actionId: IDS.gear, device: 'dev10', input: 'JOY_BTN21', priority: 'must', reason: 'Gear.' },
+  ];
+  const status = (): Promise<AiStatus> => app.invoke<AiStatus>('ai-assist:status');
+  const suggest = (): Promise<Prepared> =>
+    app.invoke<Prepared>('ai-assist:prepare', { aircraftId: HORNET, kind: 'suggest' });
+
+  it('OpenAI: its own key, a JSON schema, a streamed answer, and only api.openai.com contacted', async () => {
+    await start();
+    await app.invoke('ai-assist:setProvider', { provider: 'openai' });
+    expect(await status()).toMatchObject({
+      provider: 'openai',
+      ready: false,
+      keyPresent: false,
+      model: 'gpt-6.1-terra',
+      host: 'api.openai.com',
+    });
+    await expect(suggest()).rejects.toThrow(/No OpenAI API key/);
+    const stored = await app.invoke<AiStatus>('ai-assist:setKey', { key: OPENAI_KEY });
+    expect(stored).toMatchObject({ ready: true, keyPresent: true, keyHint: '…wxyz' });
+    expect(JSON.stringify(stored)).not.toContain(OPENAI_KEY);
+    // The Anthropic key and its flag are untouched.
+    expect((await app.ports.secrets.get('anthropic-api-key')).ok).toBe(true);
+    expect(
+      (await app.invoke<{ settings: { aiKeyPresent: boolean } }>('settings:get')).settings
+        .aiKeyPresent
+    ).toBe(false);
+
+    app.ports.http.respond('api.openai.com/v1/models/gpt-6.1-terra', {
+      json: { id: 'gpt-6.1-terra' },
+    });
+    expect(await app.invoke('ai-assist:testKey')).toEqual({
+      valid: true,
+      message: 'The key works with gpt-6.1-terra.',
+    });
+
+    const prepared = await suggest();
+    expect(prepared).toMatchObject({
+      provider: 'OpenAI',
+      host: 'api.openai.com',
+      local: false,
+      retriesOnce: false,
+      streamed: true,
+    });
+    const body = JSON.parse(prepared.body);
+    expect(body.response_format.type).toBe('json_schema');
+    expect(body.stream_options).toEqual({ include_usage: true });
+    expect(prepared.body).not.toContain(OPENAI_KEY);
+    app.ports.http.respond(
+      'api.openai.com/v1/chat/completions',
+      chatStream(planText(ITEMS), {
+        usage: { prompt_tokens: 30000, completion_tokens: 900, cached: 20000 },
+      })
+    );
+    const sent = await app.invoke<Sent>('ai-assist:send', { requestId: prepared.requestId });
+    expect(sent.kind === 'suggest' && sent.suggestions.map((s) => s.actionId)).toEqual([
+      IDS.atc,
+      IDS.gear,
+    ]);
+    expect(sent.usage).toMatchObject({
+      model: 'gpt-6.1-terra',
+      input: 10000,
+      cacheRead: 20000,
+      output: 900,
+    });
+    expect(sent.usage.cost).toBeCloseTo((10000 * 1 + 20000 * 0.05 + 900 * 5) / 1e6, 10);
+    const hosts = new Set(app.ports.http.calls.map((c) => new URL(c.url).host));
+    expect([...hosts]).toEqual(['api.openai.com']);
+    expect(
+      app.ports.http.calls.every((c) => c.headers?.['authorization'] === `Bearer ${OPENAI_KEY}`)
+    ).toBe(true);
+    expect((await allText(app.home)).join('\n')).not.toContain(OPENAI_KEY);
+  });
+
+  it('a local server: no key needed, the schema asked for in the text, and one more try when the answer does not check out', async () => {
+    await start();
+    const ollama = await app.invoke<AiStatus>('ai-assist:setCompatible', { preset: 'ollama' });
+    expect(ollama).toMatchObject({
+      provider: 'compatible',
+      baseUrl: 'http://localhost:11434/v1',
+      model: 'qwen3:8b',
+      host: 'localhost:11434',
+      local: true,
+      keyNeeded: false,
+      ready: true,
+    });
+    expect(ollama.whatIsSent.join(' ')).toContain('a server on this PC');
+    await app.invoke('ai-assist:setCompatible', { structured: 'prompt' });
+    const prepared = await suggest();
+    expect(prepared).toMatchObject({
+      host: 'localhost:11434',
+      local: true,
+      retriesOnce: true,
+      approxCost: null,
+    });
+    expect(JSON.parse(prepared.body)).not.toHaveProperty('response_format');
+    expect(prepared.body).toContain('It must follow this JSON schema');
+
+    // First a chatty answer that is not JSON, then a fenced one that is: the second is used.
+    app.ports.http.scripts.push({
+      match: { url: 'localhost:11434/v1/chat/completions' },
+      times: 1,
+      response: {
+        status: 200,
+        headers: {},
+        stream: chatStream('Sure! Here are some ideas for your Hornet.').stream,
+      },
+    });
+    app.ports.http.respond(
+      'localhost:11434/v1/chat/completions',
+      chatStream('```json\n' + planText(ITEMS) + '\n```', {
+        model: 'qwen3:8b',
+        usage: { prompt_tokens: 100, completion_tokens: 50 },
+      })
+    );
+    const sent = await app.invoke<Sent>('ai-assist:send', { requestId: prepared.requestId });
+    expect(sent.kind === 'suggest' && sent.suggestions).toHaveLength(2);
+    expect(sent.usage).toMatchObject({ model: 'qwen3:8b', cost: null });
+    const calls = app.ports.http.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0]!.body).toBe(calls[1]!.body);
+    expect(calls[0]!.headers).not.toHaveProperty('authorization');
+
+    // Twice not JSON: a plain error, nothing kept.
+    app.ports.http.scripts.length = 0;
+    app.ports.http.respond(
+      'localhost:11434/v1/chat/completions',
+      chatStream('I would rather chat.')
+    );
+    const again = await suggest();
+    await expect(app.invoke('ai-assist:send', { requestId: again.requestId })).rejects.toThrow(
+      /asked for twice/
+    );
+  });
+
+  it('a hosted compatible service: its key is kept for its host only and removed when the address moves', async () => {
+    await start();
+    await expect(
+      app.invoke('ai-assist:setCompatible', { baseUrl: 'http://api.example.com/v1' })
+    ).rejects.toThrow(/Only https addresses/);
+    await app.invoke('ai-assist:setProvider', { provider: 'compatible' });
+    await expect(app.invoke('ai-assist:setKey', { key: ROUTER_KEY })).rejects.toThrow(
+      /address first/
+    );
+    const router = await app.invoke<AiStatus>('ai-assist:setCompatible', { preset: 'openrouter' });
+    expect(router).toMatchObject({ host: 'openrouter.ai', keyNeeded: true, ready: false });
+    await expect(suggest()).rejects.toThrow(/No openrouter.ai API key/);
+    expect(await app.invoke('ai-assist:setKey', { key: ROUTER_KEY })).toMatchObject({
+      ready: true,
+      keyHint: '…qrst',
+    });
+
+    app.ports.http.respond(
+      'openrouter.ai/api/v1/chat/completions',
+      chatAnswer('OK', { model: '~anthropic/claude-sonnet-latest' })
+    );
+    expect(await app.invoke('ai-assist:testKey')).toEqual({
+      valid: true,
+      message: 'openrouter.ai answered, using ~anthropic/claude-sonnet-latest.',
+    });
+    expect(app.ports.http.calls[0]!.headers?.['authorization']).toBe(`Bearer ${ROUTER_KEY}`);
+
+    // Another host: the key is gone, so it can never be sent there.
+    const moved = await app.invoke<AiStatus>('ai-assist:setCompatible', {
+      baseUrl: 'https://api.mistral.ai/v1',
+    });
+    expect(moved).toMatchObject({ host: 'api.mistral.ai', keyPresent: false, ready: false });
+    expect(await app.ports.secrets.get('compatible-api-key')).toEqual({
+      ok: true,
+      value: undefined,
+    });
+    await expect(app.invoke('ai-assist:testKey')).rejects.toThrow(/No api.mistral.ai API key/);
+    expect(app.ports.http.calls).toHaveLength(1);
+  });
+
+  it('the Anthropic key stored here keeps the app settings flag true to the secret', async () => {
+    await start();
+    await app.invoke('ai-assist:setKey', { key: KEY });
+    expect(
+      (await app.invoke<{ settings: { aiKeyPresent: boolean } }>('settings:get')).settings
+        .aiKeyPresent
+    ).toBe(true);
+    expect(await app.ports.secrets.get('anthropic-api-key')).toEqual({ ok: true, value: KEY });
+    await expect(app.invoke('ai-assist:setKey', { key: 'short' })).rejects.toThrow(
+      /does not look like an API key/
+    );
+    await app.invoke('ai-assist:clearKey');
+    expect(
+      (await app.invoke<{ settings: { aiKeyPresent: boolean } }>('settings:get')).settings
+        .aiKeyPresent
+    ).toBe(false);
   });
 });

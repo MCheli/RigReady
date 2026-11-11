@@ -1,0 +1,9 @@
+description: A generic PC with no setups yet and Claude Desktop installed; the MCP server is off and takes any free port
+rig: generic-rig
+data:
+  mcp.json: data/mcp/any-port.json
+mutations:
+  - op: writeFile
+    path: AppData/Roaming/Claude/claude_desktop_config.json
+    content: |
+      {}

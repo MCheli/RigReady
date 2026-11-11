@@ -1,0 +1,41 @@
+description: A Simagic Alpha on a generic PC, with SimPro Manager 2 installed and not running
+rig: generic-rig
+extends: generic-fresh.yaml
+# Synthetic, not recorded: nobody has run RigReady on a real SIMAGIC wheel yet. The USB ids
+# are from docs/research/wheelbases.md; the GUIDs and instance paths are made up.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_0483&PID_0522\7&1c2d3e4f&0&4'
+      vendorId: '0483'
+      productId: '0522'
+      name: 'SIMAGIC Alpha'
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: SIMAGIC
+    controller:
+      name: 'SIMAGIC Alpha'
+      guid: 5D8B3C40-9C41-11F0-8003-444553540000
+      productGuid: 05220483-0000-0000-0000-504944564944
+      vendorId: '0483'
+      productId: '0522'
+      numAxes: 6
+      numButtons: 128
+      numHats: 1
+      axisNames: [X, Y, Z, RX, RY, RZ]
+  - op: setRegistryValue
+    hive: HKLM
+    key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\simpro2'
+    name: DisplayName
+    value: { type: string, value: 'SimPro Manager 2.0.345' }
+  - op: setRegistryValue
+    hive: HKLM
+    key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\simpro2'
+    name: DisplayVersion
+    value: { type: string, value: '2.0.345' }
+  - op: writeFile
+    path: 'Program Files/simpro2/simpro2.exe'
+    content: ''

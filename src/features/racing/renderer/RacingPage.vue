@@ -25,13 +25,18 @@ onMounted(() => {
 });
 onBeforeUnmount(() => off?.());
 
-/** A PC that never had a Fanatec base: none connected, no Fanatec software, no trace of one. */
+/** A PC that never had a wheel base: none connected, no wheel software, no trace of one. */
 const neverHere = computed(
   () =>
     view.value !== undefined &&
     !view.value.wheel.connected &&
     view.value.wheel.lastSeen.length === 0 &&
     view.value.wheel.software.every((s) => !s.ok)
+);
+
+/** The mode is fine when it is the PC one, or when the brand's USB id cannot tell. */
+const modeOk = computed(
+  () => view.value?.wheel.mode === 'pc' || view.value?.wheel.mode === 'unknown'
 );
 
 const ICONS: Record<string, string> = {
@@ -69,7 +74,7 @@ const ICONS: Record<string, string> = {
             <v-icon
               :icon="
                 view.wheel.connected
-                  ? view.wheel.mode === 'pc'
+                  ? modeOk
                     ? 'mdi-check-circle'
                     : 'mdi-alert'
                   : neverHere
@@ -78,7 +83,7 @@ const ICONS: Record<string, string> = {
               "
               :class="
                 view.wheel.connected
-                  ? view.wheel.mode === 'pc'
+                  ? modeOk
                     ? 'rr-ok'
                     : 'rr-warn'
                   : neverHere
@@ -88,17 +93,24 @@ const ICONS: Record<string, string> = {
             />
             {{
               view.wheel.name ??
-              (neverHere ? 'No Fanatec wheel base on this PC' : 'No Fanatec wheel base connected')
+              (neverHere
+                ? 'No wheel base on this PC'
+                : `No ${view.wheel.brandName ?? ''} wheel base connected`.replace('  ', ' '))
             }}
             <v-spacer />
             <v-icon icon="mdi-chevron-right" class="rr-muted" />
           </div>
           <div class="rr-row-sub" data-testid="racing-wheel-summary">
             <template v-if="view.wheel.connected">
+              {{ view.wheel.brandName }} ·
               {{
-                view.wheel.mode === 'pc'
-                  ? 'PC mode'
-                  : 'Compatibility (yellow) mode: bindings made in PC mode do not match'
+                view.wheel.mode === 'compatibility'
+                  ? 'Compatibility (yellow) mode: bindings made in PC mode do not match'
+                  : view.wheel.mode === 'console'
+                    ? `${view.wheel.modeLabel}: bindings made in PC mode may not match`
+                    : view.wheel.mode === 'pc'
+                      ? 'PC mode'
+                      : view.wheel.modeLabel
               }}
               · {{ view.wheel.controllers }} game controller{{
                 view.wheel.controllers === 1 ? '' : 's'

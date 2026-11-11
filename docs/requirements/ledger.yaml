@@ -3098,7 +3098,7 @@ requirements:
       - "2026-11-07: the owner asked for better drawings ('a little blobby', leader lines that do not make sense) and whether users can supply their own; the design and what is left are in docs/research/controller-drawings.md. The pedals, panels, UFC, ICP and Fanatec wheel are still drawn as cards."
     status: done
     evidence:
-      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the two grips, the throttle and the MFD frames, with every control anchored on the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the WinWing grips, throttle and MFD frames and the popular Thrustmaster and Saitek controllers, with every control anchored on the device"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#is found by the name the grip reports, numbered as WinWing numbers it, with every bound control on the drawing"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#trades two blocks whose leaders would cross so that none do"
@@ -3132,6 +3132,7 @@ requirements:
       - "The detail panel and By action name the physical control (\"S2 weapon release\"); drawings, shipped layouts and the user's own layouts and drawings are used as before."
       - "The numbers come from the per-device default bindings DCS World ships, cross-checked with a public source, cited in docs/research/device-control-names.md; the manual lists the devices covered."
     notes:
+      - "2026-11-11: since SHEET-018 these four devices have a drawing; the named maps give the drawings their names and numbers, and the named list is what a device with a map but no drawing gets."
       - "2026-11-11: gap 2 of the coverage audit (cheat sheets name controls only for the owner's hardware). TWCS, T.Flight HOTAS X, X-56, VKB and Virpil have DCS default files but no numbered public map to cross-check, so they are not shipped yet (research doc)."
     status: done
     evidence:
@@ -3140,10 +3141,43 @@ requirements:
       - "src/features/cheat-sheets/core/known/known.test.ts#is found by its USB ids and by the name it reports"
       - "src/features/cheat-sheets/core/known/known.test.ts#the Warthog stick: TG1 is button 1, S2 is 2, H2 is 7–10, H4 is 15–19, H1 the POV"
       - "src/features/cheat-sheets/core/known/known.test.ts#a list of a known device has a block per physical control, and the others after it"
-      - "src/features/cheat-sheets/core/known/known.test.ts#gets the controls list named for it, with DCS’s Hornet defaults on its controls"
-      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a Warthog stick shows its controls by name"
+      - "src/features/cheat-sheets/core/known/known.test.ts#gets its drawing with the controls named for it, and DCS’s Hornet defaults on them"
       - "docs/research/device-control-names.md"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: the popular Thrustmaster and Saitek controllers have a drawing"
       - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
+
+  - id: SHEET-018
+    title: The popular Thrustmaster and Saitek controllers have a drawing
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The Thrustmaster HOTAS Warthog stick (the grip from behind) and throttle (from above), the T.16000M stick (from behind) and the Saitek/Logitech X52 Pro (stick and throttle in one drawing, since they report as one device) are drawn in the same flat schematic style as the WinWing drawings: simple outlines, not photos, CC0, made from scratch."
+      - "Every control the device's named map has (SHEET-017) is anchored on its drawing where it is on the device, with the maker's name and the same inputs, so the drawing and the named list cannot disagree; where the places come from is cited in docs/research/controller-drawings.md, and places that are approximate say so on the sheet."
+      - "The picture chooser gives these devices 'RigReady drawing' instead of the named list; the user's changes in Edit drawing, a photo of their own and a layout of cards they arranged before still win."
+      - "For DCS's own Hornet defaults and for every input bound, no two leader lines cross, every label block is inside the page and every anchor is on the drawn device; each has a sheet and a kneeboard page by day and by night."
+    notes:
+      - "2026-11-11: Thrustmaster is the biggest flight brand (market research); these are its and Logitech's most common sticks. The column planner now also tries ordering a column along the slope its leaders take when it runs on below the drawing, which untangles a dense switch panel. Before and after pictures: rigready-ops/drawings/compare-warthog-stick.png and the three others."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#keeps the user’s changes to a drawing, and a layout of cards they arranged before"
+      - "src/features/cheat-sheets/core/known/known.test.ts#gets its drawing with the controls named for it, and DCS’s Hornet defaults on them"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: the popular Thrustmaster and Saitek controllers have a drawing"
+      - "docs/research/controller-drawings.md"
+      - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
+      - "artifacts/screens/cheat-sheets-known-devices/02-warthog-stick-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/03-warthog-stick-kneeboard-night-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/05-warthog-throttle-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/06-warthog-throttle-kneeboard-night-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/07-t16000m.png"
+      - "artifacts/screens/cheat-sheets-known-devices/08-t16000m-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/09-t16000m-kneeboard-night-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/10-x52-pro.png"
+      - "artifacts/screens/cheat-sheets-known-devices/11-x52-pro-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/12-x52-pro-kneeboard-night-page.png"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
@@ -3171,7 +3205,7 @@ requirements:
       - "artifacts/screens/ai-assist-no-key/02-plain-labels.png"
 
   - id: AI-002
-    title: Store the Anthropic API key safely
+    title: Store the AI provider key safely
     job: configure
     area: ai
     priority: p2
@@ -3306,6 +3340,140 @@ requirements:
       - "artifacts/screens/ai-assist-viper/02-priorities.png"
       - "artifacts/screens/ai-assist-draft/01-no-guide.png"
 
+  - id: AI-008
+    title: AI help with other providers (OpenAI, OpenAI-compatible, local servers)
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "Settings > AI assistance chooses who answers: Anthropic (the default and first), OpenAI, or an OpenAI-compatible server with presets for Google Gemini, OpenRouter, Mistral, Ollama and LM Studio that fill the address and suggest a model."
+      - "Each provider has its own key in the secrets port, never shown again after saving; a compatible key is kept for its host only and removed when the address moves to another host."
+      - "A model picker with a sensible default where any model id can be typed; 'Test' makes one small request and reports clearly."
+      - "Only the chosen provider's host is contacted: https, or plain http to this PC only; redirects are not followed; the key is only in the request header and scrubbed from every message."
+      - "The same preview before every request names the host; streaming with Cancel; a JSON schema where the service takes one, otherwise JSON asked for in the text, checked with the same schemas, and the same request sent once more before a plain error."
+      - "Tokens are shown as the provider reports them; a cost only where the price is known."
+    notes:
+      - "2026-11-11: provider facts and sources in docs/research/ai-providers.md. Azure OpenAI is left out (api-key header and deployment names)."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/openai.test.ts#puts the schema in response_format, strict, with the context first and the key nowhere in it"
+      - "src/features/ai-assist/core/openai.test.ts#sends the key only as a Bearer header, never follows a redirect, and reads text and usage"
+      - "src/features/ai-assist/core/openai.test.ts#turns every failure into a plain message: 401, 429, quota, 5xx, schema refused, redirect, refusal, cut off, bad JSON, timeout"
+      - "src/features/ai-assist/core/openai.test.ts#puts the answer together from content deltas, cut anywhere, with the usage chunk at the end"
+      - "src/features/ai-assist/core/openai.test.ts#accepts https anywhere and plain http only to this PC, and never a key in the address"
+      - "src/features/ai-assist/core/service.test.ts#OpenAI: its own key, a JSON schema, a streamed answer, and only api.openai.com contacted"
+      - "src/features/ai-assist/core/service.test.ts#a local server: no key needed, the schema asked for in the text, and one more try when the answer does not check out"
+      - "src/features/ai-assist/core/service.test.ts#a hosted compatible service: its key is kept for its host only and removed when the address moves"
+      - "tests/unit/httpStream.test.ts#allows plain http to this PC only, and returns a redirect unfollowed when asked"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: another provider is chosen in Settings, its key stored and tested against the server on this PC, and only that host is named"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip through an OpenAI-compatible server on this PC streams, is checked, and applies after review"
+      - "artifacts/screens/ai-assist-providers/01-gemini-preset.png"
+      - "artifacts/screens/ai-assist-providers/02-local-server.png"
+      - "artifacts/screens/ai-assist-compatible-suggest/01-payload.png"
+      - "artifacts/screens/ai-assist-compatible-suggest/02-suggestions.png"
+
+  # ---------------------------------------------------------------------------
+  # THE BUILT-IN ASSISTANT: app-wide, on the MCP catalogue and gate
+  # ---------------------------------------------------------------------------
+
+  - id: ASSIST-001
+    title: The built-in assistant, app-wide, on the same tools and gate as the MCP server
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "With an AI provider set up (a key, or a server on this PC), an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without one there is no button and the palette opens the panel and says a provider is needed; drafts from MCP assistants are shown either way. The binding guide keeps its own view and links to the panel."
+      - "The assistant is offered the MCP server's guided catalogue (task-level tools, rigready_channels, rigready_call), never an 'off' channel, and every call goes through the one gate the MCP server uses: confirm policy, question in the window under 'Built-in assistant', one change at a time, rate limit, activity record and the Safety page name."
+      - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER}."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
+      - "src/features/ai-assist/core/assistant.test.ts#a read runs, a change is asked in the window under its name, a refusal is recorded, an off channel is refused"
+      - "src/features/ai-assist/core/assistant.test.ts#never sends a request that was not prepared and shown"
+      - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/01-panel-open.png"
+      - "artifacts/screens/assistant/02-first-request.png"
+
+  - id: ASSIST-002
+    title: Find where helper programs are installed
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "programs_find (built-in assistant and MCP) looks for programs by name or vendor in Program Files, Program Files (x86), LocalAppData\\Programs, the Steam libraries and the uninstall entries of the registry, reading only, and answers with exe paths in stored form with path variables."
+      - "It knows the folder names the usual names hide (SRS, TrackIR, Stream Deck, Pit House, G HUB) and leaves out uninstallers and crash handlers; names it did not find are listed."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/programs.test.ts#finds SimAppPro, TrackIR and Stream Deck with path variables applied, and says what it did not find"
+      - "src/features/ai-assist/core/programs.test.ts#knows the folder names the usual names hide (SRS, Pit House), and the uninstall entries"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/03-found-programs.png"
+
+  - id: ASSIST-003
+    title: An assistant proposes setup changes; only the user's Save saves them
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "setup_propose (built-in assistant and MCP) makes a draft of a new setup or of checks and launch steps added to one, validated against the registered check and fix types; it is shown in the assistant panel with every item and the setup as it would be saved."
+      - "Nothing is written until the user presses Save, which saves through profiles:create or profiles:save; a setup changed after the assistant read it is not overwritten. A script.run the assistant proposes always asks before it runs."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/assistant.test.ts#finds the programs, proposes a setup, and the user saves it"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/04-setup-proposal.png"
+
+  - id: ASSIST-004
+    title: Scripts an assistant writes are shown in full, approved by hash, never run by an assistant
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "script_draft makes a .ps1 or .cmd draft with a plain explanation; one that asks for elevation is refused. The panel shows the whole file as it would be saved, the explanation and warnings; Save writes it through FileStore into <data root>/scripts/assistant with a header, and records its SHA-256 as the approval."
+      - "The setup step it goes into asks before every run, whatever the setup says. Before it runs as a check, a fix or a step, the file is hashed again; a changed file is not run and is shown again in the panel until the user approves the text as it is now."
+      - "No assistant can run it: while an assistant's call is carried out, a script from that folder is refused, and rig_make_ready's approvePrograms never covers it. Scripts never run elevated, and shared setups keep leaving scripts out."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/assistant.test.ts#is saved into the data folder with a header, approved by hash, refused when changed and for an assistant"
+      - "src/features/ai-assist/core/assistant.test.ts#refuses a script that asks for administrator rights"
+      - "src/features/ai-assist/core/assistant.test.ts#a script.run step for an assistant script always asks, whatever the setup says"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/05-script-draft.png"
+      - "artifacts/screens/assistant/06-run-asks-first.png"
+      - "artifacts/screens/assistant/07-changed-not-run.png"
+      - "artifacts/screens/assistant/08-changed-shown-again.png"
+
+  - id: ASSIST-005
+    title: The built-in assistant uses the AI provider chosen in Settings
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "The assistant talks to the provider of AI-008 (Anthropic, OpenAI, or an OpenAI-compatible server, a local one included) with that provider's own key, over Anthropic's Messages API or Chat Completions with tools; the conversation, tool calls and tool results are carried over faithfully either way."
+      - "The preview names the host; a request whose provider, address or model changed in Settings after it was shown is not sent. A refusal or an unreadable answer is an error, never an empty success. Tokens are shown; a cost only where the price is known."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/wire.test.ts#turns the conversation into Chat Completions: system first, functions, tool calls and tool messages"
+      - "src/features/ai-assist/core/wire.test.ts#reads tool calls from a local server, which needs no key, at its own address only"
+      - "src/features/ai-assist/core/wire.test.ts#sends a key only in the header, and the Anthropic wire to api.anthropic.com"
+      - "src/features/ai-assist/core/wire.test.ts#a refusal and an unreadable answer are errors, never an empty success"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/02-first-request.png"
+
+  - id: ASSIST-006
+    title: The built-in assistant answers from the manual and links the page
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "manual_search (each hit with its https://rigready.io/docs/<section>/<page>/ address) and manual_read (one page in full, the same code as the rigready://docs resources) are task-level tools, so the built-in assistant and MCP assistants both have them."
+      - "The built-in assistant's instructions say to search and read the manual before answering a how-to question or proposing a change, and to link the page it used; a how-to question with the scripted provider leads to a search, a read and an answer that links the page."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/assistant.test.ts#answers a how-to question from the manual: searches it, reads the page and links it"
+      - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
+
   # ---------------------------------------------------------------------------
   # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)
   # ---------------------------------------------------------------------------
@@ -3428,6 +3596,51 @@ requirements:
       - "src/features/mcp/server/server.test.ts#MCP-007 the Safety page names the assistant beside its change, and undo works the same"
       - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
       - "artifacts/screens/mcp-settings/07-safety-by-assistant.png"
+
+  - id: MCP-011
+    title: Connect an assistant with one button
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Settings > AI assistants lists the assistants found on this PC (read-only detection of their folders and settings files), everyday assistants first (Claude Desktop, LM Studio, AnythingLLM, Jan, Msty Studio, Goose) and developer tools after (Claude Code, Cursor, VS Code, Windsurf), each with whether RigReady is already in its settings and one button."
+      - "Claude Desktop and AnythingLLM: RigReady's entry is merged into the assistant's JSON settings file through FileStore after a preview of the change, under one journal group the Safety page undoes; every other server and key is kept, a second press writes nothing, a file that is not valid JSON (or whose server list is not an object) is refused and left alone, and the result is read back before it says connected. The Microsoft Store version of Claude Desktop gets the file in its package folder."
+      - "Cursor, VS Code and LM Studio: their documented install link, built from a fixed stdio entry, is handed to Windows only through AppWindow.openLink, which refuses every scheme but https, cursor, vscode, vscode-insiders, lmstudio and goose; the answer says it asked, not that it is done."
+      - "Claude Code: the one command (user scope) with a Copy button, and Run it when the CLI is found, through Shell.run with an argument array, believed only when ~/.claude.json then holds RigReady. Jan, Msty Studio, Goose and Windsurf: the text to paste."
+      - "Connecting turns the server on when it is off (the bridge is paired with it) and leaves the confirm policy at Always ask. ChatGPT, Perplexity for Windows and Windows' agent connectors are not offered; the page and the manual say why (docs/research/mcp-one-click.md)."
+    status: done
+    evidence:
+      - "src/features/mcp/core/connect.test.ts#adds RigReady and keeps every other server and setting"
+      - "src/features/mcp/core/connect.test.ts#is idempotent: a second merge changes nothing"
+      - "src/features/mcp/core/connect.test.ts#refuses a file that is not valid JSON, not an object, or whose server list is not one"
+      - "src/features/mcp/core/connect.test.ts#builds the documented install links from the fixed entry"
+      - "src/features/mcp/core/connect.test.ts#opens only the schemes it knows"
+      - "src/features/mcp/core/connect.test.ts#finds installed assistants by their folders, general ones first, with their state"
+      - "src/features/mcp/core/connect.test.ts#writes the Store version of Claude Desktop where that version reads it"
+      - "src/features/mcp/core/connect.test.ts#previews, turns the server on, merges, reads back, journals, and undoes"
+      - "src/features/mcp/core/connect.test.ts#does not say it is connected when the file does not hold RigReady afterwards"
+      - "src/features/mcp/core/connect.test.ts#hands Cursor its install link and says only that it asked"
+      - "src/features/mcp/core/connect.test.ts#runs Claude Code with an argument array and believes it only after reading its settings"
+      - "tests/unit/writeAudit.test.ts#MCP: connecting Claude Desktop writes the one settings file the preview named"
+      - "tests/e2e/mcp-connect.e2e.ts#mcp-connect: Claude Desktop connected with one button, its other server kept, undone from Safety; Cursor gets its link"
+      - "artifacts/screens/mcp-connect/01-found.png"
+      - "artifacts/screens/mcp-connect/02-preview.png"
+      - "artifacts/screens/mcp-connect/03-connected.png"
+      - "artifacts/screens/mcp-connect/04-cursor-link.png"
+      - "artifacts/screens/mcp-connect/05-safety.png"
+
+  - id: MCP-012
+    title: The welcome screen offers an assistant as an optional step
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "The first-run welcome screen ends with an optional, quiet step, \"Use an AI assistant with RigReady?\", that opens Settings > AI assistants at Connect an assistant. Following it turns nothing on; Not now hides it on this PC."
+    status: done
+    evidence:
+      - test: "tests/e2e/mcp-connect.e2e.ts#mcp-connect: the welcome screen offers an assistant as an optional step, and Not now puts it away"
+      - "artifacts/screens/mcp-welcome/01-welcome-step.png"
+      - "artifacts/screens/mcp-welcome/02-welcome-to-settings.png"
 
   # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE
@@ -4283,6 +4496,81 @@ requirements:
       - "artifacts/screens/racing-rim-variant/04-each-setup-its-bindings.png"
       - "artifacts/screens/racing-rim-variant/05-gt3-setup-sees-other-bindings.png"
       - "artifacts/screens/racing-rim-variant/07-formula-variant-ready.png"
+
+  - id: RACE-WHEEL-001
+    title: The Wheel page and its checks for every major wheelbase brand
+    job: troubleshoot
+    area: wheel
+    priority: p1
+    done_means:
+      - "On synthetic fixtures for a Moza R9, a Logitech G923, a Simagic Alpha and a Thrustmaster T300 RS (fixtures/scenarios/wheel-*.yaml, made from the USB ids in docs/research/wheelbases.md), the Wheel page names the brand and the base, shows its mode where the USB id shows it and says so where it does not, lists the base's axes (named where a source says what they are, Windows' names otherwise), the brand's other parts on USB, and the brand's software installed and running."
+      - "Simucube, Asetek SimSports and Cammus bases are recognised by their ids from the same research note; Fanatec keeps everything it had (RACE-FANATEC-001 to 005)."
+      - "Every brand but Fanatec carries the line 'Tested on recorded data, not yet on a real <brand> wheel' with a link to the hardware report form."
+      - "A PC with no wheel names no brand and offers nothing."
+    notes:
+      - "2026-11-11: done on fixtures only. Not verified on a real Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek or Cammus wheel; the owner has a Fanatec DD2. RACE-WHEEL-004 is the hardware verification."
+    status: done
+    evidence:
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#the brand table is consistent: every product has a brand with a row, every brand but Fanatec is unverified"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Moza R9: detected by its USB id, Pit House running, mode not claimed, linked settings, a fix that starts Pit House"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Logitech G923: PC mode, G HUB, and its settings.db backed up and restored with G HUB closed and started again"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Simagic Alpha: the shared STMicro id, SimPro Manager installed but not running, offered unticked with a fix"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Thrustmaster T300: PC mode, and a wheel the driver did not switch or one in PS4 mode is named"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#a PC with no wheel names no brand and offers nothing"
+      - "tests/e2e/wheel-brands.e2e.ts#wheel: the Wheel page for a ${b.brand} base, tested on recorded data only"
+      - "artifacts/screens/wheel-moza/01-wheel.png"
+      - "artifacts/screens/wheel-logitech/01-wheel.png"
+      - "artifacts/screens/wheel-simagic/01-wheel.png"
+      - "artifacts/screens/wheel-thrustmaster/01-wheel.png"
+      - "docs/research/wheelbases.md"
+
+  - id: RACE-WHEEL-002
+    title: Per-brand checks a setup can hold
+    job: fly
+    area: wheel
+    priority: p1
+    done_means:
+      - "Capturing a setup with a non-Fanatec base offers 'Wheel base in PC mode' (brands whose id shows the mode) or 'Wheel base connected' (the others), and '<software> running' for the brand's program, ticked when it runs now, with a fix that starts it like any other app."
+      - "The base check names a mode the id gives away: Fanatec compatibility (yellow) mode, the Logitech G29's PS3 position, a Thrustmaster wheel still on the generic 044F:B65D id, a T300 in PS4 or advanced mode."
+      - "A wheel rotation check is offered only where the rotation is readable: the Fanatec driver's recorded rotation. Optional and unticked."
+    notes:
+      - "2026-11-11: done on fixtures only, not on a real wheel of these brands."
+    status: done
+    evidence:
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Moza R9: detected by its USB id, Pit House running, mode not claimed, linked settings, a fix that starts Pit House"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Logitech G29: the PS3 switch position is told apart from the PS4 one Logitech advises on a PC"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Thrustmaster T300: PC mode, and a wheel the driver did not switch or one in PS4 mode is named"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Fanatec keeps its rows; its rotation is offered as an optional check from what the driver recorded"
+      - "src/features/racing/core/checks.test.ts#capture on a racing rig proposes the wheel in PC mode, the helper apps and the game checks"
+
+  - id: RACE-WHEEL-003
+    title: Brand profile backups and sourced recommended settings
+    job: configure
+    area: wheel
+    priority: p2
+    done_means:
+      - "Where a brand's software keeps profiles in plain files (G HUB settings.db, Simucube Tuner cachedprofiles), the Wheel page lists them and backs them up; a restore closes the software first when the user agrees and starts it again. The Backups page offers the same files."
+      - "Brands whose profile location is not documented (Moza, Simagic, Asetek, Cammus) are offered no backup."
+      - "Recommended settings are shown for a brand only where the brand publishes them (Moza for iRacing, Asetek for four games): as links, not copied or compared. Otherwise the page says none are published."
+    notes:
+      - "2026-11-11: done on fixtures only; the G HUB file is a stand-in, not a real settings.db."
+    status: done
+    evidence:
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Logitech G923: PC mode, G HUB, and its settings.db backed up and restored with G HUB closed and started again"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Moza R9: detected by its USB id, Pit House running, mode not claimed, linked settings, a fix that starts Pit House"
+      - "artifacts/screens/wheel-logitech/02-profiles.png"
+
+  - id: RACE-WHEEL-004
+    title: Each brand verified on a real wheel
+    job: troubleshoot
+    area: wheel
+    priority: p2
+    done_means:
+      - "For each of Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek and Cammus, a hardware report (or a recorded rig) confirms the base's ids, the software's process name and the profile location; the brand's verifiedOnHardware is then set to true and its 'tested on recorded data' line goes away."
+    notes:
+      - "2026-11-11: open questions per brand are listed at the end of docs/research/wheelbases.md (Moza's second ids and preset folder, the Simagic EVO software, Thrustmaster T818 and TMX ids, Simucube, Asetek and Cammus process names, every brand's axis map)."
+    status: todo
+    evidence: []
 
   - id: GAME-MSFS-001
     title: Detect Microsoft Flight Simulator 2024 and its settings
@@ -5961,6 +6249,31 @@ requirements:
       - "tests/e2e/look.e2e.ts#look: an empty state has a drawing, says what is missing, and leads somewhere"
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
+
+  - id: WOW-UI-012
+    title: The app links to its manual, page by page
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "One map (src/shared/manualLinks.ts) gives every route of every feature the page of docs/manual that explains it, and some tabs and games a page of their own. A unit test fails when a route has no entry, when an entry is for a route that no longer exists, or when a page it names is not in docs/manual; the address it builds is the one site/lib/manual.mjs gives the page (https://rigready.io/docs/<section>/<page>/)."
+      - "A help button (?) in the header of every screen, named and with the tooltip 'Open the manual page for this screen', opens that page in the browser through the window's https-only link handler; the app window never navigates."
+      - "The command palette has 'Open the manual' and 'Open the manual page for this screen'. About and Settings have a link to the manual."
+      - "Notices with a troubleshooting page link to it: controllers that could not be read (Devices, Input tester, DCS bindings), a device not found (Devices), the earlier monitor layout (the question at start), DCS files RigReady will not write (DCS bindings, DCS World, Export.lua), a setup file that cannot be read (Setups and the notice at start), Start with Windows (Settings), and damaged data files (the notices at start)."
+      - "The manual says so: Getting started > Play and Configure, and The command palette."
+    status: done
+    evidence:
+      - "tests/unit/manualLinks.test.ts#has a manual page for every route of the app"
+      - "tests/unit/manualLinks.test.ts#names only pages that exist in docs/manual"
+      - "tests/unit/manualLinks.test.ts#builds the address the website gives each page"
+      - "tests/e2e/manual-links.e2e.ts#manual links: the help button opens the manual page of the screen shown"
+      - "tests/e2e/manual-links.e2e.ts#manual links: notices about damaged files lead to their troubleshooting pages"
+      - "tests/e2e/manual-links.e2e.ts#manual links: DCS running links to why RigReady will not write its files"
+      - "artifacts/screens/manual-links/01-play-header.png"
+      - "artifacts/screens/manual-links/02-devices-header.png"
+      - "artifacts/screens/manual-links/03-palette.png"
+      - "artifacts/screens/manual-links-notices/01-notices.png"
+      - "artifacts/screens/manual-links-dcs/01-dcs-running.png"
 
   # ---------------------------------------------------------------------------
   # SECURITY (docs/research/security-review-2026-11.md, SECURITY.md)

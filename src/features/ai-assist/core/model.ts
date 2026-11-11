@@ -133,13 +133,48 @@ export const AppliedSchema = z.object({
 export type AppliedView = z.infer<typeof AppliedSchema>;
 
 export const AiStatusSchema = z.object({
+  /** Who answers: anthropic, openai or compatible (any OpenAI-compatible server). */
+  provider: z.enum(['anthropic', 'openai', 'compatible']),
+  providers: z.array(z.object({ id: z.string(), name: z.string() })),
+  /** Fill-ins for the OpenAI-compatible provider. */
+  presets: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      baseUrl: z.string(),
+      model: z.string(),
+      structured: z.enum(['schema', 'prompt']),
+      keyNeeded: z.boolean(),
+      note: z.string(),
+    })
+  ),
+  /** A key is stored for the chosen provider. */
   keyPresent: z.boolean(),
   /** The last four characters only, e.g. "…a1B2". */
   keyHint: z.string().optional(),
+  /** False for a server on this PC, which needs no key (one may still be stored). */
+  keyNeeded: z.boolean(),
+  /** AI help can be used: the provider is set up (and has a key when it needs one). */
+  ready: z.boolean(),
+  /** Why it cannot be used yet, when it cannot. */
+  problem: z.string().optional(),
   model: z.string(),
+  /** Models offered in the picker; any other id may be typed. */
   models: z.array(
-    z.object({ id: z.string(), name: z.string(), input: z.number(), output: z.number() })
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      input: z.number().optional(),
+      output: z.number().optional(),
+    })
   ),
+  /** The OpenAI-compatible provider's address. */
+  baseUrl: z.string(),
+  structured: z.enum(['schema', 'prompt']),
+  /** The only host requests go to; empty while none is set. */
+  host: z.string(),
+  /** The host is this PC. */
+  local: z.boolean(),
   /** Exactly what is and is not sent, one statement per line. */
   whatIsSent: z.array(z.string()),
 });
@@ -151,8 +186,8 @@ export const UsageSchema = z.object({
   output: z.number(),
   cacheWrite: z.number(),
   cacheRead: z.number(),
-  /** Approximate, US dollars. */
-  cost: z.number(),
+  /** Approximate, US dollars; null when the model's price is not known. */
+  cost: z.number().nullable(),
 });
 export type UsageView = z.infer<typeof UsageSchema>;
 
@@ -167,7 +202,19 @@ export const PreparedSchema = z.object({
   body: z.string(),
   chars: z.number().int(),
   approxTokens: z.number().int(),
-  approxCost: z.number(),
+  /** Null when the model's price is not known. */
+  approxCost: z.number().nullable(),
+  /** Who receives it: "Anthropic", "OpenAI", "the server at localhost:11434". */
+  provider: z.string(),
+  /** The only host it goes to. */
+  host: z.string(),
+  /** The host is this PC. */
+  local: z.boolean(),
+  /**
+   * The answer's format is asked for in the text, not enforced by the server: an answer
+   * that does not check out is asked for once more with this same request.
+   */
+  retriesOnce: z.boolean(),
   /** What is in it, in plain words. */
   contents: z.array(z.string()),
   /** The answer arrives as a stream: progress is reported and the request can be cancelled. */

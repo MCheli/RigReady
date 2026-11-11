@@ -39,7 +39,7 @@ Setting up bindings for a rig full of controllers takes hours. RigReady helps yo
 
 - **Capture a setup.** Record the controllers, apps, layout and audio as they are now, then edit. [Capture](docs/manual/setups/capture.md)
 - **DCS bindings.** See the bindings in effect, edit them with a preview, clear the defaults DCS adds to every device, and copy controls between aircraft. [DCS bindings](docs/manual/dcs/bindings.md)
-- **Cheat sheets.** What every control does, for DCS aircraft and the racing games, printable and exportable as DCS kneeboard pages. WinWing Orion sticks, throttle and MFD frames have drawings; the Thrustmaster Warthog, T.16000M and Saitek X52 Pro have their controls named; any other controller is a labelled list of its controls until you add a photo of it and drop the labels on. [Cheat sheets](docs/manual/dcs/cheat-sheets.md)
+- **Cheat sheets.** Each device drawn with what every control does, for DCS aircraft and the racing games, printable and exportable as DCS kneeboard pages. [Cheat sheets](docs/manual/dcs/cheat-sheets.md)
 - **Learn them.** A trainer names an action and you press the control; binding guides for twenty aircraft, from the F/A-18C, F-16C, A-10C and F-14 to the Ka-50, UH-1H and P-51D, walk through what to bind first. [Trainer](docs/manual/dcs/trainer.md)
 - **Back up and restore.** One click backs up setups, game files and settings; a restore shows what will change before it does. [Backups](docs/manual/protect/backups.md), [moving to a new PC](docs/manual/protect/new-pc.md)
 - **Share it.** Share a setup as a file with personal details reviewed and removed, or make a picture of the rig to show people. [Sharing](docs/manual/protect/sharing.md)
@@ -52,14 +52,15 @@ A view that creeps, a button that does nothing, a panel the game no longer knows
 - **Find a device.** Press a button on it and RigReady opens it: its IDs, its port, and a name you choose. [Devices](docs/manual/hardware/devices.md)
 - **Health check.** Hands off for ten seconds: stuck buttons, inputs that fire by themselves and noisy axes. [Health check](docs/manual/hardware/health-check.md)
 - **USB map.** Which hub each device hangs off, how close you are to the limits, and what to unplug. [USB map](docs/manual/hardware/usb-map.md)
-- **New device IDs.** When Windows gives a controller a new ID, RigReady moves the DCS bindings, points iRacing's files at it, follows a renamed controller in Le Mans Ultimate, and copies BeamNG maps to a replacement. Other games: not yet. The iRacing repair is not yet tried on real hardware. [Device IDs](docs/manual/dcs/device-ids.md)
-- Fanatec wheel bases, Stream Deck and TrackIR have pages of their own, and RigReady notices when HidHide is hiding a device. [Hardware](docs/manual/hardware/index.md)
+- **New device IDs.** When Windows gives a controller a new ID, RigReady moves the DCS bindings, points iRacing's and Assetto Corsa's files at it, follows a renamed controller in Le Mans Ultimate, and copies BeamNG maps to a replacement. Other games: not yet. The iRacing and Assetto Corsa repairs are not yet tried on real hardware. [Device IDs](docs/manual/dcs/device-ids.md)
+- Wheel bases (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek, Cammus; tested on a real wheel for Fanatec only), Stream Deck and TrackIR have pages of their own, and RigReady notices when HidHide is hiding a device. [Hardware](docs/manual/hardware/index.md)
 
 ### Optional AI help with setup and bindings
 
 AI is off until you turn it on, and nothing else in RigReady needs it. It comes in two forms, and either works without the other. Either way, every change is backed up first and can be undone on the Safety page.
 
-- **With your own Anthropic API key**, for DCS aircraft, the binding guide can suggest a plan for your controllers, answer questions about the aircraft, and explain any action in the walkthrough. Suggestions are checked against your devices, and only the ones you tick and review are written. You see what will be sent before each request, and it goes only to Anthropic.
+- **With your own key from Anthropic, OpenAI, Google or a local model**, the built-in assistant helps anywhere in RigReady, for any game: it finds where helper programs such as SimAppPro, TrackIR, SRS or Stream Deck are installed, proposes the checks and launch steps of a ready check, and writes scripts for what no check covers. Changes it asks for go through the same questions and the same Safety page as an MCP assistant, and nothing it drafts is saved until you press Save. In the binding guide the same key suggests a plan for your controllers, answers questions about the aircraft and explains any action. You see what will be sent before each request, and it goes only to the provider you chose (or nowhere, with a model on your PC).
+
 - **With an assistant you already use** (Claude Desktop, Claude Code, Cursor or another MCP client), it can check the rig, read the manual and propose changes, and by default RigReady asks you before anything is changed or launched. What it reads goes to that assistant, never to RigReady's author.
 
 See [AI assistants](docs/manual/ai/index.md).
@@ -77,11 +78,11 @@ Any game works with a checklist, launch, tracked files and backups. These get mo
 
 | | Support |
 |---|---|
-| DCS World | The deepest: installs (Steam and standalone), MFD screen setup (MonitorSetup; from SimAppPro's plan, or without it for every installed aircraft that exports displays, see the [manual](docs/manual/dcs/screens.md)), Export.lua, options, bindings for every aircraft (view, edit, clean up, device ID repair, copy between aircraft, snapshots), cheat sheets, kneeboard pages, binding guides for twenty aircraft (F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H, the Flaming Cliffs jets, warbirds and more; listed in the [manual](docs/manual/dcs/binding-guide-and-ai.md)). |
-| iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | A page per game with its bindings and controllers as the game's files have them, cheat sheets and the trainer, backup and restore, and checks for a racing setup (wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive). |
+| DCS World | The deepest: installs (Steam and standalone), MFD screen setup (MonitorSetup), Export.lua, options, bindings (view, edit, clean up, device ID repair, copy between aircraft, snapshots), cheat sheets, kneeboard pages, binding guides for twenty aircraft (F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H, the Flaming Cliffs jets, warbirds and more). |
+| iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | A page per game with its bindings and controllers as the game's files have them, cheat sheets and the trainer, backup and restore, and checks for a racing setup. |
 | Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally | A game module: detection, config locations, backup suggestions, launch. |
 | Any other game | Works generically: a checklist, launch, tracked files, backup. |
-| Hardware | Any USB game controller, monitor and audio device Windows sees. Dedicated pages for a Fanatec wheel base, Stream Deck and TrackIR; HidHide is noticed when it hides a device. WinWing devices work as controllers; features that need WinWing's own protocol (backlight sync, UFC/ICP displays, vibration) still need SimAppPro, and RigReady checks that it is running when a setup uses them. Device drawings, layouts and the wheel page so far cover the gear RigReady was built on (WinWing, Thrustmaster TPR, Virpil panel, Fanatec). Other brands work fully as controllers; reports and drawings for them are welcome. |
+| Hardware | Any USB game controller, monitor and audio device Windows sees. Dedicated pages for a wheel base of any major brand (tested on a real Fanatec; the other brands on recorded data only), Stream Deck and TrackIR; HidHide is noticed when it hides a device. WinWing devices work as controllers; features that need WinWing's own protocol (backlight sync, UFC/ICP displays, vibration) still need SimAppPro, and RigReady checks that it is running when a setup uses them. Device drawings so far cover the gear RigReady was built on (WinWing) and the Thrustmaster and Saitek sticks listed in the manual; other brands work fully as controllers, and reports and drawings for them are welcome. |
 
 RigReady was built on one real rig. Nothing in the code is tied to it (a test enforces that), but most of the above has been proven only on recorded data from that rig and on generic test PCs. See the known limitations in `CHANGELOG.md`.
 
@@ -91,7 +92,7 @@ RigReady reads your hardware and changes game files, so it should say exactly wh
 
 - It installs for your Windows user only and never asks for administrator rights: not to install, not to run, not for a fix or an update.
 - Every change to a file outside RigReady's own data folder is backed up first, with a visible description of the change. Each one is listed on the Safety page, where it can be undone.
-- RigReady itself sends only two things off your PC: the update check to GitHub, and AI requests you send yourself with your own Anthropic key. An assistant you connect over MCP (off by default) reads only what you allow, and sends it wherever that assistant runs. There is no account, no telemetry and no crash reporting.
+- RigReady itself sends only two things off your PC: the update check to GitHub, and AI requests you send yourself, with your own key, to the one AI provider you chose. An assistant you connect over MCP (off by default) reads only what you allow, and sends it wherever that assistant runs. There is no account, no telemetry and no crash reporting.
 - A shared setup never carries scripts or launch commands, nothing from a setup is ever placed into a command line, and an imported file cannot write outside the game and document folders.
 - Updates come only from the project's GitHub releases and are checked against their published checksum before they install.
 - A monitor layout you apply goes back by itself unless you keep it.

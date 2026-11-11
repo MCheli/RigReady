@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Profile } from '../../../core/profile/schema';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { profilesContract, type ProfileOverview } from '../contract';
@@ -223,6 +224,9 @@ onBeforeUnmount(() => off?.());
         <div class="rr-row-main">
           <div class="rr-row-title">{{ broken.file.split(/[\\/]/).pop() }}</div>
           <div class="rr-row-sub rr-bad">{{ broken.message }}</div>
+          <div class="rr-row-sub">
+            <ManualLink topic="setupFileUnreadable">How to fix it</ManualLink>
+          </div>
           <pre
             v-if="broken.detail"
             class="profiles-detail rr-mono"

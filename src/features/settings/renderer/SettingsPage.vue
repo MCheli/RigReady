@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import { manifests } from '../../../renderer/features';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import type { Result } from '../../../core/result';
 import { settingsContract, type SettingsView } from '../contract';
@@ -22,7 +23,6 @@ const error = ref<string>();
 const saved = ref<string>();
 const newLayoutName = ref('');
 const renaming = ref<{ id: string; name: string }>();
-const aiKey = ref('');
 /** Bumped after a refused change so the fields show the stored values again. */
 const revision = ref(0);
 
@@ -113,10 +113,6 @@ function deleteLayout(layout: { id: string; name: string }): void {
   void run(api.removeLayout({ id: layout.id }), `Deleted the layout ${layout.name}`);
 }
 
-async function storeKey(): Promise<void> {
-  if (await run(api.setAiKey({ key: aiKey.value }), 'Stored the key')) aiKey.value = '';
-}
-
 const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
   const on = layout.displays.filter((d) => d.enabled).length;
   const off = layout.displays.length - on;
@@ -127,10 +123,17 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
 <template>
   <div class="rr-page" data-testid="settings-page">
     <h1 class="rr-page-title">Settings</h1>
-    <p class="rr-page-sub">How RigReady itself behaves. Stored in its own data folder.</p>
+    <p class="rr-page-sub">
+      How RigReady itself behaves. Stored in its own data folder. The
+      <ManualLink page="app/settings">Manual</ManualLink> explains every setting.
+    </p>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4" data-testid="settings-error">
       {{ error }}
+      <ManualLink
+        v-if="/startup app|start with windows/i.test(error)"
+        topic="startWithWindowsOff"
+      />
     </v-alert>
     <div v-if="saved" class="settings-saved rr-ok" data-testid="settings-saved">
       <v-icon icon="mdi-check" size="16" /> {{ saved }}
@@ -146,6 +149,7 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
               Starts in the tray when you sign in.
               <span v-if="view.startWithWindowsProblem" data-testid="login-problem">
                 {{ view.startWithWindowsProblem }}
+                <ManualLink topic="startWithWindowsOff" />
               </span>
             </div>
           </div>
@@ -339,56 +343,6 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
             aria-label="Largest import in megabytes"
             @change="setNumber('importMaxMegabytes', ($event.target as HTMLInputElement).value)"
           />
-        </div>
-      </div>
-
-      <div class="rr-section-title">AI assistance</div>
-      <div class="rr-panel settings-panel">
-        <div class="rr-row">
-          <v-icon
-            :icon="settings.aiKeyPresent ? 'mdi-key' : 'mdi-key-outline'"
-            :class="settings.aiKeyPresent ? 'rr-ok' : 'rr-muted'"
-          />
-          <div class="rr-row-main">
-            <div class="rr-row-title" data-testid="ai-key-state">
-              {{
-                settings.aiKeyPresent ? 'An Anthropic API key is stored' : 'No Anthropic API key'
-              }}
-            </div>
-            <div class="rr-row-sub">
-              Optional. The key is encrypted for your Windows account and is never shown again.
-              Everything else works without it.
-            </div>
-          </div>
-          <v-btn
-            v-if="settings.aiKeyPresent"
-            variant="text"
-            data-testid="ai-key-remove"
-            @click="run(api.clearAiKey(), 'Removed the key')"
-          >
-            Remove key
-          </v-btn>
-        </div>
-        <div class="rr-row">
-          <div class="rr-row-main settings-inline">
-            <v-text-field
-              v-model="aiKey"
-              type="password"
-              density="compact"
-              autocomplete="off"
-              :placeholder="settings.aiKeyPresent ? 'Replace with another key' : 'Paste your key'"
-              aria-label="Anthropic API key"
-              data-testid="ai-key-input"
-            />
-            <v-btn
-              color="primary"
-              :disabled="aiKey.trim().length < 8"
-              data-testid="ai-key-save"
-              @click="storeKey"
-            >
-              Store key
-            </v-btn>
-          </div>
         </div>
       </div>
     </div>

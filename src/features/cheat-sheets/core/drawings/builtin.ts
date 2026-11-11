@@ -1,4 +1,7 @@
+import { SAITEK_DRAWINGS } from './saitek';
+import { circle, fourWay, hat, roundedRect } from './shapes';
 import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silhouette';
+import { THRUSTMASTER_DRAWINGS } from './thrustmaster';
 
 /**
  * The drawings RigReady ships, drawn from scratch (no vendor artwork), CC0. Coordinates
@@ -14,41 +17,6 @@ import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silh
 
 const WINWING = '4098';
 const CC0 = 'CC0-1.0';
-
-/** A rounded rectangle as an absolute path. */
-function roundedRect(x: number, y: number, w: number, h: number, r: number): string {
-  const right = x + w;
-  const bottom = y + h;
-  return (
-    `M ${x + r} ${y} L ${right - r} ${y} Q ${right} ${y} ${right} ${y + r} ` +
-    `L ${right} ${bottom - r} Q ${right} ${bottom} ${right - r} ${bottom} ` +
-    `L ${x + r} ${bottom} Q ${x} ${bottom} ${x} ${bottom - r} ` +
-    `L ${x} ${y + r} Q ${x} ${y} ${x + r} ${y} Z`
-  );
-}
-
-/** A circle as an absolute path (two arcs). */
-function circle(cx: number, cy: number, r: number): string {
-  return `M ${cx - r} ${cy} A ${r} ${r} 0 1 0 ${cx + r} ${cy} A ${r} ${r} 0 1 0 ${cx - r} ${cy} Z`;
-}
-
-const hat = (n: number): { id: string; tag: string }[] => [
-  { id: `hat:${n}:U`, tag: '↑' },
-  { id: `hat:${n}:R`, tag: '→' },
-  { id: `hat:${n}:D`, tag: '↓' },
-  { id: `hat:${n}:L`, tag: '←' },
-  { id: `hat:${n}:UR`, tag: '↗' },
-  { id: `hat:${n}:DR`, tag: '↘' },
-  { id: `hat:${n}:DL`, tag: '↙' },
-  { id: `hat:${n}:UL`, tag: '↖' },
-];
-
-const fourWay = (up: number, right: number, down: number, left: number) => [
-  { id: `button:${up}`, tag: '↑' },
-  { id: `button:${right}`, tag: '→' },
-  { id: `button:${down}`, tag: '↓' },
-  { id: `button:${left}`, tag: '←' },
-];
 
 /** The Orion base and its boot, the same under every grip. */
 const ORION_BASE = [
@@ -763,4 +731,6 @@ export const DRAWINGS: DeviceDrawingInput[] = [
   F18_GRIP,
   ORION_THROTTLE,
   MFD_FRAME,
+  ...THRUSTMASTER_DRAWINGS,
+  ...SAITEK_DRAWINGS,
 ];

@@ -100,3 +100,114 @@ export function streamOf(
     ...(options.end === undefined ? {} : { end: options.end }),
   });
 }
+
+export interface ChatStreamOptions {
+  model?: string;
+  /** null: no chunk with a finish_reason, as when the connection closes early. */
+  finishReason?: string | null;
+  /** Characters per chunk. Default 40. */
+  pieceChars?: number;
+  /** The token counts, sent as a last chunk with no choices (stream_options.include_usage). */
+  usage?: { prompt_tokens: number; completion_tokens: number; cached?: number };
+  /** Leave out `data: [DONE]`. */
+  withoutDone?: boolean;
+  delayMs?: number;
+  chunkBytes?: number;
+  end?: HttpStreamScript['end'];
+}
+
+/**
+ * A Chat Completions answer as OpenAI-compatible servers stream it: `data:` events only,
+ * a role chunk, the text in content deltas, a chunk with finish_reason, optionally a
+ * usage chunk with no choices, then `data: [DONE]`.
+ */
+export function chatEvents(
+  text: string,
+  options: ChatStreamOptions = {}
+): ({ data: unknown } | string)[] {
+  const model = options.model ?? 'gpt-6.1-terra';
+  const size = options.pieceChars ?? 40;
+  const chunk = (delta: Record<string, unknown>, finish: string | null = null) => ({
+    data: {
+      id: 'chatcmpl-scripted',
+      object: 'chat.completion.chunk',
+      model,
+      choices: [{ index: 0, delta, finish_reason: finish }],
+    },
+  });
+  const pieces: string[] = [];
+  for (let at = 0; at < text.length; at += size) pieces.push(text.slice(at, at + size));
+  const usage = options.usage;
+  return [
+    chunk({ role: 'assistant', content: '' }),
+    ...pieces.map((piece) => chunk({ content: piece })),
+    ...(options.finishReason === null ? [] : [chunk({}, options.finishReason ?? 'stop')]),
+    ...(usage
+      ? [
+          {
+            data: {
+              id: 'chatcmpl-scripted',
+              object: 'chat.completion.chunk',
+              model,
+              choices: [],
+              usage: {
+                prompt_tokens: usage.prompt_tokens,
+                completion_tokens: usage.completion_tokens,
+                total_tokens: usage.prompt_tokens + usage.completion_tokens,
+                prompt_tokens_details: { cached_tokens: usage.cached ?? 0 },
+              },
+            },
+          },
+        ]
+      : []),
+    // Not JSON, so written as raw text.
+    ...(options.withoutDone ? [] : ['data: [DONE]\n\n']),
+  ];
+}
+
+/** `rig.ports.http.respond(url, chatStream('...'))`. */
+export function chatStream(
+  text: string,
+  options: ChatStreamOptions = {}
+): { stream: HttpStreamScript } {
+  return {
+    stream: HttpStreamScriptSchema.parse({
+      chunks: chatEvents(text, options),
+      ...(options.delayMs === undefined ? {} : { delayMs: options.delayMs }),
+      ...(options.chunkBytes === undefined ? {} : { chunkBytes: options.chunkBytes }),
+      ...(options.end === undefined ? {} : { end: options.end }),
+    }),
+  };
+}
+
+/** A whole (not streamed) Chat Completions answer, as `respond(url, chatAnswer('...'))` takes it. */
+export function chatAnswer(
+  text: string | null,
+  options: {
+    model?: string;
+    finishReason?: string;
+    refusal?: string;
+    usage?: ChatStreamOptions['usage'];
+  } = {}
+): { json: unknown } {
+  const usage = options.usage ?? { prompt_tokens: 120, completion_tokens: 30 };
+  return {
+    json: {
+      id: 'chatcmpl-scripted',
+      object: 'chat.completion',
+      model: options.model ?? 'gpt-6.1-terra',
+      choices: [
+        {
+          index: 0,
+          message: { role: 'assistant', content: text, refusal: options.refusal ?? null },
+          finish_reason: options.finishReason ?? 'stop',
+        },
+      ],
+      usage: {
+        prompt_tokens: usage.prompt_tokens,
+        completion_tokens: usage.completion_tokens,
+        prompt_tokens_details: { cached_tokens: usage.cached ?? 0 },
+      },
+    },
+  };
+}

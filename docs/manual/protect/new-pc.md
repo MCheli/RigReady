@@ -17,7 +17,7 @@ What you need from the old PC is one full backup, exported to a USB stick or a n
 ## On the new PC
 
 1. Install Windows and its updates, then the games: DCS World, the racing games, Microsoft Flight Simulator, whichever you use. Start each once so it creates its settings folder (`Saved Games\DCS`, `Documents\iRacing` and so on). RigReady restores into those folders, and a game that was not found cannot have its files restored.
-2. Install the helper tools you use: [SimAppPro](../dcs/simapppro.md), [Stream Deck](../hardware/stream-deck.md), [TrackIR](../hardware/trackir.md), the [Fanatec software](../games/wheel.md), [HidHide](../hardware/devices.md#hidhide), and sign in where they need it. Credentials are never in a backup ([What is never copied](index.md#what-is-never-copied)).
+2. Install the helper tools you use: [SimAppPro](../dcs/simapppro.md), [Stream Deck](../hardware/stream-deck.md), [TrackIR](../hardware/trackir.md), your wheel maker's software ([Wheel](../games/wheel.md)), [HidHide](../hardware/devices.md#hidhide), and sign in where they need it. Credentials are never in a backup ([What is never copied](index.md#what-is-never-copied)).
 3. Plug in the controllers and the extra screens.
 4. Install RigReady (see [install](../getting-started/install.md)) and open it. Go to **Configure > Backups** and press **Open backup file** to add the exported file.
 5. Press **Restore**. The page notes that the backup comes from another PC and shows where each item lands here. Items whose game was not found say so; everything else is ticked. Press **Restore**.

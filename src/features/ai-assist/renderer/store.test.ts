@@ -17,7 +17,7 @@ vi.mock('../../../renderer/ipc', () => ({
   useClient: () => ({
     on: () => () => undefined,
     aircraft: async () => ({ ok: true, value: { aircraft: [{ id: 'fa18', name: 'F/A-18C' }] } }),
-    status: async () => ({ ok: true, value: { keyPresent: false } }),
+    status: async () => ({ ok: true, value: { ready: false } }),
     guide: () =>
       new Promise((resolve) => {
         // What main holds at the moment it is asked.

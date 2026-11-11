@@ -1,0 +1,19 @@
+description: Flying, everything ready; Claude Desktop (with one MCP server of its own) and Cursor are installed, the MCP server is off and takes any free port
+rig: mark-full
+extends: mcp-settings.yaml
+mutations:
+  - op: writeFile
+    path: AppData/Roaming/Claude/claude_desktop_config.json
+    content: |
+      {
+        "mcpServers": {
+          "filesystem": {
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\Pilot\\Documents"]
+          }
+        }
+      }
+  - op: writeFile
+    path: .cursor/mcp.json
+    content: |
+      { "mcpServers": {} }

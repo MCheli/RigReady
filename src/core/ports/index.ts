@@ -234,12 +234,17 @@ export interface Secrets {
 
 export interface HttpRequest {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  /** https only. */
+  /** https, or plain http to this PC only (localhost, 127.0.0.1, [::1]). */
   url: string;
   headers?: Record<string, string>;
   body?: string;
   /** Default 60 000. */
   timeoutMs?: number;
+  /**
+   * Return a redirect as the response instead of following it, so that a request that
+   * carries a key never goes on to another address.
+   */
+  noRedirects?: boolean;
 }
 
 export interface HttpResponse {
@@ -380,6 +385,13 @@ export interface AppWindow {
    * as the main window and closes with the app.
    */
   openPanel(panel: PanelWindow): Promise<Result<{ opened: boolean }>>;
+  /**
+   * Hands a link to the program Windows has registered for its scheme (an assistant's
+   * install link such as `cursor://...` or `vscode:mcp/install?...`). Only the schemes of
+   * `isOpenableLink` (`src/core/links.ts`) are passed on; anything else is refused. Nothing
+   * comes back to read: the answer says the link was handed over, not what the program did.
+   */
+  openLink(url: string): Promise<Result<{ opened: boolean }>>;
 }
 
 export interface PanelWindow {

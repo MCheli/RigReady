@@ -4,7 +4,7 @@ description: Configure > Devices and its tools, plus Stream Deck, TrackIR and th
 order: 90
 ---
 
-This section covers the hardware tools under **Configure**: every USB device and game controller, what each one reports when you touch it, whether anything moves by itself, and where everything is plugged in. Two more pages cover a Stream Deck and TrackIR, and the Fanatec wheel has [its own page](../games/wheel.md).
+This section covers the hardware tools under **Configure**: every USB device and game controller, what each one reports when you touch it, whether anything moves by itself, and where everything is plugged in. Two more pages cover a Stream Deck and TrackIR, and the wheel base (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek or Cammus) has [its own page](../games/wheel.md).
 
 Every tool here works with any controller Windows sees. What is specific to a model (cheat-sheet drawings and layouts, the wheel page) so far covers the gear RigReady was built on: WinWing, the Thrustmaster TPR, a Virpil panel and Fanatec. Other brands work fully as controllers; reports and drawings for them are welcome.
 

@@ -1,10 +1,10 @@
 ---
 title: Safety with an assistant
-description: What RigReady asks you before an assistant changes the rig or launches a game, what it never offers, and how to see and undo what an assistant did.
+description: What RigReady asks before an assistant changes the rig or launches a game, what it never offers, how its scripts are guarded, and how to undo what it did.
 order: 30
 ---
 
-An assistant works in your name, on your rig. RigReady keeps the same safeguards for it as for you, and adds a few of its own.
+An assistant works in your name, on your rig. RigReady keeps the same safeguards for it as for you, and adds a few of its own. Everything on this page holds for the [built-in assistant](built-in-assistant.md) and for an assistant connected over MCP alike: both go through one gate in RigReady, with the same questions, the same limits and the same record. The built-in assistant is named "Built-in assistant" wherever a name is shown.
 
 ## RigReady asks you, in its own window
 
@@ -33,13 +33,26 @@ Reading never asks: checks, previews, the bindings, the log and this manual.
 - Binding files are not written while DCS is running.
 - One change at a time: while one runs, another assistant's change is refused with "RigReady is still busy".
 
+## Scripts an assistant writes
+
+- You read the whole script and its explanation in the assistant panel before it is saved, and only your **Save** saves it.
+- A script that asks for administrator rights is refused. Scripts run as you, never elevated.
+- It is saved in RigReady's data folder (`scripts\assistant`) with a header that says an assistant wrote it, and RigReady records its SHA-256 as your approval.
+- It always asks **Run this program?** before it runs, whatever the setup says.
+- If the file changes after you approved it, it is not run until you have read it again and approved it in the panel.
+- No assistant can run it, not even with **Never ask**: it runs only from RigReady's window.
+- A setup you share never carries it.
+
+See [Scripts](../setups/scripts.md#scripts-an-assistant-wrote).
+
 ## What is never offered
 
-Your Anthropic API key and the AI binding help that uses it, the AI assistant settings themselves (turning the server on or off, pairing, tokens), file dialogs, the clipboard, and RigReady's own window controls.
+Your AI provider's API key and anything that spends it (the binding guide's AI help, the built-in assistant's own requests), the AI assistant settings themselves (turning the server on or off, pairing, tokens), saving a proposal or a script, approving a script, file dialogs, the clipboard, and RigReady's own window controls.
+
 
 ## See what was done
 
-**What assistants did** on the Settings page lists every call of this run: who asked, what, and how it ended. A call that changed files says so, and the change is on the Safety page under the action it caused. RigReady also shows a short line at the bottom right after an assistant changed something or launched a game.
+**What assistants did** on the Settings page lists every call of this run, the built-in assistant's too: who asked, what, and how it ended. A call that changed files says so, and the change is on the Safety page under the action it caused. RigReady also shows a short line at the bottom right after an assistant changed something or launched a game.
 
 On the Safety page, an action an assistant caused carries its name, for example "by Claude Code", or "by RigReady.exe --mcp" for an assistant started through the bridge. The name is kept in the change journal, so it is still there after RigReady restarts, when **What assistants did** has started over. **Undo** works the same as for a change you made yourself. A change you made in RigReady shows no name.
 

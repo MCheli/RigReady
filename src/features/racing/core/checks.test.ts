@@ -80,6 +80,7 @@ describe('racing checks, capture and overview', () => {
     expect(racing.every((c) => c.kind === 'racing' || c.game !== undefined)).toBe(true);
     expect(racing.filter((c) => !c.game).map((c) => c.key)).toEqual([
       'racing:wheel-base',
+      'racing:wheel-rotation',
       'racing:app:fanatec-service',
       'racing:app:trophi',
     ]);

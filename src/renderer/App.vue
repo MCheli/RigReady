@@ -11,6 +11,9 @@ import ToastHost from './components/ToastHost.vue';
 import { manifests } from './features';
 import { useClient } from './ipc';
 import { notifyMachineChanged } from './machine';
+import { noticeManualPage } from '../shared/manualLinks';
+import ManualLink from './components/ManualLink.vue';
+import { manualPageOfRoute, openManual } from './shell/manual';
 import {
   aboutOpen,
   followRigKind,
@@ -34,6 +37,7 @@ const scenario = ref<string>();
 const version = ref('');
 const dataRoot = ref<string>();
 const overlays = manifests.flatMap((m) => m.overlays ?? []);
+const barItems = manifests.flatMap((m) => m.barItems ?? []);
 const notices = ref<string[]>([]);
 const shell = useClient(appContract);
 // The tray and live scenario changes act outside the renderer; screens refresh when told.
@@ -148,6 +152,7 @@ watch(
         </router-link>
       </nav>
       <v-spacer />
+      <component :is="item" v-for="(item, index) in barItems" :key="`bar-${index}`" />
       <button
         type="button"
         class="shell-find"
@@ -163,6 +168,21 @@ watch(
           ><kbd class="rr-kbd">Ctrl</kbd><kbd class="rr-kbd">K</kbd></span
         >
       </button>
+      <v-tooltip text="Open the manual page for this screen" location="bottom">
+        <template #activator="{ props: tip }">
+          <button
+            v-bind="tip"
+            type="button"
+            class="shell-help"
+            aria-label="Open the manual page for this screen"
+            data-testid="manual-help"
+            :data-page="manualPageOfRoute(route)"
+            @click="openManual(manualPageOfRoute(route))"
+          >
+            <v-icon icon="mdi-help-circle-outline" size="19" />
+          </button>
+        </template>
+      </v-tooltip>
       <span v-if="scenario" class="shell-scenario" data-testid="scenario-banner" :title="scenario">
         <v-icon icon="mdi-flask-outline" size="16" /> Scenario: {{ scenario }}
       </span>
@@ -189,6 +209,7 @@ watch(
         data-testid="app-notice"
       >
         {{ notice }}
+        <ManualLink :page="noticeManualPage(notice)" />
       </v-alert>
       <router-view v-slot="{ Component, route: shown }">
         <component :is="Component" :key="viewKey(shown)" />
@@ -304,6 +325,24 @@ watch(
 .shell-find-keys {
   display: inline-flex;
   gap: 3px;
+}
+.shell-help {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--rr-muted);
+  cursor: pointer;
+  transition: color var(--rr-motion-fast) var(--rr-ease);
+}
+.shell-help:hover {
+  color: var(--rr-text);
 }
 .shell-scenario {
   display: inline-block;

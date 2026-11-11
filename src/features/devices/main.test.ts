@@ -6,6 +6,9 @@ import { mutate, wiredApp, type WiredApp } from '../../../tests/helpers';
 import type { HealthReport } from './core/health';
 import type { Overview, UsbMap } from './core/model';
 
+/** A loaded CI runner can take longer than vi.waitFor's 1 s default to answer. */
+const WAIT = { timeout: 10_000 };
+
 let app: WiredApp | undefined;
 afterEach(async () => {
   for (const feature of app?.wiring.features ?? []) await feature.dispose?.();
@@ -130,7 +133,7 @@ describe('devices: the overview', () => {
           otherUnit: false,
         }),
       ]);
-    });
+    }, WAIT);
     const overview = await app.invoke<Overview>('devices:overview');
     expect(overview.devices.find((d) => d.key.startsWith('guid:'))).toMatchObject({
       name: 'vJoy Device',
@@ -201,8 +204,9 @@ describe('devices: live input, health check, switches', () => {
     app.ports.input.emit([state(10, 62, [])]);
     app.ports.input.emit([state(10, 62, [], [0.1]), state(9, 42)]);
     app.ports.input.emit([state(10, 62, [], [0.2])]);
-    await vi.waitFor(() =>
-      expect(app!.events.some((e) => e.channel === 'devices:event:input')).toBe(true)
+    await vi.waitFor(
+      () => expect(app!.events.some((e) => e.channel === 'devices:event:input')).toBe(true),
+      WAIT
     );
     const sent = app.events
       .filter((e) => e.channel === 'devices:event:input')

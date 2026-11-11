@@ -1,7 +1,12 @@
 import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { aiAssistContract } from './contract';
+import { allPathVariables } from '../../core/pathVariables';
+import { Assistant } from './core/assistant';
+import { AssistantDrafts } from './core/drafts';
 import { listenForPresses } from './core/inputs';
+import { findPrograms } from './core/programs';
+import { assistantTools } from './core/tools';
 import { plainLabels } from './core/pack';
 import { AiAssist } from './core/service';
 import { shippedPack } from './core/shipped';
@@ -16,8 +21,23 @@ export default defineFeatureMain({
       ports: ctx.ports,
       log: ctx.log,
       bindings: ctx.bindings,
+      settings: ctx.settings,
       onProgress: (progress) => ctx.emit(aiAssistContract, 'sendProgress', progress),
     });
+    const drafts = new AssistantDrafts({
+      ports: ctx.ports,
+      log: ctx.log,
+      invoke: (channel, input) => ctx.invoke(channel, input),
+      changed: () => ctx.emit(aiAssistContract, 'draftsChanged', {}),
+    });
+    const assistant = new Assistant({
+      ports: ctx.ports,
+      log: ctx.log,
+      host: () => ctx.mcp.host(),
+      target: () => ai.assistantTarget(),
+    });
+    // The three tools an assistant builds a ready check with, offered over MCP too.
+    for (const tool of assistantTools()) ctx.mcp.registerTool(tool);
     // The shipped guides' plain-language action names, for every page that lists actions.
     ctx.bindings.registerLabels({
       id: 'ai-assist',
@@ -57,7 +77,11 @@ export default defineFeatureMain({
           return ok({ listening: false });
         },
         status: () => ai.status(),
+        setProvider: ({ provider }) => ai.setProvider(provider),
         setModel: ({ model }) => ai.setModel(model),
+        setCompatible: (change) => ai.setCompatible(change),
+        setKey: ({ key }) => ai.setKey(key),
+        clearKey: () => ai.clearKey(),
         testKey: () => ai.testKey(),
         prepare: (input) => ai.prepare(input),
         send: ({ requestId }) => ai.send(requestId),
@@ -65,6 +89,28 @@ export default defineFeatureMain({
         reviewSuggestions: ({ roundId, selected }) => ai.reviewSuggestions(roundId, selected),
         applySuggestions: ({ roundId, selected }) => ai.applySuggestions(roundId, selected),
         deleteDraft: ({ aircraftId }) => ai.deleteDraft(aircraftId),
+        assistantPrepare: (input) => assistant.prepare(input),
+        assistantSend: ({ requestId }) => assistant.send(requestId, new AbortController().signal),
+        assistantConversation: async ({ conversationId }) => assistant.conversation(conversationId),
+        assistantForget: async ({ conversationId }) =>
+          ok({ forgotten: assistant.forget(conversationId) }),
+        findPrograms: async (input) =>
+          findPrograms(
+            ctx.ports,
+            await allPathVariables({ ports: ctx.ports, log: ctx.log }, ctx.games),
+            input
+          ),
+        proposeSetup: ({ by, ...input }) => drafts.proposeSetup(by, input),
+        draftScript: ({ by, ...input }) => drafts.draftScript(by, input),
+        drafts: () => drafts.drafts(),
+        saveSetupDraft: ({ draftId }) => drafts.saveSetup(draftId),
+        saveScriptDraft: ({ draftId }) => drafts.saveScript(draftId),
+        discardDraft: async ({ draftId }) => ok({ discarded: drafts.discard(draftId) }),
+        assistantScripts: async () => {
+          const scripts = await drafts.scripts();
+          return scripts.ok ? ok({ scripts: scripts.value }) : scripts;
+        },
+        approveScript: ({ file, sha256 }) => drafts.approveScript(file, sha256),
       }),
     ];
   },

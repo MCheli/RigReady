@@ -1,0 +1,115 @@
+description: The built-in assistant sets up a DCS session (scripted Anthropic answers with tool use) and writes a script to start SRS
+rig: mark-full
+extends: flying-fresh.yaml
+# SRS is installed in a folder of its own and is not running.
+mutations:
+  - op: writeFile
+    path: Program Files/DCS-SimpleRadio-Standalone/SR-ClientRadio.exe
+    content: ''
+  - op: writeFile
+    path: Program Files/DCS-SimpleRadio-Standalone/unins000.exe
+    content: ''
+# Each answer of the Messages API is used once, in this order: the first conversation finds
+# the helpers and proposes a setup, the second drafts a script for the SRS fix.
+http:
+  - match: { url: 'api.anthropic.com/v1/models/', method: GET }
+    response: { status: 200, json: { id: claude-opus-5-5, type: model, display_name: Claude Opus 5.5 } }
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST }
+    times: 1
+    response:
+      status: 200
+      json:
+        id: msg_1
+        type: message
+        role: assistant
+        model: claude-opus-5-5
+        stop_reason: tool_use
+        usage: { input_tokens: 5200, output_tokens: 60 }
+        content:
+          - { type: text, text: 'First I will find where your helper programs are installed.' }
+          - { type: tool_use, id: tu_find, name: programs_find, input: { names: [SimAppPro, TrackIR, SRS] } }
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: 'tu_find' }
+    times: 1
+    response:
+      status: 200
+      json:
+        id: msg_2
+        type: message
+        role: assistant
+        model: claude-opus-5-5
+        stop_reason: tool_use
+        usage: { input_tokens: 6100, output_tokens: 420 }
+        content:
+          - type: tool_use
+            id: tu_propose
+            name: setup_propose
+            input:
+              newSetup: { name: DCS session, game: dcs }
+              summary: 'Before DCS starts, SimAppPro, TrackIR and the SRS radio client should be running. Make ready starts any that are not.'
+              addChecks:
+                - type: process.running
+                  title: SimAppPro
+                  params: { name: SimAppPro.exe }
+                  remediation: { type: process.launch, params: { exe: '{LOCALAPPDATA}/Programs/SimAppPro/SimAppPro.exe' } }
+                - type: process.running
+                  title: TrackIR
+                  params: { name: TrackIR5.exe }
+                  remediation: { type: process.launch, params: { exe: '{PROGRAM_FILES_X86}/TrackIR5/TrackIR5.exe' } }
+                - type: process.running
+                  title: SRS radio
+                  params: { name: SR-ClientRadio.exe }
+                  remediation: { type: process.launch, params: { exe: '{PROGRAM_FILES}/DCS-SimpleRadio-Standalone/SR-ClientRadio.exe' } }
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: 'tu_propose' }
+    times: 1
+    response:
+      status: 200
+      json:
+        id: msg_3
+        type: message
+        role: assistant
+        model: claude-opus-5-5
+        stop_reason: end_turn
+        usage: { input_tokens: 6600, output_tokens: 70 }
+        content:
+          - { type: text, text: 'I found all three. The new setup "DCS session" is waiting for you in RigReady: look it over and press Save.' }
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: 'start SRS' }
+    times: 1
+    response:
+      status: 200
+      json:
+        id: msg_4
+        type: message
+        role: assistant
+        model: claude-opus-5-5
+        stop_reason: tool_use
+        usage: { input_tokens: 7000, output_tokens: 380 }
+        content:
+          - { type: text, text: 'Here is a script that starts SRS minimized and waits until it is up.' }
+          - type: tool_use
+            id: tu_script
+            name: script_draft
+            input:
+              fileName: srs-start.ps1
+              content: |
+                $exe = Join-Path $env:ProgramFiles 'DCS-SimpleRadio-Standalone\SR-ClientRadio.exe'
+                Start-Process -FilePath $exe -WindowStyle Minimized
+                for ($i = 0; $i -lt 20; $i++) {
+                  if (Get-Process SR-ClientRadio -ErrorAction SilentlyContinue) { exit 0 }
+                  Start-Sleep -Milliseconds 500
+                }
+                exit 1
+              explanation: 'Starts the SRS radio client minimized, then checks every half second for ten seconds that it is running. It ends with exit code 0 when SRS is up and 1 when it never came.'
+              use: { setup: DCS session, as: fix, forCheck: SRS radio, title: Start SRS minimized }
+  - match: { url: 'api.anthropic.com/v1/messages', method: POST, body: 'tu_script' }
+    times: 1
+    response:
+      status: 200
+      json:
+        id: msg_5
+        type: message
+        role: assistant
+        model: claude-opus-5-5
+        stop_reason: end_turn
+        usage: { input_tokens: 7400, output_tokens: 50 }
+        content:
+          - { type: text, text: 'The script is shown in RigReady. Once you save it, Make ready asks before it runs it.' }

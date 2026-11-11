@@ -175,10 +175,11 @@ describe('no background writes', () => {
  */
 const REASONED: Record<string, { why: string; previews?: Record<string, string> }> = {
   mcp: {
-    why: 'Its only write is the token of RigReady.exe --mcp, a file of its own inside the data folder (mcp/bridge-token), made when the user turns the MCP server on. Everything an assistant changes goes through the channels of the other features and their previews.',
+    why: 'Inside the data folder it writes the token of RigReady.exe --mcp (mcp/bridge-token). Outside it, only Connect writes one assistant settings file (Claude Desktop, AnythingLLM), after connectPreview has shown the change; tested below. Everything an assistant changes goes through the channels of the other features and their previews.',
+    previews: { connect: 'connectPreview' },
   },
   'ai-assist': {
-    why: 'Its own writes are inside the data folder (the guide a model drafted, kept as a YAML file there). Changes to binding files are not written by this feature: they go to the bindings feature as proposals (core/bindings.ts), whose plan is shown in the review dialog before Apply.',
+    why: 'Its own writes are inside the data folder (the guide a model drafted, kept as a YAML file there, and the scripts an assistant drafted with their approvals, in scripts/assistant, written only when the user presses Save on the full text). A setup proposal is saved through profiles:save or profiles:create, as the editor saves. Changes to binding files are not written by this feature: they go to the bindings feature as proposals (core/bindings.ts), whose plan is shown in the review dialog before Apply.',
   },
   'checks-generic': {
     why: 'No screen and no IPC of its own. Its one write outside the data folder is the "Restore from a backup" fix, which Make ready runs in one click by design: the fix text beside the failing check names the file and the copy it comes from (tested below). Its saved copies live inside the data folder.',
@@ -295,6 +296,7 @@ describe('the source rule: a feature that writes files shows the change first', 
       'racing:acRepair': 'racing:acRepairPreview',
       'profiles:createShortcut': 'profiles:shortcutPreview',
       'profiles:removeShortcut': 'profiles:shortcutPreview',
+      'mcp:connect': 'mcp:connectPreview',
     };
     const all = new Set(
       contracts.flatMap((c) => Object.keys(c.channels).map((k) => `${c.feature}:${k}`))
@@ -330,6 +332,27 @@ function expectSame(preview: ChangePreview, written: JournalEntry[], dataRoot: s
 }
 
 describe('a preview says exactly what is then written', () => {
+  it('MCP: connecting Claude Desktop writes the one settings file the preview named', async () => {
+    app = await wiredApp('generic-fresh');
+    const file = path.join(app.ports.folders.appData(), 'Claude', 'claude_desktop_config.json');
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(
+      file,
+      JSON.stringify({ mcpServers: { files: { command: 'npx', args: [] } } }, null, 2)
+    );
+    await app.invoke('mcp:setOptions', { port: 0 });
+    const before = await journal(app);
+    const preview = await app.invoke<ChangePreview>('mcp:connectPreview', {
+      client: 'claude-desktop',
+    });
+    expect(await journal(app)).toEqual(before);
+    const target = app;
+    const written = await during(target, () =>
+      target.invoke('mcp:connect', { client: 'claude-desktop' })
+    );
+    expectSame(preview, written, target.ports.folders.dataRoot());
+  });
+
   it('iRacing: pointing the files at a wheel base with a new Windows id', async () => {
     app = await wiredApp('racing-iracing-moved-wheel');
     const view = await app.invoke<{

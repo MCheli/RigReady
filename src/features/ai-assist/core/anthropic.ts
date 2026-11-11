@@ -34,6 +34,9 @@ export const DEFAULT_MODEL = MODELS[0]!.id;
 
 export const modelInfo = (id: string): ModelInfo => MODELS.find((m) => m.id === id) ?? MODELS[0]!;
 
+/** The listed model with this id, or undefined for one the user typed. */
+export const knownModel = (id: string): ModelInfo | undefined => MODELS.find((m) => m.id === id);
+
 export interface Usage {
   input: number;
   output: number;
@@ -41,9 +44,13 @@ export interface Usage {
   cacheRead: number;
 }
 
-/** Approximate cost in US dollars: cache writes cost 1.25x input, reads the cache price. */
-export function approximateCost(model: string, usage: Usage): number {
-  const m = modelInfo(model);
+/**
+ * Approximate cost in US dollars: cache writes cost 1.25x input, reads the cache price.
+ * Null for a model whose price RigReady does not know.
+ */
+export function approximateCost(model: string, usage: Usage): number | null {
+  const m = knownModel(model);
+  if (!m) return null;
   const dollars =
     usage.input * m.input +
     usage.cacheWrite * m.input * 1.25 +
@@ -93,7 +100,7 @@ export function messageBody(request: MessageRequest): Record<string, unknown> {
   };
 }
 
-function headers(key: string, beta: boolean): Record<string, string> {
+export function headers(key: string, beta: boolean): Record<string, string> {
   return {
     'content-type': 'application/json',
     'x-api-key': key,
@@ -134,7 +141,8 @@ export interface MessageAnswer {
   text: string;
   model: string;
   usage: Usage;
-  cost: number;
+  /** Approximate, US dollars; null when the price of the model is not known. */
+  cost: number | null;
 }
 
 /** Removes the key from text that may be shown or logged, whatever the server echoed. */
@@ -146,7 +154,11 @@ export function scrub(text: string, key: string): string {
 const clip = (text: string, max: number): string =>
   text.length > max ? `${text.slice(0, max)}…` : text;
 
-function apiError(status: number, body: string, retryAfter: string | undefined): Result<never> {
+export function apiError(
+  status: number,
+  body: string,
+  retryAfter: string | undefined
+): Result<never> {
   const parsed = ErrorSchema.safeParse(safeJson(body));
   const said = parsed.success ? clip(parsed.data.error.message ?? '', 300) : '';
   const detail = said ? `Anthropic said: ${said}` : `HTTP ${status}`;
@@ -186,7 +198,7 @@ function apiError(status: number, body: string, retryAfter: string | undefined):
   return err('ai.request', 'The Anthropic API refused the request.', detail);
 }
 
-function safeJson(body: string): unknown {
+export function safeJson(body: string): unknown {
   try {
     return JSON.parse(body);
   } catch {
@@ -620,7 +632,7 @@ export async function testKey(http: Http, key: string, model: string): Promise<R
   if (status === 403 || status === 404) {
     return ok({
       valid: false,
-      reason: `The key works, but it cannot use ${modelInfo(model).name}. Pick another model.`,
+      reason: `The key works, but it cannot use ${knownModel(model)?.name ?? model}. Pick another model.`,
     });
   }
   const failed = apiError(status, response.value.body, response.value.headers['retry-after']);
