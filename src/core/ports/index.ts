@@ -347,6 +347,13 @@ export interface AppWindow {
    * as the main window and closes with the app.
    */
   openPanel(panel: PanelWindow): Promise<Result<{ opened: boolean }>>;
+  /**
+   * Hands a link to the program Windows has registered for its scheme (an assistant's
+   * install link such as `cursor://...` or `vscode:mcp/install?...`). Only the schemes of
+   * `isOpenableLink` (`src/core/links.ts`) are passed on; anything else is refused. Nothing
+   * comes back to read: the answer says the link was handed over, not what the program did.
+   */
+  openLink(url: string): Promise<Result<{ opened: boolean }>>;
 }
 
 export interface PanelWindow {

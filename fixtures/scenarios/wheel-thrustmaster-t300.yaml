@@ -1,0 +1,38 @@
+description: A Thrustmaster T300 RS in PS3 normal mode on a generic PC, with the force feedback driver installed
+rig: generic-rig
+extends: generic-fresh.yaml
+# Synthetic, not recorded: nobody has run RigReady on a real Thrustmaster wheel yet. The USB ids
+# are from docs/research/wheelbases.md; the GUIDs and instance paths are made up.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_044F&PID_B66E\7&1c2d3e4f&0&4'
+      vendorId: '044F'
+      productId: 'B66E'
+      name: 'Thrustmaster T300RS Racing wheel'
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Thrustmaster
+    controller:
+      name: 'Thrustmaster T300RS Racing wheel'
+      guid: 6E9C4D50-9C41-11F0-8004-444553540000
+      productGuid: B66E044F-0000-0000-0000-504944564944
+      vendorId: '044F'
+      productId: 'B66E'
+      numAxes: 5
+      numButtons: 13
+      numHats: 1
+      axisNames: [X, Y, Z, RZ, SLIDER1]
+  - op: setRegistryValue
+    hive: HKLM
+    key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Thrustmaster FFB Racing Wheel'
+    name: DisplayName
+    value: { type: string, value: 'Thrustmaster FFB Racing Wheel' }
+  - op: setRegistryValue
+    hive: HKLM
+    key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Thrustmaster FFB Racing Wheel'
+    name: DisplayVersion
+    value: { type: string, value: '2025.TMWD.2' }

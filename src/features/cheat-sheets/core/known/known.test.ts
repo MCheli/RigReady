@@ -136,13 +136,15 @@ describe('the shipped device maps', () => {
 });
 
 describe('a Warthog stick on the recorded rig', () => {
+  // Since the drawings of the popular controllers (core/drawings/thrustmaster.ts) its
+  // sheet is a drawing; the names and numbers are still this map's.
   let app: WiredApp | undefined;
   afterEach(async () => {
     await app?.cleanup();
     app = undefined;
   });
 
-  it('gets the controls list named for it, with DCS’s Hornet defaults on its controls', async () => {
+  it('gets its drawing with the controls named for it, and DCS’s Hornet defaults on them', async () => {
     app = await wiredApp('cheat-sheets-known-devices', {
       files: [
         'Saved Games/DCS/**',
@@ -158,7 +160,11 @@ describe('a Warthog stick on the recorded rig', () => {
     const warthog = sheet.devices.find((d) => d.name === 'Joystick - HOTAS Warthog');
     expect(warthog, sheet.devices.map((d) => d.name).join(', ')).toBeDefined();
     const picture = pictureFor(warthog!);
-    expect(picture).toMatchObject({ kind: 'list', known: { id: 'tm-warthog-stick' } });
+    expect(picture).toMatchObject({
+      kind: 'drawing',
+      source: 'builtin',
+      drawing: { name: 'Thrustmaster HOTAS Warthog joystick' },
+    });
     expect(deviceLabels(warthog!).get('button:2')).toBe('S2 weapon release');
     const release = warthog!.controls.find((c) => c.id === 'button:2');
     expect(release?.bindings.map((b) => b.action)).toContain('Weapon Release Button');

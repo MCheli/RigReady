@@ -13,7 +13,8 @@ import {
 
 /**
  * Assetto Corsa (Steam app 244210). Settings are INI files in Documents\Assetto Corsa\cfg;
- * controls.ini holds the bindings and the controllers by DirectInput GUID.
+ * controls.ini holds the bindings, which name controllers by number (JOY=n), and the
+ * controllers listed at those numbers (docs/research/assetto-corsa-controls.md).
  */
 
 const APP_ID = '244210';
@@ -90,7 +91,7 @@ export const extras: GameModuleExtras = {
   kind: 'racing',
   manualFolder: { exe: EXE, label: 'the assettocorsa folder (it contains AssettoCorsa.exe)' },
   notes: [
-    'Bindings refer to controllers by their Windows instance id; after a USB port change Assetto Corsa may ask you to bind the wheel again.',
+    'Bindings refer to controllers by their position in the order Windows lists them; after a USB port change or a controller added, they can act on another controller. The bindings page can renumber them.',
   ],
 };
 

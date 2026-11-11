@@ -165,6 +165,7 @@ const TROUBLED: { scenario: string; routes: string[] }[] = [
     routes: ['/configure/racing', '/configure/racing/iracing', '/configure/racing/wheel'],
   },
   { scenario: 'racing-not-ready', routes: ['/configure/racing', '/configure/games'] },
+  { scenario: 'racing-ac-moved-controllers', routes: ['/configure/racing/assetto-corsa'] },
   {
     scenario: 'stream-deck-new-pc',
     routes: ['/configure/stream-deck', '/configure/stream-deck/setup'],

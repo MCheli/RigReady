@@ -48,6 +48,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **AI assistants**
 - An MCP server inside RigReady, off by default, so that an assistant on the same PC (Claude Desktop, Claude Code, Cursor, VS Code and other MCP clients) can check the rig, make it ready, read and change bindings with a preview, apply a monitor layout, make a backup, read the log and read the manual. `RigReady.exe --mcp` connects assistants that start a program; others pair from Settings.
+- Connect an assistant with one button: Settings > AI assistants lists the assistants found on this PC (Claude Desktop, LM Studio, AnythingLLM, Jan, Msty Studio, Goose, then Claude Code, Cursor, VS Code, Windsurf). Claude Desktop and AnythingLLM get RigReady added to their settings file after a preview, with a backup and Undo on the Safety page; Cursor, VS Code and LM Studio get their own install link; Claude Code gets its command, run on request. The welcome screen offers it as an optional last step.
 - RigReady asks in its own window before an assistant changes the rig or launches a game (Always ask, Ask before a launch only, or Never ask). Changes go through the same backups and Undo, and Settings lists what assistants did. The AI provider keys and the AI settings are never offered to an assistant.
 - Guided conversations for first setup, fixing bindings, a rig that is not ready and a new PC.
 - The built-in assistant: a panel on every screen, opened from the Assistant button (once an AI provider is set up) or the command palette, for any game, with the provider chosen in Settings (Anthropic, OpenAI, an OpenAI-compatible service or a model on this PC). It uses the same tools as the MCP server through the same gate, so its changes are asked about in the window, recorded under "Built-in assistant" and named on the Safety page. Every request is shown before it is sent.
@@ -56,8 +57,9 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **Racing and other games**
 - iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
+- Assetto Corsa controller repair: when Windows lists the controllers in another order than when `controls.ini` was saved (a USB port change, a controller added), the page shows which controller each binding really acts on now and renumbers the file after a preview, with a backup and Undo. Identical controllers are asked for, never guessed.
 - Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
-- A Fanatec wheel page (other wheel bases work as controllers; their software and modes are not read); any other game works generically.
+- A Wheel page for every major wheelbase brand (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek SimSports, Cammus): base, pedals and axes, the PC mode where the USB ID shows it, the maker's software with a "running" check that starts it, backups of profile files where they are plain files, and the maker's own per-game settings where it publishes any. Any other game works generically.
 
 **Protecting your configuration**
 - One-click backup, a restore wizard with a preview and per-item choices, snapshots, "what changed since it last worked".
@@ -71,6 +73,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 **The app**
 - Per-user installer without administrator rights, updates through GitHub Releases with stable and beta channels, logging with personal details removed, a Diagnostics page.
 - A command palette (Ctrl+K) over every page and the common actions, with what an action did reported in a toast; Ctrl+1 and Ctrl+2 for Play and Configure; `?` for the list of keys; an About panel.
+- The app links to this manual: a help button (?) in the header opens the manual page for the screen shown, tab included; the palette has Open the manual and Open the manual page for this screen; About and Settings link to it; and the notices about controllers that could not be read, a device not found, a monitor layout to put back, DCS files that will not be written, a setup file that cannot be read, Start with Windows and damaged data files link to their troubleshooting page.
 - Motion is short and switched off when Windows is asked to reduce it. A page that is still reading shows its outline.
 - Security: a review of the whole application (`docs/research/security-review-2026-11.md`), a `SECURITY.md` with the reporting path, and a Security page in the manual. A release marked `[security]` is announced on every screen with the install one click away. Every permission a page could ask for is refused; the windows that draw cheat sheets and pictures cannot reach the network; what a second start hands to the running app is validated first. A setup or backup whose YAML would multiply itself into millions of values is refused, and a restore never writes into the Start menu or its Startup folder.
 
@@ -80,6 +83,8 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - A binding written by RigReady has not been checked in DCS's own controls screen (BIND-DCS-008).
 - MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not been looked at (SAP-001).
 - The iRacing device ID repair has not been tried with a wheel whose Windows ID really changed (RACE-IRACING-005).
+- The Wheel page has only been tried on a real Fanatec base. Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek and Cammus bases were tested on recorded data made from their published USB IDs; the page says so and links the hardware report form (RACE-WHEEL-001).
+- The Assetto Corsa controller repair has not been tried in the game with a controller that really moved (RACE-AC-001).
 - Which way is up on sideways-mounted screens cannot be read from Windows; Monitors > Identify asks once.
 - Restoring a Stream Deck backup file by file, and closing the Stream Deck app, were only exercised against recorded data.
 - The taskbar badge, progress bar and thumbnail buttons were accepted by Windows in tests, but nobody has looked at them on a real taskbar; the ready tone's sound and a real press of the global hotkey are untested too.

@@ -7,14 +7,22 @@ import { MCP_PATH } from '../server/constants';
  * so the Settings page, the manual and a test say the same thing.
  */
 
-export type ClientKind =
-  | 'claude-desktop'
-  | 'claude-code'
-  | 'claude-code-http'
-  | 'cursor'
-  | 'cursor-http'
-  | 'vscode'
-  | 'http';
+export const CLIENT_KIND_IDS = [
+  'claude-desktop',
+  'lm-studio',
+  'anythingllm',
+  'jan',
+  'msty',
+  'goose',
+  'claude-code',
+  'claude-code-http',
+  'cursor',
+  'cursor-http',
+  'vscode',
+  'windsurf',
+  'http',
+] as const;
+export type ClientKind = (typeof CLIENT_KIND_IDS)[number];
 
 export const CLIENT_KINDS: { kind: ClientKind; title: string; sub: string }[] = [
   {
@@ -22,7 +30,36 @@ export const CLIENT_KINDS: { kind: ClientKind; title: string; sub: string }[] = 
     title: 'Claude Desktop',
     sub: 'claude_desktop_config.json (Settings > Developer > Edit Config), then restart Claude.',
   },
-  { kind: 'claude-code', title: 'Claude Code', sub: 'One command in a terminal.' },
+  {
+    kind: 'lm-studio',
+    title: 'LM Studio',
+    sub: 'Program > Install > Edit mcp.json, then merge this into mcpServers.',
+  },
+  {
+    kind: 'anythingllm',
+    title: 'AnythingLLM',
+    sub: 'storage\\plugins\\anythingllm_mcp_servers.json in its AppData folder, then restart AnythingLLM.',
+  },
+  {
+    kind: 'jan',
+    title: 'Jan',
+    sub: 'Settings > MCP Servers > +: the name, the command and the argument below.',
+  },
+  {
+    kind: 'msty',
+    title: 'Msty Studio',
+    sub: 'Toolbox > add a tool > STDIO / JSON, then paste this.',
+  },
+  {
+    kind: 'goose',
+    title: 'Goose',
+    sub: 'Add this under extensions in %APPDATA%\\Block\\goose\\config\\config.yaml, then restart Goose.',
+  },
+  {
+    kind: 'claude-code',
+    title: 'Claude Code',
+    sub: 'One command in a terminal; --scope user makes it work in every folder.',
+  },
   {
     kind: 'claude-code-http',
     title: 'Claude Code, over HTTP',
@@ -35,6 +72,11 @@ export const CLIENT_KINDS: { kind: ClientKind; title: string; sub: string }[] = 
     sub: 'The same with the endpoint and the token.',
   },
   { kind: 'vscode', title: 'VS Code', sub: '.vscode/mcp.json, or MCP: Open User Configuration.' },
+  {
+    kind: 'windsurf',
+    title: 'Windsurf',
+    sub: 'Cascade > MCP servers > View raw config (mcp_config.json), merge this into mcpServers.',
+  },
   { kind: 'http', title: 'Any other client', sub: 'The endpoint and the header to send.' },
 ];
 
@@ -59,9 +101,32 @@ export function clientConfig(kind: ClientKind, inputs: ConfigInputs): string {
   const bearer = `Bearer ${inputs.token ?? TOKEN_PLACEHOLDER}`;
   switch (kind) {
     case 'claude-desktop':
+    case 'lm-studio':
+    case 'anythingllm':
+    case 'windsurf':
       return JSON.stringify({ mcpServers: { rigready: stdio } }, null, 2);
+    case 'msty':
+      return JSON.stringify(stdio, null, 2);
+    case 'jan':
+      return [
+        'Server Name: rigready',
+        `Command: ${stdio.command}`,
+        `Arguments: ${stdio.args.join(' ')}`,
+      ].join('\n');
+    case 'goose':
+      // Double-quoted YAML strings take the same escapes as JSON.
+      return [
+        'extensions:',
+        '  rigready:',
+        '    name: RigReady',
+        '    type: stdio',
+        `    cmd: ${JSON.stringify(stdio.command)}`,
+        `    args: [${stdio.args.map((a) => JSON.stringify(a)).join(', ')}]`,
+        '    enabled: true',
+        '    timeout: 300',
+      ].join('\n');
     case 'claude-code':
-      return `claude mcp add --transport stdio rigready -- ${quote(stdio.command)}${stdio.args.map((a) => ` ${quote(a)}`).join('')}`;
+      return `claude mcp add --transport stdio --scope user rigready -- ${quote(stdio.command)}${stdio.args.map((a) => ` ${quote(a)}`).join('')}`;
     case 'claude-code-http':
       return `claude mcp add --transport http rigready ${url} --header "Authorization: ${bearer}"`;
     case 'cursor':

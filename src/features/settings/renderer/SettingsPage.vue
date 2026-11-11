@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import { manifests } from '../../../renderer/features';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import type { Result } from '../../../core/result';
 import { settingsContract, type SettingsView } from '../contract';
@@ -122,10 +123,17 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
 <template>
   <div class="rr-page" data-testid="settings-page">
     <h1 class="rr-page-title">Settings</h1>
-    <p class="rr-page-sub">How RigReady itself behaves. Stored in its own data folder.</p>
+    <p class="rr-page-sub">
+      How RigReady itself behaves. Stored in its own data folder. The
+      <ManualLink page="app/settings">Manual</ManualLink> explains every setting.
+    </p>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4" data-testid="settings-error">
       {{ error }}
+      <ManualLink
+        v-if="/startup app|start with windows/i.test(error)"
+        topic="startWithWindowsOff"
+      />
     </v-alert>
     <div v-if="saved" class="settings-saved rr-ok" data-testid="settings-saved">
       <v-icon icon="mdi-check" size="16" /> {{ saved }}
@@ -141,6 +149,7 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
               Starts in the tray when you sign in.
               <span v-if="view.startWithWindowsProblem" data-testid="login-problem">
                 {{ view.startWithWindowsProblem }}
+                <ManualLink topic="startWithWindowsOff" />
               </span>
             </div>
           </div>

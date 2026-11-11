@@ -2,6 +2,7 @@
 import DeviceTabs from './DeviceTabs.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { onMachineChanged } from '../../../renderer/machine';
 import { boundControl } from '../core/bound';
 import { gameInputLabel } from '../core/input';
@@ -137,6 +138,7 @@ watch(selected, () => (now.value = Date.now()));
       data-testid="tester-error"
     >
       {{ input.error }}
+      <ManualLink topic="controllersNotRead" />
     </v-alert>
 
     <div class="tester-bar">

@@ -6,6 +6,7 @@ import { featureCommands, manifests } from '../features';
 import { useClient } from '../ipc';
 import { notifyMachineChanged, onMachineChanged } from '../machine';
 import { followSetupKind } from './kind';
+import { manualPageOfRoute, openManual } from './manual';
 import { parseRecent, remember } from './palette';
 import {
   listDynamic,
@@ -120,8 +121,8 @@ function writeRecent(ids: string[]): void {
   }
 }
 
-/** The shell's own commands: its two panels. */
-function shellCommands(): ListedCommand[] {
+/** The shell's own commands: its two panels, and the manual. */
+function shellCommands(router: Router): ListedCommand[] {
   const own = (
     id: string,
     title: string,
@@ -160,7 +161,42 @@ function shellCommands(): ListedCommand[] {
       aboutOpen,
       2
     ),
+    manual('manual', 'Open the manual', ['help', 'docs', 'documentation', 'guide'], 3, () =>
+      openManual()
+    ),
+    manual(
+      'manualHere',
+      'Open the manual page for this screen',
+      ['help', 'docs', 'documentation', 'this page'],
+      4,
+      () => openManual(manualPageOfRoute(router.currentRoute.value))
+    ),
   ];
+}
+
+/** A command that opens the manual in the browser. */
+function manual(
+  id: string,
+  title: string,
+  keywords: string[],
+  order: number,
+  open: () => void
+): ListedCommand {
+  return {
+    id: `shell.${id}`,
+    feature: 'shell',
+    title,
+    hint: 'Opens in the browser',
+    icon: 'mdi-book-open-page-variant-outline',
+    keywords,
+    group: 'RigReady',
+    groupOrder: 900_000,
+    order,
+    kind: 'action',
+    run: async () => {
+      open();
+    },
+  };
 }
 
 export interface PaletteCommands {
@@ -190,7 +226,7 @@ export function usePaletteCommands(router: Router): PaletteCommands {
   const listings = shallowRef<Record<string, Listing>>({});
   const recent = ref<string[]>(readRecent());
   const byId = new Map(manifests.map((m) => [m.id, m]));
-  const own = shellCommands();
+  const own = shellCommands(router);
   let loaded: Promise<void> | undefined;
 
   function load(): Promise<void> {

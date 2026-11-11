@@ -80,6 +80,7 @@ describe('racing checks, capture and overview', () => {
     expect(racing.every((c) => c.kind === 'racing' || c.game !== undefined)).toBe(true);
     expect(racing.filter((c) => !c.game).map((c) => c.key)).toEqual([
       'racing:wheel-base',
+      'racing:wheel-rotation',
       'racing:app:fanatec-service',
       'racing:app:trophi',
     ]);
@@ -192,20 +193,25 @@ describe('racing checks, capture and overview', () => {
     expect(view.inputMethod).toBe('WHEEL');
     expect(view.controllers.map((c) => [c.index, c.state, c.used])).toEqual([
       [0, 'connected', true],
-      [1, 'moved', false],
+      [1, 'missing', false],
     ]);
     expect(view.bindings).toContainEqual({
       action: 'STEER',
       label: 'Steering',
       controller: 'FANATEC Podium Wheel Base DD2',
       input: 'Wheel',
+      number: 0,
+      actsOn: 'FANATEC Podium Wheel Base DD2',
     });
     expect(view.bindings).toContainEqual({
       action: 'BRAKES',
       label: 'Brake',
       controller: 'FANATEC Podium Wheel Base DD2',
       input: 'Brake',
+      number: 0,
+      actsOn: 'FANATEC Podium Wheel Base DD2',
     });
+    expect(view.repairNeeded).toBe(false);
     expect(view.bindings).toContainEqual({
       action: 'GEARUP',
       label: 'Shift up',

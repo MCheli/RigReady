@@ -52,8 +52,8 @@ A view that creeps, a button that does nothing, a panel the game no longer knows
 - **Find a device.** Press a button on it and RigReady opens it: its IDs, its port, and a name you choose. [Devices](docs/manual/hardware/devices.md)
 - **Health check.** Hands off for ten seconds: stuck buttons, inputs that fire by themselves and noisy axes. [Health check](docs/manual/hardware/health-check.md)
 - **USB map.** Which hub each device hangs off, how close you are to the limits, and what to unplug. [USB map](docs/manual/hardware/usb-map.md)
-- **New device IDs.** When Windows gives a controller a new ID, RigReady moves the DCS bindings, or points iRacing's files at it (the iRacing repair is not yet tried on real hardware). [Device IDs](docs/manual/dcs/device-ids.md)
-- Fanatec wheel bases, Stream Deck and TrackIR have pages of their own, and RigReady notices when HidHide is hiding a device. [Hardware](docs/manual/hardware/index.md)
+- **New device IDs.** When Windows gives a controller a new ID, RigReady moves the DCS bindings, points iRacing's and Assetto Corsa's files at it, follows a renamed controller in Le Mans Ultimate, and copies BeamNG maps to a replacement. Other games: not yet. The iRacing and Assetto Corsa repairs are not yet tried on real hardware. [Device IDs](docs/manual/dcs/device-ids.md)
+- Wheel bases (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek, Cammus; tested on a real wheel for Fanatec only), Stream Deck and TrackIR have pages of their own, and RigReady notices when HidHide is hiding a device. [Hardware](docs/manual/hardware/index.md)
 
 ### Optional AI help with setup and bindings
 
@@ -82,7 +82,7 @@ Any game works with a checklist, launch, tracked files and backups. These get mo
 | iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | A page per game with its bindings and controllers as the game's files have them, cheat sheets and the trainer, backup and restore, and checks for a racing setup. |
 | Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally | A game module: detection, config locations, backup suggestions, launch. |
 | Any other game | Works generically: a checklist, launch, tracked files, backup. |
-| Hardware | Any USB game controller, monitor and audio device Windows sees. Dedicated pages for a Fanatec wheel base, Stream Deck and TrackIR; HidHide is noticed when it hides a device. WinWing devices work as controllers; features that need WinWing's own protocol (backlight sync, UFC/ICP displays, vibration) still need SimAppPro, and RigReady checks that it is running when a setup uses them. |
+| Hardware | Any USB game controller, monitor and audio device Windows sees. Dedicated pages for a wheel base of any major brand (tested on a real Fanatec; the other brands on recorded data only), Stream Deck and TrackIR; HidHide is noticed when it hides a device. WinWing devices work as controllers; features that need WinWing's own protocol (backlight sync, UFC/ICP displays, vibration) still need SimAppPro, and RigReady checks that it is running when a setup uses them. Device drawings so far cover the gear RigReady was built on (WinWing) and the Thrustmaster and Saitek sticks listed in the manual; other brands work fully as controllers, and reports and drawings for them are welcome. |
 
 RigReady was built on one real rig. Nothing in the code is tied to it (a test enforces that), but most of the above has been proven only on recorded data from that rig and on generic test PCs. See the known limitations in `CHANGELOG.md`.
 

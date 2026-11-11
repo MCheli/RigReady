@@ -24,4 +24,10 @@ Nothing is changed by looking. If the PC could not be read just now, the screen 
 - **Restore from a backup** goes to **Configure > Backups**, for a backup RigReady made on another PC or before a reinstall. See [Restore a backup](../protect/restore.md) and [Moving to a new PC](../protect/new-pc.md).
 - **Import a shared setup** goes to **Configure > Share**, for a `.rigready` file somebody sent you. See [Share a setup](../protect/sharing.md).
 
+## An AI assistant, if you want one
+
+Under the three ways in, an optional line asks whether you want to use an AI assistant (Claude Desktop, LM Studio and others) with RigReady. **Connect an assistant** opens the list of assistants found on this PC, one button each; see [Connect an assistant](../ai/mcp-server.md). **Not now** puts the line away on this PC. Nothing is turned on until you connect one.
+
+![The optional assistant step under the three ways in](../../../artifacts/screens/mcp-welcome/01-welcome-step.png)
+
 The line at the bottom holds on every screen: Ctrl+K opens [the command palette](../app/command-palette.md), which finds any page or command from anywhere, and ? lists the [keyboard shortcuts](../app/keyboard-shortcuts.md). [Play and Configure, the two modes](two-modes.md) explains them.

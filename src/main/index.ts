@@ -225,6 +225,8 @@ async function createPlatform(): Promise<Platform> {
     window: {
       showOn: (areas) => fake.window.showOn(areas),
       openPanel: (panel) => appWindow.openPanel(panel),
+      // An install link would reach a real assistant on this PC: a scenario run only records it.
+      openLink: (url) => fake.window.openLink(url),
     },
   };
   return { ports, scenario: started.description, fake };

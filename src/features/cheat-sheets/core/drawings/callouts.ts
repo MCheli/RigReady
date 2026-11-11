@@ -26,6 +26,8 @@ const PAD = 7;
 const HEAD_SIZE = 10.5;
 const ROW_SIZE = 14;
 const LINE_HEIGHT = 1.16;
+/** The slopes a column's order is tried along, steepest last (see placeColumn). */
+const SLOPES = [0, 0.5, 1, 2, 4, -0.5];
 /** The straight stub of a leader just outside its block. */
 const STUB = 14;
 /** The square that says what kind of action a row is. */
@@ -287,9 +289,9 @@ export function stack(items: { want: number; h: number }[], top: number, bottom:
 /**
  * Tries trading two blocks of a column or row at a time, keeping a trade whenever fewer
  * leaders cross, until none do or no trade helps. `apply` places a given order and says
- * how many leaders then cross. Leaves the best order applied.
+ * how many leaders then cross. Leaves the best order applied and says how many cross.
  */
-function untangle<T>(start: T[], apply: (order: T[]) => number): void {
+function untangle<T>(start: T[], apply: (order: T[]) => number): number {
   let order = start;
   let best = apply(order);
   for (let round = 0; best > 0 && round < order.length * 2; round++) {
@@ -309,6 +311,7 @@ function untangle<T>(start: T[], apply: (order: T[]) => number): void {
     if (!improved) break;
   }
   apply(order);
+  return best;
 }
 
 /** Lays one column out, then trades neighbours whose leaders cross until none do. */
@@ -320,8 +323,8 @@ function placeColumn(
   top: number,
   bottom: number
 ): void {
-  const order = [...callouts].sort((a, b) => a.anchor.y - b.anchor.y || a.anchor.x - b.anchor.x);
-  untangle(order, (list) => {
+  const edge = side === 'left' ? columnX + columnW : columnX;
+  const apply = (list: Callout[]): number => {
     const ys = stack(
       list.map((c) => ({ want: c.anchor.y, h: c.h })),
       top,
@@ -331,12 +334,30 @@ function placeColumn(
       c.x = columnX;
       c.y = ys[i]!;
       const ly = c.y + c.h / 2;
-      const edge = side === 'left' ? columnX + columnW : columnX;
       const bend = side === 'left' ? edge + STUB : edge - STUB;
       c.leader = [c.anchor, { x: bend, y: ly }, { x: edge, y: ly }];
     });
     return crossings(list);
-  });
+  };
+  // Down the drawing first. When a column runs on far below its controls its leaders
+  // slope, and a control farther from the column then wants the lower block: ordering
+  // as if the controls slid along that slope onto the column untangles a dense panel
+  // that trading two blocks at a time cannot.
+  let best: Callout[] | undefined;
+  let fewest = Infinity;
+  for (const slope of SLOPES) {
+    const key = (c: Callout): number => c.anchor.y + slope * Math.abs(edge - c.anchor.x);
+    const order = [...callouts].sort(
+      (a, b) => key(a) - key(b) || a.anchor.y - b.anchor.y || a.anchor.x - b.anchor.x
+    );
+    const count = untangle(order, apply);
+    if (count === 0) return;
+    if (count < fewest) {
+      fewest = count;
+      best = [...callouts].sort((a, b) => a.y - b.y);
+    }
+  }
+  if (best) apply(best);
 }
 
 /**

@@ -519,6 +519,7 @@ export const headlessPorts: {
   window: {
     showOn: async () => ok({ moved: false }),
     openPanel: async () => unavailable('Extra windows'),
+    openLink: async () => unavailable('Opening links'),
   },
 };
 

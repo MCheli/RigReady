@@ -1,10 +1,12 @@
 import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
-import { racingContract } from './contract';
+import { isToolBackup, racingContract, type BackupGame } from './contract';
 import { racingBindingReaders } from './core/bindingReaders';
 import { acView } from './core/assettoCorsa';
+import { previewRepairAc, repairAc } from './core/acRepair';
 import {
   backupNow,
+  brandBackupSource,
   deleteBackup,
   fanatecBackupSource,
   listBackups,
@@ -33,7 +35,9 @@ import {
   racingOverview,
 } from './core/checks';
 import type { RacingContext } from './core/context';
-import { wheelBaseCheck, wheelStatus } from './core/fanatec/fanatec';
+import { wheelStatus } from './core/fanatec/fanatec';
+import { wheelRotationCheck } from './core/wheelbases/rotation';
+import { wheelBaseCheck } from './core/wheelbases/wheel';
 import { TUNING_PARAMETERS } from './core/fanatec/recommended';
 import {
   compareWheelSettings,
@@ -74,13 +78,14 @@ export default defineFeatureMain({
     // What is bound in each racing game, for cheat sheets and the other features that ask.
     for (const reader of racingBindingReaders(rctx)) ctx.bindings.register(reader);
     /** Tells the features that show bindings that a game's binding files were changed. */
-    const changed = <T extends { ok: boolean }>(game: string, result: T): T => {
-      if (result.ok && game !== 'fanatec') ctx.bindings.notifyChanged({ game });
+    const changed = <T extends { ok: boolean }>(game: BackupGame, result: T): T => {
+      if (result.ok && !isToolBackup(game)) ctx.bindings.notifyChanged({ game });
       return result;
     };
     const restoreFix = restoreBindingSetFix(ctx.games);
 
     ctx.checks.registerCheck(wheelBaseCheck);
+    ctx.checks.registerCheck(wheelRotationCheck);
     ctx.checks.registerCheck(iracingDevicesCheck(ctx.games));
     ctx.checks.registerCheck(iracingServiceCheck);
     ctx.checks.registerCheck(wheelSettingsCheck(ctx.games));
@@ -92,6 +97,8 @@ export default defineFeatureMain({
     ctx.checks.registerCapture(racingCapture(ctx.games));
     const setups = { profiles: ctx.profiles, clock: ctx.ports.clock };
     ctx.backupSources.register(fanatecBackupSource);
+    ctx.backupSources.register(brandBackupSource('logitech'));
+    ctx.backupSources.register(brandBackupSource('simucube'));
 
     return [
       bind(racingContract, {
@@ -125,7 +132,15 @@ export default defineFeatureMain({
           changed('beamng', await copyBindingsToController(rctx, file, to)),
         beamngCopyToControllerPreview: ({ file, to }) =>
           previewCopyBindingsToController(rctx, file, to),
-        assettoCorsa: async () => ok(await acView(rctx)),
+        async assettoCorsa() {
+          const view = await acView(rctx);
+          return ok({ ...view, controllers: await named(view.controllers) });
+        },
+        async acRepair({ choices }) {
+          const repaired = changed('assetto-corsa', await repairAc(rctx, choices));
+          return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
+        },
+        acRepairPreview: ({ choices }) => previewRepairAc(rctx, choices),
         async wheel() {
           const presets = await readPresets(rctx);
           return ok({
@@ -140,7 +155,7 @@ export default defineFeatureMain({
         backups: async ({ game }) => ok(await listBackups(rctx, game)),
         backup: ({ game, name }) => backupNow(rctx, game, name),
         nameBackup: ({ game, id, name }) => nameBackup(rctx, game, id, name),
-        backupSetups: async ({ game }) => (game === 'fanatec' ? ok([]) : setupsFor(setups, game)),
+        backupSetups: async ({ game }) => (isToolBackup(game) ? ok([]) : setupsFor(setups, game)),
         useBackupInSetup: ({ game, id, profileId }) =>
           useSetInSetup(rctx, setups, game, id, profileId),
         stopUsingBackup: ({ game, profileId }) => stopUsingSet(setups, game, profileId),

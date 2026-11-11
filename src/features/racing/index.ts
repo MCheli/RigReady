@@ -34,6 +34,7 @@ export default defineFeature({
   ],
   checkTypes: [
     { type: 'racing.wheelBase', label: 'Wheel base connected in the right mode', group: 'devices' },
+    { type: 'racing.wheelRotation', label: 'Wheel rotation as expected', group: 'devices' },
     {
       type: 'racing.iracingDevices',
       label: 'iRacing knows the connected controllers',

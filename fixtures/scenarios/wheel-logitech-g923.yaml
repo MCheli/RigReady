@@ -1,0 +1,47 @@
+description: A Logitech G923 (Xbox and PC) on a generic PC, with G HUB installed and running
+rig: generic-rig
+extends: generic-fresh.yaml
+# Synthetic, not recorded: nobody has run RigReady on a real Logitech wheel yet. The USB ids
+# are from docs/research/wheelbases.md; the GUIDs and instance paths are made up.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_046D&PID_C26E\7&1c2d3e4f&0&4'
+      vendorId: '046D'
+      productId: 'C26E'
+      name: 'Logitech G923 Racing Wheel for Xbox One and PC'
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Logitech
+    controller:
+      name: 'Logitech G923 Racing Wheel for Xbox One and PC'
+      guid: 4C7A2B30-9C41-11F0-8002-444553540000
+      productGuid: C26E046D-0000-0000-0000-504944564944
+      vendorId: '046D'
+      productId: 'C26E'
+      numAxes: 4
+      numButtons: 25
+      numHats: 1
+      axisNames: [X, Y, Z, RZ]
+  - op: setRegistryValue
+    hive: HKLM
+    key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{521c89be-637f-4274-a840-baaf7460c2b2}'
+    name: DisplayName
+    value: { type: string, value: 'Logitech G HUB' }
+  - op: setRegistryValue
+    hive: HKLM
+    key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{521c89be-637f-4274-a840-baaf7460c2b2}'
+    name: DisplayVersion
+    value: { type: string, value: '2025.9.781014' }
+  - op: writeFile
+    path: 'Program Files/LGHUB/lghub.exe'
+    content: ''
+  - op: startProcess
+    name: 'lghub_agent.exe'
+    path: 'C:\Program Files\LGHUB\lghub.exe'
+  - op: writeFile
+    path: AppData/Local/LGHUB/settings.db
+    content: 'SQLite format 3 (a stand-in for the G HUB settings database)'
