@@ -65,7 +65,7 @@ The whole navigation must fit the default window without scrolling (`tests/e2e/t
 
 ### Game modules (`src/features/games/<game>/module.ts`)
 
-Each game implements one `GameModule` interface (`src/core/games.ts`): detection (all Steam libraries via `libraryfolders.vdf`, standalone, Store), config locations, tracked-file suggestions, processes, installed version, path variables. One registry; no path tables anywhere else. Modules exist for DCS World, iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally and Microsoft Flight Simulator 2024 and ACE COMBAT 8.
+Each game implements one `GameModule` interface (`src/core/games.ts`): detection (all Steam libraries via `libraryfolders.vdf`, standalone, Store), config locations, tracked-file suggestions, processes, installed version, path variables. One registry; no path tables anywhere else. Modules exist for DCS World, iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally, Microsoft Flight Simulator 2024 and ACE COMBAT 8, among others (src/features/games).
 
 What is bound in a game is read by other features through `ctx.bindings` (`src/core/bindings.ts`): a `BindingReader` per game, plain-language action labels (`ctx.bindings.labels`), and proposals that only the feature owning the game's files may write.
 
