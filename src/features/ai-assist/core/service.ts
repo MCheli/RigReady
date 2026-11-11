@@ -6,18 +6,8 @@ import { JsonStore } from '../../../core/jsonStore';
 import type { Logger } from '../../../core/logger';
 import type { Ports } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
-import { AI_KEY_SECRET } from '../../../core/settings';
-import {
-  approximateTokens,
-  DEFAULT_MODEL,
-  messageBody,
-  modelInfo,
-  MODELS,
-  sendMessage,
-  streamMessage,
-  testKey,
-  type MessageAnswer,
-} from './anthropic';
+import type { AppSettingsPatch } from '../../../core/settings';
+import { approximateTokens, DEFAULT_MODEL, knownModel, type MessageAnswer } from './anthropic';
 import { draftSchema, draftTask, validateDraft } from './draft';
 import { describeInput, fits, hasInput } from './inputs';
 import {
@@ -49,7 +39,24 @@ import {
 } from './model';
 import { shippedPack } from './shipped';
 import { contextText, takeSnapshot, type Snapshot } from './snapshot';
+import { jsonText } from './openai';
+import {
+  checkBaseUrl,
+  KEY_SECRETS,
+  MODEL_ID,
+  OPENAI_DEFAULT_MODEL,
+  PRESETS,
+  PROVIDER_IDS,
+  PROVIDER_NAMES,
+  providerFor,
+  suggestedModels,
+  type ChatProvider,
+  type ProviderId,
+  type ProviderSettings,
+  type Structured,
+} from './providers';
 import { JsonItemCounter } from './sse';
+import type { Parsed } from './suggest';
 import {
   cleanAnswer,
   markConflicts,
@@ -70,6 +77,11 @@ export interface AiAssistContext {
   onProgress?: (progress: SendProgress) => void;
   /** Longest silence accepted from a streamed answer; the API module's default when absent. */
   streamIdleMs?: number;
+  /**
+   * The app settings, where `aiKeyPresent` says whether an Anthropic key is stored. Kept
+   * true to the secret when the key is stored or removed here.
+   */
+  settings?: { update(patch: AppSettingsPatch): Promise<Result<unknown>> };
 }
 
 /** The long answers, which are streamed so the user sees them arrive and can cancel. */
@@ -79,18 +91,50 @@ const PROGRESS_EVERY_MS = 150;
 
 const GAME = 'dcs';
 
-const SettingsSchema = z.object({ model: z.string().default(DEFAULT_MODEL) });
+const SettingsSchema = z.object({
+  provider: z.enum(PROVIDER_IDS).default('anthropic'),
+  /** The Anthropic model (its name from before there were other providers). */
+  model: z.string().default(DEFAULT_MODEL),
+  openai: z.object({ model: z.string().default(OPENAI_DEFAULT_MODEL) }).prefault({}),
+  compatible: z
+    .object({
+      baseUrl: z.string().default(''),
+      model: z.string().default(''),
+      structured: z.enum(['schema', 'prompt']).default('schema'),
+    })
+    .prefault({}),
+});
+/** The OpenAI-compatible key, kept with the host it was stored for. */
+const CompatibleKeySchema = z.object({ origin: z.string(), key: z.string() });
 const ProgressFileSchema = z.object({ aircraft: z.record(z.string(), ProgressSchema).default({}) });
 
-/** What is and is not sent to Anthropic, shown in Settings and before every request. */
-export const WHAT_IS_SENT = [
-  "Sent: the aircraft's name, and DCS's list of its actions (ids, names, categories) with what each is bound to now.",
-  'Sent: for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
-  "Sent: RigReady's guide for the aircraft when there is one, and your question.",
-  'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files.',
-  'The key goes only to api.anthropic.com, in a request header. It is stored encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots.',
-  "Anthropic's API terms and privacy policy apply to what is sent.",
-];
+/** What is and is not sent, shown in Settings and before every request. */
+export function whatIsSent(provider: ChatProvider | undefined): string[] {
+  const lines = [
+    "Sent: the aircraft's name, and DCS's list of its actions (ids, names, categories) with what each is bound to now.",
+    'Sent: for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
+    "Sent: RigReady's guide for the aircraft when there is one, and your question.",
+    'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files.',
+  ];
+  if (!provider) {
+    lines.push('Nothing is sent until a provider is set up and you press Send.');
+    return lines;
+  }
+  lines.push(
+    provider.local
+      ? `Requests go only to ${provider.host}, a server on this PC. Nothing leaves the PC unless that server sends it on.`
+      : `Requests go only to ${provider.host}, over https. No other address is contacted, and redirects are not followed.`,
+    `The key, when one is stored, goes only to ${provider.host}, in a request header. It is stored encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots.`
+  );
+  if (!provider.local) {
+    lines.push(
+      provider.id === 'compatible'
+        ? `The terms and privacy policy of the service at ${provider.host} apply to what is sent.`
+        : `${provider.label}'s API terms and privacy policy apply to what is sent.`
+    );
+  }
+  return lines;
+}
 
 const MAX_TOKENS: Record<RequestKind, number> = {
   suggest: 16000,
@@ -102,6 +146,10 @@ const MAX_TOKENS: Record<RequestKind, number> = {
 interface PreparedRequest {
   kind: RequestKind;
   aircraftId: string;
+  /** Who it goes to, fixed when it was shown to the user. */
+  provider: ChatProvider;
+  /** The answer's format was only asked for in the text: one more try when it does not check out. */
+  retriesOnce: boolean;
   model: string;
   body: Record<string, unknown>;
   snapshot: Snapshot;
@@ -112,6 +160,13 @@ interface Round {
   aircraftId: string;
   plan: SuggestionPlan;
 }
+
+const modelOf = (s: ProviderSettings): string =>
+  s.provider === 'anthropic'
+    ? s.model
+    : s.provider === 'openai'
+      ? s.openai.model
+      : s.compatible.model;
 
 const safeName = (id: string): string => id.replace(/[^A-Za-z0-9_.-]/g, '_');
 
@@ -463,47 +518,213 @@ export class AiAssist {
   // The key and the model
   // -------------------------------------------------------------------------
 
-  private async key(): Promise<Result<string>> {
-    const key = await this.ctx.ports.secrets.get(AI_KEY_SECRET);
+  /** The provider the settings describe, or why it cannot be used yet. */
+  private async provider(): Promise<Result<ChatProvider>> {
+    const settings = await this.settings.read();
+    if (!settings.ok) return settings;
+    return providerFor(settings.value);
+  }
+
+  /**
+   * The stored key for a provider, if any. The OpenAI-compatible key is used only with the
+   * host it was stored for, so a changed address never receives it.
+   */
+  private async storedKey(id: ProviderId, host: string): Promise<Result<string | undefined>> {
+    const stored = await this.ctx.ports.secrets.get(KEY_SECRETS[id]);
+    if (!stored.ok) return stored;
+    if (!stored.value) return ok(undefined);
+    if (id !== 'compatible') return ok(stored.value);
+    let parsed: z.infer<typeof CompatibleKeySchema> | undefined;
+    try {
+      const value = CompatibleKeySchema.safeParse(JSON.parse(stored.value));
+      parsed = value.success ? value.data : undefined;
+    } catch {
+      // Not what this version stores: treated as no key.
+      parsed = undefined;
+    }
+    return ok(parsed && host !== '' && parsed.origin === host ? parsed.key : undefined);
+  }
+
+  /** The key a request to this provider carries: required unless the server is on this PC. */
+  private async keyFor(provider: ChatProvider): Promise<Result<string | undefined>> {
+    const key = await this.storedKey(provider.id, provider.host);
     if (!key.ok) return key;
-    if (!key.value) return err('ai.noKey', 'No Anthropic API key is stored. Add one in Settings.');
-    return ok(key.value);
+    if (!key.value && provider.keyNeeded) {
+      return err(
+        'ai.noKey',
+        `No ${provider.id === 'compatible' ? provider.host : provider.label} API key is stored. Add one in Settings.`
+      );
+    }
+    return key;
   }
 
   async status(): Promise<Result<AiStatus>> {
     const settings = await this.settings.read();
     if (!settings.ok) return settings;
-    const key = await this.ctx.ports.secrets.get(AI_KEY_SECRET);
+    const s = settings.value;
+    const provider = providerFor(s);
+    const host = provider.ok ? provider.value.host : '';
+    const key = await this.storedKey(s.provider, host);
     const present = key.ok && key.value !== undefined && key.value !== '';
+    const keyNeeded = provider.ok ? provider.value.keyNeeded : s.provider !== 'compatible';
+    const problem = !provider.ok
+      ? provider.error.message
+      : keyNeeded && !present
+        ? 'No key yet: store one below to turn AI help on.'
+        : undefined;
     return ok({
+      provider: s.provider,
+      providers: PROVIDER_IDS.map((id) => ({ id, name: PROVIDER_NAMES[id] })),
+      presets: PRESETS,
       keyPresent: present,
       ...(present ? { keyHint: `…${key.value!.slice(-4)}` } : {}),
-      model: modelInfo(settings.value.model).id,
-      models: MODELS.map(({ id, name, input, output }) => ({ id, name, input, output })),
-      whatIsSent: WHAT_IS_SENT,
+      keyNeeded,
+      ready: problem === undefined,
+      ...(problem ? { problem } : {}),
+      model: modelOf(s),
+      models: suggestedModels(s.provider),
+      baseUrl: s.compatible.baseUrl,
+      structured: s.provider === 'compatible' ? s.compatible.structured : 'schema',
+      host,
+      local: provider.ok && provider.value.local,
+      whatIsSent: whatIsSent(provider.ok ? provider.value : undefined),
     });
   }
 
+  async setProvider(provider: ProviderId): Promise<Result<AiStatus>> {
+    const saved = await this.settings.update((s) => ({ ...s, provider }));
+    if (!saved.ok) return saved;
+    this.ctx.log.info(`ai-assist: provider set to ${provider}`);
+    return this.status();
+  }
+
+  /** Any model id may be typed; the provider says when it is used whether it has it. */
   async setModel(model: string): Promise<Result<AiStatus>> {
-    if (!MODELS.some((m) => m.id === model)) return err('ai.model', 'Unknown model.');
-    const saved = await this.settings.write({ model });
+    const id = model.trim();
+    if (!MODEL_ID.test(id)) {
+      return err(
+        'ai.model',
+        'That is not a model id. Model ids look like claude-opus-5-5, gpt-6.1-terra or qwen3:8b.'
+      );
+    }
+    const saved = await this.settings.update((s) =>
+      s.provider === 'anthropic'
+        ? { ...s, model: id }
+        : s.provider === 'openai'
+          ? { ...s, openai: { model: id } }
+          : { ...s, compatible: { ...s.compatible, model: id } }
+    );
     if (!saved.ok) return saved;
     return this.status();
   }
 
-  async testKey(): Promise<Result<{ valid: boolean; message: string }>> {
-    const key = await this.key();
-    if (!key.ok) return key;
+  /**
+   * The OpenAI-compatible provider: a preset (which fills the address, a model and the
+   * answer format), or the address or the format alone. A key stored for one host is
+   * removed when the address moves to another.
+   */
+  async setCompatible(change: {
+    preset?: string | undefined;
+    baseUrl?: string | undefined;
+    structured?: Structured | undefined;
+  }): Promise<Result<AiStatus>> {
     const settings = await this.settings.read();
     if (!settings.ok) return settings;
-    const checked = await testKey(this.ctx.ports.http, key.value, settings.value.model);
+    const next = { ...settings.value.compatible };
+    if (change.preset !== undefined) {
+      const preset = PRESETS.find((p) => p.id === change.preset);
+      if (!preset) return err('ai.preset', 'Unknown service.');
+      next.baseUrl = preset.baseUrl;
+      next.model = preset.model;
+      next.structured = preset.structured;
+    }
+    if (change.baseUrl !== undefined) {
+      const checked = checkBaseUrl(change.baseUrl);
+      if (!checked.ok) return checked;
+      next.baseUrl = checked.value;
+    }
+    if (change.structured !== undefined) next.structured = change.structured;
+    const hostOf = (url: string): string => (url ? new URL(url).host : '');
+    if (hostOf(settings.value.compatible.baseUrl) !== hostOf(next.baseUrl)) {
+      const removed = await this.ctx.ports.secrets.remove(KEY_SECRETS.compatible);
+      if (!removed.ok) return removed;
+    }
+    const saved = await this.settings.update((s) => ({
+      ...s,
+      provider: 'compatible' as const,
+      compatible: next,
+    }));
+    if (!saved.ok) return saved;
+    return this.status();
+  }
+
+  /** Stores the key for the chosen provider, encrypted. It is never sent back. */
+  async setKey(key: string): Promise<Result<AiStatus>> {
+    const value = key.trim();
+    if (value.length < 8 || value.length > 400 || /\s/.test(value)) {
+      return err('ai.keyFormat', 'That does not look like an API key. Paste the whole key.');
+    }
+    const settings = await this.settings.read();
+    if (!settings.ok) return settings;
+    const id = settings.value.provider;
+    let stored = value;
+    if (id === 'compatible') {
+      const provider = providerFor(settings.value);
+      if (!provider.ok) {
+        return err(
+          'ai.baseUrl',
+          'Choose a service or type the address first: the key is kept for that address only.'
+        );
+      }
+      stored = JSON.stringify({ origin: provider.value.host, key: value });
+    }
+    const written = await this.ctx.ports.secrets.set(KEY_SECRETS[id], stored);
+    if (!written.ok) return written;
+    // Read it back: "stored" is only said when the key really can be used.
+    const check = await this.ctx.ports.secrets.get(KEY_SECRETS[id]);
+    if (!check.ok) return check;
+    if (check.value !== stored) return err('secret.write', 'The key could not be stored.');
+    if (id === 'anthropic' && this.ctx.settings) {
+      const flagged = await this.ctx.settings.update({ aiKeyPresent: true });
+      if (!flagged.ok) return flagged;
+    }
+    this.ctx.log.info(`ai-assist: ${id} key stored`);
+    return this.status();
+  }
+
+  async clearKey(): Promise<Result<AiStatus>> {
+    const settings = await this.settings.read();
+    if (!settings.ok) return settings;
+    const id = settings.value.provider;
+    const removed = await this.ctx.ports.secrets.remove(KEY_SECRETS[id]);
+    if (!removed.ok) return removed;
+    if (id === 'anthropic' && this.ctx.settings) {
+      const flagged = await this.ctx.settings.update({ aiKeyPresent: false });
+      if (!flagged.ok) return flagged;
+    }
+    this.ctx.log.info(`ai-assist: ${id} key removed`);
+    return this.status();
+  }
+
+  async testKey(): Promise<Result<{ valid: boolean; message: string }>> {
+    const provider = await this.provider();
+    if (!provider.ok) return provider;
+    const key = await this.keyFor(provider.value);
+    if (!key.ok) return key;
+    const checked = await provider.value.test(this.ctx.ports.http, key.value);
     if (!checked.ok) return checked;
-    this.ctx.log.info(`ai-assist: key test ${checked.value.valid ? 'passed' : 'failed'}`);
-    return ok(
-      checked.value.valid
-        ? { valid: true, message: `The key works with ${modelInfo(checked.value.model).name}.` }
-        : { valid: false, message: checked.value.reason }
+    this.ctx.log.info(
+      `ai-assist: ${provider.value.id} test ${checked.value.valid ? 'passed' : 'failed'}`
     );
+    if (!checked.value.valid) return ok({ valid: false, message: checked.value.reason });
+    const model = knownModel(checked.value.model)?.name ?? checked.value.model;
+    return ok({
+      valid: true,
+      message:
+        provider.value.id === 'compatible'
+          ? `${provider.value.host} answered, using ${model}.`
+          : `The key works with ${model}.`,
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -516,14 +737,14 @@ export class AiAssist {
     question?: string;
     actionId?: string;
   }): Promise<Result<Prepared>> {
-    const key = await this.key();
+    const provider = await this.provider();
+    if (!provider.ok) return provider;
+    const key = await this.keyFor(provider.value);
     if (!key.ok) return key;
-    const settings = await this.settings.read();
-    if (!settings.ok) return settings;
     const snapshot = await this.snapshot(input.aircraftId);
     if (!snapshot.ok) return snapshot;
     const s = snapshot.value;
-    const model = modelInfo(settings.value.model).id;
+    const model = provider.value.model;
     let task: string;
     let schema: Record<string, unknown> | undefined;
     let question = '';
@@ -552,7 +773,7 @@ export class AiAssist {
       }
       task = questionTask(s, question);
     }
-    const body = messageBody({
+    const body = provider.value.body({
       model,
       system: SYSTEM_PROMPT,
       context: contextText(s),
@@ -561,10 +782,13 @@ export class AiAssist {
       maxTokens: MAX_TOKENS[input.kind],
       ...(STREAMED.has(input.kind) ? { stream: true } : {}),
     });
+    const retriesOnce = schema !== undefined && provider.value.structured === 'prompt';
     const requestId = this.next('r');
     this.prepared.set(requestId, {
       kind: input.kind,
       aircraftId: input.aircraftId,
+      provider: provider.value,
+      retriesOnce,
       model,
       body,
       snapshot: s,
@@ -579,7 +803,11 @@ export class AiAssist {
       body: JSON.stringify(body, null, 2),
       chars: text.length,
       approxTokens: tokens,
-      approxCost: (tokens * modelInfo(model).input) / 1_000_000,
+      approxCost: provider.value.inputCost(tokens),
+      provider: provider.value.label,
+      host: provider.value.host,
+      local: provider.value.local,
+      retriesOnce,
       contents: [
         `${s.actions.length} actions of the ${s.aircraftName}, with what each is bound to now`,
         `${s.controllers.length} ${s.controllers.length === 1 ? 'controller' : 'controllers'}: ${s.controllers.map((c) => c.name).join(', ') || 'none'}`,
@@ -592,8 +820,22 @@ export class AiAssist {
     });
   }
 
-  private usage(answer: MessageAnswer): UsageView {
-    return { model: answer.model, ...answer.usage, cost: answer.cost };
+  /** Tokens and cost of an answer, with those of an earlier try when there was one. */
+  private usage(answer: MessageAnswer, earlier?: MessageAnswer): UsageView {
+    const u = answer.usage;
+    const e = earlier?.usage ?? { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
+    const cost =
+      answer.cost === null || (earlier !== undefined && earlier.cost === null)
+        ? null
+        : answer.cost + (earlier?.cost ?? 0);
+    return {
+      model: answer.model,
+      input: u.input + e.input,
+      output: u.output + e.output,
+      cacheWrite: u.cacheWrite + e.cacheWrite,
+      cacheRead: u.cacheRead + e.cacheRead,
+      cost,
+    };
   }
 
   async send(requestId: string): Promise<Result<Sent>> {
@@ -610,70 +852,113 @@ export class AiAssist {
     }
   }
 
-  private async answer(
+  /** Sends the prepared body once, streamed or whole, and logs a failure. */
+  private async ask(
     requestId: string,
     request: PreparedRequest,
+    key: string | undefined,
     controller: AbortController | undefined
-  ): Promise<Result<Sent>> {
-    const key = await this.key();
-    if (!key.ok) return key;
+  ): Promise<Result<MessageAnswer>> {
     const answer = controller
-      ? await this.sendStreamed(requestId, key.value, request.body, controller.signal)
-      : await sendMessage(this.ctx.ports.http, key.value, request.body);
+      ? await this.sendStreamed(requestId, request.provider, key, request.body, controller.signal)
+      : await request.provider.send(this.ctx.ports.http, key, request.body);
     if (!answer.ok) {
       if (answer.error.code === 'ai.cancelled') {
         this.ctx.log.info(`ai-assist: ${request.kind} cancelled`);
       } else this.ctx.log.warn(`ai-assist: ${request.kind} failed: ${answer.error.code}`);
       return answer;
     }
-    const usage = this.usage(answer.value);
+    const { usage, model } = answer.value;
     this.ctx.log.info(
-      `ai-assist: ${request.kind} answered by ${usage.model}: ${usage.input} in, ${usage.cacheRead} cached, ${usage.cacheWrite} cache-written, ${usage.output} out`
+      `ai-assist: ${request.kind} answered by ${model}: ${usage.input} in, ${usage.cacheRead} cached, ${usage.cacheWrite} cache-written, ${usage.output} out`
     );
+    return answer;
+  }
+
+  /**
+   * Asks, and checks the answer. When the format was only asked for in the text (a server
+   * that takes no JSON schema), an answer that does not check out is asked for once more
+   * with the very same request, as the preview said; the usage shown covers both.
+   */
+  private async checked<T>(
+    requestId: string,
+    request: PreparedRequest,
+    key: string | undefined,
+    controller: AbortController | undefined,
+    check: (text: string, model: string) => Parsed<T>
+  ): Promise<Result<{ value: T; usage: UsageView }>> {
+    const first = await this.ask(requestId, request, key, controller);
+    if (!first.ok) return first;
+    const textOf = (answer: MessageAnswer): string =>
+      request.retriesOnce ? jsonText(answer.text) : answer.text;
+    const once = check(textOf(first.value), first.value.model);
+    if (once.ok) return ok({ value: once.value, usage: this.usage(first.value) });
+    if (!request.retriesOnce) return err('ai.invalid', once.why);
+    this.ctx.log.info(`ai-assist: ${request.kind} answer did not check out; asking once more`);
+    const second = await this.ask(requestId, request, key, controller);
+    if (!second.ok) return second;
+    const both = this.usage(second.value, first.value);
+    const twice = check(textOf(second.value), second.value.model);
+    if (twice.ok) return ok({ value: twice.value, usage: both });
+    return err(
+      'ai.invalid',
+      `${twice.why} It was asked for twice and the model did not keep to the format. A larger model, or a service that accepts a JSON schema, does better.`
+    );
+  }
+
+  private async answer(
+    requestId: string,
+    request: PreparedRequest,
+    controller: AbortController | undefined
+  ): Promise<Result<Sent>> {
+    const key = await this.keyFor(request.provider);
+    if (!key.ok) return key;
     if (request.kind === 'suggest') {
-      const plan = validatePlan(answer.value.text, request.snapshot);
-      if (!plan.ok) return err('ai.invalid', plan.why);
+      const plan = await this.checked(requestId, request, key.value, controller, (text) =>
+        validatePlan(text, request.snapshot)
+      );
+      if (!plan.ok) return plan;
+      const { value, usage } = plan.value;
       const roundId = this.next('round');
-      this.rounds.set(roundId, { aircraftId: request.aircraftId, plan: plan.value });
+      this.rounds.set(roundId, { aircraftId: request.aircraftId, plan: value });
       this.ctx.log.info(
-        `ai-assist: ${plan.value.suggestions.length} suggestions kept, ${plan.value.dropped.length} dropped`
+        `ai-assist: ${value.suggestions.length} suggestions kept, ${value.dropped.length} dropped`
       );
       return ok({
         kind: 'suggest',
         roundId,
-        summary: plan.value.summary,
-        notes: plan.value.notes,
-        suggestions: plan.value.suggestions.map(
-          ({ deviceGuid: _g, deviceRef: _r, ...view }) => view
-        ),
-        dropped: plan.value.dropped,
+        summary: value.summary,
+        notes: value.notes,
+        suggestions: value.suggestions.map(({ deviceGuid: _g, deviceRef: _r, ...view }) => view),
+        dropped: value.dropped,
         usage,
       });
     }
     if (request.kind === 'draft') {
-      const draft = validateDraft(
-        answer.value.text,
-        request.snapshot,
-        usage.model,
-        new Date(this.ctx.ports.clock.now()).toISOString()
+      const at = new Date(this.ctx.ports.clock.now()).toISOString();
+      const draft = await this.checked(requestId, request, key.value, controller, (text, model) =>
+        validateDraft(text, request.snapshot, model, at)
       );
-      if (!draft.ok) return err('ai.invalid', draft.why);
+      if (!draft.ok) return draft;
+      const { value, usage } = draft.value;
       const written = await this.ctx.ports.files.write(
         this.draftPath(request.aircraftId),
-        `# Drafted by ${usage.model} for RigReady. Format: see packs/README.md in RigReady's source.\n${yaml.dump(draft.value.pack, { lineWidth: 100 })}`,
+        `# Drafted by ${usage.model} for RigReady. Format: see packs/README.md in RigReady's source.\n${yaml.dump(value.pack, { lineWidth: 100 })}`,
         { reason: 'Binding guide drafted by AI' }
       );
       if (!written.ok) return written;
-      return ok({
-        kind: 'draft',
-        items: draft.value.pack.items.length,
-        dropped: draft.value.dropped,
-        usage,
-      });
+      return ok({ kind: 'draft', items: value.pack.items.length, dropped: value.dropped, usage });
     }
+    const answer = await this.ask(requestId, request, key.value, controller);
+    if (!answer.ok) return answer;
     const text = cleanAnswer(answer.value.text);
     if (text.length === 0) return err('ai.empty', 'The model sent an empty answer. Try again.');
-    return ok({ kind: 'answer', question: request.question, text, usage });
+    return ok({
+      kind: 'answer',
+      question: request.question,
+      text,
+      usage: this.usage(answer.value),
+    });
   }
 
   /**
@@ -683,14 +968,15 @@ export class AiAssist {
    */
   private async sendStreamed(
     requestId: string,
-    key: string,
+    provider: ChatProvider,
+    key: string | undefined,
     body: Record<string, unknown>,
     signal: AbortSignal
   ): Promise<Result<MessageAnswer>> {
     const counter = new JsonItemCounter();
     const now = (): number => this.ctx.ports.clock.now().getTime();
     let reported = { at: Number.NEGATIVE_INFINITY, items: 0 };
-    return streamMessage(this.ctx.ports.http, key, body, {
+    return provider.stream(this.ctx.ports.http, key, body, {
       signal,
       ...(this.ctx.streamIdleMs === undefined ? {} : { idleTimeoutMs: this.ctx.streamIdleMs }),
       onUpdate: (update) => {

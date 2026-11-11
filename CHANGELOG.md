@@ -42,11 +42,11 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - Bindings: effective bindings (defaults plus your changes) for the F/A-18C and UH-1H, editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots.
 - Cheat sheets with a picture of every device, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
 - Simple outline drawings of the WinWing Orion stick (F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles and the MFD frames, with a label block and leader line per control placed so that no two lines cross. A drawing can be corrected or shown over a photo of the device; for any device, a drawing can be made from a photo of your own hardware or imported from a file. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
-- A binding guide for the F/A-18C and UH-1H, and optional AI help with your own Anthropic API key.
+- A binding guide for the F/A-18C and UH-1H, and optional AI help with your own key from Anthropic (the default), OpenAI, or any OpenAI-compatible service: presets for Google Gemini, OpenRouter, Mistral, and Ollama and LM Studio on your own PC. Each provider keeps its own encrypted key, gets a Test button and a model you can type, and only its one host is contacted (https, or http to this PC only).
 
 **AI assistants**
 - An MCP server inside RigReady, off by default, so that an assistant on the same PC (Claude Desktop, Claude Code, Cursor, VS Code and other MCP clients) can check the rig, make it ready, read and change bindings with a preview, apply a monitor layout, make a backup, read the log and read the manual. `RigReady.exe --mcp` connects assistants that start a program; others pair from Settings.
-- RigReady asks in its own window before an assistant changes the rig or launches a game (Always ask, Ask before a launch only, or Never ask). Changes go through the same backups and Undo, and Settings lists what assistants did. The Anthropic API key and the AI settings are never offered to an assistant.
+- RigReady asks in its own window before an assistant changes the rig or launches a game (Always ask, Ask before a launch only, or Never ask). Changes go through the same backups and Undo, and Settings lists what assistants did. The AI provider keys and the AI settings are never offered to an assistant.
 - Guided conversations for first setup, fixing bindings, a rig that is not ready and a new PC.
 
 **Racing and other games**

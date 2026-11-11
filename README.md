@@ -59,7 +59,7 @@ A view that creeps, a button that does nothing, a panel the game no longer knows
 
 AI is off until you turn it on, and nothing else in RigReady needs it. It comes in two forms, and either works without the other. Either way, every change is backed up first and can be undone on the Safety page.
 
-- **With your own Anthropic API key**, the binding guide can suggest a plan for your controllers, answer questions about the aircraft, and explain any action in the walkthrough. Suggestions are checked against your devices, and only the ones you tick and review are written. You see what will be sent before each request, and it goes only to Anthropic.
+- **With your own key from Anthropic, OpenAI, Google or a local model**, the binding guide can suggest a plan for your controllers, answer questions about the aircraft, and explain any action in the walkthrough. Suggestions are checked against your devices, and only the ones you tick and review are written. You see what will be sent before each request, and it goes only to the provider you chose (or nowhere, with a model on your PC).
 - **With an assistant you already use** (Claude Desktop, Claude Code, Cursor or another MCP client), it can check the rig, read the manual and propose changes, and by default RigReady asks you before anything is changed or launched. What it reads goes to that assistant, never to RigReady's author.
 
 See [AI assistants](docs/manual/ai/index.md).
@@ -91,7 +91,7 @@ RigReady reads your hardware and changes game files, so it should say exactly wh
 
 - It installs for your Windows user only and never asks for administrator rights: not to install, not to run, not for a fix or an update.
 - Every change to a file outside RigReady's own data folder is backed up first, with a visible description of the change. Each one is listed on the Safety page, where it can be undone.
-- RigReady itself sends only two things off your PC: the update check to GitHub, and AI requests you send yourself with your own Anthropic key. An assistant you connect over MCP (off by default) reads only what you allow, and sends it wherever that assistant runs. There is no account, no telemetry and no crash reporting.
+- RigReady itself sends only two things off your PC: the update check to GitHub, and AI requests you send yourself, with your own key, to the one AI provider you chose. An assistant you connect over MCP (off by default) reads only what you allow, and sends it wherever that assistant runs. There is no account, no telemetry and no crash reporting.
 - A shared setup never carries scripts or launch commands, nothing from a setup is ever placed into a command line, and an imported file cannot write outside the game and document folders.
 - Updates come only from the project's GitHub releases and are checked against their published checksum before they install.
 - A monitor layout you apply goes back by itself unless you keep it.

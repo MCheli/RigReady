@@ -445,12 +445,13 @@
     </header>
     <div class="ai-grid">
       <article class="ai-card">
-        <h3>With your own Anthropic API key</h3>
+        <h3>With your own key from Anthropic, OpenAI, Google or a local model</h3>
         <p>
           The binding guide can suggest a plan for your controllers, answer questions about the
           aircraft, and explain any action in the walkthrough. Suggestions are checked against your
           devices, and only the ones you tick and review are written. You see what will be sent
-          before each request, and it goes only to Anthropic.
+          before each request, and it goes only to the provider you chose. With Ollama or LM
+          Studio it never leaves your PC.
         </p>
         <figure class="frame">
           <button type="button" class="shot" data-lightbox>
@@ -573,7 +574,7 @@
       </li>
       <li>
         RigReady itself sends only two things off your PC: the update check to GitHub, and AI
-        requests you send yourself with your own Anthropic key. An assistant you connect over MCP
+        requests you send yourself, with your own key, to the one AI provider you chose. An assistant you connect over MCP
         reads only what you allow, and sends it wherever that assistant runs. There is no account,
         no telemetry and no crash reporting.
       </li>

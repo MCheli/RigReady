@@ -66,7 +66,8 @@ export const useAiStore = defineStore('ai-assist', () => {
 
   const items = computed<ItemView[]>(() => (guide.value?.tiers ?? []).flatMap((t) => t.items));
   const item = computed(() => items.value.find((i) => i.id === itemId.value) ?? items.value[0]);
-  const keyPresent = computed(() => status.value?.keyPresent === true);
+  /** AI help can be used: a provider is set up, with a key when it needs one. */
+  const aiReady = computed(() => status.value?.ready === true);
 
   async function loadGuide(id: string): Promise<void> {
     const mine = ++generation;
@@ -388,7 +389,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     itemId,
     item,
     items,
-    keyPresent,
+    aiReady,
     listeningFor,
     pressNote,
     review,

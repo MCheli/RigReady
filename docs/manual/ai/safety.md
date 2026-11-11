@@ -35,7 +35,7 @@ Reading never asks: checks, previews, the bindings, the log and this manual.
 
 ## What is never offered
 
-Your Anthropic API key and the AI binding help that uses it, the AI assistant settings themselves (turning the server on or off, pairing, tokens), file dialogs, the clipboard, and RigReady's own window controls.
+Your AI provider's API key and the AI binding help that uses it, the AI assistant settings themselves (turning the server on or off, pairing, tokens), file dialogs, the clipboard, and RigReady's own window controls.
 
 ## See what was done
 

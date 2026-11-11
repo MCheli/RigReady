@@ -17,7 +17,7 @@ const router = useRouter();
 const tabs = computed(() => [
   { id: 'walkthrough', title: 'Walkthrough' },
   { id: 'priorities', title: 'Priorities' },
-  ...(store.keyPresent ? [{ id: 'ai', title: 'AI help' }] : []),
+  ...(store.aiReady ? [{ id: 'ai', title: 'AI help' }] : []),
 ]);
 
 const tab = computed(() => {
@@ -126,7 +126,7 @@ onBeforeUnmount(() => {
           </v-tab>
         </v-tabs>
         <router-link
-          v-if="store.status && !store.keyPresent"
+          v-if="store.status && !store.aiReady"
           to="/configure/settings"
           class="guide-setup-ai"
           data-testid="ai-setup-link"

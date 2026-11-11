@@ -96,19 +96,47 @@ export const aiAssistContract = defineContract(
       tier: 'off',
     }),
 
-    /** Whether a key is stored (its last four characters only), the model, what is sent. */
+    /** The provider, whether a key is stored (its last four characters only), the model, what is sent. */
     status: channel(noInput, AiStatusSchema, {
       describe:
-        'Whether an Anthropic API key is stored (its last four characters only), the model, and what is sent.',
+        'Which AI provider answers (Anthropic, OpenAI or an OpenAI-compatible server), whether a key is stored (its last four characters only), the model, and what is sent.',
       tier: 'read',
     }),
-    setModel: channel(z.object({ model: z.string() }), AiStatusSchema, {
-      describe: "Chooses the model used with the user's Anthropic API key.",
+    setProvider: channel(
+      z.object({ provider: z.enum(['anthropic', 'openai', 'compatible']) }),
+      AiStatusSchema,
+      { describe: 'Chooses who answers the AI requests.', tier: 'off' }
+    ),
+    setModel: channel(z.object({ model: z.string().max(200) }), AiStatusSchema, {
+      describe: 'Chooses the model of the chosen AI provider. Any model id may be typed.',
       tier: 'off',
     }),
-    /** One free request that only succeeds with a valid key. */
+    /** The OpenAI-compatible provider: a preset, its address, or how answers are kept to JSON. */
+    setCompatible: channel(
+      z.object({
+        preset: z.string().max(40).optional(),
+        baseUrl: z.string().max(400).optional(),
+        structured: z.enum(['schema', 'prompt']).optional(),
+      }),
+      AiStatusSchema,
+      {
+        describe:
+          'Sets up the OpenAI-compatible provider: a preset, the API address, or whether answers are kept to JSON by a schema or by asking.',
+        tier: 'off',
+      }
+    ),
+    /** Stores the chosen provider's key, encrypted for this Windows user. It is never sent back. */
+    setKey: channel(z.object({ key: z.string().max(400) }), AiStatusSchema, {
+      describe: "Stores the chosen AI provider's API key, encrypted for this Windows user.",
+      tier: 'off',
+    }),
+    clearKey: channel(noInput, AiStatusSchema, {
+      describe: "Removes the chosen AI provider's stored API key.",
+      tier: 'off',
+    }),
+    /** One small request that only succeeds with a working key, address and model. */
     testKey: channel(noInput, z.object({ valid: z.boolean(), message: z.string() }), {
-      describe: 'Sends one request to check the stored Anthropic API key.',
+      describe: 'Sends one small request to check the chosen AI provider, its key and model.',
       tier: 'off',
     }),
     /** Builds a request and returns exactly what would be sent. Nothing is sent. */
@@ -123,7 +151,7 @@ export const aiAssistContract = defineContract(
     ),
     /** Sends a prepared request, unchanged. */
     send: channel(z.object({ requestId: z.string() }), SentSchema, {
-      describe: "Sends a prepared request with the user's Anthropic API key.",
+      describe: 'Sends a prepared request to the chosen AI provider.',
       tier: 'off',
     }),
     /** Stops a request that is being answered. Nothing of its answer is used. */

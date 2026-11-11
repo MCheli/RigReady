@@ -1,10 +1,10 @@
 ---
 title: Binding guide and AI help
-description: The F/A-18C and UH-1H guides, the walkthrough that binds with you, and optional AI help with your own Anthropic key, with what is sent shown first.
+description: The F/A-18C and UH-1H guides, the walkthrough that binds with you, and optional AI help with your own key, with what is sent shown first.
 order: 110
 ---
 
-**Configure > Binding guide** explains, for an aircraft you do not know yet, what the important controls do, when you use them and where they belong, and walks you through binding them. Everything on the Walkthrough and Priorities tabs works without any key. AI help is optional and needs your own Anthropic API key.
+**Configure > Binding guide** explains, for an aircraft you do not know yet, what the important controls do, when you use them and where they belong, and walks you through binding them. Everything on the Walkthrough and Priorities tabs works without any key. AI help is optional and needs your own key from Anthropic, OpenAI, Google Gemini, OpenRouter or Mistral, or a model on your own PC.
 
 Choose the aircraft at the top right; each one says **Guide included**, **Guide drafted by AI** or **No guide yet**.
 
@@ -34,9 +34,9 @@ The bar at the bottom lists the staged changes, with what each one would replace
 
 ## AI help
 
-AI help needs an Anthropic API key of your own. Under **Configure > Settings**, the **AI assistance** section takes the key; it is stored encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots. Below it, **Test key** makes one free request that only succeeds with a valid key, **Model** chooses between Claude Opus 5.5 and Claude Sonnet 5.5 with their prices per million tokens, and **Exactly what is sent** lists what every request contains. See [Settings](../app/settings.md).
+AI help needs a provider: Anthropic (the default), OpenAI, or an OpenAI-compatible service such as Google Gemini, OpenRouter, Mistral, or Ollama and LM Studio on your own PC. Under **Configure > Settings**, the **AI assistance** section chooses who answers and takes the key; the key is stored encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots. **Test** makes one small request that only succeeds when the key, the address and the model work, **Model** offers the provider's models (any other id can be typed), and **Exactly what is sent** lists what every request contains and which host receives it. See [Choose who answers](../ai/providers.md) and [Settings](../app/settings.md).
 
-With a key the Binding guide page gets an **AI help** tab, and the walkthrough gets an **Explain** button on each action.
+Once a provider is set up the Binding guide page gets an **AI help** tab, and the walkthrough gets an **Explain** button on each action.
 
 - **Suggest a setup** asks for a binding plan for this aircraft on your controllers.
 - **Ask about this setup** takes a question of up to 600 characters, for example "What am I missing for carrier landings?", and answers in plain text.
@@ -45,11 +45,13 @@ With a key the Binding guide page gets an **AI help** tab, and the walkthrough g
 
 ### What is sent
 
-Before each request a dialog shows what will be sent: the model, the size in characters and tokens and the approximate cost of reading it, what is in it, and under **Show the exact request** the request body itself. Sent are the aircraft's name, DCS's list of its actions with what each is bound to now, for each controller used in DCS its product name, role, number of buttons and hats and axis names, RigReady's guide when there is one, and your question. Never sent are file paths, device IDs, serial numbers, the names you gave devices, your Windows user or PC name, or the contents of your files. The key goes only to api.anthropic.com, in a request header. Nothing leaves the PC until you press **Send**. [Privacy](../app/privacy.md) lists everything that ever leaves the PC.
+Before each request a dialog shows what will be sent: the host it goes to, the model, the size in characters and tokens and the approximate cost of reading it, what is in it, and under **Show the exact request** the request body itself. Sent are the aircraft's name, DCS's list of its actions with what each is bound to now, for each controller used in DCS its product name, role, number of buttons and hats and axis names, RigReady's guide when there is one, and your question. Never sent are file paths, device IDs, serial numbers, the names you gave devices, your Windows user or PC name, or the contents of your files. The key goes only to the chosen provider's host (api.anthropic.com by default), in a request header; with Ollama or LM Studio nothing leaves the PC. Nothing leaves the PC until you press **Send**. [Privacy](../app/privacy.md) lists everything that ever leaves the PC.
 
 ![What will be sent](../../../artifacts/screens/ai-assist-suggest/01-payload.png)
 
-A suggestion or a drafted guide arrives as a stream: the dialog says how far it is and offers **Cancel the request**; nothing of an answer is used before it is complete and has been checked. A refused, cut-off or unreadable answer is reported, and nothing from it is used.
+A suggestion or a drafted guide arrives as a stream: the dialog says how far it is and offers **Cancel the request**; nothing of an answer is used before it is complete and has been checked. A refused, cut-off or unreadable answer is reported, and nothing from it is used. A service that cannot be held to a JSON schema is asked for JSON in the text instead; the dialog then says that an answer that does not check out is asked for once more with the same request.
+
+![A suggestion from a model on this PC](../../../artifacts/screens/ai-assist-compatible-suggest/02-suggestions.png)
 
 ### Nothing is applied without a tick and a review
 

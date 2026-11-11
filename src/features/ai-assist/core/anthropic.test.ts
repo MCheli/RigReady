@@ -212,7 +212,7 @@ describe('Anthropic Messages API over the Http port', () => {
     expect(
       approximateCost('claude-sonnet-5-5', { ...usage, input: 0, cacheRead: 1_000_000 })
     ).toBeCloseTo(0.2);
-    expect(approximateCost('unknown-model', usage)).toBeCloseTo(4);
+    expect(approximateCost('unknown-model', usage)).toBeNull();
   });
 });
 

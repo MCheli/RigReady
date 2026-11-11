@@ -3139,7 +3139,7 @@ requirements:
       - "artifacts/screens/ai-assist-no-key/02-plain-labels.png"
 
   - id: AI-002
-    title: Store the Anthropic API key safely
+    title: Store the AI provider key safely
     job: configure
     area: ai
     priority: p2
@@ -3250,6 +3250,38 @@ requirements:
       - "artifacts/screens/ai-assist-suggest/05-answer.png"
       - "artifacts/screens/ai-assist-suggest/06-explained.png"
       - "artifacts/screens/ai-assist-draft/02-drafted-guide.png"
+
+  - id: AI-007
+    title: AI help with other providers (OpenAI, OpenAI-compatible, local servers)
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "Settings > AI assistance chooses who answers: Anthropic (the default and first), OpenAI, or an OpenAI-compatible server with presets for Google Gemini, OpenRouter, Mistral, Ollama and LM Studio that fill the address and suggest a model."
+      - "Each provider has its own key in the secrets port, never shown again after saving; a compatible key is kept for its host only and removed when the address moves to another host."
+      - "A model picker with a sensible default where any model id can be typed; 'Test' makes one small request and reports clearly."
+      - "Only the chosen provider's host is contacted: https, or plain http to this PC only; redirects are not followed; the key is only in the request header and scrubbed from every message."
+      - "The same preview before every request names the host; streaming with Cancel; a JSON schema where the service takes one, otherwise JSON asked for in the text, checked with the same schemas, and the same request sent once more before a plain error."
+      - "Tokens are shown as the provider reports them; a cost only where the price is known."
+    notes:
+      - "2026-11-11: provider facts and sources in docs/research/ai-providers.md. Azure OpenAI is left out (api-key header and deployment names)."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/openai.test.ts#puts the schema in response_format, strict, with the context first and the key nowhere in it"
+      - "src/features/ai-assist/core/openai.test.ts#sends the key only as a Bearer header, never follows a redirect, and reads text and usage"
+      - "src/features/ai-assist/core/openai.test.ts#turns every failure into a plain message: 401, 429, quota, 5xx, schema refused, redirect, refusal, cut off, bad JSON, timeout"
+      - "src/features/ai-assist/core/openai.test.ts#puts the answer together from content deltas, cut anywhere, with the usage chunk at the end"
+      - "src/features/ai-assist/core/openai.test.ts#accepts https anywhere and plain http only to this PC, and never a key in the address"
+      - "src/features/ai-assist/core/service.test.ts#OpenAI: its own key, a JSON schema, a streamed answer, and only api.openai.com contacted"
+      - "src/features/ai-assist/core/service.test.ts#a local server: no key needed, the schema asked for in the text, and one more try when the answer does not check out"
+      - "src/features/ai-assist/core/service.test.ts#a hosted compatible service: its key is kept for its host only and removed when the address moves"
+      - "tests/unit/httpStream.test.ts#allows plain http to this PC only, and returns a redirect unfollowed when asked"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: another provider is chosen in Settings, its key stored and tested against the server on this PC, and only that host is named"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip through an OpenAI-compatible server on this PC streams, is checked, and applies after review"
+      - "artifacts/screens/ai-assist-providers/01-gemini-preset.png"
+      - "artifacts/screens/ai-assist-providers/02-local-server.png"
+      - "artifacts/screens/ai-assist-compatible-suggest/01-payload.png"
+      - "artifacts/screens/ai-assist-compatible-suggest/02-suggestions.png"
 
   # ---------------------------------------------------------------------------
   # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)

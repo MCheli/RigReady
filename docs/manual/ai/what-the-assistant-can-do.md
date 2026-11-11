@@ -43,4 +43,4 @@ Some assistants list these as prompts or slash commands:
 
 ## What it cannot do
 
-It cannot see or use your Anthropic API key, change the AI assistant settings, open file dialogs, copy to your clipboard, or answer RigReady's questions for you. It only works while RigReady is running.
+It cannot see or use the API key of your AI provider, change the AI assistant settings, open file dialogs, copy to your clipboard, or answer RigReady's questions for you. It only works while RigReady is running.

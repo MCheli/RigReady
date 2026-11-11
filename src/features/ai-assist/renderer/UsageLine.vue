@@ -10,9 +10,10 @@ const n = (v: number): string => v.toLocaleString('en-US');
   <div class="usage rr-muted" data-testid="ai-usage">
     {{ usage.model }} · {{ n(usage.input + usage.cacheRead + usage.cacheWrite) }} tokens in
     <template v-if="usage.cacheRead > 0">({{ n(usage.cacheRead) }} from cache)</template>
-    · {{ n(usage.output) }} out · about ${{
-      usage.cost < 0.01 ? usage.cost.toFixed(4) : usage.cost.toFixed(2)
-    }}
+    · {{ n(usage.output) }} out
+    <template v-if="usage.cost !== null"
+      >· about ${{ usage.cost < 0.01 ? usage.cost.toFixed(4) : usage.cost.toFixed(2) }}</template
+    >
   </div>
 </template>
 

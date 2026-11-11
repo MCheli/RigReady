@@ -1,8 +1,10 @@
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Http, HttpStreamRequest } from '../../src/core/ports';
 import { FakeHttp } from '../../src/platform/fake';
 import { ScenarioSchema } from '../../src/platform/fake/scenario';
-import { NodeHttp } from '../../src/platform/node';
+import { LoopbackHttp, NodeHttp } from '../../src/platform/node';
 import { wiredApp, type TestRig } from '../helpers';
 
 /** `Http.stream`: the scripted fake (as a scenario file writes it) and the real port on a stubbed fetch. */
@@ -405,5 +407,60 @@ describe('the real http port: streams', () => {
       ok: false,
       error: { code: 'http.network', detail: 'refused' },
     });
+  });
+});
+
+describe('the real http port and this PC (local AI servers)', () => {
+  let server: Server | undefined;
+  afterEach(async () => {
+    await new Promise<void>((resolve) => (server ? server.close(() => resolve()) : resolve()));
+    server = undefined;
+  });
+
+  /** A real server on 127.0.0.1: /moved redirects to /here, /here answers "here". */
+  async function local(): Promise<number> {
+    server = createServer((req, res) => {
+      if (req.url === '/moved') {
+        res.writeHead(302, { location: '/here' });
+        res.end();
+        return;
+      }
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      res.end('here');
+    });
+    await new Promise<void>((resolve) => server!.listen(0, '127.0.0.1', resolve));
+    return (server!.address() as AddressInfo).port;
+  }
+
+  it('allows plain http to this PC only, and returns a redirect unfollowed when asked', async () => {
+    const port = await local();
+    const http = new NodeHttp();
+    const plain = await http.request({ url: `http://127.0.0.1:${port}/here` });
+    expect(plain).toMatchObject({ ok: true, value: { status: 200, body: 'here' } });
+    const streamed = await collect(http, { url: `http://127.0.0.1:${port}/here` });
+    expect(streamed.result.ok && text(streamed.chunks)).toBe('here');
+    const followed = await http.request({ url: `http://127.0.0.1:${port}/moved` });
+    expect(followed.ok && followed.value.body).toBe('here');
+    const kept = await http.request({ url: `http://127.0.0.1:${port}/moved`, noRedirects: true });
+    expect(kept).toMatchObject({
+      ok: true,
+      value: { status: 302, headers: { location: '/here' } },
+    });
+    expect((await http.request({ url: 'http://192.168.1.20:11434/v1/models' })).ok).toBe(false);
+    expect((await http.request({ url: 'http://localhost.example.org/' })).ok).toBe(false);
+  });
+
+  it('in a scenario run with RIGREADY_SCENARIO_LOOPBACK, sends this PC to the network and the rest to the script', async () => {
+    const port = await local();
+    const scripted = new FakeHttp();
+    scripted.respond('api.example.org', { body: 'scripted' });
+    const http = new LoopbackHttp(scripted);
+    const real = await http.request({ url: `http://127.0.0.1:${port}/here` });
+    expect(real.ok && real.value.body).toBe('here');
+    const fake = await http.request({ url: 'https://api.example.org/x' });
+    expect(fake.ok && fake.value.body).toBe('scripted');
+    expect(scripted.calls.map((c) => c.url)).toEqual(['https://api.example.org/x']);
+    const streamed = await collect(http, { url: `http://127.0.0.1:${port}/here` });
+    expect(text(streamed.chunks)).toBe('here');
   });
 });
