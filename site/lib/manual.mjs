@@ -4,6 +4,7 @@
 // reads the files and renders the pages.
 
 import path from 'node:path';
+import { esc, slugify } from './markdown.mjs';
 
 /** Where the manual lives in the repository. */
 export const MANUAL_DIR = 'docs/manual';
@@ -174,6 +175,69 @@ export function siteLink(fromFile, manual, repoUrl) {
     if (pages[target]) return pages[target] + (pages[target].includes('#') ? '' : anchor);
     return `${repoUrl}/blob/main/${target}${anchor}`;
   };
+}
+
+/**
+ * The "##" and "###" headings of a page body outside fenced code, as the reader sees them (the
+ * inline markdown taken out), with the id the renderer gives them (lib/markdown.mjs).
+ */
+export function pageHeadings(body) {
+  const out = [];
+  let fenced = false;
+  for (const line of String(body).split(/\r?\n/)) {
+    if (/^\s*```/.test(line)) {
+      fenced = !fenced;
+      continue;
+    }
+    const m = !fenced && /^#{2,3}\s+(.*)$/.exec(line.trimEnd());
+    if (!m) continue;
+    const text = m[1]
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/[`*_]/g, '')
+      .trim();
+    if (text) out.push({ text, id: slugify(m[1]) });
+  }
+  return out;
+}
+
+/**
+ * What the docs search looks through, one entry per page of the manual in reading order: its
+ * title, its section's title, its description, its URL and its headings ([text, id] pairs).
+ * The build writes it to /docs/search.json; a docs page loads it when the search box is used.
+ */
+export function searchIndex(manual, rootTitle = 'Manual') {
+  const sectionTitle = new Map(manual.sections.map((s) => [s.slug, s.title]));
+  return manual.pages.map((p) => ({
+    title: p.title,
+    section: p.section ? sectionTitle.get(p.section) : rootTitle,
+    description: p.description,
+    url: p.url,
+    headings: pageHeadings(p.body).map((h) => [h.text, h.id]),
+  }));
+}
+
+/**
+ * The manual in the docs sidebar: every section as a fold-out group (<details>) of its pages,
+ * with the section's own page linked from the summary. The section of the current page is open
+ * and the current page is marked (aria-current). Works without JavaScript.
+ */
+export function sidebarTree(manual, currentFile, rootTitle = 'Manual') {
+  const a = (p, current) =>
+    `<a href="${p.url}"${current ? ` aria-current="${current}"` : ''}>${esc(p.title)}</a>`;
+  const openSection = currentFile?.includes('/') ? currentFile.split('/')[0] : null;
+  const tree = manual.sections
+    .map((s) => {
+      const open = s.slug === openSection;
+      const current = s.file === currentFile ? 'page' : open ? 'location' : '';
+      const pages = s.pages
+        .map((p) => `<li>${a(p, p.file === currentFile ? 'page' : '')}</li>`)
+        .join('');
+      return `<li${open ? ' class="open"' : ''}><details${open ? ' open' : ''}><summary>${a(s, current)}<span class="docs-twist" aria-hidden="true"></span></summary><ul>${pages}</ul></details></li>`;
+    })
+    .join('');
+  const home = currentFile === 'index.md' ? ' aria-current="page"' : '';
+  return `<p class="docs-nav-title"><a href="${MANUAL_URL}"${home}>${esc(rootTitle)}</a></p>
+<ul class="docs-tree">${tree}</ul>`;
 }
 
 /**

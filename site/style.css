@@ -1398,7 +1398,7 @@ td {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
-.docs-toc summary {
+.docs-toc > summary {
   display: none;
 }
 .docs-nav-title {
@@ -1474,6 +1474,174 @@ td {
   padding: 5px 10px;
   font-size: 0.92rem;
 }
+/* A section: its page linked from the summary, and a chevron that folds its pages in and out. */
+.docs-tree summary {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  cursor: pointer;
+}
+.docs-tree summary::-webkit-details-marker {
+  display: none;
+}
+.docs-tree summary > a {
+  flex: 1;
+  min-width: 0;
+}
+.docs-twist {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: var(--muted);
+}
+.docs-twist::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateX(-2px) rotate(-45deg);
+  transition: transform 160ms var(--ease);
+}
+.docs-tree details[open] > summary .docs-twist::before {
+  transform: translateY(-2px) rotate(45deg);
+}
+.docs-tree summary:hover .docs-twist {
+  color: var(--text);
+  background: var(--surface);
+}
+.docs-tree summary:focus-visible {
+  outline: none;
+}
+.docs-tree summary:focus-visible .docs-twist {
+  outline: 2px solid var(--focus);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The docs search, above the contents. */
+.docs-search {
+  position: relative;
+  margin: 0 0 20px;
+}
+.docs-search input {
+  width: 100%;
+  padding: 9px 36px 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+.docs-search input::placeholder {
+  color: var(--muted);
+}
+.docs-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.docs-search-key {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  pointer-events: none;
+  color: var(--muted);
+}
+.docs-search:focus-within .docs-search-key {
+  display: none;
+}
+@media (hover: none) {
+  .docs-search-key {
+    display: none;
+  }
+}
+.docs-results {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.docs-results ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+.docs-results li a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+  line-height: 1.3;
+}
+.docs-results li a:hover,
+.docs-results li a:focus-visible {
+  background: var(--surface-2);
+  outline: none;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.r-title {
+  display: block;
+  font-size: 0.95rem;
+}
+.r-meta {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.docs-results mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 700;
+}
+.docs-noresults,
+.docs-more {
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--text-2);
+  font-size: 0.88rem;
+}
+.docs-more {
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 900px) {
+  .docs-search {
+    margin-bottom: 10px;
+  }
+  .docs-search input {
+    padding: 12px 14px;
+    font-size: 1rem;
+  }
+  .docs-toc-body {
+    position: relative;
+    max-height: 65vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 14px 16px 4px;
+  }
+  .docs-tree a {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .docs-tree ul a {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+}
 @media (max-width: 900px) {
   .docs {
     grid-template-columns: minmax(0, 1fr);
@@ -1489,14 +1657,14 @@ td {
     border-radius: 10px;
     background: var(--surface);
   }
-  .docs-toc summary {
+  .docs-toc > summary {
     display: block;
     padding: 12px 16px;
     cursor: pointer;
     color: var(--text);
     font-weight: 700;
   }
-  .docs-toc summary::after {
+  .docs-toc > summary::after {
     content: '';
     float: right;
     width: 8px;
@@ -1507,21 +1675,14 @@ td {
     transform: rotate(45deg);
     transition: transform 160ms var(--ease);
   }
-  .docs-toc[open] summary::after {
+  .docs-toc[open] > summary::after {
     transform: rotate(-135deg);
   }
-  .docs-toc[open] summary {
+  .docs-toc[open] > summary {
     border-bottom: 1px solid var(--border);
   }
-  .docs-toc summary::-webkit-details-marker {
+  .docs-toc > summary::-webkit-details-marker {
     display: none;
-  }
-  .docs-toc > :not(summary) {
-    margin-left: 16px;
-    margin-right: 16px;
-  }
-  .docs-toc > .docs-nav-title:first-of-type {
-    margin-top: 14px;
   }
 }
 
