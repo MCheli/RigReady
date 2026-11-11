@@ -6,7 +6,7 @@ import type { KnownDeviceInput } from './schema';
  * reports them. Sources: docs/research/device-control-names.md.
  */
 
-const x52pro: KnownDeviceInput = {
+export const x52pro: KnownDeviceInput = {
   id: 'saitek-x52-pro',
   name: 'Saitek / Logitech X52 Pro',
   match: { vendorId: '06A3', productIds: ['0762'], names: ['X52 Pro'] },

@@ -15,12 +15,15 @@ import {
   parseDrawing,
   pathBox,
   planCallouts,
+  planList,
+  renderPlanSvg,
   segmentsCross,
   stack,
   wrapText,
   type CalloutPlan,
 } from './index';
 import { DRAWINGS, F16_GRIP } from './builtin';
+import { knownDevices } from '../known';
 
 /**
  * PROTOTYPE: the device drawings with automatic callouts, laid out for the owner's
@@ -211,7 +214,7 @@ function expectSound(plan: CalloutPlan, device: SheetDevice): void {
 }
 
 describe('the shipped drawings', () => {
-  it('are valid drawing files, for the two grips, the throttle and the MFD frames, with every control anchored on the device', () => {
+  it('are valid drawing files, for the WinWing grips, throttle and MFD frames and the popular Thrustmaster and Saitek controllers, with every control anchored on the device', () => {
     const { drawings, broken } = builtinDrawings();
     expect(broken).toEqual([]);
     expect(drawings.map((d) => d.name)).toEqual([
@@ -220,6 +223,10 @@ describe('the shipped drawings', () => {
       'WinWing Orion 2 stick with F/A-18 grip',
       'WinWing Orion throttle with F-15EX handles',
       'WinWing MFD1 button frame',
+      'Thrustmaster HOTAS Warthog joystick',
+      'Thrustmaster HOTAS Warthog throttle',
+      'Thrustmaster T.16000M stick',
+      'Saitek / Logitech X52 Pro',
     ]);
     expect(drawingFor({ vendorId: '4098', productId: 'BEA8' })?.name).toContain('F-16EX');
     expect(drawingFor({ vendorId: '4098', productId: 'bee1' })?.name).toContain('MFD1');
@@ -227,6 +234,7 @@ describe('the shipped drawings', () => {
       10
     );
     expect(drawingFor({ vendorId: '044F', productId: 'B68F' })).toBeUndefined();
+    expect(drawingFor({ vendorId: '044f', productId: '0402' })?.name).toContain('Warthog joystick');
     for (const drawing of drawings) {
       const boxes = drawing.paths.map((p) => pathBox(p.d)).filter(Boolean) as {
         x: number;
@@ -271,7 +279,7 @@ describe('the shipped drawings', () => {
     };
     expect(parseDrawing(twice)).toMatchObject({ ok: false, reason: /more than one control/ });
     expect(parseDrawing({ format: 'nope' })).toMatchObject({ ok: false });
-    expect(DRAWINGS).toHaveLength(5);
+    expect(DRAWINGS).toHaveLength(9);
     expect(pathBox('M 10 20 L 30 40 C 1 2 3 4 50 60 Z')).toEqual({ x: 1, y: 2, w: 49, h: 58 });
     expect(pathBox('M 260 588 A 20 20 0 1 0 300 588 A 20 20 0 1 0 260 588 Z')).toEqual({
       x: 260,
@@ -702,6 +710,204 @@ describe('the Hornet on the recorded rig, drawn the new way', () => {
           );
         }
       }
+    }
+    await fs.writeFile(path.join(out, 'manifest.json'), JSON.stringify(pages, null, 2), 'utf8');
+  });
+});
+
+/** The popular controllers drawn the way the WinWing devices are (section 7 of the research note). */
+const POPULAR = [
+  {
+    name: 'Joystick - HOTAS Warthog',
+    known: 'tm-warthog-stick',
+    vendorId: '044F',
+    productId: '0402',
+  },
+  {
+    name: 'Throttle - HOTAS Warthog',
+    known: 'tm-warthog-throttle',
+    vendorId: '044F',
+    productId: '0404',
+  },
+  { name: 'T.16000M', known: 'tm-t16000m', vendorId: '044F', productId: 'B10A' },
+  {
+    name: 'Saitek X52 Pro Flight Controller',
+    known: 'saitek-x52-pro',
+    vendorId: '06A3',
+    productId: '0762',
+  },
+] as const;
+
+async function popularSheet(): Promise<Sheet> {
+  app = await wiredApp('cheat-sheets-known-devices', { files: FILES });
+  return app.invoke<Sheet>('cheat-sheets:sheet', HORNET);
+}
+
+const byName = (sheet: Sheet, name: string): SheetDevice => {
+  const device = sheet.devices.find((d) => d.name === name);
+  if (!device) throw new Error(`No device ${name}: ${sheet.devices.map((d) => d.name).join(', ')}`);
+  return device;
+};
+
+describe('the drawings of the popular Thrustmaster and Saitek controllers', () => {
+  it('anchor every control the named map has, with the same name and inputs, on a drawn part of the device', () => {
+    for (const entry of POPULAR) {
+      const drawing = drawingFor({ vendorId: entry.vendorId, productId: entry.productId })!;
+      expect(drawing, entry.name).toBeDefined();
+      // Found by the name the device reports too, whatever its product id.
+      expect(
+        drawingFor({ vendorId: entry.vendorId, productId: 'FFFF', name: entry.name })?.name
+      ).toBe(drawing.name);
+      const known = knownDevices().devices.find((d) => d.id === entry.known)!;
+      expect(drawing.controls.map((c) => c.id).sort()).toEqual(
+        known.controls.map((c) => c.id).sort()
+      );
+      for (const control of known.controls) {
+        const drawn = drawing.controls.find((c) => c.id === control.id)!;
+        expect(drawn.name).toBe(control.name);
+        expect(drawn.inputs.map((i) => i.id)).toEqual(control.inputs.map((i) => i.id));
+        expect(drawn.assumed).toBe(false);
+      }
+      // Every anchor is on a drawn surface of the device, not on an outline or in the air.
+      const surfaces = drawing.paths
+        .filter((p) => p.role !== 'line')
+        .map((p) => pathBox(p.d))
+        .filter(Boolean) as { x: number; y: number; w: number; h: number }[];
+      for (const control of drawing.controls) {
+        const { x, y } = control.at;
+        const on = surfaces.some(
+          (b) => x >= b.x - 2 && x <= b.x + b.w + 2 && y >= b.y - 2 && y <= b.y + b.h + 2
+        );
+        expect(on, `${drawing.name}: ${control.id} is off the device`).toBe(true);
+      }
+      // The outline is a schematic of paths, never a photo.
+      expect(drawing.image).toBeUndefined();
+      expect(drawing.paths.length).toBeGreaterThan(5);
+    }
+  });
+
+  it('lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page', async () => {
+    const sheet = await popularSheet();
+    for (const entry of POPULAR) {
+      const device = byName(sheet, entry.name);
+      const picture = pictureFor(device);
+      expect(picture.kind, entry.name).toBe('drawing');
+      if (picture.kind === 'drawing') expect(picture.source).toBe('builtin');
+      for (const showEmpty of [false, true]) {
+        for (const options of [{}, { fontScale: 1.3, fill: 1230 }]) {
+          const plan = planFor(device, { showEmpty, ...options });
+          if (!plan) throw new Error(entry.name);
+          // The X52 Pro has no Hornet defaults: with empty controls hidden it has no blocks.
+          if (plan.callouts.length === 0 && !showEmpty) continue;
+          expectSound(plan, device);
+        }
+      }
+      // Every input the device reports bound, with labels long enough to wrap.
+      const reports = device.reports!;
+      const controls = [
+        ...Array.from({ length: reports.buttons }, (_, i) =>
+          bound(`button:${i + 1}`, `Long action name for button ${i + 1} that wraps`, 'sensors')
+        ),
+        ...Array.from({ length: reports.hats }, (_, h) =>
+          ['U', 'R', 'D', 'L', 'UR', 'DR', 'DL', 'UL'].map((d) =>
+            bound(`hat:${h + 1}:${d}`, `Hat ${h + 1} ${d} action`, 'view')
+          )
+        ).flat(),
+        ...reports.axes.map((a) => bound(`axis:${a}`, `Axis ${a}`, 'flight')),
+      ];
+      const full: SheetDevice = { ...device, controls };
+      for (const options of [{}, { fontScale: 1.12, fill: 1230 }]) {
+        const plan = planFor(full, options)!;
+        expectSound(plan, full);
+        // Every control of the drawing has its block.
+        expect(plan.callouts).toHaveLength(drawingFor(device)!.controls.length);
+      }
+    }
+    // The Warthog stick with DCS's Hornet defaults: named as Thrustmaster names it.
+    const stick = planFor(byName(sheet, 'Joystick - HOTAS Warthog'))!;
+    const heads = stick.callouts.map((c) => c.head);
+    expect(heads).toContain('S2 weapon release · 2');
+    expect(heads).toContain('H4 CMS hat · 15–19');
+    expect(stick.extras).toEqual([]);
+    for (const theme of ['dark', 'light', 'night'] as const) {
+      const svg = renderPictureSvg(byName(sheet, 'Throttle - HOTAS Warthog'), { theme });
+      expect(svg).toContain('data-physical="coolie"');
+      expect(svg).toContain(`data-theme="${theme}"`);
+      expect(svg).not.toContain('<script');
+      expect(svg).not.toContain('<image');
+    }
+  });
+
+  it('keeps the user’s changes to a drawing, and a layout of cards they arranged before', async () => {
+    const sheet = await popularSheet();
+    const device = byName(sheet, 'T.16000M');
+    const moved: SheetDevice = {
+      ...device,
+      layoutSource: 'user',
+      layout: {
+        ...device.layout,
+        drawing: { anchors: { hat: { x: 210, y: 120 } }, sides: {}, names: { hat: 'POV' } },
+      },
+    };
+    const picture = pictureFor(moved);
+    expect(picture).toMatchObject({ kind: 'drawing', source: 'changed' });
+    if (picture.kind !== 'drawing') return;
+    expect(picture.drawing.controls.find((c) => c.id === 'hat')).toMatchObject({
+      name: 'POV',
+      at: { x: 210, y: 120 },
+    });
+    const cards: SheetDevice = {
+      ...device,
+      layoutSource: 'user',
+      layout: { ...device.layout, drawing: undefined },
+    };
+    expect(pictureFor(cards).kind).toBe('cards');
+  });
+
+  it('writes before and after pictures when asked', async () => {
+    const out = process.env['RIGREADY_DRAWINGS_OUT'];
+    if (!out) return;
+    const sheet = await popularSheet();
+    await fs.mkdir(out, { recursive: true });
+    const pages: { html: string; png: string; width: number; height: number }[] = [];
+    const heightOf = (svg: string): number =>
+      Math.round(Number(/viewBox="0 0 \d+(?:\.\d+)? (\d+(?:\.\d+)?)"/.exec(svg)?.[1] ?? 1000));
+    const escape = (doc: string): string => doc.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    const svgDoc = (svg: string): string =>
+      `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden;background:${THEMES.dark.bg}}svg{display:block;width:1000px;height:auto}</style></head><body>${svg}</body></html>`;
+    const column = (title: string, doc: string, w: number, h: number): string =>
+      `<div style="flex:none"><div style="font:600 22px Segoe UI,sans-serif;color:#ddd;padding:8px 0">${title}</div>` +
+      `<iframe style="border:0;display:block;width:${w}px;height:${h}px" srcdoc="${escape(doc)}"></iframe></div>`;
+    for (const entry of POPULAR) {
+      const device = byName(sheet, entry.name);
+      const known = knownDevices().devices.find((d) => d.id === entry.known)!;
+      // Before: the named list the device had without a drawing.
+      const list = planList(device.controls, device.reports, {
+        showEmpty: true,
+        named: known.controls,
+      });
+      const before = renderPlanSvg(list, device.controls, { theme: 'dark' });
+      const after = renderPictureSvg(device, { theme: 'dark', showEmpty: true });
+      const { width: kw, height: kh } = KNEEBOARD_SIZE;
+      const day = kneeboardDevicePage(sheet, device, { style: 'light', stamp: '2026-11-11' });
+      const night = kneeboardDevicePage(sheet, device, { style: 'night', stamp: '2026-11-11' });
+      const html =
+        `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#181a1f}</style></head><body>` +
+        `<div style="display:flex;gap:24px;padding:16px;align-items:flex-start">` +
+        column('Before: named list', svgDoc(before), 1000, heightOf(before)) +
+        column('After: RigReady drawing', svgDoc(after), 1000, heightOf(after)) +
+        column('Kneeboard, day', day, kw, kh) +
+        column('Kneeboard, night', night, kw, kh) +
+        `</div></body></html>`;
+      const slug = entry.known.replace(/^(tm|saitek)-/, '');
+      const file = path.join(out, `compare-${slug}.html`);
+      await fs.writeFile(file, html, 'utf8');
+      pages.push({
+        html: file,
+        png: path.join(out, `compare-${slug}.png`),
+        width: 2000 + 2 * kw + 3 * 24 + 32,
+        height: Math.max(heightOf(before), heightOf(after), kh) + 32 + 42,
+      });
     }
     await fs.writeFile(path.join(out, 'manifest.json'), JSON.stringify(pages, null, 2), 'utf8');
   });
