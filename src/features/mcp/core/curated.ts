@@ -4,7 +4,7 @@ import { resolveSetup } from '../../../core/commandLine';
 import type { McpCallContext, McpToolDefinition } from '../../../core/mcp';
 import { err, ok, type Result } from '../../../core/result';
 import type { Envelope } from '../../../shared/ipc';
-import { searchManual, type ManualPage } from './manual';
+import { readManualPage, searchManual, webUrl, type ManualPage } from './manual';
 
 /**
  * The task-level tools the mcp feature offers itself: what a user does on the Play screen
@@ -551,10 +551,45 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
       'Finds the pages of the RigReady manual that hold every word of the query, best first, with the matching lines and the URI to read each page in full (rigready://docs/...).',
     input: z.object({ query: z.string().trim().min(2).max(200) }),
     output: z.object({
-      hits: z.array(z.object({ uri: z.string(), title: z.string(), lines: z.array(z.string()) })),
+      hits: z.array(
+        z.object({
+          uri: z.string(),
+          url: z.string(),
+          title: z.string(),
+          lines: z.array(z.string()),
+        })
+      ),
     }),
     tier: 'read',
     run: async (input) => ok({ hits: searchManual(deps.manual(), input.query) }),
+  });
+
+  add({
+    name: 'manual_read',
+    title: 'Read a manual page',
+    description:
+      'Reads one page of the RigReady manual in full, as Markdown: give its path ("setups/scripts"), its rigready://docs URI or its https://rigready.io/docs/ address, as manual_search returned it. The same text as the rigready://docs resources. Link the page (url) when you answer from it.',
+    input: z.object({
+      page: z
+        .string()
+        .trim()
+        .min(1)
+        .max(200)
+        .describe('"setups/scripts", "rigready://docs/setups/scripts" or its rigready.io address.'),
+    }),
+    output: z.object({ title: z.string(), url: z.string(), uri: z.string(), text: z.string() }),
+    tier: 'read',
+    summarize: (input) => `Read the manual page ${input.page}`,
+    run: async (input) => {
+      const read = readManualPage(deps.manual(), input.page);
+      if (!read.ok) return err('mcp.manual', read.message);
+      return ok({
+        title: read.page.title,
+        url: webUrl(read.page.path),
+        uri: read.page.uri,
+        text: read.text,
+      });
+    },
   });
 
   return tools;

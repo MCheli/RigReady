@@ -226,6 +226,66 @@ describe('ASSIST-003 a conversation with tool use, every request shown first', (
     expect(profile.checks[0]).toMatchObject({ type: 'process.running' });
   });
 
+  it('answers a how-to question from the manual: searches it, reads the page and links it', async () => {
+    const running = await started();
+    reply(
+      running,
+      [
+        {
+          type: 'tool_use',
+          id: 'tu_search',
+          name: 'manual_search',
+          input: { query: 'script ask before running' },
+        },
+      ],
+      'tool_use'
+    );
+    reply(
+      running,
+      [{ type: 'tool_use', id: 'tu_read', name: 'manual_read', input: { page: 'setups/scripts' } }],
+      'tool_use'
+    );
+    reply(running, [
+      {
+        type: 'text',
+        text: 'Switch off "Ask before running" on the step. See https://rigready.io/docs/setups/scripts/',
+      },
+    ]);
+    const first = await running.invoke<TurnPreview>('ai-assist:assistantPrepare', {
+      text: 'How do I stop a script from asking before it runs?',
+    });
+    // The instructions tell the model to search, read and cite the manual.
+    expect(first.body).toContain('manual_search');
+    expect(first.body).toContain('https://rigready.io/docs/<section>/<page>/');
+    const tools = (JSON.parse(first.body) as { tools: { name: string }[] }).tools.map(
+      (t) => t.name
+    );
+    expect(tools).toEqual(expect.arrayContaining(['manual_search', 'manual_read']));
+
+    const searched = await running.invoke<TurnOutcome>('ai-assist:assistantSend', {
+      requestId: first.requestId,
+    });
+    // What the search found goes back with its link on the website.
+    expect(searched.next!.body).toContain('https://rigready.io/docs/setups/scripts/');
+    const read = await running.invoke<TurnOutcome>('ai-assist:assistantSend', {
+      requestId: searched.next!.requestId,
+    });
+    // The page itself, as the rigready://docs resource reads it.
+    expect(read.next!.body).toContain('Ask before running');
+    const done = await running.invoke<TurnOutcome>('ai-assist:assistantSend', {
+      requestId: read.next!.requestId,
+    });
+    const said = done.conversation.entries.filter((e) => e.kind === 'assistant');
+    expect(said.at(-1)).toMatchObject({
+      text: expect.stringContaining('rigready.io/docs/setups/scripts/'),
+    });
+    expect(
+      done.conversation.entries
+        .filter((e) => e.kind === 'tool')
+        .map((e) => e.kind === 'tool' && e.tool)
+    ).toEqual(['manual_search', 'manual_read']);
+  });
+
   it('never sends a request that was not prepared and shown', async () => {
     const running = await started();
     await expect(running.invoke('ai-assist:assistantSend', { requestId: 'nope' })).rejects.toThrow(

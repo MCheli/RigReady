@@ -83,7 +83,8 @@ Task-level tools (registered by the mcp feature on `ctx.mcp`; another feature ca
 | `rig_stand_down` | change | Stand down, optionally asking the game to close |
 | `setup_create_from_rig` | change | Captures the rig as it is and saves a setup |
 | `device_find_by_press` | read | Waits for a button press and names the device |
-| `manual_search` | read | Finds manual pages by words |
+| `manual_search` | read | Finds manual pages by words, each with its rigready.io address |
+| `manual_read` | read | One manual page in full, the same text as its rigready://docs resource (for the built-in assistant, which has tools but no resources) |
 | `rigready_channels` | read | The reference of every channel, by feature, with JSON Schemas |
 | `rigready_call` | the channel's tier | Calls one channel by name through the same gate |
 

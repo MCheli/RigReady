@@ -1,6 +1,6 @@
 ---
 title: Safety with an assistant
-description: What RigReady asks you before an assistant, built in or connected, changes the rig or launches a game, what it never offers, how scripts it writes are guarded, and how to see and undo what it did.
+description: What RigReady asks before an assistant changes the rig or launches a game, what it never offers, how its scripts are guarded, and how to undo what it did.
 order: 30
 ---
 
@@ -47,7 +47,8 @@ See [Scripts](../setups/scripts.md#scripts-an-assistant-wrote).
 
 ## What is never offered
 
-Your Anthropic API key and anything that spends it (the binding guide's AI help, the built-in assistant's own requests), the AI assistant settings themselves (turning the server on or off, pairing, tokens), saving a proposal or a script, approving a script, file dialogs, the clipboard, and RigReady's own window controls.
+Your AI provider's API key and anything that spends it (the binding guide's AI help, the built-in assistant's own requests), the AI assistant settings themselves (turning the server on or off, pairing, tokens), saving a proposal or a script, approving a script, file dialogs, the clipboard, and RigReady's own window controls.
+
 
 ## See what was done
 

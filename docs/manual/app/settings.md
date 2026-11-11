@@ -30,11 +30,17 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 ## AI assistance
 
-**Anthropic API key.** Optional. Paste a key and press **Store key**; the page then says "An Anthropic API key is stored" and offers **Remove key**. The key is never shown again, and the field only accepts a replacement.
+Optional; everything except the AI help in the binding guide works without it. See [Choose who answers](../ai/providers.md) for every provider.
+
+**Who answers.** Anthropic (Claude), the default; OpenAI; or OpenAI-compatible. For OpenAI-compatible, **Service** offers Google Gemini, OpenRouter, Mistral, Ollama and LM Studio, which fill in the **API address** and suggest a model, or **Other** to type the address of any service that speaks OpenAI's API. The address must start with `https://`; plain `http://` is accepted only for this PC. **Structured answers** says whether the service is held to a JSON schema or asked for JSON in the text (for services that refuse a schema).
+
+**API key.** Paste a key and press **Store key**; the page then says, for example, "An Anthropic API key is stored", shows the last four characters, and offers **Remove key**. The key is never shown again, and the field only accepts a replacement. Each provider keeps its own key. A key for an OpenAI-compatible service is kept for that host only and removed when the address moves to another host. A server on this PC needs no key.
 
 The key is encrypted with Windows' own data protection (DPAPI, through Electron's safeStorage) and written to `secrets\` in the data folder. Only your Windows account on this PC can decrypt it; the file is useless on another PC or to another user. The key is never written to the settings file, the log, a backup, a shared setup or a picture. If Windows cannot encrypt for your account at that moment, the key is refused rather than stored in plain text.
 
-**AI binding help** below it, added by the AI feature: the last four characters of the stored key, **Test key**, which asks Anthropic whether the key works and names the model, the **Model** choice (Opus or Sonnet, with their prices per million tokens), and **Exactly what is sent**, the list of what every request contains and what never leaves the PC. Everything except the AI help works without a key. See [the binding guide and AI](../dcs/binding-guide-and-ai.md) and [privacy](privacy.md).
+**Model.** Pick from the list (for Anthropic and OpenAI with their prices per million tokens) or type any model id the service offers. **Test** sends one small request to the chosen host and says whether the key, the address and the model work, and why not. **Exactly what is sent** lists what every request contains, what never leaves the PC, and the one host that receives it. See [the binding guide and AI](../dcs/binding-guide-and-ai.md) and [privacy](privacy.md).
+
+![AI assistance with a server on this PC](../../../artifacts/screens/ai-assist-providers/02-local-server.png)
 
 ## AI assistants (MCP)
 

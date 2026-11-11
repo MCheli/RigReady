@@ -9,17 +9,17 @@ export default defineCommands({
     {
       id: 'ai-assist.assistant',
       title: 'Open the assistant',
-      hint: 'Help with a setup, a check or a script, with your own Anthropic key',
+      hint: 'Help with a setup, a check or a script, with the AI provider you chose',
       icon: 'mdi-message-processing-outline',
       group: 'Assistant',
       keywords: ['ai', 'help', 'chat', 'claude', 'script', 'ask'],
       async run(shell) {
         assistantOpen.value = true;
         const status = await shell.client(aiAssistContract).status();
-        if (status.ok && status.value.keyPresent) return undefined;
+        if (status.ok && status.value.ready) return undefined;
         return {
           tone: 'info',
-          text: 'The assistant needs your own Anthropic API key first.',
+          text: 'The assistant needs an AI provider first: your own key, or a model on this PC.',
           action: { label: 'Open Settings', to: '/configure/settings' },
         };
       },

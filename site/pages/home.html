@@ -445,13 +445,15 @@
     </header>
     <div class="ai-grid">
       <article class="ai-card">
-        <h3>With your own Anthropic API key</h3>
+        <h3>With your own key from Anthropic, OpenAI, Google or a local model</h3>
         <p>
           The built-in assistant works anywhere in RigReady: it finds where your helper programs are
           installed, proposes the checks and launch steps of a ready check, and writes scripts you
           read in full before saving. In the binding guide it suggests a plan for your controllers
           and explains any action. You see what will be sent before each request, it goes only to
-          Anthropic, and nothing is saved until you press Save.
+          the provider you chose, and nothing is saved until you press Save. With Ollama or LM
+          Studio it never leaves your PC.
+
         </p>
         <figure class="frame">
           <button type="button" class="shot" data-lightbox>
@@ -574,7 +576,7 @@
       </li>
       <li>
         RigReady itself sends only two things off your PC: the update check to GitHub, and AI
-        requests you send yourself with your own Anthropic key. An assistant you connect over MCP
+        requests you send yourself, with your own key, to the one AI provider you chose. An assistant you connect over MCP
         reads only what you allow, and sends it wherever that assistant runs. There is no account,
         no telemetry and no crash reporting.
       </li>

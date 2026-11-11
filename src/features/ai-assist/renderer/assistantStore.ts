@@ -40,7 +40,8 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
 
   async function refreshStatus(): Promise<void> {
     const status = await api.status();
-    keyPresent.value = status.ok && status.value.keyPresent;
+    // Ready: a provider is set up, with a key when it needs one.
+    keyPresent.value = status.ok && status.value.ready;
   }
 
   async function refreshDrafts(): Promise<void> {

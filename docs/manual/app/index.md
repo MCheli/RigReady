@@ -25,7 +25,7 @@ What is in it:
 | `backups\` | The [backup files](../protect/backups.md) you made, as zip files, and under `backups\auto` the automatic copies of every file RigReady changed. |
 | `journal.jsonl` | The change journal the [Safety page](../protect/safety-page.md) reads. |
 | `logs\rigready.log` | The log, with up to four older files beside it (`rigready.log.1` and so on); each is at most 5 MB. |
-| `secrets\` | The Anthropic API key, encrypted for your Windows account. |
+| `secrets\` | The API key of each AI provider you stored one for, encrypted for your Windows account. |
 | `window.json`, `panels.json`, `state.json` | Where the window and the pop-out panels were left, and which [setup was used last](../play/switching-setups.md). |
 
 The program itself is installed under `%LOCALAPPDATA%\Programs\RigReady`, and a downloaded update waits in `%LOCALAPPDATA%\rigready-updater` until it is installed.

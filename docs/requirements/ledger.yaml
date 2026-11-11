@@ -3169,7 +3169,7 @@ requirements:
       - "artifacts/screens/ai-assist-no-key/02-plain-labels.png"
 
   - id: AI-002
-    title: Store the Anthropic API key safely
+    title: Store the AI provider key safely
     job: configure
     area: ai
     priority: p2
@@ -3304,6 +3304,38 @@ requirements:
       - "artifacts/screens/ai-assist-viper/02-priorities.png"
       - "artifacts/screens/ai-assist-draft/01-no-guide.png"
 
+  - id: AI-008
+    title: AI help with other providers (OpenAI, OpenAI-compatible, local servers)
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "Settings > AI assistance chooses who answers: Anthropic (the default and first), OpenAI, or an OpenAI-compatible server with presets for Google Gemini, OpenRouter, Mistral, Ollama and LM Studio that fill the address and suggest a model."
+      - "Each provider has its own key in the secrets port, never shown again after saving; a compatible key is kept for its host only and removed when the address moves to another host."
+      - "A model picker with a sensible default where any model id can be typed; 'Test' makes one small request and reports clearly."
+      - "Only the chosen provider's host is contacted: https, or plain http to this PC only; redirects are not followed; the key is only in the request header and scrubbed from every message."
+      - "The same preview before every request names the host; streaming with Cancel; a JSON schema where the service takes one, otherwise JSON asked for in the text, checked with the same schemas, and the same request sent once more before a plain error."
+      - "Tokens are shown as the provider reports them; a cost only where the price is known."
+    notes:
+      - "2026-11-11: provider facts and sources in docs/research/ai-providers.md. Azure OpenAI is left out (api-key header and deployment names)."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/openai.test.ts#puts the schema in response_format, strict, with the context first and the key nowhere in it"
+      - "src/features/ai-assist/core/openai.test.ts#sends the key only as a Bearer header, never follows a redirect, and reads text and usage"
+      - "src/features/ai-assist/core/openai.test.ts#turns every failure into a plain message: 401, 429, quota, 5xx, schema refused, redirect, refusal, cut off, bad JSON, timeout"
+      - "src/features/ai-assist/core/openai.test.ts#puts the answer together from content deltas, cut anywhere, with the usage chunk at the end"
+      - "src/features/ai-assist/core/openai.test.ts#accepts https anywhere and plain http only to this PC, and never a key in the address"
+      - "src/features/ai-assist/core/service.test.ts#OpenAI: its own key, a JSON schema, a streamed answer, and only api.openai.com contacted"
+      - "src/features/ai-assist/core/service.test.ts#a local server: no key needed, the schema asked for in the text, and one more try when the answer does not check out"
+      - "src/features/ai-assist/core/service.test.ts#a hosted compatible service: its key is kept for its host only and removed when the address moves"
+      - "tests/unit/httpStream.test.ts#allows plain http to this PC only, and returns a redirect unfollowed when asked"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: another provider is chosen in Settings, its key stored and tested against the server on this PC, and only that host is named"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip through an OpenAI-compatible server on this PC streams, is checked, and applies after review"
+      - "artifacts/screens/ai-assist-providers/01-gemini-preset.png"
+      - "artifacts/screens/ai-assist-providers/02-local-server.png"
+      - "artifacts/screens/ai-assist-compatible-suggest/01-payload.png"
+      - "artifacts/screens/ai-assist-compatible-suggest/02-suggestions.png"
+
   # ---------------------------------------------------------------------------
   # THE BUILT-IN ASSISTANT: app-wide, on the MCP catalogue and gate
   # ---------------------------------------------------------------------------
@@ -3314,9 +3346,9 @@ requirements:
     area: ai
     priority: p2
     done_means:
-      - "With an Anthropic key stored, an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without a key there is no button and the palette says a key is needed. The binding guide keeps its own view and links to the panel."
+      - "With an AI provider set up (a key, or a server on this PC), an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without one there is no button and the palette opens the panel and says a provider is needed; drafts from MCP assistants are shown either way. The binding guide keeps its own view and links to the panel."
       - "The assistant is offered the MCP server's guided catalogue (task-level tools, rigready_channels, rigready_call), never an 'off' channel, and every call goes through the one gate the MCP server uses: confirm policy, question in the window under 'Built-in assistant', one change at a time, rate limit, activity record and the Safety page name."
-      - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header; tool answers have the user's folder written as {USER}."
+      - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER}."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
@@ -3375,6 +3407,36 @@ requirements:
       - "artifacts/screens/assistant/06-run-asks-first.png"
       - "artifacts/screens/assistant/07-changed-not-run.png"
       - "artifacts/screens/assistant/08-changed-shown-again.png"
+
+  - id: ASSIST-005
+    title: The built-in assistant uses the AI provider chosen in Settings
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "The assistant talks to the provider of AI-008 (Anthropic, OpenAI, or an OpenAI-compatible server, a local one included) with that provider's own key, over Anthropic's Messages API or Chat Completions with tools; the conversation, tool calls and tool results are carried over faithfully either way."
+      - "The preview names the host; a request whose provider, address or model changed in Settings after it was shown is not sent. A refusal or an unreadable answer is an error, never an empty success. Tokens are shown; a cost only where the price is known."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/wire.test.ts#turns the conversation into Chat Completions: system first, functions, tool calls and tool messages"
+      - "src/features/ai-assist/core/wire.test.ts#reads tool calls from a local server, which needs no key, at its own address only"
+      - "src/features/ai-assist/core/wire.test.ts#sends a key only in the header, and the Anthropic wire to api.anthropic.com"
+      - "src/features/ai-assist/core/wire.test.ts#a refusal and an unreadable answer are errors, never an empty success"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/02-first-request.png"
+
+  - id: ASSIST-006
+    title: The built-in assistant answers from the manual and links the page
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "manual_search (each hit with its https://rigready.io/docs/<section>/<page>/ address) and manual_read (one page in full, the same code as the rigready://docs resources) are task-level tools, so the built-in assistant and MCP assistants both have them."
+      - "The built-in assistant's instructions say to search and read the manual before answering a how-to question or proposing a change, and to link the page it used; a how-to question with the scripted provider leads to a search, a read and an answer that links the page."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/assistant.test.ts#answers a how-to question from the manual: searches it, reads the page and links it"
+      - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
 
   # ---------------------------------------------------------------------------
   # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)

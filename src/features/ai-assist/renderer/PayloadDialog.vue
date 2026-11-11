@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useAiStore } from './store';
 
 /**
- * Shows exactly what will be sent to Anthropic, and sends it only when the user says so.
+ * Shows exactly what will be sent, and to which host, and sends it only when the user says so.
  * While the answer arrives it says how far it is (what was really received, no estimate)
  * and offers Cancel for the requests that are streamed.
  */
@@ -35,7 +35,8 @@ const progressText = computed(() => {
   if (store.cancelling) return 'Cancelling…';
   const progress = store.progress;
   if (phase.value === 'waiting') return 'Waiting for the answer.';
-  if (!progress) return 'Sent. Waiting for Anthropic to start answering.';
+  if (!progress)
+    return `Sent. Waiting for ${request.value?.provider ?? 'the model'} to start answering.`;
   if (progress.phase === 'started') return 'The model is working on it. No text has arrived yet.';
   const [one, many] = ITEMS[request.value?.kind ?? ''] ?? ['item', 'items'];
   const chars = `${n(progress.chars)} characters`;
@@ -84,12 +85,19 @@ function close(): void {
         {{ store.sending ? 'this was sent' : 'this is what will be sent' }}</v-card-title
       >
       <v-card-text class="pl-body">
-        <p class="pl-lead">
-          To Anthropic's API (api.anthropic.com), using {{ request.model }}. About
-          {{ n(request.approxTokens) }} tokens ({{ n(request.chars) }} characters), roughly ${{
-            request.approxCost.toFixed(request.approxCost < 0.01 ? 4 : 2)
+        <p class="pl-lead" data-testid="ai-payload-lead">
+          To {{ request.host }}<template v-if="request.local"> (a server on this PC)</template>,
+          using {{ request.model }}. About {{ n(request.approxTokens) }} tokens ({{
+            n(request.chars)
           }}
-          to read before any answer.
+          characters)<template v-if="request.approxCost !== null"
+            >, roughly ${{ request.approxCost.toFixed(request.approxCost < 0.01 ? 4 : 2) }} to read
+            before any answer</template
+          >.
+        </p>
+        <p v-if="request.retriesOnce" class="pl-lead" data-testid="ai-payload-retry">
+          This service is asked for JSON in the text rather than held to a schema. If the answer
+          does not check out, this same request is sent once more.
         </p>
         <ul class="pl-contents" data-testid="ai-payload-contents">
           <li v-for="(c, i) in request.contents" :key="i">{{ c }}</li>

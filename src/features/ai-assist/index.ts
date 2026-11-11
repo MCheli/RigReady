@@ -23,6 +23,6 @@ export default defineFeature({
   barItems: [AssistantButton],
   overlays: [AssistantPanel],
   settings: [
-    { title: 'AI binding help', component: () => import('./renderer/AiSettings.vue'), order: 100 },
+    { title: 'AI assistance', component: () => import('./renderer/AiSettings.vue'), order: 100 },
   ],
 });

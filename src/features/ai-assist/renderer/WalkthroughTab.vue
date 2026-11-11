@@ -56,12 +56,12 @@ const position = computed(() => {
       RigReady ships guides for the F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H and a dozen
       more, but not yet for this one. Guides are plain data files anyone can write (see the packs
       folder in RigReady's source).
-      <template v-if="store.keyPresent">
+      <template v-if="store.aiReady">
         With your API key, AI help can draft one from this aircraft's own list of actions.
       </template>
     </div>
     <v-btn
-      v-if="store.keyPresent"
+      v-if="store.aiReady"
       class="mt-4"
       color="primary"
       variant="tonal"
@@ -209,7 +209,7 @@ const position = computed(() => {
               </p>
             </div>
             <v-btn
-              v-if="store.keyPresent && !store.explanations[a.actionId]"
+              v-if="store.aiReady && !store.explanations[a.actionId]"
               size="small"
               variant="text"
               prepend-icon="mdi-creation-outline"

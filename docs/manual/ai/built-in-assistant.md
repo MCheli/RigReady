@@ -1,14 +1,14 @@
 ---
 title: The built-in assistant
-description: The assistant panel in RigReady with your own Anthropic key, what each request carries, how it builds a ready check, and how it writes scripts you approve.
+description: The assistant panel in RigReady with the AI provider you choose, what each request carries, how it builds a ready check, and how it writes scripts you approve.
 order: 5
 ---
 
-The built-in assistant is a panel at the side of RigReady's window. It talks to Claude with an Anthropic API key of your own, and it works through the same tools an [assistant connected over MCP](mcp-server.md) gets, with [the same safeguards](safety.md).
+The built-in assistant is a panel at the side of RigReady's window. It talks to the AI provider you chose in Settings (your own key from Anthropic, OpenAI, Google Gemini, OpenRouter or Mistral, or a model on your own PC through Ollama or LM Studio; see [Choose who answers](providers.md)), and it works through the same tools an [assistant connected over MCP](mcp-server.md) gets, with [the same safeguards](safety.md).
 
 ## Turn it on
 
-Store your Anthropic API key in **Configure > Settings**, under **AI**. The **Assistant** button then appears at the top of the window, beside **Find or run**. Without a key there is no button; **Open the assistant** in the [command palette](../app/command-palette.md) says a key is needed and takes you to Settings. The [binding guide](../dcs/binding-guide-and-ai.md) has a link to the panel too.
+Choose who answers in **Configure > Settings**, under **AI**, and store the key it needs (a server on your own PC needs none). The **Assistant** button then appears at the top of the window, beside **Find or run**. Until then there is no button; **Open the assistant** in the [command palette](../app/command-palette.md) opens the panel, says a provider is needed and takes you to Settings. What assistants connected over MCP drafted is shown in the panel either way. The [binding guide](../dcs/binding-guide-and-ai.md) has a link to the panel too.
 
 ![The assistant panel open beside the Settings page](../../../artifacts/screens/assistant/01-panel-open.png)
 
@@ -20,7 +20,11 @@ Type a message and press **Prepare** (or Enter). RigReady builds the request and
 
 When the model uses a tool, its answer goes back with the next request, and that request is shown again before it goes. Tick **Don't show this again for this conversation** and the rest of the conversation goes without stopping; **Stop after this** ends that, and **New conversation** starts over with the preview on again.
 
-What a request never carries: your API key (it is the request's credential, sent in a header to `api.anthropic.com` and nowhere else), files of yours other than what a tool answered, and the name of your Windows user folder, which is written as `{USER}`. Anthropic's terms and privacy policy apply to what is sent. The panel shows roughly what each request costs to read and what the conversation has cost so far.
+The preview names the one host the request goes to, for example `api.anthropic.com`, or the server on your PC. If you change the provider in Settings after a request was shown, that request is not sent. What a request never carries: your API key (it is the request's credential, sent in a header to that host and nowhere else), files of yours other than what a tool answered, and the name of your Windows user folder, which is written as `{USER}`. The provider's terms and privacy policy apply to what is sent; with a model on your PC nothing leaves it. The panel shows the tokens of each request and of the conversation, and roughly what they cost where the model's price is known.
+
+## It answers from this manual
+
+The assistant has this manual at hand. For a how-to question, and before it proposes a change, it searches the manual (`manual_search`), reads the page that fits (`manual_read`), answers from it and links the page, for example [Scripts](../setups/scripts.md) as https://rigready.io/docs/setups/scripts/. When the manual does not cover something, it says so.
 
 ## Build a ready check
 

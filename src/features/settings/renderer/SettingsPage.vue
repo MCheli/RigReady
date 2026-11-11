@@ -22,7 +22,6 @@ const error = ref<string>();
 const saved = ref<string>();
 const newLayoutName = ref('');
 const renaming = ref<{ id: string; name: string }>();
-const aiKey = ref('');
 /** Bumped after a refused change so the fields show the stored values again. */
 const revision = ref(0);
 
@@ -111,10 +110,6 @@ async function confirmRename(): Promise<void> {
 
 function deleteLayout(layout: { id: string; name: string }): void {
   void run(api.removeLayout({ id: layout.id }), `Deleted the layout ${layout.name}`);
-}
-
-async function storeKey(): Promise<void> {
-  if (await run(api.setAiKey({ key: aiKey.value }), 'Stored the key')) aiKey.value = '';
 }
 
 const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
@@ -339,56 +334,6 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
             aria-label="Largest import in megabytes"
             @change="setNumber('importMaxMegabytes', ($event.target as HTMLInputElement).value)"
           />
-        </div>
-      </div>
-
-      <div class="rr-section-title">AI assistance</div>
-      <div class="rr-panel settings-panel">
-        <div class="rr-row">
-          <v-icon
-            :icon="settings.aiKeyPresent ? 'mdi-key' : 'mdi-key-outline'"
-            :class="settings.aiKeyPresent ? 'rr-ok' : 'rr-muted'"
-          />
-          <div class="rr-row-main">
-            <div class="rr-row-title" data-testid="ai-key-state">
-              {{
-                settings.aiKeyPresent ? 'An Anthropic API key is stored' : 'No Anthropic API key'
-              }}
-            </div>
-            <div class="rr-row-sub">
-              Optional. The key is encrypted for your Windows account and is never shown again.
-              Everything else works without it.
-            </div>
-          </div>
-          <v-btn
-            v-if="settings.aiKeyPresent"
-            variant="text"
-            data-testid="ai-key-remove"
-            @click="run(api.clearAiKey(), 'Removed the key')"
-          >
-            Remove key
-          </v-btn>
-        </div>
-        <div class="rr-row">
-          <div class="rr-row-main settings-inline">
-            <v-text-field
-              v-model="aiKey"
-              type="password"
-              density="compact"
-              autocomplete="off"
-              :placeholder="settings.aiKeyPresent ? 'Replace with another key' : 'Paste your key'"
-              aria-label="Anthropic API key"
-              data-testid="ai-key-input"
-            />
-            <v-btn
-              color="primary"
-              :disabled="aiKey.trim().length < 8"
-              data-testid="ai-key-save"
-              @click="storeKey"
-            >
-              Store key
-            </v-btn>
-          </div>
         </div>
       </div>
     </div>

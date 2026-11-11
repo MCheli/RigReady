@@ -37,7 +37,7 @@ Devices, monitors, audio devices and running programs through Windows' own inter
 Two things, and nothing else:
 
 - The **update check**: a request to GitHub, where the releases are, a few seconds after start and once a day. Off when automatic checks are off.
-- **AI requests**, only with your own Anthropic API key and only when you press Send on the preview that shows the complete request.
+- **AI requests**, only to the one AI provider you set up (Anthropic, OpenAI, an OpenAI-compatible service over https, or a server on this PC), with your own key, and only when you press Send on the preview that shows the complete request.
 
 No telemetry, no crash reporting, no account. [Privacy](privacy.md) lists exactly what the AI requests contain and what the diagnostics report removes.
 

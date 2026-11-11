@@ -20,6 +20,13 @@ export interface ManualPage {
 }
 
 export const DOCS_URI = 'rigready://docs';
+/** Where the website publishes the manual. */
+export const DOCS_WEB = 'https://rigready.io/docs';
+
+/** A page's address on the website: https://rigready.io/docs/setups/scripts/. */
+export function webUrl(path: string): string {
+  return path === '' ? `${DOCS_WEB}/` : `${DOCS_WEB}/${path}/`;
+}
 
 export function docsUri(path: string): string {
   return path === '' ? DOCS_URI : `${DOCS_URI}/${path}`;
@@ -104,6 +111,8 @@ export function renderContents(pages: ManualPage[]): string {
 
 export interface ManualHit {
   uri: string;
+  /** The page on the website, to link in an answer. */
+  url: string;
   title: string;
   /** Lines that hold every word of the query, with a little around them. */
   lines: string[];
@@ -138,12 +147,46 @@ export function searchManual(pages: ManualPage[], query: string, limit = 8): Man
       })
       .slice(0, 4)
       .map((line) => line.trim().slice(0, 240));
-    scored.push({ hit: { uri: page.uri, title: page.title, lines }, score });
+    scored.push({
+      hit: { uri: page.uri, url: webUrl(page.path), title: page.title, lines },
+      score,
+    });
   }
   return scored
     .sort((a, b) => b.score - a.score || a.hit.title.localeCompare(b.hit.title))
     .slice(0, limit)
     .map((s) => s.hit);
+}
+
+/**
+ * The path a reference to a page means: "setups/scripts", "rigready://docs/setups/scripts" or
+ * "https://rigready.io/docs/setups/scripts/" all name the same page.
+ */
+export function pagePath(reference: string): string {
+  let path = reference.trim();
+  for (const prefix of [`${DOCS_URI}/`, DOCS_URI, `${DOCS_WEB}/`, DOCS_WEB, '/docs/']) {
+    if (path.toLowerCase().startsWith(prefix.toLowerCase())) {
+      path = path.slice(prefix.length);
+      break;
+    }
+  }
+  return path.replace(/\.md$/i, '').replace(/^\/+|\/+$/g, '');
+}
+
+/** One page as Markdown, with its title and description first: for a resource read and the manual_read tool. */
+export function readManualPage(
+  pages: ManualPage[],
+  reference: string
+): { ok: true; page: ManualPage; text: string } | { ok: false; message: string } {
+  const path = pagePath(reference);
+  const page = pages.find((p) => p.path === path);
+  if (!page) {
+    return {
+      ok: false,
+      message: `There is no manual page at ${docsUri(path)}. Search with manual_search, or read ${DOCS_URI} for the list.`,
+    };
+  }
+  return { ok: true, page, text: `# ${page.title}\n\n${page.description}\n\n${page.body}` };
 }
 
 /** The manual as the app ships it. Read once; a build without the files gives an empty manual. */

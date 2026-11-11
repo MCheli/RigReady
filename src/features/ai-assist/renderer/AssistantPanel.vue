@@ -89,8 +89,8 @@ const busy = computed(() => store.sending);
         <div>
           <h2 class="asp-title">Assistant</h2>
           <p class="asp-sub">
-            Uses your own Anthropic key. Every request is shown before it is sent. A change it asks
-            for is asked in RigReady first and listed on the Safety page.
+            Uses the AI provider you chose in Settings. Every request is shown before it is sent. A
+            change it asks for is asked in RigReady first and listed on the Safety page.
           </p>
         </div>
         <v-btn
@@ -104,7 +104,10 @@ const busy = computed(() => store.sending);
       </header>
 
       <div v-if="!store.keyPresent" class="asp-empty" data-testid="assistant-no-key">
-        <p>The assistant needs your own Anthropic API key. Add one in Settings, under AI.</p>
+        <p>
+          To talk to the assistant, choose an AI provider in Settings, under AI: your own key, or a
+          model on this PC. What assistants drafted is below either way.
+        </p>
         <v-btn variant="tonal" data-testid="assistant-settings" @click="openSettings"
           >Open Settings</v-btn
         >
@@ -147,173 +150,180 @@ const busy = computed(() => store.sending);
             <div v-else class="asp-note rr-warn" data-testid="assistant-note">{{ entry.text }}</div>
           </template>
         </div>
+      </template>
 
-        <!-- What the assistant drafted: nothing of it is saved until Save is pressed here. -->
-        <section
-          v-for="draft in store.drafts.setups"
-          :key="draft.id"
-          class="asp-card"
-          data-testid="assistant-setup-draft"
+      <!-- What the assistant drafted: nothing of it is saved until Save is pressed here. -->
+      <section
+        v-for="draft in store.drafts.setups"
+        :key="draft.id"
+        class="asp-card"
+        data-testid="assistant-setup-draft"
+      >
+        <div class="asp-card-title">
+          <v-icon icon="mdi-clipboard-check-outline" size="17" />
+          {{
+            draft.target.kind === 'new'
+              ? `New setup: ${draft.target.name}`
+              : `Changes to ${draft.target.name}`
+          }}
+        </div>
+        <p class="asp-card-sub">
+          {{ draft.summary }} <span class="asp-by">From {{ draft.by }}.</span>
+        </p>
+        <ul class="asp-items">
+          <li v-for="(c, i) in draft.checks" :key="`c${i}`" data-testid="assistant-draft-check">
+            <strong>{{ c.title }}</strong> <span class="asp-muted">{{ c.type }}</span>
+            <div class="asp-detail rr-mono">{{ c.detail }}</div>
+            <div v-if="c.fix" class="asp-detail rr-mono">Fix: {{ c.fix }}</div>
+          </li>
+          <li v-for="(s, i) in draft.steps" :key="`s${i}`" data-testid="assistant-draft-step">
+            <strong>{{ s.title }}</strong>
+            <span class="asp-muted">{{ PHASES[s.phase] }} · {{ s.type }}</span>
+            <div class="asp-detail rr-mono">{{ s.detail }}</div>
+          </li>
+        </ul>
+        <v-btn
+          size="small"
+          variant="text"
+          :prepend-icon="shownExact[draft.id] ? 'mdi-chevron-down' : 'mdi-chevron-right'"
+          @click="toggle(draft.id)"
+          >{{
+            shownExact[draft.id]
+              ? 'Hide the setup as it would be saved'
+              : 'Show the setup as it would be saved'
+          }}</v-btn
         >
-          <div class="asp-card-title">
-            <v-icon icon="mdi-clipboard-check-outline" size="17" />
-            {{
-              draft.target.kind === 'new'
-                ? `New setup: ${draft.target.name}`
-                : `Changes to ${draft.target.name}`
-            }}
-          </div>
-          <p class="asp-card-sub">
-            {{ draft.summary }} <span class="asp-by">From {{ draft.by }}.</span>
-          </p>
-          <ul class="asp-items">
-            <li v-for="(c, i) in draft.checks" :key="`c${i}`" data-testid="assistant-draft-check">
-              <strong>{{ c.title }}</strong> <span class="asp-muted">{{ c.type }}</span>
-              <div class="asp-detail rr-mono">{{ c.detail }}</div>
-              <div v-if="c.fix" class="asp-detail rr-mono">Fix: {{ c.fix }}</div>
-            </li>
-            <li v-for="(s, i) in draft.steps" :key="`s${i}`" data-testid="assistant-draft-step">
-              <strong>{{ s.title }}</strong>
-              <span class="asp-muted">{{ PHASES[s.phase] }} · {{ s.type }}</span>
-              <div class="asp-detail rr-mono">{{ s.detail }}</div>
-            </li>
-          </ul>
+        <pre v-if="shownExact[draft.id]" class="asp-pre rr-mono">{{ draft.exact }}</pre>
+        <p v-if="store.draftErrors[draft.id]" class="asp-error rr-bad" role="alert">
+          <v-icon icon="mdi-alert-circle-outline" size="15" /> {{ store.draftErrors[draft.id] }}
+        </p>
+        <div class="asp-actions">
           <v-btn
+            color="primary"
+            variant="flat"
             size="small"
-            variant="text"
-            :prepend-icon="shownExact[draft.id] ? 'mdi-chevron-down' : 'mdi-chevron-right'"
-            @click="toggle(draft.id)"
-            >{{
-              shownExact[draft.id]
-                ? 'Hide the setup as it would be saved'
-                : 'Show the setup as it would be saved'
-            }}</v-btn
+            data-testid="assistant-setup-save"
+            @click="store.saveSetup(draft.id)"
+            >Save</v-btn
           >
-          <pre v-if="shownExact[draft.id]" class="asp-pre rr-mono">{{ draft.exact }}</pre>
-          <p v-if="store.draftErrors[draft.id]" class="asp-error rr-bad" role="alert">
-            <v-icon icon="mdi-alert-circle-outline" size="15" /> {{ store.draftErrors[draft.id] }}
-          </p>
-          <div class="asp-actions">
-            <v-btn
-              color="primary"
-              variant="flat"
-              size="small"
-              data-testid="assistant-setup-save"
-              @click="store.saveSetup(draft.id)"
-              >Save</v-btn
-            >
-            <v-btn variant="text" size="small" @click="store.discard(draft.id)">Discard</v-btn>
-          </div>
-        </section>
+          <v-btn variant="text" size="small" @click="store.discard(draft.id)">Discard</v-btn>
+        </div>
+      </section>
 
-        <section
-          v-for="draft in store.drafts.scripts"
-          :key="draft.id"
-          class="asp-card"
-          data-testid="assistant-script-draft"
-        >
-          <div class="asp-card-title">
-            <v-icon icon="mdi-script-text-outline" size="17" /> Script: {{ draft.fileName }}
-          </div>
-          <p class="asp-card-sub" data-testid="assistant-script-explanation">
-            {{ draft.explanation }} <span class="asp-by">From {{ draft.by }}.</span>
-          </p>
-          <p v-if="draft.use" class="asp-muted">
-            Goes into {{ draft.use.setup }} as
-            {{
-              draft.use.as === 'check'
-                ? 'a check'
-                : draft.use.as === 'fix'
-                  ? `the fix of ${draft.use.forCheck}`
-                  : PHASES[draft.use.as]?.toLowerCase()
-            }}: "{{ draft.use.title }}". It asks before every run.
-          </p>
-          <ul v-if="draft.warnings.length > 0 || draft.replaces" class="asp-warn rr-warn">
-            <li v-for="w in draft.warnings" :key="w">
-              {{ w }}
-            </li>
-            <li v-if="draft.replaces">Replaces the script of the same name.</li>
-          </ul>
-          <div class="asp-muted">The whole file, as it would be saved at {{ draft.stored }}:</div>
-          <pre class="asp-pre rr-mono" data-testid="assistant-script-text">{{ draft.text }}</pre>
-          <p v-if="store.draftErrors[draft.id]" class="asp-error rr-bad" role="alert">
-            <v-icon icon="mdi-alert-circle-outline" size="15" /> {{ store.draftErrors[draft.id] }}
-          </p>
-          <div class="asp-actions">
-            <v-btn
-              color="primary"
-              variant="flat"
-              size="small"
-              data-testid="assistant-script-save"
-              @click="store.saveScript(draft.id)"
-              >Save</v-btn
-            >
-            <v-btn variant="text" size="small" @click="store.discard(draft.id)">Discard</v-btn>
-          </div>
-        </section>
-
-        <section
-          v-for="script in store.waitingScripts"
-          :key="script.file"
-          class="asp-card asp-card-warn"
-          data-testid="assistant-script-changed"
-        >
-          <div class="asp-card-title">
-            <v-icon icon="mdi-alert-outline" size="17" />
-            {{
-              script.state === 'changed'
-                ? `${script.file} changed since you approved it`
-                : `${script.file} is not approved`
-            }}
-          </div>
-          <p class="asp-card-sub">
-            RigReady does not run it until you have read it as it is now and approved it.
-          </p>
-          <pre class="asp-pre rr-mono" data-testid="assistant-script-current">{{
-            script.text
-          }}</pre>
-          <p v-if="store.draftErrors[script.file]" class="asp-error rr-bad" role="alert">
-            <v-icon icon="mdi-alert-circle-outline" size="15" />
-            {{ store.draftErrors[script.file] }}
-          </p>
-          <div class="asp-actions">
-            <v-btn
-              color="primary"
-              variant="flat"
-              size="small"
-              data-testid="assistant-script-approve"
-              @click="store.approve(script)"
-              >Approve it as shown</v-btn
-            >
-          </div>
-        </section>
-
-        <div
-          v-for="(done, id) in store.saved"
-          :key="id"
-          class="asp-saved"
-          role="status"
-          data-testid="assistant-saved"
-        >
-          <v-icon icon="mdi-check-circle-outline" size="15" class="rr-ok" /> {{ done.message }}
+      <section
+        v-for="draft in store.drafts.scripts"
+        :key="draft.id"
+        class="asp-card"
+        data-testid="assistant-script-draft"
+      >
+        <div class="asp-card-title">
+          <v-icon icon="mdi-script-text-outline" size="17" /> Script: {{ draft.fileName }}
+        </div>
+        <p class="asp-card-sub" data-testid="assistant-script-explanation">
+          {{ draft.explanation }} <span class="asp-by">From {{ draft.by }}.</span>
+        </p>
+        <p v-if="draft.use" class="asp-muted">
+          Goes into {{ draft.use.setup }} as
+          {{
+            draft.use.as === 'check'
+              ? 'a check'
+              : draft.use.as === 'fix'
+                ? `the fix of ${draft.use.forCheck}`
+                : PHASES[draft.use.as]?.toLowerCase()
+          }}: "{{ draft.use.title }}". It asks before every run.
+        </p>
+        <ul v-if="draft.warnings.length > 0 || draft.replaces" class="asp-warn rr-warn">
+          <li v-for="w in draft.warnings" :key="w">
+            {{ w }}
+          </li>
+          <li v-if="draft.replaces">Replaces the script of the same name.</li>
+        </ul>
+        <div class="asp-muted">The whole file, as it would be saved at {{ draft.stored }}:</div>
+        <pre class="asp-pre rr-mono" data-testid="assistant-script-text">{{ draft.text }}</pre>
+        <p v-if="store.draftErrors[draft.id]" class="asp-error rr-bad" role="alert">
+          <v-icon icon="mdi-alert-circle-outline" size="15" /> {{ store.draftErrors[draft.id] }}
+        </p>
+        <div class="asp-actions">
           <v-btn
-            v-if="done.setupId"
+            color="primary"
+            variant="flat"
             size="small"
-            variant="text"
-            data-testid="assistant-open-setup"
-            @click="openSetup(done.setupId)"
-            >Open in the setup editor</v-btn
+            data-testid="assistant-script-save"
+            @click="store.saveScript(draft.id)"
+            >Save</v-btn
+          >
+          <v-btn variant="text" size="small" @click="store.discard(draft.id)">Discard</v-btn>
+        </div>
+      </section>
+
+      <section
+        v-for="script in store.waitingScripts"
+        :key="script.file"
+        class="asp-card asp-card-warn"
+        data-testid="assistant-script-changed"
+      >
+        <div class="asp-card-title">
+          <v-icon icon="mdi-alert-outline" size="17" />
+          {{
+            script.state === 'changed'
+              ? `${script.file} changed since you approved it`
+              : `${script.file} is not approved`
+          }}
+        </div>
+        <p class="asp-card-sub">
+          RigReady does not run it until you have read it as it is now and approved it.
+        </p>
+        <pre class="asp-pre rr-mono" data-testid="assistant-script-current">{{ script.text }}</pre>
+        <p v-if="store.draftErrors[script.file]" class="asp-error rr-bad" role="alert">
+          <v-icon icon="mdi-alert-circle-outline" size="15" />
+          {{ store.draftErrors[script.file] }}
+        </p>
+        <div class="asp-actions">
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="small"
+            data-testid="assistant-script-approve"
+            @click="store.approve(script)"
+            >Approve it as shown</v-btn
           >
         </div>
+      </section>
 
+      <div
+        v-for="(done, id) in store.saved"
+        :key="id"
+        class="asp-saved"
+        role="status"
+        data-testid="assistant-saved"
+      >
+        <v-icon icon="mdi-check-circle-outline" size="15" class="rr-ok" /> {{ done.message }}
+        <v-btn
+          v-if="done.setupId"
+          size="small"
+          variant="text"
+          data-testid="assistant-open-setup"
+          @click="openSetup(done.setupId)"
+          >Open in the setup editor</v-btn
+        >
+      </div>
+
+      <template v-if="store.keyPresent">
         <!-- The request waiting for Send: what it carries, and the exact text a click away. -->
         <section v-if="store.preview" class="asp-preview" data-testid="assistant-preview">
           <div class="asp-preview-head">
             <v-icon icon="mdi-send-outline" size="16" />
-            {{ store.sending ? 'Sent, waiting for the answer' : 'Ready to send to Anthropic' }}
-            <span class="asp-muted"
-              >{{ store.preview.model }}, about {{ n(store.preview.approxTokens) }} tokens,
-              {{ money(store.preview.approxCost) }} to read</span
+            {{
+              store.sending
+                ? 'Sent, waiting for the answer'
+                : `Ready to send to ${store.preview.to}`
+            }}
+            <span class="asp-muted" data-testid="assistant-preview-size"
+              >{{ store.preview.model }}, about {{ n(store.preview.approxTokens) }} tokens{{
+                store.preview.approxCost === null
+                  ? ''
+                  : `, ${money(store.preview.approxCost)} to read`
+              }}</span
             >
           </div>
           <ul class="asp-contents" data-testid="assistant-preview-contents">
@@ -406,7 +416,12 @@ const busy = computed(() => store.sending);
               >New conversation</v-btn
             >
             <span v-if="store.conversation" class="asp-muted">
-              So far about {{ money(store.conversation.usage.cost) }}
+              So far
+              {{ n(store.conversation.usage.input + store.conversation.usage.output) }} tokens{{
+                store.conversation.usage.cost === null
+                  ? ''
+                  : `, about ${money(store.conversation.usage.cost)}`
+              }}
             </span>
           </div>
         </form>

@@ -218,11 +218,16 @@ export const TurnPreviewSchema = z.object({
   requestId: z.string(),
   conversationId: z.string(),
   model: z.string(),
+  /** Who answers and the one host the request goes to: "Anthropic (api.anthropic.com)". */
+  to: z.string(),
+  /** True for a server on this PC. */
+  local: z.boolean(),
   /** The exact JSON body, formatted. */
   body: z.string(),
   chars: z.number().int(),
   approxTokens: z.number().int(),
-  approxCost: z.number(),
+  /** Dollars to read it, when the model's price is known. */
+  approxCost: z.number().nullable(),
   /** What the request carries, in a line each. */
   contents: z.array(z.string()),
 });
@@ -232,7 +237,8 @@ export type TurnPreview = z.infer<typeof TurnPreviewSchema>;
 export const ConversationViewSchema = z.object({
   conversationId: z.string(),
   entries: z.array(EntrySchema),
-  usage: z.object({ input: z.number(), output: z.number(), cost: z.number() }),
+  /** Tokens as the provider reported them; the cost only where the price is known. */
+  usage: z.object({ input: z.number(), output: z.number(), cost: z.number().nullable() }),
   /** Tool results are waiting to be sent with the next request. */
   waiting: z.boolean(),
 });

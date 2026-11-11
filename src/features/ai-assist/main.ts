@@ -21,6 +21,7 @@ export default defineFeatureMain({
       ports: ctx.ports,
       log: ctx.log,
       bindings: ctx.bindings,
+      settings: ctx.settings,
       onProgress: (progress) => ctx.emit(aiAssistContract, 'sendProgress', progress),
     });
     const drafts = new AssistantDrafts({
@@ -33,8 +34,7 @@ export default defineFeatureMain({
       ports: ctx.ports,
       log: ctx.log,
       host: () => ctx.mcp.host(),
-      key: () => ai.apiKey(),
-      model: () => ai.model(),
+      target: () => ai.assistantTarget(),
     });
     // The three tools an assistant builds a ready check with, offered over MCP too.
     for (const tool of assistantTools()) ctx.mcp.registerTool(tool);
@@ -77,7 +77,11 @@ export default defineFeatureMain({
           return ok({ listening: false });
         },
         status: () => ai.status(),
+        setProvider: ({ provider }) => ai.setProvider(provider),
         setModel: ({ model }) => ai.setModel(model),
+        setCompatible: (change) => ai.setCompatible(change),
+        setKey: ({ key }) => ai.setKey(key),
+        clearKey: () => ai.clearKey(),
         testKey: () => ai.testKey(),
         prepare: (input) => ai.prepare(input),
         send: ({ requestId }) => ai.send(requestId),

@@ -34,6 +34,9 @@ export const DEFAULT_MODEL = MODELS[0]!.id;
 
 export const modelInfo = (id: string): ModelInfo => MODELS.find((m) => m.id === id) ?? MODELS[0]!;
 
+/** The listed model with this id, or undefined for one the user typed. */
+export const knownModel = (id: string): ModelInfo | undefined => MODELS.find((m) => m.id === id);
+
 export interface Usage {
   input: number;
   output: number;
@@ -41,9 +44,13 @@ export interface Usage {
   cacheRead: number;
 }
 
-/** Approximate cost in US dollars: cache writes cost 1.25x input, reads the cache price. */
-export function approximateCost(model: string, usage: Usage): number {
-  const m = modelInfo(model);
+/**
+ * Approximate cost in US dollars: cache writes cost 1.25x input, reads the cache price.
+ * Null for a model whose price RigReady does not know.
+ */
+export function approximateCost(model: string, usage: Usage): number | null {
+  const m = knownModel(model);
+  if (!m) return null;
   const dollars =
     usage.input * m.input +
     usage.cacheWrite * m.input * 1.25 +
@@ -134,7 +141,8 @@ export interface MessageAnswer {
   text: string;
   model: string;
   usage: Usage;
-  cost: number;
+  /** Approximate, US dollars; null when the price of the model is not known. */
+  cost: number | null;
 }
 
 /** Removes the key from text that may be shown or logged, whatever the server echoed. */
@@ -624,7 +632,7 @@ export async function testKey(http: Http, key: string, model: string): Promise<R
   if (status === 403 || status === 404) {
     return ok({
       valid: false,
-      reason: `The key works, but it cannot use ${modelInfo(model).name}. Pick another model.`,
+      reason: `The key works, but it cannot use ${knownModel(model)?.name ?? model}. Pick another model.`,
     });
   }
   const failed = apiError(status, response.value.body, response.value.headers['retry-after']);

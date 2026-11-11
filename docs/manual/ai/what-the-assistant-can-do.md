@@ -1,6 +1,6 @@
 ---
 title: What the assistants can do
-description: The tools, manual pages and guided conversations RigReady gives the built-in assistant and a connected one, for first setup, ready checks, scripts, bindings, monitors, backups and troubleshooting.
+description: The tools, manual pages and guided conversations the built-in assistant and a connected one get, for setups, ready checks, scripts, bindings and more.
 order: 20
 ---
 
@@ -21,7 +21,8 @@ The [built-in assistant](built-in-assistant.md) and an assistant [connected over
 | `programs_find` | Finds where programs are installed by name or vendor (SimAppPro, TrackIR, SRS, Stream Deck, VoiceAttack, Tacview, OpenKneeboard, Pit House, G HUB), with path variables | No: it only reads |
 | `setup_propose` | Proposes checks and launch steps for a setup, or a new setup, shown in RigReady's assistant panel | No: nothing is saved until you press **Save** |
 | `script_draft` | Drafts a `.ps1` or `.cmd` script and its explanation, shown in full in the panel | No: nothing is saved until you press **Save**, and it never runs without asking you |
-| `manual_search` | Finds pages of this manual | No |
+| `manual_search` | Finds pages of this manual, each with its address on rigready.io | No |
+| `manual_read` | Reads one page of this manual in full | No |
 | `rigready_channels` | Lists every other action of RigReady by page, with what each takes | No |
 | `rigready_call` | Runs one of those actions | When the action changes the rig or launches a game |
 
@@ -46,6 +47,7 @@ Some assistants list these as prompts or slash commands:
 
 ## What it cannot do
 
-It cannot see or use your Anthropic API key, change the AI assistant settings, open file dialogs, copy to your clipboard, or answer RigReady's questions for you. It cannot save a proposal or a script (only you can, in the panel), and it cannot run a script an assistant wrote: that runs only from RigReady's window, after RigReady asked you. It only works while RigReady is running.
+It cannot see or use the API key of your AI provider, change the AI assistant settings, open file dialogs, copy to your clipboard, or answer RigReady's questions for you. It cannot save a proposal or a script (only you can, in the panel), and it cannot run a script an assistant wrote: that runs only from RigReady's window, after RigReady asked you. It only works while RigReady is running.
 
-Setup proposals and script drafts from an assistant connected over MCP wait in the same panel, so you need an Anthropic key only to talk to the built-in assistant, not to look at or save what another assistant drafted. The **Assistant** button appears once a key is stored; without one, open the panel from the command palette.
+Setup proposals and script drafts from an assistant connected over MCP wait in the assistant panel, which opens from the command palette (**Open the assistant**) even when no AI provider is set up: no key is needed to look at them or save them, only to talk to the built-in assistant.
+

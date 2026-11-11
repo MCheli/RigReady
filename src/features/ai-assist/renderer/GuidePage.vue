@@ -19,7 +19,7 @@ const router = useRouter();
 const tabs = computed(() => [
   { id: 'walkthrough', title: 'Walkthrough' },
   { id: 'priorities', title: 'Priorities' },
-  ...(store.keyPresent ? [{ id: 'ai', title: 'AI help' }] : []),
+  ...(store.aiReady ? [{ id: 'ai', title: 'AI help' }] : []),
 ]);
 
 const tab = computed(() => {
@@ -75,7 +75,7 @@ onBeforeUnmount(() => {
           that binds it with you.
         </p>
         <v-btn
-          v-if="store.keyPresent"
+          v-if="store.aiReady"
           size="small"
           variant="text"
           prepend-icon="mdi-message-processing-outline"
@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
           </v-tab>
         </v-tabs>
         <router-link
-          v-if="store.status && !store.keyPresent"
+          v-if="store.status && !store.aiReady"
           to="/configure/settings"
           class="guide-setup-ai"
           data-testid="ai-setup-link"
