@@ -1,0 +1,614 @@
+# RigReady binding guide: F-16C Viper. Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: F-16C_50
+  name: F-16C Viper
+summary: >-
+  A single-engine fighter built around its HOTAS: in a fight your hands never leave the
+  side stick and the throttle. The four-way switches on the stick (TMS, DMS and CMS) do most
+  of the work, so bind those first, then the throttle's radio, cursor, dogfight and speed
+  brake switches. The panels and the keyboard cover the rest.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the real jet's HOTAS (the side stick and
+    throttle switch layout the F-16C is known for) and of how the switches work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from its default input files for the
+    F-16C; a test checks each one against those files so a DCS update that renames an
+    action is caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      The real Viper stick: the two-stage trigger, the pickle button, the trim hat and the
+      three four-way switches (TMS under your thumb at the top, DMS below it, CMS on the
+      side), the nose wheel steering button and the paddle. On another grip, map by feel:
+      trigger to trigger, pickle to the top thumb button, trim to the top hat.
+    items: [pitch-roll, trigger, pickle, trim, tms, dms, cms, nws, paddle]
+  throttle:
+    summary: >-
+      The throttle axis, then the switches your left hand needs in a fight: the radio
+      transmit switch, the radar cursor and its ENABLE press, the dogfight switch, the
+      speed brake, uncage, the antenna elevation and range knobs, and expand/FOV.
+    items:
+      [
+        thrust,
+        transmit,
+        cursor,
+        cursor-enable,
+        dogfight,
+        speed-brake,
+        uncage,
+        antenna,
+        expand,
+        man-range,
+        throttle-idle,
+      ]
+  pedals:
+    summary: Rudder on the rudder axis, the two toe brakes on their own axes.
+    items: [rudder, wheel-brakes]
+  mfd:
+    summary: >-
+      Each MFD frame's 20 buttons to the matching display's OSBs, in the same order (OSB 1
+      is the left end of the top row, counting clockwise; check one).
+    items: [left-mfd, right-mfd]
+  panel:
+    summary: >-
+      Switches you use a few times per flight: gear, master arm, the A-A and A-G master
+      mode buttons, laser arm, then the autopilot, start-up and lights if your panels have
+      them.
+    items:
+      [
+        gear,
+        master-arm,
+        master-mode,
+        laser-arm,
+        autopilot,
+        master-caution,
+        icp,
+        start,
+        parking-brake,
+        ldg-light,
+        ext-lights,
+        hook,
+      ]
+  keyboard:
+    summary: >-
+      Things you do rarely or once per flight can stay on DCS's keyboard defaults: views,
+      kneeboard, canopy, eject, night vision goggles.
+    items: [view-center, zoom, canopy, kneeboard, nvg, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Moves the nose up and down and banks the jet. The real stick barely moves; it reads force.
+    when: All the time.
+    actions:
+      - { name: Pitch, label: 'Pitch (stick forward and back)' }
+      - { name: Roll, label: 'Roll (stick left and right)' }
+
+  - id: rudder
+    title: Rudder
+    tier: must
+    place: hotas
+    role: pedals
+    what: Yaws the nose; on the ground it also steers once nose wheel steering is on.
+    when: Take-off roll, landing roll-out, crosswinds, taxiing.
+    actions:
+      - { name: Rudder, label: 'Rudder (pedals or stick twist)' }
+
+  - id: thrust
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    what: Engine power. Full forward past the detent is afterburner.
+    when: All the time.
+    actions:
+      - { name: Thrust, label: 'Throttle' }
+
+  - id: wheel-brakes
+    title: Wheel brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Slows the jet on the ground. Toe brakes on pedals, or one button for both wheels.
+    when: Taxiing, landing roll-out, holding before take-off.
+    note: Best on the toe brakes of the pedals (left and right axes); otherwise one button.
+    actions:
+      - { name: Wheel Brake Left, label: 'Left toe brake' }
+      - { name: Wheel Brake Right, label: 'Right toe brake' }
+      - { name: Wheel Brake, label: 'Both brakes, one axis' }
+      - { name: Wheel Brake - ON/OFF, label: 'Both brakes, one button (hold)' }
+
+  - id: trim
+    title: Trim hat
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      Trims the jet so it holds its attitude without pressure on the stick. The Viper trims
+      itself for level flight with the gear up, so you mostly need it with the gear down and
+      with heavy or uneven loads.
+    when: Approach and landing, and after dropping stores from one wing.
+    actions:
+      - { name: TRIM Button - NOSE DOWN, label: 'Trim nose down' }
+      - { name: TRIM Button - NOSE UP, label: 'Trim nose up' }
+      - { name: TRIM Button - LEFT WING DOWN, label: 'Trim left wing down' }
+      - { name: TRIM Button - RIGHT WING DOWN, label: 'Trim right wing down' }
+
+  - id: trigger
+    title: Gun trigger
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      A two-stage trigger. The second detent fires the gun. In air-to-ground with the
+      targeting pod selected, the first detent fires its laser.
+    when: Air combat, strafing, and lasing for laser-guided bombs.
+    note: A two-stage trigger on your grip maps directly; otherwise put the second detent on the trigger.
+    actions:
+      - { name: CAMERA/GUN Trigger - SECOND DETENT, label: 'Trigger second detent: fire gun' }
+      - { name: CAMERA/GUN Trigger - FIRST DETENT, label: 'Trigger first detent: laser' }
+
+  - id: pickle
+    title: Weapon release (pickle)
+    tier: must
+    place: hotas
+    role: stick
+    what: Releases bombs and fires missiles and rockets, air-to-air and air-to-ground.
+    when: Every missile shot and every bomb release.
+    actions:
+      - { name: WPN REL Button - Depress, label: 'Pickle: release weapon' }
+
+  - id: tms
+    title: Target management switch (TMS)
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      Works on whatever sensor you are looking at (the sensor of interest). Up locks or
+      designates what is under the cursor; down breaks the lock or the designation; left
+      and right change the tracking mode of that sensor.
+    when: Every radar lock and every targeting pod designation.
+    note: The four-way hat nearest the top of your grip.
+    actions:
+      - { name: Target Management Switch - Up, label: 'TMS up: lock / designate' }
+      - { name: Target Management Switch - Down, label: 'TMS down: break lock / undesignate' }
+      - { name: Target Management Switch - Left, label: 'TMS left' }
+      - { name: Target Management Switch - Right, label: 'TMS right' }
+
+  - id: dms
+    title: Display management switch (DMS)
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      Chooses which display the cursor works on. Up makes the HUD the sensor of interest;
+      down moves it between the two MFDs; left and right step through the pages of the
+      MFDs.
+    when: Constantly in a fight, every time you change from radar to targeting pod or HUD.
+    actions:
+      - { name: Display Management Switch - Up, label: 'DMS up: HUD is the sensor of interest' }
+      - { name: Display Management Switch - Down, label: 'DMS down: swap the sensor of interest between the MFDs' }
+      - { name: Display Management Switch - Left, label: 'DMS left: left MFD page' }
+      - { name: Display Management Switch - Right, label: 'DMS right: right MFD page' }
+
+  - id: cms
+    title: Countermeasures management switch (CMS)
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      Releases chaff and flares. Forward dispenses the selected program; left dispenses the
+      emergency program; right and aft give and take back consent for the semi-automatic
+      and automatic modes and the jammer.
+    when: When a missile is fired at you, and before entering a threat area.
+    note: If your grip has fewer hats, forward and left matter most.
+    actions:
+      - { name: Countermeasures Management Switch - Fwd, label: 'CMS forward: dispense program' }
+      - { name: Countermeasures Management Switch - Left, label: 'CMS left: emergency program' }
+      - { name: Countermeasures Management Switch - Right, label: 'CMS right: automatic modes on' }
+      - { name: Countermeasures Management Switch - Aft, label: 'CMS aft: automatic modes off' }
+
+  - id: transmit
+    title: Radio transmit (call the radio menu)
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Talks on the UHF or VHF radio and opens DCS's radio menu for the tower, tankers and wingmen.
+    when: Every take-off and landing, and whenever you talk to anyone.
+    note: One of the two is enough to start with; the real switch is a four-way hat on the throttle.
+    actions:
+      - { name: Transmit Switch - UHF (call radio menu), label: 'Talk on UHF / radio menu' }
+      - { name: Transmit Switch - VHF (call radio menu), label: 'Talk on VHF / radio menu' }
+
+  - id: cursor
+    title: Radar cursor
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Moves the cursor on the sensor of interest, such as the radar, the targeting pod or the HUD.
+    when: Locking targets, aiming the targeting pod, placing a markpoint.
+    note: A mini-stick on the throttle as two axes is best; four buttons or a hat works too.
+    actions:
+      - { name: RDR CURSOR Switch - X axis, label: 'Cursor left/right (axis)' }
+      - { name: RDR CURSOR Switch - Y axis, label: 'Cursor up/down (axis)' }
+      - { name: RDR CURSOR Switch - Up, label: 'Cursor up' }
+      - { name: RDR CURSOR Switch - Down, label: 'Cursor down' }
+      - { name: RDR CURSOR Switch - Left, label: 'Cursor left' }
+      - { name: RDR CURSOR Switch - Right, label: 'Cursor right' }
+
+  - id: dogfight
+    title: Dogfight / missile override switch
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: >-
+      Jumps straight into a close-range mode: outboard is DOGFIGHT (gun and short-range
+      missiles), inboard is MISSILE OVERRIDE (missiles); the centre goes back to what you
+      had before.
+    when: The moment a fight turns close.
+    note: A three-position switch uses the three positions; two buttons can use the cycle actions.
+    actions:
+      - { name: DOGFIGHT/Missile Override Switch - DOGFIGHT, label: 'Dogfight' }
+      - { name: DOGFIGHT/Missile Override Switch - MISSILE OVERRIDE, label: 'Missile override' }
+      - { name: DOGFIGHT/Missile Override Switch - CENTER, label: 'Back to the previous mode' }
+      - { name: DOGFIGHT/Missile Override Switch - Cycle Outboard, label: 'One step outboard' }
+      - { name: DOGFIGHT/Missile Override Switch - Cycle Inboard, label: 'One step inboard' }
+
+  - id: nws
+    title: Nose wheel steering / missile step
+    tier: must
+    place: hotas
+    role: stick
+    what: On the ground it switches nose wheel steering on and off; in the air it steps to the next missile or weapon.
+    when: Taxiing, and between missile shots.
+    actions:
+      - { name: NWS A/R DISC MSL STEP Button, label: 'Nose wheel steering / missile step' }
+
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    note: One button toggles; a two-position switch or lever uses UP and DN.
+    actions:
+      - { name: LG Handle - UP/DN, label: 'Gear: toggle' }
+      - { name: LG Handle - UP, label: 'Gear up' }
+      - { name: LG Handle - DN, label: 'Gear down' }
+
+  - id: master-arm
+    title: Master Arm
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Arms the weapons. OFF keeps everything safe; SIMULATE lets you practise without releasing.
+    when: Before the fight; OFF again before landing.
+    actions:
+      - { name: MASTER ARM Switch - MASTER ARM, label: 'Master Arm: ARM' }
+      - { name: MASTER ARM Switch - OFF, label: 'Master Arm: OFF' }
+      - { name: MASTER ARM Switch - SIMULATE, label: 'Master Arm: SIMULATE' }
+      - { name: MASTER ARM Switch - Up, label: 'Master Arm: one step up' }
+      - { name: MASTER ARM Switch - Down, label: 'Master Arm: one step down' }
+
+  - id: master-mode
+    title: Master mode A-A and A-G
+    tier: must
+    place: panel
+    role: panel
+    what: Switches the displays and weapons between air-to-air and air-to-ground.
+    when: Before every attack; the dogfight switch is the faster way into close air-to-air.
+    actions:
+      - { name: ICP Master Mode Button - A-A, label: 'Master mode: air-to-air' }
+      - { name: ICP Master Mode Button - A-G, label: 'Master mode: air-to-ground' }
+
+  # ---------------------------------------------------------------- should have
+  - id: speed-brake
+    title: Speed brake
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Opens the speed brakes to slow down quickly. Aft opens them while held; forward closes them.
+    when: Descending, joining up, slowing down for the approach.
+    actions:
+      - { name: SPD BRK Switch - Aft/EXTEND (Momentary), label: 'Speed brake out (hold)' }
+      - { name: SPD BRK Switch - Fwd/RETRACT, label: 'Speed brake in' }
+      - { name: SPD BRK Switch - OFF, label: 'Speed brake switch centre' }
+
+  - id: cursor-enable
+    title: Cursor ENABLE press
+    tier: should
+    place: hotas
+    role: throttle
+    what: Pressing the cursor switch in changes a mode of the sensor of interest; what it does depends on the sensor and the page.
+    when: With the targeting pod, the HUD and some radar modes.
+    actions:
+      - { name: ENABLE Switch - Depress, label: 'Cursor press (ENABLE)' }
+
+  - id: uncage
+    title: Uncage
+    tier: should
+    place: hotas
+    role: throttle
+    what: Uncages a short-range missile's seeker so it tracks the target on its own, and uncages a Maverick.
+    when: Short-range missile shots and Maverick attacks.
+    actions:
+      - { name: UNCAGE Switch, label: 'Uncage' }
+
+  - id: antenna
+    title: Radar antenna elevation
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Tilts the radar up or down so it searches the altitudes where the targets are.
+    when: Searching for targets above or below you.
+    note: A rotary or slider as an axis is best; two buttons work too.
+    actions:
+      - { name: ANT ELEV Knob, label: 'Antenna elevation (axis)' }
+      - { name: ANT ELEV Knob - CW, label: 'Antenna up' }
+      - { name: ANT ELEV Knob - CCW, label: 'Antenna down' }
+
+  - id: expand
+    title: Expand / FOV
+    tier: should
+    place: hotas
+    role: throttle
+    what: Zooms the sensor of interest in or out (radar expand, targeting pod field of view).
+    when: Picking out a target among several, identifying a target with the pod.
+    actions:
+      - { name: Expand/FOV Button - Depress, label: 'Expand / FOV' }
+
+  - id: paddle
+    title: Paddle switch
+    tier: should
+    place: hotas
+    role: stick
+    what: Disconnects the autopilot while you hold it, so you can fly by hand.
+    when: Whenever you want control back from the autopilot quickly.
+    actions:
+      - { name: Paddle Switch - Depress, label: 'Paddle: autopilot off while held' }
+
+  - id: left-mfd
+    title: Left MFD buttons
+    tier: should
+    place: panel
+    role: mfd
+    what: The 20 buttons (OSBs) around the left display, which choose its pages and options.
+    when: All through the flight, to change what the display shows.
+    note: On an MFD frame, bind the buttons in the same order as the display's.
+    actions:
+      - re: '^Left MFD OSB ([1-9]|1[0-9]|20)$'
+
+  - id: right-mfd
+    title: Right MFD buttons
+    tier: should
+    place: panel
+    role: mfd
+    what: The 20 buttons (OSBs) around the right display.
+    when: All through the flight, to change what the display shows.
+    actions:
+      - re: '^Right MFD OSB ([1-9]|1[0-9]|20)$'
+
+  - id: laser-arm
+    title: Laser arm
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Arms the targeting pod's laser so it can guide laser bombs.
+    when: Before a laser-guided bomb attack.
+    actions:
+      - { name: LASER ARM Switch - ARM/OFF, label: 'Laser arm: toggle' }
+      - { name: LASER ARM Switch - ARM, label: 'Laser arm: ARM' }
+      - { name: LASER ARM Switch - OFF, label: 'Laser arm: OFF' }
+
+  - id: throttle-idle
+    title: Throttle to idle (engine start)
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Moves the throttle out of cut-off to idle, which gives the engine fuel during start-up.
+    when: Once per flight, during the engine start.
+    actions:
+      - { name: Throttle - IDLE, label: 'Throttle to IDLE' }
+      - { name: Throttle Cutoff Release - Depress, label: 'Throttle cut-off release' }
+
+  - id: autopilot
+    title: Autopilot
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: >-
+      The pitch switch holds your altitude or attitude; the roll switch holds your heading,
+      attitude or steers to the selected steerpoint.
+    when: Long transits, and when you need your hands for the displays.
+    actions:
+      - { name: Autopilot PITCH Switch - ALT HOLD, label: 'Autopilot pitch: altitude hold' }
+      - { name: Autopilot PITCH Switch - A/P OFF, label: 'Autopilot pitch: off' }
+      - { name: Autopilot PITCH Switch - ATT HOLD, label: 'Autopilot pitch: attitude hold' }
+      - { name: Autopilot ROLL Switch - HDG SEL, label: 'Autopilot roll: heading select' }
+      - { name: Autopilot ROLL Switch - ATT HOLD, label: 'Autopilot roll: attitude hold' }
+      - { name: Autopilot ROLL Switch - STRG SEL, label: 'Autopilot roll: steer to the steerpoint' }
+
+  - id: view-center
+    title: Centre the view
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: Puts your head back to the normal position in the cockpit.
+    when: When head tracking has drifted.
+    actions:
+      - { name: View Center, label: 'Centre the view' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: man-range
+    title: Manual range knob
+    tier: nice
+    place: hotas
+    role: throttle
+    need: any
+    what: Sets the target size for the gun sight and the range on some pages.
+    when: Gun attacks without a lock.
+    actions:
+      - { name: MAN RNG Knob, label: 'Manual range (axis)' }
+      - { name: MAN RNG Knob - CW, label: 'Manual range up' }
+      - { name: MAN RNG Knob - CCW, label: 'Manual range down' }
+
+  - id: master-caution
+    title: Master caution reset
+    tier: nice
+    place: panel
+    role: panel
+    what: Silences the master caution light after a caution, so the next one can light it again.
+    when: After you have read a caution.
+    actions:
+      - { name: Master Caution Button, label: 'Master caution reset' }
+
+  - id: icp
+    title: Up-front controls keypad (ICP)
+    tier: nice
+    place: panel
+    role: panel
+    what: The keypad and rocker under the HUD for steerpoints, radios, markpoints and data entry.
+    when: Changing steerpoint, entering frequencies and coordinates.
+    actions:
+      - re: '^ICP Priority Function Button - '
+      - { name: ICP Enter Button - ENTR, label: 'ICP enter' }
+      - { name: ICP Recall Button - RCL, label: 'ICP recall' }
+      - re: '^ICP Data Control Switch - '
+      - re: '^ICP DED Increment/Decrement Switch - '
+
+  - id: start
+    title: Main power and jet fuel starter
+    tier: nice
+    place: panel
+    role: panel
+    what: Main power on, then the jet fuel starter spins up the engine.
+    when: Once per flight, during start-up.
+    actions:
+      - { name: MAIN PWR Switch - MAIN PWR, label: 'Main power on' }
+      - { name: MAIN PWR Switch - OFF, label: 'Main power off' }
+      - { name: JFS Switch - START 2 / OFF, label: 'Jet fuel starter: START 2' }
+
+  - id: parking-brake
+    title: Parking brake
+    tier: nice
+    place: panel
+    role: panel
+    what: Holds the jet still on the ramp without your feet on the brakes.
+    when: Start-up and shut-down.
+    actions:
+      - { name: ANTI-SKID Switch - PARKING BRAKE, label: 'Parking brake' }
+
+  - id: ldg-light
+    title: Landing and taxi lights
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Turns on the landing light or the taxi light.
+    when: Taxiing, take-off and landing, at night.
+    actions:
+      - { name: LANDING TAXI LIGHTS Switch - LANDING, label: 'Landing light' }
+      - { name: LANDING TAXI LIGHTS Switch - TAXI, label: 'Taxi light' }
+      - { name: LANDING TAXI LIGHTS Switch - OFF, label: 'Landing and taxi lights off' }
+      - { name: LANDING TAXI LIGHTS Switch - Up, label: 'Landing lights switch up' }
+      - { name: LANDING TAXI LIGHTS Switch - Down, label: 'Landing lights switch down' }
+
+  - id: ext-lights
+    title: Exterior lights master
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Turns the exterior lights on and off.
+    when: Before taxi and after landing, and at night.
+    actions:
+      - { name: MASTER Switch - NORM, label: 'Exterior lights on' }
+      - { name: MASTER Switch - OFF, label: 'Exterior lights off' }
+      - { name: MASTER Switch - CW, label: 'Exterior lights master one step clockwise' }
+      - { name: MASTER Switch - CCW, label: 'Exterior lights master one step anticlockwise' }
+
+  - id: hook
+    title: Arresting hook
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Lowers the hook to catch a runway arresting cable in an emergency.
+    when: Only for an emergency landing with a cable.
+    actions:
+      - { name: HOOK Switch - UP/DN, label: 'Hook: toggle' }
+      - { name: HOOK Switch - DN, label: 'Hook down' }
+      - { name: HOOK Switch - UP, label: 'Hook up' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Zooms the view in and out, to read a display or spot another aircraft.
+    when: Whenever something is too small to read.
+    actions:
+      - { name: Zoom in slow, label: 'Zoom in' }
+      - { name: Zoom out slow, label: 'Zoom out' }
+
+  - id: canopy
+    title: Canopy
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens and closes the canopy.
+    when: Before taxi and after shut-down.
+    actions:
+      - { name: Canopy - OPEN/CLOSE, label: 'Canopy open / close' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's pages and your own.
+    when: Checking frequencies, steerpoints and notes.
+    actions:
+      - { name: Kneeboard ON/OFF, label: 'Kneeboard show / hide' }
+      - { name: Kneeboard Next Page, label: 'Kneeboard next page' }
+      - { name: Kneeboard Previous Page, label: 'Kneeboard previous page' }
+
+  - id: nvg
+    title: Night vision goggles
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Puts the night vision goggles on and takes them off.
+    when: Night missions.
+    actions:
+      - { name: Toggle goggles, label: 'Night vision goggles on / off' }
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Leaves the jet.
+    when: Only when it cannot be saved.
+    actions:
+      - { name: Eject (3 times), label: 'Eject (press three times)' }

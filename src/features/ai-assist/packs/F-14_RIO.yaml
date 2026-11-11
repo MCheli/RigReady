@@ -1,0 +1,406 @@
+# RigReady binding guide: F-14 Tomcat, RIO (back seat). Format: see README.md in this folder.
+format: 1
+aircraft:
+  id: F-14_RIO
+  name: F-14A/B Tomcat (RIO)
+summary: >-
+  The Radar Intercept Officer runs the radar, the weapons system and the radios from the back
+  seat; there is no stick or throttle there. Put the hand control unit (the radar cursor
+  stick) on your joystick, the radar elevation and radio buttons on the throttle, and the
+  rest on panels or the mouse.
+sources:
+  - >-
+    Written for RigReady from general knowledge of the F-14 RIO's cockpit (the hand
+    control unit, the detail data display, the tactical information display and the
+    foot-operated radio and intercom switches) and of how they work in DCS.
+  - >-
+    Every action name below is DCS's own, taken from Heatblur's default input files for the
+    F-14 RIO seat; a test checks each one against those files so a DCS update that renames
+    an action is caught.
+  - Not affiliated with or reviewed by Eagle Dynamics. Corrections are welcome.
+
+roles:
+  stick:
+    summary: >-
+      Your joystick becomes the hand control unit: its two axes move the cursor, the
+      trigger's half and full action hook and lock targets, and the buttons pick which
+      display the hand control unit works on.
+    items: [hcu-slew, hcu-trigger, hcu-mode, hcu-thumbwheel, hcu-offset]
+  throttle:
+    summary: >-
+      Radar elevation and azimuth, the UHF radio and the intercom, and the radar mode
+      buttons you use most if your throttle has spare buttons.
+    items: [radar-elevation, comm-uhf, intercom, radar-azimuth, next-launch]
+  pedals:
+    summary: >-
+      The RIO has no rudder pedals; in the real jet the floor has two foot switches for the
+      radio and the intercom. If your pedals' toe brakes are free, they make good
+      push-to-talk switches.
+    items: [foot-mic]
+  panel:
+    summary: >-
+      The radar and weapons panels: radar modes, TID and DDD ranges, the weapons system
+      power and missile options, then countermeasures and the LANTIRN pod if you carry it.
+    items:
+      [
+        radar-mode,
+        tid-range,
+        wcs-power,
+        tid-mode,
+        ddd-range,
+        scan-bars,
+        scan-width,
+        missile-option,
+        countermeasures,
+        lantirn,
+        eject-command,
+      ]
+  keyboard:
+    summary: >-
+      Views, zoom, the kneeboard and ejection can stay on DCS's keyboard defaults; the
+      calculator buttons (CAP) are easiest with the mouse.
+    items: [view-center, zoom, kneeboard, eject]
+
+items:
+  # ---------------------------------------------------------------- must have
+  - id: hcu-slew
+    title: Hand control unit (cursor)
+    tier: must
+    place: hotas
+    role: stick
+    need: any
+    what: >-
+      Moves the cursor on the display the hand control unit is working on: the radar
+      display (DDD), the tactical display (TID) or the TV camera.
+    when: Every intercept, to hook contacts on the TID and lock a target on the DDD.
+    note: Two axes on a joystick are best; four buttons or a hat work too.
+    actions:
+      - { name: 'HCU left/right', label: 'Cursor left/right (axis)' }
+      - { name: 'HCU up/down', label: 'Cursor up/down (axis)' }
+      - { name: 'HCU forward', label: 'Cursor up' }
+      - { name: 'HCU backward', label: 'Cursor down' }
+      - { name: 'HCU Left', label: 'Cursor left' }
+      - { name: 'HCU Right', label: 'Cursor right' }
+
+  - id: hcu-trigger
+    title: Hand control unit trigger
+    tier: must
+    place: hotas
+    role: stick
+    need: any
+    what: >-
+      A two-stage trigger. Half action activates the cursor; full action hooks a contact on
+      the TID or locks the target under the cursor on the DDD.
+    when: Every time you pick or lock a target.
+    note: A two-stage trigger maps directly; otherwise use two buttons.
+    actions:
+      - { name: 'HCU half action', label: 'Trigger half action' }
+      - { name: 'HCU full action', label: 'Trigger full action: hook / lock' }
+      - { name: 'HCU dual stage trigger (axis thresholds)', label: 'Two-stage trigger on an axis' }
+
+  - id: hcu-mode
+    title: Hand control unit mode buttons
+    tier: must
+    place: hotas
+    role: stick
+    what: Chooses what the hand control unit works on, the TV camera, the radar, the DDD or the TID.
+    when: Switching between finding targets on the TID and locking them on the DDD.
+    actions:
+      - { name: 'HCU TID mode', label: 'Hand control on TID' }
+      - { name: 'HCU DDD mode', label: 'Hand control on DDD' }
+      - { name: 'HCU radar mode', label: 'Hand control on radar' }
+      - { name: 'HCU TCS mode', label: 'Hand control on TV camera' }
+
+  - id: radar-elevation
+    title: Radar elevation
+    tier: must
+    place: hotas
+    role: throttle
+    need: any
+    what: Points the radar's scan up and down so it covers the altitude the targets are at.
+    when: Constantly during a search; targets above or below the scan are not seen.
+    actions:
+      - { name: 'Radar elevation control', label: 'Radar elevation (axis)' }
+      - { name: 'Radar elevation up', label: 'Radar elevation up' }
+      - { name: 'Radar elevation down', label: 'Radar elevation down' }
+
+  - id: comm-uhf
+    title: Radio (call the radio menu)
+    tier: must
+    place: hotas
+    role: throttle
+    what: Talks on the selected radio and opens DCS's radio menu.
+    when: Whenever you talk to the tower, the carrier, AWACS or your flight.
+    actions:
+      - { name: 'Mic Button UHF', label: 'Talk on the radio / radio menu' }
+
+  - id: radar-mode
+    title: Radar modes
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: >-
+      Selects the radar mode: pulse Doppler search for long range, range while scan, track
+      while scan to guide Phoenix missiles at several targets, and single target track.
+    when: Every intercept, as it develops from search to shot.
+    actions:
+      - { name: 'RADAR Pulse Doppler Search', label: 'Radar: pulse Doppler search' }
+      - { name: 'RADAR Range While Scan', label: 'Radar: range while scan' }
+      - { name: 'RADAR Track While Scan auto', label: 'Radar: track while scan, auto' }
+      - { name: 'RADAR Track While Scan manual', label: 'Radar: track while scan, manual' }
+      - { name: 'RADAR Pulse Doppler Single Target Track', label: 'Radar: pulse Doppler single target track' }
+      - { name: 'RADAR Pulse Search', label: 'Radar: pulse search' }
+      - { name: 'RADAR Pulse Single Target Track', label: 'Radar: pulse single target track' }
+
+  - id: tid-range
+    title: TID range
+    tier: must
+    place: panel
+    role: panel
+    need: any
+    what: Sets how far the tactical display shows, from 25 to 400 miles.
+    when: Throughout an intercept, zooming in as the targets get closer.
+    actions:
+      - { name: 'TID range +', label: 'TID range up' }
+      - { name: 'TID range -', label: 'TID range down' }
+      - { name: 'TID Range', label: 'TID range (axis)' }
+
+  # ---------------------------------------------------------------- should have
+  - id: intercom
+    title: Intercom
+    tier: should
+    place: hotas
+    role: throttle
+    what: Talks to the pilot over the intercom.
+    when: Flying with a human pilot.
+    actions:
+      - { name: 'Mic Button ICS', label: 'Talk on the intercom' }
+
+  - id: radar-azimuth
+    title: Radar azimuth
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Moves the centre of the radar's scan left and right.
+    when: When the targets are off to one side.
+    actions:
+      - { name: 'Radar azimuth control', label: 'Radar azimuth (axis)' }
+      - { name: 'Radar azimuth left', label: 'Radar azimuth left' }
+      - { name: 'Radar azimuth right', label: 'Radar azimuth right' }
+      - { name: 'Radar azimuth re-center', label: 'Radar azimuth centre' }
+
+  - id: hcu-thumbwheel
+    title: Hand control unit thumbwheel
+    tier: should
+    place: hotas
+    role: stick
+    need: any
+    what: The thumbwheel on the hand control unit, an axis or up and down buttons.
+    when: Fine adjustments while working the radar.
+    actions:
+      - { name: 'HCU vernier thumbwheel', label: 'Thumbwheel (axis)' }
+      - { name: 'HCU thumb up', label: 'Thumbwheel up' }
+      - { name: 'HCU thumb down', label: 'Thumbwheel down' }
+
+  - id: wcs-power
+    title: Weapons system power
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Sets the radar to standby or transmit. Nothing shows on the displays while it is in standby.
+    when: Transmit before the fight; standby to stay quiet.
+    actions:
+      - { name: 'WCS XMIT', label: 'Radar transmit' }
+      - { name: 'WCS Standby', label: 'Radar standby' }
+      - { name: 'WCS XMIT, else Standby', label: 'Radar transmit, else standby (two-position switch)' }
+
+  - id: tid-mode
+    title: TID mode
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Turns the tactical display between ground stabilised (north up), aircraft stabilised, attack and TV.
+    when: Aircraft stabilised for most intercepts; ground stabilised for navigation.
+    actions:
+      - { name: 'TID Mode: GND STAB', label: 'TID: ground stabilised' }
+      - { name: 'TID Mode: AC STAB', label: 'TID: aircraft stabilised' }
+      - { name: 'TID Mode: ATTK', label: 'TID: attack' }
+      - { name: 'TID Mode: TV', label: 'TID: TV' }
+
+  - id: ddd-range
+    title: DDD range
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: Sets the range shown on the radar display (DDD).
+    when: Along with the TID range, as the targets get closer.
+    actions:
+      - { name: 'DDD Range 5', label: 'DDD range 5' }
+      - { name: 'DDD Range 10', label: 'DDD range 10' }
+      - { name: 'DDD Range 20', label: 'DDD range 20' }
+      - { name: 'DDD Range 50', label: 'DDD range 50' }
+      - { name: 'DDD Range 100', label: 'DDD range 100' }
+      - { name: 'DDD Range 200', label: 'DDD range 200' }
+
+  - id: scan-bars
+    title: Radar elevation bars
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: How many rows the radar scans; more rows cover more altitudes but take longer.
+    when: Setting up a search.
+    actions:
+      - { name: 'Radar elevation bars increase', label: 'More scan bars' }
+      - { name: 'Radar elevation bars decrease', label: 'Fewer scan bars' }
+
+  - id: scan-width
+    title: Radar scan width
+    tier: should
+    place: panel
+    role: panel
+    need: any
+    what: How wide the radar scans left and right of the centre.
+    when: Setting up a search; narrower scans update faster.
+    actions:
+      - { name: 'Radar azimuth scan wider', label: 'Wider scan' }
+      - { name: 'Radar azimuth scan narrower', label: 'Narrower scan' }
+
+  - id: next-launch
+    title: Next launch
+    tier: should
+    place: hotas
+    role: throttle
+    what: In track while scan, changes which target the next Phoenix will be fired at.
+    when: Phoenix shots at several targets.
+    actions:
+      - { name: 'Next launch', label: 'Next launch: change target' }
+
+  - id: foot-mic
+    title: Foot switches (radio and intercom)
+    tier: should
+    place: hotas
+    role: pedals
+    need: any
+    what: The real RIO keys the radio and the intercom with his feet; DCS lets an axis act as those switches.
+    when: Whenever you talk.
+    note: Your toe brakes work well; a press past the middle of the axis keys the switch.
+    actions:
+      - { name: 'ICS Button MIC (UHF) PTT (axis threshold)', label: 'Radio foot switch (axis)' }
+      - { name: 'ICS Button ICS (Intercom) PTT (axis threshold)', label: 'Intercom foot switch (axis)' }
+
+  - id: view-center
+    title: Center the view
+    tier: should
+    place: keyboard
+    role: keyboard
+    what: Puts your head back to the default position, needed with head tracking or VR.
+    when: Whenever your view drifts.
+    actions:
+      - { name: 'View Center', label: 'Center the view' }
+
+  # ---------------------------------------------------------------- nice to have
+  - id: hcu-offset
+    title: Hand control unit offset
+    tier: nice
+    place: hotas
+    role: stick
+    what: The offset button on the hand control unit.
+    when: Navigation and some radar tasks; bind it when you have a spare button.
+    actions:
+      - { name: 'HCU offset', label: 'Offset' }
+
+  - id: missile-option
+    title: Missile options
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: >-
+      Changes how the missiles are guided: Phoenix active makes the Phoenix use its own
+      radar from launch, Sparrow pulse Doppler sets the Sparrow's guidance.
+    when: Before a shot, when you want a different launch mode.
+    actions:
+      - { name: 'Missile Option: normal', label: 'Missiles: normal' }
+      - { name: 'Missile Option: Phoenix Active', label: 'Phoenix: active' }
+      - { name: 'Missile Option: Sparrow Pulse Doppler', label: 'Sparrow: pulse Doppler' }
+
+  - id: countermeasures
+    title: Countermeasures program
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Sets the chaff and flare dispenser to single shots or its program; the pilot releases them.
+    when: Before entering a threat area.
+    actions:
+      - { name: 'AN/ALE-39 Chaff SGL', label: 'Chaff: single' }
+      - { name: 'AN/ALE-39 Chaff PRGM', label: 'Chaff: program' }
+      - { name: 'AN/ALE-39 Flare SGL', label: 'Flares: single' }
+      - { name: 'AN/ALE-39 Flare PRGM', label: 'Flares: program' }
+
+  - id: lantirn
+    title: LANTIRN targeting pod
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Slews the LANTIRN pod's camera, tracks a point or an area, and fires the laser for laser-guided bombs.
+    when: Only when the jet carries the LANTIRN pod.
+    actions:
+      - { name: 'LANTIRN Slew X', label: 'Pod slew left/right (axis)' }
+      - { name: 'LANTIRN Slew Y', label: 'Pod slew up/down (axis)' }
+      - { name: 'LANTIRN Point Track', label: 'Pod: point track' }
+      - { name: 'LANTIRN Area Track', label: 'Pod: area track' }
+      - { name: 'LANTIRN Undesignate', label: 'Pod: undesignate' }
+      - { name: 'LANTIRN Trigger Full Action', label: 'Pod trigger: fire laser' }
+
+  - id: eject-command
+    title: Ejection command lever
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: Sets whether the RIO's ejection handle ejects both seats or only the RIO.
+    when: Before the flight, as agreed with the pilot.
+    actions:
+      - { name: 'Ejection CMD Lever - FWD', label: 'Ejection command lever forward' }
+      - { name: 'Ejection CMD Lever - AFT', label: 'Ejection command lever aft' }
+
+  - id: zoom
+    title: Zoom
+    tier: nice
+    place: keyboard
+    role: keyboard
+    need: any
+    what: Zooms the view in and out, to read the displays and gauges.
+    when: Reading small displays.
+    actions:
+      - { name: 'Zoom View', label: 'Zoom (axis)' }
+      - { name: 'Zoom in slow', label: 'Zoom in' }
+      - { name: 'Zoom out slow', label: 'Zoom out' }
+
+  - id: kneeboard
+    title: Kneeboard
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Shows the kneeboard with the mission's frequencies, waypoints and notes.
+    when: Before start-up and whenever you need a frequency.
+    actions:
+      - { name: 'Kneeboard ON/OFF', label: 'Kneeboard on/off' }
+
+  - id: eject
+    title: Eject
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Ejects. DCS needs the key pressed three times so it does not happen by accident.
+    when: Only when the jet cannot be saved.
+    actions:
+      - { name: 'Eject (3 times)', label: 'Eject (press three times)' }
