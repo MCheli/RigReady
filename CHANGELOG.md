@@ -37,12 +37,12 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **DCS World**
 - Installs across Steam libraries and standalone; update waiting; aircraft list.
-- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one.
+- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one; without SimAppPro, for the aircraft listed in the manual.
 - Export.lua managed one tool at a time; overwrites by other programs are noticed.
-- Bindings: effective bindings (defaults plus your changes) for the F/A-18C and UH-1H, editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots.
-- Cheat sheets with a picture of every device, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
+- Bindings for every DCS aircraft: effective bindings (defaults plus your changes), editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots. Binding guides and curated priority lists exist for the aircraft listed in the manual.
+- Cheat sheets of what every control does, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
 - Simple outline drawings of the WinWing Orion stick (F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles and the MFD frames, with a label block and leader line per control placed so that no two lines cross. A drawing can be corrected or shown over a photo of the device; for any device, a drawing can be made from a photo of your own hardware or imported from a file. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
-- A binding guide for the F/A-18C and UH-1H, and optional AI help with your own Anthropic API key.
+- Binding guides for the aircraft listed in the manual, and optional AI help for DCS aircraft with your own Anthropic API key.
 
 **AI assistants**
 - An MCP server inside RigReady, off by default, so that an assistant on the same PC (Claude Desktop, Claude Code, Cursor, VS Code and other MCP clients) can check the rig, make it ready, read and change bindings with a preview, apply a monitor layout, make a backup, read the log and read the manual. `RigReady.exe --mcp` connects assistants that start a program; others pair from Settings.
@@ -50,9 +50,9 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - Guided conversations for first setup, fixing bindings, a rig that is not ready and a new PC.
 
 **Racing and other games**
-- iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore.
+- iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
 - Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
-- A Fanatec wheel page; any other game works generically.
+- A Fanatec wheel page (other wheel bases work as controllers; their software and modes are not read); any other game works generically.
 
 **Protecting your configuration**
 - One-click backup, a restore wizard with a preview and per-item choices, snapshots, "what changed since it last worked".
