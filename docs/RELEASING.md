@@ -36,6 +36,18 @@ The version in the repository between releases is a `-dev.N` version (`2.0.0-dev
 - With automatic checks off, nothing is checked, downloaded or installed on quit. "Check now" and "Restart to install" still work.
 - The update is the same per-user installer run silently. It needs no administrator rights and keeps the data folder, the shortcuts and the Start with Windows entry. Started by the app rather than from a browser, it carries no mark of the web, so SmartScreen does not ask (see Code signing).
 
+## Release cadence: merging is not releasing
+
+Nothing a user runs changes when a pull request is merged. Installed copies update only from a **published** GitHub release, and a release exists only after three deliberate steps: a version-bump pull request, a `v*` tag pushed by a person, and the owner pressing Publish on the draft the workflow builds. There is no automatic versioning and no release on merge; the weekly maintenance run may suggest a release but never makes one (it cannot tag or publish).
+
+So a week with many merged pull requests is still one update for users, whenever the owner decides to cut it:
+
+- **Batch.** Merge freely to `main`; release when a set of changes is worth an update. A rough rhythm: a stable release every two to six weeks when there is something to ship, a beta (`-beta.N`, pre-release, only for people on the beta channel) when a larger change wants testers first.
+- **Security fixes are the exception**: release them on their own, as soon as they are verified, marked `[security]` (see Security fixes below).
+- **Skipping is free.** An installed copy goes straight from the version it has to the newest release; it never steps through the ones in between.
+- **Users are never interrupted mid-session.** Copies check at start and once a day, download in the background, and install on Restart or Quit, never while a game runs. Turning off automatic checks in Settings > Updates stops even the download.
+- **Withdrawing.** If a published release turns out bad, publish a fixed one with a higher version (a downgrade is refused by design); do not delete a release that installed copies may be downloading.
+
 ## Steps, for any release
 
 1. A pull request to `main` that
@@ -277,6 +289,10 @@ Will 1.1.0 installs update themselves to 2.0.0 once it is published? No. 1.1.0's
 - CI (`.github/workflows/ci.yml`) runs the checks, the scenario end-to-end tests and the packaged smoke on `windows-latest`, on pull requests and on `main`. A runner has no game controller and no desktop session of a user, so the tests that need those skip themselves there; they run on the rig.
 - RigReady is built for Windows only (the build configuration has no other target), and the app refuses to start anywhere else with a message that says so.
 
+## Weekly maintenance run
+
+A scheduled task on the owner's PC ("RigReady weekly maintenance", Mondays 08:07, Windows Task Scheduler) runs `C:\Users\Owner\rigready-ops\weekly\run.ps1`, a headless Claude Code session with the prompt in `rigready-ops\weekly\prompt.md`. It lists open and recently updated issues and pull requests, reviews outside pull requests by reading the diff and CI (it never checks out or runs contributor code on the rig), answers or labels issues, may open up to two fix pull requests from `bot/` branches, and writes a report (downloads per release, update-feed fetches as a rough count of installed copies, traffic, CI health, alert counts, what it did, what needs the owner) to `rigready-ops\reports\<date>.md` and by email. Its tool permissions forbid merging, closing, approving, tagging, releasing, pushing to `main` and changing settings or secrets. Run it by hand with `run.ps1 -Mode report-only` (reads and reports, posts nothing).
+
 ## Code signing
 
 The Release workflow signs the installer through Azure Artifact Signing (Microsoft's signing service, called Trusted Signing until 2025; the PowerShell module and some portal pages still carry that name) when the repository holds the signing configuration, and builds the plain unsigned installer when it holds none of it. `npm run dist` (`scripts/dist.ts`, with the decision in `scripts/lib/signing.ts`) reads the configuration from the environment, writes the electron-builder configuration it composed to `release/electron-builder.config.json`, prints `code signing: off` or `code signing: on (<publisher>, <account>/<profile>)`, and after the build reads the feed file inside the package (`release/win-unpacked/resources/app-update.yml`): a signed build must name the publisher there and an unsigned build must not, or the build fails. `npm run pack` and the installer smoke's test variant never sign, whatever the environment holds.
@@ -313,6 +329,8 @@ An installed signed copy carries the publisher in its feed file and refuses ever
 - The other direction is free: an unsigned install (every copy from before signing) takes a signed update.
 
 ### Setup in Azure, for an individual
+
+Done on 2026-11-10 for this repository: subscription "RigReady signing", resource group `rigready-signing`, account `rigready` (East US, Basic), certificate profile `rigready-public` (Public Trust, publisher "Mark Cheli"), app registration `rigready-release-signing`, whose client secret expires around 2028-11-10. `scripts/azure-signing-setup.ps1` holds the commands (Part A: account and the verifier role; Part B, after identity validation: certificate profile, app registration, signer role, the seven GitHub values, the secret never printed). Renew the secret before it expires by rerunning Part B's secret lines.
 
 Microsoft's own pages are the source for the current screens; this is the shape of it.
 
