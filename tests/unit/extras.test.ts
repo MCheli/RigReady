@@ -177,6 +177,25 @@ describe('JsonStore', () => {
     );
     expect(await withDefault.read()).toEqual({ ok: true, value: { id: 'x' } });
   });
+
+  it('runs updates made at once one after another, so none undoes another', async () => {
+    rig = await rigFromState(await markFull());
+    const file = path.join(rig.ports.folders.dataRoot(), 'counter.json');
+    const store = new JsonStore(rig.ports.files, file, z.object({ n: z.number().default(0) }));
+    const results = await Promise.all(
+      Array.from({ length: 12 }, () => store.update((v) => ({ n: v.n + 1 })))
+    );
+    expect(results.every((r) => r.ok)).toBe(true);
+    expect(await store.read()).toEqual({ ok: true, value: { n: 12 } });
+
+    // A change that throws fails its own update; the ones behind it still run.
+    const failing = store.update(() => {
+      throw new Error('no');
+    });
+    const next = store.update((v) => ({ n: v.n + 1 }));
+    await expect(failing).rejects.toThrow('no');
+    expect(await next).toEqual({ ok: true, value: { n: 13 } });
+  });
 });
 
 describe('profile extensions', () => {

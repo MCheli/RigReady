@@ -45,8 +45,13 @@ export interface McpToolDefinition<
   /** The shape of what `run` answers, when it is worth declaring. */
   output?: O;
   tier: McpToolTier;
-  /** One line for the confirm dialog, from the arguments: "Make DCS F/A-18C ready". Default: the title. */
-  summarize?: (input: z.output<I>) => string;
+  /**
+   * One line for the confirm dialog and the record, from the arguments: "Make DCS F/A-18C
+   * ready". It may read through `ctx` to say a thing by its name (a setup's name for the id an
+   * assistant gave); it runs before the user is asked, so it never changes anything.
+   * Default: the title.
+   */
+  summarize?: (input: z.output<I>, ctx: McpCallContext) => string | Promise<string>;
   /** The work. An error result is reported to the assistant as the tool's failure, in words. */
   run(input: z.output<I>, ctx: McpCallContext): Promise<Result<z.input<O>>>;
 }

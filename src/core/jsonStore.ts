@@ -15,6 +15,9 @@ import { err, ok, type Result } from './result';
  * A file that exists but does not fit the schema is an error, never silently replaced.
  */
 export class JsonStore<S extends z.ZodType> {
+  /** The updates still to run: one starts only when the one before it has written. */
+  private pending: Promise<unknown> = Promise.resolve();
+
   constructor(
     private readonly files: FileStore,
     readonly file: string,
@@ -58,10 +61,18 @@ export class JsonStore<S extends z.ZodType> {
     return ok(parsed.data);
   }
 
-  /** Reads, applies the change, writes. */
+  /**
+   * Reads, applies the change, writes. Updates through one store run one after another: two
+   * made at once would both read the same file, and the second write would undo the first.
+   */
   async update(change: (current: z.output<S>) => z.input<S>): Promise<Result<z.output<S>>> {
-    const current = await this.read();
-    if (!current.ok) return current;
-    return this.write(change(current.value));
+    const run = this.pending.then(async () => {
+      const current = await this.read();
+      if (!current.ok) return current;
+      return this.write(change(current.value));
+    });
+    // A change that throws fails its own update only; the next one still runs.
+    this.pending = run.catch(() => undefined);
+    return run;
   }
 }

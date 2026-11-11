@@ -675,6 +675,7 @@ requirements:
       - "src/features/fly/core/deviceKind.test.ts#knows the gear of the common brands by its names"
       - "src/features/fly/core/deviceKind.test.ts#leaves out the word most of the devices begin with: their maker"
       - "src/features/fly/renderer/rigDrawing.test.ts#fits the whole desktop in the box, every monitor at its place and in proportion"
+      - "src/features/fly/renderer/rigDrawing.test.ts#gives a letter to every box too narrow for its name, in the order they are drawn"
       - "tests/e2e/fly-rig.e2e.ts#rig: the monitors are drawn to scale and the devices are chips; a problem is a place, and choosing it leads to its row"
       - "tests/e2e/fly-rig.e2e.ts#rig: a device in a folded group is one click away, and a setup without a monitor check still shows the monitors"
       - "tests/e2e/fly-rig.e2e.ts#rig: a monitor that is unplugged, and monitors that cannot be read, are said in words"
@@ -2058,6 +2059,8 @@ requirements:
       - "src/features/cheat-sheets/core/trainerStore.test.ts#does not overwrite a progress file it cannot read, and says so"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: an action is named, the control is pressed on the device, right or wrong is said at once, missed cards come back, and what is learned is kept"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a racing game is asked the same way, on the buttons of the wheel"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a switch that stays held is drawn quietly, so the control asked for stands out"
+      - "artifacts/screens/cheat-sheets-trainer-held/01-held-and-shown.png"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a round can be stopped, and a PC without a game to read says what is missing"
       - "artifacts/screens/cheat-sheets-trainer/02-asking.png"
       - "artifacts/screens/cheat-sheets-trainer/03-right.png"
@@ -2227,6 +2230,9 @@ requirements:
       - "src/features/dcs-setup/core/screens.test.ts#lists every MonitorSetup file and reads the SimAppPro one"
       - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
       - "artifacts/screens/dcs-setup-screens/02-viewing-simapppro-file.png"
+      - "src/features/dcs-setup/core/mapCaptions.test.ts#moves the name into a viewport that covers a small monitor from its top"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: a monitor name on the screen map never lies under a viewport or over its text"
+      - "artifacts/screens/dcs-setup-screen-names/02-inside-the-viewport.png"
 
   - id: DCS-MON-002
     title: Generate a MonitorSetup for MFD viewports
@@ -3545,6 +3551,12 @@ requirements:
       - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
       - "artifacts/screens/mcp-settings/04-question.png"
       - "artifacts/screens/mcp-settings/05-activity.png"
+      - "src/features/mcp/server/server.test.ts#MCP-004 the question names a setup by its name, and says a channel in words with the call under it"
+      - "src/features/mcp/core/catalogue.test.ts#every channel the user can be asked about has a sentence to ask with"
+      - "tests/e2e/mcp.e2e.ts#mcp: a channel called directly is asked about in words with the call under them, and a no is counted"
+      - "artifacts/screens/mcp-question-plain/01-question-in-words.png"
+      - "artifacts/screens/mcp-question-plain/02-question-launch.png"
+      - "artifacts/screens/mcp-question-plain/03-said-no-and-counted.png"
 
   - id: MCP-005
     title: Settings > AI assistants turns the server on and connects assistants
@@ -3562,6 +3574,11 @@ requirements:
       - "artifacts/screens/mcp-settings/01-off.png"
       - "artifacts/screens/mcp-settings/02-on.png"
       - "artifacts/screens/mcp-settings/03-paired.png"
+      - "src/features/mcp/server/server.test.ts#MCP-005 the count beside a pairing is every call it made, a refused one too, and the window hears once it is written"
+      - "tests/unit/fileStore.test.ts#NodeRawFs puts a file in place though something has it open for a moment, and leaves nothing behind when it cannot"
+      - "tests/unit/extras.test.ts#runs updates made at once one after another, so none undoes another"
+      - "tests/e2e/mcp.e2e.ts#mcp: a channel called directly is asked about in words with the call under them, and a no is counted"
+      - "artifacts/screens/mcp-question-plain/03-said-no-and-counted.png"
 
   - id: MCP-006
     title: Task-level tools, resources, prompts and the manual for an assistant
@@ -4234,6 +4251,8 @@ requirements:
       - "src/features/racing/core/iracing/iracing.test.ts#says a controller is not connected when no controller of that model is attached"
       - "tests/e2e/racing.e2e.ts#racing: overview, iRacing bindings, and repairing a wheel with a new Windows id"
       - "artifacts/screens/racing-iracing-repair/02-moved.png"
+      - "src/features/racing/core/iracing/iracing.test.ts#names every key the way iRacing does, punctuation and the number pad included"
+      - "artifacts/screens/racing-iracing-repair/05-key-names.png"
 
   - id: RACE-IRACING-005
     title: iRacing device-ID repair where the format allows

@@ -136,7 +136,11 @@ export class McpService {
         const marked = await deps.ports.files.markActor(groupIds, client);
         if (!marked.ok) deps.log.warn('could not name the assistant in the journal', marked.error);
       },
-      noteCall: (id) => this.pairings.noteCall(id),
+      noteCall: async (id) => {
+        // The window hears of a request when it arrives, before its call is counted: told again
+        // here, or the count it shows stays one call behind.
+        if (await this.pairings.noteCall(id)) deps.emit.changed();
+      },
     });
     this.stopActivity = this.activity.onRecord((entry) => deps.emit.activity(entry));
     const manual = deps.manual ?? bundledManual;

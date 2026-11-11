@@ -29,6 +29,8 @@ export const ActivityEntrySchema = z.object({
   tier: z.enum(['read', 'change', 'launch', 'off']),
   /** One line: what was asked ("Make DCS F/A-18C ready"). */
   summary: z.string(),
+  /** The call as it was made (a channel and its input), when the line above is in words. */
+  detail: z.string().optional(),
   outcome: ActivityOutcomeSchema,
   /** The channel's answer in one line, or why it did not run. */
   message: z.string(),

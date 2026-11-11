@@ -129,7 +129,52 @@ describe('labels', () => {
     expect(iracingKeyLabel(83, 63)).toBe('Ctrl+Alt+Shift+S');
     expect(iracingKeyLabel(197, 0)).toBe('F1');
     expect(iracingKeyLabel(38, 0)).toBe('Up');
-    expect(iracingKeyLabel(114, 0)).toBe('Key 114');
+  });
+
+  it('names every key the way iRacing does, punctuation and the number pad included', async () => {
+    // Brake bias and the camera step are on = and -, the field of view on [ and ].
+    expect(iracingKeyLabel(114, 0)).toBe('=');
+    expect(iracingKeyLabel(108, 0)).toBe('-');
+    expect(iracingKeyLabel(118, 0x03)).toBe('Shift+[');
+    expect(iracingKeyLabel(120, 0x0c)).toBe('Ctrl+]');
+    expect(iracingKeyLabel(112, 0)).toBe(';');
+    expect(iracingKeyLabel(102, 0)).toBe("'");
+    expect(iracingKeyLabel(119, 0)).toBe('\\');
+    expect(iracingKeyLabel(127, 0)).toBe('~');
+    // The replay keys are on the number pad: 7 and 1 for the start and the end, 4 and 6 to step.
+    expect(iracingKeyLabel(179, 0)).toBe('Num 7');
+    expect(iracingKeyLabel(178, 0)).toBe('Num 1');
+    expect(iracingKeyLabel(180, 0x0c)).toBe('Ctrl+Num 4');
+    expect(iracingKeyLabel(182, 0x03)).toBe('Shift+Num 6');
+    expect(iracingKeyLabel(12, 0)).toBe('Num 5');
+    expect(iracingKeyLabel(185, 0)).toBe('Num .');
+    expect(iracingKeyLabel(190, 0)).toBe('Num Enter');
+    expect(iracingKeyLabel(212, 0)).toBe('F16');
+    expect(iracingKeyLabel(27, 0)).toBe('Esc');
+    expect(iracingKeyLabel(193, 0)).toBe('Right Ctrl');
+    expect(iracingKeyLabel(128, 0)).toBe('¡');
+    expect(iracingKeyLabel(172, 0)).toBe('ÿ');
+    expect(iracingKeyLabel(232, 0)).toBe('Play/Pause');
+    // A code iRacing has no key for stays a number rather than a guess.
+    expect(iracingKeyLabel(173, 0)).toBe('Key 173');
+    expect(iracingKeyLabel(95, 0)).toBe('Key 95');
+    expect(iracingKeyLabel(243, 0)).toBe('Key 243');
+
+    // No keyboard binding of the recorded file is left as a number.
+    const parsed = parseControlsCfg(await readRecorded('controls.cfg'));
+    if (!parsed.ok) throw new Error(parsed.error.message);
+    const keys = parsed.value.records.flatMap((r) =>
+      r.binding.kind === 'key'
+        ? [{ action: r.action, key: iracingKeyLabel(r.binding.keyCode, r.binding.modifiers) }]
+        : []
+    );
+    expect(keys.length).toBeGreaterThan(100);
+    expect(keys.filter((k) => /Key d+/.test(k.key))).toEqual([]);
+    const of = (action: string): string | undefined => keys.find((k) => k.action === action)?.key;
+    expect(of('BrakeBiasInc')).toBe('=');
+    expect(of('RpyToStart')).toBe('Num 7');
+    expect(of('RecenterHeadMountedDisplay')).toBe(';');
+    expect(of('DCamFOVInc')).toBe(']');
   });
 });
 

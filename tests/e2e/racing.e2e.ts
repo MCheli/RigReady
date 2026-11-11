@@ -127,6 +127,18 @@ test('racing: overview, iRacing bindings, and repairing a wheel with a new Windo
   await expect(page.locator('[data-testid="binding-row"]')).toHaveCount(8);
   await shot('repaired');
 
+  // Keyboard bindings read as the key that is pressed: none is left as a number.
+  const bindings = page.getByTestId('iracing-bindings');
+  const row = (label: string) =>
+    bindings.locator('[data-testid="binding-row"]').filter({ hasText: label });
+  await page.getByTestId('iracing-filter').locator('input').fill('');
+  await expect(row('Wheel Axis, turning right')).toHaveCount(1);
+  await expect(bindings).not.toContainText(/Key d+/);
+  await page.getByTestId('iracing-filter').locator('input').fill('brake bias');
+  await expect(row('Brake bias up').locator('.rc-input')).toHaveText('=');
+  await expect(row('Brake bias down').locator('.rc-input')).toHaveText('-');
+  await shot('key-names');
+
   // The files now hold the connected wheel's id; the change is on the Safety page.
   const yaml = await fs.readFile(path.join(home, 'Documents', 'iRacing', 'joyCalib.yaml'), 'utf8');
   expect(yaml).toContain('{20B0BED0-03A4-11F1-8001-444553540000}');

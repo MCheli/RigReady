@@ -341,6 +341,9 @@ onBeforeUnmount(() => {
         <div v-for="a in activity" :key="a.id" class="rr-row" data-testid="mcp-activity">
           <div class="rr-row-main">
             <div class="rr-row-title">{{ a.client }}: {{ a.summary }}</div>
+            <div v-if="a.detail" class="rr-row-sub rr-mono" data-testid="mcp-activity-detail">
+              {{ a.detail }}
+            </div>
             <div class="rr-row-sub">
               {{ outcomeWord[a.outcome] }}. {{ a.message }}
               <template v-if="a.journalGroups.length > 0">

@@ -30,6 +30,14 @@ export interface ToolCall {
   tier: ChannelTier;
   /** One line for the question and the record ("Make DCS F/A-18C ready"). */
   summary: string;
+  /**
+   * The same line with what the app knows put in: a setup's name for the id the assistant
+   * gave. It runs before the user is asked, so it only ever reads. When it fails, `summary`
+   * stands.
+   */
+  describe?: (ctx: McpCallContext) => Promise<string>;
+  /** The call as it was made (a channel and its input), shown small under the line in words. */
+  detail?: string;
   channel?: string;
   work(ctx: McpCallContext): Promise<Result<unknown>>;
 }
@@ -47,6 +55,7 @@ export interface GateDeps {
       client: string;
       tool: string;
       summary: string;
+      detail?: string;
       tier: 'change' | 'launch';
     },
     signal: AbortSignal
@@ -56,8 +65,12 @@ export interface GateDeps {
   journalGroupIds(): Promise<string[]>;
   /** Names the assistant beside the actions a change left in the journal, for the Safety page. */
   markActor(groupIds: string[], client: string): Promise<void>;
+  /** Counts a call under its pairing. Every call that got past the rate limit, however it ended. */
   noteCall(pairingId: string): Promise<void>;
 }
+
+/** The longest line a question or a record shows. */
+const LINE_LENGTH = 200;
 
 /** Calls a pairing may make: this many at once, refilled at this rate. */
 export const RATE_BURST = 30;
@@ -97,6 +110,13 @@ export class Gate {
 
   async call(caller: Caller, call: ToolCall): Promise<CallOutcome> {
     const started = this.deps.clock.now();
+    const ctx: McpCallContext = {
+      client: caller.client,
+      invoke: (channel, input) => this.deps.invoke(channel, input),
+      signal: caller.signal,
+    };
+    /** What the question and the record say: the call's plain line, until its own is worked out. */
+    let summary = call.summary;
     const record = (
       outcome: ActivityOutcome,
       message: string,
@@ -109,7 +129,8 @@ export class Gate {
         tool: call.tool,
         ...(call.channel ? { channel: call.channel } : {}),
         tier: call.tier,
-        summary: call.summary,
+        summary,
+        ...(call.detail ? { detail: call.detail } : {}),
         outcome,
         message,
         ms: Math.max(0, this.deps.clock.now().getTime() - started.getTime()),
@@ -131,6 +152,21 @@ export class Gate {
         `Too many calls at once from ${caller.client}: at most ${RATE_BURST} in a burst, ${RATE_PER_SECOND} a second after that.`
       );
     }
+    // Counted from here on, so a call the user said no to is in the pairing's count as it is in
+    // the list of what assistants did. A call over the rate limit is not: a flood writes nothing.
+    void this.deps.noteCall(caller.pairingId);
+    const describe = call.describe;
+    if (describe) {
+      try {
+        // As the work is: whatever this reads knows an assistant asked.
+        const line = (await runAsAssistant(caller.client, () => describe(ctx)))
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (line !== '') summary = line.slice(0, LINE_LENGTH);
+      } catch {
+        // The plain line stands.
+      }
+    }
     const decision = gateDecision(call.tier, await this.deps.policy());
     if (decision === 'refuse') {
       return refuse('refused', 'mcp.off', `${call.tool} is not offered to assistants.`);
@@ -140,23 +176,20 @@ export class Gate {
         {
           client: caller.client,
           tool: call.tool,
-          summary: call.summary,
+          summary,
+          ...(call.detail ? { detail: call.detail } : {}),
           tier: call.tier === 'launch' ? 'launch' : 'change',
         },
         caller.signal
       );
       if (answer === 'denied') {
-        return refuse(
-          'denied',
-          'mcp.denied',
-          `The user did not allow "${call.summary}" in RigReady.`
-        );
+        return refuse('denied', 'mcp.denied', `The user did not allow "${summary}" in RigReady.`);
       }
       if (answer === 'timeout') {
         return refuse(
           'timeout',
           'mcp.timeout',
-          `RigReady asked the user whether to allow "${call.summary}" and got no answer in time. Ask them to look at RigReady's window, then try again.`
+          `RigReady asked the user whether to allow "${summary}" and got no answer in time. Ask them to look at RigReady's window, then try again.`
         );
       }
     }
@@ -168,15 +201,9 @@ export class Gate {
         `RigReady is still busy with "${this.running}". Wait for it to finish, then try again.`
       );
     }
-    if (changes) this.running = call.summary;
-    void this.deps.noteCall(caller.pairingId);
+    if (changes) this.running = summary;
     try {
       const before = changes ? new Set(await this.deps.journalGroupIds()) : undefined;
-      const ctx: McpCallContext = {
-        client: caller.client,
-        invoke: (channel, input) => this.deps.invoke(channel, input),
-        signal: caller.signal,
-      };
       let result: Result<unknown>;
       try {
         // Whatever the work calls knows an assistant asked: a script an assistant wrote is

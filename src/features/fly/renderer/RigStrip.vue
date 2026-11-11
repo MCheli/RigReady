@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { CheckStatus } from '../../../core/checks/engine';
 import type { RigGlance } from '../contract';
 import { chipNames, deviceKind, KIND_ICON, KIND_NAME } from '../core/deviceKind';
-import { drawDesk } from './rigDrawing';
+import { drawDesk, keyLetters } from './rigDrawing';
 
 /**
  * The rig at a glance: the monitors drawn to scale as they are now, and the setup's
@@ -31,8 +31,6 @@ const emit = defineEmits<{ select: [itemId: string] }>();
 
 const MAX_WIDTH = 330;
 const MAX_HEIGHT = 96;
-/** A box at least this wide has room for its monitor's name. */
-const ROOM_FOR_NAME = 80;
 
 /** What is different about a monitor is marked only while the checklist says the arrangement is off. */
 const marked = computed(
@@ -43,9 +41,11 @@ const marked = computed(
 const drawing = computed(() => {
   const desk = drawDesk(props.glance?.monitors ?? [], MAX_WIDTH, MAX_HEIGHT);
   if (!desk) return undefined;
+  // A box too narrow for its name carries a letter; the key under the drawing says whose it is.
+  const letters = keyLetters(desk.boxes);
   return {
     style: { width: `${desk.width}px`, height: `${desk.height}px` },
-    boxes: desk.boxes.map((box) => {
+    boxes: desk.boxes.map((box, index) => {
       const issue = marked.value ? box.monitor.issue : undefined;
       const facts = [
         `${box.monitor.width}x${box.monitor.height}`,
@@ -56,7 +56,7 @@ const drawing = computed(() => {
       return {
         ...box.monitor,
         issue,
-        named: box.width >= ROOM_FOR_NAME,
+        letter: letters[index],
         tip: `${box.monitor.label} · ${facts.join(' · ')}`,
         style: {
           left: `${box.left}px`,
@@ -68,6 +68,13 @@ const drawing = computed(() => {
     }),
   };
 });
+
+/** Which monitor each letter in the drawing is. Empty when every box says its own name. */
+const key = computed(() =>
+  (drawing.value?.boxes ?? []).flatMap((box) =>
+    box.letter ? [{ id: box.id, letter: box.letter, label: box.label }] : []
+  )
+);
 
 const on = computed(() => (props.glance?.monitors ?? []).filter((m) => m.enabled));
 const off = computed(() => (props.glance?.monitors ?? []).filter((m) => !m.enabled));
@@ -174,10 +181,12 @@ const chips = computed(() => {
               :title="box.tip"
               data-testid="rig-monitor"
               :data-label="box.label"
+              :data-letter="box.letter ?? ''"
               :data-issue="box.issue ?? ''"
               :data-rotation="box.rotation"
             >
-              <span v-if="box.named" class="rig-monitor-name">{{ box.label }}</span>
+              <span v-if="box.letter" class="rig-monitor-letter">{{ box.letter }}</span>
+              <span v-else class="rig-monitor-name">{{ box.label }}</span>
               <v-icon
                 v-if="box.issue"
                 icon="mdi-alert-circle"
@@ -189,6 +198,17 @@ const chips = computed(() => {
           </span>
         </component>
         <div v-else class="rig-note rr-muted" data-testid="rig-no-monitor">No monitor is on.</div>
+        <ul
+          v-if="key.length"
+          class="rig-key"
+          aria-label="Which monitor each letter is"
+          data-testid="rig-key"
+        >
+          <li v-for="entry in key" :key="entry.id">
+            <span class="rig-key-letter">{{ entry.letter }}</span>
+            {{ entry.label }}
+          </li>
+        </ul>
         <ul v-if="notes.length" class="rig-notes" data-testid="rig-notes">
           <li
             v-for="note in notes"
@@ -305,6 +325,28 @@ const chips = computed(() => {
 }
 .rig-monitor {
   gap: 4px;
+}
+/* The letter of a box too narrow for its name; the key under the drawing spells it out. */
+.rig-monitor-letter,
+.rig-key-letter {
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--rr-text);
+}
+.rig-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px 12px;
+  max-width: 330px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  color: var(--rr-muted);
+}
+.rig-key-letter {
+  margin-right: 2px;
 }
 .rig-monitor-mark {
   flex: none;

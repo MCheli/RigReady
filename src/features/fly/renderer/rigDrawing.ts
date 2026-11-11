@@ -31,6 +31,24 @@ export interface DeskDrawing<T> {
 
 const round = (n: number): number => Math.round(n * 10) / 10;
 
+/** A box at least this wide has room for its monitor's name. */
+export const ROOM_FOR_NAME = 80;
+
+/**
+ * A box too narrow for the name of its monitor carries a letter instead, and a key under the
+ * drawing says which monitor each letter is. One entry per box, in order: the letter, or
+ * undefined for a box that has room for the name.
+ */
+export function keyLetters(boxes: readonly { width: number }[]): (string | undefined)[] {
+  let next = 0;
+  return boxes.map((box) => {
+    if (box.width >= ROOM_FOR_NAME) return undefined;
+    const n = next++;
+    // Past Z a desk has more monitors than letters: they go on as numbers.
+    return n < 26 ? String.fromCharCode(65 + n) : String(n + 1);
+  });
+}
+
 /**
  * Fits the monitors that are on into `maxWidth` x `maxHeight`, keeping their proportions.
  * Undefined when no monitor is on.

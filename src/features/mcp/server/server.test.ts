@@ -1,5 +1,5 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { McpStatus } from '../contract';
 import path from 'node:path';
@@ -133,6 +133,112 @@ describe('MCP-002 the server answers the official MCP client over HTTP on 127.0.
     const makeReady = entries.filter((e) => e.tool === 'rig_make_ready');
     expect(makeReady.map((e) => e.outcome)).toEqual(['ok', 'denied']);
     expect(makeReady.every((e) => e.client === 'Test assistant')).toBe(true);
+  });
+
+  it('MCP-004 the question names a setup by its name, and says a channel in words with the call under it', async () => {
+    const { app: running, url, token } = await started();
+    const client = await connect(url, token);
+    const { setups } = (await client.callTool({ name: 'setups_list', arguments: {} }))
+      .structuredContent as { setups: { id: string; name: string }[] };
+    const setup = setups[0]!;
+    expect(setup.id).not.toBe(setup.name);
+    type Question = { client: string; summary: string; detail?: string; tier: string };
+    const lastQuestion = (): Question =>
+      running.events.filter((e) => e.channel === 'mcp:event:confirm').at(-1)!.payload as Question;
+
+    // By its id, as an assistant that has just listed the setups names it.
+    answerNextQuestion(running, false);
+    const byId = await client.callTool({ name: 'rig_make_ready', arguments: { setup: setup.id } });
+    expect(lastQuestion()).toMatchObject({
+      client: 'Test assistant',
+      summary: `Make ${setup.name} ready`,
+      tier: 'change',
+    });
+    expect(lastQuestion().detail).toBeUndefined();
+    expect(text(byId)).toContain(`"Make ${setup.name} ready"`);
+
+    // A setup RigReady does not know is named as it was asked for; the answer then says why not.
+    answerNextQuestion(running, true);
+    const unknown = await client.callTool({
+      name: 'rig_make_ready',
+      arguments: { setup: 'No such setup' },
+    });
+    expect(lastQuestion().summary).toBe('Make "No such setup" ready');
+    expect(unknown.isError).toBe(true);
+    expect(text(unknown)).toContain('mcp.setup');
+
+    // A channel called directly: what it does in a sentence, and the call itself under it.
+    const deletes = "Deletes a setup's file and its desktop shortcut, if it has one";
+    const made = `profiles:remove {"id":"${setup.id}"}`;
+    answerNextQuestion(running, false);
+    const removal = await client.callTool({
+      name: 'rigready_call',
+      arguments: { channel: 'profiles:remove', input: { id: setup.id } },
+    });
+    expect(lastQuestion()).toMatchObject({ summary: deletes, detail: made, tier: 'change' });
+    expect(removal.isError).toBe(true);
+    expect(text(removal)).toContain(`"${deletes}"`);
+    const still = await running.invoke<{ id: string }[]>('profiles:list');
+    expect(still.map((s) => s.id)).toContain(setup.id);
+
+    // The list of what assistants did says the same, newest first.
+    const { entries } = await running.invoke<{
+      entries: { summary: string; detail?: string; outcome: string }[];
+    }>('mcp:activity');
+    expect(entries.map((e) => [e.summary, e.detail, e.outcome])).toEqual([
+      [deletes, made, 'denied'],
+      ['Make "No such setup" ready', undefined, 'error'],
+      [`Make ${setup.name} ready`, undefined, 'denied'],
+      ['List the setups', undefined, 'ok'],
+    ]);
+  });
+
+  it('MCP-005 the count beside a pairing is every call it made, a refused one too, and the window hears once it is written', async () => {
+    const { app: running, url, token } = await started();
+    const client = await connect(url, token);
+    // The Settings page: told that something changed, it reads the status again and shows that.
+    let shown: number | undefined;
+    let reading: Promise<void> = Promise.resolve();
+    const push = running.events.push.bind(running.events);
+    running.events.push = (...items) => {
+      for (const item of items) {
+        if (item.channel !== 'mcp:event:changed') continue;
+        reading = reading.then(async () => {
+          const status = await running.invoke<McpStatus>('mcp:status');
+          shown = status.pairings.find((p) => p.name === 'Test assistant')?.calls;
+        });
+      }
+      return push(...items);
+    };
+    const mine = async (): Promise<number> => {
+      const { entries } = await running.invoke<{ entries: { client: string }[] }>('mcp:activity', {
+        limit: 100,
+      });
+      return entries.filter((e) => e.client === 'Test assistant').length;
+    };
+
+    const { setups } = (await client.callTool({ name: 'setups_list', arguments: {} }))
+      .structuredContent as { setups: { id: string }[] };
+    const setup = setups[0]!.id;
+    answerNextQuestion(running, false);
+    const denied = await client.callTool({ name: 'rig_make_ready', arguments: { setup } });
+    expect(text(denied)).toContain('mcp.denied');
+    answerNextQuestion(running, true);
+    const allowed = await client.callTool({ name: 'rig_make_ready', arguments: { setup } });
+    expect(allowed.isError, text(allowed)).toBeFalsy();
+    // Three calls in the list, three beside the pairing: the one the user said no to as well.
+    expect(await mine()).toBe(3);
+    await vi.waitFor(() => expect(shown).toBe(3));
+
+    // Calls made at once are each counted: none writes over another's count.
+    const together = await Promise.all(
+      Array.from({ length: 8 }, () => client.callTool({ name: 'setups_list', arguments: {} }))
+    );
+    expect(together.every((r) => !r.isError)).toBe(true);
+    expect(await mine()).toBe(11);
+    await vi.waitFor(() => expect(shown).toBe(11));
+    const status = await running.invoke<McpStatus>('mcp:status');
+    expect(status.pairings.find((p) => p.name === 'Test assistant')!.calls).toBe(11);
   });
 
   it('MCP-007 the Safety page names the assistant beside its change, and undo works the same', async () => {

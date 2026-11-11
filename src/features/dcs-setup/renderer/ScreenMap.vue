@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { planCaptions } from '../core/mapCaptions';
 import { boundingBox, monitorLabels, type DesktopDisplay, type Rect } from '../core/screens';
 
 /**
@@ -148,6 +149,49 @@ function end(): void {
 
 const shown = (box: MapBox): Rect => (drag.value?.key === box.key ? drag.value.rect : box.rect);
 const EDGES: Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+
+// How wide the map is drawn, so a monitor's name can keep clear of the viewports over it.
+const drawnWidth = ref(0);
+let resized: ResizeObserver | undefined;
+onMounted(() => {
+  if (!map.value) return;
+  drawnWidth.value = map.value.clientWidth;
+  resized = new ResizeObserver(() => {
+    drawnWidth.value = map.value?.clientWidth ?? 0;
+  });
+  resized.observe(map.value);
+});
+onBeforeUnmount(() => resized?.disconnect());
+
+const captions = computed(() =>
+  planCaptions(
+    props.displays,
+    props.boxes.map((box) => ({ key: box.key, rect: shown(box) })),
+    drawnWidth.value / area.value.width
+  )
+);
+/** The name of a monitor that is drawn on the monitor itself, and how tall it may be. */
+const ownName = (d: DesktopDisplay): { height: string } | undefined => {
+  const place = captions.value.monitors.get(d.id);
+  if (!place || place.on !== 'monitor') return undefined;
+  return { height: place.room === undefined ? '100%' : `${place.room}px` };
+};
+const size = (d: DesktopDisplay): string => `${d.width}×${d.height}`;
+/** The monitor whose name this viewport shows above its own text. */
+const named = (
+  box: MapBox
+): { label: string; size?: string; tip: string; short: boolean } | undefined => {
+  const held = captions.value.viewports.get(box.key);
+  const monitor = held && props.displays.find((d) => d.id === held.monitor);
+  if (!held || !monitor) return undefined;
+  const label = labels.value.get(monitor.id) ?? '';
+  return {
+    label,
+    ...(held.withSize ? { size: size(monitor) } : {}),
+    tip: `${label} · ${size(monitor)}`,
+    short: held.short,
+  };
+};
 </script>
 
 <template>
@@ -172,8 +216,12 @@ const EDGES: Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
       data-testid="screen-map-display"
       :data-name="labels.get(d.id)"
     >
-      <span class="smap-display-name">{{ labels.get(d.id) }}</span>
-      <span class="smap-display-size">{{ d.width }}×{{ d.height }}</span>
+      <div v-if="ownName(d)" class="smap-caption" :style="ownName(d)">
+        <span class="smap-display-name" data-testid="screen-map-display-name">{{
+          labels.get(d.id)
+        }}</span>
+        <span class="smap-display-size">{{ size(d) }}</span>
+      </div>
       <span v-if="mainIds.includes(d.id)" class="smap-main-tag">Main view</span>
     </div>
     <div v-if="window" class="smap-window" :style="pct(window)" title="The DCS window" />
@@ -186,14 +234,25 @@ const EDGES: Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
         selected: box.selected,
         bad: box.bad,
         dragging: drag?.key === box.key,
+        naming: !!named(box),
+        short: named(box)?.short,
       }"
       :style="pct(shown(box))"
       data-testid="screen-map-box"
       :data-name="box.name"
       @pointerdown="start(box, 'move', $event)"
     >
-      <span class="smap-box-label">{{ box.label }}</span>
-      <span class="smap-box-name">{{ box.name }}</span>
+      <!-- The monitor's name, when this viewport covers the corner where the monitor shows it. -->
+      <span v-if="named(box)" class="smap-box-monitor" :title="named(box)!.tip">
+        <span class="smap-box-monitor-name" data-testid="screen-map-display-name">{{
+          named(box)!.label
+        }}</span>
+        <span v-if="named(box)!.size" class="smap-display-size">{{ named(box)!.size }}</span>
+      </span>
+      <span class="smap-box-text">
+        <span class="smap-box-label">{{ box.label }}</span>
+        <span class="smap-box-name">{{ box.name }}</span>
+      </span>
       <template v-if="box.editable && box.selected">
         <span
           v-for="edge in EDGES"
@@ -217,10 +276,6 @@ const EDGES: Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 }
 .smap-display {
   position: absolute;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  padding: 5px 7px;
   border: 1px solid var(--rr-border);
   outline: 2px solid var(--rr-bg);
   outline-offset: -3px;
@@ -237,12 +292,39 @@ const EDGES: Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
   border-color: var(--rr-accent);
   border-style: dashed;
 }
+/* The monitor's name and size, in the room above the first viewport drawn on the monitor. A line
+   that does not fit in that room wraps into a second column, which is cut off: the size goes
+   before the name does. The side padding is on the lines, so that column starts past the edge. */
+.smap-caption {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+  padding-top: 4px;
+  display: flex;
+  flex-flow: column wrap;
+  align-content: flex-start;
+  overflow: hidden;
+}
+.smap-caption > span {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 7px;
+}
 .smap-display-name {
   color: var(--rr-text);
-  line-height: 1.25;
+  line-height: 13px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 .smap-display-size {
   font-size: 10.5px;
+  line-height: 13px;
 }
 /* On the tinted main screen the muted grey is too faint to read. */
 .smap-display.main .smap-display-size {
@@ -296,6 +378,43 @@ const EDGES: Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 .smap-box.bad {
   border-color: var(--rr-warn);
   background: color-mix(in srgb, var(--rr-warn) 22%, transparent);
+}
+.smap-box-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+/* A viewport over the corner of a small monitor shows that monitor's name above its own text,
+   so the two never lie on top of each other. */
+.smap-box.naming {
+  justify-content: flex-start;
+}
+.smap-box.naming .smap-box-text {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.smap-box.short .smap-box-name {
+  display: none;
+}
+.smap-box-monitor {
+  align-self: stretch;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px 0;
+  text-align: left;
+}
+.smap-box-monitor .smap-display-size {
+  color: color-mix(in srgb, var(--rr-text) 75%, transparent);
+}
+.smap-box-monitor-name {
+  line-height: 13px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 .smap-box-label {
   font-weight: 600;
