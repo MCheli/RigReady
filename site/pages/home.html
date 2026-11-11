@@ -1,196 +1,417 @@
-<section class="hero">
-  <div class="wrap hero-grid">
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap">
     <div class="hero-copy">
-      <h1>Find out before the sim loads, not after.</h1>
+      <h1 id="hero-title">Get the rig ready, keep your controls, find what is wrong.</h1>
       <p class="lead">
-        RigReady checks that your flight or racing rig is ready to go: the right controllers plugged
-        in, the helper apps running, the monitors arranged, the audio and the game files right. It
-        fixes what it can, then launches the game.
+        RigReady is a free Windows app for flight and racing sim rigs. It checks the rig before you
+        launch and fixes what it can, helps you set up, save and bring back your bindings, and shows
+        what every controller is doing when something is off.
       </p>
       <div class="actions">{{HERO_ACTIONS}}</div>
     </div>
 
-    <div class="instrument" id="instrument" data-kind="flight">
-      <noscript>
-        <img
-          src="/img/screens/play-not-ready.webp"
-          width="1250"
-          height="821"
-          alt="The Play screen with four problems and a fix beside each"
-        />
-      </noscript>
+    <ul class="pillars" id="features" aria-label="What RigReady does">
+      <li class="pillar">
+        <svg class="pillar-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="m8.2 12.3 2.6 2.6 5-5.4" />
+        </svg>
+        <p class="kicker">Before a session</p>
+        <h2><a href="#ready">Ready to launch</a></h2>
+        <p>
+          Checks the rig for the setup you are about to use, fixes what is off, and starts the game.
+        </p>
+        <ul>
+          <li>Controllers, helper apps, monitors, audio, game files</li>
+          <li>Make ready runs every fix in order</li>
+          <li>Stand down puts the desk back</li>
+        </ul>
+        <a class="pillar-link" href="/docs/play/">The Play screen in the manual</a>
+      </li>
+      <li class="pillar">
+        <svg class="pillar-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 6h9M18 6h1M5 12h3M12 12h7M5 18h11M20 18h-1" />
+          <circle cx="16" cy="6" r="2" />
+          <circle cx="10" cy="12" r="2" />
+          <circle cx="18" cy="18" r="2" />
+        </svg>
+        <p class="kicker">Setting up</p>
+        <h2><a href="#controls">Controls, set up and saved</a></h2>
+        <p>
+          Bindings, cheat sheets and backups, so a new aircraft or a new PC does not start from
+          nothing.
+        </p>
+        <ul>
+          <li>See, edit and clean up DCS bindings</li>
+          <li>Cheat sheets and kneeboard pages</li>
+          <li>Back up, restore, move to a new PC</li>
+        </ul>
+        <a class="pillar-link" href="/docs/protect/">Backups in the manual</a>
+      </li>
+      <li class="pillar">
+        <svg class="pillar-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 12h4l2.5-6 4 12 2.5-6H21" />
+        </svg>
+        <p class="kicker">When something is off</p>
+        <h2><a href="#troubleshoot">See what the rig is doing</a></h2>
+        <p>Every button, axis and USB port the way a game sees them, so a fault has a name.</p>
+        <ul>
+          <li>Find a device by pressing a button</li>
+          <li>Input tester and health check</li>
+          <li>USB map and new device IDs</li>
+        </ul>
+        <a class="pillar-link" href="/docs/hardware/">Hardware tools in the manual</a>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="pillar-section ready" id="ready" aria-labelledby="ready-title">
+  <div class="wrap">
+    <header class="pillar-head">
+      <p class="kicker">Before a session</p>
+      <h2 id="ready-title">Ready to launch</h2>
+      <p>
+        A setup records how the rig looks when it works. Before each session RigReady checks the rig
+        against it, fixes what is off, and launches the game. Launch on its own is never blocked,
+        only warned.
+      </p>
+    </header>
+
+    <div class="ready-grid">
+      <div class="instrument" id="instrument" data-kind="flight">
+        <noscript>
+          <img
+            src="/img/screens/play-not-ready.webp"
+            width="1250"
+            height="821"
+            alt="The Play screen with four problems and a fix beside each"
+          />
+        </noscript>
+      </div>
+
+      <ol class="timeline">
+        <li>
+          <h3>Capture the rig while it works</h3>
+          <p>
+            The game, controllers, helper apps, monitor layout, audio devices and the game files
+            that matter. One setup per aircraft or car.
+          </p>
+        </li>
+        <li>
+          <h3>See what is off</h3>
+          <p>
+            Open RigReady or double-click the setup's desktop shortcut. Required items make the rig
+            not ready; optional ones only warn.
+          </p>
+        </li>
+        <li>
+          <h3>Make ready and launch</h3>
+          <p>
+            Apps are started, monitors arranged and files restored as visible steps. The game starts
+            once everything required is in place.
+          </p>
+        </li>
+        <li>
+          <h3>Stand down</h3>
+          <p>Afterwards the helper apps close and the monitors go back to the desk layout.</p>
+        </li>
+      </ol>
+    </div>
+
+    <ul class="also">
+      <li>
+        <svg class="also-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2.5" y="5" width="12" height="8" rx="1" />
+          <rect x="16.5" y="3" width="5" height="8" rx="1" />
+          <path d="M8.5 13v4M5.5 17h6M19 11v6" />
+        </svg>
+        <div>
+          <h3>Monitor layouts that put themselves back</h3>
+          <p>
+            Named layouts for flying, racing and the desk. A layout you apply goes back by itself
+            unless you keep it. <a href="/docs/monitors-and-audio/">Monitors and audio</a>
+          </p>
+        </div>
+      </li>
+      <li>
+        <svg class="also-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="13" rx="1.5" />
+          <path d="m10 8.5 4 2-4 2z" />
+          <path d="M8 20.5h8" />
+        </svg>
+        <div>
+          <h3>Start without opening the window</h3>
+          <p>
+            A desktop shortcut per setup, the tray, the taskbar button and a hotkey. Inside the app,
+            <kbd>Ctrl</kbd> <kbd>K</kbd> runs any action.
+            <a href="/docs/one-click/">Starting without the window</a>
+          </p>
+        </div>
+      </li>
+      <li>
+        <svg class="also-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5" />
+          <circle cx="12" cy="12" r="2.2" />
+          <path d="M3.8 10.5h6M14.2 10.5h6M12 14.2v6.3" />
+        </svg>
+        <div>
+          <h3>Flying and racing on one PC</h3>
+          <p>
+            A setup for the F/A-18C and another for iRacing, each with its own devices, apps and
+            layout. <a href="/docs/setups/">Setups</a>
+          </p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="pillar-section controls" id="controls" aria-labelledby="controls-title">
+  <div class="wrap">
+    <header class="pillar-head">
+      <p class="kicker">Setting up</p>
+      <h2 id="controls-title">Controls, set up and saved</h2>
+      <p>
+        Setting up bindings for a rig full of controllers takes hours. RigReady helps you get them
+        right, shows what every control does, and keeps a copy so a reinstall or a new PC does not
+        mean starting again.
+      </p>
+    </header>
+
+    <ul class="tiles">
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/capture.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="Capturing a setup: twelve controllers ticked as required, with a summary of the checks"
+          />
+        </button>
+        <h3>Capture a setup</h3>
+        <p>
+          Record the controllers, apps, layout and audio as they are now, then edit. No form to fill
+          in. <a href="/docs/setups/capture/">Capture</a>
+        </p>
+      </li>
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/bindings-cleanup.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="A preview of cleaning up twelve default bindings DCS added to a wheel base"
+          />
+        </button>
+        <h3>DCS bindings</h3>
+        <p>
+          See the bindings in effect, edit them with a preview, clear the defaults DCS adds to every
+          device, and copy controls between aircraft. <a href="/docs/dcs/bindings/">DCS bindings</a>
+        </p>
+      </li>
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/cheat-sheets.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="A cheat sheet for a WinWing joystick in the F/A-18C, with a label beside every button"
+          />
+        </button>
+        <h3>Cheat sheets</h3>
+        <p>
+          Each device drawn with what every control does, for DCS aircraft and the racing games.
+          Print it or export it as a DCS kneeboard page.
+          <a href="/docs/dcs/cheat-sheets/">Cheat sheets</a>
+        </p>
+      </li>
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/trainer.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="The trainer asking for Gear 2 on a Fanatec wheel base"
+          />
+        </button>
+        <h3>Learn them</h3>
+        <p>
+          The trainer names an action and you press the control. The binding guides for the F/A-18C
+          and UH-1H walk through what to bind first. <a href="/docs/dcs/trainer/">Trainer</a>
+        </p>
+      </li>
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/restore.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="Restoring a backup: what will be new, replaced or kept side by side, before anything is written"
+          />
+        </button>
+        <h3>Back up and restore</h3>
+        <p>
+          One click backs up setups, game files and settings. A restore shows what will change
+          before it does. <a href="/docs/protect/backups/">Backups</a>
+        </p>
+      </li>
+      <li class="tile">
+        <button type="button" class="tile-shot whole shot" data-lightbox>
+          <img
+            src="/img/screens/rig-picture.webp"
+            width="1600"
+            height="900"
+            loading="lazy"
+            alt="A picture of a DCS F/A-18C setup: four monitors, twelve controllers and three helper apps"
+          />
+        </button>
+        <h3>Share it</h3>
+        <p>
+          Share a setup as a file with personal details reviewed and removed, or make a picture of
+          the rig to show people. <a href="/docs/protect/sharing/">Sharing</a>
+        </p>
+      </li>
+    </ul>
+
+    <div class="newpc">
+      <h3>Moving to a new PC</h3>
+      <ol class="strip">
+        <li><strong>Back up</strong> on the old PC and export the file.</li>
+        <li><strong>Install</strong> the games and tools, plug in the controllers.</li>
+        <li><strong>Restore</strong> the file. Each item shows where it lands.</li>
+        <li><strong>Move the device IDs</strong> so DCS finds its bindings again.</li>
+        <li><strong>Run the checks</strong> and fix what is left.</li>
+      </ol>
+      <p><a href="/docs/protect/new-pc/">Moving to a new PC</a>, step by step, in the manual.</p>
     </div>
   </div>
 </section>
 
-<section class="showcase" aria-labelledby="showcase-title">
+<section class="pillar-section troubleshoot" id="troubleshoot" aria-labelledby="troubleshoot-title">
   <div class="wrap">
-    <div class="showcase-head">
-      <div>
-        <h2 id="showcase-title">One screen for the setup you use</h2>
-        <p>
-          A readiness dial, the rig drawn with its monitors and devices so a problem shows up as a
-          place, and a checklist with a fix beside everything that is off.
-        </p>
-      </div>
-      <div class="toggle" role="group" aria-label="Show the Play screen">
-        <button type="button" aria-pressed="true" data-show="play-not-ready">Four problems</button>
-        <button type="button" aria-pressed="false" data-show="play-ready">After Make ready</button>
-      </div>
-    </div>
-    <figure class="frame showcase-frame">
+    <header class="pillar-head">
+      <p class="kicker">When something is off</p>
+      <h2 id="troubleshoot-title">See what the rig is doing</h2>
+      <p>
+        A view that creeps, a button that does nothing, a panel the game no longer knows. These
+        tools show what each controller sends and where it is plugged in.
+      </p>
+    </header>
+
+    <figure class="frame band">
       <button type="button" class="shot" data-lightbox>
         <img
-          id="showcase-img"
-          src="/img/screens/play-not-ready.webp"
+          src="/img/screens/input-tester.webp"
           width="1250"
           height="821"
-          alt="The Play screen for a DCS F/A-18C setup: not ready, with four problems and a fix beside each"
+          loading="lazy"
+          alt="The input tester following a joystick: a plot of two axes together, a trace per axis and a log of inputs"
         />
       </button>
+      <figcaption>
+        <strong>Input tester.</strong> Buttons and axes the way a game sees them, one device or all
+        at once, with a live trace per axis. <a href="/docs/hardware/input-tester/">Input tester</a>
+      </figcaption>
     </figure>
-  </div>
-</section>
 
-<section class="session" aria-labelledby="session-title">
-  <div class="wrap">
-    <h2 id="session-title">How a session goes</h2>
-    <ol class="steps">
-      <li>
-        <h3>Capture the rig while it works</h3>
+    <ul class="tiles tiles-4">
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/find-device.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="A WinWing MFD found by pressing one of its buttons, with its name, IDs and USB port"
+          />
+        </button>
+        <h3>Find a device</h3>
         <p>
-          A setup is made by recording the rig as it is: the game, the controllers, the helper apps,
-          the monitor layout, the audio devices and the game files that matter. One setup per
-          aircraft or car.
+          Press a button on it and RigReady opens it: its IDs, its port, and a name you choose.
+          <a href="/docs/hardware/devices/">Devices</a>
         </p>
       </li>
-      <li>
-        <h3>See what is off</h3>
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/health-check.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="The health check after ten seconds: a stuck button and an input that fired by itself"
+          />
+        </button>
+        <h3>Health check</h3>
         <p>
-          Open RigReady, or double-click the setup's desktop shortcut. Every item is checked;
-          required ones make the rig not ready, optional ones only warn.
+          Hands off for ten seconds: stuck buttons, inputs that fire by themselves and noisy axes.
+          <a href="/docs/hardware/health-check/">Health check</a>
         </p>
       </li>
-      <li>
-        <h3>Make ready and launch</h3>
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/usb-map.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="The USB map: the hubs and the devices on each port, drawn as a tree"
+          />
+        </button>
+        <h3>USB map</h3>
         <p>
-          The fixes run in order as visible steps: apps started, monitors arranged, files restored.
-          The game starts once everything required is in place. Launch on its own is never blocked.
+          Which hub each device hangs off, how close you are to the limits, and what to unplug.
+          <a href="/docs/hardware/usb-map/">USB map</a>
         </p>
       </li>
-      <li>
-        <h3>Stand down</h3>
+      <li class="tile">
+        <button type="button" class="tile-shot shot" data-lightbox>
+          <img
+            src="/img/screens/iracing-repair.webp"
+            width="1250"
+            height="821"
+            loading="lazy"
+            alt="iRacing's page with a wheel base that has a new Windows ID, and Update iRacing beside it"
+          />
+        </button>
+        <h3>New device IDs</h3>
         <p>
-          Afterwards, Stand down closes the helper apps and puts the monitors back the way the desk
-          uses them.
+          When Windows gives a controller a new ID, RigReady moves the DCS bindings, or points
+          iRacing's files at it. <a href="/docs/dcs/device-ids/">Device IDs</a>
         </p>
       </li>
-    </ol>
+    </ul>
     <p class="section-lead">
-      In the manual: <a href="/docs/getting-started/">Getting started</a> walks through the first
-      setup, and <a href="/docs/play/">The Play screen</a> covers a session from Make ready to Stand
-      down.
+      Fanatec wheel bases, Stream Deck and TrackIR have pages of their own, and RigReady notices
+      when HidHide is hiding a device. In the manual: <a href="/docs/hardware/">Hardware</a>.
     </p>
   </div>
 </section>
 
-<div id="features">
-  <section class="feature" aria-labelledby="f-monitors">
-    <div class="wrap feature-grid">
-      <div class="feature-copy">
-        <h2 id="f-monitors">Monitor layouts that put themselves back</h2>
+<section class="ai" id="ai" aria-labelledby="ai-title">
+  <div class="wrap">
+    <header class="pillar-head">
+      <h2 id="ai-title">Optional AI help with setup and bindings</h2>
+      <p>
+        AI is off until you turn it on, and nothing else in RigReady needs it. It comes in two
+        forms, and either works without the other. Either way, every change is backed up first and
+        can be undone on the Safety page.
+      </p>
+    </header>
+    <div class="ai-grid">
+      <article class="ai-card">
+        <h3>With your own Anthropic API key</h3>
         <p>
-          A to-scale map of every screen, with named layouts for flying, racing and the desk.
-          Identify puts a number on every screen, identical USB screens are told apart, and a layout
-          you apply goes back by itself unless you choose to keep it.
+          The binding guide can suggest a plan for your controllers, answer questions about the
+          aircraft, and explain any action in the walkthrough. Suggestions are checked against your
+          devices, and only the ones you tick and review are written. You see what will be sent
+          before each request, and it goes only to Anthropic.
         </p>
-        <p>In the manual: <a href="/docs/monitors-and-audio/">Monitors and audio</a>.</p>
-      </div>
-      <figure class="frame">
-        <button type="button" class="shot" data-lightbox>
-          <img
-            src="/img/screens/monitors.webp"
-            width="1250"
-            height="821"
-            loading="lazy"
-            alt="The Monitors page: a map of a wide main screen and three portrait MFD screens, with each monitor's details below"
-          />
-        </button>
-      </figure>
-    </div>
-  </section>
-
-  <section class="feature" aria-labelledby="f-controls">
-    <div class="wrap feature-grid">
-      <div class="feature-copy">
-        <h2 id="f-controls">Know what every control does</h2>
-        <p>
-          Cheat sheets draw each device with what every button does in the aircraft or car you pick.
-          Print them, export them as DCS kneeboard pages, or let the trainer name an action and have
-          you press it until you know it.
-        </p>
-        <p>
-          For DCS, RigReady shows the bindings in effect, edits them with a preview, clears the
-          defaults DCS adds to every device, repairs bindings when Windows changes a device's ID,
-          and copies controls between aircraft.
-        </p>
-        <p>
-          In the manual: <a href="/docs/dcs/cheat-sheets/">Cheat sheets</a> and
-          <a href="/docs/dcs/bindings/">DCS bindings</a>.
-        </p>
-      </div>
-      <div class="stack">
-        <figure class="frame">
-          <button type="button" class="shot" data-lightbox>
-            <img
-              src="/img/screens/cheat-sheets.webp"
-              width="1250"
-              height="821"
-              loading="lazy"
-              alt="A cheat sheet for a WinWing joystick in the F/A-18C, with a label beside every button"
-            />
-          </button>
-        </figure>
-        <figure class="frame frame-inset">
-          <button type="button" class="shot" data-lightbox>
-            <img
-              src="/img/screens/trainer.webp"
-              width="1250"
-              height="821"
-              loading="lazy"
-              alt="The trainer asking for Gear 2 on a Fanatec wheel base"
-            />
-          </button>
-        </figure>
-      </div>
-    </div>
-  </section>
-
-  <section class="feature" aria-labelledby="f-ai">
-    <div class="wrap feature-grid">
-      <div class="feature-copy">
-        <h2 id="f-ai">Optional AI help with setup and bindings</h2>
-        <p>
-          AI is off until you turn it on, and nothing else in RigReady needs it. It comes in two
-          forms, and either can be used without the other.
-        </p>
-        <p>
-          With an Anthropic API key of your own, the binding guide can suggest a plan for your
-          controllers, answer questions about the aircraft, and explain any action in the binding
-          walkthrough. Suggestions are checked against your devices, and only the ones you tick and
-          review are written. You see exactly what will be sent before each request, and it goes
-          only to Anthropic.
-        </p>
-        <p>
-          Or connect an assistant you already use, such as Claude Desktop, Claude Code or Cursor,
-          over MCP. It can check the rig, read the manual and propose changes, and by default
-          RigReady asks you before anything is changed or launched. What it reads goes to that
-          assistant, never to RigReady's author.
-        </p>
-        <p>Either way, every change is backed up first and can be undone on the Safety page.</p>
-        <p>In the manual: <a href="/docs/ai/">AI assistants</a>.</p>
-      </div>
-      <div class="stack">
         <figure class="frame">
           <button type="button" class="shot" data-lightbox>
             <img
@@ -202,7 +423,15 @@
             />
           </button>
         </figure>
-        <figure class="frame frame-inset">
+      </article>
+      <article class="ai-card">
+        <h3>With an assistant you already use</h3>
+        <p>
+          Connect Claude Desktop, Claude Code, Cursor or another MCP client. It can check the rig,
+          read the manual and propose changes, and by default RigReady asks you before anything is
+          changed or launched. What it reads goes to that assistant, never to RigReady's author.
+        </p>
+        <figure class="frame">
           <button type="button" class="shot" data-lightbox>
             <img
               src="/img/screens/mcp-question.webp"
@@ -213,104 +442,11 @@
             />
           </button>
         </figure>
-      </div>
+      </article>
     </div>
-  </section>
-
-  <section class="feature" aria-labelledby="f-hardware">
-    <div class="wrap feature-grid">
-      <div class="feature-copy">
-        <h2 id="f-hardware">See exactly what the game sees</h2>
-        <p>
-          Find a device by pressing a button on it. The input tester shows every axis with a live
-          trace, the health check catches stuck buttons and noisy axes, and the USB map draws what
-          hangs off which hub.
-        </p>
-        <p>Fanatec wheel bases, Stream Deck and TrackIR get pages of their own.</p>
-        <p>In the manual: <a href="/docs/hardware/">Hardware</a>.</p>
-      </div>
-      <div class="stack">
-        <figure class="frame">
-          <button type="button" class="shot" data-lightbox>
-            <img
-              src="/img/screens/input-tester.webp"
-              width="1250"
-              height="821"
-              loading="lazy"
-              alt="The input tester following a joystick: a plot of two axes together, a trace per axis and a log of inputs"
-            />
-          </button>
-        </figure>
-        <figure class="frame frame-inset">
-          <button type="button" class="shot" data-lightbox>
-            <img
-              src="/img/screens/wheel.webp"
-              width="1250"
-              height="821"
-              loading="lazy"
-              alt="The Wheel page for a Fanatec Podium DD2: the base, the Fanatec software and its versions"
-            />
-          </button>
-        </figure>
-      </div>
-    </div>
-  </section>
-
-  <section class="feature" aria-labelledby="f-backup">
-    <div class="wrap feature-grid">
-      <div class="feature-copy">
-        <h2 id="f-backup">Back it up, share it, show it off</h2>
-        <p>
-          One click backs up your setups, game files and settings. A restore shows what will change
-          before it does, and a snapshot tells you what changed since the rig last worked.
-        </p>
-        <p>
-          Share a setup as a file, with personal details reviewed and removed first, or make a
-          picture of your rig to show people.
-        </p>
-        <p>In the manual: <a href="/docs/protect/">Backups, sharing and safety</a>.</p>
-      </div>
-      <figure class="frame">
-        <button type="button" class="shot" data-lightbox>
-          <img
-            src="/img/screens/rig-picture.webp"
-            width="1600"
-            height="900"
-            loading="lazy"
-            alt="A picture of a DCS F/A-18C setup: four monitors, twelve controllers and three helper apps"
-          />
-        </button>
-      </figure>
-    </div>
-  </section>
-
-  <section class="feature" aria-labelledby="f-keys">
-    <div class="wrap feature-grid">
-      <div class="feature-copy">
-        <h2 id="f-keys">From the desktop to the cockpit</h2>
-        <p>
-          Each setup can have a desktop shortcut that makes the rig ready and launches the game. The
-          same actions are in the tray, on the taskbar button and behind a global hotkey.
-        </p>
-        <p>
-          Inside the app, <kbd>Ctrl</kbd> <kbd>K</kbd> finds every page and runs the common actions.
-        </p>
-        <p>In the manual: <a href="/docs/one-click/">Starting without the window</a>.</p>
-      </div>
-      <figure class="frame">
-        <button type="button" class="shot" data-lightbox>
-          <img
-            src="/img/screens/palette.webp"
-            width="1250"
-            height="821"
-            loading="lazy"
-            alt="The command palette open over the Play screen, listing Make ready, Launch, Stand down and other actions"
-          />
-        </button>
-      </figure>
-    </div>
-  </section>
-</div>
+    <p class="section-lead">In the manual: <a href="/docs/ai/">AI assistants</a>.</p>
+  </div>
+</section>
 
 <section class="games" id="games" aria-labelledby="games-title">
   <div class="wrap">
@@ -360,11 +496,11 @@
       <figure class="frame">
         <button type="button" class="shot" data-lightbox>
           <img
-            src="/img/screens/racing-games.webp"
+            src="/img/screens/wheel.webp"
             width="1250"
             height="821"
             loading="lazy"
-            alt="The Racing page: the Fanatec wheel base, iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa, and the helper apps"
+            alt="The Wheel page for a Fanatec Podium DD2: the base, the Fanatec software and its versions"
           />
         </button>
       </figure>
@@ -453,7 +589,9 @@
       </li>
       <li>
         <a href="/how-it-was-built/">How this was built</a>
-        <span>Written with AI coding agents: how it was checked, and what is not verified yet.</span>
+        <span
+          >Written with AI coding agents: how it was checked, and what is not verified yet.</span
+        >
       </li>
       <li>
         <a href="/docs/contributing/">Read the contributing guide</a>

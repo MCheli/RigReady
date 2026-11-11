@@ -260,24 +260,6 @@
     render();
   }
 
-  function setupShowcase() {
-    const img = document.getElementById('showcase-img');
-    if (!img) return;
-    const buttons = document.querySelectorAll('.toggle [data-show]');
-    const alts = {
-      'play-not-ready':
-        'The Play screen for a DCS F/A-18C setup: not ready, with four problems and a fix beside each',
-      'play-ready': 'The same setup after Make ready: ready, with each fix that ran listed',
-    };
-    for (const b of buttons) {
-      b.addEventListener('click', () => {
-        img.src = `/img/screens/${b.dataset.show}.webp`;
-        img.alt = alts[b.dataset.show];
-        for (const other of buttons) other.setAttribute('aria-pressed', String(other === b));
-      });
-    }
-  }
-
   function setupLightbox() {
     const dialog = document.getElementById('lightbox');
     const big = dialog.querySelector('img');
@@ -316,7 +298,6 @@
 
   const instrument = document.getElementById('instrument');
   if (instrument) setupInstrument(instrument);
-  setupShowcase();
   setupLightbox();
   setupDocsNav();
 })();

@@ -296,16 +296,18 @@ pre code {
   flex: none;
 }
 
-/* Hero -------------------------------------------------------------------------------------- */
+/* Hero: one line for all three jobs, then the three of them as cards ------------------------- */
 
 .hero {
-  padding: clamp(48px, 8vw, 104px) 0 clamp(56px, 8vw, 96px);
+  padding: clamp(48px, 8vw, 96px) 0 var(--section);
 }
-.hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-  gap: clamp(32px, 5vw, 72px);
-  align-items: center;
+.hero-copy {
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+.hero-copy h1 {
+  font-size: clamp(2.1rem, 4.4vw, 3.3rem);
 }
 .lead {
   font-size: 1.2rem;
@@ -313,11 +315,17 @@ pre code {
   color: var(--text-2);
   max-width: 34em;
 }
+.hero-copy .lead {
+  margin: 0 auto;
+}
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 32px;
+}
+.hero-copy .actions {
+  justify-content: center;
 }
 .hero-note {
   flex-basis: 100%;
@@ -325,8 +333,103 @@ pre code {
   font-size: 0.92rem;
   color: var(--muted);
 }
+.hero-copy .hero-note {
+  max-width: none;
+}
+
+/* The colour of each job, used for its card, its kicker and its section. */
+.pillar:nth-child(1),
+.ready {
+  --tone: var(--ok);
+}
+.pillar:nth-child(2),
+.controls {
+  --tone: var(--accent);
+}
+.pillar:nth-child(3),
+.troubleshoot {
+  --tone: var(--warn);
+}
+.kicker {
+  margin: 0 0 6px;
+  color: var(--tone, var(--muted));
+  font: 700 0.8rem/1.3 var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pillars {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin: clamp(48px, 7vw, 80px) 0 0;
+  padding: 0;
+}
+.pillar {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 26px 22px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--tone);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.pillar-icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 16px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pillar h2 {
+  font-size: 1.35rem;
+  margin-bottom: 10px;
+}
+.pillar h2 a {
+  color: var(--text);
+  text-decoration: none;
+}
+.pillar h2 a:hover {
+  color: var(--tone);
+}
+.pillar > p:not(.kicker) {
+  margin-bottom: 14px;
+}
+.pillar ul {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  font-size: 0.95rem;
+}
+.pillar ul li {
+  position: relative;
+  padding: 7px 0 7px 18px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+}
+.pillar ul li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.95em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+.pillar-link {
+  margin-top: auto;
+  font-size: 0.92rem;
+}
 @media (max-width: 900px) {
-  .hero-grid {
+  .pillars {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -612,154 +715,297 @@ pre code {
   outline-offset: -3px;
 }
 
-.showcase {
-  padding-bottom: var(--section);
-}
-.showcase-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-.showcase-head p {
-  margin: 0;
-}
-.toggle {
-  display: inline-flex;
-  flex: none;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface);
-}
-@media (max-width: 760px) {
-  .showcase-head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
+/* The three jobs, each in a layout of its own ------------------------------------------------ */
 
-/* How a session goes ------------------------------------------------------------------------ */
-
-.session {
+.pillar-section,
+.ai {
   padding: var(--section) 0;
   border-top: 1px solid var(--border);
-  background: linear-gradient(to bottom, var(--surface) 0, var(--bg) 70%);
 }
-.steps {
+.pillar-head {
+  max-width: 720px;
+  margin-bottom: clamp(32px, 5vw, 48px);
+}
+.pillar-head h2 {
+  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+}
+.pillar-head p:last-child {
+  margin-bottom: 0;
+}
+
+/* Ready to launch: the working model beside the four steps of a session */
+
+.ready {
+  background: radial-gradient(70% 60% at 10% 0%, rgb(63 185 127 / 0.06), transparent 70%);
+}
+.ready-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: clamp(32px, 5vw, 64px);
+  align-items: center;
+}
+.timeline {
   list-style: none;
   counter-reset: step;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  margin: 40px 0 0;
+  margin: 0;
   padding: 0;
 }
-.steps li {
+.timeline li {
   counter-increment: step;
   position: relative;
-  padding: 0 28px 0 0;
+  padding: 0 0 26px 54px;
 }
-.steps li::before {
+.timeline li:last-child {
+  padding-bottom: 0;
+}
+.timeline li::before {
   content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -4px;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  margin-bottom: 18px;
-  border: 1.5px solid var(--accent);
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--tone);
   border-radius: 50%;
-  color: var(--accent);
-  font: 700 0.95rem var(--font-display);
   background: var(--bg);
-  position: relative;
+  color: var(--tone);
+  font: 700 0.95rem var(--font-display);
   z-index: 1;
 }
-.steps li::after {
+.timeline li::after {
   content: '';
   position: absolute;
-  top: 18px;
-  left: 36px;
-  right: 0;
-  height: 1.5px;
+  left: 16.5px;
+  top: 30px;
+  bottom: 0;
+  width: 1.5px;
   background: var(--border-strong);
 }
-.steps li:last-child::after {
+.timeline li:last-child::after {
   display: none;
 }
-.steps h3 {
+.timeline h3 {
+  font-size: 1.08rem;
+  margin-bottom: 4px;
+}
+.timeline p {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.also {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin: clamp(48px, 6vw, 72px) 0 0;
+  padding: 28px 0 0;
+  border-top: 1px solid var(--border);
+}
+.also li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.also-icon {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.also h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+.also p {
+  margin: 0;
+  font-size: 0.93rem;
+}
+
+/* A screenshot cut to the top left of the page's content, so its text can be read at tile
+   size: the app's header and sidebar are left out. The whole picture opens in the viewer. */
+.tile-shot {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.tile-shot img {
+  width: 165%;
+  max-width: none;
+  margin: -7.4% 0 0 -27.5%;
+}
+.tile-shot.whole img {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: contain;
+}
+
+/* Controls: a grid of tiles, then the steps to a new PC */
+
+.controls {
+  background: linear-gradient(to bottom, var(--surface) 0, var(--bg) 55%);
+}
+.tiles {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(20px, 3vw, 32px);
+  margin: 0;
+  padding: 0;
+}
+.tile h3 {
+  margin: 16px 0 6px;
   font-size: 1.08rem;
 }
-.steps p {
-  font-size: 0.98rem;
+.tile p {
   margin: 0;
+  font-size: 0.95rem;
 }
-/* The "In the manual" line after the four steps: as far below them as they are below the title. */
-.steps + .section-lead {
-  margin: 40px 0 0;
+.tiles-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-@media (max-width: 900px) {
-  .steps {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    row-gap: 36px;
-  }
-  .steps li:nth-child(2)::after {
-    display: none;
+@media (max-width: 1000px) {
+  .tiles,
+  .tiles-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 560px) {
-  .steps {
+  .tiles,
+  .tiles-4 {
     grid-template-columns: minmax(0, 1fr);
   }
-  .steps li::after {
-    display: none;
+}
+
+.newpc {
+  margin-top: clamp(48px, 6vw, 72px);
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.newpc h3 {
+  margin-bottom: 18px;
+}
+.strip {
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 0;
+}
+.strip li {
+  counter-increment: step;
+  position: relative;
+  padding: 14px 16px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+.strip li::before {
+  content: counter(step);
+  display: block;
+  margin-bottom: 6px;
+  color: var(--tone);
+  font: 700 0.85rem var(--font-display);
+}
+.strip strong {
+  color: var(--text);
+}
+.newpc > p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* See what the rig is doing: one wide picture, four tiles below */
+
+.band {
+  margin-bottom: clamp(32px, 4vw, 48px);
+}
+.band figcaption {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.98rem;
+}
+.band figcaption strong {
+  color: var(--text);
+}
+.troubleshoot .section-lead {
+  margin: clamp(28px, 4vw, 40px) 0 0;
+}
+
+@media (max-width: 900px) {
+  .ready-grid,
+  .also {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .strip {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .strip li {
+    padding: 10px 14px 10px 38px;
+  }
+  .strip li::before {
+    position: absolute;
+    left: 14px;
+    top: 11px;
+    margin: 0;
+  }
+}
+@media (max-width: 560px) {
+  .newpc,
+  .ai-card {
+    padding: 20px;
   }
 }
 
-/* Features ---------------------------------------------------------------------------------- */
+/* Optional AI help: two forms, side by side */
 
-.feature {
-  padding: calc(var(--section) * 0.5) 0;
-}
-.feature:first-child {
-  padding-top: calc(var(--section) * 0.75);
-}
-.feature:last-child {
-  padding-bottom: var(--section);
-}
-.feature-grid {
+.ai-grid {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
-  gap: clamp(28px, 5vw, 64px);
-  align-items: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(20px, 3vw, 32px);
 }
-.feature-copy p {
-  max-width: 40ch;
+.ai-card {
+  display: flex;
+  flex-direction: column;
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
 }
-.stack {
-  display: grid;
+.ai-card p {
+  font-size: 0.98rem;
 }
-.stack > .frame {
-  grid-area: 1 / 1;
+.ai-card .frame {
+  margin-top: auto;
 }
-.stack > .frame-inset {
-  width: 52%;
-  justify-self: end;
-  align-self: end;
-  margin: 0 -18px -36px 0;
-  border-color: var(--muted);
-  box-shadow: 0 24px 50px -10px rgb(0 0 0 / 0.85);
+.ai .section-lead {
+  margin: 28px 0 0;
 }
 @media (max-width: 900px) {
-  .feature-grid {
+  .ai-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .feature-copy p {
-    max-width: 64ch;
-  }
-  .stack > .frame-inset {
-    margin: 0 -6px -24px 0;
   }
 }
 

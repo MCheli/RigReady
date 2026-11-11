@@ -10,5 +10,12 @@
   "palette": "artifacts/screens/shell-palette/01-open.png",
   "rig-picture": "artifacts/screens/share-picture/rig-wide.png",
   "ai-explain": "artifacts/screens/ai-assist-suggest/06-explained.png",
-  "mcp-question": "artifacts/screens/mcp-settings/04-question.png"
+  "mcp-question": "artifacts/screens/mcp-settings/04-question.png",
+  "capture": "artifacts/screens/profile-capture/04-capture.png",
+  "bindings-cleanup": "artifacts/screens/bindings-problems/02-cleanup-preview.png",
+  "restore": "artifacts/screens/restore/02-preview.png",
+  "find-device": "artifacts/screens/devices-list/02-found.png",
+  "health-check": "artifacts/screens/devices-health/04-findings.png",
+  "usb-map": "artifacts/screens/usb-map/01-tree.png",
+  "iracing-repair": "artifacts/screens/racing-iracing-repair/02-moved.png"
 }

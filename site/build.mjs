@@ -223,9 +223,9 @@ const getActions = stable
 page({
   path: '/',
   page: 'home',
-  title: 'RigReady: your sim rig, ready before the game loads',
+  title: 'RigReady: get the sim rig ready, keep your controls, find what is wrong',
   description:
-    'RigReady is a free, open-source Windows app for flight and racing sim rigs. It checks controllers, helper apps, monitors, audio and game files, fixes what it can, and launches the game.',
+    'A free, open-source Windows app for flight and racing sim rigs: it gets the rig ready and launches the game, keeps your bindings backed up, and shows what each controller does.',
   main: fill(
     await read('site/pages/home.html'),
     { HERO_ACTIONS: heroActions, GET_NOTE: getNote, GET_ACTIONS: getActions, REPO_URL },

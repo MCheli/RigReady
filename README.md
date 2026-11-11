@@ -1,6 +1,10 @@
 # RigReady
 
-A Windows desktop app for flight and racing sim rigs. It checks that the rig is ready (devices plugged in, helper apps running, monitors arranged, audio and game files right), fixes what it can, and launches the game. It also manages bindings, backups and hardware troubleshooting.
+A Windows desktop app for flight and racing sim rigs. It does three jobs:
+
+- **Ready to launch.** Before a session it checks the rig (devices plugged in, helper apps running, monitors arranged, audio and game files right), fixes what it can, and launches the game.
+- **Controls, set up and saved.** It helps you set up and manage bindings, makes cheat sheets of every device, and backs up and restores bindings and settings, including onto a new PC.
+- **See what the rig is doing.** When something is off it shows every button and axis the way a game sees them, finds a device when you press a button on it, checks for stuck buttons and noisy axes, and maps the USB hubs.
 
 Website: [rigready.io](https://rigready.io) · License: MIT
 
@@ -16,10 +20,29 @@ Version 2.0.0 is a rebuild from the ground up. It is **pre-release**: nothing ha
 
 ## What it does
 
-- **Play.** One screen for the setup you used last: a readiness dial, the rig drawn with its monitors and devices, and a checklist with a fix beside every failing item. **Make ready and launch** runs every fix in order (starts apps, applies the monitor layout, restores files) and starts the game once everything required is met. **Launch** on its own is never blocked, only warned. **Stand down** closes the helper apps and puts the monitors back to the desk layout. The same actions are in the tray menu, on the taskbar button, behind a hotkey, and on a desktop shortcut per setup, so a session can start with one double-click.
-- **Setups.** One per aircraft or car, created by capturing the rig while it works, then edited. Back up and restore bindings and settings; share a setup as a file with personal details reviewed and removed.
-- **Controls.** See and edit DCS bindings, clean up the defaults DCS binds on every device, recover when Windows changes device IDs, copy common controls between aircraft. Cheat sheets with a picture of each device for DCS aircraft and for the racing games, printable and exportable as DCS kneeboard pages, with a trainer that names an action and has you press the control. A binding guide with a walkthrough, and optional AI help with your own Anthropic API key.
-- **Hardware.** Every device, found by pressing a button on it; an input tester with a live trace per axis; a health check for stuck buttons and noisy axes; a USB map drawn as a tree. Monitor layouts with identify and a timed revert. Default audio devices. Stream Deck, TrackIR and Fanatec wheel pages.
+### Ready to launch
+
+- **Play.** One screen for the setup you used last: a readiness dial, the rig drawn with its monitors and devices, and a checklist with a fix beside every failing item. **Make ready and launch** runs every fix in order (starts apps, applies the monitor layout, restores files) and starts the game once everything required is met. **Launch** on its own is never blocked, only warned. **Stand down** closes the helper apps and puts the monitors back to the desk layout.
+- **Without the window.** The same actions are in the tray menu, on the taskbar button, behind a hotkey, and on a desktop shortcut per setup, so a session can start with one double-click.
+- **Monitors and audio.** Monitor layouts with identify and a timed revert; default audio devices.
+
+### Controls, set up and saved
+
+- **Setups.** One per aircraft or car, created by capturing the rig while it works, then edited.
+- **Bindings.** See and edit DCS bindings, clean up the defaults DCS binds on every device, copy common controls between aircraft. A binding guide with a walkthrough for the F/A-18C and UH-1H.
+- **Cheat sheets.** A picture of each device with what every control does, for DCS aircraft and the racing games, printable and exportable as DCS kneeboard pages, with a trainer that names an action and has you press the control.
+- **Backups.** One-click backup and a restore that shows what will change; moving to a new PC; share a setup as a file with personal details reviewed and removed.
+
+### See what the rig is doing
+
+- **Devices.** Every device, found by pressing a button on it, with a name you choose. HidHide is noticed when it hides a device.
+- **Input tester and health check.** Buttons and axes the way a game sees them, with a live trace per axis; a ten-second check for stuck buttons, inputs that fire by themselves and noisy axes.
+- **USB map.** What hangs off which hub, drawn as a tree.
+- **New device IDs.** When Windows gives a controller a new ID, move the DCS bindings to it, or point iRacing's files at it.
+- **Stream Deck, TrackIR and Fanatec wheel** pages of their own.
+
+### Around all three
+
 - **Optional AI help.** Off until you turn it on. With your own Anthropic API key, the binding guide suggests a plan for your controllers, answers questions about the aircraft and explains each step of the walkthrough; every suggestion is checked and nothing is written until you tick it and review the change, and each request is shown before it is sent, only to Anthropic. Separately, an assistant you already use (Claude Desktop, Claude Code, Cursor and other MCP clients) can connect to RigReady to check the rig, read the manual and bindings, and propose changes, which RigReady asks you to allow in its own window by default. Nothing goes to RigReady's author, and every change gets the same backup and Undo. See [AI assistants](docs/manual/ai/index.md).
 - **Everywhere.** Ctrl+K finds every page and runs the common actions from wherever you are.
 
