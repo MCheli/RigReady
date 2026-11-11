@@ -3251,6 +3251,29 @@ requirements:
       - "artifacts/screens/ai-assist-suggest/06-explained.png"
       - "artifacts/screens/ai-assist-draft/02-drafted-guide.png"
 
+  - id: AI-007
+    title: Binding guides for every installed aircraft with a pilot's seat
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "A shipped guide, in the AI-005 format and depth (three tiers, plain names, what, when and where, a plan per device), for every aircraft input profile in the owner's DCS install with a seat worth guiding: F/A-18C, F-16C, A-10C II and A-10C, A-10A, F-14 pilot and RIO, F-15E pilot and WSO, F-15C, MiG-29 (three versions), Su-27 and J-11A, Su-33, Su-25T, Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. Each says it is not affiliated with or reviewed by Eagle Dynamics; the manual says none was reviewed by a pilot."
+      - "Variants whose controls DCS names the same share one file through `aircraft.also`; two shipped files may not claim the same profile."
+      - "Every action a guide names is checked by a test against that aircraft's real action list (each action's id and DCS's name, recorded from the install with the app's own Lua evaluation into fixtures/dcs-actions; the recording matches what the app reads from the recorded rig)."
+      - "The app shows the guide, the walkthrough and the plain names (bindings pages, cheat sheets) for these aircraft; an aircraft without one still offers the AI-drafted guide (AI-006)."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/pack.test.ts#ships a guide for every aircraft in the list, by its DCS input profile id"
+      - "src/features/ai-assist/core/pack.test.ts#the recorded action lists are what the app reads from the install"
+      - "src/features/ai-assist/core/pack.test.ts#refuses two shipped guides for the same aircraft"
+      - "src/features/ai-assist/core/service.test.ts#shows the shipped guide for an aircraft beyond the Hornet and the Huey, from its own input files"
+      - "tests/unit/actionLabels.test.ts#any feature reads the same labels through core, for the Hornet and the Huey; an unknown aircraft has none"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: an aircraft beyond the Hornet and the Huey has its own shipped guide, walkthrough and plain names"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: for an aircraft without a guide, AI drafts one in the guide format, marked as drafted"
+      - "artifacts/screens/ai-assist-viper/01-walkthrough.png"
+      - "artifacts/screens/ai-assist-viper/02-priorities.png"
+      - "artifacts/screens/ai-assist-draft/01-no-guide.png"
+
   # ---------------------------------------------------------------------------
   # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)
   # ---------------------------------------------------------------------------
