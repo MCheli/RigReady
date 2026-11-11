@@ -22,7 +22,20 @@ export function sha256(data: Uint8Array | string): string {
   return createHash('sha256').update(data).digest('hex');
 }
 
-type JournalLine = JournalEntry | { undo: string };
+/** A record that an action was made by an assistant, not the user in the app. */
+interface ActorLine {
+  group: string;
+  by: string;
+}
+
+type JournalLine = JournalEntry | { undo: string } | ActorLine;
+
+/** The journal entry a line is about: its own id, the undone entry, or the marked action. */
+function lineSubject(record: JournalLine): string {
+  if ('undo' in record) return record.undo;
+  if ('by' in record) return record.group;
+  return record.id;
+}
 
 /** One line of journal.jsonl: what it says, or only its text when it cannot be read. */
 export interface JournalFileLine {
@@ -49,7 +62,9 @@ export function parseJournal(text: string): JournalFileLine[] {
         : null;
       if (value && typeof value === 'object') {
         if (isText(value['undo'])) record = { undo: value['undo'] };
-        else if (
+        else if (isText(value['group']) && isText(value['by']) && !isText(value['id'])) {
+          record = { group: value['group'], by: value['by'] };
+        } else if (
           isText(value['id']) &&
           isText(value['path']) &&
           isText(value['time']) &&
@@ -389,6 +404,8 @@ export class BackupFileStore implements FileStore {
         if ('undo' in record) {
           const original = entries.get(record.undo);
           if (original) original.undone = true;
+        } else if ('by' in record) {
+          continue;
         } else {
           entries.set(record.id, record);
         }
@@ -402,6 +419,14 @@ export class BackupFileStore implements FileStore {
   async journalGroups(): Promise<Result<JournalGroup[]>> {
     const all = await this.journal();
     if (!all.ok) return all;
+    const actors = new Map<string, string>();
+    try {
+      for (const record of await this.lines()) {
+        if ('by' in record) actors.set(record.group, record.by);
+      }
+    } catch (e) {
+      return fromThrown('journal.read', 'Could not read the change journal.', e);
+    }
     const groups = new Map<string, JournalGroup>();
     // Oldest first, so a group's time and position are those of its first change.
     for (const entry of [...all.value].reverse()) {
@@ -414,6 +439,7 @@ export class BackupFileStore implements FileStore {
           reason: entry.groupReason ?? entry.reason,
           entries: [],
           undone: true,
+          ...(actors.has(id) ? { by: actors.get(id)! } : {}),
         };
         groups.set(id, group);
       }
@@ -421,6 +447,17 @@ export class BackupFileStore implements FileStore {
       if (!entry.undone) group.undone = false;
     }
     return ok([...groups.values()].reverse());
+  }
+
+  async markActor(groupIds: string[], by: string): Promise<Result<void>> {
+    const name = by.trim();
+    if (groupIds.length === 0 || name.length === 0) return ok(undefined);
+    try {
+      for (const group of groupIds) await this.appendJournal({ group, by: name });
+      return ok(undefined);
+    } catch (e) {
+      return fromThrown('journal.write', 'Could not write the change journal.', e);
+    }
   }
 
   async undo(entryId: string, options: UndoOptions = {}): Promise<Result<JournalEntry>> {
@@ -558,6 +595,7 @@ export class BackupFileStore implements FileStore {
       const gone = new Set<string>();
       let freedBytes = 0;
       for (const group of expired) {
+        gone.add(group.id);
         for (const entry of group.entries) {
           gone.add(entry.id);
           if (!entry.backupPath) continue;
@@ -570,7 +608,7 @@ export class BackupFileStore implements FileStore {
       }
       // Lines that could not be read are written back as they are: pruning never drops them.
       const kept = (await this.fileLines()).filter(
-        ({ record }) => !record || !gone.has('undo' in record ? record.undo : record.id)
+        ({ record }) => !record || !gone.has(lineSubject(record))
       );
       await this.raw.writeBytes(this.journalPath, kept.map((line) => line.raw + '\n').join(''));
       return ok({ removedGroups: expired.length, freedBytes });

@@ -601,6 +601,8 @@ export interface JournalGroup {
   entries: JournalEntry[];
   /** True when every entry has been undone. */
   undone: boolean;
+  /** Who made the action when it was not the user in the app: an assistant's pairing name. */
+  by?: string;
 }
 
 export interface UndoOptions {
@@ -659,6 +661,12 @@ export interface FileStore {
    * with `journal.changed` when the file was modified since, unless `force` is set.
    */
   undo(entryId: string, options?: UndoOptions): Promise<Result<JournalEntry>>;
+  /**
+   * Records in the journal that these actions were made by someone other than the user in
+   * the app (an assistant, by its pairing name). Nothing about the changes or their undo
+   * differs; the name is shown beside them.
+   */
+  markActor(groupIds: string[], by: string): Promise<Result<void>>;
   /** Undoes every change of a group, newest first. */
   undoGroup(groupId: string, options?: UndoOptions): Promise<Result<JournalGroup>>;
   /**

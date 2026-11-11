@@ -82,7 +82,7 @@ export async function dataFileStatus(ctx: DataHealthContext): Promise<DataFileSt
     } else {
       const lines = parseJournal(text.value);
       const damaged = lines.filter((line) => !line.record).length;
-      const entries = lines.filter((line) => line.record && !('undo' in line.record)).length;
+      const entries = lines.filter((line) => line.record && 'action' in line.record).length;
       journal =
         damaged === 0
           ? { ok: true, summary: count(entries, 'change') }

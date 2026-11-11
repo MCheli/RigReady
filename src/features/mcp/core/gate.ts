@@ -50,6 +50,8 @@ export interface GateDeps {
   invoke(channel: string, input: unknown): Promise<Envelope>;
   /** The ids of the journal's actions, newest first, for the before-and-after of a change. */
   journalGroupIds(): Promise<string[]>;
+  /** Names the assistant beside the actions a change left in the journal, for the Safety page. */
+  markActor(groupIds: string[], client: string): Promise<void>;
   noteCall(pairingId: string): Promise<void>;
 }
 
@@ -184,6 +186,7 @@ export class Gate {
       const groups = before
         ? (await this.deps.journalGroupIds()).filter((id) => !before.has(id))
         : [];
+      if (groups.length > 0) await this.deps.markActor(groups, caller.client);
       if (!result.ok) {
         const message = result.error.detail
           ? `${result.error.message} ${result.error.detail}`

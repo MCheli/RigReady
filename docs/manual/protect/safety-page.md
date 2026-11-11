@@ -12,6 +12,8 @@ This is the layer you do not have to think about. It covers restores, imports, s
 
 Each row is one user action, with the words the feature used for it, for example "Restore backup "2026-10-03 14-05 Everything"", "Import shared setup "Hornet night"", "Put back snapshot "Before rebinding" of DCS bindings", or "Set the MFD screens". It shows when it happened and how many files it touched; expand it to see each file marked **Created**, **Changed** or **Deleted** with its full path.
 
+An action an AI assistant made through RigReady's [assistant connection](../ai/safety.md) also names it, for example "by Claude Code". An action you made in RigReady names no one.
+
 An action that has been undone is marked "undone" and loses its button. The undo itself is listed too, as "Undo: ..." with the files it put back.
 
 The line above the list says how much space the automatic copies take, where they are (`backups\auto` under RigReady's data folder), and how long they are kept.
@@ -20,7 +22,7 @@ The line above the list says how much space the automatic copies take, where the
 
 ## How it works
 
-Before a file is written or removed, the file as it is now is copied into `backups\auto` under RigReady's data folder, and a line is appended to the journal (`journal.jsonl`) with the path, the reason, the copy, and a checksum of the file before and after. The journal line is written before the change, so a crash in between leaves a record and never a silent edit. Changes made under one action are grouped so they are undone together.
+Before a file is written or removed, the file as it is now is copied into `backups\auto` under RigReady's data folder, and a line is appended to the journal (`journal.jsonl`) with the path, the reason, the copy, and a checksum of the file before and after. The journal line is written before the change, so a crash in between leaves a record and never a silent edit. Changes made under one action are grouped so they are undone together. When an assistant caused the action, a further line names it; nothing else about the change or its undo differs.
 
 A file that is not UTF-8 text (a game file in a Windows code page) is never rewritten as text, because that would damage characters in it: RigReady refuses and leaves the file as it is.
 

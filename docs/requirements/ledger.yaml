@@ -3366,8 +3366,13 @@ requirements:
     priority: p3
     done_means:
       - "A change made through an assistant shows the pairing's name on the Safety page, from the journal itself, not only in the activity list of this run."
-    status: todo
-    evidence: []
+    status: done
+    evidence:
+      - "tests/unit/fileStoreGroups.test.ts#names the assistant on the actions it marks, keeps the others unnamed, and undo is unchanged"
+      - "tests/unit/fileStoreGroups.test.ts#pruning an action also drops its mark"
+      - "src/features/mcp/server/server.test.ts#MCP-007 the Safety page names the assistant beside its change, and undo works the same"
+      - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
+      - "artifacts/screens/mcp-settings/07-safety-by-assistant.png"
 
   # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE

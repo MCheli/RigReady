@@ -41,6 +41,10 @@ Your Anthropic API key and the AI binding help that uses it, the AI assistant se
 
 **What assistants did** on the Settings page lists every call of this run: who asked, what, and how it ended. A call that changed files says so, and the change is on the Safety page under the action it caused. RigReady also shows a short line at the bottom right after an assistant changed something or launched a game.
 
+On the Safety page, an action an assistant caused carries its name, for example "by Claude Code", or "by RigReady.exe --mcp" for an assistant started through the bridge. The name is kept in the change journal, so it is still there after RigReady restarts, when **What assistants did** has started over. **Undo** works the same as for a change you made yourself. A change you made in RigReady shows no name.
+
+![The Safety page names the assistant beside its change](../../../artifacts/screens/mcp-settings/07-safety-by-assistant.png)
+
 ## Who can connect
 
 The server listens only on this PC and is off until you turn it on. Every request needs a token: the one RigReady keeps in its data folder for `RigReady.exe --mcp`, or one you made with **Pair**. A web page in your browser cannot reach it. **Forget** a pairing, or **New token** for `RigReady.exe --mcp`, and the old token stops working at once.

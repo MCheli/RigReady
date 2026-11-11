@@ -117,6 +117,10 @@ export class McpService {
         const groups = await deps.ports.files.journalGroups();
         return groups.ok ? groups.value.map((g) => g.id) : [];
       },
+      markActor: async (groupIds, client) => {
+        const marked = await deps.ports.files.markActor(groupIds, client);
+        if (!marked.ok) deps.log.warn('could not name the assistant in the journal', marked.error);
+      },
       noteCall: (id) => this.pairings.noteCall(id),
     });
     this.stopActivity = this.activity.onRecord((entry) => deps.emit.activity(entry));

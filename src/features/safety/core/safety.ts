@@ -26,6 +26,7 @@ export async function readSafety(ctx: Ctx): Promise<Result<SafetyView>> {
       reason: group.reason,
       undone: group.undone,
       isUndo: group.entries.every((e) => e.undoOf !== undefined),
+      ...(group.by ? { by: group.by } : {}),
       changes: group.entries.map((e) => ({
         id: e.id,
         path: e.path,
