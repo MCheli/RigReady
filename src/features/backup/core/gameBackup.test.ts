@@ -124,12 +124,12 @@ describe('"Back up now" on the game-updated warning', () => {
       'Nothing to back up: no settings files of DCS World were found on this PC.'
     );
     const definition = app.wiring.context.checks.remediation('backup.gameFiles')!;
-    expect(await definition.available!({ game: 'falcon-bms' }, app.ctx)).toEqual({
+    expect(await definition.available!({ game: 'star-hauler' }, app.ctx)).toEqual({
       ok: false,
-      reason: 'This version of RigReady does not know "falcon-bms".',
+      reason: 'This version of RigReady does not know "star-hauler".',
     });
-    expect(definition.describe({ game: 'falcon-bms' })).toBe(
-      'Back up falcon-bms settings and bindings now'
+    expect(definition.describe({ game: 'star-hauler' })).toBe(
+      'Back up star-hauler settings and bindings now'
     );
   });
 

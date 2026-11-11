@@ -19,6 +19,8 @@ This section covers every game other than DCS World, which has [its own section]
 | [Assetto Corsa](assetto-corsa.md) | Detection, launch through Steam, files to back up, a page with the controllers, bindings and force feedback from `controls.ini`, quick backups. |
 | [Microsoft Flight Simulator 2024](msfs-2024.md) | Detection of the Steam and Microsoft Store editions, launch of the Steam edition, files to back up. |
 | [Assetto Corsa EVO and Assetto Corsa Rally](assetto-corsa-evo-and-rally.md) | Detection, launch through Steam, files to back up. |
+| [Microsoft Flight Simulator (2020), X-Plane 12 and 11, IL-2 Sturmovik: Great Battles, Falcon BMS](more-flight-and-racing-games.md#flight) | Detection (Steam, and the Store, standalone or registry install each game has), launch, files to back up. |
+| [Assetto Corsa Competizione, rFactor 2, Automobilista 2, EA SPORTS WRC, F1 25 and F1 24, DiRT Rally 2.0, RaceRoom](more-flight-and-racing-games.md#racing) | Detection in Steam (DiRT Rally 2.0 also from the Store), launch through Steam, files to back up. |
 | [Any other game](other-games.md) | A setup with a checklist, a launch target you give, and tracked files. |
 
 The four racing games with a bindings page also supply their bindings to the [cheat sheets](../dcs/cheat-sheets.md), the [trainer](../dcs/trainer.md) and the [input tester](../hardware/input-tester.md), so the picture of a wheel can show what every button does in iRacing or in BeamNG.drive.
@@ -29,7 +31,8 @@ RigReady looks in the places a game installs itself and never asks you unless it
 
 - **Steam.** Every Steam library on the PC is read (from Steam's own library list), and a game counts as installed when its manifest says so and, for most games, its program file is there. Steam games are started by asking Steam, with `steam.exe -applaunch`, so anti-cheat and sign-in work. When Steam has an update queued for a game, the page says "Steam has an update waiting" and the Racing overview marks it, because the game may not start until the update is done.
 - **Standalone installs.** iRacing is found through its entry in Windows' list of installed programs, or in `Program Files (x86)\iRacing`. DCS World standalone installs are found through their own registry entries ([Installs and aircraft](../dcs/installs.md)).
-- **Microsoft Store.** Flight Simulator 2024 from the Store is recognised by its package folder.
+- **Microsoft Store.** Flight Simulator 2024 and 2020 and DiRT Rally 2.0 from the Store are recognised by their package folders.
+- **The game's own records.** Standalone X-Plane installs are found through the install list X-Plane keeps in `%LOCALAPPDATA%`, and Falcon BMS through the registry key its installer writes ([More flight and racing games](more-flight-and-racing-games.md)).
 - **Choose folder.** When a game is not found, its page offers **Choose folder…**. You pick the game's folder; RigReady checks that the game's program is in it and refuses a folder without it. The choice is remembered and can be forgotten again with **Forget**.
 
 A game is "running" when one of its known programs is in the process list. For iRacing that is the UI or the simulator; for Assetto Corsa it includes Content Manager.

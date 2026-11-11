@@ -16,7 +16,8 @@
 #                           prove nothing is hardcoded. One Logitech joystick, a keyboard and a
 #                           mouse, one 1920x1080 monitor, onboard audio, no sim, no HidHide, no
 #                           Steam. Scenarios: generic-fresh.yaml, generic-custom-game.yaml (a game
-#                           without a module), generic-dcs.yaml (standalone DCS installed).
+#                           without a module), generic-dcs.yaml (standalone DCS installed),
+#                           generic-more-sims.yaml (the game modules added in November 2026).
 #                           It has ONE monitor and no DCS in a Steam library: entries that ask for
 #                           two monitors, a non-default Steam library or a redirected Saved Games
 #                           folder on generic-rig (NFR-009) are not covered by it yet.
@@ -3819,6 +3820,93 @@ requirements:
       - "src/features/games/core/games.test.ts#says iRacing is not installed, and accepts a folder the user chooses only when it holds iRacing"
       - "tests/e2e/racing.e2e.ts#racing: game pages show status at a glance, launch, and a folder chosen by hand"
       - "artifacts/screens/racing-game-pages/02-iracing.png"
+
+  - id: GAME-MORE-001
+    title: Find, launch and back up Microsoft Flight Simulator (2020)
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "The Steam edition (app 1250410) is found from its app manifest in any Steam library, with its build, and launched through steam.exe -applaunch 1250410; the Microsoft Store edition is recognised by its Microsoft.FlightSimulator_8wekyb3d8bbwe package folder and the page says RigReady cannot launch it."
+      - "%APPDATA%\\Microsoft Flight Simulator (UserCfg.opt, FlightSimulator.CFG), the Store package's LocalCache and the Steam Cloud folder userdata\\<account>\\1250410\\remote are listed and offered for backup; the page says the controller profiles are backed up as files and their bindings are not listed."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#Microsoft Flight Simulator (2020): Steam settings, Steam Cloud profiles, and the Store edition"
+      - "src/features/games/core/moreGames.test.ts#launches each Steam game through Steam with its own app id"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/01-games.png"
+
+  - id: GAME-MORE-002
+    title: Find, launch and back up X-Plane 12 and X-Plane 11
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "Each version is found in Steam (12: app 2014780, 11: app 269950; X-Plane.exe must be in the folder) and as a standalone install from every folder listed in %LOCALAPPDATA%\\x-plane_install_<version>.txt that still holds X-Plane.exe. Steam installs launch through Steam, standalone ones by starting X-Plane.exe."
+      - "Output\\preferences of each install is listed; the *.prf files and the control profiles folder are offered for backup."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#X-Plane: preferences and control profiles in Steam, and a standalone install from its install list"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/01-games.png"
+
+  - id: GAME-MORE-003
+    title: Find, launch and back up IL-2 Sturmovik Great Battles
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "The game is found in Steam (app 307960) when bin\\game\\Il-2.exe is in its folder, and launched through Steam; a folder chosen by hand must hold bin\\game\\Il-2.exe."
+      - "data\\input is listed; the folder, current.actions, current.map, current.responses, current.devices, devices.txt, curves.cfg, data\\startup.cfg and storeddevices.txt are offered for backup when present."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#IL-2 Great Battles: the bindings in the data input folder and the options file"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/01-games.png"
+
+  - id: GAME-MORE-004
+    title: Find, launch and back up Falcon BMS
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "Every HKLM\\SOFTWARE\\WOW6432Node\\Benchmark Sims\\Falcon BMS <version> key whose baseDir holds Bin\\x64\\Falcon BMS.exe is an install, newest version first, with that version; Launch starts <baseDir>\\Launcher.exe."
+      - "User\\Config is listed and offered for backup (settings, keyfiles, axis setup, controller order; the launcher's Backup folder left out), with its main files one by one. When Falcon 4.0 (Steam app 429530) is in the Steam library the page says so."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#Falcon BMS: found through its registry key, started through its launcher, its config folder backed up"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/02-falcon-bms.png"
+
+  - id: GAME-MORE-005
+    title: Find, launch and back up Assetto Corsa Competizione, rFactor 2 and Automobilista 2
+    job: configure
+    area: games
+    priority: p2
+    done_means:
+      - "Each is found in Steam (805550, 365960, 1066890) and launched through Steam; the page counts it running by its own program (AC2-Win64-Shipping.exe, rFactor2.exe, AMS2AVX.exe)."
+      - "ACC: Documents\\Assetto Corsa Competizione\\Config with controls.json and menuSettings.json, Customs\\Controls and Setups are offered. rFactor 2: UserData (player files, Controller.JSON, player.JSON, Config.ini, controller profiles, car setups; logs and replays left out). AMS2: Documents\\Automobilista 2 and each default.controllersettings file."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#Assetto Corsa Competizione, rFactor 2 and Automobilista 2: settings and bindings files"
+      - "src/features/games/core/moreGames.test.ts#a game counts as running by its own program, and a folder chosen by hand must hold that program"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/03-acc.png"
+
+  - id: GAME-MORE-006
+    title: Find, launch and back up EA SPORTS WRC, F1 25 and F1 24, DiRT Rally 2.0 and RaceRoom
+    job: configure
+    area: games
+    priority: p3
+    done_means:
+      - "Each is found in Steam (1849250, 3059520, 2488620, 690790, 211500) and launched through Steam; DiRT Rally 2.0 from the Microsoft Store is recognised by its package folder."
+      - "EA SPORTS WRC: the INI files in %LOCALAPPDATA%\\WRC\\Saved\\Config\\WindowsNoEditor and the telemetry config.json; F1: Documents\\My Games\\F1 <yy>\\hardwaresettings; DiRT Rally 2.0: its hardwaresettings and the binding maps in the game's input\\actionmaps; RaceRoom: its UserData folder. Where RigReady does not know where a game keeps its bindings, the page says so."
+    status: done
+    evidence:
+      - "src/features/games/core/moreGames.test.ts#EA SPORTS WRC, F1 25, DiRT Rally 2.0 and RaceRoom: settings files, with what is not backed up said plainly"
+      - "src/features/games/core/moreGames.test.ts#lists every new game, found where the fixture put it, and F1 24 as not found"
+      - "tests/e2e/games-more-sims.e2e.ts#games: the flight and racing sims added in November 2026 are found on a fixture rig"
+      - "artifacts/screens/games-more-sims/01-games.png"
       - "artifacts/screens/racing-game-pages/03-not-found.png"
       - "artifacts/screens/racing-game-pages/04-folder-chosen.png"
       - "tests/unit/genericRig.test.ts#every Configure page gets an answer it can draw as an empty state, never an error"
