@@ -128,7 +128,7 @@ describe('ASSIST-001 one gate for the built-in assistant and the MCP server', ()
   });
 });
 
-describe('ASSIST-002 a conversation with tool use, every request shown first', () => {
+describe('ASSIST-003 a conversation with tool use, every request shown first', () => {
   it('finds the programs, proposes a setup, and the user saves it', async () => {
     const running = await started();
     reply(
@@ -234,7 +234,7 @@ describe('ASSIST-002 a conversation with tool use, every request shown first', (
   });
 });
 
-describe('ASSIST-003 a script an assistant wrote: shown, saved with its hash, asked again when changed', () => {
+describe('ASSIST-004 a script an assistant wrote: shown, saved with its hash, asked again when changed', () => {
   it('is saved into the data folder with a header, approved by hash, refused when changed and for an assistant', async () => {
     const running = await started();
     const fly = await running.invoke<{ profiles: { id: string; name: string }[] }>('fly:state');

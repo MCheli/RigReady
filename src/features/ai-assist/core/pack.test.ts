@@ -1,9 +1,50 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { BindingReader } from '../../../core/bindings';
+import type { BindingReader, BoundAction } from '../../../core/bindings';
+import { actionLists } from '../../../../tests/dcsActionLists';
 import { BINDING_FILES } from '../../../../tests/dcsBindings';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
-import { itemStatus, matchActions, parsePack, resolvePack, type PackItem } from './pack';
+import {
+  itemStatus,
+  matchActions,
+  parsePack,
+  resolvePack,
+  shippedPacks,
+  type Pack,
+  type PackItem,
+} from './pack';
 import { shipped, shippedPack } from './shipped';
+
+/**
+ * The DCS input profiles with a shipped guide, in lower case: every installed aircraft with
+ * a pilot's seat worth guiding (docs/manual/dcs/binding-guide-and-ai.md lists them).
+ */
+const SHIPPED = [
+  'fa-18c_hornet',
+  'uh-1h',
+  'f-16c_50',
+  'a-10c ii',
+  'a-10c',
+  'a-10a',
+  'f-14',
+  'f-14_rio',
+  'f-15e',
+  'f-15e_wso',
+  'f-15c',
+  'mig-29',
+  'mig-29c',
+  'mig-29g',
+  'su-27',
+  'j-11a',
+  'su-33',
+  'su-25t',
+  'su-25',
+  'ka-50',
+  'ka-50 iii',
+  'p-51d',
+  'tf-51d',
+  'f-86f sabre',
+  'christen eagle ii',
+];
 
 let app: WiredApp;
 let reader: BindingReader;
@@ -31,31 +72,38 @@ items:
 `;
 
 describe('binding guides (knowledge packs)', () => {
-  it('ships a guide for the F/A-18C and the UH-1H', () => {
-    expect([...shipped().keys()].sort()).toEqual(['fa-18c_hornet', 'uh-1h']);
+  it('ships a guide for every aircraft in the list, by its DCS input profile id', () => {
+    expect([...shipped().keys()].sort()).toEqual([...SHIPPED].sort());
     expect(shippedPack('FA-18C_hornet')?.aircraft.name).toBe('F/A-18C Hornet');
     expect(shippedPack('uh-1h')?.aircraft.name).toBe('UH-1H Huey');
-    expect(shippedPack('F-16C_50')).toBeUndefined();
+    expect(shippedPack('F-16C_50')?.aircraft.name).toBe('F-16C Viper');
+    // A variant listed under `also` gets the same guide.
+    expect(shippedPack('Ka-50 III')).toBe(shippedPack('Ka-50'));
+    // Gunner seats and aircraft that are not installed have none.
+    expect(shippedPack('UH-1H_Gunner')).toBeUndefined();
+    expect(shippedPack('AH-64D_BLK_II')).toBeUndefined();
   });
 
-  async function namesExist(id: string): Promise<void> {
-    const pack = shippedPack(id)!;
-    const actions = await reader.actions!(id);
-    if (!actions.ok) throw new Error(actions.error.message);
+  function missingNames(pack: Pack, actions: BoundAction[]): string[] {
     const missing: string[] = [];
     for (const item of pack.items) {
       for (const spec of item.actions) {
         const one: PackItem = { ...item, actions: [spec] };
-        if (matchActions(one, actions.value).length === 0) {
+        if (matchActions(one, actions).length === 0) {
           missing.push(`${item.id}: ${'name' in spec ? spec.name : spec.re}`);
         }
       }
     }
-    expect(missing).toEqual([]);
+    return missing;
   }
 
-  function complete(id: string): void {
-    const pack = shippedPack(id)!;
+  async function namesExist(id: string): Promise<void> {
+    const actions = await reader.actions!(id);
+    if (!actions.ok) throw new Error(actions.error.message);
+    expect(missingNames(shippedPack(id)!, actions.value)).toEqual([]);
+  }
+
+  function complete(pack: Pack): void {
     const tiers = new Set(pack.items.map((i) => i.tier));
     expect([...tiers].sort()).toEqual(['must', 'nice', 'should']);
     expect(Object.keys(pack.roles)).toEqual(
@@ -68,15 +116,55 @@ describe('binding guides (knowledge packs)', () => {
     // Every item is somewhere in the per-device plan.
     const planned = new Set(Object.values(pack.roles).flatMap((r) => r?.items ?? []));
     expect(pack.items.filter((i) => !planned.has(i.id)).map((i) => i.id)).toEqual([]);
+    // Each says where its knowledge comes from and that nobody from the aircraft checked it.
+    expect(pack.sources.join(' ')).toContain('Not affiliated with or reviewed by Eagle Dynamics');
   }
 
   it("every action the FA-18C_hornet guide names exists in DCS's default input files", () =>
     namesExist('FA-18C_hornet'));
   it("every action the UH-1H guide names exists in DCS's default input files", () =>
     namesExist('UH-1H'));
-  it('both guides have every tier, a plan for the main devices, and explain each item', () => {
-    complete('FA-18C_hornet');
-    complete('UH-1H');
+
+  it('the recorded action lists are what the app reads from the install', async () => {
+    for (const id of ['FA-18C_hornet', 'UH-1H']) {
+      const actions = await reader.actions!(id);
+      if (!actions.ok) throw new Error(actions.error.message);
+      const recorded = actionLists().get(id.toLowerCase())!;
+      expect(recorded.actions.map((a) => [a.name, a.kind])).toEqual(
+        actions.value.map((a) => [a.name, a.kind])
+      );
+      // The same ids too, except the few whose engine number lives in a cockpit script the
+      // recorded rig does not have (the Huey's search light): there the rig keeps the name.
+      const ids = new Set(actions.value.map((a) => a.id));
+      const differ = recorded.actions.filter((a) => !ids.has(a.id)).map((a) => a.name);
+      expect(differ.length).toBeLessThanOrEqual(3);
+    }
+  });
+
+  const packs = [...new Set(shipped().values())];
+  it.each(packs.map((p) => [p.aircraft.id, p] as const))(
+    "every action the %s guide names exists in DCS's input files for each profile it is for",
+    (_id, pack) => {
+      for (const id of [pack.aircraft.id, ...(pack.aircraft.also ?? [])]) {
+        const list = actionLists().get(id.toLowerCase());
+        expect(list, `no recorded action list for ${id}`).toBeDefined();
+        expect(missingNames(pack, list!.actions), id).toEqual([]);
+      }
+    }
+  );
+
+  it.each(packs.map((p) => [p.aircraft.id, p] as const))(
+    'the %s guide has every tier, a plan for the main devices, and explains each item',
+    (_id, pack) => complete(pack)
+  );
+
+  it('refuses two shipped guides for the same aircraft', () => {
+    const two = MINIMAL.replace(
+      'aircraft: { id: Test-1, name: Test }',
+      'aircraft: { id: Test-2, name: Test, also: [test-1] }'
+    );
+    expect(() => shippedPacks({ 'a.yaml': MINIMAL, 'b.yaml': two })).toThrow(/already for test-1/);
+    expect([...shippedPacks({ 'b.yaml': two }).keys()]).toEqual(['test-2', 'test-1']);
   });
 
   it('shows what each item does and what it is bound to now, from the effective bindings', async () => {

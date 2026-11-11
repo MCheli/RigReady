@@ -30,7 +30,7 @@ async function find(names: string[]) {
   return found.value;
 }
 
-describe('ASSIST-004 finding where helper programs are installed', () => {
+describe('ASSIST-002 finding where helper programs are installed', () => {
   it('finds SimAppPro, TrackIR and Stream Deck with path variables applied, and says what it did not find', async () => {
     rig = await scenarioRig('flying-all-good');
     const found = await find(['SimAppPro', 'TrackIR', 'Stream Deck', 'Nothing Like This']);

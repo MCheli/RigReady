@@ -610,16 +610,25 @@ function listControl(
   };
 }
 
+/** A physical control of a device RigReady can name but has no drawing of (`../known`). */
+export interface NamedControl {
+  id: string;
+  name: string;
+  inputs: { id: string; tag?: string }[];
+}
+
 /**
  * The labels of a device RigReady has no drawing of: no picture to point into, so one
- * block per group of controls (the axes, each hat, buttons in runs of eight), packed into
- * two columns. Every input that does something is on it; with `showEmpty`, the free ones
- * too, and a run of buttons with nothing on any of them is one line.
+ * block per group of controls, packed into two columns. For a device whose controls are
+ * known (`named`), a block per physical control ("H2 TMS hat · 7–10"); for the rest, and
+ * any input the names leave out, the axes, each hat, and buttons in runs of eight. Every
+ * input that does something is on it; with `showEmpty`, the free ones too, and a run of
+ * buttons with nothing on any of them is one line.
  */
 export function planList(
   controls: SheetControl[],
   reports: ReportedShape | undefined,
-  options: PlanOptions = {}
+  options: PlanOptions & { named?: NamedControl[] } = {}
 ): CalloutPlan {
   const showEmpty = options.showEmpty ?? false;
   const scale = options.fontScale ?? 1;
@@ -638,24 +647,31 @@ export function planList(
   }
 
   const groups: PhysicalControl[] = [];
-  const axisIds = [...axes].sort(compareControlIds);
+  const named = new Set<string>();
+  for (const control of options.named ?? []) {
+    const made = listControl(`named-${control.id}`, control.name, control.inputs);
+    const numbers = numbersOf(made);
+    if (numbers) made.name = `${control.name} · ${numbers}`;
+    groups.push(made);
+    for (const input of control.inputs) named.add(input.id);
+  }
+  const axisIds = [...axes].filter((id) => !named.has(id)).sort(compareControlIds);
   if (axisIds.length > 0) {
     groups.push(
       listControl(
         'axes',
-        'Axes',
+        named.size > 0 ? 'Other axes' : 'Axes',
         axisIds.map((id) => ({ id, tag: controlShort(id) }))
       )
     );
   }
   for (let hat = 1; hat <= hats; hat++) {
-    groups.push(
-      listControl(
-        `hat-${hat}`,
-        `Hat ${hat}`,
-        HAT_DIRECTIONS.map((d) => ({ id: `hat:${hat}:${d}`, tag: HAT_ARROWS[d] }))
-      )
+    const ids = HAT_DIRECTIONS.map((d) => ({ id: `hat:${hat}:${d}`, tag: HAT_ARROWS[d] })).filter(
+      (input) => !named.has(input.id)
     );
+    // A known hat that names only four directions still shows a diagonal that is bound.
+    const shown = ids.length === HAT_DIRECTIONS.length ? ids : ids.filter((i) => used(i.id));
+    if (shown.length > 0) groups.push(listControl(`hat-${hat}`, `Hat ${hat}`, shown));
   }
   const idle: number[] = [];
   const flushIdle = (): void => {
@@ -668,17 +684,21 @@ export function planList(
   };
   for (let first = 1; first <= buttons; first += LIST_RUN) {
     const ids: number[] = [];
-    for (let n = first; n < first + LIST_RUN && n <= buttons; n++) ids.push(n);
+    for (let n = first; n < first + LIST_RUN && n <= buttons; n++) {
+      if (!named.has(`button:${n}`)) ids.push(n);
+    }
+    if (ids.length === 0) continue;
     if (!ids.some((n) => used(`button:${n}`))) {
       idle.push(...ids);
       continue;
     }
     flushIdle();
+    const start = ids[0]!;
     const last = ids[ids.length - 1]!;
     groups.push(
       listControl(
-        `buttons-${first}`,
-        first === last ? `Button ${first}` : `Buttons ${first}–${last}`,
+        `buttons-${start}`,
+        start === last ? `Button ${start}` : `Buttons ${start}–${last}`,
         ids.map((n) => ({ id: `button:${n}`, tag: String(n) }))
       )
     );
