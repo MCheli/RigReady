@@ -372,6 +372,10 @@ class DirectInput:
         )
         if hr != 0:
             raise OSError("EnumDevices failed with 0x%08X" % hr)
+        # The order DirectInput gave is what games that bind by position use (Assetto Corsa's
+        # controls.ini JOY=n); the list itself is sorted by name for a stable display.
+        for position, entry in enumerate(found):
+            entry["enumerationIndex"] = position
         found.sort(key=lambda d: (d["name"].lower(), d["guid"]))
         return found
 
@@ -432,6 +436,7 @@ class DirectInput:
         product = entry["productGuid"]
         info = {
             "index": index,
+            "enumerationIndex": entry["enumerationIndex"],
             "name": entry["name"],
             "guid": entry["guid"],
             "productGuid": product,
