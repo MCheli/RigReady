@@ -57,7 +57,8 @@ function Install-VigemClient {
         if ($actual -ne $vgamepadSha256) { throw "The vgamepad download does not match its expected SHA-256 (got $actual)" }
         $inside = "vgamepad-$vgamepadVersion/vgamepad/win/vigem/client/x64/ViGEmClient.dll"
         $license = "vgamepad-$vgamepadVersion/LICENSE"
-        & tar.exe -xzf $archive -C $work $inside $license
+        # Windows' own tar by its full path: under Git Bash, a bare tar is GNU tar, which reads C:\ as a remote host.
+        & (Join-Path $env:SystemRoot "System32\tar.exe") -xzf $archive -C $work $inside $license
         if ($LASTEXITCODE -ne 0) { throw "ViGEmClient.dll could not be taken out of the archive" }
         $dll = Join-Path $work $inside
         $actual = Get-Sha256 $dll
