@@ -50,3 +50,24 @@ export function siteLink(
   repoUrl: string
 ): (href: string) => string;
 export function tidiedName(repoFile: string, ext?: string): string;
+
+export interface Heading {
+  text: string;
+  id: string;
+}
+
+export interface SearchEntry {
+  title: string;
+  section: string;
+  description: string;
+  url: string;
+  headings: [string, string][];
+}
+
+export function pageHeadings(body: string): Heading[];
+export function searchIndex(manual: Manual, rootTitle?: string): SearchEntry[];
+export function sidebarTree(
+  manual: Manual,
+  currentFile: string | null,
+  rootTitle?: string
+): string;
