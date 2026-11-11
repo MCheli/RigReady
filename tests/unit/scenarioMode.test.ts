@@ -119,6 +119,9 @@ async function mutationsNamedInLedger(): Promise<string[]> {
   return [...names].sort();
 }
 
+/** Read once when the file is collected, so each mutation can be a test of its own. */
+const NAMED = await mutationsNamedInLedger();
+
 describe('PLAT-013 fixtures and scenario files', () => {
   it('the recorded rig and the generic rig load, and the scenarios the ledger calls mark-flight, mark-racing and generic-rig exist', async () => {
     const owner = await loadRig(path.join(fixturesDir, 'rigs', 'mark-full'));
@@ -173,12 +176,18 @@ describe('PLAT-013 fixtures and scenario files', () => {
     expect(problems).toEqual([]);
   }, 300_000);
 
-  it('every mutation the ledger names is a scenario file, and that scenario has the effect', async () => {
-    const named = await mutationsNamedInLedger();
-    // The ledger names at least these; the list is read from it, not written here.
-    expect(named).toEqual(expect.arrayContaining(['pedals-unplugged', 'mfd2-rotated']));
-    expect(named.filter((name) => !(name in LEDGER_MUTATIONS))).toEqual([]);
-    for (const name of named) {
+  it('the ledger names known mutations, and every one has a scenario that shows it', () => {
+    // The list is read from the ledger, not written here; each is checked on its own below.
+    expect(NAMED).toEqual(expect.arrayContaining(['pedals-unplugged', 'mfd2-rotated']));
+    expect(NAMED.filter((name) => !(name in LEDGER_MUTATIONS))).toEqual([]);
+  });
+
+  // One test per mutation: each loads a full recorded rig, so each gets its own time limit
+  // (one loop over all of them outgrew a single limit on a slow CI runner), and a failure
+  // names the mutation.
+  it.each(NAMED.filter((name) => name in LEDGER_MUTATIONS))(
+    'mutation %s from the ledger is a scenario file, and that scenario has the effect',
+    async (name) => {
       const { scenario, holds } = LEDGER_MUTATIONS[name]!;
       await expect(fs.access(scenarioFile(scenario)), `${name} -> ${scenario}`).resolves.toBe(
         undefined
@@ -186,7 +195,7 @@ describe('PLAT-013 fixtures and scenario files', () => {
       const rig = keep(await scenarioRig(scenario));
       expect(await holds(rig), `${name} -> ${scenario}`).toBe(true);
     }
-  }, 120_000);
+  );
 });
 
 describe('PLAT-013 mutations while the app runs', () => {
