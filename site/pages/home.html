@@ -1,13 +1,52 @@
 <section class="hero" aria-labelledby="hero-title">
   <div class="wrap">
-    <div class="hero-copy">
-      <h1 id="hero-title">Get the rig ready, keep your controls, find what is wrong.</h1>
-      <p class="lead">
-        RigReady is a free Windows app for flight and racing sim rigs. It checks the rig before you
-        launch and fixes what it can, helps you set up, save and bring back your bindings, and shows
-        what every controller is doing when something is off.
-      </p>
-      <div class="actions">{{HERO_ACTIONS}}</div>
+    <div class="hero-top">
+      <div class="hero-copy">
+        <h1 id="hero-title">Get the rig ready, keep your controls, find what is wrong.</h1>
+        <p class="lead">
+          RigReady is a free Windows app for flight and racing sim rigs. It checks the rig before
+          you launch and fixes what it can, helps you set up, save and bring back your bindings, and
+          shows what every controller is doing when something is off.
+        </p>
+        <div class="actions">{{HERO_ACTIONS}}</div>
+      </div>
+
+      <div class="stage" aria-label="Screenshots of RigReady">
+        <figure class="stage-shot stage-back-left">
+          <button type="button" class="shot" data-lightbox>
+            <img
+              src="/img/screens/cheat-sheets.webp"
+              width="1250"
+              height="821"
+              alt="A cheat sheet for a WinWing joystick in the F/A-18C, with a label beside every button"
+            />
+          </button>
+          <figcaption class="chip chip-controls">Cheat sheet</figcaption>
+        </figure>
+        <figure class="stage-shot stage-back-right">
+          <button type="button" class="shot" data-lightbox>
+            <img
+              src="/img/screens/input-tester.webp"
+              width="1250"
+              height="821"
+              alt="The input tester following a joystick: a plot of two axes together and a trace per axis"
+            />
+          </button>
+          <figcaption class="chip chip-troubleshoot">Input tester</figcaption>
+        </figure>
+        <figure class="stage-shot stage-front">
+          <button type="button" class="shot" data-lightbox>
+            <img
+              src="/img/screens/play-not-ready.webp"
+              width="1250"
+              height="821"
+              fetchpriority="high"
+              alt="The Play screen for a DCS F/A-18C setup: not ready, with four problems and a fix beside each"
+            />
+          </button>
+          <figcaption class="chip chip-ready">The Play screen</figcaption>
+        </figure>
+      </div>
     </div>
 
     <ul class="pillars" id="features" aria-label="What RigReady does">
@@ -533,10 +572,10 @@
         <a href="/docs/protect/safety-page/">Safety page</a>, where it can be undone.
       </li>
       <li>
-        RigReady itself sends only two things off your PC: the update check to GitHub, and AI requests
-        you send yourself with your own Anthropic key. An assistant you connect over MCP reads only
-        what you allow, and sends it wherever that assistant runs. There is no account, no telemetry
-        and no crash reporting.
+        RigReady itself sends only two things off your PC: the update check to GitHub, and AI
+        requests you send yourself with your own Anthropic key. An assistant you connect over MCP
+        reads only what you allow, and sends it wherever that assistant runs. There is no account,
+        no telemetry and no crash reporting.
       </li>
       <li>
         A shared setup never carries scripts or launch commands. An imported file is checked for
