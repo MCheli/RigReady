@@ -91,7 +91,7 @@ RigReady reads your hardware and changes game files, so it should say exactly wh
 
 - It installs for your Windows user only and never asks for administrator rights: not to install, not to run, not for a fix or an update.
 - Every change to a file outside RigReady's own data folder is backed up first, with a visible description of the change. Each one is listed on the Safety page, where it can be undone.
-- Only two things leave your PC: the update check to GitHub, and AI requests you send yourself with your own Anthropic key. There is no account, no telemetry and no crash reporting.
+- RigReady itself sends only two things off your PC: the update check to GitHub, and AI requests you send yourself with your own Anthropic key. An assistant you connect over MCP (off by default) reads only what you allow, and sends it wherever that assistant runs. There is no account, no telemetry and no crash reporting.
 - A shared setup never carries scripts or launch commands, nothing from a setup is ever placed into a command line, and an imported file cannot write outside the game and document folders.
 - Updates come only from the project's GitHub releases and are checked against their published checksum before they install.
 - A monitor layout you apply goes back by itself unless you keep it.
