@@ -74,6 +74,29 @@ test('mcp: turned on in Settings, an assistant paired, its change asked in the w
     const third = await client.callTool({ name: 'rig_make_ready', arguments: { setup } });
     expect(third.isError).toBeFalsy();
     await expect(question).toBeHidden();
+
+    // A file change the assistant makes is on the Safety page under its name, and undoes the same.
+    const created = await client.callTool({
+      name: 'setup_create_from_rig',
+      arguments: { name: 'Made by an assistant' },
+    });
+    expect(created.isError).toBeFalsy();
+    const made = (created.structuredContent as { id: string }).id;
+    const removed = await client.callTool({
+      name: 'rigready_call',
+      arguments: { channel: 'profiles:remove', input: { id: made } },
+    });
+    expect(removed.isError).toBeFalsy();
+    await page.getByTestId('nav-safety').click();
+    const change = page.getByTestId('change-group').first();
+    await expect(change).toContainText('Made by an assistant');
+    await expect(change.getByTestId('change-by')).toContainText('by Claude Code');
+    await shot('safety-by-assistant');
+    await change.getByTestId('change-undo').click();
+    await expect(change.getByTestId('change-undone')).toBeVisible();
+    await expect(change.getByTestId('change-by')).toContainText('by Claude Code');
+    await page.getByTestId('nav-settings').click();
+    await page.getByTestId('mcp-settings').scrollIntoViewIfNeeded();
   } finally {
     await client.close();
   }

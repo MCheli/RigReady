@@ -120,6 +120,7 @@ const fileCount = (n: number): string => `${n} ${n === 1 ? 'file' : 'files'}`;
               <div class="rr-row-title">{{ group.reason }}</div>
               <div class="rr-row-sub">
                 {{ when(group.time) }} · {{ fileCount(group.changes.length) }}
+                <span v-if="group.by" data-testid="change-by"> · by {{ group.by }}</span>
                 <span v-if="group.undone" data-testid="change-undone"> · undone</span>
               </div>
             </div>

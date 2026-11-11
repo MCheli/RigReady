@@ -135,6 +135,37 @@ describe('MCP-002 the server answers the official MCP client over HTTP on 127.0.
     expect(makeReady.every((e) => e.client === 'Test assistant')).toBe(true);
   });
 
+  it('MCP-007 the Safety page names the assistant beside its change, and undo works the same', async () => {
+    const { app: running, url, token } = await started();
+    await running.invoke('mcp:setOptions', { confirm: 'never' });
+    const client = await connect(url, token);
+    const created = await client.callTool({
+      name: 'setup_create_from_rig',
+      arguments: { name: 'Made by an assistant' },
+    });
+    expect(created.isError, text(created)).toBeFalsy();
+    const id = (created.structuredContent as { id: string }).id;
+    const removed = await client.callTool({
+      name: 'rigready_call',
+      arguments: { channel: 'profiles:remove', input: { id } },
+    });
+    expect(removed.isError, text(removed)).toBeFalsy();
+
+    type View = { groups: { id: string; by?: string; undone: boolean }[] };
+    const view = await running.invoke<View>('safety:journal');
+    const change = view.groups[0]!;
+    expect(change.by).toBe('Test assistant');
+
+    // Undoing the assistant's change is the same undo as any other.
+    const after = await running.invoke<View>('safety:undo', { groupId: change.id });
+    expect(after.groups.find((g) => g.id === change.id)).toMatchObject({
+      undone: true,
+      by: 'Test assistant',
+    });
+    const setups = await running.invoke<{ id: string }[]>('profiles:list');
+    expect(setups.map((s) => s.id)).toContain(id);
+  });
+
   it('refuses a channel that is not offered, even through rigready_call', async () => {
     const { url, token } = await started();
     const client = await connect(url, token);

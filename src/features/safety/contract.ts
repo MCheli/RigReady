@@ -18,6 +18,8 @@ export const ChangeGroupSchema = z.object({
   undone: z.boolean(),
   /** True for an entry that is itself the undoing of an earlier one. */
   isUndo: z.boolean(),
+  /** The assistant that made it, by its pairing name. Absent for a change made in the app. */
+  by: z.string().optional(),
 });
 export type ChangeGroupView = z.infer<typeof ChangeGroupSchema>;
 

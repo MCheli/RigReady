@@ -319,3 +319,55 @@ describe('BackupFileStore: retention', () => {
     expect(left.ok && left.value.map((g) => g.reason)).toEqual(['Undo: change 4']);
   });
 });
+
+describe('BackupFileStore: who made an action (MCP-007)', () => {
+  it('names the assistant on the actions it marks, keeps the others unnamed, and undo is unchanged', async () => {
+    const file = path.join(outside, 'options.lua');
+    const mine = path.join(outside, 'mine.lua');
+    expect((await store.write(file, 'before', { reason: 'Seed' })).ok).toBe(true);
+    const group = store.beginGroup('Assistant change');
+    expect((await store.write(file, 'after', { reason: 'Assistant change', group })).ok).toBe(true);
+    expect((await store.write(mine, 'mine', { reason: 'My change' })).ok).toBe(true);
+    expect((await store.markActor([group.id], 'Claude Code')).ok).toBe(true);
+    // Nothing to mark, or no name: nothing written.
+    expect((await store.markActor([], 'Claude Code')).ok).toBe(true);
+    expect((await store.markActor([group.id], '  ')).ok).toBe(true);
+
+    const groups = await store.journalGroups();
+    expect(groups.ok).toBe(true);
+    if (!groups.ok) return;
+    const byReason = new Map(groups.value.map((g) => [g.reason, g]));
+    expect(byReason.get('Assistant change')?.by).toBe('Claude Code');
+    expect(byReason.get('My change')?.by).toBeUndefined();
+    expect(byReason.get('Seed')?.by).toBeUndefined();
+    // The marks are not changes: the journal of entries is the same three.
+    const entries = await store.journal();
+    expect(entries.ok && entries.value.length).toBe(3);
+
+    const undone = await store.undoGroup(group.id);
+    expect(undone.ok).toBe(true);
+    expect(await fs.readFile(file, 'utf8')).toBe('before');
+    const after = await store.journalGroups();
+    expect(after.ok).toBe(true);
+    if (!after.ok) return;
+    expect(after.value.find((g) => g.id === group.id)).toMatchObject({
+      undone: true,
+      by: 'Claude Code',
+    });
+    // The undo, made here in the app, names no one.
+    expect(after.value[0]!.reason).toBe('Undo: Assistant change');
+    expect(after.value[0]!.by).toBeUndefined();
+  });
+
+  it('pruning an action also drops its mark', async () => {
+    const file = path.join(outside, 'old.lua');
+    const group = store.beginGroup('Old assistant change');
+    expect((await store.write(file, 'x', { reason: 'Old assistant change', group })).ok).toBe(true);
+    expect((await store.markActor([group.id], 'Claude Code')).ok).toBe(true);
+    clock.advance(40 * DAY);
+    const pruned = await store.prune({ days: 30, groups: 0 });
+    expect(pruned.ok && pruned.value.removedGroups).toBe(1);
+    const text = await fs.readFile(path.join(dataRoot, 'journal.jsonl'), 'utf8');
+    expect(text).not.toContain('Claude Code');
+  });
+});
