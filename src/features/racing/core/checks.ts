@@ -10,7 +10,10 @@ import type { RacingOverview } from '../contract';
 import { RACING_GAMES, installOf, type RacingContext } from './context';
 import { beamngView } from './beamng/beamng';
 import { acView } from './assettoCorsa';
-import { fanatecBases, WHEEL_BASE, wheelStatus } from './fanatec/fanatec';
+import { wheelStatus } from './fanatec/fanatec';
+import { brandOf } from './wheelbases/brands';
+import { readWheelRotation, WHEEL_ROTATION } from './wheelbases/rotation';
+import { softwareStates, wheelBases, WHEEL_BASE } from './wheelbases/wheel';
 import { WHEEL_SETTINGS } from './fanatec/wheelSettings';
 import { iracingView } from './iracing/iracing';
 import { lmuView } from './lmu/lmu';
@@ -87,24 +90,74 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
       const ctx: RacingContext = { ...checkCtx, games };
       const candidates: CaptureCandidate[] = [];
       const devices = await ctx.ports.devices.list();
-      const base = devices.ok ? fanatecBases(devices.value)[0] : undefined;
+      const base = devices.ok ? wheelBases(devices.value)[0] : undefined;
+      const brand = brandOf(base?.product.brand);
       // Everything here is marked as racing gear (`kind`) or as one game's (`game`): the
       // capture screen keeps it in a setup for a racing game, or for that game, and leaves
       // it out of a flight setup even while the wheel is plugged in.
-      if (base) {
+      if (base && brand) {
+        const title = brand.modeDetectable ? 'Wheel base in PC mode' : 'Wheel base connected';
+        const warns =
+          brand.id === 'fanatec'
+            ? 'warns when it is in compatibility (yellow) mode'
+            : brand.modeDetectable
+              ? 'warns when it is in a console mode'
+              : `${brand.name} bases do not show their mode in the USB id`;
         candidates.push({
           key: 'racing:wheel-base',
           group: 'devices',
-          title: 'Wheel base in PC mode',
-          description: `${base.name || 'Fanatec wheel base'} · warns when it is in compatibility (yellow) mode`,
+          title,
+          description: `${base.name || `${brand.name} wheel base`} · ${warns}`,
           selectedByDefault: true,
           kind: 'racing',
           icon: 'mdi-steering',
           check: {
             type: WHEEL_BASE,
-            title: 'Wheel base in PC mode',
+            title,
             required: true,
             params: { vendorId: base.vendorId, productId: base.productId },
+          },
+        });
+        if (brand.id !== 'fanatec') {
+          // The maker's own software, with a fix that starts it, like any other app.
+          for (const state of await softwareStates(ctx, brand)) {
+            const { software } = state;
+            if (!software.process || !state.exe) continue;
+            candidates.push({
+              key: `racing:wheel-software:${software.id}`,
+              group: 'apps',
+              title: `${software.name} running`,
+              description: `For ${software.purpose}${state.running ? ' · running now' : ' · not running now'}`,
+              selectedByDefault: state.running,
+              kind: 'racing',
+              icon: 'mdi-steering',
+              program: software.process,
+              check: {
+                type: 'process.running',
+                title: `${software.name} running`,
+                required: true,
+                params: { name: software.process, stopOnStandDown: false },
+                remediation: { type: 'process.launch', params: { exe: state.exe, args: [] } },
+              },
+            });
+          }
+        }
+      }
+      const rotation = await readWheelRotation(ctx, brand?.id);
+      if (base && brand && rotation !== undefined) {
+        candidates.push({
+          key: 'racing:wheel-rotation',
+          group: 'devices',
+          title: `Wheel rotation ${rotation}°`,
+          description: `As the ${brand.name} driver last recorded it · warns when it changes`,
+          selectedByDefault: false,
+          kind: 'racing',
+          icon: 'mdi-steering',
+          check: {
+            type: WHEEL_ROTATION,
+            title: `Wheel rotation ${rotation}°`,
+            required: false,
+            params: { brand: brand.id, degrees: rotation },
           },
         });
       }

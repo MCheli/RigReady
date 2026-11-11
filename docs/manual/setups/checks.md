@@ -16,7 +16,11 @@ A USB device is present. It is known by its vendor and product ID, never by its 
 
 ### Wheel base connected in the right mode (`racing.wheelBase`)
 
-A Fanatec wheel base is connected and in PC mode ([Wheel](../games/wheel.md)). Fields: `vendorId` (0EB7 unless said otherwise), `productId`. It says when the base is in compatibility (yellow) mode, when games cannot see it, when it hangs off a hub, and when a different base is connected. No fix.
+A wheel base is connected and, where its USB ID shows the mode, in PC mode ([Wheel](../games/wheel.md)); any brand RigReady knows. Fields: `vendorId` (0EB7 unless said otherwise), `productId`. It says when a Fanatec base is in compatibility (yellow) mode, when a Logitech G29 is in its PS3 position, when a Thrustmaster wheel has not been switched by its driver or a T300 is in PS4 or advanced mode, when games cannot see the base, when it hangs off a hub, and when a different base is connected. No fix. Tested on a real wheel for Fanatec only.
+
+### Wheel rotation as expected (`racing.wheelRotation`)
+
+Optional. The rotation the Fanatec driver last recorded is the one expected. Fields: `brand` (only `fanatec` can be read), `degrees`. No fix: set the rotation on the base.
 
 ### Stream Deck connected (`stream-deck.connected`)
 

@@ -5,7 +5,7 @@ import type { GameRegistry } from '../../../core/games';
 import type { ProfileStore } from '../../../core/profile/store';
 import { err, ok, type Result } from '../../../core/result';
 import type { Clock } from '../../../core/ports';
-import type { BackupGame, BindingBackup } from '../contract';
+import { isToolBackup, type BackupGame, type BindingBackup } from '../contract';
 import { backupsRoot, listBackups, restoreBackup } from './backups';
 import { RACING_GAMES, type RacingContext, type RacingGameId } from './context';
 
@@ -47,7 +47,7 @@ export function isBindingFile(
   game: BackupGame,
   file: { path: string; restorable: boolean }
 ): boolean {
-  if (!file.restorable || game === 'fanatec') return false;
+  if (!file.restorable || isToolBackup(game)) return false;
   const names = BINDING_FILE_NAMES[game];
   return names === 'all' || names.includes(path.basename(file.path).toLowerCase());
 }
@@ -216,8 +216,8 @@ export async function useSetInSetup(
   backupId: string,
   profileId: string
 ): Promise<Result<{ message: string }>> {
-  if (game === 'fanatec') {
-    return err('racing.backup', 'Fanatec App settings are not bindings of a game.');
+  if (isToolBackup(game)) {
+    return err('racing.backup', 'Wheel software settings are not bindings of a game.');
   }
   const backup = (await listBackups(ctx, game)).find((b) => b.id === backupId);
   if (!backup) return err('racing.backup', 'That backup no longer exists.');

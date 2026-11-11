@@ -6,7 +6,8 @@ import { previewWrites, type PlannedWrite } from '../../../core/files/preview';
 import { err, ok, type Result } from '../../../core/result';
 import type { RegistryHive } from '../../../shared/models';
 import type { BackupGame, BindingBackup, WritePreviewView } from '../contract';
-import { BindingBackupSchema } from '../contract';
+import { BindingBackupSchema, isToolBackup } from '../contract';
+import { brandOf } from './wheelbases/brands';
 import { locationOf, refuseWhileRunning, type RacingContext } from './context';
 
 /**
@@ -107,7 +108,51 @@ async function sources(ctx: RacingContext, game: BackupGame): Promise<Source[]> 
       return existing(ctx, [
         { path: fanatecPrefs(ctx), label: 'Fanatec App settings', restorable: true },
       ]);
+    case 'logitech':
+    case 'simucube':
+      return brandSources(ctx, game);
   }
+}
+
+/** A wheel brand's profile files (./wheelbases/brands.ts): files as they are, folders file by file. */
+async function brandSources(ctx: RacingContext, game: 'logitech' | 'simucube'): Promise<Source[]> {
+  const out: Source[] = [];
+  for (const location of brandOf(game)?.profiles ?? []) {
+    const where = location.path(ctx.ports.folders);
+    if (location.kind === 'file') {
+      out.push(
+        ...(await existing(ctx, [{ path: where, label: location.label, restorable: true }]))
+      );
+      continue;
+    }
+    const tree = await ctx.ports.files.listTree(where, { maxEntries: 2000 });
+    for (const e of tree.ok ? tree.value : [])
+      out.push({ path: e.path, label: `${location.label}: ${e.relativePath}`, restorable: true });
+  }
+  return out;
+}
+
+/**
+ * What the backup page offers for a wheel brand's software: its profile files, and the
+ * program to close before they are put back (./wheelbases/brands.ts).
+ */
+export function brandBackupSource(id: 'logitech' | 'simucube'): BackupSource {
+  const brand = brandOf(id)!;
+  return {
+    id: `wheel-${id}`,
+    label: `${brand.name} wheel software`,
+    async suggest(ctx) {
+      return ok(
+        brand.profiles.map((p) => ({
+          label: p.label,
+          path: p.path(ctx.ports.folders),
+          kind: p.kind,
+          description: p.description,
+        }))
+      );
+    },
+    ...(brand.holders ? { program: { ...brand.holders, restart: true } } : {}),
+  };
 }
 
 export const backupsRoot = (ctx: RacingContext, game: BackupGame): string =>
@@ -276,7 +321,12 @@ export async function backupNow(
 ): Promise<Result<BindingBackup>> {
   const files = await sources(ctx, game);
   if (files.length === 0 && game !== 'fanatec') {
-    return err('racing.backup', 'There are no binding files to back up yet.');
+    return err(
+      'racing.backup',
+      isToolBackup(game)
+        ? `There are no ${GAME_NAMES[game]} profile files to back up yet.`
+        : 'There are no binding files to back up yet.'
+    );
   }
   const now = ctx.ports.clock.now();
   let id = now.toISOString().replace(/[:.]/g, '-');
@@ -369,7 +419,32 @@ const GAME_NAMES: Record<BackupGame, string> = {
   beamng: 'BeamNG.drive',
   'assetto-corsa': 'Assetto Corsa',
   fanatec: 'Fanatec App',
+  logitech: 'Logitech G HUB',
+  simucube: 'Simucube',
 };
+
+const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** The program that holds a wheel software's files while it runs, and where to start it again. */
+function holderOf(
+  ctx: RacingContext,
+  game: 'fanatec' | 'logitech' | 'simucube'
+): { name: string; processes: string[]; exe?: string } | undefined {
+  if (game === 'fanatec')
+    return {
+      name: 'the Fanatec App',
+      processes: ['fanatec.exe'],
+      exe: path.join(ctx.ports.folders.programFiles(), 'Fanatec', 'FanatecUI', 'UI', 'Fanatec.exe'),
+    };
+  const brand = brandOf(game);
+  if (!brand?.holders) return undefined;
+  const exe = brand.software.flatMap((s) => s.exe?.(ctx.ports.folders) ?? [])[0];
+  return {
+    name: brand.holders.name,
+    processes: brand.holders.processes.map((p) => p.toLowerCase()),
+    ...(exe ? { exe } : {}),
+  };
+}
 
 export const RestoreOptionsSchema = z.object({ closeApp: z.boolean().default(false) });
 
@@ -420,24 +495,33 @@ export async function restoreBackup(
 ): Promise<Result<{ message: string }>> {
   const backup = (await listBackups(ctx, game)).find((b) => b.id === id);
   if (!backup) return err('racing.backup', 'That backup no longer exists.');
-  let reopen: string | undefined;
-  if (game === 'fanatec') {
-    const list = await ctx.ports.processes.list();
-    const app = list.ok
-      ? list.value.find((p) => p.name.toLowerCase() === 'fanatec.exe')
-      : undefined;
-    if (app) {
-      if (!options.closeApp) {
+  let reopen: { exe: string; name: string } | undefined;
+  if (isToolBackup(game)) {
+    const holder = holderOf(ctx, game);
+    if (holder) {
+      const list = await ctx.ports.processes.list();
+      if (!list.ok) {
         return err(
-          'racing.appOpen',
-          'The Fanatec App is open. It must be closed while its settings are restored.'
+          'racing.processes',
+          `RigReady could not see which programs are running, so it cannot tell whether ${holder.name} is open.`,
+          list.error.message
         );
       }
-      const closed = await ctx.ports.processes.close(app.pid, { waitMs: 10_000 });
-      if (!closed.ok) return closed;
-      reopen =
-        app.path ??
-        path.join(ctx.ports.folders.programFiles(), 'Fanatec', 'FanatecUI', 'UI', 'Fanatec.exe');
+      const open = list.value.filter((p) => holder.processes.includes(p.name.toLowerCase()));
+      if (open.length > 0) {
+        if (!options.closeApp) {
+          return err(
+            'racing.appOpen',
+            `${capital(holder.name)} is open. It must be closed while its settings are restored.`
+          );
+        }
+        for (const app of open) {
+          const closed = await ctx.ports.processes.close(app.pid, { waitMs: 10_000 });
+          if (!closed.ok) return closed;
+        }
+        const exe = open.find((p) => p.path)?.path ?? holder.exe;
+        if (exe) reopen = { exe, name: holder.name };
+      }
     }
   } else {
     const blocked = await refuseWhileRunning(ctx, game);
@@ -445,7 +529,7 @@ export async function restoreBackup(
   }
   const dir = path.join(backupsRoot(ctx, game), id);
   const group = ctx.ports.files.beginGroup(
-    `Restore ${GAME_NAMES[game]} ${game === 'fanatec' ? 'settings' : 'bindings'} ${options.what ?? `from ${when(backup.createdAt)}`}`
+    `Restore ${GAME_NAMES[game]} ${isToolBackup(game) ? 'settings' : 'bindings'} ${options.what ?? `from ${when(backup.createdAt)}`}`
   );
   let restored = 0;
   for (const file of backup.files.filter((f) => f.restorable && (options.only?.(f) ?? true))) {
@@ -464,10 +548,10 @@ export async function restoreBackup(
   }
   let message = `Restored ${restored} ${restored === 1 ? 'file' : 'files'} from ${when(backup.createdAt)}. Undo is on the Safety page.`;
   if (reopen) {
-    const started = await ctx.ports.processes.start({ exe: reopen, args: [] });
+    const started = await ctx.ports.processes.start({ exe: reopen.exe, args: [] });
     message += started.ok
-      ? ' The Fanatec App was started again.'
-      : ' Start the Fanatec App again yourself.';
+      ? ` ${capital(reopen.name)} was started again.`
+      : ` Start ${reopen.name} again yourself.`;
   }
   return ok({ message });
 }

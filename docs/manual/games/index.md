@@ -55,7 +55,7 @@ Each game's page has the same sections:
 
 The Racing page is the overview for the wheel and the racing games:
 
-- **Wheel**: the Fanatec wheel base, its mode (PC or compatibility), how many game controllers Windows makes of it and what it is connected through. It leads to [the Wheel page](wheel.md).
+- **Wheel**: the wheel base of any brand RigReady knows, its mode where the USB ID shows it (Fanatec PC or compatibility mode, the Logitech G29 switch, a Thrustmaster wheel the driver has not switched), how many game controllers Windows makes of it and what it is connected through. It leads to [the Wheel page](wheel.md).
 - **Games**: one card per racing game with its version, "update waiting in Steam", a **Running** chip and one line about its bindings: "17 bindings · controllers connected", "1 controller has a new Windows ID", "1 controller not connected", "No bindings yet" or "Default bindings". A card with something to look at is marked. Installed games open their own page.
 - **Helper apps**: Fanatec Service, SimHub, Crew Chief and the trophi.ai coach, when they are installed or running, and whether each is running now. To have a setup check or start them, keep them when you create the setup from the rig.
 

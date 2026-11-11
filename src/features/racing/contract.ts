@@ -175,22 +175,75 @@ export const AcViewSchema = z.object({
 });
 export type AcView = z.infer<typeof AcViewSchema>;
 
-// ---------------------------------------------------------------- Wheel (Fanatec)
+// ---------------------------------------------------------------- Wheel (every brand)
+
+export const WHEEL_BRANDS = [
+  'fanatec',
+  'moza',
+  'logitech',
+  'simagic',
+  'thrustmaster',
+  'simucube',
+  'asetek',
+  'cammus',
+] as const;
+export const WheelBrandSchema = z.enum(WHEEL_BRANDS);
+export type WheelBrandId = z.infer<typeof WheelBrandSchema>;
+
+export const WheelPartSchema = z.object({
+  role: z.enum(['base', 'rim', 'pedals', 'shifter', 'handbrake', 'other']),
+  name: z.string(),
+  vendorId: z.string(),
+  productId: z.string(),
+});
+export type WheelPart = z.infer<typeof WheelPartSchema>;
 
 export const WheelStatusSchema = z.object({
   connected: z.boolean(),
+  /** The brand of the connected base, or of the one whose software or traces are here. */
+  brand: WheelBrandSchema.optional(),
+  brandName: z.string().optional(),
+  /** False until someone reports this brand working on a real wheel: tested on recorded data only. */
+  verifiedOnHardware: z.boolean(),
   name: z.string().optional(),
   /** The name the owner gave the device on the Devices page, shown before `name`. */
   givenName: z.string().optional(),
   vendorId: z.string().optional(),
   productId: z.string().optional(),
-  /** pc: native (red) mode. compatibility: yellow mode, reporting as a ClubSport V2.5. */
-  mode: z.enum(['pc', 'compatibility', 'none']),
+  /**
+   * pc: the base reports itself as what it is (Fanatec red mode). compatibility: Fanatec yellow
+   * mode, reporting as a ClubSport V2.5. console: a console or legacy mode the USB id gives away.
+   * unknown: this brand's mode cannot be told from the USB id.
+   */
+  mode: z.enum(['pc', 'compatibility', 'console', 'unknown', 'none']),
+  /** The mode in words: "PC (red) mode", "PS4 mode". */
+  modeLabel: z.string().optional(),
+  /** What to do about a mode that is not the PC one. */
+  modeHelp: z.string().optional(),
   /** DirectInput controllers games see for the base. */
   controllers: z.number(),
+  /** Why games may see this base as more than one controller, when the brand does that. */
+  controllersNote: z.string().optional(),
   connection: z.string().optional(),
+  /** Names of the brand's other parts on USB: pedals, shifter, rim. */
   accessories: z.array(z.string()),
+  /** Base, rim, pedals and the rest, each with its role. */
+  parts: z.array(WheelPartSchema),
+  /** What each axis of the base is, as this brand uses it. */
+  axes: z.array(z.object({ axis: z.string(), name: z.string() })),
+  /** True when the axis names come from the maker or a reliable source, false when generic. */
+  axesSourced: z.boolean(),
   software: z.array(z.object({ label: z.string(), value: z.string(), ok: z.boolean() })),
+  /** What the brand's software is needed for, in one line. */
+  softwareNote: z.string().optional(),
+  /** Profile files of the brand's software that are plain files a backup can copy. */
+  profiles: z.array(z.object({ label: z.string(), path: z.string(), present: z.boolean() })),
+  /** Set when RigReady can back the brand's profile files up (the backups panel's game). */
+  backup: z.string().optional(),
+  /** Pages where the brand itself publishes settings per game; RigReady links, it does not compare. */
+  recommendedLinks: z.array(z.object({ game: z.string(), title: z.string(), url: z.string() })),
+  /** Wheel bases of other brands connected at the same time. */
+  others: z.array(z.string()),
   firmwareShipped: z.string().optional(),
   lastSeen: z.array(Pair),
 });
@@ -289,9 +342,22 @@ export type RacingOverview = z.infer<typeof RacingOverviewSchema>;
 
 // ---------------------------------------------------------------- Backups
 
-export const BACKUP_GAMES = ['iracing', 'lmu', 'beamng', 'assetto-corsa', 'fanatec'] as const;
+export const BACKUP_GAMES = [
+  'iracing',
+  'lmu',
+  'beamng',
+  'assetto-corsa',
+  'fanatec',
+  'logitech',
+  'simucube',
+] as const;
 export const BackupGameSchema = z.enum(BACKUP_GAMES);
 export type BackupGame = z.infer<typeof BackupGameSchema>;
+/** Backups of a wheel maker's software, not of a game's bindings. */
+export const TOOL_BACKUPS = ['fanatec', 'logitech', 'simucube'] as const;
+export type ToolBackup = (typeof TOOL_BACKUPS)[number];
+export const isToolBackup = (game: BackupGame): game is ToolBackup =>
+  (TOOL_BACKUPS as readonly string[]).includes(game);
 
 export const BindingBackupSchema = z.object({
   id: z.string(),
@@ -419,7 +485,7 @@ export const racingContract = defineContract('racing', {
   }),
   wheel: channel(noInput, WheelViewSchema, {
     describe:
-      'The Fanatec wheel base status, the five tuning presets noted in RigReady and how the active one compares with the recommended values. Changes nothing.',
+      'The wheel base of any brand (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek, Cammus): base, rim and pedals, mode, axes, the maker software and its profile files; for Fanatec also the five tuning presets noted in RigReady and how the active one compares with the recommended values. Changes nothing.',
     tier: 'read',
   }),
   savePresets: channel(WheelPresetsSchema, WheelPresetsSchema, {
@@ -429,7 +495,7 @@ export const racingContract = defineContract('racing', {
   }),
   backups: channel(GameRef, z.array(BindingBackupSchema), {
     describe:
-      "Lists RigReady's binding backups of one game (iracing, lmu, beamng, assetto-corsa or fanatec). Backup ids for the other racing backup channels come from here. Changes nothing.",
+      "Lists RigReady's binding backups of one game (iracing, lmu, beamng, assetto-corsa), or of a wheel maker's software (fanatec, logitech, simucube). Backup ids for the other racing backup channels come from here. Changes nothing.",
     tier: 'read',
   }),
   backup: channel(GameRef.extend({ name: BackupName.optional() }), BindingBackupSchema, {
@@ -467,7 +533,7 @@ export const racingContract = defineContract('racing', {
   }),
   restore: channel(BackupRef.extend({ closeApp: z.boolean().default(false) }), Message, {
     describe:
-      'Puts the files of a racing binding backup back. The game must be closed; for the Fanatec App, closeApp lets RigReady close it and start it again. Call racing:restorePreview first and show the user.',
+      'Puts the files of a racing binding backup back. The game must be closed; for wheel software (the Fanatec App, G HUB), closeApp lets RigReady close it and start it again. Call racing:restorePreview first and show the user.',
     tier: 'change',
   }),
   /** What restoring that backup would change, file by file. Reads only. */

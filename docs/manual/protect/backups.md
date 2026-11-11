@@ -31,7 +31,7 @@ The same full backup can be started from anywhere with the [command palette](../
 - Every setup file (`profiles\*.yaml`).
 - RigReady's settings, your saved monitor layouts and the **Always back up** list itself.
 - Your [snapshots](snapshots.md) and the [what changed](what-changed.md) records, with the stored copies of the files they refer to. Each copy is stored once, however many snapshots and records share it.
-- Settings that live in the Windows registry rather than in files, when a tool provides them. Today that is the Fanatec driver settings ([Wheel](../games/wheel.md#backups)). These are kept as data to read later; nothing writes them back, and the list marks them "kept as a record, not restored".
+- Settings that live in the Windows registry rather than in files, when a tool provides them. Today that is the Fanatec driver settings ([Wheel](../games/wheel.md#profile-files-and-backups)). These are kept as data to read later; nothing writes them back, and the list marks them "kept as a record, not restored".
 
 A backup of one setup holds that setup's tracked items and its setup file only. A backup of selected items (made from the [Tracked files](tracked-files.md) tab) holds just those items.
 

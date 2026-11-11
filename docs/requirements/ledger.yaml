@@ -4142,6 +4142,81 @@ requirements:
       - "artifacts/screens/racing-rim-variant/05-gt3-setup-sees-other-bindings.png"
       - "artifacts/screens/racing-rim-variant/07-formula-variant-ready.png"
 
+  - id: RACE-WHEEL-001
+    title: The Wheel page and its checks for every major wheelbase brand
+    job: troubleshoot
+    area: wheel
+    priority: p1
+    done_means:
+      - "On synthetic fixtures for a Moza R9, a Logitech G923, a Simagic Alpha and a Thrustmaster T300 RS (fixtures/scenarios/wheel-*.yaml, made from the USB ids in docs/research/wheelbases.md), the Wheel page names the brand and the base, shows its mode where the USB id shows it and says so where it does not, lists the base's axes (named where a source says what they are, Windows' names otherwise), the brand's other parts on USB, and the brand's software installed and running."
+      - "Simucube, Asetek SimSports and Cammus bases are recognised by their ids from the same research note; Fanatec keeps everything it had (RACE-FANATEC-001 to 005)."
+      - "Every brand but Fanatec carries the line 'Tested on recorded data, not yet on a real <brand> wheel' with a link to the hardware report form."
+      - "A PC with no wheel names no brand and offers nothing."
+    notes:
+      - "2026-11-11: done on fixtures only. Not verified on a real Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek or Cammus wheel; the owner has a Fanatec DD2. RACE-WHEEL-004 is the hardware verification."
+    status: done
+    evidence:
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#the brand table is consistent: every product has a brand with a row, every brand but Fanatec is unverified"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Moza R9: detected by its USB id, Pit House running, mode not claimed, linked settings, a fix that starts Pit House"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Logitech G923: PC mode, G HUB, and its settings.db backed up and restored with G HUB closed and started again"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Simagic Alpha: the shared STMicro id, SimPro Manager installed but not running, offered unticked with a fix"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Thrustmaster T300: PC mode, and a wheel the driver did not switch or one in PS4 mode is named"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#a PC with no wheel names no brand and offers nothing"
+      - "tests/e2e/wheel-brands.e2e.ts#wheel: the Wheel page for a ${b.brand} base, tested on recorded data only"
+      - "artifacts/screens/wheel-moza/01-wheel.png"
+      - "artifacts/screens/wheel-logitech/01-wheel.png"
+      - "artifacts/screens/wheel-simagic/01-wheel.png"
+      - "artifacts/screens/wheel-thrustmaster/01-wheel.png"
+      - "docs/research/wheelbases.md"
+
+  - id: RACE-WHEEL-002
+    title: Per-brand checks a setup can hold
+    job: fly
+    area: wheel
+    priority: p1
+    done_means:
+      - "Capturing a setup with a non-Fanatec base offers 'Wheel base in PC mode' (brands whose id shows the mode) or 'Wheel base connected' (the others), and '<software> running' for the brand's program, ticked when it runs now, with a fix that starts it like any other app."
+      - "The base check names a mode the id gives away: Fanatec compatibility (yellow) mode, the Logitech G29's PS3 position, a Thrustmaster wheel still on the generic 044F:B65D id, a T300 in PS4 or advanced mode."
+      - "A wheel rotation check is offered only where the rotation is readable: the Fanatec driver's recorded rotation. Optional and unticked."
+    notes:
+      - "2026-11-11: done on fixtures only, not on a real wheel of these brands."
+    status: done
+    evidence:
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Moza R9: detected by its USB id, Pit House running, mode not claimed, linked settings, a fix that starts Pit House"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Logitech G29: the PS3 switch position is told apart from the PS4 one Logitech advises on a PC"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Thrustmaster T300: PC mode, and a wheel the driver did not switch or one in PS4 mode is named"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Fanatec keeps its rows; its rotation is offered as an optional check from what the driver recorded"
+      - "src/features/racing/core/checks.test.ts#capture on a racing rig proposes the wheel in PC mode, the helper apps and the game checks"
+
+  - id: RACE-WHEEL-003
+    title: Brand profile backups and sourced recommended settings
+    job: configure
+    area: wheel
+    priority: p2
+    done_means:
+      - "Where a brand's software keeps profiles in plain files (G HUB settings.db, Simucube Tuner cachedprofiles), the Wheel page lists them and backs them up; a restore closes the software first when the user agrees and starts it again. The Backups page offers the same files."
+      - "Brands whose profile location is not documented (Moza, Simagic, Asetek, Cammus) are offered no backup."
+      - "Recommended settings are shown for a brand only where the brand publishes them (Moza for iRacing, Asetek for four games): as links, not copied or compared. Otherwise the page says none are published."
+    notes:
+      - "2026-11-11: done on fixtures only; the G HUB file is a stand-in, not a real settings.db."
+    status: done
+    evidence:
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Logitech G923: PC mode, G HUB, and its settings.db backed up and restored with G HUB closed and started again"
+      - "src/features/racing/core/wheelbases/wheelbases.test.ts#Moza R9: detected by its USB id, Pit House running, mode not claimed, linked settings, a fix that starts Pit House"
+      - "artifacts/screens/wheel-logitech/02-profiles.png"
+
+  - id: RACE-WHEEL-004
+    title: Each brand verified on a real wheel
+    job: troubleshoot
+    area: wheel
+    priority: p2
+    done_means:
+      - "For each of Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek and Cammus, a hardware report (or a recorded rig) confirms the base's ids, the software's process name and the profile location; the brand's verifiedOnHardware is then set to true and its 'tested on recorded data' line goes away."
+    notes:
+      - "2026-11-11: open questions per brand are listed at the end of docs/research/wheelbases.md (Moza's second ids and preset folder, the Simagic EVO software, Thrustmaster T818 and TMX ids, Simucube, Asetek and Cammus process names, every brand's axis map)."
+    status: todo
+    evidence: []
+
   - id: GAME-MSFS-001
     title: Detect Microsoft Flight Simulator 2024 and its settings
     job: configure
