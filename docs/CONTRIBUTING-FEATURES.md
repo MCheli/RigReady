@@ -297,7 +297,7 @@ export default defineCommands({
 | `pathVariableLabels?` | What each of those means, in words (`{ DCS_USER: 'DCS user folder', ... }`), for every variable the module can hand out: the setup editor accepts and offers them on a PC without the game. `tests/unit/pathVariablesAudit.test.ts` fails a module that assigns a variable it does not declare. |
 | `bindings?` | Marker for the binding feature. |
 
-Modules exist for `dcs`, `iracing`, `lmu`, `beamng`, `assetto-corsa`, `assetto-corsa-evo`, `assetto-corsa-rally`, `msfs2024` and `ace-combat-8`.
+Modules exist for `ace-combat-8`, `dcs`, `iracing`, `lmu`, `beamng`, `assetto-corsa`, `assetto-corsa-evo`, `assetto-corsa-rally`, `msfs2024`, and (November 2026) `msfs2020`, `x-plane-12`, `x-plane-11`, `il2-great-battles`, `falcon-bms`, `acc`, `rfactor2`, `ams2`, `ea-wrc`, `f1-25`, `f1-24`, `dirt-rally-2` and `raceroom`. A game that is found, launched and backed up and needs nothing else can be written with `simpleGame(spec)` from `games/core/simpleGame.ts` (Steam, other installs, settings folders, tracked files, notes); the ids and paths of those modules and their sources are in `docs/research/game-modules-2026-11.md`.
 
 `src/features/games/core/helpers.ts` `GameModuleExtras` (a module's `export const extras`) holds only what the Games page needs: `kind`, `manualFolder`, `notes`, `facts`. Process names are on the module itself.
 
@@ -364,7 +364,7 @@ Every port has a real implementation (`src/platform/windows`, `src/platform/elec
 
 Not on `Ports`, but defined in the same file: `LogSink` (`write(line)`, what the logger writes to; the app uses `RotatingFileSink` from `src/platform/node`, and a test that wants to read what was logged passes its own sink to `createLogger`) and `RawFs` (the minimal file access under `FileStore`; only `FileStore` and platform code use it).
 
-**The input reader's lifetime.** One DirectInput reader (the sidecar) serves the whole app. A feature calls `ctx.ports.input.start()` every time it needs controllers and never calls `stop()`: `start()` is idempotent (it answers at once while the reader runs, calls made while it is starting share that one start, and after a failed start the next call tries again). Only the app shell stops the reader, on quit. A feature that listens to live input keeps the function `subscribe` returns and calls it when it is done; do not cache the result of `start()`, ask again (`tests/unit/inputLifetime.test.ts`).
+**The input reader's lifetime.** One DirectInput reader (the sidecar) serves the whole app. A feature calls `ctx.ports.input.start()` every time it needs controllers and never calls `stop()`: `start()` is idempotent (it answers at once while the reader runs, calls made while it is starting share that one start, and after a failed start the next call tries again). Only the app shell stops the reader, on quit. A feature that listens to live input keeps the function `subscribe` returns and calls it when it is done; do not cache the result of `start()`, ask again (`tests/unit/inputLifetime.test.ts`). The controllers come sorted by name (`index`); `enumerationIndex` is each one's position in the order DirectInput enumerated them, the order a game that binds by number sees (Assetto Corsa's `JOY=n`). The fake gives the recorded order.
 
 In a scenario run of the real app (e2e, `dev:scenario`) the machine is fake. Three things are real because they do not depend on the rig: `secrets` and `render` (the Electron ones, working inside the temp data root) and the panels `window.openPanel` opens, which are real windows of the app.
 
@@ -562,8 +562,8 @@ Existing scenarios (`fixtures/scenarios/`, 65 files; `npm run dev:scenario` with
 | Damage | `damaged-data-files` (RigReady's own files), `damaged-game-folders` (the folders of DCS and iRacing deleted), `app-old-backups` |
 | Per feature | `audio-*` (4), `backup-*` (5), `dcs-bindings-*` (6; `dcs-bindings-identical`: three panels with one name whose IDs all changed; `dcs-bindings-old-ids`), `dcs-setup-*` (4), `dcs-two-installs`, `devices-*` (3), `displays-*` (3), `share-*` (3; `share-old-ids`: binding files that carry another PC's device IDs), `stream-deck-*` (2), `trackir-*` (3), `cheat-sheets-hornet`, `cheat-sheets-kneeboard`, `ai-assist-hornet` (scripted Anthropic answers) |
 | The shell | `shell-flight-and-racing` (the flying rig with a flight setup and a racing setup side by side, for the accent that follows the setup's kind of game), `shell-racing-pc` (a generic PC whose only game is iRacing, for the first-run welcome) |
-| Racing | `racing-not-ready`, `racing-iracing-moved-wheel` (the wheel has a new Windows id), `racing-rim-variant`, `mark-racing`, `mark-racing-tv`, `tour-racing` (the racing rig with an iRacing setup, for the tour) |
-| Not the owner's PC | `generic-fresh`, `generic-custom-game`, `generic-dcs`, `generic-second-pc` |
+| Racing | `racing-not-ready`, `racing-iracing-moved-wheel` (the wheel has a new Windows id), `racing-ac-moved-controllers` (Assetto Corsa's controllers in another order, the pedals with a new id), `racing-rim-variant`, `mark-racing`, `mark-racing-tv`, `tour-racing` (the racing rig with an iRacing setup, for the tour) |
+| Not the owner's PC | `generic-fresh`, `generic-custom-game`, `generic-dcs`, `generic-second-pc`, `generic-more-sims` |
 | One click | `one-click-fly` (the middle MFD screen rotated back and TrackIR closed; the window stays open after a launch), `one-click-slow-start` (TrackIR's start is accepted but it does not show up, so its fix keeps waiting until a test starts it) |
 
 The racing rig and the generic PCs, which the ledger names as fixtures, are scenarios too:
@@ -575,6 +575,7 @@ The racing rig and the generic PCs, which the ledger names as fixtures, are scen
 | `generic-fresh` | `fixtures/rigs/generic-rig` as written: a PC that is not the owner's, with one joystick, one monitor, no sim, no helper apps, no setups (section 10) |
 | `generic-custom-game` | `generic-fresh` plus a game RigReady has no module for: `Games/Star Hauler/StarHauler.exe` and `Documents/Star Hauler` (settings, controls, a save) |
 | `generic-dcs` | `generic-fresh` plus the standalone (not Steam) DCS World: the Eagle Dynamics registry key, `Program Files/Eagle Dynamics/DCS World/bin/DCS.exe`, `Saved Games/DCS/Config/options.lua` |
+| `generic-more-sims` | `generic-fresh` plus the games added in November 2026: Steam with two libraries holding eleven of them, a standalone X-Plane 11 listed in `x-plane_install_11.txt`, Falcon BMS through its registry key, and small settings files in each game's layout. F1 24 is not installed |
 | `generic-second-pc` | A second generic PC: two monitors, two sticks of other makes, DCS World in a second Steam library, Saved Games moved out of its default place (`setKnownFolder`). The core flows are proven on it (`tests/unit/genericSecondPc.test.ts`, `tests/e2e/generic-second-pc.e2e.ts`) |
 
 Add your own file, prefixed with your feature (`audio-wrong-default.yaml`); do not change existing ones or `fixtures/rigs/`. Put helper files next to it under `fixtures/scenarios/data/<feature>/` and profiles under `fixtures/scenarios/profiles/`. `tests/unit/scenarioMode.test.ts` starts every scenario file: its rig must exist, every mutation must match something, and every profile and data file must be there.

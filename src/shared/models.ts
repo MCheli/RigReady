@@ -135,7 +135,14 @@ export type AudioState = z.infer<typeof AudioStateSchema>;
 
 /** A game controller as DirectInput (and therefore DCS, iRacing, ...) lists it. */
 export const InputDeviceSchema = z.object({
+  /** Position in RigReady's list (sorted by name). Not the order DirectInput gives. */
   index: z.number().int(),
+  /**
+   * Position in the order DirectInput's EnumDevices gave (game controllers, attached only):
+   * the order a game that binds controllers by number sees (Assetto Corsa's JOY=n).
+   * Absent when the platform could not say.
+   */
+  enumerationIndex: z.number().int().optional(),
   /** DirectInput product name, untrimmed: games key files on the exact text. */
   name: z.string(),
   /**

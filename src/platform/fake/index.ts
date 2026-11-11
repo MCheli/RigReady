@@ -382,8 +382,15 @@ export class FakeInputProvider implements InputProvider {
     return ok(this.devices());
   }
   async stop(): Promise<void> {}
+  /**
+   * The recorded list in its order; that order is also the DirectInput enumeration order
+   * (enumerationIndex) unless a device states its own.
+   */
   devices(): InputDevice[] {
-    return structuredClone(this.state.input);
+    return structuredClone(this.state.input).map((device, position) => ({
+      ...device,
+      enumerationIndex: device.enumerationIndex ?? position,
+    }));
   }
   subscribe(listener: (states: InputState[]) => void): () => void {
     this.listeners.add(listener);

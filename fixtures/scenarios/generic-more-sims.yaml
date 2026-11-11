@@ -1,0 +1,407 @@
+description: A generic PC with eleven more flight and racing sims (Steam, standalone X-Plane 11, Falcon BMS)
+rig: generic-rig
+extends: generic-fresh.yaml
+# Written by hand for the game modules added in November 2026 (docs/research/game-modules-2026-11.md).
+# Every file is small and synthetic, in the layout the game uses. Steam has two libraries;
+# X-Plane 11 is a standalone install recorded in x-plane_install_11.txt; Falcon BMS is found
+# through its registry key. F1 24 is not installed, so it is listed as not found.
+mutations:
+  - op: setRegistryValue
+    hive: HKCU
+    key: Software\Valve\Steam
+    name: SteamPath
+    value: { type: string, value: 'C:\Program Files (x86)\Steam' }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steam.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/libraryfolders.vdf"
+    rehome: true
+    content: |
+      "libraryfolders"
+      {
+      	"0"
+      	{
+      		"path"		"C:\\Program Files (x86)\\Steam"
+      		"apps"
+      		{
+      			"1250410"		"1000000"
+      			"2014780"		"1000000"
+      			"429530"		"1000000"
+      			"805550"		"1000000"
+      			"1066890"		"1000000"
+      			"1849250"		"1000000"
+      			"3059520"		"1000000"
+      			"211500"		"1000000"
+      		}
+      	}
+      	"1"
+      	{
+      		"path"		"C:\\Users\\User\\Games\\SteamLibrary"
+      		"apps"
+      		{
+      			"307960"		"1000000"
+      			"365960"		"1000000"
+      			"690790"		"1000000"
+      		}
+      	}
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_1250410.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"1250410"
+      	"name"		"Microsoft Flight Simulator"
+      	"StateFlags"		"4"
+      	"installdir"		"MicrosoftFlightSimulator"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000001"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/MicrosoftFlightSimulator/FlightSimulator.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_2014780.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"2014780"
+      	"name"		"X-Plane 12"
+      	"StateFlags"		"4"
+      	"installdir"		"X-Plane 12"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000002"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/X-Plane 12/X-Plane.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_429530.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"429530"
+      	"name"		"Falcon 4.0"
+      	"StateFlags"		"4"
+      	"installdir"		"Falcon 4.0"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000003"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/Falcon 4.0/falcon4.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_805550.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"805550"
+      	"name"		"Assetto Corsa Competizione"
+      	"StateFlags"		"4"
+      	"installdir"		"Assetto Corsa Competizione"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000004"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/Assetto Corsa Competizione/AC2/Binaries/Win64/AC2-Win64-Shipping.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_1066890.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"1066890"
+      	"name"		"Automobilista 2"
+      	"StateFlags"		"4"
+      	"installdir"		"Automobilista 2"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000005"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/Automobilista 2/AMS2AVX.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_1849250.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"1849250"
+      	"name"		"EA SPORTS WRC"
+      	"StateFlags"		"4"
+      	"installdir"		"EA SPORTS WRC"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000006"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/EA SPORTS WRC/WRC/Binaries/Win64/WRC.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_3059520.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"3059520"
+      	"name"		"F1 25"
+      	"StateFlags"		"4"
+      	"installdir"		"F1 25"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000007"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/F1 25/F1_25.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_211500.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"211500"
+      	"name"		"RaceRoom Racing Experience"
+      	"StateFlags"		"4"
+      	"installdir"		"raceroom racing experience"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000008"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/raceroom racing experience/Game/x64/RRRE64.exe"
+    content: ''
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/appmanifest_307960.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"307960"
+      	"name"		"IL-2 Sturmovik: Battle of Stalingrad"
+      	"StateFlags"		"4"
+      	"installdir"		"IL-2 Sturmovik Battle of Stalingrad"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000009"
+      }
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/IL-2 Sturmovik Battle of Stalingrad/bin/game/Il-2.exe"
+    content: ''
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/appmanifest_365960.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"365960"
+      	"name"		"rFactor 2"
+      	"StateFlags"		"4"
+      	"installdir"		"rFactor 2"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000010"
+      }
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/rFactor 2/Bin64/rFactor2.exe"
+    content: ''
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/appmanifest_690790.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"690790"
+      	"name"		"DiRT Rally 2.0"
+      	"StateFlags"		"4"
+      	"installdir"		"DiRT Rally 2.0"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000011"
+      }
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/DiRT Rally 2.0/dirtrally2.exe"
+    content: ''
+  - op: writeFile
+    path: "AppData/Roaming/Microsoft Flight Simulator/UserCfg.opt"
+    content: |
+      Version 66
+      {Graphics
+      	Preset Custom
+      }
+      InstalledPackagesPath "D:\MSFS\Packages"
+  - op: writeFile
+    path: "AppData/Roaming/Microsoft Flight Simulator/FlightSimulator.CFG"
+    content: |
+      [Main]
+      User Objects=Airplane
+  - op: writeFile
+    path: "Program Files (x86)/Steam/userdata/12345678/1250410/remote/A1B2C3D4E5F60718"
+    content: |
+      controller profile
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/X-Plane 12/Output/preferences/X-Plane.prf"
+    content: |
+      I
+      1200 version
+      PREF
+      _renopt_frame_rate 60
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/X-Plane 12/Output/preferences/X-Plane Keys.prf"
+    content: |
+      I
+      1200 version
+      KEYS
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/X-Plane 12/Output/preferences/control profiles/Logitech Extreme 3D.prf"
+    content: |
+      I
+      1200 version
+      JOY
+      _joy_AXIS_use0 1
+      _joy_AXIS_use1 2
+  - op: writeFile
+    path: "AppData/Local/x-plane_install_11.txt"
+    rehome: true
+    content: |
+      C:\Users\User\Games\X-Plane 11\
+  - op: writeFile
+    path: "Games/X-Plane 11/X-Plane.exe"
+    content: ''
+  - op: writeFile
+    path: "Games/X-Plane 11/Output/preferences/X-Plane.prf"
+    content: |
+      I
+      1100 version
+      PREF
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/IL-2 Sturmovik Battle of Stalingrad/data/input/current.actions"
+    content: |
+      &actions=action,command,invert;
+      rpc_fire_pilot_weapons,joy0_b0,0|
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/IL-2 Sturmovik Battle of Stalingrad/data/input/current.map"
+    content: |
+      &actions=action,command,invert;
+      pitch,joy0_axis_y,0|
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/IL-2 Sturmovik Battle of Stalingrad/data/input/current.responses"
+    content: |
+      &responses=action,deadzone;
+      pitch,0|
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/IL-2 Sturmovik Battle of Stalingrad/data/input/devices.txt"
+    content: |
+      configId,guid,model|
+      0,%225C3A9E40-6D21-11EF-8001-444553540000%22,Logitech Extreme 3D|
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/IL-2 Sturmovik Battle of Stalingrad/data/startup.cfg"
+    content: |
+      [KEY = graphics]
+      	fullscreen = 1
+      [END]
+  - op: setRegistryValue
+    hive: HKLM
+    key: SOFTWARE\WOW6432Node\Benchmark Sims\Falcon BMS 4.38
+    name: baseDir
+    value: { type: string, value: 'C:\Users\User\Games\Falcon BMS 4.38' }
+  - op: writeFile
+    path: "Games/Falcon BMS 4.38/Bin/x64/Falcon BMS.exe"
+    content: ''
+  - op: writeFile
+    path: "Games/Falcon BMS 4.38/Launcher.exe"
+    content: ''
+  - op: writeFile
+    path: "Games/Falcon BMS 4.38/User/Config/Falcon BMS.cfg"
+    content: |
+      set g_bShowFlaps 1
+  - op: writeFile
+    path: "Games/Falcon BMS 4.38/User/Config/axismapping.dat"
+    content: |
+      axis
+  - op: writeFile
+    path: "Games/Falcon BMS 4.38/User/Config/DeviceSorting.txt"
+    content: |
+      {5C3A9E40-6D21-11EF-8001-444553540000} "Logitech Extreme 3D"
+  - op: writeFile
+    path: "Games/Falcon BMS 4.38/User/Config/BMS - Full.key"
+    content: |
+      SimTriggerFirstDet -1 0 0XFFFFFFFF 0 0 0 1 "TRIGGER"
+  - op: writeFile
+    path: "Games/Falcon BMS 4.38/User/Config/Backup/axismapping.dat"
+    content: |
+      old
+  - op: writeFile
+    path: "Documents/Assetto Corsa Competizione/Config/controls.json"
+    content: |
+      {
+        "throttle": { "axis": 1 }
+      }
+  - op: writeFile
+    path: "Documents/Assetto Corsa Competizione/Config/menuSettings.json"
+    content: |
+      {
+        "language": "en"
+      }
+  - op: writeFile
+    path: "Documents/Assetto Corsa Competizione/Setups/porsche_992_gt3_r/monza/race.json"
+    content: |
+      {
+        "carName": "porsche_992_gt3_r"
+      }
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/rFactor 2/UserData/player/Controller.JSON"
+    content: |
+      {
+        "Input": { "Steering Lock": 540 }
+      }
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/rFactor 2/UserData/player/player.JSON"
+    content: |
+      {
+        "DRIVER": { "Player Name": "Driver" }
+      }
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/rFactor 2/UserData/Config.ini"
+    content: |
+      [Config]
+      Fullscreen=1
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/rFactor 2/UserData/Log/trace.txt"
+    content: |
+      log
+  - op: writeFile
+    path: "Documents/Automobilista 2/savegame/76561190000000000/automobilista 2/profiles/default.controllersettings.v1.03.sav"
+    content: |
+      controls
+  - op: writeFile
+    path: "Documents/Automobilista 2/graphicsconfigdx11.xml"
+    content: |
+      <graphics/>
+  - op: writeFile
+    path: "AppData/Local/WRC/Saved/Config/WindowsNoEditor/GameUserSettings.ini"
+    content: |
+      [/Script/WRC.WRCGameUserSettings]
+      WRCVersion=1
+      GameResolutionSizeX=1920
+      GameResolutionSizeY=1080
+  - op: writeFile
+    path: "AppData/Local/WRC/Saved/Config/WindowsNoEditor/EgoInput.ini"
+    content: |
+      [/Script/Input.EgoInputGameSettings]
+      Lcd=(bDisplayGears=True)
+  - op: writeFile
+    path: "Documents/My Games/WRC/telemetry/config.json"
+    content: |
+      {"schema":2,"udp":{"packets":[]}}
+  - op: writeFile
+    path: "Documents/My Games/F1 25/hardwaresettings/hardware_settings_config.xml"
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <hardware_settings_config version="1"/>
+  - op: writeFile
+    path: "Documents/My Games/DiRT Rally 2.0/hardwaresettings/hardware_settings_config.xml"
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <hardware_settings_config version="1"/>
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/DiRT Rally 2.0/input/actionmaps/custom_wheel.xml"
+    content: |
+      <ActionMap name="custom"/>
+  - op: writeFile
+    path: "Games/SteamLibrary/steamapps/common/DiRT Rally 2.0/input/devices/device_defines.xml"
+    content: |
+      <devices/>
+  - op: writeFile
+    path: "Documents/My Games/SimBin/RaceRoom Racing Experience/UserData/hud_options.xml"
+    content: |
+      <hud/>

@@ -21,12 +21,13 @@
     "audioEndpoints": 10,
     "inputDevices": 12,
     "registryKeys": 252,
-    "files": 363,
+    "files": 366,
     "fileBytes": 2880711,
-    "placeholders": 20
+    "placeholders": 23
   },
   "notes": [
     "Stream Deck: 2 of 10 profiles recorded (manifests only, action settings emptied).",
-    "Skipped as too large: C:\\Program Files (x86)\\Steam\\steamapps\\common\\BeamNG.drive\\integrity.json (1714948 bytes)"
+    "Skipped as too large: C:\\Program Files (x86)\\Steam\\steamapps\\common\\BeamNG.drive\\integrity.json (1714948 bytes)",
+    "Added 2026-11-11 by hand, not by a recording: empty placeholders for Assetto Corsa EVO's binary settings files in Saved Games\\ACE (input_devices.inputdeviceconfiguration, input_settings.inputsettings, video.videosettings), measured on the PC."
   ]
 }

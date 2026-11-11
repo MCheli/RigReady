@@ -225,7 +225,7 @@ export const deviceCapture: CaptureDefinition = {
       const twin =
         twins.length > 1 ? { index: twins.indexOf(device) + 1, of: twins.length } : undefined;
       const title = given ?? (twin ? `${device.name} (${twin.index} of ${twin.of})` : device.name);
-      const kind = simFamily(device.vendorId, device.productId);
+      const kind = simFamily(device.vendorId, device.productId, device.name);
       return {
         key: `device:${device.instanceId}`,
         group: 'devices' as const,

@@ -83,6 +83,47 @@ describe('what kind of device a name is', () => {
     for (const [name, kind] of names) expect(deviceKind(name), name).toBe(kind);
   });
 
+  it('knows the gear of the common brands by its names', () => {
+    const names: [string, DeviceKind][] = [
+      ['TCA Sidestick Airbus', 'stick'],
+      ['T.A320 Copilot', 'stick'],
+      ['TCA YOKE BOEING', 'yoke'],
+      ['Saitek Pro Flight Yoke', 'yoke'],
+      ['Alpha Flight Controls', 'yoke'],
+      ['Turtle Beach VelocityOne Flight', 'yoke'],
+      ['Turtle Beach VelocityOne Flightstick', 'stick'],
+      ['Turtle Beach VelocityOne Rudder', 'pedals'],
+      ['Turtle Beach VelocityOne Race', 'wheel'],
+      ['TCA Q-Eng 1&2', 'throttle'],
+      ['TCA Quadrant Boeing 1&2', 'throttle'],
+      ['Bravo Throttle Quadrant', 'throttle'],
+      ['VKB STECS Mini Plus', 'throttle'],
+      ['VPC MongoosT-50CM3', 'stick'],
+      ['RIGHT VPC Stick WarBRD', 'stick'],
+      ['MOZA AB9 FFB Base', 'stick'],
+      ['MOZA MTP Throttle Panel', 'throttle'],
+      ['MOZA MTLP Take-off Landing Pane', 'panel'],
+      ['MOZA R9 Base', 'wheel'],
+      ['MOZA SR-P Pedals', 'pedals'],
+      ['Simagic Alpha', 'wheel'],
+      ['Simagic Alpha Mini', 'wheel'],
+      ['Simucube 2 Sport', 'wheel'],
+      ['Thrustmaster T300RS', 'wheel'],
+      ['T248', 'wheel'],
+      ['T818', 'wheel'],
+      ['TS-PC Racer', 'wheel'],
+      ['T-LCM Pedals', 'pedals'],
+      ['T500 RS Gear Shift', 'shifter'],
+      ['Asetek Invicta', 'wheel'],
+      ['Asetek Invicta Pedals', 'pedals'],
+      ['Cammus C5', 'wheel'],
+      ['Logitech G29 Driving Force Racing Wheel', 'wheel'],
+      ['Saitek Pro Flight X-56 Rhino Stick', 'stick'],
+      ['CH Fighterstick USB', 'stick'],
+    ];
+    for (const [name, kind] of names) expect(deviceKind(name), name).toBe(kind);
+  });
+
   it('a base is what is mounted on it: a throttle base and a wheel base are not sticks', () => {
     expect(deviceKind('Orion Throttle Base II')).toBe('throttle');
     expect(deviceKind('Wheel Base')).toBe('wheel');
