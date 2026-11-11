@@ -37,6 +37,7 @@ const scenario = ref<string>();
 const version = ref('');
 const dataRoot = ref<string>();
 const overlays = manifests.flatMap((m) => m.overlays ?? []);
+const barItems = manifests.flatMap((m) => m.barItems ?? []);
 const notices = ref<string[]>([]);
 const shell = useClient(appContract);
 // The tray and live scenario changes act outside the renderer; screens refresh when told.
@@ -151,6 +152,7 @@ watch(
         </router-link>
       </nav>
       <v-spacer />
+      <component :is="item" v-for="(item, index) in barItems" :key="`bar-${index}`" />
       <button
         type="button"
         class="shell-find"

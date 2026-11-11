@@ -179,7 +179,7 @@ const REASONED: Record<string, { why: string; previews?: Record<string, string> 
     previews: { connect: 'connectPreview' },
   },
   'ai-assist': {
-    why: 'Its own writes are inside the data folder (the guide a model drafted, kept as a YAML file there). Changes to binding files are not written by this feature: they go to the bindings feature as proposals (core/bindings.ts), whose plan is shown in the review dialog before Apply.',
+    why: 'Its own writes are inside the data folder (the guide a model drafted, kept as a YAML file there, and the scripts an assistant drafted with their approvals, in scripts/assistant, written only when the user presses Save on the full text). A setup proposal is saved through profiles:save or profiles:create, as the editor saves. Changes to binding files are not written by this feature: they go to the bindings feature as proposals (core/bindings.ts), whose plan is shown in the review dialog before Apply.',
   },
   'checks-generic': {
     why: 'No screen and no IPC of its own. Its one write outside the data folder is the "Restore from a backup" fix, which Make ready runs in one click by design: the fix text beside the failing check names the file and the copy it comes from (tested below). Its saved copies live inside the data folder.',

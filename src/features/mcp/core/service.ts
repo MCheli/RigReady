@@ -4,7 +4,7 @@ import { LATEST_PROTOCOL_VERSION, type McpServerFactory } from '@modelcontextpro
 import type { ContractRegistry } from '../../../core/contracts';
 import { JsonStore } from '../../../core/jsonStore';
 import type { Logger } from '../../../core/logger';
-import type { McpRegistry } from '../../../core/mcp';
+import type { HostCaller, HostedTool, McpRegistry, ToolHost } from '../../../core/mcp';
 import type { Ports } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChannelDef, Envelope } from '../../../shared/ipc';
@@ -30,6 +30,7 @@ import { changePreview } from '../../../core/files/preview';
 import type { ChangePreview } from '../../../shared/changePreview';
 import { Confirmations, type ConfirmOutcome, type ConfirmRequest } from './confirm';
 import { builtinTools } from './curated';
+import { planToolCall } from './dispatch';
 import { Gate } from './gate';
 import { instructions } from './guide';
 import { bundledManual, type ManualPage } from './manual';
@@ -149,6 +150,7 @@ export class McpService {
     for (const resource of resources) deps.registry.registerResource(resource);
     for (const template of templates) deps.registry.registerResourceTemplate(template);
     for (const prompt of PROMPTS) deps.registry.registerPrompt(prompt);
+    deps.registry.provideHost(this.toolHost());
     this.host = new McpHost({
       log: deps.log,
       factory: this.factory(),
@@ -173,16 +175,70 @@ export class McpService {
     return catalogue;
   }
 
+  /** The guided surface, whatever the MCP server's own setting: what the built-in assistant is offered. */
+  private guided: Catalogue | undefined;
+
+  guidedCatalogue(): Catalogue {
+    this.guided ??= buildCatalogue({
+      contracts: this.deps.contracts.all(),
+      registry: this.deps.registry,
+      surface: 'guided',
+    });
+    return this.guided;
+  }
+
+  private channelDef(channel: string): ChannelDef | undefined {
+    const [feature, key] = channel.split(':');
+    return feature && key ? this.deps.contracts.get(feature)?.channels[key] : undefined;
+  }
+
+  /**
+   * The catalogue and the gate for an assistant inside the app. The same tools on the guided
+   * surface, the same arguments check, the same gate (and so the same confirm policy, rate
+   * limit, one change at a time, activity record and Safety page name). It works whether or
+   * not the MCP server listens: nothing here goes over the network.
+   */
+  toolHost(): ToolHost {
+    return {
+      tools: (): HostedTool[] =>
+        this.guidedCatalogue().tools.map((t) => ({
+          name: t.name,
+          title: t.title,
+          description: t.description,
+          tier: t.tier,
+          inputSchema: t.inputSchema,
+        })),
+      call: async (caller: HostCaller, name: string, args: unknown): Promise<Result<unknown>> => {
+        const catalogue = this.guidedCatalogue();
+        const spec = catalogue.tools.find((t) => t.name === name);
+        if (!spec) {
+          return err(
+            'mcp.tool',
+            `There is no tool "${name}".`,
+            `Tools: ${catalogue.tools.map((t) => t.name).join(', ')}.`
+          );
+        }
+        const planned = planToolCall(spec, args, {
+          catalogue,
+          channelDef: (channel) => this.channelDef(channel),
+        });
+        if (!planned.ok) return planned;
+        const outcome = await this.gate.call(
+          { pairingId: caller.id, client: caller.name, signal: caller.signal },
+          planned.value
+        );
+        return outcome.ok ? ok(outcome.value) : { ok: false, error: outcome.error };
+      },
+    };
+  }
+
   /** A server factory for the surface the settings name now. */
   private factory(): McpServerFactory {
     return createServerFactory({
       version: this.deps.version(),
       instructions: instructions({ version: this.deps.version(), surface: this.surface }),
       catalogue: () => this.catalogue(),
-      channelDef: (channel): ChannelDef | undefined => {
-        const [feature, key] = channel.split(':');
-        return feature && key ? this.deps.contracts.get(feature)?.channels[key] : undefined;
-      },
+      channelDef: (channel) => this.channelDef(channel),
       resources: this.deps.registry.resources(),
       templates: this.deps.registry.resourceTemplates(),
       prompts: this.deps.registry.prompts(),

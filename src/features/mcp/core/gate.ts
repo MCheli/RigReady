@@ -1,3 +1,4 @@
+import { runAsAssistant } from '../../../core/assistantScripts';
 import type { McpCallContext } from '../../../core/mcp';
 import type { Clock } from '../../../core/ports';
 import { err, type Result, type RigError } from '../../../core/result';
@@ -12,6 +13,9 @@ import { gateDecision, type ConfirmPolicy } from './tiers';
  * to be allowed in the window first), one change at a time across every assistant, the
  * work itself through the app's validated channels, and the record: what was asked, how
  * it ended, and which Safety page actions it left behind, under the assistant's name.
+ *
+ * Both doors use it: the MCP server (a paired assistant) and the built-in assistant of the
+ * app (`McpService.host`, as `ctx.mcp.host()`), so a rule changed here holds for both.
  */
 
 export interface Caller {
@@ -175,7 +179,9 @@ export class Gate {
       };
       let result: Result<unknown>;
       try {
-        result = await call.work(ctx);
+        // Whatever the work calls knows an assistant asked: a script an assistant wrote is
+        // then refused, so it only ever runs from the window, where the user is asked.
+        result = await runAsAssistant(caller.client, () => call.work(ctx));
       } catch (e) {
         result = err(
           'mcp.tool',

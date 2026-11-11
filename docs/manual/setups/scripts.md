@@ -80,4 +80,17 @@ actions:
       params: { exe: '{USER}/Scripts/warmup.cmd', args: ['--off'], requiresConfirmation: false }
 ```
 
+## Scripts an assistant wrote
+
+The [built-in assistant](../ai/built-in-assistant.md), or an assistant connected over MCP, can draft a script for you. It is shown to you in full in the assistant panel with an explanation, and saved only when you press **Save**. Such a script:
+
+- lives in RigReady's data folder, in `scripts\assistant`, and the setup names it as `{RIGREADY_HOME}/scripts/assistant/<name>`;
+- starts with a few comment lines that say an assistant wrote it and that RigReady guards it;
+- always asks **Run this program?** before it runs: **Ask before running** is on and cannot be turned off for it;
+- runs only exactly as you approved it. RigReady records the file's SHA-256 when you press **Save**. If the file changes later, the check or fix that uses it says "has changed since you approved it" and does not run it; the assistant panel shows it as it is now, and **Approve it as shown** approves that text. A check script is held back the same way;
+- is never run by an assistant, only from RigReady's window;
+- never asks for administrator rights (a draft that does is refused).
+
+![A script an assistant wrote, changed after it was approved, shown again](../../../artifacts/screens/assistant/08-changed-shown-again.png)
+
 Scripts are never included when a setup is [shared as a file](../protect/sharing.md); the other person is told what to add.

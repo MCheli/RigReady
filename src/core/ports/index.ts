@@ -196,12 +196,17 @@ export interface Secrets {
 
 export interface HttpRequest {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  /** https only. */
+  /** https, or plain http to this PC only (localhost, 127.0.0.1, [::1]). */
   url: string;
   headers?: Record<string, string>;
   body?: string;
   /** Default 60 000. */
   timeoutMs?: number;
+  /**
+   * Return a redirect as the response instead of following it, so that a request that
+   * carries a key never goes on to another address.
+   */
+  noRedirects?: boolean;
 }
 
 export interface HttpResponse {

@@ -83,7 +83,8 @@ Task-level tools (registered by the mcp feature on `ctx.mcp`; another feature ca
 | `rig_stand_down` | change | Stand down, optionally asking the game to close |
 | `setup_create_from_rig` | change | Captures the rig as it is and saves a setup |
 | `device_find_by_press` | read | Waits for a button press and names the device |
-| `manual_search` | read | Finds manual pages by words |
+| `manual_search` | read | Finds manual pages by words, each with its rigready.io address |
+| `manual_read` | read | One manual page in full, the same text as its rigready://docs resource (for the built-in assistant, which has tools but no resources) |
 | `rigready_channels` | read | The reference of every channel, by feature, with JSON Schemas |
 | `rigready_call` | the channel's tier | Calls one channel by name through the same gate |
 
@@ -109,6 +110,10 @@ Every refusal is a tool result with `isError: true` and text `code: message deta
 - A feature exposes itself by giving its contract `describe` and `tier`, and optionally by registering task-level tools, resources and prompts on `ctx.mcp` in its `main.ts`. No shared file changes.
 - `catalogue.test.ts` fails when a channel has no description or tier, so a new channel is described when it is written.
 - The SDK negotiates the protocol revision; the endpoint file records the newest one the server speaks.
+
+## The built-in assistant (ASSIST-001 to ASSIST-004)
+
+The assistant inside the app uses the same catalogue and the same gate. `McpService.toolHost()` is handed to `ctx.mcp.provideHost()` at setup; the ai-assist feature calls `ctx.mcp.host()` for the guided surface's tools and calls each through `planToolCall` (`core/dispatch.ts`, shared with `server/build.ts`) and `Gate.call`, with the caller "Built-in assistant". It works whether or not the server listens. The gate runs every call's work under `runAsAssistant` (`src/core/assistantScripts.ts`), so a script an assistant wrote is refused while any assistant's call is being carried out; only the window runs one, after asking. `programs_find`, `setup_propose` and `script_draft` are task-level tools of the ai-assist feature, so MCP clients have them too; the last two only make drafts, which the panel shows and only the user's Save turns into files.
 
 ## Not built yet
 

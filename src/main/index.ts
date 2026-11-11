@@ -50,7 +50,7 @@ import { ElectronUpdateFeed } from '../platform/electron/updater';
 import { applyLiveMutations, startScenario, type FakePorts } from '../platform/fake';
 import { pngSize } from '../platform/fake/png';
 import { MutationSchema } from '../platform/fake/scenario';
-import { systemClock } from '../platform/node';
+import { LoopbackHttp, systemClock } from '../platform/node';
 import { createWindowsPorts } from '../platform/windows';
 import { trimWorkingSets } from '../platform/windows/memory';
 import { appContract, type CommandRun } from '../shared/appContract';
@@ -217,6 +217,10 @@ async function createPlatform(): Promise<Platform> {
     ...fake,
     secrets: new ElectronSecrets(dataRoot),
     render: new ElectronRender(dataRoot),
+    // A test that started its own server on this PC (a fake local AI server) reaches it.
+    ...(process.env['RIGREADY_SCENARIO_LOOPBACK'] === '1'
+      ? { http: new LoopbackHttp(fake.http) }
+      : {}),
     // Panels are RigReady's own windows, not the machine: a scenario run opens real ones.
     window: {
       showOn: (areas) => fake.window.showOn(areas),

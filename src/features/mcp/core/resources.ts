@@ -8,7 +8,7 @@ import type { Envelope } from '../../../shared/ipc';
 import type { ActivityLog } from './activity';
 import { renderFeatureIndex, renderFeatureReference, type ChannelReference } from './catalogue';
 import { GUIDE, GUIDE_URI } from './guide';
-import { DOCS_URI, docsUri, renderContents, type ManualPage } from './manual';
+import { DOCS_URI, readManualPage, renderContents, type ManualPage } from './manual';
 
 /**
  * What an assistant can read without calling anything: the guide, the manual, the channel
@@ -291,12 +291,6 @@ export function builtinResources(deps: ResourceDeps): {
 }
 
 function readPage(pages: ManualPage[], path: string): Result<string> {
-  const page = pages.find((p) => p.path === path);
-  if (!page) {
-    return err(
-      'mcp.resource',
-      `There is no manual page at ${docsUri(path)}. Read ${DOCS_URI} for the list.`
-    );
-  }
-  return ok(`# ${page.title}\n\n${page.description}\n\n${page.body}`);
+  const read = readManualPage(pages, path);
+  return read.ok ? ok(read.text) : err('mcp.resource', read.message);
 }

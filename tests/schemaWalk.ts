@@ -122,6 +122,9 @@ const STRING_CANDIDATES = [
   '{DOCUMENTS}/sample.txt',
   'sample.yaml',
   '#aabbcc',
+  'sample.ps1',
+  'A sample sentence that is long enough for a text field.',
+  '0'.repeat(64),
 ];
 const NUMBER_CANDIDATES = [1, 0, 10, 100, 1000, 0.5, -1, 90];
 

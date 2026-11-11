@@ -114,7 +114,7 @@ async function main(): Promise<number> {
   const u = answer.value.usage;
   console.log(`OK: model ${answer.value.model}`);
   console.log(
-    `tokens: input ${u.input}, cache write ${u.cacheWrite}, cache read ${u.cacheRead}, output ${u.output}; approx $${answer.value.cost.toFixed(4)}`
+    `tokens: input ${u.input}, cache write ${u.cacheWrite}, cache read ${u.cacheRead}, output ${u.output}; approx $${(answer.value.cost ?? 0).toFixed(4)}`
   );
   console.log(
     plan.ok

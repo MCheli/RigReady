@@ -302,7 +302,17 @@ export class NodeShell implements Shell {
   }
 }
 
-/** fetch, restricted to https. Used by the real platform; tests use the scripted fake. */
+/** Names of this PC itself: plain http is allowed to them (local AI servers such as Ollama). */
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/** https anywhere, or plain http to this PC only. */
+export const allowedUrl = (url: URL): boolean =>
+  url.protocol === 'https:' || (url.protocol === 'http:' && LOOPBACK.has(url.hostname));
+
+/**
+ * fetch, restricted to https (plain http only to this PC). Used by the real platform; tests
+ * use the scripted fake. With `noRedirects` a redirect is returned as it is, never followed.
+ */
 export class NodeHttp implements Http {
   async request(request: HttpRequest): Promise<Result<HttpResponse>> {
     let url: URL;
@@ -311,13 +321,14 @@ export class NodeHttp implements Http {
     } catch {
       return err('http.url', `Not a valid address: ${request.url}`);
     }
-    if (url.protocol !== 'https:') return err('http.url', 'Only https addresses are allowed.');
+    if (!allowedUrl(url)) return err('http.url', 'Only https addresses are allowed.');
     try {
       const response = await fetch(url, {
         method: request.method ?? 'GET',
         ...(request.headers ? { headers: request.headers } : {}),
         ...(request.body !== undefined ? { body: request.body } : {}),
         signal: AbortSignal.timeout(request.timeoutMs ?? 60_000),
+        ...(request.noRedirects ? { redirect: 'manual' as const } : {}),
       });
       const headers: Record<string, string> = {};
       response.headers.forEach((value, key) => (headers[key.toLowerCase()] = value));
@@ -342,7 +353,7 @@ export class NodeHttp implements Http {
     } catch {
       return err('http.url', `Not a valid address: ${request.url}`);
     }
-    if (url.protocol !== 'https:') return err('http.url', 'Only https addresses are allowed.');
+    if (!allowedUrl(url)) return err('http.url', 'Only https addresses are allowed.');
     if (request.signal?.aborted) return err('http.cancelled', 'The request was cancelled.');
 
     // One controller ends the fetch and the body read, whatever the reason; `why` keeps the first.
@@ -366,6 +377,7 @@ export class NodeHttp implements Http {
         ...(request.headers ? { headers: request.headers } : {}),
         ...(request.body !== undefined ? { body: request.body } : {}),
         signal: controller.signal,
+        ...(request.noRedirects ? { redirect: 'manual' as const } : {}),
       });
       const headers: Record<string, string> = {};
       response.headers.forEach((value, key) => (headers[key.toLowerCase()] = value));
@@ -398,6 +410,38 @@ export class NodeHttp implements Http {
       clearTimeout(total);
       request.signal?.removeEventListener('abort', cancelled);
     }
+  }
+}
+
+/**
+ * For scenario runs that test against a server the test itself started on this PC: requests
+ * to this PC go to the real network, everything else to the scripted port. Only used when
+ * RIGREADY_SCENARIO_LOOPBACK=1 is set for a scenario run.
+ */
+export class LoopbackHttp implements Http {
+  private readonly real = new NodeHttp();
+  constructor(private readonly scripted: Http) {}
+
+  private local(url: string): boolean {
+    try {
+      return LOOPBACK.has(new URL(url).hostname);
+    } catch {
+      // Not a URL: the scripted port refuses it like any other unscripted request.
+      return false;
+    }
+  }
+
+  request(request: HttpRequest): Promise<Result<HttpResponse>> {
+    return this.local(request.url) ? this.real.request(request) : this.scripted.request(request);
+  }
+
+  stream(
+    request: HttpStreamRequest,
+    onChunk: (bytes: Uint8Array) => void
+  ): Promise<Result<HttpResponse>> {
+    return this.local(request.url)
+      ? this.real.stream(request, onChunk)
+      : this.scripted.stream(request, onChunk);
   }
 }
 

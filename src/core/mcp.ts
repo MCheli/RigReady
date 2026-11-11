@@ -98,6 +98,39 @@ export interface McpPromptDefinition {
   ): Promise<Result<{ description?: string; messages: McpPromptMessage[] }>>;
 }
 
+/**
+ * One tool as an assistant inside the app is offered it: the same catalogue entry the MCP
+ * server lists, without the parts only the protocol needs.
+ */
+export interface HostedTool {
+  name: string;
+  title: string;
+  description: string;
+  tier: ChannelTier;
+  /** JSON Schema of the arguments. */
+  inputSchema: Record<string, unknown>;
+}
+
+/** Who a hosted call is made for: an id for the rate limit, a name for the record and the Safety page. */
+export interface HostCaller {
+  id: string;
+  name: string;
+  signal: AbortSignal;
+}
+
+/**
+ * The tool catalogue and the gate as one object, for an assistant that is not reached over
+ * MCP (the built-in one). The mcp feature provides it; every call takes the same path an
+ * MCP tool call does: rate limit, tier against the confirm policy, the question in the
+ * window, one change at a time, the activity record under the caller's name, and the
+ * caller's name beside the Safety page actions it left.
+ */
+export interface ToolHost {
+  /** The guided surface: task-level tools, rigready_channels and rigready_call. */
+  tools(): HostedTool[];
+  call(caller: HostCaller, name: string, args: unknown): Promise<Result<unknown>>;
+}
+
 const TOOL_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 
 export class McpRegistry {
@@ -105,6 +138,18 @@ export class McpRegistry {
   private readonly resourceList: McpResourceDefinition[] = [];
   private readonly templateList: McpResourceTemplateDefinition[] = [];
   private readonly promptList: McpPromptDefinition[] = [];
+  private toolHost: ToolHost | undefined;
+
+  /** The mcp feature hands over the catalogue and gate it serves, once, at setup. */
+  provideHost(host: ToolHost): void {
+    if (this.toolHost) throw new Error('A tool host is provided twice');
+    this.toolHost = host;
+  }
+
+  /** The catalogue and gate, when the feature that serves them is wired. */
+  host(): ToolHost | undefined {
+    return this.toolHost;
+  }
 
   registerTool<I extends z.ZodType, O extends z.ZodType>(tool: McpToolDefinition<I, O>): void {
     if (!TOOL_NAME.test(tool.name) || tool.name.startsWith('ipc_')) {
