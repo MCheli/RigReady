@@ -6,6 +6,7 @@ import type {
 } from '../../../core/checks/registry';
 import type { GameRegistry } from '../../../core/games';
 import type { ShellResult } from '../../../core/ports';
+import { isStoredAssistantScript, mayRunScript } from '../../../core/assistantScripts';
 import { err, ok, type Result } from '../../../core/result';
 import { scriptEnvironment } from '../../../core/scriptEnv';
 import { fileName, lastLines, resolveStored } from './paths';
@@ -52,6 +53,7 @@ const OUTPUT_LINES = 200;
 type Run =
   | { kind: 'missing'; path: string }
   | { kind: 'failed'; message: string; detail?: string }
+  | { kind: 'refused'; code: string; message: string }
   | { kind: 'timeout'; exe: string; seconds: number }
   | { kind: 'done'; exe: string; code: number | null; output: string };
 
@@ -70,6 +72,10 @@ async function runProgram(
       ...(exe.error.detail ? { detail: exe.error.detail } : {}),
     };
   if (!(await ctx.ports.files.exists(exe.value))) return { kind: 'missing', path: exe.value };
+  // A script an assistant wrote runs only as the user approved it, and never for an assistant.
+  const allowed = await mayRunScript(ctx.ports.files, ctx.ports.folders.dataRoot(), exe.value);
+  if (!allowed.ok)
+    return { kind: 'refused', code: allowed.error.code, message: allowed.error.message };
   const cwd = params.cwd ? await resolveStored(params.cwd, ctx, games) : undefined;
   if (cwd && !cwd.ok) return { kind: 'failed', message: cwd.error.message };
   const timeoutMs = params.timeoutSeconds * 1000;
@@ -126,6 +132,8 @@ export function createScriptCheck(
             summary: run.message,
             details: run.detail ? [run.detail] : [],
           };
+        case 'refused':
+          return { pass: false, error: true, summary: run.message };
         case 'timeout':
           return { pass: false, error: true, summary: `Timed out after ${run.seconds} s` };
         case 'done': {
@@ -152,8 +160,9 @@ export function createScriptRemediation(
     order: 500,
     params: ScriptRunParamsSchema,
     describe: (params) => `Run ${fileName(params.exe)}`,
+    // A script an assistant wrote is always asked about, whatever its setup says.
     confirm: (params) =>
-      params.requiresConfirmation
+      params.requiresConfirmation || isStoredAssistantScript(params.exe)
         ? { exe: params.exe, args: params.args, ...(params.cwd ? { cwd: params.cwd } : {}) }
         : undefined,
     async run(params, ctx) {
@@ -164,6 +173,12 @@ export function createScriptRemediation(
         if (!(await ctx.ports.files.exists(exe.value))) {
           return err('script.missing', `Script not found: ${exe.value}`);
         }
+        const allowed = await mayRunScript(
+          ctx.ports.files,
+          ctx.ports.folders.dataRoot(),
+          exe.value
+        );
+        if (!allowed.ok) return allowed;
         const cwd = params.cwd ? await resolveStored(params.cwd, ctx, games) : undefined;
         if (cwd && !cwd.ok) return cwd;
         const started = await ctx.ports.shell.launch(exe.value, params.args, {
@@ -184,6 +199,8 @@ export function createScriptRemediation(
           return err('script.missing', `Script not found: ${run.path}`);
         case 'failed':
           return err('script.failed', run.message, run.detail);
+        case 'refused':
+          return err(run.code, run.message);
         case 'timeout':
           return err('script.timeout', `${name} timed out after ${run.seconds} s`);
         case 'done':

@@ -59,7 +59,7 @@ A view that creeps, a button that does nothing, a panel the game no longer knows
 
 AI is off until you turn it on, and nothing else in RigReady needs it. It comes in two forms, and either works without the other. Either way, every change is backed up first and can be undone on the Safety page.
 
-- **With your own Anthropic API key**, the binding guide can suggest a plan for your controllers, answer questions about the aircraft, and explain any action in the walkthrough. Suggestions are checked against your devices, and only the ones you tick and review are written. You see what will be sent before each request, and it goes only to Anthropic.
+- **With your own Anthropic API key**, the built-in assistant helps anywhere in RigReady, for any game: it finds where helper programs such as SimAppPro, TrackIR, SRS or Stream Deck are installed, proposes the checks and launch steps of a ready check, and writes scripts for what no check covers. You see what will be sent before each request, it goes only to Anthropic, and nothing is saved until you press Save. Changes it asks for go through the same questions and the same Safety page as an MCP assistant. In the binding guide it also suggests a plan for your controllers and explains any action.
 - **With an assistant you already use** (Claude Desktop, Claude Code, Cursor or another MCP client), it can check the rig, read the manual and propose changes, and by default RigReady asks you before anything is changed or launched. What it reads goes to that assistant, never to RigReady's author.
 
 See [AI assistants](docs/manual/ai/index.md).

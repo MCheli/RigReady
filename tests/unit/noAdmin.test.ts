@@ -54,7 +54,11 @@ describe('no administrator rights', () => {
       ...(await filesBelow(path.join(repoRoot, 'src'), /\.(ts|vue|ps1|cmd|bat|html)$/)),
       ...(await filesBelow(path.join(repoRoot, 'python'), /\.py$/)),
       ...(await filesBelow(path.join(repoRoot, 'build'), /\.(nsh|nsi|yml)$/)),
-    ].filter((file) => !/\.test\.ts$/.test(file) && !file.includes(`${path.sep}legacy${path.sep}`));
+    ]
+      .filter((file) => !/\.test\.ts$/.test(file) && !file.includes(`${path.sep}legacy${path.sep}`))
+      // The one file that names these words to refuse them: a script an assistant drafted
+      // that asks for elevation is turned away before the user sees it (assistant.test.ts).
+      .filter((file) => !file.endsWith(path.join('ai-assist', 'core', 'scriptRules.ts')));
     expect(shipped.length).toBeGreaterThan(200);
     const offenders: string[] = [];
     for (const file of shipped) {

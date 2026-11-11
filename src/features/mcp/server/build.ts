@@ -11,22 +11,11 @@ import type {
   McpResourceDefinition,
   McpResourceTemplateDefinition,
 } from '../../../core/mcp';
-import { err, type RigError } from '../../../core/result';
+import type { RigError } from '../../../core/result';
 import type { Logger } from '../../../core/logger';
-import type { ChannelTier } from '../../../shared/ipc';
-import {
-  BUILTIN_CALL_TOOL,
-  BUILTIN_CHANNELS_TOOL,
-  CallToolInput,
-  ChannelsToolInput,
-  channelInputOf,
-  renderFeatureIndex,
-  renderFeatureReference,
-  type Catalogue,
-  type ToolSpec,
-} from '../core/catalogue';
+import type { Catalogue, ToolSpec } from '../core/catalogue';
+import { planToolCall } from '../core/dispatch';
 import type { Caller, Gate, ToolCall } from '../core/gate';
-import { channelInputFrom } from '../core/jsonSchema';
 import type { ChannelDef } from '../../../shared/ipc';
 
 /**
@@ -101,10 +90,7 @@ export function createServerFactory(deps: BuildDeps): (ctx: McpRequestContext) =
     );
     const catalogue = deps.catalogue();
 
-    const run = async (
-      ctx: ServerContext,
-      call: Omit<ToolCall, 'work'> & { work: ToolCall['work'] }
-    ): Promise<CallToolResult> => {
+    const run = async (ctx: ServerContext, call: ToolCall): Promise<CallToolResult> => {
       const info = callerOf(ctx);
       if (!info)
         return errorResult({ code: 'mcp.unpaired', message: 'This request carries no pairing.' });
@@ -115,23 +101,6 @@ export function createServerFactory(deps: BuildDeps): (ctx: McpRequestContext) =
       };
       const outcome = await deps.gate.call(caller, call);
       return outcome.ok ? okResult(outcome.value) : errorResult(outcome.error);
-    };
-
-    const channelCall = (
-      channel: string,
-      tier: ChannelTier,
-      tool: string,
-      args: unknown
-    ): ToolCall => {
-      const def = deps.channelDef(channel);
-      const input = def ? channelInputFrom(def.input, args) : args;
-      return {
-        tool,
-        tier,
-        channel,
-        summary: `${channel}${input === undefined ? '' : ` ${JSON.stringify(input).slice(0, 120)}`}`,
-        work: async (c) => c.invoke(channel, input),
-      };
     };
 
     for (const spec of catalogue.tools) {
@@ -152,83 +121,11 @@ export function createServerFactory(deps: BuildDeps): (ctx: McpRequestContext) =
           },
         },
         async (args: unknown, ctx: ServerContext) => {
-          if (spec.kind === 'channel' && spec.channel) {
-            return run(ctx, channelCall(spec.channel, spec.tier, spec.name, args));
-          }
-          if (spec.kind === 'curated' && spec.curated) {
-            const curated = spec.curated;
-            const parsed = curated.input.safeParse(args);
-            if (!parsed.success) {
-              return errorResult({
-                code: 'mcp.input',
-                message: `Invalid arguments for ${spec.name}.`,
-                detail: parsed.error.message,
-              });
-            }
-            const summary = curated.summarize ? curated.summarize(parsed.data) : curated.title;
-            return run(ctx, {
-              tool: spec.name,
-              tier: spec.tier,
-              summary,
-              work: async (c) => {
-                const result = await curated.run(parsed.data, c);
-                if (!result.ok || !curated.output) return result;
-                // Answered in the shape the tool declares: fields it does not name are left out.
-                const shaped = curated.output.safeParse(result.value);
-                return shaped.success
-                  ? { ok: true, value: shaped.data }
-                  : err(
-                      'mcp.output',
-                      `${spec.name} answered in a shape it does not declare.`,
-                      shaped.error.message
-                    );
-              },
-            });
-          }
-          if (spec.name === BUILTIN_CHANNELS_TOOL) {
-            const parsed = ChannelsToolInput.safeParse(args ?? {});
-            const feature = parsed.success ? parsed.data.feature : undefined;
-            return run(ctx, {
-              tool: spec.name,
-              tier: 'read',
-              summary: feature ? `The channels of ${feature}` : 'The features',
-              work: async () => {
-                if (!feature) return { ok: true, value: renderFeatureIndex(catalogue.reference) };
-                if (!catalogue.reference.some((r) => r.feature === feature)) {
-                  return err(
-                    'mcp.feature',
-                    `There is no feature "${feature}".`,
-                    renderFeatureIndex(catalogue.reference)
-                  );
-                }
-                return { ok: true, value: renderFeatureReference(catalogue.reference, feature) };
-              },
-            });
-          }
-          if (spec.name === BUILTIN_CALL_TOOL) {
-            const parsed = CallToolInput.safeParse(args);
-            if (!parsed.success) {
-              return errorResult({
-                code: 'mcp.input',
-                message: 'rigready_call needs a channel name.',
-                detail: parsed.error.message,
-              });
-            }
-            const reference = channelInputOf(catalogue.reference, parsed.data.channel);
-            if (!reference) {
-              return errorResult({
-                code: 'mcp.channel',
-                message: `There is no channel "${parsed.data.channel}".`,
-                detail:
-                  'Read rigready://ipc for the features and rigready://ipc/<feature> for their channels.',
-              });
-            }
-            return run(
-              ctx,
-              channelCall(reference.channel, reference.tier, spec.name, parsed.data.input ?? {})
-            );
-          }
-          return errorResult({ code: 'mcp.tool', message: `${spec.name} is not served.` });
+          const planned = planToolCall(spec, args, {
+            catalogue,
+            channelDef: deps.channelDef,
+          });
+          return planned.ok ? run(ctx, planned.value) : errorResult(planned.error);
         }
       );
     }

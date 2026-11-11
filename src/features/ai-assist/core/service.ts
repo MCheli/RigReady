@@ -470,6 +470,17 @@ export class AiAssist {
     return ok(key.value);
   }
 
+  /** The stored key, for the built-in assistant's requests. Never shown or logged. */
+  apiKey(): Promise<Result<string>> {
+    return this.key();
+  }
+
+  /** The model chosen in Settings. */
+  async model(): Promise<Result<string>> {
+    const settings = await this.settings.read();
+    return settings.ok ? ok(modelInfo(settings.value.model).id) : settings;
+  }
+
   async status(): Promise<Result<AiStatus>> {
     const settings = await this.settings.read();
     if (!settings.ok) return settings;

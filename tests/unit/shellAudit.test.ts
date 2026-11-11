@@ -75,6 +75,9 @@ const SCRIPT_RULES: Rule[] = [
   {
     what: 'a PowerShell command string (-Command, -EncodedCommand, Invoke-Expression)',
     pattern: /['"`]-(?:Command|EncodedCommand|ec|enc)['"`]|\biex\b|Invoke-Expression/i,
+    // The rules a script an assistant drafted is held to: it names Invoke-Expression to warn
+    // the user about a draft that uses it, and runs nothing.
+    allowed: ['src/features/ai-assist/core/scriptRules.ts'],
   },
   {
     what: 'cmd.exe or powershell.exe started by name',

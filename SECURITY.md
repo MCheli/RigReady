@@ -20,7 +20,7 @@ Say what you found, which version, and how to reproduce it. A diagnostics report
 
 - **Runs as you, never as administrator.** The installer is per user (`%LOCALAPPDATA%\Programs\RigReady`), nothing asks for elevation, and the registry is only read, except the per-user "start with Windows" entry.
 - **Writes** go to its own data folder (`%USERPROFILE%\.rigready`) and, on request, to game and tool files under Documents, Saved Games, AppData and the Steam libraries. Every write outside the data folder is backed up first and listed on the Safety page, where it can be undone.
-- **Starts** the game, helper programs and the scripts you put in a setup, always as a program plus an argument list; nothing from a setup is ever part of a command line. An imported setup never carries scripts or launch commands.
+- **Starts** the game, helper programs and the scripts you put in a setup, always as a program plus an argument list; nothing from a setup is ever part of a command line. An imported setup never carries scripts or launch commands. A script an assistant wrote runs only as you approved it (its SHA-256 is checked before every run), always asks first, and is never run by an assistant.
 - **Leaves the PC:** the update check (GitHub Releases) and, only with your own Anthropic API key and only when you press Send, AI requests to `api.anthropic.com`. Nothing else. No telemetry, no crash reporting.
 - **Reads untrusted input** (game Lua files, imported `.rigready` files, backup zips, controller names) through strict parsers with size caps; Lua runs in a sandbox with no file or process access and limits on how long it runs and how much memory it uses. A restore or an import never writes into the Start menu or its Startup folder.
 

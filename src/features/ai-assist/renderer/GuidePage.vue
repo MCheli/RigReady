@@ -8,9 +8,11 @@ import PayloadDialog from './PayloadDialog.vue';
 import PrioritiesTab from './PrioritiesTab.vue';
 import ReviewDialog from './ReviewDialog.vue';
 import WalkthroughTab from './WalkthroughTab.vue';
+import { useAssistantStore } from './assistantStore';
 import { useAiStore } from './store';
 
 const store = useAiStore();
+const assistant = useAssistantStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -72,6 +74,15 @@ onBeforeUnmount(() => {
           What matters in each aircraft, in plain language and in priority order, and a walkthrough
           that binds it with you.
         </p>
+        <v-btn
+          v-if="store.keyPresent"
+          size="small"
+          variant="text"
+          prepend-icon="mdi-message-processing-outline"
+          data-testid="ai-open-assistant"
+          @click="assistant.open = true"
+          >Ask the assistant about anything else</v-btn
+        >
       </div>
       <v-select
         v-if="aircraftItems.length > 0"

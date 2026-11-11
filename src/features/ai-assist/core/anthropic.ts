@@ -93,7 +93,7 @@ export function messageBody(request: MessageRequest): Record<string, unknown> {
   };
 }
 
-function headers(key: string, beta: boolean): Record<string, string> {
+export function headers(key: string, beta: boolean): Record<string, string> {
   return {
     'content-type': 'application/json',
     'x-api-key': key,
@@ -146,7 +146,11 @@ export function scrub(text: string, key: string): string {
 const clip = (text: string, max: number): string =>
   text.length > max ? `${text.slice(0, max)}…` : text;
 
-function apiError(status: number, body: string, retryAfter: string | undefined): Result<never> {
+export function apiError(
+  status: number,
+  body: string,
+  retryAfter: string | undefined
+): Result<never> {
   const parsed = ErrorSchema.safeParse(safeJson(body));
   const said = parsed.success ? clip(parsed.data.error.message ?? '', 300) : '';
   const detail = said ? `Anthropic said: ${said}` : `HTTP ${status}`;
@@ -186,7 +190,7 @@ function apiError(status: number, body: string, retryAfter: string | undefined):
   return err('ai.request', 'The Anthropic API refused the request.', detail);
 }
 
-function safeJson(body: string): unknown {
+export function safeJson(body: string): unknown {
   try {
     return JSON.parse(body);
   } catch {

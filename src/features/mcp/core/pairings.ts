@@ -143,6 +143,9 @@ export class Pairings {
 
   /** Records a call under a pairing. Best effort: a failure to write is not the call's problem. */
   async noteCall(id: string): Promise<void> {
+    // The built-in assistant has no pairing: nothing to note, and nothing is written.
+    const current = await this.store.read();
+    if (!current.ok || !current.value.pairings.some((p) => p.id === id)) return;
     await this.store.update((current) => ({
       ...current,
       pairings: current.pairings.map((p) =>

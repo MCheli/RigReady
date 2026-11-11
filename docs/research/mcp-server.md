@@ -110,6 +110,10 @@ Every refusal is a tool result with `isError: true` and text `code: message deta
 - `catalogue.test.ts` fails when a channel has no description or tier, so a new channel is described when it is written.
 - The SDK negotiates the protocol revision; the endpoint file records the newest one the server speaks.
 
+## The built-in assistant (AI-007 to AI-010)
+
+The assistant inside the app uses the same catalogue and the same gate. `McpService.toolHost()` is handed to `ctx.mcp.provideHost()` at setup; the ai-assist feature calls `ctx.mcp.host()` for the guided surface's tools and calls each through `planToolCall` (`core/dispatch.ts`, shared with `server/build.ts`) and `Gate.call`, with the caller "Built-in assistant". It works whether or not the server listens. The gate runs every call's work under `runAsAssistant` (`src/core/assistantScripts.ts`), so a script an assistant wrote is refused while any assistant's call is being carried out; only the window runs one, after asking. `programs_find`, `setup_propose` and `script_draft` are task-level tools of the ai-assist feature, so MCP clients have them too; the last two only make drafts, which the panel shows and only the user's Save turns into files.
+
 ## Not built yet
 
 These return a clear error or are absent, never a pretend success:

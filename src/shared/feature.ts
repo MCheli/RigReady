@@ -52,6 +52,12 @@ export interface FeatureManifest {
    * able to appear anywhere (e.g. "keep this monitor layout?").
    */
   overlays?: Component[];
+  /**
+   * Small controls in the app bar, beside "Find or run", on every screen: a button that
+   * opens something of the feature's own (the assistant panel). A control shows itself only
+   * when it has something to offer.
+   */
+  barItems?: Component[];
   /** Check types this feature registers in main, with the label shown in editors. */
   checkTypes?: { type: string; label: string; group: CheckGroup }[];
   remediationTypes?: { type: string; label: string }[];

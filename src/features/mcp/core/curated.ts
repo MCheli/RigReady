@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isStoredAssistantScript } from '../../../core/assistantScripts';
 import { resolveSetup } from '../../../core/commandLine';
 import type { McpCallContext, McpToolDefinition } from '../../../core/mcp';
 import { err, ok, type Result } from '../../../core/result';
@@ -271,7 +272,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     name: 'rig_make_ready',
     title: 'Make the rig ready',
     description:
-      'Runs every available fix of a setup in the order Make ready does (start apps, apply the monitor layout, set audio, restore files), then checks again. Answers with what each step did and what is still not met. A fix that starts a program the setup names as needing confirmation runs only with approvePrograms. A monitor layout it applies reverts by itself unless the user keeps it in RigReady.',
+      'Runs every available fix of a setup in the order Make ready does (start apps, apply the monitor layout, set audio, restore files), then checks again. Answers with what each step did and what is still not met. A fix that starts a program the setup names as needing confirmation runs only with approvePrograms; a script an assistant wrote is never run this way (the user runs it from RigReady). A monitor layout it applies reverts by itself unless the user keeps it in RigReady.',
     input: z.object({
       setup: SetupArg.optional(),
       approvePrograms: z
@@ -302,7 +303,11 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
           await ctx.invoke('fly:check', { profileId: setup.value.id, remember: false })
         );
         if (!before.ok) return before;
-        approved = before.value.results.filter((r) => r.confirm).map((r) => r.itemId);
+        // A script an assistant wrote is never approved by an assistant: the user runs it
+        // from RigReady's window, where "Run this program?" is asked first.
+        approved = before.value.results
+          .filter((r) => r.confirm && !isStoredAssistantScript(r.confirm.exe))
+          .map((r) => r.itemId);
       }
       const made = unwrap<{
         steps: Step[];

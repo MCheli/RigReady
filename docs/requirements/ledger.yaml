@@ -3251,6 +3251,74 @@ requirements:
       - "artifacts/screens/ai-assist-suggest/06-explained.png"
       - "artifacts/screens/ai-assist-draft/02-drafted-guide.png"
 
+  - id: AI-007
+    title: The built-in assistant, app-wide, on the same tools and gate as the MCP server
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "With an Anthropic key stored, an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without a key there is no button and the palette says a key is needed. The binding guide keeps its own view and links to the panel."
+      - "The assistant is offered the MCP server's guided catalogue (task-level tools, rigready_channels, rigready_call), never an 'off' channel, and every call goes through the one gate the MCP server uses: confirm policy, question in the window under 'Built-in assistant', one change at a time, rate limit, activity record and the Safety page name."
+      - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header; tool answers have the user's folder written as {USER}."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
+      - "src/features/ai-assist/core/assistant.test.ts#a read runs, a change is asked in the window under its name, a refusal is recorded, an off channel is refused"
+      - "src/features/ai-assist/core/assistant.test.ts#never sends a request that was not prepared and shown"
+      - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/01-panel-open.png"
+      - "artifacts/screens/assistant/02-first-request.png"
+
+  - id: AI-008
+    title: Find where helper programs are installed
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "programs_find (built-in assistant and MCP) looks for programs by name or vendor in Program Files, Program Files (x86), LocalAppData\\Programs, the Steam libraries and the uninstall entries of the registry, reading only, and answers with exe paths in stored form with path variables."
+      - "It knows the folder names the usual names hide (SRS, TrackIR, Stream Deck, Pit House, G HUB) and leaves out uninstallers and crash handlers; names it did not find are listed."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/programs.test.ts#finds SimAppPro, TrackIR and Stream Deck with path variables applied, and says what it did not find"
+      - "src/features/ai-assist/core/programs.test.ts#knows the folder names the usual names hide (SRS, Pit House), and the uninstall entries"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/03-found-programs.png"
+
+  - id: AI-009
+    title: An assistant proposes setup changes; only the user's Save saves them
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "setup_propose (built-in assistant and MCP) makes a draft of a new setup or of checks and launch steps added to one, validated against the registered check and fix types; it is shown in the assistant panel with every item and the setup as it would be saved."
+      - "Nothing is written until the user presses Save, which saves through profiles:create or profiles:save; a setup changed after the assistant read it is not overwritten. A script.run the assistant proposes always asks before it runs."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/assistant.test.ts#finds the programs, proposes a setup, and the user saves it"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/04-setup-proposal.png"
+
+  - id: AI-010
+    title: Scripts an assistant writes are shown in full, approved by hash, never run by an assistant
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "script_draft makes a .ps1 or .cmd draft with a plain explanation; one that asks for elevation is refused. The panel shows the whole file as it would be saved, the explanation and warnings; Save writes it through FileStore into <data root>/scripts/assistant with a header, and records its SHA-256 as the approval."
+      - "The setup step it goes into asks before every run, whatever the setup says. Before it runs as a check, a fix or a step, the file is hashed again; a changed file is not run and is shown again in the panel until the user approves the text as it is now."
+      - "No assistant can run it: while an assistant's call is carried out, a script from that folder is refused, and rig_make_ready's approvePrograms never covers it. Scripts never run elevated, and shared setups keep leaving scripts out."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/assistant.test.ts#is saved into the data folder with a header, approved by hash, refused when changed and for an assistant"
+      - "src/features/ai-assist/core/assistant.test.ts#refuses a script that asks for administrator rights"
+      - "src/features/ai-assist/core/assistant.test.ts#a script.run step for an assistant script always asks, whatever the setup says"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "artifacts/screens/assistant/05-script-draft.png"
+      - "artifacts/screens/assistant/06-run-asks-first.png"
+      - "artifacts/screens/assistant/07-changed-not-run.png"
+      - "artifacts/screens/assistant/08-changed-shown-again.png"
+
   # ---------------------------------------------------------------------------
   # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)
   # ---------------------------------------------------------------------------
