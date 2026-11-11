@@ -2,7 +2,14 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
-import { PRESET_PARAMS, racingContract, type WheelPresets, type WheelView } from '../contract';
+import { bugs } from '../../../../package.json';
+import {
+  PRESET_PARAMS,
+  racingContract,
+  type BackupGame,
+  type WheelPresets,
+  type WheelView,
+} from '../contract';
 import BackupsPanel from './BackupsPanel.vue';
 import './racing.css';
 
@@ -64,7 +71,7 @@ async function save(): Promise<void> {
   await load();
 }
 
-/** A PC that never had a Fanatec base: none connected, no Fanatec software, no trace of one. */
+/** A PC that never had a wheel base: none connected, no wheel software, no trace of one. */
 const neverHere = computed(
   () =>
     view.value !== undefined &&
@@ -72,6 +79,23 @@ const neverHere = computed(
     view.value.status.lastSeen.length === 0 &&
     view.value.status.software.every((s) => !s.ok)
 );
+
+const status = computed(() => view.value?.status);
+const brandName = computed(() => status.value?.brandName ?? 'wheel');
+const fanatec = computed(() => status.value?.brand === 'fanatec');
+/** The mode is fine when it is the PC one, or when this brand's USB id cannot tell. */
+const modeOk = computed(() => status.value?.mode === 'pc' || status.value?.mode === 'unknown');
+const backupGame = computed(() => status.value?.backup as BackupGame | undefined);
+/** The hardware report form, from the package's own description (package.json). */
+const reportUrl = `${bugs.url}/new?template=hardware.yml`;
+const ROLE: Record<string, string> = {
+  base: 'Wheel base',
+  rim: 'Steering wheel (rim)',
+  pedals: 'Pedals',
+  shifter: 'Shifter',
+  handbrake: 'Handbrake',
+  other: 'Accessory',
+};
 
 const comparison = computed(() => view.value?.comparisons.find((c) => c.game === game.value));
 const paramName = (id: string): string =>
@@ -95,22 +119,23 @@ const STATUS = {
       <div>
         <h1 class="rr-page-title">Wheel</h1>
         <p class="rr-page-sub">
-          Your Fanatec wheel base, its software, and the tuning it keeps on the wheel itself.
+          Your wheel base, rim and pedals as Windows sees them, the maker's software, and what can
+          be kept safe.
         </p>
       </div>
     </div>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
 
-    <template v-if="view">
+    <template v-if="view && status">
       <section class="rc-section">
         <h2 class="rr-section-title">Wheel base</h2>
-        <div class="rr-panel" data-testid="wheel-status">
+        <div class="rr-panel" data-testid="wheel-status" :data-brand="status.brand ?? 'none'">
           <div class="rr-row">
             <v-icon
               :icon="
-                view.status.connected
-                  ? view.status.mode === 'pc'
+                status.connected
+                  ? modeOk
                     ? 'mdi-check-circle'
                     : 'mdi-alert'
                   : neverHere
@@ -118,8 +143,8 @@ const STATUS = {
                     : 'mdi-close-circle'
               "
               :class="
-                view.status.connected
-                  ? view.status.mode === 'pc'
+                status.connected
+                  ? modeOk
                     ? 'rr-ok'
                     : 'rr-warn'
                   : neverHere
@@ -131,31 +156,31 @@ const STATUS = {
             <div class="rr-row-main">
               <div class="rr-row-title" data-testid="wheel-name">
                 {{
-                  view.status.givenName ??
-                  view.status.name ??
+                  status.givenName ??
+                  status.name ??
                   (neverHere
-                    ? 'No Fanatec wheel base on this PC'
-                    : 'No Fanatec wheel base connected')
+                    ? 'No wheel base on this PC'
+                    : status.brandName
+                      ? `No ${status.brandName} wheel base connected`
+                      : 'No wheel base connected')
                 }}
                 <span
-                  v-if="view.status.givenName && view.status.name"
+                  v-if="status.givenName && status.name"
                   class="rr-muted racing-hardware"
                   data-testid="wheel-hardware-name"
                 >
-                  {{ view.status.name }}</span
+                  {{ status.name }}</span
                 >
               </div>
               <div class="rr-row-sub" data-testid="wheel-mode">
-                <template v-if="view.status.connected">
-                  {{ view.status.mode === 'pc' ? 'PC (red) mode' : 'Compatibility (yellow) mode' }}
-                  ·
-                  <span class="rr-mono"
-                    >{{ view.status.vendorId }}:{{ view.status.productId }}</span
-                  >
-                  <template v-if="view.status.connection"> · {{ view.status.connection }}</template>
+                <template v-if="status.connected">
+                  {{ status.brandName }} · {{ status.modeLabel }} ·
+                  <span class="rr-mono">{{ status.vendorId }}:{{ status.productId }}</span>
+                  <template v-if="status.connection"> · {{ status.connection }}</template>
                 </template>
                 <template v-else-if="neverHere"
-                  >Nothing to set up unless you have one. Plug a base in and this page fills in by
+                  >Nothing to set up unless you have one. Plug a base in (Fanatec, Moza, Logitech,
+                  Simagic, Thrustmaster, Simucube, Asetek or Cammus) and this page fills in by
                   itself.</template
                 >
                 <template v-else
@@ -165,45 +190,90 @@ const STATUS = {
             </div>
           </div>
           <div
-            v-if="view.status.connected"
+            v-if="status.brand && !status.verifiedOnHardware"
             class="rr-row rr-row-sub"
-            data-testid="wheel-controllers"
+            data-testid="wheel-unverified"
           >
+            <v-icon icon="mdi-flask-outline" size="18" class="rr-warn" />
+            <span>
+              Tested on recorded data, not yet on a real {{ status.brandName }} wheel. Whether it
+              works on yours or not,
+              <a :href="reportUrl" target="_blank" rel="noopener" class="rec-link"
+                >tell us with the hardware report form</a
+              >.
+            </span>
+          </div>
+          <div v-if="status.connected" class="rr-row rr-row-sub" data-testid="wheel-controllers">
             <v-icon icon="mdi-information-outline" size="18" class="rr-muted" />
             <span>
               Games see this base as
               {{
-                view.status.controllers === 1
-                  ? 'one controller'
-                  : `${view.status.controllers} controllers`
-              }}. A Podium base normally shows up as two controllers with the same name; both are
-              the base, not a duplicate, and games use the first.
+                status.controllers === 1 ? 'one controller' : `${status.controllers} controllers`
+              }}.
+              <template v-if="status.controllersNote">{{ status.controllersNote }}</template>
             </span>
           </div>
-          <div v-if="view.status.accessories.length" class="rr-row rr-row-sub">
-            <v-icon icon="mdi-usb" size="18" class="rr-muted" /> Also connected:
-            {{ view.status.accessories.join(', ') }}
+          <div
+            v-for="p in status.parts.filter((x) => x.role !== 'base')"
+            :key="`${p.vendorId}:${p.productId}`"
+            class="rr-row rr-row-sub"
+            data-testid="wheel-part"
+            :data-role="p.role"
+          >
+            <v-icon icon="mdi-usb" size="18" class="rr-muted" />
+            <span
+              >{{ ROLE[p.role] }}: {{ p.name }}
+              <span class="rr-mono rr-muted">{{ p.vendorId }}:{{ p.productId }}</span></span
+            >
+          </div>
+          <div v-if="status.others.length" class="rr-row rr-row-sub" data-testid="wheel-others">
+            <v-icon icon="mdi-information-outline" size="18" class="rr-muted" />
+            <span>Also connected: {{ status.others.join(', ') }}</span>
           </div>
         </div>
         <div
-          v-if="view.status.mode === 'compatibility'"
+          v-if="status.connected && !modeOk"
           class="rc-notice warn mt-3"
           data-testid="wheel-compat"
         >
           <v-icon icon="mdi-alert" class="rr-warn" />
-          <div>
-            The base is in compatibility (yellow) mode and reports itself as a ClubSport Wheel Base
-            V2.5. Bindings saved in PC mode do not match it in iRacing, Le Mans Ultimate or
-            BeamNG.drive. Switch it to PC (red) mode in the base's menu or the Fanatec App.
-          </div>
+          <div>{{ status.modeHelp }}</div>
         </div>
       </section>
 
+      <section v-if="status.connected && status.axes.length" class="rc-section">
+        <h2 class="rr-section-title">Axes</h2>
+        <div class="rr-panel" data-testid="wheel-axes">
+          <div class="rc-grid">
+            <div v-for="a in status.axes" :key="a.axis" class="rc-pair" data-testid="wheel-axis">
+              <span class="rc-pair-label rr-mono">{{ a.axis }}</span>
+              <span class="rc-pair-value">{{ a.name }}</span>
+            </div>
+          </div>
+        </div>
+        <p class="rc-hint mt-2" data-testid="wheel-axes-note">
+          <template v-if="status.axesSourced"
+            >What each axis is on a {{ brandName }} base, as games see it. The maker's software can
+            change some of them (separate or combined pedals); the
+            <router-link to="/configure/devices/test" class="rec-link">input tester</router-link>
+            shows what moves.</template
+          >
+          <template v-else
+            >No source RigReady trusts says what each axis is on a {{ brandName }} base, so these
+            are the names Windows gives them. Move the wheel and pedals in the
+            <router-link to="/configure/devices/test" class="rec-link">input tester</router-link> to
+            see which is which.</template
+          >
+        </p>
+      </section>
+
       <section class="rc-section">
-        <h2 class="rr-section-title">Fanatec software</h2>
+        <h2 class="rr-section-title">
+          {{ status.brand ? `${status.brandName} software` : 'Wheel software' }}
+        </h2>
         <div class="rr-panel">
           <div
-            v-for="s in view.status.software"
+            v-for="s in status.software"
             :key="s.label"
             class="rr-row"
             data-testid="wheel-software"
@@ -218,7 +288,19 @@ const STATUS = {
             </div>
             <span class="text-body-2">{{ s.value }}</span>
           </div>
-          <div v-if="view.status.firmwareShipped" class="rr-row">
+          <div v-if="!status.software.length" class="rr-row" data-testid="wheel-no-software">
+            <v-icon icon="mdi-minus-circle-outline" class="rr-muted" size="20" />
+            <div class="rr-row-main">
+              <div class="rr-row-title">
+                {{
+                  status.brand
+                    ? `RigReady does not know the ${status.brandName} software yet`
+                    : 'No wheel software is installed'
+                }}
+              </div>
+            </div>
+          </div>
+          <div v-if="status.firmwareShipped" class="rr-row">
             <v-icon icon="mdi-chip" class="rr-muted" size="20" />
             <div class="rr-row-main">
               <div class="rr-row-title">Base firmware in this driver</div>
@@ -226,9 +308,9 @@ const STATUS = {
                 The firmware on the base itself can only be read on the base or in the Fanatec App.
               </div>
             </div>
-            <span class="text-body-2 rr-mono">{{ view.status.firmwareShipped }}</span>
+            <span class="text-body-2 rr-mono">{{ status.firmwareShipped }}</span>
           </div>
-          <div v-for="l in view.status.lastSeen" :key="`${l.label}${l.value}`" class="rr-row">
+          <div v-for="l in status.lastSeen" :key="`${l.label}${l.value}`" class="rr-row">
             <v-icon icon="mdi-history" class="rr-muted" size="20" />
             <div class="rr-row-main">
               <div class="rr-row-title">{{ l.label }}</div>
@@ -237,9 +319,12 @@ const STATUS = {
             <span class="text-body-2">{{ l.value }}</span>
           </div>
         </div>
+        <p v-if="status.softwareNote" class="rc-hint mt-2" data-testid="wheel-software-note">
+          {{ status.softwareNote }}
+        </p>
       </section>
 
-      <section v-if="presets" class="rc-section" data-testid="wheel-presets">
+      <section v-if="presets && fanatec" class="rc-section" data-testid="wheel-presets">
         <div class="rc-section-head">
           <h2 class="rr-section-title">Your tuning presets</h2>
           <v-spacer />
@@ -328,7 +413,7 @@ const STATUS = {
         </div>
       </section>
 
-      <section class="rc-section" data-testid="wheel-recommended">
+      <section v-if="fanatec" class="rc-section" data-testid="wheel-recommended">
         <h2 class="rr-section-title">Recommended settings</h2>
         <v-btn-toggle
           v-model="game"
@@ -403,10 +488,77 @@ const STATUS = {
         </div>
       </section>
 
+      <section v-if="!fanatec && status.brand" class="rc-section" data-testid="wheel-recommended">
+        <h2 class="rr-section-title">Recommended settings</h2>
+        <div v-if="status.recommendedLinks.length" class="rr-panel">
+          <div
+            v-for="r in status.recommendedLinks"
+            :key="r.url"
+            class="rr-row"
+            data-testid="wheel-recommended-link"
+          >
+            <v-icon icon="mdi-open-in-new" class="rr-muted" size="18" />
+            <div class="rr-row-main">
+              <div class="rr-row-title">
+                <a :href="r.url" target="_blank" rel="noopener" class="rec-link">{{ r.title }}</a>
+              </div>
+              <div class="rr-row-sub">{{ r.game }}</div>
+            </div>
+            <v-chip size="x-small" variant="tonal">{{ status.brandName }}</v-chip>
+          </div>
+        </div>
+        <p class="rc-hint mt-2" data-testid="wheel-recommended-note">
+          <template v-if="status.recommendedLinks.length"
+            >Published by {{ status.brandName }} itself. RigReady links to them and does not compare
+            them with your files: the values are set in {{ status.brandName }}'s software and in the
+            game.</template
+          >
+          <template v-else
+            >{{ status.brandName }} publishes no recommended settings per game that RigReady could
+            find, so none are shown. Community guides are not copied here.</template
+          >
+        </p>
+      </section>
+
+      <section
+        v-if="!fanatec && status.profiles.length"
+        class="rc-section"
+        data-testid="wheel-profiles"
+      >
+        <h2 class="rr-section-title">{{ status.brandName }} profiles</h2>
+        <div class="rr-panel">
+          <div
+            v-for="p in status.profiles"
+            :key="p.path"
+            class="rr-row"
+            data-testid="wheel-profile"
+          >
+            <v-icon
+              :icon="p.present ? 'mdi-file-check-outline' : 'mdi-file-hidden'"
+              :class="p.present ? 'rr-ok' : 'rr-muted'"
+              size="20"
+            />
+            <div class="rr-row-main">
+              <div class="rr-row-title">{{ p.label }}</div>
+              <div class="rr-row-sub rr-mono">{{ p.path }}</div>
+            </div>
+            <span class="text-body-2">{{ p.present ? 'On this PC' : 'Not found' }}</span>
+          </div>
+        </div>
+      </section>
+
       <BackupsPanel
+        v-if="fanatec"
         game="fanatec"
         what="Fanatec App settings"
         closed-hint="The Fanatec App's window settings and choices are restored. The Fanatec Service registry settings are kept as a record only: RigReady never writes the registry."
+      />
+      <BackupsPanel
+        v-else-if="backupGame"
+        :key="backupGame"
+        :game="backupGame"
+        :what="`${status.brandName} profiles`"
+        :closed-hint="`The ${status.brandName} software must be closed while its profiles are restored; RigReady offers to close it and start it again.`"
       />
     </template>
   </div>

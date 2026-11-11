@@ -35,8 +35,20 @@ export default defineCommands({
     {
       // The navigation entry keeps its name; these are more words it is found by.
       id: 'racing.wheel',
-      title: 'Fanatec wheel base',
-      keywords: ['fanatec', 'force feedback', 'dd2', 'tuning'],
+      title: 'Wheel base',
+      keywords: [
+        'fanatec',
+        'moza',
+        'logitech',
+        'simagic',
+        'thrustmaster',
+        'simucube',
+        'asetek',
+        'cammus',
+        'force feedback',
+        'pedals',
+        'tuning',
+      ],
       to: '/configure/racing/wheel',
     },
   ],

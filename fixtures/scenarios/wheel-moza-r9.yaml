@@ -1,0 +1,44 @@
+description: A Moza R9 base on a generic PC, with MOZA Pit House installed and running
+rig: generic-rig
+extends: generic-fresh.yaml
+# Synthetic, not recorded: nobody has run RigReady on a real MOZA wheel yet. The USB ids
+# are from docs/research/wheelbases.md; the GUIDs and instance paths are made up.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_346E&PID_0002\7&1c2d3e4f&0&4'
+      vendorId: '346E'
+      productId: '0002'
+      name: 'MOZA R9 Base'
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: MOZA
+    controller:
+      name: 'MOZA R9 Base'
+      guid: 3B6F1A20-9C41-11F0-8001-444553540000
+      productGuid: 0002346E-0000-0000-0000-504944564944
+      vendorId: '346E'
+      productId: '0002'
+      numAxes: 8
+      numButtons: 64
+      numHats: 1
+      axisNames: [X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2]
+  - op: setRegistryValue
+    hive: HKLM
+    key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MOZA Pit House'
+    name: DisplayName
+    value: { type: string, value: 'MOZA Pit House' }
+  - op: setRegistryValue
+    hive: HKLM
+    key: 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MOZA Pit House'
+    name: DisplayVersion
+    value: { type: string, value: '1.3.2.9' }
+  - op: writeFile
+    path: 'Program Files (x86)/MOZA Pit House/MOZA Pit House.exe'
+    content: ''
+  - op: startProcess
+    name: 'MOZA Pit House.exe'
+    path: 'C:\Program Files (x86)\MOZA Pit House\MOZA Pit House.exe'

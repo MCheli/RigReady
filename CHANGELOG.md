@@ -53,7 +53,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
 - Assetto Corsa controller repair: when Windows lists the controllers in another order than when `controls.ini` was saved (a USB port change, a controller added), the page shows which controller each binding really acts on now and renumbers the file after a preview, with a backup and Undo. Identical controllers are asked for, never guessed.
 - Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally: detection, launch, files to back up.
-- A Fanatec wheel page (other wheel bases work as controllers; their software and modes are not read); any other game works generically.
+- A Wheel page for every major wheelbase brand (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek SimSports, Cammus): base, pedals and axes, the PC mode where the USB ID shows it, the maker's software with a "running" check that starts it, backups of profile files where they are plain files, and the maker's own per-game settings where it publishes any. Any other game works generically.
 
 **Protecting your configuration**
 - One-click backup, a restore wizard with a preview and per-item choices, snapshots, "what changed since it last worked".
@@ -76,6 +76,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - A binding written by RigReady has not been checked in DCS's own controls screen (BIND-DCS-008).
 - MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not been looked at (SAP-001).
 - The iRacing device ID repair has not been tried with a wheel whose Windows ID really changed (RACE-IRACING-005).
+- The Wheel page has only been tried on a real Fanatec base. Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek and Cammus bases were tested on recorded data made from their published USB IDs; the page says so and links the hardware report form (RACE-WHEEL-001).
 - The Assetto Corsa controller repair has not been tried in the game with a controller that really moved (RACE-AC-001).
 - Which way is up on sideways-mounted screens cannot be read from Windows; Monitors > Identify asks once.
 - Restoring a Stream Deck backup file by file, and closing the Stream Deck app, were only exercised against recorded data.
