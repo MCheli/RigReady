@@ -3475,9 +3475,13 @@ requirements:
     done_means:
       - "manual_search (each hit with its https://rigready.io/docs/<section>/<page>/ address) and manual_read (one page in full, the same code as the rigready://docs resources) are task-level tools, so the built-in assistant and MCP assistants both have them."
       - "The built-in assistant's instructions say to search and read the manual before answering a how-to question or proposing a change, and to link the page it used; a how-to question with the scripted provider leads to a search, a read and an answer that links the page."
+    notes:
+      - "2026-11-12: manual_read also takes a section (a heading of the page) and then answers that section only; without one it answers the page in full, as before. manual_search names the section each hit stands under, so an assistant can read the part it needs."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#answers a how-to question from the manual: searches it, reads the page and links it"
+      - "src/features/mcp/core/manual.test.ts#reads the whole page without a section, and only the section under the title with one"
+      - "src/features/mcp/core/manual.test.ts#a search names the sections its lines stand under"
       - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
 
   # ---------------------------------------------------------------------------
@@ -3493,9 +3497,12 @@ requirements:
       - "Every channel of every feature contract appears exactly once in the MCP catalogue, named ipc_<feature>_<key>, with a JSON Schema converted from its zod input, a description and a tier (read, change, launch, off) taken from the contract's own metadata; a feature exposes a new channel by writing its contract, with no shared-code edit."
       - "Every channel has a description and a tier (the test fails on one without), and channels that hand out a secret, use the user's API key, open dialogs or only serve a window are off and never offered."
       - "The guided surface (the default) offers the task-level tools plus rigready_channels (the reference) and rigready_call, which reaches every offered channel through the same gate; the full surface also lists every channel as its own tool."
+    notes:
+      - "2026-11-12: rigready_channels, the reference, answers in three steps: the features, one feature in a line per channel, one channel with its schemas. An assistant that looked up one channel used to be handed the whole feature with every schema."
     status: done
     evidence:
       - "src/features/mcp/core/catalogue.test.ts#every channel of every real contract appears exactly once, with a sound schema and words"
+      - "src/features/mcp/core/dispatch.test.ts#the features, then one feature in a line per channel, then one channel in full"
       - "src/features/mcp/core/catalogue.test.ts#derives a tool per channel, named from the channel, with its schema, description and tier"
       - "src/features/mcp/core/catalogue.test.ts#the channels still without metadata are exactly the known ones"
       - "src/features/mcp/core/catalogue.test.ts#a channel that would hand an assistant a secret is off"

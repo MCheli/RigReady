@@ -133,8 +133,24 @@ export interface HostCaller {
 export interface ToolHost {
   /** The guided surface: task-level tools, rigready_channels and rigready_call. */
   tools(): HostedTool[];
-  call(caller: HostCaller, name: string, args: unknown): Promise<Result<unknown>>;
+  call(caller: HostCaller, name: string, args: unknown): Promise<HostedResult>;
 }
+
+/**
+ * What a hosted call really was, as the gate recorded it. A tool that reaches something
+ * else (rigready_call) is not what it did: the channel it called is, with that channel's tier.
+ */
+export interface HostedCallRecord {
+  /** The tier of what was called: for a call of one channel, the channel's own. */
+  tier: ChannelTier;
+  /** The call in plain words, as the activity record has it. */
+  summary: string;
+  /** The channel reached, for a call of one channel: "profiles:list". */
+  channel?: string;
+}
+
+/** A hosted call's answer, with the record of what was called when the call reached the gate. */
+export type HostedResult = Result<unknown> & { made?: HostedCallRecord };
 
 const TOOL_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 

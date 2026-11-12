@@ -7,8 +7,9 @@ import {
   CallToolInput,
   ChannelsToolInput,
   channelInputOf,
+  renderChannelReference,
   renderFeatureIndex,
-  renderFeatureReference,
+  renderFeatureSummary,
   type Catalogue,
   type ToolSpec,
 } from './catalogue';
@@ -98,21 +99,41 @@ export function planToolCall(spec: ToolSpec, args: unknown, deps: DispatchDeps):
   }
   if (spec.name === BUILTIN_CHANNELS_TOOL) {
     const parsed = ChannelsToolInput.safeParse(args ?? {});
-    const feature = parsed.success ? parsed.data.feature : undefined;
+    const channel = parsed.success ? parsed.data.channel?.trim() || undefined : undefined;
+    const feature = parsed.success ? parsed.data.feature?.trim() || undefined : undefined;
+    const known = (id: string): boolean => catalogue.reference.some((r) => r.feature === id);
     return ok({
       tool: spec.name,
       tier: 'read',
-      summary: feature ? `The channels of ${feature}` : 'The features',
+      summary: channel
+        ? `What ${channel} takes and answers`
+        : feature
+          ? `The channels of ${feature}`
+          : 'The features',
+      // Shortest first: the features, one feature's channels in a line each, then one
+      // channel in full. An assistant pays for every character again with each request.
       work: async () => {
+        if (channel) {
+          const row = channelInputOf(catalogue.reference, channel);
+          if (row) return ok(renderChannelReference(row));
+          const of = channel.includes(':') ? channel.slice(0, channel.indexOf(':')) : channel;
+          return err(
+            'mcp.channel',
+            `There is no channel "${channel}".`,
+            known(of)
+              ? renderFeatureSummary(catalogue.reference, of)
+              : renderFeatureIndex(catalogue.reference)
+          );
+        }
         if (!feature) return ok(renderFeatureIndex(catalogue.reference));
-        if (!catalogue.reference.some((r) => r.feature === feature)) {
+        if (!known(feature)) {
           return err(
             'mcp.feature',
             `There is no feature "${feature}".`,
             renderFeatureIndex(catalogue.reference)
           );
         }
-        return ok(renderFeatureReference(catalogue.reference, feature));
+        return ok(renderFeatureSummary(catalogue.reference, feature));
       },
     });
   }
@@ -126,7 +147,7 @@ export function planToolCall(spec: ToolSpec, args: unknown, deps: DispatchDeps):
       return err(
         'mcp.channel',
         `There is no channel "${parsed.data.channel}".`,
-        'Read rigready://ipc for the features and rigready://ipc/<feature> for their channels.'
+        'Ask rigready_channels for the features, then for the channels of one (or read rigready://ipc and rigready://ipc/<feature>).'
       );
     }
     return ok(
