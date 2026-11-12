@@ -3171,8 +3171,10 @@ requirements:
       - "Further pages take the number of the first with a letter ('RigReady - 01b - Key actions 2.png', 'RigReady - 02b - Stick list.png', 'RigReady - 02c - Stick list 2.png'), so DCS shows them straight after it. A device name too long for a file name is cut and still ends in ' list'."
       - "Every list page ends with a short bar, and the export looks for that bar in each rendered picture. A page without it is planned again with fewer rows; when it is still cut off nothing is written and the dialog names the page. Pages exported before this are reported as stale."
       - "Scenario mark-flight with long device names (cheat-sheets-long-names): the real renderer writes the key actions over two pages and every list page has its bar (E2E, reading the PNG files). The printed 'Most important actions' goes on to a further page the same way."
+      - "Scenario mark-flight (cheat-sheets-hornet), printed on A4: the 71 most important actions take two pages. Measured in the print layout, every column ends inside its page, all 71 are there, and together they are taller than the two columns of one page (E2E). The PDF has one page a device and those two."
     notes:
       - "2026-11-12 sitting, finding 11: the exported 'Key actions' page said '24 actions' and showed 7. The page was planned by a row count that did not know how long the device names were, and whatever ran off the page was cut without a word."
+      - "The printed summary had the same fault: on the full rig its one page cut the list off at the bottom edge. The PDF of the full rig therefore has 13 pages where it had 12. The planner is careful with paper (it cannot look at a printed page afterwards as it does at a kneeboard picture), so the first of the two pages is about two thirds full."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/pages.test.ts#gives every action a row, and goes on in the next column and on the next page"
@@ -3187,6 +3189,9 @@ requirements:
       - "src/features/cheat-sheets/core/kneeboard.test.ts#checks every rendered list page, plans again with fewer rows when one came out cut off, and writes nothing when it still is"
       - "src/features/cheat-sheets/core/kneeboard.test.ts#says that pages with a list from before the fix need a new export"
       - "tests/e2e/kneeboard.e2e.ts#kneeboard: with long device names every key action still gets a place, over as many pages as that takes"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: print layout and PDF, one page per device plus a summary"
+      - "artifacts/screens/cheat-sheets-print/03-summary-first-page.png"
+      - "artifacts/screens/cheat-sheets-print/04-summary-second-page.png"
       - "artifacts/screens/kneeboard-long-names/01-preview-key-actions.png"
       - "artifacts/screens/kneeboard-long-names/02-exported.png"
       - "artifacts/screens/kneeboard-outputs/long-names-key-actions-1.png"
