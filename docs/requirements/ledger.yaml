@@ -533,6 +533,45 @@ requirements:
       - "artifacts/screens/fly-live-plug/01-unplugged.png"
       - "artifacts/screens/fly-live-plug/02-plugged-back.png"
 
+  - id: FLY-029
+    title: The Play page says what Launch will do before the click
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "When the setup runs steps around the game, the Play page says so under its buttons before anything is clicked: \"Before launch: \" and \"After launch: \" with the names of the steps in the order they run. Past three, the rest are counted (\"and 2 more\")."
+      - "Steps that run at Stand down are not in these lines, and a setup with no step around the game shows no such line."
+    status: done
+    evidence:
+      - 'src/features/fly/core/launchText.test.ts#names the steps before launch in the order they run'
+      - 'src/features/fly/core/launchText.test.ts#names three and counts the rest'
+      - 'src/features/fly/core/launchText.test.ts#says nothing for a phase without a step, and never counts a step of Stand down'
+      - 'src/features/fly/core/launchText.test.ts#gives a line for each side of the game that has a step'
+      - 'tests/e2e/launch-moment.e2e.ts#play: the steps Launch runs before and after the game are on the page before the click'
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch'
+      - 'artifacts/screens/launch-plan/01-before-the-click.png'
+      - 'artifacts/screens/setup-from-game-gamepad/03-play-says-what-launch-does.png'
+    notes: "From the sitting of 2026-11-12: nothing on the page said a virtual controller would start before the game."
+
+  - id: FLY-030
+    title: From the click on Launch, the user is told the game is starting, by the game's own name
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "From the moment the game is started until the launch has answered, the Play page says \"Starting \" and the game's own name (\"Starting DCS World\"), never the name of one fixed game. A game of the user's own goes by the name they gave it, and a setup that names no game by its own name."
+      - "When the window hides itself after the launch, Windows shows a notification with the same line and why nothing shows yet; for a game handed to Steam it says Steam is opening it."
+      - "With \"hide after launch\" off the window stays, the page says it, and Windows is not asked to say anything."
+    status: done
+    evidence:
+      - 'src/features/fly/core/launchText.test.ts#names the game it was given, and says why nothing shows yet'
+      - 'src/features/fly/core/fly.test.ts#FLY-030: says the game is starting by its own name, on the screen at once and for Windows when the window hides'
+      - "tests/e2e/launch-moment.e2e.ts#play: from the click on Launch the page says \"Starting\" with the game's name, and Windows says it as the window goes away"
+      - 'tests/e2e/launch-moment.e2e.ts#play: with "hide after launch" off the window stays and Windows is not asked to say anything'
+      - 'tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to'
+      - 'artifacts/screens/launch-starting/01-starting.png'
+    notes: "From the sitting of 2026-11-12: the window went away at once and the game took most of a minute to show, which read as a launch that had failed. RigReady still hides when the launch answers, not when the game's own window is there: no port can see another program's window. The notification itself is proven as what the app hands to Windows; how Windows draws it is not pictured."
+
   # ---------------------------------------------------------------------------
   # FLY MODE — the final pass (docs/PRODUCT.md, "The final pass")
   # ---------------------------------------------------------------------------
@@ -1475,6 +1514,134 @@ requirements:
       - 'tests/e2e/first-impressions.e2e.ts#welcome: on the data folder RigReady 1 left behind, the first start is still the welcome, and the old setup is listed apart'
       - 'artifacts/screens/welcome-after-version-one/02-listed-apart.png'
     notes: "Found on 2026-10-04 by starting this version on a copy of the owner's real data folder: one setup of version 1.1.0 made the first start open on 'No setup can be opened'. Checked again on that copy afterwards: the welcome, no warning, no old file changed."
+
+  - id: CFG-PROFILE-017
+    title: A new setup starts from the game, not from everything on the rig
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "On New setup from this rig, only what the chosen game is played with comes ticked: the wheel and pedals for a racing game; sticks, throttles, pedals and the head tracker for a flight sim. Everything else found on the rig stays on the page, listed and not ticked. Choosing another game on the page changes the ticks."
+      - "A helper program is not ticked merely because it is running: the program of gear the game does not read (TrackIR software for iRacing) is listed and not ticked."
+      - "What a game is played with comes from its game module (an optional playedWith: the kinds of gear, helpers, a microphone, a gamepad), else from what a game of its kind uses. The page holds no list of games or devices. Gear whose kind cannot be told from its name stays ticked."
+      - "The wheel rotation the wheel's driver last recorded is listed and not ticked: it is a recorded value, not a reading of the wheel, and it changes from car to car."
+      - "A game is listed under the name people write, not the store's capitals: \"Ace Combat 8: Wings of Theve\"."
+      - "The saved setup holds a check only for what was ticked."
+    status: done
+    evidence:
+      - 'src/core/gearKind.test.ts#a flight sim reads sticks and a head tracker and no wheel; a racing sim the other way round'
+      - 'src/core/gearKind.test.ts#what the game module says wins, and what it leaves out is what a game of its kind uses'
+      - 'src/features/profiles/core/captureDefaults.test.ts#a racing game keeps the wheel and pedals; flight gear is offered and not ticked'
+      - 'src/features/profiles/core/captureDefaults.test.ts#a helper is not kept merely because it is running: TrackIR software for a racing game'
+      - 'src/features/profiles/core/captureDefaults.test.ts#gear nobody can tell from its name is kept; what the rig did not propose never is'
+      - 'src/features/profiles/core/capture.test.ts#a helper that happens to be running is offered, not ticked, for a game that does not use it: TrackIR software and iRacing'
+      - 'src/features/profiles/core/capture.test.ts#on a rig with both, a racing game keeps the wheel and no flight gear, and a flight sim the other way round'
+      - 'src/features/profiles/core/capture.test.ts#the wheel rotation the driver last recorded is offered and not ticked'
+      - 'src/features/profiles/core/capture.test.ts#every game says what it is played with; Ace Combat 8 says a gamepad, its own gear and no helpers'
+      - 'src/features/games/ace-combat-8/module.test.ts#is named the way people write it, and says what it is played with'
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a racing game keeps the wheel; flight gear and a head tracker program that happens to run are listed, not ticked'
+      - 'artifacts/screens/setup-from-game-racing/01-flight-sim.png'
+      - 'artifacts/screens/setup-from-game-racing/02-racing-game-devices.png'
+      - 'artifacts/screens/setup-from-game-racing/03-racing-game-helpers.png'
+      - 'artifacts/screens/setup-from-game-racing/04-wheel-rotation-offered.png'
+    notes: "From the sitting of 2026-11-12: a new iRacing setup came with the flight gear and the head tracker's program ticked, because both were plugged in or running."
+
+  - id: CFG-PROFILE-018
+    title: RigReady's own virtual controller is not part of the rig, and a gamepad game is offered the step that starts one
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "While RigReady's own virtual controller is on, New setup from this rig does not list it among the rig's devices. A virtual controller another program made is listed and not ticked."
+      - "For a game whose module says it reads a gamepad, the page offers a step under Before launch, \"Start a virtual controller\", with the user's virtual controllers to choose from by name and a line that says what the chosen one is. For any other game the step is not offered."
+      - "The step starts with the controller in use now, else the only one there is; with several and none in use, nothing is chosen. Without a choice the step is not kept, and the page says \"Choose one to keep this step.\""
+      - "The saved setup holds the step before launch with the controller's id and name, and when the step fails the launch stops and asks."
+    status: done
+    evidence:
+      - "src/features/profiles/core/capture.test.ts#RigReady's own virtual controller is never offered as a connected device"
+      - 'src/features/profiles/core/capture.test.ts#tells its own controller from real ones that share its ids'
+      - 'src/features/profiles/core/capture.test.ts#a game that reads a gamepad is offered "Start a virtual controller" with the profiles by name, and the setup starts it before launch'
+      - 'src/features/profiles/core/captureDefaults.test.ts#is offered only for a game that reads a gamepad'
+      - 'src/features/profiles/core/captureDefaults.test.ts#starts with the one in use now, else the only one, and never guesses between two'
+      - 'src/features/profiles/core/captureDefaults.test.ts#goes into the setup as a step before launch that carries the name with the id, and stops the launch when it fails'
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch'
+      - "tests/e2e/setup-from-game.e2e.ts#new setup: RigReady's own virtual controller is not listed among the rig's devices"
+      - 'artifacts/screens/setup-from-game-gamepad/01-gamepad-game.png'
+      - 'artifacts/screens/setup-from-game-gamepad/02-step-without-a-choice.png'
+      - 'artifacts/screens/setup-own-virtual-controller/01-another-programs-controller.png'
+      - 'artifacts/screens/setup-own-virtual-controller/02-own-controller-not-listed.png'
+
+  - id: CFG-PROFILE-019
+    title: In the setup editor a saved layout or a virtual controller is chosen by name, never typed as an id
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "The check \"Monitor layout\" and the fix \"Apply the monitor layout\" ask for the layout from a list of the saved layouts by name, each with what it is (\"5 monitors, 4 on\"). Choosing fills in the id, the name and the monitors; no field asks for any of them."
+      - "A fix that picks from the same list as its check follows the check: the editor asks once and says \"Uses the layout chosen above.\" Adding the check brings its fix along. A fix that was given something else by hand shows its own list."
+      - "\"Start a virtual controller\" asks for the controller from a list by name. Two controllers of one name are told apart, in the open list and under the closed one, by a line with the kind, the id and what feeds it. The one in use now is marked."
+      - "A check not named yet takes the name of what was chosen (\"Monitor layout: Flying\") and goes with a second choice; a name the person typed is never replaced."
+      - "An empty list says where to make one. What a setup uses stays in the list when it is gone, and says so. A save without a choice is refused with a line that names the list: \"Layout: choose one from the list.\""
+    status: done
+    evidence:
+      - 'src/features/profiles/core/paramPickers.test.ts#carries the choices as they are now, with what choosing fills in'
+      - 'src/features/profiles/core/paramPickers.test.ts#a list that cannot be read says why and offers nothing, and the editor still opens'
+      - 'src/features/profiles/core/profiles.test.ts#a monitor layout is chosen by name, and the fix for the check picks from the same list'
+      - 'src/features/profiles/core/profiles.test.ts#two virtual controllers of one name are told apart, and the one in use is marked'
+      - 'src/features/profiles/core/profiles.test.ts#with one name in the list, nothing is added to tell it apart'
+      - 'src/features/profiles/core/profiles.test.ts#a list with nothing in it says what to do, and one that cannot be read says so'
+      - 'src/features/profiles/core/profiles.test.ts#a save without a choice names the list to choose from, not the field behind it'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#tells two of the same name apart with the list closed, by the line under it'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#choosing fills in everything, and a second choice leaves nothing of the first'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#keeps what the setup uses in the list when it is gone, says so, and never changes it'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#a fix that follows its check asks for none of the followed fields'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#is following only while it says exactly what the check says'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#a check not named yet takes the name of what was chosen'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#goes with a second choice, so the name never says one thing and the check another'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#never replaces a name the person typed'
+      - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: a monitor layout is chosen by name, and the fix that applies it goes with the check'
+      - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: a virtual controller is chosen by name, two of one name are told apart, and a step without a choice is not saved'
+      - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: with no saved layout the list says where to make one'
+      - 'artifacts/screens/editor-lists-layout/01-layouts-by-name.png'
+      - 'artifacts/screens/editor-lists-layout/02-layout-chosen.png'
+      - 'artifacts/screens/editor-lists-virtual-controller/01-two-of-one-name.png'
+      - 'artifacts/screens/editor-lists-virtual-controller/02-step-needs-a-choice.png'
+      - 'artifacts/screens/editor-lists-empty/01-no-saved-layout.png'
+    notes: "From the sitting of 2026-11-12: the layout check asked for a layout id and the monitors as data, and the step for a virtual controller asked for a profile id."
+
+  - id: CFG-PROFILE-020
+    title: What RigReady can list is chosen by name in every check, fix and step, and no form asks for data as JSON
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "An audio device, a DCS aircraft, saved wheel bindings, a Stream Deck and a game are chosen by name from a list in every check, fix and step that names one."
+      - "No registered check, fix or step shows a field for JSON. A closed set of answers is a set of tick boxes with words, a size is a width and a height, and the DCS install folder has Browse."
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#CFG-PROFILE-020: nothing the editor shows for a registered type asks for raw data'
+      - 'src/features/profiles/core/profiles.test.ts#CFG-PROFILE-020: an audio device, an aircraft, saved bindings and a Stream Deck are chosen by name'
+      - 'src/features/profiles/core/profiles.test.ts#a type that asks which game offers the games by name, and every list arrives filled'
+      - 'src/features/profiles/core/paramPickers.test.ts#the games RigReady knows are chosen by name, in order'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#asks for the list by name and never for what the list fills in'
+    notes: "Proven on the form the editor builds from each type, not by a picture of each one. Still typed by hand, because nothing lists them yet: the ids of a wheel base, the name of a program or a Windows service, the name of a DCS monitor setup, and the game version last verified. A connected device is still stored by its ids, which Pick a connected device fills in."
+
+  - id: CFG-PROFILE-021
+    title: A setup Steam starts shows as "Through Steam" in the editor
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "A setup whose launch is steam.exe with -applaunch and a number (how New setup from this rig saves a Steam game) opens in the editor on \"Through Steam\" with the game's number, not on a program and its arguments."
+      - "Another number is saved the way the setup already launches (steam.exe -applaunch and the number). Any other program with arguments stays \"A program\"."
+    status: done
+    evidence:
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#knows steam.exe with a game number as a Steam launch, however the path is written'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#leaves anything else a program: other arguments, no number, another program'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#says which of the three choices a setup is, and the number to show'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#saves a setup that hands over through steam.exe the same way, with the new number'
+      - "tests/e2e/setup-editor-lists.e2e.ts#setup editor: a setup Steam starts shows as \"Through Steam\" with the game's number, not as a program and arguments"
+      - 'artifacts/screens/editor-through-steam/01-through-steam.png'
 
   # ---------------------------------------------------------------------------
   # DISPLAYS
@@ -3543,6 +3710,7 @@ requirements:
       - "Reads run; a change or a launch is asked in RigReady's window under the user's policy (always ask, launches only, never); a no, or no answer in 60 seconds, ends the call with mcp.denied or mcp.timeout; an off channel is refused even through rigready_call."
       - "Calls go through the app's validated channels and safeguards (FileStore backups, the monitor keep-or-revert countdown, DCS must be closed); one change at a time across assistants; a rate limit and size limits per pairing."
       - "Every call is recorded with the pairing's name, how it ended and the Safety page actions it left, and shown on the Settings page; a change or launch also shows a short line on every screen."
+      - "The line that says what a call answered counts one thing in the singular: \"1 setup\", never \"1 setups\"."
     status: done
     evidence:
       - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
@@ -3557,6 +3725,7 @@ requirements:
       - "artifacts/screens/mcp-question-plain/01-question-in-words.png"
       - "artifacts/screens/mcp-question-plain/02-question-launch.png"
       - "artifacts/screens/mcp-question-plain/03-said-no-and-counted.png"
+      - 'src/features/mcp/core/gate.test.ts#counts one thing in the singular: "1 setup", never "1 setups"'
 
   - id: MCP-005
     title: Settings > AI assistants turns the server on and connects assistants

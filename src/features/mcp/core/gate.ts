@@ -247,12 +247,24 @@ export function oneLine(value: unknown): string {
       if (typeof object[key] === 'string') return (object[key] as string).slice(0, 200);
     }
     if (typeof object['ready'] === 'boolean') return object['ready'] ? 'Ready' : 'Not ready';
-    if (Array.isArray(value)) return `${value.length} items`;
+    if (Array.isArray(value)) return counted(value.length, 'items');
     const keys = Object.keys(object);
     if (keys.length === 1 && Array.isArray(object[keys[0]!])) {
-      return `${(object[keys[0]!] as unknown[]).length} ${keys[0]}`;
+      return counted((object[keys[0]!] as unknown[]).length, keys[0]!);
     }
-    return `${Object.keys(object).length} fields`;
+    return counted(keys.length, 'fields');
   }
   return String(value);
+}
+
+/** "1 setup", "3 setups": a count and what is counted, in the singular for one. */
+function counted(count: number, plural: string): string {
+  return `${count} ${count === 1 ? singular(plural) : plural}`;
+}
+
+/** The word for one of them, for the plain English plurals an answer is keyed by. */
+function singular(plural: string): string {
+  if (/ies$/.test(plural)) return `${plural.slice(0, -3)}y`;
+  if (/(ch|sh|ss|x|z)es$/.test(plural)) return plural.slice(0, -2);
+  return /[^s]s$/.test(plural) ? plural.slice(0, -1) : plural;
 }

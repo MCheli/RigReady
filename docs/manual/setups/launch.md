@@ -16,7 +16,7 @@ Launch starts the program and waits up to 30 seconds for it to appear in the lis
 
 ## Through Steam
 
-A **Steam app id** (the number in the game's store address, 223750 for DCS World) makes Launch ask Steam to start the game, through `steam://rungameid/<id>`. Steam must be installed. The result is "Asked Steam to start DCS F/A-18C": Steam does the rest, after an update or a sign-in if it needs one. RigReady then waits for the game's own program, which it knows from the [game module](../games/index.md), for up to fifteen minutes before it gives up on the session ([Sessions and history](../play/sessions.md)). A launch program whose file is `steam.exe` counts the same way.
+A **Steam app id** (the number in the game's store address, 223750 for DCS World) makes Launch ask Steam to start the game, through `steam://rungameid/<id>`. Steam must be installed. The result is "Asked Steam to start DCS F/A-18C": Steam does the rest, after an update or a sign-in if it needs one. RigReady then waits for the game's own program, which it knows from the [game module](../games/index.md), for up to fifteen minutes before it gives up on the session ([Sessions and history](../play/sessions.md)). A launch program whose file is `steam.exe` counts the same way. When its arguments are `-applaunch` and the number, which is how a new setup for a Steam game is saved, [the setup editor](editor.md) shows the setup as **Through Steam**.
 
 ## Nothing
 
@@ -24,7 +24,7 @@ A setup with nothing to launch has no Launch button; Make ready is its main acti
 
 ## Steps before launch
 
-They run in order, before the game starts. Each step is a fix type that does something: start a program, run a script, apply a layout, set an audio device, start TrackIR. Options:
+They run in order, before the game starts. The [Play screen](../play/make-ready-and-launch.md#the-launch-itself) names them under its buttons before you click Launch. Each step is a fix type that does something: start a program, run a script, apply a layout, set an audio device, start TrackIR. Options:
 
 - **Go on if it fails**, on by default. Off: when the step fails the launch pauses with **A step before launch failed**, showing the step's output, and asks **Launch anyway** (the launch goes on after that step) or **Cancel**. Nothing is ever silently launched or silently abandoned.
 - **Wait until it finishes**: a script waits by default and its exit code is judged; a program does not wait by default, RigReady only waits for it to appear (10 seconds unless the step says otherwise). With it on for a program, the launch waits until the program has exited, within the timeout.

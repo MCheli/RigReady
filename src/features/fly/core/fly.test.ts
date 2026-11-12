@@ -397,6 +397,66 @@ describe('Launch', () => {
     expect(started!.args).toEqual(['steam://rungameid/223750']);
   });
 
+  it('FLY-030: says the game is starting by its own name, on the screen at once and for Windows when the window hides', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    // A game RigReady knows is called by its name, not by the setup's.
+    await saveProfile({
+      id: 'p',
+      name: 'Hornet nights',
+      game: 'dcs',
+      launch: { exe: DCS, args: [] },
+    });
+    const { fly: f, events } = fly();
+    const launched = await f.launch('p', { runId: 'L' });
+    expect(launched.ok && launched.value).toMatchObject({
+      outcome: 'launched',
+      minimize: true,
+      starting: {
+        title: 'Starting DCS World',
+        body: 'It can take a minute to show. RigReady is out of the way while you play.',
+      },
+    });
+    // The screen is told while the game is being started, before the launch has answered.
+    const game = events.filter((e) => e.kind === 'launchProgress' && e.payload['id'] === 'game');
+    expect(game.map((e) => [e.payload['state'], e.payload['message']])).toEqual([
+      ['running', 'Starting DCS World'],
+      ['done', 'Launched DCS.exe'],
+    ]);
+
+    // A game of the user's own, handed to Steam: its own name, and Steam is the one opening it.
+    await saveProfile({
+      id: 'q',
+      name: 'Stage nights',
+      game: 'other',
+      gameName: 'Richard Burns Rally',
+      steamAppId: '12345',
+    });
+    const viaSteam = await f.launch('q');
+    expect(viaSteam.ok && viaSteam.value.starting).toEqual({
+      title: 'Starting Richard Burns Rally',
+      body: 'Steam is opening it, which can take a minute. RigReady is out of the way while you play.',
+    });
+
+    // A setup that names no game goes by its own name.
+    await saveProfile({ id: 'r', name: 'Bare', launch: { exe: DCS, args: [] } });
+    const bare = await f.launch('r');
+    expect(bare.ok && bare.value.starting?.title).toBe('Starting Bare');
+
+    // With the window staying up there is nothing for Windows to say: the screen says it.
+    await f.setPreferences({ minimizeOnLaunch: false });
+    const stays = await f.launch('p', { runId: 'M' });
+    expect(stays.ok && stays.value).toMatchObject({ outcome: 'launched', minimize: false });
+    expect(stays.ok && 'starting' in stays.value).toBe(false);
+    expect(
+      events.some(
+        (e) =>
+          e.payload['runId'] === 'M' &&
+          e.payload['state'] === 'running' &&
+          e.payload['message'] === 'Starting DCS World'
+      )
+    ).toBe(true);
+  });
+
   it('says where it looked when the game is not there, and never claims a launch it did not see', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
     const missing = path.join(app.home, 'Games', 'DCS.exe');

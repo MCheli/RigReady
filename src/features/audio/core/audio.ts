@@ -4,6 +4,7 @@ import type {
   CaptureDefinition,
   CheckDefinition,
   CheckOutcome,
+  ParamPicker,
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import type { AudioProvider } from '../../../core/ports';
@@ -21,7 +22,14 @@ export type Flow = z.infer<typeof FlowSchema>;
  * everything ("Set as Default Device"); "communications" is the one voice chat apps use
  * ("Set as Default Communication Device"); "both" means the same device is both.
  */
-export const DefaultRoleSchema = z.enum(['default', 'communications', 'both']);
+export const DefaultRoleSchema = z.enum(['default', 'communications', 'both']).meta({
+  // What the setup editor calls each choice.
+  'x-labels': {
+    default: 'Default device',
+    communications: 'Default for calls',
+    both: 'Both',
+  },
+});
 export type DefaultRole = z.infer<typeof DefaultRoleSchema>;
 
 /** A setup's audio check: this device must be Windows' default. */
@@ -72,11 +80,42 @@ export function findDevice(
 
 const flowWord = (flow: Flow): string => (flow === 'playback' ? 'output' : 'input');
 
+/**
+ * The audio devices Windows lists now, by name, for the setup editor. A setup stores the
+ * Windows endpoint id, which nobody can type; choosing a device fills in its id, its name
+ * and whether it is an output or a microphone.
+ */
+export const audioDevicePicker: ParamPicker = {
+  list: 'audio.devices',
+  param: 'id',
+  label: 'Audio device',
+  fills: ['name', 'flow'],
+  // The fix makes the device the default for what the check asks: both or neither.
+  shares: ['role'],
+  empty:
+    'Windows lists no audio device right now. Plug yours in or switch it on, then open this again.',
+  async choices(ctx) {
+    const state = await ctx.ports.audio.read();
+    if (!state.ok) return state;
+    return ok(
+      state.value.devices.map((device) => ({
+        value: device.id,
+        label: device.name,
+        detail: device.flow === 'playback' ? 'Sound output' : 'Microphone',
+        fill: { name: device.name, flow: device.flow },
+        ...(defaultOf(state.value, device.flow)?.id === device.id ? { current: true } : {}),
+      }))
+    );
+  },
+};
+
 export const audioDefaultCheck: CheckDefinition<AudioParams> = {
   type: AUDIO_DEFAULT,
   group: 'audio',
   label: 'Default audio device',
   params: AudioParamsSchema,
+  fixes: [AUDIO_SET_DEFAULT],
+  picker: audioDevicePicker,
   async run(params, ctx): Promise<CheckOutcome> {
     const state = await ctx.ports.audio.read();
     if (!state.ok) return { pass: false, summary: state.error.message };
@@ -176,6 +215,7 @@ export function createSetDefaultRemediation(
     label: 'Set the default audio device',
     order: 250,
     params: AudioParamsSchema,
+    picker: audioDevicePicker,
     describe: (p) =>
       p.role === 'communications'
         ? `Make ${p.name} the default for calls`

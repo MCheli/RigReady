@@ -19,7 +19,11 @@ import {
 } from './options';
 import { boundingBox, MONITOR_SETUP_NAME, MONITOR_SETUP_OPTION } from './screens';
 import { findSimAppPro, SIMAPPPRO_EXE } from './simAppPro';
-import { RuntimeFeatureSchema, runtimeFeaturePhrase } from './simAppProShared';
+import {
+  RUNTIME_FEATURE_LABELS,
+  RuntimeFeatureSchema,
+  runtimeFeaturePhrase,
+} from './simAppProShared';
 import { SIMAPPPRO_CHECK, START_SIMAPPPRO, type DcsSetupService } from './service';
 
 export const DCS_INSTALL = 'dcs.install';
@@ -41,7 +45,16 @@ const MonitorParams = z.object({
     .object({ width: z.number().int().positive(), height: z.number().int().positive() })
     .optional(),
 });
-const ExportParams = z.object({ tools: z.array(ExportToolSchema).min(1) });
+// "x-labels": what the setup editor calls each choice, in place of the id it stores.
+const ExportParams = z.object({
+  tools: z
+    .array(
+      ExportToolSchema.meta({
+        'x-labels': Object.fromEntries(EXPORT_TOOLS.map((tool) => [tool, TOOL_INFO[tool].name])),
+      })
+    )
+    .min(1),
+});
 export const OptionsParams = z
   .object({
     multiMonitorSetup: z.string().optional(),
@@ -51,7 +64,9 @@ export const OptionsParams = z
     vr: z.boolean().optional(),
   })
   .refine((p) => Object.values(p).some((v) => v !== undefined), 'Name at least one option');
-const SimAppProParams = z.object({ features: z.array(RuntimeFeatureSchema).min(1) });
+const SimAppProParams = z.object({
+  features: z.array(RuntimeFeatureSchema.meta({ 'x-labels': RUNTIME_FEATURE_LABELS })).min(1),
+});
 const NoParams = z.object({});
 
 const names = (tools: readonly (keyof typeof TOOL_INFO)[]): string =>
