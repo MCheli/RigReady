@@ -539,7 +539,12 @@ export const headlessPorts: {
     isEnabled: async () => unavailable('Start with Windows'),
     setEnabled: async () => unavailable('Start with Windows'),
   },
-  overlays: { showLabels: async () => unavailable('Screen labels') },
+  overlays: {
+    showLabels: async () => unavailable('Screen labels'),
+    showPanel: async () => unavailable('The overlay'),
+    panelPlace: async () => unavailable('The overlay'),
+    hidePanel: async () => unavailable('The overlay'),
+  },
   // No window to move outside the app; a layout change from a script needs none.
   window: {
     showOn: async () => ok({ moved: false }),

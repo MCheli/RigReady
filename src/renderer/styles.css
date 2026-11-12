@@ -92,6 +92,20 @@ html {
 html.v-overlay-scroll-blocked {
   padding-inline-end: 0;
 }
+/*
+ * A bare window (an overlay over a game, see main.ts) is its page and nothing else: what
+ * is behind the window shows through, no strip is kept for a scrollbar, and it never
+ * scrolls.
+ */
+html.rr-bare {
+  overflow: hidden !important;
+  scrollbar-gutter: auto;
+  background: transparent;
+}
+html.rr-bare body {
+  background: transparent;
+  overflow: hidden;
+}
 html::-webkit-scrollbar {
   width: 14px;
 }
