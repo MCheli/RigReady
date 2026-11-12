@@ -1,13 +1,15 @@
 import { z } from 'zod';
 import type {
   CheckDefinition,
+  ParamPicker,
+  PickerChoice,
   RemediationDefinition,
   StandDownStep,
 } from '../../../core/checks/registry';
 import { err, ok } from '../../../core/result';
 import { DRIVER_DOWNLOAD } from '../links';
 import type { Emulator } from './emulator';
-import { PROFILE_ID } from './profile';
+import { PROFILE_ID, profileSources, type PadProfile } from './profile';
 import type { ProfileStore } from './store';
 
 /**
@@ -76,10 +78,68 @@ export const installDriverInstructions: RemediationDefinition<Record<string, nev
 export const StartParamsSchema = z.object({
   /** The id of a virtual controller profile (Configure > Virtual controller). */
   profile: z.string().regex(PROFILE_ID),
+  /** The profile's name when it was chosen, for the step's description. */
+  profileName: z.string().max(80).optional(),
   /** Hide the real controllers from games with HidHide until Stand down. */
   hideControllers: z.boolean().default(false),
 });
 export type StartParams = z.infer<typeof StartParamsSchema>;
+
+const KIND_NAME = { xbox360: 'Xbox 360 controller', ds4: 'DualShock 4' } as const;
+
+/**
+ * One line that says what a profile is: the controller games see and what feeds it. Two
+ * profiles may have the same name; those also say their id, which is never the same.
+ */
+export function profileDetail(profile: PadProfile, sameName: boolean): string {
+  const sources = profileSources(profile);
+  const devices = [...new Set(sources.map((s) => s.source.device.name))];
+  const fed =
+    sources.length === 0
+      ? 'nothing mapped yet'
+      : `${sources.length} ${sources.length === 1 ? 'input' : 'inputs'} from ${devices.join(', ')}`;
+  // The id comes before the list of gear: that list can be long, and a line cut short must
+  // still tell two controllers of one name apart.
+  return [KIND_NAME[profile.kind], ...(sameName ? [`id ${profile.id}`] : []), fed].join(' · ');
+}
+
+/**
+ * The user's own virtual controllers, by name, for the step that starts one. The starting
+ * points are left out: nothing in them is mapped, so a game would get a controller that
+ * does nothing.
+ */
+export function profilePicker(
+  emulator: () => Pick<Emulator, 'current'>,
+  store: Pick<ProfileStore, 'all'>
+): ParamPicker {
+  return {
+    list: 'virtual-controller.profiles',
+    param: 'profile',
+    label: 'Virtual controller',
+    fills: ['profileName'],
+    empty:
+      'You have no virtual controller of your own yet. Make one on Configure > Virtual controller, then choose it here.',
+    async choices() {
+      const all = await store.all();
+      if (!all.ok) return all;
+      const running = emulator().current()?.profileId;
+      const count = new Map<string, number>();
+      for (const p of all.value.mine) {
+        const key = p.name.toLowerCase();
+        count.set(key, (count.get(key) ?? 0) + 1);
+      }
+      return ok(
+        all.value.mine.map((p): PickerChoice => ({
+          value: p.id,
+          label: p.name,
+          detail: profileDetail(p, (count.get(p.name.toLowerCase()) ?? 0) > 1),
+          fill: { profileName: p.name },
+          ...(p.id === running ? { current: true } : {}),
+        }))
+      );
+    },
+  };
+}
 
 export function startRemediation(
   emulator: () => Emulator,
@@ -90,8 +150,11 @@ export function startRemediation(
     label: 'Start a virtual controller',
     order: 160,
     params: StartParamsSchema,
+    picker: profilePicker(emulator, store),
+    // A game that reads a gamepad needs one: a new setup for such a game offers this step.
+    provides: 'gamepad',
     describe: (p) =>
-      `Start the virtual controller "${p.profile}"${p.hideControllers ? ', hiding the real controllers from games' : ''}`,
+      `Start the virtual controller "${p.profileName ?? p.profile}"${p.hideControllers ? ', hiding the real controllers from games' : ''}`,
     async run(params, ctx) {
       const profile = await store.get(params.profile);
       if (!profile.ok) return profile;

@@ -21,7 +21,7 @@ The button at the top right opens the setup's file **in your editor** or shows i
 
 ## Launch
 
-**A program**, **Through Steam** or **Nothing**. For a program: the executable (path variables allowed, **Browse…**), the arguments as a list, and the working folder; "Found on this PC" offers the game's own program with **Use it**. For Steam: the **Steam app id**, the number in the game's store address. With Nothing the Play screen has no Launch button. Details on [Launch targets and steps](launch.md).
+**A program**, **Through Steam** or **Nothing**. For a program: the executable (path variables allowed, **Browse…**), the arguments as a list, and the working folder; "Found on this PC" offers the game's own program with **Use it**. For Steam: the **Steam app id**, the number in the game's store address. A setup that hands its game to Steam opens as **Through Steam** with the number filled in, also when it was made by **New setup from this rig**. With Nothing the Play screen has no Launch button. Details on [Launch targets and steps](launch.md).
 
 ## Desktop shortcut
 
@@ -44,7 +44,9 @@ An open item has:
 - **Name shown in the checklist**, and **Timeout (seconds)** for this item in place of the limit in [Settings](../app/settings.md#safety-and-limits).
 - Pickers for the common kinds: **Pick a connected device** (identical devices get their serial number or USB port added, so they are told apart; see [Devices](../hardware/devices.md)) and **Press a button on it** for a device check; **Pick a running app** for an app check, which also fills in the fix with the app's path; **Pick a service** for a Windows service.
 - **What to check**: the fields of the check type. The path, program and folder fields have **Browse…**, which stores the path with a variable where one applies.
-- **Fix**: **What Make ready does when this is not met** ([Make ready and launch](../play/make-ready-and-launch.md)), chosen from the fixes that suit this check type, and the fix's own fields. Some fixes have a helper button, for example **Keep a copy of the file as it is now** for a restore, which saves a known-good copy the fix can later put back.
+- **Lists by name**: what RigReady can list is chosen from a list and never typed as an id: a saved monitor layout, a virtual controller, a game, an audio device, saved bindings, an aircraft, a Stream Deck. The line under the list says what the chosen one is. Two virtual controllers of the same name show what each is made of and its id, so they can be told apart. An empty list says where to make the first one. When what the setup uses is no longer in the list, it stays there marked "(no longer in the list)" until you choose another.
+- A check chosen from a list is named after the choice ("Monitor layout: Flying") until you type a name of your own.
+- **Fix**: **What Make ready does when this is not met** ([Make ready and launch](../play/make-ready-and-launch.md)), chosen from the fixes that suit this check type, and the fix's own fields. Some fixes have a helper button, for example **Keep a copy of the file as it is now** for a restore, which saves a known-good copy the fix can later put back. A fix that goes with one check is added with it: **Add check > Monitor layout** brings **Apply the monitor layout**. Such a fix takes what was chosen in the check and says so ("Uses the layout chosen above."), so nothing is asked twice.
 
 ## Before launch, After launch, At Stand down
 
@@ -56,6 +58,10 @@ Three lists of steps, each with **Add step**. A step is any fix type that does s
 - **Close it at Stand down**, for programs, on by default.
 - **Timeout (seconds)**, 30 by default.
 - **Seconds after the game starts**, for a step after launch.
+
+A step that needs a choice from a list, such as which virtual controller to start, is not saved without one. The step then says "Virtual controller: choose one from the list."
+
+![Two virtual controllers of one name, told apart in the list](../../../artifacts/screens/editor-lists-virtual-controller/01-two-of-one-name.png)
 
 What each list means is on [Launch targets and steps](launch.md).
 
