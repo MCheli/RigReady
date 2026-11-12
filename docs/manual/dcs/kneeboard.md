@@ -60,17 +60,25 @@ The dialog shows where each of the three is bound for this aircraft now, control
 
 ## Where DCS shows the kneeboard
 
-DCS decides where the kneeboard is drawn, and it does not ask the monitor setup file. From DCS's own scripts: the kneeboard goes in the bottom right corner of the whole DCS window (bottom left for a few aircraft, the Su-25T among them), half the window's height wide and about three quarters of it tall.
+DCS decides where the kneeboard is drawn, and it does not ask the monitor setup file. From DCS's own scripts: the kneeboard goes in a bottom corner of the whole DCS window, half the window's height wide and about three quarters of it tall. Which corner is the aircraft's choice, made in the aircraft's own scripts:
 
-With one screen that is a readable panel at the lower right. With MFD screens to the right of the main screen, the DCS window spans all of them, and its bottom right corner is on the last small screen, or below it when that screen is shorter than the main one. On a 5120 × 1440 screen with three 768 × 1024 screens to its right, the kneeboard is 720 × 1085 and only its top 62% is on a screen.
+- **Bottom right:** A-10C and A-10C II, F-14A and F-14B, F-15C, F-15E, F-16C, F-86F, F/A-18C, Ka-50 (2 and 3), P-51D and TF-51D, Su-25, UH-1H.
+- **Bottom left, 32 pixels in from the edge:** A-10A, MiG-29A, MiG-29G and MiG-29S, Su-25T, Su-27 and J-11A, Su-33, Christen Eagle II.
+- **Any other aircraft: RigReady does not know.** These lists are the aircraft whose scripts were read, in one DCS install. Another module may use either corner, or bring a kneeboard of its own.
 
-The **Screens** tab of **Configure > DCS World** draws this place on its map as a dashed box marked **Kneeboard**, and says under the map which screen it is on and how much of it shows. The map always draws the bottom right corner; it does not tell the few aircraft with a kneeboard on the left apart. See [MFD screens and the monitor setup](screens.md).
+With one screen that is a readable panel in a lower corner. With MFD screens to the right of the main screen, the DCS window spans all of them, and its bottom right corner is on the last small screen, or below it when that screen is shorter than the main one. On a 5120 × 1440 screen with three 768 × 1024 screens to its right, the kneeboard of the F/A-18C is 720 × 1085 and only its top 62% is on a screen.
+
+The **Screens** tab of **Configure > DCS World** draws this place on its map as a dashed box marked **Kneeboard**, for the aircraft whose displays the tab is showing, and says under the map which screen it is on and how much of it shows. The line names the aircraft. For an aircraft in neither list above the map draws no box, and the line says that RigReady does not know where this aircraft shows the kneeboard: a place nobody has read from the game is not drawn. With no aircraft in the setup there is no box either, because the corner depends on the aircraft. See [MFD screens and the monitor setup](screens.md).
 
 ![The kneeboard runs off the right screen](../../../artifacts/screens/dcs-screens-kneeboard/01-kneeboard-runs-off-the-right-screen.png)
 
+For an aircraft that shows it on the left, here the Su-25T with the main view alone:
+
+![The kneeboard at the bottom left for the Su-25T](../../../artifacts/screens/dcs-screens-kneeboard/04-kneeboard-on-the-left.png)
+
 RigReady has no control that moves the kneeboard, because no setting that stock DCS reads for this is known. A `KNEEBOARD` entry in a monitor setup file is read by nothing in an unchanged DCS, so RigReady writes none. What you can do:
 
-- **Arrange the screens so the corner is on a screen.** The kneeboard follows the bottom right corner of the DCS window. On the rig above, small screens that line up with the bottom of the main screen in Windows' display settings, not with its top, would have 94% of the kneeboard on the last of them, over whatever display is drawn there. The Screens tab shows the box for the layout you choose before anything is written.
+- **Arrange the screens so the corner is on a screen.** The kneeboard follows its corner of the DCS window. On the rig above, with the F/A-18C, small screens that line up with the bottom of the main screen in Windows' display settings, not with its top, would have 94% of the kneeboard on the last of them, over whatever display is drawn there. The Screens tab shows the box for the layout you choose before anything is written.
 - **Move it in the game.** DCS's scripts allow the kneeboard to be dragged with the mouse while it is shown. This has not been tried with RigReady, and where DCS keeps the new place, or whether it keeps it at all, is not known.
 - **A changed game script.** Players give the kneeboard a place in the monitor setup by editing one of DCS's own scripts. RigReady does not do this: the file is part of the install, every DCS update or repair puts the original back, and whether a changed file passes a multiplayer server's file check has not been established.
 

@@ -262,17 +262,18 @@ test('dcs-screens: Identify screens works from this tab, and the map shows where
   await nameScreens(page);
   await openScreens(page);
 
-  // DCS draws the kneeboard at the bottom right of its whole window. With the three small
-  // screens to the right of the wide one that is the right small screen, which is not as
-  // tall as the wide one: the lower part of the kneeboard is on no screen.
+  // The F/A-18C shows the kneeboard at the bottom right of DCS's whole window. With the three
+  // small screens to the right of the wide one that is the right small screen, which is not
+  // as tall as the wide one: the lower part of the kneeboard is on no screen.
   const outline = page.locator('[data-testid="screen-map-outline"][data-name="kneeboard"]');
   await expect(outline).toBeVisible();
   await expect(outline).toHaveAttribute('data-bad', 'true');
   await expect(outline).toContainText('Kneeboard');
   const note = page.getByTestId('screens-kneeboard');
+  await expect(note).toHaveAttribute('data-side', 'right');
   await expect(note).toHaveAttribute('data-whole', 'false');
   await expect(note).toContainText(
-    'DCS shows the kneeboard at the bottom right of its window. With this setup that is on MFD right, and only 62% of it is on a screen.'
+    'In the F/A-18C Hornet, DCS shows the kneeboard at the bottom right of its window. With this setup that is on MFD right, and only 62% of it is on a screen.'
   );
   await expect(note).toContainText(
     'DCS chooses this place itself; its monitor setup file cannot move the kneeboard.'
@@ -306,7 +307,7 @@ test('dcs-screens: Identify screens works from this tab, and the map shows where
   await expect(page.getByTestId('screen-map-box')).toHaveCount(0);
   await expect(note).toHaveAttribute('data-whole', 'true');
   await expect(note).toContainText(
-    'DCS shows the kneeboard at the bottom right of LC49G95T. All of it is on that screen.'
+    'In the F/A-18C Hornet, DCS shows the kneeboard at the bottom right of LC49G95T. All of it is on that screen.'
   );
   await expect(note.getByTestId('manual-link-page')).toContainText('About this place');
   await expect(outline).toHaveAttribute('data-bad', 'false');
@@ -316,6 +317,70 @@ test('dcs-screens: Identify screens works from this tab, and the map shows where
   expect(whole.y).toBeGreaterThanOrEqual(wide.y - 1);
   expect(whole.x + whole.width).toBeLessThanOrEqual(wide.x + wide.width + 1);
   expect(whole.y + whole.height).toBeLessThanOrEqual(wide.y + wide.height + 1);
+  // The right end of the wide screen.
+  expect(whole.x).toBeGreaterThan(wide.x + wide.width / 2);
   await note.scrollIntoViewIfNeeded();
   await shot('kneeboard-all-on-the-wide-screen');
+
+  // The corner is the aircraft's own. An aircraft that shows the kneeboard on the left, and
+  // one whose scripts RigReady has not read, have no displays to send to a screen, so the
+  // tab never offers them; a setup can still have them (one an assistant saved, say). Saved
+  // here through the channel the page uses, with the main view on the wide screen alone.
+  const saved = (await page.evaluate(async () => {
+    const api = (
+      globalThis as unknown as {
+        rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+      }
+    ).rigready;
+    const state = (await api.invoke('dcs-setup:screens', undefined)) as {
+      value: { desktops: { label: string; displays: { id: string; primary: boolean }[] }[] };
+    };
+    const current = state.value.desktops[0]!;
+    return api.invoke('dcs-setup:applyScreens', {
+      setup: {
+        mainDisplayIds: [current.displays.find((d) => d.primary)!.id],
+        aircraft: [
+          { unit: 'Su-25T', label: 'Su-25T', placements: [] },
+          { unit: 'AH-64D_BLK_II', label: 'AH-64D', placements: [] },
+        ],
+        desktop: current.displays,
+        desktopLabel: current.label,
+      },
+    });
+  })) as { ok: boolean };
+  expect(saved.ok).toBe(true);
+  // The tab opens on the saved setup.
+  await page.getByTestId('nav-displays').click();
+  await expect(page.getByTestId('displays-page')).toBeVisible();
+  await page.getByTestId('nav-dcs').click();
+  await page.getByTestId('dcs-tab-screens').click();
+  await expect(page.getByTestId('screens-aircraft-Su-25T')).toBeVisible();
+
+  // The Su-25T: the bottom left of the DCS window, all of it on the wide screen.
+  await expect(note).toHaveAttribute('data-side', 'left');
+  await expect(note).toHaveAttribute('data-whole', 'true');
+  await expect(note).toContainText(
+    'In the Su-25T, DCS shows the kneeboard at the bottom left of LC49G95T. All of it is on that screen.'
+  );
+  await expect(outline).toHaveAttribute('data-bad', 'false');
+  const screen = (await mapDisplay(page, 'LC49G95T').boundingBox())!;
+  const left = (await outline.boundingBox())!;
+  expect(left.x).toBeGreaterThanOrEqual(screen.x - 1);
+  expect(left.x + left.width).toBeLessThan(screen.x + screen.width / 2);
+  expect(left.y + left.height).toBeLessThanOrEqual(screen.y + screen.height + 1);
+  await note.scrollIntoViewIfNeeded();
+  await shot('kneeboard-on-the-left');
+
+  // An aircraft RigReady has not read: no place is drawn, and the line says why.
+  await page.getByTestId('screens-aircraft-AH-64D_BLK_II').click();
+  await expect(note).toHaveAttribute('data-side', 'unknown');
+  await expect(note).not.toHaveAttribute('data-whole');
+  await expect(note).toContainText(
+    'RigReady does not know where DCS shows the kneeboard in the AH-64D, so it is not drawn on the map.'
+  );
+  await expect(note).not.toContainText('bottom');
+  await expect(note.getByTestId('manual-link-page')).toContainText('What RigReady knows');
+  await expect(outline).toHaveCount(0);
+  await note.scrollIntoViewIfNeeded();
+  await shot('kneeboard-place-not-known');
 });

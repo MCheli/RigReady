@@ -2397,23 +2397,30 @@ requirements:
     area: dcs-monitors
     priority: p1
     done_means:
-      - "The map of the Screens tab draws the place DCS gives the kneeboard for this setup's window (DCS's own rule: the bottom right corner of the whole window, half its height wide; docs/research/dcs.md 5.1), marked 'Kneeboard'."
-      - "A line under the map names the monitor it is on and says whether all of it is on a screen, and how much when not; when not, it says that DCS chooses the place and the monitor setup file cannot move it, and links to the manual section that says what can be done."
-      - "Scenario mark-flight (7424 x 1440 window): the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen (E2E)."
+      - "The map of the Screens tab draws the place DCS gives the kneeboard for this setup's window, for the aircraft whose displays the tab is showing, marked 'Kneeboard' (DCS's own rule: a bottom corner of the whole window, half its height wide; docs/research/dcs.md 5.1)."
+      - "The corner is the aircraft's, by its unit type, from a table of the aircraft whose own scripts were read (docs/research/dcs.md 5.1): the bottom right for 18 unit types, the bottom left, 32 pixels in, for 9 (A-10A, the MiG-29s, Su-27, J-11A, Su-33, Su-25T, Christen Eagle II)."
+      - "For an aircraft that is not in the table no box is drawn, and the line says 'RigReady does not know where DCS shows the kneeboard in the <aircraft>, so it is not drawn on the map.' A setup with no aircraft has no box either. No place is shown that was not read from the game's scripts."
+      - "A line under the map names the aircraft and the monitor the kneeboard is on, and says whether all of it is on a screen, and how much when not; when not, it says that DCS chooses the place and the monitor setup file cannot move it, and links to the manual section that says what can be done."
+      - "Scenario mark-flight (7424 x 1440 window), F/A-18C: the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen, at its right end. A saved setup with the Su-25T has the box at the left end of the wide screen and the line says bottom left; with an aircraft that is not in the table (AH-64D) there is no box and the line says RigReady does not know (E2E)."
       - "RigReady writes no KNEEBOARD entry into RigReady.lua, because nothing in an unchanged DCS reads one."
     notes:
       - "2026-11-12 sitting, finding 19: the kneeboard opened on the right MFD screen with only its top left corner readable. This entry is the part that could be done from DCS's scripts alone: the user is told before flying. The choice of place is DCS-MON-010."
-      - "From reading the scripts of the install; not checked in the game. The map always draws the bottom right corner and does not tell the few aircraft with a kneeboard on the left (Su-25T, A-10A, MiG-29, Su-27, Su-33) apart."
+      - "From reading the scripts of one install; not checked in the game."
+      - "The aircraft with a kneeboard on the left have no displays to send to a screen, so '+ Aircraft' does not offer them and the tab does not start on them. The left box is seen only in a setup that already has such an aircraft (one saved by an assistant, for example). On a rig like the owner's, a user who flies one of them still gets the F/A-18C's box unless the setup has their aircraft."
     status: done
     evidence:
       - "src/features/dcs-setup/core/screens.test.ts#is the bottom right of the whole window: on the rig of the sitting, the right small screen"
       - "src/features/dcs-setup/core/screens.test.ts#is all on the main screen when the window is that screen alone"
       - "src/features/dcs-setup/core/screens.test.ts#is never wider than half the window"
+      - "src/features/dcs-setup/core/screens.test.ts#is the bottom left, 32 pixels in, for an aircraft that declares it on the left"
+      - "src/features/dcs-setup/core/screens.test.ts#knows the side only of the aircraft whose scripts were read"
       - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: Identify screens works from this tab, and the map shows where DCS will draw the kneeboard"
       - "tests/unit/manualLinks.test.ts"
       - "docs/research/dcs.md"
       - "artifacts/screens/dcs-screens-kneeboard/01-kneeboard-runs-off-the-right-screen.png"
       - "artifacts/screens/dcs-screens-kneeboard/03-kneeboard-all-on-the-wide-screen.png"
+      - "artifacts/screens/dcs-screens-kneeboard/04-kneeboard-on-the-left.png"
+      - "artifacts/screens/dcs-screens-kneeboard/05-kneeboard-place-not-known.png"
 
   - id: DCS-MON-010
     title: The user chooses where DCS shows the kneeboard

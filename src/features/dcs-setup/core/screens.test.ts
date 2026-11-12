@@ -7,7 +7,14 @@ import { err } from '../../../core/result';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { PlanPairing, ScreensPreview, ScreensState } from '../contract';
 import { evaluateMonitorSetup } from './monitorFiles';
-import { generateSetup, kneeboardPlace, moveCrop, NO_CROP, type ScreenSetup } from './screens';
+import {
+  generateSetup,
+  kneeboardPlace,
+  kneeboardSide,
+  moveCrop,
+  NO_CROP,
+  type ScreenSetup,
+} from './screens';
 
 let app: WiredApp;
 afterEach(() => app?.cleanup());
@@ -514,6 +521,36 @@ describe('where DCS shows the kneeboard', () => {
     expect(place.rect.x + place.rect.width).toBe(1000);
     expect(place.rect.y + place.rect.height).toBe(1440);
     expect(place.whole).toBe(true);
+  });
+
+  it('is the bottom left, 32 pixels in, for an aircraft that declares it on the left', () => {
+    const place = kneeboardPlace(
+      { x: 0, y: 0, width: 7424, height: 1440 },
+      [wide, ...mfds],
+      kneeboardSide('Su-25T')
+    );
+    // The same size as on the right (ViewportHandling.lua), at manual_viewport_margin_left.
+    expect(place.rect).toEqual({ x: 32, y: 355, width: 720, height: 1085 });
+    expect(place).toMatchObject({ displayId: 'wide', whole: true, shown: 1 });
+    // A window that does not start at the desktop's left edge: the margin is from the window.
+    const shifted = kneeboardPlace({ x: 1920, y: 0, width: 1920, height: 1080 }, [], 'left');
+    expect(shifted.rect.x).toBe(1952);
+    expect(shifted.shown).toBe(0);
+  });
+
+  it('knows the side only of the aircraft whose scripts were read', () => {
+    for (const unit of ['A-10A', 'MiG-29A', 'MiG-29S', 'Su-27', 'Su-33', 'J-11A', 'Su-25T']) {
+      expect(kneeboardSide(unit), unit).toBe('left');
+    }
+    for (const unit of ['FA-18C_hornet', 'F-16C_50', 'A-10C_2', 'UH-1H', 'Su-25', 'F-15C']) {
+      expect(kneeboardSide(unit), unit).toBe('right');
+    }
+    // Not read: a module that is not in the install the table was made from, a mod, no aircraft.
+    expect(kneeboardSide('AH-64D_BLK_II')).toBeUndefined();
+    expect(kneeboardSide('Some-Mod')).toBeUndefined();
+    expect(kneeboardSide(undefined)).toBeUndefined();
+    // A name every object has is not an aircraft.
+    expect(kneeboardSide('constructor')).toBeUndefined();
   });
 });
 

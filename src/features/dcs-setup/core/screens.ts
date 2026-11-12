@@ -482,6 +482,60 @@ export function moveCrop(
  */
 export const KNEEBOARD_ASPECT = 0.142 / 0.214;
 
+export type KneeboardSide = 'left' | 'right';
+
+/**
+ * How far in from the window's left edge DCS puts a kneeboard that is on the left
+ * (manual_viewport_margin_left in KNEEBOARD\indicator\init.lua).
+ */
+export const KNEEBOARD_LEFT_MARGIN = 32;
+
+/**
+ * The side of the DCS window each aircraft shows its kneeboard on, by DCS unit type. Read
+ * from the aircraft's own scripts in a DCS install on 2026-11-12 (docs/research/dcs.md 5.1):
+ * an aircraft is on the left when its device_init.lua loads
+ * KNEEBOARD\declare_kneeboard_device_left.lua or sets is_left before the common
+ * declaration, and on the right when it loads the common declaration without either.
+ * An aircraft whose scripts were not read is not in the table, and nothing is said about
+ * where it shows the kneeboard.
+ */
+export const KNEEBOARD_SIDES: Record<string, KneeboardSide> = {
+  'A-10A': 'left',
+  'Christen Eagle II': 'left',
+  'J-11A': 'left',
+  'MiG-29A': 'left',
+  'MiG-29G': 'left',
+  'MiG-29S': 'left',
+  'Su-25T': 'left',
+  'Su-27': 'left',
+  'Su-33': 'left',
+  'A-10C': 'right',
+  'A-10C_2': 'right',
+  'F-14A-95-GR': 'right',
+  'F-14A-135-GR-Early': 'right',
+  'F-14A-135-GR': 'right',
+  'F-14B': 'right',
+  'F-15C': 'right',
+  'F-15ESE': 'right',
+  'F-16C_50': 'right',
+  'F-86F Sabre': 'right',
+  'FA-18C_hornet': 'right',
+  'Ka-50': 'right',
+  'Ka-50_3': 'right',
+  'P-51D': 'right',
+  'P-51D-30-NA': 'right',
+  'Su-25': 'right',
+  'TF-51D': 'right',
+  'UH-1H': 'right',
+};
+
+/** The side an aircraft shows its kneeboard on, when RigReady knows it. */
+export function kneeboardSide(unit: string | undefined): KneeboardSide | undefined {
+  return unit !== undefined && Object.hasOwn(KNEEBOARD_SIDES, unit)
+    ? KNEEBOARD_SIDES[unit]
+    : undefined;
+}
+
 export interface KneeboardPlace {
   /** Where DCS draws it, in desktop coordinates. */
   rect: Rect;
@@ -498,15 +552,22 @@ export interface KneeboardPlace {
  * file has no say in (update_screenspace_diplacement in
  * Scripts\Aircrafts\_Common\Cockpit\ViewportHandling.lua, called by
  * KNEEBOARD\indicator\init.lua, which looks for no viewport by name). The kneeboard is
- * half the window's height wide, never more than half the window's width, and sits in the
- * bottom right corner of the whole window, whatever monitor is there. A few aircraft
- * declare a kneeboard on the left instead; those are not told apart here.
+ * half the window's height wide, never more than half the window's width, and sits in a
+ * bottom corner of the whole window, whatever monitor is there: the right corner, or for an
+ * aircraft that declares its kneeboard on the left (kneeboardSide) the left corner,
+ * KNEEBOARD_LEFT_MARGIN pixels in.
  */
-export function kneeboardPlace(window: Rect, displays: (Rect & { id: string })[]): KneeboardPlace {
+export function kneeboardPlace(
+  window: Rect,
+  displays: (Rect & { id: string })[],
+  side: KneeboardSide = 'right'
+): KneeboardPlace {
   const width = Math.min(0.5 * window.height, 0.5 * window.width);
   const height = width / KNEEBOARD_ASPECT;
   const rect = {
-    x: Math.round(window.x + window.width - width),
+    x: Math.round(
+      side === 'left' ? window.x + KNEEBOARD_LEFT_MARGIN : window.x + window.width - width
+    ),
     y: Math.round(window.y + window.height - height),
     width: Math.round(width),
     height: Math.round(height),

@@ -20,6 +20,7 @@ import {
   displayLabel,
   generateSetup,
   kneeboardPlace,
+  kneeboardSide,
   MAIN_VIEW_ONLY,
   monitorLabels,
   moveCrop,
@@ -331,14 +332,18 @@ const boxes = computed<MapBox[]>(() => {
 });
 
 /**
- * Where DCS will draw the kneeboard with this setup. DCS decides it from the size of its
- * window alone (core/screens.ts kneeboardPlace); it is shown so nobody finds out in the air.
+ * Where DCS will draw the kneeboard with this setup, for the aircraft whose displays the
+ * page is showing. DCS takes the place from the size of its window and the corner from the
+ * aircraft (core/screens.ts kneeboardPlace and kneeboardSide); it is shown so nobody finds
+ * out in the air. For an aircraft whose corner was not read from the game there is no
+ * place to show: nothing is drawn, and the line under the map says so.
  */
-const kneeboard = computed(() =>
-  generated.value && setup.value
-    ? kneeboardPlace(generated.value.window, setup.value.desktop)
-    : undefined
-);
+const kneeboard = computed(() => {
+  const side = kneeboardSide(aircraft.value?.unit);
+  return side && generated.value && setup.value
+    ? { side, ...kneeboardPlace(generated.value.window, setup.value.desktop, side) }
+    : undefined;
+});
 const outlines = computed<MapOutline[]>(() =>
   kneeboard.value && !viewing.value
     ? [
@@ -351,16 +356,38 @@ const outlines = computed<MapOutline[]>(() =>
       ]
     : []
 );
-const kneeboardText = computed(() => {
+/** The line under the map about the kneeboard: what it says, its icon and its link. */
+const kneeboardLine = computed(() => {
+  const a = aircraft.value;
   const place = kneeboard.value;
-  if (!place) return '';
+  if (!a)
+    return {
+      text: 'Where DCS shows the kneeboard depends on the aircraft, so it is not drawn while this setup has no aircraft.',
+      icon: 'mdi-help-circle-outline',
+      link: 'What RigReady knows',
+    };
+  if (!place)
+    return {
+      text: `RigReady does not know where DCS shows the kneeboard in the ${a.label}, so it is not drawn on the map.`,
+      icon: 'mdi-help-circle-outline',
+      link: 'What RigReady knows',
+    };
   const on = place.displayId ? labels.value.get(place.displayId) : undefined;
+  const start = `In the ${a.label}, DCS shows the kneeboard at the bottom ${place.side} of`;
   if (place.whole)
-    return `DCS shows the kneeboard at the bottom right of ${on}. All of it is on that screen.`;
+    return {
+      text: `${start} ${on}. All of it is on that screen.`,
+      icon: 'mdi-notebook-outline',
+      link: 'About this place',
+    };
   const part = Math.round(place.shown * 100);
-  return on
-    ? `DCS shows the kneeboard at the bottom right of its window. With this setup that is on ${on}, and only ${part}% of it is on a screen.`
-    : 'DCS shows the kneeboard at the bottom right of its window. With this setup none of it is on a screen.';
+  return {
+    text: on
+      ? `${start} its window. With this setup that is on ${on}, and only ${part}% of it is on a screen.`
+      : `${start} its window. With this setup none of it is on a screen.`,
+    icon: 'mdi-alert',
+    link: 'What you can do',
+  };
 });
 
 /** The crop a display had before "Not shown", so choosing a monitor again brings it back. */
@@ -797,19 +824,20 @@ onBeforeUnmount(() => {
           DCS window ({{ generated?.window.width }} × {{ generated?.window.height }}).
         </div>
         <div
-          v-if="!viewing && kneeboard"
+          v-if="!viewing"
           class="scr-kneeboard rr-row-sub"
-          :class="{ 'rr-warn': !kneeboard.whole }"
+          :class="{ 'rr-warn': kneeboard && !kneeboard.whole }"
           data-testid="screens-kneeboard"
-          :data-whole="kneeboard.whole"
+          :data-side="kneeboard?.side ?? 'unknown'"
+          :data-whole="kneeboard?.whole"
         >
-          <v-icon :icon="kneeboard.whole ? 'mdi-notebook-outline' : 'mdi-alert'" size="14" />
-          {{ kneeboardText }}
-          <template v-if="!kneeboard.whole">
+          <v-icon :icon="kneeboardLine.icon" size="14" />
+          {{ kneeboardLine.text }}
+          <template v-if="kneeboard && !kneeboard.whole">
             DCS chooses this place itself; its monitor setup file cannot move the kneeboard.
           </template>
           <ManualLink page="dcs/kneeboard" anchor="where-dcs-shows-the-kneeboard">
-            {{ kneeboard.whole ? 'About this place' : 'What you can do' }}
+            {{ kneeboardLine.link }}
           </ManualLink>
         </div>
       </div>
