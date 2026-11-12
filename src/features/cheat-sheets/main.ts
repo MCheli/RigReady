@@ -40,6 +40,9 @@ function setup(ctx: MainContext) {
   // The latest state per controller waiting to be sent. Axis movement is coalesced; a
   // change of what is held is sent at once, so a quick press is never swallowed.
   const pending = new Map<string, LiveDevice>();
+  // What each controller said last. A window that starts to listen while another already
+  // does has missed what the controllers said first, which is where their controls rest.
+  const latest = new Map<string, LiveDevice>();
   const flush = (): void => {
     timer = undefined;
     if (pending.size === 0 || watchers.size === 0) return;
@@ -53,6 +56,7 @@ function setup(ctx: MainContext) {
     clearTimeout(timer);
     timer = undefined;
     pending.clear();
+    latest.clear();
     tracker.reset();
   };
   cleanups.add(unwatch);
@@ -110,6 +114,14 @@ function setup(ctx: MainContext) {
         const started = await ctx.ports.input.start();
         if (!started.ok) return started;
         watchers.add(client);
+        if (stop && latest.size > 0) {
+          // Another window listens already, so the reader will not say again where the
+          // controls are. What is waiting goes out first, as the presses it is; then every
+          // controller's last word, marked as where the controls rest.
+          clearTimeout(timer);
+          flush();
+          ctx.emit(cheatSheetsContract, 'input', { devices: [...latest.values()], rest: true });
+        }
         stop ??= ctx.ports.input.subscribe((states) => {
           const devices = ctx.ports.input.devices();
           for (const state of states) {
@@ -118,6 +130,7 @@ function setup(ctx: MainContext) {
               state
             );
             if (!live) continue;
+            latest.set(live.guid, { ...live, moved: [] });
             let waiting = pending.get(live.guid);
             if (waiting && waiting.pressed.join() !== live.pressed.join()) {
               clearTimeout(timer);

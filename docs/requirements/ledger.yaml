@@ -2040,10 +2040,12 @@ requirements:
     priority: p2
     done_means:
       - "Cheat sheets > Learn opens a trainer for the aircraft or car: it names an action in plain language (the name the sheet shows, with the game's own name beside a plainer wording) and the user presses the control for it on the real device. Cards are the actions a button or hat of a connected controller does by itself; with bindings of the user's own, only those. A racing game is asked the same way, and a game with one set of bindings for every car is called by its name."
-      - "A press is judged at once: right, with the control lit on the picture of the device; or wrong, with what was pressed and what that does, and the right control lit. The picture has nothing written on it while the question is open. 'Show me' gives the answer away and counts as a miss. Letting go of the right control brings the next card."
+      - "A press is judged once the control has been held for a moment or tapped: right, with every place the action is bound lit on the picture of the device; or wrong, with what was pressed and what that does, and the right places lit. The picture has nothing written on it while the question is open. 'Show me' gives the answer away and counts as a miss. Letting go of the right control brings the next card."
       - "A missed card comes back a few cards later in the same round; a round ends with how many were right first time and the list of missed ones with where they are, and 'Practise the missed' asks just those."
       - "Progress is kept per aircraft under the data root (cheat-sheets/trainer.json): per action how often it was right and wrong and how many times running; right first time twice running is learned. A round asks what is known least first. A progress file that cannot be read is said and never overwritten."
       - "It runs on live input: the first state a controller reports is where it rests (a switch that is on is not a press). A round can be limited to one device and can be stopped; a PC without a readable game says what is missing."
+    notes:
+      - "2026-11-12: the second criterion was 'A press is judged at once'. At the owner's sitting a control on its way back from one card was taken for the answer to the next, so a press now has to be held for a moment or tapped (WOW-TOOLS-007). The summary of a finished round also stays on screen when a device is plugged in or taken out; before, it was replaced by the start of a new round."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/trainer.test.ts#asks every action a button or hat of a connected controller does by itself"
@@ -2057,7 +2059,7 @@ requirements:
       - "src/features/cheat-sheets/core/trainerStore.test.ts#asks a racing game too, and calls a game with one set of bindings for every car by its name"
       - "src/features/cheat-sheets/core/trainerStore.test.ts#keeps each answer per aircraft in cheat-sheets/trainer.json and gives it back with the cards"
       - "src/features/cheat-sheets/core/trainerStore.test.ts#does not overwrite a progress file it cannot read, and says so"
-      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: an action is named, the control is pressed on the device, right or wrong is said at once, missed cards come back, and what is learned is kept"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: an action is named, the control is pressed on the device, right or wrong is said once it is held, missed cards come back, and what is learned is kept"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a racing game is asked the same way, on the buttons of the wheel"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a switch that stays held is drawn quietly, so the control asked for stands out"
       - "artifacts/screens/cheat-sheets-trainer-held/01-held-and-shown.png"
@@ -2091,6 +2093,59 @@ requirements:
       - "artifacts/screens/usb-map/01-tree.png"
       - "artifacts/screens/usb-map/02-pedals-selected.png"
       - "artifacts/screens/usb-map/05-empty-hubs.png"
+
+  - id: WOW-TOOLS-007
+    title: The trainer takes only a meant press for an answer
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "A control answers a card once it has been held for about a third of a second, or tapped: let go sooner with nothing else changing on its controller and no axis travelling. A position a lever or a hat only passes is neither, and is said ('let go too soon to count') and not counted. A plain press is not made slow: it is judged within the hold, and the next card is up within a second of it."
+      - "Where a control rests is not a press: what a controller holds when it is first heard, when the round starts and when a card comes up answers only after it has gone off and come on again. The next card comes once the answering control is let go, the verdict has been on screen for a moment and nothing has changed or travelled for a moment, so the way back to rest happens before the next card and not on it. Axes never answer, and one that never comes to rest cannot hold the next card back for ever."
+      - "A wrong answer needs a control that is new to the question. A control that goes back to where it rested, and the control used on the card before the first time it comes on again, are said under the card and not counted as a miss; the right control always counts. The owner's sitting of 12 November 2026 plays back without a wrong answer that was not one."
+      - "An action bound in more than one place is one card: every place is named ('Button 25 or Button 28 on Throttle'), every place is lit on the picture, on both pictures when the places are on two devices, and any of them is right. A round for one device asks only for the places on that device. What was missed is listed with every place."
+      - "In a round for one device, a press on another device is said to be on another device, by name, and is not counted. In a round for all devices the same press is an answer."
+      - "A window that starts to listen while another window listens is told where every control is, marked as rest and not as a press: the trainer opened beside the popped-out quick look does not take a switch that is on for an answer, and the pop-out does not take it for the last press."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#tapped, is the answer a moment after it is let go, and the next card follows"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#held, is the answer after a short hold, and letting go brings the next card"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#is not made slow: a press is judged within the hold, the next card within a second"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#answers with where it stops, not with what it passes, there and back"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#two-way: the position it is put in answers, and putting it back is not an answer"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#three-way, put back late: on the next card it is told and not counted"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#rolled over a corner, answers with the direction it ends on"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#never answer, and their jitter neither spoils a tap nor holds up the next card"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#that never come to rest cannot hold the next card back for ever"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#at the start of the round is where the controls rest, not an answer"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#cannot fail this one: a control used on it is told and not counted, once"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#does not keep the right control from counting, even the one that answered it"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#is answered by either of them"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#says a press on another device is on another device, and does not count it"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#for all devices takes the same press for an answer"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#76.4 s: Button 16 answered \"Cage / uncage\" and came on again on \"Dispense flares\""
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#243.8 s: the left handle travelled back to OFF (Button 2) as \"Zoom in\" came up"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#243.8 s, with a slower hand: the handle reaches OFF after \"Zoom in\" is up"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#239.8 s: the right handle, moved to OFF for one card, was parked there on the next"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#207.5 s: a button brushed while a handle travels is not an answer"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#176.1 s: Button 8 of the startup panel in the round for the throttle"
+      - "src/features/cheat-sheets/core/trainer.test.ts#names every place an action is bound, and the other places once one was pressed"
+      - "src/features/cheat-sheets/core/trainer.test.ts#can be limited to one device, or to the cards missed last time"
+      - "src/features/cheat-sheets/watch.test.ts#tells a window that starts to listen later where the controls rest"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: only a control that is held or tapped answers a card; one on its way back, one from the card before, one passed over and one on another device are said and not counted"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: an action bound in several places is named and lit in every one of them, and any of them is right"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: opened while the quick look is popped out, it is told where the controls rest, and no window takes that for a press"
+      - "artifacts/screens/cheat-sheets-trainer-rule/01-right-and-held.png"
+      - "artifacts/screens/cheat-sheets-trainer-rule/02-back-to-where-it-was.png"
+      - "artifacts/screens/cheat-sheets-trainer-rule/03-from-the-card-before.png"
+      - "artifacts/screens/cheat-sheets-trainer-rule/04-passed-over.png"
+      - "artifacts/screens/cheat-sheets-trainer-rule/05-on-another-device.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/01-both-places-after-a-miss.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/02-the-other-place-is-right.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/03-missed-with-every-place.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/04-lit-on-both-devices.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/05-lit-on-the-other-device.png"
+      - "artifacts/screens/cheat-sheets-trainer-windows/02-trainer-beside-the-pop-out.png"
 
   # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files
