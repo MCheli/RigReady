@@ -137,6 +137,7 @@ onBeforeUnmount(() => {
               v-if="line.words.more > 0"
               class="rp-tag"
               :title="`${line.words.more} more on this control`"
+              data-testid="overlay-press-more"
             >
               +{{ line.words.more }}
             </span>

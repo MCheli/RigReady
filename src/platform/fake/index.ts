@@ -383,6 +383,10 @@ export class FakeInputProvider implements InputProvider {
   private latest = new Map<number, InputState>();
   constructor(private readonly state: RigState) {}
   async start(): Promise<Result<InputDevice[]>> {
+    // A reader that does not come up: it never answers, or it answers that it could not start.
+    if (isHung(this.state, 'input')) return never();
+    const failed = providerFailure(this.state, 'input');
+    if (failed) return failed;
     return ok(this.devices());
   }
   async stop(): Promise<void> {}

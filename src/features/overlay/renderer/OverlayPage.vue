@@ -19,6 +19,8 @@ const state = ref<OverlayState>();
 const loadError = ref<string>();
 const error = ref<string>();
 const busy = ref(false);
+/** Bumped after a refused change, so that every control shows again what is in effect. */
+const revision = ref(0);
 
 async function load(): Promise<void> {
   const result = await api.state();
@@ -40,6 +42,8 @@ async function change(call: () => Promise<Result<OverlayState>>): Promise<void> 
     state.value = result.value;
   } else {
     error.value = errorText(result.error);
+    // A switch keeps what was clicked on it. Drawn again, it shows what is in effect.
+    revision.value++;
     void load();
   }
 }
@@ -179,7 +183,7 @@ onBeforeUnmount(() => {
       {{ error }}
     </v-alert>
 
-    <template v-if="state">
+    <div v-if="state" :key="revision">
       <v-alert
         v-if="state.problem"
         type="warning"
@@ -339,7 +343,7 @@ onBeforeUnmount(() => {
           <div class="rr-row">
             <div class="rr-row-main">
               <div class="rr-row-title">Place</div>
-              <div class="rr-row-sub">
+              <div class="rr-row-sub" data-testid="overlay-place-words">
                 <template v-if="widget.moving">
                   It is framed on the screen now: drag it to where it should be, then lock it. While
                   it can be dragged it takes clicks.
@@ -347,6 +351,10 @@ onBeforeUnmount(() => {
                 <template v-else-if="widget.showing">
                   Pick a corner, an edge or the middle, or move it by hand to anywhere on the
                   screen, clear of what the game shows.
+                </template>
+                <template v-else-if="state.on">
+                  Pick a corner, an edge or the middle. To move it by hand, it has to be showing
+                  first.
                 </template>
                 <template v-else>
                   Pick a corner, an edge or the middle. To move it by hand, turn the overlay on
@@ -395,7 +403,7 @@ onBeforeUnmount(() => {
             @change="setOptions(widget, $event)"
           />
 
-          <div class="rr-row op-preview-row">
+          <div class="rr-row op-preview-row" data-testid="overlay-preview-row">
             <div class="rr-row-main">
               <div class="rr-row-title">Preview</div>
               <div class="rr-row-sub" data-testid="overlay-preview-words">
@@ -430,7 +438,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </template>
-    </template>
+    </div>
     <PageSkeleton v-else-if="!loadError" label="Reading the overlay…" />
   </div>
 </template>

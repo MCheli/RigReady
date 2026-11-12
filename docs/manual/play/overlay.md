@@ -8,6 +8,8 @@ order: 70
 
 Clicks go through the overlay to the game, and it never takes the keyboard. While nothing is pressed there is nothing on the screen.
 
+![The overlay's list of presses, as the preview on the page shows it](../../../artifacts/screens/overlay/05-preview.png)
+
 ## Where it shows, and where it cannot
 
 - It shows over the desktop and over a game that runs in a window or as a borderless window.
@@ -57,9 +59,11 @@ The list hangs from the edge it is nearest to. In the upper half of the screen t
 - **Shown for**: how long a press stays, from 1 to 30 seconds; 5 to begin with. A line is clear for the first part of that time and fades out over the rest. When Windows is set to show no animations, a line does not fade: it goes when its time is over.
 - **Lines**: the most presses shown at once, from 1 to 10. The oldest makes room for a new one.
 - **Size**: small, medium or large. The text and the room the list takes go together.
-- **Presses the game has nothing on**: turned off, a press that is not bound is left out.
+- **Presses the game has nothing on**: turned off, a press that is not bound is left out, and one that is on the list goes at once.
 
 **Preview** shows the list at the size it has over the game, on a bright background. While the overlay is on, what you press shows there as well.
+
+![The options and the preview on the Overlay page](../../../artifacts/screens/overlay/06-on.png)
 
 ## If it does not show
 
@@ -68,3 +72,5 @@ The list hangs from the edge it is nearest to. In the upper half of the screen t
 - Over a game in exclusive full screen, set the game to borderless.
 
 The overlay keeps its settings in [RigReady's own folder](../app/index.md) and changes nothing in any game.
+
+When the page says that `overlay\settings.json` in that folder is not valid, something other than RigReady changed the file. RigReady leaves the file as it is and refuses changes to the overlay until the file is repaired or deleted. Deleted, the overlay starts again from its first settings, turned off.

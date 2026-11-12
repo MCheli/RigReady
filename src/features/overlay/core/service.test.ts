@@ -428,19 +428,22 @@ describe('what a press is shown as', () => {
         showUnbound: false,
       })
     );
+    // The one that is listed goes at once, like any other option, and the windows are told.
+    expect(seen.presses.at(-1)).toEqual([]);
+    expect(rowsOf(service)).toEqual([]);
     const told = seen.presses.length;
     app.clock.advance(1000);
     app.ports.input.emit([held(icp)]);
     app.clock.advance(1000);
     app.ports.input.emit([held(icp, [2])]);
     expect(seen.presses).toHaveLength(told);
-    expect(rowsOf(service).map((r) => r.control)).toEqual(['Button 1']);
+    expect(rowsOf(service)).toEqual([]);
 
     // What the game does have something on still shows.
     const stick = controller(app, 'WINWING Orion');
     app.ports.input.emit([held(stick)]);
     app.ports.input.emit([held(stick, [5])]);
-    expect(rowsOf(service).map((r) => r.control)).toEqual(['Button 5', 'Button 1']);
+    expect(rowsOf(service).map((r) => r.control)).toEqual(['Button 5']);
   });
 
   it('the same control pressed again counts up instead of adding a line', async () => {

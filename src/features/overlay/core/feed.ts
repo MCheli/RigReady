@@ -111,6 +111,14 @@ export class PressFeed<T> {
     return true;
   }
 
+  /**
+   * Takes away the lines the caller wants shown no longer (an option that leaves a kind of
+   * press out). The others keep their order; pressed again, what went is a first press.
+   */
+  drop(gone: (what: T) => boolean): void {
+    this.lines = this.lines.filter((line) => !gone(line.what));
+  }
+
   /** What is shown at this moment, newest first. */
   rows(now: number): FeedEntry<T>[] {
     this.prune(now);

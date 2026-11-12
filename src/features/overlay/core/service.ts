@@ -500,6 +500,11 @@ export class OverlayService {
       this.settingsProblem = read.error.message;
     }
     this.pressOptions = recentPresses.read(this.settings.widgets[RECENT_PRESSES]?.options);
+    // Left out from now on, and off the list at once: what the game has nothing on. Before
+    // the number of lines is applied, so that none of them makes a line with words give way.
+    if (!this.pressOptions.showUnbound) {
+      this.feed.drop((what) => what.known && what.actions.length === 0);
+    }
     this.feed.configure(limitsOf(this.pressOptions), this.now());
   }
 

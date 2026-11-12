@@ -96,7 +96,15 @@ export interface RigState {
   folders?: { documents?: string; savedGames?: string };
 }
 
-export const HangablePortSchema = z.enum(['devices', 'displays', 'processes', 'services', 'audio']);
+/** The ports a test or scenario can make hang or fail. For `input` it is the start of the reader. */
+export const HangablePortSchema = z.enum([
+  'devices',
+  'displays',
+  'processes',
+  'services',
+  'audio',
+  'input',
+]);
 export type HangablePort = z.infer<typeof HangablePortSchema>;
 
 /** True when a test or scenario made this port hang. */

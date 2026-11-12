@@ -87,6 +87,18 @@ describe('the list of recent presses', () => {
     expect(shown(list, 610)).toEqual(['Action 7']);
   });
 
+  it('lines the caller wants gone go at once, and the others keep their order', () => {
+    const list = feed();
+    list.press(0, 'stick', 'JOY_BTN1', 'Trigger');
+    list.press(100, 'panel', 'JOY_BTN2', 'Nothing');
+    list.press(200, 'stick', 'JOY_BTN3', 'Weapon release');
+    list.drop((what) => what === 'Nothing');
+    expect(shown(list, 300)).toEqual(['Weapon release', 'Trigger']);
+    // Pressed again it is a first press, not a second.
+    list.press(400, 'panel', 'JOY_BTN2', 'Nothing');
+    expect(shown(list, 500)).toEqual(['Nothing', 'Weapon release', 'Trigger']);
+  });
+
   it('a longer time does not bring back a line whose time was over', () => {
     const list = feed(5, 5000);
     list.press(0, 'stick', 'JOY_BTN1', 'Trigger');
