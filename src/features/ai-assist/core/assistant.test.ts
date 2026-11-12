@@ -681,7 +681,7 @@ describe('a ceiling on what one question may cost', () => {
 
   it('shows the ceiling with the request, stops before going past it, and goes on only with a yes', async () => {
     const running = await started();
-    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0.1 });
+    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0.1, acknowledged: true });
     // Each answer costs about $0.17 at the price of the default model.
     reply(running, [use('tu1', 'setups_list')], 'tool_use', big);
     reply(running, [use('tu2', 'setups_list')], 'tool_use', big);
@@ -716,7 +716,7 @@ describe('a ceiling on what one question may cost', () => {
     const free = await prepare(running, 'Hello');
     expect(free).toMatchObject({ ceiling: null, overCeiling: false });
     expect(free.approxCost).toBeGreaterThan(0);
-    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0.1 });
+    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0.1, acknowledged: true });
     await running.invoke('ai-assist:setModel', { model: 'a-model-nobody-priced' });
     const unknown = await prepare(running, 'Hello');
     expect(unknown).toMatchObject({ approxCost: null, spent: null, ceiling: null });
@@ -728,7 +728,10 @@ describe('a ceiling on what one question may cost', () => {
     type Status = { questionCeiling: number; priceKnown: boolean };
     const before = await running.invoke<Status>('ai-assist:status');
     expect(before).toMatchObject({ questionCeiling: 0.25, priceKnown: true });
-    const set = await running.invoke<Status>('ai-assist:setQuestionCeiling', { dollars: 1.239 });
+    const set = await running.invoke<Status>('ai-assist:setQuestionCeiling', {
+      dollars: 1.239,
+      acknowledged: true,
+    });
     expect(set.questionCeiling).toBe(1.24);
     expect((await running.invoke<Status>('ai-assist:status')).questionCeiling).toBe(1.24);
     await expect(running.invoke('ai-assist:setQuestionCeiling', { dollars: 500 })).rejects.toThrow(

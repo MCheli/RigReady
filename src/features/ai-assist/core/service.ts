@@ -13,7 +13,9 @@ import {
   DEFAULT_MODEL,
   knownModel,
   type MessageAnswer,
+  type Usage,
 } from './anthropic';
+import { budgetStopMessage, MonthSpend } from './budget';
 import { draftSchema, draftTask, validateDraft } from './draft';
 import { describeInput, fits, hasInput } from './inputs';
 import {
@@ -29,9 +31,17 @@ import {
 } from './pack';
 import {
   ProgressSchema,
+  AcknowledgedSchema,
+  DEFAULT_MONTHLY_BUDGET,
   DEFAULT_QUESTION_CEILING,
+  MAX_MONTHLY_BUDGET,
+  MAX_PRICE,
   MAX_QUESTION_CEILING,
+  PRICES_RECORDED,
+  PriceSchema,
   type AiStatus,
+  type MonthBudget,
+  type Price,
   type WhatIsSent,
   type AircraftList,
   type AppliedView,
@@ -85,6 +95,8 @@ export interface AiAssistContext {
   bindings: BindingRegistry;
   /** Told how a streamed request is coming along; the app passes it on to the page. */
   onProgress?: (progress: SendProgress) => void;
+  /** Told what the month is estimated at each time a request was counted, for Settings. */
+  onCounted?: (month: MonthBudget) => void;
   /** Longest silence accepted from a streamed answer; the API module's default when absent. */
   streamIdleMs?: number;
   /**
@@ -113,9 +125,22 @@ const SettingsSchema = z.object({
       structured: z.enum(['schema', 'prompt']).default('schema'),
     })
     .prefault({}),
-  /** Dollars one question to the assistant may cost before RigReady stops and asks; 0 for none. */
+  /** Dollars one question to the assistant may reach by RigReady's estimate before it stops and asks; 0 for none. */
   questionCeiling: z.number().min(0).max(MAX_QUESTION_CEILING).default(DEFAULT_QUESTION_CEILING),
+  /** Dollars a calendar month may reach by RigReady's estimate before it stops sending; 0 for none. */
+  monthlyBudget: z.number().min(0).max(MAX_MONTHLY_BUDGET).default(DEFAULT_MONTHLY_BUDGET),
+  /** Prices the user typed, by service and model (`priceKey`). They win over the built-in ones. */
+  prices: z.record(z.string(), PriceSchema).default({}),
+  /** When the user acknowledged, for each limit, that it is counted from estimates. */
+  acknowledged: AcknowledgedSchema.prefault({}),
 });
+
+/** The limits that are counted from estimates: turning one on needs the user's acknowledgement. */
+type Limit = 'questionCeiling' | 'monthlyBudget';
+const LIMITS: Record<Limit, { most: number; off: string }> = {
+  questionCeiling: { most: MAX_QUESTION_CEILING, off: '0 means no ceiling.' },
+  monthlyBudget: { most: MAX_MONTHLY_BUDGET, off: '0 means no monthly budget.' },
+};
 /** The OpenAI-compatible key, kept with the host it was stored for. */
 const CompatibleKeySchema = z.object({ origin: z.string(), key: z.string() });
 const ProgressFileSchema = z.object({ aircraft: z.record(z.string(), ProgressSchema).default({}) });
@@ -192,6 +217,8 @@ interface PreparedRequest {
   body: Record<string, unknown>;
   snapshot: Snapshot;
   question: string;
+  /** What reading it is estimated at, as the preview said; null without prices. */
+  approxCost: number | null;
 }
 
 interface Round {
@@ -211,6 +238,8 @@ const safeName = (id: string): string => id.replace(/[^A-Za-z0-9_.-]/g, '_');
 export class AiAssist {
   private readonly settings: JsonStore<typeof SettingsSchema>;
   private readonly progressStore: JsonStore<typeof ProgressFileSchema>;
+  /** What this month's answered requests are estimated at, for the monthly budget. */
+  private readonly spend: MonthSpend;
   private readonly prepared = new Map<string, PreparedRequest>();
   private readonly rounds = new Map<string, Round>();
   /** Streamed requests on their way, by request id, so they can be cancelled. */
@@ -228,6 +257,12 @@ export class AiAssist {
       ctx.ports.files,
       path.join(root, 'progress.json'),
       ProgressFileSchema
+    );
+    this.spend = new MonthSpend(
+      ctx.ports.files,
+      path.join(root, 'spend.json'),
+      ctx.ports.clock,
+      ctx.log
     );
   }
 
@@ -652,30 +687,131 @@ export class AiAssist {
       local: provider.ok && provider.value.local,
       whatIsSent: whatIsSent(provider.ok ? provider.value : undefined),
       questionCeiling: s.questionCeiling,
-      // A ceiling in dollars needs a price: without one only the count of tool rounds stops it.
-      priceKnown:
-        provider.ok &&
-        provider.value.cost({ input: 1, output: 1, cacheWrite: 0, cacheRead: 0 }) !== null,
+      // A limit in dollars needs prices: without them only the count of tool rounds stops a question.
+      priceKnown: provider.ok && provider.value.prices !== null,
+      prices: provider.ok ? provider.value.prices : null,
+      builtInPrices: provider.ok ? provider.value.builtIn : null,
+      pricesRecorded: PRICES_RECORDED,
+      month: await this.spend.view(s.monthlyBudget),
+      acknowledged: s.acknowledged,
     });
   }
 
-  /** Dollars one question to the assistant may cost before it stops and asks; 0 for no ceiling. */
+  /** Dollars one question to the assistant may reach by the estimate before it stops and asks; 0 for no ceiling. */
   async questionCeiling(): Promise<number> {
     const settings = await this.settings.read();
     return settings.ok ? settings.value.questionCeiling : DEFAULT_QUESTION_CEILING;
   }
 
-  async setQuestionCeiling(dollars: number): Promise<Result<AiStatus>> {
-    if (!Number.isFinite(dollars) || dollars < 0 || dollars > MAX_QUESTION_CEILING) {
-      return err(
-        'ai.amount',
-        `Type an amount between 0 and ${MAX_QUESTION_CEILING} dollars. 0 means no ceiling.`
-      );
+  /**
+   * Sets a limit that is counted from estimates. Turning one on (an amount where there was
+   * none, or the first amount the user sets at all) needs `acknowledged`: the user's own yes
+   * to what the limit is, which is kept with its time. It is checked here, not only in the
+   * page, so no caller can turn a limit on without it.
+   */
+  private async setLimit(
+    limit: Limit,
+    dollars: number,
+    acknowledged: boolean
+  ): Promise<Result<AiStatus>> {
+    const { most, off } = LIMITS[limit];
+    if (!Number.isFinite(dollars) || dollars < 0 || dollars > most) {
+      return err('ai.amount', `Type an amount between 0 and ${most} dollars. ${off}`);
     }
     // Whole cents: what the page shows is what is kept.
-    const questionCeiling = Math.round(dollars * 100) / 100;
-    const saved = await this.settings.update((s) => ({ ...s, questionCeiling }));
+    const amount = Math.round(dollars * 100) / 100;
+    const current = await this.settings.read();
+    if (!current.ok) return current;
+    const turnsOn =
+      amount > 0 && (current.value[limit] === 0 || current.value.acknowledged[limit] === undefined);
+    if (turnsOn && !acknowledged) {
+      return err(
+        'ai.acknowledge',
+        'Nothing was changed: this limit is counted from estimates, and turning it on needs your acknowledgement of that.'
+      );
+    }
+    const at = this.ctx.ports.clock.now().toISOString();
+    const saved = await this.settings.update((s) => ({
+      ...s,
+      [limit]: amount,
+      acknowledged: turnsOn ? { ...s.acknowledged, [limit]: at } : s.acknowledged,
+    }));
     if (!saved.ok) return saved;
+    if (turnsOn) this.ctx.log.info(`ai-assist: ${limit} turned on, acknowledged as an estimate`);
+    return this.status();
+  }
+
+  setQuestionCeiling(dollars: number, acknowledged = false): Promise<Result<AiStatus>> {
+    return this.setLimit('questionCeiling', dollars, acknowledged);
+  }
+
+  setMonthlyBudget(dollars: number, acknowledged = false): Promise<Result<AiStatus>> {
+    return this.setLimit('monthlyBudget', dollars, acknowledged);
+  }
+
+  /**
+   * This month against the monthly budget, as it would stand with a request estimated at
+   * `next` dollars counted in.
+   */
+  async monthBudget(next = 0): Promise<MonthBudget> {
+    const settings = await this.settings.read();
+    return this.spend.view(settings.ok ? settings.value.monthlyBudget : 0, next);
+  }
+
+  /**
+   * Counts an answered request in the month's estimate, at the provider's prices as they
+   * were when it was sent. A server on this PC that the user gave no prices is not counted:
+   * it charges nothing.
+   */
+  async countRequest(provider: ChatProvider, usage: Usage): Promise<void> {
+    if (provider.local && provider.prices === null) return;
+    await this.spend.record(provider.cost(usage));
+    this.ctx.onCounted?.(await this.monthBudget());
+  }
+
+  /**
+   * The user's own prices for the model chosen now, in US dollars per million tokens. From
+   * then on every estimate for that model uses them, and says so.
+   */
+  async setPrices(price: Price): Promise<Result<AiStatus>> {
+    const values = [price.input, price.output, price.cacheRead, price.cacheWrite];
+    if (values.some((v) => !Number.isFinite(v) || v < 0 || v > MAX_PRICE)) {
+      return err(
+        'ai.price',
+        `Type each price as dollars per million tokens, between 0 and ${MAX_PRICE}.`
+      );
+    }
+    const provider = await this.provider();
+    if (!provider.ok) return provider;
+    const key = provider.value.priceKey;
+    // Millionths of a dollar: more than any price list gives, and no stray digits.
+    const kept = (v: number): number => Math.round(v * 1_000_000) / 1_000_000;
+    const own: Price = {
+      input: kept(price.input),
+      output: kept(price.output),
+      cacheRead: kept(price.cacheRead),
+      cacheWrite: kept(price.cacheWrite),
+    };
+    const saved = await this.settings.update((s) => ({
+      ...s,
+      prices: { ...s.prices, [key]: own },
+    }));
+    if (!saved.ok) return saved;
+    this.ctx.log.info(`ai-assist: the user set their own prices for ${key}`);
+    return this.status();
+  }
+
+  /** Forgets the user's own prices for the model chosen now: the built-in ones, or none, again. */
+  async resetPrices(): Promise<Result<AiStatus>> {
+    const provider = await this.provider();
+    if (!provider.ok) return provider;
+    const key = provider.value.priceKey;
+    const saved = await this.settings.update((s) => {
+      const { [key]: _gone, ...prices } = s.prices;
+      return { ...s, prices };
+    });
+    if (!saved.ok) return saved;
+    this.ctx.log.info(`ai-assist: the user's own prices for ${key} were removed`);
     return this.status();
   }
 
@@ -871,6 +1007,12 @@ export class AiAssist {
       ...(STREAMED.has(input.kind) ? { stream: true } : {}),
     });
     const retriesOnce = schema !== undefined && provider.value.structured === 'prompt';
+    const text = JSON.stringify(body);
+    const tokens = approximateTokens(text);
+    const approxCost = provider.value.inputCost(tokens);
+    // The monthly budget holds a request back before it is shown as ready to send.
+    const month = approxCost === null ? null : await this.monthBudget(approxCost);
+    if (month?.state === 'stopped') return err('ai.budget', budgetStopMessage(month));
     const requestId = this.next('r');
     this.prepared.set(requestId, {
       kind: input.kind,
@@ -881,9 +1023,8 @@ export class AiAssist {
       body,
       snapshot: s,
       question,
+      approxCost,
     });
-    const text = JSON.stringify(body);
-    const tokens = approximateTokens(text);
     return ok({
       requestId,
       kind: input.kind,
@@ -891,7 +1032,9 @@ export class AiAssist {
       body: JSON.stringify(body, null, 2),
       chars: text.length,
       approxTokens: tokens,
-      approxCost: provider.value.inputCost(tokens),
+      approxCost,
+      prices: approxCost === null ? null : (provider.value.prices?.source ?? null),
+      month,
       provider: provider.value.label,
       host: provider.value.host,
       local: provider.value.local,
@@ -908,27 +1051,36 @@ export class AiAssist {
     });
   }
 
-  /** Tokens and cost of an answer, with those of an earlier try when there was one. */
-  private usage(answer: MessageAnswer, earlier?: MessageAnswer): UsageView {
+  /**
+   * Tokens of an answer and what they are estimated at, with those of an earlier try when
+   * there was one. The estimate uses the prices of the provider the request was shown with.
+   */
+  private usage(provider: ChatProvider, answer: MessageAnswer, earlier?: MessageAnswer): UsageView {
     const u = answer.usage;
     const e = earlier?.usage ?? { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
-    const cost =
-      answer.cost === null || (earlier !== undefined && earlier.cost === null)
-        ? null
-        : answer.cost + (earlier?.cost ?? 0);
-    return {
-      model: answer.model,
+    const used: Usage = {
       input: u.input + e.input,
       output: u.output + e.output,
       cacheWrite: u.cacheWrite + e.cacheWrite,
       cacheRead: u.cacheRead + e.cacheRead,
+    };
+    const cost = provider.cost(used);
+    return {
+      model: answer.model,
+      ...used,
       cost,
+      prices: cost === null ? null : (provider.prices?.source ?? null),
     };
   }
 
   async send(requestId: string): Promise<Result<Sent>> {
     const request = this.prepared.get(requestId);
     if (!request) return err('ai.expired', 'That request is no longer ready. Ask again.');
+    // The month may have filled since the request was shown. It stays ready while it waits.
+    if (request.approxCost !== null) {
+      const month = await this.monthBudget(request.approxCost);
+      if (month.state === 'stopped') return err('ai.budget', budgetStopMessage(month));
+    }
     this.prepared.delete(requestId);
     // Registered before anything is awaited, so that Cancel works from the first moment.
     const controller = STREAMED.has(request.kind) ? new AbortController() : undefined;
@@ -960,6 +1112,8 @@ export class AiAssist {
     this.ctx.log.info(
       `ai-assist: ${request.kind} answered by ${model}: ${usage.input} in, ${usage.cacheRead} cached, ${usage.cacheWrite} cache-written, ${usage.output} out`
     );
+    // Every answered try is counted: the provider charges for each.
+    await this.countRequest(request.provider, usage);
     return answer;
   }
 
@@ -980,12 +1134,14 @@ export class AiAssist {
     const textOf = (answer: MessageAnswer): string =>
       request.retriesOnce ? jsonText(answer.text) : answer.text;
     const once = check(textOf(first.value), first.value.model);
-    if (once.ok) return ok({ value: once.value, usage: this.usage(first.value) });
+    if (once.ok) {
+      return ok({ value: once.value, usage: this.usage(request.provider, first.value) });
+    }
     if (!request.retriesOnce) return err('ai.invalid', once.why);
     this.ctx.log.info(`ai-assist: ${request.kind} answer did not check out; asking once more`);
     const second = await this.ask(requestId, request, key, controller);
     if (!second.ok) return second;
-    const both = this.usage(second.value, first.value);
+    const both = this.usage(request.provider, second.value, first.value);
     const twice = check(textOf(second.value), second.value.model);
     if (twice.ok) return ok({ value: twice.value, usage: both });
     return err(
@@ -1045,7 +1201,7 @@ export class AiAssist {
       kind: 'answer',
       question: request.question,
       text,
-      usage: this.usage(answer.value),
+      usage: this.usage(request.provider, answer.value),
     });
   }
 

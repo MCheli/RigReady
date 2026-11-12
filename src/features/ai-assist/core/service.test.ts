@@ -1024,7 +1024,10 @@ describe('the ceiling on what one question to the assistant may cost', () => {
     await start();
     const ai = (running: WiredApp) => running.invoke<AiStatus>('ai-assist:status');
     expect((await ai(app)).questionCeiling).toBe(0.25);
-    const set = await app.invoke<AiStatus>('ai-assist:setQuestionCeiling', { dollars: 2 });
+    const set = await app.invoke<AiStatus>('ai-assist:setQuestionCeiling', {
+      dollars: 2,
+      acknowledged: true,
+    });
     expect(set.questionCeiling).toBe(2);
     const text = await allText(path.join(app.home, '.rigready', 'ai-assist'));
     expect(text.join('\n')).toContain('"questionCeiling": 2');
@@ -1050,7 +1053,7 @@ describe('the ceiling on what one question to the assistant may cost', () => {
       app.events.filter((e) => e.channel === 'ai-assist:event:settingsChanged').length;
     let before = told();
     for (const [channel, input] of [
-      ['ai-assist:setQuestionCeiling', { dollars: 1 }],
+      ['ai-assist:setQuestionCeiling', { dollars: 1, acknowledged: true }],
       ['ai-assist:setModel', { model: 'claude-sonnet-5-5' }],
       ['ai-assist:setKey', { key: KEY }],
       ['ai-assist:clearKey', undefined],

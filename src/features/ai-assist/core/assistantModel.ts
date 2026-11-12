@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MonthBudgetSchema, PriceSourceSchema } from './model';
 
 /**
  * What crosses IPC for the built-in assistant, the program finder and the drafts: the
@@ -240,20 +241,27 @@ export const TurnPreviewSchema = z.object({
   chars: z.number().int(),
   approxTokens: z.number().int(),
   /**
-   * Dollars this one request costs to read, when the model's price is known: what the
-   * provider already holds from the request before it at the cached price, the rest at the
-   * price of writing it. One request of a question, not the question.
+   * RigReady's estimate in dollars of what reading this one request costs, when there are
+   * prices for the model: what the provider already holds from the request before it at the
+   * cached price, the rest at the price of writing it. One request of a question, not the
+   * question, and never a bill.
    */
   approxCost: z.number().nullable(),
+  /** Where the prices behind the estimates of this preview come from; null with no estimate. */
+  prices: PriceSourceSchema.nullable().default(null),
+  /** The month against the monthly budget with this request counted in; null with no estimate. */
+  month: MonthBudgetSchema.nullable().default(null),
   /** What the request carries, in a line each. */
   contents: z.array(z.string()),
   /** The user's message, when the request carries one: it goes back into the box if the request is dropped. */
   text: z.string().optional(),
   /** Which request of the question this is: 1 carries the user's message. */
   round: z.number().int(),
-  /** Dollars the question has cost before this request; null when the price is not known. */
+  /** Dollars the question is estimated at before this request; null when there are no prices. */
   spent: z.number().nullable(),
-  /** Dollars a question may cost before RigReady stops and asks; null when there is no ceiling (none set, or no price known). */
+  /** Where the prices behind `spent` come from: the requests before this one. Null with nothing estimated yet. */
+  spentPrices: PriceSourceSchema.nullable().default(null),
+  /** Dollars a question may reach by the estimate before RigReady stops and asks; null when there is no ceiling (none set, or no prices). */
   ceiling: z.number().nullable(),
   /** Sending this would take the question past the ceiling: it goes only when the user says so. */
   overCeiling: z.boolean(),
@@ -261,7 +269,7 @@ export const TurnPreviewSchema = z.object({
 
 export type TurnPreview = z.infer<typeof TurnPreviewSchema>;
 
-/** Tokens as the provider reported them; the cost only where the price is known. */
+/** Tokens as the provider reported them; an estimate in dollars only where there are prices. */
 export const SpentSchema = z.object({
   /** Requests sent. */
   requests: z.number().int(),
@@ -270,7 +278,10 @@ export const SpentSchema = z.object({
   /** Of `input`, what was read from the provider's cache at the lower price. */
   cached: z.number(),
   output: z.number(),
+  /** RigReady's estimate in US dollars, never a bill; null when a request had no prices. */
   cost: z.number().nullable(),
+  /** Where the prices behind `cost` come from; null with no estimate. */
+  prices: PriceSourceSchema.nullable().default(null),
 });
 
 export type Spent = z.infer<typeof SpentSchema>;
@@ -293,8 +304,10 @@ export const AssistantProgressSchema = z.object({
   round: z.number().int(),
   /** The tool being run, in words: "Find installed programs". */
   tool: z.string().optional(),
-  /** Dollars the question has cost so far; null when the price is not known. */
+  /** Dollars the question is estimated at so far; null when there are no prices. */
   cost: z.number().nullable(),
+  /** Where the prices behind `cost` come from; null with no estimate. */
+  prices: PriceSourceSchema.nullable().default(null),
   /** Tokens the question has used so far, in and out. */
   tokens: z.number(),
 });

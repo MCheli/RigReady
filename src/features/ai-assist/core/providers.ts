@@ -1,7 +1,6 @@
 import type { Http } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
 import {
-  approximateCost,
   DEFAULT_MODEL,
   knownModel,
   messageBody,
@@ -17,13 +16,13 @@ import {
 } from './anthropic';
 import {
   chatBody,
-  chatCost,
   sendChat,
   streamChat,
   testChat,
   type ChatTarget,
   type ModelPrice,
 } from './openai';
+import type { Price, PriceBasis } from './model';
 
 /**
  * Who answers the AI requests: Anthropic (the default), OpenAI, or any server that speaks
@@ -53,7 +52,10 @@ export type Structured = 'schema' | 'prompt';
 
 export const OPENAI_ROOT = 'https://api.openai.com/v1';
 
-/** OpenAI models offered in Settings; the first is the default. Prices as published in Nov 2026. */
+/**
+ * OpenAI models offered in Settings; the first is the default. Prices as published in Nov 2026:
+ * when one changes, change PRICES_RECORDED in model.ts with it.
+ */
 export const OPENAI_MODELS: { id: string; name: string; price: ModelPrice }[] = [
   { id: 'gpt-6.1-terra', name: 'GPT-6.1 Terra', price: { input: 1, output: 5, cacheRead: 0.05 } },
   { id: 'gpt-6.1-sol', name: 'GPT-6.1 Sol', price: { input: 2, output: 10, cacheRead: 0.1 } },
@@ -170,6 +172,39 @@ export interface ProviderSettings {
   model: string;
   openai: { model: string };
   compatible: { baseUrl: string; model: string; structured: Structured };
+  /** Prices the user typed, by `priceKey`. They win over the built-in ones. */
+  prices?: Record<string, Price>;
+}
+
+/**
+ * RigReady's built-in prices for a model, when it has any: the listed Anthropic and OpenAI
+ * models. Recorded when PRICES_RECORDED (model.ts) says; a provider may have changed its
+ * prices since, which is why every figure worked out from them is shown as an estimate.
+ */
+export function builtInPrice(id: ProviderId, model: string): Price | null {
+  if (id === 'anthropic') {
+    const m = knownModel(model);
+    if (!m) return null;
+    // Anthropic charges a quarter more to write its five-minute cache than to read fresh input.
+    return { input: m.input, output: m.output, cacheRead: m.cacheRead, cacheWrite: m.input * 1.25 };
+  }
+  if (id === 'openai') {
+    const m = OPENAI_MODELS.find((known) => known.id === model);
+    // OpenAI charges nothing extra to write its cache.
+    return m ? { ...m.price, cacheWrite: m.price.input } : null;
+  }
+  return null;
+}
+
+/** RigReady's estimate in US dollars of what a request used, at these prices per million tokens. */
+export function estimate(price: Price, usage: Usage): number {
+  return (
+    (usage.input * price.input +
+      usage.cacheWrite * price.cacheWrite +
+      usage.cacheRead * price.cacheRead +
+      usage.output * price.output) /
+    1_000_000
+  );
 }
 
 /** A provider, ready to build and send requests. */
@@ -197,16 +232,47 @@ export interface ChatProvider {
     options: StreamOptions
   ): Promise<Result<MessageAnswer>>;
   test(http: Http, key: string | undefined): Promise<Result<KeyCheck>>;
-  /** Approximate dollars for this many tokens in, at the model's input price; null when unknown. */
+  /** The name the user's own prices for this model are kept under: "anthropic/claude-opus-5-5". */
+  priceKey: string;
+  /** RigReady's built-in prices for the model; null when it has none. */
+  builtIn: Price | null;
+  /**
+   * The prices every estimate of this provider is worked out from, and where they come from:
+   * the user's own numbers when there are any, else the built-in ones. Null when there are
+   * neither: then no dollar figure is made and no limit in dollars applies.
+   */
+  prices: PriceBasis | null;
+  /** The estimate in dollars for this many tokens in, at the input price; null without prices. */
   inputCost(tokens: number): number | null;
-  /** Approximate dollars for what a request used, at the model's prices (cache writes and reads at theirs); null when unknown. */
+  /** The estimate in dollars for what a request used (cache writes and reads at their prices); null without prices. */
   cost(usage: Usage): number | null;
+}
+
+type Unpriced = Omit<ChatProvider, 'priceKey' | 'builtIn' | 'prices' | 'inputCost' | 'cost'>;
+
+/** The user's own prices are kept by service and model; a compatible server by its host. */
+export const priceKey = (provider: { id: ProviderId; host: string; model: string }): string =>
+  `${provider.id === 'compatible' ? provider.host : provider.id}/${provider.model}`;
+
+function priced(provider: Unpriced, own: Record<string, Price> | undefined): ChatProvider {
+  const key = priceKey(provider);
+  const builtIn = builtInPrice(provider.id, provider.model);
+  const mine = own?.[key];
+  const price = mine ?? builtIn;
+  return {
+    ...provider,
+    priceKey: key,
+    builtIn,
+    prices: mine ? { source: 'own', ...mine } : builtIn ? { source: 'built-in', ...builtIn } : null,
+    inputCost: (tokens) => (price ? (tokens * price.input) / 1_000_000 : null),
+    cost: (usage) => (price ? estimate(price, usage) : null),
+  };
 }
 
 const needKey = (key: string | undefined): Result<string> =>
   key ? ok(key) : err('ai.noKey', 'No API key is stored. Add one in Settings.');
 
-function anthropic(model: string): ChatProvider {
+function anthropic(model: string): Unpriced {
   return {
     id: 'anthropic',
     label: 'Anthropic',
@@ -228,11 +294,6 @@ function anthropic(model: string): ChatProvider {
       const k = needKey(key);
       return k.ok ? testKey(http, k.value, model) : k;
     },
-    inputCost: (tokens) =>
-      knownModel(model)
-        ? approximateCost(model, { input: tokens, output: 0, cacheWrite: 0, cacheRead: 0 })
-        : null,
-    cost: (usage) => approximateCost(model, usage),
   };
 }
 
@@ -244,7 +305,7 @@ function chat(
   model: string,
   keyNeeded: boolean,
   freeModelCheck: boolean
-): ChatProvider {
+): Unpriced {
   return {
     id,
     label: target.label,
@@ -257,11 +318,6 @@ function chat(
     send: (http, key, body) => sendChat(http, target, key, body),
     stream: (http, key, body, options) => streamChat(http, target, key, body, options),
     test: (http, key) => testChat(http, target, key, model, freeModelCheck),
-    inputCost: (tokens) => {
-      const price = target.prices?.[model];
-      return price ? (tokens * price.input) / 1_000_000 : null;
-    },
-    cost: (usage) => chatCost(target, model, usage),
   };
 }
 
@@ -270,25 +326,30 @@ const NO_STREAM_USAGE = new Set(['api.mistral.ai', 'localhost:1234', '127.0.0.1:
 
 /** The provider the settings describe, or why it cannot be used yet. */
 export function providerFor(settings: ProviderSettings): Result<ChatProvider> {
-  if (settings.provider === 'anthropic') return ok(anthropic(settings.model));
+  if (settings.provider === 'anthropic') {
+    return ok(priced(anthropic(settings.model), settings.prices));
+  }
   if (settings.provider === 'openai') {
     const prices = Object.fromEntries(OPENAI_MODELS.map((m) => [m.id, m.price]));
     return ok(
-      chat(
-        'openai',
-        {
-          root: OPENAI_ROOT,
-          label: 'OpenAI',
-          tokenField: 'max_completion_tokens',
-          streamUsage: true,
-          structured: 'schema',
-          prices,
-        },
-        'api.openai.com',
-        false,
-        settings.openai.model,
-        true,
-        true
+      priced(
+        chat(
+          'openai',
+          {
+            root: OPENAI_ROOT,
+            label: 'OpenAI',
+            tokenField: 'max_completion_tokens',
+            streamUsage: true,
+            structured: 'schema',
+            prices,
+          },
+          'api.openai.com',
+          false,
+          settings.openai.model,
+          true,
+          true
+        ),
+        settings.prices
       )
     );
   }
@@ -302,20 +363,23 @@ export function providerFor(settings: ProviderSettings): Result<ChatProvider> {
   const url = new URL(checked.value);
   const local = isLocal(url);
   return ok(
-    chat(
-      'compatible',
-      {
-        root: checked.value,
-        label: local ? `the server at ${url.host}` : url.host,
-        tokenField: 'max_tokens',
-        streamUsage: !NO_STREAM_USAGE.has(url.host),
-        structured,
-      },
-      url.host,
-      local,
-      model,
-      !local,
-      false
+    priced(
+      chat(
+        'compatible',
+        {
+          root: checked.value,
+          label: local ? `the server at ${url.host}` : url.host,
+          tokenField: 'max_tokens',
+          streamUsage: !NO_STREAM_USAGE.has(url.host),
+          structured,
+        },
+        url.host,
+        local,
+        model,
+        !local,
+        false
+      ),
+      settings.prices
     )
   );
 }

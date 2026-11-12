@@ -248,6 +248,11 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
       case 'ai.busy':
         error.value = message;
         return;
+      case 'ai.budget':
+        // Held back by the monthly budget, on the estimate: it stays ready, and goes once
+        // the budget is raised or turned off in Settings.
+        error.value = message;
+        return;
       case 'ai.conversation':
         // The conversation is gone in RigReady: nothing more can be sent in it.
         preview.value = undefined;
@@ -258,10 +263,16 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
       case 'ai.changed': {
         const rebuilt = await rebuild(request);
         if (!rebuilt) return;
-        notice.value =
-          failure.code === 'ai.changed'
-            ? `Who answers was changed in Settings, so the request was made ready again for ${rebuilt.to}. Nothing was sent: look it over and send.`
-            : 'The request was made ready again. Nothing was sent: look it over and send.';
+        const same = rebuilt.to === request.to && rebuilt.model === request.model;
+        if (failure.code !== 'ai.changed') {
+          notice.value =
+            'The request was made ready again. Nothing was sent: look it over and send.';
+        } else if (same) {
+          notice.value =
+            'Settings were changed after this request was shown, so it was made ready again and its estimate worked out anew. Nothing was sent: look it over and send.';
+        } else {
+          notice.value = `Who answers was changed in Settings, so the request was made ready again for ${rebuilt.to}. Nothing was sent: look it over and send.`;
+        }
         return;
       }
       default:
@@ -357,9 +368,10 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
   }
 
   /**
-   * Settings > AI changed (provider, model, key, ceiling). A request on screen was made for
-   * the old settings: it is made ready again for the new ones, or taken away when no
-   * provider is ready any more. An old failure is no longer true and goes.
+   * Settings > AI changed (provider, model, key, prices, ceiling, monthly budget). A request
+   * on screen was made for the old settings: it is made ready again for the new ones, or
+   * taken away when no provider is ready any more or the monthly budget holds it back. An old
+   * failure is no longer true and goes.
    */
   async function settingsChanged(): Promise<void> {
     await refreshStatus();
@@ -373,8 +385,12 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
       return;
     }
     const rebuilt = await rebuild(request);
-    if (rebuilt && (rebuilt.to !== request.to || rebuilt.model !== request.model)) {
+    if (!rebuilt) return;
+    if (rebuilt.to !== request.to || rebuilt.model !== request.model) {
       notice.value = `Who answers was changed in Settings: this request now goes to ${rebuilt.to}, ${rebuilt.model}. Nothing was sent.`;
+    } else if (rebuilt.prices !== request.prices || rebuilt.approxCost !== request.approxCost) {
+      notice.value =
+        'The prices were changed in Settings: the estimate for this request was worked out again. Nothing was sent.';
     }
   }
 

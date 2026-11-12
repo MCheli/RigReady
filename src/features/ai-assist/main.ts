@@ -26,6 +26,7 @@ export default defineFeatureMain({
       bindings: ctx.bindings,
       settings: ctx.settings,
       onProgress: (progress) => ctx.emit(aiAssistContract, 'sendProgress', progress),
+      onCounted: (month) => ctx.emit(aiAssistContract, 'monthChanged', month),
     });
     const drafts = new AssistantDrafts({
       ports: ctx.ports,
@@ -39,6 +40,8 @@ export default defineFeatureMain({
       host: () => ctx.mcp.host(),
       target: () => ai.assistantTarget(),
       ceiling: () => ai.questionCeiling(),
+      month: (next) => ai.monthBudget(next),
+      counted: (provider, usage) => ai.countRequest(provider, usage),
       progress: (progress) => ctx.emit(aiAssistContract, 'assistantProgress', progress),
     });
     // The provider, model, key or ceiling changed: the pages that show them ask again, and a
@@ -94,7 +97,12 @@ export default defineFeatureMain({
         setCompatible: (change) => changed(ai.setCompatible(change)),
         setKey: ({ key }) => changed(ai.setKey(key)),
         clearKey: () => changed(ai.clearKey()),
-        setQuestionCeiling: ({ dollars }) => changed(ai.setQuestionCeiling(dollars)),
+        setQuestionCeiling: ({ dollars, acknowledged }) =>
+          changed(ai.setQuestionCeiling(dollars, acknowledged)),
+        setMonthlyBudget: ({ dollars, acknowledged }) =>
+          changed(ai.setMonthlyBudget(dollars, acknowledged)),
+        setPrices: (price) => changed(ai.setPrices(price)),
+        resetPrices: () => changed(ai.resetPrices()),
         testKey: () => ai.testKey(),
         prepare: (input) => ai.prepare(input),
         send: ({ requestId }) => ai.send(requestId),

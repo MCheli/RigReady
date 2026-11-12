@@ -16,6 +16,7 @@ import {
   workingLine,
   type FlowItem,
 } from './assistantText';
+import { monthWarning, NOT_A_BILL } from './estimateText';
 import { MarkdownText } from './markdownView';
 
 /**
@@ -80,6 +81,18 @@ const nothingYet = computed(() => !store.conversation && store.pendingText === u
 const budget = computed(() => (store.preview ? budgetLine(store.preview) : ''));
 const spend = computed(() => spendLine(store.progress));
 const usage = computed(() => (store.conversation ? usageLine(store.conversation.usage) : ''));
+/** Said only when the month is close to its budget; the stop itself arrives as a refusal. */
+const monthNote = computed(() => monthWarning(store.preview?.month ?? null));
+/** A dollar figure is on show somewhere in the foot: it is said once that it is no bill. */
+const figures = computed(() =>
+  [
+    store.preview ? sizeLine(store.preview) : '',
+    budget.value,
+    monthNote.value,
+    spend.value,
+    usage.value,
+  ].some((line) => line.includes('$'))
+);
 /** The request on screen is for the very message in the box: its Send is the button to press. */
 const boxReady = computed(
   () => store.preview?.text !== undefined && store.preview.text === store.draft.trim()
@@ -664,6 +677,9 @@ async function openSettings(): Promise<void> {
           >
             {{ budget }}
           </div>
+          <div v-if="monthNote" class="asp-over rr-warn" data-testid="assistant-month">
+            {{ monthNote }}
+          </div>
           <ul class="asp-contents" data-testid="assistant-preview-contents">
             <li v-for="(c, i) in store.preview.contents" :key="i">{{ c }}</li>
           </ul>
@@ -765,10 +781,12 @@ async function openSettings(): Promise<void> {
               @click="store.resume()"
               >Continue</v-btn
             >
-            <v-spacer />
-            <span v-if="usage" class="asp-muted" data-testid="assistant-usage">{{ usage }}</span>
           </div>
         </form>
+        <div v-if="usage || figures" class="asp-usage asp-muted">
+          <div v-if="usage" data-testid="assistant-usage">{{ usage }}</div>
+          <div v-if="figures" data-testid="assistant-estimate-note">{{ NOT_A_BILL }}</div>
+        </div>
       </footer>
     </div>
   </v-navigation-drawer>
@@ -1131,6 +1149,12 @@ async function openSettings(): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.asp-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
 }
 
 /* A reply, formatted (markdownView.ts makes the elements). */

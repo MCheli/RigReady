@@ -49,6 +49,10 @@ What is sent depends on what you use, and is the same for every provider.
 - With Ollama or LM Studio nothing leaves the PC, unless that server is set up to send it on.
 - The provider's own terms and privacy policy apply to what you send it.
 
-## Cost and tokens
+## Tokens and estimates
 
-After each answer, RigReady shows the model, the tokens in (and how many came from the provider's cache) and out, as the provider reports them. It shows an approximate cost for the Anthropic and OpenAI models it lists. For other services and models it shows no price, because it does not know it; check your account with the service. A model on your own PC costs nothing per request.
+After each answer, RigReady shows the model, the tokens in (and how many came from the provider's cache) and out, as the provider reports them. Where prices are set for the model, it also shows an estimate in dollars, worked out from those tokens and the prices in Settings, and says which prices those are: RigReady's built-in ones with the month they were recorded, or your own. It is an estimate, not a bill: your provider's console shows what you are charged.
+
+RigReady has built-in prices for the Anthropic and OpenAI models it lists. For other services and models it has none, and shows no dollar figure until you type the model's prices in Settings; check your account with the service. Nobody charges for a model on your own PC, and RigReady shows no dollar figure for it unless you type prices.
+
+The prices can be edited for each model, and a ceiling for one question and a monthly budget can be set, in Settings under **AI**. See [Estimates, prices and limits](built-in-assistant.md#estimates-prices-and-limits).

@@ -58,15 +58,19 @@ test('assistant: sets up a DCS session and writes a script that asks before it r
   await expect(page.getByTestId('assistant-preview-contents')).toContainText(
     'Your message: "Set up a DCS session with SimAppPro, TrackIR and SRS"'
   );
-  // What it costs to read, said as the first request of several, and where RigReady stops.
+  // What reading it is estimated at and from which prices, said as the first request of
+  // several, and where RigReady stops. No dollar figure stands without the word estimate.
   await expect(page.getByTestId('assistant-preview-size')).toContainText(
     'Request 1 of this question'
   );
-  await expect(page.getByTestId('assistant-preview-size')).toContainText(
-    'to read, plus the answer'
+  await expect(page.getByTestId('assistant-preview-size')).toHaveText(
+    / · estimated \$\d+\.\d\d to read at built-in prices of November 2026, plus the answer$/
   );
   await expect(page.getByTestId('assistant-budget')).toHaveText(
-    'RigReady asks before a question passes $0.25.'
+    'RigReady asks before the estimate for a question passes $0.25.'
+  );
+  await expect(page.getByTestId('assistant-estimate-note')).toHaveText(
+    "Estimates, not a bill: your provider's console shows what you are charged."
   );
   // The exact text is one click away.
   await expect(page.getByTestId('assistant-preview-body')).toHaveCount(0);
@@ -115,6 +119,9 @@ test('assistant: sets up a DCS session and writes a script that asks before it r
   await expect(page.getByTestId('assistant-setup-draft')).toHaveCount(0);
 
   await expect(page.getByTestId('assistant-usage')).toContainText('This conversation: 3 requests');
+  await expect(page.getByTestId('assistant-usage')).toHaveText(
+    /, estimated \$\d+\.\d\d at built-in prices of November 2026$/
+  );
 
   // A script: the whole text and the explanation, saved only on Save. The tick is set for
   // this conversation, so the message goes without the preview.

@@ -1,6 +1,6 @@
 ---
 title: The built-in assistant
-description: The assistant panel in RigReady with the AI provider you choose, what each request carries and costs, building a ready check, and scripts you approve.
+description: The assistant panel in RigReady with the AI provider you choose, what a request carries, estimates and limits, building a ready check, and scripts.
 order: 5
 ---
 
@@ -16,7 +16,7 @@ The conversation fills the panel and the message box stays at the bottom. Drag t
 
 ## Every request is shown first
 
-Type a message and press **Prepare** (or Enter). RigReady builds the request and shows it above the message box: the host and the model it goes to, which request of the question it is, about how many tokens it has and roughly what reading it costs, and what it carries, in a line each: your message, what the tools answered since the last request, how long the conversation is, and RigReady's instructions and tool list. **Show the exact request** shows the whole text. Nothing is sent until you press **Send** (or Enter again). **Don't send** throws the request away and leaves your message in the box; changing the message does the same, so the request on screen is always the one for the text in the box.
+Type a message and press **Prepare** (or Enter). RigReady builds the request and shows it above the message box: the host and the model it goes to, which request of the question it is, about how many tokens it has and what reading it is estimated at, and what it carries, in a line each: your message, what the tools answered since the last request, how long the conversation is, and RigReady's instructions and tool list. **Show the exact request** shows the whole text. Nothing is sent until you press **Send** (or Enter again). **Don't send** throws the request away and leaves your message in the box; changing the message does the same, so the request on screen is always the one for the text in the box.
 
 ![A request waiting for Send, with the exact text shown](../../../artifacts/screens/assistant/02-first-request.png)
 
@@ -26,23 +26,57 @@ The preview names the one host the request goes to, for example `api.anthropic.c
 
 ## While it works
 
-A line above the message box says what the assistant is doing, for example "Waiting for the answer (request 2)" or "Running: Find installed programs (request 2)", with the tokens and the cost of the question so far. **Stop** is beside it the whole time. Stopping loses nothing: a message that was not answered is back in the box, and what the tools already answered waits until you press **Continue**.
+A line above the message box says what the assistant is doing, for example "Waiting for the answer (request 2)" or "Running: Find installed programs (request 2)", with the tokens of the question so far and the estimate for them. **Stop** is beside it the whole time. Stopping loses nothing: a message that was not answered is back in the box, and what the tools already answered waits until you press **Continue**.
 
 Every tool the assistant used is a row in the conversation: what it did in words, whether that read, changed something or launched a game, and a line about what it answered. Click the row to see the exact answer, which is what goes to the provider with the next request. A proposal or a script appears in the conversation at the place where it was made.
 
 Replies are shown formatted: headings, lists, bold, code. An `https://` link in a reply opens in your browser when you click it; any other address is shown as text. HTML in a reply is shown as text, and pictures are never loaded.
 
-## What it costs
+## Estimates, prices and limits
 
-Where the model's price is known, the panel says what you spend:
+Your provider counts the tokens of every request and reports them: those numbers are exact. The dollars are not. RigReady works them out from the token counts and from prices per million tokens kept in Settings, and those prices can be out of date. So every dollar figure RigReady shows is an estimate, and says which prices it was worked out from: "built-in prices of November 2026" (the prices that came with RigReady, with the month they were recorded) or "your own prices". None of them is a bill. Your provider's console shows what you are charged, and a spending limit set there is the one that holds: set one there.
 
-- **Before a request goes**, the preview says for example "Request 1 of this question · about 4,400 tokens · about $0.02 to read, plus the answer". One question often takes several requests, one more each time the assistant uses tools.
-- **While it works**, the line above the message box shows the tokens and the cost of the question so far.
-- **Under the message box** is the total of the conversation: requests, tokens, how many of them the provider read from its cache, and the cost.
+Where prices are set for the model, the panel shows:
 
-**Most a question to the assistant may cost**, in Settings under **AI**, is a ceiling per question, $0.25 unless you change it. Before a request would take a question past it, RigReady stops, also when the preview is switched off for the conversation, and shows that request with **Continue past $0.25** in place of **Send**. Pressing it is good for as much again. Set the amount to 0 and RigReady never stops a question for its cost.
+- **Before a request goes**, for example "Request 1 of this question · about 4,400 tokens · estimated $0.02 to read at built-in prices of November 2026, plus the answer". One question often takes several requests, one more each time the assistant uses tools.
+- **While it works**, the tokens of the question so far and the estimate for them.
+- **Under the message box**, the total of the conversation: requests, tokens, how many of them the provider read from its cache, and the estimate, with the line "Estimates, not a bill: your provider's console shows what you are charged."
 
-The amounts are estimates from the provider's list price for the model chosen in Settings; what the provider bills is what counts. With Anthropic, the part of a request that did not change since the one before (the instructions, the tools, the conversation so far) is read from the provider's cache at a fraction of the price when the requests follow each other within five minutes. For a model with no known price, and for a server on your own PC, no cost is shown and the ceiling is not used. A question always ends once the assistant has used tools 16 times for it.
+### Prices
+
+**Prices for this model, in dollars per million tokens**, in Settings under **AI**, has four fields: input, output, cache read and cache write. For the Anthropic and OpenAI models RigReady lists, they start filled with its built-in prices, and the row says the month those were recorded. Providers change their prices. Compare the fields with your provider's price list, type your own numbers where they differ, and press **Save prices**: from then on the estimates for that model use your numbers and say "at your own prices". **Reset to built-in** goes back. Prices are kept for each model.
+
+For any other model, and for a server on your own PC, the fields start empty. Until you type prices, RigReady shows no dollar figure for that model, and neither limit below applies to it. Type 0 where your provider charges nothing.
+
+If the prices are changed after a request was shown, that request is not sent: it is made ready again with its new estimate, and shown first.
+
+![The prices of a model in Settings, with the month the built-in ones were recorded](../../../artifacts/screens/assistant-estimates/01-built-in-prices.png)
+
+### The ceiling for one question
+
+**Ask before the estimate for one question passes**, in Settings under **AI**, is $0.25 unless you change it. Before a request would take the estimate for a question past it, RigReady stops, also when the preview is switched off for the conversation, says so in words that name the estimate, and shows that request with **Continue past $0.25** in place of **Send**. Pressing it is good for as much again. Set the amount to 0 and RigReady never stops a question on its estimate.
+
+### The monthly budget
+
+RigReady adds up the estimates of every request the assistant and the [binding guide](../dcs/binding-guide-and-ai.md) got an answer to in the calendar month, each at the prices in force when it was sent, and shows the sum in Settings. **Stop sending when the estimate for a month reaches**, in the same place, is a budget for that sum. It is off until you set an amount. With an amount set:
+
+- **From 80 percent of the amount**, Settings says so, and so does every request that waits for **Send**.
+- **At the amount**, or before a request whose estimate would take the month past it, RigReady sends nothing more. The message starts "Stopped on RigReady's estimate, not on a bill", gives the estimate and the budget, and says that nothing was sent. Your message stays in the box.
+- **It starts again** with the next calendar month, or when you raise the amount, or when you set it to 0, which turns the budget off.
+
+Not in the month's estimate, though your provider may charge for them: a request you stopped, a request that failed on its way, the small request **Test** sends in Settings, and a request to a model without prices (Settings says how many of those there were). A server on your own PC without prices is not counted at all.
+
+![A message held back at the monthly budget, in words that say it stopped on the estimate](../../../artifacts/screens/assistant-estimates/09-stopped-on-the-estimate.png)
+
+### Turning a limit on
+
+The first time you set an amount for either limit, and each time you turn one on again after 0, a dialog says what you are turning on: the limit is counted from RigReady's estimates at the prices in Settings, it is not your provider's bill, and the limit that holds is the one at your provider. **Turn on the limit** can be pressed once you ticked that you understand this; **Cancel** changes nothing. Settings then shows the day you acknowledged it.
+
+![The dialog that turns the monthly budget on](../../../artifacts/screens/assistant-estimates/04-acknowledge.png)
+
+### Cache and the end of a question
+
+With Anthropic, the part of a request that did not change since the one before (the instructions, the tools, the conversation so far) is read from the provider's cache at the cache read price when the requests follow each other within five minutes. A question always ends once the assistant has used tools 16 times for it.
 
 ## When a request fails
 

@@ -8,32 +8,21 @@ import {
   type SetupDraftView,
   type TurnPreview,
 } from '../core/assistantModel';
+import { amountOf, dollars, estimated, plural, pricesName } from './estimateText';
 
 /**
  * What the assistant panel says in numbers and in which order it shows things, kept out of the
- * template so it can be tested: a cost is never rounded down to nothing, a count never reads
- * "1 requests", and a proposal is shown where it was made and only once.
+ * template so it can be tested: a dollar figure is always an estimate that names its prices
+ * and is never rounded down to nothing, a count never reads "1 requests", and a proposal is
+ * shown where it was made and only once.
  */
 
 const n = (v: number): string => v.toLocaleString('en-US');
 
-/** A count with its noun: "1 request", "2 requests". */
-export function plural(count: number, one: string, many = `${one}s`): string {
-  return `${n(count)} ${count === 1 ? one : many}`;
-}
-
-/** A plain amount: "$0.25". */
-export function dollars(amount: number): string {
-  return `$${amount.toFixed(2)}`;
-}
-
-/** An approximate cost, never shown as nothing: "about $0.33", "less than $0.01". */
-export function about(amount: number): string {
-  return amount < 0.01 ? 'less than $0.01' : `about ${dollars(amount)}`;
-}
+export { dollars, plural };
 
 /**
- * The size of the request that waits. The cost is what reading this one request costs: the
+ * The size of the request that waits. The estimate is of reading this one request: the
  * answer and any request after it come on top, and the line says so.
  */
 export function sizeLine(preview: TurnPreview): string {
@@ -41,29 +30,33 @@ export function sizeLine(preview: TurnPreview): string {
     `Request ${preview.round} of this question`,
     `about ${plural(preview.approxTokens, 'token')}`,
   ];
-  if (preview.approxCost !== null) {
-    parts.push(`${about(preview.approxCost)} to read, plus the answer`);
-  }
+  const reading = estimated(preview.approxCost, preview.prices, 'to read');
+  if (reading) parts.push(`${reading}, plus the answer`);
   return parts.join(' · ');
 }
 
-/** What the question has cost so far and where RigReady stops to ask; empty with nothing to say. */
+/**
+ * What the question is estimated at so far and where RigReady stops to ask; empty with
+ * nothing to say. Without prices there is no figure, and the line says what that means.
+ */
 export function budgetLine(preview: TurnPreview): string {
-  if (preview.approxCost === null) {
+  if (preview.approxCost === null || preview.prices === null) {
     return preview.local
       ? ''
-      : 'No price is known for this model, so no cost is shown and no ceiling applies.';
+      : 'No prices are set for this model, so no dollar figure is shown and neither the ceiling nor the monthly budget applies. You can enter prices in Settings under AI.';
   }
   const spent = preview.spent ?? 0;
-  const soFar = spent > 0 ? `This question so far: ${about(spent)}. ` : '';
+  // What went before may have been estimated at other prices than this request is.
+  const before = preview.spentPrices ?? preview.prices;
+  const soFar = spent > 0 ? `This question so far: ${estimated(spent, before)}. ` : '';
   if (preview.ceiling === null) return `${soFar}No ceiling is set in Settings.`;
-  const most = `${dollars(preview.ceiling)}, the most a question may cost before RigReady asks you`;
+  const most = `${dollars(preview.ceiling)}, the most one question may reach before RigReady asks you`;
   if (preview.overCeiling) {
     return spent > 0
-      ? `This question has cost ${about(spent)} and this request would take it past ${most}.`
-      : `Reading this request alone costs ${about(preview.approxCost)}, more than ${most}.`;
+      ? `This question is estimated at ${amountOf(spent)} so far, at ${pricesName(before)}, and this request would take the estimate past ${most}.`
+      : `Reading this request alone is estimated at ${amountOf(preview.approxCost)}, at ${pricesName(preview.prices)}: more than ${most}.`;
   }
-  return `${soFar}RigReady asks before ${spent > 0 ? 'it' : 'a question'} passes ${dollars(preview.ceiling)}.`;
+  return `${soFar}RigReady asks before the estimate for ${spent > 0 ? 'it' : 'a question'} passes ${dollars(preview.ceiling)}.`;
 }
 
 /** What the assistant is doing right now, for the line above the input. */
@@ -77,16 +70,16 @@ export function workingLine(progress: AssistantProgress | undefined): string {
 /** What the question has used so far while it works; empty before the first answer. */
 export function spendLine(progress: AssistantProgress | undefined): string {
   if (!progress || progress.tokens === 0) return '';
-  const cost = progress.cost === null ? '' : `, ${about(progress.cost)}`;
-  return `${plural(progress.tokens, 'token')} so far${cost}`;
+  const figure = estimated(progress.cost, progress.prices);
+  return `${plural(progress.tokens, 'token')} so far${figure ? `, ${figure}` : ''}`;
 }
 
 /** The conversation's total, under the input; empty before the first answer. */
 export function usageLine(usage: ConversationView['usage']): string {
   if (usage.requests === 0) return '';
   const cached = usage.cached > 0 ? ` (${n(usage.cached)} read from cache)` : '';
-  const cost = usage.cost === null ? '' : `, ${about(usage.cost)}`;
-  return `This conversation: ${plural(usage.requests, 'request')}, ${plural(usage.input + usage.output, 'token')}${cached}${cost}`;
+  const figure = estimated(usage.cost, usage.prices);
+  return `This conversation: ${plural(usage.requests, 'request')}, ${plural(usage.input + usage.output, 'token')}${cached}${figure ? `, ${figure}` : ''}`;
 }
 
 /** A typed amount of dollars: "0.25", "$0.25", "0,25", ".5". Anything else is no amount. */
@@ -107,13 +100,13 @@ export function ceilingHint(status: {
   const rounds = `A question still ends when the assistant has used tools ${MAX_TOOL_ROUNDS} times.`;
   if (!status.priceKnown) {
     return status.local
-      ? `A server on this PC has no price per request, so no cost is shown and this amount is not used. ${rounds}`
-      : `No price is known for this model, so no cost is shown and this amount is not used. ${rounds}`;
+      ? `No prices are set for this server on your PC, so nothing is estimated and this amount is not used. ${rounds}`
+      : `No prices are set for this model, so nothing is estimated and this amount is not used. ${rounds}`;
   }
   if (status.questionCeiling === 0) {
-    return `No ceiling: RigReady does not stop a question for its cost. ${rounds}`;
+    return `No ceiling: RigReady does not stop a question on its estimate. ${rounds}`;
   }
-  return 'One question often takes several requests. Before a request would take a question past this amount, RigReady stops and asks you. An amount smaller than a single request costs holds back the first request too. 0 means no ceiling.';
+  return "One question often takes several requests. Before a request would take the estimate for a question past this amount, RigReady stops and asks you. An amount smaller than the estimate for a single request holds back the first request too. It works on RigReady's estimates, not on your provider's bill. 0 means no ceiling.";
 }
 
 export const PANEL_WIDTH = { fallback: 560, min: 420, max: 960, step: 24 } as const;

@@ -3,6 +3,8 @@ import type { HostedResult, HostedTool, ToolHost } from '../../../core/mcp';
 import type { Ports } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
 import { approximateTokens, type Usage } from './anthropic';
+import { budgetStopMessage } from './budget';
+import { PRICES_RECORDED, type MonthBudget, type PriceBasis, type PriceSource } from './model';
 import {
   MAX_TOOL_ROUNDS,
   type AssistantProgress,
@@ -43,8 +45,11 @@ import {
  * sent as shown: a newer request of the conversation replaced it, who answers was changed in
  * Settings, the user threw it away, or the conversation ended.
  *
- * What a question costs is counted as it goes, and a ceiling (Settings) stops it before the
- * request that would take it past: that request goes only when the user says so.
+ * What a question is estimated at is counted as it goes, and a ceiling (Settings) stops it
+ * before the request that would take it past: that request goes only when the user says so.
+ * A monthly budget (Settings) stops every request once the month's estimate has reached it.
+ * Both work on RigReady's estimates (the provider's token counts at the prices kept in the
+ * app), never on what the provider charges, and every message that stops something says so.
  */
 
 export const ASSISTANT_NAME = 'Built-in assistant';
@@ -90,7 +95,10 @@ interface Meter {
   cached: number;
   written: number;
   output: number;
+  /** RigReady's estimate in dollars; null once a request had no prices. */
   cost: number | null;
+  /** Where the prices behind the estimate came from; null while nothing is estimated. */
+  source: PriceSource | null;
 }
 
 const emptyMeter = (): Meter => ({
@@ -100,16 +108,26 @@ const emptyMeter = (): Meter => ({
   written: 0,
   output: 0,
   cost: 0,
+  source: null,
 });
 
-function count(meter: Meter, usage: Usage, cost: number | null): void {
+function count(
+  meter: Meter,
+  usage: Usage,
+  cost: number | null,
+  source: PriceBasis['source'] | null
+): void {
   meter.requests += 1;
   meter.input += usage.input + usage.cacheRead + usage.cacheWrite;
   meter.cached += usage.cacheRead;
   meter.written += usage.cacheWrite;
   meter.output += usage.output;
-  // One request without a known price and the sum is not known either.
+  // One request without prices and the sum cannot be estimated either.
   meter.cost = meter.cost !== null && cost !== null ? meter.cost + cost : null;
+  // Requests estimated at prices of different origins make a sum that says so.
+  if (cost !== null && source !== null) {
+    meter.source = meter.source === null || meter.source === source ? source : 'mixed';
+  }
 }
 
 const spentOf = (meter: Meter): Spent => ({
@@ -118,7 +136,25 @@ const spentOf = (meter: Meter): Spent => ({
   cached: meter.cached,
   output: meter.output,
   cost: meter.cost,
+  prices: meter.cost === null ? null : meter.source,
 });
+
+/** Where an estimate's prices came from, in words for the log. */
+function pricesInWords(source: PriceSource | null): string {
+  if (source === 'built-in') return `built-in, recorded ${PRICES_RECORDED}`;
+  if (source === 'own') return "the user's own";
+  if (source === 'mixed') return `mixed: built-in (recorded ${PRICES_RECORDED}) and the user's own`;
+  return 'none';
+}
+
+const samePrices = (a: PriceBasis | null, b: PriceBasis | null): boolean =>
+  a === null || b === null
+    ? a === b
+    : a.source === b.source &&
+      a.input === b.input &&
+      a.output === b.output &&
+      a.cacheRead === b.cacheRead &&
+      a.cacheWrite === b.cacheWrite;
 
 interface Conversation {
   id: string;
@@ -153,8 +189,10 @@ interface Prepared {
   text?: string;
   /** Its size, for the estimate of the request after it. */
   tokens: number;
-  /** Dollars it is estimated to cost to read; null when the price is not known. */
+  /** Dollars reading it is estimated at; null when there are no prices for the model. */
   estimate: number | null;
+  /** The prices that estimate was worked out from, as the preview said. */
+  prices: PriceBasis | null;
 }
 
 export interface AssistantDeps {
@@ -162,8 +200,12 @@ export interface AssistantDeps {
   log: Logger;
   host(): ToolHost | undefined;
   target(): Promise<Result<AssistantTarget>>;
-  /** Dollars one question may cost before RigReady stops and asks (Settings); 0 for no ceiling. */
+  /** Dollars one question may reach by the estimate before RigReady stops and asks (Settings); 0 for no ceiling. */
   ceiling?(): Promise<number>;
+  /** The month against the monthly budget (Settings) with a request estimated at `next` dollars counted in. */
+  month?(next: number): Promise<MonthBudget>;
+  /** Told of every answered request, so that it is counted in the month's estimate. */
+  counted?(provider: ChatProvider, usage: Usage): Promise<void>;
   /** Told what the assistant is doing while it answers, for the line under the conversation. */
   progress?(progress: AssistantProgress): void;
 }
@@ -285,9 +327,9 @@ export class Assistant {
   }
 
   /**
-   * What reading a request of this size costs: what the provider still holds from the
-   * request before it at the price of a cache read, the rest at the price of writing it
-   * (Anthropic); the plain input price elsewhere. Null when the price is not known.
+   * The estimate of what reading a request of this size costs: what the provider still holds
+   * from the request before it at the price of a cache read, the rest at the price of
+   * writing it (Anthropic); the plain input price elsewhere. Null without prices.
    */
   private estimate(
     conversation: Conversation,
@@ -327,15 +369,21 @@ export class Assistant {
       [...conversation.messages, adds],
       MAX_TOKENS
     );
+    const provider = target.value.provider;
+    const compact = JSON.stringify(body);
+    const tokens = approximateTokens(compact);
+    const estimate = this.estimate(conversation, provider, tokens);
+    // The monthly budget holds a request back before it is shown as ready to send.
+    const month = estimate === null ? null : ((await this.deps.month?.(estimate)) ?? null);
+    if (month?.state === 'stopped') {
+      this.deps.log.info('ai-assist: the monthly budget held a request back, on the estimate');
+      return err('ai.budget', budgetStopMessage(month));
+    }
     // One request is ready per conversation at a time: an older one no longer fits it.
     for (const [id, p] of this.prepared) {
       if (p.conversationId === conversation.id) this.prepared.delete(id);
     }
     const requestId = this.next('t');
-    const provider = target.value.provider;
-    const compact = JSON.stringify(body);
-    const tokens = approximateTokens(compact);
-    const estimate = this.estimate(conversation, provider, tokens);
     this.prepared.set(requestId, {
       conversationId: conversation.id,
       body,
@@ -345,6 +393,7 @@ export class Assistant {
       ...(text !== undefined ? { text } : {}),
       tokens,
       estimate,
+      prices: provider.prices,
     });
     const results = adds.content.filter((b): b is ToolResultBlock => b.type === 'tool_result');
     const answered = results
@@ -368,6 +417,9 @@ export class Assistant {
       chars: compact.length,
       approxTokens: tokens,
       approxCost: estimate,
+      prices: estimate === null ? null : (provider.prices?.source ?? null),
+      spentPrices: spent === null || fresh ? null : conversation.question.source,
+      month,
       contents: [
         ...(text !== undefined ? [`Your message: "${oneLine(text)}"`] : []),
         ...(results.length > 0
@@ -468,11 +520,16 @@ export class Assistant {
       round,
       ...(tool !== undefined ? { tool } : {}),
       cost: fresh ? (question.cost === null ? null : 0) : question.cost,
+      // Nothing of a new question is estimated yet, so there is no figure to say a source for.
+      prices: fresh ? null : spentOf(question).prices,
       tokens: fresh ? 0 : question.input + question.output,
     });
   }
 
-  /** One line in the log for a question that ended: what it used, never what was said. */
+  /**
+   * One line in the log for a question that ended: what it used, never what was said. The
+   * dollars are RigReady's estimate, named so, with where its prices came from.
+   */
   private finish(conversation: Conversation, ended: 'answered' | 'stopped' | 'rounds' | 'left') {
     const question = conversation.question;
     if (conversation.logged || question.requests === 0) return;
@@ -487,7 +544,8 @@ export class Assistant {
       cached: question.cached,
       written: question.written,
       output: question.output,
-      cost: question.cost === null ? null : Math.round(question.cost * 10_000) / 10_000,
+      estimatedDollars: question.cost === null ? null : Math.round(question.cost * 10_000) / 10_000,
+      prices: pricesInWords(spentOf(question).prices),
     });
   }
 
@@ -528,6 +586,22 @@ export class Assistant {
         'Who answers was changed in Settings after this request was shown, so it was not sent. Send the message again.'
       );
     }
+    // The estimate that was shown must be the one the limits work on.
+    if (!samePrices(target.value.provider.prices, prepared.prices)) {
+      this.prepared.delete(requestId);
+      return err(
+        'ai.changed',
+        'The prices were changed in Settings after this request was shown, so its estimate no longer holds and it was not sent. Send the message again.'
+      );
+    }
+    // The month may have filled since the request was shown. It stays ready while it waits.
+    if (prepared.estimate !== null) {
+      const month = await this.deps.month?.(prepared.estimate);
+      if (month?.state === 'stopped') {
+        this.deps.log.info('ai-assist: the monthly budget held a request back, on the estimate');
+        return err('ai.budget', budgetStopMessage(month));
+      }
+    }
     const fresh = prepared.text !== undefined;
     const spent = prepared.estimate === null ? null : fresh ? 0 : conversation.question.cost;
     const limit = await this.limitFor(conversation, fresh);
@@ -536,7 +610,7 @@ export class Assistant {
       if (!options.pastCeiling) {
         return err(
           'ai.ceiling',
-          `This question has cost about ${dollars(spent ?? 0)} and the next request would take it past ${dollars(limit ?? 0)}, the most a question may cost before RigReady asks you. Nothing was sent.`
+          `Stopped on RigReady's estimate, not on a bill: this question is estimated at ${dollars(spent ?? 0)} so far, and the next request would take the estimate past ${dollars(limit ?? 0)}, the most one question may reach before RigReady asks you. Nothing was sent.`
         );
       }
       // The user's yes is good for as much again, or for this request when it alone is more.
@@ -600,10 +674,12 @@ export class Assistant {
     conversation.messages.push(prepared.adds);
     conversation.pendingResults = [];
     const { blocks, usage, stopReason } = answer.value;
-    // Priced as the model chosen in Settings, whatever dated name the answer gives it.
+    // Estimated as the model chosen in Settings, whatever dated name the answer gives it.
     const cost = provider.cost(usage);
-    count(conversation.total, usage, cost);
-    count(conversation.question, usage, cost);
+    const source = provider.prices?.source ?? null;
+    count(conversation.total, usage, cost, source);
+    count(conversation.question, usage, cost, source);
+    await this.deps.counted?.(provider, usage);
     conversation.warm = {
       tokens: prepared.tokens,
       at: this.now(),
@@ -719,7 +795,10 @@ export class Assistant {
       // What was answered and done stays in sight; only the next request is missing.
       conversation.entries.push({
         kind: 'note',
-        text: `The next request could not be made ready: ${next.error.message} Continue to try again.`,
+        text:
+          next.error.code === 'ai.budget'
+            ? `${next.error.message} What the tools answered is kept: Continue sends it once the budget allows.`
+            : `The next request could not be made ready: ${next.error.message} Continue to try again.`,
       });
       return ok({ conversation: this.view(conversation) });
     }
@@ -727,7 +806,7 @@ export class Assistant {
   }
 }
 
-/** Whether a request estimated at `estimate` takes a question that cost `spent` past `limit`. */
+/** Whether a request estimated at `estimate` takes a question estimated at `spent` so far past `limit`. */
 function over(spent: number | null, estimate: number | null, limit: number | null): boolean {
   return limit !== null && spent !== null && estimate !== null && spent + estimate > limit;
 }

@@ -381,7 +381,10 @@ describe('the log of the wired app: what is in it after the assistant was used, 
         written: 3600,
         output: 150,
       });
-      expect(numbers['cost']).toBeGreaterThan(0);
+      expect(numbers['estimatedDollars']).toBeGreaterThan(0);
+      // The dollars are named an estimate, with the prices behind them; nothing is called a cost.
+      expect(numbers['prices']).toBe('built-in, recorded November 2026');
+      expect(numbers).not.toHaveProperty('cost');
 
       // What never is: the key, the question, what a tool answered, what the assistant said.
       const all = app.written.join('');

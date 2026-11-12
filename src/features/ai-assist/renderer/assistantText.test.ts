@@ -6,7 +6,6 @@ import {
   type TurnPreview,
 } from '../core/assistantModel';
 import {
-  about,
   budgetLine,
   ceilingHint,
   flow,
@@ -19,6 +18,7 @@ import {
   usageLine,
   workingLine,
 } from './assistantText';
+import { amountOf } from './estimateText';
 
 function preview(over: Partial<TurnPreview> = {}): TurnPreview {
   return TurnPreviewSchema.parse({
@@ -31,6 +31,7 @@ function preview(over: Partial<TurnPreview> = {}): TurnPreview {
     chars: 18_004,
     approxTokens: 4445,
     approxCost: 0.0222,
+    prices: 'built-in',
     contents: [],
     round: 1,
     spent: 0,
@@ -51,72 +52,111 @@ describe('ASSIST-001 the numbers the assistant panel shows', () => {
   });
 
   it('never shows a cost as nothing, and never as a cent when it is thirty', () => {
-    expect(about(0.0004)).toBe('less than $0.01');
-    expect(about(0.0099)).toBe('less than $0.01');
-    expect(about(0.01)).toBe('about $0.01');
-    expect(about(0.3349)).toBe('about $0.33');
-    expect(about(12.5)).toBe('about $12.50');
+    expect(amountOf(0.0004)).toBe('less than $0.01');
+    expect(amountOf(0.0099)).toBe('less than $0.01');
+    expect(amountOf(0.01)).toBe('$0.01');
+    expect(amountOf(0.3349)).toBe('$0.33');
+    expect(amountOf(12.5)).toBe('$12.50');
+    // Nothing at all is nothing: a model the user typed prices of 0 for.
+    expect(amountOf(0)).toBe('$0.00');
   });
 
   it('says which request of the question waits and that its cost is only the reading', () => {
     expect(sizeLine(preview())).toBe(
-      'Request 1 of this question · about 4,445 tokens · about $0.02 to read, plus the answer'
+      'Request 1 of this question · about 4,445 tokens · estimated $0.02 to read at built-in prices of November 2026, plus the answer'
     );
-    expect(sizeLine(preview({ round: 4, approxTokens: 1, approxCost: 0.004 }))).toBe(
-      'Request 4 of this question · about 1 token · less than $0.01 to read, plus the answer'
+    expect(sizeLine(preview({ round: 4, approxTokens: 1, approxCost: 0.004, prices: 'own' }))).toBe(
+      'Request 4 of this question · about 1 token · estimated less than $0.01 to read at your own prices, plus the answer'
     );
-    // No price known: no cost is made up.
-    expect(sizeLine(preview({ approxCost: null, spent: null, ceiling: null }))).toBe(
+    // No prices: no figure is made up.
+    expect(sizeLine(preview({ approxCost: null, prices: null, spent: null, ceiling: null }))).toBe(
+      'Request 1 of this question · about 4,445 tokens'
+    );
+    // A figure whose prices are not named is not shown either.
+    expect(sizeLine(preview({ prices: null }))).toBe(
       'Request 1 of this question · about 4,445 tokens'
     );
   });
 
   it('says what the question has cost and where RigReady stops to ask', () => {
-    expect(budgetLine(preview())).toBe('RigReady asks before a question passes $0.25.');
-    expect(budgetLine(preview({ round: 3, spent: 0.0438 }))).toBe(
-      'This question so far: about $0.04. RigReady asks before it passes $0.25.'
+    expect(budgetLine(preview())).toBe(
+      'RigReady asks before the estimate for a question passes $0.25.'
     );
-    expect(budgetLine(preview({ round: 3, spent: 0.24, overCeiling: true }))).toBe(
-      'This question has cost about $0.24 and this request would take it past $0.25, the most a question may cost before RigReady asks you.'
+    expect(budgetLine(preview({ round: 3, spent: 0.0438, spentPrices: 'built-in' }))).toBe(
+      'This question so far: estimated $0.04 at built-in prices of November 2026. RigReady asks before the estimate for it passes $0.25.'
+    );
+    expect(
+      budgetLine(preview({ round: 3, spent: 0.24, spentPrices: 'built-in', overCeiling: true }))
+    ).toBe(
+      'This question is estimated at $0.24 so far, at built-in prices of November 2026, and this request would take the estimate past $0.25, the most one question may reach before RigReady asks you.'
     );
     expect(budgetLine(preview({ ceiling: 0.01, overCeiling: true }))).toBe(
-      'Reading this request alone costs about $0.02, more than $0.01, the most a question may cost before RigReady asks you.'
+      'Reading this request alone is estimated at $0.02, at built-in prices of November 2026: more than $0.01, the most one question may reach before RigReady asks you.'
     );
     expect(budgetLine(preview({ ceiling: null }))).toBe('No ceiling is set in Settings.');
-    expect(budgetLine(preview({ ceiling: null, spent: 0.5, round: 9 }))).toBe(
-      'This question so far: about $0.50. No ceiling is set in Settings.'
+    expect(
+      budgetLine(preview({ ceiling: null, spent: 0.5, spentPrices: 'built-in', round: 9 }))
+    ).toBe(
+      'This question so far: estimated $0.50 at built-in prices of November 2026. No ceiling is set in Settings.'
     );
-    // A model with no known price: said once, and nothing for a model on this PC.
-    expect(budgetLine(preview({ approxCost: null, spent: null, ceiling: null }))).toBe(
-      'No price is known for this model, so no cost is shown and no ceiling applies.'
+    // The prices were changed in the middle of a question: what went before says so.
+    expect(
+      budgetLine(preview({ round: 2, spent: 0.05, spentPrices: 'mixed', prices: 'own' }))
+    ).toBe(
+      'This question so far: estimated $0.05 at built-in prices of November 2026 and your own prices. RigReady asks before the estimate for it passes $0.25.'
     );
-    expect(budgetLine(preview({ approxCost: null, spent: null, ceiling: null, local: true }))).toBe(
-      ''
+    // A model without prices: said once, and nothing for a model on this PC.
+    const bare = { approxCost: null, prices: null, spent: null, ceiling: null };
+    expect(budgetLine(preview(bare))).toBe(
+      'No prices are set for this model, so no dollar figure is shown and neither the ceiling nor the monthly budget applies. You can enter prices in Settings under AI.'
     );
+    expect(budgetLine(preview({ ...bare, local: true }))).toBe('');
   });
 
   it('says what it is doing, with the request it is on and what the question has used', () => {
     expect(workingLine(undefined)).toBe('Sending the request');
-    const asking = { conversationId: 'c1', phase: 'asking', round: 2, cost: 0.031, tokens: 9120 };
+    const asking = {
+      conversationId: 'c1',
+      phase: 'asking',
+      round: 2,
+      cost: 0.031,
+      prices: 'built-in',
+      tokens: 9120,
+    } as const;
     expect(workingLine({ ...asking, phase: 'asking' })).toBe('Waiting for the answer (request 2)');
     expect(workingLine({ ...asking, phase: 'tool', tool: 'Find installed programs' })).toBe(
       'Running: Find installed programs (request 2)'
     );
     expect(workingLine({ ...asking, phase: 'tool' })).toBe('Running: a tool (request 2)');
-    expect(spendLine({ ...asking, phase: 'asking' })).toBe('9,120 tokens so far, about $0.03');
-    expect(spendLine({ ...asking, phase: 'asking', cost: null })).toBe('9,120 tokens so far');
-    expect(spendLine({ ...asking, phase: 'asking', tokens: 0, cost: 0 })).toBe('');
+    expect(spendLine({ ...asking, phase: 'asking' })).toBe(
+      '9,120 tokens so far, estimated $0.03 at built-in prices of November 2026'
+    );
+    expect(spendLine({ ...asking, phase: 'asking', cost: null, prices: null })).toBe(
+      '9,120 tokens so far'
+    );
+    expect(spendLine({ ...asking, phase: 'asking', tokens: 0, cost: 0, prices: null })).toBe('');
     expect(spendLine(undefined)).toBe('');
   });
 
   it("totals the conversation, with what was read from the provider's cache", () => {
-    const question = { requests: 2, input: 9000, cached: 4000, output: 400, cost: 0.044 };
+    const question = {
+      requests: 2,
+      input: 9000,
+      cached: 4000,
+      output: 400,
+      cost: 0.044,
+      prices: 'built-in',
+    } as const;
     expect(usageLine({ ...question, question })).toBe(
-      'This conversation: 2 requests, 9,400 tokens (4,000 read from cache), about $0.04'
+      'This conversation: 2 requests, 9,400 tokens (4,000 read from cache), estimated $0.04 at built-in prices of November 2026'
     );
-    const one = { requests: 1, input: 900, cached: 0, output: 80, cost: null };
+    // A conversation whose requests were estimated at different prices says so.
+    expect(usageLine({ ...question, prices: 'mixed', question })).toBe(
+      'This conversation: 2 requests, 9,400 tokens (4,000 read from cache), estimated $0.04 at built-in prices of November 2026 and your own prices'
+    );
+    const one = { requests: 1, input: 900, cached: 0, output: 80, cost: null, prices: null };
     expect(usageLine({ ...one, question: one })).toBe('This conversation: 1 request, 980 tokens');
-    const none = { requests: 0, input: 0, cached: 0, output: 0, cost: 0 };
+    const none = { requests: 0, input: 0, cached: 0, output: 0, cost: 0, prices: null };
     expect(usageLine({ ...none, question: none })).toBe('');
   });
 
@@ -135,17 +175,20 @@ describe('ASSIST-001 the numbers the assistant panel shows', () => {
 
   it('says in Settings what the ceiling does, and when it does nothing', () => {
     const status = { questionCeiling: 0.25, priceKnown: true, local: false };
-    expect(ceilingHint(status)).toMatch(/Before a request would take a question past this amount/);
+    expect(ceilingHint(status)).toMatch(
+      /Before a request would take the estimate for a question past this amount/
+    );
+    expect(ceilingHint(status)).toMatch(/RigReady's estimates, not on your provider's bill/);
     // A ceiling below one request holds the first one: said where the amount is typed.
     expect(ceilingHint(status)).toMatch(/holds back the first request too/);
     expect(ceilingHint({ ...status, questionCeiling: 0 })).toBe(
-      'No ceiling: RigReady does not stop a question for its cost. A question still ends when the assistant has used tools 16 times.'
+      'No ceiling: RigReady does not stop a question on its estimate. A question still ends when the assistant has used tools 16 times.'
     );
     expect(ceilingHint({ ...status, priceKnown: false })).toMatch(
-      /^No price is known for this model, so no cost is shown and this amount is not used\./
+      /^No prices are set for this model, so nothing is estimated and this amount is not used\./
     );
     expect(ceilingHint({ ...status, priceKnown: false, local: true })).toMatch(
-      /^A server on this PC has no price per request/
+      /^No prices are set for this server on your PC/
     );
   });
 

@@ -199,6 +199,13 @@ test('ai-assist: a suggestion round trip shows what is sent, checks the answer, 
     '1072 actions of the F/A-18C'
   );
   await expect(page.getByTestId('ai-payload-contents')).toContainText(STICK);
+  // The dollar figure is an estimate that names its prices, and is not a bill.
+  await expect(page.getByTestId('ai-payload-lead')).toContainText(
+    /estimated \$\d+\.\d\d to read at built-in prices of November 2026, before any answer\./
+  );
+  await expect(page.getByTestId('ai-payload-estimate')).toHaveText(
+    "Estimates, not a bill: your provider's console shows what you are charged."
+  );
   await page.getByTestId('ai-payload-toggle').click();
   await expect(page.getByTestId('ai-payload-body')).toContainText('"cache_control"');
   await expect(page.getByTestId('ai-payload-body')).not.toContainText(KEY);
@@ -217,6 +224,9 @@ test('ai-assist: a suggestion round trip shows what is sent, checks the answer, 
   await expect(pickle.getByTestId('ai-flag-already')).toBeVisible();
   await expect(pickle.getByTestId('ai-suggestion-tick').locator('input')).not.toBeChecked();
   await expect(page.getByTestId('ai-usage').first()).toContainText('tokens in');
+  await expect(page.getByTestId('ai-usage').first()).toContainText(
+    /· estimated \$\d+\.\d\d at built-in prices of November 2026/
+  );
   await page.getByTestId('ai-dropped').locator('summary').click();
   await shot('suggestions');
 

@@ -5,9 +5,11 @@ import {
   AircraftListSchema,
   AppliedSchema,
   GuideViewSchema,
+  MonthBudgetSchema,
   PlanSchema,
   PreparedSchema,
   PressSchema,
+  PriceSchema,
   ProgressSchema,
   SendProgressSchema,
   RequestKindSchema,
@@ -245,16 +247,48 @@ export const aiAssistContract = defineContract(
       describe: 'Ends a conversation of the built-in assistant.',
       tier: 'off',
     }),
-    /** The most one question to the assistant may cost before it stops and asks; 0 for none. */
+    /**
+     * The most one question to the assistant may reach by RigReady's estimate before it stops
+     * and asks; 0 for none. Turning it on needs `acknowledged`: the user's own yes that the
+     * limit is counted from estimates and is not the provider's bill.
+     */
     setQuestionCeiling: channel(
-      z.object({ dollars: z.number().min(0).max(1000) }),
+      z.object({ dollars: z.number().min(0).max(1000), acknowledged: z.boolean().default(false) }),
       AiStatusSchema,
       {
         describe:
-          'Sets the most one question to the built-in assistant may cost before RigReady stops and asks.',
+          "Sets the most one question to the built-in assistant may reach, by RigReady's estimate, before RigReady stops and asks. Turning it on needs the user's acknowledgement that it is counted from estimates.",
         tier: 'off',
       }
     ),
+    /**
+     * The most a calendar month may reach by RigReady's estimate before nothing more is sent;
+     * 0 for none. Turning it on needs `acknowledged`, as the ceiling does.
+     */
+    setMonthlyBudget: channel(
+      z.object({
+        dollars: z.number().min(0).max(1_000_000),
+        acknowledged: z.boolean().default(false),
+      }),
+      AiStatusSchema,
+      {
+        describe:
+          "Sets the monthly budget: the most a calendar month's requests may reach, by RigReady's estimate, before RigReady stops sending. Turning it on needs the user's acknowledgement that it is counted from estimates.",
+        tier: 'off',
+      }
+    ),
+    /** The user's own prices for the chosen model, in US dollars per million tokens. */
+    setPrices: channel(PriceSchema, AiStatusSchema, {
+      describe:
+        "Sets the user's own prices for the chosen model, in US dollars per million tokens: input, output, cache read and cache write. Every estimate for that model uses them from then on.",
+      tier: 'off',
+    }),
+    /** Forgets the user's own prices for the chosen model: the built-in ones, or none, again. */
+    resetPrices: channel(noInput, AiStatusSchema, {
+      describe:
+        "Removes the user's own prices for the chosen model, so estimates use RigReady's built-in prices again, or none where it has none.",
+      tier: 'off',
+    }),
     /** Where helper programs are installed, by name or vendor. Reads folder names and the registry only. */
     findPrograms: channel(FindProgramsInputSchema, FoundProgramsSchema, {
       describe:
@@ -337,9 +371,11 @@ export const aiAssistContract = defineContract(
     draftsChanged: z.object({}),
     /** A request that is being answered got further. */
     sendProgress: SendProgressSchema,
-    /** The assistant got further with a question: what it is doing and what it has cost. */
+    /** The assistant got further with a question: what it is doing and what it is estimated at. */
     assistantProgress: AssistantProgressSchema,
-    /** The provider, model, key or ceiling changed: `status` is worth asking again. */
+    /** The provider, model, key, prices, ceiling or budget changed: `status` is worth asking again. */
     settingsChanged: z.object({}),
+    /** A request was answered and counted: what this month is estimated at now. */
+    monthChanged: MonthBudgetSchema,
   }
 );

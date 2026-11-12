@@ -413,7 +413,7 @@ describe('ASSIST-005 what a conversation with the assistant costs', () => {
 
   it('a question that reads on and on stops at the ceiling and asks, before it is passed', async () => {
     const running = await started();
-    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0.05 });
+    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0.05, acknowledged: true });
     const meter = new Meter();
     const one = await ask(running, meter, QUESTION_ONE, WIDE_ONE);
     write('the first question as it went, with a ceiling of $0.05', [

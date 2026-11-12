@@ -498,7 +498,7 @@ describe('ASSIST-001 while the assistant works', () => {
   it('never goes past the ceiling by itself: it stops, says so, and goes on only on the press', async () => {
     const running = await started();
     const store = panel();
-    await store.api.setQuestionCeiling({ dollars: 0.05 });
+    await store.api.setQuestionCeiling({ dollars: 0.05, acknowledged: true });
     // A first answer that cost more than the ceiling by itself: about 12 cents.
     reply(running, [use('tu1', 'setups_list')], 'tool_use', {
       input_tokens: 20_000,
@@ -526,7 +526,7 @@ describe('ASSIST-001 while the assistant works', () => {
   it('a ceiling below one request holds the very first one, before anything is sent', async () => {
     const running = await started();
     const store = panel();
-    await store.api.setQuestionCeiling({ dollars: 0.01 });
+    await store.api.setQuestionCeiling({ dollars: 0.01, acknowledged: true });
     store.edit(QUESTION);
     await store.prepare();
     expect(store.preview?.overCeiling).toBe(true);
@@ -564,5 +564,140 @@ describe('ASSIST-001 while the assistant works', () => {
     await store.prepare();
     await store.send();
     expect(kinds(store)).toEqual(['user', 'assistant']);
+  });
+});
+
+/** An answer estimated at 12 cents at the built-in prices of Opus 5.5: $0.08 in, $0.04 out. */
+const TWELVE_CENTS = { input_tokens: 20_000, output_tokens: 2000 };
+const OWN_PRICES = { input: 8, output: 40, cacheRead: 0.4, cacheWrite: 10 };
+
+describe('ASSIST-007 the panel at the monthly budget', () => {
+  it('does not make a message ready once the month is at its budget: nothing is sent, the reason says it stopped on the estimate, and the message stays', async () => {
+    const running = await started();
+    const store = panel();
+    await store.api.setMonthlyBudget({ dollars: 0.1, acknowledged: true });
+    reply(running, text('Two setups.'), 'end_turn', TWELVE_CENTS);
+    store.edit('Which setups are there?');
+    await store.prepare();
+    await store.send();
+    expect(sentRequests(running)).toBe(1);
+
+    store.edit(QUESTION);
+    expect(await store.prepare()).toBe(false);
+    expect(store.preview).toBeUndefined();
+    expect(store.error).toMatch(/^Stopped on RigReady's estimate, not on a bill: /);
+    expect(store.error).toMatch(
+      /estimated at \$0\.12, which reaches your monthly budget of \$0\.10/
+    );
+    expect(store.error).toMatch(/Nothing was sent\./);
+    expect(store.error).toMatch(/What you are charged is in your provider's console\./);
+    // Not a failure of the provider: no "Try again" for something that cannot go.
+    expect(store.failed).toBe(false);
+    expect(store.draft).toBe(QUESTION);
+    expect(sentRequests(running)).toBe(1);
+
+    // Turned off in Settings: the old reason goes, and the message can be made ready.
+    await store.api.setMonthlyBudget({ dollars: 0 });
+    await vi.waitFor(() => expect(store.error).toBeUndefined());
+    reply(running, text('It is not.'));
+    expect(await store.prepare()).toBe(true);
+    await store.send();
+    expect(sentRequests(running)).toBe(2);
+    expect(kinds(store)).toEqual(['user', 'assistant', 'user', 'assistant']);
+  });
+
+  it('warns in the request when the month is close, keeps a request ready that Send could not take, and sends it once the budget is raised', async () => {
+    const running = await started();
+    // The page does not hear of the changes made behind it here.
+    const store = useAssistantStore();
+    await store.api.setMonthlyBudget({ dollars: 0.14, acknowledged: true });
+    reply(running, text('Two setups.'), 'end_turn', TWELVE_CENTS);
+    store.edit('Which setups are there?');
+    await store.prepare();
+    expect(store.preview?.month).toMatchObject({ state: 'ok', budget: 0.14, spent: 0 });
+    await store.send();
+
+    // 12 of 14 cents: the next request says so before it is sent.
+    store.edit(QUESTION);
+    await store.prepare();
+    const shown = store.preview!;
+    expect(shown.month).toMatchObject({ state: 'warn', budget: 0.14, requests: 1 });
+    expect(shown.month?.spent).toBeCloseTo(0.12, 6);
+
+    // The budget was lowered under it: Send is refused, on the estimate.
+    await running.wiring.handlers.get('ai-assist:setMonthlyBudget')!({ dollars: 0.1 });
+    await store.send();
+    expect(sentRequests(running)).toBe(1);
+    expect(store.error).toMatch(/^Stopped on RigReady's estimate, not on a bill: /);
+    expect(store.failed).toBe(false);
+    expect(store.preview?.requestId).toBe(shown.requestId);
+    expect(store.draft).toBe(QUESTION);
+    expect(store.sending).toBe(false);
+    // Pressing again changes nothing while the budget stands.
+    await store.send();
+    expect(sentRequests(running)).toBe(1);
+
+    // Raised in Settings: the request is made ready again and goes on the press.
+    await running.wiring.handlers.get('ai-assist:setMonthlyBudget')!({ dollars: 5 });
+    await store.settingsChanged();
+    expect(store.error).toBeUndefined();
+    expect(store.preview?.text).toBe(QUESTION);
+    expect(store.preview?.month).toMatchObject({ state: 'ok', budget: 5 });
+    reply(running, text('It is not.'));
+    await store.send();
+    expect(sentRequests(running)).toBe(2);
+    expect(kinds(store)).toEqual(['user', 'assistant', 'user', 'assistant']);
+  });
+});
+
+describe('ASSIST-009 the panel when the prices are changed', () => {
+  it('makes a request shown at other prices ready again with its new estimate, and never sends it by itself', async () => {
+    const running = await started();
+    // The page did not hear of the change: Send is pressed on an estimate that no longer holds.
+    const store = useAssistantStore();
+    store.edit(QUESTION);
+    await store.prepare();
+    const first = store.preview!;
+    expect(first.prices).toBe('built-in');
+    store.skipPreview = true;
+    await running.wiring.handlers.get('ai-assist:setPrices')!(OWN_PRICES);
+
+    await store.send();
+    expect(sentRequests(running)).toBe(0);
+    expect(store.error).toBeUndefined();
+    expect(store.notice).toMatch(
+      /^Settings were changed after this request was shown, so it was made ready again and its estimate worked out anew\. Nothing was sent/
+    );
+    expect(store.preview?.requestId).not.toBe(first.requestId);
+    expect(store.preview?.prices).toBe('own');
+    // Every price was doubled, so the estimate is twice what it was.
+    expect(store.preview!.approxCost!).toBeCloseTo(first.approxCost! * 2, 6);
+    expect(store.draft).toBe(QUESTION);
+
+    reply(running, text('It is not.'));
+    await store.send();
+    expect(kinds(store)).toEqual(['user', 'assistant']);
+    expect(store.conversation?.usage.prices).toBe('own');
+  });
+
+  it('works the estimate of the request on screen out again when Settings says the prices changed', async () => {
+    const running = await started();
+    const store = panel();
+    store.edit(QUESTION);
+    await store.prepare();
+    const first = store.preview!;
+
+    await store.api.setPrices(OWN_PRICES);
+    await vi.waitFor(() => expect(store.preview?.prices).toBe('own'));
+    expect(store.preview?.requestId).not.toBe(first.requestId);
+    expect(store.notice).toBe(
+      'The prices were changed in Settings: the estimate for this request was worked out again. Nothing was sent.'
+    );
+    expect(sentRequests(running)).toBe(0);
+
+    // Back to the built-in prices: the estimate it had at first.
+    await store.api.resetPrices();
+    await vi.waitFor(() => expect(store.preview?.prices).toBe('built-in'));
+    expect(store.preview!.approxCost!).toBeCloseTo(first.approxCost!, 9);
   });
 });
