@@ -177,6 +177,7 @@ const face = (now: TrainerRound): string =>
     now.note?.press.control,
     now.weighing?.since,
     now.holding,
+    now.inPlace.length,
   ].join('|');
 
 /** Plays the round on: `play` is one step of it. */
@@ -261,6 +262,16 @@ const afterAnswer = computed(() =>
 );
 /** A control that is held and being weighed as the answer. */
 const weighing = computed(() => round.value?.weighing?.press.control ?? '');
+/**
+ * The control asked for has been where the card asks since before the card came up. Where
+ * a control rests is not a press, so the card says how to answer with it.
+ */
+const inPlace = computed(() => {
+  if (!round.value?.inPlace.length || phase.value === 'done') return '';
+  const which =
+    answers.value.length > 1 ? 'One of the controls for it is' : 'The control for it is';
+  return `${which} already in place. Move it away and straight back.`;
+});
 
 const deviceOf = (guid: string): SheetDevice | undefined =>
   store.sheet?.devices.find((d) => d.guid?.toUpperCase() === guid);
@@ -642,7 +653,12 @@ onBeforeUnmount(() => {
                 </span>
               </template>
             </div>
-            <!-- A press that was not taken as an answer: said, so that nothing is silently ignored. -->
+            <!-- The control asked for is held and has not moved: said, or the card would only wait. -->
+            <div v-if="inPlace" class="trainer-note" role="status" data-testid="trainer-in-place">
+              <v-icon icon="mdi-information-outline" size="18" />
+              <span>{{ inPlace }}</span>
+            </div>
+            <!-- A press that was not taken as an answer, and why. A position that was only passed is not a press and is not said. -->
             <div
               v-if="note"
               class="trainer-note"

@@ -13,7 +13,9 @@ import { TrainerSession, type Press, type TrainerCard, type Verdict } from './tr
  *     is held when a card comes up, can only answer after it went off and came on again.
  *  2. A control counts once it has been held for a moment (HOLD_MS), or after a clean tap:
  *     let go sooner, with nothing else on its controller changing and no lever of it
- *     travelling around the tap. A position that is only passed over is neither.
+ *     travelling around the tap. A position that is only passed over is neither, and
+ *     nothing is said of it. Only the control the card asks for is worth a word when it
+ *     was let go too soon.
  *  3. A wrong answer needs a control that is new to the question. One that goes back to
  *     where it rested in this round, one that was in use while the card before was up, and
  *     one on a controller the round is not about are told to the user and not counted.
@@ -53,7 +55,8 @@ export interface InputFrame {
  * - other-device: it is on a controller this round is not about;
  * - back-to-rest: it went back to a place it rested in earlier in the round;
  * - last-card: it was in use while the card before was up;
- * - too-quick: it was let go too soon, and too much else was going on for a tap.
+ * - too-quick: it is the control the card asks for, and it was let go too soon, with too
+ *   much else going on for a tap.
  */
 export type NotCounted = 'other-device' | 'back-to-rest' | 'last-card' | 'too-quick';
 
@@ -196,6 +199,24 @@ export class TrainerRound {
     };
   }
 
+  /**
+   * The controls the card asks for that have been held since before it came up. Where a
+   * control rests is not a press, so one of these answers only once it is moved away and
+   * back: the user is told, because nothing else on the card says why it does not count.
+   */
+  get inPlace(): Press[] {
+    const { card, phase } = this.session;
+    if (!card || (phase !== 'asking' && phase !== 'wrong' && phase !== 'shown')) return [];
+    // A control that came on while the card is up is being weighed, or has counted.
+    return card.answers
+      .filter(
+        (a) =>
+          (this.known.get(a.guid)?.held.has(a.control) ?? false) &&
+          !this.weighed.some((w) => w.guid === a.guid && w.control === a.control)
+      )
+      .map((a) => ({ guid: a.guid, control: a.control }));
+  }
+
   /** Whether the control that answered the card is still held. */
   get holding(): boolean {
     const answered = this.session.answered;
@@ -317,15 +338,18 @@ export class TrainerRound {
     if (verdict) step.verdicts.push(verdict);
   }
 
-  /** A control was let go too soon to count, and it was not a clean tap. */
+  /**
+   * A control was let go too soon to count, and it was not a clean tap: it was passed over,
+   * as a lever passes positions on its way and a hand brushes a button. Nothing is said of
+   * that. The one exception is the control the card asks for: the user had it, and is told
+   * to hold it a moment longer.
+   */
   private passedOver(w: Weighed): void {
     const phase = this.session.phase;
-    const right = this.isRight(w);
-    const mattered =
-      phase === 'asking'
-        ? right || !this.excused(w)
-        : (phase === 'wrong' || phase === 'shown') && right;
-    if (mattered) this.note = { why: 'too-quick', press: { guid: w.guid, control: w.control } };
+    const open = phase === 'asking' || phase === 'wrong' || phase === 'shown';
+    if (open && this.isRight(w)) {
+      this.note = { why: 'too-quick', press: { guid: w.guid, control: w.control } };
+    }
   }
 
   /**

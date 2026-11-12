@@ -32,18 +32,22 @@ At the end the page says how many of the cards were right first time and lists t
 
 ## What counts as an answer
 
-A control answers a card when you tap it or hold it for a moment, about a third of a second. The next card comes once you have let go of it and the controls are still, so the way back to rest happens before the next card and not on it.
+A control answers a card when you tap it or hold it for a moment, about a third of a second. While you hold it, a thin line grows across the card until it counts. The next card comes once you have let go of it and the controls are still, so the way back to rest happens before the next card and not on it.
 
-Some of what a controller reports is not an answer. RigReady says so under the card, and it is not counted as a miss:
+A control that is only passed on the way, like the positions a lever goes through before it stops, is not an answer. Nothing is said of it and it is not a miss.
 
-- A control that is only passed on the way, like the positions a lever goes through before it stops.
+Some of what a controller reports is not an answer either. RigReady says so under the card, and it is not counted as a miss:
+
+- The control the card asks for, when it was let go too soon to count, as when a lever sweeps through it. Hold it for a moment.
 - A control that goes back to where it was earlier in the round, like a lever returning to its stop.
 - The control used on the card before, the first time it comes on again.
 - In a round for one device, a press on another device.
 
 ![A press on another device, said and not counted](../../../artifacts/screens/cheat-sheets-trainer-rule/05-on-another-device.png)
 
-Where a switch or a lever rests is not a press either. A switch that is on when a card comes up is drawn as held and is not taken for an answer. When a card asks for the position a control is already in, move the control away and straight back.
+Where a switch or a lever rests is not a press either. A switch that is on when a card comes up is drawn as held and is not taken for an answer. When a card asks for the position a control is already in, the card says so: move the control away and straight back.
+
+![A card whose control is already in place](../../../artifacts/screens/cheat-sheets-trainer-in-place/01-already-in-place.png)
 
 ## What is remembered
 

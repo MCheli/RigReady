@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Locator, Page } from '@playwright/test';
 import { axeViolations, colourOnlyStatus } from './a11y';
 import { expect, screensDir, test, type RunningApp } from './harness';
+import { HOLD_MS } from '../../src/features/cheat-sheets/core/trainerRound';
 
 /**
  * "Learn your controls": RigReady names an action of the F/A-18C, the control is pressed
@@ -422,7 +423,7 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await restarted.shot('after-restart');
 });
 
-test('trainer: only a control that is held or tapped answers a card; one on its way back, one from the card before, one passed over and one on another device are said and not counted', async ({
+test('trainer: only a control that is held or tapped answers a card; one on its way back, one from the card before, one on another device and the right one let go too soon are said and not counted; a position that is only passed is not said', async ({
   rig,
 }) => {
   test.setTimeout(180_000);
@@ -439,10 +440,10 @@ test('trainer: only a control that is held or tapped answers a card; one on its 
   const onThrottle = (held: string[] = []) => stateOf(throttle, held);
 
   // A lever of the throttle rests in a position that holds a button, as the handles of the
-  // owner's throttle do at OFF. The startup panel is at rest.
+  // owner's throttle do at OFF. The startup panel has not been heard from yet.
   const parked = fake.spare(throttle);
-  await run.sendInput([onThrottle([parked]), stateOf(panel)]);
-  await heard(trainer, 2);
+  await run.sendInput([onThrottle([parked])]);
+  await heard(trainer, 1);
   await trainer.getByTestId('trainer-start').click();
 
   // ---- Card 1: the lever leaves its place for the control asked for, and stays there.
@@ -461,7 +462,27 @@ test('trainer: only a control that is held or tapped answers a card; one on its 
   await expect(note).toHaveCount(0);
   await expect(count).toHaveText('1 of 10 done');
 
-  // ---- Card 2, and four things that are not an answer to it.
+  // ---- Card 2, and five things that are not an answer to it.
+  // A lever on its way passes two positions and stops on neither. They are not what the
+  // card asks for, so nothing is said of them. The startup panel is heard from for the
+  // first time right after: once the page has that, it has the lever's way too.
+  const passed = fake
+    .cardsOn(throttleKey)
+    .filter((c) => c.id !== first.card.id && c.id !== second.card.id)
+    .flatMap((c) => c.answers)
+    .filter((a) => a.deviceKey === throttleKey && a.control.startsWith('button:'))
+    .slice(0, 2);
+  expect(passed).toHaveLength(2);
+  await run.sendInput([
+    onThrottle([parked, passed[0]!.control]),
+    onThrottle([parked, passed[1]!.control]),
+    onThrottle([parked]),
+  ]);
+  await run.sendInput([stateOf(panel)]);
+  await heard(trainer, 2);
+  await expect(note).toHaveCount(0);
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+
   // A slower hand: the lever is off its place and back on it while the card is up. It went
   // back to where it was, which is said.
   await run.sendInput([onThrottle(), onThrottle([parked])]);
@@ -482,25 +503,21 @@ test('trainer: only a control that is held or tapped answers a card; one on its 
   await shot('from-the-card-before');
   await run.sendInput([onThrottle([parked])]);
 
-  // A lever on its way passes two positions and stops on neither.
-  const passed = fake
-    .cardsOn(throttleKey)
-    .filter((c) => c.id !== first.card.id && c.id !== second.card.id)
-    .flatMap((c) => c.answers)
-    .filter((a) => a.deviceKey === throttleKey && a.control.startsWith('button:'))
-    .slice(0, 2);
-  expect(passed).toHaveLength(2);
+  // The control the card asks for, in a hurry: another one is let go as it goes down, and
+  // it is let go at once. That is no tap, so it does not count. The user had it, and is
+  // told to hold it.
   await run.sendInput([
     onThrottle([parked, passed[0]!.control]),
-    onThrottle([parked, passed[1]!.control]),
+    onThrottle([parked, second.answer.control]),
     onThrottle([parked]),
   ]);
   await expect(note).toHaveAttribute('data-why', 'too-quick');
-  await expect(note).toHaveAttribute('data-control', passed[1]!.control);
+  await expect(note).toHaveAttribute('data-control', second.answer.control);
   await expect(note).toContainText(
-    `${passed[1]!.name} on Throttle was let go too soon to count. Hold a control for a moment to answer with it.`
+    `${second.answer.name} on Throttle was let go too soon to count. Hold a control for a moment to answer with it.`
   );
-  await shot('passed-over');
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+  await shot('let-go-too-soon');
 
   // A button of another device, as Button 8 of the startup panel was at the sitting. The
   // round is for the throttle, so it is said and uses up no try.
@@ -515,7 +532,7 @@ test('trainer: only a control that is held or tapped answers a card; one on its 
   await shot('on-another-device');
   await run.sendInput([stateOf(panel)]);
 
-  // None of the four was an answer: the question is still open and nothing is done.
+  // None of the five was an answer: the question is still open and nothing is done.
   await expect(verdict).toHaveAttribute('data-phase', 'asking');
   await expect(count).toHaveText('1 of 10 done');
   await round.hold(second.answer, [parked]);
@@ -878,6 +895,109 @@ test('trainer: a switch that stays held is drawn quietly, so the control asked f
   }
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
   await shot('held-and-shown');
+});
+
+/** What the page can do with the animations under an element. */
+interface Animated {
+  getAnimations(options: { subtree: boolean }): {
+    animationName?: string;
+    pause(): void;
+    currentTime: number | null;
+  }[];
+}
+
+test('trainer: a card whose control is already in place says so, and a control that is being weighed shows a line until it counts', async ({
+  rig,
+}) => {
+  const flow = 'cheat-sheets-trainer-in-place';
+  const run = await rig.launch('cheat-sheets-hornet', flow);
+  const { page, shot } = run;
+  // The time of the page is the test's to stop, for the picture of a control half weighed.
+  await page.clock.install();
+  const trainer = await openTrainer(page, 'Throttle');
+  const fake = await hornet(page);
+  const throttleKey = fake.keyOf('Throttle');
+  const throttle = fake.controllerFor(throttleKey);
+  const panel = fake.controllerFor(fake.keyOf('WinWing F18 STARTUP PANEL'));
+  const { count, verdict, note, summary, current } = roundOf(run, fake, throttleKey);
+  const inPlace = trainer.getByTestId('trainer-in-place');
+  const onThrottle = (held: string[] = []) => stateOf(throttle, held);
+
+  await run.sendInput([onThrottle()]);
+  await heard(trainer, 1);
+  await trainer.getByTestId('trainer-start').click();
+
+  // ---- The first card is not known: "Show me", and the round is stopped. The card is
+  // kept as missed. Nothing is held, so nothing is said to be in place.
+  const asked = await current();
+  await expect(inPlace).toHaveCount(0);
+  await trainer.getByTestId('trainer-show').click();
+  await expect(verdict).toHaveAttribute('data-phase', 'shown');
+  await expect(inPlace).toHaveCount(0);
+  await trainer.getByTestId('trainer-stop').click();
+  const again = summary.getByTestId('trainer-again-missed');
+  await expect(again).toBeVisible();
+
+  // ---- The control is put where that card asks and left there, as a switch that stays on
+  // is. The startup panel is heard from for the first time right after: once the page has
+  // that, it has the switch too.
+  await run.sendInput([onThrottle([asked.answer.control])]);
+  await run.sendInput([stateOf(panel)]);
+  await heard(trainer, 2);
+
+  // ---- "Practise the missed" asks that one card. Its control is where it rests, which is
+  // not a press: the card says so, and how to answer with it.
+  await again.click();
+  expect((await current()).card.id).toBe(asked.card.id);
+  await expect(count).toHaveText('0 of 1 done');
+  await expect(inPlace).toHaveText(
+    `${asked.places.length > 1 ? 'One of the controls for it is' : 'The control for it is'} already in place. Move it away and straight back.`
+  );
+  await expect(note).toHaveCount(0);
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('already-in-place');
+
+  // ---- Moved away: it is in place no longer, and the line goes.
+  await run.sendInput([onThrottle()]);
+  await expect(inPlace).toHaveCount(0);
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+
+  // ---- And straight back. Time is stopped while it is held, so that the moment it is
+  // weighed for can be looked at: a thin line grows over the question, and nothing is
+  // right or wrong yet. A clock can only be stopped ahead of where it is, so it is stopped
+  // well ahead: nothing in the round waits on time while the question is open.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 10_000);
+  await run.sendInput([onThrottle([asked.answer.control])]);
+  await expect(verdict).toHaveAttribute('data-weighing', asked.answer.control);
+  await expect(verdict).toHaveClass(/is-weighing/);
+  // Half of the moment goes by. The line is drawn by the window, not by the page's clock,
+  // so it is put at the same point.
+  await page.clock.runFor(HOLD_MS / 2);
+  const lines = await verdict.evaluate((el, at) => {
+    const growing = (el as unknown as Animated)
+      .getAnimations({ subtree: true })
+      .filter((a) => (a.animationName ?? '').startsWith('trainer-weigh'));
+    for (const line of growing) {
+      line.pause();
+      line.currentTime = at;
+    }
+    return growing.length;
+  }, HOLD_MS / 2);
+  expect(lines).toBe(1);
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+  await expect(verdict).toHaveAttribute('data-weighing', asked.answer.control);
+  await expect(count).toHaveText('0 of 1 done');
+  // The line is held half way, which the numbered pictures do not wait for.
+  await page.screenshot({ path: path.join(screensDir, flow, 'being-weighed.png') });
+
+  // ---- The rest of the moment: held long enough, it counts and the line is gone.
+  await page.clock.runFor(HOLD_MS);
+  await expect(verdict).toHaveAttribute('data-phase', 'right');
+  await expect(verdict).not.toHaveClass(/is-weighing/);
+  await page.clock.resume();
+  await expect(count).toHaveText('1 of 1 done');
+  await run.sendInput([onThrottle()]);
+  await expect(summary.getByTestId('trainer-score')).toHaveText('1 of 1 right first time');
 });
 
 test('trainer: a racing game is asked the same way, on the buttons of the wheel', async ({
