@@ -1,10 +1,12 @@
 import { z } from 'zod';
-import { directInputName, type AircraftBindings, type BindingReader } from '../../../core/bindings';
+import { directInputName, type AircraftBindings, type BindingReader } from './bindings';
 
 /**
- * "What does this control do?" for the input tester: the actions a game has bound to each
- * input of each controller, read through core's binding registry (`ctx.bindings`). The
- * devices feature knows nothing about any game's files.
+ * "What does this control do?": the actions a game has bound to each input of each
+ * controller, read through the binding registry (`ctx.bindings`), and the lookup from a
+ * press (the controller's GUID plus the name press detection gives the input) to those
+ * actions. One lookup for every feature that shows what a press does: the input tester and
+ * the overlay. Neither knows anything about any game's files.
  */
 
 export const BindingSourceSchema = z.object({

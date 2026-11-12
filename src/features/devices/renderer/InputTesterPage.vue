@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { onMachineChanged } from '../../../renderer/machine';
-import { boundControl } from '../core/bound';
+import { boundControl } from '../../../core/boundInputs';
 import { gameInputLabel } from '../core/input';
 import CompactController from './CompactController.vue';
 import ControllerView from './ControllerView.vue';

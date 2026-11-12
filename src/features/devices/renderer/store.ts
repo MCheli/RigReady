@@ -3,7 +3,7 @@ import { computed, ref, shallowReactive, shallowRef } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import type { InputDevice, InputState } from '../../../shared/models';
 import { devicesContract } from '../contract';
-import type { BindingSource, BoundInputs } from '../core/bound';
+import type { BindingSource, BoundInputs } from '../../../core/boundInputs';
 import type { DeviceIdentity } from '../core/identity';
 import { ActivityLog, widen, type AxisRange } from '../core/input';
 import type { NotificationMode, Overview, RigDevice } from '../core/model';

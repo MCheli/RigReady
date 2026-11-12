@@ -1844,8 +1844,8 @@ requirements:
       - "An input bound to multiple actions shows all of them with a duplicate warning (BIND-DCS-011)."
     status: done
     evidence:
-      - "src/features/devices/core/bound.test.ts#an input bound to several actions shows all of them with a duplicate warning; a modifier makes it a different press"
-      - "src/features/devices/core/bound.test.ts#names the control that was used the way the game does: button, hat direction, axis"
+      - "src/core/boundInputs.test.ts#an input bound to several actions shows all of them with a duplicate warning; a modifier makes it a different press"
+      - "src/features/devices/core/controlNames.test.ts#names the control that was used the way the game does: button, hat direction, axis"
       - "src/features/dcs-bindings/core/reader.test.ts#gives the effective bindings of an aircraft per device: input, label, action, category, source, modifiers"
       - "tests/unit/bindingsAcrossFeatures.test.ts#the input tester can ask what a control does in an aircraft, duplicates flagged (DEV-010)"
       - "tests/e2e/devices-bindings.e2e.ts#tester: pressing a control shows what it is bound to in the chosen aircraft, and a device opens its DCS bindings"
@@ -2960,7 +2960,7 @@ requirements:
       - "src/features/cheat-sheets/core/labels.test.ts#saves the printout of a racing sheet under the game’s name"
       - "src/features/cheat-sheets/core/labels.test.ts#is the game of the setup in use, not the first game in the alphabet"
       - "src/features/cheat-sheets/core/labels.test.ts#is, without a setup, the game most of the connected controllers are bound in"
-      - "src/features/devices/core/bound.test.ts#finds a binding by the control it is on, whatever the game calls its input (the racing games)"
+      - "src/core/boundInputs.test.ts#finds a binding by the control it is on, whatever the game calls its input (the racing games)"
       - "tests/unit/bindingsAcrossFeatures.test.ts#on the racing rig the tester knows what a paddle does in iRacing, and a device links only to a bindings page that opens on it"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the racing rig - iRacing and Le Mans Ultimate on the shipped Fanatec wheel"
       - "artifacts/screens/cheat-sheets-racing/01-iracing-wheel.png"
