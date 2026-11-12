@@ -235,6 +235,7 @@ async function sendRaw(
     headers: headers(key, 'fallbacks' in body),
     body: JSON.stringify(body),
     timeoutMs,
+    noRedirects: true,
   });
   if (!response.ok) {
     return err(
@@ -544,6 +545,7 @@ async function streamRaw(
       body: JSON.stringify(body),
       idleTimeoutMs: idleMs,
       timeoutMs: options.timeoutMs ?? STREAM_TOTAL_MS,
+      noRedirects: true,
       signal: controller.signal,
     },
     (chunk) => {
@@ -622,6 +624,7 @@ export async function testKey(http: Http, key: string, model: string): Promise<R
     url: `${API_ROOT}/models/${encodeURIComponent(model)}`,
     headers: headers(key, false),
     timeoutMs: 20_000,
+    noRedirects: true,
   });
   if (!response.ok) {
     return err('ai.network', 'Could not reach the Anthropic API. Check the internet connection.');

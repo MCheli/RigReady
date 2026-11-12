@@ -23,6 +23,7 @@ import {
   TurnPreviewSchema,
   ConversationViewSchema,
   TurnOutcomeSchema,
+  AssistantProgressSchema,
 } from './core/assistantModel';
 
 const By = z.string().trim().min(1).max(80).default('An assistant');
@@ -206,9 +207,34 @@ export const aiAssistContract = defineContract(
         tier: 'off',
       }
     ),
-    /** Sends a prepared request; the tools the model asks for run through the gate. */
-    assistantSend: channel(z.object({ requestId: z.string().max(40) }), TurnOutcomeSchema, {
-      describe: "Sends a request of the built-in assistant with the user's Anthropic API key.",
+    /**
+     * Sends a prepared request; the tools the model asks for run through the gate. A request
+     * that would take the question past the ceiling is refused (ai.ceiling) and kept, until
+     * the user says to go on: `pastCeiling`.
+     */
+    assistantSend: channel(
+      z.object({ requestId: z.string().max(40), pastCeiling: z.boolean().optional() }),
+      TurnOutcomeSchema,
+      {
+        describe: 'Sends a prepared request of the built-in assistant to the chosen AI provider.',
+        tier: 'off',
+      }
+    ),
+    /** Builds the next request again from what the tools answered, after one was lost or refused. */
+    assistantResume: channel(ConversationId, TurnPreviewSchema, {
+      describe:
+        'Builds the waiting request of a conversation of the built-in assistant again. Nothing is sent.',
+      tier: 'off',
+    }),
+    /** Throws a prepared request away without sending it. */
+    assistantDiscard: channel(
+      z.object({ requestId: z.string().max(40) }),
+      z.object({ discarded: z.boolean() }),
+      { describe: 'Throws away a request of the built-in assistant unsent.', tier: 'off' }
+    ),
+    /** Stops the assistant while it works: the request in flight ends, no further tool runs. */
+    assistantStop: channel(ConversationId, z.object({ stopped: z.boolean() }), {
+      describe: 'Stops the built-in assistant while it is working on a question.',
       tier: 'off',
     }),
     assistantConversation: channel(ConversationId, ConversationViewSchema, {
@@ -219,6 +245,16 @@ export const aiAssistContract = defineContract(
       describe: 'Ends a conversation of the built-in assistant.',
       tier: 'off',
     }),
+    /** The most one question to the assistant may cost before it stops and asks; 0 for none. */
+    setQuestionCeiling: channel(
+      z.object({ dollars: z.number().min(0).max(1000) }),
+      AiStatusSchema,
+      {
+        describe:
+          'Sets the most one question to the built-in assistant may cost before RigReady stops and asks.',
+        tier: 'off',
+      }
+    ),
     /** Where helper programs are installed, by name or vendor. Reads folder names and the registry only. */
     findPrograms: channel(FindProgramsInputSchema, FoundProgramsSchema, {
       describe:
@@ -301,7 +337,9 @@ export const aiAssistContract = defineContract(
     draftsChanged: z.object({}),
     /** A request that is being answered got further. */
     sendProgress: SendProgressSchema,
-    /** The settings changed (the API key was stored or removed): `status` is worth asking again. */
+    /** The assistant got further with a question: what it is doing and what it has cost. */
+    assistantProgress: AssistantProgressSchema,
+    /** The provider, model, key or ceiling changed: `status` is worth asking again. */
     settingsChanged: z.object({}),
   }
 );

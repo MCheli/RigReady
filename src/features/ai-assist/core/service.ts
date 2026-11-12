@@ -29,7 +29,10 @@ import {
 } from './pack';
 import {
   ProgressSchema,
+  DEFAULT_QUESTION_CEILING,
+  MAX_QUESTION_CEILING,
   type AiStatus,
+  type WhatIsSent,
   type AircraftList,
   type AppliedView,
   type GuideView,
@@ -110,37 +113,65 @@ const SettingsSchema = z.object({
       structured: z.enum(['schema', 'prompt']).default('schema'),
     })
     .prefault({}),
+  /** Dollars one question to the assistant may cost before RigReady stops and asks; 0 for none. */
+  questionCeiling: z.number().min(0).max(MAX_QUESTION_CEILING).default(DEFAULT_QUESTION_CEILING),
 });
 /** The OpenAI-compatible key, kept with the host it was stored for. */
 const CompatibleKeySchema = z.object({ origin: z.string(), key: z.string() });
 const ProgressFileSchema = z.object({ aircraft: z.record(z.string(), ProgressSchema).default({}) });
 
-/** What is and is not sent, shown in Settings and before every request. */
-export function whatIsSent(provider: ChatProvider | undefined): string[] {
-  const lines = [
-    "Sent: the aircraft's name, and DCS's list of its actions (ids, names, categories) with what each is bound to now.",
-    'Sent: for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
-    "Sent: RigReady's guide for the aircraft when there is one, and your question.",
-    'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files.',
-  ];
+/**
+ * What is and is not sent, shown in Settings: by use, because the two uses send different
+ * things. The binding guide sends a fixed, narrow description of one aircraft's bindings; the
+ * assistant sends the conversation and whatever the tools it used answered.
+ */
+export function whatIsSent(provider: ChatProvider | undefined): WhatIsSent {
+  const guide = {
+    title: 'The binding guide (DCS)',
+    lines: [
+      "Sent: the aircraft's name, and DCS's list of its actions (ids, names, categories) with what each is bound to now.",
+      'Sent: for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
+      "Sent: RigReady's guide for the aircraft when there is one, and your question.",
+      'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files.',
+      'Every request is shown to you in full before it is sent.',
+    ],
+  };
+  const assistant = {
+    title: 'The assistant (any game)',
+    lines: [
+      "Sent with every request: your messages and the assistant's answers in the conversation so far, RigReady's instructions for the assistant, and the list of tools it may use (their names, descriptions and arguments).",
+      "Sent: what each tool answered when the assistant used it. A tool can answer what RigReady itself can show you: your setups and their checks and steps, whether the rig is ready, what is connected and running, where programs are installed, the names of your devices, bindings and settings, and pages of RigReady's manual.",
+      'Every tool the assistant used is listed in the conversation. Open its row to read exactly what it answered, which is exactly what is sent.',
+      "Before a tool's answer is sent, the path of your Windows user folder is replaced by {USER}, and the PC's name by {PC} when it has five or more characters. Nothing else is taken out: other names and paths go as they are.",
+      'Not sent: anything no tool was used for. The assistant cannot read the PC in any other way.',
+      'Each request is shown before it is sent, with its exact text one click away, unless you ticked "Don\'t show this again for this conversation".',
+    ],
+  };
   if (!provider) {
-    lines.push('Nothing is sent until a provider is set up and you press Send.');
-    return lines;
+    return [
+      guide,
+      assistant,
+      {
+        title: 'Where it goes',
+        lines: ['Nothing is sent until a provider is set up and you press Send.'],
+      },
+    ];
   }
-  lines.push(
+  const where = [
     provider.local
       ? `Requests go only to ${provider.host}, a server on this PC. Nothing leaves the PC unless that server sends it on.`
       : `Requests go only to ${provider.host}, over https. No other address is contacted, and redirects are not followed.`,
-    `The key, when one is stored, goes only to ${provider.host}, in a request header. It is stored encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots.`
-  );
+    `The key, when one is stored, goes only to ${provider.host}, in a request header. It is stored encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots.`,
+    'Testing a key sends the key and the name of the model, and to some servers the words "Reply with the word OK." Nothing of yours.',
+  ];
   if (!provider.local) {
-    lines.push(
+    where.push(
       provider.id === 'compatible'
         ? `The terms and privacy policy of the service at ${provider.host} apply to what is sent.`
         : `${provider.label}'s API terms and privacy policy apply to what is sent.`
     );
   }
-  return lines;
+  return [guide, assistant, { title: 'Where it goes', lines: where }];
 }
 
 const MAX_TOKENS: Record<RequestKind, number> = {
@@ -620,7 +651,32 @@ export class AiAssist {
       host,
       local: provider.ok && provider.value.local,
       whatIsSent: whatIsSent(provider.ok ? provider.value : undefined),
+      questionCeiling: s.questionCeiling,
+      // A ceiling in dollars needs a price: without one only the count of tool rounds stops it.
+      priceKnown:
+        provider.ok &&
+        provider.value.cost({ input: 1, output: 1, cacheWrite: 0, cacheRead: 0 }) !== null,
     });
+  }
+
+  /** Dollars one question to the assistant may cost before it stops and asks; 0 for no ceiling. */
+  async questionCeiling(): Promise<number> {
+    const settings = await this.settings.read();
+    return settings.ok ? settings.value.questionCeiling : DEFAULT_QUESTION_CEILING;
+  }
+
+  async setQuestionCeiling(dollars: number): Promise<Result<AiStatus>> {
+    if (!Number.isFinite(dollars) || dollars < 0 || dollars > MAX_QUESTION_CEILING) {
+      return err(
+        'ai.amount',
+        `Type an amount between 0 and ${MAX_QUESTION_CEILING} dollars. 0 means no ceiling.`
+      );
+    }
+    // Whole cents: what the page shows is what is kept.
+    const questionCeiling = Math.round(dollars * 100) / 100;
+    const saved = await this.settings.update((s) => ({ ...s, questionCeiling }));
+    if (!saved.ok) return saved;
+    return this.status();
   }
 
   async setProvider(provider: ProviderId): Promise<Result<AiStatus>> {

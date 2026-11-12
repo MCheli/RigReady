@@ -132,6 +132,19 @@ export const AppliedSchema = z.object({
 });
 export type AppliedView = z.infer<typeof AppliedSchema>;
 
+/**
+ * Dollars one question to the assistant may cost before RigReady stops and asks, until the
+ * user sets their own in Settings. 0 means no ceiling.
+ */
+export const DEFAULT_QUESTION_CEILING = 0.25;
+export const MAX_QUESTION_CEILING = 50;
+
+/** What is sent, by use: a title ("The assistant (any game)") and its statements. */
+export const WhatIsSentSchema = z.array(
+  z.object({ title: z.string(), lines: z.array(z.string()) })
+);
+export type WhatIsSent = z.infer<typeof WhatIsSentSchema>;
+
 export const AiStatusSchema = z.object({
   /** Who answers: anthropic, openai or compatible (any OpenAI-compatible server). */
   provider: z.enum(['anthropic', 'openai', 'compatible']),
@@ -175,8 +188,12 @@ export const AiStatusSchema = z.object({
   host: z.string(),
   /** The host is this PC. */
   local: z.boolean(),
-  /** Exactly what is and is not sent, one statement per line. */
-  whatIsSent: z.array(z.string()),
+  /** Exactly what is and is not sent: by use, one statement per line. */
+  whatIsSent: WhatIsSentSchema,
+  /** Dollars one question to the assistant may cost before RigReady stops and asks; 0 for no ceiling. */
+  questionCeiling: z.number(),
+  /** The chosen model's price is known, so costs can be shown and the ceiling can work. */
+  priceKnown: z.boolean(),
 });
 export type AiStatus = z.infer<typeof AiStatusSchema>;
 

@@ -3391,12 +3391,27 @@ requirements:
       - "With an AI provider set up (a key, or a server on this PC), an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without one there is no button and the palette opens the panel and says a provider is needed; drafts from MCP assistants are shown either way. The binding guide keeps its own view and links to the panel."
       - "The assistant is offered the MCP server's guided catalogue (task-level tools, rigready_channels, rigready_call), never an 'off' channel, and every call goes through the one gate the MCP server uses: confirm policy, question in the window under 'Built-in assistant', one change at a time, rate limit, activity record and the Safety page name."
       - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER}."
-    status: done
+    notes:
+      - "2026-11-12: the panel was reworked after the owner's first use on the rig. A request that failed stays ready and one press sends it again, with the message back in the box; the conversation is the one scrolling region, with proposals where they were made; replies are shown formatted; every request says what reading it costs, and a ceiling per question stops and asks (ASSIST-005). The unit tests below prove this on the real code paths: the panel's store against the wired app, the log through the real logger. Open: tests/e2e/assistant.e2e.ts was extended and has a second test ('assistant: a request the provider refuses can be sent again with one press', scenario assistant-refused). Neither has been run since the rework, because no window may be opened while the rig sitting runs. The two screenshots below show the panel as it was before; they, the other six of artifacts/screens/assistant and the two new ones of artifacts/screens/assistant-refused (refused, answered-after-retry) wait to be taken by that run. Back to done once the run has passed and the screenshots are committed."
+    status: in_progress
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
       - "src/features/ai-assist/core/assistant.test.ts#a read runs, a change is asked in the window under its name, a refusal is recorded, an off channel is refused"
       - "src/features/ai-assist/core/assistant.test.ts#never sends a request that was not prepared and shown"
       - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "src/features/ai-assist/core/assistant.test.ts#keeps the request when the provider refuses it: trying again is the same request, once more"
+      - "src/features/ai-assist/core/assistant.test.ts#drops a request whose provider changed in Settings, says so, and a new one can be built at once"
+      - "src/features/ai-assist/core/assistant.test.ts#a read through \"Call one channel\" is a read, named by what the channel does"
+      - "src/features/ai-assist/core/assistant.test.ts#stops between tools: what ran is kept, what did not says so, and Continue goes on"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#the scenario the window test plays: refused once, answered on the next press, counted once"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#belongs to one conversation: a failed first send, a dropped request or a new conversation never carries it over"
+      - "src/features/ai-assist/renderer/assistantText.test.ts#puts a draft right after the tool row that made it, and what was drafted elsewhere at the end"
+      - "src/features/ai-assist/core/providerLog.test.ts#a refused send and a refused key test each leave one line; a finished question leaves its numbers"
+      - "src/features/ai-assist/core/providerLog.test.ts#never writes the key, the request or its address query, however the provider answers"
+      - "src/features/ai-assist/core/markdown.test.ts#HTML stays text: no node is ever made of a tag"
+      - "src/features/ai-assist/core/markdown.test.ts#a link leads to a plain web address or it is no link"
+      - "src/features/ai-assist/renderer/markdownView.test.ts#makes a link of an https address only, opened in the system browser and never in the window"
+      - "src/features/ai-assist/core/service.test.ts#says apart what the binding guide sends and what the assistant sends, and where it goes"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/01-panel-open.png"
       - "artifacts/screens/assistant/02-first-request.png"
@@ -3409,6 +3424,8 @@ requirements:
     done_means:
       - "programs_find (built-in assistant and MCP) looks for programs by name or vendor in Program Files, Program Files (x86), LocalAppData\\Programs, the Steam libraries and the uninstall entries of the registry, reading only, and answers with exe paths in stored form with path variables."
       - "It knows the folder names the usual names hide (SRS, TrackIR, Stream Deck, Pit House, G HUB) and leaves out uninstallers and crash handlers; names it did not find are listed."
+    notes:
+      - "2026-11-12: unchanged in what it does. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/programs.test.ts#finds SimAppPro, TrackIR and Stream Deck with path variables applied, and says what it did not find"
@@ -3424,9 +3441,13 @@ requirements:
     done_means:
       - "setup_propose (built-in assistant and MCP) makes a draft of a new setup or of checks and launch steps added to one, validated against the registered check and fix types; it is shown in the assistant panel with every item and the setup as it would be saved."
       - "Nothing is written until the user presses Save, which saves through profiles:create or profiles:save; a setup changed after the assistant read it is not overwritten. A script.run the assistant proposes always asks before it runs."
+    notes:
+      - "2026-11-12: two reading tools were added beside setup_propose, for the built-in assistant and MCP: setup_read (one setup in a line per item) and setup_types (the check and fix types, one type's params on request), so an assistant no longer reads every setup and every schema to propose one. Saving a draft is a plain write in RigReady's data folder, as in the setup editor: it is not backed up and not listed on the Safety page, and the panel and the manual no longer say it is. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#finds the programs, proposes a setup, and the user saves it"
+      - "src/features/ai-assist/core/setupTools.test.ts#setup_read answers one setup in a fraction of what the whole list takes, and asks nobody"
+      - "src/features/ai-assist/core/setupTools.test.ts#setup_types lists the types in a tenth of what their schemas take, and one type on request"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/04-setup-proposal.png"
 
@@ -3439,6 +3460,8 @@ requirements:
       - "script_draft makes a .ps1 or .cmd draft with a plain explanation; one that asks for elevation is refused. The panel shows the whole file as it would be saved, the explanation and warnings; Save writes it through FileStore into <data root>/scripts/assistant with a header, and records its SHA-256 as the approval."
       - "The setup step it goes into asks before every run, whatever the setup says. Before it runs as a check, a fix or a step, the file is hashed again; a changed file is not run and is shown again in the panel until the user approves the text as it is now."
       - "No assistant can run it: while an assistant's call is carried out, a script from that folder is refused, and rig_make_ready's approvePrograms never covers it. Scripts never run elevated, and shared setups keep leaving scripts out."
+    notes:
+      - "2026-11-12: unchanged in what it does. The screenshots show the panel before the rework of ASSIST-001 (2026-11-12) and are taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#is saved into the data folder with a header, approved by hash, refused when changed and for an assistant"
@@ -3458,12 +3481,23 @@ requirements:
     done_means:
       - "The assistant talks to the provider of AI-008 (Anthropic, OpenAI, or an OpenAI-compatible server, a local one included) with that provider's own key, over Anthropic's Messages API or Chat Completions with tools; the conversation, tool calls and tool results are carried over faithfully either way."
       - "The preview names the host; a request whose provider, address or model changed in Settings after it was shown is not sent. A refusal or an unreadable answer is an error, never an empty success. Tokens are shown; a cost only where the price is known."
+    notes:
+      - "2026-11-12: what a question costs was cut and is said honestly. On the Anthropic wire the instructions and the end of the conversation are marked for the provider's cache, so every request after the first reads what was already sent at the cached price; cache writes and reads are priced as such in the estimate before sending and in the totals; the preview says which request of the question it is and that the amount is for reading only; a ceiling per question (Settings, $0.25 unless changed, 0 for none) stops and asks before a question passes it, also with the preview switched off. No redirect is followed. Measured with a scripted model (src/features/ai-assist/core/cost.test.ts): the owner's first two questions, replayed request for request, went from about $0.70 to about $0.19, and to about $0.09 with the narrower tools. A cost and the ceiling exist only where the price is known. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/wire.test.ts#turns the conversation into Chat Completions: system first, functions, tool calls and tool messages"
       - "src/features/ai-assist/core/wire.test.ts#reads tool calls from a local server, which needs no key, at its own address only"
       - "src/features/ai-assist/core/wire.test.ts#sends a key only in the header, and the Anthropic wire to api.anthropic.com"
       - "src/features/ai-assist/core/wire.test.ts#a refusal and an unreadable answer are errors, never an empty success"
+      - "src/features/ai-assist/core/wire.test.ts#marks the instructions and the end of the conversation, so the next request reads both from the cache"
+      - "src/features/ai-assist/core/wire.test.ts#moves the mark with the conversation and never leaves one behind in it"
+      - "src/features/ai-assist/core/wire.test.ts#never follows a redirect: the key goes to the host the preview named and nowhere else"
+      - "src/features/ai-assist/core/cost.test.ts#the first session played again as it went costs less than half of what it did"
+      - "src/features/ai-assist/core/cost.test.ts#what is shown before a request is sent is what reading it costs, with the cache as it is"
+      - "src/features/ai-assist/core/cost.test.ts#a question that reads on and on stops at the ceiling and asks, before it is passed"
+      - "src/features/ai-assist/core/assistant.test.ts#shows the ceiling with the request, stops before going past it, and goes on only with a yes"
+      - "src/features/ai-assist/core/assistant.test.ts#0 means no ceiling, and a model without a known price has none"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#never goes past the ceiling by itself: it stops, says so, and goes on only on the press"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/02-first-request.png"
 

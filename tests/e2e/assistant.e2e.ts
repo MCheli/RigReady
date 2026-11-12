@@ -8,6 +8,8 @@ import { checkRow, expect, test } from './harness';
  * With scripted Anthropic answers (tool use), it finds the helper programs of a DCS session,
  * proposes a setup that the user saves, and drafts a script that is shown in full, saved,
  * asked about before it runs, and held back once the file changes until it is approved again.
+ * A request the provider refuses stays ready: the message is back in the box, one press sends
+ * it again, and the refusal is in the log without the key or the message.
  */
 
 const KEY = 'sk-ant-api03-e2e-NOT-A-REAL-KEY-0000-wxyz';
@@ -20,9 +22,17 @@ async function storeKey(page: Page): Promise<void> {
   await expect(page.getByTestId('ai-key-state')).toHaveText('An Anthropic API key is stored');
 }
 
-async function ask(page: Page, text: string): Promise<void> {
-  await page.getByTestId('assistant-input').locator('textarea').first().fill(text);
+const box = (page: Page) => page.getByTestId('assistant-input').locator('textarea').first();
+
+/** Writes a message and presses the button under the box. */
+async function write(page: Page, text: string): Promise<void> {
+  await box(page).fill(text);
   await page.getByTestId('assistant-prepare').click();
+}
+
+/** Writes a message; the request for it is then shown, and nothing is sent yet. */
+async function ask(page: Page, text: string): Promise<void> {
+  await write(page, text);
   await expect(page.getByTestId('assistant-preview')).toBeVisible();
 }
 
@@ -38,6 +48,9 @@ test('assistant: sets up a DCS session and writes a script that asks before it r
   await expect(page.getByTestId('assistant-open')).toBeVisible();
   await page.getByTestId('assistant-open').click();
   await expect(page.getByTestId('assistant-panel')).toBeVisible();
+  await expect(page.getByTestId('assistant-promise')).toContainText(
+    'Every request is shown before it is sent.'
+  );
   await shot('panel-open');
 
   // Every request is shown first; nothing goes until Send.
@@ -45,6 +58,18 @@ test('assistant: sets up a DCS session and writes a script that asks before it r
   await expect(page.getByTestId('assistant-preview-contents')).toContainText(
     'Your message: "Set up a DCS session with SimAppPro, TrackIR and SRS"'
   );
+  // What it costs to read, said as the first request of several, and where RigReady stops.
+  await expect(page.getByTestId('assistant-preview-size')).toContainText(
+    'Request 1 of this question'
+  );
+  await expect(page.getByTestId('assistant-preview-size')).toContainText(
+    'to read, plus the answer'
+  );
+  await expect(page.getByTestId('assistant-budget')).toHaveText(
+    'RigReady asks before a question passes $0.25.'
+  );
+  // The exact text is one click away.
+  await expect(page.getByTestId('assistant-preview-body')).toHaveCount(0);
   await page.getByTestId('assistant-preview-toggle').click();
   await expect(page.getByTestId('assistant-preview-body')).toContainText('"programs_find"');
   await expect(page.getByTestId('assistant-preview-body')).not.toContainText(KEY);
@@ -52,8 +77,22 @@ test('assistant: sets up a DCS session and writes a script that asks before it r
   await page.getByTestId('assistant-send').click();
 
   // The tool answered: the next request carries what it found, and is shown again.
-  await expect(page.getByTestId('assistant-tool').first()).toContainText('Find installed programs');
-  await expect(page.getByTestId('assistant-preview-contents')).toContainText('programs_find');
+  const found = page.getByTestId('assistant-tool').first();
+  await expect(found).toContainText('Find installed programs');
+  // The row says what was really called: this tool only reads.
+  await expect(found.getByTestId('assistant-tool-tier')).toHaveText('read');
+  // Its raw answer is shown only when the row is opened.
+  await expect(page.getByTestId('assistant-tool-answer')).toHaveCount(0);
+  await found.getByRole('button').click();
+  await expect(page.getByTestId('assistant-tool-answer')).toContainText('SimAppPro.exe');
+  await found.getByRole('button').click();
+  await expect(page.getByTestId('assistant-tool-answer')).toHaveCount(0);
+  await expect(page.getByTestId('assistant-preview-contents')).toContainText(
+    'What one tool answered: Find installed programs'
+  );
+  await expect(page.getByTestId('assistant-preview-size')).toContainText(
+    'Request 2 of this question'
+  );
   await page.getByTestId('assistant-preview-toggle').click();
   const body = page.getByTestId('assistant-preview-body');
   await expect(body).toContainText('{LOCALAPPDATA}/Programs/SimAppPro/SimAppPro.exe');
@@ -75,8 +114,11 @@ test('assistant: sets up a DCS session and writes a script that asks before it r
   await expect(page.getByTestId('assistant-saved')).toContainText('Saved DCS session');
   await expect(page.getByTestId('assistant-setup-draft')).toHaveCount(0);
 
-  // A script: the whole text and the explanation, saved only on Save.
-  await ask(page, 'Write a script to start SRS minimized as the fix of the SRS radio check');
+  await expect(page.getByTestId('assistant-usage')).toContainText('This conversation: 3 requests');
+
+  // A script: the whole text and the explanation, saved only on Save. The tick is set for
+  // this conversation, so the message goes without the preview.
+  await write(page, 'Write a script to start SRS minimized as the fix of the SRS radio check');
   await expect(page.getByTestId('assistant-script-draft')).toBeVisible();
   const text = page.getByTestId('assistant-script-text');
   await expect(text).toContainText('Written by an assistant (Built-in assistant)');
@@ -123,4 +165,75 @@ test('assistant: sets up a DCS session and writes a script that asks before it r
   await expect(page.getByTestId('assistant-saved').last()).toContainText(
     'Approved srs-start.ps1 as it is now.'
   );
+});
+
+test('assistant: a request the provider refuses can be sent again with one press', async ({
+  rig,
+}) => {
+  const run = await rig.launch('assistant-refused', 'assistant-refused');
+  const { page, shot } = run;
+  await storeKey(page);
+  await page.getByTestId('assistant-open').click();
+  const message = 'Is TrackIR a required step for launching the F/A-18C setup?';
+  await ask(page, message);
+  await page.getByTestId('assistant-send').click();
+
+  // Refused: said in the panel, the message is back in the box, and the button sends it again.
+  await expect(page.getByTestId('assistant-error')).toContainText(
+    'Anthropic did not accept the API key'
+  );
+  await expect(box(page)).toHaveValue(message);
+  await expect(page.getByTestId('assistant-preview')).toBeVisible();
+  await expect(page.getByTestId('assistant-send')).toHaveText('Try again');
+  await shot('refused');
+
+  // Closing the panel and coming back changes nothing: the same request is still ready.
+  await page.getByTestId('assistant-close').click();
+  await page.getByTestId('assistant-open').click();
+  await expect(page.getByTestId('assistant-send')).toHaveText('Try again');
+  await page.getByTestId('assistant-send').click();
+
+  // Answered: the reply is formatted, and markup in it is text, never elements.
+  const reply = page.getByTestId('assistant-reply').last();
+  await expect(reply).toContainText('TrackIR is a check of that setup, not a launch step');
+  await expect(reply.locator('strong')).toHaveText('TrackIR');
+  await expect(reply.locator('li')).toHaveCount(2);
+  await expect(reply.locator('code').first()).toHaveText('process.running');
+  await expect(reply).toContainText('<b onclick="x()">This is shown as text.</b>');
+  await expect(reply.locator('b')).toHaveCount(0);
+  await expect(reply.getByRole('link', { name: 'how the assistant works' })).toHaveAttribute(
+    'href',
+    'https://rigready.io/docs/ai/built-in-assistant/'
+  );
+  await expect(page.getByTestId('assistant-error')).toHaveCount(0);
+  await expect(page.getByTestId('assistant-user')).toHaveText(message);
+  await expect(box(page)).toHaveValue('');
+  await expect(page.getByTestId('assistant-usage')).toContainText('This conversation: 1 request,');
+  await shot('answered-after-retry');
+
+  // A new conversation starts with the preview on: the tick belongs to a conversation.
+  await page.getByTestId('assistant-new').click();
+  await ask(page, 'And SRS?');
+  await expect(page.getByTestId('assistant-skip-preview').locator('input')).not.toBeChecked();
+  await page.getByTestId('assistant-discard').click();
+  await expect(page.getByTestId('assistant-preview')).toHaveCount(0);
+  await expect(box(page)).toHaveValue('And SRS?');
+
+  // The refusal left one line in the log: who, which model, the status, what the provider
+  // said and its request id. Not the key, and not what was asked.
+  const logFile = path.join(run.dataRoot, 'logs', 'rigready.log');
+  await expect
+    .poll(() => fs.readFile(logFile, 'utf8'))
+    .toContain('the assistant finished a question');
+  const log = await fs.readFile(logFile, 'utf8');
+  const line = log.split(/\r?\n/).find((l) => l.includes('a request to the AI provider failed'));
+  expect(line).toBeDefined();
+  expect(line).toContain('api.anthropic.com');
+  expect(line).toContain('claude-opus-5-5');
+  expect(line).toContain('401');
+  expect(line).toContain('authentication_error');
+  expect(line).toContain('req_e2e_refused_1');
+  expect(log).not.toContain(KEY);
+  expect(log).not.toContain('Is TrackIR a required step');
+  expect(log).toContain('the assistant finished a question');
 });

@@ -5,6 +5,9 @@ import { z } from 'zod';
  * schemas alone, with nothing that needs Node, so the contract and the pages can import them.
  */
 
+/** Rounds of tool use the model may take for one message of the user. */
+export const MAX_TOOL_ROUNDS = 16;
+
 // ---- programs ------------------------------------------------------------
 
 export const FindProgramsInputSchema = z.object({
@@ -54,14 +57,14 @@ export type FoundPrograms = z.infer<typeof FoundProgramsSchema>;
 export const Params = z.record(z.string(), z.unknown()).default({});
 
 export const ProposedCheckSchema = z.object({
-  type: z.string().min(1).max(60).describe('A check type from profiles:types ("process.running").'),
+  type: z.string().min(1).max(60).describe('A check type from setup_types ("process.running").'),
   title: z.string().trim().min(1).max(120),
   required: z.boolean().default(true),
   params: Params,
   remediation: z
     .object({ type: z.string().min(1).max(60), params: Params })
     .optional()
-    .describe('The fix Make ready runs ("process.launch" with the exe), from profiles:types.'),
+    .describe('The fix Make ready runs ("process.launch" with the exe), from setup_types.'),
 });
 
 export const ProposedStepSchema = z.object({
@@ -70,7 +73,7 @@ export const ProposedStepSchema = z.object({
     .string()
     .min(1)
     .max(60)
-    .describe('A fix type from profiles:types ("process.launch", "script.run").'),
+    .describe('A fix type from setup_types ("process.launch", "script.run").'),
   title: z.string().trim().min(1).max(120),
   params: Params,
   continueOnError: z.boolean().default(true),
@@ -204,10 +207,20 @@ export const EntrySchema = z.discriminatedUnion('kind', [
     kind: z.literal('tool'),
     tool: z.string(),
     title: z.string(),
+    /**
+     * What the call did: the tier of what was really called (for "Call one channel", the
+     * channel's own tier, not the tool's), as the gate recorded it.
+     */
     tier: z.enum(['read', 'change', 'launch', 'off']),
     ok: z.boolean(),
     /** One line: what it answered, or why it did not run. */
     line: z.string(),
+    /** The channel a call through "Call one channel" reached: "profiles:list". */
+    channel: z.string().optional(),
+    /** The answer as the model is given it (cut the same way), shown when the row is opened. */
+    answer: z.string().optional(),
+    /** The draft this call made: it is shown in the conversation at this place. */
+    draftId: z.string().optional(),
   }),
   z.object({ kind: z.literal('note'), text: z.string() }),
 ]);
@@ -226,22 +239,67 @@ export const TurnPreviewSchema = z.object({
   body: z.string(),
   chars: z.number().int(),
   approxTokens: z.number().int(),
-  /** Dollars to read it, when the model's price is known. */
+  /**
+   * Dollars this one request costs to read, when the model's price is known: what the
+   * provider already holds from the request before it at the cached price, the rest at the
+   * price of writing it. One request of a question, not the question.
+   */
   approxCost: z.number().nullable(),
   /** What the request carries, in a line each. */
   contents: z.array(z.string()),
+  /** The user's message, when the request carries one: it goes back into the box if the request is dropped. */
+  text: z.string().optional(),
+  /** Which request of the question this is: 1 carries the user's message. */
+  round: z.number().int(),
+  /** Dollars the question has cost before this request; null when the price is not known. */
+  spent: z.number().nullable(),
+  /** Dollars a question may cost before RigReady stops and asks; null when there is no ceiling (none set, or no price known). */
+  ceiling: z.number().nullable(),
+  /** Sending this would take the question past the ceiling: it goes only when the user says so. */
+  overCeiling: z.boolean(),
 });
 
 export type TurnPreview = z.infer<typeof TurnPreviewSchema>;
 
+/** Tokens as the provider reported them; the cost only where the price is known. */
+export const SpentSchema = z.object({
+  /** Requests sent. */
+  requests: z.number().int(),
+  /** Everything the provider read: fresh, written to its cache and read from it. */
+  input: z.number(),
+  /** Of `input`, what was read from the provider's cache at the lower price. */
+  cached: z.number(),
+  output: z.number(),
+  cost: z.number().nullable(),
+});
+
+export type Spent = z.infer<typeof SpentSchema>;
+
 export const ConversationViewSchema = z.object({
   conversationId: z.string(),
   entries: z.array(EntrySchema),
-  /** Tokens as the provider reported them; the cost only where the price is known. */
-  usage: z.object({ input: z.number(), output: z.number(), cost: z.number().nullable() }),
+  /** The whole conversation, and the question being answered (or the last one answered). */
+  usage: SpentSchema.extend({ question: SpentSchema }),
   /** Tool results are waiting to be sent with the next request. */
   waiting: z.boolean(),
 });
+
+/** What the assistant is doing right now, for the line under the conversation. */
+export const AssistantProgressSchema = z.object({
+  conversationId: z.string(),
+  /** Waiting for the provider's answer, or running a tool. */
+  phase: z.enum(['asking', 'tool']),
+  /** Which request of the question. */
+  round: z.number().int(),
+  /** The tool being run, in words: "Find installed programs". */
+  tool: z.string().optional(),
+  /** Dollars the question has cost so far; null when the price is not known. */
+  cost: z.number().nullable(),
+  /** Tokens the question has used so far, in and out. */
+  tokens: z.number(),
+});
+
+export type AssistantProgress = z.infer<typeof AssistantProgressSchema>;
 
 export type ConversationView = z.infer<typeof ConversationViewSchema>;
 

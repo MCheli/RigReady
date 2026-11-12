@@ -35,9 +35,14 @@ Suggestions and drafted guides come back as JSON, which RigReady checks line by 
 
 ## Which host receives what
 
-What is sent is the same for every provider: the aircraft, its actions and what each is bound to now, the product names and layout of the controllers used in DCS, RigReady's guide for the aircraft and your question. Never sent: file paths, device IDs, serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files. See [What is sent](../dcs/binding-guide-and-ai.md#what-is-sent).
+What is sent depends on what you use, and is the same for every provider.
 
-- Requests go only to the host in the table above (or the one you typed), and only when you press **Send** on the preview, or **Test** in Settings.
+- **The binding guide** sends the aircraft, its actions and what each is bound to now, the product names and layout of the controllers used in DCS, RigReady's guide for the aircraft and your question. It never sends file paths, device IDs, serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files. See [What is sent](../dcs/binding-guide-and-ai.md#what-is-sent).
+- **The built-in assistant** sends your messages, its own answers, RigReady's instructions and tool list, and what each tool it used answered. That can be anything RigReady itself can show you: your setups, what is connected and running, where programs are installed, the names of your devices, bindings and settings. In what the tools answered, the path of your Windows user folder is written as `{USER}` and the PC's name as `{PC}`; other names and paths go as they are. See [The built-in assistant](built-in-assistant.md#every-request-is-shown-first).
+
+**Exactly what is sent** in Settings says the same for the provider you chose.
+
+- Requests go only to the host in the table above (or the one you typed), and only when you press **Send** on the preview, or **Test** in Settings. In the assistant panel you can switch the preview off for one conversation; its requests then go as soon as they are ready, until you press **Stop**.
 - The address must start with `https://`. Plain `http://` is accepted only for this PC (`localhost`, `127.0.0.1`), so the key and your data are never sent unencrypted over a network.
 - If a service answers with a redirect to another address, RigReady stops and says so instead of following it with your key.
 - The key goes only in the request's header. It is encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots.

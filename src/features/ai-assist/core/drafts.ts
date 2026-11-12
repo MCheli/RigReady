@@ -20,6 +20,7 @@ import type {
 import { err, ok, type Result } from '../../../core/result';
 import type { Envelope } from '../../../shared/ipc';
 import { elevationIn, warningsFor } from './scriptRules';
+import { detailOf, matchSetup, type SetupLine } from './setupTools';
 import {
   ScriptUseSchema,
   type ProposeSetupInput,
@@ -86,23 +87,6 @@ export interface DraftsDeps {
 const unwrap = <T>(envelope: Envelope): Result<T> =>
   envelope.ok ? ok(envelope.value as T) : envelope;
 
-interface SetupLine {
-  id: string;
-  name: string;
-}
-
-/** The text a line shows for its params: the program, file or name it is about. */
-function detailOf(params: Record<string, unknown>): string {
-  for (const key of ['exe', 'path', 'name', 'service', 'device', 'layout']) {
-    const value = params[key];
-    if (typeof value === 'string' && value) {
-      const args = Array.isArray(params['args']) ? (params['args'] as unknown[]).join(' ') : '';
-      return args ? `${value} ${args}` : value;
-    }
-  }
-  return JSON.stringify(params).slice(0, 160);
-}
-
 /** A script.run step or fix proposed by an assistant always asks first. */
 function guarded(type: string, params: Record<string, unknown>): Record<string, unknown> {
   return type === 'script.run' ? { ...params, requiresConfirmation: true } : params;
@@ -131,18 +115,8 @@ export class AssistantDrafts {
   private async findSetup(asked: string): Promise<Result<SetupLine>> {
     const listed = unwrap<{ profiles: SetupLine[] }>(await this.deps.invoke('fly:state'));
     if (!listed.ok) return listed;
-    const wanted = asked.trim().toLowerCase();
-    const found = listed.value.profiles.find(
-      (p) => p.id === wanted || p.name.trim().toLowerCase() === wanted
-    );
-    if (!found) {
-      return err(
-        'ai.setup',
-        `There is no setup "${asked}".`,
-        `Setups: ${listed.value.profiles.map((p) => `${p.name} (${p.id})`).join(', ') || 'none'}.`
-      );
-    }
-    return ok(found);
+    // The same reading of a name as setup_read: what an assistant read is what it proposes for.
+    return matchSetup(asked, listed.value.profiles);
   }
 
   private async knownTypes(): Promise<Result<{ checks: Set<string>; fixes: Set<string> }>> {
@@ -174,18 +148,24 @@ export class AssistantDrafts {
     if (!types.ok) return types;
     for (const check of input.addChecks) {
       if (!types.value.checks.has(check.type)) {
-        return err('ai.type', `There is no check type "${check.type}". Read profiles:types.`);
+        return err(
+          'ai.type',
+          `There is no check type "${check.type}". The types are listed by setup_types.`
+        );
       }
       if (check.remediation && !types.value.fixes.has(check.remediation.type)) {
         return err(
           'ai.type',
-          `There is no fix type "${check.remediation.type}". Read profiles:types.`
+          `There is no fix type "${check.remediation.type}". The types are listed by setup_types.`
         );
       }
     }
     for (const step of input.addSteps) {
       if (!types.value.fixes.has(step.type)) {
-        return err('ai.type', `There is no step type "${step.type}". Read profiles:types.`);
+        return err(
+          'ai.type',
+          `There is no step type "${step.type}". The types are listed by setup_types.`
+        );
       }
     }
     let base: Profile | undefined;

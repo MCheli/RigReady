@@ -13,9 +13,11 @@ import {
   type MessageAnswer,
   type MessageRequest,
   type StreamOptions,
+  type Usage,
 } from './anthropic';
 import {
   chatBody,
+  chatCost,
   sendChat,
   streamChat,
   testChat,
@@ -197,6 +199,8 @@ export interface ChatProvider {
   test(http: Http, key: string | undefined): Promise<Result<KeyCheck>>;
   /** Approximate dollars for this many tokens in, at the model's input price; null when unknown. */
   inputCost(tokens: number): number | null;
+  /** Approximate dollars for what a request used, at the model's prices (cache writes and reads at theirs); null when unknown. */
+  cost(usage: Usage): number | null;
 }
 
 const needKey = (key: string | undefined): Result<string> =>
@@ -228,6 +232,7 @@ function anthropic(model: string): ChatProvider {
       knownModel(model)
         ? approximateCost(model, { input: tokens, output: 0, cacheWrite: 0, cacheRead: 0 })
         : null,
+    cost: (usage) => approximateCost(model, usage),
   };
 }
 
@@ -256,6 +261,7 @@ function chat(
       const price = target.prices?.[model];
       return price ? (tokens * price.input) / 1_000_000 : null;
     },
+    cost: (usage) => chatCost(target, model, usage),
   };
 }
 

@@ -290,7 +290,9 @@ describe('AI help with a key', () => {
     const status = await app.invoke<AiStatus>('ai-assist:status');
     expect(status).toMatchObject({ keyPresent: true, keyHint: '…EFGH' });
     expect(JSON.stringify(status)).not.toContain(KEY);
-    expect(status.whatIsSent.join(' ')).toMatch(/Never sent: file paths, device ids/);
+    expect(status.whatIsSent.flatMap((part) => part.lines).join(' ')).toMatch(
+      /Never sent: file paths, device ids/
+    );
 
     app.ports.http.respond('/v1/models/claude-opus-5-5', { json: { id: 'claude-opus-5-5' } });
     const tested = await app.invoke<{ valid: boolean; message: string }>('ai-assist:testKey');
@@ -868,7 +870,9 @@ describe('other providers: OpenAI and OpenAI-compatible servers', () => {
       keyNeeded: false,
       ready: true,
     });
-    expect(ollama.whatIsSent.join(' ')).toContain('a server on this PC');
+    expect(ollama.whatIsSent.flatMap((part) => part.lines).join(' ')).toContain(
+      'a server on this PC'
+    );
     await app.invoke('ai-assist:setCompatible', { structured: 'prompt' });
     const prepared = await suggest();
     expect(prepared).toMatchObject({
@@ -973,5 +977,91 @@ describe('other providers: OpenAI and OpenAI-compatible servers', () => {
       (await app.invoke<{ settings: { aiKeyPresent: boolean } }>('settings:get')).settings
         .aiKeyPresent
     ).toBe(false);
+  });
+});
+
+describe('"Exactly what is sent": true for every use, by use', () => {
+  const part = (status: AiStatus, title: RegExp): string =>
+    status.whatIsSent.find((p) => title.test(p.title))!.lines.join(' ');
+
+  it('says apart what the binding guide sends and what the assistant sends, and where it goes', async () => {
+    await start();
+    const status = await app.invoke<AiStatus>('ai-assist:status');
+    expect(status.whatIsSent.map((p) => p.title)).toEqual([
+      'The binding guide (DCS)',
+      'The assistant (any game)',
+      'Where it goes',
+    ]);
+    // The narrow promise is the guide's alone: the assistant sends what its tools answer.
+    expect(part(status, /guide/)).toMatch(/Never sent: file paths, device ids/);
+    expect(part(status, /guide/)).toMatch(/Every request is shown to you in full/);
+    const assistant = part(status, /assistant/);
+    expect(assistant).not.toMatch(/Never sent/);
+    expect(assistant).toMatch(/your messages and the assistant's answers/);
+    expect(assistant).toMatch(/what each tool answered/);
+    expect(assistant).toMatch(/the names of your devices/);
+    expect(assistant).toMatch(/replaced by \{USER\}/);
+    expect(assistant).toMatch(/Nothing else is taken out/);
+    expect(part(status, /Where/)).toMatch(/Requests go only to api.anthropic.com, over https/);
+    expect(part(status, /Where/)).toMatch(/Testing a key sends the key and the name of the model/);
+  });
+
+  it('says nothing is sent while no provider can be used', async () => {
+    await start();
+    await app.invoke('ai-assist:setProvider', { provider: 'compatible' });
+    const status = await app.invoke<AiStatus>('ai-assist:status');
+    expect(status.ready).toBe(false);
+    expect(part(status, /Where/)).toBe(
+      'Nothing is sent until a provider is set up and you press Send.'
+    );
+    // What would be sent is still said, so it can be read before anything is set up.
+    expect(status.whatIsSent).toHaveLength(3);
+  });
+});
+
+describe('the ceiling on what one question to the assistant may cost', () => {
+  it('starts at the default, is kept across a restart, and 0 switches it off', async () => {
+    await start();
+    const ai = (running: WiredApp) => running.invoke<AiStatus>('ai-assist:status');
+    expect((await ai(app)).questionCeiling).toBe(0.25);
+    const set = await app.invoke<AiStatus>('ai-assist:setQuestionCeiling', { dollars: 2 });
+    expect(set.questionCeiling).toBe(2);
+    const text = await allText(path.join(app.home, '.rigready', 'ai-assist'));
+    expect(text.join('\n')).toContain('"questionCeiling": 2');
+    const off = await app.invoke<AiStatus>('ai-assist:setQuestionCeiling', { dollars: 0 });
+    expect(off.questionCeiling).toBe(0);
+    await expect(app.invoke('ai-assist:setQuestionCeiling', { dollars: 51 })).rejects.toThrow(
+      /between 0 and 50 dollars/
+    );
+    await expect(app.invoke('ai-assist:setQuestionCeiling', { dollars: -1 })).rejects.toThrow();
+    expect((await ai(app)).questionCeiling).toBe(0);
+  });
+
+  it('says whether a price is known for the model, since a ceiling in dollars needs one', async () => {
+    await start();
+    expect((await app.invoke<AiStatus>('ai-assist:status')).priceKnown).toBe(true);
+    const local = await app.invoke<AiStatus>('ai-assist:setCompatible', { preset: 'ollama' });
+    expect(local.priceKnown).toBe(false);
+  });
+
+  it('tells the pages when the provider, the model, the key or the ceiling changed', async () => {
+    await start();
+    const told = (): number =>
+      app.events.filter((e) => e.channel === 'ai-assist:event:settingsChanged').length;
+    let before = told();
+    for (const [channel, input] of [
+      ['ai-assist:setQuestionCeiling', { dollars: 1 }],
+      ['ai-assist:setModel', { model: 'claude-sonnet-5-5' }],
+      ['ai-assist:setKey', { key: KEY }],
+      ['ai-assist:clearKey', undefined],
+      ['ai-assist:setProvider', { provider: 'openai' }],
+    ] as const) {
+      await app.invoke(channel, input);
+      expect(told(), channel).toBeGreaterThan(before);
+      before = told();
+    }
+    // A change that was refused changed nothing, and says nothing.
+    await expect(app.invoke('ai-assist:setModel', { model: 'not a model id' })).rejects.toThrow();
+    expect(told()).toBe(before);
   });
 });

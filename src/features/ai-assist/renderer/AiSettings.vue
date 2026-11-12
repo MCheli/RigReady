@@ -4,12 +4,14 @@ import type { Result } from '../../../core/result';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { aiAssistContract } from '../contract';
 import type { AiStatus } from '../core/model';
+import { ceilingHint, parseDollars } from './assistantText';
 
 /**
  * The AI binding help's settings: who answers (Anthropic, OpenAI, or a server that speaks
  * OpenAI's API, with presets for Gemini, OpenRouter, Mistral, Ollama and LM Studio), its
  * key (stored encrypted, only the last four characters shown again), the model, a test,
- * and exactly what is sent and to which host.
+ * the most one question to the assistant may cost, and exactly what is sent and to which
+ * host, use by use.
  */
 const api = useClient(aiAssistContract);
 const status = ref<AiStatus>();
@@ -20,11 +22,13 @@ const testing = ref(false);
 const key = ref('');
 const baseUrl = ref('');
 const model = ref('');
+const ceiling = ref('');
 
 watch(status, (s) => {
   if (!s) return;
   baseUrl.value = s.baseUrl;
   model.value = s.model;
+  ceiling.value = s.questionCeiling.toFixed(2);
 });
 
 const compatible = computed(() => status.value?.provider === 'compatible');
@@ -82,6 +86,7 @@ async function change(action: Promise<Result<AiStatus>>, message: string): Promi
     if (status.value) {
       baseUrl.value = status.value.baseUrl;
       model.value = status.value.model;
+      ceiling.value = status.value.questionCeiling.toFixed(2);
     }
     return false;
   }
@@ -109,6 +114,23 @@ function saveBaseUrl(): void {
   if (url !== status.value?.baseUrl) {
     void change(api.setCompatible({ baseUrl: url }), 'Saved the address');
   }
+}
+
+function saveCeiling(): void {
+  const dollars = parseDollars(ceiling.value);
+  if (dollars === undefined) {
+    saved.value = undefined;
+    error.value = 'Type an amount in dollars, such as 0.25. 0 means no ceiling.';
+    return;
+  }
+  if (dollars === status.value?.questionCeiling) {
+    ceiling.value = dollars.toFixed(2);
+    return;
+  }
+  void change(
+    api.setQuestionCeiling({ dollars }),
+    dollars === 0 ? 'Saved: no ceiling' : 'Saved the ceiling'
+  );
 }
 
 async function testKey(): Promise<void> {
@@ -307,6 +329,25 @@ onBeforeUnmount(() => off?.());
 
       <div class="rr-row">
         <div class="rr-row-main">
+          <div class="rr-row-title">Most a question to the assistant may cost</div>
+          <div class="rr-row-sub" data-testid="ai-ceiling-hint">{{ ceilingHint(status) }}</div>
+        </div>
+        <v-text-field
+          v-model="ceiling"
+          class="ais-amount"
+          density="compact"
+          prefix="$"
+          inputmode="decimal"
+          :disabled="!status.priceKnown"
+          aria-label="Most a question to the assistant may cost, in dollars"
+          data-testid="ai-question-ceiling"
+          @keydown.enter="saveCeiling"
+          @blur="saveCeiling"
+        />
+      </div>
+
+      <div class="rr-row">
+        <div class="rr-row-main">
           <div class="rr-row-title">Test</div>
           <div class="rr-row-sub">
             One small request to {{ status.host || 'the provider' }} with this key and model.
@@ -341,10 +382,19 @@ onBeforeUnmount(() => off?.());
       <div class="rr-row">
         <div class="rr-row-main">
           <div class="rr-row-title">Exactly what is sent</div>
-          <ul class="ais-sent" data-testid="ai-what-is-sent">
-            <li v-for="(line, i) in status.whatIsSent" :key="i">{{ line }}</li>
-          </ul>
-          <div class="rr-row-sub">Every request is shown to you in full before it is sent.</div>
+          <div data-testid="ai-what-is-sent">
+            <section
+              v-for="part in status.whatIsSent"
+              :key="part.title"
+              class="ais-part"
+              data-testid="ai-what-is-sent-part"
+            >
+              <h4 class="ais-part-title">{{ part.title }}</h4>
+              <ul class="ais-sent">
+                <li v-for="(line, i) in part.lines" :key="i">{{ line }}</li>
+              </ul>
+            </section>
+          </div>
         </div>
       </div>
     </template>
@@ -372,6 +422,15 @@ onBeforeUnmount(() => off?.());
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.ais-amount {
+  max-width: 140px;
+  min-width: 120px;
+}
+.ais-part-title {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
 }
 .ais-sent {
   margin: 4px 0 6px;
