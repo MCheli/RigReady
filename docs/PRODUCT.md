@@ -24,6 +24,7 @@ A sim rig PC is also used for other things. Getting it ready to fly or race mean
 - Back up and restore bindings and configs. One-click backup and a restore wizard covering game settings, bindings and Stream Deck.
 - Manage bindings: see them, edit them, clean up what the game binds by default on every device, recover when Windows changes device IDs, copy common controls between aircraft.
 - Per-aircraft cheat sheets: a picture of each device with what every control does, printable and exportable as a DCS kneeboard page.
+- An overlay over the game (asked for by the owner on 2026-11-12): a small see-through list of the buttons you press and what each is bound to in the game for the aircraft you are in. The newest press is always shown, and each fades away after a few seconds. The user turns it on, places it on the screen where it covers nothing, and sets how long a press stays. It is built to take more widgets later (stick position, axis readouts). On a monitor only: inside a VR headset is later.
 - AI-assisted binding guidance (optional, bring your own Anthropic API key): what should be bound on this aircraft, in what priority, with plain-language labels. Non-AI parts work without a key.
 - Share a setup with other people as a file, with personal paths and identifiers reviewed and removed. Scripts are never included.
 - Stream Deck: install guidance, backup, restore, backup management.
@@ -59,7 +60,7 @@ A sim rig PC is also used for other things. Getting it ready to fly or race mean
 
 ## Explicitly later
 
-Active in-game overlay, VR headset checks, a hosted sharing service (file sharing comes first; the owner has a home server for later), plugin system.
+The in-game overlay inside a VR headset (on a monitor it is in scope since 2026-11-12, above), VR headset checks, a hosted sharing service (file sharing comes first; the owner has a home server for later), plugin system.
 
 ## The final pass
 

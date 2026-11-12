@@ -3186,6 +3186,206 @@ requirements:
       - "artifacts/screens/cheat-sheets-known-devices/12-x52-pro-kneeboard-night-page.png"
 
   # ---------------------------------------------------------------------------
+  # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)
+  # ---------------------------------------------------------------------------
+
+  - id: OVERLAY-001
+    title: An overlay over the game, off until it is turned on
+    job: fly
+    area: overlay
+    priority: p2
+    done_means:
+      - "Configure has an 'Overlay' page of its own in the left menu, under Controls. The overlay is off until the user turns on 'Show the overlay': while it is off no window is put over anything and the controllers are not read for it (E2E, scenario cheat-sheets-hornet; and on generic-fresh, where the page names no game and no hardware that is not on that PC)."
+      - "Turned on, it stays on: it is up again when RigReady starts, without the page being opened, and gone when it is turned off or RigReady quits. The page says in words whether it is on and over which screen, and when it is on but not showing, why (no screen is on, Windows refused the window, the controllers cannot be read)."
+      - "The command palette has 'Turn the overlay on' and 'Turn the overlay off'. Each answers with what happened: a window that could not be shown is not reported as showing."
+      - "Its settings are in RigReady's own folder (overlay/settings.json). A damaged settings file is said to be damaged and is not replaced. Nothing in any game is changed."
+    notes:
+      - "2026-11-12: built and unit-tested on the fake machine (the tests below). Not done, because nothing visible has been looked at: no window could be opened on the rig while a sitting was under way. The scenario tests are written and have never been run: tests/e2e/overlay.e2e.ts ('the overlay lists each press with what the game does on it, and lets it go again' and 'the overlay goes where it is put, stays there, and comes up again with RigReady') and the 'overlay' page in tests/e2e/generic-rig.e2e.ts. To finish: run them, look at the pictures under artifacts/screens/overlay/ and artifacts/screens/overlay-placing/, add the test ids and the pictures to evidence here and in OVERLAY-002 to OVERLAY-006, and put a picture into docs/manual/play/overlay.md. The tour (tests/e2e/tour.e2e.ts) visits one page more with this one: its pictures after Cheat sheets are renumbered by the first run, so site/screens.json has to follow in the same commit. The navigation had no room for a twentieth entry at the default window size (the tour fails when it scrolls), so its rows went from 30 to 28 px high in src/renderer/layouts/ConfigureLayout.vue; that it fits now is arithmetic checked against a tour picture, not yet a run of the tour, and it changes every picture that shows the navigation."
+    status: in_progress
+    evidence:
+      - "src/features/overlay/core/service.test.ts#is off until the user turns it on: no window, and nothing is listened to"
+      - "src/features/overlay/core/service.test.ts#left on, it comes up when RigReady starts; left off, it does not"
+      - "src/features/overlay/core/service.test.ts#turned off, the window goes and what was shown is forgotten"
+      - "src/features/overlay/core/service.test.ts#on quit the window goes and nothing is listened to any more"
+      - "src/features/overlay/core/service.test.ts#says why when the window cannot be shown, and shows it once it can"
+      - "src/features/overlay/core/service.test.ts#with no screen on there is nothing to show it on"
+      - "src/features/overlay/core/service.test.ts#says why when the controllers cannot be read"
+      - "src/features/overlay/core/service.test.ts#a damaged settings file is said to be damaged and is not replaced"
+      - "src/features/overlay/main.test.ts#state, set, recent and the two events: off, on over the main screen, a press, off again"
+      - "src/features/overlay/main.test.ts#nothing is put on the screen by starting RigReady until the overlay was turned on once"
+      - "src/features/overlay/main.test.ts#left on, it is over the screen again after a start without the page being opened, and gone on quit"
+      - "tests/unit/paletteCommands.test.ts#\"Turn the overlay on\" puts it over the main screen and says so; \"off\" takes it away"
+      - "tests/unit/paletteCommands.test.ts#a window that Windows refuses is not reported as showing"
+      - "tests/unit/paletteCommands.test.ts#on a PC without a game it comes on, and says that presses are shown without what they do"
+
+  - id: OVERLAY-002
+    title: The overlay window is over the game and out of its way
+    job: fly
+    area: overlay
+    priority: p2
+    done_means:
+      - "Each part of the overlay is a window of its own with no frame and nothing painted behind what it shows, kept above other windows, not in the taskbar, that cannot be given the keyboard and lets the mouse through to what is under it. While nothing is pressed nothing is drawn (E2E for on top, never focused and nothing painted behind; Electron cannot be asked whether clicks go through, so that part is the rig check below)."
+      - "The page and the manual say where it cannot show: over a game in exclusive full screen it may not (set the game to borderless), and it does not show inside a VR headset (OVERLAY-007)."
+      - "Checked once on the owner's rig with a game running borderless on the main screen, recorded with a picture under artifacts/rig/OVERLAY-002/: the list shows over the cockpit; a click on it lands in the game; the game keeps the keyboard; presses made while the game is the window in use are listed; the game runs as smoothly as without it. The same is tried once with the game in exclusive full screen, and the page and the manual are changed if what happens is not what they say."
+    notes:
+      - "2026-11-12: built; nothing about the real window has been tried. The window is ElectronOverlays.showPanel in src/platform/electron/index.ts: no frame, transparent, not focusable, not in the taskbar, setIgnoreMouseEvents except while it is being placed, always on top at Electron's 'screen-saver' level. The tests below prove what the fake port can: which screen and place the window is asked for, that it lets the mouse through except while it is being placed, that it is not opened twice and is put back when it was closed from outside, and that its page is drawn without the app's shell. That it is see-through, stays on top, never takes the keyboard and lets clicks through is what Electron documents for those settings, not something seen. That it shows over a game in a window or borderless and may not over exclusive full screen is from Electron's documentation of window levels and from how topmost windows behave on Windows, not from a test with a game. That the controllers are read while a game has the focus is from the input reader's code (DirectInput, background and non-exclusive), not from a test. The scenario test named in OVERLAY-001 asks Electron for the window's facts; the rig check is the third criterion."
+    status: in_progress
+    evidence:
+      - "tests/unit/overlayPanels.test.ts#shows a panel on the screen asked for, at the place asked for, and answers where it is"
+      - "tests/unit/overlayPanels.test.ts#only a panel that is being placed can be dragged; its place is read back from where it was dropped"
+      - "tests/unit/overlayPanels.test.ts#hiding takes it away, and a panel that is not shown has no place"
+      - "tests/unit/overlayPanels.test.ts#a window Windows refuses is an error, and with no monitor on there is nowhere to show it"
+      - "src/features/overlay/core/service.test.ts#turned on, the recent presses are low in the middle of the main screen and let the mouse through"
+      - "src/features/overlay/core/service.test.ts#a window that is there is left alone, and one closed from outside is put back"
+      - "src/renderer/shell/routes.test.ts#sorts the routes into Play, Configure and windows of their own"
+      - "src/renderer/shell/routes.test.ts#is so for the address of a bare page, with or without the leading #"
+      - "docs/manual/play/overlay.md"
+
+  - id: OVERLAY-003
+    title: "Recent presses: each press with what the game does on it"
+    job: fly
+    area: overlay
+    priority: p2
+    done_means:
+      - "Each button or hat pressed on any game controller is listed at once: the action as the game names it for the aircraft or car in use, the control ('Button 5', 'Hat 1 up') and the controller, by the name the user gave it or a short form of the name it reports. The newest press is always shown, in the same spot. It works without a drawing of the device (E2E, scenario cheat-sheets-hornet: the stick's trigger, the throttle's speed brake switch, a button of the ICP)."
+      - "What is held when the overlay starts is how the rig rests, not a press. A switch or lever that goes through its positions is one line that changes, not a line for each position. The same control pressed again counts up ('×2') instead of adding a line. An axis is never a press. The virtual controller RigReady itself plugged in is not listed."
+      - "A control with more than one action shows the one that works on its own first and how many more there are. A press the game has nothing on is listed dimmed as 'Not bound', or left out when the user says so; when the bindings could not be read the line shows the control and the controller and does not claim that nothing is bound."
+      - "The page says which setup, game and aircraft or car the names are from, and how the aircraft was picked: the one the user chose for that setup, then one the setup names, then the only one the game has bindings for, otherwise a guess that is said to be a guess. The user can choose another. With no game whose bindings can be read, presses are shown without what they do and the page says why. It reads any game with a binding reader, a racing game too."
+    notes:
+      - "2026-11-12: built and unit-tested (the tests below). Not done: the list has not been seen in a window; the scenario test named in OVERLAY-001 is written and not run. Known limits, in the manual where they matter to the user: the first press on a controller that has not reported anything since the overlay started is taken as rest; the same control pressed again after another one is a new line (the list is what happened, in order); bindings changed in the game are read again within about two minutes of a press, or when the page is opened; with no setup and the bindings of several games on the PC no game is guessed, so presses are shown without what they do."
+    status: in_progress
+    evidence:
+      - "src/features/overlay/core/presses.test.ts#the first state of a controller is how it rests: a switch that is on is not a press"
+      - "src/features/overlay/core/presses.test.ts#a hat is a press of the direction it went to and a release of the one it left"
+      - "src/features/overlay/core/presses.test.ts#an axis is never a press, however far it travels"
+      - "src/features/overlay/core/feed.test.ts#the newest press is first"
+      - "src/features/overlay/core/feed.test.ts#pressing the same control again counts up and starts its time again, without a new line"
+      - "src/features/overlay/core/feed.test.ts#a lever passing five positions leaves one line, the position it stopped at"
+      - "src/features/overlay/core/feed.test.ts#two buttons pressed one after the other stay two lines"
+      - "src/features/overlay/core/service.test.ts#what is held when the overlay starts is how the controllers rest, not a press"
+      - "src/features/overlay/core/service.test.ts#shows what the press does in the game, the control and the controller"
+      - "src/features/overlay/core/service.test.ts#uses the name the user gave a controller"
+      - "src/features/overlay/core/service.test.ts#on the rig with named controllers: the setup, its aircraft, and what three controls show"
+      - "src/features/overlay/core/service.test.ts#what needs something held with it comes after what works on its own"
+      - "src/features/overlay/core/service.test.ts#a press the game has nothing on is shown as that, or left out when the user says so"
+      - "src/features/overlay/core/service.test.ts#the same control pressed again counts up instead of adding a line"
+      - "src/features/overlay/core/service.test.ts#a switch or lever going through its positions is one line that changes"
+      - "src/features/overlay/core/service.test.ts#the aircraft the setup in use names, until the user chooses another"
+      - "src/features/overlay/core/service.test.ts#another setup played while flying is picked up on a press: the words are never those of another game"
+      - "src/features/overlay/core/service.test.ts#a setup for a game whose bindings are not on this PC gives presses without words, and says why"
+      - "src/features/overlay/core/service.test.ts#a racing game: the one set of bindings it has, by the control a press is on"
+      - "src/features/overlay/core/service.test.ts#without a setup, and with the bindings of several games here, none is guessed"
+      - "src/features/overlay/core/service.test.ts#a binding changed in the game is read again after two minutes, on a press"
+      - "src/features/overlay/core/service.test.ts#the virtual controller RigReady itself plugged in is not shown: it repeats the real ones"
+      - "src/features/overlay/core/aircraft.test.ts#the one the user chose for this setup comes before everything else"
+      - "src/features/overlay/core/aircraft.test.ts#otherwise the first with bindings of the user’s own, and it says that this is a guess"
+      - "src/features/overlay/core/deviceName.test.ts#keeps what the controller is built on and drops what is mounted on it"
+      - "src/features/overlay/core/shown.test.ts#the action large, the control and the controller small"
+      - "src/features/overlay/core/shown.test.ts#with more than one action on the control: the first, what it needs held, and how many more"
+      - "src/features/overlay/core/shown.test.ts#when the bindings could not be read it does not claim that nothing is bound"
+      - "src/core/boundInputs.test.ts#finds a binding by the control it is on, whatever the game calls its input (the racing games)"
+
+  - id: OVERLAY-004
+    title: Presses fade away, and the user sets how long they stay
+    job: fly
+    area: overlay
+    priority: p2
+    done_means:
+      - "A line is clear for the first part of its time and fades out over the rest; when its time is over it is gone, whether or not the control is still held. Each line goes at its own time. To begin with a press is shown for 5 seconds (E2E: the fading as the browser runs it, and the time a line really lived)."
+      - "'Shown for' sets the time from 1 to 30 seconds, 'Lines' the most presses shown at once from 1 to 10 (the oldest makes room, the newest is always there), 'Size' small, medium or large. Each applies at once to the overlay that is up, and the window is exactly as large as the most lines it may show. A longer time does not bring back a line that was gone."
+      - "Where Windows is set to show no animations a line does not fade: it stays clear and goes when its time is over."
+      - "The preview on the page is the same list at the size it has over the game, on a bright background, and shows what is pressed while the overlay is on."
+    notes:
+      - "2026-11-12: built and unit-tested (the tests below): when a line is over, how old it is, the limits and the size of the window. Not done: the fade itself is CSS in src/features/overlay/renderer/widgets/RecentPresses.vue and has never been seen; the scenario test named in OVERLAY-001 measures it and is not run. How readable the lines are over a bright cockpit has been worked out (the dark plates give the words at least 4.5 to 1 over white) and not looked at."
+    status: in_progress
+    evidence:
+      - "src/features/overlay/core/feed.test.ts#a press stays for its time and is gone after it, whether or not it is still held"
+      - "src/features/overlay/core/feed.test.ts#each line goes at its own time"
+      - "src/features/overlay/core/feed.test.ts#shows at most so many: the oldest makes room, the newest is always there"
+      - "src/features/overlay/core/feed.test.ts#new limits apply to what is shown already"
+      - "src/features/overlay/core/feed.test.ts#a longer time does not bring back a line whose time was over"
+      - "src/features/overlay/core/service.test.ts#each line goes when its time is up, and says how old it is until then"
+      - "src/features/overlay/core/service.test.ts#apply at once: fewer lines, a shorter time, another size of window"
+      - "src/features/overlay/core/service.test.ts#a longer time does not bring back a press whose time was over"
+      - "src/features/overlay/core/service.test.ts#options that do not fit are refused, and so is a part the overlay does not have"
+      - "src/features/overlay/core/shown.test.ts#sent again with the next press, a line keeps its moment: it does not fade twice as fast"
+      - "src/features/overlay/core/shown.test.ts#a line is over when its time is up, to the millisecond"
+      - "src/features/overlay/core/shown.test.ts#says how long until the first line is over, and nothing when there is none"
+      - "src/features/overlay/core/widgets.test.ts#are five seconds, five rows, medium, and unbound presses shown, until the user says otherwise"
+      - "src/features/overlay/core/widgets.test.ts#the window is exactly as big as the most rows it may show"
+
+  - id: OVERLAY-005
+    title: "Placing the overlay: which screen, and where on it"
+    job: configure
+    area: overlay
+    priority: p2
+    done_means:
+      - "'Screen' offers the monitors that are on, the main one first, and the overlay goes to the one chosen. 'Place' has nine spots (the corners, the edges, the middle) and the overlay goes to the one clicked (E2E)."
+      - "'Move it on screen' frames the overlay where it is; framed, it takes the mouse and can be dragged anywhere on any monitor. 'Lock here' in the frame or 'Lock it here' on the page keeps it where it was let go, read back from the window, and clicks go through it again. When the new place cannot be read the overlay is back where it was and the page says so."
+      - "The place belongs to the monitor by what it is, not by where it is on the desktop: after another monitor layout the overlay is on the same monitor at the same place. While that monitor is off the main screen stands in, the page says which one is away, and the overlay goes back when it is on again. The place is a share of the free room, so it is the same corner on a screen of another size and never off the screen."
+      - "The list hangs from the edge it is nearer to, so the newest press is always in the same spot: from the top in the upper half of the screen, from the bottom in the lower half, and set to the side it is on."
+      - "Checked once on the owner's rig: the frame dragged with the mouse to another monitor and locked with a click on 'Lock here'; after a switch of monitor layout and back the overlay is where it was put."
+    notes:
+      - "2026-11-12: built and unit-tested (the tests below). Not done: nothing has been seen, and the scenario test named in OVERLAY-001 is not run. That test moves the window by a call and clicks 'Lock here' through the debugger, which is not a drag with a mouse over the drag region of a window that was just made to take the mouse: that is the last criterion. A change of monitor layout made while the Overlay page is closed is noticed on the first press that comes at least ten seconds after the last look, not at once."
+    status: in_progress
+    evidence:
+      - "src/core/overlayPlace.test.ts#a place is a share of the free room: corners, the middle, and a screen that does not start at zero"
+      - "src/core/overlayPlace.test.ts#never leaves the screen: a place outside 0..1 is the edge, and a panel too large is made to fit"
+      - "src/core/overlayPlace.test.ts#a box read and put back is on the same pixel, on a very wide screen too"
+      - "src/core/overlayPlace.test.ts#the same place lands in the same corner of a screen of another size"
+      - "src/features/overlay/core/place.test.ts#the page is offered the screens that are on: the main one first, then left to right"
+      - "src/features/overlay/core/place.test.ts#never placed: its own default place on the main screen"
+      - "src/features/overlay/core/place.test.ts#the screen is found again after the layout changed: by what it is, not where it is"
+      - "src/features/overlay/core/place.test.ts#its screen is off: the main screen stands in at the same place, and it says which is away"
+      - "src/features/overlay/core/place.test.ts#a screen that is off is not taken for its twin that is on"
+      - "src/features/overlay/core/service.test.ts#goes on the screen and to the place the user picks"
+      - "src/features/overlay/core/service.test.ts#a screen that is not on is refused"
+      - "src/features/overlay/core/service.test.ts#while its screen is off the main screen stands in, and it goes back when the screen is on again"
+      - "src/features/overlay/core/service.test.ts#screens rearranged while flying are noticed on a press, but not more often than every ten seconds"
+      - "src/features/overlay/core/service.test.ts#\"move it\": the window takes the mouse, is dragged, and locking keeps the place and the screen"
+      - "src/features/overlay/core/service.test.ts#placing by hand needs the overlay on, and ending what never started changes nothing"
+      - "src/features/overlay/core/service.test.ts#when the new place cannot be read the overlay is back where it was, and says so"
+      - "src/features/overlay/core/shown.test.ts#from the top in the upper half of the screen, from the bottom in the lower"
+      - "src/features/overlay/core/shown.test.ts#set to the side of the screen it is on"
+      - "src/features/overlay/core/shown.test.ts#nine places have a name; one that was dragged to has none"
+
+  - id: OVERLAY-006
+    title: The overlay takes more widgets, each with its own place and options
+    job: platform
+    area: overlay
+    priority: p2
+    done_means:
+      - "A widget of the overlay is a kind in src/features/overlay/core/widgets.ts (its id, its words, where it sits until it is placed, its options with a default for each, the size of its window) and two components registered under the same id in renderer/widgets/index.ts: what is drawn over the game, and the controls for its options. With that it has a window of its own, a place per monitor, 'Move it on screen', stored options and its section on the page, without a change to the code that places windows or keeps settings."
+      - "Options that do not fit a widget are refused with what is wrong; stored options that do not fit (a file edited by hand) fall back to that widget's defaults; a widget id cannot be anything that would not do as part of an address or a key in the settings file."
+      - "docs/CONTRIBUTING-FEATURES.md says how a widget is added, and a second widget has been added that way and shown (the stick position or an axis readout, when the owner asks for one)."
+    notes:
+      - "2026-11-12: the seam is built and the first widget, the recent presses, goes through it. Proved by the tests below: what a kind is, its options and their defaults, what is refused. Not proved: a second widget has never been run through the service or the page, which are tested with the one kind there is; the last criterion stays open until a second widget exists. The stick position and axis readouts the owner mentioned are not built, on his word that they are not needed yet, and are not requirements in this ledger yet."
+    status: in_progress
+    evidence:
+      - "src/features/overlay/core/widgets.test.ts#are found by id, and an id that is none is not"
+      - "src/features/overlay/core/widgets.test.ts#a new kind takes an id, words, a default place, options with defaults and a size"
+      - "src/features/overlay/core/widgets.test.ts#refuses an id that could not be part of an address or a file key"
+      - "src/features/overlay/core/widgets.test.ts#keeps what the user set and fills in what is missing"
+      - "src/features/overlay/core/widgets.test.ts#stored options that do not fit (a file edited by hand) are replaced by the defaults, whole"
+      - "src/features/overlay/core/widgets.test.ts#options the user is setting are checked, and what is wrong is said"
+      - "src/features/overlay/main.test.ts#options, place, move and aircraft do what the page asks, and refuse what does not fit"
+      - "docs/CONTRIBUTING-FEATURES.md"
+
+  - id: OVERLAY-007
+    title: The overlay inside a VR headset
+    job: fly
+    area: overlay
+    priority: p3
+    done_means:
+      - "With a game running in a VR headset, the recent presses are shown inside the headset, where the user put them, readable without covering the instruments, and placing them is done from the Overlay page."
+      - "It works with the VR runtimes the supported sims are flown in (OpenXR and SteamVR at least), and what it costs in frame time on the owner's rig is measured and written down."
+      - "Until then the Overlay page and the manual say that the overlay does not show inside a VR headset."
+    notes:
+      - "2026-11-12: not built, by the owner's decision: 'We're going to ignore the VR part of that for now. We can leave that as an unsatisfied requirement.' The overlay of OVERLAY-001 to OVERLAY-006 is a window on a monitor, and a headset is not a monitor: a game in VR draws straight to the headset, so nothing of this overlay is seen in it. Showing something there takes an overlay layer of the VR runtime (an OpenXR API layer, or a SteamVR overlay), which is research first. The third criterion is met by the page ('It does not show inside a VR headset.') and by docs/manual/play/overlay.md; the first two are open."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
   # ---------------------------------------------------------------------------
 

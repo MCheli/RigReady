@@ -46,15 +46,34 @@ describe('where an overlay panel sits on a screen', () => {
     expect(panelBox(main, size, { x: Number.NaN, y: 0 }).x).toBe(1520);
   });
 
-  it('reads a place back from where the box is, the same place it was put at', () => {
+  it('reads a place back from where the box is: the place it was put at, to the pixel', () => {
+    // An edge is an edge exactly.
     for (const at of [
       { x: 0, y: 0 },
       { x: 1, y: 1 },
-      { x: 0.25, y: 0.8 },
-      { x: 0.5, y: 0.5 },
     ]) {
       expect(panelAt(main, panelBox(main, size, at))).toEqual(at);
       expect(panelAt(side, panelBox(side, size, at))).toEqual(at);
+    }
+    // Anywhere else a box is on whole pixels, so the place read back is the nearest to it.
+    for (const at of [
+      { x: 0.25, y: 0.8 },
+      { x: 0.5, y: 0.5 },
+    ]) {
+      for (const screen of [main, side]) {
+        const back = panelAt(screen, panelBox(screen, size, at));
+        expect(back.x).toBeCloseTo(at.x, 2);
+        expect(back.y).toBeCloseTo(at.y, 2);
+        expect(panelBox(screen, size, back)).toEqual(panelBox(screen, size, at));
+      }
+    }
+  });
+
+  it('a box read and put back is on the same pixel, on a very wide screen too', () => {
+    const wide = { x: 0, y: 0, width: 5120, height: 1440 };
+    for (const x of [1, 100, 2362, 4803]) {
+      const box = { x, y: 777, width: 316, height: 154 };
+      expect(panelBox(wide, box, panelAt(wide, box))).toEqual(box);
     }
   });
 
@@ -62,7 +81,7 @@ describe('where an overlay panel sits on a screen', () => {
     expect(panelAt(main, { x: -120, y: 1300, width: 400, height: 300 })).toEqual({ x: 0, y: 1 });
     expect(panelAt(side, { x: -768, y: 500, width: 768, height: 300 })).toEqual({
       x: 0.5,
-      y: 0.414,
+      y: 0.41436,
     });
   });
 

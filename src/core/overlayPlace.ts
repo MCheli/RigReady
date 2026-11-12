@@ -22,8 +22,12 @@ export interface OverlayAt {
 const share = (value: number): number =>
   Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0.5;
 
-/** Three decimals: finer than a pixel on any screen, and a file a person can read. */
-const tidy = (value: number): number => Math.round(share(value) * 1000) / 1000;
+/**
+ * Five decimals: finer than a pixel on any screen, so a panel that is read and put back
+ * (dragged, then locked) stays on the pixel it was on. Three were not enough on a screen
+ * five thousand pixels wide.
+ */
+const tidy = (value: number): number => Math.round(share(value) * 100_000) / 100_000;
 
 /**
  * The box of a panel of this size at this place on a screen. A panel larger than the
