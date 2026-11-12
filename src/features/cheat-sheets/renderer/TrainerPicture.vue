@@ -6,23 +6,23 @@ import type { SheetDevice } from '../core/sheet';
 /**
  * The device of a trainer card, drawn like its cheat sheet but with nothing written on it:
  * what each control does is the thing being asked. After an answer, the control that was
- * pressed and the one that was right are lit, and those two say what they do.
+ * pressed and every control that is right are lit, and those say what they do.
  */
 const props = withDefaults(
   defineProps<{
     device: SheetDevice;
     /** Controls whose labels are written out. */
     reveal?: string[];
-    /** The control that was the right answer and was pressed. */
-    right?: string | undefined;
+    /** After a right answer: every control of this device that does the action. */
+    right?: string[];
     /** The control that was pressed and was not it. */
     wrong?: string | undefined;
-    /** The right answer, shown after a miss. */
-    target?: string | undefined;
+    /** After a miss: every control of this device that does the action. */
+    target?: string[];
     /** Controls held on the real device right now. */
     held?: string[];
   }>(),
-  { reveal: () => [], right: undefined, wrong: undefined, target: undefined, held: () => [] }
+  { reveal: () => [], right: () => [], wrong: undefined, target: () => [], held: () => [] }
 );
 
 const host = ref<HTMLElement>();
@@ -42,9 +42,9 @@ function paint(): void {
   for (const el of root.querySelectorAll<SVGGElement>('.cs-ctl')) {
     const id = el.dataset['control'] ?? '';
     el.classList.toggle('cs-on', held.has(id));
-    el.classList.toggle('tr-right', id === props.right);
+    el.classList.toggle('tr-right', props.right.includes(id));
     el.classList.toggle('tr-wrong', id === props.wrong);
-    el.classList.toggle('tr-target', id === props.target);
+    el.classList.toggle('tr-target', props.target.includes(id));
   }
 }
 
@@ -62,9 +62,9 @@ onMounted(paint);
     aria-hidden="true"
     data-testid="trainer-picture"
     :data-device="device.key"
-    :data-right="right ?? ''"
+    :data-right="right.join(' ')"
     :data-wrong="wrong ?? ''"
-    :data-target="target ?? ''"
+    :data-target="target.join(' ')"
     v-html="svg"
   ></div>
 </template>
