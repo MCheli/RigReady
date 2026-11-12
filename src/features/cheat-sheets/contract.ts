@@ -252,7 +252,11 @@ export const cheatSheetsContract = defineContract(
     ...trainerChannels,
   },
   {
-    input: z.object({ devices: z.array(LiveDeviceSchema) }),
+    /**
+     * What the controllers say. `rest` marks what is said again for a window that began to
+     * listen after another: where the controls are, not something that was just pressed.
+     */
+    input: z.object({ devices: z.array(LiveDeviceSchema), rest: z.boolean().optional() }),
     /** A game's bindings were changed by the feature that owns them: sheets of it are redrawn. */
     changed: z.object({ game: z.string(), aircraftId: z.string().optional() }),
   }
