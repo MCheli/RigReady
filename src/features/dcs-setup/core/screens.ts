@@ -374,8 +374,16 @@ export function generateSetup(setup: ScreenSetup): GeneratedSetup {
     luaRect('UIMainView', center.file, '', centerFields),
     luaRect('GU_MAIN_VIEWPORT', center.file, '', centerFields),
   ];
+  // The aircraft that use a display, said once above the displays they share: the displays
+  // are written group by group, each group in the order it first came up.
+  const groups = new Map<string, PlacedViewport[]>();
   for (const viewport of viewports) {
-    lines.push('', `-- ${viewport.aircraft.join(', ')}`, luaRect(viewport.name, viewport.file, ''));
+    const users = viewport.aircraft.join(', ');
+    groups.set(users, [...(groups.get(users) ?? []), viewport]);
+  }
+  for (const [users, shared] of groups) {
+    lines.push('', `-- ${users}`);
+    for (const viewport of shared) lines.push(luaRect(viewport.name, viewport.file, ''));
   }
   if (perUnit.length > 0) {
     // DCS calls this with the unit type when a cockpit loads (see its 3Cameras.lua sample).
@@ -445,4 +453,79 @@ export function cropFor(display: Rect, rect: Rect): Crop {
 /** The monitor a rectangle lies entirely on, if any. */
 export function displayContaining<T extends Rect>(rect: Rect, displays: T[]): T | undefined {
   return displays.find((d) => contains(d, rect));
+}
+
+type Sized = Pick<Rect, 'width' | 'height'>;
+
+/**
+ * The crop a display keeps when it moves to another monitor. A crop is measured in the
+ * pixels of one monitor (the bezel it hides), so it fits another monitor of the same size
+ * and means nothing on one of another size: there it starts again from the whole monitor.
+ */
+export function moveCrop(
+  from: Sized | undefined,
+  to: Sized,
+  crop: Crop | undefined
+): { crop: Crop; kept: boolean } {
+  const none = { left: 0, top: 0, right: 0, bottom: 0 };
+  const cropped = crop !== undefined && Object.values(crop).some((side) => side > 0);
+  if (!cropped) return { crop: none, kept: true };
+  if (from && from.width === to.width && from.height === to.height) {
+    return { crop: { ...crop }, kept: true };
+  }
+  return { crop: none, kept: false };
+}
+
+/**
+ * The kneeboard's width over its height, from DCS's own declaration of it
+ * (Scripts\Aircrafts\_Common\Cockpit\KNEEBOARD\declare_kneeboard_device.lua: 0.142 by 0.214).
+ */
+export const KNEEBOARD_ASPECT = 0.142 / 0.214;
+
+export interface KneeboardPlace {
+  /** Where DCS draws it, in desktop coordinates. */
+  rect: Rect;
+  /** The monitor most of it is on; absent when none of it is on a monitor. */
+  displayId?: string;
+  /** How much of it is on a monitor at all, 0 to 1. */
+  shown: number;
+  /** True when all of it is on one monitor. */
+  whole: boolean;
+}
+
+/**
+ * Where DCS draws the kneeboard for a DCS window: DCS's own rule, which the monitor setup
+ * file has no say in (update_screenspace_diplacement in
+ * Scripts\Aircrafts\_Common\Cockpit\ViewportHandling.lua, called by
+ * KNEEBOARD\indicator\init.lua, which looks for no viewport by name). The kneeboard is
+ * half the window's height wide, never more than half the window's width, and sits in the
+ * bottom right corner of the whole window, whatever monitor is there. A few aircraft
+ * declare a kneeboard on the left instead; those are not told apart here.
+ */
+export function kneeboardPlace(window: Rect, displays: (Rect & { id: string })[]): KneeboardPlace {
+  const width = Math.min(0.5 * window.height, 0.5 * window.width);
+  const height = width / KNEEBOARD_ASPECT;
+  const rect = {
+    x: Math.round(window.x + window.width - width),
+    y: Math.round(window.y + window.height - height),
+    width: Math.round(width),
+    height: Math.round(height),
+  };
+  const overlap = (d: Rect): number =>
+    Math.max(0, Math.min(d.x + d.width, rect.x + rect.width) - Math.max(d.x, rect.x)) *
+    Math.max(0, Math.min(d.y + d.height, rect.y + rect.height) - Math.max(d.y, rect.y));
+  const area = rect.width * rect.height;
+  let most: { id: string; area: number } | undefined;
+  let total = 0;
+  for (const display of displays) {
+    const on = overlap(display);
+    total += on;
+    if (on > 0 && (!most || on > most.area)) most = { id: display.id, area: on };
+  }
+  return {
+    rect,
+    ...(most ? { displayId: most.id } : {}),
+    shown: area > 0 ? Math.min(1, total / area) : 0,
+    whole: displays.some((d) => contains(d, rect)),
+  };
 }

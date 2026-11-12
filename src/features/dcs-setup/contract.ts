@@ -138,6 +138,25 @@ export const ScreensStateSchema = z.object({
 });
 export type ScreensState = z.infer<typeof ScreensStateSchema>;
 
+/** One of SimAppPro's screens and the monitor it was paired with (core/simAppProImport.ts). */
+export const PlanScreenSchema = z.object({
+  planId: z.string(),
+  rect: RectSchema.optional(),
+  main: z.boolean(),
+  shows: z.array(z.string()),
+  aircraft: z.string().optional(),
+  displayId: z.string().optional(),
+  how: z.enum(['chosen', 'name', 'position', 'left', 'none']),
+  certain: z.boolean(),
+  note: z.string(),
+});
+export const PlanPairingSchema = z.object({
+  /** True when no pairing needs the user's eye. */
+  certain: z.boolean(),
+  screens: z.array(PlanScreenSchema),
+});
+export type PlanPairing = z.infer<typeof PlanPairingSchema>;
+
 export const ApplyScreensSchema = z.object({
   setup: ScreenSetupSchema,
   /** Also set options.lua width/height/aspect to the window the setup needs. */
@@ -239,11 +258,30 @@ export const dcsSetupContract = defineContract('dcs-setup', {
   }),
   /** SimAppPro's MFD plan as a screen setup for one of the monitor layouts. */
   importSimAppPro: channel(
-    z.object({ desktopId: z.string() }),
-    z.object({ setup: ScreenSetupSchema, unmatched: z.array(z.string()), catalog: CatalogSchema }),
+    z.object({
+      desktopId: z.string(),
+      /** The user's own pairing: SimAppPro's screen id to a monitor id of the layout, or null to leave that screen out. */
+      pairs: z.record(z.string(), z.string().nullable()).default({}),
+    }),
+    z.object({
+      setup: ScreenSetupSchema,
+      unmatched: z.array(z.string()),
+      catalog: CatalogSchema,
+      pairing: PlanPairingSchema,
+    }),
     {
       describe:
-        "Turns SimAppPro's MFD plan into a screen setup for one monitor layout, with the screens it could not place. desktopId comes from dcs-setup:screens. Nothing is saved; pass the setup to previewScreens and applyScreens.",
+        "Turns SimAppPro's MFD plan into a screen setup for one monitor layout, with the screens it could not place. desktopId comes from dcs-setup:screens. SimAppPro knows a screen only by where it was on the desktop when the plan was saved, so the answer also says which of its screens was paired with which monitor, how (the name the user gave the monitor, or its position) and whether that is certain. When pairing.certain is false, show the user the pairing and let them correct it (pass their choice as pairs) before the setup is applied. Nothing is saved; pass the setup to previewScreens and applyScreens.",
+      tier: 'read',
+    }
+  ),
+  /** "Identify screens": a number on every monitor, with what the setup shows there. */
+  identifyScreens: channel(
+    z.object({ setup: ScreenSetupSchema }),
+    z.object({ shown: z.number().int(), off: z.number().int() }),
+    {
+      describe:
+        "Shows a number on every monitor that is on for a few seconds, with the user's name for the monitor and what the given screen setup shows there, so the user can tell which screen is which. The numbers are the same as on the Monitors page. Changes nothing.",
       tier: 'read',
     }
   ),

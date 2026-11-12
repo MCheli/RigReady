@@ -2305,6 +2305,114 @@ requirements:
       - "artifacts/screens/dcs-setup-mfd-rotated/01-both-warn.png"
       - "artifacts/screens/dcs-setup-mfd-rotated/02-both-clear.png"
 
+  - id: DCS-MON-006
+    title: The Screens tab calls every monitor by the name the user gave it
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Wherever the Screens tab shows a monitor (the map, the main view's monitors, the list of each display, the pairing with SimAppPro's plan, the warnings, the crop note and the Description line of RigReady.lua) it uses the name given on the Monitors page; a monitor without one keeps Windows' name."
+      - "The same holds for a screen setup saved before the names were given and for a monitor layout saved with a setup, whatever the monitors are doing now."
+      - "Scenario mark-flight with the three small screens named 'MFD left', 'MFD centre' and 'MFD right' on the Monitors page: the tab shows those names and 'USB_Monitor' nowhere (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 15: the tab said 'USB_Monitor (1 of 3)' for screens the owner had named. The names are read through ctx.names.monitors(), which the displays feature already provides; nothing in src/features/displays changed."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#are used for the layout as it is now, for a setup saved before they were given, and in the file"
+      - "src/features/dcs-setup/core/screens.test.ts#are used for a layout saved with a setup, whatever the monitors are doing now"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: the screens carry the user's names, and SimAppPro's plan follows the names, is shown, corrected and only then written"
+      - "artifacts/screens/dcs-screens-named/01-paired-by-name.png"
+      - "artifacts/screens/dcs-screens-named/02-corrected-by-hand.png"
+
+  - id: DCS-MON-007
+    title: SimAppPro's plan is paired with the monitors by name, shown, and put right before anything is written
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Each screen of SimAppPro's plan is paired with a monitor of the layout: first by the side the user's name for a monitor speaks of ('MFD left' for the screen that carries LEFT_MFCD), then by the plan's exact place and size, then the one monitor of that size that is left. Two monitors named for the same side are not guessed between. Only {APPDATA}/SimAppPro/GameExtendDisplay/MFD/DCS_config.json is read."
+      - "A pairing is certain only when the name and the plan's place agree, or when the place fits and no other monitor of the layout has that size. The tab lists every pairing with its reason. While one is not certain, 'Use in DCS' is off and says why, until the user has changed the list or pressed 'These are right'."
+      - "The user changes a pairing in the list; choosing a monitor another screen of the plan has makes the two change places; the setup, the map and the file preview follow, and nothing is written before 'Use in DCS'."
+      - "Scenario mark-flight, whose plan has the left display where the middle screen is now: with the screens named, RigReady.lua is written with LEFT_MFCD at x = 5128, CENTER_MFCD at 5896 and RIGHT_MFCD at 6664, and the tab says the plan is from before the screens were put in this order. Without names the pairing is by position and the tab says three screens are the same size (E2E, both)."
+      - "'Identify screens' on the tab shows, on every monitor that is on, its number, its name and what this setup puts on it, and says how many monitors show it."
+    notes:
+      - "2026-11-12 sitting, finding 16: the import went by position alone and put each display on the wrong screen, because the screens had been put in another order since SimAppPro saved its plan."
+      - "The stop is in the page: a caller of dcs-setup:importSimAppPro over IPC is told in the channel's description to show the user an uncertain pairing and let them correct it before dcs-setup:applyScreens. A scenario run uses the fake overlay port, so what Identify draws on the real screens is proven by the unit test of the requests it makes, not by a picture."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#follows the names the user gave the screens when the plan is from another order"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#is certain when the names and the plan agree"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#says so when it has only the position to go by and the screens look alike"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#takes the user's own pairing over its own, and leaves out a screen they chose none for"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#does not guess between two monitors named for the same side"
+      - "src/features/dcs-setup/core/screens.test.ts#goes by the names when the screens were put in another order since the plan was saved"
+      - "src/features/dcs-setup/core/screens.test.ts#says it is not certain when the screens have no names and look alike"
+      - "src/features/dcs-setup/core/screens.test.ts#shows each monitor's number, its name and what the setup puts on it"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: the screens carry the user's names, and SimAppPro's plan follows the names, is shown, corrected and only then written"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: Identify screens works from this tab, and the map shows where DCS will draw the kneeboard"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
+      - "artifacts/screens/dcs-screens-named/01-paired-by-name.png"
+      - "artifacts/screens/dcs-screens-named/02-corrected-by-hand.png"
+      - "artifacts/screens/dcs-screens-named/03-written.png"
+      - "artifacts/screens/dcs-screens-kneeboard/02-identified.png"
+
+  - id: DCS-MON-008
+    title: A crop goes with its display to another monitor of the same size
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Choosing another monitor for a display keeps its crop when the new monitor has the size of the old one. On a monitor of another size the crop starts from zero and a line under the display says so, with both sizes."
+      - "A display set to 'Not shown' and put back on a monitor of the same size has its crop again."
+      - "Scenario mark-flight: the Left DDI with a crop of 8, 240, 8, 6 moved from 'MFD left' to 'MFD centre' keeps it and the file preview shows it; moved to the 5120 x 1440 screen it has none and the tab says 'The crop was not kept' (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 17: choosing another monitor for a display reset its crop to zero. Dragging a display to another screen on the map is as it was."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#keeps the crop when the new monitor is the same size"
+      - "src/features/dcs-setup/core/screens.test.ts#drops the crop, and says so, when the new monitor is another size"
+      - "src/features/dcs-setup/core/screens.test.ts#has nothing to keep, and nothing to say, when there was no crop"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: a crop goes with its display to a screen of the same size, and the tab says so when it cannot"
+      - "artifacts/screens/dcs-screens-crop/01-crop-kept.png"
+      - "artifacts/screens/dcs-screens-crop/02-crop-not-kept.png"
+
+  - id: DCS-MON-009
+    title: The Screens tab shows where DCS will draw the kneeboard
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "The map of the Screens tab draws the place DCS gives the kneeboard for this setup's window (DCS's own rule: the bottom right corner of the whole window, half its height wide; docs/research/dcs.md 5.1), marked 'Kneeboard'."
+      - "A line under the map names the monitor it is on and says whether all of it is on a screen, and how much when not; when not, it says that DCS chooses the place and the monitor setup file cannot move it, and links to the manual section that says what can be done."
+      - "Scenario mark-flight (7424 x 1440 window): the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen (E2E)."
+      - "RigReady writes no KNEEBOARD entry into RigReady.lua, because nothing in an unchanged DCS reads one."
+    notes:
+      - "2026-11-12 sitting, finding 19: the kneeboard opened on the right MFD screen with only its top left corner readable. This entry is the part that could be done from DCS's scripts alone: the user is told before flying. The choice of place is DCS-MON-010."
+      - "From reading the scripts of the install; not checked in the game. The map always draws the bottom right corner and does not tell the few aircraft with a kneeboard on the left (Su-25T, A-10A, MiG-29, Su-27, Su-33) apart."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#is the bottom right of the whole window: on the rig of the sitting, the right small screen"
+      - "src/features/dcs-setup/core/screens.test.ts#is all on the main screen when the window is that screen alone"
+      - "src/features/dcs-setup/core/screens.test.ts#is never wider than half the window"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: Identify screens works from this tab, and the map shows where DCS will draw the kneeboard"
+      - "tests/unit/manualLinks.test.ts"
+      - "docs/research/dcs.md"
+      - "artifacts/screens/dcs-screens-kneeboard/01-kneeboard-runs-off-the-right-screen.png"
+      - "artifacts/screens/dcs-screens-kneeboard/03-kneeboard-all-on-the-wide-screen.png"
+
+  - id: DCS-MON-010
+    title: The user chooses where DCS shows the kneeboard
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "On the Screens tab the user chooses where the kneeboard shows; the default has all of it readable on the main screen."
+      - "The choice is written through FileStore with a backup, by a means an unchanged DCS honours and that passes a multiplayer server's file check, and it is confirmed in the game."
+    notes:
+      - "2026-11-12 sitting, finding 19 (the owner: 'just show on the main screen on the left side or something like that, or at least have some control over where it shows'). Not started beyond research: a monitor setup file cannot place the kneeboard, and where DCS keeps a kneeboard moved by hand in the game was not found in its scripts. docs/research/dcs.md 5.1 lists four candidates; each needs DCS running, so each is for a sitting. Changing one of the game's own scripts is a product decision for the owner."
+    status: todo
+    evidence: []
+
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines
     job: configure
@@ -3052,6 +3160,81 @@ requirements:
       - "artifacts/screens/cheat-sheets-check-add/01-added-in-the-dialog.png"
       - "artifacts/screens/cheat-sheets-check-add/02-on-the-fly-screen.png"
       - "artifacts/screens/cheat-sheets-check-add/03-made-ready.png"
+
+  - id: KNEE-001
+    title: A kneeboard or printed list shows every row it says it has
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The 'Key actions' page and a device's large-print list never drop a row to fit: rows are planned by the lines they wrap to at the page's width (long device names mean fewer rows on a page), and what does not fit goes on to a further page. The header says which rows a page has ('Actions 1 to 12 of 20'), a kind of action that carries over is marked 'continued', and an action bound in many places is counted once."
+      - "Further pages take the number of the first with a letter ('RigReady - 01b - Key actions 2.png', 'RigReady - 02b - Stick list.png', 'RigReady - 02c - Stick list 2.png'), so DCS shows them straight after it. A device name too long for a file name is cut and still ends in ' list'."
+      - "Every list page ends with a short bar, and the export looks for that bar in each rendered picture. A page without it is planned again with fewer rows; when it is still cut off nothing is written and the dialog names the page. Pages exported before this are reported as stale."
+      - "Scenario mark-flight with long device names (cheat-sheets-long-names): the real renderer writes the key actions over two pages and every list page has its bar (E2E, reading the PNG files). The printed 'Most important actions' goes on to a further page the same way."
+    notes:
+      - "2026-11-12 sitting, finding 11: the exported 'Key actions' page said '24 actions' and showed 7. The page was planned by a row count that did not know how long the device names were, and whatever ran off the page was cut without a word."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/pages.test.ts#gives every action a row, and goes on in the next column and on the next page"
+      - "src/features/cheat-sheets/core/pages.test.ts#plans a row by the lines it wraps to, so long device names mean fewer rows on a page"
+      - "src/features/cheat-sheets/core/pages.test.ts#gives an action bound in many places further rows, and counts it once"
+      - "src/features/cheat-sheets/core/pages.test.ts#shows every key action of the kneeboard summary, each page ending with the bar that is checked"
+      - "src/features/cheat-sheets/core/pages.test.ts#shows every action of a device on its large-print list, without the device name in each row"
+      - "src/features/cheat-sheets/core/pages.test.ts#prints every one of the most important actions, on a further page when one is not enough"
+      - "src/features/cheat-sheets/core/pageCheck.test.ts#is not found when it was cut off, or when something else merely has its colour"
+      - "src/features/cheat-sheets/core/pageCheck.test.ts#wants every mark of the page in the picture"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#puts every key action on a page when the device names are long, over as many pages as that takes"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#checks every rendered list page, plans again with fewer rows when one came out cut off, and writes nothing when it still is"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#says that pages with a list from before the fix need a new export"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: with long device names every key action still gets a place, over as many pages as that takes"
+      - "artifacts/screens/kneeboard-long-names/01-preview-key-actions.png"
+      - "artifacts/screens/kneeboard-long-names/02-exported.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-key-actions-1.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-key-actions-2.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-stick-list.png"
+
+  - id: KNEE-002
+    title: Kneeboard page numbers stay put between exports
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "A device keeps the page number it had in the last export, also when a change of bindings moves it up or down the cheat sheet. A device exported for the first time gets the number after those that already have a page. The numbers have no gaps."
+      - "Scenario mark-flight (cheat-sheets-hornet): after the pedals lose their bindings, a new export writes the same file names as the first ('RigReady - 04 - Pedals.png' still fourth) and removes nothing (E2E, reading the folder)."
+    notes:
+      - "2026-11-12 sitting, finding 22: a new export would have moved the pedals from page 4 to page 11 and renumbered seven others. The order came from the sheet, which lists devices with bindings first; it now comes from the record of the last export."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#keeps every device on the page it had when the bindings change which device comes first"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: every device keeps its page number when the bindings change which device comes first"
+      - "artifacts/screens/kneeboard-page-numbers/01-first-export.png"
+      - "artifacts/screens/kneeboard-page-numbers/02-bindings-changed.png"
+      - "artifacts/screens/kneeboard-page-numbers/03-same-numbers.png"
+
+  - id: KNEE-003
+    title: The kneeboard dialog says which keys turn the pages and offers to bind them
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The kneeboard dialog shows where 'show or hide the kneeboard', 'next page' and 'previous page' are bound for the aircraft, controllers first, read from the bindings in effect (the game's defaults included). The glance view, the mark point and the shortcut actions are not taken for them."
+      - "When the two page keys are on no controller it says that the pages turn only from the keyboard, or from nothing when one is unbound, names the game's two actions, and offers 'Bind the page keys'. An aircraft without the actions gets no such note."
+      - "The offer opens the game's bindings page on that aircraft with the kneeboard's actions found. Once both are bound to a controller the note is gone and the dialog shows the buttons."
+      - "Scenario mark-flight (cheat-sheets-hornet): the note shows; from the offer both page keys are bound to stick buttons by pressing them; back in the dialog it reads 'Button 33 on Stick' and 'Button 35 on Stick' and the note is gone (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bindings page itself gives no such hint when show or hide is bound there, which is the bindings feature's to add."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads it from the game's name for the action"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#leaves out the glance view, the mark point and everything that is not the kneeboard"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#says the pages turn only from the keyboard when show or hide is on a button"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#has nothing to say once both page keys are on a controller"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#says nothing turns the pages when a page key is bound to nothing at all"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads DCS's own keys, finds none on a controller, and offers the page to bind them on"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: the dialog says which keys turn the pages, and offers the page to bind them on"
+      - "artifacts/screens/kneeboard-keys/01-pages-turn-only-from-the-keyboard.png"
+      - "artifacts/screens/kneeboard-keys/02-bindings-page-on-the-kneeboard-actions.png"
+      - "artifacts/screens/kneeboard-keys/03-page-keys-on-the-stick.png"
 
   - id: SHEET-014
     title: Every control is drawn once, and kinds are told apart in the night style

@@ -45,6 +45,7 @@ import {
 import { describeChange, editOptions, readOptions, type DcsOptions } from './options';
 import {
   boundingBox,
+  displayLabel,
   generateSetup,
   MONITOR_SETUP_NAME,
   MONITOR_SETUP_OPTION,
@@ -52,7 +53,7 @@ import {
   type Rect,
   type ScreenSetup,
 } from './screens';
-import { aircraftCatalog, importSimAppPro } from './simAppProImport';
+import { aircraftCatalog, importSimAppPro, type PlanScreen } from './simAppProImport';
 import { findSimAppPro, readSimAppProPlan } from './simAppPro';
 import { DcsProfileExtensionSchema, type RuntimeFeature } from './simAppProShared';
 import { createStateStore, type DcsSetupState, type StateStore } from './state';
@@ -61,6 +62,10 @@ export type ServiceContext = Pick<MainContext, 'ports' | 'log' | 'games' | 'prof
   Partial<Pick<MainContext, 'names'>>;
 
 export const FEATURE_ID = 'dcs-setup';
+/** How long "Identify screens" keeps the numbers up: as long as the Monitors page does. */
+export const IDENTIFY_MS = 5000;
+/** How many of the things a setup shows on a monitor fit under its number. */
+const IDENTIFY_USES = 2;
 export const SIMAPPPRO_CHECK = 'dcs.simAppProRunning';
 export const START_SIMAPPPRO = 'dcs.startSimAppPro';
 
@@ -432,6 +437,50 @@ export class DcsSetupService {
 
   // ---------------------------------------------------------------- screens
 
+  /**
+   * What the user calls the monitors of a stored layout ("MFD left"), in the order given;
+   * undefined where they gave no name. A name belongs to a monitor, not to the connector
+   * it was on when the layout was saved: each monitor is looked up as the connected one it
+   * is now (USB serial, connector, EDID serial, the only one of its model), so a layout
+   * saved before a screen moved to another port keeps its names.
+   */
+  private async monitorNaming(): Promise<
+    (
+      monitors: { id: string; serial?: string | undefined; usbSerial?: string | undefined }[]
+    ) => (string | undefined)[]
+  > {
+    const names = (await this.ctx.names?.monitors()) ?? {};
+    if (Object.keys(names).length === 0) return (monitors) => monitors.map(() => undefined);
+    const layout = await this.ctx.ports.displays.read();
+    const connected = layout.ok ? layout.value.displays : [];
+    return (monitors) => {
+      const wanted = monitors.map((m) => ({
+        id: m.id,
+        ...(m.serial ? { serial: m.serial } : {}),
+        ...(m.usbSerial ? { usbSerial: m.usbSerial } : {}),
+      }));
+      const matches = matchMonitors(wanted, connected);
+      return monitors.map((m, at) => {
+        const now = matches[at]?.actual;
+        // Not connected now: the name it had on the connector the layout knows it by.
+        return names[(now?.id ?? m.id).toLowerCase()];
+      });
+    };
+  }
+
+  /**
+   * The setup saved for DCS with its monitors called what the user calls them now. The
+   * names stored with it are those of the day it was saved; a monitor named or renamed
+   * since would otherwise show under its old name, or under the name Windows has for it.
+   */
+  private async namedAsNow(setup: ScreenSetup): Promise<ScreenSetup> {
+    const named = (await this.monitorNaming())(setup.desktop);
+    return {
+      ...setup,
+      desktop: setup.desktop.map((d, at) => ({ ...d, name: named[at] ?? d.name })),
+    };
+  }
+
   async desktops(): Promise<DesktopChoice[]> {
     const choices: DesktopChoice[] = [];
     const seen = new Set<string>();
@@ -443,6 +492,7 @@ export class DcsSetupService {
       choices.push({ id, label, displays });
     };
     add('current', 'Monitors as they are now', await this.currentDesktop());
+    const naming = await this.monitorNaming();
     const fromTargets = (
       targets: {
         id: string;
@@ -454,20 +504,25 @@ export class DcsSetupService {
         width?: number;
         height?: number;
         rotation?: number;
+        serial?: string;
+        usbSerial?: string;
       }[]
-    ): DesktopDisplay[] =>
-      targets
-        .filter((t) => t.enabled && t.width && t.height)
-        .map((t) => ({
-          id: t.id.toLowerCase(),
-          name: t.name ?? '',
-          x: t.x ?? 0,
-          y: t.y ?? 0,
-          width: t.width!,
-          height: t.height!,
-          rotation: t.rotation ?? 0,
-          primary: t.primary ?? false,
-        }));
+    ): DesktopDisplay[] => {
+      const usable = targets.filter((t) => t.enabled && t.width && t.height);
+      const named = naming(usable);
+      return usable.map((t, at) => ({
+        id: t.id.toLowerCase(),
+        name: named[at] ?? t.name ?? '',
+        ...(t.serial ? { serial: t.serial } : {}),
+        ...(t.usbSerial ? { usbSerial: t.usbSerial } : {}),
+        x: t.x ?? 0,
+        y: t.y ?? 0,
+        width: t.width!,
+        height: t.height!,
+        rotation: t.rotation ?? 0,
+        primary: t.primary ?? false,
+      }));
+    };
     const profiles = await this.ctx.profiles.list();
     for (const profile of profiles.ok ? profiles.value : []) {
       const layout = profile.checks.find((c) => c.type === 'display.layout');
@@ -536,7 +591,7 @@ export class DcsSetupService {
     const desktops = await this.desktops();
     const base = {
       desktops,
-      ...(state.screens ? { saved: state.screens } : {}),
+      ...(state.screens ? { saved: await this.namedAsNow(state.screens) } : {}),
       files: [],
       simAppProPlan: simAppPro.planPath !== undefined,
       dcsRunning: await dcsRunning(this.check, this.ctx.games),
@@ -579,14 +634,27 @@ export class DcsSetupService {
     };
   }
 
+  /**
+   * SimAppPro's screen plan on one of the monitor layouts. `pairs` is the user's own answer
+   * to which of SimAppPro's screens is which monitor (null leaves a screen out); without it
+   * RigReady pairs them itself and says for each screen how sure it is.
+   */
   async importFromSimAppPro(
-    desktopId: string
-  ): Promise<Result<{ setup: ScreenSetup; unmatched: string[]; catalog: CatalogEntry[] }>> {
+    desktopId: string,
+    pairs: Record<string, string | null> = {}
+  ): Promise<
+    Result<{
+      setup: ScreenSetup;
+      unmatched: string[];
+      catalog: CatalogEntry[];
+      pairing: { certain: boolean; screens: PlanScreen[] };
+    }>
+  > {
     const desktop = (await this.desktops()).find((d) => d.id === desktopId);
     if (!desktop) return err('dcs.screens.layout', 'That monitor layout is no longer available.');
     const json = await readSimAppProPlan(this.check);
     if (!json.ok) return json;
-    const imported = importSimAppPro(json.value, desktop.displays);
+    const imported = importSimAppPro(json.value, desktop.displays, pairs);
     if (!imported.ok) return err('simapppro.plan', imported.message);
     const primary = desktop.displays.find((d) => d.primary) ?? desktop.displays[0]!;
     const paths = await this.paths();
@@ -601,7 +669,55 @@ export class DcsSetupService {
       },
       unmatched: imported.plan.unmatched,
       catalog: await this.screenCatalog(paths.ok ? paths.value : undefined, imported.plan.catalog),
+      pairing: { certain: imported.plan.certain, screens: imported.plan.screens },
     });
+  }
+
+  /**
+   * "Identify screens": a big number on every monitor that is on, for a few seconds, with
+   * the user's name for it and what the setup on the page shows there underneath. The
+   * numbers run left to right, then top to bottom, as on the Monitors page, so both pages
+   * say the same number for the same screen. Changes nothing.
+   */
+  async identifyScreens(setup: ScreenSetup): Promise<Result<{ shown: number; off: number }>> {
+    const layout = await this.ctx.ports.displays.read();
+    if (!layout.ok) return layout;
+    const names = (await this.ctx.names?.monitors()) ?? {};
+    const on = layout.value.displays
+      .filter((d) => d.enabled)
+      .sort((a, b) => a.x - b.x || a.y - b.y);
+    if (on.length === 0) return err('dcs.screens.identify', 'No monitor is on.');
+    // The monitors of the layout on the page as the connected ones they are now.
+    const matches = matchMonitors(setup.desktop, layout.value.displays);
+    const uses = new Map<string, string[]>();
+    const use = (displayId: string, what: string): void => {
+      const now = matches.find((m) => m.expected.id === displayId)?.actual;
+      if (!now) return;
+      const list = uses.get(now.id) ?? [];
+      if (!list.includes(what)) list.push(what);
+      uses.set(now.id, list);
+    };
+    for (const id of setup.mainDisplayIds) use(id, 'Main view');
+    for (const aircraft of setup.aircraft) {
+      for (const placement of aircraft.placements) {
+        use(placement.displayId, displayLabel(aircraft.unit, placement.name));
+      }
+    }
+    const labels = on.map((d, at) => {
+      const name = names[d.id.toLowerCase()] ?? d.name;
+      const shows = (uses.get(d.id) ?? []).slice(0, IDENTIFY_USES);
+      return {
+        x: d.x,
+        y: d.y,
+        width: d.width,
+        height: d.height,
+        text: String(at + 1),
+        caption: [name, ...shows].filter((part) => part !== '').join(' · '),
+      };
+    });
+    const shown = await this.ctx.ports.overlays.showLabels(labels, IDENTIFY_MS);
+    if (!shown.ok) return shown;
+    return ok({ shown: labels.length, off: layout.value.displays.length - on.length });
   }
 
   private desiredOptions(

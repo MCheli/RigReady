@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import ManualLink from '../../../renderer/components/ManualLink.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
@@ -8,6 +9,7 @@ import {
   dcsSetupContract,
   type DesktopChoice,
   type MonitorSetupFileView,
+  type PlanPairing,
   type ScreensPreview,
   type ScreensState,
 } from '../contract';
@@ -17,14 +19,16 @@ import {
   cropRect,
   displayLabel,
   generateSetup,
+  kneeboardPlace,
   MAIN_VIEW_ONLY,
   monitorLabels,
+  moveCrop,
   type Crop,
   type Rect,
   type ScreenSetup,
 } from '../core/screens';
 import DiffView from './DiffView.vue';
-import ScreenMap, { type MapBox } from './ScreenMap.vue';
+import ScreenMap, { type MapBox, type MapOutline } from './ScreenMap.vue';
 
 const api = useClient(dcsSetupContract);
 const state = ref<ScreensState>();
@@ -47,6 +51,24 @@ const error = ref<string>();
 const notes = ref<string[]>([]);
 const started = ref<string>();
 const done = ref<{ message: string; changes: string[] }>();
+
+// Which of SimAppPro's screens is which monitor. SimAppPro knows a screen only by where it
+// was when it saved its plan, so the pairing is shown and, when it is not certain, has to be
+// checked before the setup can be used.
+const pairing = ref<PlanPairing>();
+/** The user's own pairing: SimAppPro's screen id to a monitor id, or null for "not shown". */
+const pairs = ref<Record<string, string | null>>({});
+const pairingChecked = ref(false);
+/** The layout the plan was last imported into: a correction is made for the same one. */
+const importedInto = ref('current');
+const mustCheckPairing = computed(
+  () => !!pairing.value && !pairing.value.certain && !pairingChecked.value
+);
+
+const identifying = ref(false);
+const identified = ref<string>();
+/** Said under a display's row when moving it to another monitor could not keep its crop. */
+const cropNote = ref<{ name: string; text: string }>();
 
 const choices = computed<DesktopChoice[]>(() => {
   const list = [...(state.value?.desktops ?? [])];
@@ -105,17 +127,29 @@ async function load(initial = false): Promise<void> {
   desktopId.value = current.id;
 }
 
-/** Imports SimAppPro's plan into the first layout that has all its screens (or the current one). */
-async function importPlan(automatic = false): Promise<boolean> {
+/**
+ * Imports SimAppPro's plan into the first layout that has all its screens (or the current one).
+ * `corrected` imports it again into the same layout with the user's own pairing.
+ */
+async function importPlan(automatic = false, corrected = false): Promise<boolean> {
   error.value = undefined;
-  const ids = automatic
-    ? (state.value?.desktops ?? []).map((d) => d.id)
-    : [desktopId.value === 'saved' ? 'current' : desktopId.value];
+  if (!corrected) pairs.value = {};
+  const ids = corrected
+    ? [importedInto.value]
+    : automatic
+      ? (state.value?.desktops ?? []).map((d) => d.id)
+      : [desktopId.value === 'saved' ? 'current' : desktopId.value];
   let fallback:
-    | { setup: ScreenSetup; unmatched: string[]; catalog: ScreensState['catalog']; id: string }
+    | {
+        setup: ScreenSetup;
+        unmatched: string[];
+        catalog: ScreensState['catalog'];
+        pairing: PlanPairing;
+        id: string;
+      }
     | undefined;
   for (const id of ids) {
-    const result = await api.importSimAppPro({ desktopId: id });
+    const result = await api.importSimAppPro({ desktopId: id, pairs: pairs.value });
     if (!result.ok) {
       if (!automatic) error.value = errorText(result.error);
       return false;
@@ -132,6 +166,10 @@ async function importPlan(automatic = false): Promise<boolean> {
     ? fallback.setup
     : { ...fallback.setup, aircraft: startingAircraft() };
   desktopId.value = fallback.id;
+  importedInto.value = fallback.id;
+  pairing.value = fallback.pairing;
+  pairingChecked.value = false;
+  cropNote.value = undefined;
   showAircraftInUse();
   notes.value = fallback.unmatched;
   const planes = fallback.setup.aircraft.map((a) => a.label).join(', ');
@@ -141,9 +179,58 @@ async function importPlan(automatic = false): Promise<boolean> {
   return true;
 }
 
+/**
+ * The user says which monitor one of SimAppPro's screens is. When another of its screens had
+ * that monitor, the two change places: one choice puts two swapped screens right.
+ */
+async function pairWith(planId: string, displayId: string | null): Promise<void> {
+  const screens = pairing.value?.screens ?? [];
+  const mine = screens.find((s) => s.planId === planId);
+  if (!mine || (mine.displayId ?? null) === displayId) return;
+  const next = { ...pairs.value, [planId]: displayId };
+  const other = displayId
+    ? screens.find((s) => s.planId !== planId && s.displayId === displayId)
+    : undefined;
+  if (other) {
+    if (mine.displayId) next[other.planId] = mine.displayId;
+    else delete next[other.planId];
+  }
+  pairs.value = next;
+  await importPlan(false, true);
+}
+
+/** What the plan says about one of its screens: whose it is and where SimAppPro has it. */
+function planPlace(screen: PlanPairing['screens'][number]): string {
+  const where = screen.rect
+    ? `SimAppPro has it at ${screen.rect.x},${screen.rect.y} (${screen.rect.width} × ${screen.rect.height})`
+    : 'SimAppPro does not say where it is';
+  return screen.aircraft ? `${screen.aircraft} · ${where}` : where;
+}
+
+async function identify(): Promise<void> {
+  if (!setup.value) return;
+  identifying.value = true;
+  identified.value = undefined;
+  error.value = undefined;
+  const result = await api.identifyScreens({ setup: setup.value });
+  identifying.value = false;
+  if (!result.ok) {
+    error.value = errorText(result.error);
+    return;
+  }
+  const { shown, off: turnedOff } = result.value;
+  identified.value =
+    `Each monitor that is on shows its number, its name and what this setup puts on it for 5 seconds (${shown} ${shown === 1 ? 'monitor' : 'monitors'}).` +
+    (turnedOff > 0
+      ? ` ${turnedOff} turned-off ${turnedOff === 1 ? 'monitor cannot' : 'monitors cannot'} show one.`
+      : '');
+}
+
 function chooseDesktop(id: string): void {
   const choice = choices.value.find((c) => c.id === id);
   if (!choice || !setup.value) return;
+  // The pairing was made for the layout the plan was imported into, not for this one.
+  if (id !== desktopId.value) pairing.value = undefined;
   desktopId.value = id;
   setup.value = {
     ...setup.value,
@@ -206,13 +293,66 @@ const boxes = computed<MapBox[]>(() => {
   });
 });
 
+/**
+ * Where DCS will draw the kneeboard with this setup. DCS decides it from the size of its
+ * window alone (core/screens.ts kneeboardPlace); it is shown so nobody finds out in the air.
+ */
+const kneeboard = computed(() =>
+  generated.value && setup.value
+    ? kneeboardPlace(generated.value.window, setup.value.desktop)
+    : undefined
+);
+const outlines = computed<MapOutline[]>(() =>
+  kneeboard.value && !viewing.value
+    ? [
+        {
+          key: 'kneeboard',
+          label: 'Kneeboard',
+          rect: kneeboard.value.rect,
+          bad: !kneeboard.value.whole,
+        },
+      ]
+    : []
+);
+const kneeboardText = computed(() => {
+  const place = kneeboard.value;
+  if (!place) return '';
+  const on = place.displayId ? labels.value.get(place.displayId) : undefined;
+  if (place.whole)
+    return `DCS shows the kneeboard at the bottom right of ${on}. All of it is on that screen.`;
+  const part = Math.round(place.shown * 100);
+  return on
+    ? `DCS shows the kneeboard at the bottom right of its window. With this setup that is on ${on}, and only ${part}% of it is on a screen.`
+    : 'DCS shows the kneeboard at the bottom right of its window. With this setup none of it is on a screen.';
+});
+
+/** The crop a display had before "Not shown", so choosing a monitor again brings it back. */
+const hidden = new Map<string, { size: { width: number; height: number }; crop: Crop }>();
+
 function setMonitor(name: string, displayId: string | null): void {
   const a = aircraft.value;
   if (!a) return;
+  const key = `${a.unit}:${name}`;
+  const before = a.placements.find((p) => p.name === name);
+  const from = before ? displaysById.value.get(before.displayId) : undefined;
   a.placements = a.placements.filter((p) => p.name !== name);
-  if (displayId) {
-    a.placements.push({ name, displayId, crop: { left: 0, top: 0, right: 0, bottom: 0 } });
-    selected.value = name;
+  cropNote.value = undefined;
+  if (!displayId) {
+    if (before && from) hidden.set(key, { size: from, crop: before.crop });
+    return;
+  }
+  const to = displaysById.value.get(displayId);
+  if (!to) return;
+  const was = before && from ? { size: from, crop: before.crop } : hidden.get(key);
+  const moved = moveCrop(was?.size, to, was?.crop);
+  hidden.delete(key);
+  a.placements.push({ name, displayId, crop: moved.crop });
+  selected.value = name;
+  if (!moved.kept && was) {
+    cropNote.value = {
+      name,
+      text: `The crop was not kept: ${labels.value.get(to.id)} is ${to.width} × ${to.height} and the screen it was set for is ${was.size.width} × ${was.size.height}. Set it again here.`,
+    };
   }
 }
 
@@ -236,6 +376,7 @@ function setCrop(name: string, side: keyof Crop, value: string): void {
   if (!placement) return;
   const n = Math.max(0, Math.round(Number(value) || 0));
   placement.crop = { ...placement.crop, [side]: n };
+  if (cropNote.value?.name === name) cropNote.value = undefined;
 }
 
 function toggleMain(id: string): void {
@@ -317,6 +458,7 @@ async function apply(overwriteEdited = false): Promise<void> {
   }
   done.value = result.value;
   started.value = undefined;
+  pairing.value = undefined;
   notifyMachineChanged();
   await load();
   desktopId.value = 'saved';
@@ -325,6 +467,7 @@ async function apply(overwriteEdited = false): Promise<void> {
 
 const blocked = computed(() => {
   if (!preview.value || previewPending.value) return 'Checking…';
+  if (mustCheckPairing.value) return 'Check which screen is which first.';
   if (preview.value.dcsRunning) return 'Close DCS first: it rewrites options.lua when it exits.';
   if (preview.value.errors.length) return 'Fix the problems above first.';
   return undefined;
@@ -434,6 +577,77 @@ onBeforeUnmount(() => {
         RigReady.lua was changed outside RigReady. Writing will show you the differences first.
       </v-alert>
 
+      <section
+        v-if="pairing && pairing.screens.length"
+        class="rr-panel scr-pairing"
+        data-testid="screens-pairing"
+        :data-certain="pairing.certain"
+        :data-checked="pairingChecked"
+      >
+        <div class="scr-pairing-head">
+          <div class="rr-row-main">
+            <h2 class="rr-section-title">Which screen is which?</h2>
+            <div class="rr-row-sub">
+              SimAppPro knows a screen only by where it was on the desktop when it saved its plan.
+              <template v-if="pairing.certain">
+                RigReady could tell every screen apart. Change one here if it is wrong.
+              </template>
+              <template v-else>
+                RigReady could not be sure of every screen. Look at each one, put right what is
+                wrong, then say they are right. Identify screens shows each screen's name on the
+                screen itself.
+              </template>
+            </div>
+          </div>
+        </div>
+        <div
+          v-for="s in pairing.screens"
+          :key="s.planId"
+          class="scr-pair"
+          data-testid="screens-pair"
+          :data-plan="s.planId"
+          :data-how="s.how"
+          :data-certain="s.certain"
+        >
+          <div class="rr-row-main">
+            <div class="rr-row-title">{{ s.shows.join(', ') || `Screen ${s.planId}` }}</div>
+            <div class="rr-row-sub">{{ planPlace(s) }}</div>
+            <div class="rr-row-sub scr-pair-note" :class="s.certain ? 'rr-muted' : 'rr-warn'">
+              <v-icon :icon="s.certain ? 'mdi-check' : 'mdi-alert'" size="14" /> {{ s.note }}
+            </div>
+          </div>
+          <v-select
+            :model-value="s.displayId ?? null"
+            :items="[
+              ...(s.main ? [] : [{ title: 'Not shown', value: null }]),
+              ...setup.desktop.map((d) => ({ title: labels.get(d.id), value: d.id })),
+            ]"
+            density="compact"
+            hide-details
+            class="scr-monitor"
+            :aria-label="`Monitor for ${s.shows.join(', ') || `screen ${s.planId}`}`"
+            :data-testid="`screens-pair-monitor-${s.planId}`"
+            @update:model-value="pairWith(s.planId, $event)"
+          />
+        </div>
+        <div v-if="!pairing.certain" class="scr-pairing-foot">
+          <span v-if="pairingChecked" class="rr-ok" data-testid="screens-pairing-checked">
+            <v-icon icon="mdi-check" size="16" /> You checked these.
+          </span>
+          <v-spacer />
+          <v-btn
+            v-if="!pairingChecked"
+            color="primary"
+            variant="tonal"
+            size="small"
+            data-testid="screens-pairing-confirm"
+            @click="pairingChecked = true"
+          >
+            These are right
+          </v-btn>
+        </div>
+      </section>
+
       <div class="scr-toolbar">
         <v-select
           :model-value="desktopId"
@@ -461,7 +675,30 @@ onBeforeUnmount(() => {
             {{ labels.get(d.id) }}
           </v-chip>
         </div>
+        <v-spacer />
+        <v-btn
+          variant="tonal"
+          size="small"
+          prepend-icon="mdi-monitor-eye"
+          :loading="identifying"
+          data-testid="screens-identify"
+          @click="identify"
+        >
+          Identify screens
+        </v-btn>
       </div>
+      <v-alert
+        v-if="identified"
+        type="info"
+        variant="tonal"
+        density="compact"
+        class="mb-3"
+        closable
+        data-testid="screens-identified"
+        @click:close="identified = undefined"
+      >
+        {{ identified }}
+      </v-alert>
 
       <div ref="mapWrap" class="rr-panel scr-map-wrap">
         <div v-if="viewing" class="scr-viewing" data-testid="screens-viewing">
@@ -481,6 +718,7 @@ onBeforeUnmount(() => {
           :displays="setup.desktop"
           :main-ids="viewing ? [] : setup.mainDisplayIds"
           :boxes="boxes"
+          :outlines="outlines"
           :window="viewing ? undefined : generated?.window"
           @select="selected = $event"
           @place="place"
@@ -488,6 +726,22 @@ onBeforeUnmount(() => {
         <div v-if="!viewing" class="scr-legend rr-row-sub">
           Drag a display onto a screen; drag its edges to crop the bezel. The dashed outline is the
           DCS window ({{ generated?.window.width }} × {{ generated?.window.height }}).
+        </div>
+        <div
+          v-if="!viewing && kneeboard"
+          class="scr-kneeboard rr-row-sub"
+          :class="{ 'rr-warn': !kneeboard.whole }"
+          data-testid="screens-kneeboard"
+          :data-whole="kneeboard.whole"
+        >
+          <v-icon :icon="kneeboard.whole ? 'mdi-notebook-outline' : 'mdi-alert'" size="14" />
+          {{ kneeboardText }}
+          <template v-if="!kneeboard.whole">
+            DCS chooses this place itself; its monitor setup file cannot move the kneeboard.
+          </template>
+          <ManualLink page="dcs/kneeboard" anchor="where-dcs-shows-the-kneeboard">
+            {{ kneeboard.whole ? 'About this place' : 'What you can do' }}
+          </ManualLink>
         </div>
       </div>
 
@@ -582,6 +836,13 @@ onBeforeUnmount(() => {
                   :data-testid="`screens-crop-${row.name}-${side}`"
                   @update:model-value="setCrop(row.name, side, $event)"
                 />
+              </div>
+              <div
+                v-if="cropNote?.name === row.name"
+                class="rr-row-sub rr-warn scr-crop-note"
+                data-testid="screens-crop-note"
+              >
+                <v-icon icon="mdi-alert" size="14" /> {{ cropNote.text }}
               </div>
             </div>
             <div v-if="rows.length === 0" class="rr-row rr-muted">
@@ -780,6 +1041,40 @@ onBeforeUnmount(() => {
 }
 .scr-legend {
   margin-top: 10px;
+}
+.scr-kneeboard {
+  margin-top: 4px;
+}
+.scr-pairing {
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.scr-pairing-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.scr-pair {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--rr-border);
+}
+.scr-pair-note {
+  margin-top: 2px;
+}
+.scr-pairing-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rr-border);
+  font-size: 13px;
+}
+.scr-crop-note {
+  margin-top: 6px;
 }
 .scr-columns {
   display: grid;
