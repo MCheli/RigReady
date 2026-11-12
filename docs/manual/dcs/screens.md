@@ -30,6 +30,16 @@ RigReady pairs them in this order:
 
 A pairing counts as sure only when the name and the plan's position agree, or when the position fits and no other monitor has that size. For anything else the row carries a warning, and **Use in DCS** stays off ("Check which screen is which first.") until you have looked: change any row with its list, then press **These are right**. Choosing a monitor that another row has makes the two change places. A choice of your own shows as "You chose this screen."
 
+Changing a row changes only the pairing. What you did to the setup since the import stays: a crop you set goes with its display to the newly paired screen when that screen is the same size, and a display you moved to another monitor or set to **Not shown** stays where you put it. If the newly paired screen is another size, the crop cannot mean the same there; it starts again from zero and a line in the list says which display to set again.
+
+![One row changed by hand: the crop set before went with its display](../../../artifacts/screens/dcs-screens-named/02-corrected-by-hand.png)
+
+The rule is RigReady's own, not only the page's. Nothing that asks RigReady to use an imported setup gets it written while a pairing is unsure and nobody has said it is right, and that includes an [AI assistant](../ai/mcp-server.md) connected to RigReady: it gets the refusal with the screens in doubt named, and has to show them to you first. If you choose another monitor layout after the import, the question is asked again with the rows RigReady was not sure of. In that case the rows cannot be changed in the list; press **Import from SimAppPro** again to change one.
+
+![Asked again after another layout was chosen](../../../artifacts/screens/dcs-screens-layout/01-asked-again.png)
+
+A setup that is already in use in DCS is not asked about again.
+
 **Identify screens** (next to the main view's monitors) puts each monitor's number and name on the monitor itself for five seconds, with what this setup would draw there, so you can check the list against the desk without leaving the tab. Name the small screens once on the Monitors page and the import pairs them without help from then on.
 
 ![The plan is from before the screens were put in this order](../../../artifacts/screens/dcs-screens-named/01-paired-by-name.png)

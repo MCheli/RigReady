@@ -128,7 +128,7 @@ describe('DCS screen setup', () => {
 
     const applied = await app.invoke<{ message: string; changes: string[] }>(
       'dcs-setup:applyScreens',
-      { setup }
+      { setup, pairingChecked: true }
     );
     expect(applied.changes).toEqual([
       'Created RigReady.lua',
@@ -155,7 +155,10 @@ describe('DCS screen setup', () => {
     );
 
     // The same again changes nothing.
-    const again = await app.invoke<{ changes: string[] }>('dcs-setup:applyScreens', { setup });
+    const again = await app.invoke<{ changes: string[] }>('dcs-setup:applyScreens', {
+      setup,
+      pairingChecked: true,
+    });
     expect(again.changes).toEqual([]);
     const state = await app.invoke<ScreensState>('dcs-setup:screens');
     expect(state.rigReady).toMatchObject({ exists: true, selected: true, editedOutside: false });
@@ -195,11 +198,14 @@ describe('DCS screen setup', () => {
   it('updates its own unmodified RigReady.lua without asking, with a journal entry', async () => {
     app = await wiredApp('flying-fresh', { files: FILES });
     const setup = await importedSetup();
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     setup.aircraft[0]!.placements[0]!.crop.top = 300;
     const preview = await app.invoke<ScreensPreview>('dcs-setup:previewScreens', { setup });
     expect(preview.file.status).toBe('update');
-    const applied = await app.invoke<{ changes: string[] }>('dcs-setup:applyScreens', { setup });
+    const applied = await app.invoke<{ changes: string[] }>('dcs-setup:applyScreens', {
+      setup,
+      pairingChecked: true,
+    });
     expect(applied.changes).toEqual(['Updated RigReady.lua']);
     const journal = await app.ports.files.journal();
     expect(journal.ok && journal.value[0]).toMatchObject({
@@ -213,7 +219,7 @@ describe('DCS screen setup', () => {
   it('asks before replacing a RigReady.lua edited outside RigReady', async () => {
     app = await wiredApp('flying-fresh', { files: FILES });
     const setup = await importedSetup();
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     const edited = (await fs.readFile(rigReadyLua(), 'utf8')).replace('x = 5896;', 'x = 5900;');
     await fs.writeFile(rigReadyLua(), edited);
 
@@ -223,13 +229,17 @@ describe('DCS screen setup', () => {
       { kind: 'removed', text: '\tx = 5900;' },
       { kind: 'added', text: '\tx = 5896;' },
     ]);
-    await expect(app.invoke('dcs-setup:applyScreens', { setup })).rejects.toThrow(
-      /dcs.screens.edited/
-    );
+    await expect(
+      app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true })
+    ).rejects.toThrow(/dcs.screens.edited/);
     expect(await fs.readFile(rigReadyLua(), 'utf8')).toBe(edited);
 
     const journalBefore = await app.ports.files.journal();
-    await app.invoke('dcs-setup:applyScreens', { setup, overwriteEdited: true });
+    await app.invoke('dcs-setup:applyScreens', {
+      setup,
+      pairingChecked: true,
+      overwriteEdited: true,
+    });
     expect(await fs.readFile(rigReadyLua(), 'utf8')).toBe(preview.lua);
     const journalAfter = await app.ports.files.journal();
     expect(
@@ -244,7 +254,9 @@ describe('DCS screen setup', () => {
     app.ports.state.processes.push({ pid: 4242, name: 'DCS.exe', path: 'C:\\DCS\\bin\\DCS.exe' });
     const preview = await app.invoke<ScreensPreview>('dcs-setup:previewScreens', { setup });
     expect(preview.dcsRunning).toBe(true);
-    await expect(app.invoke('dcs-setup:applyScreens', { setup })).rejects.toThrow(/dcs.running/);
+    await expect(
+      app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true })
+    ).rejects.toThrow(/dcs.running/);
     expect(await app.ports.files.exists(rigReadyLua())).toBe(false);
   });
 
@@ -256,9 +268,9 @@ describe('DCS screen setup', () => {
     expect(preview.errors).toEqual([
       'F/A-18C Hornet: the monitor for Left DDI is not part of this monitor layout.',
     ]);
-    await expect(app.invoke('dcs-setup:applyScreens', { setup })).rejects.toThrow(
-      /dcs.screens.invalid/
-    );
+    await expect(
+      app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true })
+    ).rejects.toThrow(/dcs.screens.invalid/);
   });
 
   it('matches SimAppPro screens only in a layout that has them', async () => {
@@ -301,7 +313,7 @@ describe("the user's names for the monitors", () => {
     app = await wiredApp('flying-fresh', { files: FILES });
     // Saved while the screens still had Windows' names.
     const setup = await importedSetup();
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     expect(setup.desktop.filter((d) => d.name === 'USB_Monitor')).toHaveLength(3);
 
     const ids = await nameSmallScreens(['MFD left', 'MFD centre', 'MFD right']);

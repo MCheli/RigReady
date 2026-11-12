@@ -49,7 +49,15 @@ const pair = (page: Page, planId: string) =>
   page.locator(`[data-testid="screens-pair"][data-plan="${planId}"]`);
 const mapDisplay = (page: Page, name: string) =>
   page.locator(`[data-testid="screen-map-display"][data-name="${name}"]`);
-const viewportAt = (name: string, x: number): RegExp => new RegExp(`${name} =\\s*\\{\\s*x = ${x};`);
+const viewportAt = (name: string, x: number, y?: number): RegExp =>
+  new RegExp(`${name} =\\s*\\{\\s*x = ${x};${y === undefined ? '' : `\\s*y = ${y};`}`);
+/** One side of the crop of a display, and all four as the tab shows them: left, top, right, bottom. */
+const crop = (page: Page, name: string, side: string) =>
+  page.locator(`[data-testid="screens-crop-${name}-${side}"] input`);
+const crops = (page: Page, name: string): Promise<string[]> =>
+  Promise.all(
+    ['left', 'top', 'right', 'bottom'].map((side) => crop(page, name, side).inputValue())
+  );
 
 test("dcs-screens: the screens carry the user's names, and SimAppPro's plan follows the names, is shown, corrected and only then written", async ({
   rig,
@@ -102,19 +110,36 @@ test("dcs-screens: the screens carry the user's names, and SimAppPro's plan foll
   );
   await expect(page.getByTestId('screens-apply')).toBeDisabled();
 
+  // Before looking at the pairing the user works on the setup: the top of the left
+  // display's picture is set by hand, and the centre display is taken off its screen.
+  await expect(crop(page, 'LEFT_MFCD', 'top')).toHaveValue('256');
+  await crop(page, 'LEFT_MFCD', 'top').fill('240');
+  await choose(page, 'screens-monitor-CENTER_MFCD', 'Not shown');
+  await expect(lua).toContainText(viewportAt('LEFT_MFCD', 5128, 240));
+  await expect(lua).not.toContainText('CENTER_MFCD =');
+
   // The user puts one right by hand: the two screens change places, and it is their word now.
   await choose(page, 'screens-pair-monitor-002', 'MFD right');
   await expect(pair(page, '002')).toHaveAttribute('data-how', 'chosen');
   await expect(pair(page, '002')).toContainText('You chose this screen.');
   await expect(page.getByTestId('screens-pair-monitor-004')).toContainText('MFD left');
   await expect(pair(page, '004')).toHaveAttribute('data-how', 'chosen');
-  await expect(lua).toContainText(viewportAt('LEFT_MFCD', 6664));
-  await expect(lua).toContainText(viewportAt('RIGHT_MFCD', 5128));
+  await expect(lua).toContainText(viewportAt('LEFT_MFCD', 6664, 240));
+  await expect(lua).toContainText(viewportAt('RIGHT_MFCD', 5128, 256));
+  // Only the pairing changed. The crop went with its display to the screen of the same
+  // size, and the display the user took off is still off.
+  expect(await crops(page, 'LEFT_MFCD')).toEqual(['8', '240', '8', '6']);
+  await expect(page.getByTestId('screens-monitor-LEFT_MFCD')).toContainText('MFD right');
+  await expect(page.getByTestId('screens-monitor-CENTER_MFCD')).toContainText('Not shown');
+  await expect(lua).not.toContainText('CENTER_MFCD =');
+  await expect(page.getByTestId('screens-pairing-note')).toHaveCount(0);
   await shot('corrected-by-hand');
-  // And back, as the names had it.
+  // And back, as the names had it: the user's crop comes back with the display.
   await choose(page, 'screens-pair-monitor-002', 'MFD left');
   await expect(page.getByTestId('screens-pair-monitor-004')).toContainText('MFD right');
-  await expect(lua).toContainText(viewportAt('LEFT_MFCD', 5128));
+  await expect(lua).toContainText(viewportAt('LEFT_MFCD', 5128, 240));
+  expect(await crops(page, 'LEFT_MFCD')).toEqual(['8', '240', '8', '6']);
+  await choose(page, 'screens-monitor-CENTER_MFCD', 'MFD centre');
   // None of this wrote anything.
   await expect(fs.access(written)).rejects.toThrow();
 
@@ -130,12 +155,61 @@ test("dcs-screens: the screens carry the user's names, and SimAppPro's plan foll
     "DCS uses RigReady's screen setup"
   );
   const file = await fs.readFile(written, 'utf8');
-  expect(file).toMatch(viewportAt('LEFT_MFCD', 5128));
+  // What the user set before correcting the pairing is what was written.
+  expect(file).toMatch(viewportAt('LEFT_MFCD', 5128, 240));
   expect(file).toMatch(viewportAt('CENTER_MFCD', 5896));
   expect(file).toMatch(viewportAt('RIGHT_MFCD', 6664));
   // The aircraft is named once above its displays, not before every one.
   expect(file.match(/-- F\/A-18C Hornet/g)).toHaveLength(1);
   await shot('written');
+});
+
+test('dcs-screens: the question about the pairing is asked again when another monitor layout is chosen', async ({
+  rig,
+}) => {
+  // One small screen is back in landscape, so the tab has two layouts to offer: the monitors
+  // as they are now, and the layout saved with the F/A-18C setup.
+  const run = await rig.launch('dcs-setup-mfd-rotated', 'dcs-screens-layout');
+  const { page, shot, home } = run;
+  const written = path.join(home, 'Saved Games', 'DCS', 'Config', 'MonitorSetup', 'RigReady.lua');
+  await page.getByTestId('mode-configure').click();
+  await openScreens(page);
+  const panel = page.getByTestId('screens-pairing');
+  await expect(panel).toHaveAttribute('data-certain', 'false');
+  await expect(panel).toHaveAttribute('data-from-service', 'false');
+  const layouts = ['Layout of the setup "DCS F/A-18C"', 'Monitors as they are now'];
+  const shown = (await page.getByTestId('screens-layout').textContent()) ?? '';
+  const first = layouts.find((l) => shown.includes(l))!;
+  const other = layouts.find((l) => l !== first)!;
+
+  // The pairing was made for the layout the plan was read into. With another layout the
+  // page no longer has it, and RigReady still will not write a pairing nobody looked at:
+  // it asks again, with what it was not sure of.
+  await choose(page, 'screens-layout', other);
+  await expect(panel).toHaveAttribute('data-from-service', 'true');
+  await expect(panel).toContainText(
+    "RigReady could not be sure of every screen when it read the plan. Look at each one, then say they are right. To change which screen is which, import SimAppPro's plan again."
+  );
+  await expect(page.getByTestId('screens-pair-monitor-002')).toHaveClass(/v-input--disabled/);
+  await expect(page.getByTestId('screens-blocked')).toHaveText(
+    'Check which screen is which first.'
+  );
+  await expect(page.getByTestId('screens-apply')).toBeDisabled();
+  await panel.scrollIntoViewIfNeeded();
+  await shot('asked-again');
+
+  // Back on the first layout the question still stands, until the user answers it.
+  await choose(page, 'screens-layout', first);
+  await expect(panel).toHaveAttribute('data-from-service', 'true');
+  await expect(page.getByTestId('screens-apply')).toBeDisabled();
+  await expect(fs.access(written)).rejects.toThrow();
+  await page.getByTestId('screens-pairing-confirm').click();
+  await expect(page.getByTestId('screens-pairing-checked')).toHaveText('You checked these.');
+  await expect(page.getByTestId('screens-blocked')).toHaveCount(0);
+  await page.getByTestId('screens-apply').click();
+  await expect(page.getByTestId('screens-done')).toContainText('Created RigReady.lua');
+  await fs.access(written);
+  await shot('written-after-answer');
 });
 
 test('dcs-screens: a crop goes with its display to a screen of the same size, and the tab says so when it cannot', async ({
@@ -145,21 +219,17 @@ test('dcs-screens: a crop goes with its display to a screen of the same size, an
   const { page, shot } = run;
   await nameScreens(page);
   await openScreens(page);
-  const crop = (name: string, side: string) =>
-    page.locator(`[data-testid="screens-crop-${name}-${side}"] input`);
-  const crops = async (name: string): Promise<string[]> =>
-    Promise.all(['left', 'top', 'right', 'bottom'].map((side) => crop(name, side).inputValue()));
 
   // SimAppPro's plan crops each display to the glass behind the bezel. The user sets the
   // top of the left one by hand.
-  await expect(crop('LEFT_MFCD', 'top')).toHaveValue('256');
-  await crop('LEFT_MFCD', 'top').fill('240');
-  expect(await crops('LEFT_MFCD')).toEqual(['8', '240', '8', '6']);
+  await expect(crop(page, 'LEFT_MFCD', 'top')).toHaveValue('256');
+  await crop(page, 'LEFT_MFCD', 'top').fill('240');
+  expect(await crops(page, 'LEFT_MFCD')).toEqual(['8', '240', '8', '6']);
 
   // The centre screen is freed and the left display moves there: same size, same crop.
   await choose(page, 'screens-monitor-CENTER_MFCD', 'Not shown');
   await choose(page, 'screens-monitor-LEFT_MFCD', 'MFD centre');
-  expect(await crops('LEFT_MFCD')).toEqual(['8', '240', '8', '6']);
+  expect(await crops(page, 'LEFT_MFCD')).toEqual(['8', '240', '8', '6']);
   await expect(page.getByTestId('screens-crop-note')).toHaveCount(0);
   await page.getByTestId('screens-show-lua').click();
   await expect(page.getByTestId('screens-lua')).toContainText(
@@ -169,14 +239,14 @@ test('dcs-screens: a crop goes with its display to a screen of the same size, an
 
   // A display taken off its screen and put back has its crop again.
   await choose(page, 'screens-monitor-RIGHT_MFCD', 'Not shown');
-  await expect(crop('RIGHT_MFCD', 'top')).toHaveCount(0);
+  await expect(crop(page, 'RIGHT_MFCD', 'top')).toHaveCount(0);
   await choose(page, 'screens-monitor-RIGHT_MFCD', 'MFD right');
-  expect(await crops('RIGHT_MFCD')).toEqual(['8', '256', '8', '6']);
+  expect(await crops(page, 'RIGHT_MFCD')).toEqual(['8', '256', '8', '6']);
   await expect(page.getByTestId('screens-crop-note')).toHaveCount(0);
 
   // The wide screen is another size: the crop cannot mean the same there, and the tab says so.
   await choose(page, 'screens-monitor-LEFT_MFCD', 'LC49G95T');
-  expect(await crops('LEFT_MFCD')).toEqual(['0', '0', '0', '0']);
+  expect(await crops(page, 'LEFT_MFCD')).toEqual(['0', '0', '0', '0']);
   await expect(page.getByTestId('screens-crop-note')).toHaveText(
     'The crop was not kept: LC49G95T is 5120 × 1440 and the screen it was set for is 768 × 1024. Set it again here.'
   );

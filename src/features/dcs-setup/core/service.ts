@@ -12,6 +12,7 @@ import type {
   ExportState,
   MonitorSetupFileView,
   Overview,
+  PlanPairing,
   ScreensPreview,
   ScreensState,
   SimAppProState,
@@ -43,12 +44,14 @@ import {
   type MonitorSetupFile,
 } from './monitorFiles';
 import { describeChange, editOptions, readOptions, type DcsOptions } from './options';
+import { describeUnsure, uncertainPlacements, usesUnchecked } from './pairingChange';
 import {
   boundingBox,
   displayLabel,
   generateSetup,
   MONITOR_SETUP_NAME,
   MONITOR_SETUP_OPTION,
+  monitorLabels,
   type DesktopDisplay,
   type Rect,
   type ScreenSetup,
@@ -165,6 +168,16 @@ export class DcsSetupService {
   constructor(private readonly ctx: ServiceContext) {
     this.store = createStateStore(ctx.ports.files, ctx.ports.folders.dataRoot());
   }
+
+  /**
+   * The last import from SimAppPro, while it was not certain of a pairing and nobody has
+   * said the pairing is right: what it put on the monitors it was not sure of. applyScreens
+   * refuses those placements until the user has checked the pairing, so the rule holds for
+   * every caller and not only for the page. Kept in memory on purpose: it is about the
+   * import somebody is looking at now, and what is applied is saved and not asked about
+   * again. One holder for the service and its per-setup copies (for()).
+   */
+  private readonly unchecked: { last?: { pairing: PlanPairing; placements: string[] } } = {};
 
   /** The setup this instance works for, when a check or fix of a setup is running. */
   private profile: RunProfile | undefined;
@@ -658,19 +671,36 @@ export class DcsSetupService {
     if (!imported.ok) return err('simapppro.plan', imported.message);
     const primary = desktop.displays.find((d) => d.primary) ?? desktop.displays[0]!;
     const paths = await this.paths();
+    const setup: ScreenSetup = {
+      mainDisplayIds: imported.plan.mainDisplayIds.length
+        ? imported.plan.mainDisplayIds
+        : [primary.id],
+      aircraft: imported.plan.aircraft,
+      desktop: desktop.displays,
+      desktopLabel: desktop.label,
+    };
+    const pairing = { certain: imported.plan.certain, screens: imported.plan.screens };
+    // Remembered until somebody has looked at it: see `unchecked`.
+    this.unchecked.last = pairing.certain
+      ? undefined
+      : { pairing, placements: uncertainPlacements(setup, pairing.screens) };
     return ok({
-      setup: {
-        mainDisplayIds: imported.plan.mainDisplayIds.length
-          ? imported.plan.mainDisplayIds
-          : [primary.id],
-        aircraft: imported.plan.aircraft,
-        desktop: desktop.displays,
-        desktopLabel: desktop.label,
-      },
+      setup,
       unmatched: imported.plan.unmatched,
       catalog: await this.screenCatalog(paths.ok ? paths.value : undefined, imported.plan.catalog),
-      pairing: { certain: imported.plan.certain, screens: imported.plan.screens },
+      pairing,
     });
+  }
+
+  /**
+   * The unchecked import a setup still uses a doubtful pairing of, when there is one: what
+   * applyScreens refuses for, and what a preview hands the caller to show the user.
+   */
+  private async pairingToCheck(setup: ScreenSetup): Promise<PlanPairing | undefined> {
+    const last = this.unchecked.last;
+    if (!last) return undefined;
+    const inUse = (await this.state()).screens;
+    return usesUnchecked(last.placements, setup, inUse) ? last.pairing : undefined;
   }
 
   /**
@@ -734,6 +764,7 @@ export class DcsSetupService {
   async previewScreens(input: {
     setup: ScreenSetup;
     setResolution: boolean;
+    pairingChecked?: boolean;
   }): Promise<Result<ScreensPreview>> {
     const paths = await this.paths();
     if (!paths.ok) return paths;
@@ -757,7 +788,10 @@ export class DcsSetupService {
       if (edited.ok) optionChanges = edited.value.changes.map(describeChange);
       else errors.push(`options.lua cannot be changed safely: ${edited.error.message}`);
     }
+    // Present exactly when applying this, as it was asked, would be refused for the pairing.
+    const toCheck = input.pairingChecked ? undefined : await this.pairingToCheck(input.setup);
     return ok({
+      ...(toCheck ? { pairingToCheck: toCheck } : {}),
       lua: generated.lua,
       window: generated.window,
       errors,
@@ -772,12 +806,28 @@ export class DcsSetupService {
     });
   }
 
-  /** Writes RigReady.lua and selects it in options.lua: one undoable action, read back before reporting. */
+  /**
+   * Writes RigReady.lua and selects it in options.lua: one undoable action, read back
+   * before reporting. Refuses a setup that uses a pairing the last import from SimAppPro
+   * was not sure of until the user has said the pairing is right (`pairingChecked`): a
+   * wrong pairing puts every display of that screen on another screen, and nothing on disk
+   * would show it.
+   */
   async applyScreens(input: {
     setup: ScreenSetup;
     setResolution: boolean;
     overwriteEdited: boolean;
+    pairingChecked?: boolean;
   }): Promise<Result<{ message: string; changes: string[] }>> {
+    const toCheck = input.pairingChecked ? undefined : await this.pairingToCheck(input.setup);
+    if (toCheck) {
+      const labels = monitorLabels(input.setup.desktop);
+      const unsure = describeUnsure(toCheck.screens, (id) => labels.get(id) ?? 'a monitor');
+      return err(
+        'dcs.screens.pairing',
+        `Check which screen is which first. RigReady was not sure of these when it read SimAppPro's plan: ${unsure}.`
+      );
+    }
     const refused = await refuseWhileRunning(this.check, this.ctx.games);
     if (!refused.ok) return refused;
     const preview = await this.previewScreens(input);
@@ -851,6 +901,8 @@ export class DcsSetupService {
       },
     }));
     if (!saved.ok) return saved;
+    // The user said the pairing is right, and it is in use now: nothing is left to check.
+    if (input.pairingChecked) this.unchecked.last = undefined;
     return ok({
       message: changes.length
         ? 'DCS will use the RigReady screen setup the next time it starts'

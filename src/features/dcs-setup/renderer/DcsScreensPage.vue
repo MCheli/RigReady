@@ -27,6 +27,7 @@ import {
   type Rect,
   type ScreenSetup,
 } from '../core/screens';
+import { carryPairing } from '../core/pairingChange';
 import DiffView from './DiffView.vue';
 import ScreenMap, { type MapBox, type MapOutline } from './ScreenMap.vue';
 
@@ -54,13 +55,24 @@ const done = ref<{ message: string; changes: string[] }>();
 
 // Which of SimAppPro's screens is which monitor. SimAppPro knows a screen only by where it
 // was when it saved its plan, so the pairing is shown and, when it is not certain, has to be
-// checked before the setup can be used.
+// checked before the setup can be used. The service holds the same rule for every caller
+// (dcs-setup:applyScreens refuses without pairingChecked); the page asks before it gets there.
 const pairing = ref<PlanPairing>();
 /** The user's own pairing: SimAppPro's screen id to a monitor id, or null for "not shown". */
 const pairs = ref<Record<string, string | null>>({});
 const pairingChecked = ref(false);
 /** The layout the plan was last imported into: a correction is made for the same one. */
 const importedInto = ref('current');
+/** The setup exactly as the last import made it: what a correction is compared with, so edits made since are kept. */
+const importedSetup = ref<ScreenSetup>();
+/**
+ * True when the pairing on the page is not from an import this page made: the service said
+ * the setup uses a pairing nobody checked (the preview's pairingToCheck). It can be looked
+ * at and said to be right here; changing it takes a new import.
+ */
+const pairingFromService = ref(false);
+/** Said in the pairing panel when a correction could not keep a crop the user had set. */
+const pairingNotes = ref<string[]>([]);
 const mustCheckPairing = computed(
   () => !!pairing.value && !pairing.value.certain && !pairingChecked.value
 );
@@ -148,8 +160,10 @@ async function importPlan(automatic = false, corrected = false): Promise<boolean
         id: string;
       }
     | undefined;
+  let asked: string | undefined;
   for (const id of ids) {
     const result = await api.importSimAppPro({ desktopId: id, pairs: pairs.value });
+    asked = id;
     if (!result.ok) {
       if (!automatic) error.value = errorText(result.error);
       return false;
@@ -161,16 +175,38 @@ async function importPlan(automatic = false, corrected = false): Promise<boolean
     }
   }
   if (!fallback) return false;
+  if (fallback.id !== asked) {
+    // No layout has all the screens, so the first one tried is shown. The service asks about
+    // the pairing of its last import: make that the one on the page.
+    const again = await api.importSimAppPro({ desktopId: fallback.id, pairs: pairs.value });
+    if (again.ok) fallback = { ...again.value, id: fallback.id };
+  }
   if (state.value) state.value.catalog = fallback.catalog;
-  setup.value = fallback.setup.aircraft.length
-    ? fallback.setup
-    : { ...fallback.setup, aircraft: startingAircraft() };
+  const before = importedSetup.value;
+  if (corrected && before && setup.value) {
+    // Only the pairing changes. What was done to the setup since the import (a crop, a
+    // display moved or taken off, an aircraft added) stays: core/pairingChange.ts.
+    const unit = aircraft.value?.unit;
+    const mine = JSON.parse(JSON.stringify(setup.value)) as ScreenSetup;
+    const carried = carryPairing(before, fallback.setup, mine);
+    setup.value = carried.setup;
+    pairingNotes.value = carried.notes;
+    const at = carried.setup.aircraft.findIndex((a) => a.unit === unit);
+    aircraftIndex.value = at >= 0 ? at : 0;
+  } else {
+    setup.value = fallback.setup.aircraft.length
+      ? fallback.setup
+      : { ...fallback.setup, aircraft: startingAircraft() };
+    pairingNotes.value = [];
+    showAircraftInUse();
+  }
+  importedSetup.value = structuredClone(fallback.setup);
   desktopId.value = fallback.id;
   importedInto.value = fallback.id;
   pairing.value = fallback.pairing;
+  pairingFromService.value = false;
   pairingChecked.value = false;
   cropNote.value = undefined;
-  showAircraftInUse();
   notes.value = fallback.unmatched;
   const planes = fallback.setup.aircraft.map((a) => a.label).join(', ');
   started.value = planes
@@ -181,7 +217,8 @@ async function importPlan(automatic = false, corrected = false): Promise<boolean
 
 /**
  * The user says which monitor one of SimAppPro's screens is. When another of its screens had
- * that monitor, the two change places: one choice puts two swapped screens right.
+ * that monitor, the two change places: one choice puts two swapped screens right. The plan
+ * is read again with the new pairing, and only what the pairing moves changes in the setup.
  */
 async function pairWith(planId: string, displayId: string | null): Promise<void> {
   const screens = pairing.value?.screens ?? [];
@@ -429,11 +466,25 @@ async function refreshPreview(): Promise<void> {
   const result = await api.previewScreens({
     setup: setup.value,
     setResolution: setResolution.value,
+    pairingChecked: pairingChecked.value,
   });
   if (request !== previewRequest) return;
   previewPending.value = false;
-  if (result.ok) preview.value = result.value;
-  else error.value = errorText(result.error);
+  if (!result.ok) {
+    error.value = errorText(result.error);
+    return;
+  }
+  preview.value = result.value;
+  // The service would refuse this setup for a pairing nobody checked, and the page is not
+  // asking about one (another layout was chosen since the import, or the import was not
+  // made here): show that pairing, so the question is asked before the button is pressed.
+  const toCheck = result.value.pairingToCheck;
+  if (toCheck && !(pairing.value && !pairing.value.certain)) {
+    pairing.value = toCheck;
+    pairingFromService.value = true;
+    pairingChecked.value = false;
+    pairingNotes.value = [];
+  }
 }
 
 async function apply(overwriteEdited = false): Promise<void> {
@@ -450,6 +501,7 @@ async function apply(overwriteEdited = false): Promise<void> {
     setup: setup.value,
     setResolution: setResolution.value,
     overwriteEdited,
+    pairingChecked: pairingChecked.value,
   });
   busy.value = false;
   if (!result.ok) {
@@ -459,6 +511,8 @@ async function apply(overwriteEdited = false): Promise<void> {
   done.value = result.value;
   started.value = undefined;
   pairing.value = undefined;
+  pairingChecked.value = false;
+  pairingNotes.value = [];
   notifyMachineChanged();
   await load();
   desktopId.value = 'saved';
@@ -583,6 +637,7 @@ onBeforeUnmount(() => {
         data-testid="screens-pairing"
         :data-certain="pairing.certain"
         :data-checked="pairingChecked"
+        :data-from-service="pairingFromService"
       >
         <div class="scr-pairing-head">
           <div class="rr-row-main">
@@ -591,6 +646,11 @@ onBeforeUnmount(() => {
               SimAppPro knows a screen only by where it was on the desktop when it saved its plan.
               <template v-if="pairing.certain">
                 RigReady could tell every screen apart. Change one here if it is wrong.
+              </template>
+              <template v-else-if="pairingFromService">
+                RigReady could not be sure of every screen when it read the plan. Look at each one,
+                then say they are right. To change which screen is which, import SimAppPro's plan
+                again.
               </template>
               <template v-else>
                 RigReady could not be sure of every screen. Look at each one, put right what is
@@ -625,10 +685,19 @@ onBeforeUnmount(() => {
             density="compact"
             hide-details
             class="scr-monitor"
+            :disabled="pairingFromService"
             :aria-label="`Monitor for ${s.shows.join(', ') || `screen ${s.planId}`}`"
             :data-testid="`screens-pair-monitor-${s.planId}`"
             @update:model-value="pairWith(s.planId, $event)"
           />
+        </div>
+        <div
+          v-for="n in pairingNotes"
+          :key="n"
+          class="rr-row-sub rr-warn scr-pairing-note"
+          data-testid="screens-pairing-note"
+        >
+          <v-icon icon="mdi-alert" size="14" /> {{ n }}
         </div>
         <div v-if="!pairing.certain" class="scr-pairing-foot">
           <span v-if="pairingChecked" class="rr-ok" data-testid="screens-pairing-checked">
@@ -1064,6 +1133,10 @@ onBeforeUnmount(() => {
 }
 .scr-pair-note {
   margin-top: 2px;
+}
+.scr-pairing-note {
+  padding: 6px 0;
+  border-top: 1px solid var(--rr-border);
 }
 .scr-pairing-foot {
   display: flex;
