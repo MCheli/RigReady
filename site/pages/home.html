@@ -1,25 +1,64 @@
 <section class="hero" aria-labelledby="hero-title">
   <div class="wrap">
-    <div class="hero-copy">
-      <h1 id="hero-title">
-        <span>Less time on rig chores.</span>
-        <span>More time flying and racing.</span>
-      </h1>
-      <p class="lead">
-        RigReady is a free Windows app for flight and racing sim rigs. It does the work around the
-        game: setting up your controls and screens, learning what every button does, getting
-        everything running before you launch, and putting your desk back after.
-      </p>
-      <div class="actions">{{HERO_ACTIONS}}</div>
+    <div class="hero-top">
+      <div class="hero-copy">
+        <h1 id="hero-title">
+          <span>Less time on rig chores.</span>
+          <span>More time flying and racing.</span>
+        </h1>
+        <p class="lead">
+          RigReady is a free Windows app for flight and racing sim rigs. It does the work around the
+          game: setting up your controls and screens, learning what every button does, getting
+          everything running before you launch, and putting your desk back after.
+        </p>
+        <div class="actions">{{HERO_ACTIONS}}</div>
+      </div>
+
+      <div class="stage" aria-label="Screenshots of RigReady">
+        <figure class="stage-shot stage-back-left">
+          <button type="button" class="shot" data-lightbox>
+            <img
+              src="/img/screens/cheat-sheets.webp"
+              width="1250"
+              height="821"
+              alt="A cheat sheet for a WinWing joystick in the F/A-18C, with a label beside every button"
+            />
+          </button>
+          <figcaption class="chip chip-controls">Cheat sheet</figcaption>
+        </figure>
+        <figure class="stage-shot stage-back-right">
+          <button type="button" class="shot" data-lightbox>
+            <img
+              src="/img/screens/input-tester.webp"
+              width="1250"
+              height="821"
+              alt="The input tester following a joystick: a plot of two axes together and a trace per axis"
+            />
+          </button>
+          <figcaption class="chip chip-troubleshoot">Input tester</figcaption>
+        </figure>
+        <figure class="stage-shot stage-front">
+          <button type="button" class="shot" data-lightbox>
+            <img
+              src="/img/screens/play-not-ready.webp"
+              width="1250"
+              height="821"
+              fetchpriority="high"
+              alt="The Play screen for a DCS F/A-18C setup: not ready, with four problems and a fix beside each"
+            />
+          </button>
+          <figcaption class="chip chip-ready">The Play screen</figcaption>
+        </figure>
+      </div>
     </div>
 
     <ol
-      class="stages"
+      class="steps"
       id="features"
       aria-label="What RigReady does, from setting up to putting away"
     >
-      <li class="stage">
-        <button type="button" class="shot stage-shot" data-lightbox>
+      <li class="step">
+        <button type="button" class="shot step-shot" data-lightbox>
           <img
             src="/img/screens/bindings.webp"
             width="1250"
@@ -27,7 +66,7 @@
             alt="Bindings with its Game picker open, offering DCS and iRacing"
           />
         </button>
-        <div class="stage-body">
+        <div class="step-body">
           <h2>Set it up</h2>
           <p>
             Bind your controls for DCS and iRacing, with a preview first and Undo after, helped by
@@ -35,11 +74,11 @@
             layouts, DCS's MFD screens and Export.lua without SimAppPro, and iRacing's control
             profiles.
           </p>
-          <a class="stage-link" href="/docs/controls/">Bindings in the manual</a>
+          <a class="step-link" href="/docs/controls/">Bindings in the manual</a>
         </div>
       </li>
-      <li class="stage">
-        <button type="button" class="shot stage-shot" data-lightbox>
+      <li class="step">
+        <button type="button" class="shot step-shot" data-lightbox>
           <img
             src="/img/screens/trainer.webp"
             width="1250"
@@ -47,7 +86,7 @@
             alt="The trainer asking for Look left in iRacing, beside a drawing of the Fanatec wheel and pedals"
           />
         </button>
-        <div class="stage-body">
+        <div class="step-body">
           <h2>Learn it</h2>
           <p>
             Cheat sheets show what every control on your stick, throttle, wheel or button box does,
@@ -55,11 +94,11 @@
             control. The overlay lists each button you press and what it does in that aircraft or
             car.
           </p>
-          <a class="stage-link" href="/docs/controls/trainer/">The trainer in the manual</a>
+          <a class="step-link" href="/docs/controls/trainer/">The trainer in the manual</a>
         </div>
       </li>
-      <li class="stage">
-        <button type="button" class="shot stage-shot" data-lightbox>
+      <li class="step">
+        <button type="button" class="shot step-shot" data-lightbox>
           <img
             src="/img/screens/play-not-ready.webp"
             width="1250"
@@ -67,7 +106,7 @@
             alt="The Play screen for a DCS F/A-18C setup: not ready, with four problems and a fix beside each"
           />
         </button>
-        <div class="stage-body">
+        <div class="step-body">
           <h2>Launch</h2>
           <p>
             One check before the session covers the stick and throttle or wheel and pedals, helper
@@ -75,11 +114,11 @@
             order, and starts the game. When a control acts up, the input tester, health check and
             USB map help find out why.
           </p>
-          <a class="stage-link" href="/docs/play/">The Play screen in the manual</a>
+          <a class="step-link" href="/docs/play/">The Play screen in the manual</a>
         </div>
       </li>
-      <li class="stage">
-        <button type="button" class="shot stage-shot" data-lightbox>
+      <li class="step">
+        <button type="button" class="shot step-shot" data-lightbox>
           <img
             src="/img/screens/stand-down-countdown.webp"
             width="1250"
@@ -87,19 +126,19 @@
             alt="DCS World has closed and Stand down counts down from 59 seconds, with Cancel"
           />
         </button>
-        <div class="stage-body">
+        <div class="step-body">
           <h2>Put it away</h2>
           <p>
             After the session, Stand down closes the helper apps and puts your monitors back in the
             desk layout. It can run by itself when the game closes, after a countdown you can
             cancel.
           </p>
-          <a class="stage-link" href="/docs/play/stand-down/">Stand down in the manual</a>
+          <a class="step-link" href="/docs/play/stand-down/">Stand down in the manual</a>
         </div>
       </li>
     </ol>
 
-    <p class="stages-note">
+    <p class="steps-note">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6z" />
         <path d="m8.8 12.2 2.3 2.3 4.3-4.6" />
