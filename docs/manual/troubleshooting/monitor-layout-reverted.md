@@ -10,7 +10,7 @@ A monitor layout RigReady applies is on probation until you have kept it once. A
 
 After a layout is applied on the Monitors page or from the [command palette](../app/command-palette.md), a dialog asks **Keep this monitor layout?** and counts down: **Keep it** keeps it, **Go back** reverts at once, and no answer puts the previous arrangement back when the countdown ends. The time is the **Monitor layout revert timer** in [Settings](../app/settings.md), 15 seconds by default, and at least 60 seconds when an AI assistant asked for the change. The prompt, and why it is there, are described under [Keep it or go back](../monitors-and-audio/layouts.md#keep-it-or-go-back).
 
-A fix on the Play screen, **Make ready** and **Stand down** ask the same question the first time they use a layout on this PC. Once you have kept it, with the same monitors connected, they apply it without asking. They ask again after the layout is edited or replaced, or after a monitor is added, removed or moved to another connector ([When RigReady asks, and when it does not](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)).
+A fix on the Play screen, **Make ready** and **Stand down** ask the same question the first time they use a layout on this PC. Once you have kept it, with the same monitors connected, they apply it without asking; **Replace with the monitors as they are now** on the Monitors page counts as keeping it. They ask again after the layout is edited, or after a monitor is added, removed or moved to another connector ([When RigReady asks, and when it does not](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)).
 
 The Monitors page does not call a layout applied when it went back: it says, for example, ""Flying" was not kept. The monitors are back the way they were."
 
@@ -25,6 +25,12 @@ If the new layout switched off the screen you were looking at, or put the window
 **Make ready** and **Make ready and launch** apply the setup's layout as one of their steps. When the layout was not kept on this PC before, they then wait for your answer. Nothing else happens until you keep it or go back, and the game is not launched; if you do not answer, the layout goes back and the run says so. Run Make ready again and answer the question. After you have kept it once, the same run goes through without the question.
 
 ![A layout applied, waiting for the answer](../../../artifacts/screens/shell-commands/01-layout-applied-waiting.png)
+
+## Stand down went back to the game's layout
+
+When Stand down runs by itself after the game closes, it applies the desk layout. If that layout has not been kept with the monitors connected now (often after swapping the flight gear for the racing gear), Stand down asks **Keep this monitor layout?**, and with nobody there the layout goes back. The screens then stay as the game left them, and Stand down says: "Desk monitor layout: The new monitor layout was not kept, so the previous one is back. Next time, stay for the question and press Keep it."
+
+The countdown before it warns you: "The desk layout "Desk" has not been kept with these monitors yet. Stay and press Keep it when RigReady asks, or the monitors stay as they are." To put the desk layout back now, press **Stand down** and then **Keep it**. With these monitors it is not asked about again. See [Stand down when the game closes](../play/stand-down.md#stand-down-when-the-game-closes).
 
 ## "Put the earlier monitor layout back?"
 

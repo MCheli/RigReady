@@ -32,7 +32,7 @@ export class DisplaysService {
     private readonly ctx: Ctx,
     private readonly names: MonitorNameStore,
     private readonly recoveryStore: RecoveryStore,
-    private readonly applier: Pick<LayoutApplier, 'apply' | 'applyAndWait'>,
+    private readonly applier: Pick<LayoutApplier, 'apply' | 'applyAndWait' | 'seen'>,
     private readonly upright?: UprightStore
   ) {}
 
@@ -249,7 +249,16 @@ export class DisplaysService {
     const connected = new Set(now.map((t) => t.id));
     const kept = existing.value.displays.filter((d) => !connected.has(d.id.toLowerCase()));
     const replaced = await this.ctx.layouts.replace(id, [...now, ...kept]);
-    return replaced.ok ? this.view() : replaced;
+    if (!replaced.ok) return replaced;
+    // Nothing was applied, and the person who pressed this is looking at the monitors as
+    // the layout now holds them: that counts as kept with these monitors (proven.ts). The
+    // targets are the ones Make ready and Stand down would apply; a layout that is not
+    // exactly the monitors as they are is not remembered, and is asked about as before.
+    const analysis = analyzeLayout(replaced.value.displays, current.value.displays);
+    if (analysis.changes.length === 0 && analysis.problems.length === 0) {
+      await this.applier.seen(analysis.targets, current.value.displays);
+    }
+    return this.view();
   }
 
   async editLayout(id: string, displays: DisplayTarget[]): Promise<Result<DisplaysView>> {
