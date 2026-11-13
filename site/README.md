@@ -38,13 +38,13 @@ RELEASES_JSON=file.json node site/build.mjs   # offline, with a saved copy of th
 
 ## Screenshots
 
-`img/screens/` (the home page, listed in `screens.json`) and `img/guide/` (every picture in `docs/manual/`) are tidied copies of scenario screenshots from `artifacts/screens/`. To refresh them after the scenarios or the manual's pictures change:
+`img/screens/` (the home page, listed in `screens.json`; the repository's README shows some of the same copies) and `img/guide/` (every picture in `docs/manual/`) are tidied copies of scenario screenshots from `artifacts/screens/`. To refresh them after the scenarios or the manual's pictures change:
 
 ```
 python site/tools/screens.py            # needs Pillow
 ```
 
-It paints over the test-only parts of the app's header (the scenario banner and the dev version) and cuts off the scrollbar. Look at the results before committing them. A picture added to the manual without a tidied copy still appears on the site, as the raw capture, and the build says so.
+It paints over the test-only parts of the app's header (the scenario banner and the dev version) and cuts off the scrollbar, on the usual window and on a larger capture of the app alike, and removes copies nothing names any more. Look at the results before committing them. A picture added to the manual without a tidied copy still appears on the site, as the raw capture, and the build says so.
 
 ## Hosting
 
