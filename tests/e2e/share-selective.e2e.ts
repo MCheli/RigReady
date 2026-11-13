@@ -202,7 +202,7 @@ test('share: Import pressed again from the keyboard while the import runs import
     'FA-18C_hornet',
     'joystick'
   );
-  const rudder = 'T-Pendular-Rudder {7F3956A0-B756-11f0-801B-444553540000}';
+  const rudder = 'T-Pendular-Rudder {0F1424B4-D566-14a0-801B-444553540000}';
   await fs.appendFile(path.join(joystick, `${rudder}.diff.lua`), '\n-- changed on this PC\n');
   await openImport(page);
   await expect(page.getByTestId('import-conflict')).toBeVisible();
