@@ -278,6 +278,8 @@ describe('audio capture', () => {
         { flow: 'recording', ...HEADSET_MIC, role: 'both' },
       ],
     ]);
+    // The microphone says it is one, so a setup for a game without a radio leaves it out.
+    expect(result.value.map((c) => c.microphone)).toEqual([undefined, undefined, true]);
     // Every proposed check passes right now, and its fix is the matching set-default.
     for (const candidate of result.value) {
       const params = AudioParamsSchema.parse(candidate.check.params);

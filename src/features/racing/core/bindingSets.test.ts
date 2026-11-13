@@ -231,6 +231,56 @@ describe('rim variants: a setup expects one set of bindings', () => {
     expect(await app!.invoke<Setup[]>('racing:backupSetups', { game: 'fanatec' })).toEqual([]);
   });
 
+  it('saved bindings of two games made in the same moment are both in the list, each with its game', async () => {
+    app = await wiredApp('racing-fresh');
+    const iracing = await app.invoke<BindingBackup>('racing:backup', {
+      game: 'iracing',
+      name: 'League night',
+    });
+    const lmu = await app.invoke<BindingBackup>('racing:backup', {
+      game: 'lmu',
+      name: 'League night',
+    });
+    // The id of a backup is the moment it was made: two games, one moment, one id.
+    expect(lmu.id).toBe(iracing.id);
+    const types = await app.invoke<{
+      checks: {
+        type: string;
+        pickers?: {
+          param: string;
+          choices: { value: string; label: string; detail?: string; fill?: object }[];
+        }[];
+      }[];
+    }>('profiles:types');
+    const list = types.checks
+      .find((t) => t.type === 'racing.bindingSet')!
+      .pickers!.find((p) => p.param === 'backupId')!;
+    expect(list.choices.map((c) => [c.value, c.fill])).toEqual([
+      [iracing.id, { name: 'League night', game: 'iracing' }],
+      [iracing.id, { name: 'League night', game: 'lmu' }],
+    ]);
+    // The line under each says the game, so the two are never one line twice.
+    expect(list.choices[0]!.detail).toMatch(/^iRacing, saved /);
+    expect(list.choices[1]!.detail).toMatch(/^Le Mans Ultimate, saved /);
+
+    // Each is checked against its own game's files.
+    const check = async (game: string): Promise<{ pass: boolean; summary: string }> => {
+      const definition = app!.wiring.context.checks.check('racing.bindingSet')!;
+      return definition.run(
+        definition.params.parse({ backupId: iracing.id, name: 'League night', game }),
+        app!.wiring.context
+      );
+    };
+    expect(await check('iracing')).toMatchObject({
+      pass: true,
+      summary: 'iRacing has the bindings saved as "League night"',
+    });
+    expect(await check('lmu')).toMatchObject({
+      pass: true,
+      summary: 'Le Mans Ultimate has the bindings saved as "League night"',
+    });
+  });
+
   it('compares and restores binding files only, per game', () => {
     const file = (p: string, restorable = true) => ({ path: p, restorable });
     expect(isBindingFile('iracing', file('C:\\Docs\\iRacing\\controls.cfg'))).toBe(true);

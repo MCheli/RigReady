@@ -2,6 +2,17 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { z } from 'zod';
+import {
+  choiceFor,
+  keptByDefault as isKeptByDefault,
+  offered as isOffered,
+  stepAction,
+  stepChecks,
+  stepDefault,
+  stepsFor,
+  variantsOf,
+  type CaptureChoice,
+} from '../../../core/captureDefaults';
 import type { CaptureCandidateSchema } from '../../../core/checks/engine';
 import { CHECK_GROUPS, type CheckGroup } from '../../../core/profile/schema';
 import { errorText, useClient } from '../../../renderer/ipc';
@@ -11,17 +22,9 @@ import {
   type CaptureResult,
   type CaptureStep,
 } from '../contract';
-import {
-  choiceFor,
-  keptByDefault as isKeptByDefault,
-  offered as isOffered,
-  stepAction,
-  stepDefault,
-  stepsFor,
-  type CaptureChoice,
-} from '../core/captureDefaults';
 import MonitorDiagram from './MonitorDiagram.vue';
 import { pickerItems, pickerNote, type PickerItem, type PickerNote } from './pickerForm';
+import { newSetupLaunch, steamAppOf, steamAppProblem, type LaunchKind } from './steamLaunch';
 
 /**
  * "Capture what is true right now": the rig as it is becomes a setup. The screen is the
@@ -48,6 +51,12 @@ const installDir = ref('');
 const name = ref('');
 /** Once the user types a name, choosing another game no longer replaces it. */
 const nameEdited = ref(false);
+/**
+ * The editor's three choices. A game Steam starts shows as "Through Steam" with its number;
+ * "Nothing" is a setup that only checks the rig.
+ */
+const launchKind = ref<LaunchKind>('program');
+const steamApp = ref('');
 const launchExe = ref('');
 const launchArgs = ref('');
 const launchCwd = ref('');
@@ -68,6 +77,8 @@ const trackedTouched = reactive<Record<string, boolean>>({});
 const stepOn = reactive<Record<string, boolean>>({});
 const stepValue = reactive<Record<string, string>>({});
 const stepTouched = reactive<Record<string, boolean>>({});
+/** The checks that go with a kept step, by check type: left out only when the person says so. */
+const stepCheckLeft = reactive<Record<string, boolean>>({});
 
 const candidates = computed(() => captured.value?.candidates ?? []);
 const games = computed(() => captured.value?.games ?? []);
@@ -80,15 +91,7 @@ const chosenInstall = computed(
 );
 
 /** The aircraft or cars of the chosen game that something on this PC is set up for. */
-const variants = computed(() => {
-  const seen = new Map<string, NonNullable<Candidate['variant']>>();
-  for (const candidate of candidates.value) {
-    if (candidate.variant && candidate.game === game.value && !seen.has(candidate.variant.id)) {
-      seen.set(candidate.variant.id, candidate.variant);
-    }
-  }
-  return [...seen.values()];
-});
+const variants = computed(() => variantsOf(candidates.value, game.value));
 const chosenVariant = computed(() => variants.value.find((v) => v.id === variant.value));
 
 /** The game, its family and what it is played with: what decides which rows come ticked. */
@@ -121,10 +124,43 @@ function toggle(candidate: Candidate, value: boolean | null): void {
   touched[candidate.key] = true;
 }
 
+const argsLine = (args: string[]): string =>
+  args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ');
 function setLaunch(launch: Launch | undefined): void {
   launchExe.value = launch?.exe ?? '';
-  launchArgs.value = (launch?.args ?? []).map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ');
+  launchArgs.value = argsLine(launch?.args ?? []);
   launchCwd.value = launch?.cwd ?? '';
+  steamApp.value = steamAppOf(launch) ?? '';
+  launchKind.value = steamApp.value ? 'steam' : 'program';
+}
+/** The program as the three fields have it. */
+function typedLaunch(): Launch | undefined {
+  const exe = launchExe.value.trim();
+  const cwd = launchCwd.value.trim();
+  return exe ? { exe, args: splitArgs(launchArgs.value), ...(cwd ? { cwd } : {}) } : undefined;
+}
+/** Still what the game brought, and so not a program the person typed. */
+function holds(launch: Launch | undefined): boolean {
+  if (!launch) return false;
+  return (
+    launchExe.value === launch.exe &&
+    launchArgs.value === argsLine(launch.args) &&
+    launchCwd.value === (launch.cwd ?? '')
+  );
+}
+/**
+ * "A program" and "Through Steam" are two views of one launch: a number changed under one
+ * shows under the other. "Nothing" keeps what was typed, in case the person comes back.
+ */
+function setLaunchKind(kind: LaunchKind): void {
+  if (kind === launchKind.value) return;
+  if (kind === 'program') {
+    const made = newSetupLaunch('steam', typedLaunch(), steamApp.value).launch;
+    if (made) launchArgs.value = argsLine(made.args);
+  } else if (kind === 'steam') {
+    steamApp.value = steamAppOf(typedLaunch()) ?? steamApp.value;
+  }
+  launchKind.value = kind;
 }
 
 function suggestName(): void {
@@ -135,12 +171,14 @@ function suggestName(): void {
 
 /** A known game brings its launch target, its aircraft or cars, its files and its checks. */
 function chooseGame(id: string): void {
+  // What the game chosen until now brought: "Another game" does not start that one.
+  const brought = chosenInstall.value?.launch;
   game.value = id;
   const found = games.value.find((g) => g.id === id);
   installDir.value = found?.installs[0]?.installDir ?? '';
   variant.value = variants.value[0]?.id ?? '';
   if (found) setLaunch(found.installs[0]?.launch);
-  else if (id === '') setLaunch(undefined);
+  else if (id === '' || holds(brought)) setLaunch(undefined);
   suggestName();
   applyDefaults();
 }
@@ -376,6 +414,14 @@ function startRename(candidate: Candidate): void {
 
 // ---- the summary ----
 const kept = computed(() => candidates.value.filter((c) => selected[c.key] && offered(c)));
+/** The checks the kept steps bring (the driver a virtual controller needs), unless left out. */
+const keptStepChecks = computed(() =>
+  stepChecks(
+    keptSteps.value.map((k) => k.step),
+    new Set(Object.keys(stepCheckLeft).filter((type) => stepCheckLeft[type])),
+    kept.value.map((c) => c.check)
+  )
+);
 const summary = computed(() =>
   sections.value
     .map((s) => {
@@ -387,18 +433,29 @@ const summary = computed(() =>
 const closedAtStandDown = computed(() =>
   kept.value.filter((c) => c.standDownNote).map((c) => titleOf(c))
 );
+const steamProblem = computed(() =>
+  launchKind.value === 'steam' ? steamAppProblem(steamApp.value) : undefined
+);
 const launchText = computed(() => {
+  const what =
+    game.value === 'other' ? gameName.value.trim() || 'the game' : (chosenGame.value?.name ?? '');
+  if (launchKind.value === 'none') return undefined;
+  if (launchKind.value === 'steam') {
+    const app = steamApp.value.trim();
+    if (!app || steamProblem.value) return undefined;
+    return what ? `${what}, through Steam` : `Steam app ${app}`;
+  }
   const exe = launchExe.value.trim();
   if (!exe) return undefined;
   const file = exe.replace(/^.*[\\/]/, '');
   const through = /^steam\.exe$/i.test(file) ? 'through Steam' : `with ${file}`;
-  const what =
-    game.value === 'other' ? gameName.value.trim() || 'the game' : (chosenGame.value?.name ?? '');
   return what ? `${what}, ${through}` : file;
 });
 
 // Every part can be skipped: a setup with only a name is still a valid one to start from.
-const canSave = computed(() => name.value.trim().length > 0 && !saving.value && !loading.value);
+const canSave = computed(
+  () => name.value.trim().length > 0 && !saving.value && !loading.value && !steamProblem.value
+);
 
 /** Splits an argument line on spaces, keeping "quoted parts" together. Arguments stay an array end to end. */
 function splitArgs(line: string): string[] {
@@ -414,24 +471,25 @@ async function browseProgram(): Promise<void> {
 async function save(): Promise<void> {
   saving.value = true;
   error.value = undefined;
-  const exe = launchExe.value.trim();
-  const cwd = launchCwd.value.trim();
   const severalInstalls = (chosenGame.value?.installs.length ?? 0) > 1;
   const result = await api.create({
     name: name.value,
     ...(game.value ? { game: game.value } : {}),
     ...(game.value === 'other' && gameName.value.trim() ? { gameName: gameName.value.trim() } : {}),
     ...(severalInstalls && installDir.value ? { gameInstall: installDir.value } : {}),
-    ...(exe ? { launch: { exe, args: splitArgs(launchArgs.value), ...(cwd ? { cwd } : {}) } } : {}),
-    checks: kept.value.map((c) => {
-      const answer = c.ask ? (answers[c.key] ?? '').trim() : '';
-      return {
-        ...c.check,
-        title: titleOf(c),
-        required: required[c.key] ?? true,
-        ...(c.ask && answer ? { params: { ...c.check.params, [c.ask.param]: answer } } : {}),
-      };
-    }),
+    ...newSetupLaunch(launchKind.value, typedLaunch(), steamApp.value),
+    checks: [
+      ...kept.value.map((c) => {
+        const answer = c.ask ? (answers[c.key] ?? '').trim() : '';
+        return {
+          ...c.check,
+          title: titleOf(c),
+          required: required[c.key] ?? true,
+          ...(c.ask && answer ? { params: { ...c.check.params, [c.ask.param]: answer } } : {}),
+        };
+      }),
+      ...keptStepChecks.value,
+    ],
     ...(keptSteps.value.length > 0
       ? {
           actions: {
@@ -639,14 +697,55 @@ onMounted(capture);
               <div class="cap-launch" data-testid="capture-launch">
                 <div class="cap-launch-head">
                   <span class="cap-launch-title">Launch</span>
+                  <v-btn-toggle
+                    :model-value="launchKind"
+                    mandatory
+                    density="compact"
+                    variant="outlined"
+                    divided
+                    color="primary"
+                    @update:model-value="setLaunchKind"
+                  >
+                    <v-btn value="program" size="small" data-testid="capture-launch-program"
+                      >A program</v-btn
+                    >
+                    <v-btn value="steam" size="small" data-testid="capture-launch-steam"
+                      >Through Steam</v-btn
+                    >
+                    <v-btn value="none" size="small" data-testid="capture-launch-none"
+                      >Nothing</v-btn
+                    >
+                  </v-btn-toggle>
                   <span v-if="launchText" class="rr-row-sub" data-testid="capture-launch-text"
                     >The Launch button starts {{ launchText }}.</span
+                  >
+                  <span
+                    v-else-if="launchKind === 'none'"
+                    class="rr-row-sub"
+                    data-testid="capture-launch-text"
+                    >The Play screen offers no Launch button for this setup.</span
+                  >
+                  <span
+                    v-else-if="launchKind === 'steam'"
+                    class="rr-row-sub"
+                    data-testid="capture-launch-text"
+                    >No Steam app id yet: the Play screen will have no Launch button.</span
                   >
                   <span v-else class="rr-row-sub" data-testid="capture-launch-text"
                     >No program yet: the Play screen will have no Launch button.</span
                   >
                 </div>
-                <div class="cap-launch-fields">
+                <v-text-field
+                  v-if="launchKind === 'steam'"
+                  v-model="steamApp"
+                  label="Steam app id"
+                  hint="The number in the game's Steam store address."
+                  persistent-hint
+                  :error-messages="steamProblem ? [steamProblem] : []"
+                  class="cap-launch-steam"
+                  data-testid="capture-launch-steam-app"
+                />
+                <div v-else-if="launchKind === 'program'" class="cap-launch-fields">
                   <v-text-field
                     v-model="launchExe"
                     label="Program"
@@ -691,62 +790,87 @@ onMounted(capture);
           </div>
           <p class="cap-lead" data-testid="capture-steps-lead">{{ stepLead }}</p>
           <div class="rr-panel">
-            <div
-              v-for="step in steps"
-              :key="step.type"
-              class="rr-row cap-row"
-              data-testid="capture-step"
-              :data-type="step.type"
-              :data-kept="stepOn[step.type] ? 'yes' : 'no'"
-            >
-              <v-checkbox
-                :model-value="stepOn[step.type]"
-                :disabled="!stepValue[step.type]"
-                :aria-label="`Keep ${step.label}`"
-                @update:model-value="toggleStep(step, $event)"
-              />
-              <v-icon
-                icon="mdi-controller"
-                size="18"
-                class="cap-row-icon"
-                :class="{ dim: !stepOn[step.type] }"
-              />
-              <div class="rr-row-main">
-                <div class="rr-row-title">{{ step.label }}</div>
-                <div
-                  v-if="step.picker.problem"
-                  class="rr-row-sub rr-bad"
-                  data-testid="capture-step-problem"
-                >
-                  {{ step.picker.problem }}
-                </div>
-                <div
-                  v-else-if="step.picker.choices.length === 0"
-                  class="rr-row-sub"
-                  data-testid="capture-step-empty"
-                >
-                  {{ step.picker.empty }}
-                </div>
-                <template v-else>
-                  <v-select
-                    :model-value="stepValue[step.type] || null"
-                    :items="stepItems(step)"
-                    item-props
-                    :label="step.picker.label"
-                    :hint="stepValue[step.type] ? undefined : 'Choose one to keep this step.'"
-                    persistent-hint
-                    clearable
-                    density="compact"
-                    class="cap-ask"
-                    data-testid="capture-step-choice"
-                    @update:model-value="chooseStep(step, $event)"
-                  />
-                  <div v-if="stepNote(step)" class="rr-row-sub" data-testid="capture-step-note">
-                    {{ stepNote(step)?.text }}
+            <template v-for="step in steps" :key="step.type">
+              <div
+                class="rr-row cap-row"
+                data-testid="capture-step"
+                :data-type="step.type"
+                :data-kept="stepOn[step.type] ? 'yes' : 'no'"
+              >
+                <v-checkbox
+                  :model-value="stepOn[step.type]"
+                  :disabled="!stepValue[step.type]"
+                  :aria-label="`Keep ${step.label}`"
+                  @update:model-value="toggleStep(step, $event)"
+                />
+                <v-icon
+                  icon="mdi-controller"
+                  size="18"
+                  class="cap-row-icon"
+                  :class="{ dim: !stepOn[step.type] }"
+                />
+                <div class="rr-row-main">
+                  <div class="rr-row-title">{{ step.label }}</div>
+                  <div
+                    v-if="step.picker.problem"
+                    class="rr-row-sub rr-bad"
+                    data-testid="capture-step-problem"
+                  >
+                    {{ step.picker.problem }}
                   </div>
-                </template>
+                  <div
+                    v-else-if="step.picker.choices.length === 0"
+                    class="rr-row-sub"
+                    data-testid="capture-step-empty"
+                  >
+                    {{ step.picker.empty }}
+                  </div>
+                  <template v-else>
+                    <v-select
+                      :model-value="stepValue[step.type] || null"
+                      :items="stepItems(step)"
+                      item-props
+                      :label="step.picker.label"
+                      :hint="stepValue[step.type] ? undefined : 'Choose one to keep this step.'"
+                      persistent-hint
+                      clearable
+                      density="compact"
+                      class="cap-ask"
+                      data-testid="capture-step-choice"
+                      @update:model-value="chooseStep(step, $event)"
+                    />
+                    <div v-if="stepNote(step)" class="rr-row-sub" data-testid="capture-step-note">
+                      {{ stepNote(step)?.text }}
+                    </div>
+                  </template>
+                </div>
               </div>
-            </div>
+              <!-- What the step cannot work without is checked too, while the step is kept -->
+              <div
+                v-for="check in stepOn[step.type] ? step.checks : []"
+                :key="`${step.type}:${check.type}`"
+                class="rr-row cap-row cap-step-check"
+                data-testid="capture-step-check"
+                :data-type="check.type"
+                :data-kept="stepCheckLeft[check.type] ? 'no' : 'yes'"
+              >
+                <v-checkbox
+                  :model-value="!stepCheckLeft[check.type]"
+                  :aria-label="`Keep ${check.title}`"
+                  @update:model-value="stepCheckLeft[check.type] = $event !== true"
+                />
+                <v-icon
+                  icon="mdi-check-circle-outline"
+                  size="18"
+                  class="cap-row-icon"
+                  :class="{ dim: stepCheckLeft[check.type] }"
+                />
+                <div class="rr-row-main">
+                  <div class="rr-row-title">{{ check.title }}</div>
+                  <div class="rr-row-sub">The step above needs it. Checked before launch.</div>
+                </div>
+              </div>
+            </template>
           </div>
         </section>
 
@@ -1023,7 +1147,10 @@ onMounted(capture);
             <span v-else class="rr-muted">No Launch button</span>
           </div>
           <div class="rr-section-title cap-summary-gap">Checks before launch</div>
-          <div v-if="summary.length === 0" class="rr-muted cap-summary-line">
+          <div
+            v-if="summary.length === 0 && keptStepChecks.length === 0"
+            class="rr-muted cap-summary-line"
+          >
             Nothing kept: a setup with only a name.
           </div>
           <div
@@ -1046,6 +1173,15 @@ onMounted(capture);
                   .join(' · ')
               }}<span v-if="part.items.length > 4"> · +{{ part.items.length - 4 }} more</span>
             </div>
+          </div>
+          <div
+            v-for="check in keptStepChecks"
+            :key="check.type"
+            class="cap-summary-line"
+            data-testid="capture-summary-step-check"
+          >
+            <v-icon icon="mdi-check-circle-outline" size="15" />
+            <span>{{ check.title }}</span>
           </div>
           <template v-if="keptSteps.length > 0">
             <div class="rr-section-title cap-summary-gap">Before launch</div>
@@ -1225,6 +1361,9 @@ onMounted(capture);
   grid-template-columns: 2fr 1fr 1fr;
   gap: 10px;
 }
+.cap-launch-steam {
+  max-width: 320px;
+}
 .cap-diagram {
   padding: 16px 16px 12px;
   border-bottom: 1px solid var(--rr-border);
@@ -1239,6 +1378,9 @@ onMounted(capture);
 }
 .cap-row-icon.dim {
   color: var(--rr-muted);
+}
+.cap-step-check {
+  padding-left: 44px;
 }
 .cap-row.flash {
   background: rgba(90, 169, 230, 0.14);

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { launchKindOf, steamAppOf, steamAppShown, steamLaunchFor } from './steamLaunch';
+import {
+  launchKindOf,
+  newSetupLaunch,
+  steamAppOf,
+  steamAppProblem,
+  steamAppShown,
+  steamLaunchFor,
+} from './steamLaunch';
 
 /** CFG-PROFILE-021: a setup made for a Steam game reads as "Through Steam" in the editor. */
 
@@ -50,5 +57,44 @@ describe('the Launch section of a setup Steam starts', () => {
     });
     expect(steamLaunchFor({ steamAppId: '1', launch: handoff }, '2')).toEqual({ steamAppId: '2' });
     expect(steamLaunchFor({ launch: handoff }, '  ')).toEqual({});
+  });
+
+  it('never hands steam.exe something that is not a number', () => {
+    // It goes as a Steam app id, which the setup refuses when it is saved.
+    expect(steamLaunchFor({ launch: handoff }, '22375o')).toEqual({ steamAppId: '22375o' });
+  });
+});
+
+describe('the Launch section of a new setup', () => {
+  const program = { exe: 'C:\\Games\\RBR\\RichardBurnsRally.exe', args: ['-window'] };
+
+  it('a game Steam starts is saved as it was found, with the number shown', () => {
+    expect(newSetupLaunch('steam', handoff, '266410')).toEqual({ launch: handoff });
+    expect(newSetupLaunch('steam', handoff, '223750')).toEqual({
+      launch: { exe: STEAM, args: ['-applaunch', '223750'] },
+    });
+  });
+
+  it('"Through Steam" for a game that came with a program, or with none, is a Steam app id', () => {
+    expect(newSetupLaunch('steam', program, '223750')).toEqual({ steamAppId: '223750' });
+    expect(newSetupLaunch('steam', undefined, '223750')).toEqual({ steamAppId: '223750' });
+  });
+
+  it('"A program" is saved as typed, also when it is steam.exe', () => {
+    expect(newSetupLaunch('program', program, '223750')).toEqual({ launch: program });
+    expect(newSetupLaunch('program', handoff, '')).toEqual({ launch: handoff });
+  });
+
+  it('saves no launch when what the choice needs is not filled in', () => {
+    expect(newSetupLaunch('program', undefined, '223750')).toEqual({});
+    expect(newSetupLaunch('steam', handoff, '')).toEqual({});
+    expect(newSetupLaunch('none', program, '223750')).toEqual({});
+  });
+
+  it('says what is wrong with a Steam app id that is not a number', () => {
+    expect(steamAppProblem('')).toBeUndefined();
+    expect(steamAppProblem(' 223750 ')).toBeUndefined();
+    expect(steamAppProblem('dcs')).toBe('A number, for example 223750.');
+    expect(steamAppProblem('12345678901')).toBe('A number, for example 223750.');
   });
 });

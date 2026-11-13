@@ -306,6 +306,7 @@ export const audioCapture: CaptureDefinition = {
               ? `The default ${flowWord(flow)} device, also for comms`
               : `The default ${flowWord(flow)} device`,
           selectedByDefault: true,
+          ...(flow === 'recording' ? { microphone: true } : {}),
           check: {
             type: AUDIO_DEFAULT,
             title,
@@ -329,6 +330,7 @@ export const audioCapture: CaptureDefinition = {
           title,
           description: `The ${flowWord(flow)} device Windows gives voice chat apps`,
           selectedByDefault: false,
+          ...(flow === 'recording' ? { microphone: true } : {}),
           check: {
             type: AUDIO_DEFAULT,
             title,

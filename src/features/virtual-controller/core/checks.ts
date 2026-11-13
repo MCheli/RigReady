@@ -153,6 +153,8 @@ export function startRemediation(
     picker: profilePicker(emulator, store),
     // A game that reads a gamepad needs one: a new setup for such a game offers this step.
     provides: 'gamepad',
+    // Without the driver nothing starts: a new setup that keeps the step checks for it too.
+    requires: [driverCheck.type],
     describe: (p) =>
       `Start the virtual controller "${p.profileName ?? p.profile}"${p.hideControllers ? ', hiding the real controllers from games' : ''}`,
     async run(params, ctx) {

@@ -88,3 +88,42 @@ test('play: with "hide after launch" off the window stays and Windows is not ask
   expect(await windowVisible(app)).toBe(true);
   expect(await notifications(app)).toEqual([]);
 });
+
+test('play: while the game runs the page no longer says what Launch will do, and says it again once the game has closed', async ({
+  rig,
+}) => {
+  const { page, shot, mutate } = await rig.launch('fly-actions', 'launch-plan-while-playing');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await page.getByTestId('fly-more').click();
+  await page.getByTestId('fly-minimize-pref').click();
+  await page.keyboard.press('Escape');
+  const before = 'Before launch: Start VoiceAttack, Warm up the hub, Check TrackIR answers';
+  await expect(page.getByTestId('fly-plan-preLaunch')).toHaveText(before);
+
+  // One step fails and asks; the lines are still what Launch will do.
+  await page.getByTestId('launch').click();
+  await expect(page.getByTestId('launch-paused')).toContainText('"Check TrackIR answers" failed');
+  await page.getByTestId('paused-launch').click();
+  const activity = page.getByTestId('fly-activity');
+  await expect(activity).toContainText('Launched DCS.exe');
+  await expect(activity).toContainText('Started SR-ClientRadio.exe');
+  await expect(page.getByTestId('fly-session')).toHaveAttribute('data-phase', 'running');
+
+  // The game is up. Launch is not what comes next, and what ran is in the Launch panel.
+  await expect(page.getByTestId('fly-plan')).toHaveCount(0);
+  await expect(page.getByTestId('fly-starting')).toHaveCount(0);
+  await expect(page.locator('[data-testid="fly-activity"] .fly-entry .rr-row-sub')).toHaveText([
+    'Before launch · Start VoiceAttack',
+    'Before launch · Warm up the hub',
+    'Before launch · Check TrackIR answers',
+    'Game · DCS with launch steps',
+    'After launch · Start SRS',
+  ]);
+  await shot('while-the-game-runs');
+
+  // The game is closed: Launch would run its steps again, and the page says so again.
+  await mutate([{ op: 'stopProcess', name: 'DCS.exe' }]);
+  await expect(page.getByTestId('fly-plan-preLaunch')).toHaveText(before);
+  await expect(page.getByTestId('fly-plan-postLaunch')).toHaveText('After launch: Start SRS');
+  await shot('after-the-game');
+});
