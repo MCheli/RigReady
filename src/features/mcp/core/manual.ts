@@ -116,6 +116,69 @@ export interface ManualHit {
   title: string;
   /** Lines that hold every word of the query, with a little around them. */
   lines: string[];
+  /** The headings those lines stand under: what to ask manual_read for instead of the whole page. */
+  sections?: string[];
+}
+
+interface BodyLine {
+  text: string;
+  /** 1 to 6 for a heading, 0 for any other line. */
+  level: number;
+  /** The heading this line is, or stands under; empty before the first one. */
+  under: string;
+}
+
+const HEADING = /^(#{1,6})\s+(.+?)\s*#*\s*$/;
+
+/** A page line by line with the heading each stands under. A "#" inside a code fence is no heading. */
+function walk(body: string): BodyLine[] {
+  let fenced = false;
+  let under = '';
+  return body.split(/\r?\n/).map((text) => {
+    if (/^\s*(```|~~~)/.test(text)) {
+      fenced = !fenced;
+      return { text, level: 0, under };
+    }
+    const heading = fenced ? null : HEADING.exec(text);
+    if (heading) under = heading[2] ?? '';
+    return { text, level: heading ? (heading[1] ?? '').length : 0, under };
+  });
+}
+
+const plainHeading = (text: string): string =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/** The headings of a page, in its order. */
+export function sectionsOf(body: string): string[] {
+  return walk(body)
+    .filter((line) => line.level > 0)
+    .map((line) => line.under);
+}
+
+/**
+ * One section of a page: its heading and what stands under it, up to the next heading of the
+ * same level or above. By the heading as written, or by a part of it when no heading is it.
+ */
+export function sectionOf(body: string, wanted: string): string | undefined {
+  const want = plainHeading(wanted);
+  if (!want) return undefined;
+  const lines = walk(body);
+  let start = lines.findIndex((line) => line.level > 0 && plainHeading(line.under) === want);
+  if (start < 0) {
+    start = lines.findIndex((line) => line.level > 0 && plainHeading(line.under).includes(want));
+  }
+  const first = lines[start];
+  if (!first) return undefined;
+  let end = lines.findIndex((line, i) => i > start && line.level > 0 && line.level <= first.level);
+  if (end < 0) end = lines.length;
+  return lines
+    .slice(start, end)
+    .map((line) => line.text)
+    .join('\n')
+    .trim();
 }
 
 /** Pages that hold every word of the query, the best first: the title, then the description, then the body. */
@@ -139,16 +202,22 @@ export function searchManual(pages: ManualPage[], query: string, limit = 8): Man
       if (description.includes(w)) score += 4;
       score += Math.min(5, body.split(w).length - 1);
     }
-    const lines = page.body
-      .split(/\r?\n/)
+    const matching = walk(page.body)
       .filter((line) => {
-        const lower = line.toLowerCase();
-        return words.some((w) => lower.includes(w)) && line.trim() !== '';
+        const lower = line.text.toLowerCase();
+        return words.some((w) => lower.includes(w)) && line.text.trim() !== '';
       })
-      .slice(0, 4)
-      .map((line) => line.trim().slice(0, 240));
+      .slice(0, 4);
+    const lines = matching.map((line) => line.text.trim().slice(0, 240));
+    const sections = [...new Set(matching.map((line) => line.under).filter((s) => s !== ''))];
     scored.push({
-      hit: { uri: page.uri, url: webUrl(page.path), title: page.title, lines },
+      hit: {
+        uri: page.uri,
+        url: webUrl(page.path),
+        title: page.title,
+        lines,
+        ...(sections.length > 0 ? { sections } : {}),
+      },
       score,
     });
   }
@@ -173,10 +242,14 @@ export function pagePath(reference: string): string {
   return path.replace(/\.md$/i, '').replace(/^\/+|\/+$/g, '');
 }
 
-/** One page as Markdown, with its title and description first: for a resource read and the manual_read tool. */
+/**
+ * One page as Markdown, with its title and description first: for a resource read and the
+ * manual_read tool. With a section, only that part of the page under the page's title.
+ */
 export function readManualPage(
   pages: ManualPage[],
-  reference: string
+  reference: string,
+  section?: string
 ): { ok: true; page: ManualPage; text: string } | { ok: false; message: string } {
   const path = pagePath(reference);
   const page = pages.find((p) => p.path === path);
@@ -186,7 +259,22 @@ export function readManualPage(
       message: `There is no manual page at ${docsUri(path)}. Search with manual_search, or read ${DOCS_URI} for the list.`,
     };
   }
-  return { ok: true, page, text: `# ${page.title}\n\n${page.description}\n\n${page.body}` };
+  if (section === undefined || section.trim() === '') {
+    return { ok: true, page, text: `# ${page.title}\n\n${page.description}\n\n${page.body}` };
+  }
+  const part = sectionOf(page.body, section);
+  if (part === undefined) {
+    const sections = sectionsOf(page.body);
+    return {
+      ok: false,
+      message: `The manual page ${page.title} has no section "${section.trim()}". ${
+        sections.length > 0
+          ? `Its sections: ${sections.join('; ')}.`
+          : 'It has no sections: read the whole page.'
+      }`,
+    };
+  }
+  return { ok: true, page, text: `# ${page.title}\n\n${part}` };
 }
 
 /** The manual as the app ships it. Read once; a build without the files gives an empty manual. */

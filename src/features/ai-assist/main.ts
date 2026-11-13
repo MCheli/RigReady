@@ -1,11 +1,12 @@
 import { bind, defineFeatureMain } from '../../core/feature';
-import { ok } from '../../core/result';
+import { ok, type Result } from '../../core/result';
 import { aiAssistContract } from './contract';
 import { allPathVariables } from '../../core/pathVariables';
 import { Assistant } from './core/assistant';
 import { AssistantDrafts } from './core/drafts';
 import { listenForPresses } from './core/inputs';
 import { findPrograms } from './core/programs';
+import { loggedHttp } from './core/providerLog';
 import { assistantTools } from './core/tools';
 import { plainLabels } from './core/pack';
 import { AiAssist } from './core/service';
@@ -17,12 +18,15 @@ let stopWatchingSettings: (() => void) | undefined;
 export default defineFeatureMain({
   id: 'ai-assist',
   setup(ctx) {
+    // Every request to a provider goes through this: one that fails leaves a line in the log.
+    const ports = { ...ctx.ports, http: loggedHttp(ctx.ports.http, ctx.log) };
     const ai = new AiAssist({
-      ports: ctx.ports,
+      ports,
       log: ctx.log,
       bindings: ctx.bindings,
       settings: ctx.settings,
       onProgress: (progress) => ctx.emit(aiAssistContract, 'sendProgress', progress),
+      onCounted: (month) => ctx.emit(aiAssistContract, 'monthChanged', month),
     });
     const drafts = new AssistantDrafts({
       ports: ctx.ports,
@@ -31,12 +35,23 @@ export default defineFeatureMain({
       changed: () => ctx.emit(aiAssistContract, 'draftsChanged', {}),
     });
     const assistant = new Assistant({
-      ports: ctx.ports,
+      ports,
       log: ctx.log,
       host: () => ctx.mcp.host(),
       target: () => ai.assistantTarget(),
+      ceiling: () => ai.questionCeiling(),
+      month: (next) => ai.monthBudget(next),
+      counted: (provider, usage) => ai.countRequest(provider, usage),
+      progress: (progress) => ctx.emit(aiAssistContract, 'assistantProgress', progress),
     });
-    // The three tools an assistant builds a ready check with, offered over MCP too.
+    // The provider, model, key or ceiling changed: the pages that show them ask again, and a
+    // request that was shown for the old ones is built again instead of failing on Send.
+    const changed = async <T>(result: Promise<Result<T>>): Promise<Result<T>> => {
+      const done = await result;
+      if (done.ok) ctx.emit(aiAssistContract, 'settingsChanged', {});
+      return done;
+    };
+    // The tools an assistant reads a setup and builds a ready check with, offered over MCP too.
     for (const tool of assistantTools()) ctx.mcp.registerTool(tool);
     // The shipped guides' plain-language action names, for every page that lists actions.
     ctx.bindings.registerLabels({
@@ -77,11 +92,17 @@ export default defineFeatureMain({
           return ok({ listening: false });
         },
         status: () => ai.status(),
-        setProvider: ({ provider }) => ai.setProvider(provider),
-        setModel: ({ model }) => ai.setModel(model),
-        setCompatible: (change) => ai.setCompatible(change),
-        setKey: ({ key }) => ai.setKey(key),
-        clearKey: () => ai.clearKey(),
+        setProvider: ({ provider }) => changed(ai.setProvider(provider)),
+        setModel: ({ model }) => changed(ai.setModel(model)),
+        setCompatible: (change) => changed(ai.setCompatible(change)),
+        setKey: ({ key }) => changed(ai.setKey(key)),
+        clearKey: () => changed(ai.clearKey()),
+        setQuestionCeiling: ({ dollars, acknowledged }) =>
+          changed(ai.setQuestionCeiling(dollars, acknowledged)),
+        setMonthlyBudget: ({ dollars, acknowledged }) =>
+          changed(ai.setMonthlyBudget(dollars, acknowledged)),
+        setPrices: (price) => changed(ai.setPrices(price)),
+        resetPrices: () => changed(ai.resetPrices()),
         testKey: () => ai.testKey(),
         prepare: (input) => ai.prepare(input),
         send: ({ requestId }) => ai.send(requestId),
@@ -90,7 +111,11 @@ export default defineFeatureMain({
         applySuggestions: ({ roundId, selected }) => ai.applySuggestions(roundId, selected),
         deleteDraft: ({ aircraftId }) => ai.deleteDraft(aircraftId),
         assistantPrepare: (input) => assistant.prepare(input),
-        assistantSend: ({ requestId }) => assistant.send(requestId, new AbortController().signal),
+        assistantSend: ({ requestId, pastCeiling }) => assistant.send(requestId, { pastCeiling }),
+        assistantResume: ({ conversationId }) => assistant.resume(conversationId),
+        assistantDiscard: async ({ requestId }) => ok({ discarded: assistant.discard(requestId) }),
+        assistantStop: async ({ conversationId }) =>
+          ok({ stopped: assistant.stop(conversationId) }),
         assistantConversation: async ({ conversationId }) => assistant.conversation(conversationId),
         assistantForget: async ({ conversationId }) =>
           ok({ forgotten: assistant.forget(conversationId) }),

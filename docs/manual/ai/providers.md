@@ -35,15 +35,24 @@ Suggestions and drafted guides come back as JSON, which RigReady checks line by 
 
 ## Which host receives what
 
-What is sent is the same for every provider: the aircraft, its actions and what each is bound to now, the product names and layout of the controllers used in DCS, RigReady's guide for the aircraft and your question. Never sent: file paths, device IDs, serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files. See [What is sent](../dcs/binding-guide-and-ai.md#what-is-sent).
+What is sent depends on what you use, and is the same for every provider.
 
-- Requests go only to the host in the table above (or the one you typed), and only when you press **Send** on the preview, or **Test** in Settings.
+- **The binding guide** sends the aircraft, its actions and what each is bound to now, the product names and layout of the controllers used in DCS, RigReady's guide for the aircraft and your question. It never sends file paths, device IDs, serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files. See [What is sent](../dcs/binding-guide-and-ai.md#what-is-sent).
+- **The built-in assistant** sends your messages, its own answers, RigReady's instructions and tool list, and what each tool it used answered. That can be anything RigReady itself can show you: your setups, what is connected and running, where programs are installed, the names of your devices, bindings and settings. In what the tools answered, the path of your Windows user folder is written as `{USER}` and the PC's name as `{PC}`; other names and paths go as they are. See [The built-in assistant](built-in-assistant.md#every-request-is-shown-first).
+
+**Exactly what is sent** in Settings says the same for the provider you chose.
+
+- Requests go only to the host in the table above (or the one you typed), and only when you press **Send** on the preview, or **Test** in Settings. In the assistant panel you can switch the preview off for one conversation; its requests then go as soon as they are ready, until you press **Stop**.
 - The address must start with `https://`. Plain `http://` is accepted only for this PC (`localhost`, `127.0.0.1`), so the key and your data are never sent unencrypted over a network.
 - If a service answers with a redirect to another address, RigReady stops and says so instead of following it with your key.
 - The key goes only in the request's header. It is encrypted for your Windows account and never written to settings, logs, backups, shared setups or screenshots.
 - With Ollama or LM Studio nothing leaves the PC, unless that server is set up to send it on.
 - The provider's own terms and privacy policy apply to what you send it.
 
-## Cost and tokens
+## Tokens and estimates
 
-After each answer, RigReady shows the model, the tokens in (and how many came from the provider's cache) and out, as the provider reports them. It shows an approximate cost for the Anthropic and OpenAI models it lists. For other services and models it shows no price, because it does not know it; check your account with the service. A model on your own PC costs nothing per request.
+After each answer, RigReady shows the model, the tokens in (and how many came from the provider's cache) and out, as the provider reports them. Where prices are set for the model, it also shows an estimate in dollars, worked out from those tokens and the prices in Settings, and says which prices those are: RigReady's built-in ones with the month they were recorded, or your own. It is an estimate, not a bill: your provider's console shows what you are charged.
+
+RigReady has built-in prices for the Anthropic and OpenAI models it lists. For other services and models it has none, and shows no dollar figure until you type the model's prices in Settings; check your account with the service. Nobody charges for a model on your own PC, and RigReady shows no dollar figure for it unless you type prices.
+
+The prices can be edited for each model, and a ceiling for one question and a monthly budget can be set, in Settings under **AI**. See [Estimates, prices and limits](built-in-assistant.md#estimates-prices-and-limits).

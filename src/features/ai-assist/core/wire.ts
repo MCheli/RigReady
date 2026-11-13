@@ -57,6 +57,27 @@ export interface Answer {
   stopReason: string | undefined;
 }
 
+/**
+ * The conversation with a cache breakpoint at its end (Anthropic): the next request, which
+ * repeats all of this and adds to it, reads it at the cache price instead of the full one.
+ * The mark is put on the body alone, never kept in the conversation, so it moves with every
+ * request and the two breakpoints (this one and the instructions') are all there ever are.
+ */
+function withBreakpoint(messages: Message[]): unknown[] {
+  const last = messages.at(-1);
+  if (!last || last.content.length === 0) return messages;
+  const end = last.content.length - 1;
+  return [
+    ...messages.slice(0, -1),
+    {
+      role: last.role,
+      content: last.content.map((block, i) =>
+        i === end ? { ...block, cache_control: { type: 'ephemeral' } } : block
+      ),
+    },
+  ];
+}
+
 export function requestBody(
   wire: Wire,
   system: string,
@@ -68,13 +89,14 @@ export function requestBody(
     return {
       model: wire.model,
       max_tokens: maxTokens,
+      // Tools and instructions never change within a conversation: one breakpoint covers both.
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       tools: tools.map((t) => ({
         name: t.name,
         description: t.description,
         input_schema: t.schema,
       })),
-      messages,
+      messages: withBreakpoint(messages),
     };
   }
   const chat: Record<string, unknown>[] = [{ role: 'system', content: system }];
@@ -249,32 +271,58 @@ function parseAnswer(wire: Wire, text: string, body: Record<string, unknown>): R
   });
 }
 
-/** Sends one request body and reads the answer. Nothing is retried. */
+/** How long an answer may take: the body is not streamed, so nothing arrives until it is whole. */
+const ANSWER_TIMEOUT_MS = 180_000;
+
+/**
+ * Sends one request body and reads the answer. Nothing is retried. The answer is read as it
+ * arrives only so that `signal` can end the wait at once (the user's Stop); the request
+ * itself asks for a whole answer, not a stream.
+ */
 export async function sendTurn(
   http: Http,
   wire: Wire,
   key: string | undefined,
   body: Record<string, unknown>,
-  who: string
+  who: string,
+  signal?: AbortSignal
 ): Promise<Result<Answer>> {
   const anthropic = wire.kind === 'anthropic';
-  const response = await http.request({
-    method: 'POST',
-    url: anthropic ? `${API_ROOT}/messages` : `${wire.root}/chat/completions`,
-    headers: anthropic ? headers(key ?? '', false) : chatHeaders(key),
-    body: JSON.stringify(body),
-    timeoutMs: 180_000,
-  });
+  const decoder = new TextDecoder();
+  let received = '';
+  let bytes = 0;
+  const response = await http.stream(
+    {
+      method: 'POST',
+      url: anthropic ? `${API_ROOT}/messages` : `${wire.root}/chat/completions`,
+      headers: anthropic ? headers(key ?? '', false) : chatHeaders(key),
+      body: JSON.stringify(body),
+      timeoutMs: ANSWER_TIMEOUT_MS,
+      idleTimeoutMs: ANSWER_TIMEOUT_MS,
+      // Only the host the preview named: a redirect is an answer, never followed.
+      noRedirects: true,
+      ...(signal ? { signal } : {}),
+    },
+    (chunk) => {
+      bytes += chunk.length;
+      // More than is ever read: the rest is dropped rather than kept in memory.
+      if (bytes <= MAX_RESPONSE_BYTES) received += decoder.decode(chunk, { stream: true });
+    }
+  );
   if (!response.ok) {
-    return err(
-      response.error.code === 'http.timeout' ? 'ai.timeout' : 'ai.network',
-      response.error.code === 'http.timeout'
-        ? `${who} did not answer in time. Try again.`
-        : `Could not reach ${who}. Check the connection.`
-    );
+    const code = response.error.code;
+    if (code === 'http.cancelled') {
+      return err('ai.stopped', 'Stopped before the answer came. Nothing was changed.');
+    }
+    const late = code === 'http.timeout' || code === 'http.idle';
+    return late
+      ? err('ai.timeout', `${who} did not answer in time. Try again.`)
+      : err('ai.network', `Could not reach ${who}. Check the connection.`);
   }
-  const { status, body: text } = response.value;
-  if (text.length > MAX_RESPONSE_BYTES) {
+  const status = response.value.status;
+  // A refusal comes whole in the result; an answer came in pieces.
+  const text = response.value.body || received + decoder.decode();
+  if (bytes > MAX_RESPONSE_BYTES || text.length > MAX_RESPONSE_BYTES) {
     return err(
       'ai.oversized',
       'The answer was far larger than expected, so RigReady did not read it.'

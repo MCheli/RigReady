@@ -77,7 +77,12 @@ describe('Anthropic Messages API over the Http port', () => {
     const answer = await sendMessage(rig.ports.http, KEY, body);
     expect(answer.ok && answer.value.text).toBe('hello');
     const call = rig.ports.http.calls[0]!;
-    expect(call).toMatchObject({ method: 'POST', url: 'https://api.anthropic.com/v1/messages' });
+    // A redirect is never followed: the key goes to this host and no other.
+    expect(call).toMatchObject({
+      method: 'POST',
+      url: 'https://api.anthropic.com/v1/messages',
+      noRedirects: true,
+    });
     expect(call.headers).toEqual({
       'content-type': 'application/json',
       'x-api-key': KEY,
@@ -182,6 +187,7 @@ describe('Anthropic Messages API over the Http port', () => {
     expect(rig.ports.http.calls[0]).toMatchObject({
       method: 'GET',
       url: 'https://api.anthropic.com/v1/models/claude-opus-5-5',
+      noRedirects: true,
     });
     expect(rig.ports.http.calls[0]!.body).toBeUndefined();
 
@@ -273,7 +279,12 @@ describe('a streamed answer from the Messages API', () => {
       },
     });
     const call = rig.ports.http.calls[0]!;
-    expect(call).toMatchObject({ method: 'POST', url: 'https://api.anthropic.com/v1/messages' });
+    // A redirect is never followed: the key goes to this host and no other.
+    expect(call).toMatchObject({
+      method: 'POST',
+      url: 'https://api.anthropic.com/v1/messages',
+      noRedirects: true,
+    });
     expect(call.headers).toEqual({
       'content-type': 'application/json',
       'x-api-key': KEY,

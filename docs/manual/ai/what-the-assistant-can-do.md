@@ -19,11 +19,13 @@ The [built-in assistant](built-in-assistant.md) and an assistant [connected over
 | `setup_create_from_rig` | Creates a setup from the rig as it is now, like the capture page | Yes, under **Always ask** |
 | `device_find_by_press` | Waits for you to press a button and names the device | No |
 | `programs_find` | Finds where programs are installed by name or vendor (SimAppPro, TrackIR, SRS, Stream Deck, VoiceAttack, Tacview, OpenKneeboard, Pit House, G HUB), with path variables | No: it only reads |
+| `setup_read` | Reads one setup: what Launch starts, every check with its fix, and every step, in a line each | No: it only reads |
+| `setup_types` | Lists what a setup can check and what a fix or a step can do, and what one type needs | No: it only reads |
 | `setup_propose` | Proposes checks and launch steps for a setup, or a new setup, shown in RigReady's assistant panel | No: nothing is saved until you press **Save** |
 | `script_draft` | Drafts a `.ps1` or `.cmd` script and its explanation, shown in full in the panel | No: nothing is saved until you press **Save**, and it never runs without asking you |
 | `manual_search` | Finds pages of this manual, each with its address on rigready.io | No |
-| `manual_read` | Reads one page of this manual in full | No |
-| `rigready_channels` | Lists every other action of RigReady by page, with what each takes | No |
+| `manual_read` | Reads one page of this manual, or one section of it | No |
+| `rigready_channels` | Lists every other action of RigReady by page in a line each, and what one action takes when asked for it | No |
 | `rigready_call` | Runs one of those actions | When the action changes the rig or launches a game |
 
 Through `rigready_channels` and `rigready_call` the assistant also reaches the bindings pages (read the bindings of an aircraft, plan a change, show you the plan, then write it), the monitor layouts, audio devices, backups and restores, setups, Stream Deck and TrackIR, the racing games, diagnostics and the log. Every one of them says whether it only reads, changes the rig or launches a game, and RigReady applies [the same rules](safety.md) to each.
