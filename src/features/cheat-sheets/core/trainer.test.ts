@@ -192,7 +192,11 @@ describe('which actions make cards', () => {
       cards.find((c) => c.action === action)!.answers[0]!.otherPositions;
     // The stops of a handle, the places of a switch: the other positions of the same control.
     expect(others('Throttle (Left) - IDLE')).toEqual(['button:2']);
-    expect(others('Left handle switch: middle')).toEqual(['button:57', 'button:59']);
+    // A set: which order the drawing lists them in does not matter.
+    expect([...(others('Left handle switch: middle') ?? [])].sort()).toEqual([
+      'button:57',
+      'button:59',
+    ]);
     expect(others('Upper thumb switch: middle')).toEqual(['button:22', 'button:24']);
     // A hat, a plain button and a lever spring back: they have none.
     expect(others('Left handle hat up')).toBeUndefined();
