@@ -4,7 +4,7 @@ description: Use your own key from Anthropic, OpenAI, Google Gemini, OpenRouter 
 order: 5
 ---
 
-The [built-in assistant](built-in-assistant.md), for any game, and the AI help in the [binding guide](../dcs/binding-guide-and-ai.md), for DCS aircraft, use a model you choose, with your own key. RigReady has no account or server of its own and never sees your key or your requests. Set it up under **Configure > Settings > AI assistance**.
+The [built-in assistant](built-in-assistant.md), for any game, and the AI help in the [binding guide](../dcs/binding-guide-and-ai.md), for DCS aircraft and iRacing cars, use a model you choose, with your own key. RigReady has no account or server of its own and never sees your key or your requests. Set it up under **Configure > Settings > AI assistance**.
 
 ## The choices
 
@@ -37,7 +37,7 @@ Suggestions and drafted guides come back as JSON, which RigReady checks line by 
 
 What is sent depends on what you use, and is the same for every provider.
 
-- **AI help in the binding guide** is for DCS aircraft only; if you do not fly DCS, none of this is ever sent. It sends the aircraft, its actions and what each is bound to now, the product names and layout of the controllers used in DCS, the guide for the aircraft when there is one (RigReady's, one drafted by AI, or your own) and your question. It never sends file paths, device IDs, serial numbers, the names you gave your devices, your Windows user or PC name, or any other content of your files. See [What is sent](../dcs/binding-guide-and-ai.md#what-is-sent).
+- **AI help in the binding guide** is for DCS aircraft and iRacing cars; if you play neither, none of this is ever sent. For DCS it sends the aircraft, its actions and what each is bound to now, the product names and layout of the controllers used in DCS; for iRacing the class or car, iRacing's actions and what each is bound to now, and the product names of the connected controllers those bindings name; and the guide for the aircraft when there is one (RigReady's, one drafted by AI, or your own) and your question. It never sends file paths, device IDs, serial numbers, the names you gave your devices, your Windows user or PC name, or any other content of your files. See [What is sent](../dcs/binding-guide-and-ai.md#what-is-sent).
 - **The built-in assistant** works the same whatever you play: a racing sim such as iRacing, a flight sim such as DCS, or anything else. It sends your messages, its own answers, RigReady's instructions and tool list, and what each tool it used answered. That can be anything RigReady itself can show you: your setups, what is connected and running, where programs are installed, the names of your devices, bindings and settings. In what the tools answered, the path of your Windows user folder is written as `{USER}` and the PC's name as `{PC}`; other names and paths go as they are. See [The built-in assistant](built-in-assistant.md#every-request-is-shown-first).
 
 **Exactly what is sent** in Settings says the same, use by use, for the provider you chose.

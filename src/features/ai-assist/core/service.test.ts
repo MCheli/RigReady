@@ -990,7 +990,7 @@ describe('"Exactly what is sent": true for every use, by use', () => {
     // The assistant first: it is what everyone who sets up AI uses, whatever they play.
     expect(status.whatIsSent.map((p) => p.title)).toEqual([
       'The assistant (any game)',
-      'AI help in the binding guide (DCS aircraft only)',
+      'AI help in the binding guide (DCS aircraft and iRacing cars)',
       'Where it goes',
     ]);
     // The narrow promise is the guide's alone: the assistant sends what its tools answer.
@@ -1011,7 +1011,11 @@ describe('"Exactly what is sent": true for every use, by use', () => {
     // Every word about DCS is under the one use that is about DCS, which says who it is for.
     expect(assistant.replace('a flight sim such as DCS', '')).not.toMatch(/DCS|aircraft/);
     expect(part(status, /guide/)).toMatch(
-      /^Only when you ask for AI help on the Binding guide page, which covers DCS aircraft\. If you do not fly DCS, nothing in this list is ever sent\./
+      /^Only when you ask for AI help on the Binding guide page, which covers DCS aircraft and iRacing cars\. If you play neither, nothing in this list is ever sent\./
+    );
+    // What goes for iRacing is said apart, and names no device id or name the owner gave.
+    expect(part(status, /guide/)).toMatch(
+      /Sent for iRacing: the class or car's name, iRacing's list of actions/
     );
     expect(part(status, /Where/)).toMatch(/Requests go only to api.anthropic.com, over https/);
     expect(part(status, /Where/)).toMatch(/Testing a key sends the key and the name of the model/);

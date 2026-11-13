@@ -1,0 +1,205 @@
+format: 1
+game: iracing
+car:
+  id: dirt
+  name: Dirt
+summary: >-
+  Dirt racing in iRacing is two things: dirt ovals, with sprint cars, late models and modifieds
+  sliding sideways around a short oval, and rallycross, on a mixed track of dirt and tarmac.
+  Bind the pedals and the steering first. For rallycross add the paddles and the handbrake; for
+  the dirt ovals the tear-off and the glances left and right matter more.
+sources:
+  - >-
+    Written from general knowledge of dirt racing and of iRacing's controls. Not reviewed by a
+    racing driver. Not affiliated with or reviewed by iRacing.
+  - >-
+    Every action is named by iRacing's own id, as in its controls file; a test checks each one
+    against iRacing's list of 369 actions (November 2026).
+  - >-
+    Cars differ: a dirt oval car has no handbrake and hardly any gears, and a car without a
+    control ignores its binding.
+roles:
+  wheel:
+    summary: >-
+      The paddles, the tear-off, push to talk and the glances left and right, then the black box
+      buttons.
+    items: [steering, shift, tear-off, push-to-talk, look-sideways, black-box]
+  pedals:
+    summary: Throttle and brake, and the clutch for a rallycross start.
+    items: [throttle, brake, clutch]
+  shifter:
+    summary: The handbrake, for rallycross. A lever with an axis is best; a button works too.
+    items: [handbrake]
+  panel:
+    summary: The brake bias and the starter.
+    items: [brake-bias, starter]
+  keyboard:
+    summary: Black box settings, force feedback strength and chat are fine on the keyboard.
+    items: [black-box-values, force-feedback, text-chat]
+items:
+  - id: steering
+    title: Steering
+    tier: must
+    place: rim
+    role: wheel
+    input: axis
+    what: >-
+      Turns the front wheels. On dirt you steer with the throttle as much as with the wheel.
+      iRacing stores the wheel as one axis in two halves, one for each way of turning.
+    when: All the time.
+    note: >-
+      Bind it in iRacing: Options, then Controls, then Calibrate. Turn the wheel from lock to
+      lock when iRacing asks.
+    actions:
+      - { name: SteerLeft, label: Steer left }
+      - { name: SteerRight, label: Steer right }
+  - id: throttle
+    title: Throttle
+    tier: must
+    place: rim
+    role: pedals
+    input: axis
+    what: The accelerator pedal. On dirt it decides how far the car slides.
+    when: All the time.
+    note: Bind and calibrate it in iRacing with the wheel, in the same steps.
+    actions:
+      - { name: Throttle, label: Throttle }
+  - id: brake
+    title: Brake
+    tier: must
+    place: rim
+    role: pedals
+    input: axis
+    what: The brake pedal. A touch of brake sets the car up to slide into the corner.
+    when: Every corner.
+    note: Bind and calibrate it in iRacing. Press the pedal as hard as you will in a race.
+    actions:
+      - { name: Brake, label: Brake }
+  - id: shift
+    title: Shift up and down
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Changes gear. Rallycross cars shift all the time; most dirt oval cars stay in one gear
+      once they are moving.
+    when: Every corner in rallycross.
+    actions:
+      - { name: ShiftUp, label: Shift up }
+      - { name: ShiftDown, label: Shift down }
+  - id: handbrake
+    title: Handbrake
+    tier: should
+    place: rim
+    role: shifter
+    what: Locks the rear wheels to swing the car around a tight corner, in rallycross.
+    when: Hairpins and the tightest corners of a rallycross track.
+    note: >-
+      RigReady binds a handbrake button. A handbrake lever with an axis is bound in iRacing, as
+      the pedals are.
+    actions:
+      - { name: Handbrake, label: Handbrake }
+  - id: tear-off
+    title: Tear off visor
+    tier: should
+    place: rim
+    role: wheel
+    what: Tears a layer off your helmet visor when mud covers it, so you can see again.
+    when: Whenever the mud from the cars ahead makes it hard to see.
+    actions:
+      - { name: TearOffVisor, label: Tear off visor }
+  - id: push-to-talk
+    title: Push to talk
+    tier: should
+    place: rim
+    role: wheel
+    what: Opens your microphone on iRacing's voice chat while you hold it.
+    when: To talk to your spotter or your team.
+    actions:
+      - { name: VChatPushToTalk, label: Push to talk }
+  - id: look-sideways
+    title: Look left and right
+    tier: should
+    place: rim
+    role: wheel
+    what: Turns your view to the side while you hold it, to see a car beside you.
+    when: In close racing, if you drive on one screen without head tracking.
+    actions:
+      - { name: LookLeft, label: Look left }
+      - { name: LookRight, label: Look right }
+  - id: black-box
+    title: Black boxes
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Cycles through iRacing's black boxes: the panels for fuel, tyres, the relative gaps and
+      the car's settings.
+    when: Before the race and between heats.
+    actions:
+      - { name: BlackBoxShowNext, label: Next black box }
+      - { name: BlackBoxShowPrev, label: Previous black box }
+  - id: clutch
+    title: Clutch
+    tier: nice
+    place: rim
+    role: pedals
+    input: axis
+    what: The clutch pedal, for a fast standing start in rallycross.
+    when: At the start of a rallycross heat.
+    note: Bind it in iRacing if your pedals have a third pedal.
+    actions:
+      - { name: Clutch, label: Clutch }
+  - id: brake-bias
+    title: Brake bias
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      Moves the braking between the front and rear wheels, on cars that let you change it in the
+      car. The black box shows it as the share on the front; up raises it.
+    when: As the track dries or gets slicker during a race.
+    actions:
+      - { name: BrakeBiasInc, label: Brake bias up }
+      - { name: BrakeBiasDec, label: Brake bias down }
+  - id: starter
+    title: Starter
+    tier: nice
+    place: panel
+    role: panel
+    what: Starts the engine again after it stalled, so you can rejoin without a tow.
+    when: After a spin that stalls the engine.
+    actions:
+      - { name: Starter, label: Starter }
+  - id: black-box-values
+    title: Change a black box setting
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Moves through the lines of the black box on screen and changes a value.
+    when: Before the race and between heats.
+    note: iRacing's own keys for these are the arrow keys and Space.
+    actions:
+      - { name: BlackBoxNext, label: Black box next control }
+      - { name: BlackBoxPrev, label: Black box previous control }
+      - { name: BlackBoxInc, label: Black box value up }
+      - { name: BlackBoxDec, label: Black box value down }
+  - id: force-feedback
+    title: Force feedback strength
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Makes the force feedback of the wheel stronger or weaker while you drive.
+    when: When the wheel kicks too hard over the bumps, or feels too light.
+    actions:
+      - { name: IncFFB, label: Force feedback stronger }
+      - { name: DecFFB, label: Force feedback weaker }
+  - id: text-chat
+    title: Text chat
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens the text chat to type a message.
+    when: Before the start or after the finish, not while driving.
+    actions:
+      - { name: TChatInitiate, label: Text chat }

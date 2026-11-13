@@ -8,6 +8,7 @@ import { listenForPresses } from './core/inputs';
 import { findPrograms } from './core/programs';
 import { loggedHttp } from './core/providerLog';
 import { assistantTools } from './core/tools';
+import { iracingThroughChannels } from './core/iracing';
 import { plainLabels } from './core/pack';
 import { AiAssist } from './core/service';
 import { shippedPack } from './core/shipped';
@@ -24,6 +25,9 @@ export default defineFeatureMain({
       ports,
       log: ctx.log,
       bindings: ctx.bindings,
+      // iRacing's bindings belong to the iRacing bindings feature: the guide reads and binds
+      // them through its channels, validated as a window's calls are, never its files.
+      iracing: iracingThroughChannels((channel, input) => ctx.invoke(channel, input)),
       settings: ctx.settings,
       onProgress: (progress) => ctx.emit(aiAssistContract, 'sendProgress', progress),
       onCounted: (month) => ctx.emit(aiAssistContract, 'monthChanged', month),
@@ -59,6 +63,12 @@ export default defineFeatureMain({
       game: 'dcs',
       labels: async (aircraftId) => plainLabels(shippedPack(aircraftId)),
     });
+    // iRacing's, by its own action id, for every set ("all", or a car's own).
+    ctx.bindings.registerLabels({
+      id: 'ai-assist-iracing',
+      game: 'iracing',
+      labels: (setId) => ai.iracingLabels(setId),
+    });
     // The key is stored and removed on the Settings page; this feature's own section and
     // pages follow it through an event instead of asking again on a timer.
     stopWatchingSettings = ctx.settings.onChange(() =>
@@ -66,7 +76,8 @@ export default defineFeatureMain({
     );
     return [
       bind(aiAssistContract, {
-        aircraft: () => ai.aircraft(),
+        games: () => ai.games(),
+        aircraft: (input) => ai.aircraft(input?.game ?? 'dcs'),
         guide: ({ aircraftId }) => ai.guide(aircraftId),
         setProgress: ({ aircraftId, itemId, state, current }) =>
           ai.setProgress(aircraftId, itemId, state, current),
@@ -77,6 +88,10 @@ export default defineFeatureMain({
         reviewStaged: ({ aircraftId }) => ai.reviewStaged(aircraftId),
         applyStaged: ({ aircraftId }) => ai.applyStaged(aircraftId),
         undo: ({ groupId }) => ai.undo(groupId),
+        iracingBindPreview: ({ aircraftId, actionId, binding }) =>
+          ai.iracingPreview(aircraftId, actionId, binding),
+        iracingBind: ({ aircraftId, actionId, binding, seen }) =>
+          ai.iracingBind(aircraftId, actionId, binding, seen),
         async listenStart() {
           const started = await ctx.ports.input.start();
           if (!started.ok) return started;

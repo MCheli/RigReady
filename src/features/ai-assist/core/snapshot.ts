@@ -7,7 +7,7 @@ import type {
 } from '../../../core/bindings';
 import { err, ok, type Result } from '../../../core/result';
 import { describeInput, type Controls } from './inputs';
-import type { Pack } from './pack';
+import type { GuideGame, Pack } from './pack';
 
 /**
  * Everything about one aircraft the guide and the AI work from: its actions, what is bound
@@ -27,6 +27,8 @@ export interface ControllerRef {
 }
 
 export interface Snapshot {
+  /** The game: a DCS aircraft, or an iRacing class or car. */
+  game: GuideGame;
   aircraftId: string;
   aircraftName: string;
   actions: BoundAction[];
@@ -36,6 +38,20 @@ export interface Snapshot {
   pack?: Pack;
   /** Whose guide `pack` is. Absent means the one RigReady ships. */
   guideKind?: GuideKind;
+  /** For iRacing: the set of bindings this is about, and whether RigReady may change it now. */
+  iracing?: {
+    /** The iRacing bindings feature's set id: "all", or "car:<folder>". */
+    set: string;
+    /** "All cars", or the car's folder name. */
+    setName: string;
+    /** The control profile the set is in, when iRacing keeps profiles. */
+    profile?: string;
+    /** Changing a binding is on in this run of RigReady. */
+    editing: boolean;
+    /** The simulator runs: it writes its files when it closes, so nothing is written now. */
+    simRunning: boolean;
+    notes: string[];
+  };
 }
 
 export type GuideKind = 'shipped' | 'drafted' | 'own';
@@ -45,6 +61,11 @@ const GUIDE_SOURCE: Record<GuideKind, string> = {
   shipped: "RigReady's binding guide for this aircraft",
   drafted: 'a binding guide an AI model drafted for this aircraft; no person checked it',
   own: 'a binding guide the player wrote or was given for this aircraft; RigReady did not check its advice',
+};
+const IRACING_GUIDE_SOURCE: Record<GuideKind, string> = {
+  shipped: "RigReady's binding guide for this class of car; not reviewed by a racing driver",
+  drafted: 'a binding guide an AI model drafted for this car; no person checked it',
+  own: 'a binding guide the player wrote or was given for this car; RigReady did not check its advice',
 };
 
 export async function takeSnapshot(
@@ -80,6 +101,7 @@ export async function takeSnapshot(
       controls: d.controls ?? { buttons: 0, hats: 0, axes: [] },
     }));
   return ok({
+    game: 'dcs',
     aircraftId,
     aircraftName: bindings.value.aircraft.name,
     actions: actions.value,
@@ -121,13 +143,23 @@ export const oneLine = (text: string, max = 160): string =>
  */
 export function contextText(snapshot: Snapshot): string {
   const lines: string[] = [];
-  lines.push(`<aircraft>`);
-  lines.push(
-    `DCS World aircraft: ${oneLine(snapshot.aircraftName)} (input profile ${oneLine(snapshot.aircraftId)})`
-  );
-  lines.push(`</aircraft>`);
+  const iracing = snapshot.game === 'iracing';
+  if (iracing) {
+    lines.push(`<car>`);
+    lines.push(
+      `iRacing: ${oneLine(snapshot.aircraftName)}; the bindings for ${oneLine(snapshot.iracing?.setName ?? 'All cars')}`
+    );
+    lines.push(`</car>`);
+  } else {
+    lines.push(`<aircraft>`);
+    lines.push(
+      `DCS World aircraft: ${oneLine(snapshot.aircraftName)} (input profile ${oneLine(snapshot.aircraftId)})`
+    );
+    lines.push(`</aircraft>`);
+  }
   if (snapshot.pack) {
-    lines.push(`<guide source="${GUIDE_SOURCE[snapshot.guideKind ?? 'shipped']}">`);
+    const source = (iracing ? IRACING_GUIDE_SOURCE : GUIDE_SOURCE)[snapshot.guideKind ?? 'shipped'];
+    lines.push(`<guide source="${source}">`);
     lines.push(oneLine(snapshot.pack.summary, 800));
     for (const item of snapshot.pack.items) {
       lines.push(
@@ -137,8 +169,25 @@ export function contextText(snapshot: Snapshot): string {
     lines.push(`</guide>`);
   }
   const bound = boundNow(snapshot);
-  lines.push(`<actions columns="id | kind | writable | category | name | bound now">`);
+  // iRacing's own id is its name: one column is enough.
+  lines.push(
+    iracing
+      ? `<actions columns="id | kind | writable | group | bound now">`
+      : `<actions columns="id | kind | writable | category | name | bound now">`
+  );
   for (const a of snapshot.actions) {
+    if (iracing) {
+      lines.push(
+        [
+          a.id,
+          a.kind,
+          a.editable ? 'yes' : 'no',
+          oneLine(a.category.join('/'), 80),
+          (bound.get(a.id) ?? []).join(', ') || '-',
+        ].join(' | ')
+      );
+      continue;
+    }
     lines.push(
       [
         a.id,
@@ -156,6 +205,14 @@ export function contextText(snapshot: Snapshot): string {
 
 /** The user's controllers as sent: names, roles, control counts and axis names only. */
 export function devicesText(snapshot: Snapshot): string {
+  if (snapshot.game === 'iracing') {
+    // iRacing's file names a controller and its inputs, not what the controller has.
+    const lines = [`<devices columns="ref | DirectInput name">`];
+    for (const c of snapshot.controllers) lines.push(`${c.ref} | ${oneLine(c.name, 100)}`);
+    lines.push(`keyboard | Keyboard`);
+    lines.push(`</devices>`);
+    return lines.join('\n');
+  }
   const lines = [`<devices columns="ref | DirectInput name | used as | buttons | hats | axes">`];
   for (const c of snapshot.controllers) {
     lines.push(

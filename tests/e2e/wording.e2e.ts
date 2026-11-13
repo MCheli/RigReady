@@ -12,14 +12,16 @@ test('wording: on a PC whose only game is iRacing, the shared pages speak of any
   const { page, shot } = await rig.launch('shell-racing-pc', 'wording-racing');
   await page.getByTestId('mode-configure').click();
 
-  // Settings > AI: the assistant is for whatever you play; the binding guide is named as DCS's.
+  // Settings > AI: the assistant is for whatever you play; the binding guide names its games.
   await page.getByTestId('nav-settings').click();
   const who = page.getByTestId('ai-who-answers');
   await who.scrollIntoViewIfNeeded();
   await expect(who).toContainText(
     'the assistant answers questions about your rig, proposes setups and drafts scripts, whatever you play.'
   );
-  await expect(who).toContainText('For DCS aircraft, the Binding guide page can also');
+  await expect(who).toContainText(
+    'For DCS aircraft and iRacing cars, the Binding guide page can also'
+  );
   await shot('settings-ai');
 
   // Backups: a snapshot and a tracked item are explained with no DCS example.

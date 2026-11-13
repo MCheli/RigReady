@@ -13,32 +13,43 @@ const store = useAiStore();
 const emit = defineEmits<{ open: [tab: string] }>();
 
 const guide = computed(() => store.guide!);
+const iracing = computed(() => guide.value.game === 'iracing');
 const settled = computed(
   () => new Set([...guide.value.progress.done, ...guide.value.progress.skipped])
 );
+/**
+ * In iRacing, what RigReady cannot bind (the steering, the pedals) is bound in iRacing: such
+ * an item is never marked done here, and the count is of the items RigReady binds with you.
+ */
+const inGameOnly = (i: ItemView): boolean =>
+  iracing.value && i.actions.length > 0 && i.actions.every((a) => !a.editable);
+const bindable = computed(() => store.items.filter((i) => !inGameOnly(i)));
+const inGameCount = computed(() => store.items.length - bindable.value.length);
 const doneCount = computed(
-  () => store.items.filter((i) => guide.value.progress.done.includes(i.id)).length
+  () => bindable.value.filter((i) => guide.value.progress.done.includes(i.id)).length
 );
 const item = computed(() => store.item);
 const stagedFor = (actionId: string) => guide.value.staged.find((s) => s.actionId === actionId);
+const gameName = computed(() => (iracing.value ? 'iRacing' : 'DCS'));
 
-const STATUS: Record<ItemView['status'], string> = {
+const STATUS = computed<Record<ItemView['status'], string>>(() => ({
   bound: 'Bound',
   partial: 'Partly bound',
   unbound: 'Not bound on a controller',
-  missing: 'Not in this version of DCS',
-};
+  inGame: 'Bind in iRacing',
+  missing: `Not in this version of ${gameName.value}`,
+}));
 const statusClass = (i: ItemView): string =>
   i.status === 'bound'
     ? 'rr-ok'
     : i.status === 'partial'
       ? 'rr-warn'
-      : i.status === 'unbound' && i.tier === 'must'
+      : (i.status === 'unbound' || i.status === 'inGame') && i.tier === 'must'
         ? 'rr-bad'
         : 'rr-muted';
 
 function mark(i: ItemView): string {
-  if (guide.value.progress.done.includes(i.id)) return 'mdi-check-circle';
+  if (guide.value.progress.done.includes(i.id) && !inGameOnly(i)) return 'mdi-check-circle';
   if (guide.value.progress.skipped.includes(i.id)) return 'mdi-debug-step-over';
   return i.status === 'bound' ? 'mdi-circle' : 'mdi-circle-outline';
 }
@@ -47,16 +58,53 @@ const position = computed(() => {
   const at = store.items.findIndex((i) => i.id === item.value?.id);
   return { at, total: store.items.length };
 });
+
+/** The words beside an action RigReady does not bind here. */
+function cannot(kind: 'button' | 'axis'): string {
+  if (!iracing.value) return 'Bind in DCS: RigReady cannot write this one yet';
+  if (!guide.value.iracing?.editing) return 'Bind in iRacing: Options, then Controls';
+  return kind === 'axis'
+    ? 'An axis: bind it in iRacing, Options, then Controls'
+    : 'Bind in iRacing: Options, then Controls';
+}
+
+function bindingTitle(b: { ignored: boolean; source: string }): string {
+  if (iracing.value) return 'In iRacing’s file';
+  return b.ignored
+    ? 'On a device marked as not used in DCS'
+    : b.source === 'default'
+      ? 'DCS default'
+      : 'Your binding';
+}
+
+/** Moves on without marking anything: for an item that is bound in iRacing itself. */
+function next(): void {
+  const at = position.value.at;
+  const following = store.items[at + 1];
+  if (following) void store.goTo(following.id);
+}
 </script>
 
 <template>
   <div v-if="!guide.guide" class="rr-panel rr-empty" data-testid="ai-no-guide">
     <v-icon icon="mdi-book-open-blank-variant" size="36" class="mb-3" />
     <div v-if="guide.stored" class="rr-row-title">
-      The guide file for the {{ guide.aircraftName }} needs a fix
+      The guide file for {{ iracing ? '' : 'the ' }}{{ guide.aircraftName }} needs a fix
     </div>
-    <div v-else class="rr-row-title">There is no guide for the {{ guide.aircraftName }} yet</div>
-    <div v-if="!guide.stored" class="rr-row-sub">
+    <div v-else class="rr-row-title">
+      There is no guide for {{ iracing ? '' : 'the ' }}{{ guide.aircraftName }} yet
+    </div>
+    <div v-if="!guide.stored && iracing" class="rr-row-sub">
+      RigReady ships guides by class of car: GT3, GT4, LMDh and prototypes, formula, oval and dirt.
+      This car has controls of its own in iRacing, and its folder name does not say its class. Pick
+      the class at the top for the bindings of all cars, or give this car a guide of its own: import
+      one somebody shared with you, or start your own from a short example and edit it in Notepad.
+      Neither needs an AI key.
+      <template v-if="store.aiReady">
+        With your API key, AI help can also draft one from iRacing's list of actions.
+      </template>
+    </div>
+    <div v-else-if="!guide.stored" class="rr-row-sub">
       RigReady ships guides for the F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H and a dozen
       more, but not yet for this one. A guide is a plain text file: import one somebody shared with
       you, or start your own from a short example and edit it in Notepad. Neither needs an AI key.
@@ -81,8 +129,11 @@ const position = computed(() => {
   <div v-else class="walk" data-testid="ai-walkthrough">
     <div class="walk-progress">
       <div class="walk-progress-text" data-testid="ai-progress">
-        {{ doneCount }} of {{ store.items.length }} done
+        {{ doneCount }} of {{ bindable.length }} done
         <span class="rr-muted">· saved as you go</span>
+        <span v-if="inGameCount > 0" class="rr-muted" data-testid="ai-progress-in-game">
+          · {{ inGameCount }} more {{ inGameCount === 1 ? 'is' : 'are' }} set up in iRacing itself
+        </span>
       </div>
       <!-- A meter of how far the walkthrough is, not a sign that something is loading. -->
       <div
@@ -90,14 +141,14 @@ const position = computed(() => {
         role="progressbar"
         aria-label="Walkthrough progress"
         aria-valuemin="0"
-        :aria-valuemax="store.items.length"
+        :aria-valuemax="bindable.length"
         :aria-valuenow="doneCount"
         data-testid="ai-walk-meter"
       >
         <div
           class="walk-meter-fill"
           :style="{
-            width: `${store.items.length ? (100 * doneCount) / store.items.length : 0}%`,
+            width: `${bindable.length ? (100 * doneCount) / bindable.length : 0}%`,
           }"
         />
       </div>
@@ -167,6 +218,20 @@ const position = computed(() => {
         <p v-if="item.note" class="walk-note">
           <v-icon icon="mdi-lightbulb-on-outline" size="15" /> {{ item.note }}
         </p>
+        <div v-if="inGameOnly(item)" class="walk-in-game rr-panel" data-testid="ai-in-game">
+          <v-icon icon="mdi-open-in-app" size="18" class="rr-muted" />
+          <div>
+            <div class="rr-row-title">Bind this in iRacing: Options, then Controls</div>
+            <div class="rr-row-sub">
+              <template v-if="guide.iracing?.editing">
+                RigReady binds buttons and keys in iRacing. An axis, such as the wheel or a pedal,
+                is bound and calibrated in iRacing itself, and so is a hat switch.
+              </template>
+              <template v-else> RigReady does not change iRacing bindings in this run. </template>
+              iRacing writes its bindings when it closes; this page then shows what you bound.
+            </div>
+          </div>
+        </div>
 
         <div class="walk-actions">
           <div
@@ -178,7 +243,12 @@ const position = computed(() => {
           >
             <div class="walk-action-main">
               <div class="rr-row-title">{{ a.label }}</div>
-              <div class="rr-mono rr-muted walk-dcs" title="DCS's own name">{{ a.dcsName }}</div>
+              <div
+                class="rr-mono rr-muted walk-dcs"
+                :title="iracing ? 'iRacing’s own id' : 'DCS\'s own name'"
+              >
+                {{ a.dcsName }}
+              </div>
               <div class="walk-bound">
                 <span v-if="a.bound.length === 0" class="rr-muted">Not bound</span>
                 <span
@@ -186,13 +256,7 @@ const position = computed(() => {
                   :key="n"
                   class="walk-chip"
                   :class="{ ignored: b.ignored }"
-                  :title="
-                    b.ignored
-                      ? 'On a device marked as not used in DCS'
-                      : b.source === 'default'
-                        ? 'DCS default'
-                        : 'Your binding'
-                  "
+                  :title="bindingTitle(b)"
                 >
                   {{ b.text }}
                 </span>
@@ -238,7 +302,7 @@ const position = computed(() => {
               </v-btn>
               <div v-else class="walk-listening" data-testid="ai-listening">
                 <v-progress-circular indeterminate size="16" width="2" color="primary" />
-                Press the control
+                {{ iracing ? 'Press a button or a key… Esc stops.' : 'Press the control' }}
                 <v-btn
                   size="x-small"
                   variant="text"
@@ -250,7 +314,7 @@ const position = computed(() => {
               </div>
             </template>
             <span v-else class="rr-muted walk-cannot" data-testid="ai-not-writable">
-              Bind in DCS: RigReady cannot write this one yet
+              {{ cannot(a.kind) }}
             </span>
           </div>
         </div>
@@ -269,25 +333,39 @@ const position = computed(() => {
             Back
           </v-btn>
           <v-spacer />
-          <v-btn
-            v-if="settled.has(item.id)"
-            variant="text"
-            data-testid="ai-reopen"
-            @click="store.reopen(item.id)"
-          >
-            Mark not done
-          </v-btn>
-          <v-btn v-else variant="text" data-testid="ai-skip" @click="store.finish('skipped')">
-            Skip
-          </v-btn>
-          <v-btn
-            color="primary"
-            append-icon="mdi-chevron-right"
-            data-testid="ai-done"
-            @click="store.finish('done')"
-          >
-            Done, next
-          </v-btn>
+          <template v-if="inGameOnly(item)">
+            <!-- Bound in iRacing: RigReady never marks it done; the status comes from the file. -->
+            <v-btn
+              v-if="position.at < position.total - 1"
+              color="primary"
+              append-icon="mdi-chevron-right"
+              data-testid="ai-next"
+              @click="next()"
+            >
+              Next
+            </v-btn>
+          </template>
+          <template v-else>
+            <v-btn
+              v-if="settled.has(item.id)"
+              variant="text"
+              data-testid="ai-reopen"
+              @click="store.reopen(item.id)"
+            >
+              Mark not done
+            </v-btn>
+            <v-btn v-else variant="text" data-testid="ai-skip" @click="store.finish('skipped')">
+              Skip
+            </v-btn>
+            <v-btn
+              color="primary"
+              append-icon="mdi-chevron-right"
+              data-testid="ai-done"
+              @click="store.finish('done')"
+            >
+              Done, next
+            </v-btn>
+          </template>
         </div>
       </section>
     </div>
@@ -387,6 +465,14 @@ const position = computed(() => {
   font-size: 13px;
   color: var(--rr-muted);
   margin: 0 0 10px;
+}
+.walk-in-game {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  margin: 0 0 10px;
+  background: var(--rr-surface-2);
 }
 .walk-actions {
   border-top: 1px solid var(--rr-border);

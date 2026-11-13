@@ -61,6 +61,10 @@ If a file holds a kind of binding RigReady has not seen before, the row says "A 
 
 **Cheat sheet** opens the [cheat sheets](../controls/cheat-sheets.md) for iRacing with the set you were looking at.
 
+## Plain names from the binding guide
+
+Where one of the [iRacing binding guides](iracing-binding-guide.md) names an action, the list shows the guide's plain name, with iRacing's own id beside it as always: "Next dash page" for `DashPageInc`. A car with a guide of its own uses that guide's names for its own bindings. Everything else keeps the names this page gives it.
+
 ## Why the page does not change bindings
 
 To change a binding, use iRacing itself: **Options**, then **Controls**. The change shows on this page afterwards. iRacing writes its files when the simulator closes, so while the simulator runs the page says that a binding changed in this session may not show yet.

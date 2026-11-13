@@ -74,6 +74,45 @@ Rules the loader enforces (a shipped file that breaks one fails the tests):
 DCS's own name is always shown next to the plain label, so a user can find the action in
 DCS's controls screen.
 
+## iRacing guides
+
+iRacing guides are by class of car, not per car: every car in iRacing has the same list of
+actions, and what matters differs by the kind of racing. Shipped today (none reviewed by a
+racing driver yet): GT3, GT4, LMDh and prototypes, formula and open-wheel, oval, and dirt, in
+`iracing-<class>.yaml`. The format is the one above, with these differences:
+
+```yaml
+format: 1
+game: iracing                   # required for an iRacing guide
+car:                            # instead of aircraft
+  id: gt3                       # the class; a guide of a user's own for one car: "car:<folder>"
+  name: GT3
+roles:                          # any of: wheel, pedals, shifter, panel, keyboard
+  wheel: { summary: ..., items: [...] }
+items:
+  - id: throttle
+    place: rim                  # rim (the wheel, pedals or shifter) | panel (a button box) | keyboard
+    role: pedals
+    input: axis                 # optional: the actions go on an axis, which is bound in iRacing
+    actions:
+      - { name: Throttle, label: Throttle }   # iRacing's own action id, as in its controls file
+```
+
+- An action is named by iRacing's own id ("BrakeBiasInc"), exactly as its controls file and
+  the iRacing bindings page give it. `iracingGuides.test.ts` checks every id against iRacing's
+  list of 369 actions in `fixtures/iracing-actions/baseline-2026-11.txt` (recorded from a real
+  control profile, 13 Nov 2026), and that list against what RigReady reads from the
+  scenario's copy of the same file. After an iRacing update that adds or renames actions,
+  record the list again from a real `controls.cfg`.
+- An item with `input: axis` (the steering, the pedals) is bound in iRacing itself; RigReady
+  binds buttons and keys. The test checks that an axis item names actions that take an axis,
+  and every other item actions that take a button or a key.
+- One action has the same plain label in every iRacing guide (a test checks it): the labels
+  are the plain names the iRacing bindings page and the cheat sheets show, whichever class is
+  shown.
+- A new class needs its id added to `IRACING_CLASSES` in `core/iracing.ts` (the page's order)
+  and to the test's list.
+
 ## Guides drafted by AI
 
 For an aircraft without a guide, a user with an Anthropic API key can have one drafted. It

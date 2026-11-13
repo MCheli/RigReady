@@ -1,0 +1,25 @@
+description: Binding guide for iRacing, on the racing rig with control profiles and two cars with their own
+rig: mark-full
+extends: iracing-bindings-profiles.yaml
+# The racing rig on iRacing 2026.11 with the profile "Baseline" for all cars (the owner's real one
+# of 13 Nov 2026 with the recorded rig's made-up device ids), except that its clutch axis is left
+# unbound, as a user with two pedals has it: data/ai-assist/iracing-profile-no-clutch.cfg differs
+# from data/iracing-bindings/profile-controls.cfg in that one record. Two cars have controls of
+# their own (app.ini [ControlProfiles]): porsche992rgt3, whose folder name says GT3, on the same
+# profile, and cadillacctsvr, whose name says no class, on a profile of its own.
+mutations:
+  - op: writeFile
+    path: Documents/iRacing/app.ini
+    from: data/ai-assist/iracing-app.ini
+  - op: writeFile
+    path: Documents/iRacing/profiles/controls/Baseline/controls.cfg
+    from: data/ai-assist/iracing-profile-no-clutch.cfg
+  - op: writeFile
+    path: Documents/iRacing/profiles/controls/Test Profile CTSV/controls.cfg
+    from: data/ai-assist/iracing-profile-no-clutch.cfg
+  - op: writeFile
+    path: Documents/iRacing/setups/porsche992rgt3/baseline.sto
+    content: setup
+  - op: writeFile
+    path: Documents/iRacing/setups/cadillacctsvr/baseline.sto
+    content: setup

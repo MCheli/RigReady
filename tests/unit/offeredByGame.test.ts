@@ -1,7 +1,8 @@
 /**
  * NAV-GAMES-006: an entry or a page about a game is offered where the game is found. A user
- * without DCS does not meet the binding guide in the menu, nor the DCS World and DCS bindings
- * pages in the command palette; a user with DCS meets all of them. Run on the real path: the
+ * without DCS does not meet the DCS World and DCS bindings pages in the command palette, nor,
+ * without DCS and iRacing, the binding guide in the menu; a user with DCS meets all of them,
+ * and a user with iRacing meets the binding guide (AI-IRACING-002). Run on the real path: the
  * manifests as the features declare them, the features' real commands.ts, the games feature's
  * `gamesFound` against the wired main side, and the shell's own follower, menu and filter.
  */
@@ -162,17 +163,22 @@ async function offeredOn(scenario: string, files?: string[]) {
 
 /** A page of the palette that is about DCS: its routes, or a name that says DCS. */
 const aboutDcs = (titles: string[], pages: string[]): string[] => [
-  ...titles.filter((title) => /\bDCS\b|Binding guide/.test(title)),
-  ...pages.filter((to) => /^\/configure\/(dcs|dcs-bindings|ai-assist)(\/|$)/.test(to)),
+  ...titles.filter((title) => /\bDCS\b/.test(title)),
+  ...pages.filter((to) => /^\/configure\/(dcs|dcs-bindings)(\/|$)/.test(to)),
+];
+/** The binding guide, which is about DCS and iRacing. */
+const guidePages = (titles: string[], pages: string[]): string[] => [
+  ...titles.filter((title) => /Binding guide/.test(title)),
+  ...pages.filter((to) => /^\/configure\/ai-assist(\/|$)/.test(to)),
 ];
 
 describe('NAV-GAMES-006 an entry or a page about a game is offered where the game is found', () => {
-  it('the binding guide is the one menu entry about a game, and it is about DCS', async () => {
+  it('the binding guide is the one menu entry about a game, and it is about DCS and iRacing', async () => {
     const manifests = await realManifests();
     const aboutAGame = manifests.flatMap((m) =>
       (m.nav ?? []).filter((entry) => entry.games).map((entry) => [entry.title, entry.games])
     );
-    expect(aboutAGame).toEqual([['Binding guide', ['dcs']]]);
+    expect(aboutAGame).toEqual([['Binding guide', ['dcs', 'iracing']]]);
     // Its route stays, so a link to it still opens the page, which says DCS was not found.
     const guide = manifests.find((m) => m.id === 'ai-assist')!;
     expect(guide.routes?.map((r) => r.path)).toEqual(['/configure/ai-assist/:tab?']);
@@ -184,6 +190,7 @@ describe('NAV-GAMES-006 an entry or a page about a game is offered where the gam
     expect(pc.controls).toEqual(['Bindings', 'Cheat sheets', 'Overlay']);
     expect(pc.entries).toBe(17);
     expect(aboutDcs(pc.titles, pc.pages)).toEqual([]);
+    expect(guidePages(pc.titles, pc.pages)).toEqual([]);
     // What is about no game in particular is all there, and Play's commands lead.
     expect(pc.titles).toEqual(
       expect.arrayContaining(['Games', 'Bindings', 'Cheat sheets', 'Overlay', 'Wheel', 'Settings'])
@@ -191,11 +198,13 @@ describe('NAV-GAMES-006 an entry or a page about a game is offered where the gam
     expect(pc.palette[0]!.group).toBe('Play');
   });
 
-  it('a PC whose only game is iRacing: no DCS, and the racing pages are there', async () => {
+  it('a PC whose only game is iRacing: no DCS, and the racing pages and the binding guide are there', async () => {
     const pc = await offeredOn('shell-racing-pc');
     expect(pc.found).toEqual(['iracing']);
-    expect(pc.controls).toEqual(['Bindings', 'Cheat sheets', 'Overlay']);
+    expect(pc.controls).toEqual(['Bindings', 'Binding guide', 'Cheat sheets', 'Overlay']);
+    expect(pc.entries).toBe(18);
     expect(aboutDcs(pc.titles, pc.pages)).toEqual([]);
+    expect(pc.titles).toContain('Binding guide');
     expect(pc.titles).toEqual(expect.arrayContaining(['Racing', 'iRacing', 'iRacing bindings']));
     expect(pc.palette[0]!.group).toBe('Play');
   });

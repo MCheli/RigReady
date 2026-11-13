@@ -34,6 +34,7 @@ if (!key) {
 }
 
 const snapshot: Snapshot = {
+  game: 'dcs',
   aircraftId: 'FA-18C_hornet',
   aircraftName: 'F/A-18C',
   actions: [
