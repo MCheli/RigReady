@@ -44,7 +44,7 @@ npm run dev
 
 Then, one at a time:
 
-1. **Configure > Devices**, press a button on the device: its page opens. Ask for **Vendor : product** and the name it reports. Tell them not to send the serial number or the instance path.
+1. **Configure > Devices**, click **Find a device** at the top of the page, then press a button on the device: the banner says "That was <name>" and its row is highlighted. Click the row to open its details. Ask for **Vendor : product** and the name it reports. Tell them not to send the serial number or the instance path.
 2. **Input tester** tab: how many axes, buttons and hats it has.
 3. **Cheat sheets**: what the device's sheet shows now (a list of numbered controls, cards, or a drawing). A screenshot (Win+Shift+S) helps; ask them to check that it shows no serial number or instance path before they share it.
 
@@ -98,7 +98,7 @@ A failure is fixed, and that step run again. Fill in the results table of `docs/
 
 ## Step 9 of 9: keep it or send it
 
-Go through the change with the user file by file, in plain words, until they could answer a question about it. Then:
+Go through the change with the user file by file, in plain words, until they could answer a question about it. Then commit it on its branch, with their OK: only the change's own paths (never `git add -A`), with other flows' screenshots put back (`git checkout -- artifacts/screens/<their flow>`), until `git status --short` prints nothing. Then:
 
 - For themselves: the `local-build` skill.
 - For everyone: the `open-pull-request` skill. The rig results go into the Testing section.

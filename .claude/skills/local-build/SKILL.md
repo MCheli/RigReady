@@ -28,20 +28,24 @@ Check `git --version`, `node --version` (22.12 or newer) and `git status` (which
 
 Before they trust a build of a change: `npm run check` passes. Say so if it does not, and what failed.
 
-## Step 3: build
+## Step 3: build (a program folder or an installer only)
 
-Run the command they chose. For `pack` and `dist`, tell them it takes a few minutes and uploads nothing (`--publish never`).
+For `pack` or `dist`, run it, and tell them it takes a few minutes and uploads nothing (`--publish never`). A run from the source has nothing to build here: do not start `npm run dev` in this step, because nothing has set its data folder yet. Step 4 starts every choice.
 
 ## Step 4: start it, apart from their real data
 
-Tell the user to quit any RigReady that runs (tray icon, right-click, **Quit**): run one at a time. Then give them, for a PowerShell window in the repository's folder:
+Nothing starts before these two things, in this order, whichever of the three they chose:
 
-```powershell
-$env:RIGREADY_HOME = "$env:USERPROFILE\.rigready-my-build"
-& .\release\win-unpacked\RigReady.exe
-```
+1. The user quits every RigReady that runs (tray icon, right-click, **Quit**). A packaged copy started while another runs only brings that one forward, and two copies would share the controllers and the files.
+2. The data folder is set in the same PowerShell window, in the repository's folder, before the start command: `$env:RIGREADY_HOME = "$env:USERPROFILE\.rigready-my-build"`. Check it with `$env:RIGREADY_HOME` before going on.
 
-(or `npm run dev` in place of the second line, or the installer). For a first look with nothing real at all, the isolated launch in `docs/contributing/local-build.md` ("Trying a build without touching anything real").
+Then the start command in that same window:
+
+- From the source: `npm run dev`.
+- The program folder: `& .\release\win-unpacked\RigReady.exe`.
+- The installer: it replaces an installed RigReady (say so first, step 5). On its last page the user unticks the box that starts RigReady, since a start from there has no `RIGREADY_HOME` and opens `~/.rigready`. Then start the installed program from the same window: `& "$env:LOCALAPPDATA\Programs\RigReady\RigReady.exe"`, or the folder they chose in the installer. A start from the Start menu or the desktop shortcut also uses `~/.rigready`.
+
+If you start it yourself in the background instead, set `RIGREADY_HOME` on that command, never after it. For a first look that also keeps the user folder apart, the isolated launch in `docs/contributing/local-build.md` ("Trying a build in a user folder of its own"), with what it does and does not keep apart.
 
 ## Step 5: what a copy of their own means
 

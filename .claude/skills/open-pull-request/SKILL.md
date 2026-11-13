@@ -15,7 +15,8 @@ The rules are in `CONTRIBUTING.md` and `docs/contributing/README.md` ("Sending i
 
 ## Step 1: is it ready to send?
 
-- The change is on a branch of its own made from `main`, one change in it (`git status`, `git log --oneline origin/main..HEAD`).
+- **Everything is committed, and nothing else is there.** `git status --short` must print nothing; only then is `origin/main...HEAD` the whole change, as the steps below read it. If it prints anything, go through each file with the user: commit the ones that belong to the change (by path, never `git add -A`; ask first), and ask what to do with the rest (moved out of the repository, or kept for a later change on another branch). Never delete one of their files. Run `git status --short` again, and go on only when it is empty.
+- The change is on a branch of its own made from `main`, one change in it (`git branch --show-current`, `git log --oneline origin/main..HEAD`).
 - For hardware or a game: the results of the proof on the user's own rig are in hand ("Proof on your own rig" in `docs/contributing/README.md`). Without them the pull request may be opened as a draft that says so, but it is not marked ready, and nothing in it calls the device or game supported.
 - The research note, the tests, the screenshots under `artifacts/screens/<flow>/`, the ledger entry and the manual page are part of the change.
 

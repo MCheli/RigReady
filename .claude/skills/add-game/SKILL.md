@@ -62,4 +62,4 @@ Only after stage 2 passed on the user's rig. Read `src/features/iracing-bindings
 
 ## At the end of each stage
 
-Go through the change with the user file by file, in plain words, until they could answer a question about it. Then the `local-build` skill for a copy of their own, or the `open-pull-request` skill to send it in.
+Go through the change with the user file by file, in plain words, until they could answer a question about it. Then commit it on its branch, with their OK: only the change's own paths (never `git add -A`), with other flows' screenshots put back (`git checkout -- artifacts/screens/<their flow>`), until `git status --short` prints nothing. Then the `local-build` skill for a copy of their own, or the `open-pull-request` skill to send it in.

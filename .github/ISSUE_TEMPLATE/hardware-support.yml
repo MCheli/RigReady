@@ -38,7 +38,7 @@ body:
     attributes:
       label: Vendor and product ID
       description: >-
-        In RigReady, Configure > Devices, press a button on the device and copy "Vendor : product" from its page.
+        In RigReady, Configure > Devices, click Find a device, press a button on the device, then click its highlighted row and copy "Vendor : product" from its details.
         Or in Windows' Device Manager, the device's Properties > Details > Hardware Ids, the numbers after VID_ and PID_.
       placeholder: 044F:0404
     validations:

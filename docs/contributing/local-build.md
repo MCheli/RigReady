@@ -28,7 +28,7 @@ Once, for the small Python runtime that reads your controllers:
 npm run setup:python
 ```
 
-It downloads Python's embeddable runtime and one library file for the virtual controller into `resources/`, each checked against a fixed checksum. Then:
+It downloads Python's embeddable runtime and one library file for the virtual controller into `resources/`, each checked against a fixed checksum. Then quit any RigReady that runs (right-click its icon in the tray, then **Quit**), and start yours with its data folder set first, in the same PowerShell window:
 
 ```powershell
 $env:RIGREADY_HOME = "$env:USERPROFILE\.rigready-my-build"
@@ -56,7 +56,9 @@ Or build an installer:
 npm run dist
 ```
 
-This makes `release\RigReady-Setup-<version>.exe`, unsigned, in a few minutes. Both commands pass `--publish never` to the packager: nothing is uploaded anywhere. `release\` is not tracked by Git. `docs/RELEASING.md` describes both.
+This makes `release\RigReady-Setup-<version>.exe`, unsigned, in a few minutes. Installing it replaces an installed RigReady (below). On the installer's last page, untick the box that starts RigReady: started from there, or from the Start menu or the desktop shortcut, it has no `RIGREADY_HOME` and uses `~/.rigready`. Start it from PowerShell instead, after setting `RIGREADY_HOME` as above: `& "$env:LOCALAPPDATA\Programs\RigReady\RigReady.exe"`, or the folder you chose in the installer.
+
+Both commands pass `--publish never` to the packager: nothing is uploaded anywhere. `release\` is not tracked by Git. `docs/RELEASING.md` describes both.
 
 ## What a copy of your own means
 
@@ -66,9 +68,14 @@ This makes `release\RigReady-Setup-<version>.exe`, unsigned, in a few minutes. B
 - **Unsigned.** The official installer is signed; yours is not. Started on the PC that built it, it carries no mark of the web, so SmartScreen does not ask. Copied to another PC by a download, a chat or an email, it is marked: SmartScreen then shows "Windows protected your PC" with an unknown publisher (**More info**, then **Run anyway**). With Windows' Smart App Control on, an unsigned program can be blocked outright. If you give your build to someone, tell them it is your own build and not the official release.
 - **The data folder.** Every copy uses `~/.rigready` unless `RIGREADY_HOME` says otherwise: the setups, the settings, the backups and the record of changes on the Safety page. With a folder of its own, a change your copy makes to a game's files is backed up into that folder and listed on your copy's Safety page, so Undo it there.
 
-## Trying a build without touching anything real
+## Trying a build in a user folder of its own
 
-The isolated launch, which RigReady's own scenario tests use, gives the program a user folder of its own: no setups, no game files, no data folder of yours. Open a PowerShell window for it alone, and close it afterwards, since the four variables stay set in that window:
+The isolated launch gives the program a user folder of its own, in a temp folder. It is not a sandbox: RigReady still runs on the real Windows of this PC, and only what lives in your user folder is kept apart.
+
+- **Kept apart:** your user folder, and so RigReady's data folder (setups, settings, backups, the Safety page), Documents, Saved Games, AppData and the Desktop. Settings and bindings a game keeps there (DCS's `Saved Games\DCS`, iRacing's `Documents\iRacing`) are not seen, and the temp folder starts empty.
+- **Still the real ones:** Program Files and ProgramData, Steam and every Steam library (found through the real registry), so the games installed there and the files in their folders; the registry (read only); the programs running; the controllers, monitors and audio devices. RigReady reads them as usual, and a change you confirm in it to a file in those places is written there, with its backup in the temp folder. A monitor layout or a default audio device changes only when you apply one.
+
+Open a PowerShell window for it alone, and close it afterwards, since the four variables stay set in that window:
 
 ```powershell
 $try = Join-Path $env:TEMP "rigready-try"
@@ -79,8 +86,6 @@ $env:LOCALAPPDATA = "$try\AppData\Local"
 $env:RIGREADY_HOME = "$try\.rigready"
 & .\release\win-unpacked\RigReady.exe
 ```
-
-Your controllers, monitors and audio devices are still the real ones. RigReady reads them; it changes a monitor layout or the default audio device only when you apply one.
 
 ## Keep your change, and take the updates
 
