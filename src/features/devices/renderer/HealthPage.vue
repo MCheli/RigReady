@@ -49,7 +49,8 @@ async function run(): Promise<void> {
 // The controllers are shown live while the check listens, so a button that is down or an
 // axis that trembles can be seen while it happens.
 onMounted(() => {
-  if (!devicesStore.overview) void devicesStore.load();
+  // Always read again: a list kept from an earlier visit can be from before a plug or unplug.
+  void devicesStore.load();
   void input.acquire();
 });
 onBeforeUnmount(() => {
@@ -207,7 +208,7 @@ const controllerName = (index: number): string => {
         data-testid="health-live"
         aria-hidden="true"
       >
-        <div v-for="d in input.devices" :key="d.index" class="health-live-row">
+        <div v-for="d in input.devices" :key="d.guid" class="health-live-row">
           <div class="health-live-name">{{ controllerName(d.index) }}</div>
           <ControllerStrip :device="d" />
         </div>

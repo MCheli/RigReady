@@ -134,5 +134,10 @@ export const devicesContract = defineContract(
   {
     /** Latest state of each controller that changed, at most about 60 times a second. */
     input: z.object({ states: z.array(InputStateSchema) }),
+    /**
+     * The list of game controllers changed while a window watches input: one came, went or
+     * got another number. Sent before any input of the new list.
+     */
+    controllers: z.object({ devices: z.array(InputDeviceSchema) }),
   }
 );

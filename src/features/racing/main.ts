@@ -1,6 +1,6 @@
 import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
-import { isToolBackup, racingContract, type BackupGame } from './contract';
+import { isToolBackup, racingContract, type BackupGame, type WheelView } from './contract';
 import { racingBindingReaders } from './core/bindingReaders';
 import { acView } from './core/assettoCorsa';
 import { previewRepairAc, repairAc } from './core/acRepair';
@@ -37,6 +37,7 @@ import {
 import type { RacingContext } from './core/context';
 import { wheelStatus } from './core/fanatec/fanatec';
 import { wheelRotationCheck } from './core/wheelbases/rotation';
+import { addMyWheel, removeMyWheel, unlistedView } from './core/wheelbases/unlisted';
 import { wheelBaseCheck } from './core/wheelbases/wheel';
 import { TUNING_PARAMETERS } from './core/fanatec/recommended';
 import {
@@ -73,6 +74,18 @@ export default defineFeatureMain({
         });
         return givenName ? { ...device, givenName } : device;
       });
+    };
+
+    /** The Wheel page: the base, its settings, and what "My wheel is not listed" can pick. */
+    const wheelView = async (): Promise<WheelView> => {
+      const presets = await readPresets(rctx);
+      return {
+        status: (await named([await wheelStatus(rctx)]))[0]!,
+        presets,
+        parameters: TUNING_PARAMETERS,
+        comparisons: await compareWheelSettings(rctx, presets),
+        ...(await unlistedView(rctx)),
+      };
     };
 
     // What is bound in each racing game, for cheat sheets and the other features that ask.
@@ -141,14 +154,14 @@ export default defineFeatureMain({
           return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
         },
         acRepairPreview: ({ choices }) => previewRepairAc(rctx, choices),
-        async wheel() {
-          const presets = await readPresets(rctx);
-          return ok({
-            status: (await named([await wheelStatus(rctx)]))[0]!,
-            presets,
-            parameters: TUNING_PARAMETERS,
-            comparisons: await compareWheelSettings(rctx, presets),
-          });
+        wheel: async () => ok(await wheelView()),
+        async addWheel(input) {
+          const added = await addMyWheel(rctx, input);
+          return added.ok ? ok(await wheelView()) : added;
+        },
+        async removeWheel(ref) {
+          const removed = await removeMyWheel(rctx, ref);
+          return removed.ok ? ok(await wheelView()) : removed;
         },
         savePresets: (presets) =>
           presetStore(rctx).write({ ...presets, updatedAt: ctx.ports.clock.now().toISOString() }),

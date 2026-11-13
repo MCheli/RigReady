@@ -13,7 +13,8 @@ import { acView } from './assettoCorsa';
 import { wheelStatus } from './fanatec/fanatec';
 import { brandOf } from './wheelbases/brands';
 import { readWheelRotation, WHEEL_ROTATION } from './wheelbases/rotation';
-import { softwareStates, wheelBases, WHEEL_BASE } from './wheelbases/wheel';
+import { readMyWheels } from './wheelbases/unlisted';
+import { firstBase, softwareStates, wheelBases, WHEEL_BASE } from './wheelbases/wheel';
 import { WHEEL_SETTINGS } from './fanatec/wheelSettings';
 import { iracingView } from './iracing/iracing';
 import { lmuView } from './lmu/lmu';
@@ -90,11 +91,31 @@ export function racingCapture(games: GameRegistry): CaptureDefinition {
       const ctx: RacingContext = { ...checkCtx, games };
       const candidates: CaptureCandidate[] = [];
       const devices = await ctx.ports.devices.list();
-      const base = devices.ok ? wheelBases(devices.value)[0] : undefined;
+      const mine = await readMyWheels(ctx);
+      const base = devices.ok ? firstBase(wheelBases(devices.value, mine)) : undefined;
       const brand = brandOf(base?.product.brand);
       // Everything here is marked as racing gear (`kind`) or as one game's (`game`): the
       // capture screen keeps it in a setup for a racing game, or for that game, and leaves
       // it out of a flight setup even while the wheel is plugged in.
+      if (base?.unlisted) {
+        // A base the user added ("My wheel is not listed"): connected and seen by games is
+        // all that can be checked without knowing the model. No maker software, no rotation.
+        candidates.push({
+          key: 'racing:wheel-base',
+          group: 'devices',
+          title: 'Wheel base connected',
+          description: `${base.name} · RigReady does not know this model, so its mode is not checked`,
+          selectedByDefault: true,
+          kind: 'racing',
+          icon: 'mdi-steering',
+          check: {
+            type: WHEEL_BASE,
+            title: 'Wheel base connected',
+            required: true,
+            params: { vendorId: base.vendorId, productId: base.productId },
+          },
+        });
+      }
       if (base && brand) {
         const title = brand.modeDetectable ? 'Wheel base in PC mode' : 'Wheel base connected';
         const warns =

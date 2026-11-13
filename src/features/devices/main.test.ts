@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { nullLogger } from '../../core/logger';
 import { discoverFeatures, wireFeatures } from '../../main/bootstrap';
-import type { InputState } from '../../shared/models';
+import type { InputDevice, InputState } from '../../shared/models';
 import { mutate, wiredApp, type WiredApp } from '../../../tests/helpers';
 import type { HealthReport } from './core/health';
 import type { Overview, UsbMap } from './core/model';
@@ -222,6 +222,85 @@ describe('devices: live input, health check, switches', () => {
     app.ports.input.emit([state(10, 62, [1])]);
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(app.events.length).toBe(before);
+  });
+
+  it('tells the window when a controller came or went, by itself and before any input of the new list', async () => {
+    app = await wiredApp('devices-rig', { files: [] });
+    const lists = (): { at: number; names: string[] }[] =>
+      app!.events.flatMap((e, at) =>
+        e.channel === 'devices:event:controllers'
+          ? [{ at, names: (e.payload as { devices: InputDevice[] }).devices.map((d) => d.name) }]
+          : []
+      );
+    const inputs = (): { at: number; states: InputState[] }[] =>
+      app!.events.flatMap((e, at) =>
+        e.channel === 'devices:event:input'
+          ? [{ at, states: (e.payload as { states: InputState[] }).states }]
+          : []
+      );
+
+    // A window that starts to watch gets the list as it is now.
+    await app.invoke('devices:watchInput', { client: 'a', on: true });
+    expect(lists()).toHaveLength(1);
+    expect(lists()[0]!.names).toHaveLength(12);
+    expect(lists()[0]!.names.slice(0, 2)).toEqual([
+      'FANATEC Podium Wheel Base DD2',
+      'R-VPC Panel #1',
+    ]);
+
+    // The wheel base is unplugged. Nobody presses anything and nothing else asks: the
+    // window is told by itself, and the button box now has the number the base had.
+    await mutate(app, [{ op: 'unplugDevice', match: { vendorId: '0EB7', productId: '0007' } }]);
+    await vi.waitFor(() => expect(lists()).toHaveLength(2), WAIT);
+    expect(lists()[1]!.names).toHaveLength(11);
+    expect(lists()[1]!.names[0]).toBe('R-VPC Panel #1');
+
+    // The button box goes and the base comes back while input of the button box may still
+    // wait to be sent: whatever is sent after the new list was read from the new list.
+    app.ports.input.emit([state(0, 55, [3])]);
+    await mutate(app, [
+      { op: 'unplugDevice', match: { vendorId: '3344', productId: 'C259' } },
+      { op: 'unplugDevice', match: { vendorId: '044F', productId: 'B68F' } },
+      { op: 'unplugDevice', match: { vendorId: '4098' } },
+      { op: 'plugDevice', match: { vendorId: '0EB7', productId: '0007' } },
+    ]);
+    app.ports.input.emit([state(0, 108, [5])]);
+    await vi.waitFor(
+      () => expect(inputs().some((i) => i.states.some((s) => s.buttons.length === 108))).toBe(true),
+      WAIT
+    );
+    const fromBase = inputs().find((i) => i.states.some((s) => s.buttons.length === 108))!;
+    // The list in force when the base's input goes out is the one with the base alone. (The
+    // list may have been sent in steps while the devices went one by one.)
+    const swapped = lists()
+      .filter((l) => l.at < fromBase.at)
+      .at(-1)!;
+    expect(swapped.names).toEqual(['FANATEC Podium Wheel Base DD2']);
+    expect(lists().length).toBeGreaterThanOrEqual(3);
+    const after = inputs().filter((i) => i.at > swapped.at);
+    expect(after.flatMap((i) => i.states.map((s) => s.buttons.length))).toEqual([108]);
+    // The press on the button box went out before the list changed, or not at all.
+    const changed = lists()[2]!;
+    const fromBox = inputs().filter((i) => i.states.some((s) => s.buttons.length === 55));
+    expect(fromBox.every((i) => i.at < changed.at)).toBe(true);
+
+    // Nobody watches: nothing is compared and nothing is sent, whatever comes or goes.
+    await app.invoke('devices:watchInput', { client: 'a', on: false });
+    const sent = (): number =>
+      app!.events.filter((e) => e.channel.startsWith('devices:event:')).length;
+    const before = sent();
+    await mutate(app, [{ op: 'plugDevice', match: { vendorId: '3344', productId: 'C259' } }]);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(sent()).toBe(before);
+
+    // The next window to watch gets the list as it is by then.
+    await app.invoke('devices:watchInput', { client: 'b', on: true });
+    expect(lists().at(-1)!.names).toEqual(['FANATEC Podium Wheel Base DD2', 'R-VPC Panel #1']);
+    expect(sent()).toBe(before + 1);
+    // A reading from before the list changed is not played back to it: the numbers may
+    // belong to other controllers by now.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(sent()).toBe(before + 1);
   });
 
   it('runs the hands-off check on live input and remembers switches marked as normally on', async () => {

@@ -2086,6 +2086,65 @@ requirements:
       - "artifacts/screens/devices-hidhide/02-devices.png"
       - "artifacts/screens/devices-hidhide/03-hidhide-panel.png"
 
+  - id: DEV-015
+    title: The input tester follows a plug or unplug, and never shows a controller under another one's name
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "When a game controller is plugged in or unplugged, the window is told the new list by itself, before any input of the new list, with no visit to the Devices tab and no Refresh. The tester's cards and chips follow."
+      - "A controller is known by its own GUID, not by its number in Windows' list. When a number passes to another controller, that controller shows under its own name with nothing held, no ranges reached and no lines in the log; a reading from before the change is not shown for it."
+      - "Lines an unplugged controller wrote stay in the log under that controller's name."
+      - "The single view follows its controller to a new number. When its controller is unplugged it says 'That controller is not connected any more.' and does not pass to another controller."
+      - "Scenario devices-flying-then-wheel (mark-full with the wheel base unplugged): after the button box, the pedals and the stick are unplugged and the wheel base plugged in, the tester opened from the Wheel page lists 'FANATEC Podium Wheel Base DD2' and no flight device."
+    notes:
+      - "2026-11-12: sitting finding 49. Proven on the fake reader, which now forgets its last readings when the list changes as the Windows reader does. Not repeated on the real rig. The recorded rig has one DD2 controller, not the two the real rig showed."
+      - "2026-11-12: pages other than the tester still reload shortly after a plug, while the Windows reader looks for new controllers every two seconds; a link to a controller by number made from an old list can open another controller, under its own name."
+    status: done
+    evidence:
+      - "src/features/devices/core/controllers.test.ts#knows a controller by its GUID, not by its number"
+      - "src/features/devices/core/controllers.test.ts#never finds a device for a controller that only has the number of one of its controllers"
+      - "src/features/devices/core/controllers.test.ts#says which numbers passed to another controller, and whether anything changed at all"
+      - "src/features/devices/core/controllers.test.ts#writes a line for a list that differs whenever who sits where does"
+      - "src/features/devices/core/input.test.ts#never passes the lines of one controller on to the next one with its number"
+      - "src/features/devices/main.test.ts#tells the window when a controller came or went, by itself and before any input of the new list"
+      - "tests/e2e/devices-wheel.e2e.ts#devices: after the flight gear is swapped for the wheel, the tester names the wheel base and never a device that is gone"
+      - "artifacts/screens/devices-swap-to-wheel/01-flying.png"
+      - "artifacts/screens/devices-swap-to-wheel/02-wheel-named.png"
+      - "artifacts/screens/devices-swap-to-wheel/03-wheel-input.png"
+      - "artifacts/screens/devices-swap-to-wheel/04-wheel-gone.png"
+      - "artifacts/screens/devices-swap-to-wheel/05-box-after-wheel.png"
+
+  - id: DEV-016
+    title: A wheel base in the input tester is drawn as a wheel and pedals, under the Wheel page's axis names
+    job: troubleshoot
+    area: devices
+    priority: p2
+    done_means:
+      - "For a wheel base whose axes have a source (Fanatec), the single view shows 'Wheel and pedals' in place of the plot of two axes: the steering as a wheel that turns with the reading in words ('Left 37%', 'Centre', 'Right 100%'), and Clutch, Brake and Accelerator as three named bars."
+      - "The axes below and the activity log use the names the Wheel page uses (Wheel, Combined pedals, Accelerator, Brake, Clutch, Dial), with Windows' name underneath; with raw values on, the DirectInput names. One test walks the whole table of wheel products and holds the two pages to the same names."
+      - "The steering is the share of the travel to one side, not degrees: RigReady does not read the rotation set on the base. A pedal counts from the end it rested at on its first reading."
+      - "A controller with no source for its axes, a base added by hand among them, keeps the general view and Windows' names."
+      - "The wheel's highest value reads 'Right 100%'; 99% shows only when the value is below the top."
+    notes:
+      - "2026-11-12: sitting finding 50. The 99% the real wheel showed at full lock is not rounding in the tester (unit test). What raw value the real wheel sends there was not looked at: it needs a person at the wheel."
+    status: done
+    evidence:
+      - "src/features/devices/core/wheelAxes.test.ts#names the axes the maker names, and no others"
+      - "src/features/devices/core/wheelAxes.test.ts#names nothing on a controller RigReady has no source for"
+      - "src/features/devices/core/wheelAxes.test.ts#lists the axes by what they are, with their place among the controller's axes"
+      - "src/features/devices/core/wheelAxes.test.ts#says the side and the share of the travel to that side"
+      - "src/features/devices/core/wheelAxes.test.ts#calls the wheel straight within 1% of the travel of the centre, and no further"
+      - "src/features/devices/core/wheelAxes.test.ts#counts from the high end when the first reading was there"
+      - "src/features/devices/core/wheelAxes.test.ts#reads 100% when the wheel reports its highest value, and 99% only when it does not"
+      - "src/features/devices/core/input.test.ts#calls the axes of a wheel base what its maker calls them, with the Windows name at hand"
+      - "src/features/devices/core/input.test.ts#writes a wheel under the names of its axes"
+      - "tests/unit/wheelAxisNames.test.ts#the tester names every axis of every known wheel product as the Wheel page does"
+      - "tests/unit/wheelAxisNames.test.ts#the tester draws a wheel for exactly the bases whose axes the Wheel page has a source for"
+      - "tests/e2e/devices-wheel.e2e.ts#devices: the input tester draws a wheel base as a wheel and pedals, with the names the Wheel page uses"
+      - "artifacts/screens/devices-tester-wheel/01-wheel-view.png"
+      - "artifacts/screens/devices-tester-wheel/02-wheel-view-raw.png"
+
   # ---------------------------------------------------------------------------
   # THE FINAL PASS — the tools: troubleshooting and learning the rig
   # ---------------------------------------------------------------------------
@@ -5024,6 +5083,47 @@ requirements:
       - "2026-11-11: open questions per brand are listed at the end of docs/research/wheelbases.md (Moza's second ids and preset folder, the Simagic EVO software, Thrustmaster T818 and TMX ids, Simucube, Asetek and Cammus process names, every brand's axis map)."
     status: todo
     evidence: []
+
+  - id: RACE-WHEEL-005
+    title: A wheel base RigReady does not know is seen, said to be unknown, and can be added as my wheel
+    job: troubleshoot
+    area: wheel
+    priority: p1
+    done_means:
+      - "With no base from the table connected, the Wheel page and the Racing overview say 'No wheel base RigReady knows is connected', never that the PC has no wheel base. The software panel says 'No wheel software RigReady knows is installed'."
+      - "A connected controller that is not in the table but looks like a wheel base (its name says wheel, steering or direct drive, or its USB vendor id belongs to a maker of wheel bases only, and it has axes and buttons) is named: 'RigReady sees <name>, but does not know this model', with the reason. A stick, a button box, pedals or a shifter is not called a wheel."
+      - "'My wheel is not listed' lists the connected controllers that are not a known base; the user picks one and may type the maker. RigReady keeps the choice in {RIGREADY_HOME}/racing/wheels.json and nowhere else, starts no program, and 'Forget this wheel' takes it back. A model from the table, a controller that is not connected and an id that is no USB id are refused. A wheels file that cannot be read adds no wheel and is not replaced."
+      - "An added base gets what needs nothing model-specific: connected or not and how many controllers games see, the 'Wheel base connected' check in a setup (fails when unplugged, no mode checked), its axes in the input tester, and the game pages as for any controller. The page lists these, and lists as not available for this model: the maker's software, the mode, axis names, profile and settings files, rotation with tuning presets and recommended settings, and the wheel's parts. A maker's name typed in is a label and gives the base nothing of that maker."
+      - "A base from the table stays the base of the page when both are connected; the added one is listed as also connected."
+    notes:
+      - "2026-11-12: the device layer has no force feedback flag and no device kind for a game controller, so 'looks like a wheel base' rests on the name and on the USB vendor ids of makers that sell wheel bases only (Fanatec, Simagic, Asetek, Cammus). Anything else the user picks by hand."
+      - "2026-11-12: tested on a made-up controller (VRS DirectForce Pro, 0483:A355) on the recorded rig, not on a real base outside the table."
+    status: done
+    evidence:
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a connected base that is not in the table is seen and said to be unknown, never \"no wheel base\""
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#with nothing it knows connected it says only that, and a stick or a button box is not called a wheel"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#what looks like a wheel base: a name that says so, or a wheel maker's id on something with axes and buttons"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#\"My wheel is not listed\": the user picks it, RigReady remembers it in its own folder and shows what it can"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#the lists of what an unlisted base gets and does not get are plain, and neither claims the other"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a setup can check an added base: connected passes, unplugged fails, and the mode is said to be unchecked"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a setup made for a known base names the added base when that is what is connected instead"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a base RigReady knows stays the base of the page; an added one beside it is listed as also connected"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#adding is refused for a model RigReady knows, for one that is not connected, and for ids that are not USB ids"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#\"Forget this wheel\" takes it out of the list, and forgetting one that was never added changes nothing"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a wheels file that cannot be read adds no wheel, and adding says what is wrong instead of replacing it"
+      - "tests/e2e/wheel-not-listed.e2e.ts#racing: a wheel base RigReady does not know is seen, named as unknown, then added as my wheel"
+      - "tests/e2e/wheel-not-listed.e2e.ts#racing: with no base plugged in, the Wheel page claims only what RigReady knows"
+      - "artifacts/screens/racing-wheel-not-listed/01-racing-card-seen.png"
+      - "artifacts/screens/racing-wheel-not-listed/02-seen.png"
+      - "artifacts/screens/racing-wheel-not-listed/03-add.png"
+      - "artifacts/screens/racing-wheel-not-listed/04-my-wheel.png"
+      - "artifacts/screens/racing-wheel-not-listed/05-scope.png"
+      - "artifacts/screens/racing-wheel-not-listed/06-racing-card-mine.png"
+      - "artifacts/screens/racing-wheel-not-listed/07-capture.png"
+      - "artifacts/screens/racing-wheel-not-listed/08-unplugged.png"
+      - "artifacts/screens/racing-wheel-not-listed/09-forgotten.png"
+      - "artifacts/screens/racing-wheel-none/01-none.png"
+      - "artifacts/screens/racing-wheel-none/02-picker.png"
 
   - id: GAME-MSFS-001
     title: Detect Microsoft Flight Simulator 2024 and its settings

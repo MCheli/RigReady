@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
-import { onMachineChanged } from '../../../renderer/machine';
+import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { bugs } from '../../../../package.json';
 import {
   PRESET_PARAMS,
   racingContract,
   type BackupGame,
+  type MyWheel,
+  type UnlistedController,
   type WheelPresets,
   type WheelView,
 } from '../contract';
+import { wheelHead } from '../core/wheelbases/head';
+import { UNLISTED_NOT_AVAILABLE, UNLISTED_WORKS } from '../core/wheelbases/unlistedScope';
 import BackupsPanel from './BackupsPanel.vue';
 import './racing.css';
 
@@ -71,20 +75,75 @@ async function save(): Promise<void> {
   await load();
 }
 
-/** A PC that never had a wheel base: none connected, no wheel software, no trace of one. */
-const neverHere = computed(
-  () =>
-    view.value !== undefined &&
-    !view.value.status.connected &&
-    view.value.status.lastSeen.length === 0 &&
-    view.value.status.software.every((s) => !s.ok)
-);
-
 const status = computed(() => view.value?.status);
-const brandName = computed(() => status.value?.brandName ?? 'wheel');
-const fanatec = computed(() => status.value?.brand === 'fanatec');
 /** The mode is fine when it is the PC one, or when this brand's USB id cannot tell. */
 const modeOk = computed(() => status.value?.mode === 'pc' || status.value?.mode === 'unknown');
+/** Which case the top row is in, and its words (core/wheelbases/head.ts). */
+const head = computed(() => (status.value ? wheelHead(status.value) : undefined));
+
+// ---- My wheel is not listed -----------------------------------------------------------------
+
+const adding = ref(false);
+const picked = ref<string>();
+const maker = ref('');
+const addError = ref<string>();
+const working = ref(false);
+const changed = ref<string>();
+const idOf = (c: { vendorId: string; productId: string }): string => `${c.vendorId}:${c.productId}`;
+
+/** Opens the picker. Only a controller that looks like a wheel base is chosen beforehand. */
+function openAdd(first?: UnlistedController): void {
+  const choice = first ?? view.value?.unlisted.find((c) => c.looksLikeWheel);
+  picked.value = choice ? idOf(choice) : undefined;
+  addError.value = undefined;
+  changed.value = undefined;
+  adding.value = true;
+}
+
+function closeAdd(): void {
+  adding.value = false;
+  addError.value = undefined;
+}
+
+async function addWheel(): Promise<void> {
+  const choice = view.value?.unlisted.find((c) => idOf(c) === picked.value);
+  if (!choice) {
+    addError.value = 'Pick the controller that is your wheel base first.';
+    return;
+  }
+  working.value = true;
+  const given = maker.value.trim();
+  const result = await api.addWheel({
+    vendorId: choice.vendorId,
+    productId: choice.productId,
+    ...(given ? { maker: given } : {}),
+  });
+  working.value = false;
+  if (!result.ok) {
+    addError.value = errorText(result.error);
+    return;
+  }
+  view.value = result.value;
+  adding.value = false;
+  maker.value = '';
+  changed.value = `RigReady now treats ${choice.name} as your wheel base.`;
+  notifyMachineChanged();
+}
+
+async function forgetWheel(wheel: MyWheel): Promise<void> {
+  working.value = true;
+  const result = await api.removeWheel({ vendorId: wheel.vendorId, productId: wheel.productId });
+  working.value = false;
+  if (!result.ok) {
+    error.value = errorText(result.error);
+    return;
+  }
+  view.value = result.value;
+  changed.value = `RigReady no longer treats ${wheel.name} as your wheel base.`;
+  notifyMachineChanged();
+}
+const brandName = computed(() => status.value?.brandName ?? 'wheel');
+const fanatec = computed(() => status.value?.brand === 'fanatec');
 const backupGame = computed(() => status.value?.backup as BackupGame | undefined);
 /** The hardware report form, from the package's own description (package.json). */
 const reportUrl = `${bugs.url}/new?template=hardware.yml`;
@@ -127,43 +186,44 @@ const STATUS = {
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
 
-    <template v-if="view && status">
+    <template v-if="view && status && head">
       <section class="rc-section">
         <h2 class="rr-section-title">Wheel base</h2>
-        <div class="rr-panel" data-testid="wheel-status" :data-brand="status.brand ?? 'none'">
+        <div
+          class="rr-panel"
+          data-testid="wheel-status"
+          :data-brand="status.brand ?? 'none'"
+          :data-state="head.state"
+        >
           <div class="rr-row">
             <v-icon
               :icon="
-                status.connected
+                head.state === 'connected'
                   ? modeOk
                     ? 'mdi-check-circle'
                     : 'mdi-alert'
-                  : neverHere
-                    ? 'mdi-minus-circle-outline'
-                    : 'mdi-close-circle'
+                  : head.state === 'seen'
+                    ? 'mdi-help-circle'
+                    : head.state === 'none'
+                      ? 'mdi-minus-circle-outline'
+                      : 'mdi-close-circle'
               "
               :class="
-                status.connected
+                head.state === 'connected'
                   ? modeOk
                     ? 'rr-ok'
                     : 'rr-warn'
-                  : neverHere
-                    ? 'rr-muted'
-                    : 'rr-bad'
+                  : head.state === 'seen'
+                    ? 'rr-warn'
+                    : head.state === 'none'
+                      ? 'rr-muted'
+                      : 'rr-bad'
               "
               size="28"
             />
             <div class="rr-row-main">
               <div class="rr-row-title" data-testid="wheel-name">
-                {{
-                  status.givenName ??
-                  status.name ??
-                  (neverHere
-                    ? 'No wheel base on this PC'
-                    : status.brandName
-                      ? `No ${status.brandName} wheel base connected`
-                      : 'No wheel base connected')
-                }}
+                {{ status.givenName ?? head.title }}
                 <span
                   v-if="status.givenName && status.name"
                   class="rr-muted racing-hardware"
@@ -173,21 +233,51 @@ const STATUS = {
                 >
               </div>
               <div class="rr-row-sub" data-testid="wheel-mode">
-                <template v-if="status.connected">
+                <template v-if="status.connected && status.unlisted">
+                  {{ status.maker ?? 'Maker not given' }} · A model RigReady does not know ·
+                  <span class="rr-mono">{{ status.vendorId }}:{{ status.productId }}</span>
+                  <template v-if="status.connection"> · {{ status.connection }}</template>
+                </template>
+                <template v-else-if="status.connected">
                   {{ status.brandName }} · {{ status.modeLabel }} ·
                   <span class="rr-mono">{{ status.vendorId }}:{{ status.productId }}</span>
                   <template v-if="status.connection"> · {{ status.connection }}</template>
                 </template>
-                <template v-else-if="neverHere"
+                <template v-else-if="head.seen"
+                  >{{ head.seen.why }} It is connected, but it is not in the list of wheel bases
+                  RigReady knows. If it is your wheel base, say so and this page shows what it
+                  can.</template
+                >
+                <template v-else-if="head.state === 'awaited'"
+                  >You added it as your wheel base. Plug it in and switch it on; this page updates
+                  by itself.</template
+                >
+                <template v-else-if="head.state === 'none'"
                   >Nothing to set up unless you have one. Plug a base in (Fanatec, Moza, Logitech,
                   Simagic, Thrustmaster, Simucube, Asetek or Cammus) and this page fills in by
-                  itself.</template
+                  itself. If yours is plugged in and not shown, choose My wheel is not
+                  listed.</template
                 >
                 <template v-else
                   >Plug it in and switch it on; this page updates by itself.</template
                 >
               </div>
             </div>
+            <v-btn
+              v-if="head.seen && !adding"
+              color="primary"
+              size="small"
+              data-testid="wheel-is-mine"
+              @click="openAdd(head.seen)"
+              >This is my wheel base</v-btn
+            >
+          </div>
+          <div v-if="status.unlisted" class="rr-row rr-row-sub" data-testid="wheel-unlisted">
+            <v-icon icon="mdi-account-check-outline" size="18" class="rr-muted" />
+            <span>
+              You told RigReady this is your wheel base. RigReady does not know this model, so this
+              page shows only what Windows and games say about it.
+            </span>
           </div>
           <div
             v-if="status.brand && !status.verifiedOnHardware"
@@ -205,7 +295,10 @@ const STATUS = {
           </div>
           <div v-if="status.connected" class="rr-row rr-row-sub" data-testid="wheel-controllers">
             <v-icon icon="mdi-information-outline" size="18" class="rr-muted" />
-            <span>
+            <span v-if="status.controllers === 0"
+              >Games do not see this base as a controller yet.</span
+            >
+            <span v-else>
               Games see this base as
               {{
                 status.controllers === 1 ? 'one controller' : `${status.controllers} controllers`
@@ -230,6 +323,18 @@ const STATUS = {
             <v-icon icon="mdi-information-outline" size="18" class="rr-muted" />
             <span>Also connected: {{ status.others.join(', ') }}</span>
           </div>
+          <div
+            v-if="status.connected && status.unknownBases.length"
+            class="rr-row rr-row-sub"
+            data-testid="wheel-unknown-also"
+          >
+            <v-icon icon="mdi-help-circle-outline" size="18" class="rr-muted" />
+            <span
+              >Also connected, and not a model RigReady knows:
+              {{ status.unknownBases.map((b) => b.name).join(', ') }}. If it is your wheel base,
+              choose My wheel is not listed.</span
+            >
+          </div>
         </div>
         <div
           v-if="status.connected && !modeOk"
@@ -238,6 +343,158 @@ const STATUS = {
         >
           <v-icon icon="mdi-alert" class="rr-warn" />
           <div>{{ status.modeHelp }}</div>
+        </div>
+        <div v-if="changed" class="rc-message rr-ok mt-3" data-testid="wheel-changed">
+          <v-icon icon="mdi-check" size="16" /> {{ changed }}
+        </div>
+
+        <div v-if="adding" class="rr-panel wheel-add mt-3" data-testid="wheel-add">
+          <h3 class="wheel-add-title">My wheel is not listed</h3>
+          <p class="rc-hint">
+            Pick the connected controller that is your wheel base. RigReady remembers the choice on
+            this PC, in its own data folder. It changes no file of a game or of the maker and starts
+            no program.
+          </p>
+          <template v-if="view.unlisted.length">
+            <v-radio-group
+              v-model="picked"
+              density="compact"
+              hide-details
+              data-testid="wheel-add-list"
+            >
+              <v-radio
+                v-for="c in view.unlisted"
+                :key="idOf(c)"
+                :value="idOf(c)"
+                :data-testid="`wheel-add-pick-${idOf(c)}`"
+              >
+                <template #label>
+                  <div>
+                    <div>{{ c.name }}</div>
+                    <div class="rr-row-sub">
+                      <span class="rr-mono">{{ idOf(c) }}</span> ·
+                      {{
+                        c.controllers === 0
+                          ? 'games do not see it as a controller'
+                          : `${c.axes} axes, ${c.buttons} buttons`
+                      }}<template v-if="c.why"> · {{ c.why }}</template>
+                    </div>
+                  </div>
+                </template>
+              </v-radio>
+            </v-radio-group>
+            <v-text-field
+              v-model="maker"
+              label="Maker, if you know it"
+              placeholder="VRS, Simucube, Leo Bodnar"
+              density="compact"
+              hide-details
+              maxlength="60"
+              class="wheel-add-maker"
+              data-testid="wheel-add-maker"
+            />
+            <div class="wheel-add-lists">
+              <div>
+                <div class="wheel-add-head">What RigReady does for it</div>
+                <ul data-testid="wheel-add-works">
+                  <li v-for="line in UNLISTED_WORKS" :key="line">{{ line }}</li>
+                </ul>
+              </div>
+              <div>
+                <div class="wheel-add-head">Not available for a model RigReady does not know</div>
+                <ul data-testid="wheel-add-not-available">
+                  <li v-for="line in UNLISTED_NOT_AVAILABLE" :key="line">{{ line }}</li>
+                </ul>
+              </div>
+            </div>
+          </template>
+          <p v-else data-testid="wheel-add-empty">
+            No controller is connected that RigReady does not already know. Plug your wheel base in
+            and switch it on; it then shows up here.
+          </p>
+          <p v-if="addError" class="rr-bad" data-testid="wheel-add-error">{{ addError }}</p>
+          <div class="wheel-add-actions">
+            <v-btn
+              v-if="view.unlisted.length"
+              color="primary"
+              size="small"
+              :loading="working"
+              data-testid="wheel-add-confirm"
+              @click="addWheel"
+              >This is my wheel base</v-btn
+            >
+            <v-btn size="small" variant="text" data-testid="wheel-add-cancel" @click="closeAdd"
+              >Cancel</v-btn
+            >
+          </div>
+        </div>
+        <div v-else class="mt-2">
+          <v-btn
+            size="small"
+            variant="text"
+            prepend-icon="mdi-help-circle-outline"
+            data-testid="wheel-not-listed"
+            @click="openAdd()"
+            >My wheel is not listed</v-btn
+          >
+        </div>
+
+        <div v-if="view.myWheels.length" class="rr-panel mt-3" data-testid="wheel-mine">
+          <div
+            v-for="w in view.myWheels"
+            :key="idOf(w)"
+            class="rr-row"
+            data-testid="wheel-mine-row"
+          >
+            <v-icon
+              :icon="w.connected ? 'mdi-check-circle' : 'mdi-close-circle'"
+              :class="w.connected ? 'rr-ok' : 'rr-bad'"
+              size="20"
+            />
+            <div class="rr-row-main">
+              <div class="rr-row-title">{{ w.name }}</div>
+              <div class="rr-row-sub">
+                Added by you{{ w.maker ? ` · ${w.maker}` : '' }} ·
+                <span class="rr-mono">{{ idOf(w) }}</span> ·
+                {{ w.connected ? 'Connected' : 'Not connected' }}
+              </div>
+            </div>
+            <v-btn
+              size="small"
+              variant="text"
+              :disabled="working"
+              data-testid="wheel-forget"
+              @click="forgetWheel(w)"
+              >Forget this wheel</v-btn
+            >
+          </div>
+        </div>
+      </section>
+
+      <section v-if="status.unlisted" class="rc-section" data-testid="wheel-scope">
+        <h2 class="rr-section-title">What RigReady does for this wheel base</h2>
+        <div class="rr-panel">
+          <div
+            v-for="line in status.unlistedWorks"
+            :key="line"
+            class="rr-row rr-row-sub"
+            data-testid="wheel-works"
+          >
+            <v-icon icon="mdi-check" size="18" class="rr-ok" />
+            <span>{{ line }}</span>
+          </div>
+        </div>
+        <h2 class="rr-section-title wheel-scope-next">Not available for this model</h2>
+        <div class="rr-panel">
+          <div
+            v-for="line in status.unlistedNotAvailable"
+            :key="line"
+            class="rr-row rr-row-sub"
+            data-testid="wheel-not-available"
+          >
+            <v-icon icon="mdi-minus-circle-outline" size="18" class="rr-muted" />
+            <span>{{ line }}</span>
+          </div>
         </div>
       </section>
 
@@ -258,6 +515,12 @@ const STATUS = {
             <router-link to="/configure/devices/test" class="rec-link">input tester</router-link>
             shows what moves.</template
           >
+          <template v-else-if="status.unlisted"
+            >RigReady does not know this model, so these are the names Windows gives its axes. Move
+            the wheel and pedals in the
+            <router-link to="/configure/devices/test" class="rec-link">input tester</router-link> to
+            see which is which.</template
+          >
           <template v-else
             >No source RigReady trusts says what each axis is on a {{ brandName }} base, so these
             are the names Windows gives them. Move the wheel and pedals in the
@@ -267,7 +530,8 @@ const STATUS = {
         </p>
       </section>
 
-      <section class="rc-section">
+      <!-- An unlisted base has no software rows: "Not available for this model" above says why. -->
+      <section v-if="!status.unlisted" class="rc-section">
         <h2 class="rr-section-title">
           {{ status.brand ? `${status.brandName} software` : 'Wheel software' }}
         </h2>
@@ -295,7 +559,7 @@ const STATUS = {
                 {{
                   status.brand
                     ? `RigReady does not know the ${status.brandName} software yet`
-                    : 'No wheel software is installed'
+                    : 'No wheel software RigReady knows is installed'
                 }}
               </div>
             </div>
@@ -565,6 +829,42 @@ const STATUS = {
 </template>
 
 <style scoped>
+.wheel-add {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+.wheel-add-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+.wheel-add-maker {
+  max-width: 360px;
+}
+.wheel-add-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  font-size: 13px;
+}
+.wheel-add-lists ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.wheel-add-lists li {
+  margin-bottom: 4px;
+}
+.wheel-add-head {
+  font-weight: 600;
+}
+.rr-section-title.wheel-scope-next {
+  margin-top: 26px;
+}
+.wheel-add-actions {
+  display: flex;
+  gap: 8px;
+}
 .preset-body {
   padding: 16px;
   display: grid;

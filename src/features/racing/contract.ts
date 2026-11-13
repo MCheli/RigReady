@@ -227,6 +227,41 @@ export const WheelPartSchema = z.object({
 });
 export type WheelPart = z.infer<typeof WheelPartSchema>;
 
+/** A four-digit USB id in hex ("0EB7"). */
+const UsbId = z.string().regex(/^[0-9A-Fa-f]{4}$/);
+
+/**
+ * A connected controller that is not in RigReady's table of wheel parts
+ * (core/wheelbases/products.ts) and that the user has not said is their wheel base.
+ */
+export const UnlistedControllerSchema = z.object({
+  vendorId: z.string(),
+  productId: z.string(),
+  name: z.string(),
+  /** DirectInput controllers games see for it. */
+  controllers: z.number().int(),
+  /** Axes and buttons of its first controller; 0 when games do not see it. */
+  axes: z.number().int(),
+  buttons: z.number().int(),
+  /** Its name, or its maker's USB id with its axes and buttons, says it may be a wheel base. */
+  looksLikeWheel: z.boolean(),
+  /** Why it looks like one, as a sentence. */
+  why: z.string().optional(),
+});
+export type UnlistedController = z.infer<typeof UnlistedControllerSchema>;
+
+/** A wheel base the user added with "My wheel is not listed". Kept in RigReady's data folder. */
+export const MyWheelSchema = z.object({
+  vendorId: z.string(),
+  productId: z.string(),
+  /** The name the device reported when it was added. */
+  name: z.string(),
+  /** The maker, when the user gave one. A label only. */
+  maker: z.string().optional(),
+  connected: z.boolean(),
+});
+export type MyWheel = z.infer<typeof MyWheelSchema>;
+
 export const WheelStatusSchema = z.object({
   connected: z.boolean(),
   /** The brand of the connected base, or of the one whose software or traces are here. */
@@ -275,6 +310,23 @@ export const WheelStatusSchema = z.object({
   others: z.array(z.string()),
   firmwareShipped: z.string().optional(),
   lastSeen: z.array(Pair),
+  /**
+   * True when the base shown is one the user said is their wheel base and its model is not in
+   * RigReady's table. It has no brand: only what needs nothing model-specific applies to it.
+   */
+  unlisted: z.boolean().optional(),
+  /** The maker the user named for an unlisted base. A label only. */
+  maker: z.string().optional(),
+  /** For an unlisted base: what RigReady does for it, and what is not available for this model. */
+  unlistedWorks: z.array(z.string()).optional(),
+  unlistedNotAvailable: z.array(z.string()).optional(),
+  /**
+   * Connected controllers that look like a wheel base, are not in the table, and that nobody
+   * has said are the user's wheel: RigReady sees them and does not know the model.
+   */
+  unknownBases: z.array(UnlistedControllerSchema),
+  /** With no base connected: the name of the wheel base the user added, the one to plug in. */
+  awaitedName: z.string().optional(),
 });
 export type WheelStatus = z.infer<typeof WheelStatusSchema>;
 
@@ -337,8 +389,18 @@ export const WheelViewSchema = z.object({
   presets: WheelPresetsSchema,
   parameters: z.array(z.object({ id: z.string(), name: z.string(), meaning: z.string() })),
   comparisons: z.array(GameComparisonSchema),
+  /**
+   * Every connected controller the wheel table does not know and the user has not added:
+   * the choices for "My wheel is not listed", the ones that look like a wheel first.
+   */
+  unlisted: z.array(UnlistedControllerSchema),
+  /** The wheel bases the user added with "My wheel is not listed". */
+  myWheels: z.array(MyWheelSchema),
 });
 export type WheelView = z.infer<typeof WheelViewSchema>;
+
+/** One model of controller, by its USB ids. */
+export const WheelRefSchema = z.object({ vendorId: UsbId, productId: UsbId });
 
 // ---------------------------------------------------------------- Overview
 
@@ -537,8 +599,24 @@ export const racingContract = defineContract('racing', {
   }),
   wheel: channel(noInput, WheelViewSchema, {
     describe:
-      'The wheel base of any brand (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek, Cammus): base, rim and pedals, mode, axes, the maker software and its profile files; for Fanatec also the five tuning presets noted in RigReady and how the active one compares with the recommended values. Changes nothing.',
+      'The wheel base of any brand (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek, Cammus): base, rim and pedals, mode, axes, the maker software and its profile files; for Fanatec also the five tuning presets noted in RigReady and how the active one compares with the recommended values. Also the connected controllers RigReady does not know (unlisted, and status.unknownBases for the ones that look like a wheel base) and the wheel bases the user added (myWheels). Changes nothing.',
     tier: 'read',
+  }),
+  /** "My wheel is not listed": remembers a connected controller as the user's wheel base. */
+  addWheel: channel(
+    WheelRefSchema.extend({ maker: z.string().trim().max(60).optional() }),
+    WheelViewSchema,
+    {
+      describe:
+        "Remembers a connected controller as the user's wheel base, for a model RigReady does not know. Take vendorId and productId from unlisted in racing:wheel; maker is the maker's name when the user knows it. Kept in RigReady's own data folder on this PC. The wheel, its software and the games are not changed. Such a base gets what needs nothing model-specific (connected, how many controllers games see, the racing.wheelBase check); status.unlistedNotAvailable says what it does not get.",
+      tier: 'change',
+    }
+  ),
+  /** Forgets a wheel base added with racing:addWheel. */
+  removeWheel: channel(WheelRefSchema, WheelViewSchema, {
+    describe:
+      "Forgets a wheel base the user added as their own. Take the ids from myWheels in racing:wheel. Only RigReady's own list changes; a setup check for that base keeps working.",
+    tier: 'change',
   }),
   savePresets: channel(WheelPresetsSchema, WheelPresetsSchema, {
     describe:
