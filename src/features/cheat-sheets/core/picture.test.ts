@@ -95,7 +95,7 @@ describe('the picture of a device', () => {
         // Off the drawing on purpose: kept on it.
         anchors: { trim: { x: 120, y: 9000 } },
         sides: { trim: 'left' },
-        names: { pickle: 'Weapon release' },
+        names: { 'red-button': 'Weapon release' },
       },
     };
     await running.invoke('cheat-sheets:saveLayout', { ...STICK, layout });
@@ -107,7 +107,9 @@ describe('the picture of a device', () => {
     expect(trim.side).toBe('left');
     expect(trim.control.at).toEqual({ x: 120, y: 820 });
     expect(trim.anchor.y).toBeGreaterThan(trimBefore.anchor.y);
-    expect(plan.callouts.find((c) => c.control.id === 'pickle')?.head).toBe('Weapon release · 20');
+    expect(plan.callouts.find((c) => c.control.id === 'red-button')?.head).toBe(
+      'Weapon release · 20'
+    );
     expect(crossings(plan.callouts)).toBe(0);
 
     // A photo in place of the silhouette: the picture, the dots and labels, no silhouette.
@@ -178,7 +180,7 @@ describe('the trainer’s picture', () => {
     for (const id of ids) expect(svg, id).toContain(`data-control="${id}"`);
     expect(svg).not.toContain('cs-bound');
     // The controls are named as on the device; what they do is the question.
-    expect(svg).toContain('Pickle · 20');
+    expect(svg).toContain('Red button · 20');
     expect(svg).not.toContain('release weapon');
   });
 });
@@ -245,9 +247,13 @@ describe('a device RigReady knows nothing about', () => {
       'Buttons 9–40',
     ]);
     expect(plan.callouts.every((c) => c.leader.length === 0)).toBe(true);
-    expect(plan.callouts.find((c) => c.head === 'Buttons 9–40')?.rows).toEqual([
-      expect.objectContaining({ text: 'nothing bound', dim: true }),
-    ]);
+    // The run of free buttons: one row with a cell for each number, so a press lights it.
+    const run = plan.callouts.find((c) => c.head === 'Buttons 9–40')!.rows;
+    expect(run).toHaveLength(1);
+    expect(run[0]!.cells?.map((cell) => cell.id)).toEqual(
+      Array.from({ length: 32 }, (_, i) => `button:${9 + i}`)
+    );
+    expect(run[0]!.cells?.[0]?.text).toBe('9');
     expect(plan.callouts.find((c) => c.head === 'Buttons 1–8')?.rows.map((r) => r.text)).toEqual(
       expect.arrayContaining(['3 Gear up', '4 —'])
     );
@@ -268,6 +274,13 @@ describe('a device RigReady knows nothing about', () => {
     expect(svg).toContain('cs-listed');
     expect(svg).toContain('data-control="button:3"');
     expect(svg).not.toContain('<polyline class="cs-lead2"');
+    // With the free controls shown, every input the device reports is on the page to
+    // be lit: a free button in the run, and a hat direction with nothing bound.
+    const every = renderPictureSvg({ ...logitech, controls }, { theme: 'night', showEmpty: true });
+    for (const id of ['button:9', 'button:40', 'button:4', 'hat:1:D', 'axis:SLIDER1']) {
+      expect(every, id).toContain(`data-control="${id}"`);
+    }
+    expect(every).toMatch(/class="cs-ctl cs-empty" data-control="button:40"/);
   });
 });
 

@@ -736,7 +736,9 @@ async function start(): Promise<void> {
   const switchFromTray = async (profileId: string): Promise<void> => {
     if (trayBusy || profileId === trayStatus.profileId) return;
     // Checking a setup makes it the one in use, on the Play screen too.
-    await call('fly:check', { profileId });
+    const checked = await call('fly:check', { profileId });
+    // The tray and the Play screen then stay on the setup they showed: the log says why.
+    if (!checked.ok) log.warn(`the tray could not switch to ${profileId}`, checked.error);
     await call('fly:state');
     flyChanged();
   };

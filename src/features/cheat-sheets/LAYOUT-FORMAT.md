@@ -63,7 +63,7 @@ A control is named the way DirectInput numbers it, whatever a game calls it:
 
 `label` is what is printed on the device next to the control ("OSB 6", "BATT"). `pin` is the spot on the drawing where the control is; a line is drawn from there to the card.
 
-Controls that do something in the chosen aircraft but are not in the layout are added below it under "More controls", so a sheet never leaves a binding out.
+Controls that do something in the chosen aircraft but are not in the layout are added below it under "More controls", so a sheet never leaves a binding out. On a drawing, with "Unbound controls" on, every input the device reports that is neither on the drawing nor bound is there too, one small cell each with its number, so a press always lights something.
 
 ## Joystick Diagrams templates
 
@@ -71,7 +71,7 @@ RigReady ships none of the Joystick Diagrams templates (that project is GPL-2.0 
 
 ## Drawings (format `rigready-device-drawing`, version 1)
 
-A drawing is a silhouette of one controller model with its physical controls marked on it. The labels are not part of it: RigReady places one label block per physical control in a column left or right of the drawing (or a row above or below), with a leader line from the control to the block, and makes the text as large as the page allows. The schema is `DeviceDrawingSchema` in `core/drawings/silhouette.ts`. RigReady ships drawings for the WinWing Orion 2 stick with the F-16EX grip, the Orion sticks with the F/A-18 grip, the Orion throttle with the F-15EX handles and the MFD1 frames (`core/drawings/builtin.ts`, CC0). Other devices with a shipped layout are drawn as cards until they are drawn; a device with neither is shown as a list of its controls.
+A drawing is a silhouette of one controller model with its physical controls marked on it. The labels are not part of it: RigReady places one label block per physical control in a column left or right of the drawing (or a row above or below), with a leader line from the control to the block, and makes the text as large as the page allows. The schema is `DeviceDrawingSchema` in `core/drawings/silhouette.ts`. RigReady ships drawings for the WinWing Orion 2 stick with the F-16EX (ViperAce) grip, the Orion sticks with the F/A-18 grip, the Orion throttle with the F-15EX handles, the MFD1 frames, the UFC1 with its HUD1, the ICP, the startup panel and take-off panel 2, and for the Thrustmaster HOTAS Warthog stick and the T.16000M (`core/drawings/builtin.ts`, CC0). A device is drawn only where the picture is known to match the real thing: what each one was checked against is in `docs/research/controller-drawings.md`. Other devices with a shipped layout are drawn as cards; a device with neither is shown as a list of its controls, named as the maker names them where RigReady knows the device.
 
 ```json
 {
@@ -98,7 +98,7 @@ A drawing is a silhouette of one controller model with its physical controls mar
 | `paths` | SVG path data (absolute `M L H V C Q A Z`) with a colour `role`: `body`, `panel`, `screen`, `line`, `accent`, `shade`, `key`; `dashed` for a face the view does not show. |
 | `image` | Optional photo or traced picture (`data:image/png`, `jpeg`, `webp` or `svg+xml`, about 6 MB at most), stretched over `size`. With one, `paths` may be empty. |
 | `texts` | Text printed on the device: `x`, `y`, `text`, `size`. |
-| `controls` | The physical controls: `id`, `name`, `glyph` (`hat`, `switch`, `button`, `stick`, `lever`, `rocker`, `knob`, `key`, `axis`, `slide`, `axes`, `none`), `at`, optional `side`, `inputs` (control ids as above, each with an optional `tag`, the word its row starts with: "↑", "IDLE", "2nd"), `hidden` (drawn dashed), `assumed` (the numbers are a guess; the label shows "?"). An input may be on one control only. |
+| `controls` | The physical controls: `id`, `name`, `glyph` (`hat`, `switch`, `button`, `stick`, `lever`, `rocker`, `knob`, `key`, `axis`, `slide`, `axes`, `none`), `at`, optional `side`, `inputs` (control ids as above, each with an optional `tag`, the word its row starts with: "↑", "IDLE", "2nd"), `hidden` (drawn dashed), `assumed` (which number or direction is which is not confirmed from a real source; the label shows "?". Keep it for exactly those controls). An input may be on one control only. |
 | `columnWidth` | Room for the label columns, 120 to 400 canvas units (default 300). |
 
 In a layout, `drawing` holds the user's changes to a drawing: `anchors` (where a control really is, by control `id`), `sides`, `names`, and `custom`, a whole drawing of their own. The editor writes it: "Make a drawing from a photo" makes a `custom` drawing from a photo with a dot for every control to drag into place, and "Import" accepts a drawing file as well as a layout file.

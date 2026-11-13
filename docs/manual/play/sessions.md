@@ -24,7 +24,9 @@ When the game closes the screen says **Welcome back**, with the setup, how long 
 
 ![Welcome back](../../../artifacts/screens/fly-session/03-welcome-back.png)
 
-With **Stand down when the game closes** on, the line says "Standing down…" and then what Stand down did (see [Stand down](stand-down.md)). If nobody is at a window of RigReady (nothing was done in it for a minute, or it is hidden), the welcome is a Windows notification instead ([the tray icon](../one-click/tray.md)): "DCS F/A-18C: 1 h 42 min. Stand down when you are done."
+Unless the setup switches it off, a countdown to Stand down starts now: "Stand down in 1 minute", with **Cancel** in place of Dismiss. When it is up the line says "Standing down…" and then what Stand down did. A game that closed within two minutes of starting starts no countdown, and the line says so. See [Stand down](stand-down.md#stand-down-when-the-game-closes).
+
+If nobody is at a window of RigReady (nothing was done in it for a minute, or it is hidden), Windows says it as a notification ([the tray icon](../one-click/tray.md)): "DCS F/A-18C: 1 h 42 min. Stand down starts in 1 minute. Open RigReady to cancel.", and the window comes back on screen. When no countdown starts, the notification ends "Stand down when you are done." and the window stays where it is.
 
 ## Last session
 

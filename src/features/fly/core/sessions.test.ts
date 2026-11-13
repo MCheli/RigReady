@@ -2,18 +2,23 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Profile } from '../../../core/profile/schema';
+import { standDownOnClose, withStandDownOnClose } from '../../../core/profile/standDownOnClose';
 import { err, ok } from '../../../core/result';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { SessionRecord, SessionState } from '../contract';
 import { Fly } from './fly';
+import { problemText } from './sessionText';
 import {
   AWAY_MS,
   HISTORY_LISTED,
+  LOOK_BACK_MS,
   MAX_SESSIONS,
   PRESENCE_MS,
+  QUICK_EXIT_MS,
   SessionLog,
   sessionTotals,
   SessionTracker,
+  type TrackerDeps,
   type TrackerOptions,
 } from './sessions';
 
@@ -45,16 +50,21 @@ function make(options: TrackerOptions = {}): {
     {
       emit: (state) => states.push(state),
       standDown: async (profileId) => {
-        const down = await fly.standDown(profileId);
+        const down = await fly.standDown(profileId, { closeGame: false });
         if (!down.ok) return down;
+        const failed = down.value.steps.filter((s) => !s.ok && !s.skipped);
         return ok({
           headline: down.value.headline,
-          failed: down.value.steps.filter((s) => !s.ok && !s.skipped).length,
+          failed: failed.length,
+          problems: failed.map(problemText),
         });
       },
-      autoStandDown: async () => {
-        const preferences = await fly.preferences();
-        return preferences.ok && preferences.value.autoStandDown;
+      standDownOnClose: async (profileId) => {
+        const found = await fly.profile(profileId);
+        return found.ok ? standDownOnClose(found.value.profile) : { enabled: false, seconds: 60 };
+      },
+      showWindow: async () => {
+        await app.ports.window.showOn([{ x: 0, y: 0, width: 1920, height: 1080 }]);
       },
     },
     { sleep: () => new Promise(() => {}), ...options }
@@ -88,6 +98,21 @@ async function saveProfile(
 }
 
 const closeGame = (): Promise<void> => mutate(app, [{ op: 'stopProcess', name: 'DCS.exe' }]);
+const startGame = (): Promise<void> =>
+  mutate(app, [{ op: 'startProcess', name: 'DCS.exe', path: 'C:\\Games\\DCS\\bin\\DCS.exe' }]);
+
+/** What the setup says about standing down by itself, written into the setup's own file. */
+async function setupSays(enabled: boolean, seconds: number): Promise<void> {
+  const found = await app.wiring.context.profiles.get(P);
+  if (!found.ok) throw new Error(found.error.message);
+  const saved = await app.wiring.context.profiles.save(
+    withStandDownOnClose(found.value, { enabled, seconds })
+  );
+  if (!saved.ok) throw new Error(saved.error.message);
+}
+
+/** The time on the clock in `ms` from now, as the session says it. */
+const inMs = (ms: number): string => new Date(app.clock.now().getTime() + ms).toISOString();
 
 describe('a session, from Launch to the game closing', () => {
   it('starts when the game runs, lasts while it runs, and ends when its program is gone: recorded with its length', async () => {
@@ -125,6 +150,9 @@ describe('a session, from Launch to the game closing', () => {
       startedAt: started,
       endedAt: iso(),
       durationSeconds: 102 * 60,
+      // This setup says nothing about standing down by itself: on, in one minute.
+      standDownAt: inMs(MINUTE),
+      standDownSeconds: 60,
     });
     expect(states.at(-1)?.phase).toBe('ended');
     const history = await log.history();
@@ -154,7 +182,7 @@ describe('a session, from Launch to the game closing', () => {
       kind: 'flight',
       lastSession: { startedAt: started, durationSeconds: 6120 },
     });
-    // Nothing more happens by itself.
+    // Another look a moment later adds nothing to the record.
     await tracker.poll();
     expect((await log.history()).sessions).toHaveLength(1);
   });
@@ -175,18 +203,20 @@ describe('a session, from Launch to the game closing', () => {
     await closeGame();
     waits[1]!.wake();
     await vi.waitFor(() => expect(states.at(-1)?.phase).toBe('ended'));
-    // The session is over: nobody is waiting any more.
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(waits).toHaveLength(2);
-
-    // A second session, and RigReady quits in the middle of it: the loop ends with it.
-    await fly.launch(P);
+    // The session is over. One wait is left: RigReady looks for the game to come back.
     await vi.waitFor(() => expect(waits).toHaveLength(3));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(waits).toHaveLength(3);
+
+    // A second session, and RigReady quits in the middle of it: the loops end with it.
+    await fly.launch(P);
+    await vi.waitFor(() => expect(waits).toHaveLength(4));
     tracker.stop();
     await closeGame();
     waits[2]!.wake();
+    waits[3]!.wake();
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(waits).toHaveLength(3);
+    expect(waits).toHaveLength(4);
     expect((await tracker.current()).phase).toBe('running');
   });
 
@@ -365,7 +395,7 @@ describe('welcome back', () => {
     expect(notified()).toEqual([
       {
         title: 'Welcome back',
-        body: 'DCS F/A-18C: 1 h 42 min. Stand down when you are done.',
+        body: 'DCS F/A-18C: 1 h 42 min. Stand down starts in 1 minute. Open RigReady to cancel.',
       },
     ]);
 
@@ -421,6 +451,7 @@ describe('welcome back', () => {
     await closeGame();
     await tracker.poll();
     expect(notified()).toHaveLength(2);
+    // A minute and a second: too short for Stand down to start by itself.
     expect(notified()[1]!.body).toBe('DCS F/A-18C: 1 min. Stand down when you are done.');
   });
 
@@ -446,49 +477,6 @@ describe('welcome back', () => {
     expect(states).toHaveLength(before);
   });
 
-  it('stands down by itself when asked to, says what it did, and leaves the welcome on screen', async () => {
-    app = await wiredApp('flying-all-good', { files: [] });
-    const { fly, tracker, states } = make();
-    expect((await fly.preferences()).ok && (await fly.preferences())).toMatchObject({
-      value: { autoStandDown: false },
-    });
-    await fly.setPreferences({ autoStandDown: true });
-    tracker.presence('main', false);
-    await fly.launch(P);
-    app.clock.advance(30 * MINUTE);
-    await closeGame();
-    await tracker.poll();
-    // TrackIR is closed, as Stand down does for this setup.
-    expect(app.ports.processes.closed.map((c) => c.name)).toEqual(['TrackIR5.exe']);
-    const phases = states.slice(-2);
-    expect(phases[0]).toMatchObject({ phase: 'ended', standingDown: true });
-    expect(phases[1]).toMatchObject({
-      phase: 'ended',
-      durationSeconds: 1800,
-      stoodDown: { headline: 'Closed 1 app', failed: 0 },
-    });
-    expect(phases[1]!.standingDown).toBeUndefined();
-    expect(notified()).toEqual([
-      { title: 'Welcome back', body: 'DCS F/A-18C: 30 min. Stood down: Closed 1 app.' },
-    ]);
-    // Read and dismissed.
-    expect(tracker.dismiss()).toEqual({ phase: 'idle' });
-  });
-
-  it('a Stand down that fails by itself says so instead of "stood down"', async () => {
-    app = await wiredApp('flying-all-good', { files: [] });
-    const { fly, tracker, states } = make();
-    await fly.setPreferences({ autoStandDown: true });
-    await fly.launch(P);
-    await closeGame();
-    // The setup file is gone by the time the game closes.
-    await fs.rm(app.wiring.context.profiles.fileFor(P));
-    await tracker.poll();
-    expect(states.at(-1)).toMatchObject({ phase: 'ended', stoodDown: { failed: 1 } });
-    expect(states.at(-1)!.stoodDown!.headline).toMatch(/^Stand down did not finish: /);
-    expect(notified()[0]!.body).toMatch(/less than a minute\. Stand down did not finish: /);
-  });
-
   it('stood down while the game was still open: when it closes there is nothing left to offer', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
     const { fly, tracker, log } = make();
@@ -501,6 +489,552 @@ describe('welcome back', () => {
     expect(notified()).toEqual([]);
     // The session itself is on the record all the same.
     expect((await log.history()).sessions).toMatchObject([{ durationSeconds: 900 }]);
+  });
+});
+
+describe('stand down by itself when the game closes', () => {
+  /** A session of half an hour that has just closed, with nobody at a window. */
+  async function closedAfterHalfAnHour(
+    options: TrackerOptions = {}
+  ): Promise<ReturnType<typeof make>> {
+    const made = make(options);
+    made.tracker.presence('main', false);
+    await made.fly.launch(P);
+    app.clock.advance(30 * MINUTE);
+    await closeGame();
+    await made.tracker.poll();
+    return made;
+  }
+  const closedApps = (): string[] => app.ports.processes.closed.map((c) => c.name);
+
+  /**
+   * A tracker whose Stand down is the test's own, for what the real one does too fast to
+   * be looked at. Ten minutes of the game, then closed, with a countdown of five seconds
+   * that is over: the next look runs that Stand down.
+   */
+  async function countedDown(
+    standDown: TrackerDeps['standDown']
+  ): Promise<{ tracker: SessionTracker; states: SessionState[] }> {
+    const states: SessionState[] = [];
+    const tracker = new SessionTracker(
+      app.wiring.context,
+      new SessionLog(app.ports.files, sessionsDir()),
+      {
+        emit: (state) => states.push(state),
+        standDown,
+        standDownOnClose: async () => ({ enabled: true, seconds: 5 }),
+        showWindow: async () => {},
+      },
+      { sleep: () => new Promise(() => {}) }
+    );
+    await startGame();
+    await tracker.launched(
+      { id: P, name: 'DCS F/A-18C' },
+      { name: 'DCS World', processes: ['DCS.exe'], seen: true }
+    );
+    app.clock.advance(10 * MINUTE);
+    await closeGame();
+    await tracker.poll();
+    expect(states.at(-1)).toMatchObject({ phase: 'ended', standDownSeconds: 5 });
+    app.clock.advance(5000);
+    return { tracker, states };
+  }
+
+  it('a setup saved before this existed counts down for one minute, then runs Stand down and says what it did', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const saved = await app.wiring.context.profiles.get(P);
+    expect(saved.ok && saved.value.extensions).toEqual({});
+    const { tracker, states } = await closedAfterHalfAnHour();
+    // The countdown: on every screen, with the moment Stand down runs.
+    const counting = {
+      phase: 'ended',
+      profileId: P,
+      profileName: 'DCS F/A-18C',
+      gameName: 'DCS World',
+      startedAt: inMs(-30 * MINUTE),
+      endedAt: iso(),
+      durationSeconds: 1800,
+      standDownAt: inMs(MINUTE),
+      standDownSeconds: 60,
+    };
+    expect(await tracker.current()).toEqual(counting);
+    // The window that hid itself for the game is brought back, and Windows says it too.
+    expect(app.ports.window.shown).toHaveLength(1);
+    expect(notified()).toEqual([
+      {
+        title: 'Welcome back',
+        body: 'DCS F/A-18C: 30 min. Stand down starts in 1 minute. Open RigReady to cancel.',
+      },
+    ]);
+
+    // One second before the end nothing has been touched.
+    app.clock.advance(59_000);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect(await tracker.current()).toEqual(counting);
+
+    // Time is up: TrackIR is closed, as the Stand down button does for this setup.
+    app.clock.advance(1000);
+    await tracker.poll();
+    expect(closedApps()).toEqual(['TrackIR5.exe']);
+    const [running, done] = states.slice(-2);
+    expect(running).toMatchObject({ phase: 'ended', standingDown: true });
+    expect(running!.standDownAt).toBeUndefined();
+    expect(done).toMatchObject({
+      phase: 'ended',
+      durationSeconds: 1800,
+      stoodDown: { finished: true, headline: 'Closed 1 app', failed: 0, problems: [] },
+    });
+    expect(done!.standingDown).toBeUndefined();
+    expect(notified()[1]).toEqual({
+      title: 'Welcome back',
+      body: 'DCS F/A-18C: 30 min. Stood down: Closed 1 app.',
+    });
+    // Read and dismissed. Nothing runs a second time.
+    expect(tracker.dismiss()).toEqual({ phase: 'idle' });
+    app.clock.advance(5 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual(['TrackIR5.exe']);
+  });
+
+  it('counts down for as long as the setup says', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    await setupSays(true, 10);
+    const { tracker } = await closedAfterHalfAnHour();
+    expect(await tracker.current()).toMatchObject({
+      standDownAt: inMs(10_000),
+      standDownSeconds: 10,
+    });
+    expect(notified()[0]!.body).toBe(
+      'DCS F/A-18C: 30 min. Stand down starts in 10 seconds. Open RigReady to cancel.'
+    );
+    app.clock.advance(9000);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    app.clock.advance(1000);
+    await tracker.poll();
+    expect(closedApps()).toEqual(['TrackIR5.exe']);
+  });
+
+  it('a setup that switches it off gets Welcome back and nothing by itself, however long it is left', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    await setupSays(false, 10);
+    const { tracker, states } = await closedAfterHalfAnHour();
+    const ended = await tracker.current();
+    expect(ended).toMatchObject({ phase: 'ended', durationSeconds: 1800 });
+    expect(ended.standDownAt).toBeUndefined();
+    expect(ended.standDownHeld).toBeUndefined();
+    expect(app.ports.window.shown).toEqual([]);
+    expect(notified()).toEqual([
+      { title: 'Welcome back', body: 'DCS F/A-18C: 30 min. Stand down when you are done.' },
+    ]);
+    const before = states.length;
+    app.clock.advance(60 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect(states).toHaveLength(before);
+    expect(await tracker.current()).toEqual(ended);
+  });
+
+  it('Cancel ends the countdown: nothing is closed, and Stand down is still there to press', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly, tracker, states } = await closedAfterHalfAnHour();
+    app.clock.advance(20_000);
+    const cancelled = tracker.cancelStandDown();
+    expect(cancelled).toMatchObject({ phase: 'ended', standDownHeld: 'cancelled' });
+    expect(cancelled.standDownAt).toBeUndefined();
+    expect(cancelled.standDownSeconds).toBeUndefined();
+    expect(states.at(-1)).toEqual(cancelled);
+    // Long after the countdown would have ended: nothing was closed, nothing was said.
+    app.clock.advance(10 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect(await tracker.current()).toEqual(cancelled);
+    expect(notified()).toHaveLength(1);
+    // Cancel again: there is nothing to cancel, and nothing changes.
+    const before = states.length;
+    expect(tracker.cancelStandDown()).toEqual(cancelled);
+    expect(states).toHaveLength(before);
+    // The button still does its work.
+    const down = await fly.standDown(P);
+    expect(down.ok && down.value.headline).toBe('Closed 1 app');
+    expect(await tracker.current()).toEqual({ phase: 'idle' });
+  });
+
+  it('Cancel after Stand down has started changes nothing: the answer says it is running', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    let finish = (): void => {};
+    const { tracker, states } = await countedDown(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve(ok({ headline: 'Closed 1 app', failed: 0, problems: [] }));
+        })
+    );
+    const run = tracker.poll();
+    await vi.waitFor(() => expect(states.at(-1)).toMatchObject({ standingDown: true }));
+    const answer = tracker.cancelStandDown();
+    expect(answer).toMatchObject({ phase: 'ended', standingDown: true });
+    expect(answer.standDownHeld).toBeUndefined();
+    // Dismiss does not hide a Stand down that is running either.
+    expect(tracker.dismiss()).toMatchObject({ phase: 'ended', standingDown: true });
+    // Its own start and end are not taken for a Stand down pressed by hand.
+    tracker.standDownStarted();
+    tracker.stoodDown();
+    expect(await tracker.current()).toMatchObject({ phase: 'ended', standingDown: true });
+    finish();
+    await run;
+    expect(await tracker.current()).toMatchObject({
+      phase: 'ended',
+      stoodDown: { finished: true, headline: 'Closed 1 app', failed: 0 },
+    });
+    expect((await tracker.current()).standingDown).toBeUndefined();
+  });
+
+  it('Play pressed while Stand down runs by itself: the new session keeps the screen, and the old result is not shown over it', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    let finish = (): void => {};
+    const { tracker, states } = await countedDown(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve(ok({ headline: 'Closed 1 app', failed: 0, problems: [] }));
+        })
+    );
+    const run = tracker.poll();
+    await vi.waitFor(() => expect(states.at(-1)).toMatchObject({ standingDown: true }));
+    await startGame();
+    await tracker.launched(
+      { id: P, name: 'DCS F/A-18C' },
+      { name: 'DCS World', processes: ['DCS.exe'], seen: true }
+    );
+    finish();
+    await run;
+    expect(await tracker.current()).toMatchObject({ phase: 'running', startedAt: iso() });
+    expect(states.some((s) => s.stoodDown)).toBe(false);
+    expect(notified()).toHaveLength(1);
+  });
+
+  it('the game running again during the countdown ends the countdown and is a new session', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { tracker, log } = await closedAfterHalfAnHour();
+    app.clock.advance(30_000);
+    await startGame();
+    await tracker.poll();
+    const restarted = iso();
+    const running = await tracker.current();
+    expect(running).toEqual({
+      phase: 'running',
+      profileId: P,
+      profileName: 'DCS F/A-18C',
+      gameName: 'DCS World',
+      startedAt: restarted,
+    });
+    // It is on disk as the session in progress, so a restart of RigReady picks it up.
+    expect(await log.current()).toMatchObject({ ok: true, value: { startedAt: restarted } });
+    // Past the end of the countdown, with the game running: nothing is stood down.
+    app.clock.advance(5 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect((await tracker.current()).phase).toBe('running');
+
+    // The second session closes later and has its own countdown.
+    app.clock.advance(20 * MINUTE);
+    await closeGame();
+    await tracker.poll();
+    expect(await tracker.current()).toMatchObject({
+      phase: 'ended',
+      startedAt: restarted,
+      durationSeconds: 25 * 60,
+      standDownAt: inMs(MINUTE),
+    });
+    expect((await log.history()).sessions).toMatchObject([
+      { startedAt: restarted, durationSeconds: 25 * 60 },
+      { durationSeconds: 30 * 60 },
+    ]);
+  });
+
+  it('a game that closes within two minutes of starting starts no countdown, and the screen is told why', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly, tracker } = make();
+    tracker.presence('main', false);
+    await fly.launch(P);
+    app.clock.advance(QUICK_EXIT_MS - 1000);
+    await closeGame();
+    await tracker.poll();
+    const ended = await tracker.current();
+    expect(ended).toMatchObject({ phase: 'ended', standDownHeld: 'quickExit' });
+    expect(ended.standDownAt).toBeUndefined();
+    expect(app.ports.window.shown).toEqual([]);
+    expect(notified()).toEqual([
+      { title: 'Welcome back', body: 'DCS F/A-18C: 1 min. Stand down when you are done.' },
+    ]);
+    app.clock.advance(10 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect(await tracker.current()).toEqual(ended);
+
+    // Two minutes exactly is a session: it counts down.
+    await fly.launch(P);
+    app.clock.advance(QUICK_EXIT_MS);
+    await closeGame();
+    await tracker.poll();
+    expect(await tracker.current()).toMatchObject({ standDownAt: inMs(MINUTE) });
+  });
+
+  it('a launcher that exits while the real game runs is one session: it ends when the last known program is gone', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly, tracker } = make();
+    await fly.launch(P);
+    const started = iso();
+    // DCS.exe hands over to the multithreaded program and exits.
+    app.clock.advance(20_000);
+    await mutate(app, [
+      { op: 'startProcess', name: 'DCS_mt.exe', path: 'C:\\Games\\DCS\\bin-mt\\DCS_mt.exe' },
+    ]);
+    await closeGame();
+    await tracker.poll();
+    expect(await tracker.current()).toMatchObject({ phase: 'running', startedAt: started });
+    app.clock.advance(40 * MINUTE);
+    await tracker.poll();
+    expect((await tracker.current()).phase).toBe('running');
+    expect(closedApps()).toEqual([]);
+    await mutate(app, [{ op: 'stopProcess', name: 'DCS_mt.exe' }]);
+    await tracker.poll();
+    expect(await tracker.current()).toMatchObject({
+      phase: 'ended',
+      startedAt: started,
+      standDownAt: inMs(MINUTE),
+    });
+  });
+
+  it('a launcher that exits a moment before the real game shows up: no countdown, and the game is a session when it runs', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly, tracker, log } = make();
+    await fly.launch(P);
+    app.clock.advance(20_000);
+    await closeGame();
+    await tracker.poll();
+    expect(await tracker.current()).toMatchObject({ phase: 'ended', standDownHeld: 'quickExit' });
+    // Eight seconds with nothing running, then the game itself.
+    app.clock.advance(8000);
+    await tracker.poll();
+    await mutate(app, [
+      { op: 'startProcess', name: 'DCS_mt.exe', path: 'C:\\Games\\DCS\\bin-mt\\DCS_mt.exe' },
+    ]);
+    await tracker.poll();
+    expect(await tracker.current()).toMatchObject({ phase: 'running', startedAt: iso() });
+    expect(closedApps()).toEqual([]);
+    app.clock.advance(45 * MINUTE);
+    await mutate(app, [{ op: 'stopProcess', name: 'DCS_mt.exe' }]);
+    await tracker.poll();
+    expect(await tracker.current()).toMatchObject({ durationSeconds: 45 * 60 });
+    expect((await log.history()).sessions).toMatchObject([
+      { durationSeconds: 45 * 60 },
+      { durationSeconds: 20 },
+    ]);
+  });
+
+  it('with no countdown running, RigReady stops looking for the game after a quarter of an hour', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    await setupSays(false, 60);
+    const { tracker, states } = await closedAfterHalfAnHour();
+    const ended = await tracker.current();
+    app.clock.advance(LOOK_BACK_MS);
+    await tracker.poll();
+    // A game started now was not started from here: it is not a session.
+    await startGame();
+    const before = states.length;
+    await tracker.poll();
+    expect(states).toHaveLength(before);
+    expect(await tracker.current()).toEqual(ended);
+  });
+
+  it('Stand down pressed by hand during the countdown ends the countdown: one Stand down runs, not two', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly, tracker, states } = await closedAfterHalfAnHour();
+    app.clock.advance(15_000);
+    const before = states.length;
+    const down = await fly.standDown(P);
+    expect(down.ok && down.value.headline).toBe('Closed 1 app');
+    // The countdown left the screen the moment Stand down started.
+    expect(states[before]).toMatchObject({ phase: 'ended' });
+    expect(states[before]!.standDownAt).toBeUndefined();
+    expect(await tracker.current()).toEqual({ phase: 'idle' });
+    // Past the moment the countdown would have ended: nothing runs again.
+    app.clock.advance(5 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual(['TrackIR5.exe']);
+    expect(await tracker.current()).toEqual({ phase: 'idle' });
+    // Nothing is said by Windows about a Stand down the user ran at the screen.
+    expect(notified()).toHaveLength(1);
+  });
+
+  it('a second Stand down while one is running is refused: it does not run on top of the first', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly } = make();
+    await fly.launch(P);
+    const first = fly.standDown(P);
+    const second = await fly.standDown(P);
+    expect(second).toMatchObject({
+      ok: false,
+      error: { code: 'fly.standDownRunning', message: 'Stand down is already running.' },
+    });
+    const done = await first;
+    expect(done.ok && done.value.headline).toBe('Closed 1 app');
+    expect(closedApps()).toEqual(['TrackIR5.exe']);
+    // Once it has finished, Stand down can be run again.
+    expect((await fly.standDown(P)).ok).toBe(true);
+  });
+
+  it('Dismiss, or Play again, during the countdown: nothing is stood down', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly, tracker } = await closedAfterHalfAnHour();
+    expect(tracker.dismiss()).toEqual({ phase: 'idle' });
+    app.clock.advance(5 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+
+    // Again, and this time Play is pressed while it counts down.
+    await fly.launch(P);
+    app.clock.advance(30 * MINUTE);
+    await closeGame();
+    await tracker.poll();
+    expect((await tracker.current()).standDownAt).toBeDefined();
+    app.clock.advance(30_000);
+    await fly.launch(P);
+    expect(await tracker.current()).toMatchObject({ phase: 'running', startedAt: iso() });
+    app.clock.advance(5 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect((await tracker.current()).phase).toBe('running');
+  });
+
+  it('RigReady quit during the countdown: nothing is stood down then or at the next start, and nothing says it was', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { tracker, states } = await closedAfterHalfAnHour();
+    tracker.stop();
+    app.clock.advance(5 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect(states.some((s) => s.standingDown || s.stoodDown)).toBe(false);
+
+    // RigReady starts again: the session is in the history, and nothing is under way.
+    const again = make();
+    expect(await again.tracker.current()).toEqual({ phase: 'idle' });
+    await again.tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect((await again.log.history()).sessions).toMatchObject([{ durationSeconds: 1800 }]);
+    expect(notified()).toHaveLength(1);
+  });
+
+  it('when the running programs cannot be read at the end of the countdown, Stand down waits for a look that works', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { tracker } = await closedAfterHalfAnHour();
+    const list = app.ports.processes.list.bind(app.ports.processes);
+    app.ports.processes.list = async () => err('process.list', 'Could not list running programs.');
+    app.clock.advance(MINUTE + 5000);
+    await tracker.poll();
+    // Whether the game is back is not known: nothing is closed, and nothing says it was.
+    expect(closedApps()).toEqual([]);
+    const waiting = await tracker.current();
+    expect(waiting.standDownAt).toBeDefined();
+    expect(waiting.standingDown).toBeUndefined();
+    app.ports.processes.list = list;
+    await tracker.poll();
+    expect(closedApps()).toEqual(['TrackIR5.exe']);
+    expect(await tracker.current()).toMatchObject({ stoodDown: { finished: true } });
+  });
+
+  it('a step that did not work is named: it never reads as stood down', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    app.ports.processes.stubborn.add('trackir5.exe');
+    const { tracker } = await closedAfterHalfAnHour();
+    app.clock.advance(MINUTE);
+    await tracker.poll();
+    const down = (await tracker.current()).stoodDown!;
+    expect(down).toMatchObject({ finished: true, failed: 1 });
+    expect(down.headline).toBe('No apps to close · 1 step needs attention');
+    expect(down.problems).toHaveLength(1);
+    expect(down.problems[0]).toMatch(/^TrackIR5\.exe is still running/);
+    expect(notified()[1]!.body).toMatch(
+      /^DCS F\/A-18C: 30 min\. Stand down ran, but 1 step needs attention: TrackIR5\.exe is still running/
+    );
+    expect(notified()[1]!.body).not.toMatch(/Stood down/);
+  });
+
+  it('a Stand down that cannot run says why instead of "stood down"', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { tracker, states } = await closedAfterHalfAnHour();
+    // The setup's file is gone by the time the countdown ends.
+    await fs.rm(app.wiring.context.profiles.fileFor(P));
+    app.clock.advance(MINUTE);
+    await tracker.poll();
+    const down = states.at(-1)!.stoodDown!;
+    expect(down).toMatchObject({
+      finished: false,
+      headline: 'Stand down did not finish',
+      failed: 1,
+    });
+    expect(down.problems).toHaveLength(1);
+    expect(down.problems[0]).not.toBe('');
+    expect(notified()[1]!.body).toBe(
+      `DCS F/A-18C: 30 min. Stand down did not finish: ${down.problems[0]}`
+    );
+    expect(closedApps()).toEqual([]);
+  });
+
+  it('a Stand down that throws is said the same way, and the next one can still run', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { tracker, states } = await countedDown(async () => {
+      throw new Error('The helper stopped.');
+    });
+    await tracker.poll();
+    expect(states.at(-1)).toMatchObject({
+      phase: 'ended',
+      stoodDown: {
+        finished: false,
+        headline: 'Stand down did not finish',
+        failed: 1,
+        problems: ['The helper stopped.'],
+      },
+    });
+    expect(states.at(-1)!.standingDown).toBeUndefined();
+    // The tracker is not left "standing down" for ever: a Stand down by hand is noticed.
+    tracker.stoodDown();
+    expect(states.at(-1)).toEqual({ phase: 'idle' });
+  });
+
+  it('looks again every few seconds while it counts down, and not later than the end of the countdown', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    await setupSays(true, 5);
+    const waits: { ms: number; wake: () => void }[] = [];
+    const { fly, states } = make({
+      sleep: (ms) => new Promise<void>((wake) => waits.push({ ms, wake })),
+    });
+    await fly.launch(P);
+    await vi.waitFor(() => expect(waits).toHaveLength(1));
+    app.clock.advance(30 * MINUTE);
+    await closeGame();
+    waits[0]!.wake();
+    await vi.waitFor(() => expect(states.at(-1)).toMatchObject({ standDownSeconds: 5 }));
+    await vi.waitFor(() => expect(waits).toHaveLength(2));
+    expect(waits[1]!.ms).toBe(2000);
+    app.clock.advance(2000);
+    waits[1]!.wake();
+    await vi.waitFor(() => expect(waits).toHaveLength(3));
+    expect(waits[2]!.ms).toBe(2000);
+    app.clock.advance(2000);
+    waits[2]!.wake();
+    // One second is left: it does not sleep past it.
+    await vi.waitFor(() => expect(waits).toHaveLength(4));
+    expect(waits[3]!.ms).toBe(1000);
+    expect(closedApps()).toEqual([]);
+    app.clock.advance(1000);
+    waits[3]!.wake();
+    await vi.waitFor(() => expect(states.at(-1)).toMatchObject({ stoodDown: { finished: true } }));
+    expect(closedApps()).toEqual(['TrackIR5.exe']);
+    // It is over: nobody is waiting any more.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(waits).toHaveLength(4);
   });
 });
 
@@ -697,6 +1231,23 @@ describe('the history file', () => {
       await fs.readFile(path.join(sessionsDir(), 'sessions.json'), 'utf8')
     ) as { sessions: SessionRecord[] };
     expect(kept.sessions[0]!.id).toBe('s5');
+  });
+
+  it('changes made at the same moment are all kept: none reads the history before the one ahead of it has written', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const log = new SessionLog(app.ports.files, sessionsDir());
+    // A game closes as the next one is launched: the session that ended, the one that
+    // begins and the one after it, with nothing waited for in between.
+    const results = await Promise.all([
+      log.finish(record(1)),
+      log.setCurrent({ ...record(2), processes: ['DCS.exe'] }),
+      log.finish(record(2)),
+      log.finish(record(3)),
+    ]);
+    expect(results.map((result) => result.ok)).toEqual([true, true, true, true]);
+    const history = await log.history();
+    expect(history.sessions.map((s) => s.id)).toEqual(['s3', 's2', 's1']);
+    expect(await log.current()).toEqual({ ok: true, value: undefined });
   });
 
   it('a damaged file is left exactly as it is, named, and the history goes on in the next one', async () => {

@@ -17,9 +17,10 @@ import type {
   ScreensState,
   SimAppProState,
 } from '../contract';
-import { listAircraft } from './aircraft';
+import { listAircraft, type AircraftInfo } from './aircraft';
 import {
   aircraftNamedIn,
+  aircraftWithoutDisplays,
   builtInCatalog,
   installedDisplayCatalog,
   type CatalogEntry,
@@ -554,8 +555,34 @@ export class DcsSetupService {
     return choices;
   }
 
-  /** The installed aircraft with exportable displays; rescanned when a module folder changes. */
-  private displayCache: { key: string; catalog: CatalogEntry[]; units: Set<string> } | undefined;
+  /** The installed aircraft, and those with exportable displays; rescanned when a module folder changes. */
+  private displayCache:
+    | { key: string; aircraft: AircraftInfo[]; catalog: CatalogEntry[]; units: Set<string> }
+    | undefined;
+
+  private async installedAircraft(installDir: string): Promise<{
+    aircraft: AircraftInfo[];
+    catalog: CatalogEntry[];
+    units: Set<string>;
+  }> {
+    const modules = await this.ctx.ports.files.listEntries(
+      path.join(installDir, 'Mods', 'aircraft')
+    );
+    const key = JSON.stringify([
+      installDir,
+      ...(modules.ok ? modules.value : []).map((m) => [m.name, m.mtimeMs]),
+    ]);
+    if (this.displayCache?.key !== key) {
+      const aircraft = await listAircraft(this.check, installDir, undefined);
+      this.displayCache = {
+        key,
+        aircraft,
+        catalog: await installedDisplayCatalog(this.check, installDir, aircraft),
+        units: new Set(aircraft.map((a) => a.unit)),
+      };
+    }
+    return this.displayCache;
+  }
 
   /**
    * What the screen editor offers: every installed aircraft whose cockpit scripts name an
@@ -568,25 +595,24 @@ export class DcsSetupService {
   ): Promise<CatalogEntry[]> {
     const installDir = paths?.install?.installDir;
     if (!installDir) return aircraftCatalog(simAppPro);
-    const modules = await this.ctx.ports.files.listEntries(
-      path.join(installDir, 'Mods', 'aircraft')
-    );
-    const key = JSON.stringify([
-      installDir,
-      ...(modules.ok ? modules.value : []).map((m) => [m.name, m.mtimeMs]),
-    ]);
-    if (this.displayCache?.key !== key) {
-      const aircraft = await listAircraft(this.check, installDir, undefined);
-      this.displayCache = {
-        key,
-        catalog: await installedDisplayCatalog(this.check, installDir, aircraft),
-        units: new Set(aircraft.map((a) => a.unit)),
-      };
-    }
-    const { catalog, units } = this.displayCache;
+    const { catalog, units } = await this.installedAircraft(installDir);
     return catalog.length
       ? aircraftCatalog(simAppPro, catalog, units)
       : aircraftCatalog(simAppPro, builtInCatalog());
+  }
+
+  /**
+   * The installed aircraft that catalog leaves out, because no exportable display was found
+   * in their files. The editor offers them apart: a display can be added to one by name.
+   */
+  private async noDisplaysFound(
+    paths: DcsPaths | undefined,
+    catalog: CatalogEntry[]
+  ): Promise<{ unit: string; label: string }[]> {
+    const installDir = paths?.install?.installDir;
+    if (!installDir) return [];
+    const { aircraft } = await this.installedAircraft(installDir);
+    return aircraftWithoutDisplays(aircraft, catalog);
   }
 
   /** The aircraft of the setup in use: the last one used, when it is a DCS setup whose name names one. */
@@ -616,6 +642,7 @@ export class DcsSetupService {
       return {
         ...base,
         catalog,
+        noDisplaysFound: [],
         ...(inUse ? { aircraftInUse: inUse } : {}),
         problem: paths.error.message,
         ...(paths.error.code === 'dcs.notFound' ? { dcsFound: false } : {}),
@@ -635,6 +662,7 @@ export class DcsSetupService {
     return {
       ...base,
       catalog,
+      noDisplaysFound: await this.noDisplaysFound(paths.value, catalog),
       ...(inUse ? { aircraftInUse: inUse } : {}),
       files: await this.monitorFiles(paths.value, options),
       ...(options ? { options } : {}),

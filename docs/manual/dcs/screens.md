@@ -50,7 +50,7 @@ Every monitor is shown by the name you gave it on the Monitors page, on the map,
 
 - **Monitor layout the coordinates are for**: the monitors as they are now, the layout of any setup, any saved layout from [Monitors](../monitors-and-audio/layouts.md), or the layout saved with this screen setup. The coordinates only fit one arrangement, so choose the one you fly with.
 - **Main view on**: tick one or more monitors. The 3D view spans them.
-- **Aircraft**: one chip per aircraft. **+ Aircraft** lists every aircraft installed in DCS that can draw a display on another screen, with the displays it can export. RigReady reads them from each module's own cockpit scripts (the names a display asks the monitor setup for, such as `LEFT_MFCD`, `EHSI`, `F14_TID` or the Ka-50's `ABRIS` and `Shkval`), so a module you install later appears on its own. The scripts are only read, never run. An aircraft without exportable displays, such as the UH-1H, is not listed and uses the main view only. If a module's scripts cannot be read, RigReady falls back to what it knows of the F/A-18C, F-16C, A-10C and A-10C II, F-15E, F-14 and Ka-50, and adds whatever SimAppPro's plan knows about installed aircraft.
+- **Aircraft**: one chip per aircraft. **+ Aircraft** has three parts. First come the aircraft installed in DCS in whose files RigReady found a display that can be drawn on another screen, each with those displays. RigReady reads them from each module's own cockpit scripts (the names a display asks the monitor setup for, such as `LEFT_MFCD`, `EHSI`, `F14_TID` or the Ka-50's `ABRIS` and `Shkval`), so a module you install later appears on its own. The scripts are only read, never run. If a module's scripts cannot be read, RigReady falls back to what it knows of the F/A-18C, F-16C, A-10C and A-10C II, F-15E, F-14 and Ka-50, and adds whatever SimAppPro's plan knows about installed aircraft. Then, under **No display found in their files**, come the installed aircraft where RigReady found none, such as the UH-1H. That heading says what RigReady found, not that the aircraft has no such display. Last is **Another aircraft, by name**, which stays in view under the list; see [An aircraft or a display RigReady did not find](#an-aircraft-or-a-display-rigready-did-not-find).
 - A new setup starts on the aircraft of the setup you used last, when its name says which one (a setup called "DCS F-16C" starts on the Viper), and otherwise on the first aircraft in the list. A saved setup or SimAppPro's plan starts with the aircraft it already has.
 - For each display, choose the monitor or **Not shown**, then set the **Crop** in pixels from the left, top, right and bottom edges to leave out the bezel. On the map you can also drag a display onto a screen and drag its edges.
 - Choosing another monitor for a display keeps its crop when the new monitor has the same size as the old one, so moving a display between identical MFD screens costs nothing. On a monitor of another size the crop would not mean the same thing; it starts again from zero and a line under the display says so ("The crop was not kept: …"). A display set to **Not shown** and then put back on a monitor gets its crop back.
@@ -66,6 +66,25 @@ The page refuses to write a setup with a problem (a display placed twice, a moni
 ![The F-15E's six displays, one placed on an MFD screen](../../../artifacts/screens/dcs-setup-module-displays/03-f-15e-placed.png)
 
 ![Cropping a bezel](../../../artifacts/screens/dcs-setup-screens/05-cropped.png)
+
+## An aircraft or a display RigReady did not find
+
+RigReady can miss a display, and it knows nothing of an aircraft that is not installed where it looks, such as some community aircraft. Both can be added by name.
+
+- **+ Aircraft**, then **Another aircraft, by name**: type the name DCS itself uses for the aircraft, such as `FA-18C_hornet`. If an installed aircraft has that name, whatever capitals you typed, the box says which one and RigReady adds it with what it knows of it. Otherwise the name is added as typed, and a line under the chips says that RigReady has not found an aircraft of that name in DCS on this PC.
+- **Display by name**, under the displays of the aircraft: type the name the aircraft asks DCS for, such as `LEFT_MFCD`. The display gets a row like any other and can be put on a monitor and cropped. Its row shows the name as you typed it and says that RigReady has not seen this name in the aircraft's files. The cross at the end of the row takes the name off the list again.
+
+RigReady writes an added name exactly as you typed it. It cannot check the name against the game, and it does not claim that the aircraft or the display exists. DCS matches names letter for letter, capitals included. If the aircraft does not ask DCS for a display of that name, nothing is drawn there.
+
+RigReady accepts only what can be a name. A display name has only letters, digits and `_`, starts with a letter or `_`, and is at most 64 characters long. An aircraft name has only letters, digits, spaces and the signs `_ . + -`, starts with a letter or a digit, and is at most 64 characters long. A word that DCS's monitor setup file already uses for something else, such as `Viewports`, cannot be a display name either. Anything else is refused with the reason, in the box where you type and for every other way a screen setup reaches RigReady, and nothing is written.
+
+![The aircraft menu: displays found, none found, and any other aircraft by name](../../../artifacts/screens/dcs-screens-by-name/01-aircraft-menu.png)
+
+![A name that cannot be a display name is refused with the reason](../../../artifacts/screens/dcs-screens-by-name/02-name-refused.png)
+
+![A display added by name: the row says what RigReady knows of it](../../../artifacts/screens/dcs-screens-by-name/03-display-added-by-name.png)
+
+![An aircraft RigReady has not found in DCS on this PC](../../../artifacts/screens/dcs-screens-by-name/04-aircraft-added-by-name.png)
 
 ## Writing it
 

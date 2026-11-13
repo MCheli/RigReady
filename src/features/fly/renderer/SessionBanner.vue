@@ -1,27 +1,57 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { GameKind } from '../../../shared/models';
 import type { SessionState } from '../contract';
-import { clockText, durationText, elapsedText } from '../core/sessionText';
+import {
+  clockText,
+  countdownLeft,
+  countdownTitle,
+  durationText,
+  elapsedText,
+  standDownHeldText,
+  stoodDownLine,
+  stoodDownText,
+} from '../core/sessionText';
+import { secondsLeft as noticeSecondsLeft } from './standDownCountdown';
 
 /**
  * The session of the moment, under the readiness: the game running with its clock, or
- * "Welcome back" with how long it was once the game has closed.
+ * "Welcome back" with how long it was once the game has closed. Under "Welcome back", one
+ * line says where Stand down by itself stands: counting down, running, what it did, or why
+ * it is not going to run this time.
  */
 const props = defineProps<{
   session: SessionState;
   /** The family of sims the game belongs to, for the picture beside "Welcome back". */
   kind?: GameKind | undefined;
-  /** In the compact view: one line, no button. */
+  /**
+   * In the compact view: short lines and no Dismiss. Cancel for the countdown is here,
+   * because the notice that carries it in the main window is not shown in this one.
+   */
   compact?: boolean;
 }>();
-const emit = defineEmits<{ dismiss: [] }>();
+const emit = defineEmits<{ dismiss: []; cancel: [] }>();
 
+/** True while it counts down to a Stand down by itself. */
+const countingDown = computed(() => {
+  const s = props.session;
+  return s.standDownAt !== undefined && !s.standingDown && !s.stoodDown;
+});
+
+/**
+ * The clock of this line: once a second for the time in session, and four times a second
+ * while it counts down, read afresh when the countdown starts. A clock a second behind
+ * would start a countdown of one minute at "1 minute 1 second".
+ */
 const now = ref(Date.now());
 let tick: ReturnType<typeof setInterval> | undefined;
-onMounted(() => {
-  tick = setInterval(() => (now.value = Date.now()), 1000);
-});
+function tickEvery(ms: number): void {
+  clearInterval(tick);
+  now.value = Date.now();
+  tick = setInterval(() => (now.value = Date.now()), ms);
+}
+onMounted(() => tickEvery(countingDown.value ? 250 : 1000));
+watch(countingDown, (on) => tickEvery(on ? 250 : 1000));
 onBeforeUnmount(() => clearInterval(tick));
 
 const game = computed(() => props.session.gameName ?? props.session.profileName ?? 'The game');
@@ -44,17 +74,45 @@ const backIcon = computed(() =>
       ? 'mdi-flag-checkered'
       : 'mdi-home-outline'
 );
-/** What Stand down did when it ran by itself. */
-const stoodDown = computed(() => {
-  const down = props.session.stoodDown;
-  if (!down) return undefined;
-  const failed = down.failed > 0;
-  return {
-    tone: failed ? 'rr-warn' : 'rr-ok',
-    // A stand down that did not finish says so in its own words.
-    text: down.headline.startsWith('Stand down') ? down.headline : `Stood down: ${down.headline}`,
-  };
+/** Seconds until Stand down starts by itself; undefined when nothing is counting down. */
+const secondsLeft = computed(() => {
+  const s = props.session;
+  if (!countingDown.value || !s.standDownAt) return undefined;
+  // In the main window the notice counts down too. Its clock is used while it runs, so the
+  // two never say a different second. The compact view has no notice: this line's clock.
+  return noticeSecondsLeft.value ?? countdownLeft(s.standDownAt, now.value, s.standDownSeconds);
 });
+/**
+ * Where Stand down by itself stands, in one line. `full` is the whole sentence where the
+ * compact view shows a shorter one.
+ */
+const down = computed(
+  (): { text: string; full?: string; tone?: string; state: string } | undefined => {
+    const s = props.session;
+    if (s.standingDown) return { text: 'Standing down…', state: 'running' };
+    if (s.stoodDown) {
+      // Green only when every step worked; a step left undone, or a Stand down that could
+      // not run, never reads as done.
+      const tone = stoodDownText(s.stoodDown).ok
+        ? 'rr-ok'
+        : s.stoodDown.finished
+          ? 'rr-warn'
+          : 'rr-bad';
+      return { text: stoodDownLine(s.stoodDown), tone, state: 'result' };
+    }
+    if (secondsLeft.value !== undefined) {
+      return { text: countdownTitle(secondsLeft.value), state: 'counting' };
+    }
+    if (s.standDownHeld) {
+      return {
+        text: standDownHeldText(s.standDownHeld, props.compact),
+        full: standDownHeldText(s.standDownHeld),
+        state: 'held',
+      };
+    }
+    return undefined;
+  }
+);
 </script>
 
 <template>
@@ -104,20 +162,33 @@ const stoodDown = computed(() => {
           <template v-if="!compact">{{ session.profileName }} · </template>{{ length }} · closed at
           {{ closedAt }}
         </div>
-        <div v-if="session.standingDown" class="session-down" data-testid="fly-session-down">
-          Standing down…
-        </div>
+        <!-- The countdown ticks: it is not read out every second. -->
         <div
-          v-else-if="stoodDown"
+          v-if="down"
           class="session-down"
-          :class="stoodDown.tone"
+          :class="down.tone"
+          :title="compact ? (down.full ?? down.text) : undefined"
+          :aria-live="down.state === 'counting' ? 'off' : undefined"
+          :data-state="down.state"
           data-testid="fly-session-down"
         >
-          {{ stoodDown.text }}
+          {{ down.text }}
         </div>
       </div>
       <v-btn
-        v-if="!compact"
+        v-if="compact && down?.state === 'counting'"
+        variant="tonal"
+        size="small"
+        aria-label="Cancel Stand down"
+        data-testid="fly-session-cancel"
+        @click="emit('cancel')"
+      >
+        Cancel
+      </v-btn>
+      <!-- While it counts down the way out is Cancel, so that nothing reads as "hide this
+           and let it run". -->
+      <v-btn
+        v-else-if="!compact && down?.state !== 'counting'"
         variant="text"
         size="small"
         :disabled="session.standingDown === true"
@@ -153,10 +224,14 @@ const stoodDown = computed(() => {
     transform: none;
   }
 }
+/* The small window has room for three close lines after the game has closed: "Welcome
+   back", how long it was, and where Stand down stands. The window's size is the one the
+   user may have kept from before there was a third line, so the lines make the room. */
 .session-compact {
   margin-top: 10px;
-  padding: 7px 10px;
+  padding: 5px 10px;
   gap: 8px;
+  line-height: 1.3;
 }
 .session-icon {
   flex: none;
@@ -192,6 +267,9 @@ const stoodDown = computed(() => {
 .session-down {
   margin-top: 2px;
   font-size: 12.5px;
+}
+.session-compact .session-down {
+  margin-top: 0;
 }
 .session-clock {
   font-size: 22px;

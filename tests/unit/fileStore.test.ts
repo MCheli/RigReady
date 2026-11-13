@@ -328,4 +328,46 @@ describe('node platform', () => {
     expect(await raw.exists(`${folder}.rigready-tmp`)).toBe(false);
     expect((await raw.stat(folder))?.isDirectory).toBe(true);
   });
+
+  it('NodeRawFs: reads and writes of one file asked for at the same moment take turns', async () => {
+    // No waiting at all here: a write that finds its file open fails at once. So this passes
+    // only when RigReady's own reads and writes of a file are never in each other's way.
+    // On the build server a session was lost from the history exactly so: the write of
+    // sessions.json was refused for longer than the second it waits.
+    const raw = new NodeRawFs([]);
+    const file = path.join(dir, 'turns', 'sessions.json');
+    await raw.writeBytes(file, JSON.stringify({ round: -1 }));
+    for (let round = 0; round < 40; round++) {
+      const long = JSON.stringify({ round, by: 'first', pad: 'x'.repeat(400) });
+      const short = JSON.stringify({ round, by: 'second' });
+      const [, ...read] = await Promise.all([
+        raw.writeBytes(file, long),
+        raw.readText(file),
+        raw.readText(file),
+        raw.readBytes(file).then((bytes) => Buffer.from(bytes).toString('utf8')),
+        raw.writeBytes(file, short).then(() => 'written'),
+        raw.readText(file),
+      ]);
+      // Each read saw the whole file as it was when the read was asked for.
+      expect(read).toEqual([long, long, long, 'written', short]);
+      // The write asked for last is what is left: whole, with nothing of the other in it.
+      expect(await fs.readFile(file, 'utf8')).toBe(short);
+    }
+    expect(await raw.list(path.join(dir, 'turns'))).toEqual(['sessions.json']);
+    // The same file under another spelling of its path is still the same file.
+    await Promise.all([
+      raw.writeBytes(file.toUpperCase(), 'upper'),
+      raw.readText(file),
+      raw.writeBytes(path.join(dir, 'turns', '.', 'sessions.json'), 'last'),
+    ]);
+    expect(await fs.readFile(file, 'utf8')).toBe('last');
+    // A write that fails does not hold up the ones after it.
+    const folder = path.join(dir, 'turns', 'a-folder');
+    await fs.mkdir(folder);
+    const failed = raw.writeBytes(folder, 'x');
+    const after = raw.list(folder);
+    await expect(failed).rejects.toThrow();
+    expect(await after).toEqual([]);
+    await expect(raw.readText(folder)).rejects.toThrow();
+  });
 });

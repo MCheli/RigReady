@@ -132,6 +132,95 @@ export const AppliedSchema = z.object({
 });
 export type AppliedView = z.infer<typeof AppliedSchema>;
 
+/**
+ * Dollars one question to the assistant may cost before RigReady stops and asks, until the
+ * user sets their own in Settings. 0 means no ceiling.
+ */
+export const DEFAULT_QUESTION_CEILING = 0.25;
+export const MAX_QUESTION_CEILING = 50;
+
+/**
+ * Dollars a calendar month may reach by RigReady's estimate before it stops sending. 0 means
+ * no budget, which is how it starts: a budget is the user's own, set with an acknowledgement.
+ */
+export const DEFAULT_MONTHLY_BUDGET = 0;
+export const MAX_MONTHLY_BUDGET = 10_000;
+/** The share of the monthly budget from which RigReady warns. */
+export const BUDGET_WARN_SHARE = 0.8;
+
+/**
+ * When RigReady's built-in prices (anthropic.ts, providers.ts) were recorded from the
+ * providers' published price lists. Shown with every estimate that uses them: change it
+ * whenever a price in those tables is changed.
+ */
+export const PRICES_RECORDED = 'November 2026';
+export const MAX_PRICE = 10_000;
+
+const PerMillion = z.number().min(0).max(MAX_PRICE);
+/** What a model costs, in US dollars per million tokens. */
+export const PriceSchema = z.object({
+  /** Input read fresh. */
+  input: PerMillion,
+  output: PerMillion,
+  /** Input the provider reads from its cache. */
+  cacheRead: PerMillion,
+  /** Input the provider writes to its cache. */
+  cacheWrite: PerMillion,
+});
+export type Price = z.infer<typeof PriceSchema>;
+
+/** The prices an estimate is worked out from: RigReady's built-in ones, or the user's own numbers. */
+export const PriceBasisSchema = PriceSchema.extend({ source: z.enum(['built-in', 'own']) });
+export type PriceBasis = z.infer<typeof PriceBasisSchema>;
+
+/**
+ * Where the prices behind a dollar estimate come from. `mixed` is a sum over requests that
+ * were not all estimated at the same prices. No dollar figure is shown without one.
+ */
+export const PriceSourceSchema = z.enum(['built-in', 'own', 'mixed']);
+export type PriceSource = z.infer<typeof PriceSourceSchema>;
+
+/** A calendar month of estimates against the monthly budget. */
+export const MonthBudgetSchema = z.object({
+  /** Dollars the month may reach by RigReady's estimate before it stops sending; 0 for no budget. */
+  budget: z.number(),
+  /** The month counted, by this PC's clock: "2026-11". */
+  month: z.string(),
+  /**
+   * RigReady's estimate of the month's answered requests, each at the prices in force when
+   * it was sent. An estimate, never what the provider charged.
+   */
+  spent: z.number(),
+  /** Answered requests in that estimate. */
+  requests: z.number().int(),
+  /** Answered requests of the month that had no prices: they are in no estimate. */
+  unpriced: z.number().int(),
+  /**
+   * off: no budget. ok. warn: at or past the warning share. stopped: the estimate has reached
+   * the budget, or the request asked about would take it past, so nothing is sent.
+   */
+  state: z.enum(['off', 'ok', 'warn', 'stopped']),
+  /** The count could not be read, and why: with a budget set nothing is sent until it can. */
+  problem: z.string().optional(),
+});
+export type MonthBudget = z.infer<typeof MonthBudgetSchema>;
+
+/**
+ * The limits counted from estimates, and when the user acknowledged what each one is (an ISO
+ * time). Turning one on needs that acknowledgement.
+ */
+export const AcknowledgedSchema = z.object({
+  questionCeiling: z.string().optional(),
+  monthlyBudget: z.string().optional(),
+});
+export type Acknowledged = z.infer<typeof AcknowledgedSchema>;
+
+/** What is sent, by use: a title ("The assistant (any game)") and its statements. */
+export const WhatIsSentSchema = z.array(
+  z.object({ title: z.string(), lines: z.array(z.string()) })
+);
+export type WhatIsSent = z.infer<typeof WhatIsSentSchema>;
+
 export const AiStatusSchema = z.object({
   /** Who answers: anthropic, openai or compatible (any OpenAI-compatible server). */
   provider: z.enum(['anthropic', 'openai', 'compatible']),
@@ -175,8 +264,22 @@ export const AiStatusSchema = z.object({
   host: z.string(),
   /** The host is this PC. */
   local: z.boolean(),
-  /** Exactly what is and is not sent, one statement per line. */
-  whatIsSent: z.array(z.string()),
+  /** Exactly what is and is not sent: by use, one statement per line. */
+  whatIsSent: WhatIsSentSchema,
+  /** Dollars one question to the assistant may reach by RigReady's estimate before it stops and asks; 0 for no ceiling. */
+  questionCeiling: z.number(),
+  /** There are prices for the chosen model, so estimates can be shown and the limits can work. */
+  priceKnown: z.boolean(),
+  /** The prices estimates for the chosen model are worked out from; null when there are none. */
+  prices: PriceBasisSchema.nullable(),
+  /** RigReady's built-in prices for the chosen model; null for a model it has none for. */
+  builtInPrices: PriceSchema.nullable(),
+  /** When the built-in prices were recorded: "November 2026". */
+  pricesRecorded: z.string(),
+  /** This month's estimate against the monthly budget. */
+  month: MonthBudgetSchema,
+  /** Which limits the user acknowledged as counted from estimates, and when. */
+  acknowledged: AcknowledgedSchema,
 });
 export type AiStatus = z.infer<typeof AiStatusSchema>;
 
@@ -186,8 +289,10 @@ export const UsageSchema = z.object({
   output: z.number(),
   cacheWrite: z.number(),
   cacheRead: z.number(),
-  /** Approximate, US dollars; null when the model's price is not known. */
+  /** RigReady's estimate in US dollars, never a bill; null when there are no prices for the model. */
   cost: z.number().nullable(),
+  /** Where the prices behind `cost` come from; null with no estimate. */
+  prices: PriceSourceSchema.nullable().default(null),
 });
 export type UsageView = z.infer<typeof UsageSchema>;
 
@@ -202,8 +307,12 @@ export const PreparedSchema = z.object({
   body: z.string(),
   chars: z.number().int(),
   approxTokens: z.number().int(),
-  /** Null when the model's price is not known. */
+  /** RigReady's estimate of what reading it costs; null when there are no prices for the model. */
   approxCost: z.number().nullable(),
+  /** Where the prices behind `approxCost` come from; null with no estimate. */
+  prices: PriceSourceSchema.nullable().default(null),
+  /** The month against the monthly budget with this request counted in; null with no estimate. */
+  month: MonthBudgetSchema.nullable().default(null),
   /** Who receives it: "Anthropic", "OpenAI", "the server at localhost:11434". */
   provider: z.string(),
   /** The only host it goes to. */

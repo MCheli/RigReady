@@ -1,9 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { UsageView } from '../core/model';
+import { estimated } from './estimateText';
 
-/** Tokens and approximate cost of one request. */
-defineProps<{ usage: UsageView }>();
+/**
+ * One request: the tokens as the provider counted them and, where there are prices for the
+ * model, RigReady's estimate in dollars with the prices it was worked out from.
+ */
+const props = defineProps<{ usage: UsageView }>();
 const n = (v: number): string => v.toLocaleString('en-US');
+const figure = computed(() => estimated(props.usage.cost, props.usage.prices));
 </script>
 
 <template>
@@ -11,9 +17,7 @@ const n = (v: number): string => v.toLocaleString('en-US');
     {{ usage.model }} · {{ n(usage.input + usage.cacheRead + usage.cacheWrite) }} tokens in
     <template v-if="usage.cacheRead > 0">({{ n(usage.cacheRead) }} from cache)</template>
     · {{ n(usage.output) }} out
-    <template v-if="usage.cost !== null"
-      >· about ${{ usage.cost < 0.01 ? usage.cost.toFixed(4) : usage.cost.toFixed(2) }}</template
-    >
+    <template v-if="figure">· {{ figure }}</template>
   </div>
 </template>
 

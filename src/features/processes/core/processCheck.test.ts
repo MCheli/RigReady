@@ -3,10 +3,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { GameRegistry } from '../../../core/games';
 import { err, ok } from '../../../core/result';
 import { NodeShell } from '../../../platform/node';
-import { scenarioRig, type TestRig } from '../../../../tests/helpers';
+import { mutate, scenarioRig, type TestRig } from '../../../../tests/helpers';
 import {
   createLaunchRemediation,
   createProcessRunningCheck,
+  FORCE_CLOSE_LABEL,
   LaunchParamsSchema,
   pathResolver,
   createProcessCapture,
@@ -113,6 +114,97 @@ describe('process.running', () => {
     expect(await running('SimAppPro.exe')).toBe(false);
     rig.ports.processes.list = async () => err('process.list', 'nope');
     expect(await check.standDown!(params, rig.ctx)).toMatchObject({ ok: false });
+  });
+
+  it('an app that stays open says why, and what to do: the hint names the switch in the setup', async () => {
+    const { check } = setup();
+    rig = await scenarioRig('flying-all-good', { files: [] });
+    const params = ProcessParamsSchema.parse({ name: 'SimAppPro.exe', stopOnStandDown: true });
+    const forced = { ...params, forceClose: true };
+    const offer = `Close it yourself, or switch on "${FORCE_CLOSE_LABEL}" for this check in the setup.`;
+
+    // It went to the tray when asked, the way its X button makes it.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'SimAppPro.exe' }]);
+    expect(await check.standDown!(params, rig.ctx)).toEqual(
+      err(
+        'process.stillRunning',
+        'SimAppPro.exe is still running: it was asked to close and stayed open. Some apps only go to the tray when asked.',
+        offer
+      )
+    );
+
+    // It has no window at all.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'simapppro.exe', why: 'noWindow' }]);
+    expect(await check.standDown!(params, rig.ctx)).toEqual(
+      err(
+        'process.stillRunning',
+        'SimAppPro.exe is still running: it has no window, so it could not be asked to close.',
+        offer
+      )
+    );
+
+    // Running as administrator: forcing does not work either, so it is not offered.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'SimAppPro.exe', why: 'refused' }]);
+    const refused = err(
+      'process.stillRunning',
+      'SimAppPro.exe is still running: Windows did not let RigReady close it. It may be running as administrator.',
+      'Close it yourself.'
+    );
+    expect(await check.standDown!(params, rig.ctx)).toEqual(refused);
+    expect(await check.standDown!(forced, rig.ctx)).toEqual(refused);
+    expect(await running('SimAppPro.exe')).toBe(true);
+
+    // Forced, and already told so: there is nothing more to switch on.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'SimAppPro.exe', why: 'ignored' }]);
+    rig.ports.processes.close = async (pid) =>
+      err('process.stillRunning', `Process ${pid} did not close within 10 s.`, 'ignored');
+    expect(await check.standDown!(forced, rig.ctx)).toMatchObject({
+      error: { detail: 'Close it yourself.' },
+    });
+  });
+
+  it('an app that stays open is ended when the setup lets it be forced, and closes again when it behaves', async () => {
+    const { check } = setup();
+    rig = await scenarioRig('flying-all-good', { files: [] });
+    const params = ProcessParamsSchema.parse({ name: 'SimAppPro.exe', stopOnStandDown: true });
+    await mutate(rig, [{ op: 'failProcessClose', name: 'SimAppPro.exe', why: 'noWindow' }]);
+    expect(await check.standDown!({ ...params, forceClose: true }, rig.ctx)).toEqual(
+      ok('Closed SimAppPro.exe (it had to be forced)')
+    );
+    expect(await running('SimAppPro.exe')).toBe(false);
+
+    await rig.ports.processes.start({ exe: 'C:\\SimAppPro\\SimAppPro.exe', args: [] });
+    await mutate(rig, [{ op: 'failProcessClose', name: 'SimAppPro.exe', why: 'off' }]);
+    expect(await check.standDown!(params, rig.ctx)).toEqual(ok('Closed SimAppPro.exe'));
+  });
+
+  it('an app of several processes is closed as one, whichever of them comes first', async () => {
+    const { check } = setup();
+    rig = await scenarioRig('flying-all-good', { files: [] });
+    const exe = 'C:\\Apps\\Coach\\coach.exe';
+    // Three processes of one app. The first two are helpers without a window.
+    const pids: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const started = await rig.ports.processes.start({ exe, args: [] });
+      if (started.ok && started.value.pid !== undefined) pids.push(started.value.pid);
+    }
+    expect(pids).toHaveLength(3);
+    const owner = pids[2]!;
+    const close = rig.ports.processes.close.bind(rig.ports.processes);
+    const asked: number[] = [];
+    rig.ports.processes.close = async (pid, options) => {
+      asked.push(pid);
+      if (pid !== owner) {
+        return err('process.stillRunning', `Process ${pid} has no window to close.`, 'noWindow');
+      }
+      // The owner of the window closes, and its helpers go with it.
+      for (const helper of pids) if (helper !== owner) await close(helper, options);
+      return close(pid, options);
+    };
+    const params = ProcessParamsSchema.parse({ name: 'coach.exe', stopOnStandDown: true });
+    expect(await check.standDown!(params, rig.ctx)).toEqual(ok('Closed coach.exe'));
+    expect(asked).toEqual(pids);
+    expect(await running('coach.exe')).toBe(false);
   });
 });
 

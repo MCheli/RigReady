@@ -19,7 +19,7 @@ Windows desktop app that verifies a flight/racing sim rig is ready, fixes what i
 - Never build shell command strings from data. `Shell.run(exe, args[])` only.
 - Stay inside your feature folder; shared changes go through `src/core` or `src/shared` deliberately.
 - Only `src/platform` imports `fs`, `child_process` or `koffi`; everything else uses the ports.
-- `npm run check` must pass before every commit.
+- Every commit is checked: by `npm run check` on this PC, or by GitHub's run on its pull request. Nothing merges into main without a green run.
 
 ## This machine
 

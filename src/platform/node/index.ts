@@ -43,14 +43,50 @@ const REPLACE_WAITS: readonly number[] = [5, 10, 20, 40, 80, 160, 320, 400];
 /** What Windows answers while a file is held open by something else. */
 const HELD = new Set(['EPERM', 'EACCES', 'EBUSY']);
 
+/**
+ * What is still to finish for each file RigReady is reading or writing, by its path: the
+ * writes asked for so far, and everything asked for so far.
+ *
+ * A write of a file waits for RigReady's own earlier reads and writes of it, and a read waits
+ * for the writes asked for before it. Reads do not wait for each other. Because:
+ * - a read that has the file open makes Windows refuse the write that replaces it, and on a
+ *   slow disk that lasted longer than the write waits (a session lost from the history);
+ * - two writes of one file at once share the temporary file beside it, and what is left is
+ *   part of one and part of the other, or one of them fails.
+ * So only something outside RigReady can still be in a write's way, and the waits are for that.
+ */
+const turns = new Map<string, { writes: Promise<unknown>; all: Promise<unknown> }>();
+const NOTHING = Promise.resolve();
+
+function inTurn<T>(file: string, kind: 'read' | 'write', work: () => Promise<T>): Promise<T> {
+  // Windows does not tell upper case from lower in a path.
+  const key = path.resolve(file).toLowerCase();
+  const before = turns.get(key) ?? { writes: NOTHING, all: NOTHING };
+  const run = (kind === 'read' ? before.writes : before.all).then(work);
+  // One that fails has failed for whoever asked; what comes after still gets its turn.
+  const done = run.then(
+    () => undefined,
+    () => undefined
+  );
+  const now =
+    kind === 'read'
+      ? { writes: before.writes, all: Promise.all([before.all, done]) }
+      : { writes: done, all: done };
+  turns.set(key, now);
+  void now.all.then(() => {
+    if (turns.get(key) === now) turns.delete(key);
+  });
+  return run;
+}
+
 export class NodeRawFs implements RawFs {
   constructor(private readonly replaceWaits: readonly number[] = REPLACE_WAITS) {}
 
   readText(file: string): Promise<string> {
-    return fs.readFile(file, 'utf8');
+    return inTurn(file, 'read', () => fs.readFile(file, 'utf8'));
   }
-  async readBytes(file: string): Promise<Uint8Array> {
-    return new Uint8Array(await fs.readFile(file));
+  readBytes(file: string): Promise<Uint8Array> {
+    return inTurn(file, 'read', async () => new Uint8Array(await fs.readFile(file)));
   }
   async stat(file: string): Promise<RawStat | undefined> {
     try {
@@ -74,7 +110,10 @@ export class NodeRawFs implements RawFs {
       return false;
     }
   }
-  async writeBytes(file: string, data: Uint8Array | string): Promise<void> {
+  writeBytes(file: string, data: Uint8Array | string): Promise<void> {
+    return inTurn(file, 'write', () => this.replace(file, data));
+  }
+  private async replace(file: string, data: Uint8Array | string): Promise<void> {
     await fs.mkdir(path.dirname(file), { recursive: true });
     // Write to a sibling and rename so a crash never leaves a half-written file.
     const temp = `${file}.rigready-tmp`;

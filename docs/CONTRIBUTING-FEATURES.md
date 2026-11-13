@@ -38,10 +38,12 @@ Nothing else is needed for unit and e2e work: both run on fake providers. `npm r
 
 | Command | What it does |
 |---|---|
-| `npm run check` | Typecheck (node and web projects), lint, format check, unit tests with coverage threshold, ledger check. Must pass before every commit. |
+| `npm run check` | Typecheck (node and web projects), lint, format check, unit tests with coverage threshold, ledger check. Every commit is checked by it, here or by GitHub's run on its pull request. Nothing merges into main without a green run. |
 | `npm run typecheck` / `npm run lint` / `npm run format` | The single gates; `format` fixes formatting, `lint:fix` fixes what ESLint can. |
 | `npm test` / `npm run test:watch` | Unit tests. `npx vitest run tests/unit/<file>.test.ts` runs one file. |
+| `npm run test:coverage:shard -- --shard=1/4` / `npm run test:coverage:merge` | How CI runs the unit tests of `npm run check`: a quarter of the test files on each of four runners, then the coverage limits on the four reports together (`.github/workflows/ci.yml`). Not needed on a desk PC: one shard alone is not held to the limits. |
 | `npm run test:e2e` | Build, then run every scenario flow. Screenshots land in `artifacts/screens/<flow>/`. |
+| `npm run test:e2e:changed` | Build, then run the scenario files that what you changed since `origin/main` can reach, after printing which and why (section 13). `-- --list` prints and runs nothing; `-- --base=<branch>` compares with another branch; `-- --no-build` skips the build; anything else goes to Playwright, for example `-- --workers=1`. |
 | `npx playwright test tests/e2e/<file>.e2e.ts` | One e2e file (run `npm run build` first). |
 | `npm run dev:scenario -- <scenario>` | The app in dev mode on a scenario (fake providers, temp data folder). Without a name it lists the scenarios. |
 | `npm run ledger:check` | Validate `docs/requirements/ledger.yaml`. |
@@ -466,7 +468,8 @@ await rig.cleanup();                                 // in afterEach
   - Replacing a whole port after wiring (`rig.ports.http = somethingElse`) is not seen by any feature: they hold the copy made at wiring.
   - Anything that must be true before a feature's `setup` runs (a feature that reads at startup, starts a watcher, or keeps a reference to a port method) goes in `wiredApp(scenario, { beforeWiring })`, which runs on the rig after the scenario is seeded and before any feature is set up.
   - Inside a check run the ports are wrapped once more by the read cache (section 3): assert on what the check returned, not on how often the fake was called, unless the call count is what you are testing.
-- To make a provider fail with an error, hang, or a program fail to start, use the `failProvider`, `hangProvider` and `failProcessStart` mutations (they work in scenario files and live).
+- To make a provider fail with an error, hang, a program fail to start, or a program stay open when it is asked to close, use the `failProvider`, `hangProvider`, `failProcessStart` and `failProcessClose` mutations (they work in scenario files and live).
+- A program that is several processes (every Chromium or Electron app) is closed with `closeTogether` from `src/core/processes.ts`: all are asked at once and the process list afterwards decides. Do not loop over `processes.close` one process at a time. `stillRunningText` words why a program stayed open.
 - Features start watchers in `setup`. In a test that wires the app, call `dispose` on them before cleanup: `for (const f of app.wiring.features) await f.dispose?.()`.
 - A fix that applies a monitor layout waits for the keep-or-revert answer the first time. `wiredApp` answers "keep" by itself; set `app.layoutAnswer` to `'revert'` or to `'wait'` (then answer through `displays:keep` / `displays:revert`). A layout kept once in a test is known to work from then on, so the same Make ready or Stand down in the same data folder applies it without `displays:event:applied` and sends `displays:event:appliedKnown` instead.
 - Do not mock `fs`. Test code may use `node:fs` to arrange and inspect the temp folder.
@@ -536,6 +539,7 @@ A status that is not 2xx is never streamed (its whole body is the result), and a
 | `setKnownFolder` | `folder: documents \| savedGames`, `path` | Moves Documents or Saved Games to another folder below the fake user folder, as a user does in Properties > Location. A file the scenario writes must go to the new place |
 | `slowFiles` | `ms` (0 ends it) | Every read and write of a file's content takes that long (a slow disk, a big backup), so a long operation can be watched |
 | `failProcessStart` | `name` (image name), `mode?: error \| neverRuns \| off` | Starting that program fails ("Access is denied"), or is accepted but the program never shows up |
+| `failProcessClose` | `name` (image name), `why?: ignored \| noWindow \| refused \| off` | That program stays open when asked to close, and the provider says why: it only went to the tray, it has no window, or Windows did not allow it (it runs as administrator; forcing fails too) |
 | `stopProcess` | `name` | Removes every process with that name |
 | `startProcess` | `name`, `path` | Adds a running process |
 | `setDisplay` | `match: { name?, id?, index? }`, `set: { enabled?, primary?, x?, y?, width?, height?, rotation?, refreshHz?, id?, serial?, usbSerial? }` | Changes monitors (`index` picks one of several with the same name). A new `id` is the monitor moved to another connector or USB port |
@@ -683,9 +687,29 @@ A test is `<file>#<test title>`; the file must exist and contain that title (quo
 ## 13. Before you commit
 
 1. `npm run check` passes. It includes every audit of section 15; the sabotage audit alone takes 60 to 80 seconds.
-2. `npm run test:e2e` passes and you have looked at your screenshots, the tour's pictures of your page on all four rigs included.
+2. `npm run test:e2e` passes and you have looked at your screenshots, the tour's pictures of your page on all four rigs included. When you cannot wait for all of it, `npm run test:e2e:changed` is the least to run before a push (below).
 3. A new page is on the `PAGES` list of `tests/e2e/generic-rig.e2e.ts` (section 10).
 4. `git add` your own paths only (your feature folder, your scenario and e2e files, your screenshot folders, the ledger). Never `git add -A`. Other flows' screenshots change on every e2e run (they show temp paths and times); do not commit them: `git checkout -- artifacts/screens/<their-flow>`.
+
+### The scenario tests your change can reach
+
+`npm run check` runs no scenario test. Running only your own feature's scenario files is not enough either: from 6 to 12 November 2026, 11 of the 21 red CI runs were a real defect that only a scenario test could see, and at least 7 of those were in a scenario the branch had not run: one that crosses features, or one of another feature, broken by a change to code they share. Each was first seen a quarter of an hour after the push. `npm run test:e2e:changed` is for that. It compares your files with `origin/main` (committed or not, new files too), says which scenario files it runs and why, builds, and runs them:
+
+| What changed | What runs |
+|---|---|
+| A scenario test file | That file. |
+| A feature folder, `src/features/<id>/` | The files named after that feature (`<id>.e2e.ts`, `<id>-*.e2e.ts`) and the 24 files named after no feature, because those cross features: the walk over every page, the keyboard, the tray, damaged files. About half of the suite. |
+| A scenario, a recorded rig or a data file under `fixtures/` | The files that name that scenario, or one built on it. A fixture nothing names runs every file. |
+| Anything else that a scenario can read: `src/core`, `src/shared`, `src/renderer`, `src/main`, `src/preload`, `src/platform` with its fakes, the helpers in `tests/e2e/`, the Playwright and build settings, `package.json`, and any path the script does not know | Every file. A guess that nothing reads it would be the expensive mistake. |
+| Unit tests, documents, the website, the workflows, the scripts, screenshots, the packaged and installer tests | Nothing. |
+
+The rules are in `scripts/lib/scenarioPick.ts`, with their tests beside them. Three things it does not do:
+
+- It is the first look, not the whole answer. A feature can still break a scenario named after another feature; CI runs all of them on every pull request.
+- It does not run the packaged smoke. After a change to packaging, the sidecar or the updater, run `npm run smoke:packaged`.
+- It does not test a clean install. After a change to `package.json`, run `npm ci` once before you push.
+
+On a PC where other test runs are going, add `-- --workers=1`: two apps at once take each other's focus.
 
 ## 14. The features and what each owns
 
@@ -705,7 +729,7 @@ Every folder under `src/features/`. "Registers" lists what the feature adds to t
 | `dcs-bindings` | DCS bindings (`/configure/dcs-bindings`): Overview, Devices, Actions, Problems, Device IDs, Copy, Snapshots. The only code that writes DCS input files. | The DCS `BindingReader` with `actions` and `proposals`; check `dcs-bindings.deviceIds` |
 | `cheat-sheets` | Cheat sheets (`/configure/cheat-sheets`): a picture of each device with what every control does, device layouts and the layout editor (`LAYOUT-FORMAT.md`), notes, print and PDF, DCS kneeboard pages, the quick-look panel (`openPanel`). Reads bindings only through `ctx.bindings`, for every game that has a reader, and redraws when one says its bindings changed. Ships layouts for the owner's flight devices and the Fanatec wheel base. | Check `cheat-sheets.kneeboardCurrent`, fix `cheat-sheets.regenerate` |
 | `mcp` | Settings > AI assistants (MCP): the MCP server on 127.0.0.1 behind pairing tokens, the catalogue derived from every contract, task-level tools, resources (the manual, the guide, the rig), prompts, the confirm questions in the window, and what assistants did. `RigReady.exe --mcp` (`src/main/mcpBridge.ts`) is its stdio bridge. | A settings section, an overlay (the question and the "assistant did" line), `ctx.mcp` |
-| `ai-assist` | Binding guide (`/configure/ai-assist`): shipped guides for twenty aircraft (`packs/`, checked against the action lists in `fixtures/dcs-actions`), the press-to-bind walkthrough, priorities, and the optional AI help (Anthropic, OpenAI or an OpenAI-compatible server through `http`, one key per provider in `secrets`; see `docs/research/ai-providers.md`). Writes bindings only as proposals to the bindings feature. The built-in assistant: the panel (an overlay and an app-bar button), a tool-using conversation over `ctx.mcp.host()` with the chosen provider, the program finder, setup proposals and assistant-written scripts (`scripts/assistant` in the data folder, approved by hash through `src/core/assistantScripts.ts`). | Action labels (`ctx.bindings.registerLabels`), a settings section, the task-level tools `programs_find`, `setup_propose`, `script_draft` on `ctx.mcp` |
+| `ai-assist` | Binding guide (`/configure/ai-assist`): shipped guides for twenty aircraft (`packs/`, checked against the action lists in `fixtures/dcs-actions`), the press-to-bind walkthrough, priorities, and the optional AI help (Anthropic, OpenAI or an OpenAI-compatible server through `http`, one key per provider in `secrets`; see `docs/research/ai-providers.md`). Writes bindings only as proposals to the bindings feature. The built-in assistant: the panel (an overlay and an app-bar button), a tool-using conversation over `ctx.mcp.host()` with the chosen provider, the program finder, setup proposals and assistant-written scripts (`scripts/assistant` in the data folder, approved by hash through `src/core/assistantScripts.ts`). | Action labels (`ctx.bindings.registerLabels`), a settings section, the task-level tools `programs_find`, `setup_read`, `setup_types`, `setup_propose`, `script_draft` on `ctx.mcp` |
 
 | `backup` | Backups (`/configure/backups`): tracked files, full and scoped backups, snapshots, "what changed", the restore wizard. | Fix `backup.gameFiles`; reads `ctx.backupSources` and `GameModule.trackedFiles` |
 | `sharing` | Share (`/configure/share`): export a setup as a `.rigready` file with a privacy review; import with a compatibility report and a choice of what to bring in. | |

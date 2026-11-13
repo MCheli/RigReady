@@ -8,6 +8,7 @@ import {
   ProposeSetupInputSchema,
   DraftScriptInputSchema,
 } from './assistantModel';
+import { setupTools } from './setupTools';
 
 /**
  * The task-level tools for building a ready check, registered on `ctx.mcp` so that the
@@ -36,7 +37,7 @@ export function assistantTools(): McpToolDefinition[] {
     name: 'setup_propose',
     title: 'Propose setup changes',
     description:
-      'Proposes checks and launch steps for an existing setup (by id or name), or a new setup (newSetup: name and game). Each check is a check type from profiles:types with its params and, usually, its fix: a program that must run is {type: "process.running", params: {name: "SimAppPro.exe"}, remediation: {type: "process.launch", params: {exe: "{LOCALAPPDATA}/Programs/SimAppPro/SimAppPro.exe"}}}. Steps go before launch, after launch or at Stand down. The proposal is shown to the user in RigReady with every item; nothing is saved until they press Save there. Answers with the draft id.',
+      'Proposes checks and launch steps for an existing setup (by id or name), or a new setup (newSetup: name and game). Each check is a check type from setup_types with its params and, usually, its fix: a program that must run is {type: "process.running", params: {name: "SimAppPro.exe"}, remediation: {type: "process.launch", params: {exe: "{LOCALAPPDATA}/Programs/SimAppPro/SimAppPro.exe"}}}. Steps go before launch, after launch or at Stand down. The proposal is shown to the user in RigReady with every item; nothing is saved until they press Save there. Answers with the draft id.',
     input: ProposeSetupInputSchema,
     output: Drafted,
     tier: 'read',
@@ -59,5 +60,5 @@ export function assistantTools(): McpToolDefinition[] {
     run: async (input, ctx) =>
       unwrap(await ctx.invoke('ai-assist:draftScript', { ...input, by: ctx.client })),
   };
-  return [programs, propose, script] as unknown as McpToolDefinition[];
+  return [...setupTools(), programs, propose, script] as unknown as McpToolDefinition[];
 }

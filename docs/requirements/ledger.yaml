@@ -435,14 +435,28 @@ requirements:
     done_means:
       - "Stand down closes every app the profile marks closeOnStandDown (default true for apps started by RigReady in this session, false otherwise)."
       - "Apps are asked to close gracefully first and are force-terminated only after 10 s and only if the item allows force (default false); unclosed apps are listed."
+      - "An app that is still running after it was asked is named with the reason (it was asked and stayed open; it has no window to ask; Windows did not let RigReady ask it) and with what to do: close it yourself, or switch on 'Force it closed if it does not close' for the check, named as the setup editor names it. Forcing is not suggested for a program Windows does not let RigReady touch. An app of several processes with one name is closed as one: every process is asked before any is waited for, a helper that goes with its parent is no failure, and the app counts as closed when none of them is left."
       - "Stand down never closes the game itself unless the game is still running and the user confirms."
       - "Scenario mark-flight after a Make ready that started TrackIR and SimAppPro: Stand down results in the fake ProcessProvider receiving stop for both and the summary 'Closed 2 apps'."
+    notes:
+      - "2026-11-12: from the sitting, where trophi.ai.exe was still running after Stand down and the screen only said it did not close when asked. Three causes were in RigReady: processes of one name were asked one after another and the rest were not asked once one stayed; a helper that went with its parent was counted as a failure; and the reason the Windows provider knew was not passed on. The fourth criterion covers them. How the Windows provider tells the reasons apart (src/platform/windows/processes.ts) is not covered by a test, because a test never closes a real program; the reasons are tested from the port upwards with fakes."
     status: done
     evidence:
       - 'src/features/fly/core/fly.test.ts#closes only the apps RigReady started this session, politely, and says how many'
       - 'src/features/fly/core/fly.test.ts#never closes the game unless asked, closes what launch actions started, and runs its own actions'
       - 'src/features/processes/core/processCheck.test.ts#stand down closes politely: always, never, or only what RigReady started this session'
       - 'src/features/processes/core/processCheck.test.ts#stand down lists an app that will not close, and forces it only when the item allows'
+      - 'src/features/processes/core/processCheck.test.ts#an app that stays open says why, and what to do: the hint names the switch in the setup'
+      - 'src/features/processes/core/processCheck.test.ts#an app that stays open is ended when the setup lets it be forced, and closes again when it behaves'
+      - 'src/features/processes/core/processCheck.test.ts#an app of several processes is closed as one, whichever of them comes first'
+      - 'src/core/processes.test.ts#a helper with no window comes first in the list: the owner of the window is still asked, and the program counts as closed when all of it is gone'
+      - 'src/core/processes.test.ts#a helper that is already gone when it is asked is no failure'
+      - 'src/core/processes.test.ts#a program that only goes to the tray is still running, and the reason is the one of the process that was asked'
+      - 'src/core/processes.test.ts#says so when Windows did not let it be asked, and when it has no window at all'
+      - 'src/core/processes.test.ts#names the program and says what happened'
+      - 'tests/unit/crossFeature.test.ts#the switch that lets Stand down force a program closed'
+      - 'tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: with RigReady in the tray Windows says when it starts and what it did; a step that did not work is named and nothing says it was done'
+      - 'artifacts/screens/fly-stand-down-step-failed/01-step-failed.png'
       - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
       - 'artifacts/screens/fly-launch-actions/03-game-running.png'
       - 'artifacts/screens/fly-launch-actions/04-stood-down.png'
@@ -579,7 +593,7 @@ requirements:
       - 'src/features/fly/core/fly.test.ts#FLY-030: says the game is starting by its own name, on the screen at once and for Windows when the window hides'
       - "tests/e2e/launch-moment.e2e.ts#play: from the click on Launch the page says \"Starting\" with the game's name, and Windows says it as the window goes away"
       - 'tests/e2e/launch-moment.e2e.ts#play: with "hide after launch" off the window stays and Windows is not asked to say anything'
-      - 'tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to'
+      - 'tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself'
       - 'artifacts/screens/launch-starting/01-starting.png'
     notes: "From the sitting of 2026-11-12: the window went away at once and the game took most of a minute to show, which read as a launch that had failed. RigReady still hides when the launch answers, not when the game's own window is there: no port can see another program's window. The notification itself is proven as what the app hands to Windows; how Windows draws it is not pictured."
 
@@ -655,8 +669,8 @@ requirements:
     done_means:
       - "After a launch the Play screen shows the session: which game is running, 'Session in progress since <time>', and a running clock (h:mm:ss, tabular numerals). A game handed to Steam is shown as waited for, and its session begins when the game's own program runs; one that never shows up within fifteen minutes is not a session. While the game runs, Enter starts nothing."
       - "When the game's program is gone (RigReady looks every two seconds), the screen says 'Welcome back' with the setup, how long the session was and when it closed, and Stand down becomes the primary action, on Enter. Dismiss puts the screen back without standing down. Stand down used while the game was still open leaves nothing to offer when it closes."
-      - "A setting in the Play menu, off by default, stands down by itself when the game closes; the screen then says what Stand down did, or that it did not finish."
-      - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and either 'Stand down when you are done' or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
+      - "Stand down runs by itself when the game closes, after a countdown the user can cancel. It is on by default; every setup has its own switch and its own countdown length, one minute by default (the details are WOW-FLY-008). The screen then says what Stand down did, names each step that did not work, or says that it did not finish. A game that closed within two minutes of starting starts no countdown, and the Welcome back line says so."
+      - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and one of: 'Stand down when you are done' (no countdown started), 'Stand down starts in <length>. Open RigReady to cancel.' (a countdown started, and the window is brought back on screen), or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
       - "Every session is recorded in {RIGREADY_HOME}/fly/sessions.json: setup, game, start, length, seconds from opening the setup to every required check being met, what had to be fixed (by Make ready or a fix button), the first required item that was not met, and whether it was launched not ready. A game whose programs RigReady does not know is recorded without a length. A session in progress survives a restart of RigReady: it is picked up when the game still runs, and recorded without a length when it closed meanwhile."
       - "A damaged history file is left exactly as it is and named; the history goes on in the next file (sessions.1.json ...). The newest thousand sessions are kept."
       - "Under the setup's name the screen says 'Last session <today | yesterday | weekday | date>, <length>', or 'No session yet': the same words for every game, with no word of flying, so they read naturally to someone who only races. While a setup's first session is under way the line does not say there was none."
@@ -670,8 +684,9 @@ requirements:
       - "src/features/fly/core/sessions.test.ts#with no window on screen, Windows says it; with one on screen, the screen does"
       - "src/features/fly/core/sessions.test.ts#a launch that hides RigReady leaves nobody at its window, whatever was done there a moment before"
       - "src/features/fly/core/sessions.test.ts#a window in the tray is not on screen, and one that stopped saying so for a minute is gone"
-      - "src/features/fly/core/sessions.test.ts#stands down by itself when asked to, says what it did, and leaves the welcome on screen"
-      - "src/features/fly/core/sessions.test.ts#a Stand down that fails by itself says so instead of \"stood down\""
+      - "src/features/fly/core/sessions.test.ts#a setup saved before this existed counts down for one minute, then runs Stand down and says what it did"
+      - "src/features/fly/core/sessions.test.ts#a game that closes within two minutes of starting starts no countdown, and the screen is told why"
+      - "src/features/fly/core/sessions.test.ts#a Stand down that cannot run says why instead of \"stood down\""
       - "src/features/fly/core/sessions.test.ts#stood down while the game was still open: when it closes there is nothing left to offer"
       - "src/features/fly/core/sessions.test.ts#is a session from the moment the game itself runs, not from the hand-off"
       - "src/features/fly/core/sessions.test.ts#that never shows up is not a session: after a quarter of an hour RigReady stops waiting"
@@ -687,17 +702,98 @@ requirements:
       - "src/features/fly/core/sessionText.test.ts#sessions, hours, and what needed fixing most"
       - "tests/e2e/fly-session.e2e.ts#session: the game running with its clock, Welcome back when it closes, and Stand down as the one action"
       - "tests/e2e/fly-session.e2e.ts#session: Dismiss puts the screen back without standing down"
-      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to"
+      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself"
       - "tests/e2e/fly-session.e2e.ts#history: \"last session\" on the setup, the totals in one line, and every session with what it took to be ready"
       - "tests/e2e/fly-session.e2e.ts#session: a game started through Steam is waited for, and the session begins when the game itself runs"
       - "artifacts/screens/fly-session/01-no-history-yet.png"
       - "artifacts/screens/fly-session/02-in-session.png"
       - "artifacts/screens/fly-session/03-welcome-back.png"
       - "artifacts/screens/fly-session/04-stood-down.png"
-      - "artifacts/screens/fly-session-away/01-stood-down-by-itself.png"
+      - "artifacts/screens/fly-session-away/01-closed-at-once.png"
       - "artifacts/screens/fly-session-steam/01-waiting-for-steam.png"
       - "artifacts/screens/fly-history/01-last-session.png"
       - "artifacts/screens/fly-history/02-history.png"
+
+  - id: WOW-FLY-008
+    title: Stand down by itself when the game closes - a switch and a countdown for every setup
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "Every setup has its own switch 'Stand down when the game closes' (on by default) and its own countdown length (one minute by default; the editor offers 10 seconds to 10 minutes, the setup file takes 5 to 3600 seconds). Both are in the setup editor under 'When the game closes' and in the setup file under extensions.fly (standDownOnClose, standDownAfterSeconds). A setup saved before this existed gets the defaults, and so does a value a hand edit got wrong."
+      - "When the game the setup started has closed and the switch is on, a countdown starts. It is visible wherever the user is: a notice at the bottom right of every page of the main window ('Stand down in 42 seconds', one sentence that says what will happen, Cancel, and 'Change this for the setup'), the Welcome back line of the Play screen, and the session line of the compact view with its own Cancel. When nobody is at a RigReady window, Windows says 'Stand down starts in <length>. Open RigReady to cancel.' and the window is brought back on screen."
+      - "The notice lies over the bottom right corner of the page, where a page may have buttons of its own (the setup editor's Save and Cancel). While it counts it can be moved to the top bar: the countdown, as a clock that is never cut short ('Stand down in 4:05'), and its Cancel are then in the bar on every page and cover nothing, and pressing the countdown there brings the notice back. What Stand down did is always said in the notice."
+      - "When the time is up the same Stand down the button runs is run, once. The notice and the Welcome back line then say what it did: 'Stood down' with its summary only when every step worked; 'Stand down ran, but N step(s) need(s) attention' with each step that did not work; 'Stand down did not finish' with the reason when it could not run. The result stays until the user presses OK. With nobody at a window the same is a Windows notification."
+      - "Cancel ends the countdown: nothing is closed, the screen says 'Stand down was cancelled. Nothing was closed.', and Stand down stays the primary action. Cancel pressed after Stand down has started changes nothing, and the answer says so."
+      - "The game running again during the countdown ends the countdown, closes nothing, and is a new session. Every program name known for the game is watched, so a launcher that exits while the real game runs does not end the session."
+      - "A game that closes within two minutes of starting starts no countdown. The screen says why, and Stand down is still there to press."
+      - "The compact view keeps to its small window: 'Welcome back', how long the session was and the Stand down line are three lines that are on screen without scrolling, at the window size a user may have kept from before. A reason too long for one line there has a short form ('It closed too soon: Stand down did not start.') with the full sentence as its tooltip."
+      - "Stand down pressed by hand during the countdown ends the countdown and runs once; a second Stand down while one is running is refused. Dismiss, or a new launch, during the countdown stands nothing down."
+      - "RigReady quit during the countdown stands nothing down, then or at the next start, and nothing says it did. A window that is only hidden in the tray is not a quit: the countdown goes on."
+      - "When the running programs cannot be read at the end of the countdown, Stand down waits for a look that works."
+      - "With the switch off, the game closing is 'Welcome back' and nothing is closed by itself, however long it is left."
+    notes:
+      - "2026-11-12: the owner's decision: on by default, a switch and a countdown length for every setup, a countdown that can be cancelled. It replaces the Play-menu setting of WOW-FLY-003, which was off by default and had no countdown. A fly/preferences.json from before still reads; its autoStandDown is ignored."
+      - "2026-11-12: known limits. With nobody at the PC, a desk layout applied by Stand down still asks 'Keep this monitor layout?'; unanswered, the layout goes back and the step is listed as not done. A launcher under a name RigReady does not know that stays open for more than two minutes cannot be told apart from the game closing."
+    status: done
+    evidence:
+      - "src/core/profile/standDownOnClose.test.ts#a setup saved before this existed gets the defaults: on, one minute"
+      - "src/core/profile/standDownOnClose.test.ts#reads the switch and the length the setup holds"
+      - "src/core/profile/standDownOnClose.test.ts#a value a hand edit got wrong falls back to its default, the other is kept"
+      - "src/core/profile/standDownOnClose.test.ts#writes the answer into the setup and keeps what else is there"
+      - "src/core/profile/standDownOnClose.test.ts#keeps a length inside the limits"
+      - "src/features/fly/core/sessions.test.ts#a setup saved before this existed counts down for one minute, then runs Stand down and says what it did"
+      - "src/features/fly/core/sessions.test.ts#counts down for as long as the setup says"
+      - "src/features/fly/core/sessions.test.ts#a setup that switches it off gets Welcome back and nothing by itself, however long it is left"
+      - "src/features/fly/core/sessions.test.ts#Cancel ends the countdown: nothing is closed, and Stand down is still there to press"
+      - "src/features/fly/core/sessions.test.ts#Cancel after Stand down has started changes nothing: the answer says it is running"
+      - "src/features/fly/core/sessions.test.ts#Play pressed while Stand down runs by itself: the new session keeps the screen, and the old result is not shown over it"
+      - "src/features/fly/core/sessions.test.ts#the game running again during the countdown ends the countdown and is a new session"
+      - "src/features/fly/core/sessions.test.ts#a game that closes within two minutes of starting starts no countdown, and the screen is told why"
+      - "src/features/fly/core/sessions.test.ts#a launcher that exits while the real game runs is one session: it ends when the last known program is gone"
+      - "src/features/fly/core/sessions.test.ts#a launcher that exits a moment before the real game shows up: no countdown, and the game is a session when it runs"
+      - "src/features/fly/core/sessions.test.ts#Stand down pressed by hand during the countdown ends the countdown: one Stand down runs, not two"
+      - "src/features/fly/core/sessions.test.ts#a second Stand down while one is running is refused: it does not run on top of the first"
+      - "src/features/fly/core/sessions.test.ts#Dismiss, or Play again, during the countdown: nothing is stood down"
+      - "src/features/fly/core/sessions.test.ts#RigReady quit during the countdown: nothing is stood down then or at the next start, and nothing says it was"
+      - "src/features/fly/core/sessions.test.ts#when the running programs cannot be read at the end of the countdown, Stand down waits for a look that works"
+      - "src/features/fly/core/sessions.test.ts#a step that did not work is named: it never reads as stood down"
+      - "src/features/fly/core/sessions.test.ts#a Stand down that cannot run says why instead of \"stood down\""
+      - "src/features/fly/core/sessions.test.ts#a Stand down that throws is said the same way, and the next one can still run"
+      - "src/features/fly/core/sessionText.test.ts#counts down in whole seconds and minutes, and never says zero"
+      - "src/features/fly/core/sessionText.test.ts#counts down as a clock where there is little room, in step with the heading"
+      - "src/features/fly/core/sessionText.test.ts#a clock that is a moment behind never shows more than the countdown is long"
+      - "src/features/fly/core/sessionText.test.ts#says \"Stood down\" only when every step worked"
+      - "src/features/fly/core/sessionText.test.ts#a Stand down that could not run says so, with the reason when there is one"
+      - "src/features/fly/core/sessionText.test.ts#says why it is not going to run this time"
+      - "src/features/fly/core/sessionText.test.ts#says it in one short line where there is little room, and never that it ran"
+      - "tests/e2e/fly-compact.e2e.ts#compact: the dial, the setup and the one action in a small window on top; the whole routine is done from there"
+      - "src/features/fly/core/fly.test.ts#a preferences file from before the switch moved into the setup still reads"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: every setup has its own switch and countdown length; the countdown then stands the rig down and says what it did"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the countdown says what will happen and when, and Cancel ends it with nothing closed"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the countdown is on every page and in the compact view, and the game starting again ends it"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: Cancel in the compact view ends the countdown everywhere"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the notice can be moved to the top bar, where it covers no button of the page, and Cancel there ends the countdown with nothing closed"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: with RigReady in the tray Windows says when it starts and what it did; a step that did not work is named and nothing says it was done"
+      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself"
+      - "artifacts/screens/fly-stand-down-setting/01-on-by-default.png"
+      - "artifacts/screens/fly-stand-down-setting/02-lengths.png"
+      - "artifacts/screens/fly-stand-down-setting/03-stood-down-by-itself.png"
+      - "artifacts/screens/fly-stand-down-setting/04-switched-off.png"
+      - "artifacts/screens/fly-stand-down-setting/05-off-nothing-by-itself.png"
+      - "artifacts/screens/fly-stand-down-countdown/01-countdown.png"
+      - "artifacts/screens/fly-stand-down-countdown/02-cancelled.png"
+      - "artifacts/screens/fly-stand-down-everywhere/01-on-another-page.png"
+      - "artifacts/screens/fly-stand-down-everywhere/02-game-is-back.png"
+      - "artifacts/screens/fly-stand-down-everywhere/03-closed-again-at-once.png"
+      - "artifacts/screens/fly-stand-down-top-bar/01-over-the-setup-editor.png"
+      - "artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png"
+      - "artifacts/screens/fly-stand-down-top-bar/03-cancelled-from-the-top-bar.png"
+      - "artifacts/screens/fly-stand-down-compact/01-compact-countdown.png"
+      - "artifacts/screens/fly-stand-down-compact/02-compact-cancelled.png"
+      - "artifacts/screens/fly-compact/04-welcome-back.png"
+      - "artifacts/screens/fly-stand-down-step-failed/01-step-failed.png"
+      - "artifacts/screens/fly-session-away/01-closed-at-once.png"
 
   - id: WOW-FLY-004
     title: The rig at a glance - monitors to scale and devices as chips
@@ -3002,12 +3098,12 @@ requirements:
       - "The corner is the aircraft's, by its unit type, from a table of the aircraft whose own scripts were read (docs/research/dcs.md 5.1): the bottom right for 18 unit types, the bottom left, 32 pixels in, for 9 (A-10A, the MiG-29s, Su-27, J-11A, Su-33, Su-25T, Christen Eagle II)."
       - "For an aircraft that is not in the table no box is drawn, and the line says 'RigReady does not know where DCS shows the kneeboard in the <aircraft>, so it is not drawn on the map.' A setup with no aircraft has no box either. No place is shown that was not read from the game's scripts."
       - "A line under the map names the aircraft and the monitor the kneeboard is on, and says whether all of it is on a screen, and how much when not; when not, it says that DCS chooses the place and the monitor setup file cannot move it, and links to the manual section that says what can be done."
-      - "Scenario mark-flight (7424 x 1440 window), F/A-18C: the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen, at its right end. A saved setup with the Su-25T has the box at the left end of the wide screen and the line says bottom left; with an aircraft that is not in the table (AH-64D) there is no box and the line says RigReady does not know (E2E)."
+      - "Scenario mark-flight (7424 x 1440 window), F/A-18C: the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen, at its right end. With the Su-25T added from '+ Aircraft' the box is at the left end of the wide screen and the line says bottom left; with an aircraft that is not in the table (AH-64D_BLK_II, added by name) there is no box and the line says RigReady does not know (E2E)."
       - "RigReady writes no KNEEBOARD entry into RigReady.lua, because nothing in an unchanged DCS reads one."
     notes:
       - "2026-11-12 sitting, finding 19: the kneeboard opened on the right MFD screen with only its top left corner readable. This entry is the part that could be done from DCS's scripts alone: the user is told before flying. The choice of place is DCS-MON-010."
       - "From reading the scripts of one install; not checked in the game."
-      - "The aircraft with a kneeboard on the left have no displays to send to a screen, so '+ Aircraft' does not offer them and the tab does not start on them. The left box is seen only in a setup that already has such an aircraft (one saved by an assistant, for example). On a rig like the owner's, a user who flies one of them still gets the F/A-18C's box unless the setup has their aircraft."
+      - "RigReady found no display in the files of the aircraft with a kneeboard on the left. '+ Aircraft' offers them all the same since DCS-MON-011, under 'No display found in their files', so the user can add one and see its box. The tab still does not start on them: on a rig like the owner's, a user who flies one gets the F/A-18C's box until they add their aircraft."
     status: done
     evidence:
       - "src/features/dcs-setup/core/screens.test.ts#is the bottom right of the whole window: on the rig of the sitting, the right small screen"
@@ -3035,6 +3131,45 @@ requirements:
       - "2026-11-12 sitting, finding 19 (the owner: 'just show on the main screen on the left side or something like that, or at least have some control over where it shows'). Not started beyond research: a monitor setup file cannot place the kneeboard, and where DCS keeps a kneeboard moved by hand in the game was not found in its scripts. docs/research/dcs.md 5.1 lists four candidates; each needs DCS running, so each is for a sitting. Changing one of the game's own scripts is a product decision for the owner."
     status: todo
     evidence: []
+
+  - id: DCS-MON-011
+    title: An aircraft or a display RigReady did not find is added by name on the Screens tab
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "'+ Aircraft' has three parts: the installed aircraft with the displays RigReady found for them; under 'No display found in their files', the installed aircraft where it found none; and 'Another aircraft, by name', which stays in view while the list scrolls. An aircraft already in the setup is not offered again."
+      - "'Another aircraft, by name' takes the name DCS has for the aircraft. A name an installed aircraft has, whatever capitals were typed, adds that aircraft with what RigReady knows of it, and the box says which one. Any other name is added as typed. 'Display by name' adds a row to the aircraft in view, which is placed and cropped like any other; the cross on the row takes the name off the list and out of the file."
+      - "The tab says what RigReady knows and no more. The heading and the empty text say no display was found, not that the aircraft has none. A row for a name RigReady has not seen shows the name as typed and says: 'RigReady has not seen this name in this aircraft's files. If the aircraft does not ask DCS for it, nothing is drawn there.' An aircraft that is not installed where RigReady looks carries: 'RigReady has not found an aircraft called <name> in DCS on this PC. It cannot check this name, or any display you add for it.' The footnote says a name is written as typed and cannot be checked against the game."
+      - "Only what can be a name is taken. A display name: letters, digits and _, starting with a letter or _, at most 64 characters, and not a word of the Lua language, a name the monitor setup file uses itself, or DCS's name for the main view. An aircraft name: letters, digits, spaces and _ . + -, starting with a letter or a digit, at most 64 characters. The name shown for an aircraft is one line of plain text, at most 60 characters. Anything else is refused with the reason in plain words: in the box, where 'Add' stays off, and in the service for a caller over IPC or the MCP server."
+      - "The file writer holds the rule itself: generateSetup leaves out every name that fails it and reports an error, dcs-setup:applyScreens writes nothing while the preview has an error, and text that is not a name (the name shown, the monitor names) is written on one line inside a comment or a quoted string whatever it holds. With names that are not only names, the generated file is the same, byte for byte, as without them (unit). What an aircraft's files or SimAppPro's plan name is held to the same rule when it is read."
+      - "A setup with an added aircraft and added displays is written to Saved Games/DCS/Config/MonitorSetup/RigReady.lua through FileStore, one backup group, with each name as typed under its aircraft, and is there again when the tab is reopened (unit and E2E)."
+    notes:
+      - "2026-11-12, the audit of fixed lists, item 3 and block 24: an aircraft the scan missed could not be added, and the footnote read as if it had no displays."
+      - "RigReady cannot know whether an added name is right: that shows only in the game. Not checked in the game."
+      - "The list of monitor setup files further down the tab still shows only names in capital letters as a file's displays; a name added in other letters is written and placed, but not listed there."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screenNames.test.ts#takes the names DCS aircraft use for their displays"
+      - "src/features/dcs-setup/core/screenNames.test.ts#refuses any other display name, and says why in plain words"
+      - "src/features/dcs-setup/core/screenNames.test.ts#takes the names DCS has for aircraft, and refuses anything else"
+      - "src/features/dcs-setup/core/screenNames.test.ts#wants the name shown for an aircraft to be one short line"
+      - "src/features/dcs-setup/core/screenNames.test.ts#does not list a name out of an aircraft file that the setup file could not carry"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is offered for every installed aircraft, with or without displays found in its files"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is written as typed, through the file store, when it can only be a name"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is refused with the reason, and nothing is written, when it has any other character"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is refused with the reason, and nothing is written, when the file already uses the word"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is refused, and nothing is written, when the name shown for the aircraft has a line break"
+      - "src/features/dcs-setup/core/screenNames.test.ts#leaves out a display name that is not only a name"
+      - "src/features/dcs-setup/core/screenNames.test.ts#leaves out an aircraft whose name is not only a name"
+      - "src/features/dcs-setup/core/screenNames.test.ts#keeps the name shown for an aircraft inside one comment and one string, whatever it holds"
+      - "src/features/dcs-setup/core/screenNames.test.ts#writes a name with quotes in it as text, and the file still reads as plain data"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: an aircraft or a display RigReady did not find is added by name, a name that cannot be one is refused with the reason, and the tab says what it knows"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the screen editor offers every installed aircraft with the displays its cockpit scripts name, starting on the setup in use"
+      - "artifacts/screens/dcs-screens-by-name/01-aircraft-menu.png"
+      - "artifacts/screens/dcs-screens-by-name/02-name-refused.png"
+      - "artifacts/screens/dcs-screens-by-name/03-display-added-by-name.png"
+      - "artifacts/screens/dcs-screens-by-name/04-aircraft-added-by-name.png"
 
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines
@@ -3913,9 +4048,10 @@ requirements:
       - "User-supplied drawings: a drawing is made from a photo of the device (a dot per control to drag into place), or imported from a drawing file (rigready-device-drawing, documented in LAYOUT-FORMAT.md), checked like any import."
     notes:
       - "2026-11-07: the owner asked for better drawings ('a little blobby', leader lines that do not make sense) and whether users can supply their own; the design and what is left are in docs/research/controller-drawings.md. The pedals, panels, UFC, ICP and Fanatec wheel are still drawn as cards."
+      - "2026-11-12: the stick and throttle drawings were redrawn from the maker's number maps (SHEET-019), the owner's WinWing panels, UFC and ICP have drawings (SHEET-020), and a drawing ships only where it is known to match the device (SHEET-021). Still drawn as cards: the pedals, the Virpil control panel, the Fanatec wheel."
     status: done
     evidence:
-      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the WinWing grips, throttle and MFD frames and the popular Thrustmaster and Saitek controllers, with every control anchored on the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the WinWing grips, throttle, frames and panels and the Thrustmaster sticks, with every control anchored on the device"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#is found by the name the grip reports, numbered as WinWing numbers it, with every bound control on the drawing"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#trades two blocks whose leaders would cross so that none do"
@@ -3950,6 +4086,7 @@ requirements:
       - "The numbers come from the per-device default bindings DCS World ships, cross-checked with a public source, cited in docs/research/device-control-names.md; the manual lists the devices covered."
     notes:
       - "2026-11-11: since SHEET-018 these four devices have a drawing; the named maps give the drawings their names and numbers, and the named list is what a device with a map but no drawing gets."
+      - "2026-11-12: the Warthog throttle and the X52 Pro show as their named lists again (SHEET-021): their drawings put controls where no source confirms them. The Warthog stick and the T.16000M keep their drawings."
       - "2026-11-11: gap 2 of the coverage audit (cheat sheets name controls only for the owner's hardware). TWCS, T.Flight HOTAS X, X-56, VKB and Virpil have DCS default files but no numbered public map to cross-check, so they are not shipped yet (research doc)."
     status: done
     evidence:
@@ -3960,41 +4097,133 @@ requirements:
       - "src/features/cheat-sheets/core/known/known.test.ts#a list of a known device has a block per physical control, and the others after it"
       - "src/features/cheat-sheets/core/known/known.test.ts#gets its drawing with the controls named for it, and DCS’s Hornet defaults on them"
       - "docs/research/device-control-names.md"
-      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: the popular Thrustmaster and Saitek controllers have a drawing"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
       - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
+      - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/10-x52-pro.png"
 
   - id: SHEET-018
-    title: The popular Thrustmaster and Saitek controllers have a drawing
+    title: The popular Thrustmaster sticks have a drawing
     job: configure
     area: cheat-sheet
     priority: p2
     done_means:
-      - "The Thrustmaster HOTAS Warthog stick (the grip from behind) and throttle (from above), the T.16000M stick (from behind) and the Saitek/Logitech X52 Pro (stick and throttle in one drawing, since they report as one device) are drawn in the same flat schematic style as the WinWing drawings: simple outlines, not photos, CC0, made from scratch."
-      - "Every control the device's named map has (SHEET-017) is anchored on its drawing where it is on the device, with the maker's name and the same inputs, so the drawing and the named list cannot disagree; where the places come from is cited in docs/research/controller-drawings.md, and places that are approximate say so on the sheet."
+      - "The Thrustmaster HOTAS Warthog stick (the grip from behind) and the T.16000M stick (from behind) are drawn in the same flat schematic style as the WinWing drawings: simple outlines, not photos, CC0, made from scratch."
+      - "Every control the device's named map has (SHEET-017) is anchored on its drawing where it is on the device, with the maker's name and the same inputs, so the drawing and the named list cannot disagree; where the places come from is cited in docs/research/controller-drawings.md. The T.16000M names its grip and base buttons by group, because no source says which key of a group is which number."
       - "The picture chooser gives these devices 'RigReady drawing' instead of the named list; the user's changes in Edit drawing, a photo of their own and a layout of cards they arranged before still win."
       - "For DCS's own Hornet defaults and for every input bound, no two leader lines cross, every label block is inside the page and every anchor is on the drawn device; each has a sheet and a kneeboard page by day and by night."
     notes:
       - "2026-11-11: Thrustmaster is the biggest flight brand (market research); these are its and Logitech's most common sticks. The column planner now also tries ordering a column along the slope its leaders take when it runs on below the drawing, which untangles a dense switch panel. Before and after pictures: rigready-ops/drawings/compare-warthog-stick.png and the three others."
+      - "2026-11-12: this requirement first covered four drawings. The review of every drawing against a real map (SHEET-021) withdrew two: the Warthog throttle (its thumb switches were drawn on the left handle; the game's own figure of the throttle has them on the right one) and the X52 Pro (no source confirms its places, and controls were missing). Both show as their named lists until redrawn from a source that settles every place."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#keeps the user’s changes to a drawing, and a layout of cards they arranged before"
       - "src/features/cheat-sheets/core/known/known.test.ts#gets its drawing with the controls named for it, and DCS’s Hornet defaults on them"
-      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: the popular Thrustmaster and Saitek controllers have a drawing"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
       - "docs/research/controller-drawings.md"
       - "artifacts/screens/cheat-sheets-known-devices/01-warthog-stick.png"
       - "artifacts/screens/cheat-sheets-known-devices/02-warthog-stick-kneeboard-day-page.png"
       - "artifacts/screens/cheat-sheets-known-devices/03-warthog-stick-kneeboard-night-page.png"
-      - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
-      - "artifacts/screens/cheat-sheets-known-devices/05-warthog-throttle-kneeboard-day-page.png"
-      - "artifacts/screens/cheat-sheets-known-devices/06-warthog-throttle-kneeboard-night-page.png"
       - "artifacts/screens/cheat-sheets-known-devices/07-t16000m.png"
       - "artifacts/screens/cheat-sheets-known-devices/08-t16000m-kneeboard-day-page.png"
       - "artifacts/screens/cheat-sheets-known-devices/09-t16000m-kneeboard-night-page.png"
+
+  - id: SHEET-019
+    title: The WinWing stick and throttle are drawn as the real devices, every control in its place
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The ViperAce (F-16EX) grip is drawn from behind with every control the grip has: the red button, the trim hat, the top left hat, the centre and right hats, the mini-stick, the two side hats, the top front lever, the two-stage trigger, the paddle lever and the pinky button, each where it is on the grip, with the button numbers and axes of the maker's number map."
+      - "The F-15EX throttle handles are drawn in four views (the front of the left handle, the base from above, the thumb side of the right handle, the front of the right handle), with every control of both handles on the handle it is on, and 57 of the 62 buttons and all seven axes placed; buttons 45 to 49, which no control is known to press, are left off and say so in the note."
+      - "The F/A-18 grip is drawn with every switch of the maker's number map on both stick bases."
+      - "A control whose direction or left and right is not confirmed from a real source carries the '?' mark, and only those do: the grip's right side hat and the throttle's two front hats."
+      - "A control is named for where it is and what it is ('Red button', 'Left side hat (CMS)'), not for what one aircraft does with it; the sheet's detail panel and By action use the same names."
+      - "On the owner's recorded rig and Hornet bindings no two leader lines cross, every label is on the page and every bound input is on the sheet."
+    notes:
+      - "2026-11-12: the owner could not find controls on his own stick and throttle in the sitting: the first drawings put controls in the wrong places and left some out (the grip had 12 controls with TMS, CMS and DMS on the wrong hats; the throttle had 27 of 62 buttons, with handle controls drawn on the base). Redrawn from the maker's number maps, the game's default profiles and the owner's presses, with RigReady's own artwork (owner decision 10A). Sources and what was fixed: docs/research/controller-drawings.md section 8."
+      - "Still to settle by one press each on the real device: the directions of the grip's right side hat, left and right on the throttle's two front hats, which end of the left handle knob gives 60 and which 62."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the WinWing grips, throttle, frames and panels and the Thrustmaster sticks, with every control anchored on the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#is found by the name the grip reports, numbered as WinWing numbers it, with every bound control on the drawing"
+      - "src/features/cheat-sheets/core/sheet.test.ts"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "docs/research/controller-drawings.md"
+      - "artifacts/screens/cheat-sheets-gallery/01-stick.png"
+      - "artifacts/screens/cheat-sheets-gallery/02-throttle.png"
+
+  - id: SHEET-020
+    title: The WinWing panels, UFC and ICP are drawn as the real devices
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The WinWing UFC1 with its HUD1, the ICP, the F-18 startup panel and the F-18 take-off panel 2 each have a drawing of the panel face, found by the USB id or the name the panel reports, in place of the grid of cards: every switch, knob, key and handle the maker's number map names is on the face where it is on the panel, with its numbers and the word printed beside it."
+      - "The MFD1 frame drawing has all twenty edge buttons, the four corner rockers by their printed names (DAY / NGT, SYM, GAIN, CONT), the knob with its press, and the switch on the side edge."
+      - "A number the maker's map has no control for is not placed on the drawing; it shows under More controls (SHEET-022)."
+      - "A control whose numbers are not confirmed carries the '?' mark, and only that one does: the take-off panel's brake handle."
+      - "On the owner's recorded rig, whatever is bound, no two leader lines cross and every label is on the page."
+    notes:
+      - "2026-11-12: owner decision 10A: every WinWing controller the owner has, drawn fresh in RigReady's style. The cards of the ICP were one number too low on two switches and are corrected for users who keep a card layout. Sources: docs/research/controller-drawings.md section 8."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#has a drawing for each of the owner's WinWing panels, found by what the panel reports, numbered as the maker numbers it"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#draws each one, not a grid of cards, with no leader crossing and every label on the page, whatever is bound"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "docs/research/controller-drawings.md"
+      - "artifacts/screens/cheat-sheets-gallery/05-winwing-f18-startup-panel.png"
+      - "artifacts/screens/cheat-sheets-gallery/06-winwing-f18-takeoff-panel-2.png"
+      - "artifacts/screens/cheat-sheets-gallery/07-centre-mfd.png"
+      - "artifacts/screens/cheat-sheets-gallery/10-winwing-ufc1-hud1.png"
+      - "artifacts/screens/cheat-sheets-gallery/12-winwing-icp.png"
+
+  - id: SHEET-021
+    title: A device has a drawing only where the drawing is known to match it
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "Every shipped drawing was checked against a real map (the maker's number map or manual, and the game's default profile for the device); the table of device, source, what was fixed and what stays unconfirmed is in docs/research/controller-drawings.md."
+      - "A device whose places no source confirms has no drawing: it shows as its named list, which claims no places, and the page says 'Controls named for the <device> (no drawing of it yet)'. This is so for the Thrustmaster HOTAS Warthog throttle and the Saitek / Logitech X52 Pro."
+      - "The '?' mark is kept for exactly the controls whose number or direction is not confirmed from a real source; LAYOUT-FORMAT.md says so for drawings other people make."
+      - "The manual says which devices have a drawing, which have a named list, and what '?' means."
+    notes:
+      - "2026-11-12: the owner in the sitting: 'We got to redo all of these diagrams because as they stand today, they are just too misleading.' The two withdrawn drawings are in the history of this repository and come back once a source settles their places."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#shows no picture of a device whose places are not known to match it: the Warthog throttle and the X52 Pro are their named lists"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
+      - "docs/research/controller-drawings.md"
+      - "src/features/cheat-sheets/LAYOUT-FORMAT.md"
+      - "docs/manual/dcs/cheat-sheets.md"
+      - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
       - "artifacts/screens/cheat-sheets-known-devices/10-x52-pro.png"
-      - "artifacts/screens/cheat-sheets-known-devices/11-x52-pro-kneeboard-day-page.png"
-      - "artifacts/screens/cheat-sheets-known-devices/12-x52-pro-kneeboard-night-page.png"
+
+  - id: SHEET-022
+    title: A press never lights nothing on a drawing
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "With 'Unbound controls' on, every button, hat direction and axis the device reports that is neither on the drawing nor bound has a small cell with its number under the drawing, in 'More controls · not on the drawing'."
+      - "Pressing such a button lights its cell, and the last-press line names the device and the button and says 'nothing bound'."
+      - "Every button the device reports has a place on the sheet: on the drawing, in a bound row under it, or in a cell."
+      - "With 'Unbound controls' off the cells are hidden with the other empty controls."
+    notes:
+      - "2026-11-12: from the sitting: the owner pressed a button on his throttle and nothing on the sheet lit, because the drawing had no place for it and nothing was bound to it."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lists the numbers no source places under More controls, one cell each, only with the free controls shown"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a press never lights nothing - a button no control is known to press still shows, and lights up"
+      - "artifacts/screens/cheat-sheets-free-buttons/01-throttle-more-controls.png"
+      - "artifacts/screens/cheat-sheets-free-buttons/02-throttle-button-45-pressed.png"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
@@ -4171,6 +4400,7 @@ requirements:
       - "Tokens are shown as the provider reports them; a cost only where the price is known."
     notes:
       - "2026-11-11: provider facts and sources in docs/research/ai-providers.md. Azure OpenAI is left out (api-key header and deployment names)."
+      - "2026-11-12: the model field draws its arrow as a plain icon, because Vuetify draws its own as an element with the role of a button and no name; the fix of 11 Nov (e80e9a3) had not reached main and was applied again by hand. Neither axe nor the route crawl fails without it (the element is hidden from assistive technology and out of the tab order, and the crawl excepts exactly that), so tests/e2e/assistant-estimates.e2e.ts looks through the AI section for anything with the role of a button and no name: with the fix taken out, that check failed on the arrow and on nothing else. Test in Settings now waits for a settings change that is still on its way, so that pressed straight after Store key it tests the key just stored; before, the last step of the first scenario test below failed once in two runs with 'Works.' for the key that was being replaced. The dollar figures of this entry are worded as estimates since ASSIST-008."
     status: done
     evidence:
       - "src/features/ai-assist/core/openai.test.ts#puts the schema in response_format, strict, with the context first and the key nowhere in it"
@@ -4202,15 +4432,38 @@ requirements:
       - "With an AI provider set up (a key, or a server on this PC), an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without one there is no button and the palette opens the panel and says a provider is needed; drafts from MCP assistants are shown either way. The binding guide keeps its own view and links to the panel."
       - "The assistant is offered the MCP server's guided catalogue (task-level tools, rigready_channels, rigready_call), never an 'off' channel, and every call goes through the one gate the MCP server uses: confirm policy, question in the window under 'Built-in assistant', one change at a time, rate limit, activity record and the Safety page name."
       - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER}."
+    notes:
+      - "2026-11-12: the panel was reworked after the owner's first use on the rig. A request that failed stays ready and one press sends it again, with the message back in the box; the conversation is the one scrolling region, with proposals where they were made; replies are shown formatted; every request says what reading it costs, and a ceiling per question stops and asks (ASSIST-005). The unit tests below prove this on the real code paths: the panel's store against the wired app, the log through the real logger. Open: tests/e2e/assistant.e2e.ts was extended and has a second test ('assistant: a request the provider refuses can be sent again with one press', scenario assistant-refused). Neither has been run since the rework, because no window may be opened while the rig sitting runs. The two screenshots below show the panel as it was before; they, the other six of artifacts/screens/assistant and the two new ones of artifacts/screens/assistant-refused (refused, answered-after-retry) wait to be taken by that run. Back to done once the run has passed and the screenshots are committed."
+      - "2026-11-12, after the sitting: windows were allowed again. Both tests of tests/e2e/assistant.e2e.ts passed against the build of this commit, with the isolated launch, and the eight screenshots of artifacts/screens/assistant and the two of artifacts/screens/assistant-refused were taken by that run and are committed with it. Back to done. The dollar figures in them are worded as estimates (ASSIST-008)."
+      - "2026-11-12, later: the renderer of replies now counts its own work, and reads ahead of its place for the end of a link only up to a fixed number of characters for each character of the reply. A reply that spends that keeps all of its text and gets no more links; a long reply written to be read keeps every one. Its test holds it to counted steps, for each hard text and for one twice as long, so the result is the same on every machine; the 1500 ms on the clock stay as a loose backstop. Compared once with the renderer as it was on one million random texts (a run that is not kept in the repository): none was parsed differently."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
       - "src/features/ai-assist/core/assistant.test.ts#a read runs, a change is asked in the window under its name, a refusal is recorded, an off channel is refused"
       - "src/features/ai-assist/core/assistant.test.ts#never sends a request that was not prepared and shown"
       - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "src/features/ai-assist/core/assistant.test.ts#keeps the request when the provider refuses it: trying again is the same request, once more"
+      - "src/features/ai-assist/core/assistant.test.ts#drops a request whose provider changed in Settings, says so, and a new one can be built at once"
+      - "src/features/ai-assist/core/assistant.test.ts#a read through \"Call one channel\" is a read, named by what the channel does"
+      - "src/features/ai-assist/core/assistant.test.ts#stops between tools: what ran is kept, what did not says so, and Continue goes on"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#the scenario the window test plays: refused once, answered on the next press, counted once"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#belongs to one conversation: a failed first send, a dropped request or a new conversation never carries it over"
+      - "src/features/ai-assist/renderer/assistantText.test.ts#puts a draft right after the tool row that made it, and what was drafted elsewhere at the end"
+      - "src/features/ai-assist/core/providerLog.test.ts#a refused send and a refused key test each leave one line; a finished question leaves its numbers"
+      - "src/features/ai-assist/core/providerLog.test.ts#never writes the key, the request or its address query, however the provider answers"
+      - "src/features/ai-assist/core/markdown.test.ts#HTML stays text: no node is ever made of a tag"
+      - "src/features/ai-assist/core/markdown.test.ts#a link leads to a plain web address or it is no link"
+      - "src/features/ai-assist/renderer/markdownView.test.ts#makes a link of an https address only, opened in the system browser and never in the window"
+      - "src/features/ai-assist/core/service.test.ts#says apart what the binding guide sends and what the assistant sends, and where it goes"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "tests/e2e/assistant.e2e.ts#assistant: a request the provider refuses can be sent again with one press"
       - "artifacts/screens/assistant/01-panel-open.png"
       - "artifacts/screens/assistant/02-first-request.png"
+      - "artifacts/screens/assistant-refused/01-refused.png"
+      - "artifacts/screens/assistant-refused/02-answered-after-retry.png"
+      - "src/features/ai-assist/core/markdown.test.ts#stays quick and shallow on text built to be slow or deep"
+      - "src/features/ai-assist/core/markdown.test.ts#makes no more links in a text that costs too much to read, and loses none of it"
+      - "src/features/ai-assist/core/markdown.test.ts#keeps every link of a long reply written to be read"
 
   - id: ASSIST-002
     title: Find where helper programs are installed
@@ -4220,6 +4473,9 @@ requirements:
     done_means:
       - "programs_find (built-in assistant and MCP) looks for programs by name or vendor in Program Files, Program Files (x86), LocalAppData\\Programs, the Steam libraries and the uninstall entries of the registry, reading only, and answers with exe paths in stored form with path variables."
       - "It knows the folder names the usual names hide (SRS, TrackIR, Stream Deck, Pit House, G HUB) and leaves out uninstallers and crash handlers; names it did not find are listed."
+    notes:
+      - "2026-11-12: unchanged in what it does. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
+      - "2026-11-12, after the sitting: that run has passed and the screenshot shows the panel as it is now; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/programs.test.ts#finds SimAppPro, TrackIR and Stream Deck with path variables applied, and says what it did not find"
@@ -4235,9 +4491,13 @@ requirements:
     done_means:
       - "setup_propose (built-in assistant and MCP) makes a draft of a new setup or of checks and launch steps added to one, validated against the registered check and fix types; it is shown in the assistant panel with every item and the setup as it would be saved."
       - "Nothing is written until the user presses Save, which saves through profiles:create or profiles:save; a setup changed after the assistant read it is not overwritten. A script.run the assistant proposes always asks before it runs."
+    notes:
+      - "2026-11-12: two reading tools were added beside setup_propose, for the built-in assistant and MCP: setup_read (one setup in a line per item) and setup_types (the check and fix types, one type's params on request), so an assistant no longer reads every setup and every schema to propose one. Saving a draft is a plain write in RigReady's data folder, as in the setup editor: it is not backed up and not listed on the Safety page, and the panel and the manual no longer say it is. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#finds the programs, proposes a setup, and the user saves it"
+      - "src/features/ai-assist/core/setupTools.test.ts#setup_read answers one setup in a fraction of what the whole list takes, and asks nobody"
+      - "src/features/ai-assist/core/setupTools.test.ts#setup_types lists the types in a tenth of what their schemas take, and one type on request"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/04-setup-proposal.png"
 
@@ -4250,6 +4510,9 @@ requirements:
       - "script_draft makes a .ps1 or .cmd draft with a plain explanation; one that asks for elevation is refused. The panel shows the whole file as it would be saved, the explanation and warnings; Save writes it through FileStore into <data root>/scripts/assistant with a header, and records its SHA-256 as the approval."
       - "The setup step it goes into asks before every run, whatever the setup says. Before it runs as a check, a fix or a step, the file is hashed again; a changed file is not run and is shown again in the panel until the user approves the text as it is now."
       - "No assistant can run it: while an assistant's call is carried out, a script from that folder is refused, and rig_make_ready's approvePrograms never covers it. Scripts never run elevated, and shared setups keep leaving scripts out."
+    notes:
+      - "2026-11-12: unchanged in what it does. The screenshots show the panel before the rework of ASSIST-001 (2026-11-12) and are taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
+      - "2026-11-12, after the sitting: that run has passed and the screenshots show the panel as it is now; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#is saved into the data folder with a header, approved by hash, refused when changed and for an assistant"
@@ -4269,12 +4532,24 @@ requirements:
     done_means:
       - "The assistant talks to the provider of AI-008 (Anthropic, OpenAI, or an OpenAI-compatible server, a local one included) with that provider's own key, over Anthropic's Messages API or Chat Completions with tools; the conversation, tool calls and tool results are carried over faithfully either way."
       - "The preview names the host; a request whose provider, address or model changed in Settings after it was shown is not sent. A refusal or an unreadable answer is an error, never an empty success. Tokens are shown; a cost only where the price is known."
+    notes:
+      - "2026-11-12: what a question costs was cut and is said honestly. On the Anthropic wire the instructions and the end of the conversation are marked for the provider's cache, so every request after the first reads what was already sent at the cached price; cache writes and reads are priced as such in the estimate before sending and in the totals; the preview says which request of the question it is and that the amount is for reading only; a ceiling per question (Settings, $0.25 unless changed, 0 for none) stops and asks before a question passes it, also with the preview switched off. No redirect is followed. Measured with a scripted model (src/features/ai-assist/core/cost.test.ts): the owner's first two questions, replayed request for request, went from about $0.70 to about $0.19, and to about $0.09 with the narrower tools. A cost and the ceiling exist only where the price is known. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
+      - "2026-11-12, after the sitting: that run has passed and the screenshot shows the panel as it is now. By the owner's rule of the same day, what this entry calls a cost is shown as an estimate that names its prices (ASSIST-008), the prices can be typed (ASSIST-009), and the first amount the user sets as the ceiling needs an acknowledgement (ASSIST-010)."
     status: done
     evidence:
       - "src/features/ai-assist/core/wire.test.ts#turns the conversation into Chat Completions: system first, functions, tool calls and tool messages"
       - "src/features/ai-assist/core/wire.test.ts#reads tool calls from a local server, which needs no key, at its own address only"
       - "src/features/ai-assist/core/wire.test.ts#sends a key only in the header, and the Anthropic wire to api.anthropic.com"
       - "src/features/ai-assist/core/wire.test.ts#a refusal and an unreadable answer are errors, never an empty success"
+      - "src/features/ai-assist/core/wire.test.ts#marks the instructions and the end of the conversation, so the next request reads both from the cache"
+      - "src/features/ai-assist/core/wire.test.ts#moves the mark with the conversation and never leaves one behind in it"
+      - "src/features/ai-assist/core/wire.test.ts#never follows a redirect: the key goes to the host the preview named and nowhere else"
+      - "src/features/ai-assist/core/cost.test.ts#the first session played again as it went costs less than half of what it did"
+      - "src/features/ai-assist/core/cost.test.ts#what is shown before a request is sent is what reading it costs, with the cache as it is"
+      - "src/features/ai-assist/core/cost.test.ts#a question that reads on and on stops at the ceiling and asks, before it is passed"
+      - "src/features/ai-assist/core/assistant.test.ts#shows the ceiling with the request, stops before going past it, and goes on only with a yes"
+      - "src/features/ai-assist/core/assistant.test.ts#0 means no ceiling, and a model without a known price has none"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#never goes past the ceiling by itself: it stops, says so, and goes on only on the press"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/02-first-request.png"
 
@@ -4286,10 +4561,138 @@ requirements:
     done_means:
       - "manual_search (each hit with its https://rigready.io/docs/<section>/<page>/ address) and manual_read (one page in full, the same code as the rigready://docs resources) are task-level tools, so the built-in assistant and MCP assistants both have them."
       - "The built-in assistant's instructions say to search and read the manual before answering a how-to question or proposing a change, and to link the page it used; a how-to question with the scripted provider leads to a search, a read and an answer that links the page."
+    notes:
+      - "2026-11-12: manual_read also takes a section (a heading of the page) and then answers that section only; without one it answers the page in full, as before. manual_search names the section each hit stands under, so an assistant can read the part it needs."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#answers a how-to question from the manual: searches it, reads the page and links it"
+      - "src/features/mcp/core/manual.test.ts#reads the whole page without a section, and only the section under the title with one"
+      - "src/features/mcp/core/manual.test.ts#a search names the sections its lines stand under"
       - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
+
+  - id: ASSIST-007
+    title: A monthly budget on what RigReady estimates, which warns and then stops sending
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "RigReady adds up, per calendar month of this PC, the estimates of every request the built-in assistant and the binding guide got an answer to, each at the prices in force when it was sent, and shows the sum in Settings under AI with the number of requests and how many had no prices. The sum is kept whether or not a budget is set."
+      - "A monthly budget in dollars can be set there; it is off (0) until the user sets an amount. From 80 percent of it, Settings and every request that waits for Send say so. At the budget, or before a request whose estimate would take the month past it, nothing is sent, for the assistant and the binding guide alike, checked when a request is made ready and again when it is sent. The user can raise the budget or set it to 0 at any time; a new calendar month starts from nothing."
+      - "The message that holds a request back says it stopped on RigReady's estimate, not on a bill, gives the estimate and the budget, says that nothing was sent and where the true figure is; the user's message stays in the box. While a budget is set, a count that cannot be read stops sending and does not let a request pass."
+    notes:
+      - "2026-11-12: the owner's decision of 12 Nov (a monthly budget that warns and then stops sending; the user can change it or turn it off). Calls made in building it, for the owner to confirm: off until an amount is set, the warning from 80 percent, and no 'continue past' for the month (the ceiling of one question has one). Not in the month's estimate, though a provider may charge for them: a request the user stopped, a request that failed on its way, the small request Test sends in Settings, and a request to a model without prices (those are counted as a number and shown; a server on this PC without prices is not counted at all). The manual says so."
+      - "2026-11-12, later: the message that holds a request back says where the budget is changed, and the panel covers that place. Under it there is now a button, 'Open the budget in Settings': it closes the panel and shows the monthly budget in Settings with its amount selected, from whichever page the panel was opened on. Wording and look were decided in building it."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/budget.test.ts#names the calendar month of this PC, and a month starts on its first day"
+      - "src/features/ai-assist/core/budget.test.ts#is off at 0, warns from 80 percent, and stops at the budget or before the request that would pass it"
+      - "src/features/ai-assist/core/budget.test.ts#says it stopped on the estimate, never on a bill, and where the true figure is"
+      - "src/features/ai-assist/core/budget.test.ts#starts switched off and counts nothing against a limit until the user sets one"
+      - "src/features/ai-assist/core/budget.test.ts#counts every answered request, warns from 80 percent, then stops and sends nothing"
+      - "src/features/ai-assist/core/budget.test.ts#checks again when a request that was shown is sent, and keeps it ready while the budget holds it"
+      - "src/features/ai-assist/core/budget.test.ts#holds the binding guide back as well, before a request is shown and again when it is sent"
+      - "src/features/ai-assist/core/budget.test.ts#says what the month is estimated at each time a request was counted, for the page that shows it"
+      - "src/features/ai-assist/core/budget.test.ts#starts a new calendar month from nothing"
+      - "src/features/ai-assist/core/budget.test.ts#sends nothing it cannot count: an unreadable count stops it while a budget is set, and the budget can still be turned off"
+      - "src/features/ai-assist/core/budget.test.ts#keeps requests without prices out of the estimate, and says how many there were"
+      - "src/features/ai-assist/core/budget.test.ts#does not count a server on this PC that was given no prices"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says what the month is estimated at, over how many requests, and what had no prices"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#warns from 80 percent, and says when it stopped that it stopped on the estimate"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says in the request that waits when the month is close to its budget, and nothing before"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says in Settings what the budget does, and when it does nothing"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#does not make a message ready once the month is at its budget: nothing is sent, the reason says it stopped on the estimate, and the message stays"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#warns in the request when the month is close, keeps a request ready that Send could not take, and sends it once the budget is raised"
+      - "tests/e2e/assistant-estimates.e2e.ts#assistant estimates: prices are named and can be typed, a limit needs an acknowledgement, and the monthly budget stops on the estimate"
+      - "artifacts/screens/assistant-estimates/05-budget-on.png"
+      - "artifacts/screens/assistant-estimates/07-month-close-to-budget.png"
+      - "artifacts/screens/assistant-estimates/08-request-close-to-budget.png"
+      - "artifacts/screens/assistant-estimates/09-stopped-on-the-estimate.png"
+      - "artifacts/screens/assistant-estimates/10-month-stopped.png"
+      - "artifacts/screens/assistant-estimates/11-budget-from-the-stop.png"
+
+  - id: ASSIST-008
+    title: Every dollar figure for an AI request is an estimate that says where its prices came from
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Every dollar figure the app shows for an AI request (before a request is sent, while a question runs, the totals of a conversation, the binding guide's dialog and its line after an answer, the month in Settings) is worded 'estimated $X' and names the prices it was worked out from: 'built-in prices of <the month they were recorded>', 'your own prices', or both for a sum over the two. No figure is shown where the prices cannot be named, and the word cost never stands beside a number."
+      - "Where figures are shown, the app says they are estimates and not a bill and that the provider's console shows what is charged; Settings also says that a spending limit set at the provider is the one that holds, and to set one there."
+      - "The log line of a finished question carries the estimate as estimatedDollars with the prices it came from, and no field named cost."
+      - "A request held back at the ceiling of one question or at the monthly budget says that it stopped on RigReady's estimate, not on a bill."
+    notes:
+      - "2026-11-12: the owner's rule of 12 Nov. Token counts are the provider's and exact; dollars are RigReady's arithmetic on them with prices that can be out of date, so no figure is presented as a bill. The manual (the assistant, AI providers, Settings, the binding guide) and the changelog are worded the same way. Older entries of this ledger (AI-006, AI-008, ASSIST-005) still say 'cost' in what they were done against; what they mean is this estimate."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/prices.test.ts#gives the source of the prices with every estimate the assistant shows"
+      - "src/features/ai-assist/core/prices.test.ts#gives the source with the estimates of the binding guide too"
+      - "src/features/ai-assist/core/prices.test.ts#says mixed for a sum over requests estimated at built-in and at own prices"
+      - "src/features/ai-assist/core/prices.test.ts#stops at the ceiling in words that say it stopped on the estimate, not on a bill"
+      - "src/features/ai-assist/core/budget.test.ts#says it stopped on the estimate, never on a bill, and where the true figure is"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#names the prices behind an estimate: built-in as of the month they were recorded, the user's own, or both"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#shows no figure without prices, and none whose prices it cannot name"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#never words a figure as a cost or a bill"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says that estimates are not a bill, where the true figure is, and to set a limit at the provider"
+      - "src/features/ai-assist/core/providerLog.test.ts#a refused send and a refused key test each leave one line; a finished question leaves its numbers"
+      - "tests/e2e/assistant-estimates.e2e.ts#assistant estimates: prices are named and can be typed, a limit needs an acknowledgement, and the monthly budget stops on the estimate"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip shows what is sent, checks the answer, and applies only what is ticked after review"
+      - "artifacts/screens/assistant-estimates/06-request-estimate.png"
+      - "artifacts/screens/assistant/02-first-request.png"
+      - "artifacts/screens/ai-assist-suggest/01-payload.png"
+
+  - id: ASSIST-009
+    title: The prices behind the estimates can be typed per model, with a reset to the built-in ones
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Settings under AI has, for the chosen model, the four prices in dollars per million tokens: input, output, cache read and cache write. For the Anthropic and OpenAI models RigReady lists they start as its built-in prices, and the row says the month those were recorded. Save prices keeps the user's own numbers for that service and model; Reset to built-in goes back."
+      - "A model without built-in prices (any other model id, a compatible service, a server on this PC) starts with empty fields. Until the user has typed all four, no dollar figure is shown for it and neither the ceiling of one question nor the monthly budget takes an amount for it. A price is a number from 0 to 10,000; anything else is refused and the prices stay as they were."
+      - "Estimates use the user's prices from the moment they are saved. A request that was shown at other prices is not sent: it is made ready again with its new estimate and shown first."
+    notes:
+      - "2026-11-12: the owner's rule of 12 Nov: the user must be able to put in the numbers themselves, clearly labelled. The user's prices are kept in the feature's settings in RigReady's data folder, by service and model. The built-in table was recorded in November 2026 from the providers' price lists."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/prices.test.ts#has built-in prices for the listed models of Anthropic and OpenAI, and for no other"
+      - "src/features/ai-assist/core/prices.test.ts#counts fresh input, cache writes, cache reads and output each at its own price"
+      - "src/features/ai-assist/core/prices.test.ts#puts the user's own prices before the built-in ones, by service and model"
+      - "src/features/ai-assist/core/prices.test.ts#starts from the built-in prices of the chosen model and says when they were recorded"
+      - "src/features/ai-assist/core/prices.test.ts#estimates with the user's own prices once they are set, per model, and goes back to the built-in ones on reset"
+      - "src/features/ai-assist/core/prices.test.ts#shows no dollar figure and applies no limit for a model without prices, until the user enters them"
+      - "src/features/ai-assist/core/prices.test.ts#does not send a request that was shown at other prices: its estimate no longer holds"
+      - "src/features/ai-assist/core/prices.test.ts#refuses a price that is not a number from 0 to 10,000, and keeps the prices it had"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#reads a typed price per million tokens, 0 included, and nothing that is not one"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#shows a price as it would be typed"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says where the prices in the fields come from, with the month the built-in ones were recorded"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#offers a reset only for the user's own prices, and says what it goes back to"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#makes a request shown at other prices ready again with its new estimate, and never sends it by itself"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#works the estimate of the request on screen out again when Settings says the prices changed"
+      - "tests/e2e/assistant-estimates.e2e.ts#assistant estimates: prices are named and can be typed, a limit needs an acknowledgement, and the monthly budget stops on the estimate"
+      - "artifacts/screens/assistant-estimates/01-built-in-prices.png"
+      - "artifacts/screens/assistant-estimates/02-no-prices.png"
+      - "artifacts/screens/assistant-estimates/03-own-prices.png"
+
+  - id: ASSIST-010
+    title: A limit in dollars is turned on only with an acknowledgement that it works on estimates
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Turning on the monthly budget, or setting an amount of the user's own for the ceiling of one question (the first amount the user sets, and any amount after 0), opens a dialog that says the limit is counted from RigReady's estimates at the prices in Settings, that it is not the provider's bill, and that the hard limit belongs at the provider. The limit is turned on only once the user ticked that they understand this; Cancel changes nothing."
+      - "RigReady itself refuses to turn a limit on without the acknowledgement and changes nothing. The time of the acknowledgement is stored with the feature's settings, and Settings shows the day."
+    notes:
+      - "2026-11-12: the owner's rule of 12 Nov. The ceiling of one question starts at $0.25 without an acknowledgement, as it did before this rule, because taking it away would leave a new user with no stop at all; whether that starting amount should wait for an acknowledgement too is a question for the owner."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/budget.test.ts#refuses to turn the monthly budget on without it, changes nothing, and keeps when it was given"
+      - "src/features/ai-assist/core/budget.test.ts#asks for it before the first amount the user sets as the ceiling of one question"
+      - "src/features/ai-assist/core/budget.test.ts#refuses an amount that is not one before it asks for anything"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says the limit is counted from estimates at the prices in Settings, is not the bill, and that the hard limit belongs at the provider"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says when it was acknowledged, from the time that was stored"
+      - "tests/e2e/assistant-estimates.e2e.ts#assistant estimates: prices are named and can be typed, a limit needs an acknowledgement, and the monthly budget stops on the estimate"
+      - "artifacts/screens/assistant-estimates/04-acknowledge.png"
+      - "artifacts/screens/assistant-estimates/05-budget-on.png"
 
   # ---------------------------------------------------------------------------
   # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)
@@ -4304,9 +4707,12 @@ requirements:
       - "Every channel of every feature contract appears exactly once in the MCP catalogue, named ipc_<feature>_<key>, with a JSON Schema converted from its zod input, a description and a tier (read, change, launch, off) taken from the contract's own metadata; a feature exposes a new channel by writing its contract, with no shared-code edit."
       - "Every channel has a description and a tier (the test fails on one without), and channels that hand out a secret, use the user's API key, open dialogs or only serve a window are off and never offered."
       - "The guided surface (the default) offers the task-level tools plus rigready_channels (the reference) and rigready_call, which reaches every offered channel through the same gate; the full surface also lists every channel as its own tool."
+    notes:
+      - "2026-11-12: rigready_channels, the reference, answers in three steps: the features, one feature in a line per channel, one channel with its schemas. An assistant that looked up one channel used to be handed the whole feature with every schema."
     status: done
     evidence:
       - "src/features/mcp/core/catalogue.test.ts#every channel of every real contract appears exactly once, with a sound schema and words"
+      - "src/features/mcp/core/dispatch.test.ts#the features, then one feature in a line per channel, then one channel in full"
       - "src/features/mcp/core/catalogue.test.ts#derives a tool per channel, named from the channel, with its schema, description and tier"
       - "src/features/mcp/core/catalogue.test.ts#the channels still without metadata are exactly the known ones"
       - "src/features/mcp/core/catalogue.test.ts#a channel that would hand an assistant a secret is off"
@@ -6303,12 +6709,13 @@ requirements:
       - "2026-10-03: CI ran the check only for pushes to main; .github/workflows/ci.yml now runs it for a push to any branch. The check also includes the format check."
       - "2026-10-31: the push trigger is limited to main again. Every branch reaches main through a pull request (the ruleset requires CI to pass), so the pull_request run checks it; a second push run on the same commit doubled the e2e suite, and a flaky test in either one blocked the merge."
       - "2026-11-06: the unit tests get 120 s each on CI instead of 30 s (vitest.config.ts, as playwright.config.ts already did). The push run of #19 failed with five timeouts on a tree that had passed the same job an hour earlier: for two and a half minutes the runner's disk stalled and every one-second test running then took ten to thirty."
+      - "2026-11-12: CI runs the command's parts, not the command: typecheck, lint, format check and ledger check in one job; the unit tests as four shards on four runners (on one runner they took eight to thirteen minutes, the longest job of every run); and one job that puts the shards' coverage reports together and applies the limits of vitest.config.ts to the whole. The check with the required name sums the three up and fails unless each passed. npm run check itself is unchanged. Tried on a desk PC before the change: one shard alone has 54 to 76% of the lines, so a shard is not held to the limits; the merged figures are the one-run figures (93.57% of statements against 93.55%); a limit that cannot be met fails the merge; and three reports of four still clear the limits, so the job counts the reports first."
     status: done
     evidence:
       - "tests/unit/gates.test.ts#the command exits 0 on a valid ledger and 1, naming the entry, on each kind of broken one"
       - "tests/unit/gates.test.ts#the ledger in the repository is valid, and every done entry has a test that exists"
       - "tests/unit/gates.test.ts#check is typecheck, lint, format, unit tests with coverage and the ledger check, in that order"
-      - "tests/unit/gates.test.ts#CI runs npm run check on every push to main, and on pull requests into main"
+      - "tests/unit/gates.test.ts#CI runs every part of npm run check on every push to main, and on pull requests into main"
       - "scripts/lib/lib.test.ts#fails done without evidence, with missing evidence, or with screenshots only"
       - ".github/workflows/ci.yml"
 

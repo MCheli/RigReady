@@ -322,45 +322,18 @@ test('dcs-screens: Identify screens works from this tab, and the map shows where
   await note.scrollIntoViewIfNeeded();
   await shot('kneeboard-all-on-the-wide-screen');
 
-  // The corner is the aircraft's own. An aircraft that shows the kneeboard on the left, and
-  // one whose scripts RigReady has not read, have no displays to send to a screen, so the
-  // tab never offers them; a setup can still have them (one an assistant saved, say). Saved
-  // here through the channel the page uses, with the main view on the wide screen alone.
-  const saved = (await page.evaluate(async () => {
-    const api = (
-      globalThis as unknown as {
-        rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
-      }
-    ).rigready;
-    const state = (await api.invoke('dcs-setup:screens', undefined)) as {
-      value: { desktops: { label: string; displays: { id: string; primary: boolean }[] }[] };
-    };
-    const current = state.value.desktops[0]!;
-    return api.invoke('dcs-setup:applyScreens', {
-      setup: {
-        mainDisplayIds: [current.displays.find((d) => d.primary)!.id],
-        aircraft: [
-          { unit: 'Su-25T', label: 'Su-25T', placements: [] },
-          { unit: 'AH-64D_BLK_II', label: 'AH-64D', placements: [] },
-        ],
-        desktop: current.displays,
-        desktopLabel: current.label,
-      },
-    });
-  })) as { ok: boolean };
-  expect(saved.ok).toBe(true);
-  // The tab opens on the saved setup.
-  await page.getByTestId('nav-displays').click();
-  await expect(page.getByTestId('displays-page')).toBeVisible();
-  await page.getByTestId('nav-dcs').click();
-  await page.getByTestId('dcs-tab-screens').click();
+  // The corner is the aircraft's own. An aircraft that shows the kneeboard on the left has no
+  // display RigReady found in its files; "+ Aircraft" offers it all the same, apart from
+  // the ones with displays. The main view is still on the wide screen alone.
+  await page.getByTestId('screens-add-aircraft').click();
+  await page.getByTestId('screens-add-without-Su-25T').click();
   await expect(page.getByTestId('screens-aircraft-Su-25T')).toBeVisible();
 
   // The Su-25T: the bottom left of the DCS window, all of it on the wide screen.
   await expect(note).toHaveAttribute('data-side', 'left');
   await expect(note).toHaveAttribute('data-whole', 'true');
   await expect(note).toContainText(
-    'In the Su-25T, DCS shows the kneeboard at the bottom left of LC49G95T. All of it is on that screen.'
+    'In the Su-25T Frogfoot, DCS shows the kneeboard at the bottom left of LC49G95T. All of it is on that screen.'
   );
   await expect(outline).toHaveAttribute('data-bad', 'false');
   const screen = (await mapDisplay(page, 'LC49G95T').boundingBox())!;
@@ -371,16 +344,200 @@ test('dcs-screens: Identify screens works from this tab, and the map shows where
   await note.scrollIntoViewIfNeeded();
   await shot('kneeboard-on-the-left');
 
-  // An aircraft RigReady has not read: no place is drawn, and the line says why.
-  await page.getByTestId('screens-aircraft-AH-64D_BLK_II').click();
+  // An aircraft RigReady has not read, added by the name DCS has for it: no place is drawn,
+  // and the line says why.
+  await page.getByTestId('screens-add-aircraft').click();
+  await page.getByTestId('screens-add-aircraft-by-name').click();
+  await page.getByTestId('screens-naming-field').locator('input').fill('AH-64D_BLK_II');
+  await page.getByTestId('screens-naming-add').click();
+  await expect(page.getByTestId('screens-aircraft-AH-64D_BLK_II')).toBeVisible();
   await expect(note).toHaveAttribute('data-side', 'unknown');
   await expect(note).not.toHaveAttribute('data-whole');
   await expect(note).toContainText(
-    'RigReady does not know where DCS shows the kneeboard in the AH-64D, so it is not drawn on the map.'
+    'RigReady does not know where DCS shows the kneeboard in the AH-64D_BLK_II, so it is not drawn on the map.'
   );
   await expect(note).not.toContainText('bottom');
   await expect(note.getByTestId('manual-link-page')).toContainText('What RigReady knows');
   await expect(outline).toHaveCount(0);
   await note.scrollIntoViewIfNeeded();
   await shot('kneeboard-place-not-known');
+});
+
+test('dcs-screens: an aircraft or a display RigReady did not find is added by name, a name that cannot be one is refused with the reason, and the tab says what it knows', async ({
+  rig,
+}) => {
+  const run = await rig.launch('dcs-setup-flying', 'dcs-screens-by-name');
+  const { page, shot, home } = run;
+  const written = path.join(home, 'Saved Games', 'DCS', 'Config', 'MonitorSetup', 'RigReady.lua');
+  await nameScreens(page);
+  await openScreens(page);
+  const menu = page.getByTestId('screens-aircraft-menu');
+  const rows = page.getByTestId('screens-display-row');
+  const row = (name: string) =>
+    page.locator(`[data-testid="screens-display-row"][data-name="${name}"]`);
+  const naming = page.getByTestId('screens-naming');
+  const field = page.getByTestId('screens-naming-field').locator('input');
+  const add = page.getByTestId('screens-naming-add');
+  const problem = page.getByTestId('screens-naming-problem');
+
+  // "+ Aircraft" has three parts: the aircraft with the displays found for them, the
+  // installed aircraft in whose files none was found, and any other aircraft by name.
+  await page.getByTestId('screens-add-aircraft').click();
+  await expect(menu).toContainText('F-16C bl.50');
+  await expect(menu).toContainText('No display found in their files');
+  const frogfoot = page.getByTestId('screens-add-without-Su-25T');
+  await expect(frogfoot).toContainText('Su-25T Frogfoot');
+  await expect(page.getByTestId('screens-add-aircraft-by-name')).toContainText(
+    'Another aircraft, by name'
+  );
+  // The aircraft scroll; the way to add any other one stays in view under them.
+  await page.getByTestId('screens-add-without').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('screens-add-aircraft-by-name')).toBeInViewport();
+  await shot('aircraft-menu');
+
+  // An installed aircraft with no display found. The tab does not say it has none.
+  await frogfoot.click();
+  await expect(page.getByTestId('screens-aircraft-Su-25T')).toBeVisible();
+  await expect(rows).toHaveCount(0);
+  await expect(page.getByTestId('screens-no-displays')).toHaveText(
+    "RigReady found no display to put on another screen in this aircraft's files. It may still have one: add it by name if you know it."
+  );
+  await expect(page.getByTestId('screens-aircraft')).toContainText(
+    'A name you add is written as you typed it: RigReady cannot check it against the game.'
+  );
+
+  // A display by name. Text that is more than a name is refused, with the reason, and
+  // cannot be added.
+  await page.getByTestId('screens-add-display').click();
+  await expect(naming).toContainText('Add a display of the Su-25T Frogfoot by name');
+  await expect(naming).toContainText(
+    'RigReady writes the name as you type it and cannot check that the aircraft has such a display.'
+  );
+  await expect(add).toBeDisabled();
+  await field.fill("TV = 1; os.exit('now')");
+  await expect(problem).toHaveText(
+    'A display name has only letters, digits and _, starts with a letter or _, and is at most 64 characters long.'
+  );
+  await expect(add).toBeDisabled();
+  await field.press('Enter');
+  await expect(naming).toBeVisible();
+  await shot('name-refused');
+  await field.fill('Viewports');
+  await expect(problem).toHaveText(
+    "DCS's monitor setup file already uses that name for something else."
+  );
+  await field.fill('end');
+  await expect(problem).toHaveText(
+    "That is a word of the Lua language, which DCS's monitor setup file is written in."
+  );
+  await expect(add).toBeDisabled();
+  await field.fill('TV_DISPLAY');
+  await expect(add).toBeEnabled();
+  await add.click();
+  await expect(naming).toHaveCount(0);
+
+  // The name has a row, on no screen yet, and the row says what RigReady knows of it.
+  await expect(rows).toHaveCount(1);
+  await expect(page.getByTestId('screens-no-displays')).toHaveCount(0);
+  await expect(page.getByTestId('screens-monitor-TV_DISPLAY')).toContainText('Not shown');
+  // A name RigReady has not seen is shown as typed, not made to read like a known display.
+  await expect(row('TV_DISPLAY').locator('.rr-row-title')).toHaveText('TV_DISPLAY');
+  await expect(row('TV_DISPLAY').getByTestId('screens-name-unseen')).toHaveText(
+    "RigReady has not seen this name in this aircraft's files. If the aircraft does not ask DCS for it, nothing is drawn there."
+  );
+  // The same name a second time is refused too.
+  await page.getByTestId('screens-add-display').click();
+  await field.fill('TV_DISPLAY');
+  await expect(problem).toHaveText('That display is already in the list.');
+  await expect(add).toBeDisabled();
+  await page.getByTestId('screens-naming-cancel').click();
+  await expect(naming).toHaveCount(0);
+
+  // It goes on a screen as any other display, and into the file under the name as typed.
+  await choose(page, 'screens-monitor-TV_DISPLAY', 'MFD left');
+  await expect(page.getByTestId('screens-errors')).toHaveCount(0);
+  await page.getByTestId('screens-show-lua').click();
+  const lua = page.getByTestId('screens-lua');
+  await expect(lua).toContainText(viewportAt('TV_DISPLAY', 5120, 0));
+  await row('TV_DISPLAY').scrollIntoViewIfNeeded();
+  await shot('display-added-by-name');
+
+  // A name added by mistake comes off the list again, and out of the file.
+  await page.getByTestId('screens-add-display').click();
+  await field.fill('WRONG_NAME');
+  await field.press('Enter');
+  await expect(rows).toHaveCount(2);
+  await choose(page, 'screens-monitor-WRONG_NAME', 'MFD centre');
+  await expect(lua).toContainText('WRONG_NAME =');
+  await page.getByTestId('screens-forget-WRONG_NAME').click();
+  await expect(rows).toHaveCount(1);
+  await expect(lua).not.toContainText('WRONG_NAME');
+
+  // An aircraft by name. One that is installed is found whatever capitals were typed, and
+  // one already in the setup is not added twice.
+  await page.getByTestId('screens-add-aircraft').click();
+  await page.getByTestId('screens-add-aircraft-by-name').click();
+  await expect(naming).toContainText('Add an aircraft by name');
+  await expect(naming).toContainText(
+    'RigReady writes the name as you type it and cannot check that DCS has such an aircraft.'
+  );
+  await field.fill("OH-6A'] = 1 --");
+  await expect(problem).toHaveText(
+    'An aircraft name has only letters, digits, spaces and the signs _ . + -, starts with a letter or a digit, and is at most 64 characters long.'
+  );
+  await expect(add).toBeDisabled();
+  await field.fill('su-25t');
+  await expect(problem).toHaveText('That aircraft is already in this setup.');
+  await expect(add).toBeDisabled();
+  await field.fill('f-16c_50');
+  await expect(page.getByTestId('screens-naming-known')).toHaveText(
+    'That is the F-16C bl.50, which is installed. RigReady adds it with what it knows of it.'
+  );
+  await expect(add).toBeEnabled();
+  // An aircraft DCS on this PC does not have: a community aircraft, say.
+  await field.fill('OH-6A');
+  await expect(page.getByTestId('screens-naming-known')).toHaveCount(0);
+  await add.click();
+  await expect(page.getByTestId('screens-aircraft-OH-6A')).toBeVisible();
+  await expect(rows).toHaveCount(0);
+  await expect(page.getByTestId('screens-no-displays')).toHaveCount(0);
+  await expect(page.getByTestId('screens-aircraft-unknown')).toHaveText(
+    'RigReady has not found an aircraft called OH-6A in DCS on this PC. It cannot check this name, or any display you add for it. DCS matches names letter for letter, capitals included.'
+  );
+  await page.getByTestId('screens-add-display').click();
+  await expect(naming).toContainText('Add a display of the OH-6A by name');
+  await field.fill('OH6_MAP');
+  await add.click();
+  await choose(page, 'screens-monitor-OH6_MAP', 'MFD right');
+  await expect(lua).toContainText(viewportAt('OH6_MAP', 6656, 0));
+  await page
+    .getByTestId('screens-aircraft-unknown')
+    .evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  await shot('aircraft-added-by-name');
+
+  // Written as typed, each under its aircraft, with the Hornet's own displays as before.
+  await page.getByTestId('screens-pairing-confirm').click();
+  await page.getByTestId('screens-apply').click();
+  await expect(page.getByTestId('screens-done')).toContainText('Created RigReady.lua');
+  const file = await fs.readFile(written, 'utf8');
+  expect(file).toMatch(viewportAt('LEFT_MFCD', 5128));
+  expect(file).toContain('-- Su-25T Frogfoot\nTV_DISPLAY =');
+  expect(file).toContain('-- OH-6A\nOH6_MAP =');
+  expect(file).toMatch(viewportAt('TV_DISPLAY', 5120, 0));
+  expect(file).toMatch(viewportAt('OH6_MAP', 6656, 0));
+  for (const never of ['WRONG_NAME', 'os.exit', 'function']) expect(file).not.toContain(never);
+
+  // The setup is kept: opened again, the added names are there and say the same.
+  await page.getByTestId('nav-displays').click();
+  await expect(page.getByTestId('displays-page')).toBeVisible();
+  await page.getByTestId('nav-dcs').click();
+  await page.getByTestId('dcs-tab-screens').click();
+  await page.getByTestId('screens-aircraft-OH-6A').click();
+  await expect(page.getByTestId('screens-aircraft-unknown')).toContainText(
+    'RigReady has not found an aircraft called OH-6A in DCS on this PC.'
+  );
+  await expect(page.getByTestId('screens-monitor-OH6_MAP')).toContainText('MFD right');
+  await page.getByTestId('screens-aircraft-Su-25T').click();
+  await expect(row('TV_DISPLAY').getByTestId('screens-name-unseen')).toBeVisible();
+  await expect(page.getByTestId('screens-monitor-TV_DISPLAY')).toContainText('MFD left');
 });
