@@ -59,6 +59,26 @@ describe('the cards of an aircraft', () => {
     expect(stick.cards).toBeGreaterThan(10);
   });
 
+  it("gives the owner's throttle stops and switch positions their other positions, from its drawing", async () => {
+    app = await wiredApp('cheat-sheets-hornet', FILES);
+    const deck = await deckOf(app);
+    const throttle = deck.devices.find((d) => d.title === 'Throttle')!;
+    const answer = (control: string) =>
+      deck.cards
+        .flatMap((c) => c.answers)
+        .find((a) => a.deviceKey === throttle.key && a.control === control);
+    // Left and right handle: IDLE and OFF are the stops of one handle.
+    expect(answer('button:31')?.otherPositions).toEqual(['button:2']);
+    expect(answer('button:2')?.otherPositions).toEqual(['button:31']);
+    expect(answer('button:30')?.otherPositions).toEqual(['button:1']);
+    // The thumb switches of the right handle: forward, middle and back.
+    expect(answer('button:22')?.otherPositions).toEqual(['button:23', 'button:24']);
+    expect(answer('button:4')?.otherPositions).toEqual(['button:3', 'button:5']);
+    // A hat of the throttle has none: Button 28 is the front hat pushed up.
+    expect(answer('button:28')).toBeDefined();
+    expect(answer('button:28')?.otherPositions).toBeUndefined();
+  });
+
   it('leaves out the controls of a device that is not connected, and says which', async () => {
     app = await wiredApp('cheat-sheets-hornet', FILES);
     const before = await deckOf(app);

@@ -108,6 +108,8 @@ export const AWAY_MS = 2 * 60_000;
 export const QUICK_EXIT_MS = 2 * 60_000;
 /** How long RigReady keeps looking for a game that closed to come back, at least. */
 export const LOOK_BACK_MS = 15 * 60_000;
+/** How long the countdown waits to hear what its Stand down will need a person for. */
+export const NEEDS_YOU_MS = 3000;
 
 /** What the history adds up to. */
 export function sessionTotals(sessions: SessionRecord[]): SessionTotals {
@@ -266,6 +268,11 @@ export interface TrackerDeps {
   ): Promise<Result<{ headline: string; failed: number; problems: string[] }>>;
   /** What the setup says about standing down by itself when its game closes. */
   standDownOnClose(profileId: string): Promise<StandDownOnClose>;
+  /**
+   * What that Stand down will need a person at the screens for, one line each: said with
+   * the countdown, so whoever is there knows to stay. Changes nothing.
+   */
+  standDownNeedsYou?(profileId: string): Promise<string[]>;
   /** Brings RigReady's window where it can be seen: a countdown nobody sees cannot be cancelled. */
   showWindow(): Promise<void>;
 }
@@ -280,6 +287,8 @@ export interface TrackerOptions {
   quickExitMs?: number;
   /** LOOK_BACK_MS unless a test says otherwise. */
   lookBackMs?: number;
+  /** NEEDS_YOU_MS unless a test says otherwise. */
+  needsYouMs?: number;
 }
 
 interface Fixed {
@@ -355,6 +364,7 @@ export class SessionTracker {
   private readonly startGraceMs: number;
   private readonly quickExitMs: number;
   private readonly lookBackMs: number;
+  private readonly needsYouMs: number;
 
   constructor(
     private readonly ctx: Ctx,
@@ -367,6 +377,7 @@ export class SessionTracker {
     this.startGraceMs = options.startGraceMs ?? 15 * 60_000;
     this.quickExitMs = options.quickExitMs ?? QUICK_EXIT_MS;
     this.lookBackMs = options.lookBackMs ?? LOOK_BACK_MS;
+    this.needsYouMs = options.needsYouMs ?? NEEDS_YOU_MS;
   }
 
   private now(): Date {
@@ -572,6 +583,10 @@ export class SessionTracker {
     const said = `${rest.profileName}: ${durationText(seconds)}.`;
     const wish = await this.deps.standDownOnClose(rest.profileId);
     if (token !== this.token) return;
+    // What that Stand down will need someone at the screens for, said with its countdown.
+    const counts = wish.enabled && seconds * 1000 >= this.quickExitMs;
+    const needsYou = counts ? await this.needsYou(rest.profileId) : [];
+    if (token !== this.token) return;
     const after: After = {
       profileId: rest.profileId,
       profileName: rest.profileName,
@@ -603,12 +618,44 @@ export class SessionTracker {
       ...ended,
       standDownAt: new Date(after.standDownAt).toISOString(),
       standDownSeconds: wish.seconds,
+      ...(needsYou.length > 0 ? { standDownNeedsYou: needsYou } : {}),
     });
     // Windows says it when nobody was at a window, and then the window comes to them.
     await this.notifyWhenAway(
-      `${said} Stand down starts in ${standDownWaitText(wish.seconds)}. Open RigReady to cancel.`
+      [
+        `${said} Stand down starts in ${standDownWaitText(wish.seconds)}. Open RigReady to cancel.`,
+        ...needsYou,
+      ].join(' ')
     );
     await this.deps.showWindow();
+  }
+
+  /**
+   * What the Stand down after the countdown will need a person for. Never holds the
+   * countdown up for long: a step that cannot say in time (a monitor read that hangs) is
+   * left unsaid, and the countdown starts without it.
+   */
+  private async needsYou(profileId: string): Promise<string[]> {
+    const ask = this.deps.standDownNeedsYou;
+    if (!ask) return [];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<undefined>((resolve) => {
+      timer = setTimeout(() => resolve(undefined), this.needsYouMs);
+      (timer as { unref?: () => void }).unref?.();
+    });
+    try {
+      const lines = await Promise.race([ask(profileId), late]);
+      if (lines !== undefined) return lines;
+      this.ctx.log.warn(
+        'what Stand down will need was not known in time; the countdown said nothing about it'
+      );
+      return [];
+    } catch (thrown) {
+      this.ctx.log.warn('what Stand down will need could not be worked out', thrown);
+      return [];
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /** Looks for the game to come back, and at the clock while a countdown runs. */

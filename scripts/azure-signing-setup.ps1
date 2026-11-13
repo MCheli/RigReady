@@ -9,16 +9,19 @@
     Then the owner does the identity validation in the portal (ID photo and face check).
 
   Part B, after the identity validation shows Completed:
-    .\azure-signing-setup.ps1 -Part B -SubscriptionId <id> -ValidationId <guid> -Publisher "<CN exactly as validated>"
+    .\azure-signing-setup.ps1 -Part B -SubscriptionId <id> -ValidationId <guid> -Publisher "<CN exactly as validated>" -PublisherDn "CN=<name>, O=<name>, L=<town>, S=<state>, C=<country>"
     Creates the certificate profile, the app registration with a client secret (stored
     straight into GitHub secrets, never printed), gives it the Certificate Profile Signer
-    role, and sets the four repository variables.
+    role, and sets the five repository variables. -PublisherDn is the certificate's whole
+    subject (docs/RELEASING.md, "Code signing"); if it is not exactly right, the Release
+    workflow's update signature check fails and shows the subject the certificate has.
 #>
 param(
   [Parameter(Mandatory)] [ValidateSet('A', 'B')] [string] $Part,
   [Parameter(Mandatory)] [string] $SubscriptionId,
   [string] $ValidationId,
   [string] $Publisher,
+  [string] $PublisherDn,
   [string] $ResourceGroup = 'rigready-signing',
   [string] $Location = 'eastus',
   [string] $Account = 'rigready',
@@ -59,7 +62,7 @@ if ($Part -eq 'A') {
   exit 0
 }
 
-if (-not $ValidationId -or -not $Publisher) { throw 'Part B needs -ValidationId and -Publisher (both from the completed identity validation).' }
+if (-not $ValidationId -or -not $Publisher -or -not $PublisherDn) { throw 'Part B needs -ValidationId, -Publisher and -PublisherDn (all from the completed identity validation).' }
 Az artifact-signing certificate-profile create -g $ResourceGroup --account-name $Account -n $CertProfile `
   --profile-type PublicTrust --identity-validation-id $ValidationId -o none
 
@@ -82,6 +85,7 @@ $endpoint = Az artifact-signing show -n $Account -g $ResourceGroup --query accou
 & $gh variable set RIGREADY_SIGN_ACCOUNT --repo $Repo --body $Account
 & $gh variable set RIGREADY_SIGN_PROFILE --repo $Repo --body $CertProfile
 & $gh variable set RIGREADY_SIGN_PUBLISHER --repo $Repo --body $Publisher
+& $gh variable set RIGREADY_SIGN_PUBLISHER_DN --repo $Repo --body $PublisherDn
 
 $expires = (Get-Date).AddYears(2).ToString('yyyy-MM-dd')
-Write-Host "Part B done. Seven values set on $Repo. The client secret expires about ${expires}; renew it before then (docs/RELEASING.md)."
+Write-Host "Part B done. Eight values set on $Repo. The client secret expires about ${expires}; renew it before then (docs/RELEASING.md)."

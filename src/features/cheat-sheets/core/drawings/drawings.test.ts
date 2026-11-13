@@ -12,7 +12,7 @@ import {
   type PictureOptions,
 } from '../picture';
 import { textWidth, THEMES } from '../render';
-import type { Sheet, SheetControl, SheetDevice } from '../sheet';
+import { deviceLabels, type Sheet, type SheetControl, type SheetDevice } from '../sheet';
 import {
   builtinDrawings,
   crossings,
@@ -23,6 +23,7 @@ import {
   planCallouts,
   planList,
   renderPlanSvg,
+  restInputs,
   segmentsCross,
   stack,
   wrapText,
@@ -360,8 +361,9 @@ describe('the shipped drawings', () => {
     expect(inputsOf(startup, 'bleed')).toEqual(numbers(54, 57));
     expect(startup.controls.some((c) => c.assumed)).toBe(false);
 
-    // The take-off panel 2: the 41 buttons the maker's screen places. Only the brake
-    // handle is marked as not confirmed.
+    // The take-off panel 2: the 41 buttons the maker's screen places. The brake handle was
+    // moved on the owner's panel; only the wing fold handle, which lost 30 to it, is not
+    // confirmed.
     const takeoff = drawingFor({ vendorId: '4098', productId: 'BF05' })!;
     expect(takeoff.name).toBe('WinWing F/A-18 take-off panel 2');
     expect([...drawn(takeoff)].sort()).toEqual(numbers(1, 41).sort());
@@ -369,7 +371,7 @@ describe('the shipped drawings', () => {
     expect(inputsOf(takeoff, 'flap')).toEqual(numbers(5, 7));
     expect(inputsOf(takeoff, 'probe')).toEqual(numbers(14, 16));
     expect(inputsOf(takeoff, 'hook')).toEqual(numbers(32, 34));
-    expect(takeoff.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual(['brake']);
+    expect(takeoff.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual(['wing-fold']);
   });
 
   it('are refused with the reason when an anchor is off the drawing or an input is placed twice', () => {
@@ -396,6 +398,242 @@ describe('the shipped drawings', () => {
       h: 0,
     });
     expect(pathBox('')).toBeUndefined();
+  });
+});
+
+/**
+ * The second look on the owner's rig, 13 Nov 2026: he pressed each control while the
+ * tester recorded which button lit. The recordings below are copied from those files (the
+ * buttons held at each change, in order); every change must touch one control only, and
+ * every number must be where the press put it.
+ */
+describe('what the owner pressed on his own rig on 13 Nov 2026', () => {
+  const b = (n: number): string => `button:${n}`;
+  const sorted = (ids: Iterable<string>): string[] => [...ids].sort();
+  /** The one control an input is on, and the word its row starts with. */
+  const placeOf = (drawing: DeviceDrawing, id: string): [string, string | undefined] => {
+    const on = drawing.controls.filter((c) => c.inputs.some((i) => i.id === id));
+    expect(
+      on.map((c) => c.id),
+      id
+    ).toHaveLength(1);
+    return [on[0]!.id, on[0]!.inputs.find((i) => i.id === id)!.tag];
+  };
+  const onNone = (drawing: DeviceDrawing, n: number): boolean =>
+    !drawing.controls.some((c) => c.inputs.some((i) => i.id === b(n)));
+  /** The controls whose buttons changed between two recorded states. */
+  const changed = (drawing: DeviceDrawing, from: number[], to: number[]): string[] => {
+    const before = new Set(from);
+    const after = new Set(to);
+    const flipped = [...new Set([...from, ...to])].filter((n) => before.has(n) !== after.has(n));
+    return [...new Set(flipped.map((n) => placeOf(drawing, b(n))[0]))];
+  };
+  /** Each step of a recording changes the one control named for it. */
+  const replay = (drawing: DeviceDrawing, steps: [number[], string][]): void => {
+    for (let i = 1; i < steps.length; i += 1) {
+      const [to, control] = steps[i]!;
+      expect(changed(drawing, steps[i - 1]![0], to), `step ${i}`).toEqual([control]);
+    }
+  };
+  const grip = (): DeviceDrawing => drawingFor({ vendorId: '4098', productId: 'BEA8' })!;
+  const throttle = (): DeviceDrawing => drawingFor({ vendorId: '4098', productId: 'BD26' })!;
+  const panel = (): DeviceDrawing => drawingFor({ vendorId: '4098', productId: 'BF05' })!;
+
+  it('ViperAce grip: the right side hat is up 15, right 16, down 17, left 18 and press 14, and 1 and 7 are where its two levers rest', () => {
+    const drawing = grip();
+    expect([15, 16, 17, 18, 14].map((n) => placeOf(drawing, b(n)))).toEqual([
+      ['side-hat', '↑'],
+      ['side-hat', '→'],
+      ['side-hat', '↓'],
+      ['side-hat', '←'],
+      ['side-hat', 'press'],
+    ]);
+    expect(drawing.controls.find((c) => c.id === 'side-hat')).toMatchObject({
+      name: 'Right side hat',
+      assumed: false,
+    });
+    // lit-b1-viperace.txt: 1 and 7 held before anything was pressed, then each way.
+    const rest = [1, 7];
+    replay(drawing, [
+      [rest, ''],
+      [[...rest, 15], 'side-hat'],
+      [rest, 'side-hat'],
+      [[...rest, 16], 'side-hat'],
+      [rest, 'side-hat'],
+      [[...rest, 17], 'side-hat'],
+      [rest, 'side-hat'],
+      [[...rest, 18], 'side-hat'],
+      [rest, 'side-hat'],
+      [[...rest, 14], 'side-hat'],
+      [rest, 'side-hat'],
+    ]);
+    // 1 and 7 are the top front lever and the paddle let go: where they rest.
+    expect(placeOf(drawing, b(1))).toEqual(['front-lever', '1 at rest']);
+    expect(placeOf(drawing, b(7))).toEqual(['paddle', '7 at rest']);
+    expect(sorted(restInputs(drawing))).toEqual(sorted(rest.map(b)));
+    expect(drawing.notes).not.toContain('?');
+  });
+
+  it('F-15EX throttle: left and right on both front hats, the left handle slider, nothing on 45 to 49 or 60 to 62, and where it rests', () => {
+    const drawing = throttle();
+    expect([52, 54, 29, 33].map((n) => placeOf(drawing, b(n)))).toEqual([
+      ['left-hat', '←'],
+      ['left-hat', '→'],
+      ['front-hat', '←'],
+      ['front-hat', '→'],
+    ]);
+    // The slider on the left handle: 59 at one end, 58 in the middle where it rests, 57 at
+    // the other end. One control, the one the drawing had as a switch with 58 in the middle.
+    expect([59, 58, 57].map((n) => placeOf(drawing, b(n)))).toEqual([
+      ['left-switch', '59 one end'],
+      ['left-switch', 'middle'],
+      ['left-switch', '57 other end'],
+    ]);
+    expect(drawing.controls.find((c) => c.id === 'left-switch')?.name).toBe('Left handle slider');
+    // The knob above it is its axis only: 60 to 62 never lit.
+    expect(drawing.controls.find((c) => c.id === 'left-knob')?.inputs).toEqual([
+      { id: 'axis:RZ', tag: 'turn' },
+    ]);
+    for (const n of [45, 46, 47, 48, 49, 60, 61, 62])
+      expect(onNone(drawing, n), String(n)).toBe(true);
+    expect(drawing.notes).toContain('45 to 49 and 60 to 62');
+    expect(drawing.notes).not.toContain('?');
+    expect(drawing.controls.filter((c) => c.assumed)).toEqual([]);
+    // lit-b1-throttle.txt: held throughout, then the front hats, then the slider end to end.
+    const rest = [23, 30, 31, 4, 41, 58];
+    const slid = rest.filter((n) => n !== 58);
+    replay(drawing, [
+      [rest, ''],
+      [[...rest, 52], 'left-hat'],
+      [rest, 'left-hat'],
+      [[...rest, 54], 'left-hat'],
+      [rest, 'left-hat'],
+      [[...rest, 29], 'front-hat'],
+      [rest, 'front-hat'],
+      [[...rest, 33], 'front-hat'],
+      [rest, 'front-hat'],
+      [[...slid, 59], 'left-switch'],
+      [rest, 'left-switch'],
+      [[...slid, 57], 'left-switch'],
+      [slid, 'left-switch'],
+      [rest, 'left-switch'],
+    ]);
+    // What was held before anything was pressed is where each control rests: IDLE on both
+    // throttles, the middle of the two thumb switches and of the slider, the finger lever's centre.
+    expect(sorted(restInputs(drawing))).toEqual(sorted(rest.map(b)));
+    expect(
+      rest.map((n) => placeOf(drawing, b(n))).map(([control, tag]) => `${control} ${tag}`)
+    ).toEqual([
+      'upper-thumb-switch middle',
+      'right-throttle IDLE',
+      'left-throttle IDLE',
+      'lower-thumb-switch middle',
+      'finger-lever centre',
+      'left-switch middle',
+    ]);
+  });
+
+  it('take-off panel 2: the brake handle is out 40, in 41, left 39, right 38 and rests on 30; the gear lever and the jettison knob are one control each', () => {
+    const drawing = panel();
+    expect([40, 41, 39, 38, 30].map((n) => placeOf(drawing, b(n)))).toEqual([
+      ['brake', 'out'],
+      ['brake', 'in'],
+      ['brake', 'left'],
+      ['brake', 'right'],
+      ['brake', 'at rest'],
+    ]);
+    expect(drawing.controls.find((c) => c.id === 'brake')?.assumed).toBe(false);
+    // lit-b1-brake2.txt: the knob, the gear lever, then the brake handle each way.
+    const rest = [3, 7, 8, 10, 12, 15, 18, 30, 32, 35];
+    const without = (n: number, add?: number): number[] => [
+      ...rest.filter((m) => m !== n),
+      ...(add ? [add] : []),
+    ];
+    replay(drawing, [
+      [rest, ''],
+      [without(18), 'select-jett'],
+      [without(18, 17), 'select-jett'],
+      [without(18), 'select-jett'],
+      [rest, 'select-jett'],
+      [without(35, 36), 'gear'],
+      [without(35), 'gear'],
+      [without(35, 37), 'gear'],
+      [without(35, 36), 'gear'],
+      [without(35), 'gear'],
+      [rest, 'gear'],
+      [without(30, 40), 'brake'],
+      [rest, 'brake'],
+      [without(30, 41), 'brake'],
+      [rest, 'brake'],
+      [without(30, 39), 'brake'],
+      [rest, 'brake'],
+      [without(30, 38), 'brake'],
+      [rest, 'brake'],
+    ]);
+    // The brake handle springs back to 30. The gear lever and the knob stay wherever they
+    // are put, so neither has one place it rests and neither is marked.
+    expect(sorted(restInputs(drawing))).toEqual([b(30)]);
+    // The wing fold handle lost 30 to the brake handle: its numbers wait for a move.
+    expect(drawing.controls.find((c) => c.id === 'wing-fold')).toMatchObject({
+      assumed: true,
+      inputs: [
+        { id: b(28), tag: 'FOLD' },
+        { id: b(29), tag: 'HOLD' },
+        { id: b(31), tag: 'pull' },
+      ],
+    });
+  });
+
+  it('names each of those the same way on the sheet, in the trainer and on the overlay', async () => {
+    const sheet = await hornet();
+    const labels = (productId: string): Map<string, string> =>
+      deviceLabels(sheet.devices.find((d) => d.productId?.toUpperCase() === productId)!);
+    const stick = labels('BEA8');
+    expect([16, 18, 14, 1].map((n) => stick.get(b(n)))).toEqual([
+      'Right side hat →',
+      'Right side hat ←',
+      'Right side hat press',
+      'Top front lever 1 at rest',
+    ]);
+    const thr = labels('BD26');
+    expect([52, 33, 59, 58, 57].map((n) => thr.get(b(n)))).toEqual([
+      'Left handle hat ←',
+      'Front hat →',
+      'Left handle slider 59 one end',
+      'Left handle slider middle',
+      'Left handle slider 57 other end',
+    ]);
+    expect(thr.get(b(60))).toBeUndefined();
+    const tko = labels('BF05');
+    expect([40, 41, 39, 38, 30].map((n) => tko.get(b(n)))).toEqual([
+      'EMERG / PARK BRK handle out',
+      'EMERG / PARK BRK handle in',
+      'EMERG / PARK BRK handle left',
+      'EMERG / PARK BRK handle right',
+      'EMERG / PARK BRK handle at rest',
+    ]);
+  });
+
+  it('reads a rest mark in a drawing file, and refuses one that is not yes or no', () => {
+    const withRest = {
+      ...F16_GRIP,
+      controls: [
+        {
+          id: 'lever',
+          name: 'Lever',
+          at: { x: 10, y: 10 },
+          inputs: [{ id: 'button:1', rest: true }, { id: 'button:2' }],
+        },
+      ],
+    };
+    const parsed = parseDrawing(withRest);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(sorted(restInputs(parsed.drawing))).toEqual(['button:1']);
+    const wrong = {
+      ...withRest,
+      controls: [{ ...withRest.controls[0]!, inputs: [{ id: 'button:1', rest: 'yes' }] }],
+    };
+    expect(parseDrawing(wrong)).toMatchObject({ ok: false });
   });
 });
 
@@ -792,10 +1030,8 @@ describe('the Hornet on the recorded rig, drawn the new way', () => {
     expect(stick.callouts.find((c) => c.control.id === 'pinky-button')?.head).toBe(
       'Pinky button · 6'
     );
-    // Only the right side hat still has directions nobody has pressed to check.
-    expect(stick.placed!.drawing.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual([
-      'side-hat',
-    ]);
+    // Every direction has been pressed on the real grip: nothing is left to check.
+    expect(stick.placed!.drawing.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual([]);
     // Nothing is bound on the top front lever or the top left hat: no block on a kneeboard.
     expect(stick.callouts.find((c) => c.control.id === 'front-lever')).toBeUndefined();
     expect(stick.callouts.find((c) => c.control.id === 'castle-hat')).toBeUndefined();
@@ -878,23 +1114,21 @@ describe('the Hornet on the recorded rig, drawn the new way', () => {
       'middle Speed brake in (two-position switch)',
       'back Speed brake in',
     ]);
-    // Left and right on the two front hats are the only places still unchecked.
-    expect(throttle.placed!.drawing.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual([
-      'left-hat',
-      'front-hat',
-    ]);
+    // Left and right on the two front hats were pressed on the real throttle: nothing is
+    // left unchecked.
+    expect(throttle.placed!.drawing.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual([]);
     expect(throttle.extras.map((r) => r.id)).toEqual([]);
-    // Every input the throttle reports is drawn, except buttons 45 to 49, which no source
-    // gives a control for.
+    // Every input the throttle reports is drawn, except buttons 45 to 49 and 60 to 62,
+    // which nothing lit when the owner went round every control.
     const onThrottle = new Set(
       throttle.placed!.drawing.controls.flatMap((c) => c.inputs.map((i) => i.id))
     );
     const missing: number[] = [];
     for (let n = 1; n <= 62; n += 1) if (!onThrottle.has(`button:${n}`)) missing.push(n);
-    expect(missing).toEqual([45, 46, 47, 48, 49]);
+    expect(missing).toEqual([45, 46, 47, 48, 49, 60, 61, 62]);
     for (const axis of ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'SLIDER1'])
       expect(onThrottle.has(`axis:${axis}`), axis).toBe(true);
-    // A press never lights nothing: with the free controls shown, those five are under
+    // A press never lights nothing: with the free controls shown, those eight are under
     // "More controls", one cell each, every one a control the page can light.
     const everyThrottle = planFor(byTitle(sheet, 'Throttle'), { showEmpty: true })!;
     expect(everyThrottle.extras).toHaveLength(1);

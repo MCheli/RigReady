@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CATEGORY_IDS } from './categories';
 import { controlName } from './layout';
+import { otherPositions } from './positions';
 import type { Sheet } from './sheet';
 
 /**
@@ -20,6 +21,12 @@ export const TrainerAnswerSchema = z.object({
   control: z.string(),
   /** "Button 12" */
   name: z.string(),
+  /**
+   * The other positions of the control this is one position of (the OFF stop beside IDLE,
+   * the other places of a switch), from the device's drawing. Absent for a control that is
+   * not drawn as one with several positions.
+   */
+  otherPositions: z.array(z.string().max(40)).max(16).optional(),
 });
 export type TrainerAnswer = z.infer<typeof TrainerAnswerSchema>;
 
@@ -127,8 +134,10 @@ export function trainerCards(sheet: Sheet): TrainerCard[] {
   const cards = new Map<string, TrainerCard>();
   for (const device of sheet.devices) {
     if (!device.connected || !device.guid) continue;
+    const positions = otherPositions(device);
     for (const control of device.controls) {
       if (!pressable(control.id)) continue;
+      const others = positions.get(control.id);
       for (const binding of control.bindings) {
         if (binding.modifiers.length > 0) continue;
         if (own && binding.source !== 'user') continue;
@@ -138,6 +147,7 @@ export function trainerCards(sheet: Sheet): TrainerCard[] {
           device: device.title,
           control: control.id,
           name: controlName(control.id),
+          ...(others ? { otherPositions: others } : {}),
         };
         const card = cards.get(binding.actionId);
         if (card) {
@@ -324,8 +334,6 @@ export interface Verdict {
   right: boolean;
 }
 
-/** A missed card is asked again this many cards later. */
-const COMES_BACK_AFTER = 3;
 /** A card that keeps being missed is asked at most this many times in one round. */
 const MAX_ASKS = 3;
 
@@ -363,6 +371,12 @@ export class TrainerSession {
     return this.deck.length;
   }
 
+  /** Whether the card on screen was missed earlier in this round and is asked again. */
+  get again(): boolean {
+    const card = this.card;
+    return card !== undefined && (this.asks.get(card.id) ?? 0) > 1;
+  }
+
   /** Whether the card on screen will be asked again later in this round. */
   get comesBack(): boolean {
     const card = this.card;
@@ -377,10 +391,11 @@ export class TrainerSession {
   private miss(): Verdict {
     const card = this.card!;
     this.missedIds.add(card.id);
-    // It comes back a few cards later, unless it has been asked often enough.
+    // It comes back at the end of the round, after every card still to come, unless it has
+    // been asked often enough. Asked again right after, it looked like the round starting
+    // over (the owner's second look, 13 November 2026).
     if ((this.asks.get(card.id) ?? 1) < MAX_ASKS) {
-      const again = Math.min(this.queue.length, this.at + 1 + COMES_BACK_AFTER);
-      this.queue.splice(again, 0, card);
+      this.queue.push(card);
     } else {
       this.doneIds.add(card.id);
     }
