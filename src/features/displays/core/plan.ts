@@ -41,6 +41,11 @@ export interface LayoutAnalysis {
   enabledCount: number;
   /** Label per expected monitor id (lower case). */
   labels: Map<string, string>;
+  /**
+   * Connected monitors the layout does not list. Applying the layout leaves them exactly
+   * as they are: one that is on stays on. A layout switches off only a monitor it lists.
+   */
+  untouched: { label: string; on: boolean }[];
 }
 
 const sideways = (r: Rotation): boolean => r === 90 || r === 270;
@@ -226,10 +231,15 @@ export function analyzeLayout(
       return target;
     });
 
-  const targeted = new Set(targets.map((t) => t.id));
+  const targeted = new Set(targets.map((t) => t.id.toLowerCase()));
   const staysOn =
     placed.length > 0 || current.some((d) => d.enabled && !targeted.has(d.id.toLowerCase()));
   if (!staysOn) problems.push('The layout would turn every monitor off.');
+
+  const namedNow = monitorLabels(current, names);
+  const untouched = current
+    .filter((d) => !targeted.has(d.id.toLowerCase()))
+    .map((d) => ({ label: namedNow.get(d.id.toLowerCase()) ?? d.name, on: d.enabled }));
 
   const analysis: LayoutAnalysis = {
     differences,
@@ -240,6 +250,7 @@ export function analyzeLayout(
     offset: { x: dx, y: dy },
     enabledCount: placed.length,
     labels,
+    untouched,
   };
   if (primaryMissing) analysis.primaryMissing = primaryMissing;
   if (primary) analysis.primaryLabel = labelOf(primary.match.expected);

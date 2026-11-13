@@ -41,9 +41,11 @@ Within a phase, fixes run by their kind and then in the order of the setup. The 
 
 A fix is counted as done only when its check passes afterwards. Otherwise the step says "Started TrackIR5.exe, but the check still fails: Not running".
 
-## A monitor change asks you to keep it
+## A monitor change asks you to keep it, the first time
 
-When a fix applies a monitor layout, Windows changes the screens and RigReady asks **Keep this monitor layout?** with a countdown; no answer puts the previous arrangement back ([Keep it or go back](../monitors-and-audio/layouts.md#keep-it-or-go-back)). Make ready waits for the answer before going on, because what comes next must know which layout is there. The countdown is set in [Settings](../app/settings.md). A layout that was not kept counts as a failed fix.
+When a fix applies a monitor layout that was not kept on this PC before, Windows changes the screens and RigReady asks **Keep this monitor layout?** with a countdown; no answer puts the previous arrangement back ([Keep it or go back](../monitors-and-audio/layouts.md#keep-it-or-go-back)). Make ready waits for the answer before going on, because what comes next must know which layout is there. **Make ready and launch** waits too, and does not start the game on a layout that was not kept. The countdown is set in [Settings](../app/settings.md). A layout that was not kept counts as a failed fix.
+
+Once you have kept a layout, and the same monitors are connected, Make ready applies it at once and does not ask again ([When RigReady asks, and when it does not](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)). The monitors are still read back afterwards, and a layout Windows refuses is a failed fix with the reason.
 
 ![The question while Make ready waits](../../../artifacts/screens/fly-make-ready-all/02-keep-prompt.png)
 

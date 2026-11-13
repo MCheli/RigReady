@@ -1654,6 +1654,242 @@ requirements:
       - "tests/e2e/displays.e2e.ts#monitors: map, Identify and names, then apply Flying, Racing without the TV, and manage layouts"
       - "artifacts/screens/display-layouts/07-racing-without-tv.png"
 
+  - id: DISP-010
+    title: A layout that is known to work is applied by Make ready and Stand down without the keep question
+    job: fly
+    area: displays
+    priority: p0
+    done_means:
+      - "When Make ready, 'Make ready and launch' or Stand down applies a monitor layout, it is applied with no 'Keep this monitor layout?' question and no countdown only when that change is known to work on this PC. Every change made by hand (the Monitors page, the command palette, turning a screen) asks every time, and so does a layout that was never kept on this rig."
+      - "Known to work means all four of: the same change was applied before (the same monitors asked on or off, at the same places, sizes, rotations and refresh rates, with the same main display); exactly the same monitors are connected as then, and every monitor the change does not mention is on or off as it was then; a person pressed 'Keep it' in RigReady's own window (a keep sent by an assistant, a countdown that ran out and a question that was replaced by a newer change do not count); and the monitors, read back right after that keep, were as asked."
+      - "That fact is stored in displays/proven.json in RigReady's data folder and read from disk each time it is needed. A monitor is known by its USB serial when that is unique among the connected monitors (so a USB screen moved to another port is the same monitor), otherwise by its id. A keep by hand on the Monitors page counts for the same change made later by Make ready or Stand down."
+      - "In any doubt the question is asked: the file cannot be read or is missing, a monitor the change names is not connected, a monitor that is off would come on at a size the change does not give, another change is still waiting for its answer, or a monitor was unplugged or turned while the question was open."
+      - "A layout applied without the question is read back. When Windows refuses it, the step fails with Windows' reason, the monitors are put back, the proof is forgotten and the next time asks. When Windows took it but the monitors are not as asked, the proof is forgotten and the question is asked after all. A layout is never reported as applied when it was not."
+      - "The first time, the question says that it is asked once: 'RigReady asks this the first time a layout is used on this PC. Once you keep it, Make ready and Stand down apply it without asking.'"
+    notes:
+      - "2026-11-12: owner decision after the sitting (finding 48): automatic on Make ready and Stand down, the prompt kept for testing and first setup. The rule lives in src/features/displays/core/proven.ts and LayoutApplier.applyKnown (core/applier.ts); Make ready reaches it through core/layoutCheck.ts and Stand down through core/deskLayout.ts."
+    status: done
+    evidence:
+      - "src/features/displays/core/proven.test.ts#is the USB serial of a USB screen, which follows it to any port, and otherwise its id"
+      - "src/features/displays/core/proven.test.ts#is the same whatever order the monitors are listed in and however the ids are cased"
+      - "src/features/displays/core/proven.test.ts#is a different one when a monitor was added or taken away"
+      - "src/features/displays/core/proven.test.ts#is a different one when a monitor it does not mention is on instead of off, or the other way"
+      - "src/features/displays/core/proven.test.ts#is a different one for any other place, size, rotation, main display or refresh rate"
+      - "src/features/displays/core/proven.test.ts#there is no proof: a monitor it names is not connected"
+      - "src/features/displays/core/proven.test.ts#there is no proof: a monitor that is off would come on at a size the change does not give"
+      - "src/features/displays/core/proven.test.ts#says each thing that is not as asked"
+      - "src/features/displays/core/applier.test.ts#is asked about the first time, and the question says it is asked once"
+      - "src/features/displays/core/applier.test.ts#is applied without the question once it was kept with these monitors: no countdown, and nothing left to offer after a restart"
+      - "src/features/displays/core/applier.test.ts#is applied without the question when it was kept by hand on the Monitors page"
+      - "src/features/displays/core/applier.test.ts#is asked about again when another monitor is connected"
+      - "src/features/displays/core/applier.test.ts#says exactly what Windows refused, puts the monitors back, and asks the next time"
+      - "src/features/displays/core/applier.test.ts#is asked about after all when Windows took it but the monitors are not as they were kept"
+      - 'src/features/displays/core/applier.test.ts#does not count a "Keep it" for monitors that are not as the layout says'
+      - "src/features/displays/core/applier.test.ts#is asked about while another change is still waiting for its answer"
+      - "src/features/displays/core/applier.test.ts#is always asked about when nothing remembers what was kept"
+      - "src/features/displays/core/applier.test.ts#is not a countdown that ran out: the layout goes back and is asked about again"
+      - 'src/features/displays/core/applier.test.ts#is not a "Keep it" after a monitor was unplugged or turned while the question was open'
+      - "tests/unit/app.test.ts#MFD rotated: Make ready applies the layout, announces the timed revert, Keep settles it"
+      - "tests/unit/app.test.ts#desk state: Make ready fixes the layout; Go back restores the desk; Stand down does too and closes TrackIR"
+      - "tests/unit/settings.test.ts#applies the desk layout named in the settings, with the keep-or-revert countdown"
+      - "tests/e2e/displays.e2e.ts#make ready and stand down: the first time a layout is used it asks, and once kept on this PC it is applied without the question"
+      - "artifacts/screens/display-known-layout/01-first-make-ready-asks.png"
+      - "artifacts/screens/display-known-layout/02-second-make-ready-does-not-ask.png"
+      - "artifacts/screens/display-known-layout/03-second-stand-down-does-not-ask.png"
+
+  - id: DISP-011
+    title: Make ready and launch waits for the keep answer
+    job: fly
+    area: displays
+    priority: p0
+    done_means:
+      - "'Make ready and launch' with a monitor layout that was not kept on this PC before stops at 'Keep this monitor layout?' with the countdown, and the game is not started while the question is open."
+      - "When that layout is not kept (Go back, or the countdown runs out), the monitors go back, the run says the layout was not kept, and the game is not launched."
+      - "With a layout that was kept before and the same monitors connected, the same button applies the layout and launches without the question."
+    notes:
+      - "2026-11-12: sitting finding 18 ('no countdown on make ready and launch'). Read in the code and shown by the scenario test: the launch waits for the answer."
+    status: done
+    evidence:
+      - "tests/e2e/displays.e2e.ts#make ready and launch: the launch waits for the first answer and does not go ahead on a layout that was not kept; a layout kept before does not ask"
+      - "tests/unit/app.test.ts#MFD rotated: when the new layout is not kept, Make ready says so and the setup stays Not ready"
+      - "artifacts/screens/display-known-launch/01-launch-waits-for-the-answer.png"
+      - "artifacts/screens/display-known-launch/02-not-kept-not-launched.png"
+      - "artifacts/screens/display-known-launch/03-known-layout-launched-without-asking.png"
+
+  - id: DISP-012
+    title: A layout that was not kept is not called applied
+    job: configure
+    area: displays
+    priority: p0
+    done_means:
+      - "When a layout applied on the Monitors page goes back, because the countdown ran out or 'Go back' was pressed, the page says '\"Flying\" was not kept. The monitors are back the way they were.' as a warning, and never 'Applied \"Flying\"'."
+      - "'Applied \"<name>\"' is said only of a layout that was kept."
+    notes:
+      - "2026-11-12: sitting finding 1. The page used to write its notice when the layout was applied, before the answer; the answer of displays:applyLayout now says whether it was kept."
+    status: done
+    evidence:
+      - 'src/features/displays/core/service.test.ts#applies Flying (Dell off, MFD screens on) and Desk (the reverse), each with the keep prompt, and says "Applied" only of a layout that was kept'
+      - "src/features/displays/core/service.test.ts#says a layout was not kept when the countdown runs out with nobody answering"
+      - "tests/e2e/displays.e2e.ts#monitors: a layout that nobody kept is not called applied"
+      - "artifacts/screens/display-not-kept/01-countdown-ran-out.png"
+      - "artifacts/screens/display-not-kept/02-kept.png"
+
+  - id: DISP-013
+    title: Which way is up takes an arrow that points sideways
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "'Which way is up?' gives three answers per screen for where its arrow points: Left, Down and Right. Down turns the picture half a turn; Left and Right turn it a quarter turn."
+      - "A quarter turn swaps the screen's width and height and moves the screens beside and below it so that they stay next to it. Once the turn is kept, every saved layout that had the screen the old way is corrected, and the page says in how many."
+      - "A turn that is not kept leaves the screens and the saved layouts as they were, and the page says so."
+      - "When the screens beside it cannot be moved to make room, the turn is refused with that reason and nothing is changed."
+    notes:
+      - "2026-11-12: sitting finding 2. Proven against the fake monitors only. Which of Left and Right a real screen needs follows docs/research/owner-rig.md (an arrow seen pointing right needs 90 degrees more) and was not tried on hardware; if the two are the wrong way round, turnForArrow in src/features/displays/core/arrange.ts is the one place to swap them."
+    status: done
+    evidence:
+      - "src/features/displays/core/arrange.test.ts#turns the picture by where the arrow is seen to point"
+      - "src/features/displays/core/arrange.test.ts#swaps width and height on a quarter turn and moves the monitors beside it"
+      - "src/features/displays/core/arrange.test.ts#only changes the rotation on half a turn"
+      - "src/features/displays/core/upright.test.ts#an arrow that points sideways gets a quarter turn: the screens beside it move to stay beside it, and saved layouts with it are corrected"
+      - "src/features/displays/core/upright.test.ts#a quarter turn that is not kept leaves the screens and the saved layouts as they were"
+      - "src/features/displays/core/upright.test.ts#refuses a quarter turn, and changes nothing, when the screens beside it cannot be moved to make room"
+      - 'tests/e2e/displays.e2e.ts#monitors: "Which way is up?" takes an arrow that points sideways, a quarter turn either way'
+      - "artifacts/screens/display-quarter-turn/01-which-way-is-up.png"
+      - "artifacts/screens/display-quarter-turn/02-turned-a-quarter.png"
+      - "artifacts/screens/display-quarter-turn/03-turn-not-kept.png"
+
+  - id: DISP-014
+    title: A monitor change an assistant asked for waits at least a minute and names the assistant
+    job: fly
+    area: displays
+    priority: p1
+    done_means:
+      - "When an AI assistant asked for the change, the countdown is the revert timer of the settings or 60 seconds, whichever is longer, because the person at the screens is not the one who asked."
+      - "The question names who asked: '<assistant> asked RigReady to rearrange the monitors.'"
+      - "A keep sent by the assistant keeps the layout for now but does not make it known to work; a keep by the person at the screens does."
+      - "With no answer the monitors go back by themselves."
+    notes:
+      - "2026-11-12: sitting finding 3."
+    status: done
+    evidence:
+      - 'src/features/displays/core/applier.test.ts#waits at least a minute and names the assistant, and its own "keep" proves nothing'
+      - "src/features/displays/core/applier.test.ts#waits as long as the setting when that is longer, and counts when the person at the screens keeps it"
+      - "src/features/displays/core/applier.test.ts#goes back by itself when nobody answers"
+      - 'src/features/displays/core/service.test.ts#gives a change an assistant asked for at least a minute and names the assistant; its own "keep" proves nothing'
+      - "tests/e2e/displays.e2e.ts#an assistant asks for Make ready: the question names the assistant and gives a full minute"
+      - "artifacts/screens/display-assistant-asks/01-asked-by-an-assistant.png"
+
+  - id: DISP-015
+    title: Turning a screen in the layout editor closes the gaps, and one press of Save layout saves
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "In 'Edit layout', a quarter turn of a screen swaps its width and height and moves the screens beside and below it, so no gap and no overlap is left to work out by hand. Three 1024-wide screens side by side, turned to portrait one after another, end up touching."
+      - "A line under the drawing says which screens were moved ('Moved B and C to stay next to A.'), or that they could not be moved and X and Y must be set by hand."
+      - "A number typed into X or Y counts as it is typed. 'Save layout' saves what the fields show with one press, also while the cursor is still in a field: the drawing keeps its height and the buttons do not move while the arrangement changes."
+    notes:
+      - "2026-11-12: sitting findings 4 and 7. The lost first press had this cause: X and Y were taken over only when the field lost focus; pressing the mouse on 'Save layout' took the focus away, the drawing was drawn again at another height, the centred dialog moved, and the button was no longer under the pointer when the mouse was let go."
+    status: done
+    evidence:
+      - "src/features/displays/core/arrange.test.ts#closes the gaps: three 1024-wide screens turned to portrait end at 5120, 5888 and 6656"
+      - "src/features/displays/core/arrange.test.ts#moves what is below by the change in height, and what is beyond that with it"
+      - "src/features/displays/core/arrange.test.ts#leaves alone a monitor that is neither beside nor below the turned one"
+      - "src/features/displays/core/arrange.test.ts#says so, and moves nothing else, when the others cannot be moved without covering each other"
+      - "tests/e2e/displays.e2e.ts#monitors: turning a screen in the editor moves the screens beside it, and one press of Save layout saves"
+      - "artifacts/screens/display-edit-turn/01-first-one-turned.png"
+      - "artifacts/screens/display-edit-turn/02-all-three-upright.png"
+      - "artifacts/screens/display-edit-turn/03-typed-position.png"
+      - "artifacts/screens/display-edit-turn/04-saved-with-one-press.png"
+
+  - id: DISP-016
+    title: A layout card names every screen in desk order and says which monitors the layout leaves alone
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "A layout card lists the layout's monitors as they stand on the desk, left to right and then top to bottom, with the ones it switches off last, whatever order they were saved in."
+      - "On every drawing of the monitors a name is shown whole or not at all: a box too narrow for its name shows a letter, and a key under the drawing gives the name for each letter. No name is cut short, drawn on its side or left out, on the cards and in both views of the apply preview."
+      - "The Monitors page says that a layout changes only the monitors it lists. A card whose layout does not list a connected monitor says so by name, and the Apply dialog says that this monitor stays on."
+      - "Applying such a layout leaves that monitor as it is, on or off."
+    notes:
+      - "2026-11-12: sitting findings 5, 6 and 8."
+    status: done
+    evidence:
+      - "src/features/displays/core/service.test.ts#lists the monitors of a layout as they stand on the desk: left to right, the ones that are off last"
+      - "src/features/displays/core/service.test.ts#says which connected monitors a layout does not list, and leaves those as they are when it is applied"
+      - "src/features/displays/core/plan.test.ts#names the connected monitors a layout does not list: those are left as they are, on or off"
+      - "src/features/displays/core/mapKey.test.ts#fit when the box is as wide as the name and its padding, and not when it is narrower"
+      - "src/features/displays/core/mapKey.test.ts#marks each box whose name does not fit with a letter, from left to right, and keeps the names that fit"
+      - "src/features/displays/core/mapKey.test.ts#orders boxes that stand above each other from top to bottom"
+      - "src/features/displays/core/mapKey.test.ts#uses the number a box already shows as its mark, and does not spend a letter on it"
+      - "tests/e2e/displays.e2e.ts#monitors: a layout card names every screen in desk order, and says which connected monitors the layout leaves alone"
+      - "tests/e2e/displays.e2e.ts#monitors: the apply preview is one map that moves from how the monitors are to how they would be, and two maps side by side when Windows asks for less motion"
+      - "artifacts/screens/display-layout-cards/01-cards.png"
+      - "artifacts/screens/display-layout-cards/02-a-monitor-no-layout-lists.png"
+      - "artifacts/screens/display-layout-cards/03-apply-says-what-stays-on.png"
+      - "artifacts/screens/display-layout-cards/04-tv-still-on.png"
+      - "artifacts/screens/display-apply-preview/01-after.png"
+
+  - id: DISP-017
+    title: New layout from the monitors that stay on, and Replace asks before it overwrites
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "'New layout' on the Monitors page lists the connected monitors with a tick each. The ticked ones stay on, the others are saved as off, the ones that stay close up where one between them went, and the layout is saved under a name. Nothing changes on the monitors until the layout is applied."
+      - "A monitor that is off now cannot be ticked, because its size and place are not known, and at least one monitor has to stay on."
+      - "'Replace with the monitors as they are now' asks first. The dialog lists how the monitors differ from the layout now and says that the arrangement it holds today is gone for good, because 'Undo last change' puts back the monitors and not a saved layout. Cancel changes nothing."
+    notes:
+      - "2026-11-12: sitting findings 47 and 9. Undo does not cover Replace, so the question comes before it."
+    status: done
+    evidence:
+      - "src/features/displays/core/arrange.test.ts#lists every monitor, the ones not chosen as off, and makes the one nearest the top left the main display"
+      - "src/features/displays/core/arrange.test.ts#closes up where a monitor between the ones that stay went"
+      - "src/features/displays/core/arrange.test.ts#never switches on a monitor that is off: its size and place are not known"
+      - "src/features/displays/core/service.test.ts#New layout: saves the monitors as they are with only the chosen ones on, and does not touch the monitors"
+      - "tests/e2e/displays.e2e.ts#monitors: New layout starts from which monitors stay on, and Replace asks before it overwrites a layout"
+      - "artifacts/screens/display-new-and-replace/01-new-layout.png"
+      - "artifacts/screens/display-new-and-replace/02-new-layout-saved.png"
+      - "artifacts/screens/display-new-and-replace/03-new-layout-applied.png"
+      - "artifacts/screens/display-new-and-replace/04-replace-asks-first.png"
+      - "artifacts/screens/display-new-and-replace/05-replaced.png"
+
+  - id: DISP-018
+    title: Saving a layout again takes a refresh rate changed in Windows, and applying it brings the rate back
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "A layout stores the refresh rate Windows runs for every monitor that is on when the layout is saved. A monitor the layout has off holds no rate, also after it is switched off in the editor."
+      - "Saving under a name that is taken is refused, and the dialog says how to save it again: open the layout's menu and choose 'Replace with the monitors as they are now'."
+      - "Replace takes the rates Windows runs at that moment, so a rate that was raised in Windows is in the layout afterwards, and the Replace dialog shows the new rate before it is confirmed."
+      - "Applying the layout hands each stored rate to Windows: a monitor that has since fallen to another rate runs at the stored one again."
+    notes:
+      - "2026-11-12: asked after the sitting, where the Dell showed about 60 Hz. The owner's layouts stored 59.95 because that is what Windows ran when they were saved; RigReady stores what Windows runs and does not pick a faster rate by itself."
+    status: done
+    evidence:
+      - "src/features/displays/core/service.test.ts#saves the refresh rate of each monitor, shows it, says when it differs, and applies it; a layout without one still applies"
+      - "src/features/displays/core/service.test.ts#replacing a layout picks up a refresh rate that was changed in Windows, and applying the layout brings that rate back"
+      - "tests/e2e/displays.e2e.ts#monitors: a layout saved again takes a refresh rate that was raised in Windows, and applying it brings that rate back"
+      - "artifacts/screens/display-rate-raised/01-same-name-says-how.png"
+      - "artifacts/screens/display-rate-raised/02-replace-shows-the-new-rate.png"
+      - "artifacts/screens/display-rate-raised/03-new-rate-in-the-layout.png"
+      - "artifacts/screens/display-rate-raised/04-rate-brought-back.png"
+
+  - id: DISP-019
+    title: A monitor switched on with no refresh rate asked is left at the rate Windows chooses
+    job: configure
+    area: displays
+    priority: p1
+    done_means:
+      - "On the owner's rig, a monitor that ran faster than the first rate its EDID lists is switched off and on again by a change that asks for no refresh rate, and afterwards runs at the rate it had, not at the EDID's first rate (60 Hz on the DELL G3223D)."
+    notes:
+      - "2026-11-12: the change is made in src/platform/windows/displays.ts (a monitor that is asked for no rate is no longer switched on in one call with the signal its EDID prefers; Windows switches it on first and RigReady arranges it afterwards), and the rig test 'turns a monitor on again with no refresh rate asked, and it runs at the rate it had' is written in tests/rig/displayIdentity.rig.test.ts. Not run: this needs the real monitors, and rig commands were not allowed in this round. Run it with the owner at the rig, then mark this done."
+    status: in_progress
+    evidence: []
+
   # ---------------------------------------------------------------------------
   # DEVICES AND TROUBLESHOOTING
   # ---------------------------------------------------------------------------
