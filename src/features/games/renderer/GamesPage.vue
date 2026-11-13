@@ -7,6 +7,7 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import { gamePagesOf } from '../../../shared/feature';
 import { gamesContract, type GameSummary } from '../contract';
+import { isFound } from '../core/found';
 import AddGameDialog from './AddGameDialog.vue';
 
 const api = useClient(gamesContract);
@@ -55,8 +56,8 @@ onMounted(() => {
 });
 onBeforeUnmount(() => off?.());
 
-const found = computed(() => games.value.filter((g) => g.installs.length > 0));
-const missing = computed(() => games.value.filter((g) => g.installs.length === 0));
+const found = computed(() => games.value.filter(isFound));
+const missing = computed(() => games.value.filter((g) => !isFound(g)));
 
 /**
  * The pages other features have about a game (DCS World, Racing), each offered with a card

@@ -4375,7 +4375,7 @@ requirements:
       - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
       - "docs/research/controller-drawings.md"
       - "src/features/cheat-sheets/LAYOUT-FORMAT.md"
-      - "docs/manual/dcs/cheat-sheets.md"
+      - "docs/manual/controls/cheat-sheets.md"
       - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
       - "artifacts/screens/cheat-sheets-known-devices/10-x52-pro.png"
 
@@ -8699,6 +8699,56 @@ requirements:
       - "2026-11-12: built (src/renderer/components/BindingsGamePicker.vue), not shown: every build has two games with a bindings page since the iRacing bindings were merged, and no scenario can take one away, so there is no picture of it and no test reaches it."
     status: in_progress
     evidence: []
+
+  - id: NAV-GAMES-006
+    title: An entry or a page about a game is offered only where the game is found
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The menu shows Binding guide (DCS aircraft only) only when DCS World is found on this PC, by the same list of games the Games page shows its DCS World card by. A navigation entry declares the games it is about (games: ['dcs']); the shell asks the games feature which are found (gamesFound in its commands.ts) at start and whenever the machine changes, and no feature imports another for it."
+      - "The command palette lists a page about a game only where that game is found: Binding guide, DCS World and its tabs (Screens, Export.lua, SimAppPro), DCS bindings and its tabs need DCS; the Racing page and iRacing bindings need their racing games. Actions are not held back, and only Play's commands come first."
+      - "The route stays: a link to the binding guide on a PC without DCS opens the page, which says 'DCS World was not found on this PC'. No link in the app leads nowhere (NAV-GAMES-004)."
+      - "When which games are here cannot be told (the list fails, or no feature knows), everything is offered as before. When DCS is installed while RigReady runs, the entry and the pages arrive without a restart."
+    notes:
+      - "2026-11-13: follow-up of the wording pass (findings 27 and 37), items 1 and 2 of its 'more than wording'. Until the first answer nothing about a game is offered, so on a PC with DCS the entry appears a moment after start rather than flashing away on a PC without. The Bindings game picker still lists every game with a bindings page, DCS included, and on a PC with no setup and no game chosen yet Bindings opens the first, DCS: not changed here."
+    status: done
+    evidence:
+      - "src/shared/feature.test.ts#the menu has the binding guide only on a PC with DCS"
+      - "src/shared/feature.test.ts#a page is about the games of the nearest entry or page it lies in"
+      - "src/renderer/shell/registry.test.ts#on a PC without DCS there is no DCS World, no DCS bindings and no binding guide"
+      - "src/renderer/shell/registry.test.ts#only Play comes first, whatever is held back"
+      - "src/renderer/shell/games.test.ts#asks at once and again when the machine changed, until it is stopped"
+      - "src/renderer/shell/games.test.ts#when the games cannot be read, or no feature knows, it says it cannot tell"
+      - "tests/unit/offeredByGame.test.ts#a PC with no game: no binding guide in the menu, no DCS page in the palette"
+      - "tests/unit/offeredByGame.test.ts#a PC whose only game is iRacing: no DCS, and the racing pages are there"
+      - "tests/unit/offeredByGame.test.ts#a PC with DCS, the owner’s rig or another: the binding guide and every DCS page"
+      - "tests/e2e/offered-by-game.e2e.ts#a PC whose only game is iRacing: no binding guide in the menu, no DCS page in the palette, and a link still opens the guide"
+      - "tests/e2e/offered-by-game.e2e.ts#with DCS the binding guide and the DCS pages are offered, and they arrive when DCS is installed while RigReady runs"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "artifacts/screens/offered-racing-pc/01-menu.png"
+      - "artifacts/screens/offered-racing-pc/02-palette.png"
+      - "artifacts/screens/offered-racing-pc/03-palette-bind.png"
+      - "artifacts/screens/offered-racing-pc/04-palette-dcs.png"
+      - "artifacts/screens/offered-racing-pc/05-guide-by-link.png"
+      - "artifacts/screens/offered-dcs-arrives/01-menu-with-dcs.png"
+      - "artifacts/screens/offered-dcs-arrives/02-palette-with-dcs.png"
+
+  - id: NAV-GAMES-007
+    title: The manual keeps what works for every game out of the DCS section
+    job: platform
+    area: shell
+    priority: p3
+    done_means:
+      - "The manual pages on cheat sheets and the trainer, which serve DCS and the racing games alike, are in a section about no single game (docs/manual/controls, 'Controls', after the games sections), with an index page and a line on the manual's front page; the DCS World section points there and keeps the kneeboard pages, which are DCS's."
+      - "Every old link still works: the app's manual links, every link inside the manual and the README name the new pages; the website keeps the old addresses (/docs/dcs/cheat-sheets/, /docs/dcs/trainer/) as pages that send the reader on at once, the part after # kept, so a link from an older RigReady or a bookmark still lands."
+    status: done
+    evidence:
+      - "tests/unit/siteManual.test.ts#has the cheat sheets and the trainer under Controls, not under one game, and their old addresses still lead there"
+      - "tests/unit/siteManual.test.ts#keeps the old address of a page that moved, sending the reader on to it"
+      - "tests/unit/siteManual.test.ts#links only to pages and pictures that exist"
+      - "tests/unit/manualLinks.test.ts#names only pages that exist in docs/manual"
+      - "tests/e2e/manual-links.e2e.ts#manual links: the help button opens the manual page of the screen shown"
 
   - id: WOW-UI-002
     title: Palette commands call their feature and a toast reports what really happened

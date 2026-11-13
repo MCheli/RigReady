@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute, type RouteLocationNormalizedLoaded } from 'vue-router';
+import { navSectionsOf } from '../../shared/feature';
 import BindingsGamePicker from '../components/BindingsGamePicker.vue';
-import { bindingsPages, navSections, places } from '../features';
+import { bindingsPages, manifests, places } from '../features';
 import { bindingsPageAt } from '../shell/bindings';
 import { ariaCurrent, currentEntry } from '../shell/nav';
-import { pageEpoch } from '../shell/shell';
+import { gamesFound, pageEpoch } from '../shell/shell';
 
 /**
  * The page shown, keyed by its route record: moving between the tabs of one page keeps the
@@ -20,8 +21,16 @@ const viewKey = (shown: RouteLocationNormalizedLoaded): string =>
  * under Games and a game's bindings under Bindings.
  */
 const route = useRoute();
-const entries = navSections.flatMap((group) => group.entries.map((entry) => entry.to));
-const current = computed(() => currentEntry(entries, route.path, places));
+
+/**
+ * The menu offers an entry about a game (the binding guide, for DCS) only while the game is
+ * found on this PC, as Games offers a game page's card. Its page still opens from a link.
+ */
+const navSections = computed(() => navSectionsOf(manifests, gamesFound.value));
+const entries = computed(() =>
+  navSections.value.flatMap((group) => group.entries.map((entry) => entry.to))
+);
+const current = computed(() => currentEntry(entries.value, route.path, places));
 
 /** On a game's bindings page, the game picker of Bindings stands above it. */
 const bindings = computed(() => bindingsPageAt(bindingsPages, route.path));

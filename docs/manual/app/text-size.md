@@ -6,7 +6,7 @@ order: 50
 
 On a big monitor, or a monitor across the room, the text can be too small. RigReady uses the keys every Windows program uses for this, and everything in the window scales together: text, icons, the rig drawing, the checklist.
 
-The keys work on every screen, including the pop-out panels such as the [quick look](../dcs/cheat-sheets.md#quick-look) of a cheat sheet.
+The keys work on every screen, including the pop-out panels such as the [quick look](../controls/cheat-sheets.md#quick-look) of a cheat sheet.
 
 ## The keys
 

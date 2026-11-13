@@ -1,13 +1,16 @@
 import type { RouteRecordRaw } from 'vue-router';
 import {
   commandProblem,
+  gamesOfRoute,
   MODE_NAMES,
   navEntriesOf,
+  offeredFor,
   placeEntriesOf,
   placesOf,
   type CommandShell,
   type FeatureCommands,
   type FeatureManifest,
+  type FoundGames,
   type NavEntry,
   type PaletteCommand,
 } from '../../shared/feature';
@@ -248,6 +251,24 @@ export function staticCommands(
     });
   }
   return sortCommands([...pages.values(), ...others]);
+}
+
+/**
+ * What the palette offers on this PC: a page about a game (a menu entry's, a game page's or
+ * a bindings page's, and every page below it: "DCS World: Screens", "DCS bindings: Devices")
+ * only when the game is found, as the Games page offers its card. An action, and a page about
+ * no game in particular, are always offered; so is everything when what is found could not
+ * be told. The order is kept.
+ */
+export function offeredHere(
+  commands: ListedCommand[],
+  manifests: FeatureManifest[],
+  found: FoundGames
+): ListedCommand[] {
+  if (found === undefined) return commands;
+  return commands.filter(
+    (command) => command.to === undefined || offeredFor(gamesOfRoute(manifests, command.to), found)
+  );
 }
 
 export function sortCommands(commands: ListedCommand[]): ListedCommand[] {
