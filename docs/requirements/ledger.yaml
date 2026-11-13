@@ -4254,7 +4254,7 @@ requirements:
     evidence:
       - "src/features/cheat-sheets/core/labels.test.ts#are what a label, the action list, the printout and the kneeboard pages say, with the game’s own name kept beside them"
       - "src/features/cheat-sheets/core/labels.test.ts#change what a page shows, so exported pages are known to be out of date"
-      - "src/features/cheat-sheets/core/labels.test.ts#are left out when a game has no guide: the racing games name their actions plainly already"
+      - "src/features/cheat-sheets/core/labels.test.ts#are left out when a game has no guide: the other racing games name their actions plainly already"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: labels, a pressed control lights up, notes, search and by action"
       - "artifacts/screens/cheat-sheets-sheet/02-pressed.png"
       - "artifacts/screens/cheat-sheets-sheet/06-by-action.png"
@@ -5360,6 +5360,135 @@ requirements:
       - "artifacts/screens/ai-assist-own-guide/03-delete-asks-first.png"
       - "artifacts/screens/ai-assist-own-guide/04-started.png"
       - "artifacts/screens/ai-assist-own-guide/05-needs-a-fix.png"
+
+  - id: AI-IRACING-001
+    title: Binding guides for iRacing by class of car, every action checked against iRacing's own list
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "RigReady ships a binding guide for each of six classes of iRacing car: GT3, GT4, LMDh and prototypes, formula and open-wheel (with DRS and push to pass), oval, and dirt. Each item has a plain title, what it does, when you use it, a tier (must, should, nice), where it belongs (on the wheel, pedals or shifter; a button box; the keyboard), and the iRacing actions it stands for, each by iRacing's own id with a plain label."
+      - "Each guide says it was written from general knowledge, not reviewed by a racing driver and not affiliated with iRacing."
+      - "A test checks every action id of every iRacing guide against iRacing's list of 369 actions recorded from a real control profile (fixtures/iracing-actions/baseline-2026-11.txt), and that list against what RigReady reads from the scenario's copy of that profile. An axis item names only actions that take an axis; every other item only actions that take a button or a key."
+      - "The guide format takes game: iracing and car: for an iRacing guide; a place or role of the other game, and input: axis in a DCS guide, are refused. One action has the same plain label in every iRacing guide."
+    notes:
+      - "2026-11-13: guides are by class, not per car: every car has the same 369 actions. Written from general knowledge on the day; Mark asked for them honestly marked as unreviewed, like the DCS guides."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/iracingGuides.test.ts#ships one guide per class: GT3, GT4, LMDh and prototypes, formula, oval and dirt"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#the recorded list is the 369 actions RigReady reads from the control profile"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#every action the %s guide names is in iRacing's list of actions"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#the %s guide puts each item where iRacing can bind it: an axis item on actions that take an axis, any other on actions that take a button or a key"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#the %s guide has every tier, a plan for the wheel and the pedals, explains each item and says it was not reviewed by a racing driver"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#the formula guide has DRS and push to pass, where iRacing has them"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#gives one action the same plain label in every guide, so the class shown changes no name"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#reads `car` as what the guide is for, and writes it back as `car`"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#refuses the other game's places and roles, and `input` in a DCS guide"
+      - "artifacts/screens/ai-assist-iracing/03-priorities.png"
+
+  - id: AI-IRACING-002
+    title: Choosing the game and the class on the Binding guide page; the entry is offered where DCS or iRacing is found
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "The Binding guide page has a Game picker listing the games found on this PC (DCS World, iRacing), and for iRacing a picker of the six classes followed by each car that has a control profile of its own in app.ini, named by its folder with '(own controls)'."
+      - "A class works on the bindings for all cars (the control profile app.ini names for all cars); a car works on its own profile. The page says which bindings and which profile it works on, with a link to them on the iRacing bindings page."
+      - "RigReady suggests a class for a car only from what its folder name says (gt3, gt4, gtp, lmdh, lmp1 to lmp3, dirt), says so on the page with the part of the name, and suggests nothing otherwise."
+      - "The Binding guide menu entry is shown where DCS World or iRacing is found. On a PC with neither the page says so; a link that asks for a game not on this PC says that game was not found."
+    notes:
+      - "2026-11-13: the iRacing bindings feature owns iRacing's files. The guide reaches them only through that feature's channels (overview, set, changePreview, change), called with the same validation a window gets (ctx.invoke), as its brief allowed; nothing in ai-assist imports the iRacing feature or reads its files."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/iracingService.test.ts#names iRacing as a game it has guides for, where iRacing is found"
+      - "src/features/ai-assist/core/iracingService.test.ts#lists the six classes, then each car with controls of its own; a car named for its class uses that guide"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#suggests a class only from what a car folder name says"
+      - "src/features/ai-assist/renderer/storeIracing.test.ts#the game chosen last wins, even while the one before it is still being read"
+      - "src/features/ai-assist/renderer/storeIracing.test.ts#a guide read for the game shown before is not put on screen after a switch"
+      - "tests/unit/offeredByGame.test.ts#the binding guide is the one menu entry about a game, and it is about DCS and iRacing"
+      - "tests/unit/offeredByGame.test.ts#a PC whose only game is iRacing: no DCS, and the racing pages and the binding guide are there"
+      - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: pick iRacing and a class, see the priorities, and an axis to bind in iRacing"
+      - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: a car whose folder name says GT3 uses that guide, and says why"
+      - "tests/e2e/offered-by-game.e2e.ts#a PC whose only game is iRacing: the binding guide in the menu for iRacing, no DCS page in the palette, and DCS by a link says it is not here"
+      - "artifacts/screens/ai-assist-iracing/01-game-picker.png"
+      - "artifacts/screens/ai-assist-iracing/02-class-picker.png"
+      - "artifacts/screens/ai-assist-iracing-car/01-suggested-class.png"
+
+  - id: AI-IRACING-003
+    title: "iRacing priorities: each item bound, not bound, or to be bound in iRacing itself"
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "The Priorities tab says each item's state in words, from iRacing's file: Bound (where it belongs: on a controller, or anywhere for a keyboard item), Not bound on a controller (Not bound for a keyboard item), or Bind in iRacing for an item RigReady cannot bind and that is not bound (an axis such as the clutch)."
+      - "Tiers are titled for racing ('Must have to drive and race'), and the plan per device is for the wheel rim, the pedals, the shifter and handbrake, the button box and the keyboard."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/iracingService.test.ts#shows a class guide against the bindings for all cars: bound, not bound, or bind in iRacing"
+      - "src/features/ai-assist/core/iracingGuides.test.ts#an iRacing item that RigReady cannot bind is to be bound in iRacing; DCS keeps 'not bound'"
+      - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: pick iRacing and a class, see the priorities, and an axis to bind in iRacing"
+      - "artifacts/screens/ai-assist-iracing/03-priorities.png"
+
+  - id: AI-IRACING-004
+    title: The iRacing walkthrough binds buttons and keys through the iRacing bindings feature; axes and hats are bound in iRacing
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Bind on an action listens for a controller button or a key. What would change is shown first by the iRacing bindings feature's own preview (now, after, for which cars, what else the button or key does, the file), and nothing is written until 'Save in iRacing's file', which writes through that feature: a backup first, into the control profile iRacing uses, read back, Undo on the Safety page."
+      - "An axis item, a hat switch and a key iRacing's key reader refuses (number pad, another layout) are never written: the item says 'Bind this in iRacing: Options, then Controls', a press says why. An axis item is never marked done by RigReady: it has Next, and its state comes from iRacing's file."
+      - "Nothing is saved while the simulator runs, or into a file that changed after it was shown. An action the guide shown does not name is refused, and an answer of the iRacing bindings feature in a form the guide does not know is an error, never a guess."
+    notes:
+      - "2026-11-13: one action at a time, not staged as for DCS: the iRacing bindings feature writes one binding per change, with its own preview and Undo entry. A key press reaches that feature as the window saw it (a keyPress binding added to its contract), so its one key table decides the key code."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/iracingService.test.ts#binds a wheel button: shown first, then written to the profile iRacing uses, with Undo"
+      - "src/features/ai-assist/core/iracingService.test.ts#binds a key as iRacing stores it, and says why a key it cannot bind is refused"
+      - "src/features/ai-assist/core/iracingService.test.ts#never binds an axis item, an action the guide does not name, or a file that changed since it was shown"
+      - "src/features/ai-assist/core/iracingService.test.ts#saves nothing while the simulator runs, and says why"
+      - "src/features/ai-assist/core/iracingService.test.ts#binds into a car’s own profile when the guide is for that car"
+      - "src/features/ai-assist/core/iracingService.test.ts#says so, and binds nothing, when the iRacing bindings answer in a form it does not know"
+      - "src/features/ai-assist/core/iracingService.test.ts#is told apart from DCS for staging: iRacing binds one action at a time"
+      - "src/features/ai-assist/renderer/storeIracing.test.ts#a listen stopped while the controllers start takes no key, and main is told to stop again"
+      - "src/features/ai-assist/renderer/storeIracing.test.ts#a key is taken only for an action of the item on screen"
+      - "src/features/ai-assist/renderer/storeIracing.test.ts#a save that ends after its dialog was closed leaves the screen alone, and still tells the other pages"
+      - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: the walkthrough binds a wheel button and a key into iRacing’s profile, shown first"
+      - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: pick iRacing and a class, see the priorities, and an axis to bind in iRacing"
+      - "artifacts/screens/ai-assist-iracing-bind/01-walkthrough-step.png"
+      - "artifacts/screens/ai-assist-iracing-bind/02-saved.png"
+      - "artifacts/screens/ai-assist-iracing/04-axis-item.png"
+
+  - id: AI-IRACING-005
+    title: Plain names from the iRacing guides on the iRacing bindings page and the cheat sheets, iRacing's id beside them
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "The binding guide registers plain labels for iRacing by iRacing's own action id: a car's own guide first for that car's bindings, then the class guides. The iRacing bindings page shows them as the action's name, iRacing's id beside it as always; the cheat sheets show them where they say more than the racing feature's own name. An action no guide names keeps its name."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/iracingService.test.ts#labels iRacing actions plainly on the iRacing bindings page and for the cheat sheets, iRacing’s id beside"
+      - "src/features/cheat-sheets/core/labels.test.ts#for iRacing, come from its class guides by iRacing’s own id, and only where they say more"
+      - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: the walkthrough binds a wheel button and a key into iRacing’s profile, shown first"
+      - "artifacts/screens/ai-assist-iracing-bind/03-bindings-page.png"
+
+  - id: AI-IRACING-006
+    title: A guide of your own, and one drafted by AI, for an iRacing car with controls of its own
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "A car with controls of its own can have a guide of its own, imported or started by hand (a starter on the pit limiter and the throttle), kept in the data folder and used instead of a suggested class guide. A DCS guide is refused for an iRacing car, with the reason; the six classes keep the shipped guides."
+      - "With the user's own key, AI help explains an action, answers a question and drafts a guide for such a car. Every action in a draft is checked against iRacing's list; items with an unknown action or the other game's place or role are dropped and counted; axis items are bound in iRacing. Suggest a setup is refused for iRacing with the reason. The preview and Settings say what is sent for iRacing, and it holds no device id and no name the owner gave."
+    notes:
+      - "2026-11-13: own and drafted guides are for cars with a control profile of their own (the cars the page lists). A guide of the user's own for a class, or for a car without its own profile, is not offered."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/iracingService.test.ts#starts a guide of your own for a car, and refuses one for a class or from another game"
+      - "src/features/ai-assist/core/iracingService.test.ts#drafts a guide for a car with AI, every action checked against iRacing’s list, axes left to iRacing"
+      - "src/features/ai-assist/core/service.test.ts#says apart what the binding guide sends and what the assistant sends, and where it goes"
+      - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: a car whose folder name says GT3 uses that guide, and says why"
+      - "artifacts/screens/ai-assist-iracing-car/02-own-guide.png"
 
   # ---------------------------------------------------------------------------
   # THE BUILT-IN ASSISTANT: app-wide, on the MCP catalogue and gate
@@ -6886,6 +7015,107 @@ requirements:
       - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: an iRacing with control profiles shows the profile it uses"
       - "artifacts/screens/iracing-bindings-profiles/01-profile.png"
       - "docs/research/iracing-bindings.md"
+
+  - id: BIND-IRACING-PROFILE-001
+    title: See iRacing's control profiles, the one for all cars, and which cars use which
+    job: configure
+    area: iracing-bindings
+    priority: p1
+    done_means:
+      - "On an iRacing with control profiles, the iRacing bindings page lists every folder under Documents/iRacing/profiles/controls, marks the one app.ini [ControlProfiles] Global names as for all cars, and gives each profile the cars whose own line names it (the first line of a car counts, case ignored). A profile without controls.cfg says so; a line naming a profile with no folder is listed as not on this PC."
+      - "The lines are read with the shared lookup in src/core/iracingControls.ts. Reading changes nothing. Without a profiles folder (an iRacing from before them) the list is not shown. When app.ini names a profile for all cars that is not there, the page shows no bindings but still lists the profiles, beside the name that is not there."
+    notes:
+      - "2026-11-13: built on the 12:27 shape from the owner's rig (cadillacctsvr=Test Profile CTSV before Global=Baseline), in the scenario iracing-bindings-profile-car. The list comes with the overview channel, which is read only; no new channel."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/copy.test.ts#lists every profile, the one for all cars, and the car that has its own"
+      - "src/features/iracing-bindings/core/copy.test.ts#a profile no car uses, a car on the profile for all cars, and a line naming no folder"
+      - "src/features/iracing-bindings/core/copy.test.ts#says nothing about profiles on an iRacing from before them"
+      - "src/features/iracing-bindings/core/copy.test.ts#an empty first line of a car counts, as in the shared lookup: a later line does not"
+      - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#iRacing bindings: the control profiles, and copying bindings from one into another"
+      - "artifacts/screens/iracing-profiles-copy/01-profiles.png"
+      - "artifacts/screens/iracing-profiles-copy/06-profile-not-there.png"
+
+  - id: BIND-IRACING-PROFILE-002
+    title: Copy bindings from one iRacing control profile into another
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "Choosing two profiles lists every action whose button or key differs, with what each profile has; a button or a key to copy is ticked, a copy that would clear a binding is listed and ticked only by hand, and Tick all and Tick none are there. Nothing is written by looking."
+      - "Copying writes only the ticked actions: each ends with the bytes +8 to +67 of the same action in the profile copied from, through the writer of BIND-IRACING-007, and keeps its own first two fields; every other byte of the file stays. The profile copied from is never written."
+      - "The file is shown before it is written; the write goes through FileStore with a backup, is one entry on the Safety page with Undo, and is read back before the page says what was copied. It is refused while iRacingSim64DX11.exe runs or cannot be ruled out, and when either profile's file, the actions chosen or the cars that use the profile copied into changed after it was shown."
+      - "An axis in either profile and the calibration in joyCalib.yaml are left as they are, with the reason on the row; so are an action the other profile lacks and a binding RigReady cannot read exactly. A profile is found by its name among the folders there, never as a path."
+    notes:
+      - "2026-11-13: axes and calibration decided out. An axis record goes with its range in joyCalib.yaml and iRacing calibrates an axis as it binds it; copying the record alone pairs it with the other profile's calibration, RigReady has no joyCalib.yaml writer, and no file with an axis record placed by RigReady has been loaded by iRacing. BIND-IRACING-008 holds that work."
+      - "2026-11-13: copying the two bindings of the 12:27 car profile into Baseline gives that car profile byte for byte, the file iRacing itself wrote. Not yet seen in iRacing: a profile RigReady copied into, driven. The buttons and keys copied are the kinds BIND-IRACING-007 proved on the rig."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/copy.test.ts#lists what differs and what copying does, and writes nothing"
+      - "src/features/iracing-bindings/core/copy.test.ts#copies the two bindings and gives byte for byte the profile iRacing wrote with them"
+      - "src/features/iracing-bindings/core/copy.test.ts#copies only the ticked actions, and clears where the profile copied from has nothing"
+      - "src/features/iracing-bindings/core/copy.test.ts#leaves an axis, its calibration and what it cannot read, and says why"
+      - "src/features/iracing-bindings/core/copy.test.ts#an action the other profile does not have yet is left, with the reason"
+      - "src/features/iracing-bindings/core/copy.test.ts#while iRacing runs: says so first and writes nothing"
+      - "src/features/iracing-bindings/core/copy.test.ts#writes nothing when the file changed after the copy was shown"
+      - "src/features/iracing-bindings/core/copy.test.ts#writes nothing when the profile copied from, or the actions chosen, changed after the review"
+      - "src/features/iracing-bindings/core/copy.test.ts#finds a profile by its name among the folders there, never as a path"
+      - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#iRacing bindings: the control profiles, and copying bindings from one into another"
+      - "artifacts/screens/iracing-profiles-copy/02-copy-choose.png"
+      - "artifacts/screens/iracing-profiles-copy/03-copy-review.png"
+      - "artifacts/screens/iracing-profiles-copy/04-copied.png"
+      - "artifacts/screens/iracing-profiles-copy/05-iracing-running.png"
+
+  - id: BIND-IRACING-PROFILE-003
+    title: A setup switches iRacing's control profile for all cars, and Stand down puts it back
+    job: fly
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "A setup item 'iRacing control profile' (check iracing-bindings.controlProfile, profile chosen by name in the setup editor) passes when app.ini [ControlProfiles] Global names that profile and it holds a controls.cfg, read with src/core/iracingControls.ts."
+      - "Its fix, run by Make ready, sets the value of Global= and nothing else in app.ini: every other line and byte, the line endings and the cars' own lines stay as they were. It writes through FileStore with a backup, names app.ini before and after, and notes the profile that was there."
+      - "Stand down puts that profile back, after the game is closed, unless app.ini names another profile by then; the file is then as it was before Make ready, byte for byte."
+      - "While iRacingSim64DX11.exe runs, the fix and the Stand down step fail with the reason and write nothing; Stand down keeps what to put back for the next time. A profile not on this PC gets no fix and the row says why. No profile folder is made or removed, and an app.ini without a profile in Global= is not changed. When app.ini cannot be read back after a switch, what to put back is kept, and Stand down checks app.ini before it writes."
+    notes:
+      - "2026-11-13: built and tested on copies of the owner's 12:27 files. iRacing starting on a Global= that RigReady wrote has not been seen on the rig yet; it is the five-minute rig check of this round."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/appIni.test.ts#sets Global= and keeps every other byte of the real file, CRLF and the car line included"
+      - "src/features/iracing-bindings/core/appIni.test.ts#putting the profile back gives the file again byte for byte"
+      - "src/features/iracing-bindings/core/appIni.test.ts#keeps padding, a comment after a tab and bytes that are not text"
+      - "src/features/iracing-bindings/core/appIni.test.ts#refuses a file without the line, and a name it cannot write exactly"
+      - "src/features/iracing-bindings/core/appIni.test.ts#never changes a byte outside the value, for 200 made-up files"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#Make ready sets it in app.ini, only that line changes, and Stand down puts the old one back"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#while iRacing runs, the step fails with the reason and app.ini is not written"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#a Stand down while iRacing still runs says so, keeps what to put back, and a later one does it"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#leaves a profile chosen in iRacing after Make ready as it is"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#a profile that is not on this PC: the check says so and no fix is offered"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#offers the profiles on this PC by name in the setup editor, the one in use marked"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#an empty Global= has nothing to put back: no switch, nothing noted, nothing written"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#when app.ini cannot be read back after the switch, Stand down still knows what to put back"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#a Stand down that wrote the old profile but could not read it back is finished by the next one"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#is not met when app.ini names the profile but iRacing has no bindings file in it"
+      - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#setups: a setup switches iRacing’s control profile at Make ready and back at Stand down"
+      - "artifacts/screens/iracing-profiles-switch/01-not-ready.png"
+      - "artifacts/screens/iracing-profiles-switch/02-iracing-running.png"
+      - "artifacts/screens/iracing-profiles-switch/03-made-ready.png"
+      - "artifacts/screens/iracing-profiles-switch/05-stood-down.png"
+      - "artifacts/screens/iracing-profiles-switch/06-setup-editor.png"
+
+  - id: BIND-IRACING-PROFILE-004
+    title: A binding just saved stays in sight under the page's filters
+    job: configure
+    area: iracing-bindings
+    priority: p3
+    done_means:
+      - "With 'Not bound', a search or a device filter on, the action whose binding was just saved stays listed with its new binding and the Saved mark, until the search, a filter or the set changes."
+    notes:
+      - "2026-11-13: seen on the owner's rig (12:1x): with 'Not bound' on, a row vanished the moment its binding was saved."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/renderer/rows.test.ts#keeps a row just saved in sight under \"Not bound\", with its new binding"
+      - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#iRacing bindings: a row just saved stays in sight under “Not bound”"
+      - "artifacts/screens/iracing-profiles-kept-row/01-kept-under-not-bound.png"
 
   - id: BIND-IRACING-CLEANUP-001
     title: Clear the iRacing bindings of controllers that are gone, never of one that is only unplugged
@@ -9290,6 +9520,7 @@ requirements:
     notes:
       - "2026-11-13: follow-up of the wording pass (findings 27 and 37), items 1 and 2 of its 'more than wording'. Until the first answer nothing about a game is offered, so on a PC with DCS the entry appears a moment after start rather than flashing away on a PC without. The Bindings game picker still lists every game with a bindings page, DCS included, and on a PC with no setup and no game chosen yet Bindings opens the first, DCS: not changed here."
       - "2026-11-13, later: the Bindings picker now follows the same list of games found (NAV-GAMES-002)."
+      - "2026-11-13, AI-IRACING-002: the binding guide has guides for iRacing too, so its entry declares games: ['dcs', 'iracing'] and is offered where either is found. A link to it on a PC with neither says 'Neither DCS World nor iRacing was found on this PC'; a link that asks for DCS (?game=dcs) on a PC whose only game is iRacing says 'DCS World was not found on this PC'. DCS World, DCS bindings and their tabs still need DCS."
     status: done
     evidence:
       - "src/shared/feature.test.ts#the menu has the binding guide only on a PC with DCS"
@@ -9299,9 +9530,9 @@ requirements:
       - "src/renderer/shell/games.test.ts#asks at once and again when the machine changed, until it is stopped"
       - "src/renderer/shell/games.test.ts#when the games cannot be read, or no feature knows, it says it cannot tell"
       - "tests/unit/offeredByGame.test.ts#a PC with no game: no binding guide in the menu, no DCS page in the palette"
-      - "tests/unit/offeredByGame.test.ts#a PC whose only game is iRacing: no DCS, and the racing pages are there"
+      - "tests/unit/offeredByGame.test.ts#a PC whose only game is iRacing: no DCS, and the racing pages and the binding guide are there"
       - "tests/unit/offeredByGame.test.ts#a PC with DCS, the owner’s rig or another: the binding guide and every DCS page"
-      - "tests/e2e/offered-by-game.e2e.ts#a PC whose only game is iRacing: no binding guide in the menu, no DCS page in the palette, and a link still opens the guide"
+      - "tests/e2e/offered-by-game.e2e.ts#a PC whose only game is iRacing: the binding guide in the menu for iRacing, no DCS page in the palette, and DCS by a link says it is not here"
       - "tests/e2e/offered-by-game.e2e.ts#with DCS the binding guide and the DCS pages are offered, and they arrive when DCS is installed while RigReady runs"
       - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
       - "artifacts/screens/offered-racing-pc/01-menu.png"

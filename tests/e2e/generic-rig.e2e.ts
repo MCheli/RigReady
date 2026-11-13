@@ -250,7 +250,7 @@ const PAGES: ConfigurePage[] = [
     name: 'ai-assist',
     route: '/configure/ai-assist',
     testId: 'ai-guide-page',
-    says: ['DCS World was not found on this PC'],
+    says: ['Neither DCS World nor iRacing was found on this PC'],
   },
   {
     name: 'diagnostics',
@@ -345,8 +345,8 @@ test('generic rig: every Configure page renders an honest empty state, never an 
   await shot('fly-no-setups');
 
   await page.getByTestId('mode-configure').click();
-  // Every page the navigation offers is in the list above. No DCS here, so no binding guide
-  // (NAV-GAMES-006): its page is still in the list, opened by its address.
+  // Every page the navigation offers is in the list above. No DCS and no iRacing here, so no
+  // binding guide (NAV-GAMES-006): its page is still in the list, opened by its address.
   const links = page.getByTestId('configure-nav').locator('a');
   await expect(links).toHaveCount(17);
   await expect(page.getByTestId('nav-ai-assist')).toHaveCount(0);

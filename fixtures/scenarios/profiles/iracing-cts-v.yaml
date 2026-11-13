@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: iracing-cts-v
+name: iRacing Cadillac CTS-V
+game: iracing
+createdAt: '2026-11-13T12:00:00.000Z'
+updatedAt: '2026-11-13T12:00:00.000Z'
+launch:
+  exe: C:\Program Files (x86)\iRacing\ui\iRacingUI.exe
+  args: []
+  cwd: C:\Program Files (x86)\iRacing\ui
+checks:
+  - id: c1
+    type: iracing-bindings.controlProfile
+    title: 'iRacing control profile: Test Profile CTSV'
+    required: true
+    params: { profile: Test Profile CTSV }
+    remediation:
+      type: iracing-bindings.setControlProfile
+      params: { profile: Test Profile CTSV }

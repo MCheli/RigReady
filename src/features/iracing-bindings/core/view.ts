@@ -402,6 +402,27 @@ function stateOf(
 }
 
 /**
+ * The set with the plain names another feature knows for iRacing's actions (the binding
+ * guide's, by iRacing's own id, through ctx.bindings.labels). Where there is none, the name
+ * stays this feature's own. A name is for reading: the id stays what is matched and shown.
+ */
+export function withPlainNames(
+  view: Result<SetView>,
+  labels: Record<string, string>
+): Result<SetView> {
+  if (!view.ok) return view;
+  const named = <T extends { id: string; name: string }>(action: T): T => {
+    const label = labels[action.id]?.trim();
+    return label ? { ...action, name: label } : action;
+  };
+  return ok({
+    ...view.value,
+    actions: view.value.actions.map(named),
+    shared: view.value.shared.map((s) => ({ ...s, actions: s.actions.map(named) })),
+  });
+}
+
+/**
  * Every action of one set with what is bound to it. With `withBytes`, the set as it would
  * be with those bytes in its file: how a change is shown before it is saved.
  */

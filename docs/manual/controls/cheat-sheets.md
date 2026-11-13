@@ -4,7 +4,7 @@ description: A drawing of each device with what every control does: press a cont
 order: 10
 ---
 
-**Configure > Cheat sheets** draws every controller with what each control does in the aircraft or car you choose. It works for every game whose bindings RigReady reads: DCS World, iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa. For DCS the labels come from the same effective bindings as the [DCS bindings page](../dcs/bindings.md), with the plain-language names of the [binding guide](../dcs/binding-guide-and-ai.md) where it has one; for a racing game they come from the bindings its own page reads (see [the other games](../games/index.md)).
+**Configure > Cheat sheets** draws every controller with what each control does in the aircraft or car you choose. It works for every game whose bindings RigReady reads: DCS World, iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa. For DCS the labels come from the same effective bindings as the [DCS bindings page](../dcs/bindings.md), with the plain-language names of the [binding guide](../dcs/binding-guide-and-ai.md) where it has one; for a racing game they come from the bindings its own page reads, and for iRacing the plain names of the [iRacing binding guides](../games/iracing-binding-guide.md) where they say more (see [the other games](../games/index.md)).
 
 Choose the aircraft or car under **Aircraft or car**. The page opens on the game of the [setup in use](../play/switching-setups.md).
 

@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { PLACES, ROLES, TIERS } from './pack';
+import { ChangePreviewSchema } from '../../../shared/changePreview';
+import { GUIDE_GAMES, PLACES, ROLES, TIERS } from './pack';
+
+export const GuideGameSchema = z.enum(GUIDE_GAMES);
 
 /** What crosses IPC for the binding guide and the AI help. */
 
@@ -33,7 +36,8 @@ export const ItemViewSchema = z.object({
   what: z.string(),
   when: z.string(),
   note: z.string().optional(),
-  status: z.enum(['bound', 'partial', 'unbound', 'missing']),
+  /** inGame: not bound, and only the game itself can bind it (an iRacing axis). */
+  status: z.enum(['bound', 'partial', 'unbound', 'inGame', 'missing']),
   actions: z.array(ActionViewSchema),
 });
 export type ItemView = z.infer<typeof ItemViewSchema>;
@@ -66,6 +70,8 @@ export const ProgressSchema = z.object({
 export type Progress = z.infer<typeof ProgressSchema>;
 
 export const GuideViewSchema = z.object({
+  /** dcs: an aircraft. iracing: a class of car, or a car with controls of its own. */
+  game: GuideGameSchema.default('dcs'),
   aircraftId: z.string(),
   aircraftName: z.string(),
   guide: z
@@ -75,6 +81,11 @@ export const GuideViewSchema = z.object({
       summary: z.string(),
       sources: z.array(z.string()),
       drafted: z.object({ by: z.string(), at: z.string() }).optional(),
+      /**
+       * An iRacing car without a guide of its own uses a class guide when its folder name says
+       * the class: the class, and the part of the name that says so.
+       */
+      suggested: z.object({ className: z.string(), token: z.string() }).optional(),
       roles: z.array(
         z.object({
           role: z.enum(ROLES),
@@ -96,23 +107,70 @@ export const GuideViewSchema = z.object({
   progress: ProgressSchema.omit({ staged: true }),
   staged: z.array(StagedViewSchema),
   controllers: z.array(z.object({ name: z.string(), role: z.string(), guid: z.string() })),
+  /** For iRacing: the bindings this is about, and whether RigReady may change them now. */
+  iracing: z
+    .object({
+      /** The iRacing bindings page's id of those bindings: "all", or "car:<folder>". */
+      set: z.string(),
+      /** "All cars", or the car's folder name. */
+      setName: z.string(),
+      /** The control profile those bindings are in, when iRacing keeps profiles. */
+      profile: z.string().optional(),
+      /** The simulator runs, so nothing is written until it closes. */
+      simRunning: z.boolean(),
+      notes: z.array(z.string()),
+    })
+    .optional(),
 });
 export type GuideView = z.infer<typeof GuideViewSchema>;
 
+/** The games the guide has guides for, and whether each is on this PC. */
+export const GuideGamesSchema = z.object({
+  games: z.array(z.object({ id: GuideGameSchema, name: z.string(), available: z.boolean() })),
+});
+export type GuideGames = z.infer<typeof GuideGamesSchema>;
+
 export const AircraftListSchema = z.object({
-  /** False when no game with readable bindings is on this PC. */
+  game: GuideGameSchema.default('dcs'),
+  /** False when the game, or its bindings, are not on this PC. */
   available: z.boolean(),
   gameName: z.string(),
+  /**
+   * The game is here but its bindings cannot be read yet, and why (iRacing before its
+   * controls were ever set up). A plain state, not an error.
+   */
+  problem: z.string().optional(),
   aircraft: z.array(
     z.object({
       id: z.string(),
       name: z.string(),
       hasUserBindings: z.boolean(),
       guide: z.enum(['shipped', 'drafted', 'own']).nullable(),
+      /** An iRacing car that uses a class guide: the class's name. */
+      uses: z.string().optional(),
     })
   ),
 });
 export type AircraftList = z.infer<typeof AircraftListSchema>;
+
+/** One iRacing binding as it would change, from the iRacing bindings feature's preview. */
+export const IracingReviewViewSchema = z.object({
+  actionId: z.string(),
+  label: z.string(),
+  /** Every car the change applies to: "All cars", "porsche992rgt3 only", or a shared profile's cars. */
+  forCars: z.string(),
+  before: z.string(),
+  after: z.string(),
+  /** Saving would change nothing: the action has exactly this already. */
+  same: z.boolean(),
+  /** What else the same button or key does in that set, by plain label. */
+  conflicts: z.array(z.object({ id: z.string(), name: z.string(), cameraEditor: z.boolean() })),
+  blocked: z.string().optional(),
+  preview: ChangePreviewSchema,
+  /** The file as the preview read it: handed back to bind, which refuses a file that changed. */
+  seen: z.string(),
+});
+export type IracingReviewView = z.infer<typeof IracingReviewViewSchema>;
 
 export const PlanSchema = z.object({
   summary: z.string(),

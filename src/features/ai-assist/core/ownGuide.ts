@@ -1,7 +1,6 @@
-import * as yaml from 'js-yaml';
 import type { BoundAction } from '../../../core/bindings';
 import type { RigError } from '../../../core/result';
-import { MAX_PATTERN, MAX_REPEATS, type Pack } from './pack';
+import { MAX_PATTERN, MAX_REPEATS, packText, type GuideGame, type Pack } from './pack';
 
 /**
  * A binding guide of the user's own: a file somebody shared, or one written by hand. It is
@@ -35,8 +34,10 @@ export function guideProblem(error: RigError): string {
  */
 export function starterGuide(
   aircraft: { id: string; name: string },
-  actions: BoundAction[]
+  actions: BoundAction[],
+  game: GuideGame = 'dcs'
 ): string {
+  if (game === 'iracing') return iracingStarter(aircraft, actions);
   const named = actions.filter((a) => a.name.trim().length > 0);
   const examples = [
     named.find((a) => a.kind === 'button' && a.editable),
@@ -63,6 +64,7 @@ export function starterGuide(
   }
   const pack: Pack = {
     format: 1,
+    game: 'dcs',
     aircraft: { id: aircraft.id, name },
     summary: `My own guide for the ${name}. Replace this with a few words on how you set it up.`,
     sources: ['Written by hand.'],
@@ -92,5 +94,97 @@ export function starterGuide(
     '# not fit, the page says what and where.',
     '',
   ].join('\n');
-  return `${head}${yaml.dump(pack, { lineWidth: 100 })}`;
+  return packText(pack, head);
+}
+
+/**
+ * The same for an iRacing car: a short guide on two real actions (a button to bind from
+ * RigReady, and the throttle, which is bound in iRacing), with the format explained above it.
+ * `aircraft.id` is the guide's id without "iracing:" in front ("car:<folder>").
+ */
+function iracingStarter(aircraft: { id: string; name: string }, actions: BoundAction[]): string {
+  const has = (id: string): boolean => actions.some((a) => a.id === id);
+  const name = oneLine(aircraft.name, 80) || aircraft.id;
+  const items: Pack['items'] = [];
+  if (has('PitSpeedLimiter')) {
+    items.push({
+      id: 'pit-limiter',
+      title: 'Pit speed limiter',
+      tier: 'must',
+      place: 'rim',
+      role: 'wheel',
+      need: 'all',
+      what: 'Replace this with what it does, in plain words.',
+      when: 'Replace this with when you need it.',
+      actions: [{ name: 'PitSpeedLimiter', label: 'Pit speed limiter' }],
+    });
+  }
+  if (has('Throttle')) {
+    items.push({
+      id: 'throttle',
+      title: 'Throttle',
+      tier: 'must',
+      place: 'rim',
+      role: 'pedals',
+      need: 'all',
+      input: 'axis',
+      what: 'Replace this with what it does, in plain words.',
+      when: 'Replace this with when you need it.',
+      actions: [{ name: 'Throttle', label: 'Throttle' }],
+    });
+  }
+  if (items.length === 0) {
+    const first = actions.find((a) => a.name.trim().length > 0);
+    if (first) {
+      items.push({
+        id: 'example-1',
+        title: oneLine(first.name, 80),
+        tier: 'must',
+        place: 'rim',
+        role: 'wheel',
+        need: 'all',
+        what: 'Replace this with what it does, in plain words.',
+        when: 'Replace this with when you need it.',
+        actions: [{ name: oneLine(first.name, 200), label: oneLine(first.name, 120) }],
+      });
+    }
+  }
+  const roles: Pack['roles'] = {};
+  for (const item of items) {
+    const plan = roles[item.role] ?? { summary: 'Replace this with what goes here.', items: [] };
+    plan.items.push(item.id);
+    roles[item.role] = plan;
+  }
+  const pack: Pack = {
+    format: 1,
+    game: 'iracing',
+    aircraft: { id: aircraft.id, name },
+    summary: `My own guide for ${name}. Replace this with a few words on how you set it up.`,
+    sources: ['Written by hand.'],
+    roles,
+    items,
+  };
+  const head = [
+    `# Your own iRacing binding guide for ${name}, kept in RigReady's data folder on this PC.`,
+    '# It leaves the PC only as part of a request for AI help for this car, if you ever send',
+    '# one: its summary and items are in that request, which is shown to you first.',
+    '#',
+    '# How to write it:',
+    '#   items    One entry per thing worth binding. Copy an example and change it.',
+    '#   id       Lower-case letters, digits and dashes. Each id once.',
+    '#   tier     must, should or nice.',
+    '#   place    rim (the wheel, pedals or shifter), panel (a button box) or keyboard.',
+    '#   role     wheel, pedals, shifter, panel or keyboard: the device it goes on.',
+    '#   need     all (every action listed should be bound) or any (one is enough).',
+    '#   input    axis, for an action that belongs on an axis (the pedals): bound in iRacing.',
+    '#   what     What it does, in plain words. "when" says when you need it. "note" is optional.',
+    "#   actions  iRacing's own id of an action, as the iRacing bindings page shows it beside",
+    '#            its name (BrakeBiasInc), with a plain label.',
+    '#   roles    For each device, a summary and the ids of the items that go on it.',
+    '#',
+    '# Save the file, then press "Read it again" on the Binding guide page. When something does',
+    '# not fit, the page says what and where.',
+    '',
+  ].join('\n');
+  return packText(pack, head);
 }

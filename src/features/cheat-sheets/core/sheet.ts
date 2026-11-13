@@ -231,7 +231,8 @@ export function buildSheet(inputs: SheetInputs): Sheet {
     for (const binding of device.bindings) {
       const id = controlIdFor(binding);
       // A label is the guide's wording for reading; the game's own name stays the identity.
-      const label = inputs.labels?.[binding.action]?.trim();
+      // By the game's own name (DCS), or by its id where that is the game's own name (iRacing).
+      const label = (inputs.labels?.[binding.action] ?? inputs.labels?.[binding.actionId])?.trim();
       const plain = label && label !== binding.action ? label : undefined;
       if (!id) {
         other.push({

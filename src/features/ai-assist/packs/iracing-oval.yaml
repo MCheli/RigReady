@@ -1,0 +1,241 @@
+format: 1
+game: iracing
+car:
+  id: oval
+  name: Oval
+summary: >-
+  Oval racing is close, fast and long: stock cars, trucks and IndyCar on ovals, in packs of cars
+  for hundreds of laps. You hardly shift once you are rolling, so the pedals and the steering
+  matter most, then push to talk for your spotter and the glances left and right. The car
+  adjustments of IndyCar and the stock cars go on the rim or a button box.
+sources:
+  - >-
+    Written from general knowledge of oval racing and of iRacing's controls. Not reviewed by a
+    racing driver. Not affiliated with or reviewed by iRacing.
+  - >-
+    Every action is named by iRacing's own id, as in its controls file; a test checks each one
+    against iRacing's list of 369 actions (November 2026).
+  - >-
+    Cars differ: the weight jacker and the anti-roll bars are for cars that let you change them
+    in the car, and a car without a control ignores its binding.
+roles:
+  wheel:
+    summary: >-
+      Push to talk, the pit limiter, the shifter and the glances left and right, then the black
+      box buttons and the tear-off.
+    items: [steering, push-to-talk, pit-limiter, shift, look-sideways, black-box, tear-off]
+  pedals:
+    summary: Throttle and brake.
+    items: [throttle, brake]
+  panel:
+    summary: >-
+      The adjustments you make during a run: brake bias, the weight jacker, the anti-roll bars
+      and the grille tape, and the starter.
+    items: [brake-bias, weight-jacker, anti-roll-bars, grille-tape, starter]
+  keyboard:
+    summary: Black box settings, force feedback strength and chat are fine on the keyboard.
+    items: [black-box-values, force-feedback, text-chat]
+items:
+  - id: steering
+    title: Steering
+    tier: must
+    place: rim
+    role: wheel
+    input: axis
+    what: >-
+      Turns the front wheels. iRacing stores the wheel as one axis in two halves, one for each
+      way of turning.
+    when: All the time.
+    note: >-
+      Bind it in iRacing: Options, then Controls, then Calibrate. Turn the wheel from lock to
+      lock when iRacing asks.
+    actions:
+      - { name: SteerLeft, label: Steer left }
+      - { name: SteerRight, label: Steer right }
+  - id: throttle
+    title: Throttle
+    tier: must
+    place: rim
+    role: pedals
+    input: axis
+    what: The accelerator pedal. On an oval, small and smooth changes are what keeps you fast.
+    when: All the time.
+    note: Bind and calibrate it in iRacing with the wheel, in the same steps.
+    actions:
+      - { name: Throttle, label: Throttle }
+  - id: brake
+    title: Brake
+    tier: must
+    place: rim
+    role: pedals
+    input: axis
+    what: The brake pedal. On the short tracks you brake every corner; on the big ovals rarely.
+    when: Short tracks, pit road and to avoid a crash.
+    note: Bind and calibrate it in iRacing. Press the pedal as hard as you will in a race.
+    actions:
+      - { name: Brake, label: Brake }
+  - id: push-to-talk
+    title: Push to talk
+    tier: must
+    place: rim
+    role: wheel
+    what: >-
+      Opens your microphone on iRacing's voice chat while you hold it, to talk to your spotter
+      and your team.
+    when: Through the race, and under caution.
+    actions:
+      - { name: VChatPushToTalk, label: Push to talk }
+  - id: pit-limiter
+    title: Pit speed limiter
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Holds the car at the pit road speed limit, on cars that have a limiter. In a car without
+      one, hold the speed by the pit road lights on the dash.
+    when: Turn it on before pit road and off when you leave it.
+    actions:
+      - { name: PitSpeedLimiter, label: Pit speed limiter }
+  - id: shift
+    title: Shift up and down
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Changes gear. Once you are up to speed you stay in top gear; you shift leaving pit road
+      and on restarts.
+    when: Leaving pit road, and on every restart.
+    note: With an H-pattern shifter, bind its gears in iRacing.
+    actions:
+      - { name: ShiftUp, label: Shift up }
+      - { name: ShiftDown, label: Shift down }
+  - id: look-sideways
+    title: Look left and right
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Turns your view to the side while you hold it, to see the car beside you before you move
+      down the track.
+    when: In the pack, every lap, if you drive on one screen without head tracking.
+    actions:
+      - { name: LookLeft, label: Look left }
+      - { name: LookRight, label: Look right }
+  - id: black-box
+    title: Black boxes
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Cycles through iRacing's black boxes: the panels for fuel, tyres, the pit stop, the
+      relative gaps and the car's settings.
+    when: Before every pit stop, to choose tyres and fuel.
+    actions:
+      - { name: BlackBoxShowNext, label: Next black box }
+      - { name: BlackBoxShowPrev, label: Previous black box }
+  - id: tear-off
+    title: Tear off visor
+    tier: nice
+    place: rim
+    role: wheel
+    what: Tears a layer off your helmet visor when it is dirty, so you can see again.
+    when: When oil, rubber or dirt make it hard to see.
+    actions:
+      - { name: TearOffVisor, label: Tear off visor }
+  - id: brake-bias
+    title: Brake bias
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      Moves the braking between the front and rear wheels, on cars that let you change it in the
+      car. The black box shows it as the share on the front; up raises it.
+    when: On the short tracks, as the tyres wear.
+    actions:
+      - { name: BrakeBiasInc, label: Brake bias up }
+      - { name: BrakeBiasDec, label: Brake bias down }
+  - id: weight-jacker
+    title: Weight jacker
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: >-
+      Moves weight across the car to change how it turns, on cars that have one, such as the
+      IndyCar on ovals.
+    when: As the tyres wear and the fuel burns off during a run.
+    actions:
+      - { name: WeightJackerRightInc, label: Weight jacker right up }
+      - { name: WeightJackerRightDec, label: Weight jacker right down }
+      - { name: WeightJackerLeftInc, label: Weight jacker left up }
+      - { name: WeightJackerLeftDec, label: Weight jacker left down }
+  - id: anti-roll-bars
+    title: Anti-roll bars
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: >-
+      Changes the front or rear anti-roll bar, which changes the balance through the turns, on
+      cars that let you change them in the car.
+    when: When the car starts to push or to get loose during a run.
+    actions:
+      - { name: AntiRollFrontInc, label: Front anti-roll bar up }
+      - { name: AntiRollFrontDec, label: Front anti-roll bar down }
+      - { name: AntiRollRearInc, label: Rear anti-roll bar up }
+      - { name: AntiRollRearDec, label: Rear anti-roll bar down }
+  - id: grille-tape
+    title: Grille tape
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      Changes the tape over the grille, on stock cars that let you. More tape is faster, but the
+      engine runs hotter.
+    when: For a qualifying run or a short run at the end of a race.
+    actions:
+      - { name: QTapeInc, label: Grille tape up }
+      - { name: QTapeDec, label: Grille tape down }
+  - id: starter
+    title: Starter
+    tier: nice
+    place: panel
+    role: panel
+    what: Starts the engine again after it stalled, so you can rejoin without a tow.
+    when: After a spin that stalls the engine.
+    actions:
+      - { name: Starter, label: Starter }
+  - id: black-box-values
+    title: Change a black box setting
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: >-
+      Moves through the lines of the black box on screen and changes a value, such as the fuel
+      to add or the tyres to change at the next stop.
+    when: Before a pit stop.
+    note: iRacing's own keys for these are the arrow keys and Space.
+    actions:
+      - { name: BlackBoxNext, label: Black box next control }
+      - { name: BlackBoxPrev, label: Black box previous control }
+      - { name: BlackBoxInc, label: Black box value up }
+      - { name: BlackBoxDec, label: Black box value down }
+  - id: force-feedback
+    title: Force feedback strength
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Makes the force feedback of the wheel stronger or weaker while you drive.
+    when: When the wheel feels too light or too heavy in the banking.
+    actions:
+      - { name: IncFFB, label: Force feedback stronger }
+      - { name: DecFFB, label: Force feedback weaker }
+  - id: text-chat
+    title: Text chat
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens the text chat to type a message.
+    when: Before the start or after the finish, not while driving.
+    actions:
+      - { name: TChatInitiate, label: Text chat }

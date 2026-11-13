@@ -1,0 +1,276 @@
+format: 1
+game: iracing
+car:
+  id: prototypes
+  name: LMDh and prototypes
+summary: >-
+  Prototypes are the fastest sports cars: the LMDh cars of the GTP class, and the LMP2 and LMP3
+  cars. They run long races in traffic, often at night, with settings you change all the time.
+  Bind the pedals, the paddles and the pit limiter first. Then brake bias and traction control,
+  the headlight flash and the black boxes on the rim; hybrid and engine settings can go on a
+  button box.
+sources:
+  - >-
+    Written from general knowledge of prototype racing and of iRacing's controls. Not reviewed
+    by a racing driver. Not affiliated with or reviewed by iRacing.
+  - >-
+    Every action is named by iRacing's own id, as in its controls file; a test checks each one
+    against iRacing's list of 369 actions (November 2026).
+  - >-
+    Cars differ: a car without a control (a hybrid setting on a car without a hybrid) ignores
+    its binding.
+roles:
+  wheel:
+    summary: >-
+      The paddles and the pit limiter, then brake bias, traction control, the headlight flash,
+      the black box buttons and push to talk: in a prototype you use all of them every lap.
+    items:
+      [
+        steering,
+        shift,
+        pit-limiter,
+        brake-bias,
+        traction-control,
+        headlights,
+        black-box,
+        push-to-talk,
+      ]
+  pedals:
+    summary: Throttle and brake.
+    items: [throttle, brake]
+  panel:
+    summary: >-
+      The second traction control setting, the hybrid, the engine map, the dash pages, the
+      wipers, the full-course yellow mode and the starter.
+    items: [traction-control-2, hybrid, engine-map, dash-page, wipers, full-course-yellow, starter]
+  keyboard:
+    summary: Black box settings, force feedback strength and chat are fine on the keyboard.
+    items: [black-box-values, force-feedback, text-chat]
+items:
+  - id: steering
+    title: Steering
+    tier: must
+    place: rim
+    role: wheel
+    input: axis
+    what: >-
+      Turns the front wheels. iRacing stores the wheel as one axis in two halves, one for each
+      way of turning.
+    when: All the time.
+    note: >-
+      Bind it in iRacing: Options, then Controls, then Calibrate. Turn the wheel from lock to
+      lock when iRacing asks.
+    actions:
+      - { name: SteerLeft, label: Steer left }
+      - { name: SteerRight, label: Steer right }
+  - id: throttle
+    title: Throttle
+    tier: must
+    place: rim
+    role: pedals
+    input: axis
+    what: The accelerator pedal.
+    when: All the time.
+    note: Bind and calibrate it in iRacing with the wheel, in the same steps.
+    actions:
+      - { name: Throttle, label: Throttle }
+  - id: brake
+    title: Brake
+    tier: must
+    place: rim
+    role: pedals
+    input: axis
+    what: >-
+      The brake pedal. Prototypes have a lot of downforce: brake hardest at the start of the
+      braking zone and ease off as the car slows.
+    when: Every corner.
+    note: Bind and calibrate it in iRacing. Press the pedal as hard as you will in a race.
+    actions:
+      - { name: Brake, label: Brake }
+  - id: shift
+    title: Shift up and down
+    tier: must
+    place: rim
+    role: wheel
+    what: The paddles behind the wheel.
+    when: Every corner and every straight.
+    actions:
+      - { name: ShiftUp, label: Shift up }
+      - { name: ShiftDown, label: Shift down }
+  - id: pit-limiter
+    title: Pit speed limiter
+    tier: must
+    place: rim
+    role: wheel
+    what: Holds the car at the pit lane speed limit. Speeding in the pit lane earns a penalty.
+    when: Turn it on before the pit entry line and off after the pit exit line.
+    actions:
+      - { name: PitSpeedLimiter, label: Pit speed limiter }
+  - id: brake-bias
+    title: Brake bias
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Moves the braking between the front and rear wheels. The black box shows it as the share
+      on the front; up raises it.
+    when: As the fuel burns off and the tyres wear, often several times a stint.
+    actions:
+      - { name: BrakeBiasInc, label: Brake bias up }
+      - { name: BrakeBiasDec, label: Brake bias down }
+  - id: traction-control
+    title: Traction control
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Changes how much the traction control cuts power when the rear wheels spin. Which way is
+      more depends on the car; the black box shows the setting.
+    when: When the tyres are cold or worn, at night, or in the wet.
+    actions:
+      - { name: TractionControlInc, label: Traction control up }
+      - { name: TractionControlDec, label: Traction control down }
+  - id: headlights
+    title: Flash headlights
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Flashes the headlights to tell a slower car you are about to pass. A prototype passes GT
+      cars all race long.
+    when: Every time you come up behind a slower class.
+    actions:
+      - { name: HeadlightFlash, label: Flash headlights }
+  - id: black-box
+    title: Black boxes
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Cycles through iRacing's black boxes: the panels for fuel, tyres, the pit stop, the
+      relative gaps and the car's settings.
+    when: Before every pit stop, and to check the gaps.
+    actions:
+      - { name: BlackBoxShowNext, label: Next black box }
+      - { name: BlackBoxShowPrev, label: Previous black box }
+  - id: push-to-talk
+    title: Push to talk
+    tier: should
+    place: rim
+    role: wheel
+    what: Opens your microphone on iRacing's voice chat while you hold it.
+    when: To talk to your team, above all in a team race.
+    actions:
+      - { name: VChatPushToTalk, label: Push to talk }
+  - id: traction-control-2
+    title: Second traction control setting
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      The second traction control setting, on cars that have two. The black box names what it
+      changes in that car.
+    when: When the first setting alone does not fix the wheelspin.
+    actions:
+      - { name: TractionControl2Inc, label: Second traction control up }
+      - { name: TractionControl2Dec, label: Second traction control down }
+  - id: hybrid
+    title: Hybrid settings
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: >-
+      Changes how the hybrid system uses its electric power and how much it recovers under
+      braking, on cars with a hybrid system.
+    when: When a race or a stint asks for more power or for saving energy.
+    actions:
+      - { name: MGUKDeployModeInc, label: Hybrid deploy mode up }
+      - { name: MGUKDeployModeDec, label: Hybrid deploy mode down }
+      - { name: MGUKRegenGainInc, label: Hybrid recovery up }
+      - { name: MGUKRegenGainDec, label: Hybrid recovery down }
+  - id: engine-map
+    title: Engine map
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      Changes the engine map, which iRacing calls the fuel mixture, on cars that have one. A
+      leaner map saves fuel for a longer stint.
+    when: When you need to save fuel to make the end of a stint.
+    actions:
+      - { name: FuelMixtureInc, label: Fuel mixture up }
+      - { name: FuelMixtureDec, label: Fuel mixture down }
+  - id: dash-page
+    title: Dash pages
+    tier: nice
+    place: panel
+    role: panel
+    what: Changes the page of the car's dashboard display.
+    when: To see fuel, tyre temperatures or the hybrid's charge on the dash.
+    actions:
+      - { name: DashPageInc, label: Next dash page }
+      - { name: DashPageDec, label: Previous dash page }
+  - id: wipers
+    title: Wipers
+    tier: nice
+    place: panel
+    role: panel
+    what: Wipes the windscreen in the rain, once or all the time.
+    when: When it rains.
+    need: any
+    actions:
+      - { name: TriggerWindshieldWipers, label: Wipe once }
+      - { name: ToggleWindshieldWipers, label: Wipers on or off }
+  - id: full-course-yellow
+    title: Full-course yellow mode
+    tier: nice
+    place: panel
+    role: panel
+    what: Turns the car's full-course yellow mode on and off, on cars and series that use one.
+    when: When race control calls a full-course yellow.
+    actions:
+      - { name: FCYToggle, label: Full-course yellow mode }
+  - id: starter
+    title: Starter
+    tier: nice
+    place: panel
+    role: panel
+    what: Starts the engine again after it stalled, so you can rejoin without a tow.
+    when: After a spin that stalls the engine.
+    actions:
+      - { name: Starter, label: Starter }
+  - id: black-box-values
+    title: Change a black box setting
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: >-
+      Moves through the lines of the black box on screen and changes a value, such as the fuel
+      to add at the next stop.
+    when: Before a pit stop.
+    note: iRacing's own keys for these are the arrow keys and Space.
+    actions:
+      - { name: BlackBoxNext, label: Black box next control }
+      - { name: BlackBoxPrev, label: Black box previous control }
+      - { name: BlackBoxInc, label: Black box value up }
+      - { name: BlackBoxDec, label: Black box value down }
+  - id: force-feedback
+    title: Force feedback strength
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Makes the force feedback of the wheel stronger or weaker while you drive.
+    when: When the wheel feels too light or clips in fast corners.
+    actions:
+      - { name: IncFFB, label: Force feedback stronger }
+      - { name: DecFFB, label: Force feedback weaker }
+  - id: text-chat
+    title: Text chat
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens the text chat to type a message.
+    when: Before the start or after the finish, not while driving.
+    actions:
+      - { name: TChatInitiate, label: Text chat }
