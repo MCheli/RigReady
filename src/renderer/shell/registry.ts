@@ -34,6 +34,11 @@ const GO_TO_ORDER = 1_000_000;
 
 const SECTIONS: NavEntry['section'][] = ['Setups', 'Games', 'Controls', 'Hardware', 'RigReady'];
 const navRank = (entry: NavEntry): number => SECTIONS.indexOf(entry.section) * 10_000 + entry.order;
+/**
+ * Where a feature stands that has no navigation entry and is not Play: after everything
+ * the navigation leads to. Only Play comes first.
+ */
+const AFTER_NAVIGATION = SECTIONS.length * 10_000;
 
 /** "assetto-corsa" -> "Assetto corsa". */
 export function humanize(segment: string): string {
@@ -87,10 +92,12 @@ export function areaOf(manifest: FeatureManifest | undefined, feature: string) {
   const first = [...(manifest?.nav ?? [])].sort((a, b) => navRank(a) - navRank(b))[0];
   if (first) return { title: first.title, order: navRank(first), icon: first.icon };
   const titled = flatten(manifest?.routes ?? []).find((r) => r.title);
-  // A feature without a navigation entry of its own comes first. Where its pages are those
-  // of Play mode, it stands under the name of the mode.
-  const title = titled?.mode === 'fly' ? MODE_NAMES.fly : (titled?.title ?? humanize(feature));
-  return { title, order: -1, icon: undefined };
+  // The feature whose pages are those of Play mode has no navigation entry and comes first,
+  // under the name of the mode.
+  if (titled?.mode === 'fly') return { title: MODE_NAMES.fly, order: -1, icon: undefined };
+  // Any other feature without a navigation entry stands after the ones that have one: the
+  // first row of the palette is Play's, whatever a new feature folder adds.
+  return { title: titled?.title ?? humanize(feature), order: AFTER_NAVIGATION, icon: undefined };
 }
 
 /**
@@ -145,7 +152,13 @@ export function pageCommands(manifests: FeatureManifest[]): ListedCommand[] {
         to: route.path,
         group: GO_TO,
         groupOrder: GO_TO_ORDER,
-        order: parent ? navRank(parent) * 100 + position : -100 + position,
+        // Play's pages lead. A page of Configure that no navigation entry leads to comes
+        // after the pages of the navigation.
+        order: parent
+          ? navRank(parent) * 100 + position
+          : play
+            ? -100 + position
+            : AFTER_NAVIGATION * 100 + position,
         kind: 'page',
       });
     }
