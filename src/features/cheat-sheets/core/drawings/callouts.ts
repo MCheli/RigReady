@@ -9,10 +9,12 @@ import type { DeviceDrawing, PhysicalControl, Side } from './silhouette';
  *
  * One label block per physical control (a hat is one block with a row per direction),
  * in a column left and right of the drawing (and a row above and below it, for a bezel),
- * each with a one-bend leader line to the control. Blocks on a side are ordered the way
- * their controls are down the drawing and stacked so that each sits as close to its
- * control as the others allow; where two leaders would still cross, their blocks trade
- * places. Pure arithmetic in canvas units: nothing here asks a browser.
+ * each with a leader line to the control: one bend, or two for a block of the bottom row
+ * that sits under a column. Blocks on a side are ordered the way their controls are down
+ * the drawing and stacked so that each sits as close to its control as the others allow;
+ * where two leaders would still cross, their blocks trade places. A column starts below
+ * any leader of the top row that passes over it. Pure arithmetic in canvas units:
+ * nothing here asks a browser.
  */
 
 export const CANVAS_WIDTH = 1000;
@@ -63,6 +65,57 @@ export interface Row {
   /** A game default, or an input nothing is bound to: drawn muted. */
   dim: boolean;
   note?: boolean;
+  /**
+   * Inputs with nothing bound, set side by side by their short names instead of a row
+   * each ("45 46 47 48 49"): a run of free buttons takes a line or two, and each one is
+   * still on the page to light when it is pressed.
+   */
+  cells?: Cell[];
+}
+
+/** One input in a row of cells. */
+export interface Cell {
+  id: string;
+  /** "45", "RX", "H1↗". */
+  text: string;
+}
+
+/** How wide one cell is at a text size: room for "128" or "H1↗". */
+export const cellWidth = (size: number): number => Math.round(size * 2.6 * 10) / 10;
+
+/** How many cells fit side by side in a width. */
+export const cellsPerLine = (width: number, size: number): number =>
+  Math.max(1, Math.floor(width / cellWidth(size)));
+
+/** The cells of a row broken into lines for a width, each line as its text. */
+function cellLines(cells: Cell[], width: number, size: number): string[] {
+  const per = cellsPerLine(width, size);
+  const lines: string[] = [];
+  for (let from = 0; from < cells.length; from += per) {
+    lines.push(
+      cells
+        .slice(from, from + per)
+        .map((cell) => cell.text)
+        .join(' ')
+    );
+  }
+  return lines;
+}
+
+/** A row of cells for inputs nothing is bound to. */
+function freeRow(ids: string[]): Row {
+  const cells = ids.map((id) => ({ id, text: controlShort(id) }));
+  return { id: '', text: cells.map((cell) => cell.text).join(' '), lines: [], dim: true, cells };
+}
+
+/** Every input a device says it has: its axes, each direction of each hat, its buttons. */
+export function reportedIds(reports: ReportedShape): string[] {
+  const ids = reports.axes.map((axis) => `axis:${axis}`);
+  for (let hat = 1; hat <= reports.hats; hat++) {
+    for (const direction of HAT_DIRECTIONS) ids.push(`hat:${hat}:${direction}`);
+  }
+  for (let button = 1; button <= reports.buttons; button++) ids.push(`button:${button}`);
+  return ids;
 }
 
 export interface Callout {
@@ -78,7 +131,7 @@ export interface Callout {
   size: number;
   /** The control on the canvas. */
   anchor: Point;
-  /** From the control to the block: anchor, bend, block edge. */
+  /** From the control to the block: anchor, one bend or two, block edge. */
   leader: Point[];
   /** Nothing bound on any of its inputs. */
   empty: boolean;
@@ -97,7 +150,10 @@ export interface CalloutPlan {
   /** Absent for a device with no drawing: its labels are a list of blocks (`planList`). */
   placed?: PlacedDrawing;
   callouts: Callout[];
-  /** Bound inputs that are not on the drawing, listed under it. */
+  /**
+   * Inputs that are not on the drawing, listed under it: the bound ones always, and with
+   * `showEmpty` the free ones the device reports too (one row of cells, last).
+   */
   extras: Row[];
   /**
    * How far the label columns run on below the drawing, in canvas units. Past the
@@ -123,6 +179,12 @@ export interface PlanOptions {
    * label off, but each control that has an answer must still be on the picture to light).
    */
   listed?: string[];
+  /**
+   * What the device says it has. With `showEmpty`, every input it reports that the
+   * drawing does not place and nothing is bound to is listed under the drawing too, so
+   * that a press on the real device always has something on the page to light.
+   */
+  reports?: ReportedShape;
 }
 
 /** Text wrapped at spaces to a width; a word wider than the box is broken, as a browser would. */
@@ -163,20 +225,33 @@ export function wrapText(text: string, width: number, size: number): string[] {
   return kept;
 }
 
-/** "37–40" for buttons 37, 38, 39, 40; "H1" for a hat; "RX, RY, 26" otherwise. */
+/**
+ * What the control reports as, short enough for the head of its label: "37–40" for
+ * buttons 37 to 40, "H1" for a hat, "H1, 19" for a hat that also presses, and
+ * "RX, RY, 26–30" for a mini-stick that is two axes and five buttons. Axes come first,
+ * then hats, then the buttons in order, each run of neighbours as one range.
+ */
 export function numbersOf(control: PhysicalControl): string {
-  const ids = control.inputs.map((input) => input.id);
-  if (ids.length === 0) return '';
-  const buttons = ids.map((id) => /^button:(\d+)$/.exec(id)?.[1]).map(Number);
-  if (ids.length > 1 && buttons.every((n) => !Number.isNaN(n))) {
-    const sorted = [...buttons].sort((a, b) => a - b);
-    const consecutive = sorted.every((n, i) => i === 0 || n === sorted[i - 1]! + 1);
-    if (consecutive) return `${sorted[0]}–${sorted[sorted.length - 1]}`;
-    return sorted.join(', ');
+  const others: string[] = [];
+  const hats: string[] = [];
+  const buttons: number[] = [];
+  for (const { id } of control.inputs) {
+    const button = /^button:(\d+)$/.exec(id);
+    const hat = /^hat:(\d+):/.exec(id);
+    if (button) buttons.push(Number(button[1]));
+    else if (hat) {
+      if (!hats.includes(`H${hat[1]}`)) hats.push(`H${hat[1]}`);
+    } else others.push(controlShort(id));
   }
-  const hat = /^hat:(\d):/.exec(ids[0]!);
-  if (hat && ids.every((id) => id.startsWith(`hat:${hat[1]}:`))) return `H${hat[1]}`;
-  return ids.map(controlShort).join(', ');
+  buttons.sort((a, b) => a - b);
+  const runs: string[] = [];
+  for (let from = 0; from < buttons.length;) {
+    let to = from;
+    while (to + 1 < buttons.length && buttons[to + 1] === buttons[to]! + 1) to += 1;
+    runs.push(to > from ? `${buttons[from]}–${buttons[to]}` : `${buttons[from]}`);
+    from = to + 1;
+  }
+  return [...others, ...hats, ...runs].join(', ');
 }
 
 function rowsFor(
@@ -364,6 +439,11 @@ function placeColumn(
  * Lays a row of blocks above or below the drawing, left to right as their controls are:
  * each as close under (or over) its control as its neighbours allow, none wider than a
  * column, so a lone block sits by its control instead of across the page.
+ *
+ * `clear` is given when the columns at the sides run on below the drawing and the row
+ * sits under them. A leader then goes straight down from its control to that height
+ * before it turns to its block: a slanted line from the control would cut across the
+ * leaders of the last blocks of a column.
  */
 function placeRow(
   callouts: Callout[],
@@ -371,7 +451,8 @@ function placeRow(
   left: number,
   width: number,
   y: number,
-  maxWidth: number
+  maxWidth: number,
+  clear?: number
 ): number {
   const order = [...callouts].sort((a, b) => a.anchor.x - b.anchor.x);
   const w = Math.min(maxWidth, (width - (order.length - 1) * GAP) / order.length);
@@ -390,7 +471,9 @@ function placeRow(
       const cx = Math.max(c.x + 12, Math.min(c.x + w - 12, c.anchor.x));
       const edge = side === 'top' ? c.y + c.h : c.y;
       const bend = side === 'top' ? edge + STUB : edge - STUB;
-      c.leader = [c.anchor, { x: cx, y: bend }, { x: cx, y: edge }];
+      const down =
+        clear !== undefined && Math.abs(cx - c.anchor.x) > 0.5 ? [{ x: c.anchor.x, y: clear }] : [];
+      c.leader = [c.anchor, ...down, { x: cx, y: bend }, { x: cx, y: edge }];
     });
     return crossings(list);
   });
@@ -403,7 +486,9 @@ function measure(callout: Callout, scale: number): void {
   const size = ROW_SIZE * scale;
   let h = PAD + HEAD_SIZE * scale * LINE_HEIGHT + 3;
   for (const row of callout.rows) {
-    row.lines = wrapText(row.text, inner, size);
+    row.lines = row.cells
+      ? cellLines(row.cells, callout.w - 2 * PAD, size)
+      : wrapText(row.text, inner, size);
     h += row.lines.length * size * LINE_HEIGHT + 2;
   }
   callout.h = Math.round((h + PAD) * 10) / 10;
@@ -507,18 +592,29 @@ export function planCallouts(
   if (topRowH > 0) {
     placeRow(on('top'), 'top', MARGIN, CANVAS_WIDTH - 2 * MARGIN, MARGIN, ROW_MAX_WIDTH);
   }
-  const columnTop = drawY;
-  const columnBottom = drawY + drawH;
-  if (hasLeft) placeColumn(on('left'), 'left', MARGIN, columnW, columnTop, columnBottom);
-  if (hasRight) {
-    placeColumn(
-      on('right'),
-      'right',
-      CANVAS_WIDTH - MARGIN - columnW,
-      columnW,
-      columnTop,
-      columnBottom
+  // A block of the row above that sits over a column sends its leader down across the
+  // top corner of that column: the column starts below the place where the leader
+  // leaves it, so no leader runs behind a block.
+  const columnTop = (edge: number, over: (x: number) => boolean): number =>
+    Math.max(
+      drawY,
+      ...on('top').map((c) => {
+        const [anchor, bend] = c.leader;
+        if (!anchor || !bend || !over(bend.x) || over(anchor.x)) return drawY;
+        const part = (bend.x - edge) / (bend.x - anchor.x);
+        return bend.y + (anchor.y - bend.y) * part + GAP;
+      })
     );
+  const leftEdge = MARGIN + columnW;
+  const rightEdge = CANVAS_WIDTH - MARGIN - columnW;
+  const columnBottom = drawY + drawH;
+  if (hasLeft) {
+    const top = columnTop(leftEdge, (x) => x < leftEdge);
+    placeColumn(on('left'), 'left', MARGIN, columnW, top, columnBottom);
+  }
+  if (hasRight) {
+    const top = columnTop(rightEdge, (x) => x > rightEdge);
+    placeColumn(on('right'), 'right', rightEdge, columnW, top, columnBottom);
   }
   const sideBottom = Math.max(
     columnBottom,
@@ -527,9 +623,21 @@ export function planCallouts(
   const overflow = Math.round(sideBottom - columnBottom);
   let bottom = Math.max(columnBottom, ...callouts.map((c) => c.y + c.h));
   if (on('bottom').length > 0) {
-    const y = bottom + STUB + 16;
+    // Under columns that run on below the drawing, the row's leaders drop straight to
+    // just under the last block of a column and turn there, so they need a little more room.
+    const under = overflow > 0;
+    const y = bottom + STUB + 16 + (under ? 12 : 0);
     bottom =
-      y + placeRow(on('bottom'), 'bottom', MARGIN, CANVAS_WIDTH - 2 * MARGIN, y, ROW_MAX_WIDTH);
+      y +
+      placeRow(
+        on('bottom'),
+        'bottom',
+        MARGIN,
+        CANVAS_WIDTH - 2 * MARGIN,
+        y,
+        ROW_MAX_WIDTH,
+        under ? sideBottom + 8 : undefined
+      );
   }
 
   // What is bound but has no place on the drawing: a list under it, never left out.
@@ -573,13 +681,24 @@ export function planCallouts(
       });
     }
   }
+  // With the free controls shown, what the device reports and nothing above accounts for:
+  // not drawn, nothing bound. One row of cells, so a press on any of them lights.
+  if (showEmpty && options.reports) {
+    const shown = new Set(extras.map((row) => row.id));
+    const free = reportedIds(options.reports).filter((id) => !drawn.has(id) && !shown.has(id));
+    if (free.length > 0) extras.push(freeRow(free.sort(compareControlIds)));
+  }
   let extrasBox: CalloutPlan['extrasBox'];
   if (extras.length > 0) {
     const columns = extras.length > 8 ? 3 : extras.length > 3 ? 2 : 1;
     const w = CANVAS_WIDTH - 2 * MARGIN;
     const colW = (w - (columns - 1) * GAP) / columns;
     const size = ROW_SIZE * scale;
-    for (const row of extras) row.lines = wrapText(row.text, colW - 2 * PAD - MARK - 6, size);
+    for (const row of extras) {
+      row.lines = row.cells
+        ? cellLines(row.cells, colW - 2 * PAD, size)
+        : wrapText(row.text, colW - 2 * PAD - MARK - 6, size);
+    }
     const perColumn = Math.ceil(extras.length / columns);
     let tallest = 0;
     for (let c = 0; c < columns; c++) {
@@ -643,8 +762,8 @@ export interface NamedControl {
  * block per group of controls, packed into two columns. For a device whose controls are
  * known (`named`), a block per physical control ("H2 TMS hat · 7–10"); for the rest, and
  * any input the names leave out, the axes, each hat, and buttons in runs of eight. Every
- * input that does something is on it; with `showEmpty`, the free ones too, and a run of
- * buttons with nothing on any of them is one line.
+ * input that does something is on it; with `showEmpty`, the free ones too, a run of
+ * buttons with nothing on any of them as one row of their numbers side by side.
  */
 export function planList(
   controls: SheetControl[],
@@ -690,17 +809,28 @@ export function planList(
     const ids = HAT_DIRECTIONS.map((d) => ({ id: `hat:${hat}:${d}`, tag: HAT_ARROWS[d] })).filter(
       (input) => !named.has(input.id)
     );
-    // A known hat that names only four directions still shows a diagonal that is bound.
-    const shown = ids.length === HAT_DIRECTIONS.length ? ids : ids.filter((i) => used(i.id));
+    // A known hat that names only four directions still shows a diagonal that is bound,
+    // and with the free controls shown every other direction too, so a press there lights.
+    const shown =
+      ids.length === HAT_DIRECTIONS.length || showEmpty ? ids : ids.filter((i) => used(i.id));
     if (shown.length > 0) groups.push(listControl(`hat-${hat}`, `Hat ${hat}`, shown));
   }
   const idle: number[] = [];
+  /** The buttons of each block that is a run with nothing bound, by the block's id. */
+  const free = new Map<string, string[]>();
   const flushIdle = (): void => {
     if (idle.length === 0) return;
     const first = idle[0]!;
     const last = idle[idle.length - 1]!;
     const name = first === last ? `Button ${first}` : `Buttons ${first}–${last}`;
-    if (showEmpty) groups.push(listControl(`buttons-${first}`, name, []));
+    if (showEmpty) {
+      const block = listControl(`buttons-${first}`, name, []);
+      groups.push(block);
+      free.set(
+        block.id,
+        idle.map((n) => `button:${n}`)
+      );
+    }
     idle.length = 0;
   };
   for (let first = 1; first <= buttons; first += LIST_RUN) {
@@ -732,9 +862,9 @@ export function planList(
   const callouts: Callout[] = [];
   for (const control of groups) {
     let rows = rowsFor(control, byId, showEmpty);
-    if (control.inputs.length === 0) {
-      rows = [{ id: '', text: 'nothing bound', lines: [], dim: true }];
-    }
+    // A run with nothing bound: its numbers side by side, each one there to light.
+    const run = free.get(control.id);
+    if (run) rows = [freeRow(run)];
     if (rows.length === 0) continue;
     const callout: Callout = {
       control,

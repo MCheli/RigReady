@@ -12,6 +12,7 @@ import { fitFont, renderDeviceSvg, THEMES } from './render';
 import {
   actionIndex,
   deviceFingerprint,
+  deviceLabels,
   physicalLabels,
   summaryActions,
   type Sheet,
@@ -148,7 +149,7 @@ describe('the F/A-18C sheet from the recorded bindings', () => {
         device: 'Stick',
         control: 'button:20',
         controlName: 'Button 20',
-        physical: 'Weapon release',
+        physical: 'Red button',
         modifiers: [],
       },
     ]);
@@ -177,6 +178,39 @@ describe('the F/A-18C sheet from the recorded bindings', () => {
     const takeoff = physicalLabels(byTitle(sheet, 'WinWing F18 TAKEOFF PANEL 2').layout);
     expect(takeoff.get('button:5')).toBe('FLAP AUTO');
     expect(physicalLabels(byTitle(sheet, 'Stick').layout).get('hat:1:U')).toBe('TRIM hat ↑');
+  });
+
+  it('names a control of a drawn device as its drawing does, with the name the user gave it', async () => {
+    const running = await start();
+    const sheet = await running.invoke<Sheet>('cheat-sheets:sheet', HORNET);
+    const byProduct = (all: Sheet, productId: string) =>
+      deviceLabels(all.devices.find((d) => d.productId === productId)!);
+    const stick = byProduct(sheet, 'BEA8');
+    expect(stick.get('button:20')).toBe('Red button');
+    expect(stick.get('button:4')).toBe('Trigger 1st');
+    expect(stick.get('hat:1:U')).toBe('TRIM hat ↑');
+    expect(byProduct(sheet, 'BD26').get('axis:RY')).toBe('Left throttle travel');
+    expect(byProduct(sheet, 'BF06').get('button:22')).toBe('RTN / SEQ switch ↑');
+    expect(byProduct(sheet, 'BF06').get('button:23')).toBe('RTN / SEQ switch SEQ →');
+    expect(byProduct(sheet, 'BF05').get('button:14')).toBe('PROBE switch EXTEND');
+    expect(byProduct(sheet, 'BEE1').get('button:42')).toBe('OSB 1');
+    // An input the drawing does not place has no name: nothing is made up for it.
+    expect(byProduct(sheet, 'BD26').get('button:45')).toBeUndefined();
+    // A device without a drawing keeps the names of its cards.
+    expect(deviceLabels(byTitle(sheet, 'Pedals')).get('axis:Z')).toBe('Rudder');
+
+    await running.invoke('cheat-sheets:saveLayout', {
+      vendorId: '4098',
+      productId: 'BEA8',
+      layout: {
+        ...builtinLayoutFor('4098', 'BEA8')!,
+        drawing: { names: { 'red-button': 'Weapon release' } },
+      },
+    });
+    const renamed = await running.invoke<Sheet>('cheat-sheets:sheet', HORNET);
+    expect(byProduct(renamed, 'BEA8').get('button:20')).toBe('Weapon release');
+    const release = actionIndex(renamed).find((e) => e.action === 'Weapon Release Button')!;
+    expect(release.places[0]!.physical).toBe('Weapon release');
   });
 
   it('keeps a note on a control, shows it on the sheet and forgets it when cleared', async () => {
@@ -473,7 +507,7 @@ describe('the picture', () => {
     const icp: SheetDevice = { ...stick, layout: builtinLayoutFor('4098', 'BF06')!, controls: [] };
     const nothing = renderDeviceSvg(icp, { theme: 'dark', showEmpty: false });
     expect(nothing).not.toContain('class="cs-ctl');
-    expect(nothing).not.toContain('DCS switch');
+    expect(nothing).not.toContain('RTN / SEQ switch');
     expect(nothing).not.toContain('Thumbwheels');
     expect(renderDeviceSvg(icp, { theme: 'dark' })).toContain('Thumbwheels');
 
@@ -571,7 +605,7 @@ describe('pages', () => {
       stamp: '2026-10-03',
     });
     expect(list).toContain('Pickle: release weapon');
-    expect(list).toContain('<b>Weapon release <span>(Button 20)</span></b>');
+    expect(list).toContain('<b>Red button <span>(Button 20)</span></b>');
   });
 });
 

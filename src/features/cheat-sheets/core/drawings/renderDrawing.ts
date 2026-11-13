@@ -10,7 +10,16 @@ import {
   type ThemeName,
 } from '../render';
 import type { SheetControl } from '../sheet';
-import { LAYOUT_METRICS, MARK, type Callout, type CalloutPlan, type Row } from './callouts';
+import {
+  cellsPerLine,
+  cellWidth,
+  LAYOUT_METRICS,
+  MARK,
+  type Callout,
+  type CalloutPlan,
+  type Cell,
+  type Row,
+} from './callouts';
 import type { DeviceDrawing, PhysicalControl } from './silhouette';
 
 /**
@@ -118,6 +127,33 @@ function rowSvg(
 }
 
 /**
+ * A row of cells: inputs nothing is bound to, side by side by their short names, each
+ * one an element of its own for the page to light when it is pressed.
+ */
+function cellsSvg(
+  cells: Cell[],
+  x: number,
+  y: number,
+  w: number,
+  size: number
+): { svg: string; h: number } {
+  const per = cellsPerLine(w, size);
+  const wide = cellWidth(size);
+  const pitch = size * LINE_HEIGHT;
+  const out = cells.map((cell, i) => {
+    const left = x - 3 + (i % per) * wide;
+    const top = y + Math.floor(i / per) * pitch;
+    return (
+      `<g class="cs-ctl cs-empty" data-control="${escapeHtml(cell.id)}">` +
+      `<title>${escapeHtml(`${controlName(cell.id)}: nothing bound`)}</title>` +
+      `<rect class="cs-row" x="${n(left)}" y="${n(top + 1)}" width="${n(wide - 3)}" height="${n(pitch - 1)}" rx="3"/>` +
+      `<text class="cs-row-text cs-dim" text-anchor="middle" x="${n(left + (wide - 3) / 2)}" y="${n(top + size)}" font-size="${n(size)}">${escapeHtml(cell.text)}</text></g>`
+    );
+  });
+  return { svg: out.join(''), h: Math.ceil(cells.length / per) * pitch + 2 };
+}
+
+/**
  * Rows stacked down from y, the rows of one input (its plain press and the modifier
  * variants) in one element: the one the page lights when the control is pressed, with
  * the tooltip that names both the plain and the game's wording.
@@ -134,6 +170,14 @@ function rowsSvg(
   const out: string[] = [];
   let top = y;
   for (let i = 0; i < rows.length;) {
+    const cells = rows[i]!.cells;
+    if (cells) {
+      const made = cellsSvg(cells, x, top, w, size);
+      out.push(made.svg);
+      top += made.h;
+      i += 1;
+      continue;
+    }
     const id = rows[i]!.id;
     const own: Row[] = [];
     while (i < rows.length && rows[i]!.id === id) own.push(rows[i++]!);

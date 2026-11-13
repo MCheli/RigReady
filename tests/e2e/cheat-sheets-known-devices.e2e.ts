@@ -3,11 +3,13 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './harness';
 
 /**
- * The popular controllers RigReady ships a drawing of besides the owner's WinWing set:
- * the Thrustmaster HOTAS Warthog stick and throttle, the T.16000M and the Saitek X52 Pro,
- * plugged into the recorded rig. Each sheet is the drawing with a label block per
- * physical control, named the way the maker names them, with DCS's own Hornet defaults
- * for the device on them; each has a kneeboard page by day and by night.
+ * The popular controllers RigReady knows besides the owner's WinWing set: the
+ * Thrustmaster HOTAS Warthog stick and throttle, the T.16000M and the Saitek X52 Pro,
+ * plugged into the recorded rig. A device has a drawing only where the picture is known
+ * to match the real thing (the Warthog stick and the T.16000M); the Warthog throttle and
+ * the X52 Pro show as a list that claims no places. Either way there is a label block
+ * per physical control, named the way the maker names them, with DCS's own Hornet
+ * defaults for the device on them, and a kneeboard page by day and by night.
  */
 
 async function openSheets(page: Page): Promise<void> {
@@ -29,6 +31,7 @@ const DEVICES = [
   {
     slug: 'warthog-stick',
     title: 'Joystick - HOTAS Warthog',
+    says: 'RigReady drawing',
     heads: [
       'TG trigger · 1, 6',
       'S2 weapon release · 2',
@@ -41,21 +44,24 @@ const DEVICES = [
   {
     slug: 'warthog-throttle',
     title: 'Throttle - HOTAS Warthog',
+    says: 'Controls named for the Thrustmaster HOTAS Warthog throttle (no drawing of it yet)',
     heads: ['Coolie switch · H1', 'MS mic switch · 2–6', 'Throttles · RZ, Z'],
   },
   {
     slug: 't16000m',
     title: 'T.16000M',
+    says: 'RigReady drawing',
     heads: ['Hat · H1', 'Trigger · 1', 'Base, right bank · 11–16'],
   },
   {
     slug: 'x52-pro',
     title: 'X52',
+    says: 'Controls named for the Saitek / Logitech X52 Pro (no drawing of it yet)',
     heads: ['Fire button · 2', 'Stick POV hat · H1', 'T1–T6 toggles · 9–14'],
   },
 ] as const;
 
-test('cheat sheets: the popular Thrustmaster and Saitek controllers have a drawing', async ({
+test('cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise', async ({
   rig,
 }) => {
   const run = await rig.launch('cheat-sheets-known-devices', 'cheat-sheets-known-devices');
@@ -67,16 +73,19 @@ test('cheat sheets: the popular Thrustmaster and Saitek controllers have a drawi
     await item.click();
     await expect(page.getByTestId('sheet-title')).toContainText(entry.title);
     const source = page.getByTestId('sheet-layout-source');
-    await expect(source).toHaveAttribute('data-picture', 'drawing');
-    await expect(source).toHaveText('RigReady drawing');
+    const drawn = entry.says === 'RigReady drawing';
+    await expect(source).toHaveAttribute('data-picture', drawn ? 'drawing' : 'list');
+    await expect(source).toHaveText(entry.says);
     const picture = page.locator('[data-testid="sheet-view"] svg');
-    // A schematic outline, never a photo.
-    await expect(picture.locator('path').first()).toBeVisible();
+    // A schematic outline, never a photo; and no outline at all where the places of the
+    // controls are not known to match the device.
+    await expect(picture.locator('.cs-drawing')).toHaveCount(drawn ? 1 : 0);
+    if (drawn) await expect(picture.locator('.cs-drawing path').first()).toBeVisible();
     await expect(picture.locator('image')).toHaveCount(0);
     const heads = picture.locator('.cs-bhead');
     for (const head of entry.heads) await expect(heads.filter({ hasText: head })).toHaveCount(1);
-    // Every button has its own name: no made-up runs of eight.
-    await expect(heads.filter({ hasText: /^Buttons? \d/ })).toHaveCount(0);
+    // On a drawing every button has its own name: no made-up runs of eight.
+    if (drawn) await expect(heads.filter({ hasText: /^Buttons? \d/ })).toHaveCount(0);
     if (entry.slug === 'warthog-stick') {
       // DCS's default for the Warthog in the Hornet, on the button it belongs to.
       const release = page.locator('[data-testid="sheet-view"] [data-control="button:2"]');

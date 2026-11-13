@@ -26,7 +26,7 @@ export type Picture =
   | { kind: 'cards' }
   | { kind: 'list'; known?: KnownDevice };
 
-type PictureDevice = Pick<
+export type PictureDevice = Pick<
   SheetDevice,
   'vendorId' | 'productId' | 'name' | 'layout' | 'layoutSource' | 'controls' | 'reports'
 >;
@@ -98,6 +98,7 @@ export function planPicture(
           fontScale,
           ...(fill !== undefined ? { fill } : {}),
           ...(options.listed ? { listed: options.listed } : {}),
+          ...(device.reports ? { reports: device.reports } : {}),
         })
       : planList(device.controls, device.reports, {
           showEmpty,

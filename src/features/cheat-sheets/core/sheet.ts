@@ -15,6 +15,7 @@ import {
   type CrossPosition,
   type DeviceLayout,
 } from './layout';
+import { pictureFor } from './picture';
 
 /**
  * The cheat sheet of one aircraft: every controller with its picture (layout) and what
@@ -400,12 +401,25 @@ export function physicalLabels(layout: DeviceLayout): Map<string, string> {
 }
 
 /**
- * What each control of a device is called: the names of a known device (./known) unless a
- * shipped layout names its controls, with the user's own layout's names over both.
+ * What each control of a device is called. A device shown as a drawing is named as its
+ * drawing names it (with the user's own names on it), so the picture, the list of what
+ * is where and a control's details all say the same. Otherwise: the names of a known
+ * device (./known) unless a shipped layout names its controls, with the user's own
+ * layout's names over both.
  */
 export function deviceLabels(
   device: Pick<SheetDevice, 'layout' | 'layoutSource' | 'vendorId' | 'productId' | 'name'>
 ): Map<string, string> {
+  const picture = pictureFor(device);
+  if (picture.kind === 'drawing') {
+    const drawn = new Map<string, string>();
+    for (const control of picture.drawing.controls) {
+      for (const input of control.inputs) {
+        drawn.set(input.id, input.tag ? `${control.name} ${input.tag}` : control.name);
+      }
+    }
+    return drawn;
+  }
   const labels = physicalLabels(device.layout);
   if (device.layoutSource === 'builtin') return labels;
   const known = knownDeviceFor(device);

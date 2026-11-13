@@ -4,7 +4,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { wiredApp, type WiredApp } from '../../../../../tests/helpers';
 import { generateLayout } from '../generate';
 import { kneeboardDevicePage, KNEEBOARD_SIZE } from '../pages';
-import { pictureFor, planPicture, renderPictureSvg, type PictureOptions } from '../picture';
+import {
+  pictureFor,
+  planPicture,
+  renderPictureSvg,
+  type PictureDevice,
+  type PictureOptions,
+} from '../picture';
 import { textWidth, THEMES } from '../render';
 import type { Sheet, SheetControl, SheetDevice } from '../sheet';
 import {
@@ -21,8 +27,11 @@ import {
   stack,
   wrapText,
   type CalloutPlan,
+  type DeviceDrawing,
 } from './index';
-import { DRAWINGS, F16_GRIP } from './builtin';
+import { DRAWINGS } from './builtin';
+import { MFD_FRAME } from './mfd';
+import { F16_GRIP } from './orion';
 import { knownDevices } from '../known';
 
 /**
@@ -100,7 +109,7 @@ function f18Device(stick: SheetDevice): SheetDevice {
     vendorId: '4098',
     productId: 'BE01',
     buttons: 32,
-    axes: ['X', 'Y', 'RZ'],
+    axes: ['X', 'Y'],
     hats: 1,
   });
   return {
@@ -111,10 +120,10 @@ function f18Device(stick: SheetDevice): SheetDevice {
     title: 'F/A-18 grip',
     productId: 'BE01',
     layoutSource: 'generated',
+    reports: { buttons: 32, axes: ['X', 'Y'], hats: 1 },
     controls: [
       bound('axis:X', 'Roll', 'flight'),
       bound('axis:Y', 'Pitch', 'flight'),
-      bound('axis:RZ', 'Rudder', 'flight'),
       bound('hat:1:U', 'Trim nose down', 'flight'),
       bound('hat:1:R', 'Trim right wing down', 'flight'),
       bound('hat:1:D', 'Trim nose up', 'flight'),
@@ -214,19 +223,21 @@ function expectSound(plan: CalloutPlan, device: SheetDevice): void {
 }
 
 describe('the shipped drawings', () => {
-  it('are valid drawing files, for the WinWing grips, throttle and MFD frames and the popular Thrustmaster and Saitek controllers, with every control anchored on the device', () => {
+  it('are valid drawing files, for the WinWing grips, throttle, frames and panels and the Thrustmaster sticks, with every control anchored on the device', () => {
     const { drawings, broken } = builtinDrawings();
     expect(broken).toEqual([]);
     expect(drawings.map((d) => d.name)).toEqual([
-      'WinWing Orion 2 stick with F-16EX grip',
+      'WinWing Orion 2 stick with ViperAce (F-16EX) grip',
       'WinWing Orion stick (base 1) with F/A-18 grip',
       'WinWing Orion 2 stick with F/A-18 grip',
       'WinWing Orion throttle with F-15EX handles',
       'WinWing MFD1 button frame',
+      'WinWing UFC1 with HUD1 panel',
+      'WinWing ICP',
+      'WinWing F/A-18 startup panel',
+      'WinWing F/A-18 take-off panel 2',
       'Thrustmaster HOTAS Warthog joystick',
-      'Thrustmaster HOTAS Warthog throttle',
       'Thrustmaster T.16000M stick',
-      'Saitek / Logitech X52 Pro',
     ]);
     expect(drawingFor({ vendorId: '4098', productId: 'BEA8' })?.name).toContain('F-16EX');
     expect(drawingFor({ vendorId: '4098', productId: 'bee1' })?.name).toContain('MFD1');
@@ -253,15 +264,110 @@ describe('the shipped drawings', () => {
       const ids = drawing.controls.flatMap((c) => c.inputs.map((i) => i.id));
       expect(new Set(ids).size).toBe(ids.length);
     }
-    // The MFD: twenty keys, four rockers and the knob, numbered as the frame reports them.
+    // The MFD: twenty keys, four rockers, the side switch and the knob, numbered as the
+    // frame reports them and named as the frame prints them.
     const mfd = drawingFor({ vendorId: '4098', productId: 'BEE0' })!;
+    const inputsOf = (drawing: DeviceDrawing, id: string): string[] =>
+      drawing.controls.find((c) => c.id === id)?.inputs.map((i) => i.id) ?? [];
     expect(mfd.controls.filter((c) => c.id.startsWith('osb-'))).toHaveLength(20);
-    expect(mfd.controls.find((c) => c.id === 'osb-6')?.inputs[0]?.id).toBe('button:31');
-    expect(mfd.controls.find((c) => c.id === 'osb-20')?.inputs[0]?.id).toBe('button:1');
-    expect(mfd.controls.find((c) => c.id === 'gain')?.inputs.map((i) => i.id)).toEqual([
-      'button:43',
-      'button:44',
+    expect(inputsOf(mfd, 'osb-1')).toEqual(['button:42']);
+    expect(inputsOf(mfd, 'osb-6')).toEqual(['button:31']);
+    expect(inputsOf(mfd, 'osb-15')).toEqual(['button:12']);
+    expect(inputsOf(mfd, 'osb-20')).toEqual(['button:1']);
+    expect(inputsOf(mfd, 'day-night')).toEqual(['button:43', 'button:44']);
+    expect(inputsOf(mfd, 'sym')).toEqual(['button:33', 'button:32']);
+    expect(inputsOf(mfd, 'gain')).toEqual(['button:10', 'button:11']);
+    expect(inputsOf(mfd, 'cont')).toEqual(['button:22', 'button:21']);
+    expect(inputsOf(mfd, 'side-switch')).toEqual(['button:47', 'button:46', 'button:45']);
+    expect(inputsOf(mfd, 'knob')).toEqual(['axis:SLIDER1', 'button:49', 'button:50', 'button:48']);
+  });
+
+  it("has a drawing for each of the owner's WinWing panels, found by what the panel reports, numbered as the maker numbers it", () => {
+    const inputsOf = (drawing: DeviceDrawing, id: string): string[] =>
+      drawing.controls.find((c) => c.id === id)?.inputs.map((i) => i.id) ?? [];
+    const numbers = (from: number, to: number): string[] =>
+      Array.from({ length: to - from + 1 }, (_, i) => `button:${from + i}`);
+    const drawn = (drawing: DeviceDrawing): Set<string> =>
+      new Set(drawing.controls.flatMap((c) => c.inputs.map((i) => i.id)));
+
+    // The up-front controller with the HUD panel: one device to the PC.
+    const ufc = drawingFor({ vendorId: '4098', productId: 'BEDE' })!;
+    expect(ufc.name).toBe('WinWing UFC1 with HUD1 panel');
+    expect(inputsOf(ufc, 'ip')).toEqual(['button:1']);
+    expect(inputsOf(ufc, 'keypad')).toEqual(numbers(2, 13));
+    expect(ufc.controls.find((c) => c.id === 'keypad')?.inputs.map((i) => i.tag)).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      'CLR',
+      '0',
+      'ENT',
     ]);
+    expect(inputsOf(ufc, 'options')).toEqual(numbers(14, 18));
+    expect(inputsOf(ufc, 'emcon')).toEqual(['button:19']);
+    expect(inputsOf(ufc, 'functions')).toEqual(numbers(20, 26));
+    expect(inputsOf(ufc, 'comm-1')).toEqual(numbers(27, 29));
+    expect(inputsOf(ufc, 'comm-2')).toEqual(numbers(30, 32));
+    expect(inputsOf(ufc, 'adf')).toEqual(numbers(39, 41));
+    expect(inputsOf(ufc, 'hud-reject')).toEqual(numbers(65, 67));
+    expect(inputsOf(ufc, 'hud-att')).toEqual(numbers(75, 77));
+    expect(inputsOf(ufc, 'hdg')).toEqual(['button:80', 'button:79', 'button:78']);
+    expect(inputsOf(ufc, 'crs')).toEqual(['button:83', 'button:82', 'button:81']);
+    expect(inputsOf(ufc, 'hud-aoa')).toEqual(['axis:SLIDER2']);
+    // Every number the maker's screen places is drawn; the others are left off, not guessed.
+    for (const id of [...numbers(1, 41), ...numbers(65, 83)])
+      expect(drawn(ufc).has(id), id).toBe(true);
+    for (const id of [...numbers(42, 64), ...numbers(84, 128), 'axis:SLIDER1'])
+      expect(drawn(ufc).has(id), id).toBe(false);
+    expect(ufc.controls.some((c) => c.assumed)).toBe(false);
+
+    // The ICP: all 34 buttons and the four wheels.
+    const icp = drawingFor({ vendorId: '4098', productId: 'BF06' })!;
+    expect(icp.name).toBe('WinWing ICP');
+    expect([...drawn(icp)].sort()).toEqual(
+      [...numbers(1, 34), 'axis:X', 'axis:Y', 'axis:RX', 'axis:RY'].sort()
+    );
+    expect(inputsOf(icp, 'top-row')).toEqual(numbers(1, 6));
+    expect(inputsOf(icp, 'rcl')).toEqual(['button:10']);
+    expect(inputsOf(icp, 'entr')).toEqual(['button:14']);
+    expect(inputsOf(icp, 'four-way')).toEqual([
+      'button:22',
+      'button:23',
+      'button:24',
+      'button:25',
+      'button:21',
+    ]);
+    expect(inputsOf(icp, 'drift')).toEqual(numbers(26, 28));
+    expect(inputsOf(icp, 'flir')).toEqual(['button:30', 'button:31']);
+    expect(inputsOf(icp, 'gain')).toEqual(numbers(32, 34));
+    expect(icp.controls.some((c) => c.assumed)).toBe(false);
+
+    // The startup panel: all 57 buttons and both knobs.
+    const startup = drawingFor({ vendorId: '4098', productId: 'BE03' })!;
+    expect(startup.name).toBe('WinWing F/A-18 startup panel');
+    expect([...drawn(startup)].sort()).toEqual([...numbers(1, 57), 'axis:RX', 'axis:RY'].sort());
+    expect(inputsOf(startup, 'battery')).toEqual(numbers(12, 14));
+    expect(inputsOf(startup, 'apu')).toEqual(numbers(38, 39));
+    expect(inputsOf(startup, 'crank')).toEqual(numbers(40, 42));
+    expect(inputsOf(startup, 'bleed')).toEqual(numbers(54, 57));
+    expect(startup.controls.some((c) => c.assumed)).toBe(false);
+
+    // The take-off panel 2: the 41 buttons the maker's screen places. Only the brake
+    // handle is marked as not confirmed.
+    const takeoff = drawingFor({ vendorId: '4098', productId: 'BF05' })!;
+    expect(takeoff.name).toBe('WinWing F/A-18 take-off panel 2');
+    expect([...drawn(takeoff)].sort()).toEqual(numbers(1, 41).sort());
+    expect(inputsOf(takeoff, 'gear')).toEqual(numbers(35, 37));
+    expect(inputsOf(takeoff, 'flap')).toEqual(numbers(5, 7));
+    expect(inputsOf(takeoff, 'probe')).toEqual(numbers(14, 16));
+    expect(inputsOf(takeoff, 'hook')).toEqual(numbers(32, 34));
+    expect(takeoff.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual(['brake']);
   });
 
   it('are refused with the reason when an anchor is off the drawing or an input is placed twice', () => {
@@ -279,7 +385,7 @@ describe('the shipped drawings', () => {
     };
     expect(parseDrawing(twice)).toMatchObject({ ok: false, reason: /more than one control/ });
     expect(parseDrawing({ format: 'nope' })).toMatchObject({ ok: false });
-    expect(DRAWINGS).toHaveLength(9);
+    expect(DRAWINGS).toHaveLength(11);
     expect(pathBox('M 10 20 L 30 40 C 1 2 3 4 50 60 Z')).toEqual({ x: 1, y: 2, w: 49, h: 58 });
     expect(pathBox('M 260 588 A 20 20 0 1 0 300 588 A 20 20 0 1 0 260 588 Z')).toEqual({
       x: 260,
@@ -325,11 +431,39 @@ describe('the callout planner', () => {
     ).toBe('10–13');
     expect(
       numbersOf({ ...base, inputs: [25, 27, 28, 32].map((n) => ({ id: `button:${n}` })) })
-    ).toBe('25, 27, 28, 32');
+    ).toBe('25, 27–28, 32');
     expect(numbersOf({ ...base, inputs: [{ id: 'hat:1:U' }, { id: 'hat:1:D' }] })).toBe('H1');
     expect(
       numbersOf({ ...base, inputs: [{ id: 'axis:RX' }, { id: 'axis:RY' }, { id: 'button:26' }] })
     ).toBe('RX, RY, 26');
+    // A control that is more than one kind of input: axes first, then the hat, then the
+    // buttons in order with each run of neighbours as one range.
+    expect(
+      numbersOf({
+        ...base,
+        inputs: [{ id: 'hat:1:U' }, { id: 'hat:1:UR' }, { id: 'hat:1:D' }, { id: 'button:19' }],
+      })
+    ).toBe('H1, 19');
+    expect(
+      numbersOf({
+        ...base,
+        inputs: [
+          { id: 'button:26' },
+          { id: 'axis:RX' },
+          { id: 'button:30' },
+          { id: 'axis:RY' },
+          { id: 'button:27' },
+          { id: 'button:28' },
+          { id: 'button:29' },
+        ],
+      })
+    ).toBe('RX, RY, 26–30');
+    expect(
+      numbersOf({
+        ...base,
+        inputs: [{ id: 'axis:RZ' }, ...[1, 2, 41, 42, 3].map((n) => ({ id: `button:${n}` }))],
+      })
+    ).toBe('RZ, 1–3, 41–42');
     expect(numbersOf({ ...base, inputs: [{ id: 'button:20' }] })).toBe('20');
     expect(numbersOf(base)).toBe('');
   });
@@ -484,6 +618,57 @@ describe('the callout planner', () => {
     expect(crossings(plan.callouts)).toBe(0);
     expect(plan.callouts.map((c) => c.head)).toEqual(['Far · 1', 'Near · 2', 'Low · 3']);
   });
+
+  it('keeps the rows above and below a drawing clear of its columns: a column starts below a leader that passes over it, and under a long column a leader drops straight down before it turns', () => {
+    // A frame with labels on all four sides, every input bound to a long name: the
+    // columns at the sides run on below the frame.
+    const parsed = parseDrawing(MFD_FRAME);
+    if (!parsed.ok) throw new Error(parsed.reason);
+    const inputs = parsed.drawing.controls.flatMap((c) => c.inputs.map((i) => i.id));
+    const plan = planCallouts(
+      parsed.drawing,
+      inputs.map((id) => bound(id, `A long action name for ${id} that wraps`, 'sensors'))
+    );
+    expect(crossings(plan.callouts)).toBe(0);
+    const on = (side: string) => plan.callouts.filter((c) => c.side === side);
+    const columns = [...on('left'), ...on('right')];
+    const columnsEnd = Math.max(...columns.map((c) => c.y + c.h));
+    expect(plan.overflow).toBeGreaterThan(0);
+
+    // Below: straight down from the key to under the last block of a column, then across.
+    let turned = 0;
+    for (const c of on('bottom')) {
+      expect(c.y, c.control.id).toBeGreaterThan(columnsEnd);
+      const edge = c.leader.at(-1)!;
+      if (Math.abs(edge.x - c.anchor.x) <= 0.5) {
+        expect(c.leader, c.control.id).toHaveLength(3);
+        continue;
+      }
+      turned += 1;
+      expect(c.leader, c.control.id).toHaveLength(4);
+      expect(c.leader[1]!.x, c.control.id).toBe(c.anchor.x);
+      expect(c.leader[1]!.y, c.control.id).toBeGreaterThan(columnsEnd);
+      expect(c.leader[1]!.y, c.control.id).toBeLessThan(c.y);
+    }
+    expect(turned).toBeGreaterThan(1);
+
+    // Above: where a leader passes over the inner edge of a column, the column has not begun.
+    const inner = { left: Math.max(...on('left').map((c) => c.x + c.w)), right: on('right')[0]!.x };
+    let over = 0;
+    for (const c of on('top')) {
+      const anchor = c.leader[0]!;
+      const bend = c.leader[1]!;
+      for (const side of ['left', 'right'] as const) {
+        const outside = side === 'left' ? bend.x < inner.left : bend.x > inner.right;
+        if (!outside) continue;
+        over += 1;
+        const part = (bend.x - inner[side]) / (bend.x - anchor.x);
+        const crossesAt = bend.y + (anchor.y - bend.y) * part;
+        expect(Math.min(...on(side).map((b) => b.y)), c.control.id).toBeGreaterThan(crossesAt);
+      }
+    }
+    expect(over).toBeGreaterThan(1);
+  });
 });
 
 describe('the F/A-18 grip', () => {
@@ -504,14 +689,43 @@ describe('the F/A-18 grip', () => {
     for (const showEmpty of [false, true]) {
       const plan = planFor(device, { showEmpty })!;
       expectSound(plan, device);
-      expect(plan.extras).toEqual([]);
     }
+    // Everything the game's own profile binds is on the drawing: nothing is left for the
+    // list under it.
     const plan = planFor(device)!;
+    expect(plan.extras).toEqual([]);
+    // Parts are named for where they are, numbered as the maker's map numbers them: the
+    // trigger is 9 and 10 (button 1 is the press of the trim hat, not the trigger).
     const head = (id: string) => plan.callouts.find((c) => c.control.id === id)?.head;
-    expect(head('pickle')).toBe('Pickle · 7');
-    expect(head('sensor')).toBe('Sensor control · 4-way · 2–6');
-    expect(head('recce')).toBe('RECCE · 21');
-    expect(head('trigger')).toBe('Trigger · 1, 9');
+    expect(head('top-left-button')).toBe('Top left button · 7');
+    expect(head('centre-switch')).toBe('Centre switch · 2–6');
+    expect(head('trim')).toBe('TRIM hat · H1, 1');
+    expect(head('lower-switch')).toBe('Lower right switch · 8, 18–21');
+    expect(head('side-switch')).toBe('Left side switch · 11–15');
+    expect(head('trigger')).toBe('Trigger · 9–10');
+    expect(head('front-button')).toBe('Front left button · 16');
+    expect(head('paddle')).toBe('Paddle lever · 17');
+    const rows = (id: string) =>
+      plan.callouts.find((c) => c.control.id === id)?.rows.map((r) => r.text);
+    expect(rows('centre-switch')).toEqual([
+      '↑ Sensor select: HUD',
+      '→ Sensor select: right display',
+      '↓ Sensor select: bottom display (AMPCD)',
+      '← Sensor select: left display',
+      'press Sensor control: depress',
+    ]);
+    expect(rows('lower-switch')).toEqual(['← RECCE event mark']);
+    // Nothing on it is a guess, and no twist is drawn: no source shows one.
+    const drawing = drawingFor(device)!;
+    expect(drawing.controls.some((c) => c.assumed)).toBe(false);
+    expect(drawing.controls.flatMap((c) => c.inputs.map((i) => i.id))).not.toContain('axis:RZ');
+    // With the free controls shown, the numbers this stick reports that no source places
+    // are listed in one row, so a press on any of them still lights.
+    const all = planFor(device, { showEmpty: true })!;
+    expect(all.extras).toHaveLength(1);
+    expect(all.extras[0]!.cells?.map((cell) => cell.id)).toEqual(
+      Array.from({ length: 11 }, (_, i) => `button:${22 + i}`)
+    );
   });
 });
 
@@ -529,57 +743,88 @@ describe('the Hornet on the recorded rig, drawn the new way', () => {
     // The stick: one block per physical control, not one card per input.
     const stick = planFor(byTitle(sheet, 'Stick'))!;
     const trim = stick.callouts.find((c) => c.control.id === 'trim')!;
-    expect(trim.head).toBe('TRIM hat · H1');
+    // The hat that is a real hat also presses (button 19): one block, both in its head.
+    expect(trim.head).toBe('TRIM hat · H1, 19');
     expect(trim.rows.map((r) => r.text)).toEqual(
       expect.arrayContaining([
         '↑ Trim nose down',
         '↓ Trim nose up',
         '← Trim left wing down',
         '→ Trim right wing down',
+        'press Centre the view',
       ])
     );
     // The hat's diagonals carry only game defaults: shown muted, after the four directions.
-    expect(trim.rows.filter((r) => r.dim).length).toBe(4);
+    expect(trim.rows.filter((r) => r.id.startsWith('hat:') && r.dim).length).toBe(4);
     expect(trim.rows[0]!.dim).toBe(false);
-    const tms = stick.callouts.find((c) => c.control.id === 'tms')!;
-    expect(tms.head).toBe('TMS · 4-way · 37–40 ?');
-    expect(tms.rows.map((r) => r.text)).toEqual([
+    // The castle hat at the right of the head is buttons 37 to 40 with 36 as its press,
+    // and none of that is a guess any more.
+    const right = stick.callouts.find((c) => c.control.id === 'right-hat')!;
+    expect(right.head).toBe('Right hat (DMS) · 36–40');
+    expect(right.rows.map((r) => r.text)).toEqual([
       '↑ Sensor select: HUD',
       '→ Sensor select: right display',
       '↓ Sensor select: bottom display (AMPCD)',
       '← Sensor select: left display',
+      'press Centre the view',
     ]);
-    // The CMS carries the radar elevation (32 forward, 34 aft), as WinWing's own profile
-    // places the sensor switch there. The twist is unbound: no block on a kneeboard.
-    expect(stick.callouts.find((c) => c.control.id === 'cms')?.rows.map((r) => r.text)).toEqual([
+    // The ribbed hat in the middle carries the radar elevation (32 up, 34 down).
+    const centre = stick.callouts.find((c) => c.control.id === 'centre-hat')!;
+    expect(centre.head).toBe('Centre hat (TMS) · 31–35');
+    expect(centre.rows.map((r) => r.text)).toEqual([
       '↑ Radar elevation up',
       '↓ Radar elevation down',
     ]);
-    expect(stick.callouts.find((c) => c.control.id === 'twist')).toBeUndefined();
-    // Bound buttons the drawing does not place (the two centre-view buttons) are listed under it.
-    expect(stick.extras.map((r) => r.id)).toEqual(['button:19', 'button:36']);
-    expect(stick.extrasBox).toBeDefined();
-    // With empty controls shown, the twist appears as an empty block and the trigger's first detent as a muted row.
+    // The weapon select is on the hat on the left side of the handle, where it really is.
+    expect(
+      stick.callouts.find((c) => c.control.id === 'thumb-hat')?.rows.map((r) => r.text)
+    ).toEqual([
+      '↑ Weapon select: AMRAAM',
+      'forward Weapon select: Sparrow',
+      '↓ Weapon select: Sidewinder',
+      'back Weapon select: gun',
+    ]);
+    expect(stick.callouts.find((c) => c.control.id === 'ministick')?.head).toBe(
+      'Mini-stick · RX, RY, 26–30'
+    );
+    expect(stick.callouts.find((c) => c.control.id === 'pinky-button')?.head).toBe(
+      'Pinky button · 6'
+    );
+    // Only the right side hat still has directions nobody has pressed to check.
+    expect(stick.placed!.drawing.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual([
+      'side-hat',
+    ]);
+    // Nothing is bound on the top front lever or the top left hat: no block on a kneeboard.
+    expect(stick.callouts.find((c) => c.control.id === 'front-lever')).toBeUndefined();
+    expect(stick.callouts.find((c) => c.control.id === 'castle-hat')).toBeUndefined();
+    // Every input the grip reports is on the drawing, so nothing bound is left for the list under it.
+    expect(stick.extras).toEqual([]);
+    expect(stick.extrasBox).toBeUndefined();
+    const drawn = new Set(stick.placed!.drawing.controls.flatMap((c) => c.inputs.map((i) => i.id)));
+    for (let n = 1; n <= 42; n += 1) expect(drawn.has(`button:${n}`), `button ${n}`).toBe(true);
+    for (const axis of ['X', 'Y', 'RX', 'RY', 'RZ', 'SLIDER1'])
+      expect(drawn.has(`axis:${axis}`), axis).toBe(true);
+    // With empty controls shown, the lever appears as an empty block and the trigger's first stage as a muted row.
     const all = planFor(byTitle(sheet, 'Stick'), { showEmpty: true })!;
-    expect(all.callouts.find((c) => c.control.id === 'twist')?.empty).toBe(true);
+    expect(all.callouts.find((c) => c.control.id === 'front-lever')?.empty).toBe(true);
     expect(all.callouts.find((c) => c.control.id === 'trigger')?.rows.map((r) => r.text)).toEqual([
       '1st —',
       '2nd Trigger: fire',
     ]);
 
-    // The MFD: a row of five above and six below (the knob), five keys and the one bound
-    // rocker either side (GAIN and SYM have nothing bound in the Hornet).
+    // The MFD: five keys and the knob above, five keys below, and at each side five keys
+    // with the rockers of that side, each where the frame has it.
     const mfd = planFor(byTitle(sheet, 'Left MFD'))!;
     const sides = (side: string) => mfd.callouts.filter((c) => c.side === side);
-    expect(sides('top')).toHaveLength(5);
-    expect(sides('bottom')).toHaveLength(6);
+    expect(sides('top')).toHaveLength(6);
+    expect(sides('bottom')).toHaveLength(5);
     expect(sides('left').map((c) => c.control.id)).toEqual([
       'osb-20',
       'osb-19',
       'osb-18',
       'osb-17',
       'osb-16',
-      'brt',
+      'gain',
     ]);
     expect(sides('right').map((c) => c.control.id)).toEqual([
       'osb-6',
@@ -587,18 +832,21 @@ describe('the Hornet on the recorded rig, drawn the new way', () => {
       'osb-8',
       'osb-9',
       'osb-10',
-      'con',
+      'cont',
     ]);
+    // Nothing is bound on the switch on the side edge: it shows only with the free controls.
     const every = planFor(byTitle(sheet, 'Left MFD'), { showEmpty: true })!;
-    expect(every.callouts.filter((c) => c.side === 'left')).toHaveLength(7);
-    expect(every.callouts.find((c) => c.control.id === 'gain')?.empty).toBe(true);
-    expect(sides('top').map((c) => c.head)).toEqual([
-      'OSB 1 · 42',
-      'OSB 2 · 40',
-      'OSB 3 · 38',
-      'OSB 4 · 36',
-      'OSB 5 · 34',
-    ]);
+    expect(every.callouts.filter((c) => c.side === 'right')).toHaveLength(8);
+    expect(every.callouts.find((c) => c.control.id === 'side-switch')?.empty).toBe(true);
+    expect(
+      sides('top')
+        .filter((c) => c.control.id.startsWith('osb-'))
+        .map((c) => c.head)
+    ).toEqual(['OSB 1 · 42', 'OSB 2 · 40', 'OSB 3 · 38', 'OSB 4 · 36', 'OSB 5 · 34']);
+    expect(mfd.callouts.find((c) => c.control.id === 'gain')?.head).toBe('GAIN rocker · 10–11');
+    expect(every.callouts.find((c) => c.control.id === 'day-night')?.head).toBe(
+      'DAY / NGT rocker · 43–44'
+    );
     expect(sides('top').every((c) => c.y + c.h < mfd.placed!.y)).toBe(true);
     expect(mfd.callouts.find((c) => c.control.id === 'knob')?.rows.map((r) => r.text)).toEqual([
       '◄ Left MDI Brightness: CCW/Left',
@@ -606,13 +854,60 @@ describe('the Hornet on the recorded rig, drawn the new way', () => {
     ]);
     expect(mfd.extras).toEqual([]);
 
-    // The throttle: the finger lifts carry the detents, the base switches go below.
+    // The throttle: each handle is one control, its travel with the IDLE and OFF stops; the
+    // front of the left handle is labelled above the drawing, the front of the right below.
     const throttle = planFor(byTitle(sheet, 'Throttle'))!;
+    const leftThrottle = throttle.callouts.find((c) => c.control.id === 'left-throttle')!;
+    expect(leftThrottle.head).toBe('Left throttle · RY, 2, 31');
+    expect(leftThrottle.rows.map((r) => r.text)).toEqual([
+      'travel Throttle, left engine',
+      'IDLE Left throttle to IDLE',
+      'OFF Throttle (Left): OFF',
+    ]);
+    expect(throttle.callouts.find((c) => c.control.id === 'left-hat')?.side).toBe('top');
+    expect(throttle.callouts.find((c) => c.control.id === 'ministick')?.side).toBe('bottom');
+    expect(throttle.callouts.find((c) => c.control.id === 'ministick')?.head).toBe(
+      'Mini-stick · X, Y, 35–39'
+    );
     expect(
-      throttle.callouts.find((c) => c.control.id === 'left-lift')?.rows.map((r) => r.text)
-    ).toEqual(['IDLE Left throttle to IDLE', 'OFF Throttle (Left): OFF']);
-    expect(throttle.callouts.find((c) => c.control.id === 'switches')?.side).toBe('bottom');
+      throttle.callouts.find((c) => c.control.id === 'lower-thumb-switch')?.rows.map((r) => r.text)
+    ).toEqual([
+      'forward Speed brake out',
+      'middle Speed brake in (two-position switch)',
+      'back Speed brake in',
+    ]);
+    // Left and right on the two front hats are the only places still unchecked.
+    expect(throttle.placed!.drawing.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual([
+      'left-hat',
+      'front-hat',
+    ]);
     expect(throttle.extras.map((r) => r.id)).toEqual([]);
+    // Every input the throttle reports is drawn, except buttons 45 to 49, which no source
+    // gives a control for.
+    const onThrottle = new Set(
+      throttle.placed!.drawing.controls.flatMap((c) => c.inputs.map((i) => i.id))
+    );
+    const missing: number[] = [];
+    for (let n = 1; n <= 62; n += 1) if (!onThrottle.has(`button:${n}`)) missing.push(n);
+    expect(missing).toEqual([45, 46, 47, 48, 49]);
+    for (const axis of ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'SLIDER1'])
+      expect(onThrottle.has(`axis:${axis}`), axis).toBe(true);
+    // A press never lights nothing: with the free controls shown, those five are under
+    // "More controls", one cell each, every one a control the page can light.
+    const everyThrottle = planFor(byTitle(sheet, 'Throttle'), { showEmpty: true })!;
+    expect(everyThrottle.extras).toHaveLength(1);
+    expect(everyThrottle.extras[0]!.cells).toEqual(
+      missing.map((n) => ({ id: `button:${n}`, text: String(n) }))
+    );
+    const lit = renderPictureSvg(byTitle(sheet, 'Throttle'), { theme: 'dark', showEmpty: true });
+    for (const n of missing) {
+      expect(lit, String(n)).toContain(`class="cs-ctl cs-empty" data-control="button:${n}"`);
+    }
+    for (let n = 1; n <= 62; n += 1) expect(lit, String(n)).toContain(`data-control="button:${n}"`);
+    // Without them shown, the page lists only what is bound.
+    expect(
+      renderPictureSvg(byTitle(sheet, 'Throttle'), { theme: 'dark', showEmpty: false })
+    ).not.toContain('data-control="button:45"');
 
     // Asked to fill a kneeboard page, the drawing grows and the columns give way, but
     // never below the width that keeps labels on one or two lines; the invariants hold.
@@ -723,18 +1018,27 @@ const POPULAR = [
     vendorId: '044F',
     productId: '0402',
   },
+  { name: 'T.16000M', known: 'tm-t16000m', vendorId: '044F', productId: 'B10A' },
+] as const;
+
+/**
+ * Known by name and number, but with no picture known to match the real device: these
+ * show as their named list, which claims no places.
+ */
+const LISTED = [
   {
     name: 'Throttle - HOTAS Warthog',
     known: 'tm-warthog-throttle',
     vendorId: '044F',
     productId: '0404',
+    head: 'MS mic switch · 2–6',
   },
-  { name: 'T.16000M', known: 'tm-t16000m', vendorId: '044F', productId: 'B10A' },
   {
     name: 'Saitek X52 Pro Flight Controller',
     known: 'saitek-x52-pro',
     vendorId: '06A3',
     productId: '0762',
+    head: 'Stick top hat · 20–23',
   },
 ] as const;
 
@@ -749,7 +1053,96 @@ const byName = (sheet: Sheet, name: string): SheetDevice => {
   return device;
 };
 
-describe('the drawings of the popular Thrustmaster and Saitek controllers', () => {
+/** Every input a device reports, each with a binding long enough to wrap. */
+function everyInputBound(device: SheetDevice): SheetDevice {
+  const reports = device.reports!;
+  return {
+    ...device,
+    controls: [
+      ...Array.from({ length: reports.buttons }, (_, i) =>
+        bound(`button:${i + 1}`, `Long action name for button ${i + 1} that wraps`, 'sensors')
+      ),
+      ...Array.from({ length: reports.hats }, (_, h) =>
+        ['U', 'R', 'D', 'L', 'UR', 'DR', 'DL', 'UL'].map((d) =>
+          bound(`hat:${h + 1}:${d}`, `Hat ${h + 1} ${d} action`, 'view')
+        )
+      ).flat(),
+      ...reports.axes.map((a) => bound(`axis:${a}`, `Axis ${a}`, 'flight')),
+    ],
+  };
+}
+
+describe("the owner's WinWing panels on the recorded rig", () => {
+  const PANELS: [string, string, number][] = [
+    // product id, drawing, controls on it
+    ['BEE0', 'WinWing MFD1 button frame', 26],
+    ['BEE2', 'WinWing MFD1 button frame', 26],
+    ['BEDE', 'WinWing UFC1 with HUD1 panel', 25],
+    ['BF06', 'WinWing ICP', 14],
+    ['BE03', 'WinWing F/A-18 startup panel', 23],
+    ['BF05', 'WinWing F/A-18 take-off panel 2', 14],
+  ];
+
+  it('draws each one, not a grid of cards, with no leader crossing and every label on the page, whatever is bound', async () => {
+    const sheet = await hornet();
+    for (const [productId, name, count] of PANELS) {
+      const device = sheet.devices.find((d) => d.productId?.toUpperCase() === productId);
+      if (!device) throw new Error(`The recorded rig has no ${productId}`);
+      const picture = pictureFor(device);
+      expect(picture.kind, name).toBe('drawing');
+      if (picture.kind === 'drawing') expect(picture.source).toBe('builtin');
+      expect(drawingFor(device)?.name).toBe(name);
+      expect(drawingFor(device)?.controls, name).toHaveLength(count);
+      // As the Hornet binds it, with and without the free controls.
+      for (const showEmpty of [false, true]) {
+        for (const options of [{}, { fontScale: 1.3, fill: 1230 }]) {
+          const plan = planFor(device, { showEmpty, ...options });
+          if (!plan) throw new Error(name);
+          // The ICP is a Viper panel: the Hornet binds nothing on it.
+          if (plan.callouts.length === 0 && !showEmpty) continue;
+          expectSound(plan, device);
+        }
+      }
+      // With every input bound: a block for every control of the drawing, and every
+      // input the drawing leaves off in the list under it.
+      const full = everyInputBound(device);
+      for (const options of [{}, { fontScale: 1.12, fill: 1230 }]) {
+        const plan = planFor(full, options)!;
+        expectSound(plan, full);
+        expect(plan.callouts, name).toHaveLength(count);
+      }
+    }
+  });
+
+  it('lists the numbers no source places under More controls, one cell each, only with the free controls shown', async () => {
+    const sheet = await hornet();
+    const device = (productId: string): SheetDevice =>
+      sheet.devices.find((d) => d.productId?.toUpperCase() === productId)!;
+    const free = (productId: string, showEmpty: boolean): string[] =>
+      planFor(device(productId), { showEmpty })!
+        .extras.flatMap((row) => row.cells ?? [])
+        .map((cell) => cell.id);
+    const numbers = (from: number, to: number): string[] =>
+      Array.from({ length: to - from + 1 }, (_, i) => `button:${from + i}`);
+    // The take-off panel reports 64 buttons and the maker's screen places 41.
+    expect(free('BF05', true)).toEqual(numbers(42, 64));
+    expect(free('BF05', false)).toEqual([]);
+    // The ICP and the startup panel have every input on the drawing.
+    expect(free('BF06', true)).toEqual([]);
+    expect(free('BE03', true)).toEqual([]);
+    // The up-front controller: one spare axis and the numbers between and after its parts.
+    expect(free('BEDE', true)).toEqual(['axis:SLIDER1', ...numbers(42, 64), ...numbers(84, 128)]);
+    // Each cell is a control the page can light when it is pressed.
+    const svg = renderPictureSvg(device('BF05'), { theme: 'dark', showEmpty: true });
+    expect(svg).toContain('data-control="button:42"');
+    expect(svg).toContain('data-control="button:64"');
+    expect(renderPictureSvg(device('BF05'), { theme: 'dark', showEmpty: false })).not.toContain(
+      'data-control="button:42"'
+    );
+  });
+});
+
+describe('the drawings of the popular Thrustmaster controllers', () => {
   it('anchor every control the named map has, with the same name and inputs, on a drawn part of the device', () => {
     for (const entry of POPULAR) {
       const drawing = drawingFor({ vendorId: entry.vendorId, productId: entry.productId })!;
@@ -797,7 +1190,7 @@ describe('the drawings of the popular Thrustmaster and Saitek controllers', () =
         for (const options of [{}, { fontScale: 1.3, fill: 1230 }]) {
           const plan = planFor(device, { showEmpty, ...options });
           if (!plan) throw new Error(entry.name);
-          // The X52 Pro has no Hornet defaults: with empty controls hidden it has no blocks.
+          // A device with nothing bound has no blocks while empty controls are hidden.
           if (plan.callouts.length === 0 && !showEmpty) continue;
           expectSound(plan, device);
         }
@@ -830,11 +1223,33 @@ describe('the drawings of the popular Thrustmaster and Saitek controllers', () =
     expect(heads).toContain('H4 CMS hat · 15–19');
     expect(stick.extras).toEqual([]);
     for (const theme of ['dark', 'light', 'night'] as const) {
-      const svg = renderPictureSvg(byName(sheet, 'Throttle - HOTAS Warthog'), { theme });
-      expect(svg).toContain('data-physical="coolie"');
+      const svg = renderPictureSvg(byName(sheet, 'Joystick - HOTAS Warthog'), { theme });
+      expect(svg).toContain('data-physical="h4"');
       expect(svg).toContain(`data-theme="${theme}"`);
       expect(svg).not.toContain('<script');
       expect(svg).not.toContain('<image');
+    }
+  });
+
+  it('shows no picture of a device whose places are not known to match it: the Warthog throttle and the X52 Pro are their named lists', async () => {
+    const sheet = await popularSheet();
+    for (const entry of LISTED) {
+      expect(drawingFor({ vendorId: entry.vendorId, productId: entry.productId })).toBeUndefined();
+      expect(
+        drawingFor({ vendorId: entry.vendorId, productId: 'FFFF', name: entry.name })
+      ).toBeUndefined();
+      const device = byName(sheet, entry.name);
+      expect(pictureFor(device), entry.name).toMatchObject({
+        kind: 'list',
+        known: { id: entry.known },
+      });
+      // Every control is still named as the maker names it, with its numbers.
+      const plan = planFor(device, { showEmpty: true })!;
+      expect(plan.placed).toBeUndefined();
+      expect(plan.callouts.map((c) => c.head)).toContain(entry.head);
+      const svg = renderPictureSvg(device, { theme: 'dark', showEmpty: true });
+      expect(svg).not.toContain('class="cs-drawing"');
+      expect(svg).toContain('data-control="button:1"');
     }
   });
 
@@ -899,7 +1314,7 @@ describe('the drawings of the popular Thrustmaster and Saitek controllers', () =
         column('Kneeboard, day', day, kw, kh) +
         column('Kneeboard, night', night, kw, kh) +
         `</div></body></html>`;
-      const slug = entry.known.replace(/^(tm|saitek)-/, '');
+      const slug = entry.known.replace(/^tm-/, '');
       const file = path.join(out, `compare-${slug}.html`);
       await fs.writeFile(file, html, 'utf8');
       pages.push({
@@ -910,5 +1325,70 @@ describe('the drawings of the popular Thrustmaster and Saitek controllers', () =
       });
     }
     await fs.writeFile(path.join(out, 'manifest.json'), JSON.stringify(pages, null, 2), 'utf8');
+  });
+});
+
+/**
+ * For a look without a window: with RIGREADY_DRAWINGS_SVG_OUT set, every shipped drawing
+ * is written as one SVG file named after its device, every control shown. The owner's
+ * stick and throttle carry the recorded rig's F/A-18C bindings; the others carry none.
+ */
+describe('the shipped drawings as picture files', () => {
+  const slug = (name: string): string =>
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+  /** A device that reports exactly what its drawing draws, with nothing bound. */
+  const bare = (drawing: DeviceDrawing): PictureDevice => {
+    const ids = drawing.controls.flatMap((c) => c.inputs.map((i) => i.id));
+    const buttons = Math.max(0, ...ids.map((id) => Number(/^button:(\d+)$/.exec(id)?.[1] ?? 0)));
+    const hats = Math.max(0, ...ids.map((id) => Number(/^hat:(\d+):/.exec(id)?.[1] ?? 0)));
+    const axes = ids.filter((id) => id.startsWith('axis:')).map((id) => id.slice(5));
+    const vendorId = drawing.match.vendorId;
+    const productId = drawing.match.productIds[0] ?? 'FFFF';
+    const name = drawing.match.names[0] ?? drawing.name;
+    return {
+      vendorId,
+      productId,
+      name,
+      layout: generateLayout({ name, vendorId, productId, buttons, axes, hats }),
+      layoutSource: 'generated',
+      controls: [],
+      reports: { buttons, axes, hats },
+    };
+  };
+
+  it('renders every shipped drawing, every control shown, to SVG markup that stands alone', async () => {
+    const sheet = await hornet();
+    const out = process.env['RIGREADY_DRAWINGS_SVG_OUT'];
+    if (out) await fs.mkdir(out, { recursive: true });
+    const { drawings, broken } = builtinDrawings();
+    expect(broken).toEqual([]);
+    const names = new Set<string>();
+    for (const drawing of drawings) {
+      const onRig = sheet.devices.find((d) => {
+        const picture = pictureFor(d);
+        return picture.kind === 'drawing' && picture.drawing.name === drawing.name;
+      });
+      const device: PictureDevice = onRig ?? bare(drawing);
+      const picture = pictureFor(device);
+      expect(picture.kind, drawing.name).toBe('drawing');
+      if (picture.kind === 'drawing') expect(picture.drawing.name).toBe(drawing.name);
+      const svg = renderPictureSvg(device, { theme: 'dark', showEmpty: true });
+      expect(svg.startsWith('<svg'), drawing.name).toBe(true);
+      expect(svg).not.toContain('<script');
+      // Every input the drawing draws has a row that can light.
+      for (const control of drawing.controls) {
+        for (const input of control.inputs) {
+          expect(svg, `${drawing.name}: ${input.id}`).toContain(`data-control="${input.id}"`);
+        }
+      }
+      const name = slug(drawing.name);
+      expect(names.has(name), name).toBe(false);
+      names.add(name);
+      if (out) await fs.writeFile(path.join(out, `${name}.svg`), svg, 'utf8');
+    }
   });
 });

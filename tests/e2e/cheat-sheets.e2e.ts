@@ -162,10 +162,13 @@ test('cheat sheets: every device of the rig has a picture', async ({ rig }) => {
   for (const title of titles) {
     await device(page, title).click();
     await expect(page.getByTestId('sheet-title')).toHaveText(title);
-    // Ten devices have a hand-arranged layout; none is a bare grid. The stick, the throttle
-    // and the three MFDs are drawn: a silhouette with a label block per physical control.
+    // None is a bare grid. Every WinWing controller of the rig is drawn: the stick, the
+    // throttle, the three MFDs and the four panels, each a picture of the device with a
+    // label block per physical control. The others keep their hand-arranged cards.
     await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute('data-source', 'builtin');
-    const drawn = ['Stick', 'Throttle', 'Left MFD', 'Centre MFD', 'Right MFD'].includes(title);
+    const drawn =
+      ['Stick', 'Throttle', 'Left MFD', 'Centre MFD', 'Right MFD'].includes(title) ||
+      /UFC1|ICP|STARTUP PANEL|TAKEOFF PANEL/i.test(title);
     await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute(
       'data-picture',
       drawn ? 'drawing' : 'cards'
@@ -181,7 +184,11 @@ test('cheat sheets: every device of the rig has a picture', async ({ rig }) => {
   await device(page, 'Left MFD').click();
   await expect(page.getByTestId('sheet-title')).toHaveText('Left MFD');
   const picture = page.locator('[data-testid="sheet-view"] svg');
-  await expect(picture.locator('text').filter({ hasText: /^\d+$/ })).toHaveCount(0);
+  // No bare number is printed on the drawing; the numbers that belong to no key are
+  // listed under it.
+  await expect(picture.locator('text:not(.cs-row-text)').filter({ hasText: /^\d+$/ })).toHaveCount(
+    0
+  );
   const osb1 = picture.locator('[data-anchor="osb-1"]');
   await expect(osb1).toHaveCount(1);
   await expect(osb1).toHaveAttribute('data-side', 'top');
@@ -289,6 +296,54 @@ test('cheat sheets: labels, a pressed control lights up, notes, search and by ac
   await release.getByTestId('action-place').click();
   await expect(page.getByTestId('sheet-title')).toHaveText('Stick');
   await expect(page.getByTestId('detail-title')).toHaveText('Button 20');
+});
+
+test('cheat sheets: a press never lights nothing - a button no control is known to press still shows, and lights up', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-free-buttons');
+  const { page, shot, sendInput } = run;
+  await page.setViewportSize({ width: 1500, height: 1250 });
+  await openSheets(page);
+
+  // The throttle reports buttons 45 to 49. No control of the drawing is known to press
+  // them and nothing is bound to them: with "Unbound controls" on they still have a place.
+  await device(page, 'Throttle').click();
+  await expect(page.getByTestId('sheet-layout-source')).toHaveText('RigReady drawing');
+  const picture = page.locator('[data-testid="sheet-view"] svg');
+  await expect(picture).toContainText('MORE CONTROLS · not on the drawing');
+  for (const n of [45, 46, 47, 48, 49]) {
+    await expect(control(page, `button:${n}`)).toHaveCount(1);
+    await expect(control(page, `button:${n}`)).toHaveClass(/cs-empty/);
+  }
+  // A button the drawing does place is not repeated down there.
+  await expect(control(page, 'button:24')).toHaveCount(1);
+  await control(page, 'button:45').scrollIntoViewIfNeeded();
+  await shot('throttle-more-controls');
+
+  // Press one on the real throttle: it lights up, and the page says which button it was.
+  await sendInput([state(CONTROLLERS.throttle)]);
+  await sendInput([state(CONTROLLERS.throttle, { pressed: [45] })]);
+  await expect(control(page, 'button:45')).toHaveClass(/cs-on/);
+  await expect(page.getByTestId('sheet-last')).toContainText('Throttle · Button 45');
+  await expect(page.getByTestId('sheet-last')).toContainText('nothing bound');
+  await shot('throttle-button-45-pressed');
+  await sendInput([state(CONTROLLERS.throttle)]);
+  await expect(control(page, 'button:45')).not.toHaveClass(/cs-on/);
+
+  // Every button the device reports has a place on the sheet.
+  const ids = await picture
+    .locator('.cs-ctl[data-control^="button:"]')
+    .evaluateAll((all) => all.map((el) => el.getAttribute('data-control') ?? ''));
+  const numbers = [...new Set(ids)].map((id) => Number(id.slice('button:'.length)));
+  expect(numbers.sort((a, b) => a - b)).toEqual(
+    Array.from({ length: CONTROLLERS.throttle.buttons }, (_, i) => i + 1)
+  );
+
+  // With "Unbound controls" off the free buttons step back with the other empty ones.
+  await page.getByTestId('sheet-show-empty').locator('input').click();
+  await expect(control(page, 'button:45')).toHaveCount(0);
+  await expect(picture).not.toContainText('MORE CONTROLS');
 });
 
 test('cheat sheets: a control that fires two actions is flagged', async ({ rig }) => {
@@ -612,12 +667,12 @@ test('cheat sheets: drawing editor - move a control, its side and name, a photo,
   await sendInput([state(CONTROLLERS.stick)]);
   await sendInput([state(CONTROLLERS.stick, { pressed: [20] })]);
   const name = page.getByTestId('editor-control-name').locator('input');
-  await expect(name).toHaveValue('Pickle');
+  await expect(name).toHaveValue('Red button');
   await expect(page.getByTestId('editor-control-inputs')).toHaveText('Button 20');
   await sendInput([state(CONTROLLERS.stick)]);
   await name.fill('Weapon release');
   const canvas = page.getByTestId('editor-canvas');
-  await expect(canvas.locator('[data-anchor="pickle"] .cs-bhead')).toHaveText(
+  await expect(canvas.locator('[data-anchor="red-button"] .cs-bhead')).toHaveText(
     'Weapon release · 20'
   );
 
@@ -655,7 +710,9 @@ test('cheat sheets: drawing editor - move a control, its side and name, a photo,
   await expect(source).toHaveText('RigReady drawing, your changes');
   const sheet = page.getByTestId('sheet-view');
   await expect(sheet.locator('[data-anchor="trim"]')).toHaveAttribute('data-side', 'left');
-  await expect(sheet.locator('[data-anchor="pickle"] .cs-bhead')).toHaveText('Weapon release · 20');
+  await expect(sheet.locator('[data-anchor="red-button"] .cs-bhead')).toHaveText(
+    'Weapon release · 20'
+  );
   const saved = JSON.parse(
     await fs.readFile(
       path.join(run.dataRoot, 'cheat-sheets', 'layouts', '4098-BEA8.rrlayout.json'),
@@ -1005,29 +1062,31 @@ test('cheat sheets: a label too long for its block wraps, and is shortened with 
   await page.setViewportSize({ width: 1500, height: 1250 });
   await openSheets(page);
   await device(page, 'Stick').click();
-  const card = control(page, 'button:20');
+  // The trigger's second stage: its block is in a column beside the grip, the narrowest a
+  // block gets. (The red button's block, above the grip, is wide enough for any note.)
+  const card = control(page, 'button:5');
   await card.click();
 
   // A short note sits under the action, at the size of every label.
-  await page.getByTestId('note-input').locator('input').fill('hold until the bomb is off');
+  await page.getByTestId('note-input').locator('input').fill('hold for the whole burst');
   await page.getByTestId('note-save').click();
   await expect(page.getByTestId('note-saved')).toBeVisible();
   const action = card.locator('text.cs-row-text').first();
   const noteText = card.locator('text.cs-note');
-  await expect(noteText).toHaveText('✎ hold until the bomb is off');
+  await expect(noteText).toHaveText('✎ hold for the whole burst');
   await expect(noteText).toHaveAttribute('font-size', '14');
 
   // A note longer than three lines of its block: it wraps, and the rest is shortened. The
   // action stays whole; the note gives way and ends in an ellipsis, at the same size.
   const note =
-    'hold through the whole countdown and two seconds after release, or the bomb stays on the rack and the run is wasted';
+    'squeeze past the first click and hold for the whole burst, or the gun stops after a few rounds and the pass is wasted';
   await page.getByTestId('note-input').locator('input').fill(note);
   await page.getByTestId('note-save').click();
   await expect(page.getByTestId('note-saved')).toBeVisible();
-  await expect(action).toHaveText('Pickle: release weapon');
+  await expect(action).toContainText('Trigger: fire');
   await expect(noteText.locator('tspan')).toHaveCount(3);
   // (Its lines are the text's tspans, read here without the spaces between them.)
-  await expect(noteText).toHaveText(/^✎ hold through the whole countdown.+…$/);
+  await expect(noteText).toHaveText(/^✎ squeeze past the first click.+…$/);
   await expect(noteText).not.toContainText('wasted');
   await expect(noteText).toHaveAttribute('font-size', '14');
   // Nothing sticks out of any block, and the page did not have to make any text smaller.
@@ -1042,10 +1101,12 @@ test('cheat sheets: a label too long for its block wraps, and is shortened with 
 
   // "By action" has room for all of it.
   await page.getByTestId('sheet-view-actions').click();
-  await page.getByTestId('sheet-search').locator('input').fill('pickle');
+  await page.getByTestId('sheet-search').locator('input').fill('trigger');
   await expect(
     page
-      .locator('[data-testid="action-row"][data-action="Weapon Release Button"]')
+      .locator(
+        '[data-testid="action-row"][data-action="Gun Trigger - SECOND DETENT (Press to shoot)"]'
+      )
       .getByTestId('action-place')
   ).toContainText(note);
   await page.getByTestId('sheet-search').locator('input').fill('');
@@ -1084,8 +1145,8 @@ test('cheat sheets: an open sheet follows the bindings page - the pop-out redraw
   await page.setViewportSize({ width: 1500, height: 1250 });
   await openSheets(page);
   await device(page, 'Stick').click();
-  // Button 1 of the stick does nothing yet, and is not on the drawing: it is not on the sheet.
-  await expect(control(page, 'button:1')).toHaveCount(0);
+  // Button 1 of the stick (the top front lever at rest) does nothing yet: its row is empty.
+  await expect(control(page, 'button:1')).toHaveClass(/cs-empty/);
 
   // The quick look, popped out: the small window that stays open beside the game.
   await page.getByTestId('sheet-quick').click();
@@ -1100,7 +1161,7 @@ test('cheat sheets: an open sheet follows the bindings page - the pop-out redraw
   await expect(popped.getByTestId('sheet-view')).toHaveAttribute('data-device', '4098:BEA8');
   await expect(popped).toHaveAttribute('data-followed', '0');
   await expect(popped.locator('.cs-ctl[data-control="button:1"]')).toHaveCount(0);
-  // The frame button 1 belongs in, as it is before: only what does something is drawn.
+  // The pop-out as it is before: only what does something is on it.
   await popped.locator('.cs-ctl[data-control="button:19"]').scrollIntoViewIfNeeded();
   await snap(popup, 'pop-out-before');
 
@@ -1149,7 +1210,7 @@ test('cheat sheets: an open sheet follows the bindings page - the pop-out redraw
   await page.getByTestId('nav-cheat-sheets').click();
   await expect(page.getByTestId('cheat-sheets-page')).toHaveAttribute('data-ready', 'true');
   await device(page, 'Stick').click();
-  // Under the drawing, with the other bound controls it does not place.
+  // On the drawing, in the block of the lever it belongs to.
   await expect(control(page, 'button:1')).toContainText('Canopy: OPEN');
   await expect(control(page, 'button:1')).toHaveClass(/cs-bound/);
   await control(page, 'button:1').click();
