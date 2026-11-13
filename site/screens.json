@@ -1,5 +1,6 @@
 {
   "play-not-ready": "artifacts/screens/fly-make-ready-all/01-four-problems.png",
+  "stand-down-countdown": "artifacts/screens/fly-stand-down-countdown/01-countdown.png",
   "wheel": "artifacts/screens/tour-racing/12-racing-wheel.png",
   "trainer": "artifacts/screens/cheat-sheets-trainer-racing/01-asking.png",
   "cheat-sheets": "artifacts/screens/tour-flying/07-cheat-sheets.png",
