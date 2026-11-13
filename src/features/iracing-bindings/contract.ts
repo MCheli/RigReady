@@ -20,6 +20,11 @@ export const BindingSetSchema = z.object({
   file: z.string(),
   /** The iRacing control profile the file belongs to; absent on an iRacing without them. */
   profile: z.string().optional(),
+  /**
+   * For a car: the other cars whose app.ini line names the same profile. A change to this
+   * set changes their bindings too, and the page says so before and after saving.
+   */
+  sharedWith: z.array(z.string()).optional(),
 });
 export type BindingSet = z.infer<typeof BindingSetSchema>;
 
@@ -55,11 +60,6 @@ export const OverviewSchema = z.object({
   carFolders: z.number().int(),
   /** The page of the app that repairs a controller's id in iRacing's files, when there is one. */
   repairRoute: z.string().optional(),
-  /**
-   * Changing a binding is switched on for this run of RigReady (RIGREADY_IRACING_EDIT=1).
-   * Off unless someone turned it on: no file RigReady changed has been loaded by iRacing yet.
-   */
-  editing: z.boolean(),
 });
 export type Overview = z.infer<typeof OverviewSchema>;
 
@@ -313,8 +313,12 @@ export const PressedSchema = z.object({
 });
 export type Pressed = z.infer<typeof PressedSchema>;
 
-const EDIT_OFF =
-  'Changing iRacing bindings is switched off in RigReady until it is proven on a rig; this answers with an error unless the owner switched it on.';
+/** Why the channels that change a binding are not among a local AI's tools. */
+const ON_THE_PAGE =
+  'Used by the iRacing bindings page, where the user presses the button or the key and approves the change; it is not offered to a local AI.';
+/** Why clearing the bindings of gone controllers is not among a local AI's tools either. */
+const TICKED_ON_THE_PAGE =
+  'Used by the iRacing bindings page, where the user ticks each controller that is gone for good and approves the change; it is not offered to a local AI.';
 
 export const iracingBindingsContract = defineContract(
   'iracing-bindings',
@@ -337,7 +341,7 @@ export const iracingBindingsContract = defineContract(
      * and would have, what else the same input does, and the file. Writes nothing.
      */
     changePreview: channel(ChangeRequestSchema, ChangeReviewSchema, {
-      describe: `Shows what binding one iRacing action to a controller button or a key, or clearing it, would change. Writes nothing. ${EDIT_OFF}`,
+      describe: `Shows what binding one iRacing action to a controller button or a key, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
     /**
@@ -345,7 +349,7 @@ export const iracingBindingsContract = defineContract(
      * first, one entry on the Safety page). Refused while the simulator runs.
      */
     change: channel(ChangeRequestSchema, ChangeResultSchema, {
-      describe: `Binds one iRacing action to a controller button or a key, or clears it, in iRacing's own file, after a backup. Refused while iRacing runs. ${EDIT_OFF}`,
+      describe: `Binds one iRacing action to a controller button or a key, or clears it, in iRacing's own file, after a backup. Refused while iRacing runs. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
 
@@ -357,12 +361,12 @@ export const iracingBindingsContract = defineContract(
     }),
     /** Clearing the bindings of the chosen gone controllers, as it would be. Writes nothing. */
     clearGonePreview: channel(ClearGoneRequestSchema, ClearGoneReviewSchema, {
-      describe: `Shows which bindings clearing the chosen gone controllers of one iRacing set would remove, and the file change. Only controllers goneDevices calls gone are accepted. Writes nothing. ${EDIT_OFF}`,
+      describe: `Shows which bindings clearing the chosen gone controllers of one iRacing set would remove, and the file change. Only controllers goneDevices calls gone are accepted. Writes nothing. ${TICKED_ON_THE_PAGE}`,
       tier: 'off',
     }),
     /** Clears them in the set's controls.cfg through FileStore. Refused while iRacing runs. */
     clearGone: channel(ClearGoneRequestSchema, ClearGoneResultSchema, {
-      describe: `Clears every binding of the chosen gone controllers in one iRacing set's controls.cfg, after a backup, as one change Undo reverses. Refused while iRacing runs, and for a controller that is not gone. ${EDIT_OFF}`,
+      describe: `Clears every binding of the chosen gone controllers in one iRacing set's controls.cfg, after a backup, as one change Undo reverses. Refused while iRacing runs, and for a controller that is not gone. ${TICKED_ON_THE_PAGE}`,
       tier: 'off',
     }),
 

@@ -8,6 +8,7 @@ import {
   parseControlsFile,
   type Binding,
 } from './controlsFile';
+import { changeBinding } from './edit';
 
 /**
  * The per-car file of the scenario tests (fixtures/scenarios/data/iracing-bindings/
@@ -128,5 +129,35 @@ describe('the control profile of the scenario tests', () => {
     expect(differ.every((i) => (i >= 8 && i < 12) || i >= head.length - 4)).toBe(true);
     // Read and written again, it is the same file.
     expect(Buffer.from(encodeControlsFile(profile.value)).equals(Buffer.from(bytes))).toBe(true);
+  });
+});
+
+/**
+ * The car's control profile of the scenario tests (profile-car-controls.cfg) is the owner's
+ * real Documents\iRacing\profiles\controls\Test Profile CTSV\controls.cfg, which iRacing
+ * 2026.11 wrote at 12:27 on 13 Nov 2026 when a profile was made in its Options and given to
+ * the Cadillac CTS-V. It copied the Baseline profile as it was then: with the two bindings
+ * RigReady had written at 12:16 and iRacing had used in a test drive.
+ */
+describe('the car profile of the scenario tests', () => {
+  it('is Baseline with exactly the two bindings RigReady wrote, byte for byte', async () => {
+    const baseline = await read('scenarios', 'data', 'iracing-bindings', 'profile-controls.cfg');
+    const car = await read('scenarios', 'data', 'iracing-bindings', 'profile-car-controls.cfg');
+    const lookUp = changeBinding(baseline, 'LookUp', {
+      kind: 'button',
+      instanceGuid: WHEEL,
+      productGuid: WHEEL_PRODUCT,
+      // Button 10 as the page shows it.
+      button: 9,
+    });
+    if (!lookUp.ok) throw new Error(lookUp.error.message);
+    const both = changeBinding(lookUp.value.bytes, 'ToggleUIVisibleDrive', {
+      kind: 'key',
+      keyCode: 74,
+      modifiers: 0x03,
+    });
+    if (!both.ok) throw new Error(both.error.message);
+    // What RigReady's writer gives is what iRacing kept and copied into the new profile.
+    expect(Buffer.from(both.value.bytes).equals(Buffer.from(car))).toBe(true);
   });
 });

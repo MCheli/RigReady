@@ -7,12 +7,10 @@ import { expect, test, type RunningApp } from './harness';
 /**
  * The bindings of controllers that are gone, on the iRacing bindings page: which
  * controllers of the set are not plugged in and why, the ones that are gone ticked one by
- * one, the review of what changes, and the file afterwards. Clearing is behind the same
- * switch as changing a binding, so the tests that clear turn it on for their own run.
+ * one, the review of what changes, and the file afterwards.
  */
 
 const ROUTE = '/configure/iracing-bindings';
-const SWITCH_ON = { env: { RIGREADY_IRACING_EDIT: '1' } };
 const PEDALS = '5EED00A1-7A11-11EF-8001-444553540000';
 const BOX = '5EED00A2-7A11-11EF-8002-444553540000';
 const RUDDER = '0F1424B4-D566-14A0-801B-444553540000';
@@ -58,7 +56,7 @@ function changedActions(before: Buffer, after: Buffer): string[] {
 test('iRacing bindings: clear the bindings of a controller that is gone, after the review', async ({
   rig,
 }) => {
-  const run = await rig.launch('iracing-bindings-cleanup', 'iracing-bindings-cleanup', SWITCH_ON);
+  const run = await rig.launch('iracing-bindings-cleanup', 'iracing-bindings-cleanup');
   const { page, shot } = run;
   await page.getByTestId('mode-configure').click();
   await go(page, ROUTE);
@@ -138,30 +136,12 @@ test('iRacing bindings: clear the bindings of a controller that is gone, after t
   ).toHaveCount(1);
 });
 
-test('iRacing bindings, switched off: the gone controllers are listed, and cleared in iRacing', async ({
-  rig,
-}) => {
-  const run = await rig.launch('iracing-bindings-cleanup', 'iracing-bindings-cleanup-off');
-  const { page, shot } = run;
-  await page.getByTestId('mode-configure').click();
-  await go(page, ROUTE);
-  await expect(page.getByTestId('iracing-gone-device')).toHaveCount(3);
-  await expect(page.getByTestId('iracing-gone-choose')).toHaveCount(0);
-  await expect(page.getByTestId('iracing-gone-review')).toHaveCount(0);
-  await expect(page.getByTestId('iracing-gone-in-iracing')).toHaveText(
-    'To clear them, use iRacing: Options, then Controls.'
-  );
-  await page.getByTestId('iracing-gone').scrollIntoViewIfNeeded();
-  await shot('switched-off');
-});
-
 test('iRacing bindings: a wheel with a new Windows id points to the repair, never a cleanup', async ({
   rig,
 }) => {
   const run = await rig.launch(
     'racing-iracing-profiles-moved-wheel',
-    'iracing-bindings-cleanup-moved',
-    SWITCH_ON
+    'iracing-bindings-cleanup-moved'
   );
   const { page, shot } = run;
   await page.getByTestId('mode-configure').click();

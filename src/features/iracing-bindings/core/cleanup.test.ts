@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { fixturesDir, mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { Envelope } from '../../../shared/ipc';
 import type {
@@ -11,7 +11,6 @@ import type {
   GoneView,
   SetView,
 } from '../contract';
-import { EDIT_SWITCH } from './change';
 import { clearDevices } from './cleanup';
 import {
   RECORD_BYTES,
@@ -35,28 +34,16 @@ const BOX = '5EED00A2-7A11-11EF-8002-444553540000';
 const RUDDER = '0F1424B4-D566-14A0-801B-444553540000';
 const PEDAL_ACTIONS = ['Throttle2', 'Brake2', 'Clutch2'];
 const BOX_ACTIONS = ['HeadlightFlash', 'PushToPass', 'DRS'];
-const OFF = {
-  code: 'iracing-bindings.edit.off',
-  message: 'RigReady does not change iRacing bindings yet. Change them in iRacing.',
-};
 const DATA = (name: string): string =>
   path.join(fixturesDir, 'scenarios', 'data', 'iracing-bindings', name);
 
 let app: WiredApp | undefined;
-let switchBefore: string | undefined;
-beforeEach(() => {
-  switchBefore = process.env[EDIT_SWITCH];
-  delete process.env[EDIT_SWITCH];
-});
 afterEach(async () => {
-  if (switchBefore === undefined) delete process.env[EDIT_SWITCH];
-  else process.env[EDIT_SWITCH] = switchBefore;
   await app?.cleanup();
   app = undefined;
 });
 
-async function start(on: boolean, scenario = SCENARIO): Promise<WiredApp> {
-  if (on) process.env[EDIT_SWITCH] = '1';
+async function start(scenario = SCENARIO): Promise<WiredApp> {
   return (app = await wiredApp(scenario, { files: ['Documents/iRacing/**'] }));
 }
 const call = (a: WiredApp, channel: string, input?: unknown): Promise<Envelope> =>
@@ -107,7 +94,7 @@ function changedRecords(before: Uint8Array, after: Uint8Array): Map<string, numb
 
 describe('iRacing cleanup: which controllers are gone', () => {
   it('lists the controllers that are not plugged in: two gone, one only unplugged, with why', async () => {
-    const a = await start(false);
+    const a = await start();
     const view = await goneOf(a);
     expect(view.set).toMatchObject({ id: 'all', general: true, profile: 'Baseline' });
     // The wheel is plugged in under the id the profile names: not listed.
@@ -141,7 +128,7 @@ describe('iRacing cleanup: which controllers are gone', () => {
   });
 
   it('knows a controller by the history the Devices page keeps: seen once, it is never gone', async () => {
-    const a = await start(false);
+    const a = await start();
     // Without the history the rudder pedals are a controller RigReady never saw.
     await fs.rm(historyFile(a));
     expect(device(await goneOf(a), RUDDER)!.verdict).toBe('gone');
@@ -163,7 +150,7 @@ describe('iRacing cleanup: which controllers are gone', () => {
   });
 
   it('a controller the owner named on the Devices page is known, even before it was seen', async () => {
-    const a = await start(false);
+    const a = await start();
     await fs.rm(historyFile(a));
     await fs.writeFile(
       path.join(a.ports.folders.dataRoot(), 'devices.json'),
@@ -177,7 +164,7 @@ describe('iRacing cleanup: which controllers are gone', () => {
   });
 
   it('cannot tell when the history cannot be read, and then leaves every binding alone', async () => {
-    const a = await start(true);
+    const a = await start();
     await fs.writeFile(historyFile(a), 'not the history');
     const view = await goneOf(a);
     expect(view.devices.map((d) => d.verdict)).toEqual(['unknown', 'unknown', 'unknown']);
@@ -191,7 +178,7 @@ describe('iRacing cleanup: which controllers are gone', () => {
   });
 
   it('cannot tell when Windows does not list the controllers', async () => {
-    const a = await start(true);
+    const a = await start();
     await mutate(a, [{ op: 'failProvider', port: 'input', message: 'No input reader.' }]);
     const view = await goneOf(a);
     // The wheel too: nothing is known to be plugged in.
@@ -208,7 +195,7 @@ describe('iRacing cleanup: which controllers are gone', () => {
   });
 
   it('a controller with a new Windows id is the id repair’s, never cleared', async () => {
-    const a = await start(true, 'racing-iracing-profiles-moved-wheel');
+    const a = await start('racing-iracing-profiles-moved-wheel');
     const view = await goneOf(a);
     expect(view.devices).toEqual([
       expect.objectContaining({
@@ -227,7 +214,7 @@ describe('iRacing cleanup: which controllers are gone', () => {
   });
 
   it('a second id of a model that is plugged in is not gone', async () => {
-    const a = await start(true);
+    const a = await start();
     // The handbrake on the wheel base under an id of its own, as a base that shows up twice would have it.
     const parsed = parseControlsFile(await bytesOf(profile(a)));
     if (!parsed.ok) throw new Error(parsed.error.message);
@@ -248,28 +235,14 @@ describe('iRacing cleanup: which controllers are gone', () => {
   });
 
   it('names nothing on a set where every controller is plugged in', async () => {
-    const a = await start(false, 'iracing-bindings-profiles');
+    const a = await start('iracing-bindings-profiles');
     expect(await goneOf(a)).toMatchObject({ set: { id: 'all' }, devices: [] });
   });
 });
 
 describe('iRacing cleanup: clearing the bindings of a gone controller', () => {
-  it('is switched off with changing bindings: reading goes on, nothing is written', async () => {
-    const a = await start(false);
-    const before = await bytesOf(profile(a));
-    expect((await goneOf(a)).devices).toHaveLength(3);
-    for (const channel of ['clearGonePreview', 'clearGone']) {
-      expect(await call(a, channel, { set: 'all', devices: [PEDALS] })).toMatchObject({
-        ok: false,
-        error: OFF,
-      });
-    }
-    expect(equal(await bytesOf(profile(a)), before)).toBe(true);
-    expect(await journal(a)).toEqual([]);
-  });
-
   it('shows first which bindings go, per controller chosen, and writes nothing', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(profile(a));
     const shown = await review(a, { set: 'all', devices: [PEDALS] });
     expect(shown.set).toMatchObject({ id: 'all', profile: 'Baseline', file: profile(a) });
@@ -289,7 +262,7 @@ describe('iRacing cleanup: clearing the bindings of a gone controller', () => {
   });
 
   it('clears the chosen controller and nothing else: a backup first, one change, and Undo puts it back', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(profile(a));
     const told: unknown[] = [];
     a.wiring.context.bindings.onChanged((change) => told.push(change));
@@ -338,7 +311,7 @@ describe('iRacing cleanup: clearing the bindings of a gone controller', () => {
   });
 
   it('gives each cleared action exactly what iRacing had for it before it was bound', async () => {
-    const a = await start(true);
+    const a = await start();
     await clear(a, { set: 'all', devices: [PEDALS, BOX] });
     // The scenario's file is the owner's profile with seven records bound; six are cleared.
     const original = await bytesOf(DATA('profile-controls.cfg'));
@@ -347,7 +320,7 @@ describe('iRacing cleanup: clearing the bindings of a gone controller', () => {
   });
 
   it('never clears a controller that is only unplugged, whatever is asked', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(profile(a));
     for (const devices of [
       [RUDDER],
@@ -373,7 +346,7 @@ describe('iRacing cleanup: clearing the bindings of a gone controller', () => {
   });
 
   it('while iRacing runs, or when RigReady cannot see the programs: shown, and nothing is written', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(profile(a));
     await mutate(a, [
       {
@@ -402,7 +375,7 @@ describe('iRacing cleanup: clearing the bindings of a gone controller', () => {
   });
 
   it('writes nothing when the file changed after the review', async () => {
-    const a = await start(true);
+    const a = await start();
     const shown = await review(a, { set: 'all', devices: [PEDALS] });
     // iRacing saved its own bindings meanwhile.
     const parsed = parseControlsFile(await bytesOf(profile(a)));

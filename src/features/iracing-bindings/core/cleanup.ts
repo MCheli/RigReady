@@ -1,5 +1,4 @@
 import { sameGuid } from '../../../core/directInput';
-import { sha256 } from '../../../core/files/fileStore';
 import { changePreview } from '../../../core/files/preview';
 import type { DeviceNames } from '../../../core/names';
 import { err, ok, type Result } from '../../../core/result';
@@ -12,9 +11,10 @@ import type {
   GoneView,
   SetView,
 } from '../contract';
-import { refuseWhenOff, whyBlocked } from './change';
+import { seenOf, whyBlocked } from './change';
 import { RECORD_BYTES, encodeControlsFile, parseControlsFile } from './controlsFile';
 import { KEPT_BYTES } from './edit';
+import { listed, setScope } from './names';
 import { setView, type BindingsContext } from './view';
 
 /**
@@ -35,8 +35,8 @@ import { setView, type BindingsContext } from './view';
  * - gone: none of the above.
  *
  * The user ticks the gone controllers one by one. The change is shown first, written
- * through FileStore (a backup first, one entry on the Safety page), behind the same switch
- * as changing one binding, and refused while iRacing runs. Each cleared record gets what
+ * through FileStore (a backup first, one entry on the Safety page), and refused while
+ * iRacing runs, as changing one binding is (change.ts). Each cleared record gets what
  * iRacing itself has for an action that was never bound: bytes +8 to +67 all zero. The
  * first two fields of a record, every other record and the rest of the file stay byte for
  * byte. joyCalib.yaml is not touched: a calibration of a controller that is not there does
@@ -275,7 +275,7 @@ async function plan(
         count: bindings.filter((b) => b.device === d.key).length,
       })),
       bindings,
-      seen: sha256(bytes.value),
+      seen: seenOf(view.set, bytes.value),
     },
     file,
     bytes: cleared.value.bytes,
@@ -287,11 +287,8 @@ async function plan(
 export async function reviewClearGone(
   ctx: BindingsContext,
   request: ClearGoneRequest,
-  names: DeviceNames,
-  env?: NodeJS.ProcessEnv
+  names: DeviceNames
 ): Promise<Result<ClearGoneReview>> {
-  const on = refuseWhenOff(env);
-  if (!on.ok) return on;
   const planned = await plan(ctx, request, names);
   if (!planned.ok) return planned;
   const preview = await changePreview(ctx.ports.files, [
@@ -306,18 +303,15 @@ const bindingsWord = (n: number): string => (n === 1 ? '1 binding' : `${n} bindi
 
 /**
  * Clears the bindings of the chosen gone controllers in the set's controls.cfg: refused
- * while the switch is off and while iRacing runs, when the file changed since the review,
- * and for any controller that is not gone. A backup first, and the file is read back before
- * anything is called done.
+ * while iRacing runs, when the file (or which file or cars the set is) changed since the
+ * review, and for any controller that is not gone. A backup first, and the file is read
+ * back before anything is called done.
  */
 export async function clearGone(
   ctx: BindingsContext,
   request: ClearGoneRequest,
-  names: DeviceNames,
-  env?: NodeJS.ProcessEnv
+  names: DeviceNames
 ): Promise<Result<ClearGoneResult>> {
-  const on = refuseWhenOff(env);
-  if (!on.ok) return on;
   const blocked = await whyBlocked(ctx);
   if (blocked) return err('iracing-bindings.edit.blocked', blocked);
   const planned = await plan(ctx, request, names);
@@ -326,12 +320,13 @@ export async function clearGone(
   if (request.seen !== undefined && request.seen !== review.seen) {
     return refuse(
       'changed',
-      'controls.cfg changed after the change was shown, so nothing was written. Look at it again.'
+      'controls.cfg, or which file or cars it is for, changed after the change was shown, so nothing was written. Look at it again.'
     );
   }
   const count = review.bindings.length;
-  const who = planned.value.names.join(', ');
-  const where = review.set.general ? 'for all cars' : `for ${review.set.name}`;
+  const who = listed(planned.value.names);
+  // Every car the file is for, here and on the Safety page.
+  const where = `for ${setScope(review.set)}`;
   const group = ctx.ports.files.beginGroup(
     `iRacing bindings ${where}: cleared ${bindingsWord(count)} of ${who}`
   );

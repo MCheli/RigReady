@@ -15,14 +15,11 @@ import {
  * The controllers of one iRacing binding set that are not plugged in, and what RigReady
  * makes of each (core/cleanup.ts): gone, unplugged but known as yours, a new Windows id, or
  * cannot tell. Only a gone one can be ticked; clearing its bindings is shown first and
- * written with a backup, while changing bindings is switched on. Shown only when the set
- * names a controller that is not plugged in.
+ * written with a backup. Shown only when the set names a controller that is not plugged in.
  */
 const props = defineProps<{
   /** The set id the page shows. */
   set: string;
-  /** Changing bindings is switched on for this run (overview.editing). */
-  editing: boolean;
   /** The page with the id repair, when there is one. */
   repairRoute?: string | undefined;
 }>();
@@ -166,7 +163,7 @@ async function confirm(): Promise<void> {
       >
         <div class="rr-row">
           <v-checkbox-btn
-            v-if="editing && d.verdict === 'gone'"
+            v-if="d.verdict === 'gone'"
             :model-value="chosen.includes(d.key)"
             :aria-label="`Clear the bindings of ${nameOf(d)}`"
             density="compact"
@@ -206,32 +203,27 @@ async function confirm(): Promise<void> {
         </div>
       </div>
       <div v-if="gone.length > 0" class="gd-actions" data-testid="iracing-gone-actions">
-        <template v-if="editing">
-          <v-btn
-            color="primary"
-            variant="flat"
-            size="small"
-            :disabled="count === 0"
-            :aria-describedby="count === 0 ? 'iracing-gone-tick-hint' : undefined"
-            data-testid="iracing-gone-review"
-            @click="openReview"
-            >{{
-              count === 0
-                ? 'Review clearing'
-                : `Review clearing ${plural(count, 'binding', 'bindings')}`
-            }}</v-btn
-          >
-          <span
-            v-if="count === 0"
-            id="iracing-gone-tick-hint"
-            class="gd-hint"
-            data-testid="iracing-gone-tick-hint"
-            >Tick each controller that is gone for good. Nothing is ticked for you.</span
-          >
-        </template>
-        <span v-else class="gd-hint" data-testid="iracing-gone-in-iracing">
-          To clear them, use iRacing: Options, then Controls.
-        </span>
+        <v-btn
+          color="primary"
+          variant="flat"
+          size="small"
+          :disabled="count === 0"
+          :aria-describedby="count === 0 ? 'iracing-gone-tick-hint' : undefined"
+          data-testid="iracing-gone-review"
+          @click="openReview"
+          >{{
+            count === 0
+              ? 'Review clearing'
+              : `Review clearing ${plural(count, 'binding', 'bindings')}`
+          }}</v-btn
+        >
+        <span
+          v-if="count === 0"
+          id="iracing-gone-tick-hint"
+          class="gd-hint"
+          data-testid="iracing-gone-tick-hint"
+          >Tick each controller that is gone for good. Nothing is ticked for you.</span
+        >
       </div>
     </div>
 

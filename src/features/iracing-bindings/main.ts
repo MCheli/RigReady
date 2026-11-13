@@ -2,17 +2,13 @@ import { bind, defineFeatureMain } from '../../core/feature';
 import { listenForPresses } from '../../core/inputPresses';
 import { ok } from '../../core/result';
 import { iracingBindingsContract } from './contract';
-import { applyChange, editingOn, pressedOf, refuseWhenOff, reviewChange } from './core/change';
+import { applyChange, pressedOf, reviewChange } from './core/change';
 import { clearGone, goneDevices, reviewClearGone } from './core/cleanup';
 import { overview, setView, type BindingsContext } from './core/view';
 
 /**
- * iRacing bindings, read from iRacing's own files.
- *
- * Changing one binding is built and switched off: unless RigReady was started with
- * RIGREADY_IRACING_EDIT=1, the four channels of it answer with an error and nothing is
- * read, listened to or written (docs/research/iracing-bindings.md says what is still to
- * be proven on a rig). With the switch on, the one write goes through FileStore.
+ * iRacing bindings, read from iRacing's own files, and one binding changed at a time: the
+ * page shows what would change first, and the write goes through FileStore.
  */
 
 /** Stops reporting controller presses to the page; set while the page listens. */
@@ -31,8 +27,7 @@ export default defineFeatureMain({
       bind(iracingBindingsContract, {
         // The page that repairs a controller's id belongs to whichever feature reads
         // iRacing bindings for the rest of the app; it is asked for, not named here.
-        overview: async () =>
-          ok(await overview(bctx, ctx.bindings.get('iracing')?.route(), editingOn())),
+        overview: async () => ok(await overview(bctx, ctx.bindings.get('iracing')?.route())),
         set: async ({ id }) => setView(bctx, id, await ctx.names.devices()),
 
         changePreview: async (request) => reviewChange(bctx, request, await ctx.names.devices()),
@@ -50,8 +45,6 @@ export default defineFeatureMain({
         },
 
         async listenStart() {
-          const on = refuseWhenOff();
-          if (!on.ok) return on;
           const mine = ++listenTurn;
           const started = await ctx.ports.input.start();
           if (!started.ok) return started;
