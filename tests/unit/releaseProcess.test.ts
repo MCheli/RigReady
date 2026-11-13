@@ -292,11 +292,17 @@ describe('code signing (PLAT-017)', () => {
       "'RigReady.exe'",
       "'Uninstall RigReady.exe'",
       "'resources\\app-update.yml'",
-      "& npx tsx (Join-Path $PSScriptRoot 'verify-update-signature.ts') --installer $installerPath --feed $feedFile",
+      "$checkScript = Join-Path $PSScriptRoot 'verify-update-signature.ts'",
+      '& npx tsx $checkScript --installer $installerPath --feed $feedFile',
       '-ArgumentList @(\'/S\', "/D=$installDir")',
       "-ArgumentList '/S'",
     ]) {
       expect(script, needed).toContain(needed);
+    }
+    // npm's npx.ps1 evaluates its arguments again from the line's text in its own scope, where
+    // $PSScriptRoot is empty: an expression in an npx call's arguments broke the v2.0.0 release run.
+    for (const line of script.split(/\r?\n/).filter((l) => /^\s*&?\s*npx\b/.test(l))) {
+      expect(line, 'npx gets plain values, not expressions').not.toMatch(/\(|\$PSScriptRoot/);
     }
   });
 });
