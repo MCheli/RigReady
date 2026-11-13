@@ -485,6 +485,76 @@ test('stand down on close: the notice can be moved to the top bar, where it cove
   await shot('cancelled-from-the-top-bar');
 });
 
+test('stand down on close: "Change this for the setup" from the editor of another setup opens the setup counting down, and asks first when the other has unsaved changes', async ({
+  rig,
+}) => {
+  test.setTimeout(120_000);
+  let run = await rig.launch('fly-game-running', 'fly-stand-down-other-setup');
+  await expect(run.page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await countdownByHand(run, 300);
+  // A second setup, the one open in the editor when the countdown starts.
+  await fs.copyFile(
+    path.join('fixtures', 'scenarios', 'profiles', 'fly-dcs-uh-1h.yaml'),
+    path.join(run.dataRoot, 'profiles', 'fly-dcs-uh-1h.yaml')
+  );
+  run = await inSession(run);
+  const { page, shot } = run;
+  await closeGame(run);
+  const notice = page.getByTestId('stand-down-notice');
+  await expect(notice).toHaveAttribute('data-state', 'counting');
+  const name = page.getByTestId('edit-name').locator('input');
+  const openHuey = async (): Promise<void> => {
+    await page.getByTestId('mode-configure').click();
+    await page.getByTestId('nav-profiles').click();
+    await page
+      .locator('[data-testid="profile-row"][data-name="DCS UH-1H"]')
+      .getByTestId('profile-edit')
+      .click();
+    await expect(page.getByTestId('profile-edit-page')).toBeVisible();
+    await expect(name).toHaveValue('DCS UH-1H');
+  };
+
+  // From the Huey's editor with nothing changed: the Hornet's editor, which counts down.
+  await openHuey();
+  await page.getByTestId('stand-down-notice-edit').click();
+  await expect(page).toHaveURL(new RegExp(`#/configure/profiles/${SETUP}$`));
+  await expect(name).toHaveValue('DCS F/A-18C');
+  await page.getByTestId('edit-on-close').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('edit-on-close-seconds')).toContainText('5 minutes');
+  await expect(page.getByTestId('discard-warning')).toHaveCount(0);
+
+  // The Huey renamed and not saved: the editor asks before it drops that, and names it.
+  await openHuey();
+  await name.fill('DCS UH-1H (night)');
+  await page.getByTestId('stand-down-notice-edit').click();
+  await expect(page.getByTestId('discard-warning')).toBeVisible();
+  await expect(page.getByTestId('discard-other-setup')).toHaveText(
+    'You asked to open another setup. Your changes to "DCS UH-1H" are not saved. Its file stays exactly as it was.'
+  );
+  await focusNothing(page);
+  await shot('asks-before-another-setup');
+  // "Keep editing": still the Huey, with the new name.
+  await page.getByTestId('discard-stay').click();
+  await expect(page.getByTestId('discard-warning')).toHaveCount(0);
+  await expect(page).toHaveURL(/#\/configure\/profiles\/fly-dcs-uh-1h$/);
+  await expect(name).toHaveValue('DCS UH-1H (night)');
+
+  // "Discard": the Hornet's editor, and the Huey's file as it was.
+  await page.getByTestId('stand-down-notice-edit').click();
+  await page.getByTestId('discard-confirm').click();
+  await expect(page).toHaveURL(new RegExp(`#/configure/profiles/${SETUP}$`));
+  await expect(name).toHaveValue('DCS F/A-18C');
+  await expect(page.getByTestId('edit-on-close-seconds')).toContainText('5 minutes');
+  await focusNothing(page);
+  await shot('the-setup-counting-down');
+  const huey = await fs.readFile(path.join(run.dataRoot, 'profiles', 'fly-dcs-uh-1h.yaml'), 'utf8');
+  expect(huey).toMatch(/^name: DCS UH-1H\r?$/m);
+  expect(huey).not.toContain('night');
+
+  await page.getByTestId('stand-down-notice-cancel').click();
+  await expect(notice).toHaveCount(0);
+});
+
 test('stand down on close: on a page with the Save bar along the bottom, the notice stands above the bar and Save and Back can be pressed', async ({
   rig,
 }) => {

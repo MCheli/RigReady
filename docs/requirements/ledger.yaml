@@ -1432,9 +1432,11 @@ requirements:
       - "Changes are saved only on Save; Cancel leaves the file byte-identical (unit test compares file hashes)."
       - "Renaming a profile keeps its id stable, so last-used and backups still reference it."
       - "Save takes the user to the list of setups only while they are still in the editor: a save that answers after they went on to another page (Play) leaves them there, and that page follows the saved setup (scenario with the save slowed by slowFiles)."
+      - "When the address changes to another setup while the editor is open (the Stand down notice's 'Change this for the setup', the assistant's 'Open setup'), the editor reads and shows that setup. When the one on screen has changes that are not saved, it asks first and names it, and 'Keep editing' stays with them."
     notes:
       - "2026-10-03: the layout sentence corrected to the architecture: a setup has no layout field of its own; its layout is the display.layout check item (by layout name), and the desk layout is settings.deskLayoutId."
       - "2026-11-12: a save that answered after the user had opened Play took them back to the Setups list. On GitHub's slower runners this failed integration.e2e.ts (install choice) now and then, always with the Setups list on screen. ProfileEditPage now moves only a user still in the editor, and the scenario slows the save on purpose."
+      - "2026-11-13: review M6. The editor read its setup only when it opened, so a move from one setup to another kept the first one's draft on screen while Open file, Show file, the shortcut and the copy list used the second one's id. The scenario step failed before the fix: the address named the F/A-18C and the editor showed the UH-1H. The assistant's 'Open setup' takes the same way in and has no scenario step of its own. A change made while a save runs now also stays on screen, still unsaved, as in VPAD-007; no scenario step covers that in this editor yet."
     status: done
     evidence:
       - "tests/e2e/profiles.e2e.ts#setups: name, notes, install, and what Launch starts are edited; Cancel leaves the file as it was; a rename keeps the id"
@@ -1444,6 +1446,9 @@ requirements:
       - "artifacts/screens/profile-edit-basics/01-edited.png"
       - "artifacts/screens/profile-edit-basics/02-renamed-on-fly.png"
       - "artifacts/screens/capture-install/01-install-chosen.png"
+      - 'tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: "Change this for the setup" from the editor of another setup opens the setup counting down, and asks first when the other has unsaved changes'
+      - "artifacts/screens/fly-stand-down-other-setup/01-asks-before-another-setup.png"
+      - "artifacts/screens/fly-stand-down-other-setup/02-the-setup-counting-down.png"
 
   - id: CFG-PROFILE-007
     title: Edit checklist items
@@ -2285,6 +2290,7 @@ requirements:
     done_means:
       - "In the dialog that edits a monitor layout by hand, only the rows of monitors scroll: the title and the buttons Cancel and 'Save layout' stay inside the window, also in the smallest window RigReady allows, which is too low for all the rows."
       - "A layout that is refused says why between the rows and the buttons, in view without scrolling."
+      - "While 'Save layout' waits for its answer the dialog stays open: Cancel is off, and Escape or a click beside the dialog do nothing. The notice names the layout that was saved."
     status: done
     evidence:
       - test: "tests/e2e/displays.e2e.ts#monitors: in a window too low for the layout editor, its rows scroll and Save layout stays in view"
@@ -2292,8 +2298,11 @@ requirements:
       - "artifacts/screens/display-edit-low-window/01-top-of-the-rows.png"
       - "artifacts/screens/display-edit-low-window/02-last-row.png"
       - "artifacts/screens/display-edit/01-overlap-refused.png"
+      - "tests/e2e/displays.e2e.ts#monitors: while an edited layout is being saved, the dialog waits for the answer, and the notice names the layout that was saved"
+      - "artifacts/screens/display-edit-slow/01-saving.png"
     notes:
       - "2026-11-12: the owner's finding 38. Before, a dialog taller than the window scrolled as a whole, the buttons with the rows, and the reason for a refusal was under the last row, where it scrolled away with them. A dialog keeps its own buttons; it does not use the shared Save bar."
+      - '2026-11-13: review L24. The dialog could be closed while a save ran; the late answer then said Saved "undefined", or closed the dialog of a layout opened meanwhile. The step failed before the fix: Escape closed the dialog.'
 
   # ---------------------------------------------------------------------------
   # DEVICES AND TROUBLESHOOTING
@@ -4580,6 +4589,7 @@ requirements:
       - "The bar says 'Unsaved changes' once something was moved or renamed and 'No unsaved changes' with 'Save layout' off before that."
       - "Cancel with a change asks first, and 'Keep editing' keeps the change; Cancel with nothing changed closes the editor without a question. Saving closes the editor and the bar with it."
       - "The same bar is under a drawing made from the user's own photos. With nothing placed on the photo yet, 'Save layout' is off and the bar says 'You can save once one control is placed.' beside it."
+      - "A cheat sheet chosen in the palette while the editor has a change asks first. 'Keep editing' keeps the change; 'Leave without saving' opens the page afresh on that sheet."
     status: done
     evidence:
       - test: "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: in the layout editor, Save layout and Cancel stay in the window from the top of the page to its end, and Cancel asks before it drops a change"
@@ -4590,9 +4600,11 @@ requirements:
       - "artifacts/screens/cheat-sheets-photo-save-bar/01-top-of-the-page.png"
       - "artifacts/screens/cheat-sheets-photo-save-bar/02-end-of-the-page.png"
       - "artifacts/screens/cheat-sheets-photo-save-bar/03-one-placed-can-be-saved.png"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/04-palette-asks.png"
     notes:
       - "2026-11-12: the owner's finding 38. The two buttons were in the editor's own row of buttons, which scrolls away with the drawing, and Cancel dropped a change without asking."
       - "2026-11-12: written as SHEET-023 on its branch, then SHEET-028; the photo drawings took 023 to 027 on main first and the Thrustmaster throttles 028 and 029, so it is 030 here."
+      - "2026-11-13: review M5. The palette dropped the change without asking; the step failed before the fix."
 
   # ---------------------------------------------------------------------------
   # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)
@@ -6022,14 +6034,18 @@ requirements:
     done_means:
       - "On the page that shows what a .rigready file holds, Import and Cancel are in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
       - "With nothing ticked, Import is off and the bar says 'Tick at least one thing to import.' The bar never says 'unsaved', and leaving the page asks nothing."
+      - "Import pressed again while an import runs, from the keyboard too, does not import a second time."
     status: done
     evidence:
       - test: "tests/e2e/share-selective.e2e.ts#share: Import and Cancel stay in the window from the top of what a file holds to its end, and Import says why it is off when nothing is ticked"
       - "artifacts/screens/share-import-bar/01-top-of-the-page.png"
       - "artifacts/screens/share-import-bar/02-end-of-the-page.png"
       - "artifacts/screens/share-import-bar/03-nothing-ticked.png"
+      - "tests/e2e/share-selective.e2e.ts#share: Import pressed again from the keyboard while the import runs imports once"
+      - "artifacts/screens/share-import-once/01-imported-once.png"
     notes:
       - "2026-11-12: the owner's finding 38. The two buttons were in a panel at the end of the page. An import that fails is said in the bar and, as before, at the top of the page; no scenario makes an import fail, so that is not in a picture."
+      - "2026-11-13: review L22. Vuetify's busy button still takes Enter and Space, and the shared bar passed the second press on: with 'Keep both' a second import ran, two changes on the Safety page before the fix. The bar now ignores Save while a save runs, on every page that uses it."
 
   # ---------------------------------------------------------------------------
   # RACING — iRacing
@@ -6679,6 +6695,7 @@ requirements:
       - "On the Wheel page, 'Save presets' is in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
       - "The bar says 'Tuning presets not saved yet' when a preset was changed and 'Tuning presets: nothing to save' with the button off when not; after a save it says what was saved."
       - "Leaving the page with presets that are not saved asks first, and staying keeps what was typed."
+      - "A value typed while the presets save stays on screen, and the bar still says it is not saved. Choosing Wheel in the palette while on the Wheel page keeps presets not saved yet."
     status: done
     evidence:
       - test: 'tests/e2e/racing.e2e.ts#racing: "Save presets" stays in the window from the top of the wheel page to its end, and leaving with presets that are not saved asks first'
@@ -6686,8 +6703,12 @@ requirements:
       - "artifacts/screens/racing-wheel-save-bar/02-end-of-the-page.png"
       - "artifacts/screens/racing-wheel-save-bar/03-leaving-asks.png"
       - "artifacts/screens/racing-wheel-save-bar/04-saved.png"
+      - 'tests/e2e/racing.e2e.ts#racing: presets not saved yet survive "Wheel" chosen in the palette, and a value typed while they save'
+      - "artifacts/screens/racing-wheel-keeps-presets/01-palette-kept-the-presets.png"
+      - "artifacts/screens/racing-wheel-keeps-presets/02-typed-while-saving.png"
     notes:
       - "2026-11-12: the owner's finding 38. The button was in the heading of 'Your tuning presets', far down the page, and leaving dropped what was typed without a word. A save that fails is still said only at the top of the page."
+      - "2026-11-13: review L23 and M5. The save put main's copy over a value typed meanwhile and the bar said nothing was left to save; the palette's Wheel dropped the presets. The step failed before each fix."
 
   - id: RACE-WHEEL-001
     title: The Wheel page and its checks for every major wheelbase brand
@@ -7160,6 +7181,7 @@ requirements:
       - "In the profile editor, Save and Back are in a bar on the bottom edge of the window that stays in view however far the page is scrolled, at the usual window size and in a window wider than the page. The bar does not lie over the menu beside the page."
       - "The bar says 'Unsaved changes' when what is on screen differs from what was saved and 'No unsaved changes' when not, what the last save did, and why Save is off when it is. Leaving the editor with unsaved changes, by Back or by the menu, asks first."
       - "The bar is a shared component (src/renderer/components/SaveBar.vue, listed in docs/CONTRIBUTING-FEATURES.md) that any page with a Save button can use."
+      - "A change made in the editor while a save is running stays on screen, and the bar says it is not saved: main's answer takes its place only when nothing was changed since Save was pressed."
     status: done
     evidence:
       - test: "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
@@ -7169,9 +7191,14 @@ requirements:
       - "artifacts/screens/virtual-controller-editor/06-scrolled-save-in-view.png"
       - "artifacts/screens/virtual-controller-editor/07-saved.png"
       - "artifacts/screens/virtual-controller-editor/10-wide-window.png"
+      - "src/features/virtual-controller/core/editing.test.ts#keeps a change made while the save ran, and it still reads as unsaved"
+      - "src/features/virtual-controller/core/editing.test.ts#shows what main saved when nothing was changed while the save ran"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a change made while a save is running stays on screen, and the bar says it is not saved"
+      - "artifacts/screens/virtual-controller-save-while-editing/01-typed-while-saving.png"
     notes:
       - "2026-11-12: the owner's finding 38. Only the virtual controller's editor uses the bar so far. The other pages with a Save button are not changed here; the setup editor has a footer of its own that can move to this bar."
       - "2026-11-12, later: the bar is now on every page where the button that keeps a change could scroll out of view: the DCS Screens tab, the import of a shared setup, the tuning presets of the Wheel page and the cheat sheets layout editor, each with a requirement of its own. For them the bar takes its own words for the two states, the page's own test ids for the buttons, a Back that closes a panel, and can be told not to ask before leaving. The setup editor, the new setup page, the export and the restore of a backup keep their own footers, which are pinned already."
+      - "2026-11-13: review of the night's merges, M3. A name typed or a slider moved while a save ran was replaced by the saved copy, and the bar said 'Saved'. The scenario step failed before the fix: the name went back to what was sent."
 
   - id: VPAD-008
     title: A live picture of the virtual controller, in the running panel and in the editor
@@ -8573,6 +8600,7 @@ requirements:
       - "Matching is fuzzy: the letters typed must appear in order and the reading that keeps them together and at the starts of words counts ('mr' finds Make ready, 'f18' finds F/A-18C); letters scattered inside words find nothing; words typed apart are found in any order in the title, a keyword, the heading or the hint; the letters found are marked in the title."
       - "With nothing typed the commands used last come first, then every other command under its heading (a heading with many shows its first few and counts the rest); with something typed, a command used recently wins a near tie and never a clear one. What was used last is remembered when RigReady is started again."
       - "It is operated by keyboard alone: arrow keys move the mark and go round at the ends, Enter opens or runs, Escape closes and the focus is back on the element that had it; after a page was opened the focus is on that page's heading. It is a combobox with a listbox (aria-activedescendant follows the mark), and it passes the axe scan and the colour-only scan when open, typed into, and with nothing found."
+      - "A command that links to the page on screen never drops changes that are not saved on it. A link to the very address on screen leaves the page as it is. A link that opens the page afresh on another address asks first, with the page's own question (the Save bar's 'Leave without saving?', the setup editor's 'Discard your changes?'), and 'Keep editing' leaves everything as it was."
     status: done
     evidence:
       - "src/renderer/shell/fuzzy.test.ts#finds the typed letters in order, whatever their case, and says where"
@@ -8594,6 +8622,16 @@ requirements:
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-palette/02-typed.png"
       - "artifacts/screens/shell-palette/04-recent.png"
+      - "src/renderer/shell/go.test.ts#leaves the page on screen as it is when the link is its own address and changes are unsaved"
+      - "src/renderer/shell/go.test.ts#asks before it opens the page afresh on another address, and keeps the changes when told to"
+      - "src/renderer/shell/go.test.ts#opens the page afresh on the new address once the user lets the changes go"
+      - "src/renderer/shell/go.test.ts#does not open the page afresh when a guard of the page keeps it where it is"
+      - 'tests/e2e/racing.e2e.ts#racing: presets not saved yet survive "Wheel" chosen in the palette, and a value typed while they save'
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: in the layout editor, Save layout and Cancel stay in the window from the top of the page to its end, and Cancel asks before it drops a change"
+      - "artifacts/screens/racing-wheel-keeps-presets/01-palette-kept-the-presets.png"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/04-palette-asks.png"
+    notes:
+      - "2026-11-13: review M5. The palette opened the page on screen afresh after the navigation, and that runs no route guard: 'Wheel' on the Wheel page dropped presets not saved yet, and a cheat sheet chosen in the palette dropped the layout editor's change. Both scenario steps failed before the fix. What is unsaved on screen is held in src/renderer/unsaved.ts, by the Save bar and by the setup editor."
 
   - id: NAV-GAMES-001
     title: The menu names no game - one Games entry, from which the pages about a game open

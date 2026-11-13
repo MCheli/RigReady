@@ -112,7 +112,7 @@ Moza Pit House, SimPro Manager, RaceHub and the Cammus software keep their prese
 
 A Fanatec base keeps five tuning presets in its own memory. No file on the PC holds them, and Fanatec offers no supported way to read them, so RigReady cannot back them up by itself. What it can do is keep the copy you write down.
 
-Five tabs, **Preset 1** to **Preset 5**, each with a name, a note ("Which rim, which cars"), and a field for each tuning parameter: SEN, FF, FFS, NDP, NFR, NIN, INT, FEI, FOR, SPR, DPR, BLI, SHO and BRF. Type the values as the base shows them ("1080", "AUT", "Lin", "Off"); each field's hint says what the parameter is. Tick **The preset I drive with** on the one you normally use. **Save presets** stores them with RigReady's own data, so they survive a reinstall of the Fanatec software. RigReady never writes tuning to the base.
+Five tabs, **Preset 1** to **Preset 5**, each with a name, a note ("Which rim, which cars"), and a field for each tuning parameter: SEN, FF, FFS, NDP, NFR, NIN, INT, FEI, FOR, SPR, DPR, BLI, SHO and BRF. Type the values as the base shows them ("1080", "AUT", "Lin", "Off"); each field's hint says what the parameter is. Tick **The preset I drive with** on the one you normally use. **Save presets** stores them with RigReady's own data, so they survive a reinstall of the Fanatec software. A value you type while the save is still being written stays, and the bar says it is not saved yet. RigReady never writes tuning to the base.
 
 ![Recording the presets](../../../artifacts/screens/racing-wheel/02-presets.png)
 

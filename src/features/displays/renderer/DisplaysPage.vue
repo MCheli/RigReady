@@ -270,8 +270,7 @@ function onApplied(result: { kept: boolean; message: string }): void {
   void load();
 }
 
-function onEdited(next: DisplaysView): void {
-  const name = editing.value?.name;
+function onEdited(next: DisplaysView, name: string): void {
   editing.value = undefined;
   view.value = next;
   say(`Saved "${name}"`);

@@ -33,7 +33,9 @@ Among the actions:
 - **Keyboard shortcuts** ([the whole list](keyboard-shortcuts.md)) and **About RigReady**.
 - **Open the manual** and **Open the manual page for this screen**: the manual's front page, or its page about the screen you are on, in your browser (the same as the question mark in the header).
 
-A page opens and nothing more is said. An action reports what happened in a toast at the bottom of the window, in the feature's own words: "Backed up 340 files (12.4 MB) as "2026-10-03 14-05 Everything"", with a second line for what was skipped and a button to the page it concerns. An action that takes more than a moment shows that it is running, with its progress, until the result replaces it.
+A page opens and nothing more is said. Changes you have not saved are never dropped by the palette: choosing the page you are already on leaves it as it is, and a link that would open that page again for something else (the cheat sheet of another aircraft while the layout editor has a change) first asks **Leave without saving?**, as leaving the page does.
+
+An action reports what happened in a toast at the bottom of the window, in the feature's own words: "Backed up 340 files (12.4 MB) as "2026-10-03 14-05 Everything"", with a second line for what was skipped and a button to the page it concerns. An action that takes more than a moment shows that it is running, with its progress, until the result replaces it.
 
 A toast goes away by itself after a few seconds, longer for a warning or a failure, and stays while the pointer or the keyboard focus is on it. Something that went wrong is never shown by colour alone: the words and the icon say it.
 

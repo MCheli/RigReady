@@ -61,14 +61,18 @@ function setValue(param: string, value: string): void {
 }
 
 async function save(): Promise<void> {
-  if (!presets.value) return;
+  if (!presets.value || saving.value) return;
   saving.value = true;
+  const sent = JSON.stringify(presets.value);
   const result = await api.savePresets(presets.value);
   saving.value = false;
   if (!result.ok) {
     error.value = errorText(result.error);
     return;
   }
+  // The fields stay open during the save. A value typed meanwhile is kept, and the bar
+  // still says it is not saved.
+  if (JSON.stringify(presets.value) !== sent) return;
   dirty.value = false;
   presets.value = structuredClone(result.value);
   saved.value =
