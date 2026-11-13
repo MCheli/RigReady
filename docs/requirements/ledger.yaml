@@ -4432,12 +4432,17 @@ requirements:
       - "In the layout editor of a cheat sheet, 'Save layout' and Cancel are in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
       - "The bar says 'Unsaved changes' once something was moved or renamed and 'No unsaved changes' with 'Save layout' off before that."
       - "Cancel with a change asks first, and 'Keep editing' keeps the change; Cancel with nothing changed closes the editor without a question. Saving closes the editor and the bar with it."
+      - "The same bar is under a drawing made from the user's own photos. With nothing placed on the photo yet, 'Save layout' is off and the bar says 'You can save once one control is placed.' beside it."
     status: done
     evidence:
       - test: "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: in the layout editor, Save layout and Cancel stay in the window from the top of the page to its end, and Cancel asks before it drops a change"
+      - test: "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - Save layout and Cancel stay in the window from the top of the page to its end, and the bar says why nothing can be saved yet"
       - "artifacts/screens/cheat-sheets-editor-save-bar/01-top-of-the-page.png"
       - "artifacts/screens/cheat-sheets-editor-save-bar/02-end-of-the-page.png"
       - "artifacts/screens/cheat-sheets-editor-save-bar/03-cancel-asks.png"
+      - "artifacts/screens/cheat-sheets-photo-save-bar/01-top-of-the-page.png"
+      - "artifacts/screens/cheat-sheets-photo-save-bar/02-end-of-the-page.png"
+      - "artifacts/screens/cheat-sheets-photo-save-bar/03-one-placed-can-be-saved.png"
     notes:
       - "2026-11-12: the owner's finding 38. The two buttons were in the editor's own row of buttons, which scrolls away with the drawing, and Cancel dropped a change without asking."
       - "2026-11-12: written as SHEET-023 on its branch; the photo drawings took 023 to 027 on main first, so it is 028 here."
