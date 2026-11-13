@@ -14,6 +14,7 @@ import type {
   SetView,
 } from '../contract';
 import { changeBinding, type Change, type NewBinding } from './edit';
+import { iracingKeyOf } from './keys';
 import { inWords, setScope } from './names';
 import { findSet, setView, simulatorOf, type BindingsContext } from './view';
 
@@ -67,6 +68,14 @@ export const seenOf = (set: BindingSet, bytes: Uint8Array): string =>
 async function wanted(ctx: BindingsContext, request: ChangeRequest): Promise<Result<NewBinding>> {
   const to = request.binding;
   if (to === null || to.kind === 'key') return ok(to);
+  if (to.kind === 'keyPress') {
+    const key = iracingKeyOf(to);
+    if (key.kind === 'key') return ok(key);
+    return err(
+      'iracing-bindings.edit.key',
+      key.kind === 'waiting' ? 'Press the key that goes with Shift, Ctrl or Alt.' : key.why
+    );
+  }
   // Both ids come from the controller Windows lists, never from the page.
   const started = await ctx.ports.input.start();
   if (!started.ok) {

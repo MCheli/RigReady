@@ -551,7 +551,7 @@ describe('AI-009 a request for AI help says whose guide it carries', () => {
     const status = await app.invoke<AiStatus>('ai-assist:status');
     const guide = status.whatIsSent.find((p) => /binding guide/.test(p.title))!.lines.join(' ');
     expect(guide).toMatch(
-      /Sent: the guide for the aircraft when there is one \(RigReady's, one drafted by AI, or your own\)/
+      /Sent: the guide when there is one \(RigReady's, one drafted by AI, or your own\)/
     );
     expect(guide).toMatch(/or any other content of your files\./);
   });

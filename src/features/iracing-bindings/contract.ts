@@ -203,6 +203,20 @@ export const WantedBindingSchema = z.discriminatedUnion('kind', [
     /** Two bits each: Shift 0x03, Ctrl 0x0C, Alt 0x30. */
     modifiers: z.number().int().min(0).max(63),
   }),
+  /**
+   * A key as a window saw it pressed, for a page of another feature (the binding guide) that
+   * cannot hold iRacing's key table: turned into iRacing's key code here, by the same rules as
+   * this page's own key reader (core/keys.ts), or refused with its reason.
+   */
+  z.object({
+    kind: z.literal('keyPress'),
+    key: z.string().max(40),
+    code: z.string().max(40),
+    shiftKey: z.boolean(),
+    ctrlKey: z.boolean(),
+    altKey: z.boolean(),
+    metaKey: z.boolean().optional(),
+  }),
 ]);
 export type WantedBinding = z.infer<typeof WantedBindingSchema>;
 

@@ -255,14 +255,24 @@ export class ProfileStore {
     return ok({ profile: parsed.data, hasComments: hasYamlComments(text.value) });
   }
 
-  async save(profile: Profile): Promise<Result<Profile>> {
+  /**
+   * Writes the profile file. A save that is part of a user action changing other files too
+   * passes that action's `group` and `journal: true`, so the Safety page lists the setup
+   * with the files and one Undo puts it back with them.
+   */
+  async save(
+    profile: Profile,
+    options: { reason?: string; group?: ChangeGroup; journal?: boolean } = {}
+  ): Promise<Result<Profile>> {
     const parsed = ProfileSchema.safeParse(profile);
     if (!parsed.success) {
       return err('profile.invalid', 'The profile is not valid.', z.prettifyError(parsed.error));
     }
     const text = yaml.dump(parsed.data, { noRefs: true, lineWidth: 120 });
     const written = await this.files.write(this.fileFor(parsed.data.id), text, {
-      reason: `Save profile ${parsed.data.name}`,
+      reason: options.reason ?? `Save profile ${parsed.data.name}`,
+      ...(options.group ? { group: options.group } : {}),
+      ...(options.journal ? { journal: true } : {}),
     });
     if (!written.ok) return written;
     this.valid.set(parsed.data.id, structuredClone(parsed.data));

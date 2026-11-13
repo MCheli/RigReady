@@ -13,7 +13,7 @@ This section covers every game other than DCS World, which has [its own section]
 | Game | What RigReady does |
 |---|---|
 | DCS World | The deepest: installs, the Saved Games folder, screen setup, Export.lua, bindings with editing, cleanup, device ID repair, copying between aircraft and snapshots, cheat sheets, kneeboard pages and binding guides. See [DCS World](../dcs/index.md). |
-| [iRacing](iracing.md) | Detection, launch, files to back up, a page with the controllers and bindings from the control profile iRacing uses (`controls.cfg` and `joyCalib.yaml`), a device ID repair, quick backups, checks for a racing setup. |
+| [iRacing](iracing.md) | Detection, launch, files to back up, a page with the controllers and bindings from the control profile iRacing uses (`controls.cfg` and `joyCalib.yaml`), a device ID repair, quick backups, checks for a racing setup, and [binding guides by class of car](iracing-binding-guide.md). |
 | [Le Mans Ultimate](le-mans-ultimate.md) | Detection, launch through Steam, files to back up, a page with controllers, force feedback and bindings from `direct input.json`, a repair for a renamed controller, quick backups, checks. |
 | [BeamNG.drive](beamng.md) | Detection, launch through Steam, the versioned user folder, a page with one binding map per controller, copying bindings from an older version or to a replacement controller, quick backups, checks. |
 | [Assetto Corsa](assetto-corsa.md) | Detection, launch through Steam, files to back up, a page with the controllers, bindings and force feedback from `controls.ini`, quick backups. |

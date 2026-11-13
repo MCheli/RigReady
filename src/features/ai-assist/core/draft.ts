@@ -1,5 +1,15 @@
 import { z } from 'zod';
-import { PackSchema, PlaceSchema, RoleSchema, TierSchema, type Pack } from './pack';
+import {
+  GAME_PLACES,
+  GAME_ROLES,
+  PackSchema,
+  PlaceSchema,
+  RoleSchema,
+  TierSchema,
+  type GuideGame,
+  type Pack,
+} from './pack';
+import { IRACING_PREFIX } from './iracing';
 import { devicesText, oneLine, type Snapshot } from './snapshot';
 import type { Parsed } from './suggest';
 
@@ -12,7 +22,8 @@ import type { Parsed } from './suggest';
 
 export const MAX_DRAFT_ITEMS = 60;
 
-export function draftSchema(): Record<string, unknown> {
+export function draftSchema(game: GuideGame = 'dcs'): Record<string, unknown> {
+  const iracing = game === 'iracing';
   return {
     type: 'object',
     additionalProperties: false,
@@ -20,22 +31,30 @@ export function draftSchema(): Record<string, unknown> {
     properties: {
       summary: {
         type: 'string',
-        description: 'Two or three sentences on how to set this aircraft up.',
+        description: iracing
+          ? 'Two or three sentences on how to set these cars up.'
+          : 'Two or three sentences on how to set this aircraft up.',
       },
       items: {
         type: 'array',
         items: {
           type: 'object',
           additionalProperties: false,
-          required: ['title', 'tier', 'place', 'role', 'what', 'when', 'actionIds'],
+          required: [
+            'title',
+            'tier',
+            'place',
+            'role',
+            'what',
+            'when',
+            'actionIds',
+            ...(iracing ? ['axis'] : []),
+          ],
           properties: {
             title: { type: 'string' },
             tier: { type: 'string', enum: ['must', 'should', 'nice'] },
-            place: { type: 'string', enum: ['hotas', 'panel', 'keyboard'] },
-            role: {
-              type: 'string',
-              enum: ['stick', 'throttle', 'pedals', 'mfd', 'panel', 'keyboard'],
-            },
+            place: { type: 'string', enum: [...GAME_PLACES[game]] },
+            role: { type: 'string', enum: [...GAME_ROLES[game]] },
             what: { type: 'string', description: 'What it does, one sentence.' },
             when: { type: 'string', description: 'When you use it, one sentence.' },
             actionIds: {
@@ -43,6 +62,14 @@ export function draftSchema(): Record<string, unknown> {
               items: { type: 'string' },
               description: 'Ids from <actions>.',
             },
+            ...(iracing
+              ? {
+                  axis: {
+                    type: 'boolean',
+                    description: 'True when these actions belong on an axis (steering, a pedal).',
+                  },
+                }
+              : {}),
           },
         },
       },
@@ -51,6 +78,18 @@ export function draftSchema(): Record<string, unknown> {
 }
 
 export function draftTask(snapshot: Snapshot): string {
+  if (snapshot.game === 'iracing') {
+    return [
+      devicesText(snapshot),
+      '',
+      `Task: write an iRacing binding guide for ${oneLine(snapshot.aircraftName)} for someone who does not know these cars.`,
+      '- Group the important controls into items (one item per control, listing every action id it needs, for example brake bias up and down).',
+      '- tier must = needed to drive and race; should = makes it much easier; nice = convenient.',
+      '- place and role say where it belongs: on the wheel, pedals or shifter (rim), a button box (panel), or fine on the keyboard.',
+      '- axis is true for the steering and the pedals, which are bound in iRacing itself.',
+      `- 10 to ${MAX_DRAFT_ITEMS} items, most important first. Only ids from <actions>.`,
+    ].join('\n');
+  }
   return [
     devicesText(snapshot),
     '',
@@ -75,6 +114,7 @@ const RawDraftItemSchema = z.object({
   what: z.string().min(1).max(2000),
   when: z.string().min(1).max(2000),
   actionIds: z.array(z.string().max(200)).min(1).max(40),
+  axis: z.boolean().optional(),
 });
 
 const clip = (text: string, max: number): string =>
@@ -84,7 +124,9 @@ export function validateDraft(
   text: string,
   snapshot: Snapshot,
   model: string,
-  at: string
+  at: string,
+  /** Plain labels by the game's action name, where RigReady has them (iRacing's ids). */
+  labels: Record<string, string> = {}
 ): Parsed<{ pack: Pack; dropped: number }> {
   let json: unknown;
   try {
@@ -102,20 +144,34 @@ export function validateDraft(
     };
   }
   const byId = new Map(snapshot.actions.map((a) => [a.id, a]));
+  const game = snapshot.game;
   let dropped = 0;
   const items: Pack['items'] = [];
   for (const entry of raw.data.items) {
     const item = RawDraftItemSchema.safeParse(entry);
-    if (!item.success) {
+    // A place or role of the other game is not a guess worth keeping.
+    if (
+      !item.success ||
+      !GAME_PLACES[game].includes(item.data.place) ||
+      !GAME_ROLES[game].includes(item.data.role)
+    ) {
       dropped++;
       continue;
     }
-    const actions = [...new Set(item.data.actionIds)]
-      .map((id) => byId.get(id))
-      .filter((a) => a !== undefined);
+    const ids = [...new Set(item.data.actionIds)];
+    const actions = ids.map((id) => byId.get(id)).filter((a) => a !== undefined);
     if (actions.length === 0) {
       dropped++;
       continue;
+    }
+    if (game === 'iracing') {
+      // Half an item is worse than none (shift up without shift down would read as bound), and
+      // an axis item may only name actions iRacing takes on an axis.
+      const axisOk = (id: string): boolean => snapshot.iracing?.axisActions.includes(id) ?? false;
+      if (actions.length !== ids.length || (item.data.axis && !ids.every(axisOk))) {
+        dropped++;
+        continue;
+      }
     }
     items.push({
       id: `item-${items.length + 1}`,
@@ -124,11 +180,13 @@ export function validateDraft(
       place: item.data.place,
       role: item.data.role,
       need: 'all',
+      // An axis in iRacing is bound in iRacing; the guide says so instead of offering a button.
+      ...(game === 'iracing' && item.data.axis ? { input: 'axis' as const } : {}),
       what: clip(oneLine(item.data.what, 2000), 600),
       when: clip(oneLine(item.data.when, 2000), 300),
       actions: actions.map((a) => ({
         name: clip(a.name, 200),
-        label: clip(oneLine(a.name, 120), 120),
+        label: clip(oneLine(labels[a.name] ?? a.name, 120), 120),
       })),
     });
     if (items.length >= MAX_DRAFT_ITEMS) break;
@@ -144,12 +202,20 @@ export function validateDraft(
     plan.items.push(item.id);
     roles[item.role] = plan;
   }
+  const iracing = game === 'iracing';
   const pack = PackSchema.safeParse({
     format: 1,
-    aircraft: { id: snapshot.aircraftId, name: clip(oneLine(snapshot.aircraftName, 80), 80) },
+    game,
+    aircraft: {
+      // An iRacing guide names its class or car without the game in front.
+      id: iracing ? snapshot.aircraftId.slice(IRACING_PREFIX.length) : snapshot.aircraftId,
+      name: clip(oneLine(snapshot.aircraftName, 80), 80),
+    },
     summary: clip(oneLine(raw.data.summary, 4000), 800) || 'Drafted by AI.',
     sources: [
-      `Drafted by ${model} from DCS's action list for this aircraft. Not checked by a person.`,
+      iracing
+        ? `Drafted by ${model} from iRacing's action list. Not checked by a person.`
+        : `Drafted by ${model} from DCS's action list for this aircraft. Not checked by a person.`,
     ],
     drafted: { by: model, at },
     roles,
