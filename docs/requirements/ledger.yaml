@@ -5608,6 +5608,23 @@ requirements:
       - "artifacts/screens/share-import/03-choose.png"
       - "artifacts/screens/share-import/04-imported.png"
 
+  - id: SHARE-009
+    title: Import and Cancel stay in view under what a shared file holds
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "On the page that shows what a .rigready file holds, Import and Cancel are in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
+      - "With nothing ticked, Import is off and the bar says 'Tick at least one thing to import.' The bar never says 'unsaved', and leaving the page asks nothing."
+    status: done
+    evidence:
+      - test: "tests/e2e/share-selective.e2e.ts#share: Import and Cancel stay in the window from the top of what a file holds to its end, and Import says why it is off when nothing is ticked"
+      - "artifacts/screens/share-import-bar/01-top-of-the-page.png"
+      - "artifacts/screens/share-import-bar/02-end-of-the-page.png"
+      - "artifacts/screens/share-import-bar/03-nothing-ticked.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. The two buttons were in a panel at the end of the page. An import that fails is said in the bar and, as before, at the top of the page; no scenario makes an import fail, so that is not in a picture."
+
   # ---------------------------------------------------------------------------
   # RACING — iRacing
   # ---------------------------------------------------------------------------
