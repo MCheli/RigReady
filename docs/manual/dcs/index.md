@@ -4,7 +4,7 @@ description: What RigReady does for DCS World, its page under Configure > Games 
 order: 60
 ---
 
-For DCS World RigReady goes further than for any other game: it finds the installs, reads DCS's own files, shows what they say in plain language, and writes them for you when you ask it to. This section covers everything RigReady does with DCS: installs and aircraft, the MFD screens, Export.lua, the bindings and their problems, cheat sheets and kneeboard pages, the binding guide, and what still needs SimAppPro.
+For DCS World RigReady goes further than for any other game: it finds the installs, reads DCS's own files, shows what they say in plain language, and writes them for you when you ask it to. This section covers everything RigReady does with DCS: installs and aircraft, the MFD screens, Export.lua, the bindings and their problems, kneeboard pages, the binding guide, and what still needs SimAppPro. The cheat sheets and the trainer work for the racing games too, so they have their place in [Controls](../controls/index.md).
 
 ## The DCS World page
 
@@ -15,7 +15,7 @@ For DCS World RigReady goes further than for any other game: it finds the instal
 - **Export.lua**: the export scripts, described on [Export.lua](export-lua.md).
 - **SimAppPro**: what RigReady does in SimAppPro's place and which setups still need it running, described on [SimAppPro](simapppro.md).
 
-The bindings have their own page, **Configure > Bindings** with **DCS** chosen in its game picker, and the cheat sheets and the binding guide are under **Configure > Cheat sheets** and **Configure > Binding guide**. All of them find DCS the same way, through the installs described on [Installs and aircraft](installs.md).
+The bindings have their own page, **Configure > Bindings** with **DCS** chosen in its game picker, and the binding guide is under **Configure > Binding guide**, which the menu has when DCS is found. The [cheat sheets](../controls/cheat-sheets.md) under **Configure > Cheat sheets** serve DCS aircraft and racing cars alike. All of them find DCS the same way, through the installs described on [Installs and aircraft](installs.md).
 
 Binding guides are included for the F/A-18C, F-16C, A-10C II, A-10C, A-10A, F-14 (pilot and RIO), F-15E (pilot and WSO), F-15C, MiG-29, Su-27, J-11A, Su-33, Su-25T, Su-25, Ka-50 III, Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. Any other aircraft can have one drafted by AI with your own key; see [Binding guide and AI help](binding-guide-and-ai.md).
 

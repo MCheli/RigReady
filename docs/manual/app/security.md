@@ -15,6 +15,7 @@ RigReady installs for your Windows user only, under `%LOCALAPPDATA%\Programs\Rig
 - **Its own folder**, `%USERPROFILE%\.rigready`: setups, settings, backups, the log. See [the data folder](index.md).
 - **Game and tool files**, only when you ask: under Documents, Saved Games, AppData and the Steam libraries. Every such write is backed up first and listed on the [Safety page](../protect/safety-page.md), where it can be undone. A file RigReady did not write is never deleted.
 - **The desktop**, when you make a shortcut for a setup.
+- **HidHide's lists**, only when you start a [virtual controller](../hardware/virtual-controller.md) with "hide the real controllers". RigReady adds those controllers and its own controller reader through HidHide's own command-line tool, records what it added in its data folder first, and takes exactly that away when the virtual controller stops (or at the next start after a crash).
 
 Nothing under Program Files is changed. A setup you import, or a backup you restore, can only write to those same folders, whatever the file says, and a zip that tries to reach outside them is refused. Neither ever writes into the Start menu or its Startup folder, where Windows would open a file by itself at the next sign-in.
 
@@ -23,6 +24,10 @@ Nothing under Program Files is changed. A setup you import, or a backup you rest
 The game, the helper programs you chose, and the scripts you put in a setup. Each is started as a program with a list of arguments, never as a command line, so a name or a path in a setup cannot become a command. A script runs as you and only when you asked for it: a fix that runs a script shows the exact program and arguments first. A shared setup never carries scripts or launch commands; they are removed when it is made and again when it is imported, and the list of what was removed is shown.
 
 A small Python program that ships inside RigReady reads live controller input through Windows' DirectInput. It uses only Python's standard library and opens no network connection.
+
+## What it listens on
+
+Nothing, unless you let AI assistants use RigReady. Then the [MCP server](../ai/mcp-server.md) listens on this PC only (`127.0.0.1`, port 29170), and only while RigReady is open. An assistant that starts `RigReady.exe --mcp` gets in without a token you handle; one that connects to the address needs a pairing token, which **Forget** stops at once.
 
 ## What it closes
 

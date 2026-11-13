@@ -3,8 +3,10 @@ import {
   BINDINGS_ENTRY,
   bindingsPagesOf,
   gamePagesOf,
+  gamesOfRoute,
   navEntriesOf,
   navSectionsOf,
+  offeredFor,
   placesOf,
   SHELL_FEATURE,
   type FeatureManifest,
@@ -79,6 +81,7 @@ const guide: FeatureManifest = {
       to: '/configure/ai-assist',
       order: 310,
       section: 'Controls',
+      games: ['dcs'],
     },
   ],
 };
@@ -195,5 +198,60 @@ describe('NAV-GAMES-001 the pages that left the menu stand under an entry', () =
       ['Wheel', 'racing'],
       ['Bindings', SHELL_FEATURE],
     ]);
+  });
+});
+
+describe('NAV-GAMES-006 an entry or a page about a game is offered where the game is found', () => {
+  const controls = (found: readonly string[] | undefined) =>
+    navSectionsOf(ALL, found)
+      .find((g) => g.section === 'Controls')!
+      .entries.map((e) => e.title);
+
+  it('the menu has the binding guide only on a PC with DCS', () => {
+    expect(controls(['dcs'])).toEqual(['Bindings', 'Binding guide']);
+    expect(controls(['dcs', 'iracing'])).toEqual(['Bindings', 'Binding guide']);
+    expect(controls(['iracing'])).toEqual(['Bindings']);
+    expect(controls([])).toEqual(['Bindings']);
+    // An entry about no game in particular stays, whatever is found: Wheel, Games.
+    expect(navSectionsOf(ALL, []).map((g) => g.entries.map((e) => e.title))).toEqual([
+      ['Games'],
+      ['Bindings'],
+      ['Wheel'],
+    ]);
+  });
+
+  it('when what is found could not be told, nothing is held back', () => {
+    expect(controls(undefined)).toEqual(['Bindings', 'Binding guide']);
+    expect(offeredFor(['dcs'], undefined)).toBe(true);
+    expect(offeredFor(undefined, [])).toBe(true);
+    expect(offeredFor([], [])).toBe(true);
+    expect(offeredFor(['iracing', 'lmu'], ['lmu'])).toBe(true);
+    expect(offeredFor(['dcs'], ['iracing'])).toBe(false);
+  });
+
+  it('a page is about the games of the nearest entry or page it lies in', () => {
+    // The binding guide and its tabs.
+    expect(gamesOfRoute(ALL, '/configure/ai-assist')).toEqual(['dcs']);
+    expect(gamesOfRoute(ALL, '/configure/ai-assist/priorities')).toEqual(['dcs']);
+    // A game page and the pages below it, with a query or not.
+    expect(gamesOfRoute(ALL, '/configure/dcs')).toEqual(['dcs']);
+    expect(gamesOfRoute(ALL, '/configure/dcs/screens')).toEqual(['dcs']);
+    expect(gamesOfRoute(ALL, '/configure/racing/lmu')).toEqual([
+      'iracing',
+      'lmu',
+      'beamng',
+      'assetto-corsa',
+    ]);
+    // A bindings page is about its game, its tabs and an aircraft opened on it too.
+    expect(gamesOfRoute(ALL, '/configure/dcs-bindings/devices')).toEqual(['dcs']);
+    expect(gamesOfRoute(ALL, '/configure/dcs-bindings?aircraft=FA-18C_hornet')).toEqual(['dcs']);
+    expect(gamesOfRoute(ALL, '/configure/iracing-bindings')).toEqual(['iracing']);
+    // The Wheel entry lies inside the Racing page's address and is about no game.
+    expect(gamesOfRoute(ALL, '/configure/racing/wheel')).toBeUndefined();
+    // Neither are Games, Bindings, nor a page that only starts with the same letters.
+    expect(gamesOfRoute(ALL, '/configure/games/dcs')).toBeUndefined();
+    expect(gamesOfRoute(ALL, '/configure/bindings')).toBeUndefined();
+    expect(gamesOfRoute(ALL, '/configure/dcs-setup')).toBeUndefined();
+    expect(gamesOfRoute(ALL, '/fly')).toBeUndefined();
   });
 });

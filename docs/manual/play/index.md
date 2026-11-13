@@ -4,7 +4,7 @@ description: "What the Play screen shows when you open RigReady: the dial, the s
 order: 20
 ---
 
-The Play screen is what RigReady opens on. It shows the setup you used last, checks everything that setup needs, and says in a word or two whether the rig is ready. This section covers the screen itself, Make ready and launch, Stand down, sessions and history, switching setups, the compact view and the Play menu. Everything you do before and after a session happens here; the rest of the app is under **Configure**, the other mode at the top left of the window (see [Play and Configure](../getting-started/two-modes.md)).
+The Play screen is what RigReady opens on. It shows the setup you used last, checks everything that setup needs, and says in a word or two whether the rig is ready. This section covers the screen itself, Make ready and launch, Stand down, sessions and history, switching setups, the compact view, the Play menu and [the overlay](overlay.md) over the game. Everything you do before and after a session happens here; the rest of the app is under **Configure**, the other mode at the top left of the window (see [Play and Configure](../getting-started/two-modes.md)).
 
 This page explains what is on the screen. [Make ready and launch](make-ready-and-launch.md) covers the buttons, [Stand down](stand-down.md) what happens afterwards.
 

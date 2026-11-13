@@ -4,7 +4,7 @@ description: How RigReady finds, launches and backs up MSFS 2020, X-Plane, IL-2,
 order: 65
 ---
 
-For each game on this page RigReady finds the install, shows the version where it can read one, launches the game, tells whether it is running, and names the settings files worth backing up. It does not read or change the bindings of these games, and it has no game-specific checks for them. A setup for one of them gets the usual checks for devices, apps, monitors and audio ([Setups](../setups/index.md)).
+For each game on this page RigReady finds the install, shows the version where it can read one, launches the game, tells whether it is running, and names the settings files worth backing up. It does not read or change the bindings of these games, and it has no game-specific checks for them. A setup for one of them gets the usual checks for devices, apps, monitors and audio ([Setups](../setups/index.md)). The tools that are not about one game work the same for these as for any other: the [Devices page](../hardware/devices.md) with the input tester, health check and USB map, [Monitors and audio](../monitors-and-audio/index.md), helper apps, backups and the [Play screen](../play/index.md).
 
 Steam games are found in every Steam library and started by asking Steam (`steam.exe -applaunch <app id>`), with "update waiting" when Steam has one queued. When a game is not found, its page offers **Choose folder…** for a folder that contains the program named below ([How a game is found](index.md#how-a-game-is-found)). Restore the files only while the game is closed: the restore screen refuses while the game's program runs ([Restore](../protect/restore.md)).
 
@@ -37,4 +37,4 @@ Where each id and folder comes from is recorded in `docs/research/game-modules-2
 
 ![The Assetto Corsa Competizione page after Launch](../../../artifacts/screens/games-more-sims/03-acc.png)
 
-These games have no page under **Configure > Games > Racing** and no bindings for the [cheat sheets](../dcs/cheat-sheets.md) or the [trainer](../dcs/trainer.md); those cover the games listed with a bindings page in [Games](index.md).
+These games have no page under **Configure > Games > Racing** and no bindings for the [cheat sheets](../controls/cheat-sheets.md) or the [trainer](../controls/trainer.md); those cover the games listed with a bindings page in [Games](index.md).
