@@ -578,6 +578,19 @@ export class AiAssist {
   private async iracingList(): Promise<Result<AircraftList>> {
     const found = await this.iracingEntries();
     if (!found.ok) return found;
+    // The classes work on the bindings for all cars: without them there is nothing to show yet.
+    const overview = found.value.overview;
+    if (found.value.installed && overview && !overview.sets.some((s) => s.general)) {
+      return ok({
+        game: 'iracing',
+        available: true,
+        gameName: 'iRacing',
+        aircraft: [],
+        problem:
+          overview.source?.problem ??
+          'iRacing has no bindings file yet. Set up your controls in iRacing once, and the guide fills in.',
+      });
+    }
     const aircraft = await Promise.all(
       found.value.entries.map(async (entry) => {
         const guide = await this.guideFor(entry.id);

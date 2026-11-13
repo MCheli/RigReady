@@ -32,9 +32,10 @@ const gameItems = computed(() =>
 );
 const iracing = computed(() => store.game === 'iracing');
 
+/** The address keeps the game; the watch below follows it, so a link and the picker agree. */
 function chooseGame(id: GuideGame): void {
-  void store.selectGame(id);
-  void router.replace({ path: route.path, query: { ...route.query, game: id } });
+  if (asked() === id) void store.selectGame(id);
+  else void router.replace({ path: route.path, query: { ...route.query, game: id } });
 }
 
 const tabs = computed(() => [
@@ -53,6 +54,14 @@ function go(id: string): void {
 }
 
 watch([tab, () => store.aircraftId], () => window.scrollTo({ top: 0 }));
+// A link that names another game (?game=dcs) while the page is open switches to it.
+watch(
+  () => route.query['game'],
+  () => {
+    const wanted = asked();
+    if (wanted && wanted !== store.game) void store.selectGame(wanted);
+  }
+);
 
 const aircraftItems = computed(() =>
   (store.list?.aircraft ?? []).map((a) => ({
@@ -191,6 +200,16 @@ onBeforeUnmount(() => {
         The binding guide works on iRacing's own list of actions. Install iRacing and set up your
         controls in it once.
       </div>
+    </div>
+
+    <div
+      v-else-if="store.list && iracing && store.list.problem"
+      class="rr-panel rr-empty"
+      data-testid="ai-iracing-unread"
+    >
+      <v-icon icon="mdi-steering" size="36" class="mb-3" />
+      <div class="rr-row-title">iRacing's bindings cannot be read yet</div>
+      <div class="rr-row-sub">{{ store.list.problem }}</div>
     </div>
 
     <div

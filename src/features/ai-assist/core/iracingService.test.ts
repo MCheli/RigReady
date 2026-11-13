@@ -76,6 +76,18 @@ describe('the binding guide for iRacing: classes and cars', () => {
     ).toMatchObject({ available: false, aircraft: [] });
   });
 
+  it('says plainly, with no error, when iRacing is installed but its controls were never set up', async () => {
+    const a = (app = await wiredApp('shell-racing-pc', { files: [] }));
+    expect(await a.invoke<AircraftList>('ai-assist:aircraft', { game: 'iracing' })).toEqual({
+      game: 'iracing',
+      available: true,
+      gameName: 'iRacing',
+      aircraft: [],
+      problem:
+        'iRacing has no bindings file yet. Set up your controls in iRacing once, and the guide fills in.',
+    });
+  });
+
   it('lists the six classes, then each car with controls of its own; a car named for its class uses that guide', async () => {
     const a = await start();
     const list = await a.invoke<AircraftList>('ai-assist:aircraft', { game: 'iracing' });

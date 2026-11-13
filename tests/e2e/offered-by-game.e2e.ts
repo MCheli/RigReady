@@ -99,7 +99,12 @@ test('a PC whose only game is iRacing: the binding guide in the menu for iRacing
   await expect(page.getByTestId('ai-guide-page')).toBeVisible();
   await expect(page.getByTestId('ai-game')).toContainText('iRacing');
   await expect(page.getByTestId('ai-game')).not.toContainText('DCS');
-  await go(page, '/configure/settings');
+  // iRacing's controls were never set up on this PC: said plainly, not as an error.
+  await expect(page.getByTestId('ai-iracing-unread')).toContainText(
+    'iRacing has no bindings file yet. Set up your controls in iRacing once, and the guide fills in.'
+  );
+  await expect(page.locator('.v-alert.text-error, .v-alert.bg-error')).toHaveCount(0);
+  // The page is open: the address alone switches it.
   await go(page, '/configure/ai-assist?game=dcs');
   await expect(page.getByTestId('ai-no-dcs')).toContainText('DCS World was not found on this PC');
   await expect(page.locator('.v-alert.text-error, .v-alert.bg-error')).toHaveCount(0);

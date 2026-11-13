@@ -151,6 +151,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     // Another game was chosen while this one was read.
     if (game.value !== pick) return;
     list.value = aircraft.value;
+    error.value = undefined;
     const known = aircraft.value.aircraft.some((a) => a.id === aircraftId.value);
     const id = known ? aircraftId.value : aircraft.value.aircraft[0]?.id;
     if (id) await loadGuide(id);
@@ -178,6 +179,9 @@ export const useAiStore = defineStore('ai-assist', () => {
     aircraftId.value = undefined;
     guide.value = undefined;
     saved.value = undefined;
+    // What went wrong for the other game is not this one's.
+    error.value = undefined;
+    list.value = undefined;
     await load(id);
   }
 

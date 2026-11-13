@@ -135,6 +135,11 @@ export const AircraftListSchema = z.object({
   /** False when the game, or its bindings, are not on this PC. */
   available: z.boolean(),
   gameName: z.string(),
+  /**
+   * The game is here but its bindings cannot be read yet, and why (iRacing before its
+   * controls were ever set up). A plain state, not an error.
+   */
+  problem: z.string().optional(),
   aircraft: z.array(
     z.object({
       id: z.string(),
