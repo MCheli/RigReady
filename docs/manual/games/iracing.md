@@ -49,7 +49,7 @@ The setup path variables `{IRACING_USER}` (the Documents folder) and `{IRACING_I
 
 ## Repair: a wheel with a new Windows ID
 
-Windows gives every game controller an instance ID. When it changes, usually after the wheel was moved to another USB port or the PC was reinstalled, iRacing's files still name the old ID, and iRacing asks you to calibrate everything again.
+Windows gives every game controller an instance ID. The ID can change when the wheel is moved to another USB port, and after Windows or the wheel's driver is installed again. It does not change every time: a wheel moved to another port often keeps its ID. When the ID does change, iRacing's files still name the old one, and iRacing asks you to calibrate everything again.
 
 A controller in the **New Windows id** state shows a panel with the connected controllers it could now be. When exactly one controller of that model is attached (or exactly one with the same collection number, for a base that Windows lists as two controllers with the same name), it is suggested; otherwise you choose, and RigReady does not guess. **Update iRacing…** opens a confirmation that lists the files that will change. On **Update iRacing**, the old ID is replaced by the new one, 16 bytes at a time, in `controls.cfg`, as text in `joyCalib.yaml`, and in any per-car copies, as one journaled change with a backup of each file first. The files are read back afterwards, and Undo is on [the Safety page](../protect/safety-page.md). The repair is refused while the simulator runs.
 

@@ -6,6 +6,7 @@ import {
   axisLabel,
   axisPercent,
   axisRaw,
+  axisWindowsLabel,
   buttonGameName,
   buttonLabel,
   hatDirection,
@@ -13,20 +14,26 @@ import {
   rangeShortfall,
 } from '../core/input';
 import { HAT_POINTS } from '../core/trace';
+import { wheelAxes } from '../core/wheelAxes';
 import AxisTrace from './AxisTrace.vue';
 import { useReducedMotion } from './canvas';
 import HatRose from './HatRose.vue';
 import StickPlot from './StickPlot.vue';
 import { useInputStore } from './store';
+import WheelView from './WheelView.vue';
 
 /**
  * One controller in full, as a game sees it: each axis as a live trace with the range it
  * has reached, two axes against each other as a stick plot, hats as compass roses, and
- * every button lit while it is down and marked once it has been pressed.
+ * every button lit while it is down and marked once it has been pressed. A wheel base
+ * whose axes are known is drawn as a wheel and pedals in place of the stick plot.
  */
 const props = defineProps<{ device: InputDevice; raw: boolean }>();
 const input = useInputStore();
 const reduced = useReducedMotion();
+
+/** The base's axes by what they are, when this is a wheel base RigReady can name them for. */
+const wheel = computed(() => wheelAxes(props.device));
 
 const state = computed(() => {
   void input.versions[props.device.index];
@@ -56,9 +63,13 @@ const axes = computed(() => {
     const value = state.value?.axes[i];
     const range = input.ranges.get(`${props.device.index}:${i}`);
     const moved = range !== undefined && range.max - range.min > MOVED;
+    const label = axisLabel(props.device, i);
+    const windows = axisWindowsLabel(props.device, i);
     return {
       i,
-      label: axisLabel(props.device, i),
+      label,
+      /** What Windows calls it, where the row goes by the maker's name ("Wheel" is the X axis). */
+      windows: windows === label ? undefined : windows,
       game: axisGameName(props.device, i),
       percent: value === undefined ? undefined : axisPercent(value),
       raw: value === undefined ? undefined : axisRaw(value),
@@ -87,8 +98,8 @@ const hats = computed(() =>
 const pressedCount = computed(() => buttons.value.filter((b) => b.pressed).length);
 const triedCount = computed(() => buttons.value.filter((b) => b.tried).length);
 
-// ---- two axes against each other ----
-const pair = computed(() => input.pairFor(props.device));
+// ---- two axes against each other (not for a wheel: it has its own picture) ----
+const pair = computed(() => (wheel.value ? undefined : input.pairFor(props.device)));
 const axisItems = computed(() =>
   axes.value.map((a) => ({ title: props.raw ? a.game : a.label, value: a.i }))
 );
@@ -117,8 +128,13 @@ const position = computed(() => {
       Waiting for input from this controller. Press a button or move an axis.
     </div>
 
-    <div v-if="axes.length" class="controller-top" :class="{ 'with-plot': pair }">
-      <section v-if="pair" class="controller-section" data-testid="plot-section">
+    <div
+      v-if="axes.length"
+      class="controller-top"
+      :class="{ 'with-plot': pair, 'with-wheel': wheel }"
+    >
+      <WheelView v-if="wheel" :device="device" :axes="wheel" :raw="raw" />
+      <section v-else-if="pair" class="controller-section" data-testid="plot-section">
         <h3 class="rr-section-title">Two axes together</h3>
         <StickPlot :index="device.index" :x="pair.x" :y="pair.y" :reduced="reduced" />
         <div class="plot-readout rr-mono" data-testid="plot-position">
@@ -153,6 +169,9 @@ const position = computed(() => {
         <div v-for="a in axes" :key="a.i" class="axis" data-testid="axis" :data-axis="a.label">
           <div class="axis-name">
             {{ raw ? a.game : a.label }}
+            <div v-if="a.windows && !raw" class="axis-windows rr-muted" data-testid="axis-windows">
+              {{ a.windows }}
+            </div>
           </div>
           <AxisTrace :index="device.index" :axis="a.i" :reduced="reduced" />
           <div class="axis-numbers">
@@ -283,6 +302,23 @@ const position = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.axis-windows {
+  font-size: 11px;
+  line-height: 1.2;
+}
+/* A wheel: its picture is wider than the stick plot, and its axis names are longer. */
+.controller-top.with-wheel {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 0 28px;
+  align-items: start;
+}
+.with-wheel .axis {
+  grid-template-columns: 112px minmax(0, 1fr) 76px;
+}
+.raw-wide .with-wheel .axis {
+  grid-template-columns: 112px minmax(0, 1fr) 118px;
 }
 .axis-numbers {
   text-align: right;
