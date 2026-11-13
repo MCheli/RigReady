@@ -1,0 +1,19 @@
+description: Racing rig on iRacing 2026.11 where one car has a control profile of its own
+rig: mark-full
+extends: iracing-bindings-profiles.yaml
+# As on the owner's rig at 12:27 on 13 Nov 2026: a profile made in iRacing's Options and
+# given to the Cadillac CTS-V. app.ini [ControlProfiles] then reads
+# "cadillacctsvr=Test Profile CTSV" and "Global=Baseline", in that order, and the profile
+# folder holds a copy of Baseline as it was then, with the two bindings RigReady had
+# written at 12:16 (src/features/iracing-bindings/core/carFixture.test.ts holds it to that).
+# The car has no folder under Documents\iRacing\setups here: the app.ini line alone counts.
+mutations:
+  - op: writeFile
+    path: Documents/iRacing/app.ini
+    from: data/iracing-bindings/app-profiles-car.ini
+  - op: writeFile
+    path: Documents/iRacing/profiles/controls/Test Profile CTSV/controls.cfg
+    from: data/iracing-bindings/profile-car-controls.cfg
+  - op: writeFile
+    path: Documents/iRacing/profiles/controls/Test Profile CTSV/joyCalib.yaml
+    from: data/iracing-bindings/profile-joyCalib.yaml
