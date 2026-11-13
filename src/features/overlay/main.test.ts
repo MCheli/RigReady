@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { ProfileSchema } from '../../core/profile/schema';
 import type { InputDevice, InputState } from '../../shared/models';
 import { BINDING_FILES } from '../../../tests/dcsBindings';
 import { wiredApp, type WiredApp } from '../../../tests/helpers';
@@ -145,6 +146,71 @@ describe('the channels of the overlay', () => {
     await expect(app.invoke('overlay:move', { widget: 'gauges', moving: true })).rejects.toThrow(
       /overlay\.widget/
     );
+  });
+});
+
+describe('the overlay in each setup, through the channels the setup editor and Setups use', () => {
+  it('the switch saved in the setup editor takes it down and up, and the editor is told the default', async () => {
+    const app = await open();
+    await app.invoke('overlay:set', { on: true });
+    expect(app.ports.overlays.panels.size).toBe(1);
+    expect(await app.invoke('overlay:setupDefault', { game: 'dcs' })).toEqual({
+      startsOn: true,
+      overlayOn: true,
+    });
+    expect(await app.invoke('overlay:setupDefault', { game: 'x-plane-12' })).toEqual({
+      startsOn: false,
+      why: 'RigReady cannot read the bindings of X-Plane 12, so the overlay cannot say what a press does.',
+      overlayOn: true,
+    });
+
+    // Saved by the setup editor with the switch off.
+    const hornet = await app.invoke<Record<string, unknown>>('profiles:get', {
+      id: 'dcs-bindings-hornet',
+    });
+    await app.invoke('profiles:save', { ...hornet, extensions: { overlay: { on: false } } });
+    const down = await app.invoke<OverlayState>('overlay:state', undefined);
+    expect(down.offInSetup).toEqual({ id: 'dcs-bindings-hornet', name: 'DCS F/A-18C' });
+    expect(app.ports.overlays.panels.size).toBe(0);
+    expect(sent<OverlayState>(app, 'changed').at(-1)!.offInSetup).toBeDefined();
+
+    // Another setup made the one in use from Setups: one for a game without bindings, on.
+    const made = await app.wiring.context.profiles.save(
+      ProfileSchema.parse({
+        id: 'xplane',
+        name: 'X-Plane',
+        game: 'x-plane-12',
+        createdAt: '2026-11-13T09:00:00.000Z',
+        updatedAt: '2026-11-13T09:00:00.000Z',
+        extensions: { overlay: { on: true } },
+      })
+    );
+    if (!made.ok) throw new Error(made.error.message);
+    await app.invoke('profiles:use', { id: 'xplane' });
+    const up = await app.invoke<OverlayState>('overlay:state', undefined);
+    expect(up.offInSetup).toBeUndefined();
+    expect(up.source.setup).toEqual({ id: 'xplane', name: 'X-Plane' });
+    expect(app.ports.overlays.panels.size).toBe(1);
+  });
+
+  it('"The main screen" is chosen with a screen of null', async () => {
+    const app = await open();
+    await app.invoke('overlay:set', { on: true });
+    const before = await app.invoke<OverlayState>('overlay:state', undefined);
+    const other = before.screens.find((s) => !s.primary)!;
+    const pinned = await app.invoke<OverlayState>('overlay:place', {
+      widget: 'recent-presses',
+      screen: other.id,
+      at: { x: 0, y: 0 },
+    });
+    expect(pinned.widgets[0]!.place).toMatchObject({ screen: other.id });
+    expect(pinned.widgets[0]!.place.main).toBeUndefined();
+    const main = await app.invoke<OverlayState>('overlay:place', {
+      widget: 'recent-presses',
+      screen: null,
+      at: { x: 0, y: 0 },
+    });
+    expect(main.widgets[0]!.place).toMatchObject({ screenName: 'LC49G95T', main: true });
   });
 });
 

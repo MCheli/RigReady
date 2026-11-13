@@ -4754,7 +4754,7 @@ requirements:
       - "src/features/overlay/core/service.test.ts#the same control pressed again counts up instead of adding a line"
       - "src/features/overlay/core/service.test.ts#a switch or lever going through its positions is one line that changes"
       - "src/features/overlay/core/service.test.ts#the aircraft the setup in use names, until the user chooses another"
-      - "src/features/overlay/core/service.test.ts#another setup played while flying is picked up on a press: the words are never those of another game"
+      - "src/features/overlay/core/service.test.ts#another setup played while flying is picked up at once: the words are never those of another game"
       - "src/features/overlay/core/service.test.ts#a setup for a game whose bindings are not on this PC gives presses without words, and says why"
       - "src/features/overlay/core/service.test.ts#a racing game: the one set of bindings it has, by the control a press is on"
       - "src/features/overlay/core/service.test.ts#without a setup, and with the bindings of several games here, none is guessed"
@@ -4904,6 +4904,59 @@ requirements:
       - "2026-11-12: not built, by the owner's decision: 'We're going to ignore the VR part of that for now. We can leave that as an unsatisfied requirement.' The overlay of OVERLAY-001 to OVERLAY-006 is a window on a monitor, and a headset is not a monitor: a game in VR draws straight to the headset, so nothing of this overlay is seen in it. Showing something there takes an overlay layer of the VR runtime (an OpenXR API layer, or a SteamVR overlay), which is research first. The third criterion is met by the page ('It does not show inside a VR headset.') and by docs/manual/play/overlay.md; the first two are open."
     status: todo
     evidence: []
+
+  - id: OVERLAY-008
+    title: The overlay is a choice of each setup, on where RigReady can read the game's bindings
+    job: configure
+    area: overlay
+    priority: p1
+    done_means:
+      - "Each setup has its own switch, 'Show the overlay in this setup', in the setup editor, saved with the setup (extensions.overlay). While the overlay is turned on, it is up while the setup in use has it on and down while it has it off; playing another setup takes it up or down at once, also while nothing is pressed (E2E, scenario overlay-setups)."
+      - "A setup that says nothing (made before this, or never switched) has it on when RigReady can read the bindings of its game on this PC, so a press is shown with what it does, and off otherwise, with the reason beside the switch ('RigReady cannot read the bindings of X-Plane 12, so the overlay cannot say what a press does'). The default comes from the game's binding reader and whether it finds the bindings; no game is named in the code."
+      - "The Overlay page keeps the switch for the overlay as a whole, its look and its place, and lists every setup with On or Off, whether that was chosen or is how it started, the reason, the setup in use, and a way to the setup. With the setup in use off it says so, shows the example lines in the preview, does not read the controllers for it and does not let it be framed. 'Turn the overlay on' in the palette says so and leads to that setup."
+    notes:
+      - "2026-11-13: the owner's requirement O2 from the second look: 'I would maybe want it on in DCS and off in iRacing ... it should just be off in games where we don't support the bindings or we don't know what the controls are bound to ... don't go make it always on for DCS and always off for iRacing for every user.' The switch on the Overlay page stays as the switch for the overlay as a whole (off until the user turns it on, OVERLAY-001), so nobody gets a window over the screen by making a setup; each setup then decides whether it shows. Shared changes, made for this: ProfileStore.onChanged in src/core/profile/store.ts (said after a save, a removal and another setup in use), so the overlay goes with the setup in use while it is down and hears no presses; a setupSections slot in the feature manifest (src/shared/feature.ts), shown by the setup editor (src/features/profiles/renderer/ProfileEditPage.vue), so the overlay's switch and its reason live in the overlay feature. The setup's data is profile.extensions.overlay, the place the profile schema keeps for a feature's own data, so ProfileSchema did not change. A setup file changed by hand outside RigReady is picked up when the Overlay page is opened, or on a press after two minutes."
+    status: done
+    evidence:
+      - "src/features/overlay/core/setupChoice.test.ts#says nothing until the user switches it, and then what was switched"
+      - "src/features/overlay/core/setupChoice.test.ts#a value a hand edit got wrong says nothing, so the setup goes by its game"
+      - "src/features/overlay/core/service.test.ts#on to begin with where RigReady can read the game’s bindings, off with the reason where it cannot"
+      - "src/features/overlay/core/service.test.ts#down when a setup that has it off is played, and up again with one that has it on, at once"
+      - "src/features/overlay/core/service.test.ts#the user’s switch in the setup goes before what its game gives, both ways"
+      - "src/features/overlay/core/service.test.ts#at the owner’s desk: on in the flight and the racing setup, off in X-Plane, and the Dell is off in both layouts"
+      - "src/features/overlay/core/service.test.ts#turned off on the Overlay page it shows in no setup, and nothing is done when setups change"
+      - "src/features/overlay/main.test.ts#the switch saved in the setup editor takes it down and up, and the editor is told the default"
+      - "tests/unit/fileStore.test.ts#says when a setup is saved, deleted or another one is in use, and not for a refused save"
+      - "tests/unit/paletteCommands.test.ts#turned on while the setup in use has it off, it says so and leads to that setup"
+      - "tests/e2e/overlay-setups.e2e.ts#the overlay is a choice of each setup, and can go with the main screen"
+      - "artifacts/screens/overlay-setups/01-setups-on-the-page.png"
+      - "artifacts/screens/overlay-setups/04-setup-switch-on.png"
+      - "artifacts/screens/overlay-setups/05-setup-switch-off.png"
+      - "artifacts/screens/overlay-setups/06-no-bindings-reason.png"
+      - "artifacts/screens/overlay-setups/07-off-in-the-setup-in-use.png"
+      - "docs/manual/play/overlay.md"
+      - "docs/manual/setups/editor.md"
+
+  - id: OVERLAY-009
+    title: "The overlay can go with the main screen, and warns of a screen a setup's layout turns off"
+    job: configure
+    area: overlay
+    priority: p1
+    done_means:
+      - "Screen on the Overlay page offers 'The main screen' first, which follows whichever monitor is main in the monitor layout in use, and is where the overlay starts. Chosen, no monitor is kept for it; another monitor layout with another main monitor takes the overlay there. A drag let go on the main screen keeps following it (E2E, scenario overlay-setups)."
+      - "When the overlay was put on one monitor and that monitor is off in the monitor layout of a setup that has the overlay on (its monitor check, a saved layout by name or the setup's own), the page warns under Screen and names the setups and layouts. A setup with the overlay off, and a monitor check that is switched off, do not count."
+    notes:
+      - "2026-11-13: the second look's finding O1: the overlay's screen was the Dell, which is off in the owner's Flying layout, and the page offered no 'whichever is main'. Until now the overlay already followed the main screen until a monitor was chosen, but the page showed that as the monitor that happened to be main, so it read as a choice of the Dell. Known limit, in the manual: a layout applied by Make ready is noticed on the first press at least ten seconds after the last look, or when the Overlay page opens (OVERLAY-005)."
+    status: done
+    evidence:
+      - "src/features/overlay/core/service.test.ts#\"The main screen\" goes with whichever monitor is main, and is where it starts"
+      - "src/features/overlay/core/service.test.ts#let go on the main screen it goes on following it; let go on another it belongs there"
+      - "src/features/overlay/core/service.test.ts#says so when the screen it was put on is off in the monitor layout of a setup that has it on"
+      - "src/features/overlay/main.test.ts#\"The main screen\" is chosen with a screen of null"
+      - "tests/e2e/overlay-setups.e2e.ts#the overlay is a choice of each setup, and can go with the main screen"
+      - "artifacts/screens/overlay-setups/02-main-screen-choice.png"
+      - "artifacts/screens/overlay-setups/03-off-in-a-setup-layout.png"
+      - "docs/manual/play/overlay.md"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
