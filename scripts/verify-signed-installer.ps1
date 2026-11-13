@@ -202,9 +202,14 @@ try {
     # The publisher names of the install, read by electron-updater as the installed app reads
     # them, must accept the installer by the full DN (scripts/verify-update-signature.ts).
     Write-Step 'electron-updater checks the installer with resources\app-update.yml of the install'
-    Push-Location (Split-Path $PSScriptRoot -Parent)
+    # The paths go into variables first: npm's npx.ps1 rebuilds its arguments from this line's
+    # text and evaluates them again in its own scope, where $PSScriptRoot is empty, so an
+    # expression such as (Join-Path $PSScriptRoot ...) here fails to bind.
+    $repoRoot = Split-Path $PSScriptRoot -Parent
+    $checkScript = Join-Path $PSScriptRoot 'verify-update-signature.ts'
+    Push-Location $repoRoot
     try {
-      & npx tsx (Join-Path $PSScriptRoot 'verify-update-signature.ts') --installer $installerPath --feed $feedFile
+      & npx tsx $checkScript --installer $installerPath --feed $feedFile
       $checked = $LASTEXITCODE
     } finally {
       Pop-Location
