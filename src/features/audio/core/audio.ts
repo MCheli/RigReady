@@ -26,7 +26,7 @@ export const DefaultRoleSchema = z.enum(['default', 'communications', 'both']).m
   // What the setup editor calls each choice.
   'x-labels': {
     default: 'Default device',
-    communications: 'Default for calls',
+    communications: 'Default for comms',
     both: 'Both',
   },
 });

@@ -1,9 +1,12 @@
 import { z } from 'zod';
 import { isStoredAssistantScript } from '../../../core/assistantScripts';
+import { proposedSetup, type ProposedCheck, type StepOffer } from '../../../core/captureDefaults';
 import { resolveSetup } from '../../../core/commandLine';
+import type { PlayedWith } from '../../../core/gearKind';
 import type { McpCallContext, McpToolDefinition } from '../../../core/mcp';
 import { err, ok, type Result } from '../../../core/result';
 import type { Envelope } from '../../../shared/ipc';
+import type { GameKind } from '../../../shared/models';
 import { readManualPage, searchManual, webUrl, type ManualPage } from './manual';
 
 /**
@@ -426,7 +429,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     name: 'setup_create_from_rig',
     title: 'Create a setup from this rig',
     description:
-      "Reads the rig as it is right now (connected game controllers, running helper apps, the monitor arrangement, the default audio devices, the game's files) and saves it as a new setup with the checks a setup like it usually keeps. Make sure everything is plugged in and running first. Answers with the setup and its checks.",
+      "Reads the rig as it is right now (connected game controllers, running helper apps, the monitor arrangement, the default audio devices, the game's files) and saves it as a new setup with what the New setup page keeps for that game before anyone changes a tick: the gear and helpers the game is played with, its first aircraft or car, the files it backs up, and a step before launch when the game needs one. Make sure everything is plugged in and running first. Answers with the setup, its checks, its steps before launch and what was left out.",
     input: z.object({
       name: z.string().trim().min(1).max(80).describe('The setup\'s name ("DCS F/A-18C").'),
       game: z
@@ -439,13 +442,17 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
       everything: z
         .boolean()
         .default(false)
-        .describe('Keep every candidate the capture found, not only the ones kept by default.'),
+        .describe(
+          'Keep every check the page lists for the game, not only the ones it would tick. What belongs to another game is still left out.'
+        ),
     }),
     output: z.object({
       id: z.string(),
       name: z.string(),
       game: z.string().optional(),
       checks: z.array(z.object({ title: z.string(), required: z.boolean(), type: z.string() })),
+      /** The steps before launch the setup was given, by title. */
+      steps: z.array(z.string()),
       leftOut: z.array(z.string()),
       problems: z.array(z.string()),
     }),
@@ -458,13 +465,21 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
         title: string;
         selectedByDefault: boolean;
         game?: string;
-        check: {
-          type: string;
-          title: string;
-          required: boolean;
-          params: Record<string, unknown>;
-          remediation?: { type: string; params: Record<string, unknown> };
-        };
+        kind?: GameKind;
+        forGames?: string[];
+        variant?: { id: string; name: string };
+        device?: { model?: string };
+        check: ProposedCheck;
+      }
+      interface Tracked {
+        label: string;
+        path: string;
+        kind: string;
+        include: string[];
+        exclude: string[];
+        game?: string;
+        variant?: string;
+        selectedByDefault: boolean;
       }
       const captured = unwrap<{
         candidates: Candidate[];
@@ -472,9 +487,13 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
         games: {
           id: string;
           name: string;
+          kind?: GameKind;
+          uses?: PlayedWith;
           installs: { installDir: string; source: string; launch?: unknown }[];
         }[];
-        suggested: { game?: string };
+        tracked: Tracked[];
+        steps: StepOffer[];
+        suggested: { game?: string; kind?: GameKind };
       }>(await ctx.invoke('profiles:capture'));
       if (!captured.ok) return captured;
       const game = input.game ?? captured.value.suggested.game;
@@ -485,9 +504,12 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
           `Games found: ${captured.value.games.map((g) => g.id).join(', ') || 'none'}.`
         );
       }
-      const kept = captured.value.candidates.filter(
-        (c) => (input.everything || c.selectedByDefault) && (!c.game || c.game === game)
-      );
+      // The rules of the New setup page (core/captureDefaults), so the setup an assistant
+      // makes is the one a person gets there by changing nothing.
+      const proposed = proposedSetup(captured.value, game ?? '', {
+        everything: input.everything,
+      });
+      const { kept } = proposed;
       const leftOut = captured.value.candidates
         .filter((c) => !kept.includes(c))
         .map((c) => c.title);
@@ -497,12 +519,24 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
         name: string;
         game?: string;
         checks: { title: string; required: boolean; type: string }[];
+        actions?: { preLaunch?: { title: string }[] };
       }>(
         await ctx.invoke('profiles:create', {
           name: input.name,
           ...(game ? { game } : {}),
           ...(install?.launch ? { launch: install.launch } : {}),
-          checks: kept.map((c) => c.check),
+          checks: [...kept.map((c) => c.check), ...proposed.stepChecks],
+          ...(proposed.steps.length > 0
+            ? { actions: { preLaunch: proposed.steps, postLaunch: [], standDown: [] } }
+            : {}),
+          tracked: proposed.tracked.map((t) => ({
+            label: t.label,
+            path: t.path,
+            kind: t.kind,
+            include: t.include,
+            exclude: t.exclude,
+            ...(t.game ? { game: t.game } : {}),
+          })),
         })
       );
       if (!created.ok) return created;
@@ -515,6 +549,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
           required: c.required,
           type: c.type,
         })),
+        steps: (created.value.actions?.preLaunch ?? []).map((step) => step.title),
         leftOut,
         problems: captured.value.problems,
       });

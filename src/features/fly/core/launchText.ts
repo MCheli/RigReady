@@ -7,6 +7,8 @@
 export interface PlannedStep {
   title: string;
   phase: 'preLaunch' | 'postLaunch' | 'standDown';
+  /** What the step was set to, by name, when that was chosen from a list. */
+  choice?: string | undefined;
 }
 
 export type PlanPhase = 'preLaunch' | 'postLaunch';
@@ -20,13 +22,25 @@ const LEADS: Record<PlanPhase, string> = {
 const NAMED = 3;
 
 /**
- * "Before launch: Start a virtual controller". The steps are named in the order they run;
- * past three the rest are counted. Undefined when the setup has no step in that phase.
+ * A step by its title and what it was set to: "Start a virtual controller: My Ace Combat
+ * stick". A title that names the choice already is left as it is.
+ */
+export function stepName(step: Pick<PlannedStep, 'title' | 'choice'>): string {
+  const title = step.title.trim();
+  const choice = step.choice?.trim() ?? '';
+  if (title === '' || choice === '') return title;
+  return title.toLowerCase().includes(choice.toLowerCase()) ? title : `${title}: ${choice}`;
+}
+
+/**
+ * "Before launch: Start a virtual controller: My Ace Combat stick". The steps are named in
+ * the order they run, each with what it was set to; past three the rest are counted.
+ * Undefined when the setup has no step in that phase.
  */
 export function planLine(steps: PlannedStep[], phase: PlanPhase): string | undefined {
   const titles = steps
     .filter((step) => step.phase === phase)
-    .map((step) => step.title.trim())
+    .map(stepName)
     .filter((title) => title !== '');
   if (titles.length === 0) return undefined;
   const named = titles.slice(0, NAMED).join(', ');
@@ -40,6 +54,22 @@ export function planLines(steps: PlannedStep[]): { phase: PlanPhase; text: strin
     const text = planLine(steps, phase);
     return text ? [{ phase, text }] : [];
   });
+}
+
+/**
+ * The lines the Play page shows under its buttons: for a setup that can launch, and not
+ * while that setup's game is starting or running. Launch is not what comes next then, and
+ * the Launch panel lists what ran. Once the game has closed they are back.
+ */
+export function planShown(
+  steps: PlannedStep[],
+  setup: { id: string; canLaunch: boolean } | undefined,
+  session: { phase: 'idle' | 'starting' | 'running' | 'ended'; profileId?: string | undefined }
+): { phase: PlanPhase; text: string }[] {
+  if (!setup?.canLaunch) return [];
+  const gameUp =
+    session.profileId === setup.id && (session.phase === 'starting' || session.phase === 'running');
+  return gameUp ? [] : planLines(steps);
 }
 
 /** What is said while the game comes up: on the screen, and by Windows once the window is gone. */

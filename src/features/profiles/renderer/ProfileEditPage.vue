@@ -287,7 +287,8 @@ function addAction(phase: keyof ProfileActions): void {
       'a',
       all.map((a) => a.id)
     ),
-    title: `New ${type.label.toLowerCase()}`,
+    // Named after what it does until the person names it: "Start the app".
+    title: type.label,
     type: type.type,
     params: defaultsOf(type.schema),
     continueOnError: true,

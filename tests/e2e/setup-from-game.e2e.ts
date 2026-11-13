@@ -23,9 +23,21 @@ const keptIn = (page: Page, group: string): Promise<string[]> =>
 const bringUp = (page: Page, testId: string) =>
   page.getByTestId(testId).evaluate((el) => el.scrollIntoView({ block: 'start' }));
 
+/** How far down the window is scrolled, and whether the page is long enough to scroll. */
+const scrolled = (page: Page): Promise<number> => page.evaluate<number>('window.scrollY');
+const canScroll = (page: Page): Promise<boolean> =>
+  page.evaluate<boolean>('document.documentElement.scrollHeight > window.innerHeight + 40');
+
 interface SavedSetup {
   game: string;
-  checks: { type: string; title: string }[];
+  launch?: { exe: string; args: string[] };
+  steamAppId?: string;
+  checks: {
+    type: string;
+    title: string;
+    required?: boolean;
+    remediation?: { type: string; params: Record<string, unknown> };
+  }[];
   actions?: {
     preLaunch?: {
       title: string;
@@ -101,6 +113,42 @@ test('new setup: a racing game keeps the wheel; flight gear and a head tracker p
   ).toEqual([]);
 });
 
+test('new setup: a helper made for one game is ticked for that game only: DCS-SRS for DCS World, not for another flight sim', async ({
+  rig,
+}) => {
+  const { page, shot, mutate } = await rig.launch('flying-fresh', 'setup-from-game-helper');
+  // The radio for DCS multiplayer is running when the page reads the rig.
+  await mutate([
+    {
+      op: 'startProcess',
+      name: 'SR-ClientRadio.exe',
+      path: 'C:\\Program Files\\DCS-SimpleRadio-Standalone\\SR-ClientRadio.exe',
+    },
+  ]);
+  await page.getByTestId('fly-create').click();
+  await expect(page.getByTestId('capture-game-dcs')).toHaveAttribute('aria-checked', 'true');
+  await expect(tick(page, 'DCS-SRS')).toBeChecked();
+  await expect(tick(page, 'SimAppPro')).toBeChecked();
+
+  // Another flight sim: its helpers stay ticked, the one made for DCS is listed and not ticked.
+  await page.getByTestId('capture-game-msfs2024').click();
+  await expect(section(page, 'apps')).toContainText(
+    'Helpers for Microsoft Flight Simulator 2024 that are running now are kept.'
+  );
+  await expect(tick(page, 'SimAppPro')).toBeChecked();
+  await expect(candidate(page, 'DCS-SRS')).toBeVisible();
+  await expect(tick(page, 'DCS-SRS')).not.toBeChecked();
+  expect(await keptIn(page, 'apps')).not.toContain('DCS-SRS');
+  await expect(page.getByTestId('capture-summary')).not.toContainText('DCS-SRS');
+  await bringUp(page, 'capture-group-apps');
+  await shot('another-flight-sim');
+
+  // Back to DCS World, it is ticked again.
+  await page.getByTestId('capture-game-dcs').click();
+  await expect(tick(page, 'DCS-SRS')).toBeChecked();
+  await expect(page.getByTestId('capture-summary')).toContainText('DCS-SRS');
+});
+
 test('new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch', async ({
   rig,
 }) => {
@@ -136,6 +184,22 @@ test('new setup: a game that reads a gamepad is offered "Start a virtual control
   await expect(page.getByTestId('capture-summary-step')).toContainText(
     'Start a virtual controller: My Ace Combat stick'
   );
+  // The step cannot work without the driver: its check comes with the step, ticked.
+  const needs = page.locator(
+    '[data-testid="capture-step-check"][data-type="virtual-controller.driver"]'
+  );
+  await expect(needs).toContainText('Virtual controller driver installed');
+  await expect(needs).toContainText('The step above needs it. Checked before launch.');
+  await expect(needs.getByRole('checkbox')).toBeChecked();
+  await expect(page.getByTestId('capture-summary-step-check')).toHaveText(
+    'Virtual controller driver installed'
+  );
+  // It is the person's to leave out, and to take back.
+  await needs.getByRole('checkbox').uncheck();
+  await expect(needs).toHaveAttribute('data-kept', 'no');
+  await expect(page.getByTestId('capture-summary-step-check')).toHaveCount(0);
+  await needs.getByRole('checkbox').check();
+  await expect(page.getByTestId('capture-summary-step-check')).toHaveCount(1);
 
   // The gear the game is fed from is kept; the head tracker, the MFDs and the helpers are not.
   await expect(tick(page, 'T-Pendular-Rudder')).toBeChecked();
@@ -153,16 +217,25 @@ test('new setup: a game that reads a gamepad is offered "Start a virtual control
   await expect(step).toHaveAttribute('data-kept', 'no');
   await expect(step).toContainText('Choose one to keep this step.');
   await expect(page.getByTestId('capture-summary-step')).toHaveCount(0);
+  // A step that is not kept brings no check.
+  await expect(page.getByTestId('capture-summary-step-check')).toHaveCount(0);
   await shot('step-without-a-choice');
   await choice.click();
   await openOption(page, 'My Ace Combat stick').click();
   await expect(step).toHaveAttribute('data-kept', 'yes');
+  await expect(page.getByTestId('capture-summary-step-check')).toHaveCount(1);
 
+  // WOW-UI-013: the page is left scrolled down, and the page that follows starts at its top.
+  await page.evaluate('window.scrollTo(0, document.documentElement.scrollHeight)');
+  expect(await scrolled(page)).toBeGreaterThan(0);
   await page.getByTestId('capture-save').click();
   await expect(page.getByTestId('profile-switcher')).toContainText('Ace nights');
+  // Play is longer than the window here, so it could have stayed where the last page was.
+  expect(await canScroll(page)).toBe(true);
+  await expect.poll(() => scrolled(page)).toBe(0);
   // FLY-029: what Launch will do first is on the Play page before the click.
   await expect(page.getByTestId('fly-plan-preLaunch')).toHaveText(
-    'Before launch: Start a virtual controller'
+    'Before launch: Start a virtual controller: My Ace Combat stick'
   );
   await shot('play-says-what-launch-does');
 
@@ -176,6 +249,52 @@ test('new setup: a game that reads a gamepad is offered "Start a virtual control
     continueOnError: false,
   });
   expect(saved.checks.map((c) => c.title).filter((t) => /TrackIR|SimAppPro/.test(t))).toEqual([]);
+  // The driver the step needs is checked by the setup, with the fix that installs it.
+  expect(saved.checks.filter((c) => c.type === 'virtual-controller.driver')).toEqual([
+    expect.objectContaining({
+      title: 'Virtual controller driver installed',
+      required: true,
+      remediation: { type: 'virtual-controller.installDriver', params: {} },
+    }),
+  ]);
+
+  // A second setup, now that Play has one to show at once: this is where the page used to
+  // stay as far down as "Create setup" was.
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('new-profile').click();
+  await page.getByTestId('capture-game-ace-combat-8').click();
+  await page.getByTestId('capture-name').locator('input').fill('Ace nights two');
+  await expect(page.getByTestId('capture-save')).toBeEnabled();
+  await page.evaluate('window.scrollTo(0, document.documentElement.scrollHeight)');
+  expect(await scrolled(page)).toBeGreaterThan(0);
+  await page.getByTestId('capture-save').click();
+  await expect(page.getByTestId('profile-switcher')).toContainText('Ace nights two');
+  expect(await canScroll(page)).toBe(true);
+  expect(await scrolled(page)).toBe(0);
+  await shot('second-setup-starts-at-the-top');
+
+  // The same from the editor, scrolled to its end, to Play and to another Configure page.
+  const toEditorEnd = async (): Promise<void> => {
+    await page.getByTestId('mode-configure').click();
+    await page.getByTestId('nav-profiles').click();
+    await page
+      .locator('[data-testid="profile-row"][data-name="Ace nights"]')
+      .getByTestId('profile-edit')
+      .click();
+    await expect(page.getByTestId('edit-save')).toBeVisible();
+    await page.evaluate('window.scrollTo(0, document.documentElement.scrollHeight)');
+    expect(await scrolled(page)).toBeGreaterThan(0);
+  };
+  await toEditorEnd();
+  await page.getByTestId('mode-fly').click();
+  await expect(page.getByTestId('profile-switcher')).toBeVisible();
+  expect(await canScroll(page)).toBe(true);
+  expect(await scrolled(page)).toBe(0);
+  await toEditorEnd();
+  await page.getByTestId('nav-devices').click();
+  await expect(page.locator('[data-testid="device-row"]').first()).toBeVisible();
+  expect(await canScroll(page)).toBe(true);
+  expect(await scrolled(page)).toBe(0);
 });
 
 /** A virtual Xbox 360 controller as Windows lists it. */
@@ -237,4 +356,73 @@ test("new setup: RigReady's own virtual controller is not listed among the rig's
   await expect(page.getByTestId('capture-page')).not.toContainText('XBOX 360');
   await bringUp(page, 'capture-group-devices');
   await shot('own-controller-not-listed');
+});
+
+test('new setup: a game Steam starts shows as "Through Steam" with its number, and "Another game" does not keep it', async ({
+  rig,
+}) => {
+  const { page, shot, dataRoot, home } = await rig.launch('flying-fresh', 'setup-from-game-steam');
+  await page.getByTestId('fly-create').click();
+  await expect(page.getByTestId('capture-game-dcs')).toHaveAttribute('aria-checked', 'true');
+  const steam = page.getByTestId('capture-launch-steam-app').locator('input');
+  const program = page.getByTestId('capture-launch-exe').locator('input');
+  const text = page.getByTestId('capture-launch-text');
+
+  // Steam starts this game: the section says so, with the game's number and nothing to type.
+  await expect(page.getByTestId('capture-launch-steam')).toHaveClass(/v-btn--active/);
+  await expect(steam).toHaveValue('223750');
+  await expect(page.getByTestId('capture-launch-exe')).toHaveCount(0);
+  await expect(page.getByTestId('capture-launch-args')).toHaveCount(0);
+  await expect(text).toHaveText('The Launch button starts DCS World, through Steam.');
+  await page.getByTestId('capture-launch').scrollIntoViewIfNeeded();
+  await shot('through-steam');
+
+  // Something that is not a number is refused where it is typed.
+  await steam.fill('dcs');
+  await expect(page.getByTestId('capture-launch')).toContainText('A number, for example 223750.');
+  await expect(text).toContainText('no Launch button');
+  await expect(page.getByTestId('capture-save')).toBeDisabled();
+  await steam.fill('223750');
+  await expect(page.getByTestId('capture-save')).toBeEnabled();
+
+  // The same launch seen as a program is Steam with the game's number.
+  await page.getByTestId('capture-launch-program').click();
+  await expect(program).toHaveValue(path.join(home, 'Program Files (x86)', 'Steam', 'steam.exe'));
+  await expect(page.getByTestId('capture-launch-args').locator('input')).toHaveValue(
+    '-applaunch 223750'
+  );
+
+  // The third choice of the editor is here too: a setup that only checks the rig.
+  await page.getByTestId('capture-launch-none').click();
+  await expect(text).toHaveText('The Play screen offers no Launch button for this setup.');
+  await expect(page.getByTestId('capture-launch-exe')).toHaveCount(0);
+  await expect(page.getByTestId('capture-launch-steam-app')).toHaveCount(0);
+  await expect(page.getByTestId('capture-summary')).toContainText('No Launch button');
+  await page.getByTestId('capture-launch').scrollIntoViewIfNeeded();
+  await shot('launch-nothing');
+  // Nothing typed is lost by looking at it.
+  await page.getByTestId('capture-launch-steam').click();
+  await expect(steam).toHaveValue('223750');
+
+  // A game installed without Steam brings its own program.
+  await page.getByTestId('capture-game-iracing').click();
+  await expect(page.getByTestId('capture-launch-program')).toHaveClass(/v-btn--active/);
+  await expect(program).toHaveValue(/iRacingUI\.exe$/);
+
+  // "Another game" is neither: what the last game brought does not stay.
+  await page.getByTestId('capture-game-dcs').click();
+  await expect(steam).toHaveValue('223750');
+  await page.getByTestId('capture-game-other').click();
+  await expect(page.getByTestId('capture-launch-program')).toHaveClass(/v-btn--active/);
+  await expect(program).toHaveValue('');
+  await expect(text).toContainText('no Launch button');
+
+  // Saved as it was found: Steam is handed the game's number.
+  await page.getByTestId('capture-game-dcs').click();
+  await page.getByTestId('capture-save').click();
+  await expect(page.getByTestId('profile-switcher')).toContainText('DCS F/A-18C');
+  const saved = await savedSetup(dataRoot, 'dcs-f-a-18c');
+  expect(saved.launch?.exe.toLowerCase()).toContain('steam.exe');
+  expect(saved.launch?.args).toEqual(['-applaunch', '223750']);
+  expect(saved.steamAppId).toBeUndefined();
 });

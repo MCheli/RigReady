@@ -896,3 +896,80 @@ describe('the rest', () => {
     expect(await app.invoke('fly:watch')).toEqual({ watching: true });
   });
 });
+
+describe('FLY-029: the Play page is told what a step was set to', () => {
+  it('names the virtual controller a step starts: the name stored with the choice, or the one the list has now', async () => {
+    app = await wiredApp('virtual-controller-ready', { files: [] });
+    const { fly: f } = fly();
+    // The scenario's setup stores only the id of the controller: the name comes from the list.
+    const listed = await f.profileView('virtual-controller-ace-combat');
+    expect(listed.ok && listed.value.actions).toEqual([
+      {
+        id: 'a1',
+        title: 'Virtual gamepad for the stick',
+        phase: 'preLaunch',
+        choice: 'My Ace Combat stick',
+      },
+    ]);
+
+    const step = (id: string, extra: Partial<LaunchAction>): LaunchAction => ({
+      id,
+      title: 'Start a virtual controller',
+      type: 'virtual-controller.start',
+      params: {},
+      delaySeconds: 0,
+      continueOnError: false,
+      timeoutSeconds: 120,
+      ...extra,
+    });
+    await saveProfile({
+      id: 'ace-nights',
+      name: 'Ace nights',
+      game: 'ace-combat-8',
+      actions: {
+        preLaunch: [
+          // Chosen in the editor: the name is stored with the id, and is what is shown.
+          step('stored', {
+            params: { profile: 'my-ace-combat-stick', profileName: 'Night stick' },
+          }),
+          // A controller that is gone, and a step with nothing chosen: the title stands alone.
+          step('gone', { params: { profile: 'no-such-controller' } }),
+          step('unset', {}),
+        ],
+        postLaunch: [
+          // Typed, not chosen from a list: nothing to name.
+          step('typed', {
+            title: 'Start SRS',
+            type: 'process.launch',
+            params: { exe: 'C:\\Tools\\SRS\\SR-ClientRadio.exe', args: [] },
+          }),
+        ],
+        standDown: [],
+      },
+    });
+    const view = await f.profileView('ace-nights');
+    expect(view.ok && view.value.actions.map((a) => [a.id, a.choice])).toEqual([
+      ['stored', 'Night stick'],
+      ['gone', undefined],
+      ['unset', undefined],
+      ['typed', undefined],
+    ]);
+    // The same on the way the page first opens.
+    await app.wiring.context.profiles.setLastProfileId('ace-nights');
+    const state = await f.state();
+    expect(state.ok && state.value.active?.actions[0]).toMatchObject({ choice: 'Night stick' });
+  });
+
+  it('every step chosen from a list stores the name of the choice first, which is what is read', async () => {
+    app = await wiredApp('flying-fresh', { files: [] });
+    const registry = app.wiring.context.checks;
+    const filled = registry
+      .remediationTypes()
+      .map((type) => registry.remediation(type)!)
+      .filter((definition) => (definition.picker?.fills?.length ?? 0) > 0);
+    expect(filled.map((definition) => definition.type)).toContain('virtual-controller.start');
+    for (const definition of filled) {
+      expect(definition.picker!.fills![0], definition.type).toMatch(/name$/i);
+    }
+  });
+});

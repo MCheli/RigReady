@@ -6,7 +6,7 @@ import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
 import { errorText } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import type { History } from '../contract';
-import { planLines } from '../core/launchText';
+import { planShown } from '../core/launchText';
 import { lastSessionLine } from '../core/sessionText';
 import CheckRow from './CheckRow.vue';
 import HistoryDialog from './HistoryDialog.vue';
@@ -292,8 +292,11 @@ async function doLaunch(resumeAfter?: number, approvedBefore?: string[]): Promis
 
 // ---- what Launch will do ----
 
-/** The steps Launch runs before the game and once it is up, so none of them is a surprise. */
-const plan = computed(() => (fly.active?.canLaunch ? planLines(fly.view?.actions ?? []) : []));
+/**
+ * The steps Launch runs before the game and once it is up, so none of them is a surprise.
+ * Not while the setup's game is starting or running: the Launch panel lists what ran.
+ */
+const plan = computed(() => planShown(fly.view?.actions ?? [], fly.active, fly.session));
 /** The game is on its way: said by its own name from the moment it is started. */
 const starting = computed(
   () =>

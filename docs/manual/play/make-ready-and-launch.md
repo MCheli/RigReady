@@ -63,7 +63,7 @@ With **Make ready and launch**, the game starts only when every required check i
 
 ## The launch itself
 
-Before you click, the Play screen says under its buttons what Launch does around the game: "Before launch: Start VoiceAttack, Warm up the hub, Check TrackIR answers" and "After launch: Start SRS", each step by its name, in the order it runs. Past three steps the rest are counted ("and 2 more"). A setup without steps has no such line.
+Before you click, the Play screen says under its buttons what Launch does around the game: "Before launch: Start VoiceAttack, Warm up the hub, Check TrackIR answers" and "After launch: Start SRS", each step by its name, in the order it runs. Past three steps the rest are counted ("and 2 more"). A step that was set to something from a list names it: "Before launch: Start a virtual controller: My Ace Combat stick". A setup without steps has no such line. While the game is starting or running the lines are not shown, since the **Launch** panel below lists what ran; they are back when the game has closed.
 
 ![What Launch will do, under the buttons](../../../artifacts/screens/launch-plan/01-before-the-click.png)
 

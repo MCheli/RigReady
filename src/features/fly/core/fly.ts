@@ -26,7 +26,14 @@ import {
   type PreferencesPatch,
   type ProfileView,
 } from '../contract';
-import { actionConfirmation, realSleep, runAction, startedProgram, type Sleep } from './actions';
+import {
+  actionConfirmation,
+  chosenName,
+  realSleep,
+  runAction,
+  startedProgram,
+  type Sleep,
+} from './actions';
 import { startingNotice } from './launchText';
 import type { LastSession } from './sessionText';
 
@@ -157,8 +164,23 @@ export class Fly {
     return profile.game ? (this.ctx.games.get(profile.game)?.name ?? profile.game) : undefined;
   }
 
-  view(profile: Profile, problem?: string): ProfileView {
+  async view(profile: Profile, problem?: string): Promise<ProfileView> {
     const actions = profileActions(profile);
+    const planned = await Promise.all(
+      (['preLaunch', 'postLaunch', 'standDown'] as const).flatMap((phase) =>
+        actions[phase].map(async (action) => {
+          const confirm = actionConfirmation(action, this.ctx.checks);
+          const choice = await chosenName(action, this.ctx.checks, withProfile(this.ctx, profile));
+          return {
+            id: action.id,
+            title: action.title,
+            phase,
+            ...(choice ? { choice } : {}),
+            ...(confirm ? { confirm } : {}),
+          };
+        })
+      )
+    );
     const launchLabel = profile.steamAppId
       ? `Steam app ${profile.steamAppId}`
       : profile.launch
@@ -178,12 +200,7 @@ export class Fly {
         ...(item.disabled ? { disabled: true } : {}),
       })),
       ...(launchLabel ? { launchLabel } : {}),
-      actions: (['preLaunch', 'postLaunch', 'standDown'] as const).flatMap((phase) =>
-        actions[phase].map((action) => {
-          const confirm = actionConfirmation(action, this.ctx.checks);
-          return { id: action.id, title: action.title, phase, ...(confirm ? { confirm } : {}) };
-        })
-      ),
+      actions: planned,
       ...(problem ? { problem } : {}),
     };
   }
@@ -257,7 +274,7 @@ export class Fly {
     active ??= profiles[0]?.profile;
     if (active) {
       state.activeProfileId = active.id;
-      state.active = this.view(active, problem);
+      state.active = await this.view(active, problem);
     }
     return ok(state);
   }
@@ -265,7 +282,7 @@ export class Fly {
   async profileView(id: string): Promise<Result<ProfileView>> {
     const found = await this.profile(id);
     if (!found.ok) return found;
-    return ok(this.view(found.value.profile, found.value.problem));
+    return ok(await this.view(found.value.profile, found.value.problem));
   }
 
   /** Remembers the profile as the one in use. Writes only when it changes. */

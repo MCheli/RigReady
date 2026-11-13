@@ -157,6 +157,8 @@ test('setup editor: a virtual controller is chosen by name, two of one name are 
   // A new step: without a choice it is not saved, and the row says what is missing.
   await page.getByTestId('edit-add-preLaunch').click();
   const added = page.locator('[data-testid="edit-action"][data-phase="preLaunch"]').last();
+  // An added step is named after what it does, until the person names it.
+  await expect(added).toHaveAttribute('data-title', 'Start the app');
   await added.getByTestId('edit-action-type').click();
   await openOption(page, 'Start a virtual controller').click();
   const start = step(page, 'Start a virtual controller');
@@ -230,4 +232,79 @@ test('setup editor: a setup Steam starts shows as "Through Steam" with the game\
   const after = await savedSetup(dataRoot, 'dcs-f-a-18c');
   expect(after.launch).toEqual({ ...before.launch, args: ['-applaunch', '223751'] });
   expect(after.steamAppId).toBeUndefined();
+});
+
+test('setup editor: saved bindings of two games that share an id are two lines of the list, and the one chosen is the one saved', async ({
+  rig,
+}) => {
+  const { page, shot, dataRoot } = await rig.launch(
+    'racing-rim-variant',
+    'editor-lists-saved-bindings'
+  );
+  const backUp = async (game: string): Promise<void> => {
+    await page.getByTestId('mode-configure').click();
+    await page.getByTestId('nav-racing').click();
+    await page.locator(`[data-testid="racing-game-card"][data-game="${game}"]`).click();
+    await expect(page.getByTestId(`backups-${game}`)).toBeVisible();
+    await page.getByTestId('backup-name').locator('input').fill('League night');
+    await page.getByTestId('backup-now').click();
+    await expect(page.getByTestId('backup-message')).toContainText(
+      /Backed up \d+ files as "League night"\./
+    );
+  };
+  await backUp('iracing');
+  await backUp('lmu');
+
+  // The id of a backup is the moment it was made, so two games backed up in one moment share
+  // it. Here the second is given the id of the first, in this run's own data folder.
+  const root = path.join(dataRoot, 'racing', 'backups');
+  const ofIracing = await fs.readdir(path.join(root, 'iracing'));
+  const ofLmu = await fs.readdir(path.join(root, 'lmu'));
+  expect([ofIracing.length, ofLmu.length]).toEqual([1, 1]);
+  const id = ofIracing[0]!;
+  await fs.rename(path.join(root, 'lmu', ofLmu[0]!), path.join(root, 'lmu', id));
+  const manifest = path.join(root, 'lmu', id, 'manifest.json');
+  const stored = JSON.parse(await fs.readFile(manifest, 'utf8')) as Record<string, unknown>;
+  await fs.writeFile(manifest, JSON.stringify({ ...stored, id }, null, 2));
+
+  await openEditor(page, 'iRacing');
+  await page.getByTestId('edit-add-check').click();
+  await page.getByTestId('add-racing.bindingSet').click();
+  await editRow(page, 'New check').getByTestId('edit-params-backupId').click();
+  // Same id, same name, and still two lines: the game under each tells them apart.
+  await expect(options(page)).toHaveCount(2);
+  const lines = await options(page).allInnerTexts();
+  expect(lines.every((line) => line.includes('League night'))).toBe(true);
+  expect(lines.filter((line) => line.includes('iRacing, saved'))).toHaveLength(1);
+  expect(lines.filter((line) => line.includes('Le Mans Ultimate, saved'))).toHaveLength(1);
+  await shot('two-games-one-id');
+
+  // The second of the two can be chosen, and the row says which it is.
+  await options(page).filter({ hasText: 'Le Mans Ultimate, saved' }).click();
+  const row = editRow(page, 'Racing bindings are the saved set: League night');
+  const note = row.getByTestId('edit-params-backupId-note');
+  await expect(note).toContainText('Le Mans Ultimate, saved');
+  await row.getByTestId('edit-params-backupId').click();
+  await expect(options(page).filter({ hasText: 'Le Mans Ultimate, saved' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+  await expect(options(page).filter({ hasText: 'iRacing, saved' })).toHaveAttribute(
+    'aria-selected',
+    'false'
+  );
+  await shot('the-one-chosen');
+  // And the first again, then back: each choice is its own game's.
+  await options(page).filter({ hasText: 'iRacing, saved' }).click();
+  await expect(note).toContainText('iRacing, saved');
+  await row.getByTestId('edit-params-backupId').click();
+  await options(page).filter({ hasText: 'Le Mans Ultimate, saved' }).click();
+  await expect(note).toContainText('Le Mans Ultimate, saved');
+
+  await page.getByTestId('edit-save').click();
+  await expect(page.getByTestId('profiles-page')).toBeVisible();
+  const saved = (await savedSetup(dataRoot, 'racing-iracing')).checks.find(
+    (c) => c.type === 'racing.bindingSet'
+  );
+  expect(saved?.params).toMatchObject({ backupId: id, name: 'League night', game: 'lmu' });
 });

@@ -3,6 +3,7 @@ import type { PickerInfo } from '../contract';
 import {
   GONE,
   applyChoice,
+  choiceKey,
   chosenOf,
   filledKeys,
   followedBy,
@@ -15,7 +16,9 @@ import {
   pickerOf,
   pickerRequired,
   requiredKeys,
+  selectedKey,
   titleFromChoice,
+  titleFromType,
 } from './pickerForm';
 
 /** CFG-PROFILE-019: a field chosen by name from a list, in place of a typed id. */
@@ -213,6 +216,91 @@ describe('a field chosen from a list', () => {
   });
 });
 
+describe('two choices with the same value', () => {
+  // The id of a backup is the moment it was made: two games, one moment, one id.
+  const SAME = '2026-11-12T19-00-00-000Z';
+  const sets: PickerInfo = {
+    list: 'racing.bindingSets',
+    param: 'backupId',
+    label: 'Saved bindings',
+    fills: ['name', 'game'],
+    empty: 'You have no saved bindings yet.',
+    choices: [
+      {
+        value: SAME,
+        label: 'League night',
+        detail: 'iRacing, saved 12 November 2026, 19:00',
+        fill: { name: 'League night', game: 'iracing' },
+      },
+      {
+        value: SAME,
+        label: 'League night',
+        detail: 'Le Mans Ultimate, saved 12 November 2026, 19:00',
+        fill: { name: 'League night', game: 'lmu' },
+      },
+      { value: 'other', label: 'GT3 rim', fill: { name: 'GT3 rim', game: 'iracing' } },
+    ],
+  };
+  const [iracing, lmu, other] = sets.choices as [
+    PickerInfo['choices'][number],
+    PickerInfo['choices'][number],
+    PickerInfo['choices'][number],
+  ];
+
+  it('are two rows of the list, and a row alone in its value is still called by it', () => {
+    const rows = pickerItems(sets, {});
+    expect(rows.map((row) => row.subtitle)).toEqual([iracing.detail, lmu.detail, undefined]);
+    expect(new Set(rows.map((row) => row.value)).size).toBe(3);
+    expect(rows[2]!.value).toBe('other');
+    expect(choiceKey(sets, other)).toBe('other');
+    expect(choiceKey(sets, iracing)).not.toBe(choiceKey(sets, lmu));
+  });
+
+  it('choosing one fills in its own game, and the row shown as chosen is that one', () => {
+    const picked = applyChoice({}, sets, choiceKey(sets, lmu));
+    expect(picked).toEqual({ backupId: SAME, name: 'League night', game: 'lmu' });
+    expect(chosenOf(sets, picked)).toBe(lmu);
+    expect(selectedKey(sets, picked)).toBe(choiceKey(sets, lmu));
+    expect(pickerNote(sets, picked)?.text).toBe(lmu.detail);
+    // And back to the other game's.
+    const back = applyChoice(picked, sets, choiceKey(sets, iracing));
+    expect(back).toEqual({ backupId: SAME, name: 'League night', game: 'iracing' });
+    expect(selectedKey(sets, back)).toBe(choiceKey(sets, iracing));
+    expect(isMissing(sets, back)).toBe(false);
+  });
+
+  it("a setup that names only the id and the game gets its own game's row", () => {
+    // Renamed since: the name no longer matches, the game still does.
+    expect(chosenOf(sets, { backupId: SAME, name: 'Old name', game: 'lmu' })).toBe(lmu);
+    // Nothing to tell them apart by: the first, as a list of single values would give.
+    expect(chosenOf(sets, { backupId: SAME })).toBe(iracing);
+    expect(selectedKey(sets, { backupId: 'other' })).toBe('other');
+    // Gone from the list: the row for it is called by the saved value, as before.
+    expect(selectedKey(sets, { backupId: 'gone' })).toBe('gone');
+    expect(pickerItems(sets, { backupId: 'gone', name: 'Wet set' })[0]).toEqual({
+      value: 'gone',
+      title: 'Wet set (no longer in the list)',
+    });
+    expect(selectedKey(sets, {})).toBeUndefined();
+  });
+
+  it('the form hands the chosen row to the list', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        backupId: { type: 'string' },
+        name: { type: 'string' },
+        game: { type: 'string' },
+      },
+      required: ['backupId', 'game'],
+    };
+    const rows = formRows(schema, { backupId: SAME, name: 'League night', game: 'lmu' }, [sets]);
+    expect(rows.map((row) => row.field.key)).toEqual(['backupId']);
+    expect(rows[0]!.pick!.selected).toBe(choiceKey(sets, lmu));
+    expect(formRows(schema, {}, [sets])[0]!.pick!.selected).toBeUndefined();
+  });
+});
+
 describe('the form of a type with a list', () => {
   it('asks for the list by name and never for what the list fills in', () => {
     const rows = formRows(LAYOUT_SCHEMA, {}, [layouts]);
@@ -304,5 +392,29 @@ describe('the name of a check that is chosen from a list', () => {
     expect(titleFromChoice('New check', 'Program running', undefined, {}, flying)).toBeUndefined();
     const plain = { ...layouts, fills: [] };
     expect(titleFromChoice('New check', 'Monitor layout', [plain], {}, flying)).toBeUndefined();
+  });
+});
+
+describe('the name of a step that has not been given one', () => {
+  it('follows the type while it is still the name of the type', () => {
+    expect(titleFromType('Start the app', 'Start the app', 'Start a virtual controller')).toBe(
+      'Start a virtual controller'
+    );
+  });
+
+  it('never replaces a name the person typed, also one that begins with "New"', () => {
+    expect(titleFromType('Start VoiceAttack', 'Start the app', 'Run a script')).toBeUndefined();
+    expect(titleFromType('New headset profile', 'Start the app', 'Run a script')).toBeUndefined();
+  });
+
+  it('renames a step an earlier version left as "New start the app", and one with no name', () => {
+    expect(titleFromType('New start the app', 'Start the app', 'Run a script')).toBe(
+      'Run a script'
+    );
+    expect(titleFromType(' ', 'Start the app', 'Run a script')).toBe('Run a script');
+  });
+
+  it('keeps the name of a step whose type this version does not know', () => {
+    expect(titleFromType('Old step', undefined, 'Run a script')).toBeUndefined();
   });
 });

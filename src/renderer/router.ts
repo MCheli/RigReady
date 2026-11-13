@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 import { featureRoutes, firstConfigurePath } from './features';
 import ConfigureLayout from './layouts/ConfigureLayout.vue';
 import NotFound from './layouts/NotFound.vue';
+import { scrollOnMove } from './shell/nav';
 
 const flyRoutes = featureRoutes.filter((r) => r.meta?.mode === 'fly');
 const configureRoutes = featureRoutes.filter((r) => r.meta?.mode !== 'fly');
@@ -30,4 +31,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/:rest(.*)*', component: NotFound },
 ];
 
-export const router = createRouter({ history: createWebHashHistory(), routes });
+export const router = createRouter({
+  history: createWebHashHistory(),
+  routes,
+  scrollBehavior: (to, from, saved) => scrollOnMove(to.path, from.path, saved),
+});
