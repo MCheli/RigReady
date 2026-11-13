@@ -12,7 +12,7 @@ Windows 10 or 11 and Node.js 22.12 or newer.
 
 ```
 npm ci
-npm run check       # must pass before every commit
+npm run check       # every commit is checked: here, or by GitHub on its pull request
 npm run test:e2e    # the app driven on recorded rigs; no real hardware needed
 ```
 

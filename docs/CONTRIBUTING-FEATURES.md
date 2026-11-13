@@ -38,7 +38,7 @@ Nothing else is needed for unit and e2e work: both run on fake providers. `npm r
 
 | Command | What it does |
 |---|---|
-| `npm run check` | Typecheck (node and web projects), lint, format check, unit tests with coverage threshold, ledger check. Must pass before every commit. |
+| `npm run check` | Typecheck (node and web projects), lint, format check, unit tests with coverage threshold, ledger check. Every commit is checked by it, here or by GitHub's run on its pull request. Nothing merges into main without a green run. |
 | `npm run typecheck` / `npm run lint` / `npm run format` | The single gates; `format` fixes formatting, `lint:fix` fixes what ESLint can. |
 | `npm test` / `npm run test:watch` | Unit tests. `npx vitest run tests/unit/<file>.test.ts` runs one file. |
 | `npm run test:coverage:shard -- --shard=1/4` / `npm run test:coverage:merge` | How CI runs the unit tests of `npm run check`: a quarter of the test files on each of four runners, then the coverage limits on the four reports together (`.github/workflows/ci.yml`). Not needed on a desk PC: one shard alone is not held to the limits. |
