@@ -16,7 +16,7 @@ The button at the top right opens the setup's file **in your editor** or shows i
 
 - **Name**: what the [Play screen](../play/index.md), the [tray](../one-click/tray.md) and the shortcut call it, up to 80 characters. The id in the file name does not change when you rename.
 - **Game**: no particular game, a game RigReady knows (marked "not found on this PC" when it is not installed), or **Other game…** with a **Game name**. Choosing a known game fills in what Launch starts, when nothing was chosen yet.
-- **Install this setup uses**: shown when the game is installed more than once (DCS stable and open beta). Its folders are then what `{DCS_INSTALL}` and `{DCS_USER}` mean for this setup's checks, fixes and launch; see [Path variables](path-variables.md).
+- **Install this setup uses**: shown when the game is installed more than once (DCS stable and open beta). Its folders are then what the game's path variables (`{DCS_INSTALL}` and `{DCS_USER}` for DCS) mean for this setup's checks, fixes and launch; see [Path variables](path-variables.md).
 - **Notes**: a line or two for yourself.
 
 ## Launch

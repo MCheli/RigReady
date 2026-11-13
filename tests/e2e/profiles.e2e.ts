@@ -85,6 +85,10 @@ test('setups: checks and launch steps are added through the generic form, with p
   await expect(options.getByTestId('edit-fix-prepared')).toContainText(
     'Kept a copy of options.lua'
   );
+  // The hint under the path gives variables every game has, not a DCS file.
+  await expect(options.getByTestId('edit-params-path')).toContainText(
+    'A full path, or one starting with a variable such as {DOCUMENTS} or {SAVED_GAMES}'
+  );
   await shot('file-check');
 
   // The Variables menu beside the path lists every variable a setup may use, says where each
@@ -384,6 +388,9 @@ test('setups: name, notes, install, and what Launch starts are edited; Cancel le
   await change();
   await expect(page.getByTestId('edit-launch-exe').locator('input')).toHaveValue(
     path.join(home, 'Games', 'DCS World OpenBeta', 'bin', 'DCS.exe')
+  );
+  await expect(page.getByTestId('edit-game-install')).toContainText(
+    "Its folders are what this game's path variables mean for this setup's checks, fixes and launch."
   );
   await shot('edited');
   await page.getByTestId('edit-cancel').click();

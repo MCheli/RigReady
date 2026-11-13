@@ -4,7 +4,7 @@ description: "Cloning a setup, copying checks from one setup into another, delet
 order: 80
 ---
 
-Setups are usually alike: the same gear, the same helper apps, a different aircraft. Rather than capturing the rig again, clone a setup or copy items between setups.
+Setups are usually alike: the same gear, the same helper apps, a different aircraft or car. Rather than capturing the rig again, clone a setup or copy items between setups.
 
 ![Copying items from another setup](../../../artifacts/screens/profile-clone-copy/02-copy-dialog.png)
 

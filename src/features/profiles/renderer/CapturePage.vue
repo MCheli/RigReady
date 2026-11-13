@@ -681,7 +681,7 @@ onMounted(capture);
                 <v-text-field
                   v-model="name"
                   label="Name of the setup"
-                  placeholder="DCS F/A-18C"
+                  placeholder="e.g. GT3 or F/A-18C"
                   data-testid="capture-name"
                   @update:model-value="nameEdited = true"
                 />
@@ -763,7 +763,7 @@ onMounted(capture);
                   <v-text-field
                     v-model="launchExe"
                     label="Program"
-                    placeholder="C:\Games\DCS World\bin\DCS.exe"
+                    placeholder="C:\Games\My Game\game.exe"
                     class="rr-mono-input"
                     data-testid="capture-launch-exe"
                   >

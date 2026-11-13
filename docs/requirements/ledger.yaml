@@ -4983,6 +4983,7 @@ requirements:
       - "2026-11-12, after the sitting: windows were allowed again. Both tests of tests/e2e/assistant.e2e.ts passed against the build of this commit, with the isolated launch, and the eight screenshots of artifacts/screens/assistant and the two of artifacts/screens/assistant-refused were taken by that run and are committed with it. Back to done. The dollar figures in them are worded as estimates (ASSIST-008)."
       - "2026-11-12, later: the renderer of replies now counts its own work, and reads ahead of its place for the end of a link only up to a fixed number of characters for each character of the reply. A reply that spends that keeps all of its text and gets no more links; a long reply written to be read keeps every one. Its test holds it to counted steps, for each hard text and for one twice as long, so the result is the same on every machine; the 1500 ms on the clock stay as a loose backstop. Compared once with the renderer as it was on one million random texts (a run that is not kept in the repository): none was parsed differently."
       - "2026-11-12, later still: 'Exactly what is sent' in Settings goes use by use. The assistant comes first and says it works the same whatever is played (a racing sim such as iRacing, a flight sim such as DCS, or anything else), with what a proposed setup or a drafted script sends; AI help in the binding guide follows, marked as for DCS aircraft only, with the line that nothing in its list is sent by someone who does not fly DCS."
+      - "2026-11-12, the wording pass (the owner's findings 27 and 37): the panel's examples are for any game ('Make my setup start Stream Deck and TrackIR', 'Why is my rig not ready?', 'Write a check that SimHub answers on its port'), and 'Who answers' in Settings > AI says first what AI does whatever is played, then what the Binding guide page adds for DCS aircraft. tests/e2e/assistant.e2e.ts and tests/e2e/ai-assist.e2e.ts assert both words, and the pictures artifacts/screens/assistant/01-panel-open.png and artifacts/screens/ai-assist-key/01-settings.png were taken again by that run."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
@@ -5459,6 +5460,7 @@ requirements:
       - "No token is written to the log, whole or cut short: a value of the form rr_ followed by sixteen or more hex characters is written as rr_***, bare, in a header or in JSON. A diagnostics export holds none, and neither does the notice about an unexpected error."
       - "A token an assistant puts into a call, or a program into its answer, is masked before the question, the list and the log show the line; masking comes before cutting."
       - "A request with a token that is not known leaves one line in the log without the token, then a count."
+      - "The Claude Code form by address says that its command leaves the pairing's token in the terminal's history and in Claude Code's settings, both in plain text, and that Forget on that pairing cuts it off at once. The manual's page on the MCP server says the same."
     status: done
     evidence:
       - "src/features/mcp/core/tokenCare.test.ts#pairing, the text to paste, Copy, a new bridge token and a refused request leave no token behind"
@@ -5471,6 +5473,9 @@ requirements:
       - "tests/unit/logging.test.ts#never writes a pairing token of the MCP server, whole or cut short"
       - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
       - "artifacts/screens/mcp-settings/03-paired.png"
+      - "src/features/mcp/core/tokenCare.test.ts#the Claude Code form by address says where its command leaves the token, and that Forget cuts it off"
+      - "tests/e2e/mcp.e2e.ts#mcp: the Claude Code form by address says where its command leaves the token, and that Forget cuts it off"
+      - "artifacts/screens/mcp-claude-code-address/01-claude-code-by-address.png"
 
   # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE
@@ -8765,6 +8770,7 @@ requirements:
       - "Only the word on screen changed: the folder, the routes, the IPC channels, meta.mode and the test ids are what they were (mode-fly, /fly, fly:check)."
     notes:
       - "2026-10-04: this entry is the shell and the palette's commands. Copy in other places that still says Fly (the capture page, the tray, the user guide) is not covered by it."
+      - "2026-11-12, the wording pass after the owner's findings 27 and 37: text a racing-only user meets on pages every game shares no longer takes them for a DCS pilot. Settings > AI says what AI does for any game before it names the DCS binding guide; the assistant's examples, the hints and examples of tracked files, the setup editor and the capture, the example name of a monitor layout, the snapshot and print explanations, the palette's line when nothing matches, the hotkey refusal and the Restore button's icon no longer assume DCS or flying; the Binding guide page says at its top that it is for DCS World; the manual pages that said the same were changed with them. Places that name DCS because the feature is DCS-only were left. tests/e2e/wording.e2e.ts walks the shared places on a PC whose only game is iRacing."
     status: done
     evidence:
       - "src/renderer/shell/registry.test.ts#the page the mode switch opens is called what the switch calls it: Play"
@@ -8776,6 +8782,8 @@ requirements:
       - "tests/e2e/look.e2e.ts#look: an empty state has a drawing, says what is missing, and leads somewhere"
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
+      - "tests/e2e/wording.e2e.ts#wording: on a PC whose only game is iRacing, the shared pages speak of any game"
+      - "artifacts/screens/wording-racing/01-settings-ai.png"
 
   - id: WOW-UI-012
     title: The app links to its manual, page by page

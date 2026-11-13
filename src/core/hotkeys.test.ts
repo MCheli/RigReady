@@ -68,7 +68,10 @@ describe('a hotkey as it is written', () => {
       return result.error.message;
     };
     // A bare key, or Shift alone with it, is typed and pressed in a game all the time.
-    expect(refused('R')).toMatch(/Hold Ctrl, Alt or the Windows key/);
+    // Said for every game: nothing in it assumes the user flies.
+    expect(refused('R')).toBe(
+      'Hold Ctrl, Alt or the Windows key with it, so it cannot be pressed by accident while typing or playing.'
+    );
     expect(refused('F5')).toMatch(/Hold Ctrl, Alt or the Windows key/);
     expect(refused('Shift+R')).toMatch(/Hold Ctrl, Alt or the Windows key/);
     expect(refused('Ctrl+Alt')).toBe('A hotkey needs a key besides Ctrl, Alt, Shift and Windows.');

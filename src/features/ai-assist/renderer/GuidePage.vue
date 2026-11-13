@@ -73,8 +73,8 @@ onBeforeUnmount(() => {
       <div>
         <h1 class="rr-page-title">Binding guide</h1>
         <p class="rr-page-sub">
-          What matters in each aircraft, in plain language and in priority order, and a walkthrough
-          that binds it with you.
+          For DCS World: what matters in each aircraft, in plain language and in priority order, and
+          a walkthrough that binds it with you.
         </p>
         <v-btn
           v-if="store.aiReady"

@@ -30,7 +30,7 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 ## AI assistance
 
-Optional; everything except the AI help in the binding guide works without it. See [Choose who answers](../ai/providers.md) for every provider.
+Optional; everything except the built-in assistant and the AI help in the binding guide (DCS aircraft) works without it. See [Choose who answers](../ai/providers.md) for every provider.
 
 **Who answers.** Anthropic (Claude), the default; OpenAI; or OpenAI-compatible. For OpenAI-compatible, **Service** offers Google Gemini, OpenRouter, Mistral, Ollama and LM Studio, which fill in the **API address** and suggest a model, or **Other** to type the address of any service that speaks OpenAI's API. The address must start with `https://`; plain `http://` is accepted only for this PC. **Structured answers** says whether the service is held to a JSON schema or asked for JSON in the text (for services that refuse a schema).
 

@@ -138,8 +138,8 @@ async function confirmDelete(): Promise<void> {
     <div v-if="view" class="rr-panel take">
       <div class="take-title">Take a snapshot</div>
       <div class="rr-row-sub mb-3">
-        A named copy of one tracked item, for example before you rebind an aircraft. Compare it with
-        the files later, line by line, or put it back.
+        A named copy of one tracked item, for example before you change your bindings. Compare it
+        with the files later, line by line, or put it back.
       </div>
       <div v-if="choices.length === 0" class="rr-row-sub" data-testid="snapshot-nothing-tracked">
         Track a file or folder first.
