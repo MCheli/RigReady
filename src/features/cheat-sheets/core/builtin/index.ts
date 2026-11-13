@@ -463,15 +463,16 @@ function takeoff(): LayoutBuilder {
     [26, 'LO'],
     [27, 'RO'],
   ]);
-  // The brake handle as moved on the owner's panel (13 Nov 2026): 30 is held while it
-  // rests, which also means 30 is not the wing fold's SPREAD, as these cards had it.
+  // Both handles as moved on the owner's panel (13 Nov 2026): the wing fold handle gives
+  // 28 to 30 for its three positions and 31 while it is pushed in; the brake handle gives
+  // one button per move and none while it rests.
   b.stack('WING FOLD', x(2), y, w, [
     [28, 'FOLD'],
     [29, 'HOLD'],
-    [31, 'PULL'],
+    [30, 'SPREAD'],
+    [31, 'PUSH'],
   ]);
   b.stack('EMERG / PARK BRK', x(3), y, w, [
-    [30, 'At rest'],
     [40, 'Out'],
     [41, 'In'],
     [39, 'Left'],

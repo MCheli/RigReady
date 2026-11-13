@@ -361,9 +361,8 @@ describe('the shipped drawings', () => {
     expect(inputsOf(startup, 'bleed')).toEqual(numbers(54, 57));
     expect(startup.controls.some((c) => c.assumed)).toBe(false);
 
-    // The take-off panel 2: the 41 buttons the maker's screen places. The brake handle was
-    // moved on the owner's panel; only the wing fold handle, which lost 30 to it, is not
-    // confirmed.
+    // The take-off panel 2: the 41 buttons the maker's screen places. The brake handle and
+    // the wing fold handle were both moved on the owner's panel: nothing is left to check.
     const takeoff = drawingFor({ vendorId: '4098', productId: 'BF05' })!;
     expect(takeoff.name).toBe('WinWing F/A-18 take-off panel 2');
     expect([...drawn(takeoff)].sort()).toEqual(numbers(1, 41).sort());
@@ -371,7 +370,7 @@ describe('the shipped drawings', () => {
     expect(inputsOf(takeoff, 'flap')).toEqual(numbers(5, 7));
     expect(inputsOf(takeoff, 'probe')).toEqual(numbers(14, 16));
     expect(inputsOf(takeoff, 'hook')).toEqual(numbers(32, 34));
-    expect(takeoff.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual(['wing-fold']);
+    expect(takeoff.controls.filter((c) => c.assumed).map((c) => c.id)).toEqual([]);
   });
 
   it('are refused with the reason when an anchor is off the drawing or an input is placed twice', () => {
@@ -404,7 +403,8 @@ describe('the shipped drawings', () => {
 /**
  * The second look on the owner's rig, 13 Nov 2026: he pressed each control while the
  * tester recorded which button lit. The recordings below are copied from those files (the
- * buttons held at each change, in order); every change must touch one control only, and
+ * buttons held at each change, in order); every change must touch the control named for
+ * it and no other (one exception, on the take-off panel, is named where it happens), and
  * every number must be where the press put it.
  */
 describe('what the owner pressed on his own rig on 13 Nov 2026', () => {
@@ -426,13 +426,14 @@ describe('what the owner pressed on his own rig on 13 Nov 2026', () => {
     const before = new Set(from);
     const after = new Set(to);
     const flipped = [...new Set([...from, ...to])].filter((n) => before.has(n) !== after.has(n));
-    return [...new Set(flipped.map((n) => placeOf(drawing, b(n))[0]))];
+    return [...new Set(flipped.map((n) => placeOf(drawing, b(n))[0]))].sort();
   };
-  /** Each step of a recording changes the one control named for it. */
-  const replay = (drawing: DeviceDrawing, steps: [number[], string][]): void => {
+  /** Each step of a recording changes the control (or controls) named for it, and no other. */
+  const replay = (drawing: DeviceDrawing, steps: [number[], string | string[]][]): void => {
     for (let i = 1; i < steps.length; i += 1) {
-      const [to, control] = steps[i]!;
-      expect(changed(drawing, steps[i - 1]![0], to), `step ${i}`).toEqual([control]);
+      const [to, controls] = steps[i]!;
+      const expected = (typeof controls === 'string' ? [controls] : controls).slice().sort();
+      expect(changed(drawing, steps[i - 1]![0], to), `step ${i}`).toEqual(expected);
     }
   };
   const grip = (): DeviceDrawing => drawingFor({ vendorId: '4098', productId: 'BEA8' })!;
@@ -533,22 +534,42 @@ describe('what the owner pressed on his own rig on 13 Nov 2026', () => {
     ]);
   });
 
-  it('take-off panel 2: the brake handle is out 40, in 41, left 39, right 38 and rests on 30; the gear lever and the jettison knob are one control each', () => {
+  it('take-off panel 2: the brake handle is out 40, in 41, left 39, right 38; the wing fold handle is FOLD 28, HOLD 29, SPREAD 30 and push 31; the gear lever and the jettison knob are one control each', () => {
     const drawing = panel();
-    expect([40, 41, 39, 38, 30].map((n) => placeOf(drawing, b(n)))).toEqual([
+    expect([40, 41, 39, 38].map((n) => placeOf(drawing, b(n)))).toEqual([
       ['brake', 'out'],
       ['brake', 'in'],
       ['brake', 'left'],
       ['brake', 'right'],
-      ['brake', 'at rest'],
     ]);
-    expect(drawing.controls.find((c) => c.id === 'brake')?.assumed).toBe(false);
-    // lit-b1-brake2.txt: the knob, the gear lever, then the brake handle each way.
+    // The input tester, 12:55, one position at a time: three positions that stay put, and
+    // a push that springs back. The handle normally sits in SPREAD.
+    expect([28, 29, 30, 31].map((n) => placeOf(drawing, b(n)))).toEqual([
+      ['wing-fold', 'FOLD'],
+      ['wing-fold', 'HOLD'],
+      ['wing-fold', 'SPREAD'],
+      ['wing-fold', 'push'],
+    ]);
+    expect(drawing.controls.filter((c) => c.assumed)).toEqual([]);
+    expect(drawing.notes ?? '').not.toContain('?');
     const rest = [3, 7, 8, 10, 12, 15, 18, 30, 32, 35];
     const without = (n: number, add?: number): number[] => [
       ...rest.filter((m) => m !== n),
       ...(add ? [add] : []),
     ];
+    // The wing fold handle as the input tester showed it at 12:55 (noted by hand, one
+    // position at a time, not a recording): FOLD, HOLD, back to SPREAD, pushed in.
+    replay(drawing, [
+      [rest, ''],
+      [without(30, 28), 'wing-fold'],
+      [without(30, 29), 'wing-fold'],
+      [rest, 'wing-fold'],
+      [[...rest, 31], 'wing-fold'],
+      [rest, 'wing-fold'],
+    ]);
+    // lit-b1-brake2.txt: the knob, the gear lever, then the brake handle each way. Each
+    // move of the brake handle also let go of 30, the wing fold handle's SPREAD: the panel
+    // does that, the wing fold handle did not move. No button is the brake handle at rest.
     replay(drawing, [
       [rest, ''],
       [without(18), 'select-jett'],
@@ -561,27 +582,18 @@ describe('what the owner pressed on his own rig on 13 Nov 2026', () => {
       [without(35, 36), 'gear'],
       [without(35), 'gear'],
       [rest, 'gear'],
-      [without(30, 40), 'brake'],
-      [rest, 'brake'],
-      [without(30, 41), 'brake'],
-      [rest, 'brake'],
-      [without(30, 39), 'brake'],
-      [rest, 'brake'],
-      [without(30, 38), 'brake'],
-      [rest, 'brake'],
+      [without(30, 40), ['brake', 'wing-fold']],
+      [rest, ['brake', 'wing-fold']],
+      [without(30, 41), ['brake', 'wing-fold']],
+      [rest, ['brake', 'wing-fold']],
+      [without(30, 39), ['brake', 'wing-fold']],
+      [rest, ['brake', 'wing-fold']],
+      [without(30, 38), ['brake', 'wing-fold']],
+      [rest, ['brake', 'wing-fold']],
     ]);
-    // The brake handle springs back to 30. The gear lever and the knob stay wherever they
-    // are put, so neither has one place it rests and neither is marked.
+    // The wing fold handle rests in SPREAD. The gear lever and the knob stay wherever they
+    // are put, so neither has one place it rests and neither is marked; nor is the brake.
     expect(sorted(restInputs(drawing))).toEqual([b(30)]);
-    // The wing fold handle lost 30 to the brake handle: its numbers wait for a move.
-    expect(drawing.controls.find((c) => c.id === 'wing-fold')).toMatchObject({
-      assumed: true,
-      inputs: [
-        { id: b(28), tag: 'FOLD' },
-        { id: b(29), tag: 'HOLD' },
-        { id: b(31), tag: 'pull' },
-      ],
-    });
   });
 
   it('names each of those the same way on the sheet, in the trainer and on the overlay', async () => {
@@ -605,12 +617,13 @@ describe('what the owner pressed on his own rig on 13 Nov 2026', () => {
     ]);
     expect(thr.get(b(60))).toBeUndefined();
     const tko = labels('BF05');
-    expect([40, 41, 39, 38, 30].map((n) => tko.get(b(n)))).toEqual([
+    expect([40, 41, 39, 38, 30, 31].map((n) => tko.get(b(n)))).toEqual([
       'EMERG / PARK BRK handle out',
       'EMERG / PARK BRK handle in',
       'EMERG / PARK BRK handle left',
       'EMERG / PARK BRK handle right',
-      'EMERG / PARK BRK handle at rest',
+      'WING FOLD handle SPREAD',
+      'WING FOLD handle push',
     ]);
   });
 
