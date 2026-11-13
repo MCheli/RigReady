@@ -23,15 +23,23 @@ async function setUp(): Promise<{
   fix: ReturnType<typeof createApplyLayoutRemediation>;
   check: ReturnType<typeof createLayoutCheck>;
   guard: RevertGuard;
+  /** Resolves once the keep question is up: the guard says so itself, so no fixed wait. */
+  asked: () => Promise<void>;
 }> {
   rig = await scenarioRig('flying-all-good', { files: [] });
   const deps = {
     names: async () => ({}),
     layouts: new DisplayLayoutStore(rig.ports.files, rig.ports.folders.dataRoot(), rig.clock),
   };
+  const askWaiters: Array<() => void> = [];
   const guard = new RevertGuard(
     rig.ports.displays,
-    { armed: () => {}, settled: () => {} },
+    {
+      armed: () => {
+        for (const wake of askWaiters.splice(0)) wake();
+      },
+      settled: () => {},
+    },
     15,
     () => {
       return () => {};
@@ -41,6 +49,8 @@ async function setUp(): Promise<{
   const applier = new LayoutApplier(rig.ports.displays, guard, recovery, rig.ports.window);
   return {
     guard,
+    asked: () =>
+      guard.pending ? Promise.resolve() : new Promise<void>((resolve) => askWaiters.push(resolve)),
     fix: createApplyLayoutRemediation({ ...deps, applier }),
     check: createLayoutCheck(deps),
     /** The layout as it is now, with the ultrawide's entry changed. */
@@ -60,7 +70,7 @@ const ultrawide = () => rig.ports.state.displays.find((d) => d.name === ULTRAWID
 
 describe('a layout that asks for a resolution or refresh rate', () => {
   it('applies a mode the monitor lists, and the check then compares the refresh rate too', async () => {
-    const { layout, fix, check, guard } = await setUp();
+    const { layout, fix, check, guard, asked } = await setUp();
     expect(ultrawide()).toMatchObject({ width: 5120, height: 1440, refreshHz: 120 });
     const wanted = await layout({ refreshHz: 60 });
     expect(await check.run(wanted, rig.ctx)).toMatchObject({
@@ -68,7 +78,7 @@ describe('a layout that asks for a resolution or refresh rate', () => {
       summary: `${ULTRAWIDE} runs at 120 Hz, expected 60 Hz`,
     });
     const running = fix.run(wanted, rig.ctx);
-    await expect.poll(() => guard.pending).toBe(true);
+    await asked();
     guard.keep();
     expect(await running).toMatchObject({ ok: true });
     expect(ultrawide()).toMatchObject({ width: 5120, height: 1440, refreshHz: 60 });
@@ -78,14 +88,14 @@ describe('a layout that asks for a resolution or refresh rate', () => {
     const smaller = await layout({ width: 3840, height: 1080, refreshHz: 120 });
     // The MFD screens sit at x 5120 and up, so the narrower ultrawide leaves a gap: allowed.
     const second = fix.run(smaller, rig.ctx);
-    await expect.poll(() => guard.pending).toBe(true);
+    await asked();
     guard.keep();
     expect(await second).toMatchObject({ ok: true });
     expect(ultrawide()).toMatchObject({ width: 3840, height: 1080, refreshHz: 120 });
   });
 
   it('hands a layout that changes resolution, refresh rate, position and rotation to the display port as one apply', async () => {
-    const { layout, fix, guard } = await setUp();
+    const { layout, fix, guard, asked } = await setUp();
     const calls: unknown[][] = [];
     const apply = rig.ports.displays.apply.bind(rig.ports.displays);
     rig.ports.displays.apply = (targets) => {
@@ -103,7 +113,7 @@ describe('a layout that asks for a resolution or refresh rate', () => {
       y: 0,
     });
     const running = fix.run(wanted, rig.ctx);
-    await expect.poll(() => guard.pending).toBe(true);
+    await asked();
     guard.keep();
     expect(await running).toMatchObject({ ok: true });
 
