@@ -26,7 +26,7 @@ How the installed app finds them (`src/platform/electron/updater.ts`, electron-u
 
 Rules the app applies to what it finds (`src/features/updates/core/version.ts`): never a downgrade, never the same version, pre-releases only on the beta channel and only `-beta.N`. A beta user is moved on to the release of the same version when it appears.
 
-The version in the repository between releases is a `-dev.N` version (`2.0.0-dev.0` until 2.0.0 is out). It is older than its own release, so a development build updates to the release and to nothing else, and nothing ever goes back to 1.1.0: `2.0.0-dev.0 -> 2.0.0` is taken, `2.0.0 -> 1.1.0` and `2.0.0-dev.0 -> 1.1.0` are refused as not newer (`src/features/updates/core/updates.test.ts`).
+The version in the repository between releases is a `-dev.N` version, or the newest beta while a release is being tested (`main` carried `2.0.0-beta.N` while the 2.0.0 test builds were made). Either is older than its own release, so a development build updates to the release and to nothing else, and nothing ever goes back to 1.1.0: `2.0.0-dev.0 -> 2.0.0` is taken, `2.0.0 -> 1.1.0` and `2.0.0-dev.0 -> 1.1.0` are refused as not newer (`src/features/updates/core/updates.test.ts`).
 
 ## How updating works for the user
 
@@ -93,7 +93,7 @@ $stream = [IO.File]::OpenRead("$env:TEMP\rigready-<version>\RigReady-Setup-<vers
 Get-AuthenticodeSignature "$env:TEMP\rigready-<version>\RigReady-Setup-<version>.exe"
 ```
 
-`version:` in `latest.yml` is `<version>` (not `-dev`), `path:` and `url:` name the installer, `size:` is the file's size, and the base64 string printed equals both `sha512:` lines. The signature status is `NotSigned`: expected, see Code signing.
+`version:` in `latest.yml` is `<version>` (not `-dev`), `path:` and `url:` name the installer, `size:` is the file's size, and the base64 string printed equals both `sha512:` lines. The signature status is `Valid` and the signer's subject starts with `CN=Mark Cheli` (see Code signing); anything else, and the draft is not published.
 
 ## Checklist
 
@@ -138,13 +138,13 @@ Record for each Windows version: the build number (`winver`), the date, and who 
 
 ## Release 2.0.0: the runbook
 
-The release path has never been exercised: 2.0.0 is the first tag since the rebuild and the first run of the Release workflow. The facts it rests on, as of 2026-11-06:
+The test builds have been through the release path: `v2.0.0-beta.1` (unsigned) and `v2.0.0-beta.2` to `v2.0.0-beta.4` (signed, publisher "Mark Cheli") ran the Release workflow and became draft pre-releases, none of them published. 2.0.0 is the first release that is published, and the first signed one. The facts it rests on, as of 2026-11-13:
 
 - `main` has the ruleset described in step 1 above. The repository's default workflow token is read-only; `release.yml` asks for `contents: write` itself, which is all a draft needs. The Pages environment deploys from `main` only, which is what the site workflow's release job dispatches.
-- GitHub Releases holds v1.1.0 (marked Latest, February 2026) and v1.0.1, each with an installer and a `latest.yml`. They stay: the website ignores 1.x (it shows the newest release of the major version in `package.json`), and a 2.0.0 install never goes back to them.
-- Installing 2.0.0 over 1.1.0, and what 1.1.0 installs do when 2.0.0 is out, are worked out under "Upgrading from 1.1.0" below. Short version: 1.1.0 is replaced in place, its data folder is kept, and 1.1.0 copies do not update themselves.
+- GitHub Releases holds v1.1.0 (marked Latest, February 2026) and v1.0.1, each with an installer and a `latest.yml`. They stay: the website ignores 1.x (it shows the newest release of the major version in `package.json`), and a 2.0.0 install never goes back to them. It also holds the drafts of the 2.0.0 betas. None of them is published after 2.0.0; the unsigned `v2.0.0-beta.1` draft is deleted once 2.0.0 is out.
+- Installing 2.0.0 over 1.1.0, and what 1.1.0 installs do when 2.0.0 is out, are worked out under "Upgrading from 1.1.0" below. Short version: 1.1.0 is replaced in place, its data folder is kept, and 1.1.0 copies do not update themselves. On the rig, the guided sitting of 2026-11-12 installed signed `2.0.0-beta.4` over RigReady 1 that way; the rig now runs a signed beta, which does update itself, so Part C installs 2.0.0 as an update.
 - On 2026-11-06 CI on `main` failed (#19's push run) with five unit tests timing out at 30 s on the runner, the suite having taken 694 s; the same commit had passed as a pull request. The check job now switches the runner's virus scanner off like the other jobs, and the Release workflow does too. If a job times out anyway, re-run it before looking for a bug.
-- The build here on 2026-11-06, `npm ci && npm run setup:python && npm run dist` on a worktree of `main`: `release/RigReady-Setup-2.0.0-dev.0.exe` 133,461,160 bytes, `.exe.blockmap` 139,841 bytes, `latest.yml` 363 bytes naming the installer, its size and SHA-512; about six minutes in all, unsigned, built by electron-builder 26.18.1 with Electron 44.10.1.
+- The newest signed draft, `v2.0.0-beta.4` (2026-11-11): `RigReady-Setup-2.0.0-beta.4.exe` 134,527,128 bytes, `.exe.blockmap` 141,482 bytes, `latest.yml` 366 bytes; Authenticode `Valid`, signer `CN=Mark Cheli, O=Mark Cheli, L=Ashland, S=MA, C=US`, timestamped. A Release workflow run takes about 20 minutes (beta.3: 20; beta.4: 34, with one job run again).
 
 The release day is the `<date>` below. Everything before "Part C" can be done ahead of it, as long as the changelog carries the day the draft will be published.
 
@@ -155,10 +155,10 @@ The release day is the `<date>` below. Everything before "Part C" can be done ah
    git checkout main && git pull --ff-only && git checkout -b release/2.0.0
    npm version 2.0.0 --no-git-tag-version
    ```
-   `CHANGELOG.md`: `## 2.0.0 (not released)` becomes `## 2.0.0 (<date>)`, and the sentence "Version 2.0.0 has not been published; there is no installer to download yet." is removed from the paragraph under it.
+   `CHANGELOG.md`: `## 2.0.0 (not released)` becomes `## 2.0.0 (<date>)`, and the sentence "Version 2.0.0 has not been published; there is no installer to download yet." is removed from the paragraph under it. The 2.0.0 section stays above the beta sections: the website opens the changelog's first section.
 
-   `README.md`, the "Status" section, becomes:
-   > Version 2.0.0, released <date>, is a rebuild from the ground up; the installer is on [rigready.io/download](https://rigready.io/download/). `docs/requirements/ledger.yaml` lists every requirement with its status and the evidence for it; `CHANGELOG.md` summarises what 2.0.0 contains and what is still open.
+   The lines that say 2.0.0 is not published yet (`README.md`'s Status section, `SECURITY.md`'s sentence under the table of supported versions) and the block of `.github/dependabot.yml` marked "Remove this block after the 2.0.0 release" change in a pull request of their own once the release is published (step 4), so that nothing on `main` says 2.0.0 is out before it is. `README.md`'s Status section then becomes:
+   > Version 2.0.0, released <date>, is a rebuild from the ground up; the installer is on [rigready.io/download](https://rigready.io/download/) and under [Releases](https://github.com/MCheli/RigReady/releases). It replaces version 1.1.0, the first RigReady, from February 2026: it does not read version 1's setups as they are, and 1.1.0 does not update itself to 2.0.
 
    Then:
    ```
@@ -180,7 +180,7 @@ The release day is the `<date>` below. Everything before "Part C" can be done ah
    ```
    The Release workflow: tag check and release notes; then CI's jobs side by side (the parts of `npm run check`, `npm run test:e2e` in four shards, `npm run setup:python` and `npm run smoke:packaged`); then `npm run setup:python`, `npm run dist`, draft release with `RigReady-Setup-2.0.0.exe`, `RigReady-Setup-2.0.0.exe.blockmap`, `latest.yml`, and the changelog section as its description. About 20 minutes.
 3. Verify the draft as described above. Nothing is published yet: a 2.0.0 install from the draft's installer that checks for updates sees v1.1.0 as GitHub's latest release and says it is up to date.
-4. After the owner publishes (Part C): `gh run list --repo MCheli/RigReady --workflow site.yml --limit 3` shows the release event's run and the build of `main` it started. A few minutes later https://rigready.io/download/ shows "RigReady 2.0.0" with the installer's size and date, the home page's button says "Download for Windows", https://rigready.io/download/latest/ lands on `RigReady-Setup-2.0.0.exe` on GitHub, and the changelog's 2.0.0 entry links to the release. Nothing on the site is edited by hand.
+4. After the owner publishes (Part C): `gh run list --repo MCheli/RigReady --workflow site.yml --limit 3` shows the release event's run and the build of `main` it started. A few minutes later https://rigready.io/download/ shows "RigReady 2.0.0" with the installer's size and date, the home page's button says "Download for Windows", https://rigready.io/download/latest/ lands on `RigReady-Setup-2.0.0.exe` on GitHub, and the changelog's 2.0.0 entry links to the release. Nothing on the site is edited by hand. Then the pull request for the lines that wait for the release (step 1), and one line at the top of the v1.1.0 and v1.0.1 release notes saying that version 2 replaces them, with the link to rigready.io/download.
 5. The day after: a pull request with `npm version 2.1.0-dev.0 --no-git-tag-version` (or `2.0.1-dev.0`).
 
 ### Part B: done by the coordinator on the rig
@@ -198,16 +198,16 @@ RIGREADY_MEMORY_SETTLE_SECONDS=600 npx playwright test --config playwright.packa
 npm run smoke:installer
 ```
 
-Fill in the "Automated, on the rig" table with the date and the numbers. `smoke:installer` installs and removes the "RigReady Test" variant only; the real 1.1.0 install is checked byte for byte afterwards.
+In PowerShell the memory line is `$env:RIGREADY_MEMORY_SETTLE_SECONDS = '600'; npx playwright test --config playwright.packaged.config.ts -g "memory"`. Fill in the "Automated, on the rig" table with the date and the numbers. `smoke:installer` installs and removes the "RigReady Test" variant only; the real install (the signed beta on the rig) is checked byte for byte afterwards.
 
 After the draft exists: verify it (commands above), leave the downloaded installer in `%TEMP%\rigready-2.0.0` for the owner, and copy the filled-in checklist into the draft's description under the changelog section (keep the section; the app shows its first line).
 
-The coordinator does not run the real installer, touch `%LOCALAPPDATA%\Programs\RigReady`, `%USERPROFILE%\.rigready` or the installed 1.1.0, or publish.
+The coordinator does not run the real installer, touch `%LOCALAPPDATA%\Programs\RigReady`, `%USERPROFILE%\.rigready` or the installed RigReady, or publish.
 
 ### Part C: needs the owner at the PC
 
-1. Install 2.0.0 over 1.1.0 on the rig: quit RigReady 1.1.0 from its tray icon (the installer would otherwise ask to close it, and close it). Double-click `%TEMP%\rigready-2.0.0\RigReady-Setup-2.0.0.exe`. Windows shows "Windows protected your PC": More info, Run anyway. No UAC prompt, no "for all users" page; the destination offered is the existing `%LOCALAPPDATA%\Programs\RigReady`. Finish starts 2.0.0. Expect the Play screen without a setup and, on the Setups page, the version 1 setup files listed apart; `%USERPROFILE%\.rigready` is still there with everything version 1 wrote.
-2. Work through the Windows 11 checklist above. "Installing over the previous version" is this install; "the previous version, left running, finds this release" is skipped for 2.0.0 (1.1.0 does not download updates, see below) and ticked for the `smoke:installer` proof instead. Note `winver`.
+1. Update the rig's signed beta to 2.0.0 from the draft's files: copy `%TEMP%\rigready-2.0.0` to a folder of its own, serve it on this PC (`python -m http.server 8765 --bind 127.0.0.1 --directory <folder>`), and start the installed RigReady with `RIGREADY_UPDATE_FEED=http://127.0.0.1:8765/` (quit a running copy first: a second start only hands over to it; the stable channel reads `latest.yml`). Settings > Updates says version 2.0.0 is downloaded; quit RigReady from its tray icon; the update installs on the quit. Settings > About then says 2.0.0, the setups and settings are still there, and the log has no `ERR_UPDATER_INVALID_SIGNATURE`: the signed beta accepted the signed release. Stop the server.
+2. Run the downloaded installer once by double-click, over the installed 2.0.0. A file downloaded by `gh` carries no mark of the web, so SmartScreen does not ask about it here; if Windows asks anything, the dialog names Mark Cheli. No UAC prompt, no "for all users" page; the destination offered is the existing `%LOCALAPPDATA%\Programs\RigReady`. Then work through the Windows 11 checklist above: "installing over the previous version" and "the previous version, left running, finds this release" are step 1. Note `winver`.
 3. Windows 10 22H2 on a second PC or a virtual machine, with a standard user account: that part of the checklist.
 4. Publish the draft (step 6 of "Steps, for any release"). Then, on the rig, Settings > Updates > Check now says the app is up to date: 2.0.0 is not newer than 2.0.0.
 5. Tell the people who have 1.1.0: it does not update itself, the download page has the installer, and version 1 setups are not carried over.
@@ -346,11 +346,13 @@ Microsoft's own pages are the source for the current screens; this is the shape 
 ### Verifying a draft
 
 - The workflow's "Verify the signatures" step runs after a signed build (`scripts/verify-signed-installer.ps1`): `signtool verify /pa /v` and `Get-AuthenticodeSignature` (status Valid, subject CN equal to the publisher, compared the way electron-updater compares them) on the installer; a silent install into a temporary folder; the same checks on `RigReady.exe` and `Uninstall RigReady.exe` there and the publisher in `resources\app-update.yml` there; a silent uninstall. No draft is made when it fails.
-- By hand, on the installer downloaded from the draft: `signtool verify /pa /v RigReady-Setup-<version>.exe` (signtool comes with the Windows SDK, under `C:\Program Files (x86)\Windows Kits\10\bin\<version>\x64`), or the file's Properties > Digital Signatures. The script does the same with `pwsh scripts/verify-signed-installer.ps1 -Installer <file> -Publisher "<the name>" -SignaturesOnly`; without `-SignaturesOnly` it installs and uninstalls the real RigReady for the account that runs it, and it refuses to do that on a PC where RigReady is installed.
+- By hand, on the installer downloaded from the draft: `signtool verify /pa /v RigReady-Setup-<version>.exe` (signtool comes with the Windows SDK, under `C:\Program Files (x86)\Windows Kits\10\bin\<version>\x64`), or the file's Properties > Digital Signatures. The script does the same with `pwsh scripts/verify-signed-installer.ps1 -Installer <file> -Publisher "<the name>" -SignaturesOnly` (on a PC without PowerShell 7, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-signed-installer.ps1` with the same arguments); without `-SignaturesOnly` it installs and uninstalls the real RigReady for the account that runs it, and it refuses to do that on a PC where RigReady is installed.
 - On the rig: the previous version, left running, updates to the draft through a local feed (the checklist above), and the log has no `ERR_UPDATER_INVALID_SIGNATURE`.
 
 ### When the first signed release goes out
 
 - Say so in `CHANGELOG.md` and in the release notes, with the name the dialogs show.
-- `site/build.mjs`, the download card: it says SmartScreen may warn until the installer has earned a reputation, which is true before and after signing. Once SmartScreen stops warning on a fresh PC, drop the sentence; until then it can also name the publisher so people know what to expect in the dialog.
-- The user guide has no SmartScreen or installation troubleshooting page today. If one is written, it should say which name the dialog shows and that "Unknown publisher" on a RigReady installer means a download that is not from GitHub Releases or rigready.io, or a version from before signing.
+- `site/build.mjs`, the download card, and `site/pages/download.html`: they say the installer is signed by Mark Cheli and that SmartScreen may still warn until it has earned a reputation, which is true before and after signing. Once SmartScreen stops warning on a fresh PC, drop that sentence.
+- The manual's [SmartScreen page](manual/troubleshooting/smartscreen-warning.md) and [install page](manual/getting-started/install.md) say which name the dialog shows, and that "Unknown publisher" on a RigReady 2 installer means a file that is not from GitHub Releases or rigready.io.
+
+All three were done for 2.0.0, the first signed release.

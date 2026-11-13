@@ -45,7 +45,7 @@ A release that fixes a security problem is marked as one, and RigReady treats it
 
 ## What is checked before an update is installed
 
-The download's SHA-512 checksum is compared with the release feed's, and a file that does not match is discarded and fetched again at the next check. Once releases are signed, the installer's Authenticode signature is checked against the publisher name built into the app: an unsigned installer, or one signed by someone else, is refused and never run. See [security](security.md).
+The download's SHA-512 checksum is compared with the release feed's, and a file that does not match is discarded and fetched again at the next check. The installer's Authenticode signature is checked against the publisher name built into the app, Mark Cheli: an unsigned installer, or one signed by someone else, is refused and never run. See [security](security.md).
 
 ## Channels
 

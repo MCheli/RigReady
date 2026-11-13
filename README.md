@@ -100,7 +100,7 @@ RigReady reads your hardware and changes game files, so it should say exactly wh
 - Every change to a file outside RigReady's own data folder is backed up first, with a visible description of the change. Each one is listed on the Safety page, where it can be undone.
 - RigReady itself sends only two things off your PC: the update check to GitHub, and AI requests you send yourself, with your own key, to the one AI provider you chose. An assistant you connect over MCP (off by default) reads only what you allow, and sends it wherever that assistant runs. There is no account, no telemetry and no crash reporting.
 - A shared setup never carries scripts or launch commands, nothing from a setup is ever placed into a command line, and an imported file cannot write outside the game and document folders.
-- Updates come only from the project's GitHub releases and are checked against their published checksum before they install.
+- Updates come only from the project's GitHub releases and are checked against their published checksum and their code signature before they install.
 - A monitor layout you apply goes back by itself unless you keep it.
 - It never reports success for something that did not happen.
 

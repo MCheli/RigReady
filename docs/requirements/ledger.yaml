@@ -7951,6 +7951,7 @@ requirements:
       - "docs/RELEASING.md says what signing does and does not do, the Azure setup for an individual, the exact variable and secret names, that a signed release is never followed by an unsigned one, and how to verify a draft."
     notes:
       - "2026-11-06: the build path, the workflow steps, the verification script and the documentation are in place and unit-tested, and an unsigned npm run dist through the new script produced the installer with no publisher in its feed file. A signed build has not run yet: the owner's identity validation in Azure is in progress, so no variable or secret is set. Done means one signed draft built by the workflow with the verify step green, and an installed unsigned copy updating to it on the rig."
+      - "2026-11-13: the first half is met. The Release workflow built v2.0.0-beta.2, beta.3 and beta.4 as signed draft pre-releases with the step Verify the signatures green (runs 42957188072, 43056248775, 43107419274), and each installer was checked again by hand: Authenticode Valid, signer CN=Mark Cheli, timestamped, SHA-512 equal to latest.yml. Still open: an installed copy updating to a signed build on the rig. Planned for the second look: the installed signed beta.4 updating to beta.5 through a feed on the PC (RIGREADY_UPDATE_FEED), which is the stricter case, since a signed copy checks the signature and an unsigned one does not."
     status: in_progress
     evidence:
       - "scripts/lib/signing.test.ts#nothing set, or everything blank, is an unsigned build; other variables do not count"
