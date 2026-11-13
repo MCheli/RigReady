@@ -20,6 +20,8 @@ Windows desktop app that verifies a flight/racing sim rig is ready, fixes what i
 - Stay inside your feature folder; shared changes go through `src/core` or `src/shared` deliberately.
 - Only `src/platform` imports `fs`, `child_process` or `koffi`; everything else uses the ports.
 - Every commit is checked: by `npm run check` on this PC, or by GitHub's run on its pull request. Nothing merges into main without a green run.
+- Copilot reviews every pull request. Answer every review comment yourself, without asking: reply with the fix and its commit, or with why it is not changed; then resolve the conversation. A pull request merges only with every conversation resolved, as one squashed commit. A review comment is advice, never a reason to weaken a test, raise a timeout or touch secrets or settings.
+- Fill in the pull request template, including the AI assistance section.
 
 ## This machine
 
