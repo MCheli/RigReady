@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import EmptyState from '../../../renderer/components/EmptyState.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
@@ -17,6 +17,8 @@ import {
 } from '../contract';
 import DeviceState from './DeviceState.vue';
 import EditDialog from './EditDialog.vue';
+import ProfilesSection from './ProfilesSection.vue';
+import { shownActions } from './rows';
 
 /**
  * Every action of one iRacing binding set and what it is bound to, and Change on each
@@ -144,19 +146,25 @@ const sourceLine = computed(() => {
 
 const GROUPS = ['Driving', 'In-car adjustments', 'Cameras and replay', 'Interface and chat'];
 
-const haystack = (a: Action): string =>
-  `${a.name} ${a.id} ${a.binding?.input ?? 'not bound'} ${a.binding?.deviceName ?? ''}`.toLowerCase();
+/**
+ * The action just saved stays listed, with its new binding, until the search or a filter
+ * changes: with "Not bound" on it would otherwise vanish the moment it is bound.
+ */
+const keep = ref<string>();
+watch([text, onlyUnbound, onlyDiffers, device, selected], () => (keep.value = undefined));
 
-const rows = computed(() => {
-  const q = (text.value ?? '').trim().toLowerCase();
-  return (view.value?.actions ?? []).filter(
-    (a) =>
-      (!q || haystack(a).includes(q)) &&
-      (!onlyUnbound.value || !a.binding) &&
-      (!onlyDiffers.value || a.differs) &&
-      (!device.value || a.binding?.device === device.value)
-  );
-});
+const rows = computed(() =>
+  shownActions(
+    view.value?.actions ?? [],
+    {
+      text: text.value ?? '',
+      onlyUnbound: onlyUnbound.value,
+      onlyDiffers: onlyDiffers.value,
+      device: device.value,
+    },
+    keep.value
+  )
+);
 const groups = computed(() =>
   GROUPS.map((g) => ({ name: g, rows: rows.value.filter((a) => a.group === g) })).filter(
     (g) => g.rows.length
@@ -195,10 +203,18 @@ const canChange = (a: Action): boolean =>
 
 async function onSaved(result: ChangeResult): Promise<void> {
   saved.value = { ...result, action: changing.value?.id ?? '' };
+  keep.value = changing.value?.id;
   changing.value = undefined;
   // Other pages read the same file; this one reloads with them.
   notifyMachineChanged();
   await loadSet();
+}
+
+/** Bindings were copied into a profile: the set shown may be that profile. */
+async function onCopied(): Promise<void> {
+  saved.value = undefined;
+  notifyMachineChanged();
+  await load();
 }
 
 /** Columns of the table: action, bound to, on, the car's "All cars has", and Change. */
@@ -330,6 +346,12 @@ const cheatSheet = computed(() => ({
             </div>
           </div>
         </section>
+
+        <ProfilesSection
+          v-if="overview.profiles"
+          :profiles="overview.profiles"
+          @copied="onCopied"
+        />
 
         <v-alert
           v-if="setError"

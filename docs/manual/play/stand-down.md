@@ -16,6 +16,7 @@ Stand down goes through the setup's checks and does what each kind has to do at 
 - **TrackIR** and **Stream Deck** checks close their app when their **Close at Stand down** option is on.
 - **Default audio device** checks put back the device that was the default before Make ready changed it, unless you changed the default yourself since.
 - **Monitor layout** checks put back the arrangement from before Make ready, unless a desk layout is chosen (see below).
+- **iRacing control profile** checks: the profile iRacing used for all cars before Make ready switched it is put back in `app.ini`, unless it was changed in iRacing since ([A setup that switches the profile](../games/iracing-bindings.md#a-setup-that-switches-the-profile)). This happens after the game is closed. While the iRacing simulator still runs, the step says so, and the next Stand down puts the profile back.
 
 Then it closes the programs that launch steps started (each step has **Close it at Stand down**, on by default), runs the setup's own **At Stand down** steps, and applies the desk layout. The game's own program is never on this list unless you say so.
 

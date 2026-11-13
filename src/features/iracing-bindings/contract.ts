@@ -40,6 +40,34 @@ export const BindingSourceSchema = z.object({
 });
 export type BindingSource = z.infer<typeof BindingSourceSchema>;
 
+/** One control profile iRacing keeps: Documents\iRacing\profiles\controls\<name>. */
+export const ControlProfileSchema = z.object({
+  /** The folder's name, which is the profile's name in iRacing. */
+  name: z.string(),
+  folder: z.string(),
+  /** The folder holds a controls.cfg. */
+  hasControls: z.boolean(),
+  /** app.ini [ControlProfiles] names it for all cars (Global=). */
+  forAllCars: z.boolean(),
+  /** The cars whose own line in app.ini names it, by iRacing's path name ("cadillacctsvr"). */
+  cars: z.array(z.string()),
+});
+export type ControlProfile = z.infer<typeof ControlProfileSchema>;
+
+/** Every control profile on this PC and which cars use which, from app.ini [ControlProfiles]. */
+export const ProfilesInUseSchema = z.object({
+  /** Documents\iRacing\app.ini. */
+  appIni: z.string(),
+  /** The profile app.ini names for all cars. */
+  global: z.string().optional(),
+  profiles: z.array(ControlProfileSchema),
+  /** Lines of app.ini that name a profile with no folder; car absent for the line for all cars. */
+  missing: z.array(z.object({ car: z.string().optional(), profile: z.string() })),
+  /** app.ini could not be read: which cars use which profile is not known. */
+  unread: z.boolean().optional(),
+});
+export type ProfilesInUse = z.infer<typeof ProfilesInUseSchema>;
+
 export const OverviewSchema = z.object({
   /** iRacing's program was found on this PC. */
   installed: z.boolean(),
@@ -55,6 +83,8 @@ export const OverviewSchema = z.object({
   carFolders: z.number().int(),
   /** The page of the app that repairs a controller's id in iRacing's files, when there is one. */
   repairRoute: z.string().optional(),
+  /** With control profiles: every profile on this PC and which cars use which. */
+  profiles: ProfilesInUseSchema.optional(),
 });
 export type Overview = z.infer<typeof OverviewSchema>;
 
@@ -239,6 +269,79 @@ export const PressedSchema = z.object({
 });
 export type Pressed = z.infer<typeof PressedSchema>;
 
+/** Two control profiles, by name as overview's profiles list them. */
+export const CopyCompareRequestSchema = z.object({
+  fromProfile: z.string().min(1).max(200),
+  toProfile: z.string().min(1).max(200),
+});
+export type CopyCompareRequest = z.infer<typeof CopyCompareRequestSchema>;
+
+/** One action whose binding differs between the two profiles. */
+export const CopyRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  group: ActionGroupSchema,
+  /** What the profile copied from has: "Button 5 on Button Box", "Not bound". */
+  from: z.string(),
+  /** What the profile copied into has now. */
+  to: z.string(),
+  /** copy: a button or a key is copied. clear: copying clears it. kept: it is left as it is. */
+  kind: z.enum(['copy', 'clear', 'kept']),
+  /** For "kept": why. */
+  why: z.string().optional(),
+});
+export type CopyRow = z.infer<typeof CopyRowSchema>;
+
+export const CopyCompareSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  /** The actions that differ, in the file's order. */
+  rows: z.array(CopyRowSchema),
+  /** How many actions are the same in both. */
+  same: z.number().int(),
+  /** The controls.cfg a copy would change. */
+  file: z.string(),
+  /** Why nothing can be copied right now (iRacing is open), when it cannot. */
+  blocked: z.string().optional(),
+});
+export type CopyCompare = z.infer<typeof CopyCompareSchema>;
+
+export const CopyRequestSchema = CopyCompareRequestSchema.extend({
+  /** iRacing's ids of the actions to copy, from copyCompare's rows. */
+  actions: z.array(z.string().min(1).max(64)).min(1).max(1000),
+  /** The target file as copyPreview read it (`seen`): nothing is written when it changed since. */
+  seen: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+});
+export type CopyRequest = z.infer<typeof CopyRequestSchema>;
+
+export const CopyReviewSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  /** How many bindings change. */
+  count: z.number().int(),
+  /** Of them, how many are cleared. */
+  clears: z.number().int(),
+  preview: ChangePreviewSchema,
+  /** The target file as this was worked out from (its SHA-256): hand it to copy as `seen`. */
+  seen: z.string(),
+  blocked: z.string().optional(),
+});
+export type CopyReview = z.infer<typeof CopyReviewSchema>;
+
+export const CopyResultSchema = z.object({
+  copied: z.number().int(),
+  message: z.string(),
+  file: z.string(),
+});
+export type CopyResult = z.infer<typeof CopyResultSchema>;
+
+/** Why the channels that copy bindings are not among a local AI's tools. */
+const COPY_ON_THE_PAGE =
+  'Used by the iRacing bindings page, where the user ticks the actions and approves the change; it is not offered to a local AI.';
+
 /** Why the channels that change a binding are not among a local AI's tools. */
 const ON_THE_PAGE =
   'Used by the iRacing bindings page, where the user presses the button or the key and approves the change; it is not offered to a local AI.';
@@ -249,7 +352,7 @@ export const iracingBindingsContract = defineContract(
     /** Where iRacing keeps bindings and which sets there are. */
     overview: channel(noInput, OverviewSchema, {
       describe:
-        "Says whether iRacing's bindings are on this PC, where they are kept, whether the simulator is running, and which sets there are: one for all cars, and one for each car that has custom controls. Start here: the set ids iracing-bindings:set takes come from it. Changes nothing.",
+        "Says whether iRacing's bindings are on this PC, where they are kept, whether the simulator is running, and which sets there are: one for all cars, and one for each car that has custom controls. With control profiles it also lists every profile, the one for all cars, and which cars use which. Start here: the set ids iracing-bindings:set takes come from it. Changes nothing.",
       tier: 'read',
     }),
     /** Every action of one set, with what is bound to it. */
@@ -284,6 +387,22 @@ export const iracingBindingsContract = defineContract(
     }),
     listenStop: channel(noInput, z.object({ listening: z.boolean() }), {
       describe: 'Stops the pressed events started by listenStart.',
+      tier: 'off',
+    }),
+
+    /** What copying bindings from one control profile into another would do, per action. */
+    copyCompare: channel(CopyCompareRequestSchema, CopyCompareSchema, {
+      describe: `Lists the actions whose controller button or key differs between two iRacing control profiles, and what copying each would do. Writes nothing. ${COPY_ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    /** The chosen actions copied, as the file would change. Writes nothing. */
+    copyPreview: channel(CopyRequestSchema, CopyReviewSchema, {
+      describe: `Shows how copying the chosen bindings from one iRacing control profile into another would change that profile's controls.cfg. Writes nothing. ${COPY_ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    /** Copies the chosen bindings, through FileStore (a backup first). Refused while iRacing runs. */
+    copy: channel(CopyRequestSchema, CopyResultSchema, {
+      describe: `Copies the chosen buttons and keys from one iRacing control profile into another, after a backup. Refused while iRacing runs. ${COPY_ON_THE_PAGE}`,
       tier: 'off',
     }),
   },
