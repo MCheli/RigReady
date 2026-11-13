@@ -383,10 +383,10 @@ describe('Stand down and the desk layout', () => {
     // The countdown starts, exactly as for any other layout change, and Stand down
     // waits for the answer before it says what it did.
     app.layoutAnswer = 'wait';
+    const eventsBefore = app.events.length;
     const standingDown = app.invoke<ActionReport>('fly:standDown', P);
-    await expect
-      .poll(async () => (await app!.invoke<{ pending: boolean }>('displays:pending')).pending)
-      .toBe(true);
+    // The question is up once the layout says it was applied: wait for that event, not a clock.
+    await app.event('displays:event:applied', eventsBefore);
     expect(app.events.some((e) => e.channel === 'displays:event:applied')).toBe(true);
     expect(await app.invoke('displays:pending')).toMatchObject({ pending: true, seconds: 15 });
     const dell = app.ports.state.displays.find((d) => d.name === 'DELL G3223D')!;
@@ -481,10 +481,10 @@ describe('Stand down and the desk layout', () => {
     app = await wiredApp('flying-mfd-rotated', NO_FILES);
     await app.invoke('settings:update', { displayRevertSeconds: 30 });
     app.layoutAnswer = 'wait';
+    const eventsBefore = app.events.length;
     const making = app.invoke<ActionReport>('fly:makeReady', P);
-    await expect
-      .poll(async () => (await app!.invoke<{ pending: boolean }>('displays:pending')).pending)
-      .toBe(true);
+    // The question is up once the layout says it was applied: wait for that event, not a clock.
+    await app.event('displays:event:applied', eventsBefore);
     expect(await app.invoke('displays:pending')).toMatchObject({ pending: true, seconds: 30 });
     await app.invoke('displays:keep');
     await making;
