@@ -5,6 +5,7 @@ import { expect, openOption, test } from './harness';
 /**
  * iRacing bindings: every action of a binding set and what it is bound to, for all cars and
  * for a car with custom controls. The page reads; it has nothing that changes a binding.
+ * Changing one is built behind a switch that is off here (iracing-bindings-edit.e2e.ts).
  */
 
 const ROUTE = '/configure/iracing-bindings';
@@ -93,9 +94,37 @@ test('iRacing bindings: every action for all cars, with search, filters and shar
   const buttons = await root.getByRole('button').allInnerTexts();
   expect(
     buttons.filter((name) =>
-      /^(edit|bind|rebind|assign|save|apply|clear|remove|delete|copy)/i.test(name)
+      /^(change|edit|bind|rebind|assign|save|apply|clear|remove|delete|copy)/i.test(name)
     )
   ).toEqual([]);
+  // Changing a binding is built but switched off (iracing-bindings-edit.e2e.ts turns it
+  // on). While it is off the page has no trace of it: no column, no button, no dialog.
+  await expect(page.getByTestId('iracing-bindings-trial')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-bindings-change')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-bindings-in-iracing')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-edit')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-bindings-table').locator('thead th')).toHaveText([
+    'Action',
+    'Bound to',
+    'On',
+  ]);
+  // Asked directly, the app refuses as well: the switch is in the main process.
+  const refused = (await page.evaluate(() =>
+    (
+      globalThis as unknown as {
+        rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+      }
+    ).rigready.invoke('iracing-bindings:change', {
+      set: 'all',
+      action: 'HeadlightFlash',
+      binding: { kind: 'key', keyCode: 72, modifiers: 0 },
+    })
+  )) as { ok: boolean; error?: { code: string; message: string } };
+  expect(refused.ok).toBe(false);
+  expect(refused.error?.code).toBe('iracing-bindings.edit.off');
+  expect(refused.error?.message).toBe(
+    'RigReady does not change iRacing bindings yet. Change them in iRacing.'
+  );
   await page.getByTestId('iracing-bindings-why').click();
   await expect(reasons).toHaveCount(0);
 

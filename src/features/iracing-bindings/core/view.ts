@@ -23,7 +23,8 @@ import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './names
 /**
  * What the iRacing bindings page shows: the sets iRacing keeps (one for all cars, one for
  * each car with custom controls) and, for one set, every action with what is bound to it.
- * Everything here reads; nothing is written to iRacing's files.
+ * Everything here reads; nothing is written to iRacing's files (changing one binding is
+ * in change.ts, behind a switch).
  */
 
 /** What this code needs: the ports, and the game registry for where iRacing keeps its files. */
@@ -72,7 +73,20 @@ async function findSets(
   return sets;
 }
 
-export async function overview(ctx: BindingsContext, repairRoute?: string): Promise<Overview> {
+/**
+ * The programs that write these files: the simulator, not the launcher. Only the simulator
+ * writes controls.cfg, when it exits.
+ */
+export function simulatorOf(ctx: BindingsContext): { processes: string[] } {
+  const module = ctx.games.get(GAME);
+  return { processes: module?.closeBeforeRestore?.processes ?? module?.processes ?? [] };
+}
+
+export async function overview(
+  ctx: BindingsContext,
+  repairRoute?: string,
+  editing = false
+): Promise<Overview> {
   const module = ctx.games.get(GAME);
   const installs = module ? await module.detect(ctx) : undefined;
   const folder = await userFolder(ctx);
@@ -80,14 +94,41 @@ export async function overview(ctx: BindingsContext, repairRoute?: string): Prom
   return {
     installed: installs?.ok === true && installs.value.length > 0,
     ...(folder ? { folder } : {}),
-    // The simulator, not the launcher: only the simulator writes these files, when it exits.
-    simRunning: await gameRunning(ctx, {
-      processes: module?.closeBeforeRestore?.processes ?? module?.processes ?? [],
-    }),
+    simRunning: await gameRunning(ctx, simulatorOf(ctx)),
     sets: folder ? await findSets(ctx, folder, cars) : [],
     carFolders: cars.length,
     ...(repairRoute ? { repairRoute } : {}),
+    editing,
   };
+}
+
+export interface FoundSet {
+  /** Documents\iRacing. */
+  folder: string;
+  sets: BindingSet[];
+  set: BindingSet;
+}
+
+/**
+ * One set by its id. The id is looked up among the sets that are really there; it never
+ * becomes a path by itself.
+ */
+export async function findSet(ctx: BindingsContext, id: string): Promise<Result<FoundSet>> {
+  const folder = await userFolder(ctx);
+  if (!folder) {
+    return err('iracing-bindings.notFound', 'The iRacing folder in Documents was not found.');
+  }
+  const sets = await findSets(ctx, folder, await carFolders(ctx, folder));
+  const set = sets.find((s) => s.id === id);
+  if (!set) {
+    return err(
+      'iracing-bindings.noSet',
+      id === ALL_CARS
+        ? 'iRacing has no controls.cfg yet. Bind something in iRacing first; this page then fills in.'
+        : 'iRacing has no custom controls for that car.'
+    );
+  }
+  return ok({ folder, sets, set });
 }
 
 interface LoadedSet {
@@ -100,9 +141,10 @@ interface LoadedSet {
 async function load(
   ctx: BindingsContext,
   set: BindingSet,
-  folder: string
+  folder: string,
+  withBytes?: Uint8Array
 ): Promise<Result<LoadedSet>> {
-  const bytes = await ctx.ports.files.readBytes(set.file);
+  const bytes = withBytes ? ok(withBytes) : await ctx.ports.files.readBytes(set.file);
   if (!bytes.ok) {
     return err(
       'iracing-bindings.read',
@@ -226,27 +268,20 @@ function stateOf(
   return moved ? 'moved' : 'missing';
 }
 
+/**
+ * Every action of one set with what is bound to it. With `withBytes`, the set as it would
+ * be with those bytes in its file: how a change is shown before it is saved.
+ */
 export async function setView(
   ctx: BindingsContext,
   id: string,
-  names: DeviceNames
+  names: DeviceNames,
+  withBytes?: Uint8Array
 ): Promise<Result<SetView>> {
-  const folder = await userFolder(ctx);
-  if (!folder) {
-    return err('iracing-bindings.notFound', 'The iRacing folder in Documents was not found.');
-  }
-  // The id is looked up among the sets that are really there; it never becomes a path by itself.
-  const sets = await findSets(ctx, folder, await carFolders(ctx, folder));
-  const set = sets.find((s) => s.id === id);
-  if (!set) {
-    return err(
-      'iracing-bindings.noSet',
-      id === ALL_CARS
-        ? 'iRacing has no controls.cfg yet. Bind something in iRacing first; this page then fills in.'
-        : 'iRacing has no custom controls for that car.'
-    );
-  }
-  const loaded = await load(ctx, set, folder);
+  const found = await findSet(ctx, id);
+  if (!found.ok) return found;
+  const { folder, sets, set } = found.value;
+  const loaded = await load(ctx, set, folder, withBytes);
   if (!loaded.ok) return loaded;
   const { file, calibration } = loaded.value;
 

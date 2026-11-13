@@ -5,20 +5,24 @@ import EmptyState from '../../../renderer/components/EmptyState.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
-import { onMachineChanged } from '../../../renderer/machine';
+import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import {
   ALL_CARS,
   iracingBindingsContract,
   type Action,
+  type ChangeResult,
   type Device,
   type Overview,
   type SetView,
 } from '../contract';
 import DeviceState from './DeviceState.vue';
+import EditDialog from './EditDialog.vue';
 
 /**
- * Every action of one iRacing binding set and what it is bound to. Reading only: the page
- * has no way to change a binding, and says why (docs/research/iracing-bindings.md).
+ * Every action of one iRacing binding set and what it is bound to. As shipped it only
+ * reads: the page has no way to change a binding, and says why. Changing one binding is
+ * built behind a switch that is off (overview.editing; docs/research/iracing-bindings.md
+ * has what is still to be proven), and nothing of it is on the page until it is on.
  */
 const api = useClient(iracingBindingsContract);
 const route = useRoute();
@@ -37,6 +41,11 @@ const onlyDiffers = ref(false);
 const device = ref('');
 const showWhy = ref(false);
 const showCamera = ref(false);
+
+/** The action whose binding is being changed, while the dialog is open. */
+const changing = ref<Action>();
+/** What the last change did, as main reported it after reading the file back. */
+const saved = ref<ChangeResult & { action: string }>();
 
 async function loadSet(): Promise<void> {
   const id = selected.value;
@@ -73,6 +82,7 @@ async function load(): Promise<void> {
 }
 
 async function pick(id: string): Promise<void> {
+  saved.value = undefined;
   selected.value = id;
   void router.replace({ query: id === ALL_CARS ? {} : { set: id } });
   await loadSet();
@@ -156,6 +166,25 @@ const deviceLine = (d: Device): string =>
     .filter(Boolean)
     .join(' · ');
 
+/** RigReady changes a button or a key. An axis, and a binding it cannot read, stay with iRacing. */
+const canChange = (a: Action): boolean =>
+  (a.accepts.includes('button') || a.accepts.includes('key')) &&
+  a.binding?.kind !== 'axis' &&
+  a.binding?.kind !== 'unknown';
+
+async function onSaved(result: ChangeResult): Promise<void> {
+  saved.value = { ...result, action: changing.value?.id ?? '' };
+  changing.value = undefined;
+  // Other pages read the same file; this one reloads with them.
+  notifyMachineChanged();
+  await loadSet();
+}
+
+/** Columns of the table: the car's "All cars has", and "Change" while that is switched on. */
+const columns = computed(
+  () => 3 + (view.value?.set.general ? 0 : 1) + (overview.value?.editing ? 1 : 0)
+);
+
 const cheatSheet = computed(() => ({
   path: '/configure/cheat-sheets',
   query: { game: 'iracing', aircraft: selected.value },
@@ -218,7 +247,26 @@ const cheatSheet = computed(() => ({
       </EmptyState>
 
       <template v-else>
-        <div class="ib-notice" data-testid="iracing-bindings-readonly">
+        <div
+          v-if="overview.editing"
+          class="ib-notice ib-trial"
+          data-testid="iracing-bindings-trial"
+        >
+          <v-icon icon="mdi-flask-outline" class="rr-warn" />
+          <div class="ib-notice-main">
+            <div class="ib-notice-title">
+              You can change bindings here. This is new, and not yet tried in iRacing.
+            </div>
+            <div>
+              Change binds an action to a button or a key, or clears it. RigReady shows what will
+              change first and makes a backup of the file. Undo is on the
+              <router-link to="/configure/safety" data-testid="iracing-bindings-safety-link"
+                >Safety page</router-link
+              >. An axis or a hat switch is bound in iRacing itself: Options, then Controls.
+            </div>
+          </div>
+        </div>
+        <div v-else class="ib-notice" data-testid="iracing-bindings-readonly">
           <v-icon icon="mdi-eye-outline" class="rr-muted" />
           <div class="ib-notice-main">
             <div class="ib-notice-title">This page shows bindings. It does not change them.</div>
@@ -263,6 +311,10 @@ const cheatSheet = computed(() => ({
           <div class="ib-notice-main">
             The iRacing simulator is running. It writes its files when it closes, so a binding
             changed in this session may not show here yet.
+            <span v-if="overview.editing" data-testid="iracing-bindings-running-edit">
+              Close iRacing before you change a binding here: when it closes it would write its own
+              bindings over the change.
+            </span>
           </div>
         </div>
 
@@ -504,6 +556,17 @@ const cheatSheet = computed(() => ({
             <div class="ib-shown" data-testid="iracing-bindings-shown">
               Showing {{ rows.length }} of {{ view.counts.actions }}
             </div>
+            <div
+              v-if="saved"
+              class="ib-saved"
+              :class="saved.changed ? 'rr-ok' : 'rr-muted'"
+              role="status"
+              data-testid="iracing-bindings-saved"
+              :data-changed="saved.changed ? 'yes' : 'no'"
+            >
+              <v-icon :icon="saved.changed ? 'mdi-check' : 'mdi-information-outline'" size="16" />
+              <span>{{ saved.message }}</span>
+            </div>
             <div class="rr-panel">
               <table class="ib-table" data-testid="iracing-bindings-table">
                 <thead>
@@ -512,11 +575,12 @@ const cheatSheet = computed(() => ({
                     <th scope="col">Bound to</th>
                     <th scope="col">On</th>
                     <th v-if="!view.set.general" scope="col">All cars has</th>
+                    <th v-if="overview.editing" scope="col">Change</th>
                   </tr>
                 </thead>
                 <tbody v-for="g in groups" :key="g.name">
                   <tr class="ib-group">
-                    <th :colspan="view.set.general ? 3 : 4" scope="colgroup">
+                    <th :colspan="columns" scope="colgroup">
                       {{ g.name }} <span class="ib-group-count">{{ g.rows.length }}</span>
                     </th>
                   </tr>
@@ -544,15 +608,33 @@ const cheatSheet = computed(() => ({
                         {{ a.general }}
                       </template>
                     </td>
+                    <td v-if="overview.editing" class="ib-change">
+                      <button
+                        v-if="canChange(a)"
+                        type="button"
+                        class="ib-change-btn"
+                        data-testid="iracing-bindings-change"
+                        :aria-label="`Change ${a.name}`"
+                        @click="changing = a"
+                      >
+                        Change
+                      </button>
+                      <span v-else class="rr-muted" data-testid="iracing-bindings-in-iracing"
+                        >In iRacing</span
+                      >
+                      <span
+                        v-if="saved?.changed && saved.action === a.id"
+                        class="rr-ok ib-row-saved"
+                        data-testid="iracing-bindings-row-saved"
+                      >
+                        <v-icon icon="mdi-check" size="14" /> Saved
+                      </span>
+                    </td>
                   </tr>
                 </tbody>
                 <tbody v-if="groups.length === 0">
                   <tr>
-                    <td
-                      :colspan="view.set.general ? 3 : 4"
-                      class="rr-muted"
-                      data-testid="iracing-bindings-nothing"
-                    >
+                    <td :colspan="columns" class="rr-muted" data-testid="iracing-bindings-nothing">
                       Nothing matches.
                     </td>
                   </tr>
@@ -571,6 +653,14 @@ const cheatSheet = computed(() => ({
               </template>
             </p>
           </section>
+
+          <EditDialog
+            v-if="overview.editing"
+            :action="changing"
+            :set="view.set"
+            @close="changing = undefined"
+            @saved="onSaved"
+          />
         </template>
       </template>
     </template>
@@ -724,6 +814,37 @@ const cheatSheet = computed(() => ({
 }
 .ib-general {
   color: var(--rr-muted);
+}
+.ib-trial {
+  border-color: color-mix(in srgb, var(--rr-warn) 45%, var(--rr-border));
+}
+.ib-saved {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.ib-change {
+  white-space: nowrap;
+}
+.ib-change-btn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rr-text);
+  background: transparent;
+  border: 1px solid var(--rr-border-strong);
+  border-radius: 999px;
+  padding: 1px 12px;
+  cursor: pointer;
+}
+.ib-change-btn:hover {
+  border-color: var(--rr-accent);
+}
+.ib-row-saved {
+  margin-left: 10px;
+  font-size: 12.5px;
 }
 .ib-foot {
   margin-top: 10px;

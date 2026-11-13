@@ -5828,14 +5828,16 @@ requirements:
     area: iracing-bindings
     priority: p2
     done_means:
-      - "The page has no control that edits, clears, copies or saves a binding. The feature has two channels and both only read; using them leaves every file of the iRacing folder as it was."
+      - "The page has no control that edits, clears, copies or saves a binding. The feature has two channels that read; using them leaves every file of the iRacing folder as it was. The channels that change a binding (BIND-IRACING-007) answer with an error and read, listen to and write nothing, unless RigReady was started with RIGREADY_IRACING_EDIT=1 in its environment, which is off by default; they are never offered to a local AI."
       - "The page says it does not change bindings and how to change one in iRacing, and gives the reasons on request."
       - "While the simulator runs the page says that a binding changed in this session may not show yet; the launcher alone does not count."
       - "The Cheat sheet button opens the cheat sheets for iRacing with the set being shown."
     status: done
     evidence:
       - "src/features/iracing-bindings/core/view.test.ts#leaves every file of the iRacing folder as it was, byte for byte"
-      - "src/features/iracing-bindings/core/view.test.ts#has two channels, and both only read"
+      - "src/features/iracing-bindings/core/view.test.ts#has two channels that read; the ones that change are kept from a local AI"
+      - "src/features/iracing-bindings/core/change.test.ts#is on only when RIGREADY_IRACING_EDIT is exactly 1"
+      - "src/features/iracing-bindings/core/change.test.ts#refuses every channel of it, reads nothing, listens to nothing and writes nothing"
       - "src/features/iracing-bindings/core/view.test.ts#knows the simulator from the launcher: only the simulator writes these files"
       - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: every action for all cars, with search, filters and shared inputs"
       - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a wheel with a new Windows id, and the simulator running"
@@ -5850,11 +5852,62 @@ requirements:
     area: iracing-bindings
     priority: p3
     done_means:
-      - "A hat switch binding, a binding on a second controller and a per-car file, each written by iRacing itself, are recorded and read with no byte left unexplained that a write would have to set."
-      - "A controls.cfg in which RigReady changed one binding is accepted by iRacing: the binding shows in iRacing's Options > Controls, every other binding and setting is as before, and the file iRacing saves afterwards differs from RigReady's only where expected (rig evidence, owner present)."
-      - "A binding can be set and cleared for All cars and for a car, with a review of the change first, through FileStore with a backup and an undo, refused while iRacingSim64DX11.exe runs."
+      - "RigReady sets one action to one controller button or one key with Shift, Ctrl and Alt, or clears it, and changes only bytes +8 to +67 of that one record: the header, the first two fields of the record, every other record and the end of the file stay byte for byte as they were, and no change gives the same file. It writes only what a file from iRacing shows, and refuses the rest with the reason: an axis, a hat switch, a kind the action does not take, a record or a file it cannot read exactly."
+      - "A binding is set by pressing the button or the key, and cleared, for All cars and for a car with custom controls. Before saving, the page shows what the action has now and after, and names every other action the same button or key already does in that set."
+      - "Every save goes through FileStore: a backup first, one entry on the Safety page, and Undo puts the file back. Saving is refused while iRacingSim64DX11.exe runs, and when RigReady cannot tell whether it runs, and the page says why before saving."
+      - "A controls.cfg in which RigReady changed one button and one key is accepted by iRacing: both show in iRacing's Options > Controls, every other binding and setting is as before, and the file iRacing saves afterwards differs from the file before only in those two actions, each as RigReady wrote it (rig evidence, owner present; the steps are 'The second look' in docs/research/iracing-bindings.md)."
+      - "A controls.cfg that iRacing itself wrote for a car with custom controls has been read byte for byte, and a change RigReady made to it is accepted by iRacing (rig evidence, owner present)."
+      - "Until the two rig points hold, changing a binding is off: it is on only when RigReady starts with RIGREADY_IRACING_EDIT=1 in its environment, and otherwise nothing of it can be reached (BIND-IRACING-006)."
     notes:
-      - "2026-11-12: not started, on purpose. The read and write round trip of the owner's real file is byte for byte identical (BIND-IRACING-001), but that only proves the reader loses nothing. The layout comes from one file from one rig with one bound controller; the header settings, the first field of each record, three bits of the mask and the last two bytes are not understood; a hat switch binding and a real per-car file have never been seen; and no file changed by RigReady has been opened by iRacing, because no game may be started on the rig in this round. iRacing's own advice for a file it does not like is to delete it and bind everything again. So the page shows bindings, says why it does not change them, and has no edit buttons. The steps that would make writing safe are in docs/research/iracing-bindings.md, 'Is writing safe?'."
+      - "2026-11-12: first note, when this was not started. The read and write round trip of the owner's real file is byte for byte identical (BIND-IRACING-001), but that only proves the reader loses nothing. The layout comes from one file from one rig with one bound controller; the header settings, the first field of each record, three bits of the mask and the last two bytes are not understood; a hat switch binding and a real per-car file have never been seen; and no file changed by RigReady has been opened by iRacing, because no game may be started on the rig in this round. iRacing's own advice for a file it does not like is to delete it and bind everything again."
+      - "2026-11-12, later: the writer, the review, the save through FileStore and the edit screen are built and tested, behind a switch that is off (points 1, 2, 3 and 6; the evidence below). in_progress, not done: points 4 and 5 are open. No file changed by RigReady has been loaded by iRacing. tests/rig/iracingBindingsEdit.rig.test.ts is written and has NOT been run; its two steps go with the six steps of 'The second look'. No car on the owner's PC has custom controls, so per-car changes rest on the made-up car file of the scenario tests. A button of a controller the file does not name yet is written like one it does name, which is a guess until iRacing has loaded such a file. Axes and hat switches are not part of this requirement: BIND-IRACING-008."
+    status: in_progress
+    evidence:
+      - "src/features/iracing-bindings/core/edit.test.ts#gives back the recorded file byte for byte when an action is set to what it has, for every action"
+      - "src/features/iracing-bindings/core/edit.test.ts#binds a button: only bytes +8 to +67 of that one record differ, and the file keeps its length"
+      - "src/features/iracing-bindings/core/edit.test.ts#writes a button exactly as iRacing wrote the same button for another action"
+      - "src/features/iracing-bindings/core/edit.test.ts#writes a key exactly as iRacing wrote it, with Shift, Ctrl and Alt"
+      - "src/features/iracing-bindings/core/edit.test.ts#clears a binding to exactly what iRacing has for an action that was never bound"
+      - "src/features/iracing-bindings/core/edit.test.ts#keeps the first two fields of the record, whatever the first one is"
+      - "src/features/iracing-bindings/core/edit.test.ts#an action on an axis, and a kind the action does not take"
+      - "src/features/iracing-bindings/core/edit.test.ts#no change gives the same bytes, for every action of 150 made-up files"
+      - "src/features/iracing-bindings/core/edit.test.ts#one change alters only the 60 bytes of that record, and they are the bytes of the new binding"
+      - "src/features/iracing-bindings/core/edit.test.ts#never throws on a damaged file, and never changes a byte outside the record when it does answer"
+      - "src/features/iracing-bindings/core/keys.test.ts#refuses what it cannot be sure of, and says to bind it in iRacing"
+      - "src/features/iracing-bindings/core/keys.test.ts#only ever gives a code iRacing has a name for, whatever is pressed"
+      - "src/features/iracing-bindings/core/change.test.ts#is on only when RIGREADY_IRACING_EDIT is exactly 1"
+      - "src/features/iracing-bindings/core/change.test.ts#refuses every channel of it, reads nothing, listens to nothing and writes nothing"
+      - "src/features/iracing-bindings/core/change.test.ts#names what the same key or button already does in that set"
+      - "src/features/iracing-bindings/core/change.test.ts#binds a button: a backup first, one entry on the Safety page, only that record changed, and Undo puts the file back"
+      - "src/features/iracing-bindings/core/change.test.ts#writes exactly the file the preview showed"
+      - "src/features/iracing-bindings/core/change.test.ts#binds a key and clears a binding, each as one entry of its own"
+      - "src/features/iracing-bindings/core/change.test.ts#changes one car’s set in that car’s file and leaves the file for all cars alone"
+      - "src/features/iracing-bindings/core/change.test.ts#while iRacing runs: the reason is shown before saving and nothing is written"
+      - "src/features/iracing-bindings/core/change.test.ts#reports what is pressed on any controller while the page listens, and stops when told"
+      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings, switched on: bind by pressing a button or a key, clear, and undo"
+      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings, switched on: one car’s own bindings, and no saving while iRacing runs"
+      - "artifacts/screens/iracing-bindings-edit/01-switched-on.png"
+      - "artifacts/screens/iracing-bindings-edit/03-press-now.png"
+      - "artifacts/screens/iracing-bindings-edit/04-review.png"
+      - "artifacts/screens/iracing-bindings-edit/05-saved.png"
+      - "artifacts/screens/iracing-bindings-edit/06-conflict.png"
+      - "artifacts/screens/iracing-bindings-edit/07-clear.png"
+      - "artifacts/screens/iracing-bindings-edit/08-safety-page.png"
+      - "artifacts/screens/iracing-bindings-edit-car/01-car-conflict.png"
+      - "artifacts/screens/iracing-bindings-edit-car/02-car-saved.png"
+      - "artifacts/screens/iracing-bindings-edit-car/03-iracing-running.png"
+
+  - id: BIND-IRACING-008
+    title: Bind an axis or a hat switch for iRacing from RigReady
+    job: configure
+    area: iracing-bindings
+    priority: p3
+    done_means:
+      - "A hat switch binding and a binding on a second controller, each written by iRacing itself, are recorded and read with no byte left unexplained that a write would have to set."
+      - "What iRacing stores when it binds and calibrates an axis (controls.cfg and joyCalib.yaml) is recorded and explained, or RigReady keeps sending the user to iRacing for axes and says so."
+      - "A hat switch direction, and an axis if the point above allows it, can be bound from the edit screen of BIND-IRACING-007, and iRacing accepts the file (rig evidence, owner present)."
+    notes:
+      - "2026-11-12: not started. No file here shows how iRacing stores a hat switch, and iRacing calibrates an axis as it binds it. RigReady refuses both with the reason and points to iRacing's Options > Controls. It waits for BIND-IRACING-007 to pass on the rig and for the files of step 3 in docs/research/iracing-bindings.md, 'Is writing safe?'."
     status: todo
     evidence: []
 
