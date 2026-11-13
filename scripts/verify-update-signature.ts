@@ -13,6 +13,12 @@
  */
 import { parseArgs } from 'node:util';
 import { checkUpdateSignature } from './lib/updateSignature';
+import { forgetPsModulePath } from './lib/windowsPowerShell';
+
+// Started from PowerShell 7 (the Release workflow's steps are), this process would hand
+// PowerShell 7's module path to the Windows PowerShell that electron-updater starts. Its own
+// command line clears it too; this makes sure of it for everything started from here.
+forgetPsModulePath();
 
 // electron-updater starts PowerShell with execFile and shell: true, which Node 24 answers with a
 // deprecation warning on stderr (DEP0190); it quotes the file name itself. In a PowerShell

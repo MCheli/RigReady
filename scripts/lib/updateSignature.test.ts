@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,6 +6,7 @@ import * as yaml from 'js-yaml';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { applySigning, type BuildConfig } from './signing';
 import { checkUpdateSignature } from './updateSignature';
+import { windowsPowerShellEnv } from './windowsPowerShell';
 
 /**
  * The check runs electron-updater's own verifier, which runs Get-AuthenticodeSignature: on
@@ -13,23 +14,59 @@ import { checkUpdateSignature } from './updateSignature';
  * with an embedded signature, as RigReady's installer is); where this Node is not signed,
  * PowerShell is (by Windows' catalog). Its subject is read here first, to make the names a
  * build would put into the feed file for that certificate.
+ *
+ * Every run is made the way GitHub's runner makes it, where each step starts from PowerShell 7
+ * and PSModulePath names PowerShell 7's modules first: Windows PowerShell started with that
+ * cannot load its own Get-AuthenticodeSignature (scripts/lib/windowsPowerShell.ts). Here a
+ * stand-in module that Windows PowerShell cannot load is put first on the path, on every PC.
+ * The test's own PowerShell goes without the variable; electron-updater's verifier runs with
+ * this environment as it is and clears the variable itself (`set "PSModulePath="` before
+ * powershell.exe in its command line), so the checks below prove it copes.
  */
 const windows = process.platform === 'win32';
 
-/** The signer's subject of `file` when its signature is valid, else undefined. */
-function validSubject(file: string): string | undefined {
-  const quoted = file.replace(/'/g, "''");
-  const out = execFileSync(
+/** Get-AuthenticodeSignature in Windows PowerShell, started with `env`. */
+const authenticode = (file: string, then: string, env: NodeJS.ProcessEnv) =>
+  spawnSync(
     'powershell.exe',
     [
       '-NoProfile',
       '-NonInteractive',
       '-Command',
-      `$s = Get-AuthenticodeSignature -LiteralPath '${quoted}'; if ($s.Status -eq 'Valid') { $s.SignerCertificate.Subject }`,
+      `$s = Get-AuthenticodeSignature -LiteralPath '${file.replace(/'/g, "''")}'; ${then}`,
     ],
-    { encoding: 'utf8' }
-  ).trim();
-  return out || undefined;
+    { encoding: 'utf8', env }
+  );
+
+/** The signer's subject of `file` when its signature is valid, else undefined. */
+function validSubject(file: string): string | undefined {
+  const run = authenticode(
+    file,
+    "if ($s.Status -eq 'Valid') { $s.SignerCertificate.Subject }",
+    windowsPowerShellEnv()
+  );
+  if (run.status !== 0 || run.stderr) {
+    throw new Error(`Get-AuthenticodeSignature failed: ${run.stderr || run.error?.message}`);
+  }
+  return run.stdout.trim() || undefined;
+}
+
+/** Puts a module first on PSModulePath that Windows PowerShell finds and cannot load. */
+async function moduleClashLikeTheRunner(dir: string): Promise<string> {
+  const standIn = path.join(dir, 'pwsh-modules', 'Microsoft.PowerShell.Security');
+  await fs.mkdir(standIn, { recursive: true });
+  await fs.writeFile(
+    path.join(standIn, 'Microsoft.PowerShell.Security.psd1'),
+    "@{ ModuleVersion = '7.0.0.0'; PowerShellVersion = '7.0'; CompatiblePSEditions = @('Core'); CmdletsToExport = @('Get-AuthenticodeSignature') }\r\n"
+  );
+  const own = path.join(
+    process.env['SystemRoot'] ?? 'C:\\Windows',
+    'System32',
+    'WindowsPowerShell',
+    'v1.0',
+    'Modules'
+  );
+  return `${path.dirname(standIn)};${own}`;
 }
 
 /** The CN of a subject as Windows writes it ("CN=Name, O=..."). */
@@ -44,9 +81,14 @@ describe.runIf(windows)('checkUpdateSignature: electron-updater checks a signed 
   let signed = '';
   let subject = '';
   let cn = '';
+  const modulePathBefore = process.env['PSModulePath'];
 
   beforeAll(async () => {
     dir = await fs.mkdtemp(path.join(os.tmpdir(), 'rigready-test-'));
+    process.env['PSModulePath'] = await moduleClashLikeTheRunner(dir);
+    // The clash is real: Windows PowerShell started with this process's environment fails.
+    const clashing = authenticode(process.execPath, '$s.Status', process.env);
+    expect(clashing.stderr).toContain('could not be loaded');
     const powershell = path.join(
       process.env['SystemRoot'] ?? 'C:\\Windows',
       'System32',
@@ -67,6 +109,8 @@ describe.runIf(windows)('checkUpdateSignature: electron-updater checks a signed 
   });
 
   afterAll(async () => {
+    if (modulePathBefore === undefined) delete process.env['PSModulePath'];
+    else process.env['PSModulePath'] = modulePathBefore;
     if (dir) await fs.rm(dir, { recursive: true, force: true });
   });
 
