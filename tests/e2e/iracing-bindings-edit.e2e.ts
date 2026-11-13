@@ -6,16 +6,13 @@ import { expect, test, type RunningApp } from './harness';
 
 /**
  * Changing one iRacing binding from the bindings page: bind by pressing a button or a key,
- * clear, for all cars and for one car, with what would change shown first.
- *
- * This is switched off in the product (iracing-bindings.e2e.ts holds the page to that).
- * Every test here turns the switch on for its own run of the app, on a copy of the files
- * in a temp folder. Nothing here proves that iRacing takes the file: that is the rig step
- * in docs/research/iracing-bindings.md.
+ * clear, for all cars and for one car, with what would change shown first and nothing
+ * written until Save. It is on as RigReady ships: no run here sets anything in the app's
+ * environment. Every test works on a copy of the files in a temp folder. That iRacing uses
+ * what RigReady writes was shown on the rig on 13 Nov 2026 (docs/research/iracing-bindings.md).
  */
 
 const ROUTE = '/configure/iracing-bindings';
-const SWITCH_ON = { env: { RIGREADY_IRACING_EDIT: '1' } };
 const WHEEL = 'FANATEC Podium Wheel Base DD2';
 const WHEEL_GUID = '45D4BEA1-60A1-17D8-8001-444553540000';
 const BOX_GUID = '5EED0001-7A11-11EF-8004-444553540000';
@@ -113,30 +110,29 @@ async function listenFor(page: Page, action: string): Promise<void> {
   await expect(page.getByTestId('iracing-edit-listening')).toBeVisible();
 }
 
-test('iRacing bindings, switched on: bind by pressing a button or a key, clear, and undo', async ({
-  rig,
-}) => {
-  const run = await rig.launch('iracing-bindings-car', 'iracing-bindings-edit', SWITCH_ON);
+test('iRacing bindings: bind by pressing a button or a key, clear, and undo', async ({ rig }) => {
+  const run = await rig.launch('iracing-bindings-car', 'iracing-bindings-edit');
   const { page, shot } = run;
   await page.getByTestId('mode-configure').click();
   await go(page, ROUTE);
   await expect(counts(page)).toHaveText('367 actions · 183 bound · 184 not bound');
 
-  // The notice says what the page can now do, and that iRacing has not been tried with it.
-  const trial = page.getByTestId('iracing-bindings-trial');
-  await expect(trial).toContainText(
-    'You can change bindings here. This is new, and not yet tried in iRacing.'
+  // The notice says what the page does, what iRacing has been seen to use, and that a
+  // change is shown before anything is written.
+  const notice = page.getByTestId('iracing-bindings-editing');
+  await expect(notice).toContainText('You can change bindings here.');
+  await expect(notice).toContainText(
+    'A button and a key bound here were used by iRacing in a test drive on 13 November 2026'
   );
-  await expect(trial).toContainText('RigReady shows what will change first');
-  await expect(trial).toContainText('makes a backup of the file');
-  await expect(page.getByTestId('iracing-bindings-readonly')).toHaveCount(0);
+  await expect(notice).toContainText('writes nothing until you press Save');
+  await expect(notice).toContainText('It makes a backup of the file first');
   await expect(headers(page)).toHaveText(['Action', 'Bound to', 'On', 'Change']);
   // An axis stays with iRacing, which calibrates it as it binds it.
   await expect(row(page, 'Throttle').getByTestId('iracing-bindings-in-iracing')).toHaveText(
     'In iRacing'
   );
   await expect(change(page, 'Throttle')).toHaveCount(0);
-  await shot('switched-on');
+  await shot('change-column');
 
   const file = generalFile(run);
   const original = await fs.readFile(file);
@@ -183,8 +179,8 @@ test('iRacing bindings, switched on: bind by pressing a button or a key, clear, 
   await expect(page.getByTestId('iracing-save-camera')).toHaveCount(0);
   await expect(confirm.getByTestId('change-preview-file')).toContainText('controls.cfg');
   await expect(confirm).toContainText('Each file is backed up first; Undo is on the Safety page.');
-  await expect(page.getByTestId('iracing-save-trial')).toContainText(
-    'Not yet tried in iRacing. RigReady changes this one binding and leaves the rest of the file as it was.'
+  await expect(page.getByTestId('iracing-save-undo')).toContainText(
+    'Nothing is written until you press Save in iRacing’s file. RigReady then changes this one binding and leaves the rest of the file as it was.'
   );
   // Looking is not writing.
   expect((await fs.readFile(file)).equals(original)).toBe(true);
@@ -305,10 +301,10 @@ test('iRacing bindings, switched on: bind by pressing a button or a key, clear, 
   await expect(counts(page)).toHaveText('367 actions · 185 bound · 182 not bound');
 });
 
-test('iRacing bindings, switched on: one car’s own bindings, and no saving while iRacing runs', async ({
+test('iRacing bindings: one car’s own bindings, and no saving while iRacing runs', async ({
   rig,
 }) => {
-  const run = await rig.launch('iracing-bindings-car', 'iracing-bindings-edit-car', SWITCH_ON);
+  const run = await rig.launch('iracing-bindings-car', 'iracing-bindings-edit-car');
   const { page, shot } = run;
   await page.getByTestId('mode-configure').click();
   await go(page, CAR_ROUTE);
@@ -401,14 +397,8 @@ test('iRacing bindings, switched on: one car’s own bindings, and no saving whi
   expect((await fs.readFile(generalFile(run))).equals(general)).toBe(true);
 });
 
-test('iRacing bindings, switched on: a change goes into the control profile iRacing uses', async ({
-  rig,
-}) => {
-  const run = await rig.launch(
-    'iracing-bindings-profiles',
-    'iracing-bindings-edit-profile',
-    SWITCH_ON
-  );
+test('iRacing bindings: a change goes into the control profile iRacing uses', async ({ rig }) => {
+  const run = await rig.launch('iracing-bindings-profiles', 'iracing-bindings-edit-profile');
   const { page, shot } = run;
   const profile = path.join(
     run.home,
@@ -424,27 +414,121 @@ test('iRacing bindings, switched on: a change goes into the control profile iRac
   await page.getByTestId('mode-configure').click();
   await go(page, ROUTE);
   await expect(counts(page)).toHaveText('369 actions · 183 bound · 186 not bound');
+  const confirm = page.getByTestId('iracing-save-confirm');
+  const save = page.getByTestId('iracing-save-go');
+  const saved = page.getByTestId('iracing-bindings-saved');
+  const wheel = await controller(page, WHEEL_GUID);
 
-  // The Change box as it is: a button or a key, and what stays with iRacing.
-  await listenFor(page, 'BlackBoxShowNext');
-  await expect(page.getByTestId('iracing-edit-action')).toHaveText('Next black box');
-  await page.getByTestId('iracing-edit-listen-stop').click();
-  await expect(page.getByTestId('iracing-edit')).toContainText(
-    'A button on a controller, or a key on the keyboard.'
+  // The two changes of the rig test of 13 Nov 2026 (finding IR3 asked whether a press
+  // saves at once): a wheel button for Look up, then Shift+J for the driving UI.
+  await listenFor(page, 'LookUp');
+  await expect(page.getByTestId('iracing-edit-listening')).toHaveText(
+    'Press the button or the key now… Esc stops.'
   );
   await shot('change-box');
-  await page.getByTestId('iracing-edit-listen').click();
-  await expect(page.getByTestId('iracing-edit-listening')).toBeVisible();
-  await page.keyboard.press('Shift+J');
-  const confirm = page.getByTestId('iracing-save-confirm');
-  await expect(confirm).toContainText('Bind Next black box to Shift+J on the keyboard?');
-  // What would change names the profile's file, not the older one.
+  await run.sendInput([stateOf(wheel)]);
+  await run.sendInput([stateOf(wheel, { buttons: [10] })]);
+  // The press only shows what would change. Held, released and pressed again, the button
+  // writes nothing: only Save does.
+  await expect(confirm).toContainText(`Bind Look up to Button 10 on ${WHEEL}?`);
   await expect(confirm).toContainText('profiles\\controls\\Baseline\\controls.cfg');
-  await shot('confirm');
-  await page.getByTestId('iracing-save-go').click();
-  await expect(page.getByTestId('iracing-bindings-saved')).toContainText(
-    'Next black box is now bound to Shift+J on the keyboard.'
+  await expect(page.getByTestId('iracing-save-undo')).toContainText(
+    'Nothing is written until you press Save in iRacing’s file.'
   );
-  expectOnlyRecordChanged(before, await fs.readFile(profile), 'BlackBoxShowNext');
+  await run.sendInput([stateOf(wheel)]);
+  await run.sendInput([stateOf(wheel, { buttons: [10] })]);
+  await run.sendInput([stateOf(wheel)]);
+  // Nothing should happen here, so there is nothing to wait for but a little time.
+  await page.waitForTimeout(1000);
+  await expect(confirm).toBeVisible();
+  await expect(saved).toHaveCount(0);
+  expect((await fs.readFile(profile)).equals(before)).toBe(true);
+  await shot('review-before-save');
+  await save.click();
+  await expect(saved).toHaveText(
+    `Saved in iRacing’s file for all cars: Look up is now bound to Button 10 on ${WHEEL}. Undo is on the Safety page.`
+  );
+  const afterButton = await fs.readFile(profile);
+  expectOnlyRecordChanged(before, afterButton, 'LookUp');
+
+  await listenFor(page, 'ToggleUIVisibleDrive');
+  await expect(page.getByTestId('iracing-edit-action')).toHaveText('Hide or show the driving UI');
+  await page.keyboard.press('Shift+J');
+  await expect(confirm).toContainText(
+    'Bind Hide or show the driving UI to Shift+J on the keyboard?'
+  );
+  await page.waitForTimeout(500);
+  expect((await fs.readFile(profile)).equals(afterButton)).toBe(true);
+  await shot('confirm');
+  await save.click();
+  await expect(saved).toContainText(
+    'Hide or show the driving UI is now bound to Shift+J on the keyboard.'
+  );
+  expectOnlyRecordChanged(afterButton, await fs.readFile(profile), 'ToggleUIVisibleDrive');
+  // The older file beside the profile is never written.
   expect((await fs.readFile(generalFile(run))).equals(older)).toBe(true);
+});
+
+test('iRacing bindings: a change in a car’s own control profile, and a profile two cars share', async ({
+  rig,
+}) => {
+  const run = await rig.launch('iracing-bindings-profile-car', 'iracing-bindings-edit-car-profile');
+  const { page, shot } = run;
+  const profiles = path.join(run.home, 'Documents', 'iRacing', 'profiles', 'controls');
+  const car = path.join(profiles, 'Test Profile CTSV', 'controls.cfg');
+  const baseline = path.join(profiles, 'Baseline', 'controls.cfg');
+  const carBefore = await fs.readFile(car);
+  const baselineBefore = await fs.readFile(baseline);
+  const older = await fs.readFile(generalFile(run));
+  const confirm = page.getByTestId('iracing-save-confirm');
+  const save = page.getByTestId('iracing-save-go');
+  const saved = page.getByTestId('iracing-bindings-saved');
+  const carRoute = `${ROUTE}?set=${encodeURIComponent('car:cadillacctsvr')}`;
+  await page.getByTestId('mode-configure').click();
+  await go(page, carRoute);
+  await expect(counts(page)).toContainText('2 differ from All cars');
+
+  await listenFor(page, 'HeadlightFlash');
+  await expect(page.getByTestId('iracing-edit-set')).toHaveText(
+    'In the custom controls of cadillacctsvr'
+  );
+  await page.keyboard.press('Shift+H');
+  await expect(confirm).toContainText('Bind Flash headlights to Shift+H on the keyboard?');
+  await expect(page.getByTestId('iracing-save-set')).toHaveText('cadillacctsvr only');
+  await expect(confirm).toContainText('profiles\\controls\\Test Profile CTSV\\controls.cfg');
+  await shot('car-profile-review');
+  await save.click();
+  await expect(saved).toHaveText(
+    'Saved in iRacing’s file for cadillacctsvr: Flash headlights is now bound to Shift+H on the keyboard. Undo is on the Safety page.'
+  );
+  expectOnlyRecordChanged(carBefore, await fs.readFile(car), 'HeadlightFlash');
+  // The profile for all cars and the older file are not written.
+  expect((await fs.readFile(baseline)).equals(baselineBefore)).toBe(true);
+  expect((await fs.readFile(generalFile(run))).equals(older)).toBe(true);
+
+  // A second car on the same profile: the box and the review name both cars.
+  await run.mutate([
+    {
+      op: 'writeFile',
+      path: 'Documents/iRacing/app.ini',
+      content:
+        '[ControlProfiles]\r\ncadillacctsvr=Test Profile CTSV\r\nbmwm4gt3=Test Profile CTSV\r\nGlobal=Baseline\r\n\r\n[Drive Screen]\r\nblackBox=2\r\n',
+    },
+  ]);
+  await go(page, '/configure/games/iracing');
+  await go(page, carRoute);
+  await expect(counts(page)).toContainText('differ from All cars');
+  await listenFor(page, 'LookLeft');
+  await expect(page.getByTestId('iracing-edit-set')).toHaveText(
+    'In the profile “Test Profile CTSV”, for cadillacctsvr and bmwm4gt3'
+  );
+  await page.keyboard.press('Shift+K');
+  await expect(page.getByTestId('iracing-save-set')).toHaveText(
+    'cadillacctsvr and bmwm4gt3: they share the profile “Test Profile CTSV”'
+  );
+  await shot('shared-profile-review');
+  await save.click();
+  await expect(saved).toHaveText(
+    'Saved in iRacing’s file for cadillacctsvr and bmwm4gt3, which share the profile “Test Profile CTSV”: Look left is now bound to Shift+K on the keyboard. Undo is on the Safety page.'
+  );
 });

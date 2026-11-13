@@ -16,6 +16,15 @@ async function turn(shell: CommandShell, on: boolean): Promise<CommandOutcome> {
   if (!set.ok) return commandFailed(set.error, toPage);
   const state = set.value;
   if (!state.on) return { tone: 'ok', text: 'The overlay is off' };
+  // On, and the setup in use has it off: that is a choice of the setup, not a fault.
+  if (state.offInSetup) {
+    return {
+      tone: 'warn',
+      text: `The overlay is on, but the setup in use, “${state.offInSetup.name}”, has it off`,
+      detail: 'It comes up when you play a setup that has it on.',
+      action: { label: 'Open the setup', to: `/configure/profiles/${state.offInSetup.id}` },
+    };
+  }
   const hidden = state.widgets.find((w) => !w.showing);
   if (hidden) {
     return {

@@ -46,6 +46,22 @@ export interface SettingsSection {
 }
 
 /**
+ * A section a feature adds to the setup editor, for a choice of its own that each setup
+ * makes for itself, kept with the setup in `extensions[<feature id>]`. The component gets
+ * the setup being edited as the prop `profile` and sends the changed setup back with
+ * `update:profile`, so the editor's Save, Cancel and "unsaved changes" cover it. It may ask
+ * its own feature's IPC what it needs to say (the overlay: whether the setup's game has
+ * bindings RigReady can read).
+ */
+export interface SetupSection {
+  title: string;
+  /** Loaded when the setup editor opens: `() => import('./renderer/MySetupSection.vue')`. */
+  component: AsyncComponentLoader;
+  /** Lower comes first among the sections features add. Default 500. */
+  order?: number;
+}
+
+/**
  * A page of a feature that is about one game or one kind of game ("DCS World", "Racing").
  * It has no entry of its own in the menu: the Games page offers it with a card, and the
  * menu marks Games while it is open. So the menu does not grow when a game gets a page.
@@ -116,6 +132,8 @@ export interface FeatureManifest {
   remediationTypes?: { type: string; label: string }[];
   /** Sections on the Settings page, below the app's own. */
   settings?: SettingsSection[];
+  /** Sections in the setup editor, below the editor's own. */
+  setupSections?: SetupSection[];
 }
 
 export function defineFeature(manifest: FeatureManifest): FeatureManifest {

@@ -20,8 +20,14 @@ For hardware or a game, name the device, the game and its version.
 
 <!--
 How this change solves it, and why this way.
-Name anything you considered and left out, and any shared code you touched
-(src/core, src/shared, src/renderer).
+Name any shared code you touched (src/core, src/shared, src/renderer).
+-->
+
+## Considered but not implemented
+
+<!--
+Other ways to solve the same problem and why you did not take them,
+and follow-up work this change leaves for later. Write "Nothing" if there is none.
 -->
 
 ## Testing
@@ -34,7 +40,7 @@ If you tried it on real hardware or in a game, say which, and what you saw.
 
 ## For the reviewer
 
-<!-- What you would like checked, what you are unsure about, and anything left for a later pull request. -->
+<!-- What you would like checked, what you are unsure about. -->
 
 ## Checklist
 
@@ -45,6 +51,13 @@ If you tried it on real hardware or in a game, say which, and what you saw.
 - [ ] Files outside RigReady's data folder are changed only through `FileStore`, and programs are started with an argument array
 - [ ] No keys, tokens, serial numbers, device ids or personal paths in the code, tests, screenshots or logs
 
-## AI tools
+## AI assistance
 
-<!-- If an AI tool wrote any of this: which tool, and which parts. You must be able to explain every change. -->
+<!--
+Fill this in for every pull request. Write "None" if no AI tool was used.
+You must be able to explain every change, whoever or whatever wrote it.
+-->
+
+- **Tool or harness:** <!-- for example Claude Code, GitHub Copilot, Cursor, ChatGPT -->
+- **Model:** <!-- for example Claude Opus 5.5, GPT-5 -->
+- **How it was used:** <!-- which parts it wrote, which you wrote or changed yourself, and what you checked by hand -->
