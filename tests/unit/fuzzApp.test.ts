@@ -89,6 +89,7 @@ const WITH_INPUT: [string, unknown][] = [
   ['overlay:setupDefault', { game: 'dcs' }],
   ['overlay:setupDefault', { game: 'iracing' }],
   ['iracing-bindings:set', { id: 'all' }],
+  ['iracing-bindings:goneDevices', { set: 'all' }],
   ['racing:backups', { game: 'iracing' }],
   ['racing:backups', { game: 'lmu' }],
   ['racing:beamngCopyOlderPreview', { version: '0.36' }],

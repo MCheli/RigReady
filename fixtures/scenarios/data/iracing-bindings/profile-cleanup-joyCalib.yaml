@@ -1,0 +1,56 @@
+---
+CalibrationInfo:
+ DeviceList:
+ - DeviceName: 'FANATEC Podium Wheel Base DD2'
+   InstanceGUID: '{45D4BEA1-60A1-17D8-8001-444553540000}'
+   ProductGUID: '{00070EB7-0000-0000-0000-504944564944}'
+   AxisList:
+   - Axis: 0
+     AxisName: 'Combined Pedals'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+   - Axis: 1
+     AxisName: 'Brake'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+   - Axis: 2
+     AxisName: 'Accelerator'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+   - Axis: 3
+     AxisName: 'Wheel Axis'
+     CalibMin: 0
+     CalibCenter: 33145
+     CalibMax: 65535
+ - DeviceName: 'Load Cell Pedals'
+   InstanceGUID: '{5EED00A1-7A11-11EF-8001-444553540000}'
+   ProductGUID: '{5ED11209-0000-0000-0000-504944564944}'
+   AxisList:
+   - Axis: 0
+     AxisName: 'Throttle'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+   - Axis: 1
+     AxisName: 'Brake'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+   - Axis: 2
+     AxisName: 'Clutch'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+ - DeviceName: 'T-Pendular-Rudder'
+   InstanceGUID: '{0F1424B4-D566-14A0-801B-444553540000}'
+   ProductGUID: '{B68F044F-0000-0000-0000-504944564944}'
+   AxisList:
+   - Axis: 2
+     AxisName: 'Rudder'
+     CalibMin: 0
+     CalibCenter: 65535
+     CalibMax: 65535
+...
