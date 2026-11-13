@@ -10,7 +10,7 @@ Some games read only a gamepad: Ace Combat 8, many console ports, older driving 
 
 ## The driver
 
-A virtual controller needs the **ViGEmBus** driver by Nefarius Software Solutions, the driver most tools of this kind use (DS4Windows, x360ce and others). RigReady never installs a driver: you install it yourself, once.
+A virtual controller needs the **ViGEmBus** driver by Nefarius Software Solutions, the driver most tools of this kind use (DS4Windows, x360ce and others). RigReady never installs a driver: you install it yourself, once. Its author retired the project and archived it on 2 November 2023, so 1.22.0 is the last release and no fixes will come.
 
 1. On the Virtual controller page, **Open the ViGEmBus releases page** (it asks before opening your browser), and download the setup of the newest release, 1.22.0.
 2. Run it. Windows asks for administrator rights; that is the driver's setup asking, not RigReady.

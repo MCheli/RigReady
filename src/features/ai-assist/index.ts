@@ -11,6 +11,9 @@ export default defineFeature({
       to: '/configure/ai-assist',
       order: 310,
       section: 'Controls',
+      // It works on DCS's own files: offered only where DCS is found. A link still opens
+      // the page, which says that DCS World was not found.
+      games: ['dcs'],
     },
   ],
   routes: [

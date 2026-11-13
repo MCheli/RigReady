@@ -23,6 +23,13 @@ export interface NavEntry {
    * RigReady: the app itself (settings, the record of changes, diagnostics).
    */
   section: 'Setups' | 'Games' | 'Controls' | 'Hardware' | 'RigReady';
+  /**
+   * The games it is about, by the id of their game module ("dcs"), for an entry that is only
+   * of use with one of them (the binding guide works on DCS's own files). The menu and the
+   * command palette offer it only when one of them is found on this PC, as Games offers a
+   * game page's card; its route still opens from a link, and the page says what is missing.
+   */
+  games?: string[];
 }
 
 /**
@@ -252,11 +259,56 @@ export function placesOf(manifests: FeatureManifest[]): Place[] {
   );
 }
 
-/** The Configure navigation: every entry by section, in order. */
+/**
+ * The games found on this PC, by the id of their game module: what the shell offers an
+ * entry or a page about a game by. Undefined when that could not be told.
+ */
+export type FoundGames = readonly string[] | undefined;
+
+/**
+ * Whether something about these games is offered on this PC: when it is about no game in
+ * particular, when one of them is found, or when what is found could not be told (then it is
+ * offered, and its page says what it finds).
+ */
+export function offeredFor(games: readonly string[] | undefined, found: FoundGames): boolean {
+  return !games?.length || found === undefined || games.some((id) => found.includes(id));
+}
+
+/**
+ * The games a page of the app is about, from the entry or the page it lies in: a menu
+ * entry's `games`, a game page's `games`, a bindings page's game. The nearest one decides,
+ * so the Wheel entry inside the Racing page's address is about no game. Undefined for a page
+ * about no game in particular. A query or a hash in the address is not part of the path.
+ */
+export function gamesOfRoute(
+  manifests: FeatureManifest[],
+  address: string
+): readonly string[] | undefined {
+  const path = address.split(/[?#]/)[0]!;
+  const owners: { to: string; games: readonly string[] | undefined }[] = [
+    ...navEntriesOf(manifests).map(({ entry }) => ({ to: entry.to, games: entry.games })),
+    ...gamePagesOf(manifests).map((page) => ({ to: page.to, games: page.games })),
+    ...bindingsPagesOf(manifests).map((page) => ({ to: page.to, games: [page.game] })),
+  ];
+  let nearest: (typeof owners)[number] | undefined;
+  for (const owner of owners) {
+    if (path !== owner.to && !path.startsWith(`${owner.to}/`)) continue;
+    if (nearest === undefined || owner.to.length > nearest.to.length) nearest = owner;
+  }
+  return nearest?.games?.length ? nearest.games : undefined;
+}
+
+/**
+ * The Configure navigation: every entry by section, in order. With `found`, an entry about
+ * a game (`games`) is left out while none of its games is found on this PC.
+ */
 export function navSectionsOf(
-  manifests: FeatureManifest[]
+  manifests: FeatureManifest[],
+  found?: FoundGames
 ): { section: NavEntry['section']; entries: NavEntry[] }[] {
-  const entries = navEntriesOf(manifests).map(({ entry }) => entry);
+  const entries = navEntriesOf(manifests)
+    .map(({ entry }) => entry)
+    .filter((entry) => offeredFor(entry.games, found));
   return SECTION_ORDER.map((section) => ({
     section,
     entries: entries
@@ -362,6 +414,13 @@ export interface FeatureCommands {
    * opens that game's page until the user has chosen one.
    */
   setupGame?: (shell: CommandShell) => Promise<string | undefined>;
+  /**
+   * The ids of the games found on this PC ("dcs", "iracing"), when this feature knows (the
+   * games feature, from the list its Games page shows). The shell offers an entry or a page
+   * about a game, in the menu and in the command palette, only when the game is found. A
+   * throw means it could not be told: then everything is offered, as before.
+   */
+  gamesFound?: (shell: CommandShell) => Promise<string[]>;
   /**
    * Calls `changed` whenever the setup in use may have become another one, so the shell
    * asks `setupKind` again. Returns the function that stops it.

@@ -4,7 +4,7 @@ description: Cheat sheets as DCS kneeboard pages, day or night, in the aircraft'
 order: 90
 ---
 
-The **Kneeboard** button on [Cheat sheets](cheat-sheets.md) writes the sheet of a DCS aircraft as kneeboard pages, so what each control does is there in the cockpit. This is a DCS feature; the button is only shown for DCS aircraft.
+The **Kneeboard** button on [Cheat sheets](../controls/cheat-sheets.md) writes the sheet of a DCS aircraft as kneeboard pages, so what each control does is there in the cockpit. This is a DCS feature; the button is only shown for DCS aircraft.
 
 ## The dialog
 

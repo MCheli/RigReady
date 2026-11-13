@@ -43,6 +43,16 @@ export function manualUrl(file: string): string;
 export function pageOf(file: string, text: string): ManualPage;
 export function buildManual(files: Map<string, string> | [string, string][]): Manual;
 export function breadcrumbs(manual: Manual, page: ManualPage, rootTitle?: string): Crumb[];
+export const MOVED_PAGES: Record<string, string>;
+export interface MovedPage {
+  /** The old address. */
+  path: string;
+  /** The address of the page it moved to. */
+  to: string;
+  title: string;
+}
+export function movedPages(manual: Manual, moved?: Record<string, string>): MovedPage[];
+export function redirectPage(to: string, title: string, domain: string): string;
 export function repoPath(fromFile: string, href: string): string;
 export function siteLink(
   fromFile: string,

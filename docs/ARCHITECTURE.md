@@ -63,7 +63,7 @@ The app has two modes: **Play** (one screen; its route and feature folder are na
 
 The whole navigation must fit the default window without scrolling (`tests/e2e/tour.e2e.ts`).
 
-The navigation names no game, so it does not grow when a game gets support. A page about one game or kind of game (DCS World, Racing) is declared as a `gamePages` entry and offered with a card on Games; a game's bindings page is declared as a `bindings` entry and reached from the one Bindings entry, which the shell adds (`BINDINGS_ENTRY`) and which opens the game chosen last in its game picker. Both keep their routes, and the navigation marks Games or Bindings while one of them is open (`placesOf` in `src/shared/feature.ts`).
+The navigation names no game, so it does not grow when a game gets support. A page about one game or kind of game (DCS World, Racing) is declared as a `gamePages` entry and offered with a card on Games; a game's bindings page is declared as a `bindings` entry and reached from the one Bindings entry, which the shell adds (`BINDINGS_ENTRY`) and which opens the game chosen last in its game picker. Both keep their routes, and the navigation marks Games or Bindings while one of them is open (`placesOf` in `src/shared/feature.ts`). An entry or a page about a game is offered, in the menu and the command palette, only while that game is found on this PC (`games` on a navigation entry, `offeredFor` and `gamesOfRoute` in the same file); its route keeps opening from a link.
 
 ### Game modules (`src/features/games/<game>/module.ts`)
 

@@ -6,7 +6,7 @@ order: 110
 
 Most trouble shows up on the Play screen as a failing check, and most failing checks say in their own words what is wrong and offer the fix next to it. This section is for the rest: the problems that come from the PC, from Windows, from a game being open, or from a damaged file.
 
-Each page names the symptom as RigReady shows it, the cause, and what to do.
+Each page names the symptom as RigReady shows it, the cause, and what to do. Short answers to common questions, such as whether RigReady needs administrator rights or works without DCS, are on [Questions and answers](faq.md).
 
 ## Reading a failing check
 
