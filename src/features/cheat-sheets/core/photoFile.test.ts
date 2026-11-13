@@ -194,6 +194,56 @@ describe('a layout without its photos', () => {
     // A layout with no box in it comes back as it is.
     expect(withSavedPictures(saved, undefined)).toEqual(saved);
   });
+
+  it('gives each box the photo of the view of its name, whatever view was dropped or moved', () => {
+    const saved = layoutOf(drawingOfPhotos());
+    const bare = layoutWithoutPictures(saved);
+    const [first, back] = bare.drawing!.custom!.views!;
+    expect(back!.name).toBe('Back');
+    const withViews = (views: (typeof first)[]): DeviceLayout => ({
+      ...bare,
+      drawing: {
+        ...bare.drawing!,
+        custom: { ...bare.drawing!.custom!, views: views.map((v) => v!) },
+      },
+    });
+
+    // An assistant dropped the first view and saved: Back keeps its own photo, not the first's.
+    expect(imagesOf(withSavedPictures(withViews([back]), saved)!)).toEqual([
+      undefined,
+      undefined,
+      SECOND,
+    ]);
+    // Or put Back first.
+    expect(imagesOf(withSavedPictures(withViews([back, first]), saved)!)).toEqual([
+      undefined,
+      undefined,
+      SECOND,
+      PHOTO,
+    ]);
+    // A box under a name no saved view has is refused, never given another view's photo.
+    expect(withSavedPictures(withViews([{ ...first!, name: 'Top' }, back]), saved)).toBeUndefined();
+
+    // Two saved views of one name: the place decides between them, and only between them.
+    const twins = layoutOf(
+      photos.addView(
+        drawingOfPhotos(),
+        { image: `${PHOTO}#twin`, width: 800, height: 600 },
+        'Back'
+      )!
+    );
+    const twinsBare = layoutWithoutPictures(twins);
+    expect(imagesOf(withSavedPictures(twinsBare, twins)!)).toEqual(imagesOf(twins));
+    const [, back1, back2] = twinsBare.drawing!.custom!.views!;
+    const reordered: DeviceLayout = {
+      ...twinsBare,
+      drawing: {
+        ...twinsBare.drawing!,
+        custom: { ...twinsBare.drawing!.custom!, views: [back2!, back1!] },
+      },
+    };
+    expect(withSavedPictures(reordered, twins)).toBeUndefined();
+  });
 });
 
 // ---- in the app ----

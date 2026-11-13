@@ -306,13 +306,17 @@ const PAGES: ConfigurePage[] = [
     says: ['iRacing was not found on this PC', 'iRacing game page'],
     notFound: 'iRacing',
   },
-  // The menu's Bindings entry opens the bindings looked at last: iRacing's, just above.
+  // The menu's Bindings entry opens a game found on this PC, never one only looked at by a
+  // link (iRacing's, just above): here no such game is found, and it says so.
   {
     name: 'bindings',
     route: '/configure/bindings',
-    testId: 'iracing-bindings-page',
-    says: ['iRacing was not found on this PC'],
-    notFound: 'iRacing',
+    testId: 'bindings-none',
+    says: [
+      'No game whose bindings RigReady can read was found on this PC.',
+      'RigReady reads the bindings of DCS and iRacing.',
+      'Open Games',
+    ],
   },
 ];
 

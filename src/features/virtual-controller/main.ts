@@ -128,15 +128,23 @@ export default defineFeatureMain({
     // ---- the live view: what the virtual controller reports, or would for an edited profile ----
     let liveOff: (() => void) | undefined;
     let liveTimer: ReturnType<typeof setTimeout> | undefined;
+    /**
+     * Counts the starts and stops of the live view. The input reader can take seconds to
+     * start: a start that a later stop or start overtook meanwhile subscribes to nothing.
+     */
+    let liveTurn = 0;
     const stopLive = (): void => {
+      liveTurn++;
       liveOff?.();
       liveOff = undefined;
       clearTimeout(liveTimer);
       liveTimer = undefined;
     };
-    const startLive = async (edited: PadProfile | undefined): Promise<void> => {
+    const startLive = async (edited: PadProfile | undefined): Promise<boolean> => {
       stopLive();
+      const mine = liveTurn;
       const started = await ctx.ports.input.start();
+      if (mine !== liveTurn) return false;
       const devices = started.ok ? started.value.filter((d) => !isVirtualPadLike(d)) : [];
       const latest = new Map<number, InputState>();
       let due = false;
@@ -160,6 +168,7 @@ export default defineFeatureMain({
         liveTimer = setTimeout(send, LIVE_MS);
       });
       send();
+      return true;
     };
 
     const state = async (): Promise<Result<VcState>> => {
@@ -311,8 +320,8 @@ export default defineFeatureMain({
             stopLive();
             return ok({ watching: false });
           }
-          await startLive(profile);
-          return ok({ watching: true });
+          // False when a later call stopped or replaced this one while the reader started.
+          return ok({ watching: await startLive(profile) });
         },
       }),
     ];

@@ -1,4 +1,5 @@
 import { sameGuid } from '../../../core/directInput';
+import { sha256 } from '../../../core/files/fileStore';
 import { changePreview } from '../../../core/files/preview';
 import { gameRunning } from '../../../core/games';
 import type { ControllerPress } from '../../../core/inputPresses';
@@ -54,6 +55,8 @@ interface Plan {
   view: SetView;
   after: SetView;
   change: Change;
+  /** The SHA-256 of the file as it was read for this plan. */
+  seen: string;
 }
 
 /** The binding asked for, with the ids of the controller as it is plugged in now. */
@@ -111,7 +114,12 @@ async function plan(
   if (!view.ok) return view;
   const after = await setView(ctx, request.set, names, change.value.bytes);
   if (!after.ok) return after;
-  return ok({ view: view.value, after: after.value, change: change.value });
+  return ok({
+    view: view.value,
+    after: after.value,
+    change: change.value,
+    seen: sha256(bytes.value),
+  });
 }
 
 const actionOf = (view: SetView, id: string): SetView['actions'][number] | undefined =>
@@ -153,6 +161,7 @@ export async function reviewChange(
       .map((a) => ({ ...a, cameraEditor: /^Cam[A-Z]/.test(a.id) })),
     ...(blocked ? { blocked } : {}),
     preview: preview.value,
+    seen: planned.value.seen,
   });
 }
 
@@ -172,6 +181,14 @@ export async function applyChange(
   if (blocked) return err('iracing-bindings.edit.blocked', blocked);
   const planned = await plan(ctx, request, names);
   if (!planned.ok) return planned;
+  // Worked out again from the file as it is now: when that is not the file the preview was
+  // made from, its "now", its conflicts and what the user approved may not hold.
+  if (request.seen !== undefined && request.seen !== planned.value.seen) {
+    return err(
+      'iracing-bindings.edit.changed',
+      'controls.cfg changed after the change was shown, so nothing was written. Look at the change again.'
+    );
+  }
   const { view, after, change } = planned.value;
   const name = actionOf(view, request.action)?.name ?? request.action;
   const to = inWords(actionOf(after, request.action)?.binding);

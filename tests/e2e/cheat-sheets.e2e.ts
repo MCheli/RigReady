@@ -545,6 +545,9 @@ test('cheat sheets: layout editor - drag, label, group, photo, share, import, di
   await sendInput([state(CONTROLLERS.stick, { pressed: [5] })]);
   await sendInput([state(CONTROLLERS.stick)]);
   await expect(editor).toBeVisible();
+  // Nor do By action or another aircraft take the editor away: they wait until it is closed.
+  await expect(page.getByTestId('sheet-view-actions')).toBeDisabled();
+  await expect(page.getByTestId('sheet-aircraft')).toHaveClass(/\bv-input--disabled\b/);
 
   // Give it the name printed on the handle, and drag it up beside the right handle.
   await page.getByTestId('editor-label').locator('input').fill('Cage');

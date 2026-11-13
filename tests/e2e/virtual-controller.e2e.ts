@@ -520,6 +520,16 @@ test('virtual controller: a change made while a save is running stays on screen,
   await save.click();
   await expect(save).toHaveAttribute('aria-busy', 'true');
   await name.fill('Viper stick for Ace Combat');
+  // Back waits for the save. Leaving by the menu meanwhile says that the save goes on, and
+  // that only what was typed after it would be dropped.
+  await expect(page.getByTestId('save-bar-back')).toBeDisabled();
+  await page.getByTestId('nav-devices').click();
+  await expect(page.getByTestId('save-bar-leave-saving')).toHaveText(
+    'The save you started goes on. Changes made after you pressed Save are not in it, and leaving drops them.'
+  );
+  await shot('leave-while-saving');
+  await page.getByTestId('save-bar-leave-stay').click();
+  await expect(page.getByTestId('vc-editor')).toBeVisible();
   await mutate([{ op: 'slowFiles', ms: 0 }]);
   await expect(save).not.toHaveAttribute('aria-busy', 'true');
 

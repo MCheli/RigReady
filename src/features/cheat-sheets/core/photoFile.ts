@@ -102,9 +102,27 @@ export function hasLeftOut(layout: DeviceLayout): boolean {
 }
 
 /**
+ * The saved view a grey box stands for: the one of the same name. A view can be dropped or
+ * moved before the layout comes back (an assistant reordered "Front" and "Back"), so its
+ * place in the list says nothing by itself; it decides only between views that share a
+ * name. Undefined when no saved view has that name, or several do and none at that place.
+ */
+function savedViewFor<V extends { name: string }>(
+  saved: readonly V[],
+  name: string,
+  index: number
+): V | undefined {
+  const named = saved.filter((view) => view.name === name);
+  if (named.length === 1) return named[0];
+  const there = saved[index];
+  return there && there.name === name ? there : undefined;
+}
+
+/**
  * A layout that comes back with grey boxes (read without its photos, changed, saved
- * again) gets the photos of the saved layout back at the same places, so saving it never
- * costs the user a photo. Undefined when a box has no saved photo to come back to.
+ * again) gets the photos of the saved layout back, each into the view of the same name,
+ * so saving it never costs the user a photo or puts one under another view's markers.
+ * Undefined when a box has no saved photo to come back to.
  */
 export function withSavedPictures(
   layout: DeviceLayout,
@@ -126,7 +144,7 @@ export function withSavedPictures(
   }
   const views = custom.views?.map((view, index) => {
     if (view.image !== PICTURE_LEFT_OUT) return view;
-    const old = before?.views?.[index]?.image;
+    const old = savedViewFor(before?.views ?? [], view.name, index)?.image;
     return old && old !== PICTURE_LEFT_OUT ? { ...view, image: old } : undefined;
   });
   if (views?.some((view) => view === undefined)) return undefined;

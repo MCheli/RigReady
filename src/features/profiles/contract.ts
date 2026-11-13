@@ -168,6 +168,11 @@ export const EarlierPlanSchema = z.object({
   notes: z.array(z.string()),
   broughtOver: z.object({ id: z.string(), name: z.string() }).optional(),
   canBringOver: z.boolean(),
+  /**
+   * The plan as shown (its SHA-256). Handed to bringOver as `seen`, the setup is made only
+   * while the plan is still this one: a device plugged in or out meanwhile can change it.
+   */
+  seen: z.string(),
 });
 export type EarlierPlan = z.infer<typeof EarlierPlanSchema>;
 
@@ -342,11 +347,21 @@ export const profilesContract = defineContract('profiles', {
     tier: 'read',
   }),
   /** Makes a new setup from a RigReady 1 file, as earlierPlan says; the old file stays. */
-  bringOver: channel(ProfileId, ProfileSchema, {
-    describe:
-      'Makes a new setup from a setup file RigReady 1 left, exactly as profiles:earlierPlan says, and writes the new file. The old file is not changed. Show the plan to the user and ask first.',
-    tier: 'change',
-  }),
+  bringOver: channel(
+    ProfileId.extend({
+      /** `seen` of the earlierPlan shown: refused when the plan is no longer that one. */
+      seen: z
+        .string()
+        .regex(/^[0-9a-f]{64}$/)
+        .optional(),
+    }),
+    ProfileSchema,
+    {
+      describe:
+        'Makes a new setup from a setup file RigReady 1 left, exactly as profiles:earlierPlan says, and writes the new file. The old file is not changed. Show the plan to the user and ask first, and pass its seen: nothing is made when the plan changed since.',
+      tier: 'change',
+    }
+  ),
   /** Makes this the setup the Play screen shows. */
   use: channel(ProfileId, z.object({ used: z.boolean() }), {
     describe:

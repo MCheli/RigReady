@@ -146,4 +146,44 @@ test('with DCS the binding guide and the DCS pages are offered, and they arrive 
   await expect(page.getByTestId('ai-guide-page')).toBeVisible();
   await expect(page.getByTestId('nav-ai-assist')).toHaveAttribute('aria-current', 'page');
   await shot('guide-from-palette');
+
+  // Bindings opens DCS's bindings now, and its picker offers no game that is not here.
+  await page.getByTestId('nav-bindings').click();
+  await expect(page).toHaveURL(/#\/configure\/dcs-bindings$/);
+  await expect(page.getByTestId('bindings-game')).toContainText('DCS');
+  await expect(page.getByTestId('bindings-game-picker').locator('.v-select')).toHaveCount(0);
+  await shot('bindings-with-dcs');
+});
+
+test('Bindings on a PC without a game whose bindings it reads says so, and opens no game page', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('generic-fresh', 'offered-bindings-none');
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-bindings').click();
+  const none = page.getByTestId('bindings-none');
+  await expect(none).toContainText(
+    'No game whose bindings RigReady can read was found on this PC.'
+  );
+  await expect(none).toContainText('RigReady reads the bindings of DCS and iRacing.');
+  await expect(page).toHaveURL(/#\/configure\/bindings$/);
+  await expect(page.getByTestId('bindings-game-picker')).toHaveCount(0);
+  await expect(page.getByTestId('nav-bindings')).toHaveAttribute('aria-current', 'page');
+  await shot('none-found');
+  await none.getByTestId('bindings-none-games').click();
+  await expect(page.getByTestId('nav-games')).toHaveAttribute('aria-current', 'page');
+});
+
+test('Bindings on a PC whose only game is iRacing, with no setup yet, opens iRacing and offers nothing else', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('shell-racing-pc', 'offered-bindings-racing');
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-bindings').click();
+  await expect(page).toHaveURL(/#\/configure\/iracing-bindings$/);
+  await expect(page.getByTestId('iracing-bindings-page')).toBeVisible();
+  await expect(page.getByTestId('bindings-game')).toContainText('iRacing');
+  await expect(page.getByTestId('bindings-game-picker').locator('.v-select')).toHaveCount(0);
+  await expect(page.getByTestId('bindings-game-picker')).not.toContainText('DCS');
+  await shot('racing-pc');
 });

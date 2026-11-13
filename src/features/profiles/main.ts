@@ -66,7 +66,7 @@ export default defineFeatureMain({
           const planned = await planEarlier(ctx, id);
           return planned.ok ? ok(planned.value.view) : planned;
         },
-        bringOver: ({ id }) => bringOverEarlier(ctx, id),
+        bringOver: ({ id, seen }) => bringOverEarlier(ctx, id, seen),
         clone: ({ id }) => cloneProfile(ctx, id),
         capture: async () => ok(await captureRig(ctx)),
         remember: ({ capture, key, on }) => rememberCandidate(ctx.checks, capture, key, on, ctx),

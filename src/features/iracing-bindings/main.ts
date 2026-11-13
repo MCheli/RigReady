@@ -16,6 +16,11 @@ import { overview, setView, type BindingsContext } from './core/view';
 
 /** Stops reporting controller presses to the page; set while the page listens. */
 let stopListening: (() => void) | undefined;
+/**
+ * Counts the starts and stops of listening. The input reader can take seconds to start: a
+ * start that a stop (or a later start) overtook meanwhile listens to nothing.
+ */
+let listenTurn = 0;
 
 export default defineFeatureMain({
   id: 'iracing-bindings',
@@ -35,9 +40,11 @@ export default defineFeatureMain({
         async listenStart() {
           const on = refuseWhenOff();
           if (!on.ok) return on;
+          const mine = ++listenTurn;
           const started = await ctx.ports.input.start();
           if (!started.ok) return started;
           const names = await ctx.names.devices();
+          if (mine !== listenTurn) return ok({ listening: false });
           stopListening?.();
           stopListening = listenForPresses(ctx.ports.input, (press) =>
             ctx.emit(iracingBindingsContract, 'pressed', pressedOf(press, names))
@@ -45,6 +52,7 @@ export default defineFeatureMain({
           return ok({ listening: true });
         },
         async listenStop() {
+          listenTurn++;
           stopListening?.();
           stopListening = undefined;
           return ok({ listening: false });

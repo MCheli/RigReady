@@ -3,7 +3,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { knownPathVariables, allPathVariables } from '../../../core/pathVariables';
 import { CheckItemSchema, ProfileSchema, type Profile } from '../../../core/profile/schema';
-import { ok } from '../../../core/result';
+import { err, ok } from '../../../core/result';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import { sabotage } from '../../../../tests/sabotage';
 import type { CommandShell } from '../../../shared/feature';
@@ -664,6 +664,42 @@ describe('editing and removing a game (GAME-ADD-002)', () => {
       again.restore();
     }
     expect(app.wiring.context.games.get('user-star-hauler')).toBeDefined();
+  });
+});
+
+describe('a Remove that cannot finish (GAME-ADD-002)', () => {
+  it('puts back the setups it had changed already, and the game and every setup for it stay as they were', async () => {
+    app = await wiredApp('generic-custom-game');
+    await addStarHauler(app);
+    const profiles = app.wiring.context.profiles;
+    const first = setupFor('user-star-hauler');
+    const second = { ...setupFor('user-star-hauler'), id: 'star-hauler-night', name: 'Night run' };
+    expect((await profiles.save(first)).ok).toBe(true);
+    expect((await profiles.save(second)).ok).toBe(true);
+    const before = await fs.readdir(path.join(app.ports.folders.dataRoot(), 'profiles'));
+
+    // The second setup changed to "Another game" cannot be written (a full disk).
+    const real = profiles.save.bind(profiles);
+    let toOther = 0;
+    profiles.save = async (profile) =>
+      profile.game === 'other' && ++toOther === 2
+        ? err('profile.write', 'The disk is full.')
+        : real(profile);
+    await expect(
+      app.invoke('games:removeUserGame', { gameId: 'user-star-hauler' })
+    ).rejects.toThrow('Every setup for it is as it was.');
+    profiles.save = real;
+
+    expect(app.wiring.context.games.get('user-star-hauler')).toBeDefined();
+    for (const id of ['star-hauler', 'star-hauler-night']) {
+      const setup = await profiles.get(id);
+      if (!setup.ok) throw new Error(setup.error.message);
+      expect(setup.value.game, id).toBe('user-star-hauler');
+      expect(setup.value.gameName, id).toBeUndefined();
+    }
+    expect(await fs.readdir(path.join(app.ports.folders.dataRoot(), 'profiles'))).toEqual(before);
+    const own = await app.invoke<{ games: { usedBy: string[] }[] }>('games:userGames');
+    expect([...own.games[0]!.usedBy].sort()).toEqual(['Night run', 'Star Hauler']);
   });
 });
 

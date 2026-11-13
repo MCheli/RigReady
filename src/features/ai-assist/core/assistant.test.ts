@@ -588,6 +588,43 @@ describe('Stop is always reachable while the assistant works', () => {
   });
 });
 
+describe('Save on an assistant’s proposal', () => {
+  it('pressed twice before the first answers (a double click) makes one setup', async () => {
+    const running = await started();
+    const proposed = await running.invoke<{ draftId: string }>('ai-assist:proposeSetup', {
+      newSetup: { name: 'Twice pressed', game: 'dcs' },
+      summary: 'A new setup for DCS.',
+    });
+    // Every write of a setup, counted where every feature saves one.
+    const profiles = running.wiring.context.profiles;
+    const real = profiles.save.bind(profiles);
+    const writes: string[] = [];
+    profiles.save = (profile) => {
+      writes.push(profile.name);
+      return real(profile);
+    };
+    const [first, second] = await Promise.all([
+      running.invoke<{ setupId: string; message: string }>('ai-assist:saveSetupDraft', {
+        draftId: proposed.draftId,
+      }),
+      running.invoke<{ setupId: string; message: string }>('ai-assist:saveSetupDraft', {
+        draftId: proposed.draftId,
+      }),
+    ]);
+    profiles.save = real;
+    expect(second).toEqual(first);
+    expect(first.message).toBe('Saved Twice pressed.');
+    // One proposal, one setup written once: the second press made nothing of its own.
+    expect(writes).toEqual(['Twice pressed']);
+    const setups = await running.invoke<{ name: string }[]>('profiles:list');
+    expect(setups.filter((p) => p.name.startsWith('Twice pressed'))).toHaveLength(1);
+    // Once saved, the proposal is gone: a later press says so and makes nothing.
+    await expect(
+      running.invoke('ai-assist:saveSetupDraft', { draftId: proposed.draftId })
+    ).rejects.toThrow('That proposal is gone');
+  });
+});
+
 describe('what the page is told while the assistant works', () => {
   it('says which request of the question it is on, which tool runs, and what it has cost so far', async () => {
     const running = await started();

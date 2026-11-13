@@ -438,6 +438,31 @@ describe('ASSIST-001 while the assistant works', () => {
     expect(machineChanges).toBe(1);
   });
 
+  it('keeps Stop and the working line on screen when Settings makes the provider not ready during a send', async () => {
+    const running = await started();
+    const store = panel();
+    await store.settingsChanged();
+    expect(store.footShown).toBe(true);
+    hang(running);
+    store.edit(QUESTION);
+    await store.prepare();
+    const sending = store.send();
+    await vi.waitFor(() => expect(store.progress).toMatchObject({ phase: 'asking', round: 1 }));
+
+    // The key is taken away in Settings while the request is on its way.
+    await running.ports.secrets.remove(AI_KEY_SECRET);
+    await store.settingsChanged();
+    expect(store.keyPresent).toBe(false);
+    expect(store.sending).toBe(true);
+    expect(store.footShown).toBe(true);
+
+    // Stop still ends it; then, with no provider ready, the foot goes.
+    await store.stop();
+    await sending;
+    expect(store.sending).toBe(false);
+    expect(store.footShown).toBe(false);
+  });
+
   it('shows the message as on its way until it is taken, and Stop ends the wait with nothing lost', async () => {
     const running = await started();
     const store = panel();

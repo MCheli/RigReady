@@ -97,6 +97,11 @@ function guarded(type: string, params: Record<string, unknown>): Record<string, 
 
 export class AssistantDrafts {
   private readonly setupDrafts = new Map<string, SetupDraft>();
+  /** The saves of proposals under way, by draft id. */
+  private readonly savingSetups = new Map<
+    string,
+    Promise<Result<{ setupId: string; name: string; message: string }>>
+  >();
   private readonly scriptDrafts = new Map<string, ScriptDraft>();
   private counter = 0;
 
@@ -286,8 +291,22 @@ export class AssistantDrafts {
     };
   }
 
-  /** The user pressed Save: the setup is written through its own channel, as the editor does. */
-  async saveSetup(
+  /**
+   * The user pressed Save: the setup is written through its own channel, as the editor does.
+   * A second press while the first is still saving (a double click) waits for that one and
+   * gets its answer: one proposal makes one setup.
+   */
+  saveSetup(draftId: string): Promise<Result<{ setupId: string; name: string; message: string }>> {
+    const running = this.savingSetups.get(draftId);
+    if (running) return running;
+    const saving = this.saveSetupOnce(draftId).finally(() => {
+      this.savingSetups.delete(draftId);
+    });
+    this.savingSetups.set(draftId, saving);
+    return saving;
+  }
+
+  private async saveSetupOnce(
     draftId: string
   ): Promise<Result<{ setupId: string; name: string; message: string }>> {
     const draft = this.setupDrafts.get(draftId);

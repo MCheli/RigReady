@@ -447,6 +447,8 @@ export class UserGames {
     const setups = profiles.value.filter((p) => p.game === id);
     const variable = userGameVariable(id);
     const standard = await standardPathVariables(this.ctx.ports);
+    /** The setups changed so far, as they were: put back if a later one cannot be changed. */
+    const changed: Profile[] = [];
     for (const setup of setups) {
       const converted = withVariableWrittenOut(
         asAnotherGame(setup, game.name),
@@ -457,12 +459,19 @@ export class UserGames {
       const saved = await this.ctx.profiles.save(converted);
       const back = saved.ok ? await this.ctx.profiles.get(setup.id) : saved;
       if (!back.ok || back.value.game !== 'other') {
+        // The game stays, so every setup for it stays one: those already changed go back,
+        // this one too when it was written but did not read back as "Another game".
+        const notBack = await this.putBack(saved.ok ? [...changed, setup] : changed);
         return err(
           'games.custom.setup',
-          `${game.name} was not removed: the setup ${setup.name} could not be changed to "Another game".`,
+          `${game.name} was not removed: the setup ${setup.name} could not be changed to "Another game".` +
+            (notBack.length > 0
+              ? ` These setups could not be put back as they were and are now for "Another game": ${notBack.join(', ')}.`
+              : ' Every setup for it is as it was.'),
           back.ok ? undefined : back.error.message
         );
       }
+      changed.push(setup);
     }
     const written = await store(this.ctx).update((file) => ({
       ...file,
@@ -477,6 +486,20 @@ export class UserGames {
       );
     }
     return ok({ name: game.name, setups: setups.map((s) => s.name) });
+  }
+
+  /**
+   * Saves setups again as they were before a Remove that did not finish, each read back.
+   * Returns the names of the ones that could not be put back.
+   */
+  private async putBack(setups: Profile[]): Promise<string[]> {
+    const notBack: string[] = [];
+    for (const setup of setups) {
+      const saved = await this.ctx.profiles.save(setup);
+      const back = saved.ok ? await this.ctx.profiles.get(setup.id) : saved;
+      if (!back.ok || back.value.game !== setup.game) notBack.push(setup.name);
+    }
+    return notBack;
   }
 }
 

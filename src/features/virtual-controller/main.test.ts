@@ -458,4 +458,48 @@ describe('virtual controller feature', () => {
       .toMatchObject({ plugged: false, report: { lx: expect.closeTo(0.4845, 3) } });
     expect(await app.invoke('virtual-controller:live', { on: false })).toEqual({ watching: false });
   });
+
+  it('starts of the live view that a stop overtakes while the input reader starts leave nothing sending', async () => {
+    app = await wiredApp('virtual-controller-ready');
+    const stick = app.ports.input.devices().find((d) => d.productId === 'BEA8')!;
+    const profile = await app.invoke('virtual-controller:profile', { id: 'my-ace-combat-stick' });
+    const lives = (): number =>
+      app!.events.filter((e) => e.channel === 'virtual-controller:event:live').length;
+
+    // The input reader takes its time to start (up to 15 seconds on a real PC).
+    const input = app.ports.input;
+    const real = input.start.bind(input);
+    const held: (() => void)[] = [];
+    input.start = () => new Promise((resolve) => held.push(() => void real().then(resolve)));
+    const first = app.invoke('virtual-controller:live', { on: true, profile });
+    const second = app.invoke('virtual-controller:live', { on: true, profile });
+    await expect.poll(() => held.length).toBeGreaterThanOrEqual(2);
+    // The editor closes before the reader has started.
+    expect(await app.invoke('virtual-controller:live', { on: false })).toEqual({ watching: false });
+    for (const go of held) go();
+    expect(await first).toEqual({ watching: false });
+    expect(await second).toEqual({ watching: false });
+    input.start = real;
+
+    // A control moved now: nothing is sent, as nothing asks for the live view any more.
+    input.emit([
+      {
+        index: stick.index,
+        name: stick.name,
+        axes: [0.5, 0, 0, 0, 0, 0],
+        buttons: [],
+        hats: [[0, 0]],
+        timestamp: 0,
+      },
+    ]);
+    await new Promise((r) => setTimeout(r, 120));
+    expect(lives()).toBe(0);
+
+    // And a start nothing overtakes still works.
+    expect(await app.invoke('virtual-controller:live', { on: true, profile })).toEqual({
+      watching: true,
+    });
+    await expect.poll(lives).toBeGreaterThan(0);
+    expect(await app.invoke('virtual-controller:live', { on: false })).toEqual({ watching: false });
+  });
 });

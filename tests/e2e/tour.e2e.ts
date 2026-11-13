@@ -110,12 +110,20 @@ for (const rigged of RIGS) {
     const routes = [...new Set([...offered, ...all])].filter((r) => !forwards.includes(r));
     expect(routes.length).toBeGreaterThan(25);
 
-    // An entry that opens another page lands on one of the pages walked below.
+    // An entry that opens another page lands on one of the pages walked below. Bindings on a
+    // PC without a game whose bindings RigReady reads has nothing to open: it says so on a
+    // page of its own, which is walked with the others.
     expect(forwards).toEqual(['/configure/bindings']);
     for (const route of forwards) {
       await go(page, route);
-      await expect.poll(() => hash(page), { message: `${route} sends on` }).not.toBe(`#${route}`);
-      expect(routes, route).toContain((await hash(page)).replace(/^#/, '').split('?')[0]);
+      const none = page.getByTestId('bindings-none');
+      await expect
+        .poll(async () => (await hash(page)) !== `#${route}` || (await none.isVisible()), {
+          message: `${route} sends on, or says there is nothing to open`,
+        })
+        .toBe(true);
+      if (await none.isVisible()) routes.push(route);
+      else expect(routes, route).toContain((await hash(page)).replace(/^#/, '').split('?')[0]);
     }
 
     const findings: string[] = [];

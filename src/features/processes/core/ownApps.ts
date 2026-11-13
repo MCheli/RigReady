@@ -135,17 +135,20 @@ export class OwnApps {
     );
   }
 
-  /** Takes every entry of that name off the list, the ones RigReady refuses included. */
+  /**
+   * Takes every entry of that name off the list, the ones RigReady refuses included. The
+   * name is the one the list shows, so spaces around a name typed into the file by hand
+   * do not count.
+   */
   async remove(name: string, windowsDir: string): Promise<Result<OwnAppsRead>> {
+    const same = (other: string): boolean => sameName(other.trim(), name.trim());
     const written = await this.store.update((current) => ({
-      apps: current.apps.filter((e) => !sameName(nameOf(e) ?? '', name)),
+      apps: current.apps.filter((e) => !same(nameOf(e) ?? '')),
     }));
     if (!written.ok) return written;
     return this.readBack(
       windowsDir,
-      (list) =>
-        !list.apps.some((a) => sameName(a.name, name)) &&
-        !list.refused.some((r) => sameName(r.name, name))
+      (list) => !list.apps.some((a) => same(a.name)) && !list.refused.some((r) => same(r.name))
     );
   }
 

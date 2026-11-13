@@ -1,4 +1,5 @@
 import { onBeforeUnmount, onMounted } from 'vue';
+import type { RouteLocationRaw, Router } from 'vue-router';
 
 /**
  * Changes on screen that are not saved yet, held by the part of the page that keeps them
@@ -44,4 +45,33 @@ export async function mayDropUnsaved(): Promise<boolean> {
     if (unsaved.dirty() && !(await unsaved.ask())) return false;
   }
   return true;
+}
+
+/**
+ * The way out the user agreed to ("Leave without saving", "Discard"). While that move is
+ * under way, its redirects included, `open()` is true and the guard of the part that asked
+ * lets it through. Once it has settled it is closed again, whether the page went (then
+ * nothing is left to ask about) or the move was stopped or turned back elsewhere: the next
+ * way out asks again.
+ */
+export interface WayOut {
+  /** The agreed move is under way: the guard lets it through. */
+  open(): boolean;
+  /** Makes that move. */
+  go(to: RouteLocationRaw): Promise<void>;
+}
+
+export function wayOut(router: Pick<Router, 'push'>): WayOut {
+  let going = 0;
+  return {
+    open: () => going > 0,
+    async go(to) {
+      going++;
+      try {
+        await router.push(to);
+      } finally {
+        going--;
+      }
+    },
+  };
 }

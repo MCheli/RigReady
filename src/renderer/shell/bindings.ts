@@ -1,11 +1,30 @@
-import type { BindingsPage, CommandShell, FeatureCommands } from '../../shared/feature';
+import {
+  offeredFor,
+  type BindingsPage,
+  type CommandShell,
+  type FeatureCommands,
+  type FoundGames,
+} from '../../shared/feature';
 
 /**
  * The one Bindings entry of the menu and its game picker. Each feature that has a bindings
- * page says so in its manifest (`bindings`); the shell lists those pages in the picker and
- * opens one of them when Bindings is chosen. What is decided here is pure, so it is tested
- * without a window; the router and the picker only call it.
+ * page says so in its manifest (`bindings`); the shell lists those pages of the games found
+ * on this PC in the picker and opens one of them when Bindings is chosen, or says that no
+ * such game was found. What is decided here is pure, so it is tested without a window; the
+ * router and the picker only call it.
  */
+
+/**
+ * The bindings pages offered on this PC: those of the games found here (all of them when
+ * that cannot be told), and the one on screen, which a link can open on any PC.
+ */
+export function bindingsOffered<P extends BindingsPage>(
+  pages: readonly P[],
+  found: FoundGames,
+  shown?: P
+): P[] {
+  return pages.filter((page) => page === shown || offeredFor([page.game], found));
+}
 
 /** The game whose bindings were shown last: what Bindings opens next time. */
 export const LAST_BINDINGS_KEY = 'rigready.bindings.game';
@@ -78,18 +97,21 @@ export const windowMemory: BindingsMemory = {
 };
 
 /**
- * The page Bindings opens now. The setup in use is asked about only when no game has been
- * shown yet (or the one shown last has no page any more), so a remembered choice opens at
- * once.
+ * The page Bindings opens now, among the games found on this PC (`found`); undefined when
+ * none of them is. The setup in use is asked about only when no game has been shown yet (or
+ * the one shown last has no page here any more), so a remembered choice opens at once.
  */
 export async function bindingsTarget<P extends BindingsPage>(
   pages: readonly P[],
   memory: BindingsMemory,
-  setupGame: () => Promise<string | undefined>
+  setupGame: () => Promise<string | undefined>,
+  found: FoundGames
 ): Promise<P | undefined> {
+  const here = bindingsOffered(pages, found);
+  if (here.length === 0) return undefined;
   const last = memory.read();
-  if (last !== undefined && pages.some((page) => page.game === last)) {
-    return chooseBindingsPage(pages, last, undefined);
+  if (last !== undefined && here.some((page) => page.game === last)) {
+    return chooseBindingsPage(here, last, undefined);
   }
-  return chooseBindingsPage(pages, undefined, await setupGame());
+  return chooseBindingsPage(here, undefined, await setupGame());
 }

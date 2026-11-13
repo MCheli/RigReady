@@ -158,6 +158,14 @@ export const ChangeRequestSchema = z.object({
   action: z.string(),
   /** What to bind it to; null clears the binding. */
   binding: WantedBindingSchema.nullable(),
+  /**
+   * The set's file as the preview read it (`seen` of changePreview). With it, change writes
+   * nothing when the file is no longer that: what the user approved may not hold any more.
+   */
+  seen: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
 });
 export type ChangeRequest = z.infer<typeof ChangeRequestSchema>;
 
@@ -185,6 +193,8 @@ export const ChangeReviewSchema = z.object({
   blocked: z.string().optional(),
   /** The file as it would change. */
   preview: ChangePreviewSchema,
+  /** The file as this was worked out from (its SHA-256): hand it to change as `seen`. */
+  seen: z.string(),
 });
 export type ChangeReview = z.infer<typeof ChangeReviewSchema>;
 

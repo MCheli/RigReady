@@ -642,7 +642,7 @@ async function openBudget(): Promise<void> {
         >
       </div>
 
-      <footer v-if="store.keyPresent" class="asp-foot">
+      <footer v-if="store.footShown" class="asp-foot">
         <!-- What it is doing right now. Other kinds of work (reading a file, looking something
              up) would be further phases of this one line. -->
         <div v-if="store.sending" class="asp-working" role="status" data-testid="assistant-working">
