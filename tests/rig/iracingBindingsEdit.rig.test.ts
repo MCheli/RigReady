@@ -173,6 +173,16 @@ describe.skipIf(step !== 'before')(
         await fs.mkdir(path.dirname(path.join(copyFolder, file)), { recursive: true });
         await fs.copyFile(path.join(realFolder, file), path.join(copyFolder, file));
       }
+      // The profiles folder alone says iRacing keeps control profiles, even when no file in
+      // it was copied: without it the copy would look like an older iRacing, and RigReady
+      // would read the older controls.cfg that the real page refuses to fall back to.
+      const profiles = path.join('profiles', 'controls');
+      if (await exists(path.join(realFolder, profiles))) {
+        await fs.mkdir(path.join(copyFolder, profiles), { recursive: true });
+      }
+      expect(await exists(path.join(copyFolder, profiles))).toBe(
+        await exists(path.join(realFolder, profiles))
+      );
       // RigReady itself gets the temp profile: its Documents folder and its own data folder.
       ports = createWindowsPorts({
         log: nullLogger,

@@ -5,9 +5,16 @@ import { gameRunning } from '../../../core/games';
 import type { ControllerPress } from '../../../core/inputPresses';
 import type { DeviceNames } from '../../../core/names';
 import { err, ok, type Result } from '../../../core/result';
-import type { ChangeRequest, ChangeResult, ChangeReview, Pressed, SetView } from '../contract';
+import type {
+  BindingSet,
+  ChangeRequest,
+  ChangeResult,
+  ChangeReview,
+  Pressed,
+  SetView,
+} from '../contract';
 import { changeBinding, type Change, type NewBinding } from './edit';
-import { inWords } from './names';
+import { inWords, setScope } from './names';
 import { findSet, setView, simulatorOf, type BindingsContext } from './view';
 
 /**
@@ -38,9 +45,23 @@ interface Plan {
   view: SetView;
   after: SetView;
   change: Change;
-  /** The SHA-256 of the file as it was read for this plan. */
+  /** What this plan was made from: the file, the cars it is for, and its content. */
   seen: string;
 }
+
+/**
+ * One SHA-256 for what the user approves: which file the set is (app.ini can point "All
+ * cars" at another profile with the same bytes), which cars it applies to, and the bytes.
+ * Save writes nothing when any of the three is no longer what the preview showed.
+ */
+export const seenOf = (set: BindingSet, bytes: Uint8Array): string =>
+  sha256(
+    JSON.stringify({
+      file: set.file.toLowerCase(),
+      cars: [set.name, ...(set.sharedWith ?? [])],
+      content: sha256(bytes),
+    })
+  );
 
 /** The binding asked for, with the ids of the controller as it is plugged in now. */
 async function wanted(ctx: BindingsContext, request: ChangeRequest): Promise<Result<NewBinding>> {
@@ -101,7 +122,7 @@ async function plan(
     view: view.value,
     after: after.value,
     change: change.value,
-    seen: sha256(bytes.value),
+    seen: seenOf(found.value.set, bytes.value),
   });
 }
 
@@ -164,14 +185,15 @@ export async function applyChange(
   if (request.seen !== undefined && request.seen !== planned.value.seen) {
     return err(
       'iracing-bindings.edit.changed',
-      'controls.cfg changed after the change was shown, so nothing was written. Look at the change again.'
+      'controls.cfg, or which file or cars it is for, changed after the change was shown, so nothing was written. Look at the change again.'
     );
   }
   const { view, after, change } = planned.value;
   const name = actionOf(view, request.action)?.name ?? request.action;
   const to = inWords(actionOf(after, request.action)?.binding);
   const file = view.set.file;
-  const where = view.set.general ? 'for all cars' : `for ${view.set.name}`;
+  // Every car the file is for, here and on the Safety page.
+  const where = `for ${setScope(view.set)}`;
   if (change.same) {
     return ok({
       changed: false,
