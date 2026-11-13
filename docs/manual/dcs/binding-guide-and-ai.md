@@ -1,6 +1,6 @@
 ---
 title: Binding guide and AI help
-description: Binding guides for twenty DCS aircraft, the walkthrough that binds with you, and optional AI help with your own key, with what is sent shown first.
+description: Twenty binding guides for DCS aircraft, guides of your own, the walkthrough that binds with you, and optional AI help with what is sent shown first.
 
 order: 110
 ---

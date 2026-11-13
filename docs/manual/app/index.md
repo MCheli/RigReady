@@ -26,6 +26,12 @@ What is in it:
 | `journal.jsonl` | The change journal the [Safety page](../protect/safety-page.md) reads. |
 | `logs\rigready.log` | The log, with up to four older files beside it (`rigready.log.1` and so on); each is at most 5 MB. |
 | `secrets\` | The API key of each AI provider you stored one for, encrypted for your Windows account. |
+| `devices.json` | The names you gave devices, and what you said each one is and is used for ([Devices](../hardware/devices.md)). |
+| `games\custom.json` | The [games you added](../games/other-games.md) on the Games page. |
+| `processes\known.json` | The apps you chose to [offer in every new setup](../setups/capture.md). |
+| `overlay\settings.json` | Whether the [overlay](../play/overlay.md) is on, where you placed it, its options, and the aircraft or car you chose for each setup. |
+| `cheat-sheets\` | Your own cheat sheet layouts, drawings and photos (one file per device model, under `layouts\`), your notes, and the trainer's records. |
+| `ai-assist\guides\` | The binding guides you imported or wrote, and those drafted by AI. |
 | `window.json`, `panels.json`, `state.json` | Where the window and the pop-out panels were left, and which [setup was used last](../play/switching-setups.md). |
 
 The program itself is installed under `%LOCALAPPDATA%\Programs\RigReady`, and a downloaded update waits in `%LOCALAPPDATA%\rigready-updater` until it is installed.

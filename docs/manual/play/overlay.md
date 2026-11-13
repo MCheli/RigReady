@@ -16,6 +16,8 @@ Clicks go through the overlay to the game, and it never takes the keyboard. Whil
 - Over a game in exclusive full screen it may not show. If you do not see it there, set the game to borderless.
 - It does not show inside a VR headset. The overlay is a window on a monitor, and a headset is not one.
 
+Not yet verified on a real rig: the overlay passed its tests in the app on recorded data, but nobody has looked at it over a running game yet, or dragged it into place with the mouse on real monitors. The [changelog](../../../CHANGELOG.md) lists it under known limitations.
+
 ## Turning it on
 
 **Show the overlay** at the top of the page turns it on and off. On, it stays on: it comes up again whenever RigReady runs, until you turn it off. The line under the switch says which screen it is over, or why it is not showing.
