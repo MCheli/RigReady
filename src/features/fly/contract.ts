@@ -138,6 +138,12 @@ export const SessionStateSchema = z.object({
   /** How long that countdown is in all, in seconds (what the setup says). */
   standDownSeconds: z.number().int().optional(),
   /**
+   * While it counts down: what that Stand down will need a person at the screens for, one
+   * line each (a desk layout not kept with these monitors yet asks to be kept, and goes
+   * back when nobody answers). Absent when it needs nobody.
+   */
+  standDownNeedsYou: z.array(z.string()).optional(),
+  /**
    * Why Stand down is not going to run by itself this time, although the setup asks for
    * it: "cancelled" (the user cancelled the countdown) or "quickExit" (the game closed so
    * soon after it started that it may not have been a session at all).

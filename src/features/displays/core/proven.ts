@@ -17,6 +17,28 @@ import type { DisplayInfo, DisplayTarget, Rotation } from '../../../shared/model
  *    countdown that was merely replaced by a newer change do not count),
  * 4. and a read of the monitors right after that showed them as the change asked.
  *
+ * There is one other way to the same knowledge: "Replace with the monitors as they are
+ * now" on the Monitors page (LayoutApplier.seen). It meets the four points like this:
+ *
+ * 1. The change it records is the one Make ready and Stand down would make with that
+ *    layout (the targets `analyzeLayout` gives for it), and those targets are exactly
+ *    the arrangement the monitors are in at that moment. A proof says where the monitors
+ *    end up, not where they start (`proofOf` takes only which monitors are connected and
+ *    the on or off of the ones the change does not mention from the monitors it is given),
+ *    so "applied before and kept" and "is the arrangement now and was chosen" describe the
+ *    same end: the same monitors, on and off, in the same places, sizes, rotations and
+ *    refresh rates, with the same main display.
+ * 2. It is recorded with the monitors connected at that moment, and only those count.
+ * 3. A person chose it in RigReady's own window while looking at those monitors, which is
+ *    what "Keep it" proves: they can see a screen and the window on it. Nothing was
+ *    applied, so there was nothing to undo. An assistant's Replace does not count, and
+ *    neither does one made while a question is open (that arrangement nobody has answered).
+ * 4. The monitors are read again after the layout is saved, and nothing is recorded unless
+ *    the read shows them exactly as the targets say, with the same monitors connected.
+ *
+ * Only Replace counts. A layout saved new is asked about once, as before; and "New
+ * layout" could not count anyway, since it switches off monitors that are on now.
+ *
  * Such a kept change is written to `<data root>/displays/proven.json` (ProvenStore). A
  * layout that is edited afterwards, a monitor that is added, removed or moved to another
  * connector, or anything this module cannot work out for certain, is simply not found

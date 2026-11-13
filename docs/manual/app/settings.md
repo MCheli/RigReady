@@ -4,7 +4,7 @@ description: A reference of every setting on the Settings page, from Start with 
 order: 10
 ---
 
-**Configure > Settings** holds everything about how RigReady itself behaves. Each setting is saved the moment you change it, and the page says "Saved". A change that cannot be made is refused with the reason, and the control goes back to what is stored.
+**Configure > Settings** holds everything about how RigReady itself behaves. Each setting is saved the moment you change it, and the page says "Saved". A switch changes with a click on it or on its name; with the keyboard, Tab to it and press Space. A change that cannot be made is refused with the reason, and the control goes back to what is stored.
 
 The settings are kept in `settings.json` in RigReady's [data folder](index.md). A full [backup](../protect/backups.md) includes them, and a [restore](../protect/restore.md) brings back the desk layout, the retention and the limits; Start with Windows and the API key are never restored, because they belong to one PC and one Windows account.
 

@@ -58,13 +58,23 @@ function manualGuard(displays: DisplayProvider, seconds = 15) {
       fire = undefined;
     };
   };
+  const askWaiters: Array<() => void> = [];
   const guard = new RevertGuard(
     displays,
-    { armed: (s) => events.push(`armed ${s}`), settled: (o) => events.push(o) },
+    {
+      armed: (s) => {
+        events.push(`armed ${s}`);
+        for (const wake of askWaiters.splice(0)) wake();
+      },
+      settled: (o) => events.push(o),
+    },
     seconds,
     schedule
   );
-  return { guard, events, timeout: () => fire?.(), cancelled: () => cancelled };
+  /** Resolves once the keep question is up: the guard says so itself, so no fixed wait. */
+  const asked = (): Promise<void> =>
+    guard.pending ? Promise.resolve() : new Promise((resolve) => askWaiters.push(resolve));
+  return { guard, events, asked, timeout: () => fire?.(), cancelled: () => cancelled };
 }
 
 function fixFor(r: TestRig, names: MonitorNames = {}) {
@@ -232,7 +242,7 @@ describe('display.applyLayout fix', () => {
   it('turns the desk state into the flying layout, saving the old one first, and arms the timed revert', async () => {
     const good = await flyingLayout();
     rig = await scenarioRig('desk-mfds-wrong', NO_FILES);
-    const { remediation, events, guard, recovery } = fixFor(rig);
+    const { remediation, events, guard, recovery, asked } = fixFor(rig);
     const check = createLayoutCheck(depsFor(rig));
     expect(remediation.describe(good)).toBe('Apply the monitor layout');
     expect(remediation.describe({ ...good, layoutName: 'Flying' })).toBe(
@@ -242,7 +252,7 @@ describe('display.applyLayout fix', () => {
     // The fix applies the layout and then waits for the answer to "Keep this layout?".
     let finished = false;
     const running = remediation.run(good, rig.ctx).finally(() => (finished = true));
-    await expect.poll(() => guard.pending).toBe(true);
+    await asked();
     expect(finished).toBe(false);
     expect((await check.run(good, rig.ctx)).pass).toBe(true);
     // The Dell is off, the three MFD screens are on in portrait, the ultrawide is main.
@@ -386,7 +396,7 @@ describe('RevertGuard', () => {
     const desk = await currentLayout(rig);
     const harness = fixFor(rig);
     const running = harness.remediation.run(good, rig.ctx);
-    await expect.poll(() => harness.guard.pending).toBe(true);
+    await harness.asked();
     return { ...harness, running, good, desk, check: createLayoutCheck(depsFor(rig)) };
   }
 

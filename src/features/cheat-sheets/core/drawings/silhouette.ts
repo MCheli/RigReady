@@ -84,6 +84,14 @@ export const DrawingTextSchema = z.object({
 export const ControlInputSchema = z.object({
   id: ControlIdSchema,
   tag: z.string().max(12).optional(),
+  /**
+   * The position the control rests in when nobody is using it: the middle of a three-way
+   * switch, a lever or handle let go, a throttle at its IDLE stop. The device reports this
+   * input as held while the control is there, so it reads as held before anything is
+   * pressed. A switch or knob that stays wherever it is put (a gear lever, a selector) has
+   * no one resting place, and none of its positions is marked.
+   */
+  rest: z.boolean().optional(),
 });
 export type ControlInput = z.infer<typeof ControlInputSchema>;
 
@@ -284,6 +292,15 @@ export type DeviceDrawingInput = z.input<typeof DeviceDrawingSchema>;
 export function drawnInputs(drawing: Pick<DeviceDrawing, 'controls'>): Set<string> {
   const ids = new Set<string>();
   for (const control of drawing.controls) for (const input of control.inputs) ids.add(input.id);
+  return ids;
+}
+
+/** The inputs a drawing marks as where their control rests (`rest`), held with no hand on it. */
+export function restInputs(drawing: Pick<DeviceDrawing, 'controls'>): Set<string> {
+  const ids = new Set<string>();
+  for (const control of drawing.controls) {
+    for (const input of control.inputs) if (input.rest) ids.add(input.id);
+  }
   return ids;
 }
 

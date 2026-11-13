@@ -244,7 +244,7 @@ describe('code signing (PLAT-017)', () => {
     }
   });
 
-  it('the Release workflow hands the four variables and three secrets to the build step only, and verifies a signed build before the draft is made', async () => {
+  it('the Release workflow hands the five variables and three secrets to the build step only, and verifies a signed build before the draft is made', async () => {
     const release = await workflow('release.yml');
     const steps = release.jobs['release']!.steps!;
     const build = steps.find((step) => step.name === 'Build installer')!;
@@ -258,9 +258,22 @@ describe('code signing (PLAT-017)', () => {
       if (step === build) continue;
       for (const name of Object.keys(step.env ?? {})) expect(SIGNING_NAMES).not.toContain(name);
     }
-    // Verified right after the build, only when a publisher is configured, and before the upload.
+    // Right after the build, only when a publisher is configured: electron-updater's own check
+    // of an update, on the new installer with the publisher names the build put into the
+    // package, which fails unless the full DN matches (scripts/lib/updateSignature.ts).
+    const updateCheck = steps.find(
+      (step) => step.name === 'Check the update signature as installed copies will'
+    )!;
+    expect(steps.indexOf(updateCheck)).toBe(steps.indexOf(build) + 1);
+    expect(updateCheck.if).toBe(`vars.${SIGNING_VARIABLES.publisher} != ''`);
+    expect(updateCheck.shell).toBe('pwsh');
+    expect(updateCheck.env).toBeUndefined();
+    expect(updateCheck.run).toContain(
+      'npx tsx scripts/verify-update-signature.ts --installer "release/RigReady-Setup-$version.exe" --feed release/win-unpacked/resources/app-update.yml'
+    );
+    // Then verified by installing, only when a publisher is configured, and before the upload.
     const verify = steps.find((step) => step.name === 'Verify the signatures')!;
-    expect(steps.indexOf(verify)).toBe(steps.indexOf(build) + 1);
+    expect(steps.indexOf(verify)).toBe(steps.indexOf(build) + 2);
     expect(verify.if).toBe(`vars.${SIGNING_VARIABLES.publisher} != ''`);
     expect(verify.shell).toBe('pwsh');
     expect(verify.env).toEqual({ PUBLISHER: `\${{ vars.${SIGNING_VARIABLES.publisher} }}` });
@@ -269,8 +282,8 @@ describe('code signing (PLAT-017)', () => {
     const upload = steps.find((step) => step.uses?.startsWith('softprops/action-gh-release'))!;
     expect(steps.indexOf(upload)).toBeGreaterThan(steps.indexOf(verify));
     // The script checks what the installed app will check (a valid signature whose subject is
-    // the publisher) on the installer, the installed program and the uninstaller, and the
-    // publisher in the installed feed file; then it uninstalls.
+    // the publisher) on the installer, the installed program and the uninstaller, and runs the
+    // same electron-updater check with the installed feed file; then it uninstalls.
     const script = await read('scripts', 'verify-signed-installer.ps1');
     for (const needed of [
       'verify /pa /v',
@@ -279,6 +292,7 @@ describe('code signing (PLAT-017)', () => {
       "'RigReady.exe'",
       "'Uninstall RigReady.exe'",
       "'resources\\app-update.yml'",
+      "& npx tsx (Join-Path $PSScriptRoot 'verify-update-signature.ts') --installer $installerPath --feed $feedFile",
       '-ArgumentList @(\'/S\', "/D=$installDir")',
       "-ArgumentList '/S'",
     ]) {

@@ -82,7 +82,7 @@ jobs:
       - run: npm run setup:python
 
       # electron-builder never publishes (--publish never); the release step below does.
-      # The build is signed through Azure Artifact Signing when the repository has the four
+      # The build is signed through Azure Artifact Signing when the repository has the five
       # RIGREADY_SIGN_* variables and the three AZURE_* secrets, and is the plain unsigned
       # build when it has none of them; anything in between fails here with a message
       # (docs/RELEASING.md, "Code signing"). Only this step sees these values.
@@ -93,14 +93,28 @@ jobs:
           RIGREADY_SIGN_ACCOUNT: ${{ vars.RIGREADY_SIGN_ACCOUNT }}
           RIGREADY_SIGN_PROFILE: ${{ vars.RIGREADY_SIGN_PROFILE }}
           RIGREADY_SIGN_PUBLISHER: ${{ vars.RIGREADY_SIGN_PUBLISHER }}
+          RIGREADY_SIGN_PUBLISHER_DN: ${{ vars.RIGREADY_SIGN_PUBLISHER_DN }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
 
+      # The check an installed RigReady makes on every downloaded update, made on the new
+      # installer by electron-updater's own code (scripts/verify-update-signature.ts) with the
+      # publisher names the build put into the package: the certificate's full DN, then its CN.
+      # It fails unless the DN matches. An installed copy would still take the update by the
+      # CN, so a certificate whose details changed is caught here and the DN put right before
+      # the release, instead of every update after it passing by the CN alone.
+      - name: Check the update signature as installed copies will
+        if: vars.RIGREADY_SIGN_PUBLISHER != ''
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          npx tsx scripts/verify-update-signature.ts --installer "release/RigReady-Setup-$version.exe" --feed release/win-unpacked/resources/app-update.yml
+
       # A signed build is checked the way an installed RigReady will check it as an update:
       # signtool and Get-AuthenticodeSignature on the installer, then on the program and the
       # uninstaller it installs (silently, into a temporary folder, removed again), and the
-      # publisher in the feed file it carries. A failure here stops the release.
+      # check above once more with the feed file of that install. A failure stops the release.
       - name: Verify the signatures
         if: vars.RIGREADY_SIGN_PUBLISHER != ''
         shell: pwsh

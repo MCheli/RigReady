@@ -16,6 +16,7 @@ import net, { type AddressInfo } from 'node:net';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { _electron, chromium, type ElectronApplication, type Page } from '@playwright/test';
+import { windowsPowerShellEnv } from '../../scripts/lib/windowsPowerShell';
 import { FindWindowExW, IsWindowVisible } from '../../src/platform/windows/win32';
 import { expect, isolatedEnv, repoRoot, screensDir, test, type IsolatedEnv } from '../e2e/harness';
 import { executionLevel, isElevated } from '../winHelpers';
@@ -630,11 +631,16 @@ test('started the way a user starts it, a script that is not hidden gets a conso
       );
     }
     // Whatever happened above, no copy of this build is left running (and no other RigReady is touched).
-    await promisify(execFile)('powershell', [
-      '-NoProfile',
-      '-Command',
-      `Get-Process RigReady -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq '${exe}' } | Stop-Process -Force`,
-    ]).catch(() => undefined);
+    // Without PowerShell 7's module path, which Windows PowerShell cannot load (scripts/lib/windowsPowerShell.ts).
+    await promisify(execFile)(
+      'powershell',
+      [
+        '-NoProfile',
+        '-Command',
+        `Get-Process RigReady -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq '${exe}' } | Stop-Process -Force`,
+      ],
+      { env: windowsPowerShellEnv() }
+    ).catch(() => undefined);
     await isolated.cleanup().catch(() => undefined);
   }
 });

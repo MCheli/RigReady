@@ -62,6 +62,9 @@ export default defineFeatureMain({
         if (!found.ok) return { enabled: false, seconds: STAND_DOWN_DEFAULT_SECONDS };
         return standDownOnClose(found.value.profile);
       },
+      // Said with the countdown: a desk layout never kept with these monitors asks to be
+      // kept, and nobody may be there to answer.
+      standDownNeedsYou: (profileId) => fly.standDownNeedsYou(profileId),
       // The countdown is there to be seen and cancelled: the window that hid itself for
       // the game comes back for it. The game has closed, so nothing loses the screen to it.
       showWindow: async () => {
