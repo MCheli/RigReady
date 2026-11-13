@@ -25,7 +25,7 @@ The game keeps its settings in `%LOCALAPPDATA%\BANDAI NAMCO Entertainment\ACE CO
    - a button for **Left trigger (LT)**, which slows down. The speed brake switch of a throttle suits it;
    - the buttons you want for the rest. Each part says what it does in the game, where players' guides agree.
 4. Watch the live picture near the top of the editor while you move the controls, then **Save**.
-5. Add the step **Start a virtual controller** with your profile to the steps before launch of an Ace Combat 8 setup, with **Hide controllers** on if the game also picks up your real stick.
+5. Make the setup: **Configure > Setups > New setup from this rig**, and choose Ace Combat 8. The step **Start a virtual controller** is offered under **Before launch**, with your copy chosen by name ([Creating a setup from the rig](../setups/capture.md#before-launch)). If the game also picks up your real stick, open the step in [the setup editor](../setups/editor.md) and turn on **Hide controllers**.
 6. In the game's flight control setting, choose **Expert** for a stick: left and right then roll the aircraft, as a real stick does. With **Standard**, left and right turn the aircraft instead, which suits a gamepad's thumb stick. Then check every axis in the game's controls screen and set the game's own sensitivity to taste.
 
 **The high-G turn.** The game reads RT and LT held together as a high-G turn. That is why this starting point has the switch **One throttle axis on both triggers** turned off: one throttle split over both triggers can never press both at once, and pulled fully back it always brakes. With the throttle on RT and a button on LT, push the throttle forward and hold the button for the turn.

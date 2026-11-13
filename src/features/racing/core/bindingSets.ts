@@ -1,6 +1,11 @@
 import path from 'node:path';
 import { z } from 'zod';
-import type { CheckDefinition, RemediationDefinition } from '../../../core/checks/registry';
+import type {
+  CheckDefinition,
+  ParamPicker,
+  PickerChoice,
+  RemediationDefinition,
+} from '../../../core/checks/registry';
 import type { GameRegistry } from '../../../core/games';
 import type { ProfileStore } from '../../../core/profile/store';
 import { err, ok, type Result } from '../../../core/result';
@@ -58,13 +63,7 @@ const gameName = (game: RacingGameId): string => RACING_GAMES.find((g) => g.id =
 export function setLabel(backup: Pick<BindingBackup, 'name' | 'createdAt'>, fallback = ''): string {
   if (backup.name?.trim()) return backup.name.trim();
   if (fallback.trim()) return fallback.trim();
-  return `backup of ${new Date(backup.createdAt).toLocaleString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })}`;
+  return `backup of ${savedOn(backup)}`;
 }
 
 export interface SetComparison {
@@ -102,12 +101,58 @@ export async function compareWithSet(
   return { backup, files, different };
 }
 
+const savedOn = (backup: Pick<BindingBackup, 'createdAt'>): string =>
+  new Date(backup.createdAt).toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+/**
+ * The saved bindings of every racing game, by name, for the setup editor: a setup stores
+ * the id of a backup (a timestamp), which nobody can type. Choosing one fills in the id,
+ * its name and the game it belongs to. Only backups that hold binding files are listed.
+ */
+export function bindingSetPicker(games: GameRegistry): ParamPicker {
+  return {
+    list: 'racing.bindingSets',
+    param: 'backupId',
+    label: 'Saved bindings',
+    fills: ['name', 'game'],
+    empty:
+      'You have no saved bindings yet. Back them up on Configure > Racing, then choose them here.',
+    async choices(ctx) {
+      const rctx = { ...ctx, games };
+      const out: PickerChoice[] = [];
+      for (const game of RACING_GAMES) {
+        for (const backup of await listBackups(rctx, game.id)) {
+          if (!backup.files.some((f) => isBindingFile(game.id, f))) continue;
+          if (out.some((c) => c.value === backup.id)) continue;
+          const label = setLabel(backup);
+          out.push({
+            value: backup.id,
+            label,
+            // A named set says when it was saved; an unnamed one is already called by its date.
+            detail: backup.name?.trim() ? game.name + ', saved ' + savedOn(backup) : game.name,
+            fill: { name: label, game: game.id },
+          });
+        }
+      }
+      return ok(out);
+    },
+  };
+}
+
 export function bindingSetCheck(games: GameRegistry): CheckDefinition<BindingSetParams> {
   return {
     type: BINDING_SET,
     group: 'files',
     label: 'Racing bindings are the saved set',
     params: BindingSetParamsSchema,
+    fixes: [RESTORE_BINDING_SET],
+    picker: bindingSetPicker(games),
     async run(params, ctx) {
       const compared = await compareWithSet({ ...ctx, games }, params.game, params.backupId);
       if (!compared.backup) {
@@ -145,6 +190,7 @@ export function restoreBindingSetFix(games: GameRegistry): RemediationDefinition
     label: 'Restore the saved racing bindings',
     order: 300,
     params: BindingSetParamsSchema,
+    picker: bindingSetPicker(games),
     describe: (params) => `Restore the bindings saved as "${params.name || params.backupId}"`,
     async run(params, ctx) {
       const rctx = { ...ctx, games };

@@ -7,8 +7,16 @@ import type { CaptureCandidate } from '../../../core/checks/registry';
 import type { Profile } from '../../../core/profile/schema';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { CaptureResult, NewProfile } from '../contract';
-import { rigKind, suggestGame } from './capture';
-import { keptByDefault, offered, type CaptureChoice } from './captureDefaults';
+import { rigKind, suggestGame, withoutDeskLayout, withoutOwnPad } from './capture';
+import {
+  choiceFor,
+  keptByDefault,
+  offered,
+  stepAction,
+  stepDefault,
+  stepsFor,
+  type CaptureChoice,
+} from './captureDefaults';
 
 let app: WiredApp;
 afterEach(() => app?.cleanup());
@@ -24,11 +32,12 @@ function clickThrough(
   const game = captured.games.find((g) => g.id === gameId);
   const variants = captured.candidates.filter((c) => c.game === gameId && c.variant);
   const variant = variants[0]?.variant;
-  const choice: CaptureChoice = {
-    game: gameId,
-    variant: variant?.id ?? '',
-    family: game?.kind ?? captured.suggested.kind,
-  };
+  const choice = choiceFor(captured, gameId, variant?.id ?? '');
+  // A step with a clear choice is kept; one the person would have to choose is not.
+  const steps = stepsFor(captured.steps, choice).flatMap((step, index) => {
+    const action = stepAction(step, stepDefault(step), 'a' + (index + 1));
+    return action ? [action] : [];
+  });
   const launch = game?.installs[0]?.launch;
   return {
     name: variant?.setupName ?? game?.name ?? 'This rig',
@@ -42,6 +51,7 @@ function clickThrough(
           ? { params: { ...c.check.params, [c.ask.param]: answers[c.key] } }
           : {}),
       })) as NewProfile['checks'],
+    ...(steps.length > 0 ? { actions: { preLaunch: steps, postLaunch: [], standDown: [] } } : {}),
     tracked: captured.tracked
       .filter((t) => offered(t, choice) && t.selectedByDefault)
       .map(({ label, path: stored, kind, include, exclude, game: of }) => ({
@@ -493,5 +503,243 @@ describe('capture: one click through', () => {
     const created = await app.invoke<Profile>('profiles:create', { name: 'Bare', checks: [] });
     expect(created).toMatchObject({ id: 'bare', checks: [], extensions: {} });
     expect(await savedYaml('bare')).toMatchObject({ name: 'Bare' });
+  });
+});
+
+describe('CFG-PROFILE-017: a new setup starts from the game', () => {
+  it('a helper that happens to be running is offered, not ticked, for a game that does not use it: TrackIR software and iRacing', async () => {
+    app = await wiredApp('mark-racing');
+    await mutate(app, [
+      {
+        op: 'startProcess',
+        name: 'TrackIR5.exe',
+        path: 'C:\\Program Files (x86)\\TrackIR5\\TrackIR5.exe',
+      },
+    ]);
+    const captured = await capture();
+    const trackir = captured.candidates.find((c) => c.title === 'TrackIR software');
+    // The rig proposes it because it is running: that alone used to tick it.
+    expect(trackir).toMatchObject({ group: 'apps', selectedByDefault: true });
+    const iracing = choiceFor(captured, 'iracing');
+    expect(offered(trackir!, iracing)).toBe(true);
+    expect(keptByDefault(trackir!, iracing)).toBe(false);
+    // The racing helpers that are running are still kept.
+    const kept = captured.candidates.filter((c) => keptByDefault(c, iracing)).map((c) => c.title);
+    expect(kept).toEqual(
+      expect.arrayContaining([
+        'FANATEC Podium Wheel Base DD2',
+        'trophi.ai coach',
+        'Fanatec Service',
+      ])
+    );
+    const created = await app.invoke<Profile>('profiles:create', clickThrough(captured, 'iracing'));
+    expect(created.checks.map((c) => c.title)).not.toContain('TrackIR software');
+  });
+
+  it('on a rig with both, a racing game keeps the wheel and no flight gear, and a flight sim the other way round', async () => {
+    app = await wiredApp('flying-fresh');
+    const captured = await capture();
+    const devices = captured.candidates.filter((c) => c.key.startsWith('device:'));
+    const keptFor = (game: string): string[] =>
+      devices.filter((c) => keptByDefault(c, choiceFor(captured, game))).map((c) => c.title);
+    const racing = keptFor('iracing');
+    expect(racing).toContain('FANATEC Podium Wheel Base DD2');
+    expect(racing.filter((t) => /WINWING|T-Pendular|R-VPC|TrackIR/.test(t))).toEqual([]);
+    const flight = keptFor('dcs');
+    expect(flight).toEqual(expect.arrayContaining(['WINWING MFD1-L', 'T-Pendular-Rudder']));
+    expect(flight).not.toContain('FANATEC Podium Wheel Base DD2');
+    // Every one of them is still on the page, whichever game is chosen.
+    for (const game of ['iracing', 'dcs']) {
+      expect(devices.every((c) => offered(c, choiceFor(captured, game)))).toBe(true);
+    }
+  });
+
+  it('the wheel rotation the driver last recorded is offered and not ticked', async () => {
+    app = await wiredApp('mark-racing');
+    const captured = await capture();
+    const rotation = captured.candidates.find((c) => /^Wheel rotation/.test(c.title));
+    expect(rotation).toBeDefined();
+    expect(offered(rotation!, choiceFor(captured, 'iracing'))).toBe(true);
+    expect(keptByDefault(rotation!, choiceFor(captured, 'iracing'))).toBe(false);
+  });
+
+  it('every game says what it is played with; Ace Combat 8 says a gamepad, its own gear and no helpers', async () => {
+    app = await wiredApp('virtual-controller-ready', { files: ['Program Files (x86)/Steam/**'] });
+    const captured = await capture();
+    for (const game of captured.games) {
+      expect(game.uses, game.id).toMatchObject({
+        helpers: expect.any(Boolean),
+        microphone: expect.any(Boolean),
+        gamepad: expect.any(Boolean),
+      });
+    }
+    expect(captured.games.find((g) => g.id === 'ace-combat-8')).toMatchObject({
+      name: 'Ace Combat 8: Wings of Theve',
+      uses: {
+        gear: ['stick', 'yoke', 'throttle', 'pedals'],
+        helpers: false,
+        microphone: false,
+        gamepad: true,
+      },
+    });
+    expect(captured.games.find((g) => g.id === 'dcs')!.uses).toMatchObject({ gamepad: false });
+  });
+
+  it('the monitor arrangement the desk rests in is offered and not ticked', async () => {
+    app = await wiredApp('displays-layouts');
+    // The monitors as they are now, saved by name and then chosen as where the desk rests.
+    await app.invoke('displays:saveLayout', { name: 'At rest' });
+    const first = await capture();
+    const layout = first.candidates.find((c) => c.key === 'displays:layout')!;
+    const layoutId = layout.check.params['layoutId'] as string;
+    expect(layoutId).toBeTruthy();
+    expect(layout.selectedByDefault).toBe(true);
+    await app.invoke('displays:setDeskLayout', { id: layoutId });
+    const second = await capture();
+    expect(second.candidates.find((c) => c.key === 'displays:layout')).toMatchObject({
+      selectedByDefault: false,
+      check: { params: { layoutId } },
+    });
+    // Any other layout stays as the rig proposed it.
+    const other = [{ ...layout, check: { ...layout.check, params: { layoutId: 'another' } } }];
+    expect(withoutDeskLayout(other, layoutId)).toEqual(other);
+    expect(withoutDeskLayout(other, undefined)).toBe(other);
+  });
+});
+
+describe('CFG-PROFILE-018: the virtual controller in a new setup', () => {
+  const VIRTUAL_PAD = {
+    op: 'plugDevice' as const,
+    device: {
+      instanceId: 'USB\\VID_045E&PID_028E\\01',
+      vendorId: '045E',
+      productId: '028E',
+      name: 'Virtual Xbox 360 Controller',
+      isHid: true,
+      isGameController: true,
+      isHub: false,
+      hubChain: [],
+    },
+    controller: {
+      name: 'Controller (XBOX 360 For Windows)',
+      guid: '9A0D2F10-B756-11F0-8001-444553540000',
+      vendorId: '045E',
+      productId: '028E',
+    },
+  };
+  const isPad = (c: CaptureCandidate): boolean =>
+    c.device?.vendorId === '045E' && c.device.productId === '028E';
+  const pad = (title: string, key: string, ids = ['045e', '028e']): CaptureCandidate =>
+    ({
+      key,
+      group: 'devices',
+      title,
+      selectedByDefault: true,
+      device: { model: title, vendorId: ids[0], productId: ids[1], gameController: true },
+      check: { type: 'device.connected', title, required: true, params: {} },
+    }) as unknown as CaptureCandidate;
+
+  it("RigReady's own virtual controller is never offered as a connected device", async () => {
+    app = await wiredApp('virtual-controller-ready', { files: ['Program Files (x86)/Steam/**'] });
+    await mutate(app, [VIRTUAL_PAD]);
+    // Not started by RigReady: another program's controller. Offered, and not ticked.
+    const foreign = (await capture()).candidates.filter(isPad);
+    expect(foreign).toHaveLength(1);
+    expect(foreign[0]).toMatchObject({ selectedByDefault: false });
+    // Started by RigReady: it is not part of the rig, and is not on the page at all.
+    expect((await app.ports.pads.plug('xbox360', 'My Ace Combat stick')).ok).toBe(true);
+    const own = await capture();
+    expect(own.candidates.filter(isPad)).toEqual([]);
+    expect(own.candidates.some((c) => c.title === 'WINWING MFD1-L')).toBe(true);
+  });
+
+  it('tells its own controller from real ones that share its ids', () => {
+    const real = pad('Xbox 360 Controller', 'a');
+    const virtual = pad('Virtual Xbox 360 Controller', 'b');
+    const stick = pad('VKB Gladiator NXT', 'c', ['231D', '0200']);
+    const on = { plugged: true, kind: 'xbox360' as const };
+    // The one that says it is virtual is RigReady's; the real one stays as it was.
+    expect(withoutOwnPad([real, virtual, stick], on)).toEqual([real, stick]);
+    // The only one of its ids is it.
+    expect(withoutOwnPad([real, stick], on)).toEqual([stick]);
+    // Two alike and neither says: both stay offered, and neither is ticked.
+    const twin = pad('Xbox 360 Controller', 'd');
+    expect(withoutOwnPad([real, twin, stick], on).map((c) => [c.key, c.selectedByDefault])).toEqual(
+      [
+        ['a', false],
+        ['d', false],
+        ['c', true],
+      ]
+    );
+    // A DualShock 4 is told by its own ids, so an Xbox controller stays.
+    expect(withoutOwnPad([real, stick], { plugged: true, kind: 'ds4' })).toEqual([real, stick]);
+    // None plugged in by RigReady: nothing is removed, and one that says virtual is not ticked.
+    expect(
+      withoutOwnPad([real, virtual], { plugged: false }).map((c) => c.selectedByDefault)
+    ).toEqual([true, false]);
+    expect(withoutOwnPad([real], undefined)).toEqual([real]);
+  });
+
+  it('a game that reads a gamepad is offered "Start a virtual controller" with the profiles by name, and the setup starts it before launch', async () => {
+    app = await wiredApp('virtual-controller-ready', { files: ['Program Files (x86)/Steam/**'] });
+    const captured = await capture();
+    expect(captured.steps).toEqual([
+      {
+        need: 'gamepad',
+        type: 'virtual-controller.start',
+        label: 'Start a virtual controller',
+        picker: expect.objectContaining({
+          param: 'profile',
+          label: 'Virtual controller',
+          fills: ['profileName'],
+          choices: [
+            expect.objectContaining({
+              value: 'my-ace-combat-stick',
+              label: 'My Ace Combat stick',
+              fill: { profileName: 'My Ace Combat stick' },
+            }),
+          ],
+        }),
+      },
+    ]);
+    // Only for the game that needs it.
+    expect(stepsFor(captured.steps, choiceFor(captured, 'ace-combat-8'))).toHaveLength(1);
+    expect(stepsFor(captured.steps, choiceFor(captured, 'dcs'))).toEqual([]);
+
+    const input = clickThrough(captured, 'ace-combat-8');
+    expect(input.actions?.preLaunch).toEqual([
+      {
+        id: 'a1',
+        title: 'Start a virtual controller',
+        type: 'virtual-controller.start',
+        params: { profile: 'my-ace-combat-stick', profileName: 'My Ace Combat stick' },
+        continueOnError: false,
+        delaySeconds: 0,
+      },
+    ]);
+    const created = await app.invoke<Profile>('profiles:create', { ...input, name: 'Ace nights' });
+    expect(created.actions?.preLaunch).toEqual([
+      expect.objectContaining({
+        type: 'virtual-controller.start',
+        params: { profile: 'my-ace-combat-stick', profileName: 'My Ace Combat stick' },
+      }),
+    ]);
+    expect((await savedYaml('ace-nights')).actions?.preLaunch).toHaveLength(1);
+    // The flight gear the game is fed from is kept; the head tracker and the helpers are not.
+    const titles = created.checks.map((c) => c.title);
+    expect(titles).toContain('T-Pendular-Rudder');
+    expect(titles.some((t) => /TrackIR|SimAppPro|Stream Deck/.test(t))).toBe(false);
+    expect(
+      created.checks.some(
+        (c) => c.type === 'audio.defaultDevice' && c.params['flow'] === 'recording'
+      )
+    ).toBe(false);
+    // And the Play page says so before the click (FLY-029).
+    const view = await app.invoke<{ actions: { title: string; phase: string }[] }>('fly:view', {
+      profileId: created.id,
+    });
+    expect(view.actions).toContainEqual(
+      expect.objectContaining({ title: 'Start a virtual controller', phase: 'preLaunch' })
+    );
   });
 });

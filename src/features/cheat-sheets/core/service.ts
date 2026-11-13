@@ -23,6 +23,7 @@ import {
   type KneeboardOptions,
   type KneeboardStatus,
 } from './kneeboard';
+import { kneeboardKeys, type KneeboardKeys } from './kneeboardKeys';
 import {
   LAYOUT_EXTENSION,
   LAYOUT_FORMAT,
@@ -495,6 +496,30 @@ export class CheatSheets {
       if (blocked) return err(`${game}.running`, blocked);
     }
     return this.kneeboard.remove(aircraftId);
+  }
+
+  /**
+   * Whether the kneeboard can be opened and its pages turned for an aircraft, and from
+   * where: pages nobody can turn in the cockpit are of little use. `route` is the game's
+   * bindings page on its kneeboard actions, where the user binds what is missing.
+   */
+  async kneeboardKeys(
+    game: string,
+    aircraftId: string
+  ): Promise<Result<KneeboardKeys & { route: string }>> {
+    if (!(game in KNEEBOARD_GAMES)) {
+      return err('kneeboard.game', 'Kneeboard pages are a DCS feature.');
+    }
+    const reader = this.ctx.bindings.get(game);
+    if (!reader) return err('sheet.game', `RigReady cannot read the bindings of ${game}.`);
+    const bindings = await reader.bindings(aircraftId);
+    if (!bindings.ok) return bindings;
+    // Every action the aircraft has, so a key bound to nothing is still named.
+    const actions = reader.actions ? await reader.actions(aircraftId) : undefined;
+    return ok({
+      ...kneeboardKeys(bindings.value.devices, actions?.ok ? actions.value : undefined),
+      route: reader.route({ aircraftId, find: 'kneeboard' }),
+    });
   }
 
   /** What exporting would change in the kneeboard folder: nothing is written. */

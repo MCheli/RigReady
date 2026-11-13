@@ -88,7 +88,7 @@ When RigReady quits, or stops in any other way, the virtual controller goes with
 
 ## In a setup
 
-Add the step **Start a virtual controller** to a setup's [steps before launch](../setups/launch.md), with your profile and, if you want, **Hide controllers**. The step knows a profile by its id, which is on the profile's row and at the top of its editor (such as `my-hotas`); two profiles of one name are told apart by it. Make ready and launch then starts it before the game, so the game finds it when it starts. [Stand down](../play/stand-down.md) stops a virtual controller that a setup started and shows hidden controllers again. A step **Stop the virtual controller** exists for a setup's Stand down steps too.
+Add the step **Start a virtual controller** to a setup's [steps before launch](../setups/launch.md) and choose your virtual controller from the list, by name. If you want, turn on **Hide controllers**. Two virtual controllers of the same name are told apart in the list: each line says what the controller is made of, and its id (shown on its row on the Virtual controller page and at the top of its editor, such as `my-hotas`). A new setup for a game that reads a gamepad offers the step by itself; see [Creating a setup from the rig](../setups/capture.md#before-launch). Make ready and launch then starts it before the game, so the game finds it when it starts. [Stand down](../play/stand-down.md) stops a virtual controller that a setup started and shows hidden controllers again. A step **Stop the virtual controller** exists for a setup's Stand down steps too.
 
 The check **Virtual controller driver installed** fails on a PC without the driver, with the steps to install it.
 
