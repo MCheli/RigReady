@@ -2,23 +2,81 @@
 
 ## 2.0.0-beta.5 (2026-11-13)
 
-The fourth signed test build, for the second look on the rig. New since beta 4: what the guided sitting of 12 November found, fixed; one Games entry and Bindings with a game picker; iRacing bindings for all cars and per car, read only (changing them is built and switched off); the overlay; Add a game; "Always offer this app"; bringing a RigReady 1 setup over; "What is this device?"; a Save bar on every editor; Stand down when the game closes; closing helper programs together; a cheat sheet from a photo of your own controller; your own binding guide without an AI key; the Thrustmaster Warthog throttle and TWCS drawings; a wording pass for people who only race; and fixes from a review of the night's work. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). A draft for testing on the rig; it is not published.
+The fourth signed test build, for the second look on the rig.
+
+New since beta 4:
+
+- What the guided sitting of 12 November found, fixed.
+- One Games entry, and Bindings with a game picker.
+- iRacing bindings for all cars and per car, read only. Changing them is built and switched off.
+- The overlay.
+- Add a game.
+- "Always offer this app".
+- Bringing a RigReady 1 setup over.
+- "What is this device?"
+- A Save bar on every editor.
+- Stand down when the game closes.
+- Closing helper programs together.
+- A cheat sheet from a photo of your own controller.
+- Your own binding guide without an AI key.
+- The Thrustmaster Warthog throttle and TWCS drawings.
+- A wording pass for people who only race.
+- Fixes from a review of the night's work.
+
+What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). A test build: 2.0.0 follows once the second look on the rig has passed.
 
 ## 2.0.0-beta.4 (2026-11-11)
 
-The third signed test build. Fixed since beta 3, all found by running the test plan against it: on the DCS screen map a monitor's name no longer sits on top of a viewport's; the question RigReady asks before an assistant changes something names a setup by its name, and says in a sentence what a directly called channel does, with the call itself under it; the count of calls beside a paired assistant no longer falls behind the list (on Windows a settings file could not be replaced while the page was reading it; such a write now waits a moment and tries again); iRacing keyboard bindings show the name of the key for the number pad, punctuation, F13 to F16 and the media keys; in the trainer the control asked for stands out from switches that are simply left on; the Play screen's drawing of the monitors names every monitor, small ones by a letter and a key. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
+The third signed test build.
+
+Fixed since beta 3, all found by running the test plan against it:
+
+- On the DCS screen map, a monitor's name no longer sits on top of a viewport's.
+- The question RigReady asks before an assistant changes something names a setup by its name. It says in a sentence what a directly called channel does, with the call itself under it.
+- The count of calls beside a paired assistant no longer falls behind the list. On Windows a settings file could not be replaced while the page was reading it; such a write now waits a moment and tries again.
+- iRacing keyboard bindings show the name of the key for the number pad, punctuation, F13 to F16 and the media keys.
+- In the trainer, the control asked for stands out from switches that are simply left on.
+- The Play screen's drawing of the monitors names every monitor, small ones by a letter and a key.
+
+What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
 
 ## 2.0.0-beta.3 (2026-11-11)
 
-The second signed test build. New since beta 2: twenty binding guides; MFD screen setup for every installed aircraft that exports displays; named controls and drawings for the Thrustmaster Warthog, T.16000M and Saitek X52 Pro; 13 more games (MSFS 2020, X-Plane 12 and 11, IL-2, Falcon BMS, ACC, rFactor 2, AMS2, EA WRC, F1 24 and 25, DiRT Rally 2.0, RaceRoom, ACE COMBAT 8); a Wheel page for every major wheelbase brand; an Assetto Corsa controller repair; about 60 more devices recognised; the built-in assistant on every screen with OpenAI, Gemini, OpenRouter, Mistral and local models as well as Anthropic; one-button connection for AI assistants over MCP; a virtual controller for gamepad-only games and emulators; links from every screen to its manual page. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
+The second signed test build.
+
+New since beta 2:
+
+- Twenty binding guides.
+- MFD screen setup for every installed aircraft that exports displays.
+- Named controls and drawings for the Thrustmaster Warthog, T.16000M and Saitek X52 Pro.
+- 13 more games: MSFS 2020, X-Plane 12 and 11, IL-2, Falcon BMS, ACC, rFactor 2, AMS2, EA WRC, F1 24 and 25, DiRT Rally 2.0, RaceRoom, ACE COMBAT 8.
+- A Wheel page for every major wheelbase brand.
+- An Assetto Corsa controller repair.
+- About 60 more devices recognised.
+- The built-in assistant on every screen, with OpenAI, Gemini, OpenRouter, Mistral and local models as well as Anthropic.
+- One-button connection for AI assistants over MCP.
+- A virtual controller for gamepad-only games and emulators.
+- Links from every screen to its manual page.
+
+What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
 
 ## 2.0.0-beta.2 (2026-11-11)
 
-The first signed test build of 2.0.0. The installer, RigReady.exe and the uninstaller carry a code signature with the publisher "Mark Cheli", issued through Microsoft's Artifact Signing service; installed copies check that signature before they install an update. Also new since beta 1: an answer to an assistant's question that stops further questions about changes, and the Safety page naming the assistant beside a change it made. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
+The first signed test build of 2.0.0.
+
+New since beta 1:
+
+- The installer, RigReady.exe and the uninstaller carry a code signature with the publisher "Mark Cheli", issued through Microsoft's Artifact Signing service. Installed copies check that signature before they install an update.
+- An answer to an assistant's question that stops further questions about changes.
+- The Safety page names the assistant beside a change it made.
+
+What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). It is offered only to people who chose the beta channel in Settings > Updates.
 
 ## 2.0.0-beta.1 (2026-11-07)
 
-A test build of 2.0.0, for checking the installer and the app on a real rig before the release. What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). This build is not code signed; 2.0.0 will be. It is offered only to people who chose the beta channel in Settings > Updates.
+A test build of 2.0.0, for checking the installer and the app on a real rig before the release.
+
+What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). This build is not code signed; 2.0.0 will be. It is offered only to people who chose the beta channel in Settings > Updates.
 
 ## 2.0.0 (not released)
 

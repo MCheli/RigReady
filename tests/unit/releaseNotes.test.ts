@@ -60,6 +60,40 @@ describe('release notes from the changelog', () => {
     expect(run('2.0.0', out).status).toBe(0);
   });
 
+  it('keeps a section as written, its blank lines and bullets included, whatever the line ends', async () => {
+    const lines = [
+      '# Changelog',
+      '',
+      '## 2.0.0-beta.2 (2026-11-11)',
+      '',
+      'The first signed test build of 2.0.0.',
+      '',
+      'New since beta 1:',
+      '',
+      '- A code signature on the installer.',
+      '- The Safety page names the assistant beside a change it made.',
+      '',
+      'What it contains is the [2.0.0 section of the changelog](https://example.invalid/CHANGELOG.md).',
+      '',
+      '## 2.0.0-beta.1 (2026-11-07)',
+      '',
+      'A test build of 2.0.0.',
+      '',
+    ];
+    const out = path.join(dir, 'release-notes.md');
+    for (const eol of ['\n', '\r\n']) {
+      await fs.writeFile(path.join(dir, 'CHANGELOG.md'), lines.join(eol));
+      const result = run('v2.0.0-beta.2', out);
+      expect(result.status, result.stderr).toBe(0);
+      expect(await fs.readFile(out, 'utf8')).toBe(
+        'The first signed test build of 2.0.0.\n\nNew since beta 1:\n\n' +
+          '- A code signature on the installer.\n' +
+          '- The Safety page names the assistant beside a change it made.\n\n' +
+          'What it contains is the [2.0.0 section of the changelog](https://example.invalid/CHANGELOG.md).\n'
+      );
+    }
+  });
+
   it('refuses a version whose heading still says "(not released)", and one the changelog does not have', () => {
     const out = path.join(dir, 'release-notes.md');
     const undated = run('2.1.0', out);
