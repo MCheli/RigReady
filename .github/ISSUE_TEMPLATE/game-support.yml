@@ -1,0 +1,79 @@
+name: Support for my game
+description: Ask for RigReady to find, launch or back up a game, or to read or change its bindings, or say you will add it yourself.
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Any game already works in RigReady through **Add a game** on the Games page: it is found, launched, offered in new setups and backed up, with the program and folders you choose. This form is for more than that: RigReady finding the game by itself, or reading, drawing and changing its bindings.
+
+        You can add it yourself, with or without coding experience: clone the repository, open Claude Code in it and name the game. [Add your game](https://github.com/MCheli/RigReady/blob/main/docs/contributing/add-game.md) walks through it, one stage at a time.
+
+        Please do not attach the game's bindings or settings files: they can name your controllers' IDs and your account. Where a contributor needs one, they work on a copy with those replaced.
+  - type: input
+    id: game
+    attributes:
+      label: Game and version
+      placeholder: War Thunder, version as the game shows it
+    validations:
+      required: true
+  - type: dropdown
+    id: store
+    attributes:
+      label: Where you got it
+      options:
+        - Steam
+        - The publisher's own launcher or website
+        - Microsoft Store or Xbox app
+        - Somewhere else
+    validations:
+      required: true
+  - type: input
+    id: steam-id
+    attributes:
+      label: Steam app id, for a Steam game
+      description: The number in the address of the game's Steam store page.
+      placeholder: the number in store.steampowered.com/app/<number>/
+  - type: checkboxes
+    id: wanted
+    attributes:
+      label: What you would like RigReady to do with it
+      options:
+        - label: Find it, launch it and know when it is running
+        - label: Back up its settings and controls
+        - label: Show its bindings, with cheat sheets, the trainer and the overlay
+        - label: Change its bindings
+        - label: Something else (below)
+  - type: textarea
+    id: files
+    attributes:
+      label: Where it keeps its settings and bindings
+      description: The folders and file names, with your user name replaced by <you>, and whether a bindings file is plain text you can read in Notepad.
+      placeholder: C:\Users\<you>\Documents\<game>\...
+  - type: textarea
+    id: sources
+    attributes:
+      label: Where this is documented
+      description: Links to the game's own help pages, PCGamingWiki, or a guide about its controller files.
+  - type: dropdown
+    id: added
+    attributes:
+      label: Have you tried "Add a game" on the Games page?
+      options:
+        - Not yet
+        - Yes, and it is not enough because (below)
+        - I do not have RigReady installed
+  - type: dropdown
+    id: help
+    attributes:
+      label: Can you help?
+      options:
+        - I would like to add it myself
+        - I can try a build and check bindings in the game on my rig
+        - I can only report it
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else

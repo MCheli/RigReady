@@ -117,9 +117,13 @@ Care went into how the work was checked. Every feature is a written requirement 
 
 ## Reporting a problem
 
-Open an issue with one of the [two forms](https://github.com/MCheli/RigReady/issues/new/choose): one for something that went wrong, and one for a report of how RigReady does on your hardware, working or not. Paste the diagnostics report (Configure > Diagnostics > Copy diagnostics), which has personal details removed. RigReady has been used on one rig, so reports from other hardware help most.
+Open an issue with one of the [forms](https://github.com/MCheli/RigReady/issues/new/choose): one for something that went wrong, one for a report of how RigReady does on your hardware, working or not, and one each to ask for support for your hardware or your game. Paste the diagnostics report (Configure > Diagnostics > Copy diagnostics), which has personal details removed. RigReady has been used on one rig, so reports from other hardware help most.
 
 A security problem is reported privately, through the Security tab of this repository. [`SECURITY.md`](SECURITY.md) says how.
+
+## Contributing
+
+Clone the repository, open [Claude Code](https://claude.com/claude-code) in it, and describe your hardware or game: "Add support for my Thrustmaster TCA Quadrant", or "I play Automobilista 2, can RigReady read its bindings?". The skills in `.claude/skills/` walk you through it one step at a time, from the research to a proof on your own rig and the pull request. [Add your hardware or game](docs/contributing/README.md) is the same for a person, and [Build and run your own copy](docs/contributing/local-build.md) shows how to use a change on your own PC without sending it in. [`CONTRIBUTING.md`](CONTRIBUTING.md) has the rules.
 
 ## Run from source
 
@@ -166,6 +170,7 @@ Everything RigReady keeps is in `%USERPROFILE%\.rigready` (`~/.rigready`): setup
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Layers, ports, test harness, safety rules. |
 | [`docs/CONTRIBUTING-FEATURES.md`](docs/CONTRIBUTING-FEATURES.md) | How to add a feature, everything the shared foundation provides, and the audits a feature must pass. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute, including contributions written with AI tools. |
+| [`docs/contributing/`](docs/contributing/README.md) | Adding your hardware or game, with Claude Code or by hand, and building your own copy. |
 | [How this was built](https://rigready.io/how-it-was-built/) | An AI disclosure: written with AI coding agents, how the work was checked, what it was tested on, and what is not verified yet. Source: `site/pages/built.html`. |
 | [`docs/RELEASING.md`](docs/RELEASING.md) | How a version is released, the checklist before it is, and the runbook for a security fix. |
 | [`SECURITY.md`](SECURITY.md) | Reporting a vulnerability, supported versions, what the app touches, how a fix reaches users. |
