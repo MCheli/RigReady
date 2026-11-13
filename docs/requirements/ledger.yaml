@@ -533,6 +533,45 @@ requirements:
       - "artifacts/screens/fly-live-plug/01-unplugged.png"
       - "artifacts/screens/fly-live-plug/02-plugged-back.png"
 
+  - id: FLY-029
+    title: The Play page says what Launch will do before the click
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "When the setup runs steps around the game, the Play page says so under its buttons before anything is clicked: \"Before launch: \" and \"After launch: \" with the names of the steps in the order they run. Past three, the rest are counted (\"and 2 more\")."
+      - "Steps that run at Stand down are not in these lines, and a setup with no step around the game shows no such line."
+    status: done
+    evidence:
+      - 'src/features/fly/core/launchText.test.ts#names the steps before launch in the order they run'
+      - 'src/features/fly/core/launchText.test.ts#names three and counts the rest'
+      - 'src/features/fly/core/launchText.test.ts#says nothing for a phase without a step, and never counts a step of Stand down'
+      - 'src/features/fly/core/launchText.test.ts#gives a line for each side of the game that has a step'
+      - 'tests/e2e/launch-moment.e2e.ts#play: the steps Launch runs before and after the game are on the page before the click'
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch'
+      - 'artifacts/screens/launch-plan/01-before-the-click.png'
+      - 'artifacts/screens/setup-from-game-gamepad/03-play-says-what-launch-does.png'
+    notes: "From the sitting of 2026-11-12: nothing on the page said a virtual controller would start before the game."
+
+  - id: FLY-030
+    title: From the click on Launch, the user is told the game is starting, by the game's own name
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "From the moment the game is started until the launch has answered, the Play page says \"Starting \" and the game's own name (\"Starting DCS World\"), never the name of one fixed game. A game of the user's own goes by the name they gave it, and a setup that names no game by its own name."
+      - "When the window hides itself after the launch, Windows shows a notification with the same line and why nothing shows yet; for a game handed to Steam it says Steam is opening it."
+      - "With \"hide after launch\" off the window stays, the page says it, and Windows is not asked to say anything."
+    status: done
+    evidence:
+      - 'src/features/fly/core/launchText.test.ts#names the game it was given, and says why nothing shows yet'
+      - 'src/features/fly/core/fly.test.ts#FLY-030: says the game is starting by its own name, on the screen at once and for Windows when the window hides'
+      - "tests/e2e/launch-moment.e2e.ts#play: from the click on Launch the page says \"Starting\" with the game's name, and Windows says it as the window goes away"
+      - 'tests/e2e/launch-moment.e2e.ts#play: with "hide after launch" off the window stays and Windows is not asked to say anything'
+      - 'tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to'
+      - 'artifacts/screens/launch-starting/01-starting.png'
+    notes: "From the sitting of 2026-11-12: the window went away at once and the game took most of a minute to show, which read as a launch that had failed. RigReady still hides when the launch answers, not when the game's own window is there: no port can see another program's window. The notification itself is proven as what the app hands to Windows; how Windows draws it is not pictured."
+
   # ---------------------------------------------------------------------------
   # FLY MODE — the final pass (docs/PRODUCT.md, "The final pass")
   # ---------------------------------------------------------------------------
@@ -1476,6 +1515,134 @@ requirements:
       - 'artifacts/screens/welcome-after-version-one/02-listed-apart.png'
     notes: "Found on 2026-10-04 by starting this version on a copy of the owner's real data folder: one setup of version 1.1.0 made the first start open on 'No setup can be opened'. Checked again on that copy afterwards: the welcome, no warning, no old file changed."
 
+  - id: CFG-PROFILE-017
+    title: A new setup starts from the game, not from everything on the rig
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "On New setup from this rig, only what the chosen game is played with comes ticked: the wheel and pedals for a racing game; sticks, throttles, pedals and the head tracker for a flight sim. Everything else found on the rig stays on the page, listed and not ticked. Choosing another game on the page changes the ticks."
+      - "A helper program is not ticked merely because it is running: the program of gear the game does not read (TrackIR software for iRacing) is listed and not ticked."
+      - "What a game is played with comes from its game module (an optional playedWith: the kinds of gear, helpers, a microphone, a gamepad), else from what a game of its kind uses. The page holds no list of games or devices. Gear whose kind cannot be told from its name stays ticked."
+      - "The wheel rotation the wheel's driver last recorded is listed and not ticked: it is a recorded value, not a reading of the wheel, and it changes from car to car."
+      - "A game is listed under the name people write, not the store's capitals: \"Ace Combat 8: Wings of Theve\"."
+      - "The saved setup holds a check only for what was ticked."
+    status: done
+    evidence:
+      - 'src/core/gearKind.test.ts#a flight sim reads sticks and a head tracker and no wheel; a racing sim the other way round'
+      - 'src/core/gearKind.test.ts#what the game module says wins, and what it leaves out is what a game of its kind uses'
+      - 'src/features/profiles/core/captureDefaults.test.ts#a racing game keeps the wheel and pedals; flight gear is offered and not ticked'
+      - 'src/features/profiles/core/captureDefaults.test.ts#a helper is not kept merely because it is running: TrackIR software for a racing game'
+      - 'src/features/profiles/core/captureDefaults.test.ts#gear nobody can tell from its name is kept; what the rig did not propose never is'
+      - 'src/features/profiles/core/capture.test.ts#a helper that happens to be running is offered, not ticked, for a game that does not use it: TrackIR software and iRacing'
+      - 'src/features/profiles/core/capture.test.ts#on a rig with both, a racing game keeps the wheel and no flight gear, and a flight sim the other way round'
+      - 'src/features/profiles/core/capture.test.ts#the wheel rotation the driver last recorded is offered and not ticked'
+      - 'src/features/profiles/core/capture.test.ts#every game says what it is played with; Ace Combat 8 says a gamepad, its own gear and no helpers'
+      - 'src/features/games/ace-combat-8/module.test.ts#is named the way people write it, and says what it is played with'
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a racing game keeps the wheel; flight gear and a head tracker program that happens to run are listed, not ticked'
+      - 'artifacts/screens/setup-from-game-racing/01-flight-sim.png'
+      - 'artifacts/screens/setup-from-game-racing/02-racing-game-devices.png'
+      - 'artifacts/screens/setup-from-game-racing/03-racing-game-helpers.png'
+      - 'artifacts/screens/setup-from-game-racing/04-wheel-rotation-offered.png'
+    notes: "From the sitting of 2026-11-12: a new iRacing setup came with the flight gear and the head tracker's program ticked, because both were plugged in or running."
+
+  - id: CFG-PROFILE-018
+    title: RigReady's own virtual controller is not part of the rig, and a gamepad game is offered the step that starts one
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "While RigReady's own virtual controller is on, New setup from this rig does not list it among the rig's devices. A virtual controller another program made is listed and not ticked."
+      - "For a game whose module says it reads a gamepad, the page offers a step under Before launch, \"Start a virtual controller\", with the user's virtual controllers to choose from by name and a line that says what the chosen one is. For any other game the step is not offered."
+      - "The step starts with the controller in use now, else the only one there is; with several and none in use, nothing is chosen. Without a choice the step is not kept, and the page says \"Choose one to keep this step.\""
+      - "The saved setup holds the step before launch with the controller's id and name, and when the step fails the launch stops and asks."
+    status: done
+    evidence:
+      - "src/features/profiles/core/capture.test.ts#RigReady's own virtual controller is never offered as a connected device"
+      - 'src/features/profiles/core/capture.test.ts#tells its own controller from real ones that share its ids'
+      - 'src/features/profiles/core/capture.test.ts#a game that reads a gamepad is offered "Start a virtual controller" with the profiles by name, and the setup starts it before launch'
+      - 'src/features/profiles/core/captureDefaults.test.ts#is offered only for a game that reads a gamepad'
+      - 'src/features/profiles/core/captureDefaults.test.ts#starts with the one in use now, else the only one, and never guesses between two'
+      - 'src/features/profiles/core/captureDefaults.test.ts#goes into the setup as a step before launch that carries the name with the id, and stops the launch when it fails'
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch'
+      - "tests/e2e/setup-from-game.e2e.ts#new setup: RigReady's own virtual controller is not listed among the rig's devices"
+      - 'artifacts/screens/setup-from-game-gamepad/01-gamepad-game.png'
+      - 'artifacts/screens/setup-from-game-gamepad/02-step-without-a-choice.png'
+      - 'artifacts/screens/setup-own-virtual-controller/01-another-programs-controller.png'
+      - 'artifacts/screens/setup-own-virtual-controller/02-own-controller-not-listed.png'
+
+  - id: CFG-PROFILE-019
+    title: In the setup editor a saved layout or a virtual controller is chosen by name, never typed as an id
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "The check \"Monitor layout\" and the fix \"Apply the monitor layout\" ask for the layout from a list of the saved layouts by name, each with what it is (\"5 monitors, 4 on\"). Choosing fills in the id, the name and the monitors; no field asks for any of them."
+      - "A fix that picks from the same list as its check follows the check: the editor asks once and says \"Uses the layout chosen above.\" Adding the check brings its fix along. A fix that was given something else by hand shows its own list."
+      - "\"Start a virtual controller\" asks for the controller from a list by name. Two controllers of one name are told apart, in the open list and under the closed one, by a line with the kind, the id and what feeds it. The one in use now is marked."
+      - "A check not named yet takes the name of what was chosen (\"Monitor layout: Flying\") and goes with a second choice; a name the person typed is never replaced."
+      - "An empty list says where to make one. What a setup uses stays in the list when it is gone, and says so. A save without a choice is refused with a line that names the list: \"Layout: choose one from the list.\""
+    status: done
+    evidence:
+      - 'src/features/profiles/core/paramPickers.test.ts#carries the choices as they are now, with what choosing fills in'
+      - 'src/features/profiles/core/paramPickers.test.ts#a list that cannot be read says why and offers nothing, and the editor still opens'
+      - 'src/features/profiles/core/profiles.test.ts#a monitor layout is chosen by name, and the fix for the check picks from the same list'
+      - 'src/features/profiles/core/profiles.test.ts#two virtual controllers of one name are told apart, and the one in use is marked'
+      - 'src/features/profiles/core/profiles.test.ts#with one name in the list, nothing is added to tell it apart'
+      - 'src/features/profiles/core/profiles.test.ts#a list with nothing in it says what to do, and one that cannot be read says so'
+      - 'src/features/profiles/core/profiles.test.ts#a save without a choice names the list to choose from, not the field behind it'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#tells two of the same name apart with the list closed, by the line under it'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#choosing fills in everything, and a second choice leaves nothing of the first'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#keeps what the setup uses in the list when it is gone, says so, and never changes it'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#a fix that follows its check asks for none of the followed fields'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#is following only while it says exactly what the check says'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#a check not named yet takes the name of what was chosen'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#goes with a second choice, so the name never says one thing and the check another'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#never replaces a name the person typed'
+      - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: a monitor layout is chosen by name, and the fix that applies it goes with the check'
+      - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: a virtual controller is chosen by name, two of one name are told apart, and a step without a choice is not saved'
+      - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: with no saved layout the list says where to make one'
+      - 'artifacts/screens/editor-lists-layout/01-layouts-by-name.png'
+      - 'artifacts/screens/editor-lists-layout/02-layout-chosen.png'
+      - 'artifacts/screens/editor-lists-virtual-controller/01-two-of-one-name.png'
+      - 'artifacts/screens/editor-lists-virtual-controller/02-step-needs-a-choice.png'
+      - 'artifacts/screens/editor-lists-empty/01-no-saved-layout.png'
+    notes: "From the sitting of 2026-11-12: the layout check asked for a layout id and the monitors as data, and the step for a virtual controller asked for a profile id."
+
+  - id: CFG-PROFILE-020
+    title: What RigReady can list is chosen by name in every check, fix and step, and no form asks for data as JSON
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "An audio device, a DCS aircraft, saved wheel bindings, a Stream Deck and a game are chosen by name from a list in every check, fix and step that names one."
+      - "No registered check, fix or step shows a field for JSON. A closed set of answers is a set of tick boxes with words, a size is a width and a height, and the DCS install folder has Browse."
+    status: done
+    evidence:
+      - 'src/features/profiles/core/profiles.test.ts#CFG-PROFILE-020: nothing the editor shows for a registered type asks for raw data'
+      - 'src/features/profiles/core/profiles.test.ts#CFG-PROFILE-020: an audio device, an aircraft, saved bindings and a Stream Deck are chosen by name'
+      - 'src/features/profiles/core/profiles.test.ts#a type that asks which game offers the games by name, and every list arrives filled'
+      - 'src/features/profiles/core/paramPickers.test.ts#the games RigReady knows are chosen by name, in order'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#asks for the list by name and never for what the list fills in'
+    notes: "Proven on the form the editor builds from each type, not by a picture of each one. Still typed by hand, because nothing lists them yet: the ids of a wheel base, the name of a program or a Windows service, the name of a DCS monitor setup, and the game version last verified. A connected device is still stored by its ids, which Pick a connected device fills in."
+
+  - id: CFG-PROFILE-021
+    title: A setup Steam starts shows as "Through Steam" in the editor
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "A setup whose launch is steam.exe with -applaunch and a number (how New setup from this rig saves a Steam game) opens in the editor on \"Through Steam\" with the game's number, not on a program and its arguments."
+      - "Another number is saved the way the setup already launches (steam.exe -applaunch and the number). Any other program with arguments stays \"A program\"."
+    status: done
+    evidence:
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#knows steam.exe with a game number as a Steam launch, however the path is written'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#leaves anything else a program: other arguments, no number, another program'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#says which of the three choices a setup is, and the number to show'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#saves a setup that hands over through steam.exe the same way, with the new number'
+      - "tests/e2e/setup-editor-lists.e2e.ts#setup editor: a setup Steam starts shows as \"Through Steam\" with the game's number, not as a program and arguments"
+      - 'artifacts/screens/editor-through-steam/01-through-steam.png'
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------
@@ -2040,10 +2207,12 @@ requirements:
     priority: p2
     done_means:
       - "Cheat sheets > Learn opens a trainer for the aircraft or car: it names an action in plain language (the name the sheet shows, with the game's own name beside a plainer wording) and the user presses the control for it on the real device. Cards are the actions a button or hat of a connected controller does by itself; with bindings of the user's own, only those. A racing game is asked the same way, and a game with one set of bindings for every car is called by its name."
-      - "A press is judged at once: right, with the control lit on the picture of the device; or wrong, with what was pressed and what that does, and the right control lit. The picture has nothing written on it while the question is open. 'Show me' gives the answer away and counts as a miss. Letting go of the right control brings the next card."
+      - "A press is judged once the control has been held for a moment or tapped: right, with every place the action is bound lit on the picture of the device; or wrong, with what was pressed and what that does, and the right places lit. The picture has nothing written on it while the question is open. 'Show me' gives the answer away and counts as a miss. Letting go of the right control brings the next card."
       - "A missed card comes back a few cards later in the same round; a round ends with how many were right first time and the list of missed ones with where they are, and 'Practise the missed' asks just those."
       - "Progress is kept per aircraft under the data root (cheat-sheets/trainer.json): per action how often it was right and wrong and how many times running; right first time twice running is learned. A round asks what is known least first. A progress file that cannot be read is said and never overwritten."
       - "It runs on live input: the first state a controller reports is where it rests (a switch that is on is not a press). A round can be limited to one device and can be stopped; a PC without a readable game says what is missing."
+    notes:
+      - "2026-11-12: the second criterion was 'A press is judged at once'. At the owner's sitting a control on its way back from one card was taken for the answer to the next, so a press now has to be held for a moment or tapped (WOW-TOOLS-007). The summary of a finished round also stays on screen when a device is plugged in or taken out; before, it was replaced by the start of a new round."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/trainer.test.ts#asks every action a button or hat of a connected controller does by itself"
@@ -2057,7 +2226,7 @@ requirements:
       - "src/features/cheat-sheets/core/trainerStore.test.ts#asks a racing game too, and calls a game with one set of bindings for every car by its name"
       - "src/features/cheat-sheets/core/trainerStore.test.ts#keeps each answer per aircraft in cheat-sheets/trainer.json and gives it back with the cards"
       - "src/features/cheat-sheets/core/trainerStore.test.ts#does not overwrite a progress file it cannot read, and says so"
-      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: an action is named, the control is pressed on the device, right or wrong is said at once, missed cards come back, and what is learned is kept"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: an action is named, the control is pressed on the device, right or wrong is said once it is held, missed cards come back, and what is learned is kept"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a racing game is asked the same way, on the buttons of the wheel"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a switch that stays held is drawn quietly, so the control asked for stands out"
       - "artifacts/screens/cheat-sheets-trainer-held/01-held-and-shown.png"
@@ -2091,6 +2260,59 @@ requirements:
       - "artifacts/screens/usb-map/01-tree.png"
       - "artifacts/screens/usb-map/02-pedals-selected.png"
       - "artifacts/screens/usb-map/05-empty-hubs.png"
+
+  - id: WOW-TOOLS-007
+    title: The trainer takes only a meant press for an answer
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "A control answers a card once it has been held for about a third of a second, or tapped: let go sooner with nothing else changing on its controller and no axis travelling. A position a lever or a hat only passes is neither, and is said ('let go too soon to count') and not counted. A plain press is not made slow: it is judged within the hold, and the next card is up within a second of it."
+      - "Where a control rests is not a press: what a controller holds when it is first heard, when the round starts and when a card comes up answers only after it has gone off and come on again. The next card comes once the answering control is let go, the verdict has been on screen for a moment and nothing has changed or travelled for a moment, so the way back to rest happens before the next card and not on it. Axes never answer, and one that never comes to rest cannot hold the next card back for ever."
+      - "A wrong answer needs a control that is new to the question. A control that goes back to where it rested, and the control used on the card before the first time it comes on again, are said under the card and not counted as a miss; the right control always counts. The owner's sitting of 12 November 2026 plays back without a wrong answer that was not one."
+      - "An action bound in more than one place is one card: every place is named ('Button 25 or Button 28 on Throttle'), every place is lit on the picture, on both pictures when the places are on two devices, and any of them is right. A round for one device asks only for the places on that device. What was missed is listed with every place."
+      - "In a round for one device, a press on another device is said to be on another device, by name, and is not counted. In a round for all devices the same press is an answer."
+      - "A window that starts to listen while another window listens is told where every control is, marked as rest and not as a press: the trainer opened beside the popped-out quick look does not take a switch that is on for an answer, and the pop-out does not take it for the last press."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#tapped, is the answer a moment after it is let go, and the next card follows"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#held, is the answer after a short hold, and letting go brings the next card"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#is not made slow: a press is judged within the hold, the next card within a second"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#answers with where it stops, not with what it passes, there and back"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#two-way: the position it is put in answers, and putting it back is not an answer"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#three-way, put back late: on the next card it is told and not counted"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#rolled over a corner, answers with the direction it ends on"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#never answer, and their jitter neither spoils a tap nor holds up the next card"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#that never come to rest cannot hold the next card back for ever"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#at the start of the round is where the controls rest, not an answer"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#cannot fail this one: a control used on it is told and not counted, once"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#does not keep the right control from counting, even the one that answered it"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#is answered by either of them"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#says a press on another device is on another device, and does not count it"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#for all devices takes the same press for an answer"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#76.4 s: Button 16 answered \"Cage / uncage\" and came on again on \"Dispense flares\""
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#243.8 s: the left handle travelled back to OFF (Button 2) as \"Zoom in\" came up"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#243.8 s, with a slower hand: the handle reaches OFF after \"Zoom in\" is up"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#239.8 s: the right handle, moved to OFF for one card, was parked there on the next"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#207.5 s: a button brushed while a handle travels is not an answer"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#176.1 s: Button 8 of the startup panel in the round for the throttle"
+      - "src/features/cheat-sheets/core/trainer.test.ts#names every place an action is bound, and the other places once one was pressed"
+      - "src/features/cheat-sheets/core/trainer.test.ts#can be limited to one device, or to the cards missed last time"
+      - "src/features/cheat-sheets/watch.test.ts#tells a window that starts to listen later where the controls rest"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: only a control that is held or tapped answers a card; one on its way back, one from the card before, one passed over and one on another device are said and not counted"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: an action bound in several places is named and lit in every one of them, and any of them is right"
+      - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: opened while the quick look is popped out, it is told where the controls rest, and no window takes that for a press"
+      - "artifacts/screens/cheat-sheets-trainer-rule/01-right-and-held.png"
+      - "artifacts/screens/cheat-sheets-trainer-rule/02-back-to-where-it-was.png"
+      - "artifacts/screens/cheat-sheets-trainer-rule/03-from-the-card-before.png"
+      - "artifacts/screens/cheat-sheets-trainer-rule/04-passed-over.png"
+      - "artifacts/screens/cheat-sheets-trainer-rule/05-on-another-device.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/01-both-places-after-a-miss.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/02-the-other-place-is-right.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/03-missed-with-every-place.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/04-lit-on-both-devices.png"
+      - "artifacts/screens/cheat-sheets-trainer-places/05-lit-on-the-other-device.png"
+      - "artifacts/screens/cheat-sheets-trainer-windows/02-trainer-beside-the-pop-out.png"
 
   # ---------------------------------------------------------------------------
   # DCS WORLD — detection and files
@@ -2304,6 +2526,136 @@ requirements:
       - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: a rotated MFD screen also warns about the DCS monitor setup, and both clear after the layout fix"
       - "artifacts/screens/dcs-setup-mfd-rotated/01-both-warn.png"
       - "artifacts/screens/dcs-setup-mfd-rotated/02-both-clear.png"
+
+  - id: DCS-MON-006
+    title: The Screens tab calls every monitor by the name the user gave it
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Wherever the Screens tab shows a monitor (the map, the main view's monitors, the list of each display, the pairing with SimAppPro's plan, the warnings, the crop note and the Description line of RigReady.lua) it uses the name given on the Monitors page; a monitor without one keeps Windows' name."
+      - "The same holds for a screen setup saved before the names were given and for a monitor layout saved with a setup, whatever the monitors are doing now."
+      - "Scenario mark-flight with the three small screens named 'MFD left', 'MFD centre' and 'MFD right' on the Monitors page: the tab shows those names and 'USB_Monitor' nowhere (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 15: the tab said 'USB_Monitor (1 of 3)' for screens the owner had named. The names are read through ctx.names.monitors(), which the displays feature already provides; nothing in src/features/displays changed."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#are used for the layout as it is now, for a setup saved before they were given, and in the file"
+      - "src/features/dcs-setup/core/screens.test.ts#are used for a layout saved with a setup, whatever the monitors are doing now"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: the screens carry the user's names, and SimAppPro's plan follows the names, is shown, corrected and only then written"
+      - "artifacts/screens/dcs-screens-named/01-paired-by-name.png"
+      - "artifacts/screens/dcs-screens-named/02-corrected-by-hand.png"
+
+  - id: DCS-MON-007
+    title: SimAppPro's plan is paired with the monitors by name, shown, and put right before anything is written
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Each screen of SimAppPro's plan is paired with a monitor of the layout: first by the side the user's name for a monitor speaks of ('MFD left' for the screen that carries LEFT_MFCD), then by the plan's exact place and size, then the one monitor of that size that is left. Two monitors named for the same side are not guessed between. Only {APPDATA}/SimAppPro/GameExtendDisplay/MFD/DCS_config.json is read."
+      - "A pairing is certain only when the name and the plan's place agree, or when the place fits and no other monitor of the layout has that size. The tab lists every pairing with its reason. While one is not certain, 'Use in DCS' is off and says why, until the user has changed the list or pressed 'These are right'."
+      - "The user changes a pairing in the list; choosing a monitor another screen of the plan has makes the two change places; the setup, the map and the file preview follow, and nothing is written before 'Use in DCS'."
+      - "The stop is in the service, not only in the page: dcs-setup:applyScreens refuses (dcs.screens.pairing) a setup that uses what the last SimAppPro import put on a monitor it was not sure of, unless the call says the user checked the pairing (pairingChecked). The refusal names the displays and monitors in doubt in plain words, and a caller over IPC or the MCP server gets the same text. What the setup in use already has is not asked about again, so Make ready can still put a deleted RigReady.lua back. Applying part of the setup first, or editing it, does not get around the question. dcs-setup:previewScreens hands back the pairing to show (pairingToCheck), and the page asks with it when it is not already asking, for example after another monitor layout was chosen."
+      - "Correcting a pairing changes only the pairing. What the user did to the setup since the import stays: a crop the user set goes with its display to the newly paired monitor when the two are the same size, a display the user moved or took off stays where they put it, and aircraft, displays and main screens they added are kept. When the newly paired monitor is another size the crop starts from zero and the list says which display to set again."
+      - "Scenario mark-flight, whose plan has the left display where the middle screen is now: with the screens named, RigReady.lua is written with LEFT_MFCD at x = 5128, CENTER_MFCD at 5896 and RIGHT_MFCD at 6664, and the tab says the plan is from before the screens were put in this order. Without names the pairing is by position and the tab says three screens are the same size (E2E, both). A crop top of 240 set on the Left DDI and the AMPCD set to 'Not shown' before a row is changed are still so after it, and the written file has y = 240 (E2E)."
+      - "'Identify screens' on the tab shows, on every monitor that is on, its number, its name and what this setup puts on it, and says how many monitors show it."
+    notes:
+      - "2026-11-12 sitting, finding 16: the import went by position alone and put each display on the wrong screen, because the screens had been put in another order since SimAppPro saved its plan."
+      - "The service remembers its last import only while it runs. After a restart the page imports again when no setup is saved, and a setup that is in use needs no question. A scenario run uses the fake overlay port, so what Identify draws on the real screens is proven by the unit test of the requests it makes, not by a picture."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/pairingGate.test.ts#refuses the plan as it was imported, says why, and writes it once the user said it is right"
+      - "src/features/dcs-setup/core/pairingGate.test.ts#is not got around by editing the setup, or by applying part of it first"
+      - "src/features/dcs-setup/core/pairingGate.test.ts#does not ask when the user chose every screen in doubt by hand"
+      - "src/features/dcs-setup/core/pairingGate.test.ts#refuses an assistant the same way, with the reason in the answer it gets"
+      - "src/features/dcs-setup/core/service.test.ts#puts back a deleted RigReady.lua"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#moves the two swapped displays and takes the crop the user set along"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#leaves alone a display the user moved or took off by hand"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#keeps aircraft, displays and main screens the user added"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#says so when a crop the user set cannot go along to a screen of another size"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#does not ask again about what the setup in use already has"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: the question about the pairing is asked again when another monitor layout is chosen"
+      - "artifacts/screens/dcs-screens-layout/01-asked-again.png"
+      - "artifacts/screens/dcs-screens-layout/02-written-after-answer.png"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#follows the names the user gave the screens when the plan is from another order"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#is certain when the names and the plan agree"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#says so when it has only the position to go by and the screens look alike"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#takes the user's own pairing over its own, and leaves out a screen they chose none for"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#does not guess between two monitors named for the same side"
+      - "src/features/dcs-setup/core/screens.test.ts#goes by the names when the screens were put in another order since the plan was saved"
+      - "src/features/dcs-setup/core/screens.test.ts#says it is not certain when the screens have no names and look alike"
+      - "src/features/dcs-setup/core/screens.test.ts#shows each monitor's number, its name and what the setup puts on it"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: the screens carry the user's names, and SimAppPro's plan follows the names, is shown, corrected and only then written"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: Identify screens works from this tab, and the map shows where DCS will draw the kneeboard"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
+      - "artifacts/screens/dcs-screens-named/01-paired-by-name.png"
+      - "artifacts/screens/dcs-screens-named/02-corrected-by-hand.png"
+      - "artifacts/screens/dcs-screens-named/03-written.png"
+      - "artifacts/screens/dcs-screens-kneeboard/02-identified.png"
+
+  - id: DCS-MON-008
+    title: A crop goes with its display to another monitor of the same size
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Choosing another monitor for a display keeps its crop when the new monitor has the size of the old one. On a monitor of another size the crop starts from zero and a line under the display says so, with both sizes."
+      - "A display set to 'Not shown' and put back on a monitor of the same size has its crop again."
+      - "Scenario mark-flight: the Left DDI with a crop of 8, 240, 8, 6 moved from 'MFD left' to 'MFD centre' keeps it and the file preview shows it; moved to the 5120 x 1440 screen it has none and the tab says 'The crop was not kept' (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 17: choosing another monitor for a display reset its crop to zero. Dragging a display to another screen on the map is as it was."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#keeps the crop when the new monitor is the same size"
+      - "src/features/dcs-setup/core/screens.test.ts#drops the crop, and says so, when the new monitor is another size"
+      - "src/features/dcs-setup/core/screens.test.ts#has nothing to keep, and nothing to say, when there was no crop"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: a crop goes with its display to a screen of the same size, and the tab says so when it cannot"
+      - "artifacts/screens/dcs-screens-crop/01-crop-kept.png"
+      - "artifacts/screens/dcs-screens-crop/02-crop-not-kept.png"
+
+  - id: DCS-MON-009
+    title: The Screens tab shows where DCS will draw the kneeboard
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "The map of the Screens tab draws the place DCS gives the kneeboard for this setup's window, for the aircraft whose displays the tab is showing, marked 'Kneeboard' (DCS's own rule: a bottom corner of the whole window, half its height wide; docs/research/dcs.md 5.1)."
+      - "The corner is the aircraft's, by its unit type, from a table of the aircraft whose own scripts were read (docs/research/dcs.md 5.1): the bottom right for 18 unit types, the bottom left, 32 pixels in, for 9 (A-10A, the MiG-29s, Su-27, J-11A, Su-33, Su-25T, Christen Eagle II)."
+      - "For an aircraft that is not in the table no box is drawn, and the line says 'RigReady does not know where DCS shows the kneeboard in the <aircraft>, so it is not drawn on the map.' A setup with no aircraft has no box either. No place is shown that was not read from the game's scripts."
+      - "A line under the map names the aircraft and the monitor the kneeboard is on, and says whether all of it is on a screen, and how much when not; when not, it says that DCS chooses the place and the monitor setup file cannot move it, and links to the manual section that says what can be done."
+      - "Scenario mark-flight (7424 x 1440 window), F/A-18C: the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen, at its right end. A saved setup with the Su-25T has the box at the left end of the wide screen and the line says bottom left; with an aircraft that is not in the table (AH-64D) there is no box and the line says RigReady does not know (E2E)."
+      - "RigReady writes no KNEEBOARD entry into RigReady.lua, because nothing in an unchanged DCS reads one."
+    notes:
+      - "2026-11-12 sitting, finding 19: the kneeboard opened on the right MFD screen with only its top left corner readable. This entry is the part that could be done from DCS's scripts alone: the user is told before flying. The choice of place is DCS-MON-010."
+      - "From reading the scripts of one install; not checked in the game."
+      - "The aircraft with a kneeboard on the left have no displays to send to a screen, so '+ Aircraft' does not offer them and the tab does not start on them. The left box is seen only in a setup that already has such an aircraft (one saved by an assistant, for example). On a rig like the owner's, a user who flies one of them still gets the F/A-18C's box unless the setup has their aircraft."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#is the bottom right of the whole window: on the rig of the sitting, the right small screen"
+      - "src/features/dcs-setup/core/screens.test.ts#is all on the main screen when the window is that screen alone"
+      - "src/features/dcs-setup/core/screens.test.ts#is never wider than half the window"
+      - "src/features/dcs-setup/core/screens.test.ts#is the bottom left, 32 pixels in, for an aircraft that declares it on the left"
+      - "src/features/dcs-setup/core/screens.test.ts#knows the side only of the aircraft whose scripts were read"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: Identify screens works from this tab, and the map shows where DCS will draw the kneeboard"
+      - "tests/unit/manualLinks.test.ts"
+      - "docs/research/dcs.md"
+      - "artifacts/screens/dcs-screens-kneeboard/01-kneeboard-runs-off-the-right-screen.png"
+      - "artifacts/screens/dcs-screens-kneeboard/03-kneeboard-all-on-the-wide-screen.png"
+      - "artifacts/screens/dcs-screens-kneeboard/04-kneeboard-on-the-left.png"
+      - "artifacts/screens/dcs-screens-kneeboard/05-kneeboard-place-not-known.png"
+
+  - id: DCS-MON-010
+    title: The user chooses where DCS shows the kneeboard
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "On the Screens tab the user chooses where the kneeboard shows; the default has all of it readable on the main screen."
+      - "The choice is written through FileStore with a backup, by a means an unchanged DCS honours and that passes a multiplayer server's file check, and it is confirmed in the game."
+    notes:
+      - "2026-11-12 sitting, finding 19 (the owner: 'just show on the main screen on the left side or something like that, or at least have some control over where it shows'). Not started beyond research: a monitor setup file cannot place the kneeboard, and where DCS keeps a kneeboard moved by hand in the game was not found in its scripts. docs/research/dcs.md 5.1 lists four candidates; each needs DCS running, so each is for a sitting. Changing one of the game's own scripts is a product decision for the owner."
+    status: todo
+    evidence: []
 
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines
@@ -3053,6 +3405,86 @@ requirements:
       - "artifacts/screens/cheat-sheets-check-add/02-on-the-fly-screen.png"
       - "artifacts/screens/cheat-sheets-check-add/03-made-ready.png"
 
+  - id: KNEE-001
+    title: A kneeboard or printed list shows every row it says it has
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The 'Key actions' page and a device's large-print list never drop a row to fit: rows are planned by the lines they wrap to at the page's width (long device names mean fewer rows on a page), and what does not fit goes on to a further page. The header says which rows a page has ('Actions 1 to 12 of 20'), a kind of action that carries over is marked 'continued', and an action bound in many places is counted once."
+      - "Further pages take the number of the first with a letter ('RigReady - 01b - Key actions 2.png', 'RigReady - 02b - Stick list.png', 'RigReady - 02c - Stick list 2.png'), so DCS shows them straight after it. A device name too long for a file name is cut and still ends in ' list'."
+      - "Every list page ends with a short bar, and the export looks for that bar in each rendered picture. A page without it is planned again with fewer rows; when it is still cut off nothing is written and the dialog names the page. Pages exported before this are reported as stale."
+      - "Scenario mark-flight with long device names (cheat-sheets-long-names): the real renderer writes the key actions over two pages and every list page has its bar (E2E, reading the PNG files). The printed 'Most important actions' goes on to a further page the same way."
+      - "Scenario mark-flight (cheat-sheets-hornet), printed on A4: the 71 most important actions take two pages. Measured in the print layout, every column ends inside its page, all 71 are there, and together they are taller than the two columns of one page (E2E). The PDF has one page a device and those two."
+    notes:
+      - "2026-11-12 sitting, finding 11: the exported 'Key actions' page said '24 actions' and showed 7. The page was planned by a row count that did not know how long the device names were, and whatever ran off the page was cut without a word."
+      - "The printed summary had the same fault: on the full rig its one page cut the list off at the bottom edge. The PDF of the full rig therefore has 13 pages where it had 12. The planner is careful with paper (it cannot look at a printed page afterwards as it does at a kneeboard picture), so the first of the two pages is about two thirds full."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/pages.test.ts#gives every action a row, and goes on in the next column and on the next page"
+      - "src/features/cheat-sheets/core/pages.test.ts#plans a row by the lines it wraps to, so long device names mean fewer rows on a page"
+      - "src/features/cheat-sheets/core/pages.test.ts#gives an action bound in many places further rows, and counts it once"
+      - "src/features/cheat-sheets/core/pages.test.ts#shows every key action of the kneeboard summary, each page ending with the bar that is checked"
+      - "src/features/cheat-sheets/core/pages.test.ts#shows every action of a device on its large-print list, without the device name in each row"
+      - "src/features/cheat-sheets/core/pages.test.ts#prints every one of the most important actions, on a further page when one is not enough"
+      - "src/features/cheat-sheets/core/pageCheck.test.ts#is not found when it was cut off, or when something else merely has its colour"
+      - "src/features/cheat-sheets/core/pageCheck.test.ts#wants every mark of the page in the picture"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#puts every key action on a page when the device names are long, over as many pages as that takes"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#checks every rendered list page, plans again with fewer rows when one came out cut off, and writes nothing when it still is"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#says that pages with a list from before the fix need a new export"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: with long device names every key action still gets a place, over as many pages as that takes"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: print layout and PDF, one page per device plus a summary"
+      - "artifacts/screens/cheat-sheets-print/03-summary-first-page.png"
+      - "artifacts/screens/cheat-sheets-print/04-summary-second-page.png"
+      - "artifacts/screens/kneeboard-long-names/01-preview-key-actions.png"
+      - "artifacts/screens/kneeboard-long-names/02-exported.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-key-actions-1.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-key-actions-2.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-stick-list.png"
+
+  - id: KNEE-002
+    title: Kneeboard page numbers stay put between exports
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "A device keeps the page number it had in the last export, also when a change of bindings moves it up or down the cheat sheet. A device exported for the first time gets the number after those that already have a page. The numbers have no gaps."
+      - "Scenario mark-flight (cheat-sheets-hornet): after the pedals lose their bindings, a new export writes the same file names as the first ('RigReady - 04 - Pedals.png' still fourth) and removes nothing (E2E, reading the folder)."
+    notes:
+      - "2026-11-12 sitting, finding 22: a new export would have moved the pedals from page 4 to page 11 and renumbered seven others. The order came from the sheet, which lists devices with bindings first; it now comes from the record of the last export."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#keeps every device on the page it had when the bindings change which device comes first"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: every device keeps its page number when the bindings change which device comes first"
+      - "artifacts/screens/kneeboard-page-numbers/01-first-export.png"
+      - "artifacts/screens/kneeboard-page-numbers/02-bindings-changed.png"
+      - "artifacts/screens/kneeboard-page-numbers/03-same-numbers.png"
+
+  - id: KNEE-003
+    title: The kneeboard dialog says which keys turn the pages and offers to bind them
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The kneeboard dialog shows where 'show or hide the kneeboard', 'next page' and 'previous page' are bound for the aircraft, controllers first, read from the bindings in effect (the game's defaults included). The glance view, the mark point and the shortcut actions are not taken for them."
+      - "When the two page keys are on no controller it says that the pages turn only from the keyboard, or from nothing when one is unbound, names the game's two actions, and offers 'Bind the page keys'. An aircraft without the actions gets no such note."
+      - "The offer opens the game's bindings page on that aircraft with the kneeboard's actions found. Once both are bound to a controller the note is gone and the dialog shows the buttons."
+      - "Scenario mark-flight (cheat-sheets-hornet): the note shows; from the offer both page keys are bound to stick buttons by pressing them; back in the dialog it reads 'Button 33 on Stick' and 'Button 35 on Stick' and the note is gone (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bindings page itself gives no such hint when show or hide is bound there, which is the bindings feature's to add."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads it from the game's name for the action"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#leaves out the glance view, the mark point and everything that is not the kneeboard"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#says the pages turn only from the keyboard when show or hide is on a button"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#has nothing to say once both page keys are on a controller"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#says nothing turns the pages when a page key is bound to nothing at all"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads DCS's own keys, finds none on a controller, and offers the page to bind them on"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: the dialog says which keys turn the pages, and offers the page to bind them on"
+      - "artifacts/screens/kneeboard-keys/01-pages-turn-only-from-the-keyboard.png"
+      - "artifacts/screens/kneeboard-keys/02-bindings-page-on-the-kneeboard-actions.png"
+      - "artifacts/screens/kneeboard-keys/03-page-keys-on-the-stick.png"
+
   - id: SHEET-014
     title: Every control is drawn once, and kinds are told apart in the night style
     job: configure
@@ -3543,6 +3975,7 @@ requirements:
       - "Reads run; a change or a launch is asked in RigReady's window under the user's policy (always ask, launches only, never); a no, or no answer in 60 seconds, ends the call with mcp.denied or mcp.timeout; an off channel is refused even through rigready_call."
       - "Calls go through the app's validated channels and safeguards (FileStore backups, the monitor keep-or-revert countdown, DCS must be closed); one change at a time across assistants; a rate limit and size limits per pairing."
       - "Every call is recorded with the pairing's name, how it ended and the Safety page actions it left, and shown on the Settings page; a change or launch also shows a short line on every screen."
+      - "The line that says what a call answered counts one thing in the singular: \"1 setup\", never \"1 setups\"."
     status: done
     evidence:
       - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
@@ -3557,6 +3990,7 @@ requirements:
       - "artifacts/screens/mcp-question-plain/01-question-in-words.png"
       - "artifacts/screens/mcp-question-plain/02-question-launch.png"
       - "artifacts/screens/mcp-question-plain/03-said-no-and-counted.png"
+      - 'src/features/mcp/core/gate.test.ts#counts one thing in the singular: "1 setup", never "1 setups"'
 
   - id: MCP-005
     title: Settings > AI assistants turns the server on and connects assistants

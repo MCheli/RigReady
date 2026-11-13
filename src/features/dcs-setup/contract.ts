@@ -138,15 +138,44 @@ export const ScreensStateSchema = z.object({
 });
 export type ScreensState = z.infer<typeof ScreensStateSchema>;
 
+/** One of SimAppPro's screens and the monitor it was paired with (core/simAppProImport.ts). */
+export const PlanScreenSchema = z.object({
+  planId: z.string(),
+  rect: RectSchema.optional(),
+  main: z.boolean(),
+  shows: z.array(z.string()),
+  aircraft: z.string().optional(),
+  displayId: z.string().optional(),
+  how: z.enum(['chosen', 'name', 'position', 'left', 'none']),
+  certain: z.boolean(),
+  note: z.string(),
+});
+export const PlanPairingSchema = z.object({
+  /** True when no pairing needs the user's eye. */
+  certain: z.boolean(),
+  screens: z.array(PlanScreenSchema),
+});
+export type PlanPairing = z.infer<typeof PlanPairingSchema>;
+
 export const ApplyScreensSchema = z.object({
   setup: ScreenSetupSchema,
   /** Also set options.lua width/height/aspect to the window the setup needs. */
   setResolution: z.boolean().default(true),
   /** The user saw that RigReady.lua was edited outside RigReady and chose to replace it. */
   overwriteEdited: z.boolean().default(false),
+  /**
+   * The user looked at which of SimAppPro's screens is which monitor and said the pairing
+   * is right. Needed only while the last import was not certain of a pairing this setup uses.
+   */
+  pairingChecked: z.boolean().default(false),
 });
 
 export const ScreensPreviewSchema = z.object({
+  /**
+   * Present while applying would be refused for an unchecked pairing: the pairing of the
+   * last import from SimAppPro, for the user to look at.
+   */
+  pairingToCheck: PlanPairingSchema.optional(),
   lua: z.string(),
   window: RectSchema,
   errors: z.array(z.string()),
@@ -239,23 +268,42 @@ export const dcsSetupContract = defineContract('dcs-setup', {
   }),
   /** SimAppPro's MFD plan as a screen setup for one of the monitor layouts. */
   importSimAppPro: channel(
-    z.object({ desktopId: z.string() }),
-    z.object({ setup: ScreenSetupSchema, unmatched: z.array(z.string()), catalog: CatalogSchema }),
+    z.object({
+      desktopId: z.string(),
+      /** The user's own pairing: SimAppPro's screen id to a monitor id of the layout, or null to leave that screen out. */
+      pairs: z.record(z.string(), z.string().nullable()).default({}),
+    }),
+    z.object({
+      setup: ScreenSetupSchema,
+      unmatched: z.array(z.string()),
+      catalog: CatalogSchema,
+      pairing: PlanPairingSchema,
+    }),
     {
       describe:
-        "Turns SimAppPro's MFD plan into a screen setup for one monitor layout, with the screens it could not place. desktopId comes from dcs-setup:screens. Nothing is saved; pass the setup to previewScreens and applyScreens.",
+        "Turns SimAppPro's MFD plan into a screen setup for one monitor layout, with the screens it could not place. desktopId comes from dcs-setup:screens. SimAppPro knows a screen only by where it was on the desktop when the plan was saved, so the answer also says which of its screens was paired with which monitor, how (the name the user gave the monitor, or its position) and whether that is certain. When pairing.certain is false, show the user the pairing and let them correct it (pass their choice as pairs) before the setup is applied: until the user has said the pairing is right, dcs-setup:applyScreens refuses a setup that uses a pairing RigReady was not sure of. Nothing is saved; pass the setup to previewScreens and applyScreens.",
+      tier: 'read',
+    }
+  ),
+  /** "Identify screens": a number on every monitor, with what the setup shows there. */
+  identifyScreens: channel(
+    z.object({ setup: ScreenSetupSchema }),
+    z.object({ shown: z.number().int(), off: z.number().int() }),
+    {
+      describe:
+        "Shows a number on every monitor that is on for a few seconds, with the user's name for the monitor and what the given screen setup shows there, so the user can tell which screen is which. The numbers are the same as on the Monitors page. Changes nothing.",
       tier: 'read',
     }
   ),
   previewScreens: channel(ApplyScreensSchema, ScreensPreviewSchema, {
     describe:
-      'Shows what applying a screen setup would write (RigReady.lua and the options.lua keys), with errors found and files edited outside RigReady. Nothing is changed. Call it before dcs-setup:applyScreens and show the user.',
+      'Shows what applying a screen setup would write (RigReady.lua and the options.lua keys), with errors found and files edited outside RigReady. When the answer has pairingToCheck, the setup uses a pairing from the last SimAppPro import that RigReady was not sure of: show the user those pairings before anything else. Nothing is changed. Call it before dcs-setup:applyScreens and show the user.',
     tier: 'read',
   }),
   /** Writes RigReady.lua and selects it in options.lua, as one undoable change. */
   applyScreens: channel(ApplyScreensSchema, MessageSchema, {
     describe:
-      'Writes RigReady.lua and selects it in options.lua (and sets the resolution when setResolution) as one change that can be undone. Call dcs-setup:previewScreens first and show the user. DCS must be closed.',
+      'Writes RigReady.lua and selects it in options.lua (and sets the resolution when setResolution) as one change that can be undone. Call dcs-setup:previewScreens first and show the user. DCS must be closed. Refused with the reason dcs.screens.pairing while the setup uses a pairing from the last SimAppPro import that RigReady was not sure of: show the user which screen was paired with which monitor, and pass pairingChecked true only after the user has said the pairing is right.',
     tier: 'change',
   }),
   exportLua: channel(noInput, ExportStateSchema, {

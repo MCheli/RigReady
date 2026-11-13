@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type {
   CaptureDefinition,
   CheckDefinition,
+  ParamPicker,
+  PickerChoice,
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import type { Clock } from '../../../core/ports';
@@ -28,12 +30,46 @@ export const KneeboardCheckParamsSchema = z.object({
 });
 export type KneeboardCheckParams = z.infer<typeof KneeboardCheckParamsSchema>;
 
+/**
+ * The aircraft a kneeboard can be written for, by name, for the setup editor: a setup
+ * stores the aircraft type as the game names its folder (FA-18C_hornet), which nobody
+ * should have to type. Choosing one fills in its name and its game.
+ */
+export function kneeboardAircraftPicker(service: CheatSheets): ParamPicker {
+  return {
+    list: 'cheat-sheets.aircraft',
+    param: 'aircraft',
+    label: 'Aircraft',
+    fills: ['aircraftName', 'game'],
+    empty: 'No aircraft with bindings RigReady can read were found on this PC.',
+    async choices() {
+      const overview = await service.overview();
+      if (!overview.ok) return overview;
+      const out: PickerChoice[] = [];
+      for (const game of overview.value.games) {
+        if (!game.kneeboard) continue;
+        for (const aircraft of game.aircraft) {
+          if (out.some((c) => c.value === aircraft.id)) continue;
+          out.push({
+            value: aircraft.id,
+            label: aircraft.name,
+            detail: game.gameName,
+            fill: { aircraftName: aircraft.name, game: game.game },
+          });
+        }
+      }
+      return ok(out);
+    },
+  };
+}
+
 export function createKneeboardCheck(service: CheatSheets): CheckDefinition<KneeboardCheckParams> {
   return {
     type: KNEEBOARD_CHECK,
     group: 'files',
     label: 'Cheat sheet kneeboard pages are up to date',
     params: KneeboardCheckParamsSchema,
+    picker: kneeboardAircraftPicker(service),
     // The one fix that suits it, so the setup editor offers that and nothing else.
     fixes: [KNEEBOARD_REGENERATE],
     async run(params, ctx) {
@@ -64,6 +100,7 @@ export function createRegenerate(
     label: 'Write the kneeboard pages again',
     order: 320,
     params: KneeboardCheckParamsSchema,
+    picker: kneeboardAircraftPicker(service),
     describe: (params) =>
       `Write the cheat sheet kneeboard pages for ${params.aircraftName ?? params.aircraft} again`,
     run: (params, ctx) => service.regenerate(params.game, params.aircraft, ctx),

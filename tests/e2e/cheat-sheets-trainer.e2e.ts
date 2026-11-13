@@ -1,12 +1,16 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { axeViolations, colourOnlyStatus } from './a11y';
-import { expect, test, type RunningApp } from './harness';
+import { expect, screensDir, test, type RunningApp } from './harness';
 
 /**
  * "Learn your controls": RigReady names an action of the F/A-18C, the control is pressed
- * on the (fake) device as a hand would press it, and the page says right or wrong at once.
+ * on the (fake) device as a hand would press it, and the page says right or wrong once the
+ * control has been held for a moment or tapped.
+ *
+ * The controllers are played as they report: a state says everything that is held, so a
+ * lever that leaves one position for another is one state after the other.
  */
 
 interface Controller {
@@ -29,6 +33,10 @@ interface Card {
   action: string;
   plain?: string;
   answers: Answer[];
+}
+interface Deck {
+  cards: Card[];
+  devices: { key: string; title: string }[];
 }
 interface Progress {
   rounds: number;
@@ -79,15 +87,160 @@ function stateOf(c: Controller, held: string[] = []) {
   };
 }
 
-test('trainer: an action is named, the control is pressed on the device, right or wrong is said at once, missed cards come back, and what is learned is kept', async ({
-  rig,
-}) => {
-  test.setTimeout(180_000);
-  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-trainer');
-  const { page, shot } = run;
+/** "A", "A or B", "A, B or C". */
+const either = (names: string[]): string =>
+  names.length <= 1
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
+
+/** "Button 12" for button:12, as the page names it. */
+const buttonName = (control: string): string => `Button ${control.split(':')[1]}`;
+
+async function openSheets(page: Page): Promise<void> {
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-cheat-sheets').click();
   await expect(page.getByTestId('sheet-view').first()).toBeVisible();
+}
+
+/** From the cheat sheet of the aircraft to its trainer, with a round for one device chosen. */
+async function openTrainer(page: Page, device?: string): Promise<Locator> {
+  await openSheets(page);
+  await page.getByTestId('sheet-learn').click();
+  const trainer = page.getByTestId('trainer-page');
+  if (device) {
+    await trainer.getByTestId('trainer-device').click();
+    await page.getByRole('option', { name: new RegExp(`^${device} · `) }).click();
+  }
+  return trainer;
+}
+
+/** The fake rig of the F/A-18C as the trainer sees it: its controllers and its cards. */
+async function hornet(page: Page) {
+  const controllers = await invoke<Controller[]>(page, 'devices:inputDevices');
+  const deck = await invoke<Deck>(page, 'cheat-sheets:trainerDeck', HORNET);
+  const controllerOf = (guid: string): Controller =>
+    controllers.find((c) => c.guid.toUpperCase() === guid.toUpperCase())!;
+  const keyOf = (title: string): string => deck.devices.find((d) => d.title === title)!.key;
+  /** The cards that can be answered on a device. */
+  const cardsOn = (deviceKey: string): Card[] =>
+    deck.cards.filter((c) => c.answers.some((a) => a.deviceKey === deviceKey));
+  /** The controller a device of the sheet is. */
+  const controllerFor = (deviceKey: string): Controller =>
+    controllerOf(cardsOn(deviceKey)[0]!.answers.find((a) => a.deviceKey === deviceKey)!.guid);
+  /** A button of the controller that no card asks for. */
+  const spare = (controller: Controller): string => {
+    const asked = new Set(
+      deck.cards
+        .flatMap((c) => c.answers)
+        .filter((a) => a.guid.toUpperCase() === controller.guid.toUpperCase())
+        .map((a) => a.control)
+    );
+    const free = Array.from({ length: controller.numButtons }, (_, i) => `button:${i + 1}`).find(
+      (control) => !asked.has(control)
+    );
+    if (!free) throw new Error(`Every button of ${controller.name} is on a card.`);
+    return free;
+  };
+  return { controllers, deck, controllerOf, keyOf, cardsOn, controllerFor, spare };
+}
+type Hornet = Awaited<ReturnType<typeof hornet>>;
+
+/**
+ * The page listens, and has been told where the controls of this many controllers are.
+ * A round takes what a controller says first for where its controls rest, so a round is
+ * started only after that has arrived.
+ */
+async function heard(trainer: Locator, controllers: number): Promise<void> {
+  await expect(trainer).toHaveAttribute('data-live', 'true');
+  await expect(trainer).toHaveAttribute('data-heard', String(controllers));
+}
+
+/** A control of a picture is lit as right, as wrong or as "it is this one". */
+const lit = (picture: Locator, control: string, as: 'right' | 'wrong' | 'target') =>
+  expect(picture.locator(`.cs-ctl[data-control="${control}"]`)).toHaveClass(new RegExp(`tr-${as}`));
+
+/** What the trainer keeps under the data root for one aircraft (or a game's one set). */
+async function kept(run: RunningApp, aircraft = 'dcs/FA-18C_hornet'): Promise<Progress> {
+  const file = path.join(run.dataRoot, 'cheat-sheets', 'trainer.json');
+  const all = JSON.parse(await fs.readFile(file, 'utf8')) as { aircraft: Record<string, Progress> };
+  return all.aircraft[aircraft] ?? { rounds: 0, cards: {} };
+}
+
+interface Asked {
+  card: Card;
+  /** Where the card can be answered in this round. */
+  places: Answer[];
+  /** The first of them. */
+  answer: Answer;
+  ask: string;
+}
+
+/** A round on screen and the hands that play it. `deviceKey` is the device the round is for. */
+function roundOf(run: RunningApp, fake: Hornet, deviceKey?: string) {
+  const trainer = run.page.getByTestId('trainer-page');
+  const card = trainer.getByTestId('trainer-card');
+  const count = card.getByTestId('trainer-count');
+  const verdict = trainer.getByTestId('trainer-verdict');
+  const note = trainer.getByTestId('trainer-note');
+  const summary = trainer.getByTestId('trainer-summary');
+
+  /** The card whose question is open. */
+  const current = async (): Promise<Asked> => {
+    await expect(verdict).toHaveAttribute('data-phase', 'asking');
+    const id = await card.getAttribute('data-card-id');
+    const found = fake.deck.cards.find((c) => c.id === id)!;
+    const places = found.answers.filter((a) => !deviceKey || a.deviceKey === deviceKey);
+    return {
+      card: found,
+      places,
+      answer: places[0]!,
+      ask: (await card.getAttribute('data-ask')) ?? '',
+    };
+  };
+  /** The next card once its question is open; nothing when the round is over. */
+  const turn = async (): Promise<Asked | undefined> => {
+    await expect(
+      trainer.locator(
+        '[data-testid="trainer-verdict"][data-phase="asking"], [data-testid="trainer-summary"]'
+      )
+    ).toBeVisible();
+    return (await summary.count()) > 0 ? undefined : current();
+  };
+  /** The card on screen has been replaced by the next one, or the round is over. */
+  const movedOn = (ask: string) =>
+    expect(
+      trainer.locator(
+        `[data-testid="trainer-card"]:not([data-ask="${ask}"]), [data-testid="trainer-summary"]`
+      )
+    ).toBeVisible();
+  /** A control goes down. `parked` are controls of its controller that stay where they are. */
+  const hold = (a: Answer, parked: string[] = []) =>
+    run.sendInput([stateOf(fake.controllerOf(a.guid), [...parked, a.control])]);
+  const letGo = (a: Answer, parked: string[] = []) =>
+    run.sendInput([stateOf(fake.controllerOf(a.guid), parked)]);
+  /** Answers every card right until the round is over; says which cards were asked. */
+  const finish = async (parked: string[] = []): Promise<string[]> => {
+    const asked: string[] = [];
+    for (;;) {
+      const now = await turn();
+      if (!now) return asked;
+      asked.push(now.card.id);
+      await hold(now.answer, parked);
+      await expect(verdict).toHaveAttribute('data-phase', 'right');
+      await letGo(now.answer, parked);
+      await movedOn(now.ask);
+    }
+  };
+  return { card, count, verdict, note, summary, current, turn, movedOn, hold, letGo, finish };
+}
+
+test('trainer: an action is named, the control is pressed on the device, right or wrong is said once it is held, missed cards come back, and what is learned is kept', async ({
+  rig,
+}) => {
+  test.setTimeout(240_000);
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-trainer');
+  const { page, shot } = run;
+  await openSheets(page);
 
   // From the cheat sheet of the aircraft to its trainer.
   await page.getByTestId('sheet-learn').click();
@@ -95,18 +248,10 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await expect(trainer.locator('h1')).toHaveText('Learn your controls');
   await expect(trainer.getByTestId('trainer-aircraft')).toContainText('F/A-18C');
 
-  const controllers = await invoke<Controller[]>(page, 'devices:inputDevices');
-  const deck = await invoke<{ cards: Card[]; devices: { key: string; title: string }[] }>(
-    page,
-    'cheat-sheets:trainerDeck',
-    HORNET
-  );
-  const stickKey = deck.devices.find((d) => d.title === 'Stick')!.key;
-  const onStick = deck.cards.filter((c) => c.answers.some((a) => a.deviceKey === stickKey));
-  const controllerOf = (guid: string): Controller =>
-    controllers.find((c) => c.guid.toUpperCase() === guid)!;
-  const hold = (a: Answer) => run.sendInput([stateOf(controllerOf(a.guid), [a.control])]);
-  const letGo = (a: Answer) => run.sendInput([stateOf(controllerOf(a.guid))]);
+  const fake = await hornet(page);
+  const { deck } = fake;
+  const stickKey = fake.keyOf('Stick');
+  const onStick = fake.cardsOn(stickKey);
 
   // Only the stick, for a start: twenty controls to know.
   await expect(trainer.getByTestId('trainer-intro')).toContainText(
@@ -122,40 +267,21 @@ test('trainer: an action is named, the control is pressed on the device, right o
   );
   await shot('before-a-round');
 
-  // The controllers say where they rest; from then on a control that goes down is a press.
-  const stick = controllerOf(onStick[0]!.answers.find((a) => a.deviceKey === stickKey)!.guid);
-  await run.sendInput([stateOf(stick)]);
-  await expect(trainer).toHaveAttribute('data-live', 'true');
+  // The stick says where its controls rest; from then on a control that goes down and stays
+  // down for a moment is a press.
+  await run.sendInput([stateOf(fake.controllerFor(stickKey))]);
+  await heard(trainer, 1);
   await trainer.getByTestId('trainer-start').click();
 
-  const card = trainer.getByTestId('trainer-card');
-  const verdict = trainer.getByTestId('trainer-verdict');
+  const round = roundOf(run, fake, stickKey);
+  const { card, count, verdict, summary, current, movedOn, hold, letGo, finish } = round;
   const picture = trainer.getByTestId('trainer-picture');
-  const summary = trainer.getByTestId('trainer-summary');
-  const current = async (): Promise<{ card: Card; answer: Answer; ask: string }> => {
-    await expect(verdict).toHaveAttribute('data-phase', 'asking');
-    const id = await card.getAttribute('data-card-id');
-    const found = deck.cards.find((c) => c.id === id)!;
-    return {
-      card: found,
-      answer: found.answers.find((a) => a.deviceKey === stickKey)!,
-      ask: (await card.getAttribute('data-ask')) ?? '',
-    };
-  };
-  /** The card on screen has been replaced by the next one, or the round is over. */
-  const movedOn = (ask: string) =>
-    expect(
-      trainer.locator(
-        `[data-testid="trainer-card"]:not([data-ask="${ask}"]), [data-testid="trainer-summary"]`
-      )
-    ).toBeVisible();
-  const lit = (control: string, as: 'right' | 'wrong' | 'target') =>
-    expect(picture.locator(`.cs-ctl[data-control="${control}"]`)).toHaveClass(
-      new RegExp(`tr-${as}`)
-    );
+  const controls = (asked: Asked): string[] => asked.places.map((p) => p.control);
+  const where = (asked: Asked): string => `${either(asked.places.map((p) => p.name))} on Stick`;
 
-  // ---- Card 1: the right control. Right at once, lit on the picture; letting go moves on.
-  await expect(card.getByTestId('trainer-count')).toHaveText('0 of 10 done');
+  // ---- Card 1: the right control. Held for a moment it is right, and every control of the
+  // stick that does the action is lit on the picture; letting go moves on.
+  await expect(count).toHaveText('0 of 10 done');
   const first = await current();
   await expect(card.getByTestId('trainer-action')).toHaveText(
     first.card.plain ?? first.card.action
@@ -171,20 +297,23 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await hold(first.answer);
   await expect(verdict).toHaveAttribute('data-phase', 'right');
   await expect(verdict).toContainText(`Right. ${first.answer.name} on Stick`);
-  await expect(picture).toHaveAttribute('data-right', first.answer.control);
-  await lit(first.answer.control, 'right');
-  await expect(card.getByTestId('trainer-count')).toHaveText('1 of 10 done');
+  await expect(verdict).toContainText('Let go of it for the next card');
+  await expect(picture).toHaveAttribute('data-right', controls(first).join(' '));
+  for (const control of controls(first)) await lit(picture, control, 'right');
+  await expect(count).toHaveText('1 of 10 done');
   await shot('right');
   await letGo(first.answer);
   await movedOn(first.ask);
 
-  // ---- Card 2: another control. Wrong at once: what was pressed and what it does, and the
-  // right one lit. Pressing that goes on, and the card will come back.
+  // ---- Card 2: another control. Held, it is wrong: what was pressed and what it does, and
+  // the right one lit. Pressing that goes on, and the card will come back.
   const second = await current();
-  // A control of the stick that does something else, and does not do this as well.
+  // A control of the stick that does something else. Not the one that answered the card
+  // before: that one would be told and not counted.
   const other = onStick.find(
     (c) =>
       c.id !== second.card.id &&
+      c.id !== first.card.id &&
       !c.answers.some((a) => second.card.answers.some((b) => b.control === a.control))
   )!;
   const mistake = other.answers.find((a) => a.deviceKey === stickKey)!;
@@ -193,10 +322,10 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await expect(verdict).toContainText(`Not that one. You pressed ${mistake.name} on Stick`);
   // What the wrong control does is named as its own card would name it.
   await expect(verdict).toContainText(`which is ${other.plain ?? other.action}`);
-  await expect(verdict).toContainText(`It is ${second.answer.name} on Stick`);
-  await lit(mistake.control, 'wrong');
-  await lit(second.answer.control, 'target');
-  await expect(card.getByTestId('trainer-count')).toHaveText('1 of 10 done');
+  await expect(verdict).toContainText(`It is ${where(second)}`);
+  await lit(picture, mistake.control, 'wrong');
+  for (const control of controls(second)) await lit(picture, control, 'target');
+  await expect(count).toHaveText('1 of 10 done');
   // Right, wrong and "it is this one" are said in words and icons, not by colour alone.
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
   await shot('wrong');
@@ -205,7 +334,7 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await hold(second.answer);
   await expect(verdict).toHaveAttribute('data-phase', 'corrected');
   await expect(verdict).toContainText('This one comes back later in the round');
-  await lit(second.answer.control, 'right');
+  for (const control of controls(second)) await lit(picture, control, 'right');
   await letGo(second.answer);
   await movedOn(second.ask);
 
@@ -213,32 +342,13 @@ test('trainer: an action is named, the control is pressed on the device, right o
   const third = await current();
   await trainer.getByTestId('trainer-show').click();
   await expect(verdict).toHaveAttribute('data-phase', 'shown');
-  await expect(verdict).toContainText(`It is ${third.answer.name} on Stick`);
-  await lit(third.answer.control, 'target');
+  await expect(verdict).toContainText(`It is ${where(third)}`);
+  for (const control of controls(third)) await lit(picture, control, 'target');
   await shot('shown');
   await hold(third.answer);
   await expect(verdict).toHaveAttribute('data-phase', 'corrected');
   await letGo(third.answer);
   await movedOn(third.ask);
-
-  /** Answers every card right until the round is over; says which cards were asked. */
-  const finish = async (): Promise<string[]> => {
-    const asked: string[] = [];
-    for (;;) {
-      await expect(
-        trainer.locator(
-          '[data-testid="trainer-verdict"][data-phase="asking"], [data-testid="trainer-summary"]'
-        )
-      ).toBeVisible();
-      if ((await summary.count()) > 0) return asked;
-      const now = await current();
-      asked.push(now.card.id);
-      await hold(now.answer);
-      await expect(verdict).toHaveAttribute('data-phase', 'right');
-      await letGo(now.answer);
-      await movedOn(now.ask);
-    }
-  };
 
   // ---- The rest of the round, all right. The two missed cards come back in it.
   const rest = await finish();
@@ -249,27 +359,34 @@ test('trainer: an action is named, the control is pressed on the device, right o
   const missed = summary.getByTestId('trainer-missed');
   await expect(missed.locator('li')).toHaveCount(2);
   await expect(missed).toContainText(second.card.plain ?? second.card.action);
-  await expect(missed).toContainText(`${second.answer.name} on Stick`);
+  await expect(missed).toContainText(where(second));
   await expect(missed).toContainText(third.card.plain ?? third.card.action);
   await expect(trainer.getByTestId('trainer-progress')).toContainText('1 round played');
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
   await shot('round-over');
 
   // What was answered is kept under the data root, per aircraft.
-  const file = path.join(run.dataRoot, 'cheat-sheets', 'trainer.json');
-  const kept = async (): Promise<Progress> =>
-    (JSON.parse(await fs.readFile(file, 'utf8')) as { aircraft: Record<string, Progress> })
-      .aircraft['dcs/FA-18C_hornet']!;
-  await expect.poll(async () => (await kept()).rounds).toBe(1);
-  let progress = await kept();
+  await expect.poll(async () => (await kept(run)).rounds).toBe(1);
+  let progress = await kept(run);
   expect(Object.keys(progress.cards)).toHaveLength(10);
   expect(progress.cards[first.card.id]).toMatchObject({ right: 1, wrong: 0, streak: 1 });
   expect(progress.cards[second.card.id]).toMatchObject({ right: 0, wrong: 1, streak: 0 });
   expect(progress.cards[third.card.id]).toMatchObject({ right: 0, wrong: 1, streak: 0 });
 
+  // ---- A device is taken out while the summary is up. The cards behind it are read again:
+  // the list to practise loses the device. The summary, with what was missed, stays.
+  await run.mutate([{ op: 'unplugDevice', match: { vendorId: '4098', productId: 'BEDE' } }]);
+  await trainer.getByTestId('trainer-device').click();
+  await expect(page.getByRole('option', { name: /^Stick · / })).toBeVisible();
+  await expect(page.getByRole('option', { name: /UFC1/ })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('option', { name: /^Stick · / })).toHaveCount(0);
+  await expect(summary.getByTestId('trainer-score')).toHaveText('8 of 10 right first time');
+  await expect(missed.locator('li')).toHaveCount(2);
+
   // ---- "Practise the missed": a round of just those two.
   await summary.getByTestId('trainer-again-missed').click();
-  await expect(card.getByTestId('trainer-count')).toHaveText('0 of 2 done');
+  await expect(count).toHaveText('0 of 2 done');
   const again = await finish();
   expect([...again].sort()).toEqual([second.card.id, third.card.id].sort());
   await expect(summary.getByTestId('trainer-score')).toHaveText('2 of 2 right first time');
@@ -290,20 +407,14 @@ test('trainer: an action is named, the control is pressed on the device, right o
     `10 of ${onStick.length} learned`
   );
   await expect(trainer.getByTestId('trainer-progress')).toContainText('4 rounds played');
-  await expect.poll(async () => (await kept()).rounds).toBe(4);
-  progress = await kept();
+  await expect.poll(async () => (await kept(run)).rounds).toBe(4);
+  progress = await kept(run);
   expect(Object.values(progress.cards).filter((c) => c.streak >= 2)).toHaveLength(10);
   await shot('learned');
 
   // ---- It is still there after a restart.
   const restarted: RunningApp = await run.restart();
-  const p = restarted.page;
-  await p.getByTestId('mode-configure').click();
-  await p.getByTestId('nav-cheat-sheets').click();
-  await p.getByTestId('sheet-learn').click();
-  const back = p.getByTestId('trainer-page');
-  await back.getByTestId('trainer-device').click();
-  await p.getByRole('option', { name: /^Stick · / }).click();
+  const back = await openTrainer(restarted.page, 'Stick');
   await expect(back.getByTestId('trainer-progress')).toContainText(
     `10 of ${onStick.length} learned`
   );
@@ -311,34 +422,425 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await restarted.shot('after-restart');
 });
 
+test('trainer: only a control that is held or tapped answers a card; one on its way back, one from the card before, one passed over and one on another device are said and not counted', async ({
+  rig,
+}) => {
+  test.setTimeout(180_000);
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-trainer-rule');
+  const { page, shot } = run;
+  const trainer = await openTrainer(page, 'Throttle');
+  const fake = await hornet(page);
+  const throttleKey = fake.keyOf('Throttle');
+  const throttle = fake.controllerFor(throttleKey);
+  const panelTitle = 'WinWing F18 STARTUP PANEL';
+  const panel = fake.controllerFor(fake.keyOf(panelTitle));
+  const round = roundOf(run, fake, throttleKey);
+  const { count, verdict, note, summary, current, movedOn } = round;
+  const onThrottle = (held: string[] = []) => stateOf(throttle, held);
+
+  // A lever of the throttle rests in a position that holds a button, as the handles of the
+  // owner's throttle do at OFF. The startup panel is at rest.
+  const parked = fake.spare(throttle);
+  await run.sendInput([onThrottle([parked]), stateOf(panel)]);
+  await heard(trainer, 2);
+  await trainer.getByTestId('trainer-start').click();
+
+  // ---- Card 1: the lever leaves its place for the control asked for, and stays there.
+  const first = await current();
+  await run.sendInput([onThrottle([first.answer.control])]);
+  await expect(verdict).toHaveAttribute('data-phase', 'right');
+  await expect(verdict).toContainText(`Right. ${first.answer.name} on Throttle`);
+  await expect(verdict).toContainText('Let go of it for the next card');
+  await expect(count).toHaveText('1 of 10 done');
+  await shot('right-and-held');
+  // The hand goes back: the lever leaves the control and arrives where it rested, as at the
+  // sitting of 12 November. The next card comes, and the lever's place has not answered it.
+  await run.sendInput([onThrottle(), onThrottle([parked])]);
+  await movedOn(first.ask);
+  const second = await current();
+  await expect(note).toHaveCount(0);
+  await expect(count).toHaveText('1 of 10 done');
+
+  // ---- Card 2, and four things that are not an answer to it.
+  // A slower hand: the lever is off its place and back on it while the card is up. It went
+  // back to where it was, which is said.
+  await run.sendInput([onThrottle(), onThrottle([parked])]);
+  await expect(note).toHaveAttribute('data-why', 'back-to-rest');
+  await expect(note).toHaveAttribute('data-control', parked);
+  await expect(note).toContainText(
+    `${buttonName(parked)} on Throttle went back to where it was, so it is not counted.`
+  );
+  await shot('back-to-where-it-was');
+
+  // The control that answered the card before is touched again.
+  await run.sendInput([onThrottle([parked, first.answer.control])]);
+  await expect(note).toHaveAttribute('data-why', 'last-card');
+  await expect(note).toHaveAttribute('data-control', first.answer.control);
+  await expect(note).toContainText(
+    `${first.answer.name} on Throttle was in use on the card before, so it is not counted here.`
+  );
+  await shot('from-the-card-before');
+  await run.sendInput([onThrottle([parked])]);
+
+  // A lever on its way passes two positions and stops on neither.
+  const passed = fake
+    .cardsOn(throttleKey)
+    .filter((c) => c.id !== first.card.id && c.id !== second.card.id)
+    .flatMap((c) => c.answers)
+    .filter((a) => a.deviceKey === throttleKey && a.control.startsWith('button:'))
+    .slice(0, 2);
+  expect(passed).toHaveLength(2);
+  await run.sendInput([
+    onThrottle([parked, passed[0]!.control]),
+    onThrottle([parked, passed[1]!.control]),
+    onThrottle([parked]),
+  ]);
+  await expect(note).toHaveAttribute('data-why', 'too-quick');
+  await expect(note).toHaveAttribute('data-control', passed[1]!.control);
+  await expect(note).toContainText(
+    `${passed[1]!.name} on Throttle was let go too soon to count. Hold a control for a moment to answer with it.`
+  );
+  await shot('passed-over');
+
+  // A button of another device, as Button 8 of the startup panel was at the sitting. The
+  // round is for the throttle, so it is said and uses up no try.
+  await run.sendInput([stateOf(panel, ['button:8'])]);
+  await expect(note).toHaveAttribute('data-why', 'other-device');
+  await expect(note).toHaveAttribute('data-control', 'button:8');
+  await expect(note).toContainText(
+    `That was Button 8 on ${panelTitle}. This round is for Throttle only, so it is not counted.`
+  );
+  // Why a press was not counted is said in words, not by colour.
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('on-another-device');
+  await run.sendInput([stateOf(panel)]);
+
+  // None of the four was an answer: the question is still open and nothing is done.
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+  await expect(count).toHaveText('1 of 10 done');
+  await round.hold(second.answer, [parked]);
+  await expect(verdict).toHaveAttribute('data-phase', 'right');
+  await expect(note).toHaveCount(0);
+  await expect(count).toHaveText('2 of 10 done');
+  await round.letGo(second.answer, [parked]);
+  await movedOn(second.ask);
+
+  // ---- Card 3: a plain press, down and up again as a hand does it. Nothing has to be held
+  // for that: it is the answer.
+  const third = await current();
+  await round.hold(third.answer, [parked]);
+  await round.letGo(third.answer, [parked]);
+  await expect(count).toHaveText('3 of 10 done');
+  await movedOn(third.ask);
+
+  // ---- The rest of the round. Nothing above was a miss: ten of ten, and nothing kept as wrong.
+  const rest = await round.finish([parked]);
+  expect(rest).toHaveLength(7);
+  await expect(summary.getByTestId('trainer-score')).toHaveText('10 of 10 right first time');
+  await expect(summary.getByTestId('trainer-missed')).toHaveCount(0);
+  await shot('nothing-missed');
+  await expect.poll(async () => (await kept(run)).rounds).toBe(1);
+  const cards = Object.values((await kept(run)).cards);
+  expect(cards).toHaveLength(10);
+  expect(cards.filter((c) => c.wrong > 0 || c.right !== 1)).toEqual([]);
+});
+
+test('trainer: an action bound in several places is named and lit in every one of them, and any of them is right', async ({
+  rig,
+}) => {
+  test.setTimeout(240_000);
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-trainer-places');
+  const { page, shot } = run;
+  await openSheets(page);
+  const fake = await hornet(page);
+  const stickKey = fake.keyOf('Stick');
+  const throttleKey = fake.keyOf('Throttle');
+  const stick = fake.controllerFor(stickKey);
+  const throttle = fake.controllerFor(throttleKey);
+  const onThrottle = fake.cardsOn(throttleKey);
+
+  // The owner's throttle: radar elevation up is on Button 25 and on Button 28, down on
+  // Button 27 and on Button 32, and the field of view of the sensor on 53 and on 56.
+  const withBoth = (...buttons: string[]): Card =>
+    onThrottle.find((c) =>
+      buttons.every((control) =>
+        c.answers.some((a) => a.deviceKey === throttleKey && a.control === control)
+      )
+    )!;
+  const up = withBoth('button:25', 'button:28');
+  const down = withBoth('button:27', 'button:32');
+  const view = withBoth('button:53', 'button:56');
+  expect([up, down, view].every(Boolean)).toBe(true);
+
+  // So that these cards are asked in the first round, every card with one place only is
+  // made a learned one: what is known least is asked first. (A fixture in the temp profile
+  // of this run, put there the way the page keeps answers.)
+  const single = fake.deck.cards
+    .filter((c) => c.answers.length === 1)
+    .map((c) => ({ cardId: c.id, right: true }));
+  for (let time = 0; time < 2; time++) {
+    for (let i = 0; i < single.length; i += 250) {
+      await invoke(page, 'cheat-sheets:trainerRecord', {
+        ...HORNET,
+        answers: single.slice(i, i + 250),
+      });
+    }
+  }
+  const several = onThrottle.filter((c) => c.answers.length > 1);
+
+  await page.getByTestId('sheet-learn').click();
+  const trainer = page.getByTestId('trainer-page');
+  await trainer.getByTestId('trainer-device').click();
+  await page.getByRole('option', { name: /^Throttle · / }).click();
+  await expect(trainer.getByTestId('trainer-progress')).toContainText(
+    `${onThrottle.length - several.length} of ${onThrottle.length} learned`
+  );
+  // Every controller says where its controls rest.
+  await run.sendInput(fake.controllers.map((c) => stateOf(c)));
+  await heard(trainer, new Set(fake.controllers.map((c) => c.guid.toUpperCase())).size);
+  await trainer.getByTestId('trainer-start').click();
+
+  // ---- A round for the throttle. Each of the three cards is played another way.
+  const round = roundOf(run, fake, throttleKey);
+  const { verdict, summary } = round;
+  const picture = trainer.getByTestId('trainer-picture');
+  const wrong = fake.spare(throttle);
+  const played = new Set<string>();
+  for (;;) {
+    const now = await round.turn();
+    if (!now) break;
+    const fresh = !played.has(now.card.id);
+    played.add(now.card.id);
+    if (fresh && now.card.id === up.id) {
+      // Radar elevation up, answered with a button that is not it: both places are named
+      // and both are lit.
+      await expect(verdict).toContainText('Press the control for it on Throttle');
+      await run.sendInput([stateOf(throttle, [wrong])]);
+      await expect(verdict).toHaveAttribute('data-phase', 'wrong');
+      await expect(verdict).toContainText(
+        `Not that one. You pressed ${buttonName(wrong)} on Throttle`
+      );
+      await expect(verdict).toContainText(
+        'It is Button 25 or Button 28 on Throttle, lit on the picture: press one of them to go on.'
+      );
+      await expect(picture).toHaveAttribute('data-target', 'button:25 button:28');
+      await expect(picture).toHaveAttribute('data-wrong', wrong);
+      await lit(picture, 'button:25', 'target');
+      await lit(picture, 'button:28', 'target');
+      expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+      await shot('both-places-after-a-miss');
+      await run.sendInput([stateOf(throttle)]);
+      // The second of the two is as good as the first, and the page says where the other is.
+      await run.sendInput([stateOf(throttle, ['button:28'])]);
+      await expect(verdict).toHaveAttribute('data-phase', 'corrected');
+      await expect(verdict).toContainText(
+        'That is it: Button 28 on Throttle. Button 25 does it too.'
+      );
+      await expect(picture).toHaveAttribute('data-right', 'button:25 button:28');
+      await lit(picture, 'button:25', 'right');
+      await lit(picture, 'button:28', 'right');
+      await shot('the-other-place-is-right');
+      await run.sendInput([stateOf(throttle)]);
+    } else if (fresh && now.card.id === down.id) {
+      // Radar elevation down, given away: both places again.
+      await trainer.getByTestId('trainer-show').click();
+      await expect(verdict).toHaveAttribute('data-phase', 'shown');
+      await expect(verdict).toContainText(
+        'It is Button 27 or Button 32 on Throttle, lit on the picture. Press one of them to go on.'
+      );
+      await expect(picture).toHaveAttribute('data-target', 'button:27 button:32');
+      await lit(picture, 'button:27', 'target');
+      await lit(picture, 'button:32', 'target');
+      await run.sendInput([stateOf(throttle, ['button:32'])]);
+      await expect(verdict).toHaveAttribute('data-phase', 'corrected');
+      await expect(verdict).toContainText(
+        'That is it: Button 32 on Throttle. Button 27 does it too.'
+      );
+      await run.sendInput([stateOf(throttle)]);
+    } else if (fresh && now.card.id === view.id) {
+      // Right first time, with the second of its two places.
+      await run.sendInput([stateOf(throttle, ['button:56'])]);
+      await expect(verdict).toHaveAttribute('data-phase', 'right');
+      await expect(verdict).toContainText(
+        'Right. Button 56 on Throttle. Button 53 does it too. Let go of it for the next card.'
+      );
+      await expect(picture).toHaveAttribute('data-right', 'button:53 button:56');
+      await lit(picture, 'button:53', 'right');
+      await lit(picture, 'button:56', 'right');
+      // The cards of a round come shuffled, so this one is before the miss above in one run
+      // and after it in the next: its picture has no number, and the numbered ones keep theirs.
+      await page.screenshot({
+        path: path.join(screensDir, 'cheat-sheets-trainer-places', 'right-in-either-place.png'),
+      });
+      await run.sendInput([stateOf(throttle)]);
+    } else {
+      await round.hold(now.answer);
+      await expect(verdict).toHaveAttribute('data-phase', 'right');
+      await round.letGo(now.answer);
+    }
+    await round.movedOn(now.ask);
+  }
+  expect([up.id, down.id, view.id].filter((id) => !played.has(id))).toEqual([]);
+  await expect(summary.getByTestId('trainer-score')).toHaveText('8 of 10 right first time');
+  // What was missed is listed with every place it is in.
+  const missed = summary.getByTestId('trainer-missed');
+  await expect(missed.locator('li')).toHaveCount(2);
+  await expect(missed).toContainText('Button 25 or Button 28 on Throttle');
+  await expect(missed).toContainText('Button 27 or Button 32 on Throttle');
+  await shot('missed-with-every-place');
+
+  // ---- A round for all devices. Radar elevation up is on the stick as well: it is asked
+  // for on both devices, and both pictures are lit.
+  await trainer.getByTestId('trainer-device').click();
+  await page.getByRole('option', { name: 'All devices', exact: true }).click();
+  await summary.getByTestId('trainer-again').click();
+  const all = roundOf(run, fake);
+  const pictureOf = (key: string): Locator =>
+    trainer.locator(`[data-testid="trainer-picture"][data-device="${key}"]`);
+  let shown = false;
+  for (;;) {
+    const now = await all.turn();
+    if (!now) break;
+    if (now.card.id === up.id && !shown) {
+      shown = true;
+      await expect(verdict).toContainText('Press the control for it on Stick or Throttle');
+      await expect(trainer.getByTestId('trainer-device-panel')).toHaveCount(2);
+      await trainer.getByTestId('trainer-show').click();
+      await expect(verdict).toHaveAttribute('data-phase', 'shown');
+      await expect(verdict).toContainText(
+        'It is Button 32 on Stick, or Button 25 or Button 28 on Throttle, lit on the picture. Press one of them to go on.'
+      );
+      await expect(pictureOf(stickKey)).toHaveAttribute('data-target', 'button:32');
+      await expect(pictureOf(throttleKey)).toHaveAttribute('data-target', 'button:25 button:28');
+      await lit(pictureOf(stickKey), 'button:32', 'target');
+      await lit(pictureOf(throttleKey), 'button:25', 'target');
+      await lit(pictureOf(throttleKey), 'button:28', 'target');
+      expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+      await shot('lit-on-both-devices');
+      // The two pictures are taller than the window: the second one, further down.
+      await pictureOf(throttleKey).scrollIntoViewIfNeeded();
+      await shot('lit-on-the-other-device');
+      await verdict.scrollIntoViewIfNeeded();
+      // The one on the stick is it too, and the page says where the others are.
+      await run.sendInput([stateOf(stick, ['button:32'])]);
+      await expect(verdict).toHaveAttribute('data-phase', 'corrected');
+      await expect(verdict).toContainText(
+        'That is it: Button 32 on Stick. Button 25 and Button 28 on Throttle do it too.'
+      );
+      await expect(pictureOf(stickKey)).toHaveAttribute('data-right', 'button:32');
+      await expect(pictureOf(throttleKey)).toHaveAttribute('data-right', 'button:25 button:28');
+      await shot('right-on-either-device');
+      await run.sendInput([stateOf(stick)]);
+    } else {
+      await all.hold(now.answer);
+      await expect(verdict).toHaveAttribute('data-phase', 'right');
+      await all.letGo(now.answer);
+    }
+    await all.movedOn(now.ask);
+  }
+  expect(shown).toBe(true);
+  await expect(summary.getByTestId('trainer-score')).toHaveText('9 of 10 right first time');
+});
+
+test('trainer: opened while the quick look is popped out, it is told where the controls rest, and no window takes that for a press', async ({
+  rig,
+}) => {
+  test.setTimeout(120_000);
+  const flow = 'cheat-sheets-trainer-windows';
+  const run = await rig.launch('cheat-sheets-hornet', flow);
+  const { page, app, shot } = run;
+  await openSheets(page);
+  const fake = await hornet(page);
+  const stickKey = fake.keyOf('Stick');
+  const stick = fake.controllerFor(stickKey);
+  // Two buttons of the stick that do something, the lower number first, and one that does not.
+  const [low, high] = fake
+    .cardsOn(stickKey)
+    .flatMap((c) => c.answers)
+    .filter((a) => a.deviceKey === stickKey && a.control.startsWith('button:'))
+    .map((a) => Number(a.control.split(':')[1]))
+    .sort((a, b) => a - b)
+    .map((n) => `button:${n}`);
+  const parked = fake.spare(stick);
+
+  // ---- The quick look in the main window, and a switch of the stick that is on.
+  await page.getByTestId('sheet-quick').click();
+  const quick = page.getByTestId('quick-look');
+  await expect(quick).toHaveAttribute('data-live', 'true');
+  await run.sendInput([stateOf(stick, [low!])]);
+  await expect(quick.getByTestId('sheet-view')).toHaveAttribute('data-device', stickKey);
+  await expect(quick.locator(`.cs-ctl[data-control="${low}"]`)).toHaveClass(/cs-on/);
+
+  // ---- Popped out: a second window begins to listen while the first one does. It is told
+  // that the switch is on, so it is lit there. It was not pressed just now, so it is not
+  // what the window names as the last thing pressed.
+  const [popup] = await Promise.all([
+    app.waitForEvent('window'),
+    page.getByTestId('quick-popout').click(),
+  ]);
+  await popup.waitForLoadState('domcontentloaded');
+  const popped = popup.getByTestId('quick-look');
+  const last = popup.getByTestId('quick-last');
+  await expect(popped).toHaveAttribute('data-live', 'true');
+  await expect(popped.getByTestId('sheet-view')).toHaveAttribute('data-device', stickKey);
+  await expect(popped.locator(`.cs-ctl[data-control="${low}"]`)).toHaveClass(/cs-on/);
+  await expect(last).toHaveAttribute('data-last', '');
+  // A button goes down beside the switch: the new window names the button, not the switch.
+  await run.sendInput([stateOf(stick, [low!, high!])]);
+  await expect(last).toHaveAttribute('data-last', high!);
+  await shot('quick-look');
+  await popup.screenshot({ path: path.join(screensDir, flow, 'pop-out.png') });
+
+  // The hand lets go. A switch of the stick that does nothing in the game stays on.
+  await run.sendInput([stateOf(stick, [parked])]);
+  await expect(last).toHaveAttribute('data-last', parked);
+
+  // ---- The trainer, opened in the main window while the pop-out goes on listening. The
+  // stick says nothing new, yet the trainer is told where its controls are.
+  await page.getByTestId('quick-back').click();
+  await page.getByTestId('sheet-learn').click();
+  const trainer = page.getByTestId('trainer-page');
+  await trainer.getByTestId('trainer-device').click();
+  await page.getByRole('option', { name: /^Stick · / }).click();
+  await heard(trainer, 1);
+  // The pop-out was told again as well, and took it for no press.
+  await expect(last).toHaveAttribute('data-last', parked);
+  await trainer.getByTestId('trainer-start').click();
+
+  // So the first press of the round is an answer: the trainer knows the switch from it.
+  const round = roundOf(run, fake, stickKey);
+  const first = await round.current();
+  await round.hold(first.answer, [parked]);
+  await expect(round.verdict).toHaveAttribute('data-phase', 'right');
+  await expect(round.count).toHaveText('1 of 10 done');
+  await expect(round.note).toHaveCount(0);
+  await shot('trainer-beside-the-pop-out');
+  await round.letGo(first.answer, [parked]);
+  await round.movedOn(first.ask);
+  await popup.close();
+});
+
 test('trainer: a switch that stays held is drawn quietly, so the control asked for stands out', async ({
   rig,
 }) => {
   const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-trainer-held');
   const { page, shot } = run;
-  await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-cheat-sheets').click();
-  await page.getByTestId('sheet-learn').click();
-  const trainer = page.getByTestId('trainer-page');
-  await trainer.getByTestId('trainer-device').click();
-  await page.getByRole('option', { name: /^Stick · / }).click();
-
-  const controllers = await invoke<Controller[]>(page, 'devices:inputDevices');
-  const deck = await invoke<{ cards: Card[]; devices: { key: string; title: string }[] }>(
-    page,
-    'cheat-sheets:trainerDeck',
-    HORNET
-  );
-  const stickKey = deck.devices.find((d) => d.title === 'Stick')!.key;
-  const answers = deck.cards.flatMap((c) => c.answers.filter((a) => a.deviceKey === stickKey));
-  const stick = controllers.find((c) => c.guid.toUpperCase() === answers[0]!.guid)!;
+  const trainer = await openTrainer(page, 'Stick');
+  const fake = await hornet(page);
+  const stickKey = fake.keyOf('Stick');
   // Three buttons are down before the round starts and stay down, as switches left on do.
-  const resting = [...new Set(answers.map((a) => a.control))]
-    .filter((control) => control.startsWith('button:'))
+  // Each is of another card, so at least two of them are not what the first card asks for.
+  const resting = fake
+    .cardsOn(stickKey)
+    .map(
+      (c) =>
+        c.answers.find((a) => a.deviceKey === stickKey && a.control.startsWith('button:'))?.control
+    )
+    .filter((control): control is string => control !== undefined)
     .slice(0, 3);
   expect(resting).toHaveLength(3);
-  await run.sendInput([stateOf(stick, resting)]);
-  await expect(trainer).toHaveAttribute('data-live', 'true');
+  await run.sendInput([stateOf(fake.controllerFor(stickKey), resting)]);
+  await heard(trainer, 1);
   await trainer.getByTestId('trainer-start').click();
 
   const card = trainer.getByTestId('trainer-card');
@@ -349,8 +851,8 @@ test('trainer: a switch that stays held is drawn quietly, so the control asked f
   await expect(card.getByTestId('trainer-count')).toHaveText('0 of 10 done');
   await trainer.getByTestId('trainer-show').click();
   await expect(verdict).toHaveAttribute('data-phase', 'shown');
-  const target = (await picture.getAttribute('data-target')) ?? '';
-  expect(target).not.toBe('');
+  const targets = ((await picture.getAttribute('data-target')) ?? '').split(' ').filter(Boolean);
+  expect(targets.length).toBeGreaterThan(0);
 
   const outline = (control: string) =>
     picture
@@ -358,12 +860,14 @@ test('trainer: a switch that stays held is drawn quietly, so the control asked f
         `.cs-ctl[data-control="${control}"] .cs-card, .cs-ctl[data-control="${control}"] .cs-row`
       )
       .first();
-  // The control asked for: a heavy outline with a glow.
-  await expect(picture.locator(`.cs-ctl[data-control="${target}"]`)).toHaveClass(/tr-target/);
-  await expect(outline(target)).toHaveCSS('stroke-width', '3.2px');
-  await expect(outline(target)).not.toHaveCSS('filter', 'none');
+  // The controls asked for: a heavy outline with a glow.
+  for (const target of targets) {
+    await lit(picture, target, 'target');
+    await expect(outline(target)).toHaveCSS('stroke-width', '3.2px');
+    await expect(outline(target)).not.toHaveCSS('filter', 'none');
+  }
   // The switches that are simply on: still marked as held, with a thin outline and no glow.
-  const quiet = resting.filter((control) => control !== target);
+  const quiet = resting.filter((control) => !targets.includes(control));
   expect(quiet.length).toBeGreaterThanOrEqual(2);
   for (const control of quiet) {
     const held = picture.locator(`.cs-ctl[data-control="${control}"]`);
@@ -381,10 +885,8 @@ test('trainer: a racing game is asked the same way, on the buttons of the wheel'
 }) => {
   const run = await rig.launch('mark-racing', 'cheat-sheets-trainer-racing');
   const { page, shot } = run;
-  await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-cheat-sheets').click();
   // The page opens on the game it suggests; once that sheet is drawn, another is chosen.
-  await expect(page.getByTestId('sheet-view').first()).toBeVisible();
+  await openSheets(page);
   await page.getByTestId('sheet-aircraft').click();
   await page.getByRole('option', { name: 'iRacing · All cars' }).click();
   await expect(page.getByTestId('sheet-name')).toHaveText('iRacing');
@@ -396,7 +898,7 @@ test('trainer: a racing game is asked the same way, on the buttons of the wheel'
   await expect(trainer.getByTestId('trainer-aircraft')).toContainText('iRacing · All cars');
   const wheel = 'FANATEC Podium Wheel Base DD2';
   const car = { game: 'iracing', aircraftId: 'all' };
-  const deck = await invoke<{ cards: Card[] }>(page, 'cheat-sheets:trainerDeck', car);
+  const deck = await invoke<Deck>(page, 'cheat-sheets:trainerDeck', car);
   expect(deck.cards.map((c) => c.plain ?? c.action)).toContain('Shift up');
   await expect(trainer.getByTestId('trainer-intro')).toContainText(
     `${deck.cards.length} controls to know in iRacing`
@@ -406,11 +908,11 @@ test('trainer: a racing game is asked the same way, on the buttons of the wheel'
   const controllers = await invoke<Controller[]>(page, 'devices:inputDevices');
   const base = controllers.find((c) => c.guid.toUpperCase() === deck.cards[0]!.answers[0]!.guid)!;
   await run.sendInput([stateOf(base)]);
-  await expect(trainer).toHaveAttribute('data-live', 'true');
+  await heard(trainer, 1);
   await trainer.getByTestId('trainer-start').click();
 
-  // Whatever is asked first: the button for it on the wheel is right at once, and lit on
-  // the picture of the wheel.
+  // Whatever is asked first: the button for it on the wheel, held for a moment, is right,
+  // and lit on the picture of the wheel.
   const card = trainer.getByTestId('trainer-card');
   const verdict = trainer.getByTestId('trainer-verdict');
   const picture = trainer.getByTestId('trainer-picture');
@@ -428,7 +930,10 @@ test('trainer: a racing game is asked the same way, on the buttons of the wheel'
   await run.sendInput([stateOf(base, [answer.control])]);
   await expect(verdict).toHaveAttribute('data-phase', 'right');
   await expect(verdict).toContainText(`Right. ${answer.name} on ${wheel}`);
-  await expect(picture).toHaveAttribute('data-right', answer.control);
+  await expect(picture).toHaveAttribute(
+    'data-right',
+    asked.answers.map((a) => a.control).join(' ')
+  );
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
   await shot('right');
   await run.sendInput([stateOf(base)]);
@@ -437,14 +942,8 @@ test('trainer: a racing game is asked the same way, on the buttons of the wheel'
   ).toBeVisible();
 
   // What was answered is kept for the game's one set, beside any aircraft.
-  const file = path.join(run.dataRoot, 'cheat-sheets', 'trainer.json');
   await expect
-    .poll(async () => {
-      const all = JSON.parse(await fs.readFile(file, 'utf8')) as {
-        aircraft: Record<string, Progress>;
-      };
-      return all.aircraft['iracing/all']?.cards[asked.id];
-    })
+    .poll(async () => (await kept(run, 'iracing/all')).cards[asked.id])
     .toMatchObject({ right: 1, wrong: 0, streak: 1 });
 });
 
@@ -453,10 +952,7 @@ test('trainer: a round can be stopped, and a PC without a game to read says what
 }) => {
   const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-trainer-stop');
   const { page, shot } = run;
-  await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-cheat-sheets').click();
-  await page.getByTestId('sheet-learn').click();
-  const trainer = page.getByTestId('trainer-page');
+  const trainer = await openTrainer(page);
   await trainer.getByTestId('trainer-start').click();
   await expect(trainer.getByTestId('trainer-verdict')).toHaveAttribute('data-phase', 'asking');
   await trainer.getByTestId('trainer-stop').click();

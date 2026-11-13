@@ -3,6 +3,7 @@ import type {
   CaptureCandidate,
   CaptureDefinition,
   CheckDefinition,
+  ParamPicker,
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import type { TrackedFileSuggestion } from '../../../core/games';
@@ -52,11 +53,32 @@ export const ConnectedParamsSchema = z.object({
 });
 export type ConnectedParams = z.infer<typeof ConnectedParamsSchema>;
 
+/**
+ * The Stream Decks connected now, for the setup editor: one of several is chosen by name,
+ * and its serial number is filled in. Nothing chosen means any Stream Deck will do.
+ */
+export const streamDeckPicker: ParamPicker = {
+  list: 'stream-deck.devices',
+  param: 'serial',
+  label: 'Which Stream Deck',
+  empty: 'No Stream Deck is connected right now. Without a choice, any Stream Deck will do.',
+  async choices(ctx) {
+    const devices = await ctx.ports.devices.list();
+    if (!devices.ok) return devices;
+    return ok(
+      streamDecks(devices.value)
+        .filter((d) => d.serial !== undefined && d.serial !== '')
+        .map((d) => ({ value: d.serial!, label: d.name, detail: 'Serial number ' + d.serial }))
+    );
+  },
+};
+
 export const connectedCheck: CheckDefinition<ConnectedParams> = {
   type: SD_CONNECTED,
   group: 'devices',
   label: 'Stream Deck connected',
   params: ConnectedParamsSchema,
+  picker: streamDeckPicker,
   async run(params, ctx) {
     const devices = await ctx.ports.devices.list();
     if (!devices.ok) return { pass: false, summary: devices.error.message };

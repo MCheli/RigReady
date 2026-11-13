@@ -41,13 +41,22 @@ const userFolder = (ctx: CheckContext): string =>
 
 const aceCombat8: GameModule = {
   id: 'ace-combat-8',
-  name: 'ACE COMBAT 8: WINGS OF THEVE',
+  // Written the way people write it. Steam and the game's own folders use capitals.
+  name: 'Ace Combat 8: Wings of Theve',
   kind: 'flight',
+  // Flown on a gamepad: a stick, throttle and pedals reach it through a virtual controller.
+  // It reads no head tracker, no panel or MFD software, and has no radio or voice chat.
+  playedWith: {
+    gear: ['stick', 'yoke', 'throttle', 'pedals'],
+    helpers: false,
+    microphone: false,
+    gamepad: true,
+  },
   processes: [EXE],
   closeBeforeRestore: { why: 'The game writes its settings while it runs and when it exits.' },
   pathVariableLabels: {
-    AC8_INSTALL: 'ACE COMBAT 8 install',
-    AC8_USER: 'ACE COMBAT 8 settings and saves',
+    AC8_INSTALL: 'Ace Combat 8 install',
+    AC8_USER: 'Ace Combat 8 settings and saves',
   },
 
   async detect(ctx) {
@@ -70,7 +79,7 @@ const aceCombat8: GameModule = {
     return ok(
       await existingFiles(ctx, [
         {
-          label: 'ACE COMBAT 8 settings and saves',
+          label: 'Ace Combat 8 settings and saves',
           path: saved,
           kind: 'folder',
           include: ['Config/**', 'SaveGames/**'],

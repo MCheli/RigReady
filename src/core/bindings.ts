@@ -231,9 +231,11 @@ export interface BindingReader {
   bindings(aircraftId: string): Promise<Result<AircraftBindings>>;
   /**
    * The in-app route of the page that shows these bindings, opened on a device (by
-   * DirectInput instance GUID) and an aircraft when given.
+   * DirectInput instance GUID) and an aircraft when given. With `find`, the page opens on
+   * its list of actions with that text in the search box ("kneeboard"), where a game's
+   * page has one; a page without one ignores it.
    */
-  route(target?: { guid?: string; aircraftId?: string }): string;
+  route(target?: { guid?: string; aircraftId?: string; find?: string }): string;
   /**
    * True when `route({ guid })` opens the page on that one controller. A game whose page
    * is about the game as a whole leaves it out, and a list of devices then does not offer

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -8,7 +9,10 @@ import { err, ok, type Result } from '../../../core/result';
 import type { FakeRender } from '../../../platform/fake';
 import { pngSize } from '../../../platform/fake/png';
 import { KNEEBOARD_CHECK, KNEEBOARD_REGENERATE } from './check';
-import { fileNamePart, renderPage } from './kneeboard';
+import { PAGE_LAYOUT, fileNamePart, pageLetter, pageOrder, renderPage } from './kneeboard';
+import { KNEEBOARD_LIST_ROWS } from './pages';
+import { escapeHtml } from './render';
+import { entryName, summaryActions, type Sheet } from './sheet';
 
 /**
  * Kneeboard pages on the recorded rig: PNGs in Saved Games\DCS\Kneeboard\<aircraft type>,
@@ -62,6 +66,16 @@ const exportPages = (running: WiredApp, options: Record<string, unknown> = {}): 
   running.invoke<Outcome>('cheat-sheets:exportKneeboard', { ...HORNET, options });
 const status = (running: WiredApp): Promise<Status> =>
   running.invoke<Status>('cheat-sheets:kneeboardStatus', HORNET);
+/** The HTML of every page handed to the renderer for a picture, in order. */
+const pngPages = (running: WiredApp): string[] =>
+  (running.ports.render as FakeRender).calls.filter((c) => c.kind === 'png').map((c) => c.html);
+/** The actions a list page shows, as its rows name them. */
+const rowsOf = (html: string): string[] =>
+  [...html.matchAll(/<span class="what">(.*?)<\/span>/g)].map((m) => m[1]!);
+const sha = async (folder: string, name: string): Promise<string> =>
+  createHash('sha256')
+    .update(await fs.readFile(path.join(folder, name)))
+    .digest('hex');
 
 describe('while DCS runs', () => {
   it('refuses to write or remove pages while DCS runs (DCS.exe or DCS_mt.exe), and says why in the status', async () => {
@@ -156,27 +170,197 @@ describe('exporting kneeboard pages', () => {
       styles: ['night', 'light'],
       lists: true,
     });
+    // The stick's list takes two pages in large type. Both carry the stick's number with
+    // a letter, so they sort after its picture and move no other device's number.
     expect(outcome.written).toEqual([
       'RigReady - 01 - Key actions (day).png',
       'RigReady - 02 - Stick (day).png',
-      'RigReady - 03 - Stick list (day).png',
+      'RigReady - 02b - Stick list (day).png',
+      'RigReady - 02c - Stick list 2 (day).png',
       'RigReady - N01 - Key actions (night).png',
       'RigReady - N02 - Stick (night).png',
-      'RigReady - N03 - Stick list (night).png',
+      'RigReady - N02b - Stick list (night).png',
+      'RigReady - N02c - Stick list 2 (night).png',
     ]);
-    const html = (running.ports.render as FakeRender).calls
-      .filter((c) => c.kind === 'png')
-      .map((c) => c.html);
+    expect([...outcome.written].sort()).toEqual(outcome.written);
+    const html = pngPages(running);
     expect(html[1]).toContain('class="k-light"');
     expect(html[4]).toContain('class="k-night"');
-    expect(html[2]).toContain('Pickle: release weapon');
+    expect(html[2]! + html[3]!).toContain('Pickle: release weapon');
+    // On the list of one device the rows do not repeat its name; the title has it.
+    expect(html[2]).toContain('>Stick (1)<');
+    expect(html[2]).not.toContain('Stick · ');
+    expect(html[2]).toContain('The control on this device.');
     const night = await exportPages(running, {
       devices: ['4098:BEA8'],
       styles: ['night'],
       summary: false,
     });
     expect(night.written).toEqual(['RigReady - 01 - Stick (night).png']);
-    expect(night.removed).toHaveLength(6);
+    expect(night.removed).toHaveLength(8);
+  });
+
+  it('puts every key action on a page when the device names are long, over as many pages as that takes', async () => {
+    const { app: running } = await start('cheat-sheets-long-names');
+    const sheet = await running.invoke<Sheet>('cheat-sheets:sheet', HORNET);
+    const wanted = summaryActions(sheet, KNEEBOARD_LIST_ROWS);
+    expect(wanted.length).toBeGreaterThan(12);
+    const outcome = await exportPages(running, { devices: ['4098:BEA8'] });
+    // The summary goes on to a second page under the same number; the stick stays page 02.
+    const summary = outcome.written.filter((name) => name.includes('Key actions'));
+    expect(summary.slice(0, 2)).toEqual([
+      'RigReady - 01 - Key actions.png',
+      'RigReady - 01b - Key actions 2.png',
+    ]);
+    expect(outcome.written.at(-1)).toMatch(/^RigReady - 02 - WINWING Orion Joystick/);
+    const pages = pngPages(running).filter((html) => html.includes('>Key actions ('));
+    expect(pages).toHaveLength(summary.length);
+    // Every chosen action is on a page, in order, none twice.
+    expect(pages.flatMap(rowsOf)).toEqual(wanted.map((entry) => escapeHtml(entryName(entry))));
+    // What each page says it holds is what it holds.
+    let next = 1;
+    for (const html of pages) {
+      const count = rowsOf(html).length;
+      expect(count).toBeGreaterThan(0);
+      expect(html).toContain(`Actions ${next} to ${next + count - 1} of ${wanted.length}`);
+      next += count;
+    }
+    expect(next - 1).toBe(wanted.length);
+    // A section that goes on over the page says so.
+    expect(pages[1]).toContain('<small>continued</small>');
+
+    // A long device name is cut short in the file name. What the page is comes after the
+    // cut, so the list is still called a list.
+    const withLists = await exportPages(running, { devices: ['4098:BEA8'], lists: true });
+    const stick = withLists.written.filter((name) => name.includes('Orion Joystick'));
+    expect(stick.length).toBeGreaterThanOrEqual(2);
+    expect(stick[0]).toMatch(/^RigReady - 02 - WINWING Orion Joystick [^.]+\.png$/);
+    expect(stick[0]).not.toContain(' list');
+    expect(stick[1]).toMatch(/^RigReady - 02b - WINWING Orion Joystick [^.]+ list\.png$/);
+    for (const [at, name] of stick.slice(2).entries()) {
+      expect(name).toMatch(new RegExp(` list ${at + 2}\\.png$`));
+    }
+  });
+
+  it('checks every rendered list page, plans again with fewer rows when one came out cut off, and writes nothing when it still is', async () => {
+    const { app: running, folder } = await start();
+    const render = running.ports.render as FakeRender;
+    const first = await exportPages(running, { devices: ['4098:BEA8'] });
+    expect(first.written).toEqual(['RigReady - 01 - Key actions.png', 'RigReady - 02 - Stick.png']);
+    const full = rowsOf(pngPages(running)[0]!);
+    expect(full.length).toBeGreaterThan(12);
+
+    // The renderer makes the text run wider than planned: a page as full as planned loses its end.
+    render.calls.length = 0;
+    render.cutOff = (html) => rowsOf(html).length >= full.length;
+    const second = await exportPages(running, { devices: ['4098:BEA8'] });
+    expect(second.written).toEqual([
+      'RigReady - 01 - Key actions.png',
+      'RigReady - 01b - Key actions 2.png',
+      'RigReady - 02 - Stick.png',
+    ]);
+    // The page that was cut off was rendered and thrown away; the two written ones hold every action.
+    const tries = pngPages(running).filter((html) => html.includes('Key actions'));
+    expect(tries).toHaveLength(3);
+    expect(rowsOf(tries[0]!)).toEqual(full);
+    expect([...rowsOf(tries[1]!), ...rowsOf(tries[2]!)]).toEqual(full);
+    // The stick's picture was whole the first time and is not rendered a second time.
+    expect(pngPages(running).filter((html) => html.includes('<div class="pic">'))).toHaveLength(1);
+
+    // A list that is cut off however few rows are planned: nothing is written, and the pages stay as they were.
+    const before = await Promise.all(
+      (await fs.readdir(folder)).sort().map(async (name) => [name, await sha(folder, name)])
+    );
+    render.cutOff = (html) => html.includes('data-must-show');
+    await expect(exportPages(running, { devices: ['4098:BEA8'] })).rejects.toThrow(
+      /The list on "RigReady - 01 - Key actions\.png" did not fit on its page, so nothing was written/
+    );
+    const after = await Promise.all(
+      (await fs.readdir(folder)).sort().map(async (name) => [name, await sha(folder, name)])
+    );
+    expect(after).toEqual(before);
+    expect(await status(running)).toMatchObject({ state: 'current', pages: second.written });
+
+    // A picture that cannot be read is no proof either.
+    render.cutOff = () => false;
+    const real = render.png.bind(render);
+    running.ports.render.png = async (html, size) =>
+      html.includes('data-must-show') ? ok(new Uint8Array([1, 2, 3])) : real(html, size);
+    await expect(exportPages(running, { devices: ['4098:BEA8'] })).rejects.toThrow(
+      /The rendered page could not be read/
+    );
+  });
+
+  it('keeps every device on the page it had when the bindings change which device comes first', async () => {
+    const { app: running } = await start();
+    const first = await exportPages(running);
+    expect(first.written.slice(0, 4)).toEqual([
+      'RigReady - 01 - Key actions.png',
+      'RigReady - 02 - Stick.png',
+      'RigReady - 03 - Throttle.png',
+      'RigReady - 04 - Pedals.png',
+    ]);
+    // The pedals lose their own bindings: the sheet now lists them after every device that has some.
+    const dir = path.join(
+      running.home,
+      'Saved Games',
+      'DCS',
+      'Config',
+      'Input',
+      'FA-18C_hornet',
+      'joystick'
+    );
+    const file = (await fs.readdir(dir)).find((name) => name.startsWith('T-Pendular-Rudder'))!;
+    await fs.rm(path.join(dir, file));
+    const sheet = await running.invoke<Sheet>('cheat-sheets:sheet', HORNET);
+    expect(sheet.devices.findIndex((d) => d.title === 'Pedals')).toBeGreaterThan(2);
+    expect(await status(running)).toMatchObject({ state: 'stale' });
+
+    const second = await exportPages(running);
+    expect(second.written).toEqual(first.written);
+    expect(second.removed).toEqual([]);
+    expect(pngPages(running).at(-9)).toContain('>Pedals<');
+
+    // A device that joins later goes after the ones that have a page, whatever the sheet's order.
+    const two = await exportPages(running, { devices: ['4098:BD26', '044F:B68F'], summary: false });
+    expect(two.written).toEqual(['RigReady - 01 - Throttle.png', 'RigReady - 02 - Pedals.png']);
+    const three = await exportPages(running, {
+      devices: ['4098:BEA8', '4098:BD26', '044F:B68F'],
+      summary: false,
+    });
+    expect(three.written).toEqual([
+      'RigReady - 01 - Throttle.png',
+      'RigReady - 02 - Pedals.png',
+      'RigReady - 03 - Stick.png',
+    ]);
+    expect(pageOrder({ pages: [] })).toEqual([]);
+    expect(pageOrder(undefined)).toEqual([]);
+    expect([0, 1, 2, 25, 26, 27].map(pageLetter)).toEqual(['', 'b', 'c', 'z', 'zb', 'zc']);
+  });
+
+  it('says that pages with a list from before the fix need a new export', async () => {
+    const { app: running } = await start();
+    await exportPages(running, { devices: ['4098:BEA8'] });
+    const file = path.join(running.ports.folders.dataRoot(), 'cheat-sheets', 'kneeboard.json');
+    const manifest = JSON.parse(await fs.readFile(file, 'utf8'));
+    expect(manifest.exports['FA-18C_hornet'].layout).toBe(PAGE_LAYOUT);
+    // As 2.0.0-beta.4 wrote it: no layout recorded.
+    delete manifest.exports['FA-18C_hornet'].layout;
+    await fs.writeFile(file, JSON.stringify(manifest));
+    expect(await status(running)).toMatchObject({
+      state: 'stale',
+      summary:
+        'The kneeboard pages for F/A-18C were made by an older RigReady and can have a list cut off',
+    });
+    await exportPages(running, { devices: ['4098:BEA8'] });
+    expect(await status(running)).toMatchObject({ state: 'current' });
+
+    // Pictures of devices alone were never cut off: an old export of those is left in peace.
+    await exportPages(running, { devices: ['4098:BEA8'], summary: false });
+    const again = JSON.parse(await fs.readFile(file, 'utf8'));
+    delete again.exports['FA-18C_hornet'].layout;
+    await fs.writeFile(file, JSON.stringify(again));
+    expect(await status(running)).toMatchObject({ state: 'current' });
   });
 
   it('never overwrites or removes a page that is not its own', async () => {

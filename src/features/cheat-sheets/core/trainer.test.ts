@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Sheet, SheetBinding, SheetControl, SheetDevice } from './sheet';
 import {
+  alsoDoes,
   EMPTY_PROGRESS,
   LEARNED_STREAK,
   pickDeck,
+  placesOf,
   recordAnswer,
   seededRandom,
   summarize,
@@ -100,6 +102,50 @@ describe('which actions make cards', () => {
     ]);
     const hat = trainerCards(sheetOf(stick)).find((c) => c.kind === 'sensors')!;
     expect(hat.answers[0]!.name).toBe('Hat 1 up');
+  });
+
+  it('names every place an action is bound, and the other places once one was pressed', () => {
+    // One on each of two devices.
+    const release = trainerCards(sheetOf(stick, throttle))[0]!;
+    expect(placesOf(release.answers)).toBe('Button 20 on Stick or Button 7 on Throttle');
+    expect(alsoDoes(release.answers, release.answers[0]!)).toBe(
+      'Button 7 on Throttle does it too.'
+    );
+    expect(alsoDoes(release.answers, release.answers[1]!)).toBe('Button 20 on Stick does it too.');
+
+    // Two, and three, on the same device: the device is said once.
+    const twice = device('Throttle', 'bbbb-2', [
+      control('button:25', binding('Radar elevation up', { kind: 'sensors' })),
+      control('button:28', binding('Radar elevation up', { kind: 'sensors' })),
+    ]);
+    const up = trainerCards(sheetOf(twice))[0]!;
+    expect(up.answers.map((a) => a.control)).toEqual(['button:25', 'button:28']);
+    expect(placesOf(up.answers)).toBe('Button 25 or Button 28 on Throttle');
+    const pressed28 = { deviceKey: 'Throttle', guid: 'BBBB-2', control: 'button:28' };
+    expect(alsoDoes(up.answers, pressed28)).toBe('Button 25 does it too.');
+    const thrice = [...up.answers, { ...up.answers[0]!, control: 'button:30', name: 'Button 30' }];
+    expect(placesOf(thrice)).toBe('Button 25, Button 28 or Button 30 on Throttle');
+    expect(alsoDoes(thrice, pressed28)).toBe('Button 25 and Button 30 do it too.');
+
+    // On the stick as well, as it was at the sitting: the devices are kept apart.
+    const onStick = {
+      deviceKey: 'Stick',
+      guid: 'AAAA-1',
+      device: 'Stick',
+      control: 'button:32',
+      name: 'Button 32',
+    };
+    const three = [onStick, ...up.answers];
+    expect(placesOf(three)).toBe('Button 32 on Stick, or Button 25 or Button 28 on Throttle');
+    expect(alsoDoes(three, onStick)).toBe('Button 25 and Button 28 on Throttle do it too.');
+    expect(alsoDoes(three, pressed28)).toBe(
+      'Button 32 on Stick and Button 25 on Throttle do it too.'
+    );
+
+    // Bound in one place only: that place, and no other.
+    const trim = trainerCards(sheetOf(stick)).find((c) => c.action === 'Trim Up')!;
+    expect(placesOf(trim.answers)).toBe('Button 5 on Stick');
+    expect(alsoDoes(trim.answers, trim.answers[0]!)).toBe('');
   });
 
   it('asks the game defaults when the user has no bindings of their own', () => {

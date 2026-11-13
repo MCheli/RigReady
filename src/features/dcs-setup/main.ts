@@ -17,7 +17,8 @@ export default defineFeatureMain({
       bind(dcsSetupContract, {
         overview: async () => ok(await service.overview()),
         screens: async () => ok(await service.screens()),
-        importSimAppPro: ({ desktopId }) => service.importFromSimAppPro(desktopId),
+        importSimAppPro: ({ desktopId, pairs }) => service.importFromSimAppPro(desktopId, pairs),
+        identifyScreens: ({ setup }) => service.identifyScreens(setup),
         previewScreens: (input) => service.previewScreens(input),
         applyScreens: (input) => service.applyScreens(input),
         exportLua: async () => ok(await service.exportState()),
