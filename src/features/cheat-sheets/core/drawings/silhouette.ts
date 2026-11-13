@@ -92,6 +92,12 @@ export const ControlInputSchema = z.object({
    * no one normal place (a gear lever, a selector) has none of its positions marked.
    */
   rest: z.boolean().optional(),
+  /**
+   * Held only while it is pressed, on a control whose other positions stay put: the push
+   * of a handle, the press in the middle of a selector knob. It is not one of the control's
+   * positions, so the trainer waits for it to be let go like any button.
+   */
+  momentary: z.boolean().optional(),
 });
 export type ControlInput = z.infer<typeof ControlInputSchema>;
 

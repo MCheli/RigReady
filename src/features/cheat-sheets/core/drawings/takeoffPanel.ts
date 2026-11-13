@@ -1,4 +1,4 @@
-import { btn, keyAt, label, part, resting, roundAt, toggleAt } from './parts';
+import { btn, keyAt, label, momentary, part, resting, roundAt, toggleAt } from './parts';
 import { circle, roundedRect } from './shapes';
 import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silhouette';
 
@@ -107,7 +107,7 @@ export const TAKEOFF_PANEL_2: DeviceDrawingInput = {
       btn(19, 'R FUS MSL'),
       btn(20, 'RACK/LCHR'),
       btn(21, 'STORES'),
-      btn(22, 'JETT push'),
+      momentary(btn(22, 'JETT push')),
     ]),
     part('stations', 'Station buttons', 476, 138, 'right', [
       btn(23, 'CTR'),
@@ -141,7 +141,7 @@ export const TAKEOFF_PANEL_2: DeviceDrawingInput = {
       btn(28, 'FOLD'),
       btn(29, 'HOLD'),
       resting(btn(30, 'SPREAD')),
-      btn(31, 'push'),
+      momentary(btn(31, 'push')),
     ]),
   ],
   columnWidth: 210,

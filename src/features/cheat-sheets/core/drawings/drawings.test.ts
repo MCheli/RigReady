@@ -594,6 +594,12 @@ describe('what the owner pressed on his own rig on 13 Nov 2026', () => {
     // The wing fold handle rests in SPREAD. The gear lever and the knob stay wherever they
     // are put, so neither has one place it rests and neither is marked; nor is the brake.
     expect(sorted(restInputs(drawing))).toEqual([b(30)]);
+    // The push of the wing fold handle and the press of the jettison knob spring back: they
+    // are not positions of their control.
+    const momentary = drawing.controls.flatMap((c) =>
+      c.inputs.filter((i) => i.momentary).map((i) => `${c.id} ${i.id}`)
+    );
+    expect(momentary.sort()).toEqual(['select-jett button:22', 'wing-fold button:31']);
   });
 
   it('names each of those the same way on the sheet, in the trainer and on the overlay', async () => {
