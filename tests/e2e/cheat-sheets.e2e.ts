@@ -350,20 +350,31 @@ test('cheat sheets: what the owner pressed on his rig lights the control it belo
   await expect(control(page, 'button:58')).toHaveClass(/cs-on/);
   await expect(control(page, 'button:59')).not.toHaveClass(/cs-on/);
 
-  // The take-off panel: pulling the brake handle out gives 40 and lets go of 30, where it
-  // rests. The wing fold handle, which had 30, is the one control left with a "?".
+  // The take-off panel rests with the wing fold handle in SPREAD (30). Pulling the brake
+  // handle out gives 40 (the panel lets go of 30 meanwhile, as it did on the real one);
+  // the wing fold handle turned to FOLD gives 28. Neither carries a "?" any more.
   const panelRest = [3, 7, 8, 10, 12, 15, 18, 30, 32, 35];
+  const panelWith = (off: number, on: number): number[] => [
+    ...panelRest.filter((n) => n !== off),
+    on,
+  ];
   await page.locator('[data-testid="sheet-device"][data-title*="TAKEOFF"]').click();
-  await expect(head('brake')).toHaveText('EMERG / PARK BRK handle · 30, 38–41');
-  await expect(head('wing-fold')).toContainText('?');
+  await expect(head('brake')).toHaveText('EMERG / PARK BRK handle · 38–41');
+  await expect(head('wing-fold')).toHaveText('WING FOLD handle · 28–31');
   await sendInput([state(CONTROLLERS.takeoff, { pressed: panelRest })]);
-  await sendInput([
-    state(CONTROLLERS.takeoff, { pressed: [...panelRest.filter((n) => n !== 30), 40] }),
-  ]);
+  await expect(control(page, 'button:30')).toHaveClass(/cs-on/);
+  await expect(control(page, 'button:30')).toContainText('SPREAD');
+  await sendInput([state(CONTROLLERS.takeoff, { pressed: panelWith(30, 40) })]);
   await expect(control(page, 'button:40')).toHaveClass(/cs-on/);
-  await expect(control(page, 'button:30')).not.toHaveClass(/cs-on/);
   await expect(control(page, 'button:40')).toContainText('out');
   await shot('takeoff-brake-out');
+  await sendInput([state(CONTROLLERS.takeoff, { pressed: panelRest })]);
+  await expect(control(page, 'button:40')).not.toHaveClass(/cs-on/);
+  await sendInput([state(CONTROLLERS.takeoff, { pressed: panelWith(30, 28) })]);
+  await expect(control(page, 'button:28')).toHaveClass(/cs-on/);
+  await expect(control(page, 'button:30')).not.toHaveClass(/cs-on/);
+  await expect(control(page, 'button:28')).toContainText('FOLD');
+  await shot('takeoff-wing-fold');
   await sendInput([state(CONTROLLERS.takeoff, { pressed: panelRest })]);
   await expect(control(page, 'button:30')).toHaveClass(/cs-on/);
 });

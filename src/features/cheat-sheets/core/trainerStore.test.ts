@@ -79,6 +79,28 @@ describe('the cards of an aircraft', () => {
     expect(answer('button:28')?.otherPositions).toBeUndefined();
   });
 
+  it('keeps the push of a handle or knob out of its positions: the take-off panel', async () => {
+    app = await wiredApp('cheat-sheets-hornet', FILES);
+    const deck = await deckOf(app);
+    const panel = deck.devices.find((d) => /TAKEOFF/i.test(d.title))!;
+    const answer = (control: string) =>
+      deck.cards
+        .flatMap((c) => c.answers)
+        .find((a) => a.deviceKey === panel.key && a.control === control);
+    // The wing fold handle: FOLD, HOLD and SPREAD stay put; pushing it in (31) springs back,
+    // so it has no other positions and SPREAD's are only FOLD and HOLD.
+    expect([...(answer('button:30')?.otherPositions ?? [])].sort()).toEqual([
+      'button:28',
+      'button:29',
+    ]);
+    expect(answer('button:31')).toBeDefined();
+    expect(answer('button:31')?.otherPositions).toBeUndefined();
+    // The same for the press in the middle of the jettison knob.
+    expect(answer('button:22')).toBeDefined();
+    expect(answer('button:22')?.otherPositions).toBeUndefined();
+    expect(answer('button:18')?.otherPositions).not.toContain('button:22');
+  });
+
   it('leaves out the controls of a device that is not connected, and says which', async () => {
     app = await wiredApp('cheat-sheets-hornet', FILES);
     const before = await deckOf(app);

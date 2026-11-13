@@ -2988,6 +2988,7 @@ requirements:
       - "In a round for one device, a press on another device is said to be on another device, by name, and is not counted. In a round for all devices the same press is an answer."
       - "A window that starts to listen while another window listens is told where every control is, marked as rest and not as a press: the trainer opened beside the popped-out quick look does not take a switch that is on for an answer, and the pop-out does not take it for the last press."
       - "A switch position or a throttle stop counts once it has been there about a third of a second, and is not let go: the next card comes with it where it was put, without waiting for the other positions of its control, and the card says 'Leave it there for the next card.' A position is taken for one that stays when it, or another position of the same control, was held when the round or a card began. Which buttons are positions of one control comes from the device's drawing (the one its sheet is drawn with, else RigReady's), or from the list of a known device; what is drawn as a hat, a mini-stick, a lever or trigger, a button or a key springs back and is left out. When a card asks for the position its control is already in, another position of that control on the way away and back is not a wrong answer, is not weighed and is not said. The owner's throttle at rest on 13 November 2026 (Buttons 23, 30, 31, 4, 41 and 58 held) plays back: the left handle to IDLE from IDLE, the upper thumb switch forward, the right handle to OFF, with nothing let go."
+      - "A button a drawing marks momentary (the push of the take-off panel's wing fold handle, 31; the press of its jettison knob, 22) is not a position of its control: with the wing fold handle resting in SPREAD, a card answered by pushing the handle in still waits for it to be let go."
     notes:
       - "2026-11-13: at the second look on the rig 'Left throttle to IDLE' was hard to answer: the handle rests at IDLE, so it had to go to OFF and back, and then be moved off IDLE again because the next card waited for it to be let go (finding T1). Stops and switch positions are now left where they are put. The drawings do not mark which positions stay put, so that is taken from what was seen resting; a switch whose positions nothing tells apart from buttons, never seen resting in one, still waits to be let go or put back."
     status: done
@@ -2998,6 +2999,8 @@ requirements:
       - "src/features/cheat-sheets/core/trainerRound.test.ts#is not told by the drawing alone: a position nothing was seen resting in waits to be let go"
       - "src/features/cheat-sheets/core/trainer.test.ts#knows from the drawing of the device which buttons are positions of one switch or throttle stop"
       - "src/features/cheat-sheets/core/trainerStore.test.ts#gives the owner's throttle stops and switch positions their other positions, from its drawing"
+      - "src/features/cheat-sheets/core/trainerStore.test.ts#keeps the push of a handle or knob out of its positions: the take-off panel"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#waits for the push of a handle to be let go, though another position of the handle rests: the wing fold handle"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a throttle stop or a switch position counts once it is reached and held a moment, and is left there; one already there as its card comes up is moved away and back"
       - "artifacts/screens/cheat-sheets-trainer-stops/01-already-there.png"
       - "artifacts/screens/cheat-sheets-trainer-stops/02-moved-away.png"
@@ -4534,19 +4537,20 @@ requirements:
       - "The WinWing UFC1 with its HUD1, the ICP, the F-18 startup panel and the F-18 take-off panel 2 each have a drawing of the panel face, found by the USB id or the name the panel reports, in place of the grid of cards: every switch, knob, key and handle the maker's number map names is on the face where it is on the panel, with its numbers and the word printed beside it."
       - "The MFD1 frame drawing has all twenty edge buttons, the four corner rockers by their printed names (DAY / NGT, SYM, GAIN, CONT), the knob with its press, and the switch on the side edge."
       - "A number the maker's map has no control for is not placed on the drawing; it shows under More controls (SHEET-022)."
-      - "A control whose numbers are not confirmed carries the '?' mark, and only that one does: the take-off panel's wing fold handle, whose 30 (SPREAD on the maker's screen) turned out to follow the brake handle."
-      - "The take-off panel's brake handle is out 40, in 41, left 39, right 38, and 30 while it rests (marked rest), as moved on the owner's panel on 13 Nov; the jettison knob (17 to 19) and the gear lever (35 to 37) each move as one control. The shipped cards of the panel say the same."
+      - "No control of the panels carries the '?' mark: every number whose move was in doubt was moved on the owner's panel on 13 Nov."
+      - "The take-off panel's brake handle is out 40, in 41, left 39, right 38, with no button of its own at rest; its wing fold handle is one control with three positions that stay put, FOLD 28, HOLD 29 and SPREAD 30 (where it normally sits, marked rest), and a push in that gives 31 while held. The jettison knob (17 to 19) and the gear lever (35 to 37) each move as one control. The shipped cards of the panel say the same."
       - "On the owner's recorded rig, whatever is bound, no two leader lines cross and every label is on the page."
     notes:
       - "2026-11-12: owner decision 10A: every WinWing controller the owner has, drawn fresh in RigReady's style. The cards of the ICP were one number too low on two switches and are corrected for users who keep a card layout. Sources: docs/research/controller-drawings.md section 8."
-      - "2026-11-13: the brake handle was moved at the second look on the rig; the drawing and the cards follow the presses (research note section 11). The owner's own DCS bindings for the panel, from WinWing's profile, still have 30 as Wing Fold SPREAD: one move of the wing fold handle on the rig settles whether 30 also follows it."
+      - "2026-11-13: the brake handle was moved at the second look on the rig, and the wing fold handle in the input tester at 12:55, one position at a time; the drawing and the cards follow both (research note section 11). The brake handle's first reading gave it 30 as its rest; the wing fold handle showed 30 is SPREAD, which the panel lets go of while the brake handle is moved."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#has a drawing for each of the owner's WinWing panels, found by what the panel reports, numbered as the maker numbers it"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#draws each one, not a grid of cards, with no leader crossing and every label on the page, whatever is bound"
-      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#take-off panel 2: the brake handle is out 40, in 41, left 39, right 38 and rests on 30; the gear lever and the jettison knob are one control each"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#take-off panel 2: the brake handle is out 40, in 41, left 39, right 38; the wing fold handle is FOLD 28, HOLD 29, SPREAD 30 and push 31; the gear lever and the jettison knob are one control each"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: what the owner pressed on his rig lights the control it belongs to, on the grip, the throttle and the take-off panel"
       - "artifacts/screens/cheat-sheets-second-look/03-takeoff-brake-out.png"
+      - "artifacts/screens/cheat-sheets-second-look/04-takeoff-wing-fold.png"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
       - "docs/research/controller-drawings.md"

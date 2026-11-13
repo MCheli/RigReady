@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { generateLayout } from './generate';
+import { otherPositions } from './positions';
 import type { TrainerAnswer, TrainerCard } from './trainer';
 import {
   HOLD_MS,
@@ -614,6 +616,39 @@ describe('a position the control stays in: a switch position, a throttle stop', 
       '8080 finished',
     ]);
     expect(round.session.results()).toMatchObject({ firstTry: 3, missed: [] });
+  });
+
+  it('waits for the push of a handle to be let go, though another position of the handle rests: the wing fold handle', () => {
+    // The take-off panel at rest on the owner's rig (13 Nov): its switches where they were
+    // left, the wing fold handle in SPREAD (30). Pushing the handle in gives 31 only while
+    // it is pushed. Its other positions are the ones the trainer reads from the drawing.
+    const PANEL_REST = [3, 7, 8, 10, 12, 15, 18, 30, 32, 35];
+    const positions = otherPositions({
+      name: 'WINWING F18 TAKEOFF PANEL 2',
+      vendorId: '4098',
+      productId: 'BF05',
+      layout: generateLayout({
+        name: 'WINWING F18 TAKEOFF PANEL 2',
+        vendorId: '4098',
+        productId: 'BF05',
+        buttons: 64,
+        axes: [],
+        hats: 0,
+      }),
+      layoutSource: 'generated',
+    });
+    expect(positions.get('button:31')).toBeUndefined();
+    expect([...(positions.get('button:30') ?? [])].sort()).toEqual(['button:28', 'button:29']);
+    const push = card('Wing Fold: PULL/STOW', on(PANEL, 31));
+    const round = begin([push, other], [[0, PANEL, PANEL_REST]], [PANEL]);
+    expect(play(round, [[1000, PANEL, [...PANEL_REST, 31]]], 5000)).toEqual([
+      '1350 kept Wing Fold: PULL/STOW right',
+      '1350 right Wing Fold: PULL/STOW',
+    ]);
+    // Right, and held: it springs back, so the next card waits for it.
+    expect(round.staysPut).toBe(false);
+    expect(round.holding).toBe(true);
+    expect(play(round, [[5000, PANEL, PANEL_REST]], 9000)).toEqual(['5300 asking b']);
   });
 
   it('is not told by the drawing alone: a position nothing was seen resting in waits to be let go', () => {
