@@ -5,6 +5,8 @@ import {
   REGISTRY_SOURCES,
   filterDcsLog,
   filterLibraryFolders,
+  keepRecordedProcesses,
+  keepRecordedServices,
   redactStreamDeckManifest,
   wantUninstallEntry,
 } from './recordPlan';
@@ -54,13 +56,13 @@ describe('record plan', () => {
       '2026 INFO APP (Main): Command line: "C:\\DCS\\bin\\DCS.exe" --restarted',
       '2026 INFO APP (Main): DCS/2.9.28.26283 (x86_64; MT; Windows NT 10.0.26200)',
       '2026 INFO APP (Main): CPU: 16 cores, user home is C:\\Users\\Someone',
-      '2026 INFO INPUT (Main): created [WINWING MFD1-R] with full id [WINWING MFD1-R {806E0610-B756-11f0-8024-444553540000}],SUPPLEMENTAL|UNKNOWN',
+      '2026 INFO INPUT (Main): created [WINWING MFD1-R] with full id [WINWING MFD1-R {757B5173-A027-19e9-8024-444553540000}],SUPPLEMENTAL|UNKNOWN',
       '2026 INFO VISUALIZER (Main): lots more',
     ].join('\r\n');
     const kept = filterDcsLog(log).trimEnd().split('\r\n');
     expect(kept).toHaveLength(6);
     expect(kept.join('\n')).toContain('DCS/2.9.28.26283');
-    expect(kept.join('\n')).toContain('with full id [WINWING MFD1-R {806E0610');
+    expect(kept.join('\n')).toContain('with full id [WINWING MFD1-R {757B5173');
     expect(kept.join('\n')).not.toContain('Someone');
   });
 
@@ -125,6 +127,28 @@ describe('record plan', () => {
     expect(filtered).not.toContain('"440"');
     expect(filtered).toContain('"totalsize"\t\t"0"');
     expect(filtered.split('\n')).toHaveLength(vdf.split('\n').length - 1);
+  });
+
+  it('keeps only the listed programs, at most the listed number of copies, and the listed services', () => {
+    const running = [
+      { pid: 4, name: 'System' },
+      { pid: 10, name: 'svchost.exe' },
+      ...Array.from({ length: 20 }, (_, i) => ({ pid: 100 + i, name: 'svchost.exe' })),
+      { pid: 200, name: 'TrackIR5.exe' },
+      { pid: 300, name: 'SomeoneElsesApp.exe' },
+    ];
+    const kept = keepRecordedProcesses(running);
+    expect(kept.filter((p) => p.name === 'svchost.exe').length).toBeLessThan(10);
+    expect(kept.map((p) => p.name)).toContain('TrackIR5.exe');
+    expect(kept.map((p) => p.name)).toContain('System');
+    expect(kept.map((p) => p.name)).not.toContain('SomeoneElsesApp.exe');
+    expect(kept[0]).toBe(running[0]);
+    const services = keepRecordedServices([
+      { name: 'HidHide', state: 'running' },
+      { name: 'SomeVendorUpdater', state: 'running' },
+      { name: 'Spooler', state: 'running' },
+    ]);
+    expect(services.map((s) => s.name)).toEqual(['HidHide', 'Spooler']);
   });
 
   it('removes Steam account ids and player names from recorded text', () => {

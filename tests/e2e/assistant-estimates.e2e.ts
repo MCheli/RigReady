@@ -30,9 +30,12 @@ async function storeKey(page: Page): Promise<void> {
 const field = (page: Page, id: string) => page.getByTestId(id).locator('input');
 const box = (page: Page) => page.getByTestId('assistant-input').locator('textarea').first();
 
-/** Settings scrolled so that the rows from the key down to the monthly budget are on screen. */
+/**
+ * Settings scrolled so that the rows from the key field down to the monthly budget are on
+ * screen. The row above, with the stored key's "Key ending in" line, is out of view.
+ */
 const showMoney = (page: Page): Promise<void> =>
-  page.getByTestId('ai-key-state').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  page.getByTestId('ai-key-input').evaluate((el) => el.scrollIntoView({ block: 'start' }));
 
 /** Types an amount into a field of Settings and presses Enter. */
 async function type(page: Page, id: string, value: string): Promise<void> {
@@ -94,8 +97,15 @@ test('assistant estimates: prices are named and can be typed, a limit needs an a
   rig,
 }) => {
   const run = await rig.launch('assistant-estimates', 'assistant-estimates');
-  const { page, shot } = run;
+  const { page } = run;
   await storeKey(page);
+  // No picture shows the stored key's "Key ending in" line: the test fails rather than take one.
+  const keyHint = page.getByTestId('ai-settings-key');
+  await expect(keyHint).toContainText('Key ending in');
+  const shot = async (name: string): Promise<string> => {
+    await expect(keyHint).not.toBeInViewport();
+    return run.shot(name);
+  };
 
   // The built-in prices of the chosen model, with the month they were recorded.
   const hint = page.getByTestId('ai-prices-hint');

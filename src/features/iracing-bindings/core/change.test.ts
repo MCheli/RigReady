@@ -16,7 +16,7 @@ import { EDIT_SWITCH, editingOn, pressedOf, refuseWhenOff } from './change';
 import { RECORD_BYTES, parseControlsFile } from './controlsFile';
 import { KEPT_BYTES } from './edit';
 
-const WHEEL = '20B0BED0-03A4-11F1-8001-444553540000';
+const WHEEL = '45D4BEA1-60A1-17D8-8001-444553540000';
 const BOX = '5EED0001-7A11-11EF-8004-444553540000';
 const HANDBRAKE = '5EED0002-7A11-11EF-8005-444553540000';
 const CAR = 'car:mx5 mx52016';

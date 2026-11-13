@@ -599,7 +599,7 @@ Add your own file, prefixed with your feature (`audio-wrong-default.yaml`); do n
 
 `fixtures/rigs/mark-full/` is the owner's PC with everything connected, in the desk monitor state. `NOTES.md` there has the details. What a scenario gives you:
 
-- **State** (JSON): 62 USB devices, 5 monitors, the running processes, 718 services, 10 audio endpoints, 12 DirectInput controllers (with instance GUIDs), HidHide state, and registry keys: DirectInput (`...\MediaProperties\PrivateProperties\DirectInput` and `Joystick\OEM`), Steam path, uninstall entries of the sims and helper apps (DCS, iRacing, LMU, BeamNG, MSFS 2024, Assetto Corsa/EVO/Rally, TrackIR, Stream Deck, HidHide, ViGEm, Fanatec, SimAppPro, Steam), `HKCU\Software\Endor\FanatecService`, `HKLM\SOFTWARE\WOW6432Node\Fanatec Endor AG`. There are no Eagle Dynamics keys: the Steam edition of DCS has none.
+- **State** (JSON): 62 USB devices, 5 monitors, 44 running processes and 22 services (what the tests read and a few of Windows' own; a test that needs another adds it to `RECORDED_PROCESSES` or `RECORDED_SERVICES` in `scripts/lib/recordPlan.ts` and to the recording), 10 audio endpoints, 12 DirectInput controllers (with instance GUIDs), HidHide state, and registry keys: DirectInput (`...\MediaProperties\PrivateProperties\DirectInput` and `Joystick\OEM`), Steam path, uninstall entries of the sims and helper apps (DCS, iRacing, LMU, BeamNG, MSFS 2024, Assetto Corsa/EVO/Rally, TrackIR, Stream Deck, HidHide, ViGEm, Fanatec, SimAppPro, Steam), `HKCU\Software\Endor\FanatecService`, `HKLM\SOFTWARE\WOW6432Node\Fanatec Endor AG`. There are no Eagle Dynamics keys: the Steam edition of DCS has none.
 - **Files**, copied under the fake user folder:
 
 | Under the fake home | What |
@@ -619,7 +619,7 @@ Add your own file, prefixed with your feature (`audio-wrong-default.yaml`); do n
 
 - **Programs are empty files.** `DCS.exe`, `iRacingUI.exe`, `TrackIR5.exe`, `HidHideCLI.exe`, `StreamDeck.exe`, `SimAppPro.exe` and so on exist with zero bytes so `files.exists()` detection works. There is nothing to run and no file version to read.
 - **Recorded paths are re-pointed.** In registry values and in the recorded text files, `C:\Users\User`, `C:\Program Files`, `C:\Program Files (x86)` and `C:\ProgramData` become the matching folder under the fake home, in `\`, `\\` and `/` spellings. Process paths in `processes.json` are left as recorded (`C:\Program Files (x86)\TrackIR5\TrackIR5.exe`).
-- Never recorded: `%APPDATA%\SimAppPro\config.json` (account credentials), DCS `network.vault` and `steam_authdata.bin`, images, binaries. Steam ids and the LMU player name are replaced.
+- Never recorded: `%APPDATA%\SimAppPro\config.json` (account credentials), DCS `network.vault` and `steam_authdata.bin`, images, binaries. Steam ids and the LMU player name are replaced. Device serial numbers and instance GUIDs (controllers, audio endpoints) are stable made-up values of the same shape, made by `scripts/lib/sanitize.ts`: the same device always gets the same value, so tests may name them.
 
 ### The generic rig (`generic-rig`)
 

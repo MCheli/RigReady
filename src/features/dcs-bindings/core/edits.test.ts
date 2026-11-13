@@ -487,7 +487,7 @@ describe('writing files', () => {
     ]);
     const created = path.join(
       joystickDir(rig.home),
-      'FANATEC Podium Wheel Base DD2 {20B0BED0-03A4-11f1-8001-444553540000}.diff.lua'
+      'FANATEC Podium Wheel Base DD2 {45D4BEA1-60A1-17d8-8001-444553540000}.diff.lua'
     );
     expect(await fs.readFile(created, 'utf8')).toBe(
       [

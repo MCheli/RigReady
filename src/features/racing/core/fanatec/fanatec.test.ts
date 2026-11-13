@@ -33,7 +33,7 @@ describe('the Fanatec wheel', () => {
     app.ports.state.input.push({
       ...app.ports.state.input.find((d) => d.productId === '0007')!,
       index: 12,
-      guid: '20B0BED0-03A4-11F1-8002-444553540000',
+      guid: '45D4BEA1-60A1-17D8-8002-444553540000',
       numButtons: 63,
     });
     expect((await runBaseCheck(app)).details).toContain(

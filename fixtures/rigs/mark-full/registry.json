@@ -2,7 +2,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_044F&PID_B68F\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "a056397f56b7f011801b444553540000"
+      "value": "b424140f66d5a014801b444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -23,7 +23,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_045E&PID_028E\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "a0c503ec38bff1118001444553540000"
+      "value": "b4e672cc32bad7198001444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -52,28 +52,28 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "c0015ade51b7f011800c444553540000"
+      "value": "e9913dfa94d2a715800c444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "d0285ade51b7f011800d444553540000"
+      "value": "b4291cbb23a9f514800d444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\1\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\2": {
     "GUID": {
       "type": "binary",
-      "value": "307b7314ba10f1118001444553540000"
+      "value": "254b0477fa13e5138001444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\2\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\3": {
     "GUID": {
       "type": "binary",
-      "value": "307b7314ba10f1118002444553540000"
+      "value": "254b0477fa13e5138002444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_047D&PID_80A6\\Calibration\\3\\Type": {},
@@ -114,21 +114,21 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "a0c790006c25f1118001444553540000"
+      "value": "e6b291953b54a9118001444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "a0c790006c25f1118002444553540000"
+      "value": "e6b291953b54a9118002444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\1\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\2": {
     "GUID": {
       "type": "binary",
-      "value": "a0c790006c25f1118003444553540000"
+      "value": "e6b291953b54a9118003444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_056E&PID_0132\\Calibration\\2\\Type": {},
@@ -149,14 +149,14 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "a0e288e51f10f1118001444553540000"
+      "value": "d4b951b11e17f0168001444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "c03089e51f10f1118002444553540000"
+      "value": "b26672a99e23e4118002444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_05AC&PID_024F\\Calibration\\1\\Type": {},
@@ -181,7 +181,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0B05&PID_19AF\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "b089cd0751b7f0118003444553540000"
+      "value": "c832ee3399e9b6178003444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0B05&PID_19AF\\Calibration\\0\\Type": {},
@@ -194,7 +194,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "d0beb020a403f1118001444553540000"
+      "value": "a1bed445a160d8178001444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -205,7 +205,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "d0beb020a403f1118002444553540000"
+      "value": "a1bed445a160d8178002444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -216,7 +216,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\2": {
     "GUID": {
       "type": "binary",
-      "value": "d0beb020a403f1118003444553540000"
+      "value": "a1bed445a160d8178003444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0EB7&PID_0007\\Calibration\\2\\Type": {},
@@ -253,7 +253,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0FD9&PID_008F\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "f0b76d8056b7f011801f444553540000"
+      "value": "e0e93e1114e3c711801f444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_0FD9&PID_008F\\Calibration\\0\\Type": {},
@@ -266,14 +266,14 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "b01565d852b7f0118010444553540000"
+      "value": "b05656c648f3e9128010444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "b01565d852b7f0118011444553540000"
+      "value": "b05656c648f3e9128011444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1290\\Calibration\\1\\Type": {},
@@ -290,14 +290,14 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "807333d752b7f011800e444553540000"
+      "value": "266000a396d9e114800e444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "807333d752b7f011800f444553540000"
+      "value": "266000a396d9e114800f444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1294\\Calibration\\1\\Type": {},
@@ -314,35 +314,35 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "b089cd0751b7f0118001444553540000"
+      "value": "c832ee3399e9b6178001444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "b089cd0751b7f0118002444553540000"
+      "value": "c832ee3399e9b6178002444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\1\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\2": {
     "GUID": {
       "type": "binary",
-      "value": "b06bd20751b7f0118005444553540000"
+      "value": "c08ea80513c5e2128005444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\2\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\3": {
     "GUID": {
       "type": "binary",
-      "value": "b06bd20751b7f0118007444553540000"
+      "value": "c08ea80513c5e2128007444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\3\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\4": {
     "GUID": {
       "type": "binary",
-      "value": "b06bd20751b7f011800b444553540000"
+      "value": "c08ea80513c5e212800b444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1038&PID_1610\\Calibration\\4\\Type": {},
@@ -391,14 +391,14 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "a056397f56b7f011801c444553540000"
+      "value": "b424140f66d5a014801c444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "a056397f56b7f011801d444553540000"
+      "value": "b424140f66d5a014801d444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_1189&PID_8890\\Calibration\\1\\Type": {},
@@ -423,35 +423,35 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "b089cd0751b7f0118004444553540000"
+      "value": "c832ee3399e9b6178004444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "b06bd20751b7f0118006444553540000"
+      "value": "c08ea80513c5e2128006444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\1\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\2": {
     "GUID": {
       "type": "binary",
-      "value": "b06bd20751b7f0118008444553540000"
+      "value": "c08ea80513c5e2128008444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\2\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\3": {
     "GUID": {
       "type": "binary",
-      "value": "b06bd20751b7f0118009444553540000"
+      "value": "c08ea80513c5e2128009444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\3\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\4": {
     "GUID": {
       "type": "binary",
-      "value": "b06bd20751b7f011800a444553540000"
+      "value": "c08ea80513c5e212800a444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2013\\Calibration\\4\\Type": {},
@@ -480,35 +480,35 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "10e4626756b7f0118015444553540000"
+      "value": "45d9861747d5c9148015444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "10e4626756b7f0118016444553540000"
+      "value": "45d9861747d5c9148016444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\1\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\2": {
     "GUID": {
       "type": "binary",
-      "value": "200b636756b7f0118017444553540000"
+      "value": "643b119188a5b7118017444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\2\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\3": {
     "GUID": {
       "type": "binary",
-      "value": "200b636756b7f0118018444553540000"
+      "value": "643b119188a5b7118018444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\3\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\4": {
     "GUID": {
       "type": "binary",
-      "value": "200b636756b7f0118019444553540000"
+      "value": "643b119188a5b7118019444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_258A&PID_2024\\Calibration\\4\\Type": {},
@@ -537,7 +537,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3344&PID_C259\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "d04b6fdf0cfaf0118001444553540000"
+      "value": "f15f8dfe2ddfc3178001444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -548,7 +548,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3344&PID_C259\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "d04b6fdf0cfaf0118002444553540000"
+      "value": "f15f8dfe2ddfc3178002444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -569,21 +569,21 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "a0a5306656b7f0118012444553540000"
+      "value": "c5c2155944c6c2168012444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\0\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\1": {
     "GUID": {
       "type": "binary",
-      "value": "a0a5306656b7f0118013444553540000"
+      "value": "c5c2155944c6c2168013444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\1\\Type": {},
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\2": {
     "GUID": {
       "type": "binary",
-      "value": "a0a5306656b7f0118014444553540000"
+      "value": "c5c2155944c6c2168014444553540000"
     }
   },
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_3434&PID_0220\\Calibration\\2\\Type": {},
@@ -616,7 +616,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BD26\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "00df6d8056b7f0118022444553540000"
+      "value": "44ad0f4866d1c0188022444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -633,7 +633,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BE03\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "e0906d8056b7f011801e444553540000"
+      "value": "b7200f7596a7e813801e444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -650,7 +650,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEA8\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "00df6d8056b7f0118023444553540000"
+      "value": "44ad0f4866d1c0188023444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -667,7 +667,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEDE\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "10066e8056b7f0118026444553540000"
+      "value": "73517b7527a0e9198026444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -684,7 +684,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE0\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "00df6d8056b7f0118021444553540000"
+      "value": "44ad0f4866d1c0188021444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -701,7 +701,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE1\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "a056397f56b7f011801a444553540000"
+      "value": "b424140f66d5a014801a444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -718,7 +718,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BEE2\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "10066e8056b7f0118024444553540000"
+      "value": "73517b7527a0e9198024444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -735,7 +735,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BF05\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "10066e8056b7f0118025444553540000"
+      "value": "73517b7527a0e9198025444553540000"
     },
     "Joystick Id": {
       "type": "binary",
@@ -752,7 +752,7 @@
   "HKCU\\System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\DirectInput\\VID_4098&PID_BF06\\Calibration\\0": {
     "GUID": {
       "type": "binary",
-      "value": "f0b76d8056b7f0118020444553540000"
+      "value": "e0e93e1114e3c7118020444553540000"
     },
     "Joystick Id": {
       "type": "binary",

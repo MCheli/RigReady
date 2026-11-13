@@ -230,7 +230,7 @@ test('ai-assist: a suggestion round trip shows what is sent, checks the answer, 
   await page.getByTestId('ai-payload-toggle').click();
   await expect(page.getByTestId('ai-payload-body')).toContainText('"cache_control"');
   await expect(page.getByTestId('ai-payload-body')).not.toContainText(KEY);
-  await expect(page.getByTestId('ai-payload-body')).not.toContainText('806DDF00');
+  await expect(page.getByTestId('ai-payload-body')).not.toContainText('480FAD44');
   await shot('payload');
   await page.getByTestId('ai-payload-send').click();
 
@@ -678,7 +678,7 @@ test('ai-assist: a suggestion round trip through an OpenAI-compatible server on 
     await shot('suggestions');
     const sent = server.requests.find((r) => r.body.includes('"stream":true'))!;
     expect(sent.body).toContain('"json_schema"');
-    expect(sent.body).not.toContain('806DDF00');
+    expect(sent.body).not.toContain('480FAD44');
 
     const cage = page.locator('[data-testid="ai-suggestion"][data-action="Cage/Uncage Button"]');
     await cage.getByTestId('ai-suggestion-tick').locator('input').uncheck();

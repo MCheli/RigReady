@@ -4,5 +4,5 @@ extends: dcs-bindings-hornet.yaml
 # The left MFD frame's knob (its only axis) is bound to the HUD brightness and, by accident, to pitch.
 mutations:
   - op: writeFile
-    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-L {7F3956A0-B756-11f0-801A-444553540000}.diff.lua"
-    from: "data/dcs-bindings/conflict/WINWING MFD1-L {7F3956A0-B756-11f0-801A-444553540000}.diff.lua"
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-L {0F1424B4-D566-14a0-801A-444553540000}.diff.lua"
+    from: "data/dcs-bindings/conflict/WINWING MFD1-L {0F1424B4-D566-14a0-801A-444553540000}.diff.lua"

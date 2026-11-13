@@ -108,8 +108,8 @@ test('names: a name given on the Devices page shows on the Fly checklist, in DCS
   await expect(page.getByTestId('dev-given-name')).toHaveText('Up-front controller');
   await expect(page.getByTestId('dev-hardware-name')).toHaveText('WINWING UFC1 + HUD1');
   // Still the same device to DCS: matched by its ID, the file named after the hardware.
-  await expect(page.getByTestId('dev-meta')).toContainText('806E0610-B756-11f0-8026-444553540000');
-  await expect(page.getByTestId('dev-meta')).toContainText('WINWING UFC1 + HUD1 {806E0610');
+  await expect(page.getByTestId('dev-meta')).toContainText('757B5173-A027-19e9-8026-444553540000');
+  await expect(page.getByTestId('dev-meta')).toContainText('WINWING UFC1 + HUD1 {757B5173');
   await shot('bindings-device');
 
   // USB map.
@@ -188,7 +188,7 @@ test('tester: pressing a control shows what it is bound to in the chosen aircraf
   await shot('device-detail');
   await mfd.getByTestId('device-bindings').click();
   await expect(page.getByTestId('bind-devices')).toBeVisible();
-  await expect(page.getByTestId('dev-meta')).toContainText('7F3956A0-B756-11f0-801A-444553540000');
+  await expect(page.getByTestId('dev-meta')).toContainText('0F1424B4-D566-14a0-801A-444553540000');
   await expect(page.getByTestId('dev-select')).toContainText('WINWING MFD1-L');
   await shot('its-bindings');
 
@@ -237,7 +237,7 @@ test('tester: pressing a control shows what it is bound to in the chosen aircraf
   await expect(page.getByTestId('bound-duplicate')).toBeVisible();
   await page.getByTestId('bound-open').click();
   await expect(page.getByTestId('bind-devices')).toBeVisible();
-  await expect(page.getByTestId('dev-meta')).toContainText('7F3956A0-B756-11f0-801A-444553540000');
+  await expect(page.getByTestId('dev-meta')).toContainText('0F1424B4-D566-14a0-801A-444553540000');
 });
 
 test('bindings: three identical panels got new device IDs; each old file goes to the panel whose button is pressed', async ({

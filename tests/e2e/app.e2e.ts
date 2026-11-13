@@ -1,8 +1,24 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import type { Page } from '@playwright/test';
 import { checkRow, expect, test } from './harness';
 
 /** The app shell: settings, the safety journal, and what the harness offers every feature. */
+
+/**
+ * Settings from its top, for a picture taken while a key is stored: the "Key ending in" line
+ * is out of view, and the test fails rather than take the picture if it is not.
+ */
+async function settingsFromTheTop(page: Page): Promise<void> {
+  // Every scrolled box back at its top, so the page title is in the picture too.
+  await page.getByTestId('settings-page').evaluate((el) => {
+    for (let box: typeof el.parentElement = el; box; box = box.parentElement) box.scrollTop = 0;
+    el.ownerDocument.scrollingElement?.scrollTo(0, 0);
+  });
+  await expect(page.getByTestId('settings-page').locator('.rr-page-title')).toBeInViewport();
+  await expect(page.getByTestId('ai-settings-key')).toContainText('Key ending in');
+  await expect(page.getByTestId('ai-settings-key')).not.toBeInViewport();
+}
 
 test('settings: defaults are shown, a desk layout is saved and chosen, changes survive a restart', async ({
   rig,
@@ -51,6 +67,7 @@ test('settings: defaults are shown, a desk layout is saved and chosen, changes s
   await page.getByTestId('ai-key-save').click();
   await expect(page.getByTestId('ai-key-state')).toHaveText('An Anthropic API key is stored');
   await expect(page.getByTestId('ai-key-input').locator('input')).toHaveValue('');
+  await settingsFromTheTop(page);
   await first.shot('changed');
   const secret = await fs.readFile(path.join(first.dataRoot, 'secrets', 'anthropic-api-key.bin'));
   expect(secret.includes(Buffer.from(key))).toBe(false);
@@ -64,6 +81,7 @@ test('settings: defaults are shown, a desk layout is saved and chosen, changes s
   await expect(page.getByTestId('setting-check-timeout').locator('input')).toHaveValue('5');
   await expect(page.getByTestId('layout-row')).toContainText('desk layout');
   await expect(page.getByTestId('ai-key-state')).toHaveText('An Anthropic API key is stored');
+  await settingsFromTheTop(page);
   await second.shot('after-restart');
 
   // Rename, then delete: the desk layout setting goes with it.

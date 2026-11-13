@@ -147,7 +147,7 @@ export const InputDeviceSchema = z.object({
   name: z.string(),
   /**
    * DirectInput instance GUID, upper-case without braces, e.g.
-   * "806E0610-B756-11F0-8024-444553540000". DCS binding file names and iRacing use it.
+   * "757B5173-A027-19E9-8024-444553540000". DCS binding file names and iRacing use it.
    */
   guid: z.string(),
   /** DirectInput product GUID ({PPPPVVVV-0000-0000-0000-504944564944} for HID devices). */

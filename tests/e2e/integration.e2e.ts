@@ -145,10 +145,10 @@ test('monitors: which way is up, identity of identical screens, and a captured a
   );
   // Identity: connector, serials, and how the three identical screens are told apart.
   const first = page.locator('[data-testid="display-row"][data-label="USB_Monitor (1 of 3)"]');
-  await expect(first).toContainText('USB · REG0319 · serial 1 · USB device WWIN29320221210163532');
+  await expect(first).toContainText('USB · REG0319 · serial 1 · USB device PBOC22104847830214489');
   await expect(first.getByTestId('display-told-apart')).toHaveAttribute('data-by', 'serial');
   await expect(page.locator('[data-testid="display-row"][data-label="LC49G95T"]')).toContainText(
-    'DisplayPort · SAM7053 · serial H4ZR900542'
+    'DisplayPort · SAM7053 · serial O8HO530811'
   );
 
   // Which way is up?

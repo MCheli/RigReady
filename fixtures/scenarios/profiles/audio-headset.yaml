@@ -14,7 +14,7 @@ checks:
     required: true
     params: &output
       flow: playback
-      id: '{0.0.0.00000000}.{20e0482c-9de0-4efc-bcac-f2b35cff7d43}'
+      id: '{0.0.0.00000000}.{42c6912c-9db0-4efa-beec-f6c03dda1e39}'
       name: Headphones (Arctis Pro Wireless Game)
       role: default
     remediation:
@@ -26,7 +26,7 @@ checks:
     required: true
     params: &input
       flow: recording
-      id: '{0.0.1.00000000}.{2255b204-0d8f-4fb5-8c8a-10ee65d5a884}'
+      id: '{0.0.1.00000000}.{7826c841-8f5c-4eb2-8a4d-68da05f3e663}'
       name: Headset Microphone (Arctis Pro Wireless Chat)
       role: both
     remediation:

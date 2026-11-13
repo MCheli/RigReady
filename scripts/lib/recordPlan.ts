@@ -270,3 +270,88 @@ export function filterLibraryFolders(text: string): string {
     )
     .replace(/\u0000\r?\n?/g, '');
 }
+
+/**
+ * The running programs a recording keeps, by image name (lower case), with how many copies
+ * of each: the ones tests, scenarios and the recorder itself look for, and a few of Windows'
+ * own so the list still looks like a PC's. Nothing else that runs on the PC is recorded.
+ * A test that needs another program adds it here and to the recording.
+ */
+export const RECORDED_PROCESSES: Record<string, number> = {
+  // Windows
+  '[system process]': 1,
+  system: 1,
+  registry: 1,
+  'smss.exe': 1,
+  'csrss.exe': 2,
+  'wininit.exe': 1,
+  'services.exe': 1,
+  'winlogon.exe': 1,
+  'lsass.exe': 1,
+  'svchost.exe': 6,
+  'dwm.exe': 1,
+  'sihost.exe': 1,
+  'taskhostw.exe': 1,
+  'explorer.exe': 1,
+  'searchhost.exe': 1,
+  'runtimebroker.exe': 2,
+  'ctfmon.exe': 1,
+  'conhost.exe': 1,
+  'msedgewebview2.exe': 3,
+  'onedrive.exe': 1,
+  // sims, helpers and the other programs the tests name
+  'steam.exe': 1,
+  'steamwebhelper.exe': 2,
+  'discord.exe': 2,
+  'streamdeck.exe': 1,
+  'dcs_interface.exe': 1,
+  'esddiscord.exe': 1,
+  'simapppro.exe': 4,
+  'trackir5.exe': 1,
+  'fanatecservice.exe': 1,
+  'trophi.ai.exe': 1,
+};
+
+/** The Windows services a recording keeps, by name (lower case); as RECORDED_PROCESSES. */
+export const RECORDED_SERVICES: ReadonlySet<string> = new Set([
+  // the ones the tests and scenarios name
+  'audiosrv',
+  'fwpnpservice',
+  'hidhide',
+  'iracingservice',
+  'mosquitto',
+  'rpcss',
+  'spooler',
+  'vigembus',
+  // a few more of Windows' own, running and stopped
+  '1394ohci',
+  'audioendpointbuilder',
+  'bits',
+  'dhcp',
+  'dnscache',
+  'eventlog',
+  'msiserver',
+  'plugplay',
+  'power',
+  'schedule',
+  'themes',
+  'trustedinstaller',
+  'vss',
+  'wuauserv',
+]);
+
+/** The programs of a process list that a recording keeps (RECORDED_PROCESSES), in their order. */
+export function keepRecordedProcesses<T extends { name: string }>(processes: readonly T[]): T[] {
+  const seen = new Map<string, number>();
+  return processes.filter((p) => {
+    const key = p.name.toLowerCase();
+    const copies = (seen.get(key) ?? 0) + 1;
+    seen.set(key, copies);
+    return copies <= (RECORDED_PROCESSES[key] ?? 0);
+  });
+}
+
+/** The services of a service list that a recording keeps (RECORDED_SERVICES), in their order. */
+export function keepRecordedServices<T extends { name: string }>(services: readonly T[]): T[] {
+  return services.filter((s) => RECORDED_SERVICES.has(s.name.toLowerCase()));
+}

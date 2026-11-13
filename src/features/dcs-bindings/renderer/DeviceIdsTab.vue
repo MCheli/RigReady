@@ -152,7 +152,7 @@ onBeforeUnmount(() => void stopIdentify());
     </v-alert>
     <p class="rr-row-sub ids-why">
       DCS names each binding file after the device and the ID Windows gave it, for example
-      <span class="rr-mono">WINWING ICP {806DB7F0-…}.diff.lua</span>. After a Windows reinstall, a
+      <span class="rr-mono">WINWING ICP {113EE9E0-…}.diff.lua</span>. After a Windows reinstall, a
       move to a new PC or a driver reset the device gets a new ID, DCS looks for a file that is not
       there, and your bindings appear lost. Moving them renames the files in every aircraft folder
       and updates the IDs inside the modifier and settings files, as one change you can undo.

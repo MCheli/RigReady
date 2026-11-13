@@ -61,7 +61,7 @@ describe('registry (fake, from the recorded rig)', () => {
     const values = await registry.listValues('HKCU', `${DI}\\VID_044F&PID_B68F\\Calibration\\0`);
     expect(values.ok && values.value['GUID']).toEqual({
       type: 'binary',
-      value: 'a056397f56b7f011801b444553540000',
+      value: 'b424140f66d5a014801b444553540000',
     });
     expect(await registry.getValue('HKCU', 'Software\\Nope', 'x')).toEqual({
       ok: true,
@@ -74,16 +74,16 @@ describe('registry (fake, from the recorded rig)', () => {
 
 describe('DirectInput identities', () => {
   it('decodes registry GUID bytes and writes them the way DCS does', () => {
-    expect(guidFromBytes('a056397f56b7f011801b444553540000')).toBe(
-      '7F3956A0-B756-11F0-801B-444553540000'
+    expect(guidFromBytes('b424140f66d5a014801b444553540000')).toBe(
+      '0F1424B4-D566-14A0-801B-444553540000'
     );
     expect(guidFromBytes('abcd')).toBeUndefined();
-    expect(dcsGuidText('{7F3956A0-B756-11F0-801B-444553540000}')).toBe(
-      '7F3956A0-B756-11f0-801B-444553540000'
+    expect(dcsGuidText('{0F1424B4-D566-14A0-801B-444553540000}')).toBe(
+      '0F1424B4-D566-14a0-801B-444553540000'
     );
     expect(dcsGuidText('not-a-guid')).toBe('not-a-guid');
     expect(
-      sameGuid('{7f3956a0-b756-11f0-801b-444553540000}', '7F3956A0-B756-11F0-801B-444553540000')
+      sameGuid('{0f1424b4-d566-14a0-801b-444553540000}', '0F1424B4-D566-14A0-801B-444553540000')
     ).toBe(true);
     expect(productGuidFor('044f', 'b68f')).toBe('B68F044F-0000-0000-0000-504944564944');
   });
@@ -101,17 +101,17 @@ describe('DirectInput identities', () => {
       productId: 'B68F',
       name: 'T-Pendular-Rudder',
       productGuid: 'B68F044F-0000-0000-0000-504944564944',
-      instances: [{ slot: 0, guid: '7F3956A0-B756-11F0-801B-444553540000', joystickId: 1 }],
+      instances: [{ slot: 0, guid: '0F1424B4-D566-14A0-801B-444553540000', joystickId: 1 }],
     });
     // The Virpil panel has a stale slot and a live one: two instance GUIDs for one VID/PID.
     const virpil = identityForDevice(identities.value, { vendorId: '3344', productId: 'C259' })!;
     expect(virpil.name).toBe('R-VPC Panel #1');
     expect(virpil.instances.map((i) => i.guid)).toEqual([
-      'DF6F4BD0-FA0C-11F0-8001-444553540000',
-      'DF6F4BD0-FA0C-11F0-8002-444553540000',
+      'FE8D5FF1-DF2D-17C3-8001-444553540000',
+      'FE8D5FF1-DF2D-17C3-8002-444553540000',
     ]);
     // A GUID from a DCS binding file name resolves back to the device model.
-    expect(identityForGuid(identities.value, '{806E0610-B756-11f0-8024-444553540000}')?.name).toBe(
+    expect(identityForGuid(identities.value, '{757B5173-A027-19e9-8024-444553540000}')?.name).toBe(
       'WINWING MFD1-R'
     );
     expect(
@@ -338,8 +338,11 @@ describe('audio, services, processes (fake)', () => {
     const hidHide = await rig.ports.services.get('hidhide');
     expect(hidHide.ok && hidHide.value).toMatchObject({ name: 'HidHide', state: 'running' });
     expect(await rig.ports.services.get('NoSuchService')).toEqual({ ok: true, value: undefined });
+    // Every recorded service is listed, once, running and stopped alike.
+    const recorded = (await markFull()).services;
     const all = await rig.ports.services.list();
-    expect(all.ok && all.value.length).toBeGreaterThan(100);
+    expect(all.ok && all.value.map((s) => s.name)).toEqual(recorded.map((s) => s.name));
+    expect(recorded.some((s) => s.state === 'stopped')).toBe(true);
 
     await mutate(rig, [
       { op: 'setService', name: 'iRacingService', state: 'stopped' },

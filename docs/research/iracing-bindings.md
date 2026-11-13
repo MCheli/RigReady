@@ -135,7 +135,7 @@ Tests: "refuses every channel of it, reads nothing, listens to nothing and write
 CalibrationInfo:
  DeviceList:
  - DeviceName: 'FANATEC Podium Wheel Base DD2'
-   InstanceGUID: '{20B0BED0-03A4-11F1-8001-444553540000}'
+   InstanceGUID: '{45D4BEA1-60A1-17D8-8001-444553540000}'
    ProductGUID: '{00070EB7-0000-0000-0000-504944564944}'
    AxisList:
    - Axis: 3

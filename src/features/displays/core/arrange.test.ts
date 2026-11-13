@@ -293,7 +293,7 @@ describe('turning a monitor in a layout', () => {
 describe('a new layout from the monitors that stay on', () => {
   /** The desk as recorded: Dell (main), ultrawide, three small screens, one more that is off. */
   const desk = (): DisplayTarget[] => [
-    target('dell', 0, 0, 2560, 1440, { primary: true, serial: '12NFXG3' }),
+    target('dell', 0, 0, 2560, 1440, { primary: true, serial: '25PGII6' }),
     target('wide', 2560, 0, 5120, 1440, { refreshHz: 120 }),
     target('left', 7680, 0, 1024, 768, { usbSerial: 'WWIN-1' }),
     target('centre', 8704, 0, 1024, 768, { usbSerial: 'WWIN-2' }),
@@ -310,7 +310,7 @@ describe('a new layout from the monitors that stay on', () => {
       tv: 'off',
     });
     // What finds a monitor again on another connector stays with it, on or off.
-    expect(made.find((d) => d.id === 'dell')).toEqual(off('dell', { serial: '12NFXG3' }));
+    expect(made.find((d) => d.id === 'dell')).toEqual(off('dell', { serial: '25PGII6' }));
     expect(made.find((d) => d.id === 'left')).toEqual(off('left', { usbSerial: 'WWIN-1' }));
     expect(made.find((d) => d.id === 'wide')).toMatchObject({ refreshHz: 120 });
   });

@@ -9,7 +9,7 @@ import { mutate, wiredApp, type WiredApp } from '../helpers';
 let app: WiredApp;
 afterEach(() => app?.cleanup());
 
-const MFD_LEFT = '7F3956A0-B756-11F0-801A-444553540000';
+const MFD_LEFT = '0F1424B4-D566-14A0-801A-444553540000';
 
 interface Bound {
   gameName: string;

@@ -17,7 +17,7 @@ import {
 const data = path.join(fixturesDir, 'scenarios', 'data', 'racing');
 const fixture = (name: string): Promise<string> => fs.readFile(path.join(data, name), 'utf8');
 
-const WHEEL = '20B0BED0-03A4-11F1-8001-444553540000';
+const WHEEL = '45D4BEA1-60A1-17D8-8001-444553540000';
 const PEDALS = '3A1B2C30-0000-11F1-8003-444553540000';
 const HANDBRAKE = '4C5D6E70-0000-11F1-8004-444553540000';
 
