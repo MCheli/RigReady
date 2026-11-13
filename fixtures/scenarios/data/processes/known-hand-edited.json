@@ -1,0 +1,16 @@
+{
+  "apps": [
+    {
+      "name": "explorer.exe",
+      "title": "Files",
+      "path": "C:\\Windows\\explorer.exe",
+      "closeAtStandDown": true
+    },
+    {
+      "name": "RigReady.exe",
+      "title": "RigReady",
+      "path": "D:\\RigReady\\RigReady.exe",
+      "closeAtStandDown": true
+    }
+  ]
+}

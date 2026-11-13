@@ -48,6 +48,8 @@ const PAGES: ConfigurePage[] = [
     route: '/configure/games',
     testId: 'games-page',
     says: ['Not found on this PC'],
+    // No game is found here, so no page about one is offered: not DCS World, not Racing.
+    never: ['Screens for the cockpit displays', 'Your wheel and the racing games'],
   },
   {
     name: 'game-dcs',
@@ -304,6 +306,14 @@ const PAGES: ConfigurePage[] = [
     says: ['iRacing was not found on this PC', 'iRacing game page'],
     notFound: 'iRacing',
   },
+  // The menu's Bindings entry opens the bindings looked at last: iRacing's, just above.
+  {
+    name: 'bindings',
+    route: '/configure/bindings',
+    testId: 'iracing-bindings-page',
+    says: ['iRacing was not found on this PC'],
+    notFound: 'iRacing',
+  },
 ];
 
 /** Something still loading. */
@@ -333,7 +343,7 @@ test('generic rig: every Configure page renders an honest empty state, never an 
   await page.getByTestId('mode-configure').click();
   // Every page the navigation offers is in the list above.
   const links = page.getByTestId('configure-nav').locator('a');
-  await expect(links).toHaveCount(20);
+  await expect(links).toHaveCount(18);
   const offered = await links.evaluateAll((all) =>
     all.map((a) => (a.getAttribute('href') ?? '').replace(/^#/, ''))
   );

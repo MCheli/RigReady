@@ -26,7 +26,7 @@ RigReady checks for a newer version when it starts and once a day, downloads it 
 - Your data: `~/.rigready`, the folder `.rigready` in your Windows user folder (`C:\Users\<you>\.rigready`): the setups, the settings, the monitor layouts, the backups, the automatic copies made before each change, the change journal and the log. [The app and its data folder](../app/index.md) lists what is in it and how to move it with `RIGREADY_HOME`.
 - [Uninstalling](../app/uninstall.md), from Windows Settings > Apps, asks whether to remove that data too and keeps it by default. An update never touches it.
 
-If you used RigReady 1: version 2 is a rebuild and does not read its setups. The old files are left where they are and listed apart on the Setups page under **From RigReady 1**, where they can be deleted; see [Files from RigReady 1](../setups/yaml.md#files-from-rigready-1).
+If you used RigReady 1: version 2 is a rebuild and does not read its setups as they are. The old files are left where they are and listed apart on the Setups page under **From RigReady 1**, where RigReady can bring a setup over or say why it cannot, and where they can be deleted; see [Files from RigReady 1](../setups/yaml.md#files-from-rigready-1).
 
 ## Run from source
 

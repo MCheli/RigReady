@@ -238,7 +238,8 @@ test('setup editor: saved bindings of two games that share an id are two lines o
   );
   const backUp = async (game: string): Promise<void> => {
     await page.getByTestId('mode-configure').click();
-    await page.getByTestId('nav-racing').click();
+    await page.getByTestId('nav-games').click();
+    await page.getByTestId('game-card-racing').click();
     await page.locator(`[data-testid="racing-game-card"][data-game="${game}"]`).click();
     await expect(page.getByTestId(`backups-${game}`)).toBeVisible();
     await page.getByTestId('backup-name').locator('input').fill('League night');

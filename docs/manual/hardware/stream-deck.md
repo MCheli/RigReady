@@ -17,7 +17,7 @@ Three tabs follow.
 Findings about the setup, worst first, each with what to do:
 
 - Actions whose plugin is not installed, with the plugin's name, how many actions in which profiles use it, and a **Get it** link for the plugins RigReady knows (DCS Interface, the DCS-BIOS plugin by Mad Jack, Super Macro by BarRaider, otherwise the Elgato Marketplace). Keys that use a missing plugin show a warning in the Stream Deck app and do nothing. Plugins are never part of a backup.
-- The DCS Interface plugin in use but DCS not loading DCS-ExportScript: the keys will stay blank in DCS. The finding says whether [Export.lua](../dcs/export-lua.md) is missing, does not load the script, or loads a folder that is not there, and that **Open DCS setup** can add the line with a backup first. When DCS-ExportScript sends to a port other than 1725, the one the plugin listens on, that is reported too. A DCS-BIOS based plugin gets the same treatment for DCS-BIOS. See [DCS World](../dcs/index.md).
+- The DCS Interface plugin in use but DCS not loading DCS-ExportScript: the keys will stay blank in DCS. The finding says whether [Export.lua](../dcs/export-lua.md) is missing, does not load the script, or loads a folder that is not there, and that **Open DCS World: Export.lua** opens the tab that adds the line, with a backup first. When DCS-ExportScript sends to a port other than 1725, the one the plugin listens on, that is reported too. A DCS-BIOS based plugin gets the same treatment for DCS-BIOS. See [DCS World](../dcs/index.md).
 - A profile file that could not be read.
 - No backup in RigReady, or the newest one older than 30 days.
 

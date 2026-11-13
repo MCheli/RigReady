@@ -945,7 +945,7 @@ export class DcsSetupService {
     if (!state.screens)
       return err(
         'dcs.screens.none',
-        'There is no RigReady screen setup to write. Make one under Configure > DCS World > Screens.'
+        'There is no RigReady screen setup to write. Make one under Configure > Games > DCS World > Screens.'
       );
     const applied = await this.applyScreens({
       setup: state.screens,

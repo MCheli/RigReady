@@ -4,7 +4,7 @@ description: The Problems tab: one input on several actions, one action on sever
 order: 50
 ---
 
-The **Problems** tab of **Configure > DCS bindings** looks through an aircraft's bindings for four kinds of trouble and offers a fix for each. Every fix is shown as the exact file change before it is written. The tab's badge and the four tiles on the Overview tab count the problems.
+The **Problems** tab of **Configure > Bindings** with **DCS** chosen looks through an aircraft's bindings for four kinds of trouble and offers a fix for each. Every fix is shown as the exact file change before it is written. The tab's badge and the four tiles on the Overview tab count the problems.
 
 ![The Problems tab](../../../artifacts/screens/bindings-problems/01-problems.png)
 

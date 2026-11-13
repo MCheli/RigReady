@@ -4,7 +4,7 @@ description: What every control does in an aircraft, DCS's defaults plus your ch
 order: 40
 ---
 
-**Configure > DCS bindings** shows what every control does in each aircraft and lets you change it, without opening DCS. RigReady reads the DCS bindings you already have from DCS's own files, so there is nothing to import. This page covers the Devices and Actions tabs, binding by pressing a control, and how the changes reach DCS's files. The other tabs have their own pages: [Binding problems](binding-problems.md), [Device IDs changed](device-ids.md), and [Copy between aircraft and snapshots](copy-and-snapshots.md).
+**Configure > Bindings** with **DCS** chosen as the game shows what every control does in each aircraft and lets you change it, without opening DCS. RigReady reads the DCS bindings you already have from DCS's own files, so there is nothing to import. This page covers the Devices and Actions tabs, binding by pressing a control, and how the changes reach DCS's files. The other tabs have their own pages: [Binding problems](binding-problems.md), [Device IDs changed](device-ids.md), and [Copy between aircraft and snapshots](copy-and-snapshots.md).
 
 Choose the aircraft at the top right. Each one says how many binding files of your own it has, or **DCS defaults only**.
 

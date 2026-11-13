@@ -1,0 +1,13 @@
+description: A helper RigReady does not know is running, and a hand-edited list of apps to offer
+rig: mark-full
+extends: flying-fresh.yaml
+# SimTool is a program RigReady has no name for: it sits behind "Show other running apps"
+# until the user asks for it to be offered in every new setup. The list of apps to offer
+# (processes/known.json) was edited by hand: it names Windows Explorer and RigReady itself,
+# which RigReady refuses whatever the file says.
+mutations:
+  - op: startProcess
+    name: SimTool.exe
+    path: 'D:\Sims\Tools\SimTool.exe'
+data:
+  processes/known.json: data/processes/known-hand-edited.json

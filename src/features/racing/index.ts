@@ -4,18 +4,22 @@ export default defineFeature({
   id: 'racing',
   nav: [
     {
-      title: 'Racing',
-      icon: 'mdi-steering',
-      to: '/configure/racing',
-      order: 220,
-      section: 'Games',
-    },
-    {
       title: 'Wheel',
       icon: 'mdi-tire',
       to: '/configure/racing/wheel',
       order: 430,
       section: 'Hardware',
+    },
+  ],
+  // The overview has no menu entry of its own: Games offers it with a card (decision 1A).
+  gamePages: [
+    {
+      title: 'Racing',
+      icon: 'mdi-steering',
+      to: '/configure/racing',
+      about: 'Your wheel and the racing games: controllers, bindings and backups.',
+      games: ['iracing', 'lmu', 'beamng', 'assetto-corsa'],
+      order: 220,
     },
   ],
   routes: [

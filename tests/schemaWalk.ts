@@ -123,6 +123,7 @@ const STRING_CANDIDATES = [
   'sample.yaml',
   '#aabbcc',
   'sample.ps1',
+  'Sample.exe',
   'A sample sentence that is long enough for a text field.',
   '0'.repeat(64),
 ];

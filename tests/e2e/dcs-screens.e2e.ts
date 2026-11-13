@@ -32,7 +32,8 @@ async function nameScreens(page: Page): Promise<void> {
 }
 
 async function openScreens(page: Page): Promise<void> {
-  await page.getByTestId('nav-dcs').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-dcs').click();
   await page.getByTestId('dcs-tab-screens').click();
   // SimAppPro's plan is taken over when the tab opens on a PC that has one.
   await expect(page.getByTestId('screen-map-box')).toHaveCount(3);
@@ -527,7 +528,8 @@ test('dcs-screens: an aircraft or a display RigReady did not find is added by na
   // The setup is kept: opened again, the added names are there and say the same.
   await page.getByTestId('nav-displays').click();
   await expect(page.getByTestId('displays-page')).toBeVisible();
-  await page.getByTestId('nav-dcs').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-dcs').click();
   await page.getByTestId('dcs-tab-screens').click();
   await page.getByTestId('screens-aircraft-OH-6A').click();
   await expect(page.getByTestId('screens-aircraft-unknown')).toContainText(

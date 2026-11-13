@@ -23,6 +23,7 @@ import {
   type CaptureStep,
 } from '../contract';
 import MonitorDiagram from './MonitorDiagram.vue';
+import RememberApp from './RememberApp.vue';
 import { pickerItems, pickerNote, type PickerItem, type PickerNote } from './pickerForm';
 import { newSetupLaunch, steamAppOf, steamAppProblem, type LaunchKind } from './steamLaunch';
 
@@ -122,6 +123,13 @@ function applyDefaults(): void {
 function toggle(candidate: Candidate, value: boolean | null): void {
   selected[candidate.key] = value === true;
   touched[candidate.key] = true;
+}
+/** "Always offer this app" answered: the row is what the capture proposes now, and kept. */
+function replaced(old: Candidate, now: Candidate | undefined): void {
+  const list = captured.value?.candidates ?? [];
+  const at = list.findIndex((c) => c.key === old.key);
+  if (at >= 0) list.splice(at, 1, ...(now ? [now] : []));
+  if (now?.remember?.remembered) toggle(now, true);
 }
 
 const argsLine = (args: string[]): string =>
@@ -993,6 +1001,7 @@ onMounted(capture);
                   class="cap-ask"
                   data-testid="candidate-ask"
                 />
+                <RememberApp :candidate="candidate" @changed="replaced(candidate, $event)" />
               </div>
               <v-btn-toggle
                 v-if="selected[candidate.key]"
@@ -1063,6 +1072,7 @@ onMounted(capture);
                         candidate.description
                       }}</span>
                     </div>
+                    <RememberApp :candidate="candidate" @changed="replaced(candidate, $event)" />
                   </div>
                 </div>
               </template>
