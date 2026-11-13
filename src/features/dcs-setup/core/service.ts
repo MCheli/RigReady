@@ -1,11 +1,12 @@
 import path from 'node:path';
-import type { CheckContext, RunProfile } from '../../../core/checks/registry';
+import { withProfile, type CheckContext, type RunProfile } from '../../../core/checks/registry';
 import type { MainContext } from '../../../core/feature';
 import { profileExtension, withProfileExtension, type Profile } from '../../../core/profile/schema';
 import { matchMonitors } from '../../../core/displays/identity';
 import { changePreview } from '../../../core/files/preview';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChangePreview } from '../../../shared/changePreview';
+import type { ChangeGroup } from '../../../core/ports';
 import type {
   DesktopChoice,
   ExportAction,
@@ -57,6 +58,15 @@ import {
   type Rect,
   type ScreenSetup,
 } from './screens';
+import {
+  changedKeys,
+  followSetup,
+  sameValue,
+  valuesPhrase,
+  type Followed,
+  type FollowedKey,
+  type SetupFollow,
+} from './setupFollow';
 import { aircraftCatalog, importSimAppPro, type PlanScreen } from './simAppProImport';
 import { findSimAppPro, readSimAppProPlan } from './simAppPro';
 import { DcsProfileExtensionSchema, type RuntimeFeature } from './simAppProShared';
@@ -155,6 +165,40 @@ export function desktopDrift(setup: ScreenSetup, current: DesktopDisplay[]): str
   }
   return problems;
 }
+
+const samePath = (a: string, b: string): boolean =>
+  path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
+
+/** "MFD left, MFD centre and MFD right" */
+const listNames = (names: string[]): string =>
+  names.length <= 1
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
+/**
+ * The monitors a screen setup uses that a DCS window of this size would not cover: DCS
+ * opens its window at the top left of the monitors the setup uses.
+ */
+export function monitorsOutside(setup: ScreenSetup, width: number, height: number): string[] {
+  const window = generateSetup(setup).window;
+  const used = new Set([
+    ...setup.mainDisplayIds,
+    ...setup.aircraft.flatMap((a) => a.placements.map((p) => p.displayId)),
+  ]);
+  const labels = monitorLabels(setup.desktop);
+  return setup.desktop
+    .filter((d) => used.has(d.id))
+    .filter((d) => d.x - window.x + d.width > width || d.y - window.y + d.height > height)
+    .sort((a, b) => a.x - b.x || a.y - b.y)
+    .map((d) => labels.get(d.id) ?? (d.name || 'a monitor'));
+}
+
+/** A setup that follows "Use in DCS", as the Screens tab shows it. */
+const followView = (follow: SetupFollow): ScreensPreview['setups'][number] => ({
+  id: follow.profile.id,
+  name: follow.profile.name,
+  items: follow.items,
+});
 
 export interface ManagedFileStatus {
   label: string;
@@ -809,12 +853,18 @@ export class DcsSetupService {
             : 'editedOutside';
     const errors = [...generated.errors];
     let optionChanges: string[] = [];
-    const { text, problem } = await this.options(paths.value);
+    let setups: ScreensPreview['setups'] = [];
+    const { text, options: before, problem } = await this.options(paths.value);
     if (text === undefined || problem) errors.push(problem ?? 'options.lua is not readable.');
     else {
       const edited = editOptions(text, this.desiredOptions(generated, input.setResolution));
-      if (edited.ok) optionChanges = edited.value.changes.map(describeChange);
-      else errors.push(`options.lua cannot be changed safely: ${edited.error.message}`);
+      if (edited.ok) {
+        optionChanges = edited.value.changes.map(describeChange);
+        const after = readOptions(edited.value.text);
+        if (before && after.ok) {
+          setups = (await this.followers(paths.value, before, after.value)).map(followView);
+        }
+      } else errors.push(`options.lua cannot be changed safely: ${edited.error.message}`);
     }
     // Present exactly when applying this, as it was asked, would be refused for the pairing.
     const toCheck = input.pairingChecked ? undefined : await this.pairingToCheck(input.setup);
@@ -830,8 +880,110 @@ export class DcsSetupService {
         diff: diffLines(current ?? '', generated.lua),
       },
       optionChanges,
+      setups,
       dcsRunning: await dcsRunning(this.check, this.ctx.games),
     });
+  }
+
+  /**
+   * The setups that expect options.lua as it is `before` where it is going to be `after`,
+   * each moved to the new values (setupFollow.ts). Only setups whose DCS install uses this
+   * options.lua; an item that expects anything else is left out.
+   */
+  private async followers(
+    paths: DcsPaths,
+    before: DcsOptions,
+    after: DcsOptions
+  ): Promise<SetupFollow[]> {
+    if (changedKeys(before, after).length === 0) return [];
+    const listed = await this.ctx.profiles.list();
+    if (!listed.ok) {
+      this.ctx.log.warn('dcs-setup: the setups could not be read', listed.error);
+      return [];
+    }
+    const followers: SetupFollow[] = [];
+    for (const profile of listed.value) {
+      const moved = followSetup(profile, before, after);
+      if (!moved) continue;
+      const own = await this.for(withProfile(this.check, profile)).paths();
+      if (own.ok && samePath(own.value.options, paths.options)) followers.push(moved);
+    }
+    return followers;
+  }
+
+  /**
+   * What the last "Use in DCS" set in this options.lua that is still there: each followed
+   * key whose value now is the one RigReady set. Empty when the screen setup was not used
+   * with this options.lua, or something has changed those keys since.
+   */
+  async setByScreens(paths: DcsPaths, options: DcsOptions): Promise<Followed> {
+    const set = (await this.state()).options;
+    if (!set || !samePath(set.path, paths.options)) return {};
+    const out: Followed = {};
+    if (sameValue(options.multiMonitorSetup, set.multiMonitorSetup)) {
+      out.multiMonitorSetup = options.multiMonitorSetup!;
+    }
+    // A state from before 2.0.0 does not say; the window was set whenever it was recorded.
+    if (set.sized ?? set.width !== undefined) {
+      if (set.width !== undefined && sameValue(options.width, set.width)) out.width = set.width;
+      if (set.height !== undefined && sameValue(options.height, set.height))
+        out.height = set.height;
+      if (set.fullScreen !== undefined && options.fullScreen === set.fullScreen) {
+        out.fullScreen = set.fullScreen;
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Why setting these options.lua values would undo the RigReady screen setup in use, in
+   * words; undefined when it would not. "In use": options.lua selects RigReady.lua, and the
+   * screen setup it was written from is saved.
+   */
+  async screenSetupConflict(values: DcsOptions): Promise<string | undefined> {
+    const paths = await this.paths();
+    if (!paths.ok) return undefined;
+    const state = await this.state();
+    if (!state.screens || !state.options || !samePath(state.options.path, paths.value.options)) {
+      return undefined;
+    }
+    const { options } = await this.options(paths.value);
+    if (!options || !sameValue(options.multiMonitorSetup, MONITOR_SETUP_OPTION)) return undefined;
+    const changing = (Object.keys(values) as (keyof DcsOptions)[]).filter(
+      (key) => values[key] !== undefined && !sameValue(values[key], options[key])
+    );
+    if (changing.length === 0) return undefined;
+    const after: DcsOptions = { ...options, ...values };
+    const reasons: string[] = [];
+    if (changing.includes('multiMonitorSetup')) {
+      reasons.push("DCS would no longer use RigReady's screen setup");
+    }
+    if (
+      (changing.includes('width') || changing.includes('height')) &&
+      after.width &&
+      after.height
+    ) {
+      const outside = monitorsOutside(state.screens, after.width, after.height);
+      if (outside.length) {
+        reasons.push(`DCS's window would no longer cover ${listNames(outside)}`);
+      }
+    }
+    // Full screen from a window, whatever RigReady recorded: the screen setup needs a window.
+    if (changing.includes('fullScreen') && after.fullScreen === true) {
+      reasons.push('DCS would start in full screen, and the screen setup needs a window');
+    }
+    const set = await this.setByScreens(paths.value, options);
+    const undone = changing.filter((key) => key in set) as FollowedKey[];
+    if (reasons.length === 0 && undone.length === 0) return undefined;
+    const sets = valuesPhrase(
+      Object.fromEntries(
+        (undone.length ? undone : changing).map((key) => [key, values[key]])
+      ) as Followed
+    );
+    const why = reasons.length ? `, so ${reasons.join(', and ')}` : '';
+    return undone.length
+      ? `This fix would undo "Use in DCS": it sets ${sets}${why}.`
+      : `This fix does not fit the RigReady screen setup in DCS: it sets ${sets}${why}.`;
   }
 
   /**
@@ -846,6 +998,8 @@ export class DcsSetupService {
     setResolution: boolean;
     overwriteEdited: boolean;
     pairingChecked?: boolean;
+    /** Setups the user chose to update to the new values (ids from previewScreens' setups). */
+    followSetups?: string[];
   }): Promise<Result<{ message: string; changes: string[] }>> {
     const toCheck = input.pairingChecked ? undefined : await this.pairingToCheck(input.setup);
     if (toCheck) {
@@ -891,6 +1045,7 @@ export class DcsSetupService {
       );
     }
     const optionsText = await this.readText(paths.value.options);
+    const before = readOptions(optionsText ?? '');
     const edited = editOptions(
       optionsText ?? '',
       this.desiredOptions(generated, input.setResolution)
@@ -925,10 +1080,23 @@ export class DcsSetupService {
         multiMonitorSetup: MONITOR_SETUP_OPTION,
         ...(after.value.width !== undefined ? { width: after.value.width } : {}),
         ...(after.value.height !== undefined ? { height: after.value.height } : {}),
+        sized: input.setResolution,
+        ...(input.setResolution && after.value.fullScreen !== undefined
+          ? { fullScreen: after.value.fullScreen }
+          : {}),
         at: now,
       },
     }));
     if (!saved.ok) return saved;
+    // The setups the user chose to follow, from options.lua as it really was and is now:
+    // in the same action as the DCS files, so the Safety page undoes them together.
+    if (input.followSetups?.length && before.ok) {
+      const chosen = new Set(input.followSetups);
+      const followers = await this.followers(paths.value, before.value, after.value);
+      for (const follow of followers.filter((f) => chosen.has(f.profile.id))) {
+        changes.push(await this.saveFollower(follow, before.value, after.value, group, now));
+      }
+    }
     // The user said the pairing is right, and it is in use now: nothing is left to check.
     if (input.pairingChecked) this.unchecked.last = undefined;
     return ok({
@@ -937,6 +1105,32 @@ export class DcsSetupService {
         : 'DCS already uses this screen setup; nothing needed changing',
       changes,
     });
+  }
+
+  /**
+   * Saves one setup moved to the new values, journaled in the group of "Use in DCS", and
+   * reads it back. Resolves with the line the result shows, a failure included.
+   */
+  private async saveFollower(
+    follow: SetupFollow,
+    before: DcsOptions,
+    after: DcsOptions,
+    group: ChangeGroup,
+    now: string
+  ): Promise<string> {
+    const { profile, items } = follow;
+    const what = items.map((i) => `${i.title}: ${i.changes.join(', ')}`).join('; ');
+    const saved = await this.ctx.profiles.save(
+      { ...profile, updatedAt: now },
+      { reason: `Setup "${profile.name}" follows the new values (${what})`, group, journal: true }
+    );
+    const back = saved.ok ? await this.ctx.profiles.get(profile.id) : saved;
+    if (!back.ok) return `The setup "${profile.name}" was not updated: ${back.error.message}`;
+    // Read back: nothing in it expects the old values any more.
+    if (followSetup(back.value, before, after)) {
+      return `The setup "${profile.name}" was written but does not read back as updated`;
+    }
+    return `Updated the setup "${profile.name}": ${what}`;
   }
 
   /** Writes the saved screen setup again exactly as it was made (the fix for a changed or deselected file). */
@@ -949,7 +1143,7 @@ export class DcsSetupService {
       );
     const applied = await this.applyScreens({
       setup: state.screens,
-      setResolution: state.options?.width !== undefined,
+      setResolution: state.options?.sized ?? state.options?.width !== undefined,
       overwriteEdited: true,
     });
     return applied.ok

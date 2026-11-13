@@ -126,6 +126,13 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
       <ul v-if="result && result.details.length" class="check-details">
         <li v-for="line in result.details" :key="line">{{ line }}</li>
       </ul>
+      <div
+        v-if="canFix && result?.fixWarning"
+        class="check-warning rr-warn"
+        data-testid="fix-warning"
+      >
+        <v-icon icon="mdi-alert" size="15" /> {{ result.fixWarning }}
+      </div>
       <div v-if="result?.output" class="check-output">
         <button
           type="button"
@@ -322,7 +329,8 @@ const diagnose = computed(() => failing.value && props.item.group === 'devices')
   font-variant-numeric: tabular-nums;
   margin-left: 4px;
 }
-.check-fix-result {
+.check-fix-result,
+.check-warning {
   margin-top: 4px;
   font-size: 12.5px;
 }

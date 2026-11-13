@@ -120,8 +120,8 @@ export default defineFeatureMain({
           const view = await iracingView(rctx);
           return ok({ ...view, devices: await named(view.devices) });
         },
-        async iracingRepair({ mapping }) {
-          const repaired = changed('iracing', await repairIracing(rctx, mapping));
+        async iracingRepair({ mapping, seen }) {
+          const repaired = changed('iracing', await repairIracing(rctx, mapping, seen));
           return repaired.ok ? ok({ message: repaired.value.message }) : repaired;
         },
         iracingRepairPreview: ({ mapping }) => previewRepairIracing(rctx, mapping),

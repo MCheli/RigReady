@@ -74,6 +74,26 @@ describe('game modules', () => {
     ).toEqual(['controls.cfg', 'joyCalib.yaml']);
   });
 
+  it('with control profiles, suggests the profile iRacing uses, never the older controls.cfg', async () => {
+    // iRacing 2026 Season 3 and later: app.ini [ControlProfiles] Global=Baseline.
+    app = await wiredApp('iracing-bindings-profiles');
+    const documents = path.join(app.ports.folders.documents(), 'iRacing');
+    const profile = path.join(documents, 'profiles', 'controls', 'Baseline');
+    const tracked = (await get(app, 'iracing')).trackedFiles;
+    expect(tracked.slice(0, 3).map((f) => [f.label, f.path])).toEqual([
+      ['iRacing settings and bindings', documents],
+      ['Bindings (controls.cfg, profile “Baseline”)', path.join(profile, 'controls.cfg')],
+      [
+        'Wheel and pedal calibration (joyCalib.yaml, profile “Baseline”)',
+        path.join(profile, 'joyCalib.yaml'),
+      ],
+    ]);
+    expect(tracked.some((f) => f.path === path.join(documents, 'controls.cfg'))).toBe(false);
+    expect(tracked.find((f) => f.path === path.join(documents, 'profiles'))?.label).toBe(
+      'HUD and control profiles'
+    );
+  });
+
   it('follows a redirected Documents folder', async () => {
     app = await wiredApp('racing-fresh');
     const onedrive = path.join(app.home, 'OneDrive', 'Documents');

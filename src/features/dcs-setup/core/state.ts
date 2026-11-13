@@ -24,6 +24,14 @@ export const ManagedOptionsSchema = z.object({
   multiMonitorSetup: z.string(),
   width: z.number().optional(),
   height: z.number().optional(),
+  /**
+   * "Use in DCS" also sized the window ("Also size the DCS window", which sets width,
+   * height and full screen off). Absent in a state written before 2.0.0: the width was
+   * then set whenever it was recorded.
+   */
+  sized: z.boolean().optional(),
+  /** Full screen as RigReady set it; recorded only when it sized the window. */
+  fullScreen: z.boolean().optional(),
   at: z.string(),
 });
 export type ManagedOptions = z.infer<typeof ManagedOptionsSchema>;

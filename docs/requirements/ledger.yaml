@@ -3464,6 +3464,42 @@ requirements:
     notes:
       - "2026-11-12: the owner's finding 38. The button was at the end of the editor, above the list of files, and scrolled out of view. Edits that are not yet used in DCS are dropped when the tab is left, as before; the bar does not ask about them."
 
+  - id: DCS-MON-013
+    title: Setups that expect the DCS options as they were before "Use in DCS" are offered the new values, and their fix never undoes it unasked
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "When 'Use in DCS' would change options.lua's monitor setup, width, height or full screen, 'What \"Use in DCS\" will do' lists every setup whose 'DCS graphics options' check (with its 'Set the DCS options' fix) or 'DCS monitor setup' check expects exactly the values options.lua has now, each by name with what changes: 'DCS F/A-18C: DCS graphics options, width 7424 → 5120, height 1440 → 2464 (the check and its fix)'. One line, 'Also update the setup that expects the old values', ticked, decides for all of them; the note under it says what leaving them costs."
+      - "'Use in DCS' then saves those setups through the setups store with the DCS files, in the same Safety-page action ('Use the RigReady screen setup in DCS'), so one Undo puts back the files and the setups together. The service works the setups out again from options.lua as it really was and is after the write, updates only the ones named in followSetups, reads each back, and names each in the result ('Updated the setup \"DCS F/A-18C\": ...'). Nothing is updated unless named: an assistant over MCP or a caller that names none changes no setup."
+      - "A setup whose check or fix expects anything else for a key that changes (another window of its own) is never listed and never changed, even when named."
+      - "A setup left as it was (unticked, or made later with the old values) says so on the Play screen: the row names what 'Use in DCS' set ('\"Use in DCS\" set width 5120 and height 2464 for the RigReady screen setup, and this setup still expects the older values. Update the setup to keep the new ones.') and offers 'Update the setup', which moves the check and its fix to the values options.lua holds and the check then passes. The button is offered only while options.lua still holds what 'Use in DCS' set, and is checked again when pressed. A change made by another program is not called one 'Use in DCS' made."
+      - "'Set the DCS options' warns when it would undo the RigReady screen setup in use: a window that no longer covers the monitors RigReady.lua uses (named), another monitor setup, or full screen. The warning is on the row; Make ready and the fix button ask first ('Run this fix anyway?', Skip or Run it anyway); the tray and the command palette do not run it and say why, and it is listed under Needs you. A warning that cannot be worked out is a warning too, so the fix is never run unasked. Full screen is warned about whenever the screen setup is in use."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/setupFollow.test.ts#the owner's sequence: offered with each change named, updated in the same change, and the check passes"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#declined: the Play screen says \"Use in DCS\" set the values, offers to update the setup, and Make ready asks before undoing it"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#a yes in the RigReady window runs the fix as the setup says"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#never touches a setup that expects something else, nor one that was not chosen"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#the monitor setup check follows the monitor setup key of the first \"Use in DCS\""
+      - "src/features/dcs-setup/core/setupFollow.test.ts#a change made by another program is not taken for one \"Use in DCS\" made"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#moves the old values, leaves keys that did not change, and skips an item the fix disagrees with"
+      - "tests/unit/engine.test.ts#a fix with a warning shows it, runs only after a yes, and is not run where nobody can be asked"
+      - "tests/unit/engine.test.ts#is offered only where the check says so"
+      - "tests/unit/engine.test.ts#a warning that cannot be worked out is still asked about, and never lets the fix run unasked"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#a fix that turns full screen on warns while the screen setup is in use, even when the window was not sized"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#\"Update the setup\" on a monitor setup check moves its \"Set the DCS options\" fix with it"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#a monitor setup check with \"Set the DCS options\" as its fix moves both, or neither"
+      - test: 'tests/e2e/dcs-screens.e2e.ts#dcs-screens: "Use in DCS" offers to update the setups that expect the old window, and the Play screen says so when one is left'
+      - "artifacts/screens/dcs-screens-follow-setups/01-offer.png"
+      - "artifacts/screens/dcs-screens-follow-setups/02-play-screen-says-so.png"
+      - "artifacts/screens/dcs-screens-follow-setups/03-fix-asks-first.png"
+      - "artifacts/screens/dcs-screens-follow-setups/04-setup-updated.png"
+    notes:
+      - "2026-11-13, 13:04 on the owner's rig: the MFD screens moved below the ultrawide, 'Use in DCS' sized the window from 7424 × 1440 to 5120 × 2464, and the setup 'DCS F/A-18C' still expected 7424 × 1440. The Play screen said 'DCS graphics options differ' and Make ready would have put the old window back; the owner noticed before pressing it."
+      - "Shared changes: CheckAcknowledge.offered and fixParams, RemediationDefinition.warning and CheckResult.fixWarning (src/core/checks), ProfileStore.save options (reason, group, journal), fly:acknowledge asks offered again and stores the fix's params, the Play screen asks before a fix with a warning, and the compact window leaves Make ready to the full window while such a fix would run (as it does for a program to confirm)."
+      - "Launch steps of type 'Set the DCS options' are not followed or warned about; only the checks and their fixes are."
+
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines
     job: configure
@@ -6611,8 +6647,68 @@ requirements:
       - "If yes, a repair rewrites the GUIDs in joyCalib.yaml (and controls.cfg if safe) with preview and backup; if no, the UI does not offer repair (rule 2)."
     notes:
       - "2026-10-04: status left as it is; what is missing needs the real wheel to change its Windows id. Done in code: docs/research/racing.md 2.3-2.5 records that joyCalib.yaml (text) and every bound controls.cfg record (16 bytes) carry the DirectInput instance GUID and product GUID; the iRacing page marks a controller 'New Windows id' when the stored instance GUID is not attached but a controller of the same product GUID is, suggests the target only when it is unambiguous, shows the files that will change (racing:iracingRepairPreview), replaces the GUID in controls.cfg, joyCalib.yaml and any per-car copies as one journaled action with backups, refuses while the simulator runs, reads the files back, and offers nothing for a connected or missing controller (src/features/racing/core/iracing/iracing.test.ts 'flags a wheel whose stored id no longer matches and repairs both files through FileStore' and 'refuses to repair while the simulator runs, and refuses a controller that is not a candidate'; tests/e2e/racing.e2e.ts 'racing: overview, iRacing bindings, and repairing a wheel with a new Windows id'; artifacts/screens/racing-iracing-repair/). The dialog says 'Not yet verified on real hardware'. Not known: whether iRacing accepts the rewritten files, i.e. the second half of the first criterion ('whether rewriting them restores bindings'). Owner's check: back up Documents/iRacing (RigReady Racing > iRacing > Back up now), move the DD2's USB cable to another port (or use a PC where the id differs), confirm in RigReady that the wheel shows 'New Windows id', run 'Update iRacing…', start the iRacing simulator in a test session: it must not ask to calibrate, and steering, pedals and the shifter paddles must work. Evidence to store: before/after screenshots of the RigReady iRacing page and one of the iRacing controls screen under artifacts/rig/RACE-IRACING-005/, plus one line in docs/research/racing.md 2.5 saying what happened (including whether moving the cable changed the id at all). If iRacing still asks to calibrate: Undo on the Safety page, and the repair must be withdrawn from the page (rule 2)."
+      - "2026-11-13: on iRacing 2026 Season 3 and later the repair changes the control profile iRacing uses (RACE-IRACING-006), not Documents\\iRacing\\controls.cfg. The owner's check above therefore looks at Documents\\iRacing\\profiles\\controls\\<profile>\\ (the dialog lists those files)."
     status: todo
     evidence: []
+
+  - id: RACE-IRACING-006
+    title: Everything outside the iRacing bindings page reads and writes the control profile iRacing uses
+    job: configure
+    area: racing-iracing
+    priority: p1
+    done_means:
+      - "Since iRacing 2026 Season 3 the bindings are Documents\\iRacing\\profiles\\controls\\<name>\\controls.cfg and joyCalib.yaml, with app.ini [ControlProfiles] Global=<name> for all cars and <car path name>=<name> for a car with a profile of its own (the car needs no folder under setups). One rule finds them (src/core/iracingControls.ts), the same as the iRacing bindings page's (BIND-IRACING), held together by a test."
+      - "The racing feature's iRacing page, its check 'iRacing knows the connected controllers', the Racing overview card and the iRacing binding reader (cheat sheets, the input tester, the overlay, the guides) read that profile. The page names the profile and says the older controls.cfg is not read."
+      - "When a profiles folder exists, the older Documents\\iRacing\\controls.cfg and setups\\<car>\\controls.cfg are never read or written in place of the profile. When app.ini names no profile, or one without a controls.cfg, or cannot be read, each of these says why in words, shows no bindings and changes nothing."
+      - "The controller-id repair changes the profile for all cars and each car's own profile (each file once), through FileStore with a backup, as one action that Undo reverses; its preview, confirmation and message name the profile."
+      - "Racing backups, saved binding sets and the iRacing module's tracked-file suggestions take the profile's files. A saved set made before control profiles is not taken for the bindings iRacing uses: its check says so and its fix restores nothing."
+      - "The repair writes only what its preview showed: the preview gives a SHA-256 of the files it would change and their content (`seen`), the page hands it back, and the repair writes nothing when app.ini now points at another profile, a car got a profile of its own, or a file changed since."
+      - "A saved set is met only while app.ini gives all cars and each car the same control profiles as when it was saved (or, for a set without app.ini, while its profile files are ones iRacing uses); otherwise, or when no profile can be found, its check says which differ and its fix writes nothing."
+    status: done
+    evidence:
+      - "src/core/iracingControls.test.ts#with control profiles: the profile app.ini names for all cars, and the older file only listed as not read"
+      - "src/core/iracingControls.test.ts#a car with a profile of its own is a line of [ControlProfiles], as iRacing writes it"
+      - "src/core/iracingControls.test.ts#says why when the profile cannot be found, and never falls back to the older file"
+      - "src/core/iracingControls.test.ts#never turns a profile name that is not one plain folder name into a path"
+      - "tests/unit/iracingControlProfiles.test.ts#the control profile app.ini names, whatever its name, with the older file not read"
+      - "tests/unit/iracingControlProfiles.test.ts#the same problem when the profile cannot be found, and never the older file instead"
+      - "tests/unit/iracingControlProfiles.test.ts#a car’s own profile as iRacing writes it: its path name, no folder under setups"
+      - "src/features/racing/core/iracing/iracing.test.ts#reads the profile app.ini names, never the older controls.cfg beside it"
+      - "src/features/racing/core/iracing/iracing.test.ts#repairs a wheel id in the profile through FileStore, with a backup, and leaves the older files alone"
+      - "src/features/racing/core/iracing/iracing.test.ts#repairs a car’s own profile too; a car on the profile for all cars is not a set of its own"
+      - "src/features/racing/core/iracing/iracing.test.ts#says plainly when the profile cannot be found, and reads and changes nothing"
+      - "src/features/racing/core/bindingReaders.test.ts#reads the profile app.ini names: the wheel of the profile, not the id of the older file"
+      - "src/features/racing/core/bindingReaders.test.ts#says why when the profile cannot be found, instead of showing the older file"
+      - "src/features/racing/core/bindingReaders.test.ts#offers a car with a profile of its own, by its line in [ControlProfiles]"
+      - "src/features/racing/core/bindingSets.test.ts#saves, compares and restores the profile iRacing uses; the older file is not part of the set"
+      - "src/features/racing/core/bindingSets.test.ts#a set saved before control profiles is said to hold files iRacing no longer reads, and is not restored"
+      - "src/features/racing/core/bindingSets.test.ts#a set is not met when iRacing now uses another profile, a car got its own, or none can be found; its fix writes nothing"
+      - "src/features/racing/core/iracing/iracing.test.ts#writes only what its preview showed: another profile or a new car profile since means nothing is written"
+      - "src/core/iracingControls.test.ts#tells a file inside the control profiles from one beside them"
+      - "src/features/games/core/games.test.ts#with control profiles, suggests the profile iRacing uses, never the older controls.cfg"
+      - "tests/e2e/racing-iracing-profiles.e2e.ts#racing: iRacing with a control profile, read and repaired in the profile"
+      - "tests/e2e/racing-iracing-profiles.e2e.ts#racing: iRacing names a control profile that is not there, and the page says so"
+      - "artifacts/screens/racing-iracing-profiles/01-profile.png"
+      - "artifacts/screens/racing-iracing-profiles/03-confirm.png"
+      - "artifacts/screens/racing-iracing-profiles/04-repaired.png"
+      - "artifacts/screens/racing-iracing-profile-missing/01-profile-missing.png"
+
+  - id: RACE-IRACING-007
+    title: The racing feature names iRacing's actions as the iRacing bindings page does
+    job: configure
+    area: racing-iracing
+    priority: p2
+    done_means:
+      - "Every action of the recorded controls.cfg and control profile has the same name and group on the racing feature's iRacing page and cheat sheets as on the iRacing bindings page; a test holds the two tables together."
+      - "The black box actions carry iRacing's names: BlackBoxShowNext is 'Next black box', BlackBoxNext (Down) is 'Black box next control', BlackBoxToggle (Space) is 'Black box toggle control'."
+    status: done
+    evidence:
+      - "tests/unit/iracingActionNames.test.ts#the racing feature names and groups every action as the iRacing bindings page does"
+      - "tests/unit/iracingActionNames.test.ts#the black box actions are called what iRacing calls them, on both sides"
+      - "tests/unit/iracingActionNames.test.ts#both name every key code, with every modifier, alike"
+      - "src/features/racing/core/iracing/iracing.test.ts#names the black box actions as iRacing does"
+      - "tests/e2e/racing-iracing-profiles.e2e.ts#racing: iRacing with a control profile, read and repaired in the profile"
+      - "artifacts/screens/racing-iracing-profiles/02-black-box-names.png"
 
   # ---------------------------------------------------------------------------
   # BINDINGS — iRacing (reading; see docs/research/iracing-bindings.md)

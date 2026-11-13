@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { captureCandidates, makeReady, runChecks, standDown } from '../../src/core/checks/engine';
+import {
+  captureCandidates,
+  makeReady,
+  runChecks,
+  standDown,
+  WARNING_UNKNOWN,
+} from '../../src/core/checks/engine';
 import { CheckRegistry } from '../../src/core/checks/registry';
 import type { CheckItem, Profile } from '../../src/core/profile/schema';
 import { err, ok } from '../../src/core/result';
@@ -196,6 +202,105 @@ describe('makeReady', () => {
       nofix: 'fail',
     });
     expect(result.report.ready).toBe(false);
+  });
+
+  it('a fix with a warning shows it, runs only after a yes, and is not run where nobody can be asked', async () => {
+    registry.registerRemediation({
+      type: 'test.warned',
+      label: 'Warned',
+      order: 100,
+      params: z.object({ flag: z.string() }),
+      describe: () => 'Turn it on',
+      warning: async (params) =>
+        params.flag === 'risky' ? 'It would undo the other one.' : undefined,
+      run: async (params) => {
+        truth[params.flag] = true;
+        return ok(`Turned ${params.flag} on`);
+      },
+    });
+    const setup = profile([
+      item('risky', { remediation: { type: 'test.warned', params: { flag: 'risky' } } }),
+      item('safe', { remediation: { type: 'test.warned', params: { flag: 'safe' } } }),
+    ]);
+    const before = await runChecks(setup, registry, rig.ctx);
+    expect(before.results.map((r) => r.fixWarning)).toEqual([
+      'It would undo the other one.',
+      undefined,
+    ]);
+
+    const unasked = await makeReady(setup, registry, rig.ctx);
+    expect(unasked.steps.map((s) => [s.itemId, s.ok, s.skipped ?? false, s.message])).toEqual([
+      [
+        'risky',
+        false,
+        true,
+        'Not run: It would undo the other one. It needs your OK in the RigReady window.',
+      ],
+      ['safe', true, false, 'Turned safe on'],
+    ]);
+    expect(unasked.needsYou.map((n) => n.itemId)).toEqual(['risky']);
+
+    const asked: unknown[] = [];
+    const yes = await makeReady(setup, registry, rig.ctx, {
+      confirm: async (_item, ask) => {
+        asked.push(ask);
+        return true;
+      },
+    });
+    expect(asked).toEqual([{ warning: 'It would undo the other one.' }]);
+    expect(yes.steps.map((s) => [s.itemId, s.ok])).toEqual([['risky', true]]);
+    expect(truth['risky']).toBe(true);
+  });
+
+  it('a warning that cannot be worked out is still asked about, and never lets the fix run unasked', async () => {
+    registry.registerRemediation({
+      type: 'test.warnFails',
+      label: 'Warn fails',
+      order: 100,
+      params: z.object({ flag: z.string() }),
+      describe: () => 'Turn it on',
+      warning: async () => {
+        throw new Error('state unreadable');
+      },
+      run: async (params) => {
+        truth[params.flag] = true;
+        return ok(`Turned ${params.flag} on`);
+      },
+    });
+    const setup = profile([
+      item('x', { remediation: { type: 'test.warnFails', params: { flag: 'x' } } }),
+    ]);
+    const before = await runChecks(setup, registry, rig.ctx);
+    expect(before.results[0]!.fixWarning).toBe(WARNING_UNKNOWN);
+    const unasked = await makeReady(setup, registry, rig.ctx);
+    expect(unasked.steps[0]).toMatchObject({ ok: false, skipped: true });
+    expect(truth['x']).toBeUndefined();
+  });
+});
+
+describe('the check acknowledge', () => {
+  it('is offered only where the check says so', async () => {
+    registry.registerCheck({
+      type: 'test.ack',
+      group: 'other',
+      label: 'Ack',
+      params: z.object({ flag: z.string() }),
+      run: async () => ({ pass: false, summary: 'Not yet' }),
+      acknowledge: {
+        label: 'Take it',
+        offered: async (params) => params.flag === 'yes',
+        run: async (params) => ok(params),
+      },
+    });
+    const report = await runChecks(
+      profile([
+        item('yes', { type: 'test.ack', params: { flag: 'yes' } }),
+        item('no', { type: 'test.ack', params: { flag: 'no' } }),
+      ]),
+      registry,
+      rig.ctx
+    );
+    expect(report.results.map((r) => r.acknowledge)).toEqual(['Take it', undefined]);
   });
 });
 

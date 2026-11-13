@@ -332,6 +332,15 @@ describe('iRacing in RigReady', () => {
     });
   });
 
+  it('names the black box actions as iRacing does', () => {
+    // iRacing's "Next Black Box" is BlackBoxShowNext; Down, on BlackBoxNext, moves inside the box.
+    expect(iracingActionLabel('BlackBoxShowNext')).toBe('Next black box');
+    expect(iracingActionLabel('BlackBoxShowPrev')).toBe('Previous black box');
+    expect(iracingActionLabel('BlackBoxNext')).toBe('Black box next control');
+    expect(iracingActionLabel('BlackBoxPrev')).toBe('Black box previous control');
+    expect(iracingActionLabel('BlackBoxToggle')).toBe('Black box toggle control');
+  });
+
   it('only suggests a new id it is sure of', () => {
     const device = (guid: string, numButtons = 108) => ({
       index: 0,
@@ -354,5 +363,254 @@ describe('iRacing in RigReady', () => {
     expect(
       suggestTarget(OLD, [col1, device('BBBBBBBB-03A4-11F1-8001-444553540000')])
     ).toBeUndefined();
+  });
+});
+
+/**
+ * iRacing 2026 Season 3 and later: the bindings are a control profile that app.ini names
+ * (scenario iracing-bindings-profiles: "Baseline", the owner's real one with the recorded
+ * rig's made-up wheel id). The older Documents\iRacing\controls.cfg is still on disk and is
+ * neither read nor changed.
+ */
+describe('iRacing with control profiles', () => {
+  let app: WiredApp | undefined;
+  afterEach(async () => {
+    await app?.cleanup();
+    app = undefined;
+  });
+
+  const iracingDir = (a: WiredApp): string => path.join(a.ports.folders.documents(), 'iRacing');
+  const baseline = (a: WiredApp): string =>
+    path.join(iracingDir(a), 'profiles', 'controls', 'Baseline');
+  /** The connected wheel's id in the scenario racing-iracing-profiles-moved-wheel. */
+  const NEW = 'A1B2C3D4-5E6F-11F1-8001-444553540000';
+  const bytes = async (file: string): Promise<Buffer> => fs.readFile(file);
+
+  /** The older files name another id than the profile: reading them would show another wheel. */
+  async function olderFilesOnAnotherId(a: WiredApp): Promise<void> {
+    const dir = iracingDir(a);
+    const cfg = replaceGuidBytes(
+      new Uint8Array(await bytes(path.join(dir, 'controls.cfg'))),
+      DD2,
+      OLD
+    );
+    await fs.writeFile(path.join(dir, 'controls.cfg'), cfg.bytes);
+    const yaml = await fs.readFile(path.join(dir, 'joyCalib.yaml'), 'utf8');
+    await fs.writeFile(path.join(dir, 'joyCalib.yaml'), replaceGuidText(yaml, DD2, OLD).text);
+  }
+
+  it('reads the profile app.ini names, never the older controls.cfg beside it', async () => {
+    app = await wiredApp('iracing-bindings-profiles');
+    await olderFilesOnAnotherId(app);
+    const view = await app.invoke<IracingView>('racing:iracing');
+    expect(view.source).toEqual({
+      kind: 'profiles',
+      profile: 'Baseline',
+      folder: baseline(app),
+      oldFiles: [path.join(iracingDir(app), 'controls.cfg')],
+    });
+    expect(view.problems).toEqual([]);
+    // The wheel of the profile, connected: the older file's id is not read.
+    expect(view.devices).toHaveLength(1);
+    expect(view.devices[0]).toMatchObject({ key: DD2, state: 'connected', bindingCount: 17 });
+    // The profile has the two actions iRacing 2026.11 added: 369, not the older file's 367.
+    expect(view.bindings.length + view.unboundCount).toBe(369);
+    const byAction = new Map(view.bindings.map((b) => [b.action, b]));
+    expect(byAction.get('BlackBoxNext')).toMatchObject({
+      label: 'Black box next control',
+      input: 'Down',
+    });
+    expect(byAction.get('Throttle')).toMatchObject({ input: 'Accelerator' });
+    const check = app.wiring.context.checks.check('racing.iracingDevices')!;
+    expect(await check.run({}, app.ctx)).toMatchObject({
+      pass: true,
+      summary: 'The controller iRacing uses is connected',
+    });
+    const overview = await app.invoke<{ games: { id: string; bindings: string }[] }>(
+      'racing:overview'
+    );
+    expect(overview.games.find((g) => g.id === 'iracing')?.bindings).toContain(
+      'controllers connected'
+    );
+  });
+
+  it('repairs a wheel id in the profile through FileStore, with a backup, and leaves the older files alone', async () => {
+    app = await wiredApp('racing-iracing-profiles-moved-wheel');
+    const dir = iracingDir(app);
+    const profile = baseline(app);
+    const olderBefore = await bytes(path.join(dir, 'controls.cfg'));
+    const olderCalibration = await fs.readFile(path.join(dir, 'joyCalib.yaml'), 'utf8');
+    const profileBefore = await bytes(path.join(profile, 'controls.cfg'));
+
+    const before = await app.invoke<IracingView>('racing:iracing');
+    expect(before.devices[0]).toMatchObject({ key: DD2, state: 'moved', suggested: NEW });
+    const preview = await app.invoke<{ files: { label: string; change: string }[] }>(
+      'racing:iracingRepairPreview',
+      { mapping: [{ from: DD2, to: NEW }] }
+    );
+    expect(preview.files.map((f) => [f.label, f.change])).toEqual([
+      ['profiles/controls/Baseline/controls.cfg', 'modified'],
+      ['profiles/controls/Baseline/joyCalib.yaml', 'modified'],
+    ]);
+
+    const result = await app.invoke<{ message: string }>('racing:iracingRepair', {
+      mapping: [{ from: DD2, to: NEW }],
+    });
+    expect(result.message).toBe(
+      'Updated 17 bindings in the control profile “Baseline” and the calibration of FANATEC Podium Wheel Base DD2. Undo is on the Safety page.'
+    );
+    // The profile names the new id, 16 bytes per binding and nothing else.
+    const after = await bytes(path.join(profile, 'controls.cfg'));
+    expect(
+      after.equals(Buffer.from(replaceGuidBytes(new Uint8Array(profileBefore), DD2, NEW).bytes))
+    ).toBe(true);
+    expect(await fs.readFile(path.join(profile, 'joyCalib.yaml'), 'utf8')).toContain(`{${NEW}}`);
+    // The older files are exactly as they were.
+    expect((await bytes(path.join(dir, 'controls.cfg'))).equals(olderBefore)).toBe(true);
+    expect(await fs.readFile(path.join(dir, 'joyCalib.yaml'), 'utf8')).toBe(olderCalibration);
+    expect((await app.invoke<IracingView>('racing:iracing')).devices[0]).toMatchObject({
+      key: NEW,
+      state: 'connected',
+    });
+
+    // One action on the Safety page, each file backed up first; Undo puts the profile back.
+    const groups = await app.ports.files.journalGroups();
+    if (!groups.ok) throw new Error('journal');
+    const group = groups.value[0]!;
+    expect(group.entries.map((e) => e.path).sort()).toEqual([
+      path.join(profile, 'controls.cfg'),
+      path.join(profile, 'joyCalib.yaml'),
+    ]);
+    expect(group.entries.every((e) => e.backupPath !== null)).toBe(true);
+    expect((await app.ports.files.undoGroup(group.id)).ok).toBe(true);
+    expect((await bytes(path.join(profile, 'controls.cfg'))).equals(profileBefore)).toBe(true);
+  });
+
+  it('repairs a car’s own profile too; a car on the profile for all cars is not a set of its own', async () => {
+    app = await wiredApp('racing-iracing-profiles-moved-wheel');
+    const dir = iracingDir(app);
+    // As iRacing writes it (owner's rig, 13 Nov 2026): the car by iRacing's path name, with no
+    // folder under setups, and a profile whose name has spaces.
+    const ctsv = path.join(dir, 'profiles', 'controls', 'Test Profile CTSV');
+    await fs.mkdir(ctsv, { recursive: true });
+    for (const file of ['controls.cfg', 'joyCalib.yaml']) {
+      await fs.copyFile(path.join(baseline(app), file), path.join(ctsv, file));
+    }
+    const ini = await fs.readFile(path.join(dir, 'app.ini'), 'utf8');
+    await fs.writeFile(
+      path.join(dir, 'app.ini'),
+      ini.replace(
+        '[ControlProfiles]\r\n',
+        '[ControlProfiles]\r\ncadillacctsvr=Test Profile CTSV\r\nporsche992rgt3=Baseline\r\n'
+      )
+    );
+    const view = await app.invoke<IracingView>('racing:iracing');
+    expect(view.customCars).toEqual(['cadillacctsvr']);
+    const result = await app.invoke<{ message: string }>('racing:iracingRepair', {
+      mapping: [{ from: DD2, to: NEW }],
+    });
+    expect(result.message).toContain('Updated 17 bindings in the control profile “Baseline”');
+    const groups = await app.ports.files.journalGroups();
+    if (!groups.ok) throw new Error('journal');
+    expect(groups.value[0]!.entries.map((e) => path.relative(dir, e.path)).sort()).toEqual([
+      path.join('profiles', 'controls', 'Baseline', 'controls.cfg'),
+      path.join('profiles', 'controls', 'Baseline', 'joyCalib.yaml'),
+      path.join('profiles', 'controls', 'Test Profile CTSV', 'controls.cfg'),
+      path.join('profiles', 'controls', 'Test Profile CTSV', 'joyCalib.yaml'),
+    ]);
+    const car = parseControlsCfg(new Uint8Array(await bytes(path.join(ctsv, 'controls.cfg'))));
+    expect(car.ok && devicesInControls(car.value)[0]!.instanceGuid).toBe(NEW);
+  });
+
+  it('writes only what its preview showed: another profile or a new car profile since means nothing is written', async () => {
+    app = await wiredApp('racing-iracing-profiles-moved-wheel');
+    const dir = iracingDir(app);
+    const mapping = [{ from: DD2, to: NEW }];
+    type Preview = { seen: string; files: { label: string }[] };
+    const shown = await app.invoke<Preview>('racing:iracingRepairPreview', { mapping });
+    expect(shown.seen).toMatch(/^[0-9a-f]{64}$/);
+    // The same files and content give the same seen.
+    expect((await app.invoke<Preview>('racing:iracingRepairPreview', { mapping })).seen).toBe(
+      shown.seen
+    );
+
+    // After the preview, iRacing is pointed at another profile with the same old id.
+    const formula = path.join(dir, 'profiles', 'controls', 'Formula');
+    await fs.mkdir(formula, { recursive: true });
+    for (const file of ['controls.cfg', 'joyCalib.yaml']) {
+      await fs.copyFile(path.join(baseline(app), file), path.join(formula, file));
+    }
+    const ini = path.join(dir, 'app.ini');
+    const original = await fs.readFile(ini, 'utf8');
+    await fs.writeFile(ini, original.replace('Global=Baseline', 'Global=Formula'));
+    const changedSince =
+      'iRacing’s files changed after the change was shown, so nothing was written. Look at the change again.';
+    await expect(app.invoke('racing:iracingRepair', { mapping, seen: shown.seen })).rejects.toThrow(
+      changedSince
+    );
+    // A car given a profile of its own after the preview is another change too.
+    await fs.writeFile(
+      ini,
+      original.replace('[ControlProfiles]\r\n', '[ControlProfiles]\r\ncadillacctsvr=Formula\r\n')
+    );
+    await expect(app.invoke('racing:iracingRepair', { mapping, seen: shown.seen })).rejects.toThrow(
+      changedSince
+    );
+    const journal = await app.ports.files.journal();
+    expect(journal.ok && journal.value).toEqual([]);
+
+    // Looked at again, the change names those files, and that one is written.
+    const again = await app.invoke<Preview>('racing:iracingRepairPreview', { mapping });
+    expect(again.seen).not.toBe(shown.seen);
+    expect(again.files.map((f) => f.label)).toEqual([
+      'profiles/controls/Baseline/controls.cfg',
+      'profiles/controls/Baseline/joyCalib.yaml',
+      'profiles/controls/Formula/controls.cfg',
+      'profiles/controls/Formula/joyCalib.yaml',
+    ]);
+    await app.invoke('racing:iracingRepair', { mapping, seen: again.seen });
+    expect(await fs.readFile(path.join(formula, 'joyCalib.yaml'), 'utf8')).toContain(`{${NEW}}`);
+  });
+
+  it('says plainly when the profile cannot be found, and reads and changes nothing', async () => {
+    app = await wiredApp('racing-iracing-profiles-moved-wheel');
+    const dir = iracingDir(app);
+    await mutate(app, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/app.ini',
+        content: '[ControlProfiles]\r\nGlobal=Gone\r\n',
+      },
+    ]);
+    const olderBefore = await bytes(path.join(dir, 'controls.cfg'));
+    const view = await app.invoke<IracingView>('racing:iracing');
+    const problem =
+      'iRacing uses the control profile “Gone” for all cars, but RigReady found no controls.cfg in it.';
+    expect(view.source).toMatchObject({ kind: 'profiles', profile: 'Gone', problem });
+    expect(view.source?.folder).toBeUndefined();
+    // Nothing from the older file stands in for it.
+    expect(view).toMatchObject({ controlsFound: false, calibrationFound: false, problems: [] });
+    expect(view.devices).toEqual([]);
+    expect(view.bindings).toEqual([]);
+
+    const check = app.wiring.context.checks.check('racing.iracingDevices')!;
+    expect(await check.run({}, app.ctx)).toEqual({
+      pass: false,
+      summary: 'RigReady cannot tell which control profile iRacing uses',
+      details: [problem],
+    });
+    const overview = await app.invoke<{
+      games: { id: string; bindings: string; attention: boolean }[];
+    }>('racing:overview');
+    expect(overview.games.find((g) => g.id === 'iracing')).toMatchObject({
+      bindings: 'Cannot tell which control profile iRacing uses',
+      attention: true,
+    });
+    await expect(
+      app.invoke('racing:iracingRepair', { mapping: [{ from: DD2, to: NEW }] })
+    ).rejects.toThrow(problem);
+    expect((await bytes(path.join(dir, 'controls.cfg'))).equals(olderBefore)).toBe(true);
+    const journal = await app.ports.files.journal();
+    expect(journal.ok && journal.value).toEqual([]);
   });
 });
