@@ -196,7 +196,8 @@
             Edits iRacing bindings in bulk: one binding applied to many control profiles at once,
             the all-cars profile and per-car ones, with a preview for each, and calibration copied
             between profiles, all with iRacing closed. Changing many car profiles in one go and
-            copying calibration are not in RigReady.
+            copying calibration are not in RigReady, which copies buttons and keys from one profile
+            into another.
           </p>
           <p class="licence">Licence: MIT</p>
         </li>
@@ -303,30 +304,47 @@
       <h2 id="adds-title">What RigReady adds</h2>
       <p>
         RigReady's part is doing these jobs together, for flight and racing, with a check before the
-        session. In version 2.0:
+        session, so that less time goes on rig chores. In version 2.0:
       </p>
       <ul class="facts">
         <li>
           <strong>A check before the session, with a fix for each problem.</strong> Each setup
           checks the controllers, helper apps, monitor layout, audio and game files.
           <a href="/docs/play/make-ready-and-launch/">Make ready and launch</a> runs the fixes in
-          order and starts the game; Stand down puts the desk back after it closes.
+          order and starts the game; Stand down puts the desk back after it closes. For iRacing, a
+          setup can also switch the control profile at Make ready and put the old one back at Stand
+          down, and warn when iRacing will ask to calibrate the wheel or pedals plugged in now.
         </li>
         <li>
           <strong>Bindings with a safety net, for DCS and iRacing.</strong> A preview before
           anything is written, a backup first, and Undo on the Safety page. In DCS: editing,
           clean-up of the defaults DCS binds on every device, copy between aircraft, and a
           <a href="/docs/dcs/device-ids/">repair when Windows gives a device a new ID</a>. In
-          iRacing: <a href="/docs/games/iracing-bindings/">an action bound to a button or a key</a>
-          in the control profile iRacing uses (a button and a key bound this way worked in an
-          iRacing test drive on 13 November 2026), and the same kind of repair.
+          iRacing:
+          <a href="/docs/games/iracing-bindings/">binding an action to a button or a key</a>, or
+          clearing it, in the control profile iRacing uses (a button and a key bound this way were
+          used by iRacing in a test drive); the control profiles and which cars use each, with
+          buttons and keys copied from one profile into another; clearing the bindings of
+          controllers that are gone; and the same kind of repair.
         </li>
         <li>
-          <strong>Cheat sheets and a trainer.</strong>
-          <a href="/docs/controls/cheat-sheets/">A drawing of each device</a> with what every
-          control does, for print, PDF or DCS kneeboard pages, or made from a photo of your own
-          controller. The <a href="/docs/controls/trainer/">trainer</a> names an action and waits
-          for you to press its control.
+          <strong>Binding guides.</strong> Twenty for
+          <a href="/docs/dcs/binding-guide-and-ai/">DCS aircraft</a>, and for
+          <a href="/docs/games/iracing-binding-guide/">iRacing</a> one for each class of car: GT3,
+          GT4, LMDh and prototypes, formula and open-wheel, oval, and dirt. Each lists what to bind
+          first and walks you through binding it. For another aircraft you can import or write a
+          guide of your own. The guides were written from general knowledge and have not been
+          reviewed by a pilot or a racing driver.
+        </li>
+        <li>
+          <strong>Cheat sheets, a trainer and an overlay.</strong>
+          <a href="/docs/controls/cheat-sheets/">Cheat sheets</a> of what every control does, for
+          DCS, iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa, for print, PDF or DCS
+          kneeboard pages. Some WinWing and Thrustmaster devices have an outline drawing; for any
+          device you can make a sheet from your own photos. The
+          <a href="/docs/controls/trainer/">trainer</a> names an action and waits for you to press
+          its button or hat. The <a href="/docs/play/overlay/">overlay</a> lists each button or hat
+          you press and what it does in the aircraft or car you are in, with a switch in each setup.
         </li>
         <li>
           <strong>A hands-off health check and a USB map.</strong> The
@@ -349,13 +367,24 @@
       <h2 id="not-title">What RigReady does not do</h2>
       <ul class="facts">
         <li>
-          Bindings for other games. Microsoft Flight Simulator, X-Plane, IL-2, Falcon BMS and most
-          racing games are found, launched and backed up, nothing deeper. Changing bindings is for
-          DCS and iRacing, and in iRacing axes and hat switches are still bound in iRacing itself.
+          Bindings for other games. Binding an action to a control is for DCS and iRacing only. Le
+          Mans Ultimate, BeamNG.drive and Assetto Corsa have their bindings shown, with cheat
+          sheets; Microsoft Flight Simulator, X-Plane, IL-2, Falcon BMS and the other racing games
+          are found, launched and backed up, nothing deeper.
+        </li>
+        <li>
+          Every binding in DCS and iRacing. In DCS, many actions, mostly keyboard and view commands,
+          are shown but not edited; they are marked "bind in DCS". In iRacing, RigReady binds
+          buttons and keys; axes, hat switches and the number pad keys are bound in iRacing itself.
         </li>
         <li>
           VR. There are no VR checks, and the overlay that shows each press is a window on a
-          monitor, not inside a headset.
+          monitor, not inside a headset. Over a game in exclusive full screen the overlay may not
+          show at all.
+        </li>
+        <li>
+          Placing the DCS kneeboard. DCS opens it in the bottom right corner of its whole window,
+          which can be on a small screen; RigReady shows where, but cannot choose the place yet.
         </li>
         <li>
           Remapping. It does not merge or remap devices or add macros for games; its curves are only
@@ -367,16 +396,24 @@
         </li>
         <li>Display modes such as NVIDIA Surround, AMD Eyefinity and HDR.</li>
         <li>
-          Replacing the makers' software. WinWing backlights, the UFC and ICP displays and vibration
-          still need SimAppPro.
+          Replacing the makers' software. WinWing backlight sync, the UFC and ICP displays and
+          vibration still need SimAppPro. A Fanatec base keeps its tuning values on the base, where
+          RigReady cannot read them; the Wheel page keeps a copy you enter by hand. TrackIR's active
+          profile cannot be switched from outside TrackIR.
         </li>
-        <li>Linux or macOS: it runs on Windows 10 and 11 only.</li>
+        <li>Backups over 2 GB. A single backup is built in memory and capped at 2 GB.</li>
+        <li>
+          Linux or macOS: it runs on Windows 10 and 11 only, and has not yet been tried on a real
+          Windows 10 PC.
+        </li>
       </ul>
       <p>
         RigReady 2.0 is new and has been used on one rig. The Wheel page has been tried on a real
         Fanatec base only; other brands were tested on recorded data made from their published USB
-        IDs. The repair for a device with a new Windows ID, in DCS and in iRacing, was tested on
-        recorded files, not yet with a device whose ID really changed.
+        IDs. The iRacing repair for a controller with a new Windows ID, and the Assetto Corsa repair
+        for controllers Windows lists in another order, were tested on recorded files, not yet with
+        a controller that really changed. The virtual controller has run on the real driver once;
+        hiding the real controllers while a game runs has not been tried.
         <a href="/how-it-was-built/">How it was built</a> lists everything not verified yet.
       </p>
     </div>
