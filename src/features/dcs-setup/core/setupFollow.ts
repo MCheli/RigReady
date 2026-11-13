@@ -123,17 +123,14 @@ export function followItem(
   const keys = changedKeys(before, after);
   if (keys.length === 0) return undefined;
   let check: Moved;
-  let fix: Moved | undefined;
-  if (item.type === OPTIONS_CHECK) {
-    check = moveOptions(item.params, keys, before, after);
-    if (item.remediation?.type === SET_OPTIONS_FIX) {
-      fix = moveOptions(item.remediation.params, keys, before, after);
-    }
-  } else if (item.type === MONITOR_CHECK) {
-    check = moveMonitor(item.params, keys, before, after);
-  } else {
-    return undefined;
-  }
+  if (item.type === OPTIONS_CHECK) check = moveOptions(item.params, keys, before, after);
+  else if (item.type === MONITOR_CHECK) check = moveMonitor(item.params, keys, before, after);
+  else return undefined;
+  // Either check can carry "Set the DCS options" as its fix (the setup editor offers any).
+  const fix =
+    item.remediation?.type === SET_OPTIONS_FIX
+      ? moveOptions(item.remediation.params, keys, before, after)
+      : undefined;
   // The check and its fix are one item: both expect the old values, or it is left alone.
   if (check === 'other' || fix === 'other') return undefined;
   const fixChanges = fix?.changes ?? [];
@@ -191,6 +188,17 @@ export function followFix(
     }
   }
   return changed ? next : undefined;
+}
+
+/** A monitor setup check's params as the options.lua keys they stand for. */
+export function monitorAsOptions(params: {
+  setup?: string | undefined;
+  window?: { width: number; height: number } | undefined;
+}): Record<string, unknown> {
+  return {
+    ...(params.setup !== undefined ? { multiMonitorSetup: params.setup } : {}),
+    ...(params.window ? { width: params.window.width, height: params.window.height } : {}),
+  };
 }
 
 /** "width 5120 and height 2464", "monitor setup "rigready"" */

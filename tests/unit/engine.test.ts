@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { captureCandidates, makeReady, runChecks, standDown } from '../../src/core/checks/engine';
+import {
+  captureCandidates,
+  makeReady,
+  runChecks,
+  standDown,
+  WARNING_UNKNOWN,
+} from '../../src/core/checks/engine';
 import { CheckRegistry } from '../../src/core/checks/registry';
 import type { CheckItem, Profile } from '../../src/core/profile/schema';
 import { err, ok } from '../../src/core/result';
@@ -244,6 +250,31 @@ describe('makeReady', () => {
     expect(asked).toEqual([{ warning: 'It would undo the other one.' }]);
     expect(yes.steps.map((s) => [s.itemId, s.ok])).toEqual([['risky', true]]);
     expect(truth['risky']).toBe(true);
+  });
+
+  it('a warning that cannot be worked out is still asked about, and never lets the fix run unasked', async () => {
+    registry.registerRemediation({
+      type: 'test.warnFails',
+      label: 'Warn fails',
+      order: 100,
+      params: z.object({ flag: z.string() }),
+      describe: () => 'Turn it on',
+      warning: async () => {
+        throw new Error('state unreadable');
+      },
+      run: async (params) => {
+        truth[params.flag] = true;
+        return ok(`Turned ${params.flag} on`);
+      },
+    });
+    const setup = profile([
+      item('x', { remediation: { type: 'test.warnFails', params: { flag: 'x' } } }),
+    ]);
+    const before = await runChecks(setup, registry, rig.ctx);
+    expect(before.results[0]!.fixWarning).toBe(WARNING_UNKNOWN);
+    const unasked = await makeReady(setup, registry, rig.ctx);
+    expect(unasked.steps[0]).toMatchObject({ ok: false, skipped: true });
+    expect(truth['x']).toBeUndefined();
   });
 });
 

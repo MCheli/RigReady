@@ -22,6 +22,7 @@ import { boundingBox, MONITOR_SETUP_NAME, MONITOR_SETUP_OPTION } from './screens
 import {
   FOLLOWED_KEYS,
   followFix,
+  monitorAsOptions,
   sameValue,
   valuesPhrase,
   type Followed,
@@ -268,6 +269,11 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
           ...(keys.includes('width') ? { window: { width: set.width!, height: set.height! } } : {}),
         });
       },
+      // A "Set the DCS options" fix on this check follows it, as on the options check.
+      fixParams: (fix, before, after) =>
+        fix.type === DCS_SET_OPTIONS
+          ? followFix(fix.params, monitorAsOptions(before), monitorAsOptions(after))
+          : undefined,
     },
   };
 

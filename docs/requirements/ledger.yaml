@@ -3471,7 +3471,7 @@ requirements:
       - "'Use in DCS' then saves those setups through the setups store with the DCS files, in the same Safety-page action ('Use the RigReady screen setup in DCS'), so one Undo puts back the files and the setups together. The service works the setups out again from options.lua as it really was and is after the write, updates only the ones named in followSetups, reads each back, and names each in the result ('Updated the setup \"DCS F/A-18C\": ...'). Nothing is updated unless named: an assistant over MCP or a caller that names none changes no setup."
       - "A setup whose check or fix expects anything else for a key that changes (another window of its own) is never listed and never changed, even when named."
       - "A setup left as it was (unticked, or made later with the old values) says so on the Play screen: the row names what 'Use in DCS' set ('\"Use in DCS\" set width 5120 and height 2464 for the RigReady screen setup, and this setup still expects the older values. Update the setup to keep the new ones.') and offers 'Update the setup', which moves the check and its fix to the values options.lua holds and the check then passes. The button is offered only while options.lua still holds what 'Use in DCS' set, and is checked again when pressed. A change made by another program is not called one 'Use in DCS' made."
-      - "'Set the DCS options' warns when it would undo the RigReady screen setup in use: a window that no longer covers the monitors RigReady.lua uses (named), another monitor setup, or full screen. The warning is on the row; Make ready and the fix button ask first ('Run this fix anyway?', Skip or Run it anyway); the tray and the command palette do not run it and say why, and it is listed under Needs you."
+      - "'Set the DCS options' warns when it would undo the RigReady screen setup in use: a window that no longer covers the monitors RigReady.lua uses (named), another monitor setup, or full screen. The warning is on the row; Make ready and the fix button ask first ('Run this fix anyway?', Skip or Run it anyway); the tray and the command palette do not run it and say why, and it is listed under Needs you. A warning that cannot be worked out is a warning too, so the fix is never run unasked. Full screen is warned about whenever the screen setup is in use."
     status: done
     evidence:
       - "src/features/dcs-setup/core/setupFollow.test.ts#the owner's sequence: offered with each change named, updated in the same change, and the check passes"
@@ -3483,6 +3483,10 @@ requirements:
       - "src/features/dcs-setup/core/setupFollow.test.ts#moves the old values, leaves keys that did not change, and skips an item the fix disagrees with"
       - "tests/unit/engine.test.ts#a fix with a warning shows it, runs only after a yes, and is not run where nobody can be asked"
       - "tests/unit/engine.test.ts#is offered only where the check says so"
+      - "tests/unit/engine.test.ts#a warning that cannot be worked out is still asked about, and never lets the fix run unasked"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#a fix that turns full screen on warns while the screen setup is in use, even when the window was not sized"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#\"Update the setup\" on a monitor setup check moves its \"Set the DCS options\" fix with it"
+      - "src/features/dcs-setup/core/setupFollow.test.ts#a monitor setup check with \"Set the DCS options\" as its fix moves both, or neither"
       - test: 'tests/e2e/dcs-screens.e2e.ts#dcs-screens: "Use in DCS" offers to update the setups that expect the old window, and the Play screen says so when one is left'
       - "artifacts/screens/dcs-screens-follow-setups/01-offer.png"
       - "artifacts/screens/dcs-screens-follow-setups/02-play-screen-says-so.png"
@@ -3490,7 +3494,7 @@ requirements:
       - "artifacts/screens/dcs-screens-follow-setups/04-setup-updated.png"
     notes:
       - "2026-11-13, 13:04 on the owner's rig: the MFD screens moved below the ultrawide, 'Use in DCS' sized the window from 7424 × 1440 to 5120 × 2464, and the setup 'DCS F/A-18C' still expected 7424 × 1440. The Play screen said 'DCS graphics options differ' and Make ready would have put the old window back; the owner noticed before pressing it."
-      - "Shared changes: CheckAcknowledge.offered and fixParams, RemediationDefinition.warning and CheckResult.fixWarning (src/core/checks), ProfileStore.save options (reason, group, journal), fly:acknowledge asks offered again and stores the fix's params, the Play screen asks before a fix with a warning. The compact window leaves such a fix to Make ready's 'not run' line; it does not ask."
+      - "Shared changes: CheckAcknowledge.offered and fixParams, RemediationDefinition.warning and CheckResult.fixWarning (src/core/checks), ProfileStore.save options (reason, group, journal), fly:acknowledge asks offered again and stores the fix's params, the Play screen asks before a fix with a warning, and the compact window leaves Make ready to the full window while such a fix would run (as it does for a program to confirm)."
       - "Launch steps of type 'Set the DCS options' are not followed or warned about; only the checks and their fixes are."
 
   - id: DCS-EXPORT-001

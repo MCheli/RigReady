@@ -29,20 +29,30 @@ const toneClass = computed(
 );
 const sessionKind = computed(() => fly.profiles.find((p) => p.id === fly.session.profileId)?.kind);
 
-/**
- * A fix or a launch step that runs a program is shown before it runs, and there is no room
- * for that here: the action is then left to the full window.
- */
-const needsOk = computed(() => {
-  const fixes = fly.items.some((item) => {
+/** A fix Make ready would run that asks first: one that runs a program, or one with a warning. */
+const fixAsking = (ask: 'confirm' | 'fixWarning'): boolean =>
+  fly.items.some((item) => {
     const result = fly.results[item.itemId];
     return (
       result !== undefined &&
       result.status !== 'pass' &&
       result.fixKind === 'action' &&
-      result.confirm !== undefined
+      result[ask] !== undefined
     );
   });
+/** A fix that would undo something set elsewhere: asked about, with why, in the full window. */
+const warnedFix = computed(
+  () =>
+    (primary.value === 'makeReady' || primary.value === 'readyAndLaunch') && fixAsking('fixWarning')
+);
+
+/**
+ * A fix or a launch step that runs a program, or a fix with a warning, is shown before it
+ * runs, and there is no room for that here: the action is then left to the full window.
+ */
+const needsOk = computed(() => {
+  if (warnedFix.value) return true;
+  const fixes = fixAsking('confirm');
   const steps = (fly.view?.actions ?? []).some(
     (action) => action.phase !== 'standDown' && action.confirm !== undefined
   );
@@ -72,7 +82,9 @@ const line = computed(() => {
   if (needsOk.value) {
     return {
       tone: 'rr-warn',
-      text: 'This setup runs a program that is shown to you first. That is done in the full window.',
+      text: warnedFix.value
+        ? 'A fix of this setup would undo something you set elsewhere, and asks you first. That is done in the full window.'
+        : 'This setup runs a program that is shown to you first. That is done in the full window.',
     };
   }
   if (paused.value) return { tone: 'rr-warn', text: paused.value.message };
@@ -322,7 +334,13 @@ onBeforeUnmount(() => {
         :prepend-icon="button.icon"
         :disabled="fly.busy !== null || needsOk"
         :loading="fly.busy !== null"
-        :title="needsOk ? 'A program has to be shown to you first: use the full window' : undefined"
+        :title="
+          warnedFix
+            ? 'A fix asks you first: use the full window'
+            : needsOk
+              ? 'A program has to be shown to you first: use the full window'
+              : undefined
+        "
         :aria-keyshortcuts="onEnter ? 'Enter' : undefined"
         data-testid="compact-primary"
         @click="run"

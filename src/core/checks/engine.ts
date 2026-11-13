@@ -164,7 +164,14 @@ async function attachFix(
   if (warning) result.fixWarning = warning;
 }
 
-/** The fix's own warning (RemediationDefinition.warning), or undefined. Never throws. */
+/** What a fix warns when its own warning could not be worked out: it is asked about all the same. */
+export const WARNING_UNKNOWN =
+  'RigReady could not check whether this fix would undo something you set elsewhere.';
+
+/**
+ * The fix's own warning (RemediationDefinition.warning), or undefined. Never throws: a
+ * warning that fails is a warning, so the fix is still asked about and never runs unasked.
+ */
 async function fixWarning(
   definition: RemediationDefinition,
   params: unknown,
@@ -175,7 +182,7 @@ async function fixWarning(
     return await definition.warning(params, ctx);
   } catch (e) {
     ctx.log.error(`remediation ${definition.type} warning threw`, e);
-    return undefined;
+    return WARNING_UNKNOWN;
   }
 }
 

@@ -968,7 +968,8 @@ export class DcsSetupService {
         reasons.push(`DCS's window would no longer cover ${listNames(outside)}`);
       }
     }
-    if (changing.includes('fullScreen') && after.fullScreen && state.options.fullScreen === false) {
+    // Full screen from a window, whatever RigReady recorded: the screen setup needs a window.
+    if (changing.includes('fullScreen') && after.fullScreen === true) {
       reasons.push('DCS would start in full screen, and the screen setup needs a window');
     }
     const set = await this.setByScreens(paths.value, options);

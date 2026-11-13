@@ -7,7 +7,7 @@ import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { ScreensPreview, ScreensState } from '../contract';
 import { readOptions } from './options';
 import type { ScreenSetup } from './screens';
-import { followFix, followItem, followSetup, valuesPhrase } from './setupFollow';
+import { followFix, followItem, followSetup, monitorAsOptions, valuesPhrase } from './setupFollow';
 
 /**
  * "Use in DCS" and the setups made before it (13 Nov 2026, on the owner's rig): the MFD
@@ -262,6 +262,61 @@ describe('setups follow "Use in DCS"', () => {
     expect((await itemOf(HORNET, 'c2')).params).toEqual({ setup: 'rigready' });
   });
 
+  it('a fix that turns full screen on warns while the screen setup is in use, even when the window was not sized', async () => {
+    app = await wiredApp('dcs-setup-flying', { files: FILES });
+    const { setup } = await app.invoke<{ setup: ScreenSetup }>('dcs-setup:importSimAppPro', {
+      desktopId: 'current',
+    });
+    await app.invoke('dcs-setup:applyScreens', {
+      setup,
+      pairingChecked: true,
+      setResolution: false,
+    });
+    const hornet = await setupOf(HORNET);
+    const saved = await app.wiring.context.profiles.save({
+      ...hornet,
+      checks: hornet.checks.map((c) =>
+        c.id === 'c4'
+          ? {
+              ...c,
+              params: { fullScreen: true },
+              remediation: { type: 'dcs.setOptions', params: { fullScreen: true } },
+            }
+          : c
+      ),
+    });
+    expect(saved.ok).toBe(true);
+    expect((await resultOf(HORNET, 'c4')).fixWarning).toBe(
+      'This fix does not fit the RigReady screen setup in DCS: it sets full screen on, so DCS would start in full screen, and the screen setup needs a window.'
+    );
+  });
+
+  it('"Update the setup" on a monitor setup check moves its "Set the DCS options" fix with it', async () => {
+    app = await wiredApp('dcs-setup-flying', { files: FILES });
+    const hornet = await setupOf(HORNET);
+    const saved = await app.wiring.context.profiles.save({
+      ...hornet,
+      checks: hornet.checks.map((c) =>
+        c.id === 'c2'
+          ? {
+              ...c,
+              remediation: { type: 'dcs.setOptions', params: { multiMonitorSetup: 'wwtMonitor' } },
+            }
+          : c
+      ),
+    });
+    expect(saved.ok).toBe(true);
+    await firstUse();
+    const declined = await resultOf(HORNET, 'c2');
+    expect(declined.fixWarning).toBe(
+      'This fix would undo "Use in DCS": it sets monitor setup "wwtMonitor", so DCS would no longer use RigReady\'s screen setup.'
+    );
+    await app.invoke('fly:acknowledge', { profileId: HORNET, itemId: 'c2' });
+    const item = await itemOf(HORNET, 'c2');
+    expect(item.params).toEqual({ setup: 'rigready' });
+    expect(item.remediation?.params).toEqual({ multiMonitorSetup: 'rigready' });
+  });
+
   it('a change made by another program is not taken for one "Use in DCS" made', async () => {
     app = await wiredApp('dcs-setup-flying', { files: FILES });
     const first = await firstUse();
@@ -363,6 +418,31 @@ describe('which items follow', () => {
       )
     ).toEqual({ width: 5120, height: 2464, vr: false });
     expect(followFix({ width: 3840 }, { width: 7424 }, { width: 5120 })).toBeUndefined();
+    // A monitor setup check with "Set the DCS options" as its fix: the fix follows it too.
+    expect(
+      followFix(
+        { width: 7424, height: 1440 },
+        monitorAsOptions({ window: { width: 7424, height: 1440 } }),
+        monitorAsOptions({ window: { width: 5120, height: 2464 } })
+      )
+    ).toEqual({ width: 5120, height: 2464 });
+  });
+
+  it('a monitor setup check with "Set the DCS options" as its fix moves both, or neither', () => {
+    const monitor = (fix: Record<string, unknown>): CheckItem => ({
+      id: 'm',
+      type: 'dcs.monitorSetup',
+      title: 'DCS monitor setup',
+      required: false,
+      params: { window: { width: 7424, height: 1440 } },
+      remediation: { type: 'dcs.setOptions', params: fix },
+    });
+    const moved = followItem(monitor({ width: 7424, height: 1440 }), before, after);
+    expect(moved?.item.params).toEqual({ window: { width: 5120, height: 2464 } });
+    expect(moved?.item.remediation?.params).toEqual({ width: 5120, height: 2464 });
+    expect(moved?.follow.fix).toBe(true);
+    // The fix sets a window of its own: the item is left alone.
+    expect(followItem(monitor({ width: 3840, height: 1080 }), before, after)).toBeUndefined();
   });
 
   it('says the values in words', () => {
