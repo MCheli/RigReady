@@ -208,5 +208,6 @@ export async function locateIracingControls(
 /** True for a path under Documents\iRacing\profiles\controls (`folder` is Documents\iRacing). */
 export function inControlProfiles(folder: string, file: string): boolean {
   const relative = path.relative(path.join(folder, IRACING_PROFILES), file);
-  return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+  // Outside is a first step of "..", not a name that starts with two dots ("..Wheel").
+  return relative !== '' && relative.split(/[\\/]/)[0] !== '..' && !path.isAbsolute(relative);
 }

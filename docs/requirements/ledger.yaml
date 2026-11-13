@@ -1916,6 +1916,21 @@ requirements:
       - "artifacts/screens/profiles-version-one-two-controllers/01-bring-over.png"
       - "artifacts/screens/profiles-version-one-two-controllers/02-play.png"
 
+  - id: CFG-PROFILE-FIXLABEL-001
+    title: The setup editor names an item's fix with the names in its label as written
+    job: configure
+    area: profiles
+    priority: p3
+    done_means:
+      - "The line under an item in the setup editor says 'fix: ' and the fix's label with only an ordinary first word lowered ('start SimAppPro', 'switch iRacing’s control profile'); a first word that is a name or an abbreviation, and every word after it, keep their capitals."
+    notes:
+      - "2026-11-13: the editor lowered the whole label ('start simapppro', 'switch iracing’s control profile'), found while adding the iRacing control profile check."
+    status: done
+    evidence:
+      - "src/features/profiles/renderer/inSentence.test.ts#lowers only an ordinary first word, and keeps names and abbreviations as written"
+      - "tests/e2e/setup-editor-fix-label.e2e.ts#setup editor: the fix of an item keeps the names in its label"
+      - "artifacts/screens/setup-editor-fix-label/01-fix-label.png"
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------
@@ -2973,6 +2988,7 @@ requirements:
       - "In a round for one device, a press on another device is said to be on another device, by name, and is not counted. In a round for all devices the same press is an answer."
       - "A window that starts to listen while another window listens is told where every control is, marked as rest and not as a press: the trainer opened beside the popped-out quick look does not take a switch that is on for an answer, and the pop-out does not take it for the last press."
       - "A switch position or a throttle stop counts once it has been there about a third of a second, and is not let go: the next card comes with it where it was put, without waiting for the other positions of its control, and the card says 'Leave it there for the next card.' A position is taken for one that stays when it, or another position of the same control, was held when the round or a card began. Which buttons are positions of one control comes from the device's drawing (the one its sheet is drawn with, else RigReady's), or from the list of a known device; what is drawn as a hat, a mini-stick, a lever or trigger, a button or a key springs back and is left out. When a card asks for the position its control is already in, another position of that control on the way away and back is not a wrong answer, is not weighed and is not said. The owner's throttle at rest on 13 November 2026 (Buttons 23, 30, 31, 4, 41 and 58 held) plays back: the left handle to IDLE from IDLE, the upper thumb switch forward, the right handle to OFF, with nothing let go."
+      - "A button a drawing marks momentary (the push of the take-off panel's wing fold handle, 31; the press of its jettison knob, 22) is not a position of its control: with the wing fold handle resting in SPREAD, a card answered by pushing the handle in still waits for it to be let go."
     notes:
       - "2026-11-13: at the second look on the rig 'Left throttle to IDLE' was hard to answer: the handle rests at IDLE, so it had to go to OFF and back, and then be moved off IDLE again because the next card waited for it to be let go (finding T1). Stops and switch positions are now left where they are put. The drawings do not mark which positions stay put, so that is taken from what was seen resting; a switch whose positions nothing tells apart from buttons, never seen resting in one, still waits to be let go or put back."
     status: done
@@ -2983,6 +2999,8 @@ requirements:
       - "src/features/cheat-sheets/core/trainerRound.test.ts#is not told by the drawing alone: a position nothing was seen resting in waits to be let go"
       - "src/features/cheat-sheets/core/trainer.test.ts#knows from the drawing of the device which buttons are positions of one switch or throttle stop"
       - "src/features/cheat-sheets/core/trainerStore.test.ts#gives the owner's throttle stops and switch positions their other positions, from its drawing"
+      - "src/features/cheat-sheets/core/trainerStore.test.ts#keeps the push of a handle or knob out of its positions: the take-off panel"
+      - "src/features/cheat-sheets/core/trainerRound.test.ts#waits for the push of a handle to be let go, though another position of the handle rests: the wing fold handle"
       - "tests/e2e/cheat-sheets-trainer.e2e.ts#trainer: a throttle stop or a switch position counts once it is reached and held a moment, and is left there; one already there as its card comes up is moved away and back"
       - "artifacts/screens/cheat-sheets-trainer-stops/01-already-there.png"
       - "artifacts/screens/cheat-sheets-trainer-stops/02-moved-away.png"
@@ -4483,19 +4501,20 @@ requirements:
       - "The WinWing UFC1 with its HUD1, the ICP, the F-18 startup panel and the F-18 take-off panel 2 each have a drawing of the panel face, found by the USB id or the name the panel reports, in place of the grid of cards: every switch, knob, key and handle the maker's number map names is on the face where it is on the panel, with its numbers and the word printed beside it."
       - "The MFD1 frame drawing has all twenty edge buttons, the four corner rockers by their printed names (DAY / NGT, SYM, GAIN, CONT), the knob with its press, and the switch on the side edge."
       - "A number the maker's map has no control for is not placed on the drawing; it shows under More controls (SHEET-022)."
-      - "A control whose numbers are not confirmed carries the '?' mark, and only that one does: the take-off panel's wing fold handle, whose 30 (SPREAD on the maker's screen) turned out to follow the brake handle."
-      - "The take-off panel's brake handle is out 40, in 41, left 39, right 38, and 30 while it rests (marked rest), as moved on the owner's panel on 13 Nov; the jettison knob (17 to 19) and the gear lever (35 to 37) each move as one control. The shipped cards of the panel say the same."
+      - "No control of the panels carries the '?' mark: every number whose move was in doubt was moved on the owner's panel on 13 Nov."
+      - "The take-off panel's brake handle is out 40, in 41, left 39, right 38, with no button of its own at rest; its wing fold handle is one control with three positions that stay put, FOLD 28, HOLD 29 and SPREAD 30 (where it normally sits, marked rest), and a push in that gives 31 while held. The jettison knob (17 to 19) and the gear lever (35 to 37) each move as one control. The shipped cards of the panel say the same."
       - "On the owner's recorded rig, whatever is bound, no two leader lines cross and every label is on the page."
     notes:
       - "2026-11-12: owner decision 10A: every WinWing controller the owner has, drawn fresh in RigReady's style. The cards of the ICP were one number too low on two switches and are corrected for users who keep a card layout. Sources: docs/research/controller-drawings.md section 8."
-      - "2026-11-13: the brake handle was moved at the second look on the rig; the drawing and the cards follow the presses (research note section 11). The owner's own DCS bindings for the panel, from WinWing's profile, still have 30 as Wing Fold SPREAD: one move of the wing fold handle on the rig settles whether 30 also follows it."
+      - "2026-11-13: the brake handle was moved at the second look on the rig, and the wing fold handle in the input tester at 12:55, one position at a time; the drawing and the cards follow both (research note section 11). The brake handle's first reading gave it 30 as its rest; the wing fold handle showed 30 is SPREAD, which the panel lets go of while the brake handle is moved."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#has a drawing for each of the owner's WinWing panels, found by what the panel reports, numbered as the maker numbers it"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#draws each one, not a grid of cards, with no leader crossing and every label on the page, whatever is bound"
-      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#take-off panel 2: the brake handle is out 40, in 41, left 39, right 38 and rests on 30; the gear lever and the jettison knob are one control each"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#take-off panel 2: the brake handle is out 40, in 41, left 39, right 38; the wing fold handle is FOLD 28, HOLD 29, SPREAD 30 and push 31; the gear lever and the jettison knob are one control each"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: what the owner pressed on his rig lights the control it belongs to, on the grip, the throttle and the take-off panel"
       - "artifacts/screens/cheat-sheets-second-look/03-takeoff-brake-out.png"
+      - "artifacts/screens/cheat-sheets-second-look/04-takeoff-wing-fold.png"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
       - "docs/research/controller-drawings.md"
@@ -4865,7 +4884,7 @@ requirements:
       - "src/features/overlay/core/service.test.ts#the same control pressed again counts up instead of adding a line"
       - "src/features/overlay/core/service.test.ts#a switch or lever going through its positions is one line that changes"
       - "src/features/overlay/core/service.test.ts#the aircraft the setup in use names, until the user chooses another"
-      - "src/features/overlay/core/service.test.ts#another setup played while flying is picked up on a press: the words are never those of another game"
+      - "src/features/overlay/core/service.test.ts#another setup played while flying is picked up at once: the words are never those of another game"
       - "src/features/overlay/core/service.test.ts#a setup for a game whose bindings are not on this PC gives presses without words, and says why"
       - "src/features/overlay/core/service.test.ts#a racing game: the one set of bindings it has, by the control a press is on"
       - "src/features/overlay/core/service.test.ts#without a setup, and with the bindings of several games here, none is guessed"
@@ -5015,6 +5034,63 @@ requirements:
       - "2026-11-12: not built, by the owner's decision: 'We're going to ignore the VR part of that for now. We can leave that as an unsatisfied requirement.' The overlay of OVERLAY-001 to OVERLAY-006 is a window on a monitor, and a headset is not a monitor: a game in VR draws straight to the headset, so nothing of this overlay is seen in it. Showing something there takes an overlay layer of the VR runtime (an OpenXR API layer, or a SteamVR overlay), which is research first. The third criterion is met by the page ('It does not show inside a VR headset.') and by docs/manual/play/overlay.md; the first two are open."
     status: todo
     evidence: []
+
+  - id: OVERLAY-008
+    title: The overlay is a choice of each setup, on where RigReady can read the game's bindings
+    job: configure
+    area: overlay
+    priority: p1
+    done_means:
+      - "Each setup has its own switch, 'Show the overlay in this setup', in the setup editor, saved with the setup (extensions.overlay). While the overlay is turned on, it is up while the setup in use has it on and down while it has it off; playing another setup takes it up or down at once, also while nothing is pressed (E2E, scenario overlay-setups)."
+      - "A setup that says nothing (made before this, or never switched) has it on when RigReady can read the bindings of its game on this PC, so a press is shown with what it does, and off otherwise, with the reason beside the switch ('RigReady cannot read the bindings of X-Plane 12, so the overlay cannot say what a press does'). The default comes from the game's binding reader and whether it finds the bindings; no game is named in the code."
+      - "The Overlay page keeps the switch for the overlay as a whole, its look and its place, and lists every setup with On or Off, whether that was chosen or is how it started, the reason, the setup in use, and a way to the setup. With the setup in use off it says so, shows the example lines in the preview, does not read the controllers for it and does not let it be framed. 'Turn the overlay on' in the palette says so and leads to that setup."
+    notes:
+      - "2026-11-13: the owner's requirement O2 from the second look: 'I would maybe want it on in DCS and off in iRacing ... it should just be off in games where we don't support the bindings or we don't know what the controls are bound to ... don't go make it always on for DCS and always off for iRacing for every user.' The switch on the Overlay page stays as the switch for the overlay as a whole (off until the user turns it on, OVERLAY-001), so nobody gets a window over the screen by making a setup; each setup then decides whether it shows. Shared changes, made for this: ProfileStore.onChanged in src/core/profile/store.ts (said after a save, a removal and another setup in use), so the overlay goes with the setup in use while it is down and hears no presses; a setupSections slot in the feature manifest (src/shared/feature.ts), shown by the setup editor (src/features/profiles/renderer/ProfileEditPage.vue), so the overlay's switch and its reason live in the overlay feature. The setup's data is profile.extensions.overlay, the place the profile schema keeps for a feature's own data, so ProfileSchema did not change. A setup file changed by hand outside RigReady is picked up when the Overlay page is opened, or on a press after two minutes."
+    status: done
+    evidence:
+      - "src/features/overlay/core/setupChoice.test.ts#says nothing until the user switches it, and then what was switched"
+      - "src/features/overlay/core/setupChoice.test.ts#a value a hand edit got wrong says nothing, so the setup goes by its game"
+      - "src/features/overlay/core/service.test.ts#on to begin with where RigReady can read the game’s bindings, off with the reason where it cannot"
+      - "src/features/overlay/core/service.test.ts#down when a setup that has it off is played, and up again with one that has it on, at once"
+      - "src/features/overlay/core/service.test.ts#the user’s switch in the setup goes before what its game gives, both ways"
+      - "src/features/overlay/core/service.test.ts#at the owner’s desk: on in the flight and the racing setup, off in X-Plane, and the Dell is off in both layouts"
+      - "src/features/overlay/core/service.test.ts#turned off on the Overlay page it shows in no setup, and nothing is done when setups change"
+      - "src/features/overlay/core/service.test.ts#bindings gone while it is up: a bindings change takes it down before anyone is told"
+      - "src/features/overlay/core/service.test.ts#bindings gone while it is up: choosing an aircraft takes it down, also when the choice is refused"
+      - "src/features/overlay/core/service.test.ts#bindings gone and brought back by RigReady while it is down: it comes up again by itself"
+      - "src/features/overlay/core/service.test.ts#switched back on in its setup, it comes up with the bindings as they are now"
+      - "src/features/overlay/main.test.ts#the switch saved in the setup editor takes it down and up, and the editor is told the default"
+      - "tests/unit/fileStore.test.ts#says when a setup is saved, deleted or another one is in use, and not for a refused save"
+      - "tests/unit/paletteCommands.test.ts#turned on while the setup in use has it off, it says so and leads to that setup"
+      - "tests/e2e/overlay-setups.e2e.ts#the overlay is a choice of each setup, and can go with the main screen"
+      - "artifacts/screens/overlay-setups/01-setups-on-the-page.png"
+      - "artifacts/screens/overlay-setups/04-setup-switch-on.png"
+      - "artifacts/screens/overlay-setups/05-setup-switch-off.png"
+      - "artifacts/screens/overlay-setups/06-no-bindings-reason.png"
+      - "artifacts/screens/overlay-setups/07-off-in-the-setup-in-use.png"
+      - "docs/manual/play/overlay.md"
+      - "docs/manual/setups/editor.md"
+
+  - id: OVERLAY-009
+    title: "The overlay can go with the main screen, and warns of a screen a setup's layout turns off"
+    job: configure
+    area: overlay
+    priority: p1
+    done_means:
+      - "Screen on the Overlay page offers 'The main screen' first, which follows whichever monitor is main in the monitor layout in use, and is where the overlay starts. Chosen, no monitor is kept for it; another monitor layout with another main monitor takes the overlay there. A drag let go on the main screen keeps following it (E2E, scenario overlay-setups)."
+      - "When the overlay was put on one monitor and that monitor is off in the monitor layout of a setup that has the overlay on (its monitor check, a saved layout by name or the setup's own), the page warns under Screen and names the setups and layouts. A setup with the overlay off, and a monitor check that is switched off, do not count."
+    notes:
+      - "2026-11-13: the second look's finding O1: the overlay's screen was the Dell, which is off in the owner's Flying layout, and the page offered no 'whichever is main'. Until now the overlay already followed the main screen until a monitor was chosen, but the page showed that as the monitor that happened to be main, so it read as a choice of the Dell. Known limit, in the manual: a layout applied by Make ready is noticed on the first press at least ten seconds after the last look, or when the Overlay page opens (OVERLAY-005)."
+    status: done
+    evidence:
+      - "src/features/overlay/core/service.test.ts#\"The main screen\" goes with whichever monitor is main, and is where it starts"
+      - "src/features/overlay/core/service.test.ts#let go on the main screen it goes on following it; let go on another it belongs there"
+      - "src/features/overlay/core/service.test.ts#says so when the screen it was put on is off in the monitor layout of a setup that has it on"
+      - "src/features/overlay/main.test.ts#\"The main screen\" is chosen with a screen of null"
+      - "tests/e2e/overlay-setups.e2e.ts#the overlay is a choice of each setup, and can go with the main screen"
+      - "artifacts/screens/overlay-setups/02-main-screen-choice.png"
+      - "artifacts/screens/overlay-setups/03-off-in-a-setup-layout.png"
+      - "docs/manual/play/overlay.md"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
@@ -6421,6 +6497,8 @@ requirements:
       - "When a profiles folder exists, the older Documents\\iRacing\\controls.cfg and setups\\<car>\\controls.cfg are never read or written in place of the profile. When app.ini names no profile, or one without a controls.cfg, or cannot be read, each of these says why in words, shows no bindings and changes nothing."
       - "The controller-id repair changes the profile for all cars and each car's own profile (each file once), through FileStore with a backup, as one action that Undo reverses; its preview, confirmation and message name the profile."
       - "Racing backups, saved binding sets and the iRacing module's tracked-file suggestions take the profile's files. A saved set made before control profiles is not taken for the bindings iRacing uses: its check says so and its fix restores nothing."
+      - "The repair writes only what its preview showed: the preview gives a SHA-256 of the files it would change and their content (`seen`), the page hands it back, and the repair writes nothing when app.ini now points at another profile, a car got a profile of its own, or a file changed since."
+      - "A saved set is met only while app.ini gives all cars and each car the same control profiles as when it was saved (or, for a set without app.ini, while its profile files are ones iRacing uses); otherwise, or when no profile can be found, its check says which differ and its fix writes nothing."
     status: done
     evidence:
       - "src/core/iracingControls.test.ts#with control profiles: the profile app.ini names for all cars, and the older file only listed as not read"
@@ -6429,6 +6507,7 @@ requirements:
       - "src/core/iracingControls.test.ts#never turns a profile name that is not one plain folder name into a path"
       - "tests/unit/iracingControlProfiles.test.ts#the control profile app.ini names, whatever its name, with the older file not read"
       - "tests/unit/iracingControlProfiles.test.ts#the same problem when the profile cannot be found, and never the older file instead"
+      - "tests/unit/iracingControlProfiles.test.ts#a car’s own profile as iRacing writes it: its path name, no folder under setups"
       - "src/features/racing/core/iracing/iracing.test.ts#reads the profile app.ini names, never the older controls.cfg beside it"
       - "src/features/racing/core/iracing/iracing.test.ts#repairs a wheel id in the profile through FileStore, with a backup, and leaves the older files alone"
       - "src/features/racing/core/iracing/iracing.test.ts#repairs a car’s own profile too; a car on the profile for all cars is not a set of its own"
@@ -6438,6 +6517,9 @@ requirements:
       - "src/features/racing/core/bindingReaders.test.ts#offers a car with a profile of its own, by its line in [ControlProfiles]"
       - "src/features/racing/core/bindingSets.test.ts#saves, compares and restores the profile iRacing uses; the older file is not part of the set"
       - "src/features/racing/core/bindingSets.test.ts#a set saved before control profiles is said to hold files iRacing no longer reads, and is not restored"
+      - "src/features/racing/core/bindingSets.test.ts#a set is not met when iRacing now uses another profile, a car got its own, or none can be found; its fix writes nothing"
+      - "src/features/racing/core/iracing/iracing.test.ts#writes only what its preview showed: another profile or a new car profile since means nothing is written"
+      - "src/core/iracingControls.test.ts#tells a file inside the control profiles from one beside them"
       - "src/features/games/core/games.test.ts#with control profiles, suggests the profile iRacing uses, never the older controls.cfg"
       - "tests/e2e/racing-iracing-profiles.e2e.ts#racing: iRacing with a control profile, read and repaired in the profile"
       - "tests/e2e/racing-iracing-profiles.e2e.ts#racing: iRacing names a control profile that is not there, and the page says so"

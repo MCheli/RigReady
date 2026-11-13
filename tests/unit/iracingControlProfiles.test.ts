@@ -119,6 +119,51 @@ describe('one rule for the files that hold iRacing’s bindings', () => {
     expect(shared).toMatchObject({ problem: expect.stringContaining('could not read app.ini') });
   });
 
+  it('a car’s own profile as iRacing writes it: its path name, no folder under setups', async () => {
+    // app.ini as the owner's rig had it at 12:27 on 13 Nov 2026, the car line first.
+    app = await wiredApp('iracing-bindings-profiles', { files: ['Documents/iRacing/**'] });
+    await mutate(app, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/Test Profile CTSV/controls.cfg',
+        from: DATA('profile-controls.cfg'),
+      },
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/Test Profile CTSV/joyCalib.yaml',
+        from: DATA('profile-joyCalib.yaml'),
+      },
+    ]);
+    expect(await fs.readdir(iracingDir(app))).not.toContain('setups');
+    await setIni(app, '[ControlProfiles]\ncadillacctsvr=Test Profile CTSV\nGlobal=Baseline\n');
+    let { page, shared } = await both(app);
+    expect(shared).toEqual(page);
+    expect(shared).toMatchObject({
+      sets: [
+        { car: null, profile: 'Baseline' },
+        { car: 'cadillacctsvr', profile: 'Test Profile CTSV' },
+      ],
+    });
+
+    // Lines that add no set on either side: a car on the profile for all cars, a profile
+    // that is not there, a name that is no folder, a second line for the same car.
+    await setIni(
+      app,
+      '[ControlProfiles]\r\nGlobal=Baseline\r\nporsche992rgt3=baseline\r\nferrari296gt3=Gone\r\nbmwm4gt3=..\\..\\Saved Games\r\ncadillacctsvr=Test Profile CTSV\r\nCADILLACCTSVR=Baseline\r\n'
+    );
+    ({ page, shared } = await both(app));
+    expect(shared).toEqual(page);
+    expect(shared).toMatchObject({
+      sets: [{ car: null }, { car: 'cadillacctsvr', profile: 'Test Profile CTSV' }],
+    });
+
+    // Without a profile for all cars, a car's own is still listed on both sides.
+    await setIni(app, '[ControlProfiles]\r\ncadillacctsvr=Test Profile CTSV\r\n');
+    ({ page, shared } = await both(app));
+    expect(shared).toEqual(page);
+    expect(shared).toMatchObject({ sets: [{ car: 'cadillacctsvr' }], problem: expect.any(String) });
+  });
+
   it('a car with a profile of its own', async () => {
     app = await wiredApp('iracing-bindings-profiles', { files: ['Documents/iRacing/**'] });
     await mutate(app, [

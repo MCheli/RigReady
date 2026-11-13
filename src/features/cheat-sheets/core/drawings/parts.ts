@@ -65,6 +65,9 @@ export const btn = (button: number, tag?: string): DrawnInput => ({
 /** An input marked as where its control rests: held with no hand on it (`rest` in silhouette.ts). */
 export const resting = (input: DrawnInput): DrawnInput => ({ ...input, rest: true });
 
+/** An input held only while pressed, on a control whose other positions stay put (`momentary`). */
+export const momentary = (input: DrawnInput): DrawnInput => ({ ...input, momentary: true });
+
 /** One axis of a control. */
 export const axis = (name: string, tag?: string): DrawnInput => ({
   id: `axis:${name}`,

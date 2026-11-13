@@ -8,7 +8,7 @@ import {
   racingContract,
   type IracingDeviceView,
   type IracingView,
-  type WritePreviewView,
+  type IracingRepairPreviewView,
 } from '../contract';
 import BackupsPanel from './BackupsPanel.vue';
 import StateChip from './StateChip.vue';
@@ -55,7 +55,7 @@ const groups = computed(() => {
 });
 
 /** Which files the repair would change; loaded when the confirmation opens. */
-const repairPreview = ref<WritePreviewView>();
+const repairPreview = ref<IracingRepairPreviewView>();
 const repairPreviewError = ref<string>();
 
 async function askRepair(device: IracingDeviceView): Promise<void> {
@@ -77,7 +77,10 @@ async function repair(): Promise<void> {
   if (!to) return;
   repairing.value = true;
   error.value = undefined;
-  const result = await api.iracingRepair({ mapping: [{ from: device.key, to }] });
+  // Bound to the preview the user saw: nothing is written when the files changed since.
+  const seen = repairPreview.value?.seen;
+  if (!seen) return;
+  const result = await api.iracingRepair({ mapping: [{ from: device.key, to }], seen });
   repairing.value = false;
   confirming.value = undefined;
   if (result.ok) {

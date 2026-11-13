@@ -23,9 +23,10 @@ export default defineFeatureMain({
       bind(overlayContract, {
         state: () => overlay.state(),
         set: ({ on }) => overlay.setOn(on),
+        setupDefault: (setup) => overlay.setupDefault(setup),
         options: ({ widget, options }) => overlay.setOptions(widget, options),
         place: ({ widget, screen, at }) =>
-          overlay.place(widget, { ...(screen ? { screen } : {}), at }),
+          overlay.place(widget, { ...(screen !== undefined ? { screen } : {}), at }),
         move: ({ widget, moving }) => overlay.move(widget, moving),
         aircraft: ({ aircraftId }) => overlay.chooseAircraft(aircraftId),
         current: async () => overlay.current(),

@@ -214,6 +214,11 @@ describe('where iRacing keeps the bindings it uses', () => {
 
   it('tells a file inside the control profiles from one beside them', () => {
     expect(inControlProfiles(folder, path.join(BASELINE, 'controls.cfg'))).toBe(true);
+    // A profile whose name starts with two dots is a folder like any other.
+    expect(profileFolderName('..Wheel')).toBe('..Wheel');
+    expect(inControlProfiles(folder, at('profiles', 'controls', '..Wheel', 'controls.cfg'))).toBe(
+      true
+    );
     expect(inControlProfiles(folder, at('controls.cfg'))).toBe(false);
     expect(inControlProfiles(folder, at('profiles', 'controls'))).toBe(false);
     expect(inControlProfiles(folder, at('profiles', 'hud', 'Baseline.ini'))).toBe(false);
