@@ -510,6 +510,7 @@ export class OverlayService {
     this.disposed = true;
     this.stopSetups();
     this.unlisten();
+    this.unlistenBindings();
     for (const widget of [...this.shown.keys()]) {
       this.shown.delete(widget);
       try {
@@ -661,8 +662,11 @@ export class OverlayService {
     if (full || this.setupsStale || (await this.lastPlayed()) !== this.lastSetup) {
       this.setupsStale = false;
       const inUse = await this.readSetups();
-      // Only the overlay's switch of a setup changed: the words for a press have not.
-      if (full || sourceKey(inUse) !== this.sourceFor) {
+      // Only the overlay's switch of a setup changed: the words for a press have not, unless
+      // it comes up again now. Down, it heard nothing of a binding changed in the game, so
+      // they are read afresh then, as when it is turned on.
+      const resuming = !this.stopInput && this.up();
+      if (full || resuming || sourceKey(inUse) !== this.sourceFor) {
         this.fullAt = now;
         await this.readSource(inUse);
         await this.readNames();
@@ -931,6 +935,10 @@ export class OverlayService {
   /** Brings what is up in line with the settings and the setup in use. */
   private async reconcile(): Promise<void> {
     if (this.disposed) return;
+    // Bindings that come or go can turn the setup's switch, so they are heard while the
+    // overlay is turned on, up or not: bindings brought back bring it back.
+    if (this.settings.on) this.listenBindings();
+    else this.unlistenBindings();
     if (!this.up()) {
       await this.takeDown();
       return;
@@ -939,12 +947,18 @@ export class OverlayService {
     for (const kind of WIDGET_KINDS) await this.show(kind);
   }
 
+  /** The controllers, while the overlay is up. */
   private listen(): void {
     if (this.stopInput) return;
     // What is held when the listening starts is how the controllers rest.
     this.tracker.reset();
     this.stopInput = this.ctx.ports.input.subscribe((states) => this.onInput(states));
     void this.watchInput();
+  }
+
+  /** Bindings changed by RigReady (an edit, a restore, an undo), while the overlay is on. */
+  private listenBindings(): void {
+    if (this.stopBindings) return;
     this.stopBindings = this.ctx.bindings.onChanged(() => {
       void this.run(async () => {
         await this.readSource(await this.readSetups());
@@ -960,6 +974,9 @@ export class OverlayService {
   private unlisten(): void {
     this.stopInput?.();
     this.stopInput = undefined;
+  }
+
+  private unlistenBindings(): void {
     this.stopBindings?.();
     this.stopBindings = undefined;
   }

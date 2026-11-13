@@ -5038,6 +5038,8 @@ requirements:
       - "src/features/overlay/core/service.test.ts#turned off on the Overlay page it shows in no setup, and nothing is done when setups change"
       - "src/features/overlay/core/service.test.ts#bindings gone while it is up: a bindings change takes it down before anyone is told"
       - "src/features/overlay/core/service.test.ts#bindings gone while it is up: choosing an aircraft takes it down, also when the choice is refused"
+      - "src/features/overlay/core/service.test.ts#bindings gone and brought back by RigReady while it is down: it comes up again by itself"
+      - "src/features/overlay/core/service.test.ts#switched back on in its setup, it comes up with the bindings as they are now"
       - "src/features/overlay/main.test.ts#the switch saved in the setup editor takes it down and up, and the editor is told the default"
       - "tests/unit/fileStore.test.ts#says when a setup is saved, deleted or another one is in use, and not for a refused save"
       - "tests/unit/paletteCommands.test.ts#turned on while the setup in use has it off, it says so and leads to that setup"

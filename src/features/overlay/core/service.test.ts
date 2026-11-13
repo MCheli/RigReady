@@ -1460,6 +1460,43 @@ describe('each setup has its own switch for the overlay', () => {
     downAndSaidSo(made);
   });
 
+  it('bindings gone and brought back by RigReady while it is down: it comes up again by itself', async () => {
+    const made = await bindingsGoAway();
+    const { app, service, seen, listening } = made;
+    const { bindings } = app.wiring.context;
+    bindings.notifyChanged({ game: 'dcs' });
+    await service.idle();
+    downAndSaidSo(made);
+
+    // A restore puts the bindings back, and says so.
+    vi.spyOn(bindings.get('dcs')!, 'available').mockResolvedValue(true);
+    bindings.notifyChanged({ game: 'dcs' });
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(1);
+    expect(listening()).toBe(1);
+    expect(seen.changed.at(-1)!.offInSetup).toBeUndefined();
+    expect(seen.changed.at(-1)!.widgets[0]!.showing).toBe(true);
+  });
+
+  it('switched back on in its setup, it comes up with the bindings as they are now', async () => {
+    const { app, service } = await flying();
+    const { profiles } = app.wiring.context;
+    const hornet = value(await profiles.get('dcs-bindings-hornet'));
+    value(await profiles.save({ ...hornet, extensions: { overlay: { on: false } } }));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(0);
+
+    // Changed in the game while the overlay was down: nothing tells RigReady of that.
+    await moveTrigger(app);
+    value(await profiles.save({ ...hornet, extensions: { overlay: { on: true } } }));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(1);
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [7])]);
+    expect(actionsOf(rowsOf(service)[0])).toContain(TRIGGER);
+  });
+
   it('turned off on the Overlay page it shows in no setup, and nothing is done when setups change', async () => {
     const { app, service, seen } = await overlay();
     const { profiles } = app.wiring.context;
