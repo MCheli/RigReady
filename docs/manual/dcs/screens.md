@@ -18,14 +18,44 @@ When SimAppPro has an MFD plan on this PC, RigReady reads it, and only it (SimAp
 
 ![A setup imported from SimAppPro's plan](../../../artifacts/screens/dcs-setup-screens/01-imported.png)
 
+### Which screen is which?
+
+SimAppPro knows a screen only by where it was on the desktop when it saved its plan. If the screens have been put in another order since, or three of them are the same size, the plan's positions do not say which of your screens it meant. So after an import the tab shows a list, **Which screen is which?**, with one row per screen of the plan: what the plan shows on it, where the plan has it, the monitor RigReady paired it with, and why.
+
+RigReady pairs them in this order:
+
+1. **By the name you gave the screen.** A screen whose displays are for one side (the Left DDI, `LEFT_MFCD`) goes to the monitor of its size that you named for that side ("MFD left") on the [Monitors](../monitors-and-audio/identify.md) page. Your names say which screen is which today, so they win over the plan's positions. When the two disagree the row says so: "SimAppPro's plan has it where MFD centre is now, so the plan is from before the screens were put in this order."
+2. **By position**, when no name helps: the monitor at exactly the plan's place and size.
+3. **The one left over**: the last monitor of the right size for the last screen of the plan.
+
+A pairing counts as sure only when the name and the plan's position agree, or when the position fits and no other monitor has that size. For anything else the row carries a warning, and **Use in DCS** stays off ("Check which screen is which first.") until you have looked: change any row with its list, then press **These are right**. Choosing a monitor that another row has makes the two change places. A choice of your own shows as "You chose this screen."
+
+Changing a row changes only the pairing. What you did to the setup since the import stays: a crop you set goes with its display to the newly paired screen when that screen is the same size, and a display you moved to another monitor or set to **Not shown** stays where you put it. If the newly paired screen is another size, the crop cannot mean the same there; it starts again from zero and a line in the list says which display to set again.
+
+![One row changed by hand: the crop set before went with its display](../../../artifacts/screens/dcs-screens-named/02-corrected-by-hand.png)
+
+The rule is RigReady's own, not only the page's. Nothing that asks RigReady to use an imported setup gets it written while a pairing is unsure and nobody has said it is right, and that includes an [AI assistant](../ai/mcp-server.md) connected to RigReady: it gets the refusal with the screens in doubt named, and has to show them to you first. If you choose another monitor layout after the import, the question is asked again with the rows RigReady was not sure of. In that case the rows cannot be changed in the list; press **Import from SimAppPro** again to change one.
+
+![Asked again after another layout was chosen](../../../artifacts/screens/dcs-screens-layout/01-asked-again.png)
+
+A setup that is already in use in DCS is not asked about again.
+
+**Identify screens** (next to the main view's monitors) puts each monitor's number and name on the monitor itself for five seconds, with what this setup would draw there, so you can check the list against the desk without leaving the tab. Name the small screens once on the Monitors page and the import pairs them without help from then on.
+
+![The plan is from before the screens were put in this order](../../../artifacts/screens/dcs-screens-named/01-paired-by-name.png)
+
 ## Building the setup
+
+Every monitor is shown by the name you gave it on the Monitors page, on the map, in the lists and in the layout saved with the setup. A monitor without a name of yours keeps Windows' name.
 
 - **Monitor layout the coordinates are for**: the monitors as they are now, the layout of any setup, any saved layout from [Monitors](../monitors-and-audio/layouts.md), or the layout saved with this screen setup. The coordinates only fit one arrangement, so choose the one you fly with.
 - **Main view on**: tick one or more monitors. The 3D view spans them.
 - **Aircraft**: one chip per aircraft. **+ Aircraft** lists every aircraft installed in DCS that can draw a display on another screen, with the displays it can export. RigReady reads them from each module's own cockpit scripts (the names a display asks the monitor setup for, such as `LEFT_MFCD`, `EHSI`, `F14_TID` or the Ka-50's `ABRIS` and `Shkval`), so a module you install later appears on its own. The scripts are only read, never run. An aircraft without exportable displays, such as the UH-1H, is not listed and uses the main view only. If a module's scripts cannot be read, RigReady falls back to what it knows of the F/A-18C, F-16C, A-10C and A-10C II, F-15E, F-14 and Ka-50, and adds whatever SimAppPro's plan knows about installed aircraft.
 - A new setup starts on the aircraft of the setup you used last, when its name says which one (a setup called "DCS F-16C" starts on the Viper), and otherwise on the first aircraft in the list. A saved setup or SimAppPro's plan starts with the aircraft it already has.
 - For each display, choose the monitor or **Not shown**, then set the **Crop** in pixels from the left, top, right and bottom edges to leave out the bezel. On the map you can also drag a display onto a screen and drag its edges.
+- Choosing another monitor for a display keeps its crop when the new monitor has the same size as the old one, so moving a display between identical MFD screens costs nothing. On a monitor of another size the crop would not mean the same thing; it starts again from zero and a line under the display says so ("The crop was not kept: …"). A display set to **Not shown** and then put back on a monitor gets its crop back.
 - The dashed outline on the map is the DCS window: the box around every monitor the setup uses. Its size is what options.lua must say.
+- The dashed box marked **Kneeboard** is where DCS will draw the kneeboard for the aircraft whose displays are shown: a bottom corner of that window, the right one for some aircraft and the left one for others. The line under the map names the aircraft and the screen, and says how much of the kneeboard shows. For an aircraft whose corner RigReady does not know, no box is drawn and the line says so. DCS chooses this place itself and the monitor setup file cannot move it; see [Where DCS shows the kneeboard](kneeboard.md#where-dcs-shows-the-kneeboard).
 
 When two aircraft put the same display in different places, RigReady writes a per-aircraft section that DCS applies when that cockpit loads.
 

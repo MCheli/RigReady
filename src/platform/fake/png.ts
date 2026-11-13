@@ -16,7 +16,8 @@ function crc32(bytes: Uint8Array): number {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-function chunk(type: string, data: Uint8Array): Uint8Array {
+/** One chunk of a PNG file: length, type, data and checksum. */
+export function chunk(type: string, data: Uint8Array): Uint8Array {
   const out = new Uint8Array(12 + data.length);
   const view = new DataView(out.buffer);
   view.setUint32(0, data.length);
@@ -26,11 +27,15 @@ function chunk(type: string, data: Uint8Array): Uint8Array {
   return out;
 }
 
-/** A real, single-colour PNG of the given size: what the fake Render port returns. */
+/**
+ * A real, single-colour PNG of the given size: what the fake Render port returns. Each of
+ * `bands` is painted as a strip four rows high across the bottom, one above the other.
+ */
 export function solidPng(
   width: number,
   height: number,
-  rgb: [number, number, number] = [255, 255, 255]
+  rgb: [number, number, number] = [255, 255, 255],
+  bands: [number, number, number][] = []
 ): Uint8Array {
   const header = new Uint8Array(13);
   const view = new DataView(header.buffer);
@@ -38,10 +43,20 @@ export function solidPng(
   view.setUint32(4, height);
   header[8] = 8; // bit depth
   header[9] = 2; // colour type: RGB
-  const row = new Uint8Array(1 + width * 3);
-  for (let x = 0; x < width; x++) row.set(rgb, 1 + x * 3);
+  const rowOf = (colour: [number, number, number]): Uint8Array => {
+    const row = new Uint8Array(1 + width * 3);
+    for (let x = 0; x < width; x++) row.set(colour, 1 + x * 3);
+    return row;
+  };
+  const row = rowOf(rgb);
   const raw = new Uint8Array(row.length * height);
   for (let y = 0; y < height; y++) raw.set(row, y * row.length);
+  bands.forEach((band, at) => {
+    const strip = rowOf(band);
+    for (let y = height - 4 * (at + 1); y < height - 4 * at; y++) {
+      if (y >= 0) raw.set(strip, y * row.length);
+    }
+  });
   const parts = [
     new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', header),

@@ -3,10 +3,18 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { parseLuaData } from '../../../core/lua/data';
 import type { JournalGroup } from '../../../core/ports';
+import { err } from '../../../core/result';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
-import type { ScreensPreview, ScreensState } from '../contract';
+import type { PlanPairing, ScreensPreview, ScreensState } from '../contract';
 import { evaluateMonitorSetup } from './monitorFiles';
-import { generateSetup, type ScreenSetup } from './screens';
+import {
+  generateSetup,
+  kneeboardPlace,
+  kneeboardSide,
+  moveCrop,
+  NO_CROP,
+  type ScreenSetup,
+} from './screens';
 
 let app: WiredApp;
 afterEach(() => app?.cleanup());
@@ -22,11 +30,16 @@ const dcsDir = (): string => path.join(app.ports.folders.savedGames(), 'DCS');
 const rigReadyLua = (): string => path.join(dcsDir(), 'Config', 'MonitorSetup', 'RigReady.lua');
 const optionsLua = (): string => path.join(dcsDir(), 'Config', 'options.lua');
 
+interface Imported {
+  setup: ScreenSetup;
+  unmatched: string[];
+  pairing: PlanPairing;
+}
+
 async function importedSetup(): Promise<ScreenSetup> {
-  const imported = await app.invoke<{ setup: ScreenSetup; unmatched: string[] }>(
-    'dcs-setup:importSimAppPro',
-    { desktopId: 'current' }
-  );
+  const imported = await app.invoke<Imported>('dcs-setup:importSimAppPro', {
+    desktopId: 'current',
+  });
   expect(imported.unmatched).toEqual([]);
   return imported.setup;
 }
@@ -122,7 +135,7 @@ describe('DCS screen setup', () => {
 
     const applied = await app.invoke<{ message: string; changes: string[] }>(
       'dcs-setup:applyScreens',
-      { setup }
+      { setup, pairingChecked: true }
     );
     expect(applied.changes).toEqual([
       'Created RigReady.lua',
@@ -149,7 +162,10 @@ describe('DCS screen setup', () => {
     );
 
     // The same again changes nothing.
-    const again = await app.invoke<{ changes: string[] }>('dcs-setup:applyScreens', { setup });
+    const again = await app.invoke<{ changes: string[] }>('dcs-setup:applyScreens', {
+      setup,
+      pairingChecked: true,
+    });
     expect(again.changes).toEqual([]);
     const state = await app.invoke<ScreensState>('dcs-setup:screens');
     expect(state.rigReady).toMatchObject({ exists: true, selected: true, editedOutside: false });
@@ -189,11 +205,14 @@ describe('DCS screen setup', () => {
   it('updates its own unmodified RigReady.lua without asking, with a journal entry', async () => {
     app = await wiredApp('flying-fresh', { files: FILES });
     const setup = await importedSetup();
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     setup.aircraft[0]!.placements[0]!.crop.top = 300;
     const preview = await app.invoke<ScreensPreview>('dcs-setup:previewScreens', { setup });
     expect(preview.file.status).toBe('update');
-    const applied = await app.invoke<{ changes: string[] }>('dcs-setup:applyScreens', { setup });
+    const applied = await app.invoke<{ changes: string[] }>('dcs-setup:applyScreens', {
+      setup,
+      pairingChecked: true,
+    });
     expect(applied.changes).toEqual(['Updated RigReady.lua']);
     const journal = await app.ports.files.journal();
     expect(journal.ok && journal.value[0]).toMatchObject({
@@ -207,7 +226,7 @@ describe('DCS screen setup', () => {
   it('asks before replacing a RigReady.lua edited outside RigReady', async () => {
     app = await wiredApp('flying-fresh', { files: FILES });
     const setup = await importedSetup();
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     const edited = (await fs.readFile(rigReadyLua(), 'utf8')).replace('x = 5896;', 'x = 5900;');
     await fs.writeFile(rigReadyLua(), edited);
 
@@ -217,13 +236,17 @@ describe('DCS screen setup', () => {
       { kind: 'removed', text: '\tx = 5900;' },
       { kind: 'added', text: '\tx = 5896;' },
     ]);
-    await expect(app.invoke('dcs-setup:applyScreens', { setup })).rejects.toThrow(
-      /dcs.screens.edited/
-    );
+    await expect(
+      app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true })
+    ).rejects.toThrow(/dcs.screens.edited/);
     expect(await fs.readFile(rigReadyLua(), 'utf8')).toBe(edited);
 
     const journalBefore = await app.ports.files.journal();
-    await app.invoke('dcs-setup:applyScreens', { setup, overwriteEdited: true });
+    await app.invoke('dcs-setup:applyScreens', {
+      setup,
+      pairingChecked: true,
+      overwriteEdited: true,
+    });
     expect(await fs.readFile(rigReadyLua(), 'utf8')).toBe(preview.lua);
     const journalAfter = await app.ports.files.journal();
     expect(
@@ -238,7 +261,9 @@ describe('DCS screen setup', () => {
     app.ports.state.processes.push({ pid: 4242, name: 'DCS.exe', path: 'C:\\DCS\\bin\\DCS.exe' });
     const preview = await app.invoke<ScreensPreview>('dcs-setup:previewScreens', { setup });
     expect(preview.dcsRunning).toBe(true);
-    await expect(app.invoke('dcs-setup:applyScreens', { setup })).rejects.toThrow(/dcs.running/);
+    await expect(
+      app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true })
+    ).rejects.toThrow(/dcs.running/);
     expect(await app.ports.files.exists(rigReadyLua())).toBe(false);
   });
 
@@ -250,27 +275,282 @@ describe('DCS screen setup', () => {
     expect(preview.errors).toEqual([
       'F/A-18C Hornet: the monitor for Left DDI is not part of this monitor layout.',
     ]);
-    await expect(app.invoke('dcs-setup:applyScreens', { setup })).rejects.toThrow(
-      /dcs.screens.invalid/
-    );
+    await expect(
+      app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true })
+    ).rejects.toThrow(/dcs.screens.invalid/);
   });
 
   it('matches SimAppPro screens only in a layout that has them', async () => {
     app = await wiredApp('desk-mfds-wrong', { files: FILES });
-    const imported = await app.invoke<{ setup: ScreenSetup; unmatched: string[] }>(
-      'dcs-setup:importSimAppPro',
-      {
-        desktopId: 'current',
-      }
-    );
-    expect(imported.unmatched.length).toBe(4);
+    const imported = await app.invoke<Imported>('dcs-setup:importSimAppPro', {
+      desktopId: 'current',
+    });
+    // The small screens lie on their sides at the desk: none of them is a screen of the plan.
+    expect(imported.unmatched.length).toBe(3);
     expect(imported.unmatched[0]).toMatch(
-      /Main view: SimAppPro's screen 005 \(5120x1440 at 0,0\) is not in this monitor layout/
+      /F\/A-18C Hornet LEFT_MFCD: SimAppPro's screen 002 \(768x1024 at 5888,0\) is not in this monitor layout/
     );
     expect(imported.setup.aircraft).toEqual([]);
+    // The ultrawide is here, though not where the plan has it: paired, and the user is asked.
+    const main = imported.pairing.screens.find((s) => s.main)!;
+    const ultrawide = imported.setup.desktop.find((d) => d.name === 'LC49G95T')!;
+    expect(main).toMatchObject({ displayId: ultrawide.id, how: 'left', certain: false });
+    expect(imported.setup.mainDisplayIds).toEqual([ultrawide.id]);
+    expect(imported.pairing.certain).toBe(false);
     await expect(app.invoke('dcs-setup:importSimAppPro', { desktopId: 'nope' })).rejects.toThrow(
       /dcs.screens.layout/
     );
+  });
+});
+
+/** Names the three small screens on the Monitors page, left to right; their ids as the Screens tab has them. */
+async function nameSmallScreens(names: [string, string, string]): Promise<string[]> {
+  const small = app.ports.state.displays
+    .filter((d) => d.enabled && d.name === 'USB_Monitor')
+    .sort((a, b) => a.x - b.x);
+  expect(small).toHaveLength(3);
+  for (const [at, d] of small.entries()) {
+    await app.invoke('displays:setName', { id: d.id, name: names[at]! });
+  }
+  return small.map((d) => d.id.toLowerCase());
+}
+
+describe("the user's names for the monitors", () => {
+  it('are used for the layout as it is now, for a setup saved before they were given, and in the file', async () => {
+    app = await wiredApp('flying-fresh', { files: FILES });
+    // Saved while the screens still had Windows' names.
+    const setup = await importedSetup();
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
+    expect(setup.desktop.filter((d) => d.name === 'USB_Monitor')).toHaveLength(3);
+
+    const ids = await nameSmallScreens(['MFD left', 'MFD centre', 'MFD right']);
+    const names = (displays: ScreenSetup['desktop']): (string | undefined)[] =>
+      ids.map((id) => displays.find((d) => d.id === id)?.name);
+    const state = await app.invoke<ScreensState>('dcs-setup:screens');
+    expect(names(state.desktops[0]!.displays)).toEqual(['MFD left', 'MFD centre', 'MFD right']);
+    expect(names(state.saved!.desktop)).toEqual(['MFD left', 'MFD centre', 'MFD right']);
+    expect(state.saved!.desktop.map((d) => d.name)).not.toContain('USB_Monitor');
+    // The placements of the saved setup are untouched: only what the monitors are called changed.
+    expect(state.saved!.aircraft).toEqual(setup.aircraft);
+
+    const imported = await app.invoke<Imported>('dcs-setup:importSimAppPro', {
+      desktopId: 'current',
+    });
+    expect(names(imported.setup.desktop)).toEqual(['MFD left', 'MFD centre', 'MFD right']);
+  });
+
+  it('are used for a layout saved with a setup, whatever the monitors are doing now', async () => {
+    // At the desk: the small screens lie on their sides, and the setup holds the flying layout.
+    app = await wiredApp('desk-mfds-wrong', { files: FILES });
+    const ids = await nameSmallScreens(['MFD left', 'MFD centre', 'MFD right']);
+    const state = await app.invoke<ScreensState>('dcs-setup:screens');
+    const ofSetup = state.desktops.find((d) => d.id.startsWith('profile:'))!;
+    expect(
+      ofSetup.displays
+        .filter((d) => ids.includes(d.id))
+        .map((d) => d.name)
+        .sort()
+    ).toEqual(['MFD centre', 'MFD left', 'MFD right']);
+    expect(ofSetup.displays.map((d) => d.name)).not.toContain('USB_Monitor');
+  });
+});
+
+describe("which of SimAppPro's screens is which monitor", () => {
+  it('goes by the names when the screens were put in another order since the plan was saved', async () => {
+    app = await wiredApp('flying-fresh', { files: FILES });
+    const [left, centre, right] = await nameSmallScreens(['MFD left', 'MFD centre', 'MFD right']);
+    const imported = await app.invoke<Imported>('dcs-setup:importSimAppPro', {
+      desktopId: 'current',
+    });
+    const placed = (i: Imported): Record<string, string> =>
+      Object.fromEntries(i.setup.aircraft[0]!.placements.map((p) => [p.name, p.displayId]));
+    // SimAppPro's plan has the left display on the middle screen. The names say otherwise.
+    expect(placed(imported)).toEqual({
+      LEFT_MFCD: left,
+      CENTER_MFCD: centre,
+      RIGHT_MFCD: right,
+    });
+    expect(imported.unmatched).toEqual([]);
+    // Not certain: the plan and the names disagree, so the user is shown the pairing.
+    expect(imported.pairing.certain).toBe(false);
+    const leftDdi = imported.pairing.screens.find((s) => s.shows.includes('Left DDI'))!;
+    expect(leftDdi).toMatchObject({
+      planId: '002',
+      displayId: left,
+      how: 'name',
+      certain: false,
+      note: "Matched by the name you gave the screen. SimAppPro's plan has it where MFD centre is now, so the plan is from before the screens were put in this order.",
+    });
+    const generated = generateSetup(imported.setup);
+    expect(generated.errors).toEqual([]);
+    expect(Object.fromEntries(generated.viewports.map((v) => [v.name, v.file.x]))).toEqual({
+      LEFT_MFCD: 5128,
+      CENTER_MFCD: 5896,
+      RIGHT_MFCD: 6664,
+    });
+
+    // The user's own answer wins: they say the plan's 002 is the right screen after all.
+    const corrected = await app.invoke<Imported>('dcs-setup:importSimAppPro', {
+      desktopId: 'current',
+      pairs: { '002': right!, '004': left! },
+    });
+    expect(placed(corrected)).toEqual({
+      LEFT_MFCD: right,
+      CENTER_MFCD: centre,
+      RIGHT_MFCD: left,
+    });
+    expect(corrected.pairing.screens.find((s) => s.planId === '002')).toMatchObject({
+      how: 'chosen',
+      certain: true,
+      note: 'You chose this screen.',
+    });
+    // Nothing was written by any of this.
+    expect(await app.ports.files.exists(rigReadyLua())).toBe(false);
+  });
+
+  it('says it is not certain when the screens have no names and look alike', async () => {
+    app = await wiredApp('flying-fresh', { files: FILES });
+    const imported = await app.invoke<Imported>('dcs-setup:importSimAppPro', {
+      desktopId: 'current',
+    });
+    expect(imported.pairing.certain).toBe(false);
+    expect(imported.pairing.screens.map((s) => [s.planId, s.how, s.certain]).sort()).toEqual([
+      ['002', 'position', false],
+      ['003', 'position', false],
+      ['004', 'position', false],
+      ['005', 'position', true],
+    ]);
+  });
+});
+
+describe('Identify screens', () => {
+  it("shows each monitor's number, its name and what the setup puts on it", async () => {
+    app = await wiredApp('flying-fresh', { files: FILES });
+    await nameSmallScreens(['MFD left', 'MFD centre', 'MFD right']);
+    const { setup } = await app.invoke<Imported>('dcs-setup:importSimAppPro', {
+      desktopId: 'current',
+    });
+    expect(await app.invoke('dcs-setup:identifyScreens', { setup })).toEqual({ shown: 4, off: 1 });
+    expect(app.ports.overlays.shown).toHaveLength(1);
+    const { labels, durationMs } = app.ports.overlays.shown[0]!;
+    expect(durationMs).toBe(5000);
+    // The same numbers as on the Monitors page: left to right.
+    expect(labels.map((l) => [l.text, l.caption, l.x, l.width, l.height])).toEqual([
+      ['1', 'LC49G95T · Main view', 0, 5120, 1440],
+      ['2', 'MFD left · Left DDI', 5120, 768, 1024],
+      ['3', 'MFD centre · AMPCD', 5888, 768, 1024],
+      ['4', 'MFD right · Right DDI', 6656, 768, 1024],
+    ]);
+    // It changes nothing.
+    expect(await app.ports.files.exists(rigReadyLua())).toBe(false);
+
+    app.ports.overlays.showLabels = async () => err('overlay.show', 'Could not show the labels.');
+    await expect(app.invoke('dcs-setup:identifyScreens', { setup })).rejects.toThrow(
+      /overlay\.show/
+    );
+    app.ports.state.displays = app.ports.state.displays.map((d) => ({ ...d, enabled: false }));
+    await expect(app.invoke('dcs-setup:identifyScreens', { setup })).rejects.toThrow(
+      /No monitor is on/
+    );
+  });
+});
+
+describe('moving a display to another monitor', () => {
+  const crop = { left: 8, top: 256, right: 8, bottom: 6 };
+
+  it('keeps the crop when the new monitor is the same size', () => {
+    expect(moveCrop({ width: 768, height: 1024 }, { width: 768, height: 1024 }, crop)).toEqual({
+      crop,
+      kept: true,
+    });
+  });
+
+  it('drops the crop, and says so, when the new monitor is another size', () => {
+    expect(moveCrop({ width: 768, height: 1024 }, { width: 1024, height: 768 }, crop)).toEqual({
+      crop: NO_CROP,
+      kept: false,
+    });
+    // The monitor it was set for is gone from the layout: its size is not known.
+    expect(moveCrop(undefined, { width: 768, height: 1024 }, crop)).toEqual({
+      crop: NO_CROP,
+      kept: false,
+    });
+  });
+
+  it('has nothing to keep, and nothing to say, when there was no crop', () => {
+    expect(moveCrop({ width: 768, height: 1024 }, { width: 1024, height: 768 }, NO_CROP)).toEqual({
+      crop: NO_CROP,
+      kept: true,
+    });
+    expect(moveCrop(undefined, { width: 1024, height: 768 }, undefined)).toEqual({
+      crop: NO_CROP,
+      kept: true,
+    });
+  });
+});
+
+describe('where DCS shows the kneeboard', () => {
+  const wide = { id: 'wide', x: 0, y: 0, width: 5120, height: 1440 };
+  const mfds = [
+    { id: 'left', x: 5120, y: 0, width: 768, height: 1024 },
+    { id: 'centre', x: 5888, y: 0, width: 768, height: 1024 },
+    { id: 'right', x: 6656, y: 0, width: 768, height: 1024 },
+  ];
+
+  it('is the bottom right of the whole window: on the rig of the sitting, the right small screen', () => {
+    const place = kneeboardPlace({ x: 0, y: 0, width: 7424, height: 1440 }, [wide, ...mfds]);
+    // Half the window's height wide, at the kneeboard's own shape (ViewportHandling.lua).
+    expect(place.rect).toEqual({ x: 6704, y: 355, width: 720, height: 1085 });
+    expect(place.displayId).toBe('right');
+    expect(place.whole).toBe(false);
+    // 720 x 669 of its 720 x 1085 are on the screen: the rest is below the screen's lower edge.
+    expect(place.shown).toBeCloseTo(669 / 1085, 3);
+  });
+
+  it('is all on the main screen when the window is that screen alone', () => {
+    const place = kneeboardPlace({ x: 0, y: 0, width: 5120, height: 1440 }, [wide]);
+    expect(place.rect).toEqual({ x: 4400, y: 355, width: 720, height: 1085 });
+    expect(place).toMatchObject({ displayId: 'wide', whole: true, shown: 1 });
+  });
+
+  it('is never wider than half the window', () => {
+    const place = kneeboardPlace({ x: 0, y: 0, width: 1000, height: 1440 }, [
+      { id: 'tall', x: 0, y: 0, width: 1000, height: 1440 },
+    ]);
+    expect(place.rect.width).toBe(500);
+    expect(place.rect.x + place.rect.width).toBe(1000);
+    expect(place.rect.y + place.rect.height).toBe(1440);
+    expect(place.whole).toBe(true);
+  });
+
+  it('is the bottom left, 32 pixels in, for an aircraft that declares it on the left', () => {
+    const place = kneeboardPlace(
+      { x: 0, y: 0, width: 7424, height: 1440 },
+      [wide, ...mfds],
+      kneeboardSide('Su-25T')
+    );
+    // The same size as on the right (ViewportHandling.lua), at manual_viewport_margin_left.
+    expect(place.rect).toEqual({ x: 32, y: 355, width: 720, height: 1085 });
+    expect(place).toMatchObject({ displayId: 'wide', whole: true, shown: 1 });
+    // A window that does not start at the desktop's left edge: the margin is from the window.
+    const shifted = kneeboardPlace({ x: 1920, y: 0, width: 1920, height: 1080 }, [], 'left');
+    expect(shifted.rect.x).toBe(1952);
+    expect(shifted.shown).toBe(0);
+  });
+
+  it('knows the side only of the aircraft whose scripts were read', () => {
+    for (const unit of ['A-10A', 'MiG-29A', 'MiG-29S', 'Su-27', 'Su-33', 'J-11A', 'Su-25T']) {
+      expect(kneeboardSide(unit), unit).toBe('left');
+    }
+    for (const unit of ['FA-18C_hornet', 'F-16C_50', 'A-10C_2', 'UH-1H', 'Su-25', 'F-15C']) {
+      expect(kneeboardSide(unit), unit).toBe('right');
+    }
+    // Not read: a module that is not in the install the table was made from, a mod, no aircraft.
+    expect(kneeboardSide('AH-64D_BLK_II')).toBeUndefined();
+    expect(kneeboardSide('Some-Mod')).toBeUndefined();
+    expect(kneeboardSide(undefined)).toBeUndefined();
+    // A name every object has is not an aircraft.
+    expect(kneeboardSide('constructor')).toBeUndefined();
   });
 });
 
@@ -352,6 +632,47 @@ describe('screen setup generation', () => {
     expect(hornet.exports).toEqual([
       { name: 'LEFT_MFCD', rect: { x: 1920, y: 0, width: 400, height: 600 } },
     ]);
+  });
+
+  it('names the aircraft once above the displays it uses, not before every one', () => {
+    const three = [
+      ...desktop,
+      { ...desktop[1]!, id: 'mid', x: 2720 },
+      { ...desktop[1]!, id: 'right', x: 3520 },
+    ];
+    const on = (name: string, displayId: string): ScreenSetup['aircraft'][0]['placements'][0] => ({
+      name,
+      displayId,
+      crop: NO_CROP,
+    });
+    const generated = generateSetup({
+      mainDisplayIds: ['main'],
+      desktop: three,
+      desktopLabel: 'Test',
+      aircraft: [
+        {
+          unit: 'FA-18C_hornet',
+          label: 'F/A-18C Hornet',
+          placements: [
+            on('LEFT_MFCD', 'left'),
+            on('CENTER_MFCD', 'mid'),
+            on('RIGHT_MFCD', 'right'),
+          ],
+        },
+        // The Viper shares the two side displays and has no centre one.
+        {
+          unit: 'F-16C_50',
+          label: 'F-16C Viper',
+          placements: [on('LEFT_MFCD', 'left'), on('RIGHT_MFCD', 'right')],
+        },
+      ],
+    });
+    expect(generated.errors).toEqual([]);
+    const comments = generated.lua.split('\n').filter((line) => /^-- F/.test(line));
+    // One line for the two displays both aircraft use, one for the Hornet's own.
+    expect(comments.sort()).toEqual(['-- F/A-18C Hornet', '-- F/A-18C Hornet, F-16C Viper']);
+    // Still plain data DCS reads back the same.
+    expect(parseLuaData(generated.lua).ok).toBe(true);
   });
 
   it('reports what makes a setup unusable or odd', () => {

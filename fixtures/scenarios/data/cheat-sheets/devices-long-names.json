@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "names": [
+    {
+      "vendorId": "4098",
+      "productId": "BEE1",
+      "name": "WINWING MFD1-L, the left one of the three small screens"
+    },
+    {
+      "vendorId": "4098",
+      "productId": "BEE0",
+      "name": "WINWING MFD1-C, the centre one of the three small screens"
+    },
+    {
+      "vendorId": "4098",
+      "productId": "BEE2",
+      "name": "WINWING MFD1-R, the right one of the three small screens"
+    },
+    {
+      "vendorId": "4098",
+      "productId": "BEA8",
+      "name": "WINWING Orion Joystick Base 2 + JGRIP-F16 (ViperAce grip)"
+    },
+    {
+      "vendorId": "4098",
+      "productId": "BD26",
+      "name": "WINWING Orion Throttle Base II + F18 HANDLE, left hand"
+    },
+    {
+      "vendorId": "044F",
+      "productId": "B68F",
+      "name": "Thrustmaster T-Pendular-Rudder pedals under the desk"
+    }
+  ],
+  "switches": [],
+  "notifications": "controllers"
+}
