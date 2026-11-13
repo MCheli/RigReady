@@ -1,4 +1,4 @@
-import { btn, keyAt, label, part, resting, roundAt, toggleAt } from './parts';
+import { btn, keyAt, label, momentary, part, resting, roundAt, toggleAt } from './parts';
 import { circle, roundedRect } from './shapes';
 import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silhouette';
 
@@ -12,10 +12,12 @@ import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silh
  * sources are in docs/research/controller-drawings.md. The panel reports 64 buttons and
  * the maker's screen places 41 of them.
  *
- * The brake handle was moved on the owner's panel on 13 Nov: out 40, in 41, left 39,
- * right 38, and 30 held whenever it rests. This drawing had put 30 on the wing fold handle
- * (SPREAD), read off the same screen, so the wing fold handle is marked `assumed` until it
- * is moved: which of its positions gives which number is not known now.
+ * Both handles were moved on the owner's panel on 13 Nov. The brake handle: out 40, in 41,
+ * left 39, right 38, and no button of its own while it rests. The wing fold handle: FOLD
+ * 28, HOLD 29, SPREAD 30, each held while the handle is there, and 31 while it is pushed
+ * in (released on let-go). It normally sits in SPREAD, so 30 is where it rests. The panel
+ * also let go of 30 whenever the brake handle was moved off its rest: that is the panel's
+ * own doing, not a position of the brake handle.
  */
 
 const STATIONS: [string, number, number][] = [
@@ -34,8 +36,6 @@ export const TAKEOFF_PANEL_2: DeviceDrawingInput = {
   author: 'RigReady',
   license: 'CC0-1.0',
   view: 'From the front',
-  notes:
-    'A label with ? has numbers nobody has matched to a move yet: move the handle to each position and see which row lights up.',
   size: { width: 600, height: 320 },
   paths: [
     { d: roundedRect(2, 2, 596, 316, 14), role: 'body' },
@@ -107,7 +107,7 @@ export const TAKEOFF_PANEL_2: DeviceDrawingInput = {
       btn(19, 'R FUS MSL'),
       btn(20, 'RACK/LCHR'),
       btn(21, 'STORES'),
-      btn(22, 'JETT push'),
+      momentary(btn(22, 'JETT push')),
     ]),
     part('stations', 'Station buttons', 476, 138, 'right', [
       btn(23, 'CTR'),
@@ -132,21 +132,17 @@ export const TAKEOFF_PANEL_2: DeviceDrawingInput = {
     ]),
     part('anti-skid', 'ANTI SKID switch', 212, 158, 'bottom', [btn(10, 'ON'), btn(11, 'OFF')]),
     part('brake', 'EMERG / PARK BRK handle', 284, 211, 'bottom', [
-      resting(btn(30, 'at rest')),
       btn(40, 'out'),
       btn(41, 'in'),
       btn(39, 'left'),
       btn(38, 'right'),
     ]),
-    part(
-      'wing-fold',
-      'WING FOLD handle',
-      554,
-      232,
-      'right',
-      [btn(28, 'FOLD'), btn(29, 'HOLD'), btn(31, 'pull')],
-      { assumed: true }
-    ),
+    part('wing-fold', 'WING FOLD handle', 554, 232, 'right', [
+      btn(28, 'FOLD'),
+      btn(29, 'HOLD'),
+      resting(btn(30, 'SPREAD')),
+      momentary(btn(31, 'push')),
+    ]),
   ],
   columnWidth: 210,
 };

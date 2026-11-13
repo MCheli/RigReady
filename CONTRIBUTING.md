@@ -35,7 +35,7 @@ The maintainer reads every pull request before it is merged, against the rules a
 
 ## Reviews
 
-GitHub Copilot reviews every pull request automatically, and again after each push; the maintainer reviews it too. A pull request is merged only when every review conversation is resolved. Answer each comment with a reply: the fix, naming its commit, or why you are not changing it. Then resolve that conversation. Pull requests are merged by squashing them into one commit.
+Open your pull request as a draft while you work on it, and mark it ready for review when its checks pass and you think it can be merged. GitHub Copilot then reviews it automatically, once; please do not request another Copilot review. The maintainer reviews it too. A pull request is merged only when every review conversation is resolved. Answer each comment with a reply: the fix, naming its commit, or why you are not changing it. Then resolve that conversation. Pull requests are merged by squashing them into one commit.
 
 ## AI-assisted contributions
 
