@@ -386,6 +386,70 @@ describe('saved iRacing bindings with control profiles', () => {
     expect(await fs.readFile(older, 'utf8')).toBe('the older file, changed');
   });
 
+  it('a set is not met when iRacing now uses another profile, a car got its own, or none can be found; its fix writes nothing', async () => {
+    app = await wiredApp('iracing-bindings-profiles', { files: ['Documents/iRacing/**'] });
+    const dir = path.join(app.ports.folders.documents(), 'iRacing');
+    const ini = path.join(dir, 'app.ini');
+    const original = await fs.readFile(ini, 'utf8');
+    const backup = await app.invoke<BindingBackup>('racing:backup', {
+      game: 'iracing',
+      name: 'GT3 rim',
+    });
+    expect((await run(backup.id)).pass).toBe(true);
+    const journal = async (): Promise<number> => {
+      const entries = await app!.ports.files.journal();
+      return entries.ok ? entries.value.length : -1;
+    };
+    const entries = await journal();
+    const advice =
+      'Choose the same control profiles in iRacing (Options, then Controls), or back up the bindings again and use that backup. RigReady does not put app.ini back for this, because it also holds iRacing’s other options.';
+
+    // iRacing switched to another profile; "Baseline" itself is unchanged.
+    const formula = path.join(dir, 'profiles', 'controls', 'Formula');
+    await fs.mkdir(formula, { recursive: true });
+    await fs.copyFile(
+      path.join(dir, 'profiles', 'controls', 'Baseline', 'controls.cfg'),
+      path.join(formula, 'controls.cfg')
+    );
+    await fs.writeFile(ini, original.replace('Global=Baseline', 'Global=Formula'));
+    expect(await run(backup.id)).toEqual({
+      pass: false,
+      summary:
+        'iRacing uses other control profiles than when these bindings were saved ("GT3 rim")',
+      details: [
+        'All cars: iRacing uses the profile “Formula” now; these bindings were saved with the profile “Baseline”.',
+        advice,
+      ],
+    });
+    const switched = await fix(backup.id);
+    expect(!switched.ok && switched.error.message).toContain(
+      'All cars: iRacing uses the profile “Formula” now'
+    );
+    expect(await journal()).toBe(entries);
+
+    // Back on "Baseline", but one car now has a profile of its own.
+    await fs.writeFile(
+      ini,
+      original.replace('[ControlProfiles]\r\n', '[ControlProfiles]\r\ncadillacctsvr=Formula\r\n')
+    );
+    expect((await run(backup.id)).details?.[0]).toBe(
+      'cadillacctsvr: iRacing uses the profile “Formula” now; these bindings were saved with no profile of its own.'
+    );
+
+    // No profile RigReady can find.
+    await fs.writeFile(ini, '[ControlProfiles]\r\nGlobal=Gone\r\n');
+    expect(await run(backup.id)).toMatchObject({
+      pass: false,
+      summary: 'RigReady cannot tell which control profile iRacing uses ("GT3 rim")',
+    });
+    expect((await fix(backup.id)).ok).toBe(false);
+    expect(await journal()).toBe(entries);
+
+    // As saved again: met.
+    await fs.writeFile(ini, original);
+    expect((await run(backup.id)).pass).toBe(true);
+  });
+
   it('a set saved before control profiles is said to hold files iRacing no longer reads, and is not restored', async () => {
     // Saved on the iRacing of April 2026, which read Documents\iRacing\controls.cfg.
     app = await wiredApp('racing-fresh', { files: ['Documents/iRacing/**'] });

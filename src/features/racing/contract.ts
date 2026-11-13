@@ -492,6 +492,15 @@ const Message = z.object({ message: z.string() });
 export const WritePreviewSchema = ChangePreviewSchema;
 export type WritePreviewView = z.infer<typeof WritePreviewSchema>;
 
+/** A SHA-256 of what a preview was worked out from. */
+const SeenSchema = z.string().regex(/^[0-9a-f]{64}$/);
+/**
+ * The iRacing id repair's preview, with `seen`: the files it would change and their content
+ * as the preview read them. The repair takes it back and writes nothing when that changed.
+ */
+export const IracingRepairPreviewSchema = ChangePreviewSchema.extend({ seen: SeenSchema });
+export type IracingRepairPreviewView = z.infer<typeof IracingRepairPreviewSchema>;
+
 const GameRef = z.object({ game: BackupGameSchema });
 /** Assetto Corsa's repair: controller number in controls.ini -> instance GUID of the one it is now. */
 const AcChoices = z
@@ -521,21 +530,28 @@ export const racingContract = defineContract('racing', {
   }),
   /** Points iRacing at controllers' new Windows ids (old instance GUID -> new). */
   iracingRepair: channel(
-    z.object({ mapping: z.array(z.object({ from: z.string(), to: z.string() })).min(1) }),
+    z.object({
+      mapping: z.array(z.object({ from: z.string(), to: z.string() })).min(1),
+      /**
+       * `seen` of the preview the user approved. With it, nothing is written when the files
+       * to change, or what is in them, are no longer what the preview showed.
+       */
+      seen: SeenSchema.optional(),
+    }),
     Message,
     {
       describe:
-        "Points iRacing's bindings at controllers' new Windows ids, from old instance GUID to new, as found by racing:iracing, in the control profile iRacing uses. Call racing:iracingRepairPreview first and show the user. iRacing must be closed.",
+        "Points iRacing's bindings at controllers' new Windows ids, from old instance GUID to new, as found by racing:iracing, in the control profile iRacing uses. Call racing:iracingRepairPreview first, show the user, and pass its seen. iRacing must be closed.",
       tier: 'change',
     }
   ),
   /** Which iRacing files that repair would change and how. Reads only. */
   iracingRepairPreview: channel(
     z.object({ mapping: z.array(z.object({ from: z.string(), to: z.string() })).min(1) }),
-    WritePreviewSchema,
+    IracingRepairPreviewSchema,
     {
       describe:
-        'Shows which iRacing files racing:iracingRepair would change and how. Nothing is changed.',
+        'Shows which iRacing files racing:iracingRepair would change and how, and seen, which the repair takes to write only what was shown. Nothing is changed.',
       tier: 'read',
     }
   ),

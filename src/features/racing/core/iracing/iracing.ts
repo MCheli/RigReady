@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { sha256 } from '../../../../core/files/fileStore';
 import { changePreview } from '../../../../core/files/preview';
 import {
   locateIracingControls,
@@ -275,6 +276,11 @@ interface RepairPlan {
   names: string[];
   /** The control profile for all cars, on an iRacing that keeps them. */
   profile?: string;
+  /**
+   * What the plan was worked out from: the change asked for, which files it writes and what
+   * is in them now. The repair writes nothing when this is not what the preview showed.
+   */
+  seen: string;
 }
 
 /** The files a repair would rewrite and their new content. Reads only. */
@@ -314,6 +320,8 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
     }
   }
   const planned: { file: string; content: Uint8Array | string }[] = [];
+  /** Each planned file with what was in it, for seen. */
+  const read: { file: string; content: string }[] = [];
   let bindings = 0;
   for (const file of targets) {
     if (!(await ctx.ports.files.exists(file))) continue;
@@ -329,6 +337,7 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
       }
       if (changed > 0) {
         planned.push({ file, content: current });
+        read.push({ file, content: sha256(bytes.value) });
         if (file === targets[0]) bindings = changed;
       }
     } else {
@@ -341,7 +350,10 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
         current = replaced.text;
         changed += replaced.count;
       }
-      if (changed > 0) planned.push({ file, content: current });
+      if (changed > 0) {
+        planned.push({ file, content: current });
+        read.push({ file, content: sha256(text.value) });
+      }
     }
   }
   if (planned.length === 0)
@@ -354,6 +366,12 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
     bindings,
     names,
     ...(general.profile !== undefined ? { profile: general.profile } : {}),
+    seen: sha256(
+      JSON.stringify({
+        mapping: mapping.map((m) => [cleanGuid(m.from), cleanGuid(m.to)]),
+        files: read.map((r) => [path.resolve(r.file).toLowerCase(), r.content]),
+      })
+    ),
   });
 }
 
@@ -361,14 +379,15 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
 export async function previewRepairIracing(
   ctx: RacingContext,
   mapping: GuidMapping[]
-): Promise<Result<ChangePreview>> {
+): Promise<Result<ChangePreview & { seen: string }>> {
   const plan = await planRepair(ctx, mapping);
   if (!plan.ok) return plan;
-  return changePreview(
+  const preview = await changePreview(
     ctx.ports.files,
     plan.value.planned.map((p) => ({ path: p.file, content: p.content })),
     (write) => path.relative(plan.value.folder, write.path).replace(/\\/g, '/')
   );
+  return preview.ok ? ok({ ...preview.value, seen: plan.value.seen }) : preview;
 }
 
 /**
@@ -380,12 +399,21 @@ export async function previewRepairIracing(
  */
 export async function repairIracing(
   ctx: RacingContext,
-  mapping: GuidMapping[]
+  mapping: GuidMapping[],
+  seen?: string
 ): Promise<Result<{ message: string; files: string[] }>> {
   const blocked = await refuseWhileRunning(ctx, 'iracing');
   if (!blocked.ok) return blocked;
   const plan = await planRepair(ctx, mapping);
   if (!plan.ok) return plan;
+  // Only what the user approved: other files (app.ini now names another profile, a car got
+  // its own) or other content mean another change than the one shown.
+  if (seen !== undefined && seen !== plan.value.seen) {
+    return err(
+      'racing.repairChanged',
+      'iRacing’s files changed after the change was shown, so nothing was written. Look at the change again.'
+    );
+  }
   const { planned, bindings, names } = plan.value;
   const group = ctx.ports.files.beginGroup(
     `Point iRacing at the new Windows id of ${names.join(', ')}`

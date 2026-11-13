@@ -522,6 +522,56 @@ describe('iRacing with control profiles', () => {
     expect(car.ok && devicesInControls(car.value)[0]!.instanceGuid).toBe(NEW);
   });
 
+  it('writes only what its preview showed: another profile or a new car profile since means nothing is written', async () => {
+    app = await wiredApp('racing-iracing-profiles-moved-wheel');
+    const dir = iracingDir(app);
+    const mapping = [{ from: DD2, to: NEW }];
+    type Preview = { seen: string; files: { label: string }[] };
+    const shown = await app.invoke<Preview>('racing:iracingRepairPreview', { mapping });
+    expect(shown.seen).toMatch(/^[0-9a-f]{64}$/);
+    // The same files and content give the same seen.
+    expect((await app.invoke<Preview>('racing:iracingRepairPreview', { mapping })).seen).toBe(
+      shown.seen
+    );
+
+    // After the preview, iRacing is pointed at another profile with the same old id.
+    const formula = path.join(dir, 'profiles', 'controls', 'Formula');
+    await fs.mkdir(formula, { recursive: true });
+    for (const file of ['controls.cfg', 'joyCalib.yaml']) {
+      await fs.copyFile(path.join(baseline(app), file), path.join(formula, file));
+    }
+    const ini = path.join(dir, 'app.ini');
+    const original = await fs.readFile(ini, 'utf8');
+    await fs.writeFile(ini, original.replace('Global=Baseline', 'Global=Formula'));
+    const changedSince =
+      'iRacing’s files changed after the change was shown, so nothing was written. Look at the change again.';
+    await expect(app.invoke('racing:iracingRepair', { mapping, seen: shown.seen })).rejects.toThrow(
+      changedSince
+    );
+    // A car given a profile of its own after the preview is another change too.
+    await fs.writeFile(
+      ini,
+      original.replace('[ControlProfiles]\r\n', '[ControlProfiles]\r\ncadillacctsvr=Formula\r\n')
+    );
+    await expect(app.invoke('racing:iracingRepair', { mapping, seen: shown.seen })).rejects.toThrow(
+      changedSince
+    );
+    const journal = await app.ports.files.journal();
+    expect(journal.ok && journal.value).toEqual([]);
+
+    // Looked at again, the change names those files, and that one is written.
+    const again = await app.invoke<Preview>('racing:iracingRepairPreview', { mapping });
+    expect(again.seen).not.toBe(shown.seen);
+    expect(again.files.map((f) => f.label)).toEqual([
+      'profiles/controls/Baseline/controls.cfg',
+      'profiles/controls/Baseline/joyCalib.yaml',
+      'profiles/controls/Formula/controls.cfg',
+      'profiles/controls/Formula/joyCalib.yaml',
+    ]);
+    await app.invoke('racing:iracingRepair', { mapping, seen: again.seen });
+    expect(await fs.readFile(path.join(formula, 'joyCalib.yaml'), 'utf8')).toContain(`{${NEW}}`);
+  });
+
   it('says plainly when the profile cannot be found, and reads and changes nothing', async () => {
     app = await wiredApp('racing-iracing-profiles-moved-wheel');
     const dir = iracingDir(app);

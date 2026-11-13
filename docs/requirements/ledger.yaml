@@ -6478,6 +6478,8 @@ requirements:
       - "When a profiles folder exists, the older Documents\\iRacing\\controls.cfg and setups\\<car>\\controls.cfg are never read or written in place of the profile. When app.ini names no profile, or one without a controls.cfg, or cannot be read, each of these says why in words, shows no bindings and changes nothing."
       - "The controller-id repair changes the profile for all cars and each car's own profile (each file once), through FileStore with a backup, as one action that Undo reverses; its preview, confirmation and message name the profile."
       - "Racing backups, saved binding sets and the iRacing module's tracked-file suggestions take the profile's files. A saved set made before control profiles is not taken for the bindings iRacing uses: its check says so and its fix restores nothing."
+      - "The repair writes only what its preview showed: the preview gives a SHA-256 of the files it would change and their content (`seen`), the page hands it back, and the repair writes nothing when app.ini now points at another profile, a car got a profile of its own, or a file changed since."
+      - "A saved set is met only while app.ini gives all cars and each car the same control profiles as when it was saved (or, for a set without app.ini, while its profile files are ones iRacing uses); otherwise, or when no profile can be found, its check says which differ and its fix writes nothing."
     status: done
     evidence:
       - "src/core/iracingControls.test.ts#with control profiles: the profile app.ini names for all cars, and the older file only listed as not read"
@@ -6496,6 +6498,9 @@ requirements:
       - "src/features/racing/core/bindingReaders.test.ts#offers a car with a profile of its own, by its line in [ControlProfiles]"
       - "src/features/racing/core/bindingSets.test.ts#saves, compares and restores the profile iRacing uses; the older file is not part of the set"
       - "src/features/racing/core/bindingSets.test.ts#a set saved before control profiles is said to hold files iRacing no longer reads, and is not restored"
+      - "src/features/racing/core/bindingSets.test.ts#a set is not met when iRacing now uses another profile, a car got its own, or none can be found; its fix writes nothing"
+      - "src/features/racing/core/iracing/iracing.test.ts#writes only what its preview showed: another profile or a new car profile since means nothing is written"
+      - "src/core/iracingControls.test.ts#tells a file inside the control profiles from one beside them"
       - "src/features/games/core/games.test.ts#with control profiles, suggests the profile iRacing uses, never the older controls.cfg"
       - "tests/e2e/racing-iracing-profiles.e2e.ts#racing: iRacing with a control profile, read and repaired in the profile"
       - "tests/e2e/racing-iracing-profiles.e2e.ts#racing: iRacing names a control profile that is not there, and the page says so"
