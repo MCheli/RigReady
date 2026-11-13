@@ -1431,8 +1431,10 @@ requirements:
       - "The profile editor changes name, description, game, install choice, launch target (executable, arguments list, working directory). The monitor layout a setup uses is its Monitors check, edited like any other check; the desk layout Stand down returns to is an app setting (Settings)."
       - "Changes are saved only on Save; Cancel leaves the file byte-identical (unit test compares file hashes)."
       - "Renaming a profile keeps its id stable, so last-used and backups still reference it."
+      - "Save takes the user to the list of setups only while they are still in the editor: a save that answers after they went on to another page (Play) leaves them there, and that page follows the saved setup (scenario with the save slowed by slowFiles)."
     notes:
       - "2026-10-03: the layout sentence corrected to the architecture: a setup has no layout field of its own; its layout is the display.layout check item (by layout name), and the desk layout is settings.deskLayoutId."
+      - "2026-11-12: a save that answered after the user had opened Play took them back to the Setups list. On GitHub's slower runners this failed integration.e2e.ts (install choice) now and then, always with the Setups list on screen. ProfileEditPage now moves only a user still in the editor, and the scenario slows the save on purpose."
     status: done
     evidence:
       - "tests/e2e/profiles.e2e.ts#setups: name, notes, install, and what Launch starts are edited; Cancel leaves the file as it was; a rename keeps the id"
