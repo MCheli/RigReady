@@ -59,11 +59,15 @@ async function onTheDesk(options: { known?: false; proven?: Partial<KnownToWork[
     fire = fn;
     return () => (fire = undefined);
   };
+  // Who waits for the question: woken when the guard asks, so no test waits on a clock.
+  const askWaiters: Array<() => void> = [];
   const guard = new RevertGuard(
     displays,
     {
-      armed: (seconds, askedBy) =>
-        events.push(askedBy ? `asked for ${seconds} s by ${askedBy}` : `asked for ${seconds} s`),
+      armed: (seconds, askedBy) => {
+        events.push(askedBy ? `asked for ${seconds} s by ${askedBy}` : `asked for ${seconds} s`);
+        for (const wake of askWaiters.splice(0)) wake();
+      },
       settled: (outcome) => events.push(outcome),
     },
     15,
@@ -90,7 +94,8 @@ async function onTheDesk(options: { known?: false; proven?: Partial<KnownToWork[
     window,
     options.known === false ? undefined : known
   );
-  const asked = (): Promise<void> => expect.poll(() => guard.pending).toBe(true);
+  const asked = (): Promise<void> =>
+    guard.pending ? Promise.resolve() : new Promise((resolve) => askWaiters.push(resolve));
   const backToDesk = async (): Promise<void> => {
     const back = await displays.apply(desk);
     if (!back.ok) throw new Error(back.error.message);
