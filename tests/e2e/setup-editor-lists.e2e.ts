@@ -256,13 +256,24 @@ test('setup editor: saved bindings of two games that share an id are two lines o
   await backUp('lmu');
 
   // The id of a backup is the moment it was made, so two games backed up in one moment share
-  // it. Here the second is given the id of the first, in this run's own data folder.
+  // it. Here the second is given the id of the first, in this run's own data folder. It is
+  // copied and the first copy removed, not renamed: Windows refuses to rename a folder while
+  // anything still has one of its just-written files open, and the removal waits as the
+  // harness's own does.
   const root = path.join(dataRoot, 'racing', 'backups');
   const ofIracing = await fs.readdir(path.join(root, 'iracing'));
   const ofLmu = await fs.readdir(path.join(root, 'lmu'));
   expect([ofIracing.length, ofLmu.length]).toEqual([1, 1]);
   const id = ofIracing[0]!;
-  await fs.rename(path.join(root, 'lmu', ofLmu[0]!), path.join(root, 'lmu', id));
+  expect(ofLmu[0]).not.toBe(id);
+  await fs.cp(path.join(root, 'lmu', ofLmu[0]!), path.join(root, 'lmu', id), { recursive: true });
+  await fs.rm(path.join(root, 'lmu', ofLmu[0]!), {
+    recursive: true,
+    force: true,
+    maxRetries: 10,
+    retryDelay: 200,
+  });
+  expect(await fs.readdir(path.join(root, 'lmu'))).toEqual([id]);
   const manifest = path.join(root, 'lmu', id, 'manifest.json');
   const stored = JSON.parse(await fs.readFile(manifest, 'utf8')) as Record<string, unknown>;
   await fs.writeFile(manifest, JSON.stringify({ ...stored, id }, null, 2));
