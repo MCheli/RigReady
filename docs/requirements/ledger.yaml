@@ -6595,6 +6595,7 @@ requirements:
       - "artifacts/screens/virtual-controller-editor/10-wide-window.png"
     notes:
       - "2026-11-12: the owner's finding 38. Only the virtual controller's editor uses the bar so far. The other pages with a Save button are not changed here; the setup editor has a footer of its own that can move to this bar."
+      - "2026-11-12, later: the bar is now on every page where the button that keeps a change could scroll out of view: the DCS Screens tab, the import of a shared setup, the tuning presets of the Wheel page and the cheat sheets layout editor, each with a requirement of its own. For them the bar takes its own words for the two states, the page's own test ids for the buttons, a Back that closes a panel, and can be told not to ask before leaving. The setup editor, the new setup page, the export and the restore of a backup keep their own footers, which are pinned already."
 
   - id: VPAD-008
     title: A live picture of the virtual controller, in the running panel and in the editor
