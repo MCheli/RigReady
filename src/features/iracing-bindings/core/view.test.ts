@@ -323,8 +323,10 @@ describe('iRacing bindings: control profiles (iRacing 2026 Season 3 and later)',
         from: DATA('controls-car.cfg'),
       },
     ]);
+    // Not listed: a profile that is not there, a name that is not one folder, a car on the
+    // profile for all cars (it has no bindings of its own), and a second line for a car.
     await setIni(
-      '[ControlProfiles]\r\nGlobal=Baseline\r\nmx5 mx52016=mx5 mx52016\r\nporsche992rgt3=Gone\r\nferrari296gt3=..\\Baseline\r\n'
+      '[ControlProfiles]\r\nGlobal=Baseline\r\nmx5 mx52016=mx5 mx52016\r\nporsche992rgt3=Gone\r\nferrari296gt3=..\\Baseline\r\nbmwm4gt3=baseline\r\nMX5 MX52016=Baseline\r\n'
     );
     const view = await overviewOf(a);
     expect(view.sets.map((s) => [s.id, s.profile])).toEqual([

@@ -113,10 +113,15 @@ async function oldFiles(ctx: BindingsContext, folder: string, cars: string[]): P
  * profile that app.ini [ControlProfiles] names: "Global" for all cars, and for a car, a
  * line whose key is iRacing's path name of the car and whose value is the profile's folder
  * ("cadillacctsvr=Test Profile CTSV", as iRacing 2026.11 wrote it on the owner's rig). A
- * car is listed from that line alone: it needs no folder of its own under Documents. The
- * older controls.cfg files are then listed as not read. Without a profiles folder (an
+ * car is listed from that line alone: it needs no folder of its own under Documents. A car
+ * whose line names the profile for all cars has no bindings of its own and is not listed.
+ * The older controls.cfg files are then listed as not read. Without a profiles folder (an
  * iRacing from before them) the sets are those files: one for all cars, and one for each
  * car that has its own.
+ *
+ * The rest of the app finds the same files with src/core/iracingControls.ts once that is
+ * merged (features may not import each other); tests/unit/iracingControlProfiles.test.ts
+ * holds the two rules together. Change both or neither.
  */
 async function locateSets(ctx: BindingsContext, folder: string, cars: string[]): Promise<Located> {
   const profiles = path.join(folder, PROFILES);
@@ -145,7 +150,7 @@ async function locateSets(ctx: BindingsContext, folder: string, cars: string[]):
     return name ? path.join(profiles, name, CONTROLS) : undefined;
   };
   const sets: BindingSet[] = [];
-  const global = lines.find((l) => l.key.toLowerCase() === 'global')?.value;
+  const global = lines.find((l) => l.key.toLowerCase() === 'global')?.value || undefined;
   const globalFile = global ? fileOf(global) : undefined;
   let problem: string | undefined;
   if (!text?.ok) {
@@ -159,10 +164,14 @@ async function locateSets(ctx: BindingsContext, folder: string, cars: string[]):
   } else {
     sets.push({ id: ALL_CARS, name: 'All cars', general: true, file: globalFile, profile: global });
   }
-  // Every other line is one car, by the path name iRacing gives it; the first line wins.
+  // Every other line is one car, by the path name iRacing gives it; the first line for a
+  // car counts, whatever its case. A car on the profile for all cars has none of its own.
+  const onGeneral = (value: string): boolean =>
+    sets.some((s) => s.general) && value.toLowerCase() === global!.toLowerCase();
   const carLines = lines
     .filter((l) => l.key.toLowerCase() !== 'global')
-    .filter((l, i, all) => all.findIndex((o) => o.key === l.key) === i)
+    .filter((l, i, all) => all.findIndex((o) => o.key.toLowerCase() === l.key.toLowerCase()) === i)
+    .filter((l) => !onGeneral(l.value))
     .sort((a, b) => a.key.localeCompare(b.key));
   for (const line of carLines) {
     const file = fileOf(line.value);
