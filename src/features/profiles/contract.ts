@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CaptureCandidateSchema } from '../../core/checks/engine';
+import { GEAR_KINDS } from '../../core/gearKind';
 import {
   CheckGroupSchema,
   CheckItemSchema,
@@ -39,12 +40,50 @@ const ProfileId = z.object({ id: z.string() });
 /** A JSON Schema (draft 2020-12) object, as produced by z.toJSONSchema. */
 const JsonSchema = z.record(z.string(), z.unknown());
 
+/** One thing a picker offers: the value that is saved and the name the person reads. */
+export const PickerChoiceSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+  /** A second line: what kind of thing it is, and what tells two of the same name apart. */
+  detail: z.string().optional(),
+  /** Other params of the same item that this choice fills in. */
+  fill: z.record(z.string(), z.unknown()).optional(),
+  /** It is the one in use on this PC right now. */
+  current: z.boolean().optional(),
+});
+export type PickerChoice = z.infer<typeof PickerChoiceSchema>;
+
+/**
+ * A param chosen by name from what exists on this PC (a saved monitor layout, a virtual
+ * controller, a game), with the choices as they are right now. The form shows one list
+ * for `param` and does not ask for the params in `fills`.
+ */
+export const PickerInfoSchema = z.object({
+  /** Names the list; a check and a fix that pick from the same list are kept in step. */
+  list: z.string(),
+  param: z.string(),
+  label: z.string(),
+  fills: z.array(z.string()),
+  /** Other params a fix that follows its check takes from the check as well. */
+  shares: z.array(z.string()).optional(),
+  /** Said when there is nothing to choose from. */
+  empty: z.string(),
+  /** Said when nothing is chosen although the filled params have values. */
+  unpicked: z.string().optional(),
+  choices: z.array(PickerChoiceSchema),
+  /** Why the list could not be read, when it could not. */
+  problem: z.string().optional(),
+});
+export type PickerInfo = z.infer<typeof PickerInfoSchema>;
+
 export const CheckTypeInfoSchema = z.object({
   type: z.string(),
   label: z.string(),
   group: CheckGroupSchema,
   /** The params form is generated from this. */
   schema: JsonSchema,
+  /** Params chosen from a list by name in place of a typed id. */
+  pickers: z.array(PickerInfoSchema).optional(),
   /** Remediation types that suit it; absent means any. */
   fixes: z.array(z.string()).optional(),
   /** Label of its acknowledge action, when it has one. */
@@ -59,6 +98,8 @@ export const RemediationTypeInfoSchema = z.object({
   kind: z.enum(['action', 'instructions', 'navigate']),
   order: z.number(),
   schema: JsonSchema,
+  /** Params chosen from a list by name in place of a typed id. */
+  pickers: z.array(PickerInfoSchema).optional(),
   /** Label of the editor's helper action ("Keep a copy of the file as it is now"). */
   prepare: z.string().optional(),
   /** Runs a program the user confirms first, when its params say so. */
@@ -100,9 +141,20 @@ export const DetectedGameSchema = z.object({
 });
 export type DetectedGame = z.infer<typeof DetectedGameSchema>;
 
+/** What a game is played with (see core/gearKind): what a new setup for it starts from. */
+export const PlayedWithSchema = z.object({
+  /** The kinds of gear the game reads; absent when nothing is known, so nothing is ruled out. */
+  gear: z.array(z.enum(GEAR_KINDS)).optional(),
+  helpers: z.boolean(),
+  microphone: z.boolean(),
+  /** The game reads a gamepad and not sim gear. */
+  gamepad: z.boolean(),
+});
+
 /** A game module and what was found of it on this PC, for the capture screen. */
 export const CaptureGameSchema = DetectedGameSchema.extend({
   kind: GameKindSchema.optional(),
+  uses: PlayedWithSchema.optional(),
   /** One of the game's programs is running right now. */
   running: z.boolean(),
 });
@@ -121,11 +173,27 @@ export const CaptureTrackedSchema = TrackedItemSchema.omit({ id: true }).extend(
 });
 export type CaptureTracked = z.infer<typeof CaptureTrackedSchema>;
 
+/**
+ * A step before launch that gives a game something it needs and the rig does not have by
+ * itself: a virtual controller for a game that reads a gamepad. Offered by the capture
+ * screen for such a game, with the picker's choices.
+ */
+export const CaptureStepSchema = z.object({
+  need: z.enum(['gamepad']),
+  /** The fix type the step runs. */
+  type: z.string(),
+  label: z.string(),
+  picker: PickerInfoSchema,
+});
+export type CaptureStep = z.infer<typeof CaptureStepSchema>;
+
 export const CaptureResultSchema = z.object({
   candidates: z.array(CaptureCandidateSchema),
   problems: z.array(z.string()),
   games: z.array(CaptureGameSchema),
   tracked: z.array(CaptureTrackedSchema),
+  /** Steps before launch a game may need (see CaptureStepSchema). */
+  steps: z.array(CaptureStepSchema),
   /** What the rig itself says the setup is for, when it says so clearly. */
   suggested: z.object({
     game: z.string().optional(),

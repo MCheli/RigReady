@@ -1,4 +1,5 @@
 import type { CheckContext } from './checks/registry';
+import type { GamePlayedWith } from './gearKind';
 import type { Ports } from './ports';
 import type { Result } from './result';
 import type { GameKind, LaunchTarget } from '../shared/models';
@@ -58,6 +59,13 @@ export interface GameModule {
    * and helper apps of that family and leaves the other family's out.
    */
   kind?: GameKind;
+  /**
+   * What the game is played with, where that is narrower than its kind: which gear it
+   * reads, whether it takes helper programs or a microphone, whether it reads a gamepad
+   * and not sim gear. Optional, and so is every part of it; a new setup starts from it
+   * (see core/gearKind).
+   */
+  playedWith?: GamePlayedWith;
   /** Every installation found: all Steam libraries, standalone, Store. */
   detect(ctx: CheckContext): Promise<Result<GameInstall[]>>;
   /** Where the game keeps per-user configuration. */

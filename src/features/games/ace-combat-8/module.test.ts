@@ -9,7 +9,20 @@ afterEach(async () => {
   rig = undefined;
 });
 
-describe('ACE COMBAT 8 game module', () => {
+describe('Ace Combat 8 game module', () => {
+  it('is named the way people write it, and says what it is played with', () => {
+    // Steam writes the name in capitals; a list of games in RigReady does not shout.
+    expect(aceCombat8.name).toBe('Ace Combat 8: Wings of Theve');
+    // CFG-PROFILE-017: flown on a gamepad, so a new setup offers a virtual controller and
+    // keeps the stick, throttle and pedals. No head tracker, no helper apps, no radio.
+    expect(aceCombat8.playedWith).toEqual({
+      gear: ['stick', 'yoke', 'throttle', 'pedals'],
+      helpers: false,
+      microphone: false,
+      gamepad: true,
+    });
+  });
+
   it('finds the Steam install, its settings, its build and its path variables', async () => {
     rig = await scenarioRig('virtual-controller-ready', {
       files: ['Program Files (x86)/Steam/**'],
@@ -33,7 +46,7 @@ describe('ACE COMBAT 8 game module', () => {
     });
     const tracked = await aceCombat8.trackedFiles!(rig.ctx);
     expect(tracked.ok && tracked.value.map((t) => t.label)).toEqual([
-      'ACE COMBAT 8 settings and saves',
+      'Ace Combat 8 settings and saves',
       'Graphics and display (GameUserSettings.ini)',
     ]);
     const install = installs.ok ? installs.value[0]! : undefined;
