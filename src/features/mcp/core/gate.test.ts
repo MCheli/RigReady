@@ -30,6 +30,15 @@ describe('what an answer says in the record, in one line', () => {
     expect(oneLine({ ready: true })).toBe('Ready');
     expect(oneLine({ ready: false })).toBe('Not ready');
     expect(oneLine(7)).toBe('7');
-    expect(oneLine('x'.repeat(300))).toHaveLength(200);
+  });
+
+  it('MCP-013 says so when a line was cut, and never shows a token', () => {
+    expect(oneLine('x'.repeat(300))).toBe(`${'x'.repeat(200)}… (100 more characters not shown)`);
+    expect(oneLine({ message: 'y'.repeat(201) })).toBe(
+      `${'y'.repeat(200)}… (1 more character not shown)`
+    );
+    const token = `rr_${'5c'.repeat(32)}`;
+    expect(oneLine(`Paired with ${token}`)).toBe('Paired with rr_***');
+    expect(oneLine({ headline: `Authorization: Bearer ${token}` })).not.toContain('5c5c');
   });
 });

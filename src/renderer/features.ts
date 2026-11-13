@@ -1,8 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router';
 import {
+  bindingsPagesOf,
   collectCommands,
   collectManifests,
   navSectionsOf,
+  placesOf,
   type FeatureCommands,
   type FeatureManifest,
   type NavEntry,
@@ -21,6 +23,15 @@ export const navSections: { section: NavEntry['section']; entries: NavEntry[] }[
   navSectionsOf(manifests);
 
 export const firstConfigurePath: string | undefined = navSections[0]?.entries[0]?.to;
+
+/** The bindings page of each game that has one, in the order of the Bindings game picker. */
+export const bindingsPages = bindingsPagesOf(manifests);
+
+/** Pages without an entry of their own and the entry each stands under (DCS World under Games). */
+export const places = placesOf(manifests).map((place) => ({
+  to: place.entry.to,
+  under: place.under,
+}));
 
 /**
  * What the features offer the command palette, discovered the same way. Loaded when the

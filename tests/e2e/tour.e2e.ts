@@ -12,20 +12,33 @@ import { expect, test } from './harness';
 const BUSY =
   '.v-progress-circular--indeterminate:visible, .v-progress-linear--active:visible, .v-skeleton-loader:visible';
 
-const routesOf = (page: Page): Promise<string[]> =>
+/**
+ * Every route of the app, and whether it only sends on to another page (Bindings opens the
+ * bindings of a game): such a route is followed, not drawn.
+ */
+const routesOf = (page: Page): Promise<{ path: string; forwards: boolean }[]> =>
   page.evaluate(() => {
     const scope = globalThis as unknown as {
       document: {
         querySelector(selector: string): {
           __vue_app__: {
-            config: { globalProperties: { $router: { getRoutes(): { path: string }[] } } };
+            config: {
+              globalProperties: {
+                $router: { getRoutes(): { path: string; meta: Record<string, unknown> }[] };
+              };
+            };
           };
         };
       };
     };
     const app = scope.document.querySelector('#app').__vue_app__;
-    return app.config.globalProperties.$router.getRoutes().map((route) => route.path);
+    return app.config.globalProperties.$router
+      .getRoutes()
+      .map((route) => ({ path: route.path, forwards: route.meta['forwards'] === true }));
   });
+
+const hash = (page: Page): Promise<string> =>
+  page.evaluate(() => (globalThis as unknown as { location: { hash: string } }).location.hash);
 
 const go = (page: Page, route: string): Promise<void> =>
   page.evaluate((hash) => {
@@ -89,11 +102,21 @@ for (const rigged of RIGS) {
     const offered = await nav
       .locator('a')
       .evaluateAll((links) => links.map((a) => (a.getAttribute('href') ?? '').replace(/^#/, '')));
-    const all = (await routesOf(page))
-      .map((r) => r.replace(/\/:[^/]+\?/g, ''))
+    const known = await routesOf(page);
+    const forwards = known.filter((r) => r.forwards).map((r) => r.path);
+    const all = known
+      .map((r) => r.path.replace(/\/:[^/]+\?/g, ''))
       .filter((r) => r.startsWith('/configure/') && !r.includes(':') && !r.includes('*'));
-    const routes = [...new Set([...offered, ...all])];
+    const routes = [...new Set([...offered, ...all])].filter((r) => !forwards.includes(r));
     expect(routes.length).toBeGreaterThan(25);
+
+    // An entry that opens another page lands on one of the pages walked below.
+    expect(forwards).toEqual(['/configure/bindings']);
+    for (const route of forwards) {
+      await go(page, route);
+      await expect.poll(() => hash(page), { message: `${route} sends on` }).not.toBe(`#${route}`);
+      expect(routes, route).toContain((await hash(page)).replace(/^#/, '').split('?')[0]);
+    }
 
     const findings: string[] = [];
     for (const route of routes) {

@@ -16,7 +16,7 @@ const joystickDir = (run: RunningApp, aircraft = 'FA-18C_hornet'): string =>
 
 async function openBindings(page: Page, tab?: string): Promise<void> {
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-dcs-bindings').click();
+  await page.getByTestId('nav-bindings').click();
   await expect(page.getByTestId('bind-overview')).toBeVisible();
   if (tab) await page.getByTestId(`bind-tab-${tab}`).click();
 }

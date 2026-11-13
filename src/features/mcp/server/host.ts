@@ -22,6 +22,9 @@ import { MCP_PATH } from './constants';
 /** Requests larger than this are refused before anything is parsed. */
 export const MAX_BODY_BYTES = 1024 * 1024;
 
+/** A request refused before the protocol leaves one line in the log, then none for this long. */
+export const REFUSED_LINE_EVERY_MS = 60_000;
+
 export interface HostDeps {
   log: Logger;
   factory: McpServerFactory;
@@ -44,6 +47,27 @@ export class McpHost {
   lastRequestAt: string | undefined;
 
   private factory: McpServerFactory;
+  /** When a refusal was last written to the log, by reason, and how many came since. */
+  private readonly refusals = new Map<string, { at: number; since: number }>();
+
+  /**
+   * One line for a request that was turned away before the protocol, so "my assistant cannot
+   * connect" can be looked up: the reason, never the token or any header. A caller that keeps
+   * trying fills no log: one line a minute for each reason, with how many more there were.
+   */
+  private refused(reason: string): void {
+    const now = Date.now();
+    const seen = this.refusals.get(reason);
+    if (seen && now - seen.at < REFUSED_LINE_EVERY_MS) {
+      seen.since++;
+      return;
+    }
+    this.deps.log.warn(
+      `mcp request refused: ${reason}`,
+      seen && seen.since > 0 ? { moreSinceTheLastLine: seen.since } : undefined
+    );
+    this.refusals.set(reason, { at: now, since: 0 });
+  }
 
   constructor(private readonly deps: HostDeps) {
     this.factory = deps.factory;
@@ -133,8 +157,14 @@ export class McpHost {
       res.end(JSON.stringify({ error: `The MCP endpoint is ${MCP_PATH}.` }));
       return;
     }
-    if (!guards.checkHost(req, res)) return;
-    if (!guards.checkOrigin(req, res)) return;
+    if (!guards.checkHost(req, res)) {
+      this.refused('it did not name this PC as its host');
+      return;
+    }
+    if (!guards.checkOrigin(req, res)) {
+      this.refused('it came from a web page on another origin');
+      return;
+    }
     const header = req.headers['authorization'];
     const token =
       typeof header === 'string' && header.toLowerCase().startsWith('bearer ')
@@ -142,6 +172,7 @@ export class McpHost {
         : undefined;
     const pairing = token ? await this.deps.identify(token) : undefined;
     if (!pairing) {
+      this.refused(token ? 'its token belongs to no pairing' : 'it carried no token');
       res.writeHead(401, {
         'content-type': 'application/json',
         'www-authenticate': 'Bearer realm="RigReady", error="invalid_token"',

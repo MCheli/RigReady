@@ -7,7 +7,8 @@ test('racing: Assetto Corsa controllers in another order are renumbered in contr
 }) => {
   const { page, shot, home } = await rig.launch('racing-ac-moved-controllers', 'racing-ac-repair');
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   const card = page.locator('[data-testid="racing-game-card"][data-game="assetto-corsa"]');
   await expect(card).toContainText('2 controllers are at another number now');
   await card.click();

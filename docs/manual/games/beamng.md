@@ -31,7 +31,7 @@ From the `settings` folder of the current user folder, offered on the [Backups p
 
 ## The bindings and controllers page
 
-**Configure > Racing > BeamNG.drive** reads every `.diff` file under `settings\inputmaps`.
+**Configure > Games > Racing > BeamNG.drive** reads every `.diff` file under `settings\inputmaps`.
 
 **Older user folders** appears when an earlier version's folder still holds binding files. **Copy into current…** shows which files would be created and which replaced, copies them with a backup of each replaced file, and offers Undo on [the Safety page](../protect/safety-page.md).
 

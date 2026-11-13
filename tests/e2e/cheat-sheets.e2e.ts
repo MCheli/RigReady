@@ -1239,7 +1239,7 @@ test('cheat sheets: an open sheet follows the bindings page - the pop-out redraw
   await snap(popup, 'pop-out-before');
 
   // On the bindings page, in the main window: put the canopy on button 1 of the stick.
-  await page.getByTestId('nav-dcs-bindings').click();
+  await page.getByTestId('nav-bindings').click();
   await expect(page.getByTestId('bind-overview')).toBeVisible();
   await page.getByTestId('bind-tab-actions').click();
   await page.getByTestId('act-search').locator('input').fill('canopy control switch - open');

@@ -2,8 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
+import { manifests } from '../../../renderer/features';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
+import { gamePagesOf } from '../../../shared/feature';
 import { gamesContract, type GameSummary, type UserGameView } from '../contract';
 import AddGameDialog from './AddGameDialog.vue';
 
@@ -98,6 +100,16 @@ const deeper = computed(() => {
       return path;
   }
   return undefined;
+});
+
+/**
+ * What the button to that page says: a page of a game's own that another feature declares
+ * (DCS World: its screens, Export.lua and SimAppPro) by its name, a racing game's page by what
+ * is on it.
+ */
+const deeperLabel = computed(() => {
+  const page = gamePagesOf(manifests).find((p) => p.to === deeper.value);
+  return page ? `Set up ${page.title}` : 'Bindings and controllers';
 });
 
 const SOURCE: Record<string, string> = {
@@ -222,7 +234,7 @@ async function forget(): Promise<void> {
           prepend-icon="mdi-tune-variant"
           :to="deeper"
           data-testid="game-bindings"
-          >Bindings and controllers</v-btn
+          >{{ deeperLabel }}</v-btn
         >
         <v-btn
           v-if="launchable"

@@ -25,19 +25,31 @@ const BUSY =
   '.v-progress-circular--indeterminate:visible, .v-progress-linear--active:visible, .v-skeleton-loader:visible';
 
 /** Every route the feature manifests registered, read from the running app's router. */
-const routesOf = (page: Page): Promise<string[]> =>
+/**
+ * Every route of the app, but the ones that only send on to another page (Bindings opens the
+ * bindings of a game, which is crawled as itself): those are given as `forwards`.
+ */
+const routesOf = (page: Page): Promise<{ paths: string[]; forwards: string[] }> =>
   page.evaluate(() => {
     const scope = globalThis as unknown as {
       document: {
         querySelector(selector: string): {
           __vue_app__: {
-            config: { globalProperties: { $router: { getRoutes(): { path: string }[] } } };
+            config: {
+              globalProperties: {
+                $router: { getRoutes(): { path: string; meta: Record<string, unknown> }[] };
+              };
+            };
           };
         };
       };
     };
     const app = scope.document.querySelector('#app').__vue_app__;
-    return app.config.globalProperties.$router.getRoutes().map((route) => route.path);
+    const known = app.config.globalProperties.$router.getRoutes();
+    return {
+      paths: known.filter((route) => route.meta['forwards'] !== true).map((route) => route.path),
+      forwards: known.filter((route) => route.meta['forwards'] === true).map((route) => route.path),
+    };
   });
 
 /**
@@ -345,7 +357,7 @@ test('nfr: every route of every feature renders, and no visible control is a stu
   test.setTimeout(300_000);
   const { page, shot } = await rig.launch('flying-all-good', 'nfr-crawl');
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
-  const all = await routesOf(page);
+  const { paths: all, forwards } = await routesOf(page);
   // Every page a link can reach directly: routes without a parameter, and those whose
   // parameters are all optional, opened without them.
   const routes = [...new Set(all.map((r) => r.replace(/\/:[^/]+\?/g, '')))].filter(
@@ -360,7 +372,11 @@ test('nfr: every route of every feature renders, and no visible control is a stu
     .locator('a')
     .evaluateAll((links) => links.map((a) => (a.getAttribute('href') ?? '').replace(/^#/, '')));
   expect(offered.length).toBeGreaterThan(10);
-  expect(offered.filter((route) => !routes.includes(route))).toEqual([]);
+  // An entry that sends on (Bindings) is followed by the walk of the page it opens.
+  expect(forwards).toEqual(['/configure/bindings']);
+  expect(offered.filter((route) => !routes.includes(route) && !forwards.includes(route))).toEqual(
+    []
+  );
 
   const findings: string[] = [];
   let controls = 0;
