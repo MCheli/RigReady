@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LAYOUT_FORMAT, LAYOUT_VERSION } from './layout';
 import type { Sheet, SheetBinding, SheetControl, SheetDevice } from './sheet';
 import {
   alsoDoes,
@@ -32,13 +33,31 @@ const control = (id: string, ...bindings: SheetBinding[]): SheetControl => ({
   bindings,
   conflict: false,
 });
-const device = (key: string, guid: string | undefined, controls: SheetControl[]): SheetDevice =>
+const device = (
+  key: string,
+  guid: string | undefined,
+  controls: SheetControl[],
+  model: Partial<Pick<SheetDevice, 'vendorId' | 'productId' | 'name'>> = {}
+): SheetDevice =>
   ({
     key,
     ...(guid ? { guid } : {}),
     name: key,
     title: key,
     connected: guid !== undefined,
+    ...model,
+    // A device RigReady has no picture of: its sheet is drawn from a layout it made up.
+    layout: {
+      format: LAYOUT_FORMAT,
+      version: LAYOUT_VERSION,
+      name: key,
+      match: { vendorId: '0000', productIds: ['0000'] },
+      canvas: { width: 100, height: 100 },
+      shapes: [],
+      groups: [],
+      controls: [],
+    },
+    layoutSource: 'generated',
     controls,
     other: [],
     counts: { placed: 0, bound: 0, empty: 0, conflicts: 0, hidden: 0 },
@@ -146,6 +165,52 @@ describe('which actions make cards', () => {
     const trim = trainerCards(sheetOf(stick)).find((c) => c.action === 'Trim Up')!;
     expect(placesOf(trim.answers)).toBe('Button 5 on Stick');
     expect(alsoDoes(trim.answers, trim.answers[0]!)).toBe('');
+  });
+
+  it('knows from the drawing of the device which buttons are positions of one switch or throttle stop', () => {
+    // The owner's throttle, the WinWing Orion base with the F-15EX handles, and its stick.
+    const base = device(
+      'Throttle',
+      'TTTT-1',
+      [
+        control('button:31', binding('Throttle (Left) - IDLE', { kind: 'airframe' })),
+        control('button:58', binding('Left handle switch: middle', { kind: 'airframe' })),
+        control('button:23', binding('Upper thumb switch: middle', { kind: 'airframe' })),
+        control('button:51', binding('Left handle hat up', { kind: 'sensors' })),
+        control('button:11', binding('Thumb button', { kind: 'sensors' })),
+      ],
+      { vendorId: '4098', productId: 'BD26' }
+    );
+    const grip = device(
+      'Stick',
+      'SSSS-1',
+      [control('button:8', binding('Paddle pulled', { kind: 'flight' }))],
+      { vendorId: '4098', productId: 'BEA8' }
+    );
+    const cards = trainerCards(sheetOf(base, grip));
+    const others = (action: string): string[] | undefined =>
+      cards.find((c) => c.action === action)!.answers[0]!.otherPositions;
+    // The stops of a handle, the places of a switch: the other positions of the same control.
+    expect(others('Throttle (Left) - IDLE')).toEqual(['button:2']);
+    expect(others('Left handle switch: middle')).toEqual(['button:57', 'button:59']);
+    expect(others('Upper thumb switch: middle')).toEqual(['button:22', 'button:24']);
+    // A hat, a plain button and a lever spring back: they have none.
+    expect(others('Left handle hat up')).toBeUndefined();
+    expect(others('Thumb button')).toBeUndefined();
+    expect(others('Paddle pulled')).toBeUndefined();
+    // A device RigReady has no drawing of but knows the controls of: its map says it.
+    const x52 = device(
+      'X52',
+      'XXXX-1',
+      [control('button:29', binding('Mode 2', { kind: 'other' }))],
+      { vendorId: '06A3', productId: '0762' }
+    );
+    expect(trainerCards(sheetOf(x52))[0]!.answers[0]!.otherPositions).toEqual([
+      'button:28',
+      'button:30',
+    ]);
+    // A device RigReady has no drawing or map of: nothing is known, nothing is made up.
+    expect(trainerCards(sheetOf(throttle)).every((c) => !c.answers[0]!.otherPositions)).toBe(true);
   });
 
   it('asks the game defaults when the user has no bindings of their own', () => {
@@ -349,31 +414,62 @@ describe('a round', () => {
     expect(session.card!.id).toBe('b');
   });
 
-  it('brings a missed card back a few cards later, and right then does not count as known', () => {
+  it('brings a missed card back at the end of the round, and right then does not count as known', () => {
     const session = new TrainerSession(six);
+    expect(session.again).toBe(false);
     const verdicts = [session.press(press(6))];
+    expect(session.comesBack).toBe(true);
     session.press(press(1));
     session.advance();
     const asked = ['a'];
+    const again: string[] = [];
     while (session.phase !== 'done') {
       const now = session.card!;
       asked.push(now.id);
+      if (session.again) again.push(now.id);
       verdicts.push(session.press(now.answers[0]!));
       session.advance();
     }
-    // a was missed, then b, c, d were asked, then a again, then the rest.
-    expect(asked).toEqual(['a', 'b', 'c', 'd', 'a', 'e', 'f']);
+    // a was missed, then every other card was asked, and a last of all: not straight away,
+    // which at the owner's second look read as the round starting over.
+    expect(asked).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'a']);
+    expect(again).toEqual(['a']);
     expect(verdicts).toEqual([
       { cardId: 'a', right: false },
       { cardId: 'b', right: true },
       { cardId: 'c', right: true },
       { cardId: 'd', right: true },
-      undefined,
       { cardId: 'e', right: true },
       { cardId: 'f', right: true },
+      undefined,
     ]);
     expect(session.results()).toEqual({ asked: 6, firstTry: 5, missed: [six[0]] });
     expect(session.settled).toBe(6);
+  });
+
+  it('missed near the end of the round, or twice, still comes back after every card left', () => {
+    // Missed: c (third), then e (fifth). Each goes to the end in the order it was missed.
+    const session = new TrainerSession(six);
+    const asked: string[] = [];
+    while (session.phase !== 'done') {
+      const now = session.card!;
+      asked.push(now.id);
+      const first = !asked.slice(0, -1).includes(now.id);
+      if (first && (now.id === 'c' || now.id === 'e')) session.press(press(9));
+      else session.press(now.answers[0]!);
+      session.advance();
+    }
+    expect(asked).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'c', 'e']);
+
+    // The last card missed is at the end already: it is the next one, and the last.
+    const last = new TrainerSession(six.slice(0, 2));
+    last.press(press(1));
+    last.advance();
+    last.press(press(9));
+    expect(last.comesBack).toBe(true);
+    last.advance();
+    expect(last.card!.id).toBe('b');
+    expect(last.again).toBe(true);
   });
 
   it('gives the answer away when asked to, which is a miss', () => {
