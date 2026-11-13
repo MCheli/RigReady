@@ -8,9 +8,10 @@ import type {
 } from '../../../core/checks/registry';
 import type { TrackedFileSuggestion } from '../../../core/games';
 import type { Ports } from '../../../core/ports';
+import { closeAtStandDown } from '../../../core/processes';
 import { ok, type Result } from '../../../core/result';
-import { closeApp, realSleep, startApp, type Sleep } from './app';
-import { detectStreamDeck, streamDeckPaths, streamDecks } from './detect';
+import { QUIT_WAIT_MS, realSleep, startApp, type Sleep } from './app';
+import { detectStreamDeck, isAppProcess, streamDeckPaths, streamDecks } from './detect';
 
 export const SD_RUNNING = 'stream-deck.running';
 export const SD_CONNECTED = 'stream-deck.connected';
@@ -19,6 +20,12 @@ export const SD_START = 'stream-deck.start';
 export const RunningParamsSchema = z.object({
   /** Quit the Stream Deck app when the user stands down. */
   closeOnStandDown: z.boolean().default(false),
+  /**
+   * End it when it has not quit after being asked to and waited for. Off unless switched
+   * on: the app saves its profiles when it quits. The name is the one `process.running`
+   * uses, so the setup editor shows the same switch and the hint can point at it.
+   */
+  forceClose: z.boolean().default(false),
 });
 export type RunningParams = z.infer<typeof RunningParamsSchema>;
 
@@ -41,9 +48,14 @@ export const runningCheck: CheckDefinition<RunningParams> = {
   },
   async standDown(params, ctx) {
     if (!params.closeOnStandDown) return ok(null);
-    const closed = await closeApp(ctx.ports);
-    if (!closed.ok) return closed;
-    return ok(closed.value.closed ? 'Closed Stream Deck' : null);
+    const processes = await ctx.ports.processes.list();
+    if (!processes.ok) return processes;
+    return closeAtStandDown(
+      ctx.ports.processes,
+      processes.value.filter(isAppProcess),
+      'Stream Deck',
+      { waitMs: QUIT_WAIT_MS, force: params.forceClose }
+    );
   },
 };
 

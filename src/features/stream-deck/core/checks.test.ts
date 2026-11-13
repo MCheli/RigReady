@@ -1,12 +1,15 @@
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { FORCE_CLOSE_LABEL } from '../../../core/processes';
 import { err } from '../../../core/result';
 import { mutate, scenarioRig, wiredApp, type TestRig } from '../../../../tests/helpers';
 import { closeApp, startApp } from './app';
+import { CANNOT_CLOSE, STILL_RUNNING } from './model';
 import {
   connectedCheck,
   createStartRemediation,
   runningCheck,
+  RunningParamsSchema,
   streamDeckCapture,
   streamDeckTrackedFiles,
 } from './checks';
@@ -17,15 +20,20 @@ afterEach(() => rig?.cleanup());
 const FILES = ['AppData/Roaming/Elgato/**', 'Program Files/Elgato/**'];
 const sleepWith = (r: TestRig) => async (ms: number) => r.clock.advance(ms);
 
+/** The check as a setup stores it: left alone, closed on Stand down, and closed by force. */
+const OFF = RunningParamsSchema.parse({});
+const CLOSE = RunningParamsSchema.parse({ closeOnStandDown: true });
+const FORCE = RunningParamsSchema.parse({ closeOnStandDown: true, forceClose: true });
+
 describe('stream-deck.running', () => {
   it('passes while the app runs and fails when it does not', async () => {
     rig = await scenarioRig('stream-deck-owner', { files: FILES });
-    expect(await runningCheck.run({ closeOnStandDown: false }, rig.ctx)).toEqual({
+    expect(await runningCheck.run(OFF, rig.ctx)).toEqual({
       pass: true,
       summary: 'Running',
     });
     await mutate(rig, [{ op: 'stopProcess', name: 'StreamDeck.exe' }]);
-    expect(await runningCheck.run({ closeOnStandDown: false }, rig.ctx)).toEqual({
+    expect(await runningCheck.run(OFF, rig.ctx)).toEqual({
       pass: false,
       summary: 'Not running',
     });
@@ -33,12 +41,12 @@ describe('stream-deck.running', () => {
 
   it('says when the app is not installed, and when the process list fails', async () => {
     rig = await scenarioRig('stream-deck-new-pc', { files: [] });
-    expect(await runningCheck.run({ closeOnStandDown: false }, rig.ctx)).toMatchObject({
+    expect(await runningCheck.run(OFF, rig.ctx)).toMatchObject({
       pass: false,
       summary: 'Not installed',
     });
     rig.ports.processes.list = async () => err('process.list', 'No process list');
-    expect(await runningCheck.run({ closeOnStandDown: false }, rig.ctx)).toEqual({
+    expect(await runningCheck.run(OFF, rig.ctx)).toEqual({
       pass: false,
       summary: 'No process list',
     });
@@ -53,7 +61,7 @@ describe('stream-deck.running', () => {
     expect(rig.ports.processes.started[0]!.exe).toBe(
       path.join(rig.home, 'Program Files', 'Elgato', 'StreamDeck', 'StreamDeck.exe')
     );
-    expect(await runningCheck.run({ closeOnStandDown: false }, rig.ctx)).toMatchObject({
+    expect(await runningCheck.run(OFF, rig.ctx)).toMatchObject({
       pass: true,
     });
     expect(await fix.run({}, rig.ctx)).toEqual({
@@ -78,24 +86,104 @@ describe('stream-deck.running', () => {
 
   it('closes the app on Stand down only when asked to', async () => {
     rig = await scenarioRig('stream-deck-owner', { files: FILES });
-    expect(await runningCheck.standDown!({ closeOnStandDown: false }, rig.ctx)).toEqual({
-      ok: true,
-      value: null,
-    });
-    expect(await runningCheck.standDown!({ closeOnStandDown: true }, rig.ctx)).toEqual({
+    expect(await runningCheck.standDown!(OFF, rig.ctx)).toEqual({ ok: true, value: null });
+    expect(await runningCheck.standDown!(CLOSE, rig.ctx)).toEqual({
       ok: true,
       value: 'Closed Stream Deck',
     });
-    expect(await runningCheck.standDown!({ closeOnStandDown: true }, rig.ctx)).toEqual({
+    expect(await runningCheck.standDown!(CLOSE, rig.ctx)).toEqual({ ok: true, value: null });
+    rig.ports.processes.list = async () => err('process.list', 'No process list');
+    expect(await runningCheck.standDown!(CLOSE, rig.ctx)).toMatchObject({ ok: false });
+  });
+
+  it('on Stand down, a Stream Deck that stays open says why and names the Force switch', async () => {
+    rig = await scenarioRig('stream-deck-owner', { files: FILES });
+    // The X of its window only sends it to the tray.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'StreamDeck.exe', why: 'ignored' }]);
+    expect(await runningCheck.standDown!(CLOSE, rig.ctx)).toEqual(
+      err(
+        'process.stillRunning',
+        'Stream Deck is still running: it was asked to close and stayed open. Some apps only go to the tray when asked.',
+        `Close it yourself, or switch on "${FORCE_CLOSE_LABEL}" for this check in the setup.`
+      )
+    );
+    expect(rig.ports.processes.closed.at(-1)!.options).toEqual({ waitMs: 15_000, force: false });
+    expect((await runningCheck.run(CLOSE, rig.ctx)).pass).toBe(true);
+
+    // Running as administrator: the switch would not help, so it is not named.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'StreamDeck.exe', why: 'refused' }]);
+    const refused = err(
+      'process.stillRunning',
+      'Stream Deck is still running: Windows did not let RigReady close it. It may be running as administrator.',
+      'Close it yourself.'
+    );
+    expect(await runningCheck.standDown!(CLOSE, rig.ctx)).toEqual(refused);
+    expect(await runningCheck.standDown!(FORCE, rig.ctx)).toEqual(refused);
+    expect((await runningCheck.run(CLOSE, rig.ctx)).pass).toBe(true);
+
+    // With the switch on, a Stream Deck that only goes to the tray is ended, and said so.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'StreamDeck.exe', why: 'ignored' }]);
+    expect(await runningCheck.standDown!(FORCE, rig.ctx)).toEqual({
       ok: true,
-      value: null,
+      value: 'Closed Stream Deck (it had to be forced)',
     });
+    expect((await runningCheck.run(CLOSE, rig.ctx)).pass).toBe(false);
+  });
+
+  it('the Force switch is off unless the setup switches it on, also in a setup made before it existed', () => {
+    expect(RunningParamsSchema.parse({ closeOnStandDown: true })).toEqual({
+      closeOnStandDown: true,
+      forceClose: false,
+    });
+    expect(RunningParamsSchema.parse({})).toEqual({ closeOnStandDown: false, forceClose: false });
+  });
+
+  it('asks every Stream Deck process together: a helper without a window goes with the window', async () => {
+    rig = await scenarioRig('stream-deck-owner', { files: FILES });
+    const first = rig.ports.state.processes.find((p) => p.name === 'StreamDeck.exe')!;
+    // A second process of the app, listed before the one that owns the window.
+    const helper = { ...first, pid: first.pid + 1 };
+    rig.ports.state.processes.unshift(helper);
+    const close = rig.ports.processes.close.bind(rig.ports.processes);
+    const asked: number[] = [];
+    rig.ports.processes.close = async (pid, options) => {
+      asked.push(pid);
+      if (pid === helper.pid) {
+        return err('process.stillRunning', `Process ${pid} has no window to close.`, 'noWindow');
+      }
+      await close(helper.pid, options);
+      return close(pid, options);
+    };
+    expect(await closeApp(rig.ports)).toEqual({ ok: true, value: { closed: true } });
+    expect(asked).toEqual([helper.pid, first.pid]);
+    expect(rig.ports.state.processes.some((p) => p.name === 'StreamDeck.exe')).toBe(false);
+  });
+
+  it('says whether ending Stream Deck can still help, by the code of the error', async () => {
+    rig = await scenarioRig('stream-deck-owner', { files: FILES });
+    await mutate(rig, [{ op: 'failProcessClose', name: 'StreamDeck.exe', why: 'ignored' }]);
+    expect(await closeApp(rig.ports)).toEqual(
+      err(
+        STILL_RUNNING,
+        'Stream Deck is still running: it was asked to close and stayed open. Some apps only go to the tray when asked.'
+      )
+    );
+    await mutate(rig, [{ op: 'failProcessClose', name: 'StreamDeck.exe', why: 'refused' }]);
+    const refused = err(
+      CANNOT_CLOSE,
+      'Stream Deck is still running: Windows did not let RigReady close it. It may be running as administrator.'
+    );
+    expect(await closeApp(rig.ports)).toEqual(refused);
+    expect(await closeApp(rig.ports, { force: true })).toEqual(refused);
+    // "Access denied" about a process that is still listed is the same thing.
+    rig.ports.processes.close = async () => err('process.stop', 'Access denied');
+    expect(await closeApp(rig.ports)).toEqual(refused);
   });
 
   it('passes on other close failures as they are', async () => {
     rig = await scenarioRig('stream-deck-owner', { files: FILES });
-    rig.ports.processes.close = async () => err('process.stop', 'Access denied');
-    expect(await closeApp(rig.ports)).toMatchObject({ ok: false, error: { code: 'process.stop' } });
+    rig.ports.processes.close = async () => err('process.hung', 'Windows did not answer.');
+    expect(await closeApp(rig.ports)).toEqual(err('process.hung', 'Windows did not answer.'));
   });
 });
 

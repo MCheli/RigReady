@@ -255,6 +255,53 @@ describe('TrackIR checks', () => {
     });
   });
 
+  it('on Stand down, a TrackIR that only goes to the tray is ended, and said so', async () => {
+    rig = await scenarioRig('trackir-ready', { files: FILES });
+    await mutate(rig, [{ op: 'failProcessClose', name: 'TrackIR5.exe', why: 'ignored' }]);
+    expect(await runningCheck.standDown!({ closeOnStandDown: true }, rig.ctx)).toEqual({
+      ok: true,
+      value: 'Closed TrackIR (it had to be forced)',
+    });
+    expect(rig.ports.processes.closed.at(-1)!.options).toEqual({ waitMs: 10_000, force: true });
+    expect(rig.ports.state.processes.some((p) => p.name === 'TrackIR5.exe')).toBe(false);
+  });
+
+  it('on Stand down, a TrackIR that is still running is named with the reason, and no switch is pointed at', async () => {
+    rig = await scenarioRig('trackir-ready', { files: FILES });
+    // Running as administrator: Windows lets RigReady neither ask it nor end it.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'TrackIR5.exe', why: 'refused' }]);
+    expect(await runningCheck.standDown!({ closeOnStandDown: true }, rig.ctx)).toEqual(
+      err(
+        'process.stillRunning',
+        'TrackIR is still running: Windows did not let RigReady close it. It may be running as administrator.',
+        // TrackIR is always ended when it does not close: there is no Force switch to name.
+        'Close it yourself.'
+      )
+    );
+    expect((await runningCheck.run({ closeOnStandDown: true }, rig.ctx)).pass).toBe(true);
+  });
+
+  it('asks every TrackIR process together: one that is gone by its turn is no failure', async () => {
+    rig = await scenarioRig('trackir-ready', { files: FILES });
+    const owner = rig.ports.state.processes.find((p) => p.name === 'TrackIR5.exe')!;
+    const helper = { ...owner, pid: owner.pid + 1 };
+    rig.ports.state.processes.push(helper);
+    const close = rig.ports.processes.close.bind(rig.ports.processes);
+    const asked: number[] = [];
+    rig.ports.processes.close = async (pid, options) => {
+      asked.push(pid);
+      // The first one takes the other with it; the other then cannot be opened any more.
+      if (pid === owner.pid) await close(helper.pid, options);
+      return close(pid, options);
+    };
+    expect(await runningCheck.standDown!({ closeOnStandDown: true }, rig.ctx)).toEqual({
+      ok: true,
+      value: 'Closed TrackIR',
+    });
+    expect(asked).toEqual([owner.pid, helper.pid]);
+    expect(rig.ports.state.processes.some((p) => p.name === 'TrackIR5.exe')).toBe(false);
+  });
+
   it('trackir.connected follows the camera', async () => {
     rig = await scenarioRig('trackir-ready', { files: [] });
     expect(await connectedCheck.run({}, rig.ctx)).toEqual({

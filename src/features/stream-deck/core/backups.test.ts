@@ -3,9 +3,10 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { readZip } from '../../../core/files/zip';
 import { err } from '../../../core/result';
-import { scenarioRig, type TestRig } from '../../../../tests/helpers';
+import { mutate, scenarioRig, type TestRig } from '../../../../tests/helpers';
 import { ARCHIVE_EXT, StreamDeckBackups, safeFileName } from './backups';
 import { readArchiveManifests } from './archive';
+import { CANNOT_CLOSE, END_AND_RESTORE_LABEL, STILL_RUNNING } from './model';
 
 let rig: TestRig;
 afterEach(() => rig?.cleanup());
@@ -301,15 +302,50 @@ describe('Stream Deck restore', () => {
     expect(await fs.readFile(extraPage, 'utf8')).toBe('{}');
   });
 
-  it('asks before ending a Stream Deck that will not quit', async () => {
+  it('asks before ending a Stream Deck that will not quit, and says why it is still running', async () => {
     const { backups } = await setup();
     const known = value(await backups.create());
+    const offer = `Quit it from its tray icon (right-click, then Quit Stream Deck), or choose "${END_AND_RESTORE_LABEL}". Nothing was restored.`;
+
+    // A provider that gives no reason: none is made up.
     rig.ports.processes.stubborn.add('streamdeck.exe');
-    const polite = await backups.restore(known.id, { closeApp: true });
-    expect(!polite.ok && polite.error.code).toBe('streamDeck.stillRunning');
+    expect(await backups.restore(known.id, { closeApp: true })).toEqual(
+      err(STILL_RUNNING, `Stream Deck is still running: it did not close when asked. ${offer}`)
+    );
+    rig.ports.processes.stubborn.clear();
+
+    // The X of its window only sends it to the tray.
+    await mutate(rig, [{ op: 'failProcessClose', name: 'StreamDeck.exe', why: 'ignored' }]);
+    expect(await backups.restore(known.id, { closeApp: true })).toEqual(
+      err(
+        STILL_RUNNING,
+        `Stream Deck is still running: it was asked to close and stayed open. Some apps only go to the tray when asked. ${offer}`
+      )
+    );
     expect(running()).toBe(true);
+    expect(rig.ports.processes.closed.every((c) => c.options.force === false)).toBe(true);
+
+    // The second yes ends it, and the restore goes through.
     value(await backups.restore(known.id, { closeApp: true, force: true }));
     expect(running()).toBe(false);
+    expect(rig.ports.processes.closed.at(-1)!.options.force).toBe(true);
+  });
+
+  it('does not offer to end a Stream Deck that Windows will not let RigReady close', async () => {
+    const { backups, profiles } = await setup();
+    const known = value(await backups.create());
+    const manifest = path.join(profiles, `${DCS_WORLD}.sdProfile`, 'manifest.json');
+    await fs.writeFile(manifest, '{"Name":"changed"}');
+    await mutate(rig, [{ op: 'failProcessClose', name: 'StreamDeck.exe', why: 'refused' }]);
+    const refused = err(
+      CANNOT_CLOSE,
+      'Stream Deck is still running: Windows did not let RigReady close it. It may be running as administrator. Close it yourself, then restore again. Nothing was restored.'
+    );
+    expect(await backups.restore(known.id, { closeApp: true })).toEqual(refused);
+    // Ending it fails the same way, and says the same.
+    expect(await backups.restore(known.id, { closeApp: true, force: true })).toEqual(refused);
+    expect(running()).toBe(true);
+    expect(await fs.readFile(manifest, 'utf8')).toBe('{"Name":"changed"}');
   });
 
   it('puts plugin folders back when asked', async () => {

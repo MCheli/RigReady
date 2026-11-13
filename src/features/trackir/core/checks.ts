@@ -6,6 +6,7 @@ import type {
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import type { Ports } from '../../../core/ports';
+import { closeAtStandDown } from '../../../core/processes';
 import { err, ok, type Result } from '../../../core/result';
 import { detectTrackIr, findExe, isTrackIr, isTrackIrProcess } from './trackir';
 
@@ -44,12 +45,14 @@ export const runningCheck: CheckDefinition<RunningParams> = {
     if (!params.closeOnStandDown) return ok(null);
     const processes = await ctx.ports.processes.list();
     if (!processes.ok) return processes;
-    const targets = processes.value.filter(isTrackIrProcess);
-    for (const target of targets) {
-      const closed = await ctx.ports.processes.close(target.pid, { waitMs: 10_000, force: true });
-      if (!closed.ok) return closed;
-    }
-    return ok(targets.length ? 'Closed TrackIR' : null);
+    // TrackIR is always ended when it has not closed after the wait, so there is no Force
+    // switch to point at: one that is still running then is named with the reason.
+    return closeAtStandDown(
+      ctx.ports.processes,
+      processes.value.filter(isTrackIrProcess),
+      'TrackIR',
+      { waitMs: 10_000, force: true }
+    );
   },
 };
 
