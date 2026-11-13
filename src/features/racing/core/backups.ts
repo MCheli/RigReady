@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { BackupRecordValue, BackupSource } from '../../../core/backupSources';
 import type { CheckContext } from '../../../core/checks/registry';
 import { previewWrites, type PlannedWrite } from '../../../core/files/preview';
+import { closeTogether, stillRunningText } from '../../../core/processes';
 import { err, ok, type Result } from '../../../core/result';
 import type { RegistryHive } from '../../../shared/models';
 import type { BackupGame, BindingBackup, WritePreviewView } from '../contract';
@@ -448,6 +449,11 @@ function holderOf(
 
 export const RestoreOptionsSchema = z.object({ closeApp: z.boolean().default(false) });
 
+/** The wheel software stayed open when it was asked to close: the restore did not start. */
+const STILL_RUNNING = 'racing.stillRunning';
+/** What follows the reason then. */
+const NOT_RESTORED = 'Close it yourself, then restore again. Nothing was restored.';
+
 /** What restoring a backup would do to each file on disk now. Nothing is written. */
 export async function previewRestoreBackup(
   ctx: RacingContext,
@@ -478,8 +484,9 @@ export async function previewRestoreBackup(
 }
 
 /**
- * Puts the files of a backup back. Refused while the game that owns them runs; for the
- * Fanatec App, `closeApp` closes it first and starts it again afterwards.
+ * Puts the files of a backup back. Refused while the game that owns them runs; for wheel
+ * software (the Fanatec App, G HUB), `closeApp` closes it first and starts it again
+ * afterwards.
  */
 export async function restoreBackup(
   ctx: RacingContext,
@@ -515,9 +522,25 @@ export async function restoreBackup(
             `${capital(holder.name)} is open. It must be closed while its settings are restored.`
           );
         }
-        for (const app of open) {
-          const closed = await ctx.ports.processes.close(app.pid, { waitMs: 10_000 });
-          if (!closed.ok) return closed;
+        // The app is one program, however many processes: they are asked together and the
+        // process list decides. It is never ended by force; one that stays open is named
+        // with the reason, and nothing is restored.
+        const closed = await closeTogether(ctx.ports.processes, open, {
+          waitMs: 10_000,
+          force: false,
+        });
+        if (closed.state === 'stillRunning') {
+          return err(
+            STILL_RUNNING,
+            `${stillRunningText(capital(holder.name), closed.why)} ${NOT_RESTORED}`
+          );
+        }
+        if (closed.state === 'failed') {
+          return err(
+            STILL_RUNNING,
+            `${capital(holder.name)} could not be closed. ${NOT_RESTORED}`,
+            closed.error.message
+          );
         }
         const exe = open.find((p) => p.path)?.path ?? holder.exe;
         if (exe) reopen = { exe, name: holder.name };

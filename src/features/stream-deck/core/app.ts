@@ -1,6 +1,8 @@
 import type { Ports } from '../../../core/ports';
+import { closeTogether, forceCanHelp, stillRunningText } from '../../../core/processes';
 import { err, ok, type Result } from '../../../core/result';
 import { findExe, findUninstallEntry, isAppProcess } from './detect';
+import { CANNOT_CLOSE, STILL_RUNNING } from './model';
 
 /** Injected so tests do not wait in real time. */
 export type Sleep = (ms: number) => Promise<void>;
@@ -17,9 +19,17 @@ export async function isAppRunning(ports: Ports): Promise<Result<boolean>> {
   return ok(processes.value.some(isAppProcess));
 }
 
+/** How long the app is given to quit after it was asked: it saves its profiles first. */
+export const QUIT_WAIT_MS = 15_000;
+
 /**
  * Quits the Stream Deck app. It is asked politely first; it is only ended when `force`
  * is set, because the app saves profiles when it quits.
+ *
+ * All of its processes are asked together and the process list decides (closeTogether).
+ * When it stays open the error says why, and its code says whether force can still help:
+ * STILL_RUNNING when it can, CANNOT_CLOSE when it was used already or Windows did not let
+ * RigReady near the app. What to do next is for the caller to add: it knows its own buttons.
  */
 export async function closeApp(
   ports: Ports,
@@ -28,26 +38,20 @@ export async function closeApp(
   const processes = await ports.processes.list();
   if (!processes.ok) return processes;
   const targets = processes.value.filter(isAppProcess);
-  for (const target of targets) {
-    const closed = await ports.processes.close(target.pid, {
-      waitMs: 15_000,
-      force: options.force ?? false,
-    });
-    if (!closed.ok) {
-      if (closed.error.code === 'process.stillRunning') {
-        return err(
-          'streamDeck.stillRunning',
-          'Stream Deck did not quit when asked.',
-          'It may still be running in the notification area. Quit it there (right-click its icon, then Quit Stream Deck), or let RigReady end it.'
-        );
-      }
-      return closed;
-    }
+  const force = options.force ?? false;
+  const closed = await closeTogether(ports.processes, targets, { waitMs: QUIT_WAIT_MS, force });
+  if (closed.state === 'failed') return { ok: false, error: closed.error };
+  if (closed.state === 'stillRunning') {
+    return err(
+      forceCanHelp(closed.why, force) ? STILL_RUNNING : CANNOT_CLOSE,
+      stillRunningText('Stream Deck', closed.why)
+    );
   }
+  // Every process that was asked is gone. One by this name now is the app started again.
   const after = await isAppRunning(ports);
   if (!after.ok) return after;
   if (after.value) {
-    return err('streamDeck.stillRunning', 'Stream Deck is still running.');
+    return err(force ? CANNOT_CLOSE : STILL_RUNNING, 'Stream Deck is still running.');
   }
   return ok({ closed: targets.length > 0 });
 }

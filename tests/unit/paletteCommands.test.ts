@@ -18,6 +18,7 @@ import {
 } from '../../src/shared/feature';
 import { createClient, type Bridge } from '../../src/shared/ipc';
 import type { InputState } from '../../src/shared/models';
+import { BINDING_FILES } from '../dcsBindings';
 import { mutate, repoRoot, wiredApp, type WiredApp } from '../helpers';
 import { sabotage } from '../sabotage';
 
@@ -598,6 +599,51 @@ describe('DCS bindings and cheat sheet commands', () => {
       expect(listing.problem, feature).toBeUndefined();
       expect(listing.commands, feature).toEqual([]);
     }
+  });
+});
+
+describe('Overlay commands', () => {
+  it('"Turn the overlay on" puts it over the main screen and says so; "off" takes it away', async () => {
+    const { shell } = await open('dcs-bindings-hornet', BINDING_FILES);
+    const on = await run(await find('overlay', shell, 'Turn the overlay on'), shell);
+    expect(on).toEqual({
+      tone: 'ok',
+      text: 'The overlay is on',
+      detail: 'Recent presses on LC49G95T',
+    });
+    expect([...app!.ports.overlays.panels.keys()]).toEqual(['overlay-recent-presses']);
+
+    const off = await run(await find('overlay', shell, 'Turn the overlay off'), shell);
+    expect(off).toEqual({ tone: 'ok', text: 'The overlay is off' });
+    expect(app!.ports.overlays.panels.size).toBe(0);
+  });
+
+  it('a window that Windows refuses is not reported as showing', async () => {
+    const { shell } = await open('dcs-bindings-hornet', BINDING_FILES);
+    app!.ports.overlays.panelFailure = {
+      code: 'overlay.window',
+      message: 'Windows refused the window.',
+    };
+    const on = await run(await find('overlay', shell, 'Turn the overlay on'), shell);
+    expect(on).toEqual({
+      tone: 'warn',
+      text: 'The overlay is on, but "Recent presses" is not showing',
+      detail: 'Windows refused the window.',
+      action: { label: 'Open Overlay', to: '/configure/overlay' },
+    });
+    expect(app!.ports.overlays.panels.size).toBe(0);
+  });
+
+  it('on a PC without a game it comes on, and says that presses are shown without what they do', async () => {
+    const { shell } = await open('generic-fresh');
+    const on = await run(await find('overlay', shell, 'Turn the overlay on'), shell);
+    expect(on).toEqual({
+      tone: 'ok',
+      text: 'The overlay is on',
+      detail:
+        'No game whose bindings RigReady can read was found on this PC, so presses are shown without what they do.',
+    });
+    expect(app!.ports.overlays.panels.size).toBe(1);
   });
 });
 

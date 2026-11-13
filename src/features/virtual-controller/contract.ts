@@ -17,6 +17,12 @@ export const ProfileSummarySchema = z.object({
   mapped: z.number().int(),
   /** Parts whose controller is not connected now. */
   missing: z.array(z.string()),
+  /** The game its notes are for, when it has any ("Ace Combat 8"). */
+  game: z.string().optional(),
+  /** Another profile has the same name: the rows show the id to tell them apart. */
+  sameName: z.boolean(),
+  /** The setups that start this profile in a step. Deleting it breaks those steps. */
+  usedBy: z.array(z.object({ id: z.string(), name: z.string() })),
 });
 export type ProfileSummary = z.infer<typeof ProfileSummarySchema>;
 
@@ -46,6 +52,11 @@ export const VcStateSchema = z.object({
   controllers: z.array(ControllerSchema),
   /** Set when the controllers could not be read. */
   inputError: z.string().optional(),
+  /**
+   * Set when the setups could not all be read, so `usedBy` may miss one: the page says
+   * so, and a delete is confirmed as if a setup used the profile.
+   */
+  setupsNote: z.string().optional(),
 });
 export type VcState = z.infer<typeof VcStateSchema>;
 
@@ -60,7 +71,7 @@ export const virtualControllerContract = defineContract(
   {
     state: channel(noInput, VcStateSchema, {
       describe:
-        "Answers with whether the ViGEmBus driver and HidHide are installed, the virtual controller running now (if any), every virtual controller profile (starting points and the user's own) and the controllers that can drive one. Profile ids come from here. Changes nothing.",
+        "Answers with whether the ViGEmBus driver and HidHide are installed, the virtual controller running now (if any), every virtual controller profile (starting points and the user's own) and the controllers that can drive one. Each profile says in usedBy which setups start it and in sameName whether another profile has its name; tell profiles apart by id. Profile ids come from here. Changes nothing.",
       tier: 'read',
     }),
     running: channel(
@@ -71,7 +82,7 @@ export const virtualControllerContract = defineContract(
       }),
       {
         describe:
-          "Answers with the virtual controller running now (or null) and the user's own profiles by name. Reads nothing but RigReady's own data.",
+          "Answers with the virtual controller running now (or null) and the user's own profiles by name (with the id after the name where two share one). Reads nothing but RigReady's own data.",
         tier: 'read',
       }
     ),
@@ -82,23 +93,27 @@ export const virtualControllerContract = defineContract(
     }),
     save: channel(z.object({ profile: PadProfileSchema }), PadProfileSchema, {
       describe:
-        "Saves one of the user's own virtual controller profiles in RigReady's data folder (a starting point cannot be saved over; copy it first). Writes nothing outside RigReady.",
+        "Saves one of the user's own virtual controller profiles in RigReady's data folder (a starting point cannot be saved over; copy it first). Refuses a new name that another profile already has. Writes nothing outside RigReady.",
       tier: 'change',
     }),
     copy: channel(
-      z.object({ from: ProfileIdSchema, name: z.string().trim().min(1).max(80) }),
+      z.object({ from: ProfileIdSchema, name: z.string().trim().min(1).max(80).optional() }),
       PadProfileSchema,
       {
         describe:
-          "Makes a copy of a virtual controller profile (a starting point or the user's own) under a new name, as the user's own. from comes from virtual-controller:state.",
+          "Makes a copy of a virtual controller profile (a starting point or the user's own), as the user's own. name is optional; a name another profile has gets the next free number after it, so no two profiles share a name. The answer holds the name and id it got. from comes from virtual-controller:state.",
         tier: 'change',
       }
     ),
-    remove: channel(z.object({ id: ProfileIdSchema }), z.object({ removed: z.boolean() }), {
-      describe:
-        "Deletes one of the user's own virtual controller profiles. Ask the user first. id comes from virtual-controller:state.",
-      tier: 'change',
-    }),
+    remove: channel(
+      z.object({ id: ProfileIdSchema, evenIfUsed: z.boolean().default(false) }),
+      z.object({ removed: z.boolean() }),
+      {
+        describe:
+          "Deletes one of the user's own virtual controller profiles. Ask the user first, naming the profile by id as well as by name. Refuses a profile that a setup starts (usedBy in virtual-controller:state) and names those setups: deleting it breaks their step. evenIfUsed deletes it all the same; set it only when the user has been told which setups break and still says yes. id comes from virtual-controller:state.",
+        tier: 'change',
+      }
+    ),
     start: channel(
       z.object({ id: ProfileIdSchema, hide: z.boolean().default(false) }),
       RunningSchema,

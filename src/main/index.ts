@@ -134,6 +134,15 @@ async function readPanelPlaces(): Promise<string | undefined> {
   return text.ok ? text.value : undefined;
 }
 
+/**
+ * What RigReady draws over everything else: the labels of "Identify", and the overlay
+ * panels, see-through windows of the app that stay over a game.
+ */
+const overlays = new ElectronOverlays({
+  preload: path.join(__dirname, '../preload/index.js'),
+  load: loadApp,
+});
+
 /** The app's own windows: the main one, and small panels a feature opens (quick-look sheets). */
 const appWindow = new ElectronAppWindow(() => mainWindow, {
   preload: path.join(__dirname, '../preload/index.js'),
@@ -195,7 +204,7 @@ async function createPlatform(): Promise<Platform> {
             notifications: new ElectronNotifications(),
             clipboard: new ElectronClipboard(),
             loginItem: new ElectronLoginItem(),
-            overlays: new ElectronOverlays(),
+            overlays,
             window: appWindow,
             updates: new ElectronUpdateFeed(logging.log.child('updater')),
             shortcuts,
@@ -222,6 +231,14 @@ async function createPlatform(): Promise<Platform> {
     ...(process.env['RIGREADY_SCENARIO_LOOPBACK'] === '1'
       ? { http: new LoopbackHttp(fake.http) }
       : {}),
+    // An overlay panel is one of RigReady's own windows too: a scenario run shows the real
+    // one, so a test can look at it. The labels of "Identify" are only recorded.
+    overlays: {
+      showLabels: (labels, durationMs) => fake.overlays.showLabels(labels, durationMs),
+      showPanel: (panel) => overlays.showPanel(panel),
+      panelPlace: (id) => overlays.panelPlace(id),
+      hidePanel: (id) => overlays.hidePanel(id),
+    },
     // Panels are RigReady's own windows, not the machine: a scenario run opens real ones.
     window: {
       showOn: (areas) => fake.window.showOn(areas),
@@ -400,6 +417,7 @@ async function start(): Promise<void> {
   const send = (channel: string, payload: unknown): void => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
     for (const panel of appWindow.panels()) panel.webContents.send(channel, payload);
+    for (const panel of overlays.panels()) panel.webContents.send(channel, payload);
     // A command started from outside the window follows the progress the features report.
     commands.onEvent(channel, payload);
     // So does the taskbar button; and a setup made, renamed or deleted changes its Jump List.
@@ -486,8 +504,6 @@ async function start(): Promise<void> {
     }
   }
 
-  // Scenario runs keep a fake overlay port; this one lets a test show the real labels.
-  const realOverlays = new ElectronOverlays();
   const appBinding = bind(appContract, {
     info: async () =>
       ok({
@@ -525,7 +541,8 @@ async function start(): Promise<void> {
         }
       }
       if (labels) {
-        const shown = await realOverlays.showLabels(
+        // Scenario runs only record the labels a feature asks for; this shows real ones.
+        const shown = await overlays.showLabels(
           labels.items.map(({ caption, ...label }) => ({
             ...label,
             ...(caption ? { caption } : {}),
@@ -994,7 +1011,11 @@ async function start(): Promise<void> {
     event.preventDefault();
     mainWindow?.hide();
   });
-  mainWindow.on('closed', () => (mainWindow = undefined));
+  mainWindow.on('closed', () => {
+    mainWindow = undefined;
+    // An overlay over a game never outlives the app: without this it would keep it running.
+    overlays.closePanels();
+  });
   // A command of this start may have begun, or even ended, before the window could be told:
   // it is told once its page is there (and again when a page that crashed was loaded anew).
   // One that stopped stays worth telling; one that went well only for a short while.

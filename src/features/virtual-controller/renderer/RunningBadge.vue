@@ -80,7 +80,8 @@ async function stop(): Promise<void> {
 .vc-badge {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  /* Above the Save bar of an editor while one is on screen (src/renderer/components/SaveBar.vue). */
+  bottom: calc(16px + var(--rr-save-bar-height, 0px));
   z-index: 2000;
   display: flex;
   align-items: center;

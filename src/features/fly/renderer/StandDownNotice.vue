@@ -23,7 +23,9 @@ import {
  * The notice lies over the bottom right corner of the page, and a page may have buttons of
  * its own there (the setup editor's Save and Cancel). So while it counts it can be put
  * away: the countdown and its Cancel are then in the app bar (StandDownBarItem.vue), which
- * lies over nothing. What Stand down did is always said here, put away or not.
+ * lies over nothing. What Stand down did is always said here, put away or not. An editor
+ * with the shared Save bar along the bottom of the window is never covered: the notice
+ * stands above that bar in every state.
  *
  * The compact view has no room for it: there the session line carries the countdown and
  * its Cancel. A small panel of its own (a popped-out sheet) shows nothing: the main window
@@ -174,7 +176,11 @@ function editSetup(): void {
 .sd-notice {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  /*
+   * Above the Save bar of an editor while one is on screen: the bar says how high it is
+   * (src/renderer/components/SaveBar.vue), and its Save and Back are at this same corner.
+   */
+  bottom: calc(20px + var(--rr-save-bar-height, 0px));
   /* Above dialogs, under a toast and the error notice. */
   z-index: 2900;
   width: 400px;
