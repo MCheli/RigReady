@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { curvePoints } from '../core/curve';
-import type { ComboView, DeviceView } from '../core/model';
+import { kneeboardPagesNote } from '../core/kneeboardPages';
+import type { BindingOp, ComboView, DeviceView } from '../core/model';
 import { comboLabel, describeInput, deviceInputs, inputSortKey } from '../core/names';
 import { useBindingsStore } from './store';
 
@@ -112,6 +113,31 @@ const existing = computed(() =>
   )
 );
 
+/**
+ * Said when "show or hide the kneeboard" is the action: the pages turn with two more
+ * actions, and here is where those are. Made from the bindings in effect, the staged
+ * changes and the control chosen here, so it is gone once both are on a controller.
+ */
+const pagesNote = computed(() => {
+  if (isCurve.value || !store.view || !store.aircraftId) return undefined;
+  const pending: BindingOp[] = store.staged.map((s) => s.op);
+  if (commandId.value && device.value && key.value) {
+    pending.push({
+      op: 'bind',
+      aircraft: store.aircraftId,
+      deviceId: device.value.id,
+      commandId: commandId.value,
+      combo: { key: key.value, reformers: reformers.value },
+    });
+  }
+  return kneeboardPagesNote(store.view, commandId.value, pending);
+});
+
+/** The actions the dialog goes on to after this one, by DCS's names. */
+const thenNames = computed(() =>
+  (request.value?.then ?? []).map((id) => store.commandName(id)).join(', then ')
+);
+
 const showFilter = computed(() => wantsAxis.value === true && key.value !== undefined);
 const userCurve = computed(() => filter.value.curvature.length > 1);
 const curvaturePercent = computed({
@@ -185,10 +211,15 @@ const canSave = computed(
   () => command.value !== undefined && device.value !== undefined && key.value !== undefined
 );
 
-function save(): void {
+/**
+ * Stages what the dialog holds. With `next`, or when the dialog was opened as one of a
+ * row, it then opens on the next action, on the same device, instead of closing.
+ */
+function save(next?: string[]): void {
   const c = command.value;
   const d = device.value;
   if (!c || !d || !key.value || !store.aircraftId) return;
+  const [following, ...rest] = next ?? request.value?.then ?? [];
   const combo = { key: key.value, reformers: reformers.value };
   const isFlat = JSON.stringify(filter.value) === JSON.stringify(FLAT);
   if (isCurve.value) {
@@ -216,6 +247,14 @@ function save(): void {
     );
   }
   close();
+  if (following) {
+    store.bindRequest = {
+      mode: 'bind',
+      commandId: following,
+      deviceId: d.id,
+      ...(rest.length > 0 ? { then: rest } : {}),
+    };
+  }
 }
 
 onBeforeUnmount(() => void stopListening());
@@ -240,10 +279,13 @@ onBeforeUnmount(() => void stopListening());
             variant="outlined"
             density="comfortable"
             hide-details="auto"
-            class="mb-4"
+            :class="thenNames ? 'mb-1' : 'mb-4'"
             placeholder="Type to search"
             data-testid="bind-action"
           />
+          <div v-if="thenNames" class="rr-row-sub mb-4" data-testid="bind-then">
+            After this one: {{ thenNames }}.
+          </div>
 
           <div class="bind-press rr-panel" :class="{ 'bind-press-on': listening }">
             <template v-if="listening">
@@ -397,6 +439,40 @@ onBeforeUnmount(() => void stopListening());
         >
           {{ label }} is already bound to this action.
         </div>
+        <v-alert
+          v-if="pagesNote"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mt-4"
+          data-testid="bind-kneeboard-pages"
+        >
+          <div>{{ pagesNote.lead }}</div>
+          <div class="bind-pages">
+            <template v-for="page in pagesNote.missing" :key="page.key">
+              <span class="bind-pages-name">{{ page.name }}</span>
+              <span data-testid="bind-kneeboard-page" :data-key="page.key">
+                {{ page.bound.length > 0 ? page.bound.join(', ') : 'Not bound' }}
+              </span>
+            </template>
+          </div>
+          <div>{{ pagesNote.advice }}</div>
+          <div v-if="pagesNote.cannot" class="mt-1" data-testid="bind-kneeboard-cannot">
+            {{ pagesNote.cannot }}
+          </div>
+          <v-btn
+            v-if="pagesNote.offerLabel"
+            size="small"
+            variant="tonal"
+            class="mt-2"
+            prepend-icon="mdi-gamepad-variant-outline"
+            :disabled="!canSave || !!existing"
+            data-testid="bind-kneeboard-next"
+            @click="save(pagesNote.offer)"
+          >
+            {{ pagesNote.offerLabel }}
+          </v-btn>
+        </v-alert>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -405,7 +481,7 @@ onBeforeUnmount(() => void stopListening());
           color="primary"
           :disabled="!canSave || (!isCurve && !!existing && !showFilter)"
           data-testid="bind-save"
-          @click="save"
+          @click="save()"
         >
           Add to staged changes
         </v-btn>
@@ -431,6 +507,15 @@ onBeforeUnmount(() => void stopListening());
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 12px;
+}
+.bind-pages {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 16px;
+  margin: 6px 0;
+}
+.bind-pages-name {
+  font-weight: 600;
 }
 .bind-filter {
   display: flex;

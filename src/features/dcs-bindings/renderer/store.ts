@@ -43,6 +43,11 @@ export interface BindRequest {
   deviceId?: string;
   key?: string;
   reformers?: string[];
+  /**
+   * Actions the dialog goes on to, one at a time, once this one is staged (the page actions
+   * of the kneeboard after "show or hide"). Cancel ends the row.
+   */
+  then?: string[];
 }
 
 export const useBindingsStore = defineStore('dcs-bindings', () => {
