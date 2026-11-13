@@ -10,6 +10,7 @@ import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { overlayContract, type OverlayState, type WidgetState } from '../contract';
+import { NOT_READ } from '../core/model';
 import type { At } from '../core/settings';
 import { NAMED_PLACES } from '../core/shown';
 import { WIDGET_PARTS } from './widgets';
@@ -191,7 +192,11 @@ onBeforeUnmount(() => {
         class="mb-4"
         data-testid="overlay-settings-problem"
       >
-        {{ state.problem }}
+        <div data-testid="overlay-settings-said">{{ state.problem }}</div>
+        <div data-testid="overlay-settings-advice">
+          Repair the overlay's settings file or delete it: once it is deleted, the overlay starts
+          again from its first settings, turned off.
+        </div>
       </v-alert>
 
       <div class="rr-panel op-section" data-testid="overlay-main" :data-on="state.on">
@@ -221,9 +226,10 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="state.input && !state.input.ok" class="rr-row">
           <div class="rr-row-main">
-            <span class="rr-warn" data-testid="overlay-input-problem">
-              {{ state.input.problem ?? 'The controllers are not being read.' }}
-            </span>
+            <div class="rr-warn" data-testid="overlay-not-read">{{ NOT_READ }}.</div>
+            <div v-if="state.input.problem" class="rr-row-sub" data-testid="overlay-input-problem">
+              {{ state.input.problem }}
+            </div>
           </div>
         </div>
         <div class="rr-row">

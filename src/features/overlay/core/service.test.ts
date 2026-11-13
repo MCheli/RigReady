@@ -18,7 +18,7 @@ import { RECENT_PRESSES } from './widgets';
 
 const PANEL = panelId(RECENT_PRESSES);
 const TRIGGER = 'Gun Trigger - SECOND DETENT (Press to shoot)';
-const STARTING = 'The controllers are not being read yet: the input reader is still starting.';
+const STARTING = 'The input reader is still starting.';
 
 interface Seen {
   changed: OverlayState[];

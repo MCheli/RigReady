@@ -89,8 +89,8 @@ interface InputStatus {
 
 const NO_NAMES: DeviceNames = { nameOf: () => undefined };
 const NO_SCREEN = 'No screen is on, so there is nothing to show the overlay on.';
-const INPUT_STARTING =
-  'The controllers are not being read yet: the input reader is still starting.';
+/** Said after "the controllers are not being read", so it only says why. */
+const INPUT_STARTING = 'The input reader is still starting.';
 
 const usable = (display: DisplayInfo): boolean =>
   display.enabled && display.width > 0 && display.height > 0;

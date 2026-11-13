@@ -361,6 +361,7 @@ test('the overlay lists each press with what the game does on it, and lets it go
   await expect(status).toContainText('On, over whatever is on LC49G95T');
   await expect(widget).toHaveAttribute('data-showing', 'true');
   expect(await saved(run.dataRoot)).toMatchObject({ on: true });
+  await expect(page.getByTestId('overlay-not-read')).toHaveCount(0);
   await expect(page.getByTestId('overlay-input-problem')).toHaveCount(0);
   await expect(page.getByTestId('overlay-preview-words')).toContainText(
     'Press a button on a controller'
@@ -870,8 +871,12 @@ test('on a PC with no game the overlay lists presses without what they do, and a
   const damaged = '{ "on": tru';
   await fs.writeFile(settingsFile(run.dataRoot), damaged);
   await reopenPage(page);
-  await expect(page.getByTestId('overlay-settings-problem')).toContainText(
+  await expect(page.getByTestId('overlay-settings-said')).toContainText(
     'settings.json is not valid JSON'
+  );
+  // What to do about it, as the manual has it.
+  await expect(page.getByTestId('overlay-settings-advice')).toHaveText(
+    "Repair the overlay's settings file or delete it: once it is deleted, the overlay starts again from its first settings, turned off."
   );
   await page.getByTestId('overlay-on').locator('input').click();
   await expect(page.getByTestId('overlay-error')).toContainText('settings.json is not valid JSON');
@@ -911,16 +916,21 @@ test('when the controllers cannot be read the overlay says so, on the page and f
   const shot = pictures('overlay-not-read');
   await openPage(page);
   const status = page.getByTestId('overlay-status');
-  const notRead = page.getByTestId('overlay-input-problem');
+  const NOT_READ = 'The overlay is on, but the controllers are not being read';
+  const notRead = page.getByTestId('overlay-not-read');
+  const why = page.getByTestId('overlay-input-problem');
   // Off, nothing is said about a reader nobody asked for.
   await expect(status).toContainText('Off.');
   await expect(notRead).toHaveCount(0);
+  await expect(why).toHaveCount(0);
 
   // ---- The input reader does not start: the window is up, and the page says what is not ----
   const READER = 'Could not start the input reader.';
   await run.mutate([{ op: 'failProvider', port: 'input', message: READER }]);
   const popup = await turnOn(app, page);
-  await expect(notRead).toHaveText(READER);
+  // The page says first what the palette says, then why in the reader's own words.
+  await expect(notRead).toHaveText(`${NOT_READ}.`);
+  await expect(why).toHaveText(READER);
   await expect(status).toContainText('On, over whatever is on BenQ GW2480');
   expect(await panel(app)).toMatchObject({ visible: true, onTop: true, focusable: false });
   expect(await accessible(page)).toEqual([]);
@@ -928,13 +938,11 @@ test('when the controllers cannot be read the overlay says so, on the page and f
 
   // ---- The palette does not answer "The overlay is on" either ----
   await runCommand(page, 'Turn the overlay on');
-  const saidNotRead = toastSaying(
-    page,
-    'The overlay is on, but the controllers are not being read'
-  );
+  const saidNotRead = toastSaying(page, NOT_READ);
   await expect(saidNotRead).toHaveAttribute('data-tone', 'warn');
   await expect(saidNotRead.getByTestId('toast-detail')).toHaveText(READER);
-  await expect(notRead).toHaveText(READER);
+  await expect(notRead).toHaveText(`${NOT_READ}.`);
+  await expect(why).toHaveText(READER);
   await shot(page, 'said-from-the-palette');
   await saidNotRead.getByTestId('toast-close').click();
   await expect(saidNotRead).toHaveCount(0);
@@ -944,6 +952,7 @@ test('when the controllers cannot be read the overlay says so, on the page and f
   await runCommand(page, 'Turn the overlay on');
   await expect(toastSaying(page, 'The overlay is on')).toHaveAttribute('data-tone', 'ok');
   await expect(notRead).toHaveCount(0);
+  await expect(why).toHaveCount(0);
   const { stick } = await controllersOf(page, { stick: 'Logitech' });
   await run.sendInput([stateOf(stick)]);
   await run.sendInput([stateOf(stick, [1])]);

@@ -5,6 +5,7 @@ import {
   type CommandShell,
 } from '../../shared/feature';
 import { overlayContract } from './contract';
+import { NOT_READ } from './core/model';
 
 const PAGE = '/configure/overlay';
 const toPage = { label: 'Open Overlay', to: PAGE };
@@ -27,7 +28,7 @@ async function turn(shell: CommandShell, on: boolean): Promise<CommandOutcome> {
   if (state.input && !state.input.ok) {
     return {
       tone: 'warn',
-      text: 'The overlay is on, but the controllers are not being read',
+      text: NOT_READ,
       ...(state.input.problem ? { detail: state.input.problem } : {}),
       action: toPage,
     };

@@ -112,3 +112,9 @@ export const OverlayStateSchema = z.object({
   problem: z.string().optional(),
 });
 export type OverlayState = z.infer<typeof OverlayStateSchema>;
+
+/**
+ * What is said when the overlay is on and the controllers are not being read: by the palette
+ * and, in the same words, on the page. Why comes after it, in the reader's own words.
+ */
+export const NOT_READ = 'The overlay is on, but the controllers are not being read';
