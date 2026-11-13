@@ -148,6 +148,11 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   for (const stop of stops) stop();
+  // Left while a part can still be dragged (to press Play, say): it is locked where it is.
+  // Otherwise its frame stays over the game, catches clicks and can take the keyboard.
+  for (const widget of state.value?.widgets ?? []) {
+    if (widget.moving) void api.move({ widget: widget.id, moving: false });
+  }
 });
 </script>
 

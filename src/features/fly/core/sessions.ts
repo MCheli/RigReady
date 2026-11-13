@@ -44,7 +44,11 @@ import {
  * - The countdown is what the user sees and can cancel. RigReady's window is brought
  *   back from the tray when it starts, and Windows says so too when nobody is at a window.
  * - Cancel, Dismiss, pressing Play again and the game coming back each end the countdown.
- *   Nothing is closed in any of these cases, and nothing says it was.
+ *   Nothing is closed in any of these cases, and nothing says it was. Play, Make ready and
+ *   a fix end it the moment they are pressed, before they start anything: a launch can take
+ *   longer than what is left of the countdown, and Stand down would then close, in the
+ *   middle of the launch, the apps the launch had just started. A check does not end it:
+ *   the Play screen checks again every few seconds by itself, and a check changes nothing.
  * - A game that closes within two minutes of starting (QUICK_EXIT_MS) starts no
  *   countdown. It may have crashed, been started by mistake, or be a launcher handing
  *   over to the real game, and standing down under a game that is about to run would
@@ -59,6 +63,11 @@ import {
  *   and the setup's own switch are what is left for that one.
  * - Stand down pressed by hand during the countdown ends the countdown the moment it
  *   starts, so two never run at once. The one that was pressed reports as it always does.
+ * - Stand down pressed by hand while the game runs, with "close the game": the game
+ *   closes while that Stand down is still running. No countdown starts under it: the one
+ *   that was pressed is this session's Stand down, so the window is not brought up and
+ *   Windows is not told about another. The same when the user closes the game while a
+ *   Stand down pressed by hand runs.
  * - RigReady quit during the countdown: the countdown ends with the app. Nothing is stood
  *   down then or at the next start, and nothing says it was. (A window closed to the tray
  *   is not a quit: the countdown carries on.)
@@ -337,7 +346,10 @@ export class SessionTracker {
   /** What each window of RigReady last said about being in use, when, and since when that is so. */
   private readonly windows = new Map<string, { visible: boolean; at: number; since: number }>();
   private resumed: Promise<void> | undefined;
+  /** The Stand down after the countdown is running. */
   private standingDown = false;
+  /** A Stand down started by hand is running (see standDownStarted and standDownEnded). */
+  private byHand = false;
   private readonly sleep: Sleep;
   private readonly pollMs: number;
   private readonly startGraceMs: number;
@@ -533,6 +545,8 @@ export class SessionTracker {
 
   private async end(live: Live, now: Date): Promise<void> {
     const token = ++this.token;
+    // Taken now: a Stand down by hand that ends while the record is written still counts.
+    const handled = live.stoodDown || this.byHand;
     this.live = undefined;
     this.prep = undefined;
     const { processes, ...rest } = live.record;
@@ -540,8 +554,9 @@ export class SessionTracker {
     this.report(await this.log.finish({ ...rest, durationSeconds: seconds }));
     // Play was pressed meanwhile: that session has its own state.
     if (token !== this.token) return;
-    if (live.stoodDown) {
-      // Stand down already ran while the game was open: there is nothing left to offer.
+    if (handled) {
+      // Stand down already ran while the game was open, or one pressed by hand is running
+      // now (it may be what closed the game): there is nothing left to offer.
       this.set({ phase: 'idle' });
       return;
     }
@@ -707,10 +722,31 @@ export class SessionTracker {
   standDownStarted(): void {
     // The countdown's own Stand down says this too; that one is already accounted for.
     if (this.standingDown) return;
+    // Until it ends, the game closing (by this Stand down or by the user) starts nothing.
+    this.byHand = true;
     const after = this.after;
     if (after?.standDownAt === undefined) return;
     after.standDownAt = undefined;
     this.set(after.ended);
+  }
+
+  /** The Stand down started by hand is over, whatever came of it. */
+  standDownEnded(): void {
+    if (this.standingDown) return;
+    this.byHand = false;
+  }
+
+  /**
+   * Play, Make ready or a fix was pressed: the rig is being made ready again. A countdown
+   * that was running is over before anything is started, and until the game is up the
+   * screen says it was cancelled. Nothing is closed, and nothing says it was. RigReady
+   * still looks for the game to come back, as after Cancel.
+   */
+  gettingReady(): void {
+    const after = this.after;
+    if (after?.standDownAt === undefined) return;
+    after.standDownAt = undefined;
+    this.set({ ...after.ended, standDownHeld: 'cancelled' });
   }
 
   /** Stand down ran (by the user, on the screen or from the tray). */

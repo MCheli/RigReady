@@ -30,7 +30,7 @@ When the screens beside it cannot be moved without one covering another, only th
 
 ## Saving
 
-**Save layout** checks the arrangement before it is stored. The layout must contain the same monitors it had, at least one must be on, exactly one must be the main display, and no two monitors may overlap. Monitors must touch or sit apart; one covering another is refused with a message naming both.
+**Save layout** checks the arrangement before it is stored. The layout must contain the same monitors it had, at least one must be on, exactly one must be the main display, and no two monitors may overlap. Monitors must touch or sit apart; one covering another is refused with a message naming both. While the save is being written the dialog stays open, and Cancel waits until it is done; then the dialog closes and the page says which layout was saved.
 
 In a small window only the rows of the editor scroll: **Save layout**, and the message when a layout is refused, stay in view.
 

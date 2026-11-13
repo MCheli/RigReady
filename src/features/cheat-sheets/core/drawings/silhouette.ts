@@ -118,6 +118,31 @@ const hex4 = z
 /** At most this much picture (as a data URL) in one drawing: about 6 MB. */
 export const MAX_IMAGE_CHARS = 8_000_000;
 
+/**
+ * All the pictures of one layout together (the picture behind it, its drawing's picture and
+ * photos) as data URL text: about 5 MB of picture. The window keeps a layout within it, so
+ * its file stays under what an import of a layout file takes and can be shared again.
+ */
+export const MAX_PICTURE_CHARS = 7_000_000;
+
+/** "5.6 MB": the size of the pictures held in this much data URL text. */
+export const pictureSize = (chars: number): string =>
+  `${Math.round((chars * 3) / 4 / 100_000) / 10} MB`;
+
+/** The picture text a drawing holds: its picture and its photos. */
+export function drawingPictureChars(drawing: {
+  image?: string | undefined;
+  views?: { image: string }[] | undefined;
+}): number {
+  return (
+    (drawing.image?.length ?? 0) + (drawing.views ?? []).reduce((n, v) => n + v.image.length, 0)
+  );
+}
+
+/** Why the pictures of a layout or drawing are refused, in words a person can act on. */
+export const tooMuchPicture = (chars: number): string =>
+  `The pictures in it are too large together (${pictureSize(chars)}). A layout holds about 5 MB of pictures at most. Use smaller photos, or fewer.`;
+
 /** A picture as a data URL: PNG, JPEG, WebP or SVG. Shown as an image, never run. */
 export const ImageDataSchema = z
   .string()
@@ -156,35 +181,40 @@ export const DrawingMatchSchema = z
     message: 'A drawing says which devices it is for: a product id or a part of the name.',
   });
 
-export const DeviceDrawingSchema = z.object({
-  format: z.literal(DRAWING_FORMAT),
-  version: z.literal(DRAWING_VERSION),
-  /** "WinWing Orion 2 stick with F-16EX grip". */
-  name: z.string().min(1).max(120),
-  match: DrawingMatchSchema,
-  author: z.string().max(120).optional(),
-  license: z.string().max(60).optional(),
-  /** Which way the device is seen: "from behind, as the pilot sees it". */
-  view: z.string().max(120).optional(),
-  notes: z.string().max(600).optional(),
-  /** The drawing's own size; everything else is in these units. */
-  size: z.object({ width: z.number().min(1).max(10000), height: z.number().min(1).max(10000) }),
-  paths: z.array(DrawingPathSchema).max(200).default([]),
-  /**
-   * A photo or traced picture of the device, stretched over the drawing's size. With one,
-   * the paths may be left out: the controls are anchored on the picture.
-   */
-  image: ImageDataSchema.optional(),
-  /**
-   * Photos of the device, each a named view in its own box of the drawing. With them the
-   * paths may be left out too. Two or more are shown with their names over them.
-   */
-  views: z.array(DrawingViewSchema).max(MAX_VIEWS).optional(),
-  texts: z.array(DrawingTextSchema).max(60).default([]),
-  controls: z.array(PhysicalControlSchema).min(1).max(200),
-  /** How much room the labels get, in canvas units (the canvas is 1000 wide). */
-  columnWidth: z.number().min(120).max(400).default(300),
-});
+export const DeviceDrawingSchema = z
+  .object({
+    format: z.literal(DRAWING_FORMAT),
+    version: z.literal(DRAWING_VERSION),
+    /** "WinWing Orion 2 stick with F-16EX grip". */
+    name: z.string().min(1).max(120),
+    match: DrawingMatchSchema,
+    author: z.string().max(120).optional(),
+    license: z.string().max(60).optional(),
+    /** Which way the device is seen: "from behind, as the pilot sees it". */
+    view: z.string().max(120).optional(),
+    notes: z.string().max(600).optional(),
+    /** The drawing's own size; everything else is in these units. */
+    size: z.object({ width: z.number().min(1).max(10000), height: z.number().min(1).max(10000) }),
+    paths: z.array(DrawingPathSchema).max(200).default([]),
+    /**
+     * A photo or traced picture of the device, stretched over the drawing's size. With one,
+     * the paths may be left out: the controls are anchored on the picture.
+     */
+    image: ImageDataSchema.optional(),
+    /**
+     * Photos of the device, each a named view in its own box of the drawing. With them the
+     * paths may be left out too. Two or more are shown with their names over them.
+     */
+    views: z.array(DrawingViewSchema).max(MAX_VIEWS).optional(),
+    texts: z.array(DrawingTextSchema).max(60).default([]),
+    controls: z.array(PhysicalControlSchema).min(1).max(200),
+    /** How much room the labels get, in canvas units (the canvas is 1000 wide). */
+    columnWidth: z.number().min(120).max(400).default(300),
+  })
+  .superRefine((drawing, ctx) => {
+    const chars = drawingPictureChars(drawing);
+    if (chars > MAX_PICTURE_CHARS) ctx.addIssue({ code: 'custom', message: tooMuchPicture(chars) });
+  });
 export type DeviceDrawing = z.infer<typeof DeviceDrawingSchema>;
 
 /**

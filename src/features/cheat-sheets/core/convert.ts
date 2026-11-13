@@ -1,8 +1,8 @@
+import { MAX_PICTURE_CHARS } from './drawings/silhouette';
 import {
   DeviceLayoutSchema,
   LAYOUT_FORMAT,
   LAYOUT_VERSION,
-  MAX_BACKGROUND_CHARS,
   type DeviceLayout,
   type LayoutControl,
 } from './layout';
@@ -180,8 +180,8 @@ export function convertJoystickDiagrams(
     .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*')/gi, '')
     .replace(/>(\s*)(?:BUTTON_\d+\w*|AXIS_\w+|POV_\d_\w+)(\s*)</gi, '>$1$2<');
   const image = `data:image/svg+xml;base64,${Buffer.from(drawing, 'utf8').toString('base64')}`;
-  if (image.length > MAX_BACKGROUND_CHARS) {
-    return { ok: false, reason: 'The drawing is too large to keep in a layout (over about 6 MB).' };
+  if (image.length > MAX_PICTURE_CHARS) {
+    return { ok: false, reason: 'The drawing is too large to keep in a layout (over about 5 MB).' };
   }
 
   // Layouts are 1000 wide, so label text comes out the same size as on any other sheet.

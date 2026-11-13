@@ -129,7 +129,8 @@ export class Gate {
     const record = (
       outcome: ActivityOutcome,
       message: string,
-      journalGroups: string[] = []
+      journalGroups: string[] = [],
+      code?: string
     ): ActivityEntry => {
       const entry: ActivityEntry = {
         id: this.deps.activity.nextId(),
@@ -142,6 +143,7 @@ export class Gate {
         ...(detail ? { detail } : {}),
         outcome,
         message: clip(maskSecrets(message), MESSAGE_LENGTH),
+        ...(code ? { code } : {}),
         ms: Math.max(0, this.deps.clock.now().getTime() - started.getTime()),
         journalGroups,
       };
@@ -151,7 +153,7 @@ export class Gate {
     const refuse = (outcome: ActivityOutcome, code: string, message: string): CallOutcome => ({
       ok: false,
       error: { code, message },
-      activity: record(outcome, message),
+      activity: record(outcome, message, [], code),
     });
 
     if (!this.allowed(caller.pairingId)) {
@@ -233,7 +235,11 @@ export class Gate {
         const message = result.error.detail
           ? `${result.error.message} ${result.error.detail}`
           : result.error.message;
-        return { ok: false, error: result.error, activity: record('error', message, groups) };
+        return {
+          ok: false,
+          error: result.error,
+          activity: record('error', message, groups, result.error.code),
+        };
       }
       return {
         ok: true,

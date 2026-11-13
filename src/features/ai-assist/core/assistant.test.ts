@@ -5,7 +5,8 @@ import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import { mayRunScript, runAsAssistant } from '../../../core/assistantScripts';
 import { AI_KEY_SECRET } from '../../../core/settings';
 import { HttpStreamScriptSchema } from '../../../platform/fake/scenario';
-import { counted, lineOf, MAX_TOOL_RESULT } from './assistant';
+import type { Ports } from '../../../core/ports';
+import { counted, lineOf, MAX_TOOL_RESULT, privacyScrub } from './assistant';
 import {
   type Drafts,
   type SavedScript,
@@ -679,6 +680,31 @@ describe('a tool row says what was really called', () => {
 describe('a ceiling on what one question may cost', () => {
   const big = { input_tokens: 40_000, output_tokens: 500 };
 
+  it('a ceiling lowered in Settings while a question runs holds for its next request', async () => {
+    const running = await started();
+    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 1, acknowledged: true });
+    reply(running, [use('tu1', 'setups_list')], 'tool_use', big);
+    reply(running, [use('tu2', 'setups_list')], 'tool_use', big);
+    reply(running, text('One setup.'), 'end_turn', big);
+    const first = await prepare(running, 'Which setups are there?');
+    const one = await send(running, first.requestId);
+    expect(one.next).toMatchObject({ round: 2, ceiling: 1, overCeiling: false });
+
+    // Lowered before the question's next request goes: that request is held back.
+    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0.1, acknowledged: true });
+    await expect(send(running, one.next!.requestId)).rejects.toThrow(/ai.ceiling/);
+    expect(running.ports.http.calls).toHaveLength(1);
+
+    // A yes past it is good for as much again of the ceiling as it is now, not as it was.
+    const two = await send(running, one.next!.requestId, true);
+    const yes = (one.next!.spent ?? 0) + Math.max(0.1, one.next!.approxCost ?? 0);
+    expect(two.next!.ceiling).toBeCloseTo(yes, 6);
+    // Turned off, nothing holds the question back.
+    await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0 });
+    await send(running, two.next!.requestId);
+    expect(running.ports.http.calls).toHaveLength(3);
+  });
+
   it('shows the ceiling with the request, stops before going past it, and goes on only with a yes', async () => {
     const running = await started();
     await running.invoke('ai-assist:setQuestionCeiling', { dollars: 0.1, acknowledged: true });
@@ -800,6 +826,46 @@ describe('ASSIST-004 a script an assistant wrote: shown, saved with its hash, as
     expect((await mayRunScript(running.ports.files, dataRoot, file)).ok).toBe(true);
   });
 
+  it('goes into the setup it names exactly, in any script; a name no setup has is refused', async () => {
+    const running = await started();
+    const other = await running.invoke<{ id: string; name: string }>('profiles:create', {
+      name: 'Штурмовик',
+      checks: [],
+    });
+    const script = (setup: string) => ({
+      by: 'Built-in assistant',
+      fileName: 'srs-running.ps1',
+      content: 'exit 0',
+      explanation: 'Passes when the SRS radio client is running, and fails when it is not.',
+      use: { setup, as: 'check', title: 'SRS radio running' },
+    });
+    // No setup is called this, and a name in another script is not taken for it.
+    for (const asked of ['iRacing GT3', 'nonexistent', 'Штурм']) {
+      await expect(running.invoke('ai-assist:draftScript', script(asked)), asked).rejects.toThrow(
+        /ai\.setup.*There is no setup/
+      );
+    }
+    expect((await running.invoke<Drafts>('ai-assist:drafts')).scripts).toEqual([]);
+
+    // The card names the setup found, as it is called, and Save adds to that one.
+    const drafted = await running.invoke<{ draftId: string }>(
+      'ai-assist:draftScript',
+      script('ШТУРМОВИК')
+    );
+    const card = (await running.invoke<Drafts>('ai-assist:drafts')).scripts[0]!;
+    expect(card.use?.setup).toBe('Штурмовик');
+    const saved = await running.invoke<{ setupId?: string; message: string }>(
+      'ai-assist:saveScriptDraft',
+      { draftId: drafted.draftId }
+    );
+    expect(saved.setupId).toBe(other.id);
+    expect(saved.message).toContain('added it to Штурмовик');
+    const profile = await running.invoke<{ checks: { type: string }[] }>('profiles:get', {
+      id: other.id,
+    });
+    expect(profile.checks.map((c) => c.type)).toContain('script.check');
+  });
+
   it('refuses a script that asks for administrator rights', async () => {
     const running = await started();
     await expect(
@@ -819,5 +885,66 @@ describe('ASSIST-004 a script an assistant wrote: shown, saved with its hash, as
       requiresConfirmation: false,
     });
     expect(fix.confirm?.(params)).toBeDefined();
+  });
+});
+
+describe('ASSIST-001 the Windows user name is not in what a tool answered, however it is written', () => {
+  const scrub = (text: string, home = 'C:\\Users\\Jane Smith', machine = 'RIG-PC'): string =>
+    privacyScrub(text, {
+      folders: { home: () => home, machineName: () => machine },
+    } as unknown as Pick<Ports, 'folders'>);
+
+  it('in any case, with either slash, doubled in JSON, and without its drive', () => {
+    expect(scrub('C:\\Users\\Jane Smith\\Saved Games')).toBe('{USER}\\Saved Games');
+    expect(scrub('c:\\users\\jane smith\\saved games')).toBe('{USER}\\saved games');
+    expect(scrub('C:\\USERS\\JANE SMITH')).toBe('{USER}');
+    expect(scrub('C:/Users/Jane Smith/x and C:\\Users/jane smith\\y')).toBe(
+      '{USER}/x and {USER}\\y'
+    );
+    expect(scrub('{"path":"C:\\\\Users\\\\Jane Smith\\\\x"}')).toBe('{"path":"{USER}\\\\x"}');
+    expect(scrub('\\Device\\HarddiskVolume3\\Users\\Jane Smith\\x')).toBe(
+      '\\Device\\HarddiskVolume3{USER}\\x'
+    );
+  });
+
+  it('in its short (8.3) form, or a mix of short and long', () => {
+    expect(scrub('C:\\Users\\JANESM~1\\AppData')).toBe('{USER}\\AppData');
+    expect(scrub('c:\\users\\janesm~2\\x')).toBe('{USER}\\x');
+    expect(scrub('C:\\Users\\JANES~12\\x')).toBe('{USER}\\x');
+    expect(scrub('C:\\Users\\JA3F2B~1\\x')).toBe('{USER}\\x');
+    expect(scrub('C:\\MYPROF~1\\Jane\\x', 'C:\\My Profiles\\Jane')).toBe('{USER}\\x');
+    expect(scrub('C:\\Users\\ZO_SMI~1\\x', 'C:\\Users\\Zoë Smith')).toBe('{USER}\\x');
+  });
+
+  it('in a file:/// URL with escaped characters, in any script', () => {
+    expect(scrub('file:///C:/Users/Jane%20Smith/Documents/a.txt')).toBe(
+      'file:///{USER}/Documents/a.txt'
+    );
+    expect(scrub('file:///c%3A/users/jane%20smith/a')).toBe('file:///{USER}/a');
+    expect(scrub('file:///C:/Users/Jane%20Smith')).toBe('file:///{USER}');
+    const zoe = 'C:\\Users\\Zoë';
+    expect(scrub('file:///C:/Users/Zo%C3%AB/x', zoe)).toBe('file:///{USER}/x');
+    expect(scrub('file:///C:/Users/ZO%c3%8b/x', zoe)).toBe('file:///{USER}/x');
+    expect(scrub('C:\\Users\\ZOË\\x', zoe)).toBe('{USER}\\x');
+    const andrei = 'C:\\Users\\Андрей';
+    expect(scrub('c:\\users\\андрей\\x', andrei)).toBe('{USER}\\x');
+    expect(scrub('file:///C:/Users/%D0%90%D0%BD%D0%B4%D1%80%D0%B5%D0%B9/x', andrei)).toBe(
+      'file:///{USER}/x'
+    );
+  });
+
+  it('leaves other names and paths as they are, and writes the PC name as {PC} in any case', () => {
+    for (const other of [
+      'C:\\Users\\Jane Smithson\\x',
+      'C:\\Users\\Public\\x',
+      'C:\\PROGRA~1\\x',
+      'Jane Smith is the name on the account',
+    ]) {
+      expect(scrub(other)).toBe(other);
+    }
+    expect(scrub('\\\\rig-pc\\share, RIG-PC and Rig-Pc.local')).toBe(
+      '\\\\{PC}\\share, {PC} and {PC}.local'
+    );
+    expect(scrub('RIG-PCX')).toBe('RIG-PCX');
   });
 });

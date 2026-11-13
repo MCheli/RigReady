@@ -362,7 +362,8 @@ export interface CommandShell {
   client<C extends ChannelMap, E extends EventMap>(contract: Contract<C, E>): FeatureClient<C, E>;
   /**
    * Opens a route of the app. A page that is already open is opened afresh, so it reads the
-   * parameters of the link again.
+   * parameters of the link again; with changes that are not saved on it, its own address
+   * leaves it as it is, and another address asks first (src/renderer/shell/go.ts).
    */
   go(to: string): Promise<void>;
   /** The route shown now, e.g. "/configure/displays". */

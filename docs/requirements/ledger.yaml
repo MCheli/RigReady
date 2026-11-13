@@ -730,12 +730,15 @@ requirements:
       - "A game that closes within two minutes of starting starts no countdown. The screen says why, and Stand down is still there to press."
       - "The compact view keeps to its small window: 'Welcome back', how long the session was and the Stand down line are three lines that are on screen without scrolling, at the window size a user may have kept from before. A reason too long for one line there has a short form ('It closed too soon: Stand down did not start.') with the full sentence as its tooltip."
       - "Stand down pressed by hand during the countdown ends the countdown and runs once; a second Stand down while one is running is refused. Dismiss, or a new launch, during the countdown stands nothing down."
+      - "Launch, Make ready and a fix end the countdown the moment they are pressed, before they start anything, and the screen says 'Stand down was cancelled. Nothing was closed.' until the game is up. A launch that takes longer than what is left of the countdown has nothing closed under it. A check does not end the countdown: the Play screen checks again by itself every few seconds, and a check changes nothing. Launch, Make ready and a fix asked for while a Stand down runs (from the tray, a shortcut or an assistant) are refused with 'Stand down is running.' and change nothing."
+      - "Stand down pressed by hand with 'close the game', or a game the user closes while a Stand down pressed by hand runs, starts no countdown under it: the session is in the history with its length, there is nothing more to offer, the window is not brought up, and Windows is told nothing more. The Stand down that was pressed reports as it always does."
       - "RigReady quit during the countdown stands nothing down, then or at the next start, and nothing says it did. A window that is only hidden in the tray is not a quit: the countdown goes on."
       - "When the running programs cannot be read at the end of the countdown, Stand down waits for a look that works."
       - "With the switch off, the game closing is 'Welcome back' and nothing is closed by itself, however long it is left."
     notes:
       - "2026-11-12: the owner's decision: on by default, a switch and a countdown length for every setup, a countdown that can be cancelled. It replaces the Play-menu setting of WOW-FLY-003, which was off by default and had no countdown. A fly/preferences.json from before still reads; its autoStandDown is ignored."
       - "2026-11-12: known limits. With nobody at the PC, a desk layout applied by Stand down still asks 'Keep this monitor layout?'; unanswered, the layout goes back and the step is listed as not done. A launcher under a name RigReady does not know that stays open for more than two minutes cannot be told apart from the game closing."
+      - "2026-11-13: two faults found by the review of 13 Nov, fixed on fix/stand-down-play. (1) Play ended the countdown only once the game was up (SessionTracker.launched), so a countdown with less time left than the actions before the launch and the game's start took ran out in the middle of the launch: Stand down closed the helper apps the launch had just started, and its result was then dropped. The countdown now ends at the start of Fly.launch, Fly.makeReady and Fly.fix (SessionTracker.gettingReady), and those three are refused while a Stand down runs, which the Play screen's busy state already did for its own buttons but the tray, the Jump List and the assistants did not. (2) A Stand down pressed by hand with 'close the game' closed the game partway through, and the watch loop then started a second, automatic countdown under it: the window came up, and with a short countdown the second one was refused and said 'Stand down did not finish: Stand down is already running.' while the first said 'Closed 2 apps'. A Stand down pressed by hand now holds the countdown off from its start to its end (standDownStarted, standDownEnded). The four unit tests and the two scenario tests added for this fail on main at e3974acb and pass with the fix."
     status: done
     evidence:
       - "src/core/profile/standDownOnClose.test.ts#a setup saved before this existed gets the defaults: on, one minute"
@@ -756,6 +759,10 @@ requirements:
       - "src/features/fly/core/sessions.test.ts#Stand down pressed by hand during the countdown ends the countdown: one Stand down runs, not two"
       - "src/features/fly/core/sessions.test.ts#a second Stand down while one is running is refused: it does not run on top of the first"
       - "src/features/fly/core/sessions.test.ts#Dismiss, or Play again, during the countdown: nothing is stood down"
+      - "src/features/fly/core/sessions.test.ts#Play pressed late in the countdown ends it at once: nothing is stood down while the launch is still under way"
+      - "src/features/fly/core/sessions.test.ts#Make ready or a fix during the countdown ends it before it changes anything; a check does not"
+      - "src/features/fly/core/sessions.test.ts#Play, Make ready and a fix do not run beside a Stand down that is running: nothing is started under it"
+      - "src/features/fly/core/sessions.test.ts#Stand down pressed by hand with \"close the game\": no countdown starts under it, the window stays where it is, and Windows is told nothing more"
       - "src/features/fly/core/sessions.test.ts#RigReady quit during the countdown: nothing is stood down then or at the next start, and nothing says it was"
       - "src/features/fly/core/sessions.test.ts#when the running programs cannot be read at the end of the countdown, Stand down waits for a look that works"
       - "src/features/fly/core/sessions.test.ts#a step that did not work is named: it never reads as stood down"
@@ -797,6 +804,12 @@ requirements:
       - "artifacts/screens/fly-compact/04-welcome-back.png"
       - "artifacts/screens/fly-stand-down-step-failed/01-step-failed.png"
       - "artifacts/screens/fly-session-away/01-closed-at-once.png"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: Launch during the countdown ends it at once, and nothing is closed while the game is starting, however long that takes"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: Stand down pressed by hand with \"close the game\" is the only one; no countdown starts under it"
+      - "artifacts/screens/fly-stand-down-play/01-launch-during-countdown.png"
+      - "artifacts/screens/fly-stand-down-by-hand/01-by-hand-still-at-work.png"
+      - "artifacts/screens/fly-stand-down-by-hand/02-by-hand-done.png"
+      - "docs/manual/play/stand-down.md"
 
   - id: WOW-FLY-004
     title: The rig at a glance - monitors to scale and devices as chips
@@ -1432,9 +1445,11 @@ requirements:
       - "Changes are saved only on Save; Cancel leaves the file byte-identical (unit test compares file hashes)."
       - "Renaming a profile keeps its id stable, so last-used and backups still reference it."
       - "Save takes the user to the list of setups only while they are still in the editor: a save that answers after they went on to another page (Play) leaves them there, and that page follows the saved setup (scenario with the save slowed by slowFiles)."
+      - "When the address changes to another setup while the editor is open (the Stand down notice's 'Change this for the setup', the assistant's 'Open setup'), the editor reads and shows that setup. When the one on screen has changes that are not saved, it asks first and names it, and 'Keep editing' stays with them."
     notes:
       - "2026-10-03: the layout sentence corrected to the architecture: a setup has no layout field of its own; its layout is the display.layout check item (by layout name), and the desk layout is settings.deskLayoutId."
       - "2026-11-12: a save that answered after the user had opened Play took them back to the Setups list. On GitHub's slower runners this failed integration.e2e.ts (install choice) now and then, always with the Setups list on screen. ProfileEditPage now moves only a user still in the editor, and the scenario slows the save on purpose."
+      - "2026-11-13: review M6. The editor read its setup only when it opened, so a move from one setup to another kept the first one's draft on screen while Open file, Show file, the shortcut and the copy list used the second one's id. The scenario step failed before the fix: the address named the F/A-18C and the editor showed the UH-1H. The assistant's 'Open setup' takes the same way in and has no scenario step of its own. A change made while a save runs now also stays on screen, still unsaved, as in VPAD-007; no scenario step covers that in this editor yet."
     status: done
     evidence:
       - "tests/e2e/profiles.e2e.ts#setups: name, notes, install, and what Launch starts are edited; Cancel leaves the file as it was; a rename keeps the id"
@@ -1444,6 +1459,9 @@ requirements:
       - "artifacts/screens/profile-edit-basics/01-edited.png"
       - "artifacts/screens/profile-edit-basics/02-renamed-on-fly.png"
       - "artifacts/screens/capture-install/01-install-chosen.png"
+      - 'tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: "Change this for the setup" from the editor of another setup opens the setup counting down, and asks first when the other has unsaved changes'
+      - "artifacts/screens/fly-stand-down-other-setup/01-asks-before-another-setup.png"
+      - "artifacts/screens/fly-stand-down-other-setup/02-the-setup-counting-down.png"
 
   - id: CFG-PROFILE-007
     title: Edit checklist items
@@ -2285,6 +2303,7 @@ requirements:
     done_means:
       - "In the dialog that edits a monitor layout by hand, only the rows of monitors scroll: the title and the buttons Cancel and 'Save layout' stay inside the window, also in the smallest window RigReady allows, which is too low for all the rows."
       - "A layout that is refused says why between the rows and the buttons, in view without scrolling."
+      - "While 'Save layout' waits for its answer the dialog stays open: Cancel is off, and Escape or a click beside the dialog do nothing. The notice names the layout that was saved."
     status: done
     evidence:
       - test: "tests/e2e/displays.e2e.ts#monitors: in a window too low for the layout editor, its rows scroll and Save layout stays in view"
@@ -2292,8 +2311,11 @@ requirements:
       - "artifacts/screens/display-edit-low-window/01-top-of-the-rows.png"
       - "artifacts/screens/display-edit-low-window/02-last-row.png"
       - "artifacts/screens/display-edit/01-overlap-refused.png"
+      - "tests/e2e/displays.e2e.ts#monitors: while an edited layout is being saved, the dialog waits for the answer, and the notice names the layout that was saved"
+      - "artifacts/screens/display-edit-slow/01-saving.png"
     notes:
       - "2026-11-12: the owner's finding 38. Before, a dialog taller than the window scrolled as a whole, the buttons with the rows, and the reason for a refusal was under the last row, where it scrolled away with them. A dialog keeps its own buttons; it does not use the shared Save bar."
+      - '2026-11-13: review L24. The dialog could be closed while a save ran; the late answer then said Saved "undefined", or closed the dialog of a layout opened meanwhile. The step failed before the fix: Escape closed the dialog.'
 
   # ---------------------------------------------------------------------------
   # DEVICES AND TROUBLESHOOTING
@@ -4511,6 +4533,7 @@ requirements:
       - "A chosen file is told by what it holds, not by its name: JPEG, PNG and WebP are taken; a file that is not a picture, an empty file, an HEIC photo and a file over 25 MB are refused, each with the reason and what to do, and nothing changes."
       - "The photos show in RigReady's own windows and on the pages the user exports. What an AI assistant can read of a sheet or a kneeboard page has a plain grey box where each photo is, and everything else as it is; no assistant is offered the file dialog."
       - "A layout that was read without its photos and is saved again keeps its photos."
+      - "All the pictures of one layout together (the picture behind it, its drawing's picture and photos) are at most 7 million characters of data URL text, about 5 MB, in the window and in the layout and drawing formats alike. A layout or drawing file over it is refused on import with 'The pictures in it are too large together (… MB). A layout holds about 5 MB of pictures at most.', and none is saved, however it is sent."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/photoFile.test.ts#is told by its first bytes: JPEG, PNG and WebP are photos, HEIC is named, the rest is not a picture"
@@ -4520,6 +4543,7 @@ requirements:
       - "src/features/cheat-sheets/core/photoFile.test.ts#gets its photos back from the saved layout, each at its place, or says it cannot"
       - "src/features/cheat-sheets/core/photoFile.test.ts#are in RigReady’s own windows and on the pages the user exports, and left out of what an assistant reads"
       - "src/features/cheat-sheets/core/photoFile.test.ts#stay saved when a layout read without them is saved again, and a box with no photo behind it is refused"
+      - "src/features/cheat-sheets/core/picture.test.ts#holds no more picture than the window lets a layout have: a shared file over it is refused with the reason"
       - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - press a control and click its place, undo, move and take off, a hat as one, two named photos, a half-done sheet"
       - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: a file that is not a picture or is too large is refused with the reason, and a control known by name comes whole"
       - "artifacts/screens/cheat-sheets-photo/01-nothing-placed.png"
@@ -4580,6 +4604,7 @@ requirements:
       - "The bar says 'Unsaved changes' once something was moved or renamed and 'No unsaved changes' with 'Save layout' off before that."
       - "Cancel with a change asks first, and 'Keep editing' keeps the change; Cancel with nothing changed closes the editor without a question. Saving closes the editor and the bar with it."
       - "The same bar is under a drawing made from the user's own photos. With nothing placed on the photo yet, 'Save layout' is off and the bar says 'You can save once one control is placed.' beside it."
+      - "A cheat sheet chosen in the palette while the editor has a change asks first. 'Keep editing' keeps the change; 'Leave without saving' opens the page afresh on that sheet."
     status: done
     evidence:
       - test: "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: in the layout editor, Save layout and Cancel stay in the window from the top of the page to its end, and Cancel asks before it drops a change"
@@ -4590,9 +4615,11 @@ requirements:
       - "artifacts/screens/cheat-sheets-photo-save-bar/01-top-of-the-page.png"
       - "artifacts/screens/cheat-sheets-photo-save-bar/02-end-of-the-page.png"
       - "artifacts/screens/cheat-sheets-photo-save-bar/03-one-placed-can-be-saved.png"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/04-palette-asks.png"
     notes:
       - "2026-11-12: the owner's finding 38. The two buttons were in the editor's own row of buttons, which scrolls away with the drawing, and Cancel dropped a change without asking."
       - "2026-11-12: written as SHEET-023 on its branch, then SHEET-028; the photo drawings took 023 to 027 on main first and the Thrustmaster throttles 028 and 029, so it is 030 here."
+      - "2026-11-13: review M5. The palette dropped the change without asking; the step failed before the fix."
 
   # ---------------------------------------------------------------------------
   # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)
@@ -4612,6 +4639,7 @@ requirements:
       - "2026-11-12: done. Built and unit-tested on the fake machine, then run in the app with the isolated launch once the sitting was over: tests/e2e/overlay.e2e.ts, its four tests, and only that file, because others were testing on the same PC. What the runs found, fixed in the same commit: after a change that was refused (a damaged settings file) the switch stayed on while the overlay was off, so the page now draws its controls again from what is in effect; with the overlay on and no screen on, the Place row said to turn the overlay on first. So that the page's words for controllers that cannot be read could be seen, the recorded rig's input reader can now be made not to start (the failProvider and hangProvider mutations take the port 'input'; tests/unit/providerFailure.test.ts). A window that Windows refuses is the same line of the page as 'no screen is on' and its words are from the unit tests; a refusal by Windows itself has not been seen. Not run with this feature in at the time (run since, see the note of the same day below): tests/e2e/generic-rig.e2e.ts (it has the 'overlay' page in its list), tests/e2e/tour.e2e.ts, tests/e2e/look.e2e.ts and tests/e2e/a11y.e2e.ts. The tour visits one page more with this one: its pictures after Cheat sheets are renumbered by its first run, so site/screens.json has to follow in the same commit. The navigation had no room for a twentieth entry at the default window size, so its rows went from 30 to 28 px high in src/renderer/layouts/ConfigureLayout.vue: the overlay's first test checks that the navigation does not scroll, and every older picture that shows the navigation is 2 px a row out of date until the whole suite is run. The rule for status colours in tests/e2e/a11y.ts now takes the name of the button an icon is in (the Close of an alert), which the alert about a damaged settings file needed."
       - "2026-11-12, later, two wordings on the page. With the overlay on and the controllers not read, the page now says first what the palette says, 'The overlay is on, but the controllers are not being read', and under it the reader's own message; both take the sentence from one place (NOT_READ in src/features/overlay/core/model.ts). The alert about a damaged settings file now ends with what to do about it, as the manual does: repair the file or delete it, and once it is deleted the overlay starts again from its first settings, turned off. Seen in the app: tests/e2e/overlay.e2e.ts, its third and fourth test, with the pictures overlay-no-game/04-damaged-settings.png and overlay-not-read/01-controllers-not-read.png taken again."
       - "2026-11-12: the four scenario files the shared changes can reach were run one at a time with the feature in, after the merges of main up to a6767a8, and all pass: tests/e2e/a11y.e2e.ts (3 tests), tests/e2e/generic-rig.e2e.ts (3 tests, with one more picture at the end of its flow, artifacts/screens/generic-configure/36-overlay.png), tests/e2e/tour.e2e.ts (4 tests) and tests/e2e/look.e2e.ts (5 tests). The tour walks the navigation in order, so the Overlay page is picture 11 on each of its four rigs (artifacts/screens/tour-flying/11-overlay.png) and the pictures after it carry new numbers; the tour had not been run since the virtual controller joined the navigation, so its two pages are new there too (18 and 36). All four tour folders were taken again and site/screens.json follows the new numbers of the wheel and the monitors. After the merge of the wheel fix the scenario files that read src/features/devices were run as well: tests/e2e/devices.e2e.ts (10 tests), tests/e2e/devices-bindings.e2e.ts (7 tests) and tests/e2e/devices-wheel.e2e.ts (2 tests), all passing. Pictures of other features that differ only by the new navigation entry were left as they are on main."
+      - "2026-11-13: quitting while the overlay was still coming up (it reads the screens, the setup and the bindings first; the bindings of DCS can take a quarter of a minute) let what was under way show its window and start listening after the quit, which could start the input reader again after the app had stopped it. Found by the review of 13 Nov, fixed on fix/stand-down-play: once disposed, the overlay shows no window, listens to nothing and takes nothing new; a window that was being shown at that moment is closed. The unit test fails on main at e3974acb."
       - "2026-11-12, the picture of the damaged settings file: it changed on every run, because the page names the file by its whole path and a run keeps its folders in a temp folder with a random name. The page is left as it is: the whole path is how the file is found, and on a user's PC it is short (the data folder, then overlay\\settings.json). The scenario now checks the true text, in what the click answered and in the line that stays, and writes the random folder name as 'rigready-e2e-XXXXXX' only while the picture is taken, then puts it back and checks the text again. Run twice: the picture came out the same both times."
     status: done
     evidence:
@@ -4619,6 +4647,7 @@ requirements:
       - "src/features/overlay/core/service.test.ts#left on, it comes up when RigReady starts; left off, it does not"
       - "src/features/overlay/core/service.test.ts#turned off, the window goes and what was shown is forgotten"
       - "src/features/overlay/core/service.test.ts#on quit the window goes and nothing is listened to any more"
+      - "src/features/overlay/core/service.test.ts#quit while it is still coming up: nothing comes up after the quit, and nothing is listened to"
       - "src/features/overlay/core/service.test.ts#says why when the window cannot be shown, and shows it once it can"
       - "src/features/overlay/core/service.test.ts#with no screen on there is nothing to show it on"
       - "src/features/overlay/core/service.test.ts#says why when the controllers cannot be read"
@@ -4776,12 +4805,13 @@ requirements:
     priority: p2
     done_means:
       - "'Screen' offers the monitors that are on, the main one first, and the overlay goes to the one chosen. 'Place' has nine spots (the corners, the edges, the middle) and the overlay goes to the one clicked (E2E)."
-      - "'Move it on screen' frames the overlay where it is; framed, it takes the mouse and can be dragged anywhere on any monitor. 'Lock here' in the frame or 'Lock it here' on the page keeps it where it was let go, read back from the window, and clicks go through it again. When the new place cannot be read the overlay is back where it was and the page says so."
+      - "'Move it on screen' frames the overlay where it is; framed, it takes the mouse and can be dragged anywhere on any monitor. 'Lock here' in the frame or 'Lock it here' on the page keeps it where it was let go, read back from the window, and clicks go through it again. When the new place cannot be read the overlay is back where it was and the page says so. Leaving the Overlay page while it is framed (to press Play, say) locks it where it is, so it is not left over the game taking clicks and the keyboard."
       - "The place belongs to the monitor by what it is, not by where it is on the desktop: after another monitor layout the overlay is on the same monitor at the same place. While that monitor is off the main screen stands in, the page says which one is away, and the overlay goes back when it is on again. The place is a share of the free room, so it is the same corner on a screen of another size and never off the screen."
       - "The list hangs from the edge it is nearer to, so the newest press is always in the same spot: from the top in the upper half of the screen, from the bottom in the lower half, and set to the side it is on."
       - "Checked once on the owner's rig: the frame dragged with the mouse to another monitor and locked with a click on 'Lock here'; after a switch of monitor layout and back the overlay is where it was put."
     notes:
       - "2026-11-12: built and unit-tested, and the first four criteria run in the app (tests/e2e/overlay.e2e.ts, second test): one of the nine places, the frame, the window moved and locked from the frame, the place kept across a restart of RigReady, another screen, that screen off with the main one standing in, no screen on at all, and the screen back. Not done: the last criterion. The test moves the window by a call and clicks 'Lock here' through the debugger, which is not a drag with a mouse over the drag region of a window that was just made to take the mouse, and its monitors are recorded ones; the check on the owner's rig (dragged to another monitor, locked there, a switch of monitor layout and back) has not been made. A change of monitor layout made while the Overlay page is closed is noticed on the first press that comes at least ten seconds after the last look, not at once."
+      - "2026-11-13: a part left framed when the page was left stayed framed over the game, where it took clicks and could take the keyboard (found by the review of 13 Nov). The Overlay page now locks it where it is when it is left (tests/e2e/overlay.e2e.ts, second test, picture overlay-placing/05-locked-on-leaving.png). Not covered: Play from the tray, a shortcut or a hotkey while the Overlay page stays open in the window; the main side has no way yet for the overlay to hear of a launch."
     status: in_progress
     evidence:
       - "src/core/overlayPlace.test.ts#a place is a share of the free room: corners, the middle, and a screen that does not start at zero"
@@ -4808,6 +4838,8 @@ requirements:
       - "artifacts/screens/overlay-placing/02-placing.png"
       - "artifacts/screens/overlay-placing/03-screen-off.png"
       - "artifacts/screens/overlay-placing/04-not-showing.png"
+      - "artifacts/screens/overlay-placing/05-locked-on-leaving.png"
+      - "docs/manual/play/overlay.md"
 
   - id: OVERLAY-006
     title: The overlay takes more widgets, each with its own place and options
@@ -5048,12 +5080,14 @@ requirements:
     priority: p3
     done_means:
       - "For an aircraft RigReady ships no guide for, the Binding guide page offers 'Import a guide file' and 'Write your own' with no AI key. The import takes the file picked in the Windows dialog, reads it with the parser every guide goes through and keeps a copy in the data folder; the starter is a short guide, valid as it stands, on real actions of the aircraft, with the format explained in its first lines."
-      - "'Open the file' starts Notepad with the kept file as its one argument (Shell.launch with an argument array); 'Read it again' reads the file after an edit, and an edit that does not fit is shown with what is wrong; 'Delete this guide' asks first."
+      - "'Open the file' starts Notepad with the kept file as its one argument (Shell.launch with an argument array); 'Read it again' reads the file after an edit, and an edit that does not fit is shown with what is wrong; 'Delete this guide' asks first, keeps a copy, and the Safety page puts the file back."
+      - "An assistant (an MCP client or the built-in one) can delete a guide an AI drafted, with the same copy kept and Undo on the Safety page. It never deletes a guide the user wrote or imported, nor a guide file that cannot be read as either, under any confirm policy: deleteDraft refuses it with ai.ownGuide, and the window's own delete (deleteGuide) is not offered to assistants."
       - "A file that is not a guide, that is for another aircraft or that is larger than 512 KB is refused with the reason. A kept guide file is never replaced by an import, a starter or a draft by AI. Nothing is written outside the data folder."
       - "A pattern in a guide is at most 100 characters, repeats no group, and uses *, + or {…} at most twice; a guide holds at most 40 patterns. The same holds for the shipped guides, a guide drafted by AI, an imported guide and a guide written by hand, each time the file is read."
       - "A request for AI help says whose guide it carries, in the preview and in the request itself, and 'Exactly what is sent' in Settings says that a guide of the user's own is part of such a request."
     notes:
       - "2026-11-12: a guide of the user's own is kept where a draft by AI is kept, <data folder>/ai-assist/guides/<aircraft>.yaml, and read by the same parser; a kept file without the 'drafted' stamp is the user's own. The aircraft list says 'Your own guide'."
+      - "2026-11-13: deleting a guide asks first and keeps a copy (the file is journaled although it is in the data folder), and the page then says 'The guide is deleted. The Safety page can put it back.' tests/e2e/ai-assist.e2e.ts asserts the dialog's words and that line; artifacts/screens/ai-assist-own-guide/03-delete-asks-first.png was taken again by that run."
     status: done
     evidence:
       - "src/features/ai-assist/core/ownGuide.test.ts#takes the file picked in the Windows dialog, checks it, keeps a copy in the data folder and shows it as your own"
@@ -5065,6 +5099,8 @@ requirements:
       - "src/features/ai-assist/core/ownGuide.test.ts#starts a short guide that is valid as it stands, on real actions of the aircraft, with the format explained"
       - "src/features/ai-assist/core/ownGuide.test.ts#reads the file again after an edit, and says what is wrong with an edit that does not fit"
       - "src/features/ai-assist/core/ownGuide.test.ts#\"Open the file\" starts Notepad with the kept guide file as its one argument, and with no other file"
+      - "src/features/ai-assist/core/ownGuide.test.ts#deleting takes the guide file away, keeps a copy, and the Safety page puts it back"
+      - "src/features/ai-assist/core/ownGuide.test.ts#refuses it under every confirm policy, and deletes a guide AI drafted with a copy kept"
       - "src/features/ai-assist/core/ownGuide.test.ts#is refused while a guide file of your own is kept, and nothing is sent"
       - "src/features/ai-assist/core/ownGuide.test.ts#a request shown before the guide was imported sends nothing afterwards and leaves the file alone"
       - "src/features/ai-assist/core/ownGuide.test.ts#names a guide of your own as yours, in the preview and in the request itself"
@@ -5088,7 +5124,7 @@ requirements:
     done_means:
       - "With an AI provider set up (a key, or a server on this PC), an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without one there is no button and the palette opens the panel and says a provider is needed; drafts from MCP assistants are shown either way. The binding guide keeps its own view and links to the panel."
       - "The assistant is offered the MCP server's guided catalogue (task-level tools, rigready_channels, rigready_call), never an 'off' channel, and every call goes through the one gate the MCP server uses: confirm policy, question in the window under 'Built-in assistant', one change at a time, rate limit, activity record and the Safety page name."
-      - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER}."
+      - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER} however it is written there: in any case, with either slash or doubled in JSON, in its short (8.3) form, without its drive, and in a file:/// address with escaped characters, in any script. Only the whole folder is taken: other names and paths go as they are, and the PC's name is written as {PC} in any case."
     notes:
       - "2026-11-12: the panel was reworked after the owner's first use on the rig. A request that failed stays ready and one press sends it again, with the message back in the box; the conversation is the one scrolling region, with proposals where they were made; replies are shown formatted; every request says what reading it costs, and a ceiling per question stops and asks (ASSIST-005). The unit tests below prove this on the real code paths: the panel's store against the wired app, the log through the real logger. Open: tests/e2e/assistant.e2e.ts was extended and has a second test ('assistant: a request the provider refuses can be sent again with one press', scenario assistant-refused). Neither has been run since the rework, because no window may be opened while the rig sitting runs. The two screenshots below show the panel as it was before; they, the other six of artifacts/screens/assistant and the two new ones of artifacts/screens/assistant-refused (refused, answered-after-retry) wait to be taken by that run. Back to done once the run has passed and the screenshots are committed."
       - "2026-11-12, after the sitting: windows were allowed again. Both tests of tests/e2e/assistant.e2e.ts passed against the build of this commit, with the isolated launch, and the eight screenshots of artifacts/screens/assistant and the two of artifacts/screens/assistant-refused were taken by that run and are committed with it. Back to done. The dollar figures in them are worded as estimates (ASSIST-008)."
@@ -5100,6 +5136,10 @@ requirements:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
       - "src/features/ai-assist/core/assistant.test.ts#a read runs, a change is asked in the window under its name, a refusal is recorded, an off channel is refused"
       - "src/features/ai-assist/core/assistant.test.ts#never sends a request that was not prepared and shown"
+      - "src/features/ai-assist/core/assistant.test.ts#in any case, with either slash, doubled in JSON, and without its drive"
+      - "src/features/ai-assist/core/assistant.test.ts#in its short (8.3) form, or a mix of short and long"
+      - "src/features/ai-assist/core/assistant.test.ts#in a file:/// URL with escaped characters, in any script"
+      - "src/features/ai-assist/core/assistant.test.ts#leaves other names and paths as they are, and writes the PC name as {PC} in any case"
       - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
       - "src/features/ai-assist/core/assistant.test.ts#keeps the request when the provider refuses it: trying again is the same request, once more"
       - "src/features/ai-assist/core/assistant.test.ts#drops a request whose provider changed in Settings, says so, and a new one can be built at once"
@@ -5152,11 +5192,15 @@ requirements:
     done_means:
       - "setup_propose (built-in assistant and MCP) makes a draft of a new setup or of checks and launch steps added to one, validated against the registered check and fix types; it is shown in the assistant panel with every item and the setup as it would be saved."
       - "Nothing is written until the user presses Save, which saves through profiles:create or profiles:save; a setup changed after the assistant read it is not overwritten. A script.run the assistant proposes always asks before it runs."
+      - "setup_read, setup_propose and script_draft take a setup by its id, or by its whole name in any case and in any script (Cyrillic, CJK, Greek, or marks only). A part of a name, a name no setup has and a name two setups share are refused with ai.setup and a message that names the setups, never a guess."
     notes:
       - "2026-11-12: two reading tools were added beside setup_propose, for the built-in assistant and MCP: setup_read (one setup in a line per item) and setup_types (the check and fix types, one type's params on request), so an assistant no longer reads every setup and every schema to propose one. Saving a draft is a plain write in RigReady's data folder, as in the setup editor: it is not backed up and not listed on the Safety page, and the panel and the manual no longer say it is. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#finds the programs, proposes a setup, and the user saves it"
+      - "src/features/ai-assist/core/setupTools.test.ts#takes the id, or the whole name in any case, and nothing less"
+      - "src/features/ai-assist/core/setupTools.test.ts#matches a name in any script exactly, and never takes one for a name it is not"
+      - "src/features/ai-assist/core/setupTools.test.ts#never guesses between two: it names them, and names all when none fits"
       - "src/features/ai-assist/core/setupTools.test.ts#setup_read answers one setup in a fraction of what the whole list takes, and asks nobody"
       - "src/features/ai-assist/core/setupTools.test.ts#setup_types lists the types in a tenth of what their schemas take, and one type on request"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
@@ -5169,6 +5213,7 @@ requirements:
     priority: p2
     done_means:
       - "script_draft makes a .ps1 or .cmd draft with a plain explanation; one that asks for elevation is refused. The panel shows the whole file as it would be saved, the explanation and warnings; Save writes it through FileStore into <data root>/scripts/assistant with a header, and records its SHA-256 as the approval."
+      - "The panel names the setup the script goes into as that setup is called, and Save adds it to that setup by its id. A setup the assistant names that no setup is called is refused before anything is shown."
       - "The setup step it goes into asks before every run, whatever the setup says. Before it runs as a check, a fix or a step, the file is hashed again; a changed file is not run and is shown again in the panel until the user approves the text as it is now."
       - "No assistant can run it: while an assistant's call is carried out, a script from that folder is refused, and rig_make_ready's approvePrograms never covers it. Scripts never run elevated, and shared setups keep leaving scripts out."
     notes:
@@ -5177,6 +5222,7 @@ requirements:
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#is saved into the data folder with a header, approved by hash, refused when changed and for an assistant"
+      - "src/features/ai-assist/core/assistant.test.ts#goes into the setup it names exactly, in any script; a name no setup has is refused"
       - "src/features/ai-assist/core/assistant.test.ts#refuses a script that asks for administrator rights"
       - "src/features/ai-assist/core/assistant.test.ts#a script.run step for an assistant script always asks, whatever the setup says"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
@@ -5193,6 +5239,7 @@ requirements:
     done_means:
       - "The assistant talks to the provider of AI-008 (Anthropic, OpenAI, or an OpenAI-compatible server, a local one included) with that provider's own key, over Anthropic's Messages API or Chat Completions with tools; the conversation, tool calls and tool results are carried over faithfully either way."
       - "The preview names the host; a request whose provider, address or model changed in Settings after it was shown is not sent. A refusal or an unreadable answer is an error, never an empty success. Tokens are shown; a cost only where the price is known."
+      - "The ceiling per question is read from Settings for every request of the question: lowered while a question runs, it holds its next request back; after the user's yes past it, the question may reach as much again of the ceiling as it is then; turned off, nothing holds the question back. The user's own Stop leaves no failure line in the log."
     notes:
       - "2026-11-12: what a question costs was cut and is said honestly. On the Anthropic wire the instructions and the end of the conversation are marked for the provider's cache, so every request after the first reads what was already sent at the cached price; cache writes and reads are priced as such in the estimate before sending and in the totals; the preview says which request of the question it is and that the amount is for reading only; a ceiling per question (Settings, $0.25 unless changed, 0 for none) stops and asks before a question passes it, also with the preview switched off. No redirect is followed. Measured with a scripted model (src/features/ai-assist/core/cost.test.ts): the owner's first two questions, replayed request for request, went from about $0.70 to about $0.19, and to about $0.09 with the narrower tools. A cost and the ceiling exist only where the price is known. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
       - "2026-11-12, after the sitting: that run has passed and the screenshot shows the panel as it is now. By the owner's rule of the same day, what this entry calls a cost is shown as an estimate that names its prices (ASSIST-008), the prices can be typed (ASSIST-009), and the first amount the user sets as the ceiling needs an acknowledgement (ASSIST-010)."
@@ -5210,6 +5257,8 @@ requirements:
       - "src/features/ai-assist/core/cost.test.ts#a question that reads on and on stops at the ceiling and asks, before it is passed"
       - "src/features/ai-assist/core/assistant.test.ts#shows the ceiling with the request, stops before going past it, and goes on only with a yes"
       - "src/features/ai-assist/core/assistant.test.ts#0 means no ceiling, and a model without a known price has none"
+      - "src/features/ai-assist/core/assistant.test.ts#a ceiling lowered in Settings while a question runs holds for its next request"
+      - "tests/unit/failureLog.test.ts#writes nothing for an answer that worked, nor for a Stop the user pressed"
       - "src/features/ai-assist/renderer/assistantStore.test.ts#never goes past the ceiling by itself: it stops, says so, and goes on only on the press"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/02-first-request.png"
@@ -6022,14 +6071,18 @@ requirements:
     done_means:
       - "On the page that shows what a .rigready file holds, Import and Cancel are in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
       - "With nothing ticked, Import is off and the bar says 'Tick at least one thing to import.' The bar never says 'unsaved', and leaving the page asks nothing."
+      - "Import pressed again while an import runs, from the keyboard too, does not import a second time."
     status: done
     evidence:
       - test: "tests/e2e/share-selective.e2e.ts#share: Import and Cancel stay in the window from the top of what a file holds to its end, and Import says why it is off when nothing is ticked"
       - "artifacts/screens/share-import-bar/01-top-of-the-page.png"
       - "artifacts/screens/share-import-bar/02-end-of-the-page.png"
       - "artifacts/screens/share-import-bar/03-nothing-ticked.png"
+      - "tests/e2e/share-selective.e2e.ts#share: Import pressed again from the keyboard while the import runs imports once"
+      - "artifacts/screens/share-import-once/01-imported-once.png"
     notes:
       - "2026-11-12: the owner's finding 38. The two buttons were in a panel at the end of the page. An import that fails is said in the bar and, as before, at the top of the page; no scenario makes an import fail, so that is not in a picture."
+      - "2026-11-13: review L22. Vuetify's busy button still takes Enter and Space, and the shared bar passed the second press on: with 'Keep both' a second import ran, two changes on the Safety page before the fix. The bar now ignores Save while a save runs, on every page that uses it."
 
   # ---------------------------------------------------------------------------
   # RACING — iRacing
@@ -6679,6 +6732,7 @@ requirements:
       - "On the Wheel page, 'Save presets' is in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
       - "The bar says 'Tuning presets not saved yet' when a preset was changed and 'Tuning presets: nothing to save' with the button off when not; after a save it says what was saved."
       - "Leaving the page with presets that are not saved asks first, and staying keeps what was typed."
+      - "A value typed while the presets save stays on screen, and the bar still says it is not saved. Choosing Wheel in the palette while on the Wheel page keeps presets not saved yet."
     status: done
     evidence:
       - test: 'tests/e2e/racing.e2e.ts#racing: "Save presets" stays in the window from the top of the wheel page to its end, and leaving with presets that are not saved asks first'
@@ -6686,8 +6740,12 @@ requirements:
       - "artifacts/screens/racing-wheel-save-bar/02-end-of-the-page.png"
       - "artifacts/screens/racing-wheel-save-bar/03-leaving-asks.png"
       - "artifacts/screens/racing-wheel-save-bar/04-saved.png"
+      - 'tests/e2e/racing.e2e.ts#racing: presets not saved yet survive "Wheel" chosen in the palette, and a value typed while they save'
+      - "artifacts/screens/racing-wheel-keeps-presets/01-palette-kept-the-presets.png"
+      - "artifacts/screens/racing-wheel-keeps-presets/02-typed-while-saving.png"
     notes:
       - "2026-11-12: the owner's finding 38. The button was in the heading of 'Your tuning presets', far down the page, and leaving dropped what was typed without a word. A save that fails is still said only at the top of the page."
+      - "2026-11-13: review L23 and M5. The save put main's copy over a value typed meanwhile and the bar said nothing was left to save; the palette's Wheel dropped the presets. The step failed before each fix."
 
   - id: RACE-WHEEL-001
     title: The Wheel page and its checks for every major wheelbase brand
@@ -7160,6 +7218,7 @@ requirements:
       - "In the profile editor, Save and Back are in a bar on the bottom edge of the window that stays in view however far the page is scrolled, at the usual window size and in a window wider than the page. The bar does not lie over the menu beside the page."
       - "The bar says 'Unsaved changes' when what is on screen differs from what was saved and 'No unsaved changes' when not, what the last save did, and why Save is off when it is. Leaving the editor with unsaved changes, by Back or by the menu, asks first."
       - "The bar is a shared component (src/renderer/components/SaveBar.vue, listed in docs/CONTRIBUTING-FEATURES.md) that any page with a Save button can use."
+      - "A change made in the editor while a save is running stays on screen, and the bar says it is not saved: main's answer takes its place only when nothing was changed since Save was pressed."
     status: done
     evidence:
       - test: "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
@@ -7169,9 +7228,14 @@ requirements:
       - "artifacts/screens/virtual-controller-editor/06-scrolled-save-in-view.png"
       - "artifacts/screens/virtual-controller-editor/07-saved.png"
       - "artifacts/screens/virtual-controller-editor/10-wide-window.png"
+      - "src/features/virtual-controller/core/editing.test.ts#keeps a change made while the save ran, and it still reads as unsaved"
+      - "src/features/virtual-controller/core/editing.test.ts#shows what main saved when nothing was changed while the save ran"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a change made while a save is running stays on screen, and the bar says it is not saved"
+      - "artifacts/screens/virtual-controller-save-while-editing/01-typed-while-saving.png"
     notes:
       - "2026-11-12: the owner's finding 38. Only the virtual controller's editor uses the bar so far. The other pages with a Save button are not changed here; the setup editor has a footer of its own that can move to this bar."
       - "2026-11-12, later: the bar is now on every page where the button that keeps a change could scroll out of view: the DCS Screens tab, the import of a shared setup, the tuning presets of the Wheel page and the cheat sheets layout editor, each with a requirement of its own. For them the bar takes its own words for the two states, the page's own test ids for the buttons, a Back that closes a panel, and can be told not to ask before leaving. The setup editor, the new setup page, the export and the restore of a backup keep their own footers, which are pinned already."
+      - "2026-11-13: review of the night's merges, M3. A name typed or a slider moved while a save ran was replaced by the saved copy, and the bar said 'Saved'. The scenario step failed before the fix: the name went back to what was sent."
 
   - id: VPAD-008
     title: A live picture of the virtual controller, in the running panel and in the editor
@@ -7972,7 +8036,7 @@ requirements:
     done_means:
       - "Every channel of every feature that answers with an error leaves one line in the log at the normal level: the channel, the error's code and the message the user was shown. Never the input, and never the error's detail. The same error of the same channel is written once a minute, with a count of the ones in between; the user's own Stop writes nothing."
       - "Every request to an AI provider that fails leaves one line: the host, the path, the model, the HTTP status, the provider's own error type, error code and message, and the id the provider gave the request. Never the key, the request text or an address's query. A send the panel refused is in the log the same way, and so is the case of a question that has used the requests it may make."
-      - "The MCP server leaves a line for every change, every launch and every call that did not go through: who, which tool and how it ended, never the input or the answer."
+      - "The MCP server leaves a line for every change, every launch and every call that did not go through: who, which tool and channel, how it ended and, for a call that did not work, the error's code. Never the input or the answer, nor the call's line in words or its message, which can hold them; those stay in the list of what assistants did."
       - "A diagnostics export of such a failure holds those lines, and holds no API key and no pairing token."
     status: done
     evidence:
@@ -7985,6 +8049,7 @@ requirements:
       - "src/features/ai-assist/core/providerLog.test.ts#holds the status, the reason, the error type and the request id, and what the panel told the user"
       - "src/features/mcp/core/tokenCare.test.ts#a port another program holds: the export says which channel failed and why"
       - "src/features/mcp/core/tokenCare.test.ts#a change an assistant made, and a call that failed, each leave a line with who and what"
+      - "src/features/mcp/core/tokenCare.test.ts#a call's line names the tool, the channel and how it ended, never what the call was given"
 
   # ---------------------------------------------------------------------------
   # WINDOWS INTEGRATION — flying in one double-click (the final pass, 2026-10-04)
@@ -8573,6 +8638,7 @@ requirements:
       - "Matching is fuzzy: the letters typed must appear in order and the reading that keeps them together and at the starts of words counts ('mr' finds Make ready, 'f18' finds F/A-18C); letters scattered inside words find nothing; words typed apart are found in any order in the title, a keyword, the heading or the hint; the letters found are marked in the title."
       - "With nothing typed the commands used last come first, then every other command under its heading (a heading with many shows its first few and counts the rest); with something typed, a command used recently wins a near tie and never a clear one. What was used last is remembered when RigReady is started again."
       - "It is operated by keyboard alone: arrow keys move the mark and go round at the ends, Enter opens or runs, Escape closes and the focus is back on the element that had it; after a page was opened the focus is on that page's heading. It is a combobox with a listbox (aria-activedescendant follows the mark), and it passes the axe scan and the colour-only scan when open, typed into, and with nothing found."
+      - "A command that links to the page on screen never drops changes that are not saved on it. A link to the very address on screen leaves the page as it is. A link that opens the page afresh on another address asks first, with the page's own question (the Save bar's 'Leave without saving?', the setup editor's 'Discard your changes?'), and 'Keep editing' leaves everything as it was."
     status: done
     evidence:
       - "src/renderer/shell/fuzzy.test.ts#finds the typed letters in order, whatever their case, and says where"
@@ -8594,6 +8660,16 @@ requirements:
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-palette/02-typed.png"
       - "artifacts/screens/shell-palette/04-recent.png"
+      - "src/renderer/shell/go.test.ts#leaves the page on screen as it is when the link is its own address and changes are unsaved"
+      - "src/renderer/shell/go.test.ts#asks before it opens the page afresh on another address, and keeps the changes when told to"
+      - "src/renderer/shell/go.test.ts#opens the page afresh on the new address once the user lets the changes go"
+      - "src/renderer/shell/go.test.ts#does not open the page afresh when a guard of the page keeps it where it is"
+      - 'tests/e2e/racing.e2e.ts#racing: presets not saved yet survive "Wheel" chosen in the palette, and a value typed while they save'
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: in the layout editor, Save layout and Cancel stay in the window from the top of the page to its end, and Cancel asks before it drops a change"
+      - "artifacts/screens/racing-wheel-keeps-presets/01-palette-kept-the-presets.png"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/04-palette-asks.png"
+    notes:
+      - "2026-11-13: review M5. The palette opened the page on screen afresh after the navigation, and that runs no route guard: 'Wheel' on the Wheel page dropped presets not saved yet, and a cheat sheet chosen in the palette dropped the layout editor's change. Both scenario steps failed before the fix. What is unsaved on screen is held in src/renderer/unsaved.ts, by the Save bar and by the setup editor."
 
   - id: NAV-GAMES-001
     title: The menu names no game - one Games entry, from which the pages about a game open

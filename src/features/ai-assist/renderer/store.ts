@@ -373,13 +373,21 @@ export const useAiStore = defineStore('ai-assist', () => {
     selected.value = next;
   }
 
-  async function deleteDraft(): Promise<void> {
+  /**
+   * Deletes the guide file kept for the aircraft shown: the draft by AI (`draft`), or after
+   * the user said yes in the dialog, whichever guide it is. A copy is kept for the Safety page.
+   */
+  async function deleteGuide(which: 'draft' | 'kept'): Promise<void> {
     if (!aircraftId.value) return;
-    const result = await api.deleteDraft({ aircraftId: aircraftId.value });
+    const input = { aircraftId: aircraftId.value };
+    const result = await (which === 'draft' ? api.deleteDraft(input) : api.deleteGuide(input));
     if (!result.ok) error.value = errorText(result.error);
     drafted.value = undefined;
     guideNote.value = undefined;
     await load();
+    if (result.ok && result.value.deleted) {
+      guideNote.value = 'The guide is deleted. The Safety page can put it back.';
+    }
   }
 
   /** A guide file the user picks in the Windows dialog, for the aircraft shown. */
@@ -477,7 +485,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     progressed,
     cancelSend,
     toggle,
-    deleteDraft,
+    deleteGuide,
     importGuide,
     startOwnGuide,
     openGuideFile,

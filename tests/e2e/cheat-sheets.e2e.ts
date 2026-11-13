@@ -1453,6 +1453,16 @@ test('cheat sheets: in the layout editor, Save layout and Cancel stay in the win
   await expect(editor).toBeVisible();
   await expect(name).toHaveValue('Weapon release');
 
+  // The palette's sheet of this aircraft opens this page afresh, which would drop the name
+  // as well: the bar asks first, and "Keep editing" keeps it.
+  await paletteChoose(page, 'sheet f18', /^Cheat sheet: F\/A-18C/);
+  await expect(page.getByTestId('save-bar-leave')).toBeVisible();
+  await shot('palette-asks');
+  await page.getByTestId('save-bar-leave-stay').click();
+  await expect(editor).toBeVisible();
+  await expect(name).toHaveValue('Weapon release');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Unsaved changes');
+
   // Saved from the bar: the editor closes, the bar goes with it, and the sheet has the name.
   await save.click();
   await expect(editor).toHaveCount(0);
@@ -1465,4 +1475,33 @@ test('cheat sheets: in the layout editor, Save layout and Cancel stay in the win
   await cancel.click();
   await expect(editor).toHaveCount(0);
   await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
+
+  // Changed again, and the palette's sheet chosen with "Leave without saving": the page
+  // opens afresh on that sheet, and the editor and its change are gone.
+  await page.getByTestId('sheet-edit-layout').click();
+  await sendInput([state(CONTROLLERS.stick)]);
+  await sendInput([state(CONTROLLERS.stick, { pressed: [20] })]);
+  await expect(name).toHaveValue('Weapon release');
+  await sendInput([state(CONTROLLERS.stick)]);
+  await name.fill('Pickle');
+  await expect(editor).toHaveAttribute('data-dirty', 'true');
+  await paletteChoose(page, 'sheet f18', /^Cheat sheet: F\/A-18C/);
+  await expect(page.getByTestId('save-bar-leave')).toBeVisible();
+  await page.getByTestId('save-bar-leave-go').click();
+  await expect(page).toHaveURL(/#\/configure\/cheat-sheets\?game=dcs&aircraft=FA-18C_hornet$/);
+  await expect(page.getByTestId('cheat-sheets-page')).toBeVisible();
+  await expect(editor).toHaveCount(0);
+  await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
 });
+
+/** Ctrl+K, the words typed, the row marked checked by its title, and Enter. */
+async function paletteChoose(page: Page, typed: string, title: RegExp): Promise<void> {
+  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('palette-input')).toBeFocused();
+  await page.keyboard.type(typed);
+  await expect(
+    page.locator('[data-testid="palette-row"][aria-selected="true"] .rr-palette-title')
+  ).toHaveText(title);
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('palette')).toBeHidden();
+}

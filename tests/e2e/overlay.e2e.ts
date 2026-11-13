@@ -879,6 +879,25 @@ test('the overlay goes where it is put, stays there, and comes up again with Rig
   await expect(widget).toHaveAttribute('data-showing', 'true');
   expect(await panel(app)).toMatchObject({ visible: true, onTop: true, focusable: false });
 
+  // ---- Left in "Move" mode for the Play screen: it is locked where it is, not left framed ----
+  // With no screen on, its window was closed: the one that is up now is a new one.
+  popup = await overlayWindow(app);
+  const where = shareOf(await panel(app));
+  await page.getByTestId('overlay-move').click();
+  await expect(popup.getByTestId('overlay-window')).toHaveAttribute('data-moving', 'true');
+  expect(await panel(app)).toMatchObject({ focusable: true });
+  await page.getByTestId('mode-fly').click();
+  await expect(page.getByTestId('fly-page')).toBeVisible();
+  await expect(popup.getByTestId('overlay-window')).toHaveAttribute('data-moving', 'false');
+  await expect(popup.getByTestId('overlay-move-frame')).toHaveCount(0);
+  await expect.poll(async () => (await panel(app)).focusable).toBe(false);
+  expect(shareOf(await panel(app)).x).toBeCloseTo(where.x, 2);
+  expect(shareOf(await panel(app)).y).toBeCloseTo(where.y, 2);
+  await openPage(page);
+  await expect(widget).toHaveAttribute('data-moving', 'false');
+  await expect(page.getByTestId('overlay-move')).toContainText('Move it on screen');
+  await shot(page, 'locked-on-leaving');
+
   // ---- Off: the window is gone, and the controllers are no longer read for it ----
   await page.getByTestId('overlay-on').locator('input').uncheck();
   await expect(page.getByTestId('overlay-main')).toHaveAttribute('data-on', 'false');
