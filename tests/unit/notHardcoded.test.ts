@@ -11,8 +11,8 @@ import { fixturesDir, repoRoot } from '../helpers';
  * controller GUID of the recorded rig (fixtures/rigs/mark-full).
  *
  * What is searched: every source file under src/ except tests, with comments taken out.
- * Comments are left alone on purpose: several quote a real id as an example of the format
- * ("806E0610-B756-11F0-8024-444553540000"), which no code path can act on. Tests are left
+ * Comments are left alone on purpose: several quote an id of the recorded rig as an example of the format
+ * ("757B5173-A027-19E9-8024-444553540000"), which no code path can act on. Tests are left
  * out because they are about the recorded rig.
  */
 
@@ -66,7 +66,7 @@ async function ownerIdentifiers(): Promise<Map<string, string>> {
 describe('nothing is hardcoded to the owner’s rig', () => {
   it('comment stripping keeps code and drops block, HTML and whole-line comments', () => {
     const text = [
-      '/** doc 806E0610 */',
+      '/** doc 757B5173 */',
       'const a = "kept"; // trailing stays',
       '  // whole line goes',
       '<!-- html goes -->',
@@ -75,7 +75,7 @@ describe('nothing is hardcoded to the owner’s rig', () => {
     const stripped = withoutComments(text);
     expect(stripped).toContain('const a = "kept"; // trailing stays');
     expect(stripped).toContain("'https://example.com/x'");
-    expect(stripped).not.toMatch(/doc 806E0610|whole line goes|html goes/);
+    expect(stripped).not.toMatch(/doc 757B5173|whole line goes|html goes/);
   });
 
   it('no source file names the owner, this PC, or a serial, instance, monitor or GUID of the recorded rig', async () => {

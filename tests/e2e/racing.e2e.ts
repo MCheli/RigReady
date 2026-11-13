@@ -143,7 +143,7 @@ test('racing: overview, iRacing bindings, and repairing a wheel with a new Windo
 
   // The files now hold the connected wheel's id; the change is on the Safety page.
   const yaml = await fs.readFile(path.join(home, 'Documents', 'iRacing', 'joyCalib.yaml'), 'utf8');
-  expect(yaml).toContain('{20B0BED0-03A4-11F1-8001-444553540000}');
+  expect(yaml).toContain('{45D4BEA1-60A1-17D8-8001-444553540000}');
   await page.getByTestId('nav-safety').click();
   await expect(page.locator('[data-testid="change-group"]').first()).toHaveAttribute(
     'data-reason',

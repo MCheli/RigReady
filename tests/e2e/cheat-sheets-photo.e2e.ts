@@ -23,7 +23,7 @@ interface Controller {
 }
 
 /** The button box of the recorded rig: 41 buttons and two sliders, no drawing, no names. */
-const PANEL_GUID = 'DF6F4BD0-FA0C-11F0-8002-444553540000';
+const PANEL_GUID = 'FE8D5FF1-DF2D-17C3-8002-444553540000';
 const PANEL_FILE = '3344-C259.rrlayout.json';
 /**
  * The X52 Pro the scenario plugs in: RigReady knows its controls by name but has no

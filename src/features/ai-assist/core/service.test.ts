@@ -24,8 +24,8 @@ import type {
 import { AiAssist } from './service';
 
 const KEY = 'sk-ant-api03-SECRETSECRETSECRET-abcdEFGH';
-const STICK = '806DDF00-B756-11F0-8023-444553540000';
-const THROTTLE = '806DDF00-B756-11F0-8022-444553540000';
+const STICK = '480FAD44-D166-18C0-8023-444553540000';
+const THROTTLE = '480FAD44-D166-18C0-8022-444553540000';
 const IDS = {
   pickle: 'key:d3003pnilu3003cd13vd1vpnilvu0',
   atc: 'key:d3037pnilu3037cd13vd1vpnilvu0',
@@ -212,7 +212,7 @@ describe('the binding guide without a key', () => {
     await expect(stage(IDS.cage, STICK, 'JOY_X')).rejects.toThrow(/needs a button or hat/);
     await expect(stage(IDS.cage, STICK, 'JOY_BTN99')).rejects.toThrow(/has no such control/);
     await expect(
-      stage(IDS.cage, '20B0BED0-03A4-11F1-8001-444553540000', 'JOY_BTN1')
+      stage(IDS.cage, '45D4BEA1-60A1-17D8-8001-444553540000', 'JOY_BTN1')
     ).rejects.toThrow(/not one DCS uses/);
     await expect(stage(IDS.score, STICK, 'JOY_BTN1')).rejects.toThrow(/cannot write/);
     await expect(stage('key:nope', STICK, 'JOY_BTN1')).rejects.toThrow(/no such action/);

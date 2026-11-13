@@ -7,7 +7,7 @@
       "sticks": {
         "lx": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_X"
           },
           "deadzone": 0.03,
@@ -15,7 +15,7 @@
         },
         "ly": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_Y"
           },
           "invert": true,
@@ -52,7 +52,7 @@
       "sticks": {
         "lx": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_X"
           },
           "deadzone": 0.03,
@@ -60,7 +60,7 @@
         },
         "ly": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_Y"
           },
           "invert": true,
@@ -69,7 +69,7 @@
         },
         "rx": {
           "source": {
-            "device": { "name": "T-Pendular-Rudder", "guid": "7F3956A0-B756-11F0-801B-444553540000" },
+            "device": { "name": "T-Pendular-Rudder", "guid": "0F1424B4-D566-14A0-801B-444553540000" },
             "input": "JOY_Z"
           },
           "deadzone": 0.05,
@@ -79,7 +79,7 @@
       },
       "throttle": {
         "source": {
-          "device": { "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R", "guid": "806DDF00-B756-11F0-8022-444553540000" },
+          "device": { "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R", "guid": "480FAD44-D166-18C0-8022-444553540000" },
           "input": "JOY_X"
         },
         "split": 0.5,
@@ -89,14 +89,14 @@
       "buttons": {
         "a": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_BTN1"
           },
           "hint": "Fire the gun or missile, as set in the game"
         },
         "b": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_BTN2"
           },
           "hint": "Special weapon"
@@ -109,14 +109,14 @@
         "right": { "hint": "Change weapon" },
         "up": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_BTN_POV1_U"
           },
           "hint": "Zoom the reticle"
         },
         "down": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_BTN_POV1_D"
           },
           "hint": "Zoom the reticle"
@@ -132,7 +132,7 @@
       "sticks": {
         "lx": {
           "source": {
-            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "480FAD44-D166-18C0-8023-444553540000" },
             "input": "JOY_X"
           },
           "deadzone": 0.03,

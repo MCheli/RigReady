@@ -16,8 +16,8 @@
   "counts": {
     "devices": 62,
     "displays": 5,
-    "processes": 342,
-    "services": 718,
+    "processes": 44,
+    "services": 22,
     "audioEndpoints": 10,
     "inputDevices": 12,
     "registryKeys": 252,

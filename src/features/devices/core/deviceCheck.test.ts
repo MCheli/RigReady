@@ -180,13 +180,13 @@ describe('device checks on the recorded rig', () => {
   it('checks identical devices unit by unit: one MFD screen unplugged fails only its own check', async () => {
     rig = await scenarioRig('devices-identical', { files: [] });
     const screen = (serial: string) => ({ vendorId: '17E9', productId: 'FF00', serial });
-    const left = await deviceConnectedCheck.run(screen('WWIN29320221210092611'), rig.ctx);
-    const centre = await deviceConnectedCheck.run(screen('WWIN29320221210093818'), rig.ctx);
-    const right = await deviceConnectedCheck.run(screen('WWIN29320221210163532'), rig.ctx);
+    const left = await deviceConnectedCheck.run(screen('ZJPC47736095181552826'), rig.ctx);
+    const centre = await deviceConnectedCheck.run(screen('NVFC74178362619330533'), rig.ctx);
+    const right = await deviceConnectedCheck.run(screen('PBOC22104847830214489'), rig.ctx);
     expect([left.pass, centre.pass, right.pass]).toEqual([true, true, false]);
     expect(right.summary).toBe('Not connected');
     expect(right.details![0]).toBe(
-      'A different WINWING USB 3.0 Display1 is connected (serial WWIN29320221210092611), not this one.'
+      'A different WINWING USB 3.0 Display1 is connected (serial ZJPC47736095181552826), not this one.'
     );
   });
 

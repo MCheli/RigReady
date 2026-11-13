@@ -730,9 +730,9 @@ describe('CFG-PROFILE-019: the lists the editor picks from', () => {
     expect(deck.label).toBe('Which Stream Deck');
     expect(deck.choices).toEqual([
       {
-        value: 'A00NA33331P1UB',
+        value: 'S11FD24013B3QA',
         label: 'Stream Deck XL',
-        detail: 'Serial number A00NA33331P1UB',
+        detail: 'Serial number S11FD24013B3QA',
       },
     ]);
   });

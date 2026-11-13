@@ -271,9 +271,9 @@ test('devices: controllers apart from the rest, find one by pressing a button, n
   await expect(page.getByTestId('identify-found')).toContainText('Button 5');
   const mfd = deviceRow(page, 'WINWING MFD1-R');
   await expect(mfd).toHaveClass(/highlighted/);
-  await expect(mfd.getByTestId('device-detail')).toContainText('80E62062A4E6D221B2465002');
+  await expect(mfd.getByTestId('device-detail')).toContainText('52F94702D5B0D916B2951379');
   await expect(mfd.getByTestId('device-detail')).toContainText(
-    '806E0610-B756-11F0-8024-444553540000'
+    '757B5173-A027-19E9-8024-444553540000'
   );
   await expect(page.getByTestId('device-name-input')).toBeVisible();
   await shot('found');
@@ -318,7 +318,7 @@ test('devices: controllers apart from the rest, find one by pressing a button, n
       (await deviceRow(again.page, name).getByTestId('device-detail').textContent()) ?? ''
     );
   }
-  expect(new Set(serials.map((t) => /WWIN\d+/.exec(t)?.[0])).size).toBe(3);
+  expect(new Set(serials.map((t) => /[A-Z]{4}\d{17}/.exec(t)?.[0])).size).toBe(3);
   await deviceRow(again.page, 'Right MFD').scrollIntoViewIfNeeded();
   await again.shot('names-after-restart');
 });

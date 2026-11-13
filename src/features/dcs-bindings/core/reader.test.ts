@@ -30,7 +30,7 @@ describe('DCS bindings through core (ctx.bindings)', () => {
     expect(stick).toMatchObject({
       kind: 'controller',
       connected: true,
-      guid: '806DDF00-B756-11F0-8023-444553540000',
+      guid: '480FAD44-D166-18C0-8023-444553540000',
       vendorId: '4098',
       productId: 'BEA8',
     });
@@ -64,9 +64,9 @@ describe('DCS bindings through core (ctx.bindings)', () => {
     const reader = createBindingReader(bindingsFor(rig));
     expect(reader.route()).toBe('/configure/dcs-bindings/devices');
     expect(
-      reader.route({ guid: '{806ddf00-b756-11f0-8023-444553540000}', aircraftId: HORNET })
+      reader.route({ guid: '{480fad44-d166-18c0-8023-444553540000}', aircraftId: HORNET })
     ).toBe(
-      '/configure/dcs-bindings/devices?aircraft=FA-18C_hornet&guid=806DDF00-B756-11F0-8023-444553540000'
+      '/configure/dcs-bindings/devices?aircraft=FA-18C_hornet&guid=480FAD44-D166-18C0-8023-444553540000'
     );
     const unknown = await reader.bindings('No-Such-Aircraft');
     expect(unknown.ok).toBe(false);

@@ -118,11 +118,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_be03#9&15e630c0&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING F18 STARTUP PANEL",
-          "serialNumber": "0FA12062F4362231C4766072",
+          "serialNumber": "9EF92793D9984080B4841193",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BE03\\9&15e630c0&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BE03\\0FA12062F4362231C4766072",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BE03\\9EF92793D9984080B4841193",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }
@@ -137,11 +137,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_bf05#9&2251a97e&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING F18 TAKEOFF PANEL 2",
-          "serialNumber": "B167D012E4465321A2E63072",
+          "serialNumber": "F601F748F9599339D6F63447",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BF05\\9&2251a97e&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BF05\\B167D012E4465321A2E63072",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BF05\\F601F748F9599339D6F63447",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }
@@ -156,11 +156,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_bf06#9&1c1aae79&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING ICP",
-          "serialNumber": "8E3C6012D4664221F33630B2",
+          "serialNumber": "4E2E9327A3187152B92813B5",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BF06\\9&1c1aae79&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BF06\\8E3C6012D4664221F33630B2",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BF06\\4E2E9327A3187152B92813B5",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }
@@ -175,11 +175,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_bee0#9&2c7f5c07&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING MFD1-C",
-          "serialNumber": "53BD7012E446232143263042",
+          "serialNumber": "75BB4533E728022501736627",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BEE0\\9&2c7f5c07&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEE0\\53BD7012E446232143263042",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEE0\\75BB4533E728022501736627",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }
@@ -194,11 +194,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_bee1#9&1a9fa625&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING MFD1-L",
-          "serialNumber": "6EFA7012E446232143263042",
+          "serialNumber": "8EAA7079D834839151957409",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BEE1\\9&1a9fa625&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEE1\\6EFA7012E446232143263042",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEE1\\8EAA7079D834839151957409",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }
@@ -213,11 +213,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_bee2#9&278fbca&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING MFD1-R",
-          "serialNumber": "80E62062A4E6D221B2465002",
+          "serialNumber": "52F94702D5B0D916B2951379",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BEE2\\9&278fbca&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEE2\\80E62062A4E6D221B2465002",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEE2\\52F94702D5B0D916B2951379",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }
@@ -232,11 +232,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_bea8#9&35be61a5&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING Orion Joystick Base 2 + JGRIP-F16",
-          "serialNumber": "82E72012C416422192F650B2",
+          "serialNumber": "22D55963A162301390D140A0",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BEA8\\9&35be61a5&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEA8\\82E72012C416422192F650B2",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEA8\\22D55963A162301390D140A0",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }
@@ -251,11 +251,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_bd26#9&13288787&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
-          "serialNumber": "14067062F4E6C33163562052",
+          "serialNumber": "43246085F6B9D37844328767",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BD26\\9&13288787&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BD26\\14067062F4E6C33163562052",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BD26\\43246085F6B9D37844328767",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }
@@ -270,11 +270,11 @@
           "symbolicLink": "\\\\?\\hid#vid_4098&pid_bede#9&3ae99abd&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
           "vendor": "Winwing",
           "product": "WINWING UFC1 + HUD1",
-          "serialNumber": "AE372062A4E6D221B2465002",
+          "serialNumber": "DD741978C0B0C192F4206238",
           "usage": "Joystick",
           "description": "HID-compliant game controller",
           "deviceInstancePath": "HID\\VID_4098&PID_BEDE\\9&3ae99abd&0&0000",
-          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEDE\\AE372062A4E6D221B2465002",
+          "baseContainerDeviceInstancePath": "USB\\VID_4098&PID_BEDE\\DD741978C0B0C192F4206238",
           "baseContainerClassGuid": "{745A17A0-74D3-11D0-B6FE-00A0C90F57DA}",
           "baseContainerDeviceCount": 1
         }

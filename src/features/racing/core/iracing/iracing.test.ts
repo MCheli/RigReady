@@ -9,7 +9,7 @@ import { parseJoyCalib, replaceGuidText } from './joyCalib';
 import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './labels';
 
 const recorded = path.join(fixturesDir, 'rigs', 'mark-full', 'files', 'Documents', 'iRacing');
-const DD2 = '20B0BED0-03A4-11F1-8001-444553540000';
+const DD2 = '45D4BEA1-60A1-17D8-8001-444553540000';
 const DD2_PRODUCT = '00070EB7-0000-0000-0000-504944564944';
 /** An id Windows might have handed the same wheel before a USB port change. */
 const OLD = '11112222-3333-11F1-8001-444553540000';
@@ -77,7 +77,7 @@ describe('controls.cfg', () => {
 
   it('turns a GUID into the bytes Windows stores', () => {
     expect(Buffer.from(guidToBytes(DD2)).toString('hex')).toBe(
-      'd0beb020a403f111800144455354' + '0000'
+      'a1bed445a160d817800144455354' + '0000'
     );
     expect(() => guidToBytes('nope')).toThrow();
   });
@@ -296,7 +296,7 @@ describe('iRacing in RigReady', () => {
     app = await withOldId();
     await expect(
       app.invoke('racing:iracingRepair', {
-        mapping: [{ from: OLD, to: '7F3956A0-B756-11F0-801B-444553540000' }],
+        mapping: [{ from: OLD, to: '0F1424B4-D566-14A0-801B-444553540000' }],
       })
     ).rejects.toThrow('not a connected');
     await expect(

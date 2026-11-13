@@ -4,7 +4,7 @@ import { gameNoteCount, gameNoteText, separateGameNotes, withoutGameNotes } from
 import { PadProfileSchema, type PadProfile } from './profile';
 
 const SOURCE = {
-  device: { name: 'A stick', guid: '806DDF00-B756-11F0-8023-444553540000' },
+  device: { name: 'A stick', guid: '480FAD44-D166-18C0-8023-444553540000' },
   input: 'JOY_BTN1',
 };
 

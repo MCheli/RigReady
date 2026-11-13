@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { fixturesDir } from '../../../../tests/helpers';
 import { readCalibration } from './calibration';
 
-const WHEEL = '20B0BED0-03A4-11F1-8001-444553540000';
+const WHEEL = '45D4BEA1-60A1-17D8-8001-444553540000';
 
 describe('iRacing joyCalib.yaml', () => {
   it('reads the wheel base and its four axes from the recorded file', async () => {

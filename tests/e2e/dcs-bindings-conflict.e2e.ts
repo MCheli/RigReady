@@ -15,7 +15,7 @@ test('bindings: an MFD knob that is also bound to pitch is reported and fixed', 
     'Input',
     'FA-18C_hornet',
     'joystick',
-    'WINWING MFD1-L {7F3956A0-B756-11f0-801A-444553540000}.diff.lua'
+    'WINWING MFD1-L {0F1424B4-D566-14a0-801A-444553540000}.diff.lua'
   );
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-bindings').click();

@@ -122,7 +122,7 @@ function decode(bytes: Uint8Array, view: DataView, offset: number): IracingBindi
   return { kind: 'none' };
 }
 
-/** The 16 bytes Windows and iRacing store for "20B0BED0-03A4-11F1-8001-444553540000". */
+/** The 16 bytes Windows and iRacing store for "45D4BEA1-60A1-17D8-8001-444553540000". */
 export function guidToBytes(guid: string): Uint8Array {
   const clean = guid.replace(/[{}-]/g, '');
   if (!/^[0-9A-Fa-f]{32}$/.test(clean)) throw new Error(`Not a GUID: ${guid}`);

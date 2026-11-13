@@ -4,9 +4,9 @@
 
 | Screen | Identity | Used for |
 |---|---|---|
-| Samsung LC49G95T ultrawide, 5120x1440 | `DISPLAY\SAM7053`, serial H4ZR900542 | Flying and racing; always the primary |
-| Three identical USB MFD screens ("USB_Monitor", `DISPLAY\REG0319`, EDID serial 1 on all three) | Each hangs off its own DisplayLink USB device (`17E9:FF00`) with a serial of its own: `WWIN29320221210163532`, `WWIN29320221210092611`, `WWIN29320221210093818`. That serial is what RigReady identifies them by, on any USB port | Flying (F/A-18C MFD exports) |
-| Dell G3223D | `DISPLAY\DELD139`, serial 12NFXG3 | Desk use; should be OFF while flying |
+| Samsung LC49G95T ultrawide, 5120x1440 | `DISPLAY\SAM7053`, serial O8HO530811 | Flying and racing; always the primary |
+| Three identical USB MFD screens ("USB_Monitor", `DISPLAY\REG0319`, EDID serial 1 on all three) | Each hangs off its own DisplayLink USB device (`17E9:FF00`) with a serial of its own: `PBOC22104847830214489`, `ZJPC47736095181552826`, `NVFC74178362619330533`. That serial is what RigReady identifies them by, on any USB port | Flying (F/A-18C MFD exports) |
+| Dell G3223D | `DISPLAY\DELD139`, serial 25PGII6 | Desk use; should be OFF while flying |
 | TV | Not connected on 2026-10-03 | Racing (track view), above the main screen |
 
 **MFD rotation (corrected 2026-10-03, later the same day).** Two states have been observed on this machine:
