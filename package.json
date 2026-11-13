@@ -14,6 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:coverage:shard": "vitest run --coverage --reporter=default --reporter=blob --coverage.thresholds.lines=0 --coverage.thresholds.functions=0 --coverage.thresholds.statements=0 --coverage.thresholds.branches=0",
+    "test:coverage:merge": "vitest --merge-reports --coverage",
     "ledger:check": "tsx scripts/ledger-check.ts",
     "icons": "electron scripts/icons.mjs",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test:coverage && npm run ledger:check",

@@ -41,6 +41,7 @@ Nothing else is needed for unit and e2e work: both run on fake providers. `npm r
 | `npm run check` | Typecheck (node and web projects), lint, format check, unit tests with coverage threshold, ledger check. Must pass before every commit. |
 | `npm run typecheck` / `npm run lint` / `npm run format` | The single gates; `format` fixes formatting, `lint:fix` fixes what ESLint can. |
 | `npm test` / `npm run test:watch` | Unit tests. `npx vitest run tests/unit/<file>.test.ts` runs one file. |
+| `npm run test:coverage:shard -- --shard=1/4` / `npm run test:coverage:merge` | How CI runs the unit tests of `npm run check`: a quarter of the test files on each of four runners, then the coverage limits on the four reports together (`.github/workflows/ci.yml`). Not needed on a desk PC: one shard alone is not held to the limits. |
 | `npm run test:e2e` | Build, then run every scenario flow. Screenshots land in `artifacts/screens/<flow>/`. |
 | `npm run test:e2e:changed` | Build, then run the scenario files that what you changed since `origin/main` can reach, after printing which and why (section 13). `-- --list` prints and runs nothing; `-- --base=<branch>` compares with another branch; `-- --no-build` skips the build; anything else goes to Playwright, for example `-- --workers=1`. |
 | `npx playwright test tests/e2e/<file>.e2e.ts` | One e2e file (run `npm run build` first). |

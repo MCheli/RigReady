@@ -7,8 +7,8 @@ import { defineConfig } from '@playwright/test';
 const slow = !!process.env['CI'];
 
 /**
- * CI runs the suite as three shards on three runners (ci.yml): E2E_SHARD=2/3 is the second
- * third of the tests, split by file. Unset, every test runs, as on a desk PC.
+ * CI runs the suite as shards on runners of their own (ci.yml): E2E_SHARD=2/4 is the second
+ * quarter of the tests, split by file. Unset, every test runs, as on a desk PC.
  */
 const shard = /^(\d+)\/(\d+)$/.exec(process.env['E2E_SHARD'] ?? '');
 
