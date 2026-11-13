@@ -37,6 +37,7 @@ From the game modules, only when the game is installed on this PC (a folder that
 | `{AC_INSTALL}` | The Assetto Corsa install folder |
 | `{AC_USER}` | Assetto Corsa's folder in Documents |
 | `{MSFS2024_USER}` | Microsoft Flight Simulator 2024's user folder, Steam or Microsoft Store edition |
+| `{USER_STAR_HAULER}` and the like | The first settings folder of a game you added on the Games page, named after the game ([Add a game](../games/other-games.md#add-it-to-the-games-page)) |
 
 For a game installed more than once, **Install this setup uses** in the setup decides which install `{DCS_INSTALL}` and `{DCS_USER}` mean for that setup. When that install is gone, a check that uses them reports "DCS install not found", and the setup never falls back to another install.
 

@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: games-star-hauler
+name: Star Hauler
+game: user-star-hauler
+createdAt: '2026-11-12T18:00:00.000Z'
+updatedAt: '2026-11-12T18:00:00.000Z'
+launch:
+  exe: '{USER}/Games/Star Hauler/StarHauler.exe'
+  args: []
+checks:
+  - { id: stick, type: device.connected, title: Logitech Extreme 3D, required: true, params: { vendorId: '046D', productId: C215 } }
+  - { id: settings, type: file.exists, title: Star Hauler settings, required: true, params: { path: '{USER_STAR_HAULER}/settings.ini' } }

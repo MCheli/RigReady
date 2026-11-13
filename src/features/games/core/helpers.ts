@@ -25,6 +25,8 @@ export interface GameModuleExtras {
   kind?: 'racing' | 'flight';
   /** Facts about this PC worth a line on the game's page ("Last run with 0.38.5"). */
   facts?(ctx: CheckContext): Promise<string[]>;
+  /** What was left out of a game the user added when its file was read, and why. */
+  problems?: string[];
 }
 
 /** Folders the user pointed RigReady at for games it could not find by itself. */

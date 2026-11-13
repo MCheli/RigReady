@@ -6564,6 +6564,114 @@ requirements:
     notes:
       - "2026-11-11: the settings folder and the program path come from community guides (docs/research/gamepad-emulation.md); the game was not on the rig when it was recorded, so the scenario virtual-controller-ready writes them by hand."
 
+  - id: GAME-ADD-001
+    title: Add a game of your own on the Games page
+    job: configure
+    area: games
+    priority: p1
+    done_means:
+      - "Configure > Games has Add a game. Its dialog takes the game's program (native file picker), a name (suggested from the program's folder), the kind (flight, racing or neither), settings folders (native folder picker), an optional Steam app id, and the program names that mean the game is running (the program's own name to start with)."
+      - "The game is kept in <data folder>/games/custom.json with its paths in the standard variables ({DOCUMENTS}/...), read at start and turned into a game module through simpleGame. It is listed with the built-in games, marked Added by you; found where its program is, or in Steam by its app id; launched; its settings folders listed and suggested on the Backups page; its program names used for Running and to close it before a restore."
+      - "Its first settings folder is a path variable of its own ({USER_<NAME>}, labelled), so its setups and backups stay portable."
+      - "Its id is user- and its name, never the id of a game RigReady ships, and a name another game already has is refused."
+    status: done
+    evidence:
+      - "src/features/games/core/customGames.test.ts#a game added from the native pickers is found, launched, backed up and offered for a setup like a built-in one"
+      - "src/features/games/core/customGames.test.ts#reads the games in custom.json at start and turns each into a game module"
+      - "src/features/games/core/customGames.test.ts#a game sold on Steam is found and started through Steam by its app id alone"
+      - "src/features/games/core/customGames.test.ts#ids start with user-, never take another game’s, and names are not doubled"
+      - "src/features/games/core/customGames.test.ts#names a game after its folder, past the folders that say nothing"
+      - "tests/e2e/games-add.e2e.ts#games: a game is added from its program and settings folder, and a new setup offers it beside Another game"
+      - "artifacts/screens/games-add-a-game/01-empty.png"
+      - "artifacts/screens/games-add-a-game/03-filled.png"
+      - "artifacts/screens/games-add-a-game/04-games.png"
+      - "artifacts/screens/games-add-a-game/05-game.png"
+
+  - id: GAME-ADD-002
+    title: Change and remove a game you added, without breaking its setups
+    job: configure
+    area: games
+    priority: p1
+    done_means:
+      - "A game the user added has Change and Remove on its page. Change opens the same dialog with what the game has and keeps the game's id."
+      - "Remove first says which setups are for the game. Those setups then become setups for “Another game” with the game's name; every path in them that starts with the game's folder variable is written out in full; they check and launch as before."
+      - "A change or a removal is reported only after custom.json, and each setup it changed, are read back holding it."
+    status: done
+    evidence:
+      - "src/features/games/core/customGames.test.ts#a removed game’s setups keep working as “Another game”, and the page said which they were"
+      - "src/features/games/core/customGames.test.ts#says it did not save or remove when the file does not hold the change afterwards"
+      - "tests/e2e/games-add.e2e.ts#games: a game the user added is changed and removed, and its setup keeps working as Another game"
+      - "artifacts/screens/games-own-change-remove/03-changed.png"
+      - "artifacts/screens/games-own-change-remove/04-remove-asks.png"
+      - "artifacts/screens/games-own-change-remove/05-removed.png"
+      - "artifacts/screens/games-own-change-remove/06-play.png"
+
+  - id: GAME-ADD-003
+    title: The settings folders of a game you added cannot open the whole PC to backups
+    job: configure
+    area: games
+    priority: p1
+    done_means:
+      - "Settings folders come only from the native folder picker: the window sends back a ref main handed out, never a path."
+      - "A drive root, the Windows folder, Program Files, ProgramData, the user folder and any folder above it, RigReady's own folder, the whole Documents, Saved Games, Desktop and AppData folders, and a whole Steam library are refused with the reason: in the picker, and when custom.json is read back (the folder is left out and the game's row and page say so)."
+      - "Whether a path may be tracked for backup no longer lets a game's folder or suggestion that is too broad vouch for it, whatever a game module names."
+    status: done
+    evidence:
+      - "src/core/guards.test.ts#refuses a drive root, Windows, Program Files, the user folder, RigReady’s folder and a whole Steam library; takes a game’s own folder"
+      - "src/features/games/core/customGames.test.ts#refuses a drive, Windows, Program Files, the user folder and RigReady’s own folder in the picker"
+      - "src/features/games/core/customGames.test.ts#a hand-edited file cannot open a whole drive or the user folder to backups and restores"
+      - "src/features/games/core/customGames.test.ts#backup does not let any game’s folder that is too broad vouch for a path (the code that decides)"
+      - "tests/e2e/games-add.e2e.ts#games: a game is added from its program and settings folder, and a new setup offers it beside Another game"
+      - "artifacts/screens/games-add-a-game/02-folder-refused.png"
+      - "artifacts/screens/games-own-change-remove/01-games.png"
+
+  - id: GAME-ADD-004
+    title: The program of a game you added is started safely, and only its own programs are closed
+    job: configure
+    area: games
+    priority: p1
+    done_means:
+      - "The program comes only from the native file picker. It must be a .exe outside Windows and RigReady's own folder and not RigReady itself, and it is started with an argument list (processes.start), never a command line; nothing typed in the dialog reaches it."
+      - "Program names that are Windows' own (explorer.exe, svchost.exe, cmd.exe and the like) or RigReady's are refused when the game is saved and left out when custom.json is read back. A restore never asks such a program to close, whatever a game module names."
+    status: done
+    evidence:
+      - "src/core/guards.test.ts#refuses Windows’ own programs and RigReady itself, by name and by file, in any case"
+      - "src/core/guards.test.ts#a restore never asks a part of Windows to close, whatever a game names"
+      - "src/features/games/core/customGames.test.ts#takes the program only from the file picker, refuses Windows and RigReady, and never a path from the window"
+      - "src/features/games/core/customGames.test.ts#a hand-edited file cannot make RigReady start or close Windows’ programs or RigReady"
+      - "src/features/games/core/customGames.test.ts#a game added from the native pickers is found, launched, backed up and offered for a setup like a built-in one"
+
+  - id: GAME-ADD-005
+    title: A shared setup for a game added by hand arrives as “Another game” on a PC without it
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "A shared setup whose game is a user- game this PC does not have is imported as a setup for “Another game” with that game's name (from the setup's compatibility list); the compatibility report and the setup part of the import say so."
+      - "When this PC has a game added under the same name, the setup keeps it."
+    status: done
+    evidence:
+      - "src/features/games/core/customGames.test.ts#comes in as “Another game” with that game’s name, and the import says so"
+      - "src/features/games/core/customGames.test.ts#keeps the game when this PC has a game of the same name added"
+      - "tests/e2e/games-add.e2e.ts#games: a shared setup for a game added by hand arrives on a PC without it as Another game, and the import says so"
+      - "artifacts/screens/games-share-own-import/01-report.png"
+      - "artifacts/screens/games-share-own-import/02-imported.png"
+
+  - id: GAME-ADD-006
+    title: Your games beside “Another game” in a new setup and in the setup editor
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "In a new setup the user's games that were found are the last game tiles, beside “Another game”, marked “added by you”; choosing one brings its program as the launch target, as a built-in game does."
+      - "In the setup editor the user's games are listed last, above “Other game…”, as “<name> (added by you)”."
+    status: done
+    evidence:
+      - "tests/e2e/games-add.e2e.ts#games: a game is added from its program and settings folder, and a new setup offers it beside Another game"
+      - "src/features/games/core/customGames.test.ts#a game added from the native pickers is found, launched, backed up and offered for a setup like a built-in one"
+      - "artifacts/screens/games-add-a-game/06-capture.png"
+      - "artifacts/screens/games-add-a-game/08-editor.png"
+
   # ---------------------------------------------------------------------------
   # VIRTUAL CONTROLLER (gamepad emulation)
   # ---------------------------------------------------------------------------
