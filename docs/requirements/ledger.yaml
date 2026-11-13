@@ -4444,24 +4444,35 @@ requirements:
     priority: p1
     done_means:
       - "The ViperAce (F-16EX) grip is drawn from behind with every control the grip has: the red button, the trim hat, the top left hat, the centre and right hats, the mini-stick, the two side hats, the top front lever, the two-stage trigger, the paddle lever and the pinky button, each where it is on the grip, with the button numbers and axes of the maker's number map."
-      - "The F-15EX throttle handles are drawn in four views (the front of the left handle, the base from above, the thumb side of the right handle, the front of the right handle), with every control of both handles on the handle it is on, and 57 of the 62 buttons and all seven axes placed; buttons 45 to 49, which no control is known to press, are left off and say so in the note."
+      - "The F-15EX throttle handles are drawn in four views (the front of the left handle, the base from above, the thumb side of the right handle, the front of the right handle), with every control of both handles on the handle it is on, and 54 of the 62 buttons and all seven axes placed; buttons 45 to 49 and 60 to 62, which nothing lit when the owner went round every control on 13 Nov, are left off and say so in the note."
       - "The F/A-18 grip is drawn with every switch of the maker's number map on both stick bases."
-      - "A control whose direction or left and right is not confirmed from a real source carries the '?' mark, and only those do: the grip's right side hat and the throttle's two front hats."
+      - "Every direction on the grip and the throttle is as the owner pressed it on his own rig on 13 Nov, so no control of either carries the '?' mark: the grip's right side hat is up 15, right 16, down 17, left 18, press 14; the throttle's front hats are left 52 and right 54 on the left handle, left 29 and right 33 on the right handle."
+      - "The three-way control under the left handle's knob is one control, named Left handle slider: 59 at one end, 58 in the middle, 57 at the other end. The knob above it is the RZ axis only."
+      - "Where a control rests when nobody uses it is marked in the drawing data (rest on the input): on the throttle 23, 4, 30, 31, 41 and 58, on the grip 1 and 7 (the top front lever and the paddle let go). A switch that stays wherever it is put has no such mark."
       - "A control is named for where it is and what it is ('Red button', 'Left side hat (CMS)'), not for what one aircraft does with it; the sheet's detail panel and By action use the same names."
       - "On the owner's recorded rig and Hornet bindings no two leader lines cross, every label is on the page and every bound input is on the sheet."
     notes:
       - "2026-11-12: the owner could not find controls on his own stick and throttle in the sitting: the first drawings put controls in the wrong places and left some out (the grip had 12 controls with TMS, CMS and DMS on the wrong hats; the throttle had 27 of 62 buttons, with handle controls drawn on the base). Redrawn from the maker's number maps, the game's default profiles and the owner's presses, with RigReady's own artwork (owner decision 10A). Sources and what was fixed: docs/research/controller-drawings.md section 8."
-      - "Still to settle by one press each on the real device: the directions of the grip's right side hat, left and right on the throttle's two front hats, which end of the left handle knob gives 60 and which 62."
+      - "2026-11-13: settled at the second look on the rig (sitting log 09:56 to 10:02): the owner pressed each '?' control while the cheat sheet recorded what lit, and the drawings and the research note (section 11) now say what the presses showed. The owner first took the left handle slider for the knob; the maker's screen ties RZ to the knob, so the two stay separate controls."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#are valid drawing files, for the WinWing grips, throttle, frames and panels and the Thrustmaster sticks, with every control anchored on the device"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#is found by the name the grip reports, numbered as WinWing numbers it, with every bound control on the drawing"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#ViperAce grip: the right side hat is up 15, right 16, down 17, left 18 and press 14, and 1 and 7 are where its two levers rest"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#F-15EX throttle: left and right on both front hats, the left handle slider, nothing on 45 to 49 or 60 to 62, and where it rests"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#names each of those the same way on the sheet, in the trainer and on the overlay"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#reads a rest mark in a drawing file, and refuses one that is not yes or no"
       - "src/features/cheat-sheets/core/sheet.test.ts"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: what the owner pressed on his rig lights the control it belongs to, on the grip, the throttle and the take-off panel"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a press never lights nothing - a button no control is known to press still shows, and lights up"
       - "docs/research/controller-drawings.md"
       - "artifacts/screens/cheat-sheets-gallery/01-stick.png"
       - "artifacts/screens/cheat-sheets-gallery/02-throttle.png"
+      - "artifacts/screens/cheat-sheets-second-look/01-stick-right-side-hat-right.png"
+      - "artifacts/screens/cheat-sheets-second-look/02-throttle-slider-one-end.png"
+      - "artifacts/screens/cheat-sheets-free-buttons/01-throttle-more-controls.png"
 
   - id: SHEET-020
     title: The WinWing panels, UFC and ICP are drawn as the real devices
@@ -4472,14 +4483,19 @@ requirements:
       - "The WinWing UFC1 with its HUD1, the ICP, the F-18 startup panel and the F-18 take-off panel 2 each have a drawing of the panel face, found by the USB id or the name the panel reports, in place of the grid of cards: every switch, knob, key and handle the maker's number map names is on the face where it is on the panel, with its numbers and the word printed beside it."
       - "The MFD1 frame drawing has all twenty edge buttons, the four corner rockers by their printed names (DAY / NGT, SYM, GAIN, CONT), the knob with its press, and the switch on the side edge."
       - "A number the maker's map has no control for is not placed on the drawing; it shows under More controls (SHEET-022)."
-      - "A control whose numbers are not confirmed carries the '?' mark, and only that one does: the take-off panel's brake handle."
+      - "A control whose numbers are not confirmed carries the '?' mark, and only that one does: the take-off panel's wing fold handle, whose 30 (SPREAD on the maker's screen) turned out to follow the brake handle."
+      - "The take-off panel's brake handle is out 40, in 41, left 39, right 38, and 30 while it rests (marked rest), as moved on the owner's panel on 13 Nov; the jettison knob (17 to 19) and the gear lever (35 to 37) each move as one control. The shipped cards of the panel say the same."
       - "On the owner's recorded rig, whatever is bound, no two leader lines cross and every label is on the page."
     notes:
       - "2026-11-12: owner decision 10A: every WinWing controller the owner has, drawn fresh in RigReady's style. The cards of the ICP were one number too low on two switches and are corrected for users who keep a card layout. Sources: docs/research/controller-drawings.md section 8."
+      - "2026-11-13: the brake handle was moved at the second look on the rig; the drawing and the cards follow the presses (research note section 11). The owner's own DCS bindings for the panel, from WinWing's profile, still have 30 as Wing Fold SPREAD: one move of the wing fold handle on the rig settles whether 30 also follows it."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#has a drawing for each of the owner's WinWing panels, found by what the panel reports, numbered as the maker numbers it"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#draws each one, not a grid of cards, with no leader crossing and every label on the page, whatever is bound"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#take-off panel 2: the brake handle is out 40, in 41, left 39, right 38 and rests on 30; the gear lever and the jettison knob are one control each"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: what the owner pressed on his rig lights the control it belongs to, on the grip, the throttle and the take-off panel"
+      - "artifacts/screens/cheat-sheets-second-look/03-takeoff-brake-out.png"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays the stick, the throttle and an MFD out with no leader crossing, every label on the page and nothing bound left out"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: every device of the rig has a picture"
       - "docs/research/controller-drawings.md"
@@ -7883,7 +7899,9 @@ requirements:
       - "Closing the window hides it to the tray (setting, default on); the tray icon reflects readiness of the last-used profile (green, yellow, red) when checks have run."
       - "Tray menu offers: Open, profile list with quick switch, Make ready, Launch, Stand down, Quit."
       - "Only one instance runs; starting a second focuses the first."
+      - "The switch for keeping RigReady in the tray changes with a mouse click on its track, its thumb or its title, and so does every switch built the same way, as a row with its title beside it: Start with Windows, Check for updates automatically, and on the Overlay page Show the overlay and Presses the game has nothing on."
     notes:
+      - '2026-11-13: at the second look the rig driver clicked the tray switch and it did not change; Space did. Measured with the mouse at the visible place of each part (tests/e2e/settings-switch-mouse.e2e.ts): the track and the thumb always switched it. Playwright''s own click on the track refuses, because the switch''s invisible input lies over the track, which is what the driver met. A click on the title did nothing: it was text beside the switch, not its label. The title of each switch built that way is now a label for the switch (label for= the switch''s id), so a click on its words switches it, with a pointer over them; the switches with their own label inside them already did.'
       - '2026-11-12: at the sitting the owner closed the window and found no icon in the tray. RigReady 1 kept its settings in the same file and wrote "minimizeToTray": false there for a switch that was disabled, and this version read that as a choice. A settings file version 1 wrote (a "version" key, no "schemaVersion") is now read without that one value, on disk and out of a backup; nothing is written at the start. A file this version has saved holds a choice and is left as it is, so a PC that ran an earlier test build of this version keeps "off" until the switch is turned on.'
       - '2026-11-12: so that nobody is surprised by what closing the window does, the switch is now called "Keep RigReady in the tray when you close the window", the line under it says what closing the window does in either position (and that Windows may keep the icon under the ^ arrow), and "tray" in the command palette finds Settings.'
     status: done
@@ -7900,6 +7918,11 @@ requirements:
       - 'artifacts/screens/close-to-tray/01-found-by-tray.png'
       - 'artifacts/screens/close-to-tray/02-on-says-what-closing-does.png'
       - 'artifacts/screens/close-to-tray/03-off-says-closing-quits.png'
+      - 'tests/e2e/settings-switch-mouse.e2e.ts#settings: a mouse click on a switch, its track, its thumb or its title, switches it, and the choice is saved'
+      - 'tests/e2e/settings-switch-mouse.e2e.ts#overlay: a mouse click on the title of either switch switches it'
+      - 'artifacts/screens/settings-switch-mouse/01-tray-off-after-clicks.png'
+      - 'artifacts/screens/settings-switch-mouse/02-tray-on-by-its-title.png'
+      - 'artifacts/screens/overlay-switch-mouse/01-on-by-its-title.png'
 
   - id: PLAT-003
     title: Auto-update with channels
@@ -8249,22 +8272,33 @@ requirements:
     area: platform
     priority: p1
     done_means:
-      - "The Release workflow signs the installer, RigReady.exe and the uninstaller through Azure Artifact Signing when the repository has the four variables RIGREADY_SIGN_ENDPOINT, RIGREADY_SIGN_ACCOUNT, RIGREADY_SIGN_PROFILE and RIGREADY_SIGN_PUBLISHER and the three secrets AZURE_TENANT_ID, AZURE_CLIENT_ID and AZURE_CLIENT_SECRET; builds today's unsigned installer when it has none of them; and fails with a message naming what is missing on anything in between. Only the build step sees them. npm run pack and the installer smoke's test variant are never signed."
-      - "A signed build's resources/app-update.yml names the publisher, so the installed app verifies every update's signature against it (electron-updater, NsisUpdater.verifySignature) and refuses an installer that is unsigned or signed under another name; an unsigned build's names none, so unsigned local builds update each other. npm run dist checks the file after every build and fails on the wrong state."
-      - "The workflow verifies a signed build before the draft is made: signtool verify /pa and Get-AuthenticodeSignature (status Valid, subject CN equal to the publisher, as electron-updater compares them) on the installer, then on the program and the uninstaller it installs silently into a temporary folder, and the publisher in the installed feed file; then the silent uninstall. A failure stops the release."
-      - "docs/RELEASING.md says what signing does and does not do, the Azure setup for an individual, the exact variable and secret names, that a signed release is never followed by an unsigned one, and how to verify a draft."
+      - "The Release workflow signs the installer, RigReady.exe and the uninstaller through Azure Artifact Signing when the repository has the five variables RIGREADY_SIGN_ENDPOINT, RIGREADY_SIGN_ACCOUNT, RIGREADY_SIGN_PROFILE, RIGREADY_SIGN_PUBLISHER and RIGREADY_SIGN_PUBLISHER_DN and the three secrets AZURE_TENANT_ID, AZURE_CLIENT_ID and AZURE_CLIENT_SECRET; builds today's unsigned installer when it has none of them; and fails with a message naming what is missing on anything in between, or when RIGREADY_SIGN_PUBLISHER_DN is not a DN (read with electron-updater's own parser) whose CN is RIGREADY_SIGN_PUBLISHER. Only the build step sees them. npm run pack and the installer smoke's test variant are never signed."
+      - "A signed build's resources/app-update.yml names the publisher as a list, the certificate's full DN first and its CN after it, so the installed app verifies every update's signature against the DN (electron-updater, NsisUpdater.verifySignature) and falls back to the CN only if the certificate's other details change, and refuses an installer that is unsigned or signed under another name; an unsigned build's names none, so unsigned local builds update each other. npm run dist checks the file after every build and fails on the wrong state."
+      - "Before the draft is made, the workflow runs electron-updater's own update check (its NsisUpdater, not a copy of it) on the new installer with the publisher names the build put into the package, and fails unless electron-updater accepts the installer without a warning and by the full DN alone: a certificate whose subject is no longer the configured DN stops the release, with the subject in the message, while installed copies would still take it by the CN."
+      - "The workflow verifies a signed build before the draft is made: signtool verify /pa and Get-AuthenticodeSignature (status Valid, subject CN equal to the publisher, as electron-updater compares them) on the installer, then on the program and the uninstaller it installs silently into a temporary folder, and the same electron-updater check with the installed feed file; then the silent uninstall. A failure stops the release."
+      - "docs/RELEASING.md says what signing does and does not do, the Azure setup for an individual, the exact variable and secret names, why the feed holds the DN and then the CN, that a signed release is never followed by an unsigned one, and how to verify a draft."
     notes:
       - "2026-11-06: the build path, the workflow steps, the verification script and the documentation are in place and unit-tested, and an unsigned npm run dist through the new script produced the installer with no publisher in its feed file. A signed build has not run yet: the owner's identity validation in Azure is in progress, so no variable or secret is set. Done means one signed draft built by the workflow with the verify step green, and an installed unsigned copy updating to it on the rig."
+      - "2026-11-13: signed 2.0.0-beta.4 updated itself to signed beta.5 on the rig, and electron-updater logged \"Signature validated using only CN ... Please add your full Distinguished Name (DN) to publisherNames\": the feed file held the CN alone. It now holds the DN from the new variable RIGREADY_SIGN_PUBLISHER_DN first and the CN after it (app-builder-lib 26.18: the list goes in publish[0].publisherName; win.azureSignOptions.publisherName is a single string in its schema and stays the CN). The new workflow step and the unit tests run electron-updater's verifier for real: in the tests on a signed Windows program (Node's own executable, or PowerShell where Node is unsigned); by hand on the signed beta.5 installer, where the names a build now writes pass, beta.5's own installed feed file fails with the CN-only warning, a DN with another town fails and shows the real subject, and another publisher is refused. Still to come: the variable set in the repository, and the step green in the 2.0.0 Release run."
+      - "2026-11-13, later: on GitHub's runner the test's own Windows PowerShell could not load Get-AuthenticodeSignature: every step starts from PowerShell 7, whose module path Windows PowerShell inherits and cannot load. Tests and scripts now start powershell.exe without PSModulePath (scripts/lib/windowsPowerShell.ts), the check's script clears it for its own process, and electron-updater's verifier clears it in its own command line. The unit test now puts a module Windows PowerShell cannot load first on the path on every PC, and proves the clash is there before it checks."
     status: in_progress
     evidence:
       - "scripts/lib/signing.test.ts#nothing set, or everything blank, is an unsigned build; other variables do not count"
-      - "scripts/lib/signing.test.ts#all seven set is a signed build with the four values, trimmed"
-      - "scripts/lib/signing.test.ts#missing from the other six fails, naming it"
-      - "scripts/lib/signing.test.ts#a signed build selects Azure signing as app-builder-lib reads it, requires it, and names the publisher in the feed"
+      - "scripts/lib/signing.test.ts#all eight set is a signed build with the five values, trimmed"
+      - "scripts/lib/signing.test.ts#missing from the other seven fails, naming it"
+      - "scripts/lib/signing.test.ts#the DN must be the certificate's whole subject, read as electron-updater reads it, with the publisher as its CN"
+      - "scripts/lib/signing.test.ts#a signed build selects Azure signing as app-builder-lib reads it, requires it, and names the DN and then the CN in the feed"
       - "scripts/lib/signing.test.ts#an unsigned build must not name a publisher: the installed app would refuse every update"
-      - "scripts/lib/signing.test.ts#a signed build must name exactly the publisher, as a list"
+      - "scripts/lib/signing.test.ts#a signed build must name exactly the publisher, as a list: the DN, then the CN"
+      - "scripts/lib/updateSignature.test.ts#the names a signed build writes, the DN and then the CN, pass by the full DN without a warning"
+      - "scripts/lib/updateSignature.test.ts#the CN alone, as the signed betas had it: electron-updater accepts with its warning, and the check fails"
+      - "scripts/lib/updateSignature.test.ts#a DN that is no longer the certificate's subject, with the CN after it: installed copies still take it, but the check fails and shows the subject"
+      - "scripts/lib/updateSignature.test.ts#a file signed by someone else, or not signed, is refused"
+      - "scripts/lib/updateSignature.test.ts#a feed file without a publisher, or no feed file, fails before any signature is read"
+      - "scripts/lib/windowsPowerShell.test.ts#a copy of the environment without PSModulePath in any case, the rest kept, the original untouched"
       - "tests/unit/releaseProcess.test.ts#the repository builds unsigned: no Azure options, no publisher in the feed, and pack and the test installer never sign"
-      - "tests/unit/releaseProcess.test.ts#the Release workflow hands the four variables and three secrets to the build step only, and verifies a signed build before the draft is made"
+      - "tests/unit/releaseProcess.test.ts#the Release workflow hands the five variables and three secrets to the build step only, and verifies a signed build before the draft is made"
+      - "scripts/verify-update-signature.ts"
       - "scripts/verify-signed-installer.ps1"
       - ".github/workflows/release.yml"
 

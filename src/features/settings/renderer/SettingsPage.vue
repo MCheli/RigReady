@@ -144,7 +144,9 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
       <div class="rr-panel settings-panel">
         <div class="rr-row">
           <div class="rr-row-main">
-            <div class="rr-row-title">Start with Windows</div>
+            <label class="rr-row-title" for="setting-start-with-windows-switch">
+              Start with Windows
+            </label>
             <div class="rr-row-sub">
               Starts in the tray when you sign in.
               <span v-if="view.startWithWindowsProblem" data-testid="login-problem">
@@ -154,6 +156,7 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
             </div>
           </div>
           <v-switch
+            id="setting-start-with-windows-switch"
             :model-value="settings.startWithWindows"
             data-testid="setting-start-with-windows"
             aria-label="Start with Windows"
@@ -162,7 +165,9 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
         </div>
         <div class="rr-row">
           <div class="rr-row-main">
-            <div class="rr-row-title">Keep RigReady in the tray when you close the window</div>
+            <label class="rr-row-title" for="setting-minimize-to-tray-switch">
+              Keep RigReady in the tray when you close the window
+            </label>
             <div class="rr-row-sub" data-testid="setting-minimize-to-tray-effect">
               <template v-if="settings.minimizeToTray">
                 Closing the window hides it. RigReady keeps running, with its icon in the tray next
@@ -175,6 +180,7 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
             </div>
           </div>
           <v-switch
+            id="setting-minimize-to-tray-switch"
             :model-value="settings.minimizeToTray"
             data-testid="setting-minimize-to-tray"
             aria-label="Keep RigReady in the tray when you close the window"

@@ -66,6 +66,7 @@ export {
   parseDrawing,
   pathBox,
   drawnInputs,
+  restInputs,
   applyChanges,
   drawingMatches,
   DeviceDrawingSchema,

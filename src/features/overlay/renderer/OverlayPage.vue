@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
       <div class="rr-panel op-section" data-testid="overlay-main" :data-on="state.on">
         <div class="rr-row">
           <div class="rr-row-main">
-            <div class="rr-row-title">Show the overlay</div>
+            <label class="rr-row-title" for="overlay-on-switch">Show the overlay</label>
             <div class="rr-row-sub" data-testid="overlay-status">
               <template v-if="!state.on">
                 Off. Nothing is put over the game, and the controllers are not read for it.
@@ -220,6 +220,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <v-switch
+            id="overlay-on-switch"
             :model-value="state.on"
             :loading="busy"
             hide-details
