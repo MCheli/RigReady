@@ -252,3 +252,49 @@ describe('the rig at a glance', () => {
     await expect(app.invoke('fly:rig', { profileId: 'gone' })).rejects.toThrow(/profile/);
   });
 });
+
+describe('DEV-017: what the owner said a device is, for the rig strip', () => {
+  it('says the kind by checklist item, only for the devices something was said about, monitors or not', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    expect((await glance()).kinds).toBeUndefined();
+
+    const listed = await app.ports.devices.list();
+    if (!listed.ok) throw new Error('list');
+    const pedals = listed.value.find((d) => d.productId === 'B68F')!;
+    await app.invoke('devices:setWhatItIs', {
+      key: pedals.instanceId,
+      kind: 'wheel',
+      usedFor: null,
+    });
+    const profile = await app.wiring.context.profiles.get(P.profileId);
+    if (!profile.ok) throw new Error('profile');
+    const item = profile.value.checks.find(
+      (c) => String(c.params['productId']).toUpperCase() === 'B68F'
+    )!;
+    expect((await glance()).kinds).toEqual({ [item.id]: 'wheel' });
+
+    // Only a use said: the picture is still told from the name.
+    await app.invoke('devices:setWhatItIs', {
+      key: pedals.instanceId,
+      kind: null,
+      usedFor: 'racing',
+    });
+    expect((await glance()).kinds).toBeUndefined();
+
+    // The devices keep their pictures when the monitors cannot be read.
+    await app.invoke('devices:setWhatItIs', {
+      key: pedals.instanceId,
+      kind: 'shifter',
+      usedFor: null,
+    });
+    await mutate(app, [
+      { op: 'failProvider', port: 'displays', message: 'The display driver did not answer.' },
+    ]);
+    expect(await glance()).toEqual({
+      monitors: [],
+      missing: [],
+      error: 'The display driver did not answer.',
+      kinds: { [item.id]: 'shifter' },
+    });
+  });
+});

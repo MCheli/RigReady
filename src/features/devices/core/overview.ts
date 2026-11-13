@@ -1,3 +1,4 @@
+import { deviceKind } from '../../../core/gearKind';
 import type { Profile } from '../../../core/profile/schema';
 import type { DeviceInfo, InputDevice } from '../../../shared/models';
 import {
@@ -16,8 +17,9 @@ import {
   sameModel,
   twinsOf,
 } from './identity';
+import { simFamily } from './family';
 import type { HidHideSummary, MissingDevice, Overview, RigDevice } from './model';
-import { findName, lastSighting, type DevicesData, type History } from './store';
+import { findEntry, findName, lastSighting, saidOf, type DevicesData, type History } from './store';
 
 export interface OverviewInputs {
   devices: DeviceInfo[];
@@ -86,6 +88,12 @@ function hidHideSummary(inputs: OverviewInputs, hiddenCount: number): HidHideSum
   };
 }
 
+/** What RigReady makes of a device without being told: the name's kind, the maker's family. */
+function readsOf(vendorId: string, productId: string, name: string): RigDevice['reads'] {
+  const usedFor = simFamily(vendorId, productId, name);
+  return { kind: deviceKind(name), ...(usedFor ? { usedFor } : {}) };
+}
+
 export function buildOverview(inputs: OverviewInputs): Overview {
   const present = inputs.devices.filter((d) => !d.isHub);
   const hubs = hubNames(inputs.devices);
@@ -114,6 +122,7 @@ export function buildOverview(inputs: OverviewInputs): Overview {
     controllers.forEach((c) => usedControllers.add(c.guid));
     const identity = identityFor(device, present);
     const given = findName(inputs.data.names, device, present)?.name;
+    const said = saidOf(findEntry(inputs.data.whatItIs, device, present));
     return {
       key: device.instanceId,
       instanceId: device.instanceId,
@@ -125,6 +134,8 @@ export function buildOverview(inputs: OverviewInputs): Overview {
       ...(given ? { givenName: given } : {}),
       name: given ?? device.name.trim(),
       kind: device.isGameController || controllers.length > 0 ? 'controller' : 'other',
+      ...(said ? { said } : {}),
+      reads: readsOf(device.vendorId, device.productId, device.name.trim()),
       controllers,
       controllersShared: twins > 1 && controllers.some((c) => c.usbInstanceId === undefined),
       twins,
@@ -146,6 +157,11 @@ export function buildOverview(inputs: OverviewInputs): Overview {
     const given = inputs.data.names.find(
       (e) => e.guid !== undefined && e.guid.toUpperCase() === controller.guid.toUpperCase()
     )?.name;
+    const said = saidOf(
+      inputs.data.whatItIs.find(
+        (e) => e.guid !== undefined && e.guid.toUpperCase() === controller.guid.toUpperCase()
+      )
+    );
     const vendorId = controller.vendorId || '0000';
     const productId = controller.productId || '0000';
     devices.push({
@@ -156,6 +172,8 @@ export function buildOverview(inputs: OverviewInputs): Overview {
       ...(given ? { givenName: given } : {}),
       name: given ?? controller.name.trim(),
       kind: 'controller',
+      ...(said ? { said } : {}),
+      reads: readsOf(vendorId, productId, controller.name.trim()),
       controllers: [controller],
       controllersShared: false,
       twins: 1,

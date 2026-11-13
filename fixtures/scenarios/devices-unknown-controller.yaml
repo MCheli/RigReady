@@ -1,0 +1,32 @@
+description: A home-built wheel that reports itself as "Arduino Leonardo", on a generic PC with flight and racing sims
+rig: generic-rig
+extends: generic-more-sims.yaml
+# Synthetic, not recorded. The controller stands for any gear RigReady cannot tell from its
+# name or its maker: a home-built wheel on an Arduino Leonardo board reports the board's own
+# name and USB id (2341:8036). No rule in src/core/gearKind.ts reads that name, and the
+# vendor is in neither list of src/features/devices/core/family.ts, so RigReady knows
+# neither what kind of gear it is nor what it is used for until the user says so on the
+# Devices page ("What it is", "Used for"). The GUIDs, the instance path and the controller's
+# axes and buttons are made up, not read from a real board.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_2341&PID_8036\6&2b1c0d9e&0&3'
+      vendorId: '2341'
+      productId: '8036'
+      name: 'Arduino Leonardo'
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+    controller:
+      name: 'Arduino Leonardo'
+      guid: 7C5D3E20-9C41-11F0-8003-444553540000
+      productGuid: 80362341-0000-0000-0000-504944564944
+      vendorId: '2341'
+      productId: '8036'
+      numAxes: 3
+      numButtons: 12
+      numHats: 0
+      axisNames: [X, Y, Z]

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CheckGroupSchema, type CheckGroup, type CheckItem, type Profile } from '../profile/schema';
 import { GameKindSchema } from '../../shared/models';
+import { DEVICE_KINDS } from '../gearKind';
 import { err, type Result } from '../result';
 import type {
   CaptureCandidate,
@@ -655,6 +656,7 @@ export const CaptureCandidateSchema = z.object({
       identifiedBy: z.enum(['ids', 'serial', 'port']),
       twin: z.object({ index: z.number().int(), of: z.number().int() }).optional(),
       model: z.string().optional(),
+      saidKind: z.enum(DEVICE_KINDS).optional(),
     })
     .optional(),
   monitors: z

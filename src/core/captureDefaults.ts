@@ -1,5 +1,11 @@
 import type { GameNeed } from './checks/registry';
-import { deviceKind, playedWith, type GearKind, type PlayedWith } from './gearKind';
+import {
+  deviceKind,
+  playedWith,
+  type DeviceKind,
+  type GearKind,
+  type PlayedWith,
+} from './gearKind';
 import type { LaunchAction } from './profile/schema';
 import type { GameKind } from '../shared/models';
 
@@ -45,7 +51,7 @@ interface Proposed extends Scoped {
   microphone?: boolean | undefined;
   group?: string | undefined;
   title?: string | undefined;
-  device?: { model?: string | undefined } | undefined;
+  device?: { model?: string | undefined; saidKind?: DeviceKind | undefined } | undefined;
   check?: { type: string; params: Record<string, unknown> } | undefined;
 }
 
@@ -87,9 +93,11 @@ export function offered(item: Scoped, choice: CaptureChoice): boolean {
  * The kind of gear a device is, or a program is for ("TrackIR software" is for a head
  * tracker, "Stream Deck app" for a button deck), told from its name. Undefined for gear
  * nobody can tell from the name and for programs that are not about one piece of gear.
+ * What the user said a device is, on the Devices page, comes before its name.
  */
 export function gearOf(candidate: Pick<Proposed, 'title' | 'device'>): GearKind | undefined {
-  const kind = deviceKind(candidate.device?.model ?? candidate.title ?? '');
+  const kind =
+    candidate.device?.saidKind ?? deviceKind(candidate.device?.model ?? candidate.title ?? '');
   return kind === 'other' || kind === 'keyboard' || kind === 'mouse' ? undefined : kind;
 }
 

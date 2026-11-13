@@ -11,7 +11,7 @@ import {
   identityFor,
   matchesDevice,
 } from './deviceCheck';
-import { deviceStores, updateHistory, withName } from './store';
+import { deviceStores, updateHistory, withName, withWhat } from './store';
 
 let rig: TestRig;
 afterEach(() => rig?.cleanup());
@@ -326,5 +326,78 @@ describe('device checks on the recorded rig', () => {
       { ...rig.ctx, profile: { id: profile.id, name: profile.name } }
     );
     expect(outcome.summary).toMatch(/^Connected · /);
+  });
+});
+
+describe('DEV-017: a new setup goes by what the user said a device is', () => {
+  it('proposes what the user said is sim gear, whatever Windows lists it as, with its picture and its family', async () => {
+    rig = await scenarioRig('flying-fresh', { files: [] });
+    const before = await deviceCapture.capture(rig.ctx);
+    if (!before.ok) throw new Error('capture');
+    const listed = await rig.ports.devices.list();
+    if (!listed.ok) throw new Error('list');
+    const present = listed.value;
+    const named = (name: string): DeviceInfo => present.find((d) => d.name === name)!;
+    await deviceStores(rig.ports).data.update((data) => {
+      // Not a game controller to Windows; the user says it is a head tracker.
+      let next = withWhat(data, named('TrackIR 5'), present, { kind: 'tracker' });
+      // A game controller to Windows; the user says it is a keyboard.
+      next = withWhat(next, named('WINWING MFD1-L'), present, { kind: 'keyboard' });
+      // Flight gear by its maker; the user races with it.
+      next = withWhat(next, named('T-Pendular-Rudder'), present, { usedFor: 'racing' });
+      // Racing gear by its maker; the user uses it for both.
+      next = withWhat(next, named('FANATEC Podium Wheel Base DD2'), present, {
+        kind: 'wheel',
+        usedFor: 'both',
+      });
+      // Nothing to Windows, and only a use said: that makes it sim gear.
+      return withWhat(next, named('SteelSeries Apex Pro'), present, { usedFor: 'flight' });
+    });
+    const result = await deviceCapture.capture(rig.ctx);
+    if (!result.ok) throw new Error('capture');
+    const candidate = (title: string) => result.value.find((c) => c.title === title)!;
+
+    expect(candidate('TrackIR 5')).toMatchObject({
+      selectedByDefault: true,
+      tier: 'main',
+      icon: 'mdi-webcam',
+      device: { gameController: false, saidKind: 'tracker' },
+    });
+    expect(candidate('WINWING MFD1-L')).toMatchObject({
+      selectedByDefault: false,
+      tier: 'more',
+      icon: 'mdi-keyboard-outline',
+      device: { gameController: true, saidKind: 'keyboard' },
+    });
+    // What is not proposed says no family: it decides nothing about the rig.
+    expect(candidate('WINWING MFD1-L').kind).toBeUndefined();
+    expect(candidate('T-Pendular-Rudder')).toMatchObject({
+      selectedByDefault: true,
+      kind: 'racing',
+      icon: 'mdi-controller',
+    });
+    expect(candidate('T-Pendular-Rudder').device?.saidKind).toBeUndefined();
+    expect(candidate('FANATEC Podium Wheel Base DD2')).toMatchObject({
+      selectedByDefault: true,
+      icon: 'mdi-steering',
+      device: { saidKind: 'wheel' },
+    });
+    expect(candidate('FANATEC Podium Wheel Base DD2').kind).toBeUndefined();
+    expect(candidate('SteelSeries Apex Pro')).toMatchObject({
+      selectedByDefault: true,
+      tier: 'main',
+      kind: 'flight',
+      icon: 'mdi-usb',
+    });
+    // Sim gear still leads the list, and everything else is behind "show all".
+    const firstOther = result.value.findIndex((c) => !c.selectedByDefault);
+    expect(result.value.slice(0, firstOther).every((c) => c.tier === 'main')).toBe(true);
+    expect(
+      result.value.slice(firstOther).every((c) => !c.selectedByDefault && c.tier === 'more')
+    ).toBe(true);
+    // An answer is never the identity: every check is the one proposed before, word for word.
+    const checks = (list: typeof result.value) =>
+      Object.fromEntries(list.map((c) => [c.key, c.check]));
+    expect(checks(result.value)).toEqual(checks(before.value));
   });
 });
