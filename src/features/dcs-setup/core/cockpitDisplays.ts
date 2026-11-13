@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { CheckContext } from '../../../core/checks/registry';
 import type { AircraftInfo } from './aircraft';
-import { KNOWN_AIRCRAFT, ViewportNameSchema } from './screens';
+import { aircraftLabel, KNOWN_AIRCRAFT, unitNameProblem, viewportNameProblem } from './screens';
 
 /**
  * Which cockpit displays an installed module can draw on another screen, read from its own
@@ -17,9 +17,6 @@ import { KNOWN_AIRCRAFT, ViewportNameSchema } from './screens';
  * module whose scripts are compiled finds nothing; the built-in table covers the aircraft it
  * knows for that case.
  */
-
-/** Names that are the main view, not a cockpit display. */
-const MAIN_VIEWS = new Set(['center', 'gu_main_viewport', 'uimainview']);
 
 /** Lua comments out (block and line). Strings are kept; a "--" inside a string is rare here. */
 const stripComments = (text: string): string =>
@@ -51,8 +48,8 @@ export function scanViewportNames(text: string): ScannedViewport[] {
   for (const m of code.matchAll(FIND)) found.push({ at: m.index, viewport: { name: m[2]! } });
   const out: ScannedViewport[] = [];
   for (const { viewport } of found.sort((a, b) => a.at - b.at)) {
-    if (MAIN_VIEWS.has(viewport.name.toLowerCase())) continue;
-    if (!ViewportNameSchema.safeParse(viewport.name).success) continue;
+    // The main view's names, and any name the setup file could not carry, are not displays.
+    if (viewportNameProblem(viewport.name)) continue;
     if (!out.some((v) => v.name === viewport.name)) out.push(viewport);
   }
   return out;
@@ -119,7 +116,8 @@ export async function installedDisplayCatalog(
   const byModule = new Map<string, string[]>();
   const out: CatalogEntry[] = [];
   for (const a of aircraft) {
-    if (!a.module) continue;
+    // A unit name the setup file cannot carry could never be used: it is not offered.
+    if (!a.module || unitNameProblem(a.unit)) continue;
     let scanned = byModule.get(a.module);
     if (!scanned) {
       scanned = await scanModuleDisplays(ctx, path.join(installDir, 'Mods', 'aircraft', a.module));
@@ -127,9 +125,28 @@ export async function installedDisplayCatalog(
     }
     const builtIn = KNOWN_AIRCRAFT.find((k) => k.unit === a.unit)?.displays.map((d) => d.name);
     const displays = scanned.length ? scanned : (builtIn ?? []);
-    if (displays.length) out.push({ unit: a.unit, label: a.label, displays });
+    // The label is text out of the module's own files: made one line before it goes anywhere.
+    if (displays.length) {
+      out.push({ unit: a.unit, label: aircraftLabel(a.label, a.unit), displays });
+    }
   }
   return out.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/**
+ * The installed aircraft the catalog leaves out: those in whose files no exportable display
+ * was found. The editor offers them apart and says so, because the scan can miss a display
+ * (a name built at run time, compiled scripts) and one can then be added by name.
+ */
+export function aircraftWithoutDisplays(
+  aircraft: AircraftInfo[],
+  catalog: CatalogEntry[]
+): { unit: string; label: string }[] {
+  const listed = new Set(catalog.map((c) => c.unit));
+  return aircraft
+    .filter((a) => a.module && !listed.has(a.unit) && !unitNameProblem(a.unit))
+    .map((a) => ({ unit: a.unit, label: aircraftLabel(a.label, a.unit) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 /** The built-in table as a catalog: for a PC where no installed module was found. */

@@ -269,7 +269,7 @@ const named = (
       </span>
       <span class="smap-box-text">
         <span class="smap-box-label">{{ box.label }}</span>
-        <span class="smap-box-name">{{ box.name }}</span>
+        <span v-if="box.name !== box.label" class="smap-box-name">{{ box.name }}</span>
       </span>
       <template v-if="box.editable && box.selected">
         <span

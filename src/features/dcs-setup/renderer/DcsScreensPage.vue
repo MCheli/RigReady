@@ -21,9 +21,10 @@ import {
   generateSetup,
   kneeboardPlace,
   kneeboardSide,
-  MAIN_VIEW_ONLY,
   monitorLabels,
   moveCrop,
+  unitNameProblem,
+  viewportNameProblem,
   type Crop,
   type Rect,
   type ScreenSetup,
@@ -283,17 +284,50 @@ const labels = computed(() => monitorLabels(setup.value?.desktop ?? []));
 const aircraft = computed(() => setup.value?.aircraft[aircraftIndex.value]);
 const displaysById = computed(() => new Map((setup.value?.desktop ?? []).map((d) => [d.id, d])));
 
-/** Every display the selected aircraft can export: the known ones plus whatever is placed. */
+/** The display names RigReady found for an aircraft: in its files, its own table or SimAppPro's plan. */
+const foundDisplays = (unit: string): string[] =>
+  state.value?.catalog.find((c) => c.unit === unit)?.displays ?? [];
+
+/**
+ * What a display is called on the page: a readable name for one RigReady found, and the
+ * name exactly as it is for one it did not, so the page does not dress up a typed name as
+ * a display it knows.
+ */
+const shownName = (unit: string, name: string): string =>
+  foundDisplays(unit).includes(name) ? displayLabel(unit, name) : name;
+
+/**
+ * Display names RigReady did not find, per aircraft, that have a row on this visit: typed
+ * here, or placed in the setup and then set to "Not shown". A row is not a claim that the
+ * display exists; only a placed one is written.
+ */
+const keptNames = ref<Record<string, string[]>>({});
+
+/** The rows of the selected aircraft: the displays found, whatever is placed, whatever was typed. */
 const rows = computed(() => {
   const a = aircraft.value;
   if (!a) return [];
-  const known = state.value?.catalog.find((c) => c.unit === a.unit)?.displays ?? [];
-  const names = [...new Set([...known, ...a.placements.map((p) => p.name)])];
+  const found = foundDisplays(a.unit);
+  const kept = keptNames.value[a.unit] ?? [];
+  const names = [...new Set([...found, ...a.placements.map((p) => p.name), ...kept])];
   return names.map((name) => ({
     name,
-    label: displayLabel(a.unit, name),
+    label: shownName(a.unit, name),
     placement: a.placements.find((p) => p.name === name),
+    /** False for a name RigReady has not seen for this aircraft: the row says so. */
+    found: found.includes(name),
   }));
+});
+
+/**
+ * What RigReady knows of the aircraft in view: displays of its own, only that it is
+ * installed (no display found in its files), or nothing, because its name was typed here
+ * or came with a setup and DCS on this PC has no aircraft of that name.
+ */
+const knows = computed<'displays' | 'installed' | 'nothing'>(() => {
+  const unit = aircraft.value?.unit;
+  if (state.value?.catalog.some((c) => c.unit === unit)) return 'displays';
+  return state.value?.noDisplaysFound.some((o) => o.unit === unit) ? 'installed' : 'nothing';
 });
 
 const boxes = computed<MapBox[]>(() => {
@@ -320,7 +354,7 @@ const boxes = computed<MapBox[]>(() => {
     return [
       {
         key: p.name,
-        label: displayLabel(a.unit, p.name),
+        label: shownName(a.unit, p.name),
         name: p.name,
         rect: cropRect(display, p.crop),
         displayId: p.displayId,
@@ -403,6 +437,10 @@ function setMonitor(name: string, displayId: string | null): void {
   cropNote.value = undefined;
   if (!displayId) {
     if (before && from) hidden.set(key, { size: from, crop: before.crop });
+    // A name RigReady did not find has its row only while it is placed: keep the row.
+    if (before && !foundDisplays(a.unit).includes(name)) {
+      keptNames.value[a.unit] = [...new Set([...(keptNames.value[a.unit] ?? []), name])];
+    }
     return;
   }
   const to = displaysById.value.get(displayId);
@@ -453,13 +491,22 @@ function toggleMain(id: string): void {
     : [...ids, id];
 }
 
-const addable = computed(() =>
-  (state.value?.catalog ?? []).filter((c) => !setup.value?.aircraft.some((a) => a.unit === c.unit))
-);
+const inSetup = (unit: string): boolean =>
+  setup.value?.aircraft.some((a) => a.unit.toLowerCase() === unit.toLowerCase()) ?? false;
 
-function addAircraft(unit: string): void {
-  const entry = state.value?.catalog.find((c) => c.unit === unit);
-  if (!entry || !setup.value) return;
+/** The "+ Aircraft" menu, first part: installed aircraft with the displays found for them. */
+const addable = computed(() => (state.value?.catalog ?? []).filter((c) => !inSetup(c.unit)));
+
+/** Second part: installed aircraft in whose files RigReady found no display. */
+const addableWithout = computed(() => {
+  const listed = new Set((state.value?.catalog ?? []).map((c) => c.unit));
+  return (state.value?.noDisplaysFound ?? []).filter(
+    (o) => !listed.has(o.unit) && !inSetup(o.unit)
+  );
+});
+
+function addAircraft(entry: { unit: string; label: string }): void {
+  if (!setup.value) return;
   setup.value.aircraft.push({ unit: entry.unit, label: entry.label, placements: [] });
   aircraftIndex.value = setup.value.aircraft.length - 1;
   selected.value = undefined;
@@ -467,8 +514,73 @@ function addAircraft(unit: string): void {
 
 function removeAircraft(index: number): void {
   if (!setup.value) return;
-  setup.value.aircraft.splice(index, 1);
+  const [removed] = setup.value.aircraft.splice(index, 1);
+  if (removed) delete keptNames.value[removed.unit];
   aircraftIndex.value = Math.max(0, Math.min(aircraftIndex.value, setup.value.aircraft.length - 1));
+}
+
+// Adding by name: an aircraft the menu does not have, or a display RigReady did not find.
+// The rules are the ones the file is written under (core/screens.ts: unitNameProblem,
+// viewportNameProblem), so nothing is taken here that is refused there. A typed name is
+// only a name: RigReady has not seen it in the game, and the page says so wherever it shows.
+const naming = ref<'aircraft' | 'display'>();
+const typedName = ref('');
+const namingOpen = computed({
+  get: () => naming.value !== undefined,
+  set: (open) => {
+    if (!open) naming.value = undefined;
+  },
+});
+
+function startNaming(what: 'aircraft' | 'display'): void {
+  typedName.value = '';
+  naming.value = what;
+}
+
+/** The installed aircraft a typed name means, whatever capitals it was typed in. */
+const namedAircraft = computed(() => {
+  const typed = typedName.value.trim().toLowerCase();
+  return [...(state.value?.catalog ?? []), ...(state.value?.noDisplaysFound ?? [])].find(
+    (c) => c.unit.toLowerCase() === typed
+  );
+});
+
+/** Why the typed name cannot be added, in words for the user; undefined when it can. */
+const namingProblem = computed<string | undefined>(() => {
+  const typed = typedName.value.trim();
+  if (naming.value === 'aircraft') {
+    const problem = unitNameProblem(typed);
+    if (problem) return problem;
+    return inSetup(typed) ? 'That aircraft is already in this setup.' : undefined;
+  }
+  const problem = viewportNameProblem(typed);
+  if (problem) return problem;
+  return rows.value.some((r) => r.name === typed)
+    ? 'That display is already in the list.'
+    : undefined;
+});
+
+function addNamed(): void {
+  const typed = typedName.value.trim();
+  if (namingProblem.value) return;
+  if (naming.value === 'aircraft') {
+    addAircraft(namedAircraft.value ?? { unit: typed, label: typed });
+  } else if (aircraft.value) {
+    const unit = aircraft.value.unit;
+    keptNames.value[unit] = [...(keptNames.value[unit] ?? []), typed];
+  }
+  naming.value = undefined;
+}
+
+/** Takes a name RigReady did not find off the list again, and off its monitor. */
+function forgetName(name: string): void {
+  const a = aircraft.value;
+  if (!a) return;
+  a.placements = a.placements.filter((p) => p.name !== name);
+  hidden.delete(`${a.unit}:${name}`);
+  keptNames.value[a.unit] = (keptNames.value[a.unit] ?? []).filter((n) => n !== name);
+  if (selected.value === name) selected.value = undefined;
+  if (cropNote.value?.name === name) cropNote.value = undefined;
 }
 
 // The server preview says what writing would change on disk; it follows every edit.
@@ -861,7 +973,7 @@ onBeforeUnmount(() => {
             >
               {{ a.label }}
             </v-chip>
-            <v-menu v-if="addable.length">
+            <v-menu>
               <template #activator="{ props: menu }">
                 <v-btn
                   v-bind="menu"
@@ -873,15 +985,42 @@ onBeforeUnmount(() => {
                   Aircraft
                 </v-btn>
               </template>
-              <v-list density="compact" max-height="320">
-                <v-list-item
-                  v-for="c in addable"
-                  :key="c.unit"
-                  :title="c.label"
-                  :subtitle="c.displays.map((d) => displayLabel(c.unit, d)).join(', ')"
-                  @click="addAircraft(c.unit)"
-                />
-              </v-list>
+              <!-- The aircraft scroll; the way to add any other one stays in view under them. -->
+              <v-sheet data-testid="screens-aircraft-menu">
+                <template v-if="addable.length || addableWithout.length">
+                  <v-list density="compact" max-height="300">
+                    <v-list-item
+                      v-for="c in addable"
+                      :key="c.unit"
+                      :title="c.label"
+                      :subtitle="c.displays.map((d) => displayLabel(c.unit, d)).join(', ')"
+                      @click="addAircraft(c)"
+                    />
+                    <template v-if="addableWithout.length">
+                      <v-divider v-if="addable.length" class="my-1" />
+                      <v-list-subheader data-testid="screens-add-without">
+                        No display found in their files
+                      </v-list-subheader>
+                      <v-list-item
+                        v-for="o in addableWithout"
+                        :key="o.unit"
+                        :title="o.label"
+                        :data-testid="`screens-add-without-${o.unit}`"
+                        @click="addAircraft(o)"
+                      />
+                    </template>
+                  </v-list>
+                  <v-divider />
+                </template>
+                <v-list density="compact">
+                  <v-list-item
+                    title="Another aircraft, by name"
+                    subtitle="Type the name DCS has for it"
+                    data-testid="screens-add-aircraft-by-name"
+                    @click="startNaming('aircraft')"
+                  />
+                </v-list>
+              </v-sheet>
             </v-menu>
           </div>
 
@@ -890,6 +1029,17 @@ onBeforeUnmount(() => {
             view.
           </div>
           <template v-else>
+            <div
+              v-if="knows === 'nothing'"
+              class="rr-row-sub scr-unknown"
+              data-testid="screens-aircraft-unknown"
+            >
+              <v-icon icon="mdi-help-circle-outline" size="14" />
+              RigReady has not found an aircraft called
+              <span class="rr-mono">{{ aircraft.unit }}</span> in DCS on this PC. It cannot check
+              this name, or any display you add for it. DCS matches names letter for letter,
+              capitals included.
+            </div>
             <div
               v-for="row in rows"
               :key="row.name"
@@ -901,8 +1051,10 @@ onBeforeUnmount(() => {
             >
               <div class="scr-row-head">
                 <div class="rr-row-main">
-                  <div class="rr-row-title">{{ row.label }}</div>
-                  <div class="rr-row-sub rr-mono">{{ row.name }}</div>
+                  <div class="rr-row-title" :class="{ 'rr-mono': !row.found }">
+                    {{ row.label }}
+                  </div>
+                  <div v-if="row.found" class="rr-row-sub rr-mono">{{ row.name }}</div>
                 </div>
                 <v-select
                   :model-value="row.placement?.displayId ?? null"
@@ -917,6 +1069,23 @@ onBeforeUnmount(() => {
                   :data-testid="`screens-monitor-${row.name}`"
                   @update:model-value="setMonitor(row.name, $event)"
                 />
+                <v-btn
+                  v-if="!row.found"
+                  icon="mdi-close"
+                  size="x-small"
+                  variant="text"
+                  :aria-label="`Take ${row.name} off the list`"
+                  :data-testid="`screens-forget-${row.name}`"
+                  @click.stop="forgetName(row.name)"
+                />
+              </div>
+              <div
+                v-if="!row.found && knows !== 'nothing'"
+                class="rr-row-sub scr-unseen"
+                data-testid="screens-name-unseen"
+              >
+                RigReady has not seen this name in this aircraft's files. If the aircraft does not
+                ask DCS for it, nothing is drawn there.
               </div>
               <div v-if="row.placement" class="scr-crop">
                 <span class="rr-row-sub">Crop</span>
@@ -942,14 +1111,31 @@ onBeforeUnmount(() => {
                 <v-icon icon="mdi-alert" size="14" /> {{ cropNote.text }}
               </div>
             </div>
-            <div v-if="rows.length === 0" class="rr-row rr-muted">
-              RigReady does not know which displays this aircraft can export.
+            <div
+              v-if="rows.length === 0 && knows !== 'nothing'"
+              class="rr-row rr-muted"
+              data-testid="screens-no-displays"
+            >
+              RigReady found no display to put on another screen in this aircraft's files. It may
+              still have one: add it by name if you know it.
+            </div>
+            <div class="scr-add-display">
+              <v-btn
+                size="small"
+                variant="text"
+                prepend-icon="mdi-plus"
+                data-testid="screens-add-display"
+                @click="startNaming('display')"
+              >
+                Display by name
+              </v-btn>
             </div>
           </template>
           <div class="rr-row-sub scr-footnote">
-            {{ Object.values(MAIN_VIEW_ONLY).join(', ') }} and other aircraft without exportable
-            displays use the main view only. When two aircraft put the same display in different
-            places, RigReady writes a per-aircraft section DCS applies when that cockpit loads.
+            RigReady lists the displays it found in each aircraft's own files, and it can miss one.
+            A name you add is written as you typed it: RigReady cannot check it against the game.
+            When two aircraft put the same display in different places, RigReady writes a
+            per-aircraft section DCS applies when that cockpit loads.
           </div>
         </section>
 
@@ -1098,6 +1284,67 @@ onBeforeUnmount(() => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="namingOpen" max-width="520">
+      <v-card data-testid="screens-naming">
+        <v-card-title>
+          <template v-if="naming === 'aircraft'">Add an aircraft by name</template>
+          <template v-else>Add a display of the {{ aircraft?.label }} by name</template>
+        </v-card-title>
+        <v-card-text>
+          <p v-if="naming === 'aircraft'" class="mb-3">
+            Type the name DCS itself uses for the aircraft, such as
+            <span class="rr-mono">FA-18C_hornet</span>. RigReady writes the name as you type it and
+            cannot check that DCS has such an aircraft.
+          </p>
+          <p v-else class="mb-3">
+            Type the name the aircraft asks DCS for, such as
+            <span class="rr-mono">LEFT_MFCD</span>. RigReady writes the name as you type it and
+            cannot check that the aircraft has such a display. If it has not, DCS draws nothing
+            there.
+          </p>
+          <v-text-field
+            v-model="typedName"
+            autofocus
+            density="compact"
+            :label="naming === 'aircraft' ? 'Name of the aircraft in DCS' : 'Name of the display'"
+            :error="!!typedName.trim() && !!namingProblem"
+            hide-details
+            data-testid="screens-naming-field"
+            @keydown.enter="addNamed"
+          />
+          <p
+            v-if="typedName.trim() && namingProblem"
+            class="rr-row-sub rr-bad mt-2"
+            data-testid="screens-naming-problem"
+          >
+            {{ namingProblem }}
+          </p>
+          <p
+            v-else-if="naming === 'aircraft' && namedAircraft"
+            class="rr-row-sub mt-2"
+            data-testid="screens-naming-known"
+          >
+            That is the {{ namedAircraft.label }}, which is installed. RigReady adds it with what it
+            knows of it.
+          </p>
+          <p v-else class="rr-row-sub mt-2">Capitals count: DCS matches names letter for letter.</p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" data-testid="screens-naming-cancel" @click="naming = undefined"
+            >Cancel</v-btn
+          >
+          <v-btn
+            color="primary"
+            :disabled="!!namingProblem"
+            data-testid="screens-naming-add"
+            @click="addNamed"
+            >Add</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -1218,6 +1465,16 @@ onBeforeUnmount(() => {
 }
 .scr-crop-field {
   max-width: 84px;
+}
+.scr-unknown {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--rr-border);
+}
+.scr-unseen {
+  margin-top: 4px;
+}
+.scr-add-display {
+  padding: 4px 6px 0;
 }
 .scr-footnote {
   padding: 10px 14px 0;

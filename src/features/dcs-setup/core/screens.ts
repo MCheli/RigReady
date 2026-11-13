@@ -32,10 +32,67 @@ export const CropSchema = z.object({
 export type Crop = z.infer<typeof CropSchema>;
 export const NO_CROP: Crop = { left: 0, top: 0, right: 0, bottom: 0 };
 
+/*
+ * Names a person may type, and what keeps them from being anything but names.
+ *
+ * A display name is written into DCS's monitor setup file as a Lua variable, an aircraft's
+ * DCS name as a quoted key, and the name shown for an aircraft in comment lines. DCS runs
+ * that file. So each of the three has one rule here, with its reason in words for the
+ * user, and generateSetup writes no name that fails its rule, whoever handed it the setup.
+ */
+
+const VIEWPORT_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
+const VIEWPORT_NAME_RULE =
+  'A display name has only letters, digits and _, starts with a letter or _, and is at most 64 characters long.';
+
 /** A viewport name DCS asks for: a Lua identifier such as LEFT_MFCD. */
-export const ViewportNameSchema = z
-  .string()
-  .regex(/^[A-Za-z_][A-Za-z0-9_]{0,63}$/, 'A display name is letters, digits and _');
+export const ViewportNameSchema = z.string().regex(VIEWPORT_NAME, VIEWPORT_NAME_RULE);
+
+/** DCS's names for the main view, in lower case: never a cockpit display. */
+export const MAIN_VIEW_NAMES: ReadonlySet<string> = new Set([
+  'center',
+  'gu_main_viewport',
+  'uimainview',
+]);
+
+/** The words of the Lua language: a variable of that name stops DCS reading the file. */
+const LUA_WORDS: ReadonlySet<string> = new Set(
+  'and break do else elseif end false for function goto if in local nil not or repeat return then true until while'.split(
+    ' '
+  )
+);
+
+/**
+ * Names that already mean something where the file runs: what Lua provides, what DCS hands
+ * the file (screen, displays, _) and what RigReady writes into it. A display of one of
+ * these names would replace it.
+ */
+const TAKEN_NAMES: ReadonlySet<string> = new Set(
+  [
+    '_G _VERSION assert collectgarbage coroutine debug dofile error gcinfo getfenv getmetatable',
+    'io ipairs load loadfile loadstring math module newproxy next os package pairs pcall print',
+    'rawequal rawget rawset require select setfenv setmetatable string table tonumber tostring',
+    'type unpack xpcall',
+    '_ screen displays lfs log',
+    'name Description Viewports reconfigure_for_unit by_unit shared',
+  ]
+    .join(' ')
+    .split(' ')
+);
+
+/** Why a display name cannot be used, in words for the user; undefined when it can. */
+export function viewportNameProblem(name: string): string | undefined {
+  if (name === '') return 'Type the name of the display.';
+  if (!VIEWPORT_NAME.test(name)) return VIEWPORT_NAME_RULE;
+  if (MAIN_VIEW_NAMES.has(name.toLowerCase())) return "That is DCS's name for the main view.";
+  if (LUA_WORDS.has(name)) {
+    return "That is a word of the Lua language, which DCS's monitor setup file is written in.";
+  }
+  if (TAKEN_NAMES.has(name)) {
+    return "DCS's monitor setup file already uses that name for something else.";
+  }
+  return undefined;
+}
 
 export const PlacementSchema = z.object({
   name: ViewportNameSchema,
@@ -44,8 +101,38 @@ export const PlacementSchema = z.object({
 });
 export type Placement = z.infer<typeof PlacementSchema>;
 
+const UNIT_NAME = /^[A-Za-z0-9][A-Za-z0-9 _.+-]{0,63}$/;
+const UNIT_NAME_RULE =
+  'An aircraft name has only letters, digits, spaces and the signs _ . + -, starts with a letter or a digit, and is at most 64 characters long.';
+
 /** DCS unit type names: "FA-18C_hornet", "F-16C_50", "UH-1H". */
-export const UnitSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9 _.+-]{0,63}$/);
+export const UnitSchema = z.string().regex(UNIT_NAME, UNIT_NAME_RULE);
+
+/** Why text cannot be an aircraft's DCS name, in words for the user; undefined when it can. */
+export function unitNameProblem(unit: string): string | undefined {
+  if (unit === '') return 'Type the name DCS has for the aircraft.';
+  return UNIT_NAME.test(unit) ? undefined : UNIT_NAME_RULE;
+}
+
+/** What is not text on a line: line breaks, other control characters, invisible marks. */
+const NOT_TEXT = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu;
+
+/** Text for one line: whatever is not text on a line becomes a space. */
+export const oneLine = (text: string): string => text.replace(NOT_TEXT, ' ').trim();
+
+/** The name shown for an aircraft, made from text out of a file: one line, 60 characters at most. */
+export const aircraftLabel = (text: string, unit: string): string =>
+  oneLine(text).slice(0, 60).trim() || unit;
+
+/** Why text cannot be the name shown for an aircraft; undefined when it can. */
+export function aircraftLabelProblem(label: string): string | undefined {
+  if (label.trim() === '') return 'An aircraft needs a name to show.';
+  if (label.length > 60) return 'The name shown for an aircraft has at most 60 characters.';
+  if (label.replace(NOT_TEXT, ' ') !== label) {
+    return 'The name shown for an aircraft is one line of plain text.';
+  }
+  return undefined;
+}
 
 export const AircraftScreensSchema = z.object({
   unit: UnitSchema,
@@ -157,9 +244,6 @@ export const KNOWN_AIRCRAFT: KnownAircraft[] = [
   { unit: 'Ka-50_3', label: 'Ka-50 Black Shark 3', displays: KA50_DISPLAYS },
 ];
 
-/** Aircraft with no exportable display: the main view is all they use. */
-export const MAIN_VIEW_ONLY: Record<string, string> = { 'UH-1H': 'UH-1H Huey' };
-
 const UPPER = new Set(['left', 'right', 'center', 'centre', 'outer', 'inner', 'front', 'rear']);
 
 /** "OUTER_LEFT_MFCD" as "Outer left MFCD", "F14_TID" as "TID": for a name no table labels. */
@@ -247,13 +331,22 @@ function luaRect(name: string, rect: Rect, indent: string, extra: string[] = [])
 const sameRect = (a: Rect, b: Rect): boolean =>
   a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 
+/** Text as a Lua string on one line: the quote and the backslash escaped, nothing else in it but text. */
 const luaString = (text: string): string =>
-  `'${text
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/[\r\n]+/g, ' ')}'`;
+  `'${oneLine(text).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 
-/** Turns the setup into the Lua file, checking it against the monitors it was made for. */
+/** A name as a message quotes it: on one line and not endless, whatever was sent. */
+const quoted = (text: string): string => {
+  const shown = oneLine(text);
+  return `"${shown.length > 40 ? `${shown.slice(0, 40)}...` : shown}"`;
+};
+
+/**
+ * Turns the setup into the Lua file, checking it against the monitors it was made for and
+ * every name against its rule (viewportNameProblem, unitNameProblem, aircraftLabelProblem).
+ * A name that fails is an error and is left out of the file; the names shown for aircraft
+ * are written on one line whatever they hold.
+ */
 export function generateSetup(setup: ScreenSetup): GeneratedSetup {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -266,11 +359,38 @@ export function generateSetup(setup: ScreenSetup): GeneratedSetup {
   }
   const mainBox = mains.length > 0 ? boundingBox(mains) : { x: 0, y: 0, width: 1, height: 1 };
 
+  // The aircraft that can be written, each under a name that is one line of text.
+  const fleet: AircraftScreens[] = [];
+  for (const aircraft of setup.aircraft) {
+    const shown = aircraftLabel(aircraft.label, 'An aircraft');
+    const unitProblem = unitNameProblem(aircraft.unit);
+    if (unitProblem) {
+      errors.push(
+        `${shown}: ${quoted(aircraft.unit)} cannot be the name DCS has for an aircraft. ${unitProblem}`
+      );
+      continue;
+    }
+    if (fleet.some((f) => f.unit === aircraft.unit)) {
+      errors.push(`${shown}: ${aircraft.unit} is in this setup twice.`);
+      continue;
+    }
+    const labelProblem = aircraftLabelProblem(aircraft.label);
+    if (labelProblem) errors.push(`${shown}: ${labelProblem}`);
+    fleet.push({ ...aircraft, label: shown });
+  }
+
   const used: Rect[] = [...mains];
   const placed: { aircraft: AircraftScreens; placement: Placement; desktop: Rect }[] = [];
-  for (const aircraft of setup.aircraft) {
+  for (const aircraft of fleet) {
     const seen = new Set<string>();
     for (const placement of aircraft.placements) {
+      const nameProblem = viewportNameProblem(placement.name);
+      if (nameProblem) {
+        errors.push(
+          `${aircraft.label}: ${quoted(placement.name)} cannot be a display name. ${nameProblem}`
+        );
+        continue;
+      }
       if (seen.has(placement.name)) {
         errors.push(`${aircraft.label}: ${placement.name} is placed twice.`);
         continue;
@@ -314,7 +434,7 @@ export function generateSetup(setup: ScreenSetup): GeneratedSetup {
     desktop: mainBox,
     file: relative(mainBox),
     displayId: setup.mainDisplayIds[0] ?? '',
-    aircraft: setup.aircraft.map(label),
+    aircraft: fleet.map(label),
   };
 
   // Shared defaults: the first aircraft to place a name decides where it goes for everyone.
@@ -345,11 +465,11 @@ export function generateSetup(setup: ScreenSetup): GeneratedSetup {
     }
   }
   const viewports = [...defaults.values()];
-  const perUnit = setup.aircraft
+  const perUnit = fleet
     .filter((a) => overrides.has(a.unit))
     .map((a) => ({ unit: a.unit, label: a.label, viewports: overrides.get(a.unit)! }));
 
-  const described = setup.aircraft.filter((a) => a.placements.length > 0).map(label);
+  const described = fleet.filter((a) => a.placements.length > 0).map(label);
   const description = described.length
     ? `Main view on ${mains.map((m) => m.name || 'monitor').join(' + ')}; cockpit displays for ${described.join(', ')}`
     : `Main view on ${mains.map((m) => m.name || 'monitor').join(' + ')}`;
