@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { checkRow, expect, test, type RunningApp } from './harness';
+import { expectSaveBarPinned } from './saveBar';
 
 /**
  * Cheat sheets on the recorded rig: device pictures, labels in plain language, text that
@@ -635,6 +636,9 @@ test('cheat sheets: layout editor - drag, label, group, photo, share, import, di
   ).toBeVisible();
   await again.shot('converted-template');
   await page2.getByTestId('editor-cancel').click();
+  // What was imported is not saved: Cancel asks before it drops it.
+  await page2.getByTestId('save-bar-leave-go').click();
+  await expect(page2.getByTestId('layout-editor')).toHaveCount(0);
 
   // Discard: the shipped drawing is back.
   await page2.getByTestId('sheet-edit-layout').click();
@@ -1408,4 +1412,57 @@ test('cheat sheets: the racing rig - iRacing and Le Mans Ultimate on the shipped
   await sendInput([state(CONTROLLERS.wheel)]);
   await sendInput([state(CONTROLLERS.wheel, { pressed: [100] })]);
   await expect(page.getByTestId('bound-none')).toContainText('Nothing is bound to it in iRacing');
+});
+
+test('cheat sheets: in the layout editor, Save layout and Cancel stay in the window from the top of the page to its end, and Cancel asks before it drops a change', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-editor-save-bar');
+  const { page, shot, sendInput } = run;
+  // The window as it opens, not the tall one of the other editor scenarios: the editor is
+  // longer than it.
+  await openSheets(page);
+  await device(page, 'Stick').click();
+  await page.getByTestId('sheet-edit-layout').click();
+  const editor = page.getByTestId('layout-editor');
+  await expect(editor).toHaveAttribute('data-dirty', 'false');
+  const save = page.getByTestId('editor-save');
+  const cancel = page.getByTestId('editor-cancel');
+  await expect(save).toHaveText('Save layout');
+  await expect(save).toBeDisabled();
+  await expect(page.getByTestId('save-bar-clean')).toHaveText('No unsaved changes');
+
+  // Press the weapon release on the stick and give it its name: a change to save.
+  await sendInput([state(CONTROLLERS.stick)]);
+  await sendInput([state(CONTROLLERS.stick, { pressed: [20] })]);
+  const name = page.getByTestId('editor-control-name').locator('input');
+  await expect(name).toHaveValue('Red button');
+  await sendInput([state(CONTROLLERS.stick)]);
+  await name.fill('Weapon release');
+  await expect(editor).toHaveAttribute('data-dirty', 'true');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Unsaved changes');
+  await expect(save).toBeEnabled();
+  await expectSaveBarPinned(page, save, shot);
+  await expect(cancel).toBeInViewport({ ratio: 1 });
+
+  // Cancel would drop the name: the bar asks, and "Keep editing" keeps it.
+  await cancel.click();
+  await expect(page.getByTestId('save-bar-leave')).toBeVisible();
+  await shot('cancel-asks');
+  await page.getByTestId('save-bar-leave-stay').click();
+  await expect(editor).toBeVisible();
+  await expect(name).toHaveValue('Weapon release');
+
+  // Saved from the bar: the editor closes, the bar goes with it, and the sheet has the name.
+  await save.click();
+  await expect(editor).toHaveCount(0);
+  await expect(page.getByTestId('save-bar')).toHaveCount(0);
+  await expect(page.getByTestId('sheet-layout-source')).toHaveAttribute('data-source', 'user');
+
+  // With nothing changed, Cancel closes the editor without a question.
+  await page.getByTestId('sheet-edit-layout').click();
+  await expect(editor).toHaveAttribute('data-dirty', 'false');
+  await cancel.click();
+  await expect(editor).toHaveCount(0);
+  await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
 });

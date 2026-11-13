@@ -115,9 +115,7 @@ test('dcs-setup: screens are imported from SimAppPro, written as RigReady.lua an
   await expect(page.locator('[data-testid="screens-pair"][data-plan="002"]')).toContainText(
     'Matched by position alone. 3 screens of this layout are the same size'
   );
-  await expect(page.getByTestId('screens-blocked')).toHaveText(
-    'Check which screen is which first.'
-  );
+  await expect(page.getByTestId('save-bar-why')).toHaveText('Check which screen is which first.');
   await expect(page.getByTestId('screens-apply')).toBeDisabled();
   await page.getByTestId('screens-pairing-confirm').click();
   await expect(page.getByTestId('screens-pairing-checked')).toHaveText('You checked these.');

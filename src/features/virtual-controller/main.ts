@@ -19,7 +19,7 @@ import { profileSources, type PadProfile } from './core/profile';
 import type { Running } from './core/running';
 import { distinctLabels, nameKey } from './core/names';
 import { ProfileStore } from './core/store';
-import { setupNames, setupsByPadProfile, type SetupRef } from './core/usedBy';
+import { setupNames, setupsByPadProfile, withPadProfileName, type SetupRef } from './core/usedBy';
 import { DRIVER_DOWNLOAD, HIDHIDE_DOWNLOAD } from './links';
 
 /** The live view sends at most this often. */
@@ -87,6 +87,27 @@ export default defineFeatureMain({
         by,
         note: `${unread === 1 ? 'One setup file' : `${unread} setup files`} could not be read, so a setup that uses a profile may be missing here.`,
       };
+    };
+    /**
+     * A renamed profile takes its new name to the setups that start it: a setup keeps the
+     * name beside the id, and the Play page reads it there. A setup that cannot be written
+     * keeps the old name until its step is chosen again; that is logged, and the rename
+     * itself stands.
+     */
+    const renameInSetups = async (profileId: string, name: string): Promise<void> => {
+      const listed = await ctx.profiles.listDetailed();
+      if (!listed.ok) {
+        log.error(`setups not read after a profile was renamed: ${listed.error.message}`);
+        return;
+      }
+      for (const { profile: setup } of listed.value.profiles) {
+        const renamed = withPadProfileName(setup, profileId, name);
+        if (!renamed) continue;
+        const saved = await ctx.profiles.save(renamed);
+        if (!saved.ok) {
+          log.error(`setup ${setup.id} keeps the old profile name: ${saved.error.message}`);
+        }
+      }
     };
     const emulator = new Emulator(ctx.ports, log, announce);
     active = emulator;
@@ -195,8 +216,13 @@ export default defineFeatureMain({
         },
         profile: ({ id }) => store.get(id),
         save: async ({ profile }) => {
+          const before = await store.get(profile.id);
           const saved = await store.save(profile);
-          if (saved.ok) announce(emulator.current());
+          if (!saved.ok) return saved;
+          if (before.ok && before.value.name !== saved.value.name) {
+            await renameInSetups(saved.value.id, saved.value.name);
+          }
+          announce(emulator.current());
           return saved;
         },
         copy: async ({ from, name }) => {

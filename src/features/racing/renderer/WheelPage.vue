@@ -15,6 +15,7 @@ import {
 import { wheelHead } from '../core/wheelbases/head';
 import { UNLISTED_NOT_AVAILABLE, UNLISTED_WORKS } from '../core/wheelbases/unlistedScope';
 import BackupsPanel from './BackupsPanel.vue';
+import SaveBar from '../../../renderer/components/SaveBar.vue';
 import './racing.css';
 
 const api = useClient(racingContract);
@@ -591,20 +592,6 @@ const STATUS = {
       <section v-if="presets && fanatec" class="rc-section" data-testid="wheel-presets">
         <div class="rc-section-head">
           <h2 class="rr-section-title">Your tuning presets</h2>
-          <v-spacer />
-          <span v-if="dirty" class="rc-hint">Not saved yet</span>
-          <span v-else id="presets-save-hint" class="rc-hint">Nothing to save</span>
-          <v-btn
-            color="primary"
-            size="small"
-            :disabled="!dirty"
-            :title="dirty ? undefined : 'Change a value below, then save.'"
-            :aria-describedby="dirty ? undefined : 'presets-save-hint'"
-            :loading="saving"
-            data-testid="presets-save"
-            @click="save"
-            >Save presets</v-btn
-          >
         </div>
         <div class="rc-notice">
           <v-icon icon="mdi-information-outline" class="rr-muted" />
@@ -614,9 +601,6 @@ const STATUS = {
             Write your values down here, from the base's display or the Fanatec App, and you have a
             record to set the base back from.
           </div>
-        </div>
-        <div v-if="saved" class="rc-message rr-ok" data-testid="presets-saved">
-          <v-icon icon="mdi-check" size="16" /> {{ saved }}
         </div>
         <div class="rr-panel">
           <v-tabs v-model="slot" density="compact" class="px-2" data-testid="preset-tabs">
@@ -823,6 +807,23 @@ const STATUS = {
         :game="backupGame"
         :what="`${status.brandName} profiles`"
         :closed-hint="`The ${status.brandName} software must be closed while its profiles are restored; RigReady offers to close it and start it again.`"
+      />
+
+      <!--
+        "Save presets" stays in view however far the page is scrolled, and leaving the page
+        with presets that are not saved asks first.
+      -->
+      <SaveBar
+        v-if="presets && fanatec"
+        :dirty="dirty"
+        :saving="saving"
+        :disabled="!dirty"
+        :saved="saved"
+        save-label="Save presets"
+        save-testid="presets-save"
+        unsaved-label="Tuning presets not saved yet"
+        clean-label="Tuning presets: nothing to save"
+        @save="save"
       />
     </template>
   </div>
