@@ -9,6 +9,7 @@ import {
   type RemediationTypeInfo,
 } from '../contract';
 import ParamsForm from './ParamsForm.vue';
+import { followedBy, follows, mergeFollowed, titleFromChoice, type Followed } from './pickerForm';
 import { defaultsOf } from './schemaForm';
 
 const props = defineProps<{
@@ -36,12 +37,31 @@ const preparing = ref(false);
 const type = computed(() => props.checks.find((c) => c.type === props.item.type));
 const fixTypes = computed(() => {
   const suited = type.value?.fixes;
-  const list = props.remediations.filter((r) => !suited || suited.includes(r.type));
+  // The fix the setup already has stays in the list, also when it is not one that fits.
+  const current = props.item.remediation?.type;
+  const list = props.remediations.filter(
+    (r) => !suited || suited.includes(r.type) || r.type === current
+  );
   return [{ title: 'No fix', value: '' }, ...list.map((r) => ({ title: r.label, value: r.type }))];
 });
 const fixType = computed(() =>
   props.remediations.find((r) => r.type === props.item.remediation?.type)
 );
+
+/**
+ * What a fix that fits this check takes from it: a check of a saved layout and the fix
+ * that applies a saved layout mean the same layout, so it is chosen once.
+ */
+function sharedWith(fix: RemediationTypeInfo | undefined): Followed | undefined {
+  if (!fix || !type.value?.fixes?.includes(fix.type)) return undefined;
+  return followedBy(type.value.pickers, fix.pickers);
+}
+/** Set while the fix says what the check says; a fix that says something else shows its own list. */
+const following = computed(() => {
+  const fix = props.item.remediation;
+  const shared = sharedWith(fixType.value);
+  return shared && fix && follows(props.item.params, fix.params, shared) ? shared : undefined;
+});
 
 function update(patch: Partial<CheckItem>): void {
   const next = { ...props.item, ...patch };
@@ -51,10 +71,43 @@ function update(patch: Partial<CheckItem>): void {
   emit('update:item', next);
 }
 
+/** A check not named by hand takes the name of what was chosen for it: "Monitor layout: Flying". */
+function titleFor(params: Record<string, unknown>): string | undefined {
+  if (!type.value) return undefined;
+  return titleFromChoice(
+    props.item.title,
+    type.value.label,
+    type.value.pickers,
+    props.item.params,
+    params
+  );
+}
+
+/** What to check changed: a fix that follows the check goes with it. */
+function setParams(params: Record<string, unknown>): void {
+  const fix = props.item.remediation;
+  const shared = following.value;
+  const title = titleFor(params);
+  update({
+    params,
+    ...(title ? { title } : {}),
+    ...(shared && fix
+      ? { remediation: { ...fix, params: mergeFollowed(fix.params, params, shared) } }
+      : {}),
+  });
+}
+
 function setFixType(value: string): void {
   if (!value) return update({ remediation: undefined });
-  const schema = props.remediations.find((r) => r.type === value)?.schema;
-  update({ remediation: { type: value, params: defaultsOf(schema) } });
+  const fix = props.remediations.find((r) => r.type === value);
+  const shared = sharedWith(fix);
+  const params = defaultsOf(fix?.schema);
+  update({
+    remediation: {
+      type: value,
+      params: shared ? mergeFollowed(params, props.item.params, shared) : params,
+    },
+  });
 }
 
 function setTimeout(raw: string): void {
@@ -80,8 +133,9 @@ function pickDevice(device: Pickers['devices'][number]): void {
     params: {
       vendorId: device.vendorId,
       productId: device.productId,
-      // Identical devices are told apart by serial, else by USB port.
-      ...(device.hasTwin
+      // Identical devices are told apart by serial, else by USB port. (A wheel base is
+      // known by its model alone.)
+      ...(device.hasTwin && props.item.type === 'device.connected'
         ? device.serial
           ? { serial: device.serial }
           : { instanceId: device.instanceId }
@@ -251,7 +305,10 @@ function pickService(service: Pickers['services'][number]): void {
         </div>
 
         <div v-if="pickers" class="item-pickers">
-          <v-menu v-if="item.type === 'device.connected'" max-height="360">
+          <v-menu
+            v-if="item.type === 'device.connected' || item.type === 'racing.wheelBase'"
+            max-height="360"
+          >
             <template #activator="{ props: menu }">
               <v-btn
                 v-bind="menu"
@@ -344,7 +401,8 @@ function pickService(service: Pickers['services'][number]): void {
           :model-value="item.params"
           testid="edit-params"
           :variables="pickers?.variables"
-          @update:model-value="update({ params: $event })"
+          :pickers="type?.pickers"
+          @update:model-value="setParams($event)"
         />
 
         <div class="rr-section-title mt-4">Fix</div>
@@ -368,6 +426,8 @@ function pickService(service: Pickers['services'][number]): void {
             :model-value="item.remediation.params"
             testid="edit-fix-params"
             :variables="pickers?.variables"
+            :pickers="fixType.pickers"
+            :follows="following"
             @update:model-value="
               update({ remediation: { type: item.remediation!.type, params: $event } })
             "

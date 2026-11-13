@@ -106,6 +106,7 @@ function setNumber(key: 'timeoutSeconds' | 'delaySeconds', raw: string): void {
         :model-value="action.params"
         testid="edit-action-params"
         :variables="pickers?.variables"
+        :pickers="type?.pickers"
         @update:model-value="update({ params: $event })"
       />
       <div class="action-options">

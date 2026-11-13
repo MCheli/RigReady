@@ -6,8 +6,10 @@ import * as yaml from 'js-yaml';
 import { z } from 'zod';
 import { expandPath, allPathVariables } from '../../../core/pathVariables';
 import { migrateProfile, ProfileSchema, type Profile } from '../../../core/profile/schema';
+import { BINDING_FILES } from '../../../../tests/dcsBindings';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { CheckTypeInfo, Pickers, ProfileOverview, RemediationTypeInfo } from '../contract';
+import { followedBy, formRows, pickerItems } from '../renderer/pickerForm';
 import { fieldsOf } from '../renderer/schemaForm';
 import { isDuplicate, nextId, targetOf } from './duplicates';
 import { waitForPress } from './identify';
@@ -379,8 +381,47 @@ describe('the generic editor form', () => {
       timeoutSeconds: 'number',
       waitForCompletion: 'boolean',
     });
-    const layout = fieldsOf(types.checks.find((t) => t.type === 'display.layout')!.schema);
-    expect(layout.some((f) => f.kind === 'json')).toBe(true);
+  });
+
+  it('CFG-PROFILE-020: nothing the editor shows for a registered type asks for raw data', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const types = await app.invoke<{
+      checks: CheckTypeInfo[];
+      remediations: RemediationTypeInfo[];
+    }>('profiles:types');
+    // The form as the editor builds it: what a list fills in by itself is not asked for.
+    for (const type of [...types.checks, ...types.remediations]) {
+      const raw = formRows(type.schema, {}, type.pickers)
+        .filter((row) => row.field.kind === 'json')
+        .map((row) => row.field.key);
+      expect(raw, type.type).toEqual([]);
+    }
+    // The monitors of a layout are still in the schema, and never on the form.
+    const layout = types.checks.find((t) => t.type === 'display.layout')!;
+    expect(fieldsOf(layout.schema).some((f) => f.kind === 'json')).toBe(true);
+    expect(formRows(layout.schema, {}, layout.pickers).map((row) => row.field.key)).toEqual([
+      'layoutId',
+    ]);
+    // A closed list is tick boxes with names, a width and height are two numbers, and a
+    // folder can be browsed for.
+    const kindsOf = (type: CheckTypeInfo | RemediationTypeInfo): Record<string, string> =>
+      Object.fromEntries(fieldsOf(type.schema).map((f) => [f.key, f.kind]));
+    const exportTools = types.checks.find((t) => t.type === 'dcs.exportLua')!;
+    const multi = fieldsOf(exportTools.schema).filter((f) => f.kind === 'multiChoice');
+    expect(multi.length).toBeGreaterThan(0);
+    for (const field of multi) {
+      expect(Object.keys(field.optionLabels ?? {}).sort(), field.key).toEqual(
+        [...(field.options ?? [])].sort()
+      );
+    }
+    expect(kindsOf(types.checks.find((t) => t.type === 'dcs.monitorSetup')!)).toMatchObject({
+      window: 'group',
+    });
+    const install = fieldsOf(types.checks.find((t) => t.type === 'dcs.install')!.schema);
+    expect(install.find((f) => f.key === 'installDir')).toMatchObject({
+      label: 'Install folder',
+      browse: 'folder',
+    });
   });
 
   it('every field a profile has is edited somewhere in the setup editor', async () => {
@@ -461,6 +502,280 @@ describe('the generic editor form', () => {
     for (const control of Object.values(CONTROLS)) {
       if (control.startsWith('edit-')) expect(sources, control).toContain(`"${control}`);
     }
+  });
+});
+
+describe('CFG-PROFILE-019: the lists the editor picks from', () => {
+  type Types = { checks: CheckTypeInfo[]; remediations: RemediationTypeInfo[] };
+
+  it('a monitor layout is chosen by name, and the fix for the check picks from the same list', async () => {
+    app = await wiredApp('displays-layouts', { files: [] });
+    const types = await app.invoke<Types>('profiles:types');
+    const check = types.checks.find((t) => t.type === 'display.layout')!;
+    const fix = types.remediations.find((t) => t.type === 'display.applyLayout')!;
+    expect(check.fixes).toEqual(['display.applyLayout']);
+    const list = check.pickers!.find((p) => p.param === 'layoutId')!;
+    expect(list).toMatchObject({
+      list: 'displays.layouts',
+      label: 'Layout',
+      fills: ['layoutName', 'displays'],
+    });
+    expect(list.choices.map((c) => c.label).sort()).toEqual(['Desk', 'Flying', 'Racing']);
+    for (const choice of list.choices) {
+      // Choosing a name fills in the monitors, so nobody types them.
+      expect(choice.detail, choice.label).toMatch(/^\d+ monitors?, \d+ on$/);
+      expect(choice.fill, choice.label).toMatchObject({ layoutName: choice.label });
+      expect(Array.isArray(choice.fill!['displays']), choice.label).toBe(true);
+    }
+    // Same list, same field: the fix can follow the check and ask for nothing.
+    expect(fix.pickers!.find((p) => p.param === 'layoutId')).toMatchObject({
+      list: 'displays.layouts',
+    });
+    expect(followedBy(check.pickers, fix.pickers)).toEqual({
+      keys: ['layoutId', 'layoutName', 'displays'],
+      label: 'layout',
+    });
+  });
+
+  it('two virtual controllers of one name are told apart, and the one in use is marked', async () => {
+    app = await wiredApp('virtual-controller-ready', {
+      files: ['Program Files (x86)/Steam/**'],
+    });
+    const copy = await app.invoke<{ id: string }>('virtual-controller:copy', {
+      from: 'my-ace-combat-stick',
+      name: 'My Ace Combat stick',
+    });
+    expect(copy.id).not.toBe('my-ace-combat-stick');
+    await app.invoke('virtual-controller:start', { id: copy.id, hide: false });
+    const types = await app.invoke<Types>('profiles:types');
+    const start = types.remediations.find((t) => t.type === 'virtual-controller.start')!;
+    const list = start.pickers!.find((p) => p.param === 'profile')!;
+    expect(list).toMatchObject({ label: 'Virtual controller', fills: ['profileName'] });
+    // The starting points are not offered: only the person's own.
+    expect(list.choices.map((c) => c.value).sort()).toEqual(
+      [copy.id, 'my-ace-combat-stick'].sort()
+    );
+    expect(new Set(list.choices.map((c) => c.label))).toEqual(new Set(['My Ace Combat stick']));
+    const details = list.choices.map((c) => c.detail!);
+    expect(new Set(details).size).toBe(2);
+    for (const choice of list.choices) expect(choice.detail).toContain(`id ${choice.value}`);
+    expect(list.choices.find((c) => c.current)?.value).toBe(copy.id);
+    // As the editor shows them: the same name twice, the line under it different.
+    const shown = pickerItems(list, {});
+    expect(shown.find((i) => i.value === copy.id)!.title).toBe('My Ace Combat stick (in use now)');
+    expect(shown.find((i) => i.value === 'my-ace-combat-stick')!.title).toBe('My Ace Combat stick');
+    // The form asks for the controller by name and never for the id or the name it fills.
+    const keys = formRows(start.schema, {}, start.pickers).map((row) => row.field.key);
+    expect(keys).toContain('profile');
+    expect(keys).not.toContain('profileName');
+  });
+
+  it('with one name in the list, nothing is added to tell it apart', async () => {
+    app = await wiredApp('virtual-controller-ready', {
+      files: ['Program Files (x86)/Steam/**'],
+    });
+    const types = await app.invoke<Types>('profiles:types');
+    const list = types.remediations
+      .find((t) => t.type === 'virtual-controller.start')!
+      .pickers!.find((p) => p.param === 'profile')!;
+    expect(list.choices).toHaveLength(1);
+    expect(list.choices[0]).toMatchObject({
+      value: 'my-ace-combat-stick',
+      label: 'My Ace Combat stick',
+      fill: { profileName: 'My Ace Combat stick' },
+    });
+    expect(list.choices[0]!.detail).not.toContain('id ');
+    expect(list.choices[0]!.current).toBeFalsy();
+  });
+
+  it('a type that asks which game offers the games by name, and every list arrives filled', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const types = await app.invoke<Types>('profiles:types');
+    const updated = types.checks.find((t) => t.type === 'game.updated')!;
+    const games = updated.pickers!.find((p) => p.param === 'game')!;
+    expect(games).toMatchObject({ list: 'games', label: 'Game' });
+    expect(games.choices).toContainEqual({ value: 'dcs', label: 'DCS World' });
+    expect(games.choices).toContainEqual({ value: 'iracing', label: 'iRacing' });
+    expect(games.choices.map((c) => c.label)).toEqual(
+      [...games.choices.map((c) => c.label)].sort((a, b) => a.localeCompare(b))
+    );
+    // Every list a type names arrives with its choices; none is left for the page to fetch.
+    for (const type of [...types.checks, ...types.remediations]) {
+      for (const picker of type.pickers ?? []) {
+        expect(Array.isArray(picker.choices), `${type.type} ${picker.list}`).toBe(true);
+        expect(picker.label.length, `${type.type} ${picker.list}`).toBeGreaterThan(0);
+        expect(picker.empty.length, `${type.type} ${picker.list}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('CFG-PROFILE-020: an audio device, an aircraft, saved bindings and a Stream Deck are chosen by name', async () => {
+    app = await wiredApp('flying-all-good', {
+      files: [...BINDING_FILES, 'Documents/iRacing/**'],
+    });
+    await app.invoke('racing:backup', { game: 'iracing', name: 'GT3 rim' });
+    await app.invoke('racing:backup', { game: 'iracing' });
+    const types = await app.invoke<Types>('profiles:types');
+    const listOf = (type: string, param: string) =>
+      [...types.checks, ...types.remediations]
+        .find((t) => t.type === type)!
+        .pickers!.find((p) => p.param === param)!;
+
+    // The Windows endpoint id nobody can type: the device by name, and what it is.
+    const audio = listOf('audio.defaultDevice', 'id');
+    expect(audio).toMatchObject({ label: 'Audio device', fills: ['name', 'flow'] });
+    // The fix sets the device for what the check asks: it follows the role too.
+    expect(audio.shares).toEqual(['role']);
+    const headphones = audio.choices.find(
+      (c) => c.label === 'Headphones (Arctis Pro Wireless Game)'
+    );
+    expect(headphones).toMatchObject({
+      detail: 'Sound output',
+      fill: { name: 'Headphones (Arctis Pro Wireless Game)', flow: 'playback' },
+    });
+    expect(audio.choices.some((c) => c.detail === 'Microphone')).toBe(true);
+    expect(audio.choices.some((c) => c.current)).toBe(true);
+    expect(listOf('audio.setDefault', 'id').choices).toEqual(audio.choices);
+    expect(types.checks.find((t) => t.type === 'audio.defaultDevice')!.fixes).toEqual([
+      'audio.setDefault',
+    ]);
+    const role = fieldsOf(types.checks.find((t) => t.type === 'audio.defaultDevice')!.schema).find(
+      (f) => f.key === 'role'
+    )!;
+    expect(role.optionLabels).toEqual({
+      default: 'Default device',
+      communications: 'Default for calls',
+      both: 'Both',
+    });
+
+    // The aircraft by the name the game shows, not the name of its folder.
+    const aircraft = listOf('dcs-bindings.deviceIds', 'aircraft');
+    expect(aircraft).toMatchObject({ label: 'Aircraft', fills: ['aircraftName'] });
+    expect(aircraft.choices.find((c) => c.value === 'FA-18C_hornet')).toMatchObject({
+      label: 'F/A-18C',
+      fill: { aircraftName: 'F/A-18C' },
+    });
+    expect(aircraft.choices.find((c) => c.value === 'FA-18C_hornet')!.detail).toMatch(
+      /^\d+ binding files of your own$/
+    );
+    expect(aircraft.choices.find((c) => c.value === 'UH-1H')!.detail).toBe(
+      'No bindings of your own yet'
+    );
+    // A kneeboard's aircraft says its game by itself, so the game is not asked for as well.
+    const kneeboard = types.checks.find((t) => t.type === 'cheat-sheets.kneeboardCurrent')!;
+    expect(kneeboard.pickers!.map((p) => p.param)).toEqual(['aircraft']);
+    expect(listOf('cheat-sheets.kneeboardCurrent', 'aircraft').choices[0]).toMatchObject({
+      value: 'FA-18C_hornet',
+      label: 'F/A-18C',
+      detail: 'DCS World',
+      fill: { aircraftName: 'F/A-18C', game: 'dcs' },
+    });
+    expect(listOf('cheat-sheets.regenerate', 'aircraft').choices).toEqual(
+      listOf('cheat-sheets.kneeboardCurrent', 'aircraft').choices
+    );
+
+    // Saved bindings by the name they were saved under, else by their date, with the game.
+    const sets = listOf('racing.bindingSet', 'backupId');
+    expect(sets).toMatchObject({ label: 'Saved bindings', fills: ['name', 'game'] });
+    expect(sets.choices).toHaveLength(2);
+    expect(sets.choices[0]).toMatchObject({
+      label: 'GT3 rim',
+      fill: { name: 'GT3 rim', game: 'iracing' },
+    });
+    expect(sets.choices[0]!.detail).toMatch(/^iRacing, saved \d+ \w+ \d{4}, \d\d:\d\d$/);
+    expect(sets.choices[1]!.label).toMatch(/^backup of \d+ \w+ \d{4}, \d\d:\d\d$/);
+    expect(sets.choices[1]!.detail).toBe('iRacing');
+    expect(new Set(sets.choices.map((c) => c.value)).size).toBe(2);
+    expect(listOf('racing.restoreBindingSet', 'backupId').choices).toEqual(sets.choices);
+    expect(types.checks.find((t) => t.type === 'racing.bindingSet')!.fixes).toEqual([
+      'racing.restoreBindingSet',
+    ]);
+
+    // One Stream Deck of several, by name; nothing chosen means any will do.
+    const deck = listOf('stream-deck.connected', 'serial');
+    expect(deck.label).toBe('Which Stream Deck');
+    expect(deck.choices).toEqual([
+      {
+        value: 'A00NA33331P1UB',
+        label: 'Stream Deck XL',
+        detail: 'Serial number A00NA33331P1UB',
+      },
+    ]);
+  });
+
+  it('a list with nothing in it says what to do, and one that cannot be read says so', async () => {
+    app = await wiredApp('generic-fresh', { files: [] });
+    const types = await app.invoke<Types>('profiles:types');
+    const listOf = (type: string, param: string) =>
+      [...types.checks, ...types.remediations]
+        .find((t) => t.type === type)!
+        .pickers!.find((p) => p.param === param)!;
+    expect(listOf('display.layout', 'layoutId')).toMatchObject({
+      choices: [],
+      empty: 'You have no saved layout yet. Save one on Configure > Monitors, then choose it here.',
+      unpicked: 'No saved layout is chosen: this setup keeps the arrangement it was made with.',
+    });
+    expect(listOf('racing.bindingSet', 'backupId')).toMatchObject({
+      choices: [],
+      empty:
+        'You have no saved bindings yet. Back them up on Configure > Racing, then choose them here.',
+    });
+    expect(listOf('virtual-controller.start', 'profile')).toMatchObject({
+      choices: [],
+      empty:
+        'You have no virtual controller of your own yet. Make one on Configure > Virtual controller, then choose it here.',
+    });
+    for (const type of [...types.checks, ...types.remediations]) {
+      for (const picker of type.pickers ?? []) {
+        // An empty list is not a failed read: only a read that failed carries a problem.
+        if (picker.problem !== undefined) expect(picker.choices).toEqual([]);
+      }
+    }
+  });
+
+  it('a save without a choice names the list to choose from, not the field behind it', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const profile = await app.invoke<Profile>('profiles:get', { id: P });
+    const file = app.wiring.context.profiles.fileFor(P);
+    const before = await sha(file);
+    const layout = {
+      id: 'c90',
+      type: 'display.layout',
+      title: 'Monitors',
+      required: true,
+      params: {},
+      remediation: { type: 'display.applyLayout', params: {} },
+    };
+    const pad = {
+      id: 'a90',
+      title: 'Start a virtual controller',
+      type: 'virtual-controller.start',
+      params: {},
+      continueOnError: false,
+      delaySeconds: 0,
+    };
+    await expect(
+      app.invoke('profiles:save', { ...profile, checks: [...profile.checks, layout] })
+    ).rejects.toThrow(
+      /profile\.params .*c90 "Monitors": Layout: choose one from the list\.\n?.*c90 "Monitors" fix: Layout: choose one from the list\./s
+    );
+    const withPad = {
+      ...profile,
+      actions: { preLaunch: [pad], postLaunch: [], standDown: [] },
+    };
+    await expect(app.invoke('profiles:save', withPad)).rejects.toThrow(
+      /One field needs fixing\..*a90 "Start a virtual controller": Virtual controller: choose one from the list\./s
+    );
+    // One line for a list, however many of its fields are wrong.
+    const save = app.wiring.handlers.get('profiles:save')!;
+    const answer = (await save({ ...profile, checks: [...profile.checks, layout] })) as {
+      ok: boolean;
+      error?: { message: string; detail?: string };
+    };
+    expect(answer.ok).toBe(false);
+    expect(answer.error!.message).toBe('2 fields need fixing.');
+    expect(answer.error!.detail!.split('\n')).toHaveLength(2);
+    expect(await sha(file)).toBe(before);
   });
 });
 
