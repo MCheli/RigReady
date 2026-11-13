@@ -204,4 +204,35 @@ describe('analyzeLayout', () => {
       'The layout would turn every monitor off.',
     ]);
   });
+
+  it('names the connected monitors a layout does not list: those are left as they are, on or off', () => {
+    const tv: DisplayInfo = {
+      ...ultrawide,
+      id: '\\\\?\\display#tv00001#5&1509d400&0&uid4999#{e6f07b5f}',
+      name: 'TV',
+      edid: 'TV00001',
+      enabled: false,
+      primary: false,
+      width: 0,
+      height: 0,
+    };
+    // A layout of the ultrawide alone, with both small screens on and a TV that is off.
+    const analysis = analyzeLayout([asTarget(ultrawide)], [...now, tv], {
+      [now[1]!.id]: 'MFD left',
+    });
+    expect(analysis.untouched).toEqual([
+      { label: 'MFD left', on: true },
+      { label: 'USB_Monitor (2 of 2)', on: true },
+      { label: 'TV', on: false },
+    ]);
+    // Nothing is asked of them: no target switches one off, and they are no difference.
+    expect(analysis.targets.map((t) => t.name)).toEqual(['LC49G95T']);
+    expect(analysis.differences).toEqual([]);
+    // A layout that lists every connected monitor leaves none out.
+    expect(analyzeLayout(now.map(asTarget), now).untouched).toEqual([]);
+    // A layout that only switches its own monitor off still leaves the others on.
+    const off = analyzeLayout([{ ...asTarget(ultrawide), enabled: false }], now);
+    expect(off.problems).toEqual([]);
+    expect(off.untouched.every((m) => m.on)).toBe(true);
+  });
 });

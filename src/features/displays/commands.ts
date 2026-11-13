@@ -19,9 +19,6 @@ const openMonitors = { label: 'Open Monitors', to: PAGE };
 
 const count = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
 
-/** How "Keep this layout?" ended. */
-type Settled = 'kept' | 'reverted' | 'revertFailed';
-
 function hintOf(layout: LayoutView): string {
   if (layout.status === 'current') return 'The monitors are arranged like this now';
   if (layout.status === 'incomplete') return `Not connected: ${layout.missing.join(', ')}`;
@@ -30,30 +27,29 @@ function hintOf(layout: LayoutView): string {
 
 async function apply(shell: CommandShell, layout: LayoutView): Promise<CommandOutcome> {
   const api = shell.client(displaysContract);
-  // Listen first: the answer to "Keep this layout?" may come before the apply call returns.
-  const answer: { given?: Settled; tell?: (outcome: Settled) => void } = {};
-  const off = api.on('settled', ({ outcome }) => {
-    answer.given = outcome;
-    answer.tell?.(outcome);
+  // The apply call answers only once "Keep this layout?" has been answered. The question
+  // being asked is the sign that the monitors were changed at all.
+  let asked = false;
+  const off = api.on('applied', () => {
+    asked = true;
+    shell.progress(`Applied "${layout.name}". Keep it, or it goes back by itself…`);
   });
   try {
     shell.progress(`Applying the ${layout.name} layout…`);
     const applied = await api.applyLayout({ id: layout.id, withoutMissing: false });
-    if (!applied.ok) return commandFailed(applied.error, openMonitors);
-    if (answer.given === undefined) {
-      const open = await api.pending();
-      if (!open.ok) return commandFailed(open.error, openMonitors);
-      // No question open and none answered: nothing had to change.
-      if (!open.value.pending && answer.given === undefined) {
-        return { tone: 'info', text: applied.value.message };
+    if (asked) shell.machineChanged();
+    if (!applied.ok) {
+      if (applied.error.code !== 'display.revert') {
+        return commandFailed(applied.error, openMonitors);
       }
+      return {
+        tone: 'bad',
+        text: `The ${layout.name} layout was not kept, and the monitors could not be put back`,
+        detail: 'Open Monitors to see how they are arranged now.',
+        action: openMonitors,
+      };
     }
-    shell.progress(`${applied.value.message}. Keep it, or it goes back by itself…`);
-    const outcome =
-      answer.given ?? (await new Promise<Settled>((resolve) => (answer.tell = resolve)));
-    shell.machineChanged();
-    if (outcome === 'kept') return { tone: 'ok', text: `${applied.value.message}, and kept` };
-    if (outcome === 'reverted') {
+    if (!applied.value.kept) {
       return {
         tone: 'warn',
         text: `The ${layout.name} layout was not kept`,
@@ -61,12 +57,9 @@ async function apply(shell: CommandShell, layout: LayoutView): Promise<CommandOu
         action: openMonitors,
       };
     }
-    return {
-      tone: 'bad',
-      text: `The ${layout.name} layout was not kept, and the monitors could not be put back`,
-      detail: 'Open Monitors to see how they are arranged now.',
-      action: openMonitors,
-    };
+    // No question was asked: nothing had to change, and the answer says so.
+    if (!asked) return { tone: 'info', text: applied.value.message };
+    return { tone: 'ok', text: `${applied.value.message}, and kept` };
   } finally {
     off();
   }

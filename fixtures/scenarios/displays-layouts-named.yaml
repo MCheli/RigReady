@@ -1,0 +1,5 @@
+description: Desk state as recorded, the three MFD screens named, and Flying saved in the order Windows listed the screens (centre, right, left)
+rig: mark-full
+data:
+  displays/names.json: data/displays/names.json
+  displays/layouts.json: data/displays/layouts-capture-order.json

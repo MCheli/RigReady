@@ -12,6 +12,7 @@ import type {
 } from '../contract';
 import { matchMonitors } from '../../../core/displays/identity';
 import type { LayoutApplier } from './applier';
+import { keepOnly, turnedBy, turnForArrow, turnInLayout, type ArrowSeen } from './arrange';
 import { describeTargets, targetFromDisplay } from './layoutCheck';
 import { monitorLabels, monitorNumbers, type MonitorNames } from './labels';
 import { analyzeLayout, joinNames } from './plan';
@@ -90,11 +91,14 @@ export class DisplaysService {
   }
 
   /**
-   * Turns one monitor upside down and waits for Keep or Go back. When it is kept, the
-   * saved layouts that had this monitor the old way round are corrected too.
+   * "Which way is up?": turns one monitor so that Identify's arrow, seen pointing `arrow`,
+   * points up, and waits for Keep or Go back. A quarter turn swaps the monitor's width and
+   * height, so the monitors next to it move to stay next to it. When it is kept, the saved
+   * layouts that had this monitor the old way round are corrected too.
    */
-  async flip(
-    id: string
+  async turn(
+    id: string,
+    arrow: ArrowSeen
   ): Promise<Result<{ kept: boolean; layoutsUpdated: number; message: string }>> {
     const current = await this.ctx.ports.displays.read();
     if (!current.ok) return current;
@@ -105,10 +109,23 @@ export class DisplaysService {
     const names = await this.names.readOrEmpty();
     const label = monitorLabels(current.value.displays, names).get(monitor.id) ?? monitor.name;
     const from = monitor.rotation;
-    const to = ((from + 180) % 360) as DisplayTarget['rotation'];
-    const applied = await this.applier.applyAndWait([
-      { ...targetFromDisplay(monitor), rotation: to },
-    ]);
+    const by = turnForArrow(arrow);
+    const to = turnedBy(from, by);
+    let targets: DisplayTarget[] = [{ ...targetFromDisplay(monitor), rotation: to }];
+    if (by !== 180) {
+      // Every monitor that is on is given its place: the ones beside this one move.
+      const on = layoutToTargets({ displays: current.value.displays.filter((d) => d.enabled) });
+      const turned = turnInLayout(on, monitor.id, to);
+      if (!turned.fitted) {
+        return err(
+          'displays.turn',
+          `${label} cannot be turned here: the screens next to it could not be moved to make room. Nothing was changed.`,
+          "Turn it in Windows' display settings, then come back."
+        );
+      }
+      targets = turned.displays;
+    }
+    const applied = await this.applier.applyAndWait(targets);
     if (!applied.ok) {
       if (applied.error.code !== 'display.reverted') return applied;
       return ok({
@@ -128,22 +145,43 @@ export class DisplaysService {
     }
     // The answer goes where it is used: every saved layout with this monitor the old way.
     let layoutsUpdated = 0;
+    const unfitted: string[] = [];
+    const before = new Map(current.value.displays.map((d) => [d.id.toLowerCase(), d]));
+    // The size of a monitor a layout holds no size for: the one it had before this turn.
+    const sizeNow = (t: DisplayTarget): { width: number; height: number } | undefined => {
+      const have = before.get(t.id.toLowerCase());
+      if (!have || !have.enabled || have.width <= 0 || have.height <= 0) return undefined;
+      return sideways(t.rotation) !== sideways(have.rotation)
+        ? { width: have.height, height: have.width }
+        : { width: have.width, height: have.height };
+    };
     const layouts = await this.ctx.layouts.list();
     for (const layout of layouts.ok ? layouts.value : []) {
       const match = matchMonitors(layout.displays, [monitor]).find((m) => m.actual);
       if (!match || !match.expected.enabled || match.expected.rotation !== from) continue;
-      const replaced = await this.ctx.layouts.replace(
-        layout.id,
-        layout.displays.map((d) => (d === match.expected ? { ...d, rotation: to } : d))
-      );
-      if (replaced.ok) layoutsUpdated++;
+      const turned = turnInLayout(layout.displays, match.expected.id, to, sizeNow);
+      const replaced = await this.ctx.layouts.replace(layout.id, turned.displays);
+      if (!replaced.ok) continue;
+      layoutsUpdated++;
+      if (!turned.fitted) unfitted.push(layout.name);
     }
     await this.upright?.confirm([uprightKey({ ...monitor, rotation: to })]);
     const also =
       layoutsUpdated > 0
         ? ` and corrected it in ${layoutsUpdated} saved ${layoutsUpdated === 1 ? 'layout' : 'layouts'}`
         : '';
-    return ok({ kept: true, layoutsUpdated, message: `Turned ${label} the other way up${also}.` });
+    const how = by === 180 ? 'the other way up' : 'a quarter turn';
+    // Never leave a layout quietly out of shape: say which one to look at.
+    const look =
+      unfitted.length > 0
+        ? ` The other screens in ${joinNames(unfitted.map((n) => `"${n}"`))} could not be moved to fit: open Edit arrangement there.`
+        : '';
+    return ok({ kept: true, layoutsUpdated, message: `Turned ${label} ${how}${also}.${look}` });
+  }
+
+  /** The arrow points down: half a turn. */
+  flip(id: string): Promise<Result<{ kept: boolean; layoutsUpdated: number; message: string }>> {
+    return this.turn(id, 'down');
   }
 
   /** The user looked at the arrows: every monitor that is on is the right way up. */
@@ -164,6 +202,40 @@ export class DisplaysService {
 
   async saveLayout(name: string): Promise<Result<DisplaysView>> {
     const created = await this.ctx.layouts.createFromCurrent(name, this.ctx.ports.displays);
+    if (!created.ok && created.error.code === 'layouts.duplicate') {
+      // Someone saving a layout "again" under its name wants Replace: say where that is.
+      return err(
+        created.error.code,
+        `${created.error.message} To save it again as the monitors are now, open its menu and choose "Replace with the monitors as they are now".`
+      );
+    }
+    return created.ok ? this.view() : created;
+  }
+
+  /**
+   * "New layout": the monitors as they are, with only the chosen ones left on. Every
+   * connected monitor is in the layout, the others as off, so applying it switches them
+   * off. Saves the layout; the monitors are not changed.
+   */
+  async newLayout(name: string, stayOn: string[]): Promise<Result<DisplaysView>> {
+    const current = await this.ctx.ports.displays.read();
+    if (!current.ok) return current;
+    const on = new Set(current.value.displays.filter((d) => d.enabled).map((d) => d.id));
+    const chosen = [...new Set(stayOn.map((id) => id.toLowerCase()))];
+    if (chosen.length === 0) {
+      return err('displays.new', 'Choose at least one monitor that stays on.');
+    }
+    if (chosen.some((id) => !on.has(id))) {
+      // Its size and place are not known while it is off.
+      return err(
+        'displays.new',
+        'A monitor that is off or not connected cannot be chosen. Switch it on in Windows first.'
+      );
+    }
+    const created = await this.ctx.layouts.create(
+      name,
+      keepOnly(layoutToTargets(current.value), chosen)
+    );
     return created.ok ? this.view() : created;
   }
 
@@ -202,9 +274,13 @@ export class DisplaysService {
     if (analysis.problems.length > 0) {
       return err('displays.edit', analysis.problems.join(' '));
     }
-    const cleaned = displays.map((d) =>
-      d.enabled ? d : { ...d, primary: false, x: 0, y: 0, rotation: 0 as const }
-    );
+    // A monitor that is off holds no place and no refresh rate: the rate it had when it was
+    // last on would be an old one by the time someone switches it on in this layout again.
+    const cleaned = displays.map((d) => {
+      if (d.enabled) return d;
+      const { refreshHz: _rate, ...off } = d;
+      return { ...off, primary: false, x: 0, y: 0, rotation: 0 as const };
+    });
     const replaced = await this.ctx.layouts.replace(id, cleaned);
     return replaced.ok ? this.view() : replaced;
   }
@@ -248,6 +324,7 @@ export class DisplaysService {
       missing: a.missing,
       problems: a.problems,
       enabledCount: a.enabledCount,
+      untouched: a.untouched,
       ...previewMaps(layout.value.displays, current.value.displays, a, names),
     };
     if (a.primaryMissing) preview.primaryMissing = a.primaryMissing;
@@ -255,16 +332,20 @@ export class DisplaysService {
     return ok(preview);
   }
 
-  async applyLayout(id: string, withoutMissing: boolean): Promise<Result<{ message: string }>> {
+  /**
+   * Applies a saved layout by hand and waits for Keep or Go back. `kept` says whether the
+   * monitors are in the layout now: "Applied" is never said of a layout that went back.
+   */
+  async applyLayout(
+    id: string,
+    withoutMissing: boolean
+  ): Promise<Result<{ kept: boolean; message: string }>> {
     const layout = await this.ctx.layouts.get(id);
     if (!layout.ok) return layout;
     const current = await this.ctx.ports.displays.read();
     if (!current.ok) return current;
-    const a = analyzeLayout(
-      layout.value.displays,
-      current.value.displays,
-      await this.names.readOrEmpty()
-    );
+    const names = await this.names.readOrEmpty();
+    const a = analyzeLayout(layout.value.displays, current.value.displays, names);
     const name = layout.value.name;
     if (a.missing.length > 0 && !withoutMissing) {
       return err(
@@ -280,25 +361,32 @@ export class DisplaysService {
       );
     }
     if (a.changes.length === 0) {
-      return ok({ message: `The monitors already match "${name}". Nothing was changed.` });
+      return ok({
+        kept: true,
+        message: `The monitors already match "${name}". Nothing was changed.`,
+      });
     }
-    const applied = await this.applier.apply(a.targets);
-    if (!applied.ok) return applied;
-    // Read back: Windows may have adjusted what it was given.
-    const left = analyzeLayout(
-      layout.value.displays,
-      applied.value.current.displays,
-      await this.names.readOrEmpty()
-    ).changes;
+    const applied = await this.applier.applyAndWait(a.targets);
+    if (!applied.ok) {
+      if (applied.error.code !== 'display.reverted') return applied;
+      return ok({
+        kept: false,
+        message: `"${name}" was not kept. The monitors are back the way they were.`,
+      });
+    }
+    // Read back, now that the answer is in: Windows may have adjusted what it was given.
+    const now = await this.ctx.ports.displays.read();
+    if (!now.ok) return now;
+    const left = analyzeLayout(layout.value.displays, now.value.displays, names).changes;
     if (left.length > 0) {
       return err(
         'display.partial',
-        `Windows did not arrange the monitors exactly as "${name}". Keep or go back in the prompt.`,
+        `You kept the change, but Windows did not arrange the monitors exactly as "${name}".`,
         left.join('; ')
       );
     }
     const without = a.missing.length > 0 ? ` without ${joinNames(a.missing)}` : '';
-    return ok({ message: `Applied "${name}"${without}` });
+    return ok({ kept: true, message: `Applied "${name}"${without}` });
   }
 
   /**
@@ -347,11 +435,10 @@ export class DisplaysService {
         left.join('; ')
       );
     }
+    // The question about it is open now, so this says where things stand, not how it ends.
+    const without = a.missing.length > 0 ? ` without ${joinNames(a.missing)}` : '';
     return ok({
-      message:
-        a.missing.length > 0
-          ? `Put back the earlier layout without ${joinNames(a.missing)}`
-          : 'Put back the earlier layout',
+      message: `The earlier layout is back${without}. Keep it, or the monitors change back when the countdown ends.`,
     });
   }
 }
@@ -455,6 +542,11 @@ export function layoutView(
       connected: have !== undefined,
     };
   });
+  // As they stand on the desk: from left to right, then top to bottom, then the ones that
+  // are off. (The file keeps the order they were saved in, which means nothing to a reader.)
+  monitors.sort(
+    (a, b) => Number(!a.enabled) - Number(!b.enabled) || (a.enabled ? a.x - b.x || a.y - b.y : 0)
+  );
   return {
     id: layout.id,
     name: layout.name,
@@ -469,5 +561,6 @@ export function layoutView(
           : 'different',
     differences: analysis.differences,
     missing: analysis.missing,
+    untouched: analysis.untouched,
   };
 }

@@ -21,12 +21,16 @@ A screen mounted sideways can be upright in two ways: rotated 90° or rotated 27
 That is why the arrow is there. After Identify, the Monitors page shows a panel headed **Which way is up?** with one row per monitor that is on. Look at each screen:
 
 - If every arrow points up, press **All arrows point up**. RigReady remembers this for each monitor at its present rotation, and the row shows "you have seen it the right way up" from then on. The question is not asked again for that monitor at that rotation.
-- If an arrow points down on a screen, press **Arrow points down: turn it** on that row. RigReady turns that one monitor by 180° (90° becomes 270°, 270° becomes 90°, 0° becomes 180°) and asks the usual **Keep this monitor layout?** question with the countdown ([Keep it or go back](layouts.md#keep-it-or-go-back)). If you keep it, every saved layout that had this monitor at the old rotation is corrected to the new one, so the answer is stored where it is used, and the message says how many layouts were changed. If you go back, nothing is changed.
+- If an arrow does not point up, find that screen's row. After **The arrow points** it has three buttons: **Left**, **Down** and **Right**. Press the one for the way the arrow points on that screen, and RigReady turns that screen's picture so the arrow points up.
 - **Not now** closes the panel without recording anything.
 
-![Which way is up](../../../artifacts/screens/displays-upright/02-which-way-is-up.png)
+![Which way is up](../../../artifacts/screens/display-quarter-turn/01-which-way-is-up.png)
 
-![After turning a screen](../../../artifacts/screens/displays-upright/03-turned.png)
+**Down** turns the monitor by 180° (90° becomes 270°, 270° becomes 90°, 0° becomes 180°). **Left** and **Right** turn it a quarter turn, which is what a screen mounted on its side needs when Windows still has it in landscape. A quarter turn swaps the monitor's width and height, so the screens beside it move to stay beside it, with no gap and no overlap. If they cannot be moved to make room, RigReady says so and changes nothing.
+
+Every turn asks the usual **Keep this monitor layout?** question with the countdown ([Keep it or go back](layouts.md#keep-it-or-go-back)). If you keep it, every saved layout that had this monitor at the old rotation is corrected to the new one, so the answer is stored where it is used, and the message says how many layouts were changed: "Turned MFD left a quarter turn and corrected it in 1 saved layout." If you go back, or the countdown runs out, nothing is changed: "MFD left is back the way it was. Nothing was changed."
+
+![After a quarter turn](../../../artifacts/screens/display-quarter-turn/02-turned-a-quarter.png)
 
 The turn is read back before anything else happens: if Windows accepts the change but the monitor does not turn, RigReady says so and changes no layout.
 

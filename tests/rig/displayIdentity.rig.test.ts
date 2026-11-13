@@ -121,6 +121,52 @@ describe.runIf(enabled)('real display changes (capture and restore)', () => {
     });
   });
 
+  it('turns a monitor on again with no refresh rate asked, and it runs at the rate it had', async () => {
+    await withRestore(async (provider, original) => {
+      const on = original.displays.filter((d) => d.enabled);
+      expect(on.length, 'needs at least two enabled monitors').toBeGreaterThanOrEqual(2);
+      // The fastest monitor that is not the main display tells most: the signal a fast
+      // monitor prefers is often 60 Hz, and that is what it must not come back with.
+      const victim = on
+        .filter((d) => !d.primary)
+        .sort((a, b) => (b.refreshHz ?? 0) - (a.refreshHz ?? 0))[0]!;
+      console.log(`  ${victim.name} runs at ${victim.refreshHz ?? '?'} Hz`);
+      const off = await provider.apply([
+        {
+          id: victim.id,
+          name: victim.name,
+          enabled: false,
+          primary: false,
+          x: 0,
+          y: 0,
+          rotation: 0,
+        },
+      ]);
+      expect(off.ok, off.ok ? '' : `${off.error.message} ${off.error.detail ?? ''}`).toBe(true);
+      await settle();
+
+      // Back on where it was, with no rate for it: the rate is left to Windows.
+      const back = await provider.apply(
+        original.displays.map((d) => {
+          const target = asTarget(d);
+          if (d.id === victim.id) delete target.refreshHz;
+          return target;
+        })
+      );
+      expect(back.ok, back.ok ? '' : `${back.error.message} ${back.error.detail ?? ''}`).toBe(true);
+      await settle();
+      const after = await provider.read();
+      expect(after.ok).toBe(true);
+      if (!after.ok) return;
+      console.log(
+        `  on again: ${describeLayout(after.value)} (${provider.lastApplyCalls} display change(s))`
+      );
+      // WHAT TO LOOK FOR: the rate printed above. A lower one here means Windows did not
+      // remember the rate either, and a layout has to give the rate to get it back.
+      expect(comparable(after.value)).toEqual(comparable(original));
+    });
+  });
+
   it('applies another refresh rate the monitor lists, and refuses nothing it was not asked', async () => {
     await withRestore(async (provider, original) => {
       // A monitor that offers its current size at a lower refresh rate too.
