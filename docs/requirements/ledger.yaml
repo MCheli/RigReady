@@ -6263,6 +6263,25 @@ requirements:
       - "artifacts/screens/racing-rim-variant/05-gt3-setup-sees-other-bindings.png"
       - "artifacts/screens/racing-rim-variant/07-formula-variant-ready.png"
 
+  - id: RACE-FANATEC-006
+    title: Save presets stays in view on the Wheel page, and unsaved presets are said
+    job: configure
+    area: fanatec
+    priority: p2
+    done_means:
+      - "On the Wheel page, 'Save presets' is in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
+      - "The bar says 'Tuning presets not saved yet' when a preset was changed and 'Tuning presets: nothing to save' with the button off when not; after a save it says what was saved."
+      - "Leaving the page with presets that are not saved asks first, and staying keeps what was typed."
+    status: done
+    evidence:
+      - test: 'tests/e2e/racing.e2e.ts#racing: "Save presets" stays in the window from the top of the wheel page to its end, and leaving with presets that are not saved asks first'
+      - "artifacts/screens/racing-wheel-save-bar/01-top-of-the-page.png"
+      - "artifacts/screens/racing-wheel-save-bar/02-end-of-the-page.png"
+      - "artifacts/screens/racing-wheel-save-bar/03-leaving-asks.png"
+      - "artifacts/screens/racing-wheel-save-bar/04-saved.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. The button was in the heading of 'Your tuning presets', far down the page, and leaving dropped what was typed without a word. A save that fails is still said only at the top of the page."
+
   - id: RACE-WHEEL-001
     title: The Wheel page and its checks for every major wheelbase brand
     job: troubleshoot

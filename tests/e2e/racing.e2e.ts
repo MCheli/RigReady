@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { parseControlsCfg } from '../../src/features/racing/core/iracing/controlsCfg';
 import { checkRow, expect, test } from './harness';
+import { expectSaveBarPinned } from './saveBar';
 
 /** The same iRacing bindings file with one action moved to the next button: another rim's bindings. */
 function withOneButtonMoved(controls: Buffer): Buffer {
@@ -513,7 +514,7 @@ test('racing: the wheel page, recorded presets and recommended settings', async 
   await page.getByTestId('preset-FF').locator('input').fill('90');
   await page.getByTestId('preset-NDP').locator('input').fill('16');
   await page.getByTestId('presets-save').click();
-  await expect(page.getByTestId('presets-saved')).toBeVisible();
+  await expect(page.getByTestId('save-bar-saved')).toBeVisible();
   await expect(page.getByTestId('preset-tab-1')).toContainText('3');
   await page.getByTestId('wheel-presets').evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await shot('presets');
@@ -584,4 +585,46 @@ test('racing: game pages show status at a glance, launch, and a folder chosen by
     'cannot list what is bound'
   );
   await shot('msfs2024');
+});
+
+test('racing: "Save presets" stays in the window from the top of the wheel page to its end, and leaving with presets that are not saved asks first', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('racing-fresh', 'racing-wheel-save-bar');
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-wheel').click();
+  await expect(page.getByTestId('wheel-name')).toHaveText('FANATEC Podium Wheel Base DD2');
+  const save = page.getByTestId('presets-save');
+  await expect(save).toHaveText('Save presets');
+  await expect(save).toBeDisabled();
+  await expect(page.getByTestId('save-bar-clean')).toHaveText('Tuning presets: nothing to save');
+  // The bar has one button here: the way back from this page is the menu.
+  await expect(page.getByTestId('save-bar-back')).toHaveCount(0);
+
+  await page.getByTestId('preset-FF').locator('input').fill('90');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Tuning presets not saved yet');
+  await expect(save).toBeEnabled();
+  await expectSaveBarPinned(page, save, shot);
+
+  // Another page of the menu: the value typed would be lost, so the bar asks.
+  await page.getByTestId('nav-racing').click();
+  await expect(page.getByTestId('save-bar-leave')).toBeVisible();
+  await shot('leaving-asks');
+  await page.getByTestId('save-bar-leave-stay').click();
+  await expect(page.getByTestId('wheel-page')).toBeVisible();
+  await expect(page.getByTestId('preset-FF').locator('input')).toHaveValue('90');
+
+  // Saved from the end of the page: what was done is said beside the button.
+  await save.click();
+  const done = page.getByTestId('save-bar-saved');
+  await expect(done).toContainText('Saved. RigReady keeps these with its own data');
+  await expect(done).toBeInViewport({ ratio: 1 });
+  await expect(save).toBeDisabled();
+  await shot('saved');
+
+  // Nothing is unsaved now, and nothing is asked.
+  await page.getByTestId('nav-racing').click();
+  await expect(page.getByTestId('racing-wheel-summary')).toBeVisible();
+  await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
+  await expect(page.getByTestId('save-bar')).toHaveCount(0);
 });
