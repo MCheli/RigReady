@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import type { LaunchAction } from '../../../core/profile/schema';
 import type { Pickers, RemediationTypeInfo } from '../contract';
 import ParamsForm from './ParamsForm.vue';
+import { titleFromType } from './pickerForm';
 import { defaultsOf } from './schemaForm';
 
 const props = defineProps<{
@@ -44,11 +45,12 @@ function update(patch: Partial<LaunchAction>): void {
 }
 
 function setType(value: string): void {
-  const label = props.remediations.find((r) => r.type === value)?.label ?? value;
+  const next = props.remediations.find((r) => r.type === value);
+  const title = titleFromType(props.action.title, type.value?.label, next?.label ?? value);
   update({
     type: value,
-    params: defaultsOf(props.remediations.find((r) => r.type === value)?.schema),
-    ...(props.action.title.startsWith('New ') ? { title: label } : {}),
+    params: defaultsOf(next?.schema),
+    ...(title === undefined ? {} : { title }),
   });
 }
 

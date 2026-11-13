@@ -208,6 +208,8 @@ export const ActionPlanSchema = z.object({
   id: z.string(),
   title: z.string(),
   phase: z.enum(['preLaunch', 'postLaunch', 'standDown']),
+  /** What the step was set to, by name, when that was chosen from a list (which virtual controller). */
+  choice: z.string().optional(),
   /** Set when the action runs a program the user must confirm first. */
   confirm: CommandPreviewSchema.optional(),
 });

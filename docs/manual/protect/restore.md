@@ -52,7 +52,7 @@ The footer sums it up before you press **Restore**: "Restores 12 items: 3 new, 8
 
 Games and some tools write their settings when they exit, or hold them in memory, which would undo a restore made while they run. The page lists any such program that is running and holds files you are about to restore, with the reason and which items it affects. The **Restore** button stays off until they are closed.
 
-Either close them yourself and press **I closed them: check again**, or tick **Ask them to close for me**. RigReady asks each program to close the way its own Exit would and never ends one by force; a program that does not close in time is named and nothing is restored. Helper tools such as [Stream Deck](../hardware/stream-deck.md) are started again afterwards when that option is offered; a game is left closed. DCS has its own page on this: [RigReady will not write DCS files](../troubleshooting/dcs-files-refused.md).
+Either close them yourself and press **I closed them: check again**, or tick **Ask them to close for me**. RigReady asks each program to close the way its own Exit would and never ends one by force; a program that does not close in time is named with the reason (it only went to the tray, it has no window, or Windows did not let RigReady close it) and nothing is restored. A tool made of several programs with the same name is asked as one. Helper tools such as [Stream Deck](../hardware/stream-deck.md) are started again afterwards when that option is offered; a game is left closed. DCS has its own page on this: [RigReady will not write DCS files](../troubleshooting/dcs-files-refused.md).
 
 ![Waiting for iRacing to close](../../../artifacts/screens/backup-sources/04-restore-waits-for-iracing.png)
 

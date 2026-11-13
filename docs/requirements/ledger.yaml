@@ -555,13 +555,24 @@ requirements:
     done_means:
       - "When the setup runs steps around the game, the Play page says so under its buttons before anything is clicked: \"Before launch: \" and \"After launch: \" with the names of the steps in the order they run. Past three, the rest are counted (\"and 2 more\")."
       - "Steps that run at Stand down are not in these lines, and a setup with no step around the game shows no such line."
+      - "A step set to a choice from a list names the choice: \"Before launch: Start a virtual controller: My Ace Combat stick\". The name is the one stored with the step, else the one the list has now, and a name the step's own title already has is not said twice."
+      - "While the setup's game is starting or running the lines are not shown: Launch is not what comes next, and the Launch panel lists what ran. They are back once the game has closed."
     status: done
     evidence:
       - 'src/features/fly/core/launchText.test.ts#names the steps before launch in the order they run'
       - 'src/features/fly/core/launchText.test.ts#names three and counts the rest'
       - 'src/features/fly/core/launchText.test.ts#says nothing for a phase without a step, and never counts a step of Stand down'
       - 'src/features/fly/core/launchText.test.ts#gives a line for each side of the game that has a step'
+      - 'src/features/fly/core/launchText.test.ts#names what a step was set to, and does not say it twice'
+      - "src/features/fly/core/launchText.test.ts#is not shown while the setup's game is starting or running, and is back once it has closed"
+      - 'src/features/fly/core/fly.test.ts#names the virtual controller a step starts: the name stored with the choice, or the one the list has now'
+      - 'src/features/fly/core/fly.test.ts#every step chosen from a list stores the name of the choice first, which is what is read'
       - 'tests/e2e/launch-moment.e2e.ts#play: the steps Launch runs before and after the game are on the page before the click'
+      - 'tests/e2e/launch-moment.e2e.ts#play: while the game runs the page no longer says what Launch will do, and says it again once the game has closed'
+      - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
+      - 'artifacts/screens/launch-plan-while-playing/01-while-the-game-runs.png'
+      - 'artifacts/screens/launch-plan-while-playing/02-after-the-game.png'
+      - 'artifacts/screens/fly-launch-actions/02-launched.png'
       - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch'
       - 'artifacts/screens/launch-plan/01-before-the-click.png'
       - 'artifacts/screens/setup-from-game-gamepad/03-play-says-what-launch-does.png'
@@ -712,6 +723,7 @@ requirements:
       - "Every setup has its own switch 'Stand down when the game closes' (on by default) and its own countdown length (one minute by default; the editor offers 10 seconds to 10 minutes, the setup file takes 5 to 3600 seconds). Both are in the setup editor under 'When the game closes' and in the setup file under extensions.fly (standDownOnClose, standDownAfterSeconds). A setup saved before this existed gets the defaults, and so does a value a hand edit got wrong."
       - "When the game the setup started has closed and the switch is on, a countdown starts. It is visible wherever the user is: a notice at the bottom right of every page of the main window ('Stand down in 42 seconds', one sentence that says what will happen, Cancel, and 'Change this for the setup'), the Welcome back line of the Play screen, and the session line of the compact view with its own Cancel. When nobody is at a RigReady window, Windows says 'Stand down starts in <length>. Open RigReady to cancel.' and the window is brought back on screen."
       - "The notice lies over the bottom right corner of the page, where a page may have buttons of its own (the setup editor's Save and Cancel). While it counts it can be moved to the top bar: the countdown, as a clock that is never cut short ('Stand down in 4:05'), and its Cancel are then in the bar on every page and cover nothing, and pressing the countdown there brings the notice back. What Stand down did is always said in the notice."
+      - "An editor with the shared Save bar along the bottom of the window (the virtual controller's) is never covered: the notice stands above that bar in every state, counting, standing down or showing the result, so Save and Back can always be pressed."
       - "When the time is up the same Stand down the button runs is run, once. The notice and the Welcome back line then say what it did: 'Stood down' with its summary only when every step worked; 'Stand down ran, but N step(s) need(s) attention' with each step that did not work; 'Stand down did not finish' with the reason when it could not run. The result stays until the user presses OK. With nobody at a window the same is a Windows notification."
       - "Cancel ends the countdown: nothing is closed, the screen says 'Stand down was cancelled. Nothing was closed.', and Stand down stays the primary action. Cancel pressed after Stand down has started changes nothing, and the answer says so."
       - "The game running again during the countdown ends the countdown, closes nothing, and is a new session. Every program name known for the game is watched, so a launcher that exits while the real game runs does not end the session."
@@ -778,6 +790,8 @@ requirements:
       - "artifacts/screens/fly-stand-down-top-bar/01-over-the-setup-editor.png"
       - "artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png"
       - "artifacts/screens/fly-stand-down-top-bar/03-cancelled-from-the-top-bar.png"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: on a page with the Save bar along the bottom, the notice stands above the bar and Save and Back can be pressed"
+      - "artifacts/screens/fly-stand-down-save-bar/01-above-the-save-bar.png"
       - "artifacts/screens/fly-stand-down-compact/01-compact-countdown.png"
       - "artifacts/screens/fly-stand-down-compact/02-compact-cancelled.png"
       - "artifacts/screens/fly-compact/04-welcome-back.png"
@@ -1621,6 +1635,7 @@ requirements:
     done_means:
       - "On New setup from this rig, only what the chosen game is played with comes ticked: the wheel and pedals for a racing game; sticks, throttles, pedals and the head tracker for a flight sim. Everything else found on the rig stays on the page, listed and not ticked. Choosing another game on the page changes the ticks."
       - "A helper program is not ticked merely because it is running: the program of gear the game does not read (TrackIR software for iRacing) is listed and not ticked."
+      - "A helper says which games it is made for, where it is made for some only: DCS-SRS is ticked for DCS World, and for another flight sim it is listed and not ticked. With no game chosen it stays ticked."
       - "What a game is played with comes from its game module (an optional playedWith: the kinds of gear, helpers, a microphone, a gamepad), else from what a game of its kind uses. The page holds no list of games or devices. Gear whose kind cannot be told from its name stays ticked."
       - "The wheel rotation the wheel's driver last recorded is listed and not ticked: it is a recorded value, not a reading of the wheel, and it changes from car to car."
       - "A game is listed under the name people write, not the store's capitals: \"Ace Combat 8: Wings of Theve\"."
@@ -1629,12 +1644,16 @@ requirements:
     evidence:
       - 'src/core/gearKind.test.ts#a flight sim reads sticks and a head tracker and no wheel; a racing sim the other way round'
       - 'src/core/gearKind.test.ts#what the game module says wins, and what it leaves out is what a game of its kind uses'
-      - 'src/features/profiles/core/captureDefaults.test.ts#a racing game keeps the wheel and pedals; flight gear is offered and not ticked'
-      - 'src/features/profiles/core/captureDefaults.test.ts#a helper is not kept merely because it is running: TrackIR software for a racing game'
-      - 'src/features/profiles/core/captureDefaults.test.ts#gear nobody can tell from its name is kept; what the rig did not propose never is'
+      - 'src/core/captureDefaults.test.ts#a racing game keeps the wheel and pedals; flight gear is offered and not ticked'
+      - 'src/core/captureDefaults.test.ts#a helper is not kept merely because it is running: TrackIR software for a racing game'
+      - 'src/core/captureDefaults.test.ts#gear nobody can tell from its name is kept; what the rig did not propose never is'
       - 'src/features/profiles/core/capture.test.ts#a helper that happens to be running is offered, not ticked, for a game that does not use it: TrackIR software and iRacing'
       - 'src/features/profiles/core/capture.test.ts#on a rig with both, a racing game keeps the wheel and no flight gear, and a flight sim the other way round'
       - 'src/features/profiles/core/capture.test.ts#the wheel rotation the driver last recorded is offered and not ticked'
+      - 'src/core/captureDefaults.test.ts#a helper made for one game is kept for that game only, and stays offered for any other'
+      - 'src/features/processes/core/processCheck.test.ts#says which games a helper is made for: DCS-SRS is for DCS only, and no other helper is tied to a game'
+      - 'src/features/profiles/core/capture.test.ts#a helper made for one game is kept for that game only: DCS-SRS for DCS, not for another flight sim'
+      - 'src/features/profiles/core/capture.test.ts#a program two parts of RigReady know keeps the games it is made for, whichever of the two stays'
       - 'src/features/profiles/core/capture.test.ts#every game says what it is played with; Ace Combat 8 says a gamepad, its own gear and no helpers'
       - 'src/features/games/ace-combat-8/module.test.ts#is named the way people write it, and says what it is played with'
       - 'tests/e2e/setup-from-game.e2e.ts#new setup: a racing game keeps the wheel; flight gear and a head tracker program that happens to run are listed, not ticked'
@@ -1642,6 +1661,8 @@ requirements:
       - 'artifacts/screens/setup-from-game-racing/02-racing-game-devices.png'
       - 'artifacts/screens/setup-from-game-racing/03-racing-game-helpers.png'
       - 'artifacts/screens/setup-from-game-racing/04-wheel-rotation-offered.png'
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a helper made for one game is ticked for that game only: DCS-SRS for DCS World, not for another flight sim'
+      - 'artifacts/screens/setup-from-game-helper/01-another-flight-sim.png'
     notes: "From the sitting of 2026-11-12: a new iRacing setup came with the flight gear and the head tracker's program ticked, because both were plugged in or running."
 
   - id: CFG-PROFILE-018
@@ -1654,14 +1675,16 @@ requirements:
       - "For a game whose module says it reads a gamepad, the page offers a step under Before launch, \"Start a virtual controller\", with the user's virtual controllers to choose from by name and a line that says what the chosen one is. For any other game the step is not offered."
       - "The step starts with the controller in use now, else the only one there is; with several and none in use, nothing is chosen. Without a choice the step is not kept, and the page says \"Choose one to keep this step.\""
       - "The saved setup holds the step before launch with the controller's id and name, and when the step fails the launch stops and asks."
+      - "A kept step brings the check it cannot work without, on its own line under the step and ticked: \"Virtual controller driver installed\", saved with the fix that installs the driver. It is the person's to leave out, and it is not offered while the step is not kept. Which check a step needs is said by the step's own feature (requires)."
     status: done
     evidence:
       - "src/features/profiles/core/capture.test.ts#RigReady's own virtual controller is never offered as a connected device"
       - 'src/features/profiles/core/capture.test.ts#tells its own controller from real ones that share its ids'
       - 'src/features/profiles/core/capture.test.ts#a game that reads a gamepad is offered "Start a virtual controller" with the profiles by name, and the setup starts it before launch'
-      - 'src/features/profiles/core/captureDefaults.test.ts#is offered only for a game that reads a gamepad'
-      - 'src/features/profiles/core/captureDefaults.test.ts#starts with the one in use now, else the only one, and never guesses between two'
-      - 'src/features/profiles/core/captureDefaults.test.ts#goes into the setup as a step before launch that carries the name with the id, and stops the launch when it fails'
+      - 'src/core/captureDefaults.test.ts#is offered only for a game that reads a gamepad'
+      - 'src/core/captureDefaults.test.ts#starts with the one in use now, else the only one, and never guesses between two'
+      - 'src/core/captureDefaults.test.ts#goes into the setup as a step before launch that carries the name with the id, and stops the launch when it fails'
+      - 'src/core/captureDefaults.test.ts#a kept step brings the check it cannot work without, until the person leaves it out'
       - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch'
       - "tests/e2e/setup-from-game.e2e.ts#new setup: RigReady's own virtual controller is not listed among the rig's devices"
       - 'artifacts/screens/setup-from-game-gamepad/01-gamepad-game.png'
@@ -1680,6 +1703,7 @@ requirements:
       - "\"Start a virtual controller\" asks for the controller from a list by name. Two controllers of one name are told apart, in the open list and under the closed one, by a line with the kind, the id and what feeds it. The one in use now is marked."
       - "A check not named yet takes the name of what was chosen (\"Monitor layout: Flying\") and goes with a second choice; a name the person typed is never replaced."
       - "An empty list says where to make one. What a setup uses stays in the list when it is gone, and says so. A save without a choice is refused with a line that names the list: \"Layout: choose one from the list.\""
+      - "A step added in the editor is named after what it does (\"Start the app\"), not \"New ...\", and takes the name of another type chosen for it until the person names it. A name the person typed is never replaced."
     status: done
     evidence:
       - 'src/features/profiles/core/paramPickers.test.ts#carries the choices as they are now, with what choosing fills in'
@@ -1697,6 +1721,9 @@ requirements:
       - 'src/features/profiles/renderer/pickerForm.test.ts#a check not named yet takes the name of what was chosen'
       - 'src/features/profiles/renderer/pickerForm.test.ts#goes with a second choice, so the name never says one thing and the check another'
       - 'src/features/profiles/renderer/pickerForm.test.ts#never replaces a name the person typed'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#follows the type while it is still the name of the type'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#never replaces a name the person typed, also one that begins with "New"'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#renames a step an earlier version left as "New start the app", and one with no name'
       - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: a monitor layout is chosen by name, and the fix that applies it goes with the check'
       - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: a virtual controller is chosen by name, two of one name are told apart, and a step without a choice is not saved'
       - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: with no saved layout the list says where to make one'
@@ -1715,6 +1742,7 @@ requirements:
     done_means:
       - "An audio device, a DCS aircraft, saved wheel bindings, a Stream Deck and a game are chosen by name from a list in every check, fix and step that names one."
       - "No registered check, fix or step shows a field for JSON. A closed set of answers is a set of tick boxes with words, a size is a width and a height, and the DCS install folder has Browse."
+      - "Two lines of one list that share an id (saved bindings of two games made in the same moment) both stay in the list, told apart by the game under the name. The one chosen is the one shown as chosen and the one saved."
     status: done
     evidence:
       - 'src/features/profiles/core/profiles.test.ts#CFG-PROFILE-020: nothing the editor shows for a registered type asks for raw data'
@@ -1722,24 +1750,64 @@ requirements:
       - 'src/features/profiles/core/profiles.test.ts#a type that asks which game offers the games by name, and every list arrives filled'
       - 'src/features/profiles/core/paramPickers.test.ts#the games RigReady knows are chosen by name, in order'
       - 'src/features/profiles/renderer/pickerForm.test.ts#asks for the list by name and never for what the list fills in'
-    notes: "Proven on the form the editor builds from each type, not by a picture of each one. Still typed by hand, because nothing lists them yet: the ids of a wheel base, the name of a program or a Windows service, the name of a DCS monitor setup, and the game version last verified. A connected device is still stored by its ids, which Pick a connected device fills in."
+      - 'src/features/racing/core/bindingSets.test.ts#saved bindings of two games made in the same moment are both in the list, each with its game'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#are two rows of the list, and a row alone in its value is still called by it'
+      - 'src/features/profiles/renderer/pickerForm.test.ts#choosing one fills in its own game, and the row shown as chosen is that one'
+      - "src/features/profiles/renderer/pickerForm.test.ts#a setup that names only the id and the game gets its own game's row"
+      - 'tests/e2e/setup-editor-lists.e2e.ts#setup editor: saved bindings of two games that share an id are two lines of the list, and the one chosen is the one saved'
+      - 'artifacts/screens/editor-lists-saved-bindings/01-two-games-one-id.png'
+      - 'artifacts/screens/editor-lists-saved-bindings/02-the-one-chosen.png'
+    notes: "The audio check's choice of which Windows default it is about reads \"Default for comms\" in the editor, the word the Audio page and the check's own lines use (2026-11-12). Proven on the form the editor builds from each type, not by a picture of each one. Still typed by hand, because nothing lists them yet: the ids of a wheel base, the name of a program or a Windows service, the name of a DCS monitor setup, and the game version last verified. A connected device is still stored by its ids, which Pick a connected device fills in."
 
   - id: CFG-PROFILE-021
-    title: A setup Steam starts shows as "Through Steam" in the editor
+    title: A setup Steam starts shows as "Through Steam", in the editor and on the New setup page
     job: configure
     area: profiles
     priority: p2
     done_means:
       - "A setup whose launch is steam.exe with -applaunch and a number (how New setup from this rig saves a Steam game) opens in the editor on \"Through Steam\" with the game's number, not on a program and its arguments."
       - "Another number is saved the way the setup already launches (steam.exe -applaunch and the number). Any other program with arguments stays \"A program\"."
+      - "New setup from this rig has the editor's three choices under Launch: \"A program\", \"Through Steam\" and \"Nothing\". A game Steam starts comes on \"Through Steam\" with its number and is saved as it was found; a number that is not a number is refused with a line. With \"Nothing\" the page says the Play screen offers no Launch button, and none is saved."
+      - "\"Another game\" starts with no launch: it does not keep the program or the number of the game chosen before."
     status: done
     evidence:
       - 'src/features/profiles/renderer/steamLaunch.test.ts#knows steam.exe with a game number as a Steam launch, however the path is written'
       - 'src/features/profiles/renderer/steamLaunch.test.ts#leaves anything else a program: other arguments, no number, another program'
       - 'src/features/profiles/renderer/steamLaunch.test.ts#says which of the three choices a setup is, and the number to show'
       - 'src/features/profiles/renderer/steamLaunch.test.ts#saves a setup that hands over through steam.exe the same way, with the new number'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#a game Steam starts is saved as it was found, with the number shown'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#"Through Steam" for a game that came with a program, or with none, is a Steam app id'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#"A program" is saved as typed, also when it is steam.exe'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#saves no launch when what the choice needs is not filled in'
+      - 'src/features/profiles/renderer/steamLaunch.test.ts#says what is wrong with a Steam app id that is not a number'
       - "tests/e2e/setup-editor-lists.e2e.ts#setup editor: a setup Steam starts shows as \"Through Steam\" with the game's number, not as a program and arguments"
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game Steam starts shows as "Through Steam" with its number, and "Another game" does not keep it'
       - 'artifacts/screens/editor-through-steam/01-through-steam.png'
+      - 'artifacts/screens/setup-from-game-steam/01-through-steam.png'
+      - 'artifacts/screens/setup-from-game-steam/02-launch-nothing.png'
+
+  - id: CFG-PROFILE-022
+    title: A setup an assistant makes from the rig is the one the New setup page makes
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "What a new setup keeps for a game is decided in one place (src/core/captureDefaults.ts), used by the New setup page and by the assistant's tool setup_create_from_rig: the same game gets the same checks, the same aircraft or car, the same step before launch with the check it needs, and the same files to back up."
+      - "Asked for everything, the tool keeps every check the page lists for the game, and still nothing of another game, aircraft or car. A game that is not on this PC is refused in words, and nothing is saved."
+      - "The tool answers with the setup, its checks, its steps before launch and what was left out."
+    status: done
+    evidence:
+      - 'src/core/captureDefaults.test.ts#for a flight sim: its first aircraft, its gear, its helpers and its own files'
+      - 'src/core/captureDefaults.test.ts#for a racing game: the wheel, and neither flight gear nor a helper made for another game'
+      - 'src/core/captureDefaults.test.ts#for a game that reads a gamepad: the step with its clear choice, and the check the step needs'
+      - 'src/core/captureDefaults.test.ts#with no game: what the rig proposes, and nothing that belongs to one game'
+      - 'src/core/captureDefaults.test.ts#asked for everything, keeps all the page would list for the game, and still nothing of another game or aircraft'
+      - 'src/features/mcp/core/curated.test.ts#on a rig with a wheel and flight gear, a racing game gets the wheel and a flight sim the flight gear'
+      - 'src/features/mcp/core/curated.test.ts#saves exactly what the page proposes before anyone changes a tick: the same checks and the same files to back up'
+      - 'src/features/mcp/core/curated.test.ts#a game that reads a gamepad gets "Start a virtual controller" before launch and the driver check with it'
+      - 'src/features/mcp/core/curated.test.ts#asked for everything, keeps every check the page lists for the game and still nothing of another game'
+      - 'src/features/mcp/core/curated.test.ts#a game that is not on this PC is refused in words, and nothing is saved'
+    notes: "Before this the tool kept everything the rig proposed, whatever the game: a setup made through an assistant for iRacing came with the flight gear ticked, which the page stopped doing in CFG-PROFILE-017."
 
   # ---------------------------------------------------------------------------
   # DISPLAYS
@@ -2507,8 +2575,8 @@ requirements:
       - "src/features/devices/main.test.ts#answers for a controller without a USB device by its GUID, and refuses what it cannot keep"
       - "src/features/fly/core/rig.test.ts#says the kind by checklist item, only for the devices something was said about, monitors or not"
       - "src/features/fly/core/suggest.test.ts#goes along with the offer, and asking for it is no second look at the machine"
-      - "src/features/profiles/core/captureDefaults.test.ts#the kind the user said comes before the kind the name says"
-      - "src/features/profiles/core/captureDefaults.test.ts#a device said to be a wheel is kept for a racing sim and left unticked for a flight sim"
+      - "src/core/captureDefaults.test.ts#the kind the user said comes before the kind the name says"
+      - "src/core/captureDefaults.test.ts#a device said to be a wheel is kept for a racing sim and left unticked for a flight sim"
       - "src/features/profiles/core/capture.test.ts#gear the user said is for racing counts for the family, whatever Windows lists it as"
       - "src/features/sharing/core/picture.test.ts#draws the device as what the owner said, with the nearest drawing the picture has"
       - "src/core/gearKind.test.ts#every kind has a picture and a word of its own, and every kind of sim gear is one of them"
@@ -3609,6 +3677,37 @@ requirements:
       - "artifacts/screens/bindings-overview/04-overview-huey.png"
       - "artifacts/screens/bindings-problems/04-huey-problems.png"
 
+  - id: BIND-DCS-025
+    title: Binding show or hide the kneeboard says its pages turn with two more actions
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "When the action in the bind dialog is the one that shows or hides the kneeboard (DCS: 'Kneeboard ON/OFF') and a page action ('Kneeboard Next Page', 'Kneeboard Previous Page') is on no controller, the dialog says that this action shows and hides the kneeboard, that its pages turn with the other actions, names each one that is on no controller and where it is now ('] on the keyboard', or 'Not bound'), and says to bind it to a button too."
+      - "It is said only when true: not for any other action (the glance view, the mark point, the shortcuts and the page actions included), not for an aircraft with no action that turns a page, and not once every page action is on a controller. A binding on a control the device does not have does not count."
+      - "Changes that wait to be saved count: a page action staged onto a button is not named, and one whose button is cleared, or given to another action in this very dialog, is."
+      - "'Add this and bind them next' stages the binding made and opens the dialog on the first page action, on the same device, then on the second ('After this one: Kneeboard Previous Page.'). Cancel ends it and keeps what is staged. A page action RigReady cannot write a binding for is not offered, and the note says to bind it in DCS's own controls screen."
+      - "Scenario mark-flight (dcs-bindings-hornet): binding 'Kneeboard ON/OFF' to Button 14 of the stick shows the note with both page actions on the keyboard; the offer leads through Button 33 and Button 35; three changes are saved to the stick's file; binding show or hide again shows no note (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide to a stick button and found in the cockpit that nothing on his controllers turned the pages. KNEE-003 says it where the pages are exported; this says it where the button is bound."
+      - "The three actions are found by DCS's names for them, the way KNEE-003 does (cheat-sheets core/kneeboardKeys.ts). A feature does not import another, so the rule is written in both; change them together."
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#reads the three from DCS's names, and takes the glance view, the mark point and the shortcuts for none"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#on the recorded Hornet, says the two page actions are on the keyboard and on no controller"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says the same for the UH-1H, whose page actions are its own"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says nothing for any other action, the glance view and the page actions included"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#counts a page action that waits to be saved as bound, and has nothing to say once both wait"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#is gone once both page actions are written to the stick, and back when the button of one is given to show or hide"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#does not count a binding on a control the device does not have"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says a page action is bound to nothing when it is on no keyboard key either"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#offers only what RigReady can bind, and says where to bind the rest"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#has nothing to say for an aircraft with no action that turns a page"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: binding show or hide the kneeboard says its pages turn with two more actions, and goes on to bind them"
+      - "artifacts/screens/bindings-kneeboard-pages/01-show-or-hide-needs-the-page-actions.png"
+      - "artifacts/screens/bindings-kneeboard-pages/02-next-page-then-previous-page.png"
+      - "artifacts/screens/bindings-kneeboard-pages/03-nothing-to-add-once-the-pages-turn.png"
+
   # ---------------------------------------------------------------------------
   # CHEAT SHEETS
   # ---------------------------------------------------------------------------
@@ -3968,7 +4067,7 @@ requirements:
       - "The offer opens the game's bindings page on that aircraft with the kneeboard's actions found. Once both are bound to a controller the note is gone and the dialog shows the buttons."
       - "Scenario mark-flight (cheat-sheets-hornet): the note shows; from the offer both page keys are bound to stick buttons by pressing them; back in the dialog it reads 'Button 33 on Stick' and 'Button 35 on Stick' and the note is gone (E2E)."
     notes:
-      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bindings page itself gives no such hint when show or hide is bound there, which is the bindings feature's to add."
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bind dialog of the bindings page says it where show or hide is bound (BIND-DCS-025)."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads it from the game's name for the action"
@@ -5723,6 +5822,160 @@ requirements:
     evidence: []
 
   # ---------------------------------------------------------------------------
+  # BINDINGS — iRacing (reading; see docs/research/iracing-bindings.md)
+  # ---------------------------------------------------------------------------
+
+  - id: BIND-IRACING-001
+    title: Read iRacing's controls.cfg without losing a byte
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "controls.cfg of the recorded rig is read into its header, its 367 records and its tail, and writing it back gives the same bytes."
+      - "Each record says whether every one of its 68 bytes is understood. A kind of binding not seen before is kept as it is and shown as 'A binding RigReady cannot read', never guessed."
+      - "A file that is not a controls.cfg, or is damaged or cut short, is refused with a plain message; damaged and random input never throws (fuzz)."
+      - "docs/research/iracing-bindings.md records the layout, what is and is not understood, how devices are identified, per-car files and the sources."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#reading the real file and writing it back gives the same bytes"
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#holds 367 actions, and the records fill the chunk exactly"
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#every record is fully understood: its fields give back its 68 bytes"
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#a kind of input never seen is kept byte for byte and marked as not understood"
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#refuses other content with a plain message and never throws"
+      - "src/features/iracing-bindings/core/view.test.ts#counts a binding of an unknown kind and shows it as one it cannot read"
+      - "src/features/iracing-bindings/core/view.test.ts#refuses a damaged file with a plain message"
+      - "tests/unit/fuzzParsers.test.ts#iRacing controls.cfg, every action (binary)"
+      - "docs/research/iracing-bindings.md"
+
+  - id: BIND-IRACING-002
+    title: Every iRacing action and what it is bound to, for all cars
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "The iRacing bindings page lists every action of controls.cfg, bound or not (367 on the recorded rig: 183 bound, 184 not), in four groups, each with a plain name, iRacing's own id, the input in plain words and the device."
+      - "The list can be searched by action name, iRacing's id, input and device, narrowed to the actions that are not bound, and narrowed to one device; it says how many of the actions it is showing."
+      - "Axes are named from joyCalib.yaml; when that file cannot be read they are shown by number and the page says why."
+      - "On a PC without iRacing the page says so and shows no list; with iRacing but no controls.cfg yet it says there is no bindings file."
+    notes:
+      - "2026-11-12: the page is reached from the command palette ('iRacing bindings') and by its address, /configure/iracing-bindings. It has no menu entry: the Games menu and the game picker in Bindings are built on another branch and will replace this registration."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#lists every action, bound or not, with the device and input in plain words"
+      - "src/features/iracing-bindings/core/view.test.ts#shows axes by number when the calibration file cannot be read, and says why"
+      - "src/features/iracing-bindings/core/view.test.ts#says so when iRacing was never set up on this PC"
+      - "src/features/iracing-bindings/core/view.test.ts#has no sets while iRacing has not written a controls.cfg yet"
+      - "src/features/iracing-bindings/core/names.test.ts#gives every action of the recorded file a name that reads as words"
+      - "src/features/iracing-bindings/core/names.test.ts#puts every action in one of four groups"
+      - "src/features/iracing-bindings/core/calibration.test.ts#reads the wheel base and its four axes from the recorded file"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: every action for all cars, with search, filters and shared inputs"
+      - 'tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a PC without iRacing gets a plain "not found", and no list'
+      - "artifacts/screens/iracing-bindings-all-cars/01-all-cars.png"
+      - "artifacts/screens/iracing-bindings-all-cars/02-actions.png"
+      - "artifacts/screens/iracing-bindings-all-cars/04-search.png"
+      - "artifacts/screens/iracing-bindings-all-cars/05-not-bound.png"
+      - "artifacts/screens/iracing-bindings-all-cars/06-on-the-wheel.png"
+      - "artifacts/screens/iracing-bindings-not-here/01-not-on-this-pc.png"
+
+  - id: BIND-IRACING-003
+    title: Bindings of a car with custom controls, and what the car changes
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "A car is offered only when its folder under Documents/iRacing/setups has a controls.cfg of its own; the page says how many cars have a folder and how many have custom controls."
+      - "Choosing a car shows its own bindings, marks every action that differs from All cars, shows what All cars has for it, and can narrow the list to the differences."
+      - "The chosen car is kept in the page's address, and a set id never becomes a file path."
+      - "A controls.cfg that iRacing itself wrote for a car (recorded from a rig where one car has custom controls) is read the same way, with no binding RigReady cannot read."
+    notes:
+      - "2026-11-12: criteria 1 to 3 are met by the tests below. The fourth is open, and that is why the entry is not done: the owner's PC has 184 car folders and none has custom controls, so no per-car file written by iRacing has ever been read. The car file of the tests (fixtures/scenarios/data/iracing-bindings/controls-car.cfg) is made up: the recorded file with eight records changed, on the assumption that a per-car file is a whole copy in the same format (docs/research/iracing-bindings.md, 'Per-car bindings'). To close it, with iRacing closed afterwards: in iRacing tick 'Use custom controls for this car' for one car, change two bindings, quit; copy Documents/iRacing/setups/<car>/controls.cfg and joyCalib.yaml into the rig fixture; add a test that reads it with no unread binding. A file in another format is refused with a plain message, it is not shown wrongly."
+    status: in_progress
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#lists a car only when it has a controls.cfg of its own"
+      - "src/features/iracing-bindings/core/view.test.ts#shows the car’s own bindings and where they differ from all cars"
+      - "src/features/iracing-bindings/core/view.test.ts#still shows the car when the set for all cars cannot be read, and says what is missing"
+      - "src/features/iracing-bindings/core/view.test.ts#never turns a set id into a path"
+      - "src/features/iracing-bindings/core/carFixture.test.ts#is the recorded file for all cars with exactly eight records changed"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
+      - "artifacts/screens/iracing-bindings-car/01-car.png"
+      - "artifacts/screens/iracing-bindings-car/02-car-differs.png"
+
+  - id: BIND-IRACING-004
+    title: Controllers in iRacing's bindings, matched to what is plugged in
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "Each controller a set names is listed with the number of actions bound on it and a name: the one the owner gave it, else iRacing's own from joyCalib.yaml, else the connected controller's, else its USB ids. The keyboard is listed with its count."
+      - "Each controller has a state in words with an icon, not colour alone: Connected, New Windows id, Not connected, or Cannot tell when Windows gave no list."
+      - "A controller with a new Windows id links to the id repair of the iRacing page; one that is not plugged in says how many bindings do nothing until it is."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#lists the devices the set names, matched to what is plugged in"
+      - "src/features/iracing-bindings/core/view.test.ts#uses the name the owner gave a controller"
+      - "src/features/iracing-bindings/core/view.test.ts#says whether a controller is plugged in, has a new Windows id, or is missing"
+      - "src/features/iracing-bindings/core/view.test.ts#says it cannot tell when Windows does not list the controllers"
+      - "src/features/iracing-bindings/core/view.test.ts#lists the car’s devices: the button box plugged in, the handbrake not"
+      - "src/features/iracing-bindings/core/view.test.ts#names a controller by its USB ids when nothing else knows it"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a wheel with a new Windows id, and the simulator running"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
+      - "artifacts/screens/iracing-bindings-moved-wheel/01-new-windows-id.png"
+      - "artifacts/screens/iracing-bindings-car/01-car.png"
+
+  - id: BIND-IRACING-005
+    title: iRacing inputs that do more than one thing
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "Every button, axis half or key (with its modifiers) that is bound to two or more actions in the shown set is listed with all of its actions, controller inputs first."
+      - "Inputs shared only with iRacing's camera editor, which is how iRacing's own default keys are, are counted in one line and shown on request, not presented as faults."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#lists the inputs that do more than one thing, the camera editor ones apart"
+      - "src/features/iracing-bindings/core/view.test.ts#puts the wheel button that does two things first among the shared inputs"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: every action for all cars, with search, filters and shared inputs"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
+      - "artifacts/screens/iracing-bindings-all-cars/07-shared-inputs.png"
+      - "artifacts/screens/iracing-bindings-car/03-car-shared.png"
+
+  - id: BIND-IRACING-006
+    title: iRacing bindings are shown, not changed, and the page says why
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "The page has no control that edits, clears, copies or saves a binding. The feature has two channels and both only read; using them leaves every file of the iRacing folder as it was."
+      - "The page says it does not change bindings and how to change one in iRacing, and gives the reasons on request."
+      - "While the simulator runs the page says that a binding changed in this session may not show yet; the launcher alone does not count."
+      - "The Cheat sheet button opens the cheat sheets for iRacing with the set being shown."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#leaves every file of the iRacing folder as it was, byte for byte"
+      - "src/features/iracing-bindings/core/view.test.ts#has two channels, and both only read"
+      - "src/features/iracing-bindings/core/view.test.ts#knows the simulator from the launcher: only the simulator writes these files"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: every action for all cars, with search, filters and shared inputs"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a wheel with a new Windows id, and the simulator running"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
+      - "artifacts/screens/iracing-bindings-all-cars/03-why-read-only.png"
+      - "artifacts/screens/iracing-bindings-moved-wheel/02-simulator-running.png"
+      - "artifacts/screens/iracing-bindings-car/04-car-cheat-sheet.png"
+
+  - id: BIND-IRACING-007
+    title: Change an iRacing binding from RigReady
+    job: configure
+    area: iracing-bindings
+    priority: p3
+    done_means:
+      - "A hat switch binding, a binding on a second controller and a per-car file, each written by iRacing itself, are recorded and read with no byte left unexplained that a write would have to set."
+      - "A controls.cfg in which RigReady changed one binding is accepted by iRacing: the binding shows in iRacing's Options > Controls, every other binding and setting is as before, and the file iRacing saves afterwards differs from RigReady's only where expected (rig evidence, owner present)."
+      - "A binding can be set and cleared for All cars and for a car, with a review of the change first, through FileStore with a backup and an undo, refused while iRacingSim64DX11.exe runs."
+    notes:
+      - "2026-11-12: not started, on purpose. The read and write round trip of the owner's real file is byte for byte identical (BIND-IRACING-001), but that only proves the reader loses nothing. The layout comes from one file from one rig with one bound controller; the header settings, the first field of each record, three bits of the mask and the last two bytes are not understood; a hat switch binding and a real per-car file have never been seen; and no file changed by RigReady has been opened by iRacing, because no game may be started on the rig in this round. iRacing's own advice for a file it does not like is to delete it and bind everything again. So the page shows bindings, says why it does not change them, and has no edit buttons. The steps that would make writing safe are in docs/research/iracing-bindings.md, 'Is writing safe?'."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
   # RACING — Le Mans Ultimate
   # ---------------------------------------------------------------------------
 
@@ -6209,7 +6462,8 @@ requirements:
     done_means:
       - "A profile maps any connected controller's axes, buttons and hat directions onto the left and right sticks, the triggers, the buttons and the d-pad of a virtual Xbox 360 controller or DualShock 4; each part is chosen by pressing or moving the control."
       - "Each axis has invert, deadzone, a response curve and a range (full output reached early, for a wheel's steering lock, with a helper from the wheel's rotation); a pedal or throttle onto a trigger has the same; one throttle axis can be split over LT and RT at a chosen point with its own deadzone; an axis can act as a button past half its travel."
-      - "The editor shows live what a game would get. Profiles belong to no game and are kept in RigReady's data folder; three starting points (flight stick for ACE COMBAT 8, HOTAS, wheel and pedals for driving games and console emulators) say what each part is for, map nothing, and are copied, never changed."
+      - "The editor shows live what a game would get. Profiles are kept in RigReady's data folder and work with any program that reads a gamepad; three starting points (a flight stick for Ace Combat 8, HOTAS, wheel and pedals for driving games and console emulators) say what each part is for, map nothing, and are copied, never changed."
+      - "While a part waits for its control, the page says to press or move it now and counts down the seconds that are left."
     status: done
     evidence:
       - "src/features/virtual-controller/core/mapping.test.ts#a deadzone gives nothing inside it and starts from zero at its edge, not with a jump"
@@ -6220,9 +6474,12 @@ requirements:
       - "src/features/virtual-controller/core/profile.test.ts#the starting points are valid, map nothing yet and say what each part is for"
       - "src/features/virtual-controller/core/profile.test.ts#stores the user own profiles, copies starting points, never changes or deletes one"
       - "src/features/virtual-controller/main.test.ts#detects the control the user moves, and sends the live view for an edited profile"
-      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat starting point, mapped by moving the stick, with live bars"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
       - "artifacts/screens/virtual-controller-editor/01-page.png"
-      - "artifacts/screens/virtual-controller-editor/02-editor.png"
+      - "artifacts/screens/virtual-controller-editor/02-listening.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's sitting found the copy's wording leaning to one game, no countdown while a part listens, and Save out of view. See VPAD-006 to VPAD-010 for what was added."
 
   - id: VPAD-003
     title: A setup starts the virtual controller and Stand down stops it
@@ -6232,13 +6489,13 @@ requirements:
     done_means:
       - "A step before launch 'Start a virtual controller' names a profile and may hide the real controllers from games with HidHide; the launch says which profile runs and what was hidden."
       - "Stand down stops a virtual controller a setup started and shows hidden controllers to games again; one started by hand (the page, the tray, the command palette) keeps running until stopped or RigReady quits. A step 'Stop the virtual controller' exists for Stand down lists too."
-      - "While one runs, every screen (the Play screen included) and the tray say so and offer Stop; the tray also starts a profile."
+      - "While one runs, every screen (the Play screen included) and the tray say so and offer Stop; the tray also starts a profile. The row of the running profile says it is running, and its Start is off."
     status: done
     evidence:
       - "src/features/virtual-controller/main.test.ts#a setup starts it before launch with the real controllers hidden, and Stand down stops it and shows them again"
       - "src/features/virtual-controller/main.test.ts#one started by hand stays at Stand down, and stops when RigReady quits"
       - "tests/unit/tray.test.ts#shows the virtual controller that runs, with Stop, and a Start for each profile"
-      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, and Stand down stops it"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, the running panel shows it live, and Stand down stops it"
       - "artifacts/screens/virtual-controller-launch/01-launched.png"
       - "artifacts/screens/virtual-controller-launch/02-running.png"
       - "artifacts/screens/virtual-controller-launch/03-stood-down.png"
@@ -6268,12 +6525,139 @@ requirements:
     priority: p2
     done_means:
       - "On the owner's rig, with ViGEmBus installed by the owner, the manual rig test plugs in an Xbox 360 controller that DirectInput lists, feeds it reports and unplugs it."
-      - "ACE COMBAT 8 (or an emulator) is played with a profile made in the editor: the stick, rudder and throttle drive the aircraft as mapped; with hiding on, the game does not also see the real stick; after Stand down HidHide's lists are as they were."
+      - "Ace Combat 8 (or an emulator) is played with a profile made in the editor: the stick, rudder and throttle drive the aircraft as mapped; with hiding on, the game does not also see the real stick; after Stand down HidHide's lists are as they were."
       - "A DualShock 4 profile is tried once in a program that reads one (DuckStation or PCSX2), the Y axes the right way up."
+      - "The Ace Combat 8 starting point as it is since 12 Nov 2026 (VPAD-010) is flown in the game: the throttle on RT, a button on LT, both held together for the high-G turn. Its notes for the game are checked against the game's own controls screen."
     status: in_progress
     evidence: []
     notes:
+      - "2026-11-12: at the owner's sitting the virtual Xbox 360 controller ran on the real driver, Windows listed it, and the owner flew Ace Combat 8 with a profile of eight parts made in the editor from the starting point as it was then. That is the owner's word in the sitting notes, with no rig test and no screenshot, so this stays in progress. Not tried: hiding the real controllers while a game runs, a DualShock 4 profile, and the starting point as it is now. Nobody has read the game's controls screen for the notes yet."
       - "2026-11-11: unverified on hardware. Everything above runs against the fake machine; the helper (python/pad_server.py) and ViGEmClient.dll have never driven the real driver. For the owner, with every game closed: (1) npm run setup:python (fetches ViGEmClient.dll, hash-checked); (2) cross-env RIGREADY_RIG_PAD=1 npx vitest run --config vitest.rig.config.ts tests/rig/virtualController.rig.test.ts, and open joy.cpl meanwhile to see 'Controller (XBOX 360 For Windows)' come and go; (3) in the app, copy the Ace Combat starting point, map the stick, rudder and throttle, Start, and check the axes in joy.cpl, then in the game offline; (4) the same with 'Hide the real controllers' on, then Stop, and check HidHide's window shows the lists as before. Add the rig test id and screenshots to evidence and set done."
+
+  - id: VPAD-006
+    title: Virtual controller profiles are told apart, and a delete that breaks a setup warns first
+    job: configure
+    area: virtual-controller
+    priority: p1
+    done_means:
+      - "A new or copied profile never gets a name another profile has, capitals and spacing aside: a copy is numbered ('My HOTAS 2'), two copies asked for at once get two names, Make a copy pressed twice makes one copy, and a rename to a taken name is refused with the reason, in the editor and again where the file is written."
+      - "Profiles that already share a name still load and can be edited. Each row shows the profile's id and says that another profile has the name; the tray menu and the command palette add the id to such a name."
+      - "Each row of the user's profiles names the setups that start the profile (a step before or after launch or at Stand down, or the fix of a check), or says that no setup uses it. The feature reads the setups from the setup store on its own context, not from the setups feature. When a setup file cannot be read, the page says so."
+      - "The delete question shows the profile's name and id, names every setup that uses it and says what breaks. Delete stays off until the user ticks that they know, and the delete is refused where it happens without that yes."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/names.test.ts#two names are one name when only capitals or spacing differ"
+      - "src/features/virtual-controller/core/names.test.ts#keeps a free name and numbers a taken one"
+      - "src/features/virtual-controller/core/names.test.ts#adds the id only to profiles that share a name"
+      - "src/features/virtual-controller/core/profile.test.ts#never gives a new or renamed profile a name another profile has"
+      - "src/features/virtual-controller/core/profile.test.ts#two copies asked for at once get two names and two ids"
+      - "src/features/virtual-controller/core/profile.test.ts#profiles that already share a name still load, in a steady order, and can be edited"
+      - "src/features/virtual-controller/core/usedBy.test.ts#finds a start step before launch, after launch, at Stand down and as the fix of a check"
+      - "src/features/virtual-controller/core/usedBy.test.ts#names a setup once however many of its steps start the profile"
+      - "src/features/virtual-controller/main.test.ts#says which setups start each profile, and which profiles share a name"
+      - "src/features/virtual-controller/main.test.ts#does not delete a profile a setup starts until it is told to all the same"
+      - "src/features/virtual-controller/main.test.ts#when a setup file cannot be read it says so, and a delete then needs the same yes"
+      - "src/features/virtual-controller/main.test.ts#names a copy for what it was copied from, and never as another profile is named"
+      - "src/features/profiles/core/profiles.test.ts#a copy asked for under a name in use gets its own name, and the list needs no id"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: two profiles of one name are told apart, and deleting the one a setup uses warns first"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-same-names/01-rows.png"
+      - "artifacts/screens/virtual-controller-same-names/02-editor-same-name.png"
+      - "artifacts/screens/virtual-controller-same-names/03-delete-used.png"
+      - "artifacts/screens/virtual-controller-same-names/04-delete-unused.png"
+      - "artifacts/screens/virtual-controller-same-names/05-delete-ticked.png"
+      - "artifacts/screens/virtual-controller-editor/04-name-taken.png"
+      - "artifacts/screens/virtual-controller-editor/09-copies.png"
+    notes:
+      - "2026-11-12: at the owner's sitting two profiles had one name, the rows looked the same, the question only gave the name, and the profile a setup depends on was deleted. A deleted profile still cannot be brought back from inside the app; the warning is what stands in the way."
+
+  - id: VPAD-007
+    title: Save stays in view in the virtual controller editor, and unsaved changes are said
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "In the profile editor, Save and Back are in a bar on the bottom edge of the window that stays in view however far the page is scrolled, at the usual window size and in a window wider than the page. The bar does not lie over the menu beside the page."
+      - "The bar says 'Unsaved changes' when what is on screen differs from what was saved and 'No unsaved changes' when not, what the last save did, and why Save is off when it is. Leaving the editor with unsaved changes, by Back or by the menu, asks first."
+      - "The bar is a shared component (src/renderer/components/SaveBar.vue, listed in docs/CONTRIBUTING-FEATURES.md) that any page with a Save button can use."
+    status: done
+    evidence:
+      - test: "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+      - "artifacts/screens/virtual-controller-editor/04-name-taken.png"
+      - "artifacts/screens/virtual-controller-editor/05-leave-question.png"
+      - "artifacts/screens/virtual-controller-editor/06-scrolled-save-in-view.png"
+      - "artifacts/screens/virtual-controller-editor/07-saved.png"
+      - "artifacts/screens/virtual-controller-editor/10-wide-window.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. Only the virtual controller's editor uses the bar so far. The other pages with a Save button are not changed here; the setup editor has a footer of its own that can move to this bar."
+
+  - id: VPAD-008
+    title: A live picture of the virtual controller, in the running panel and in the editor
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "The running panel on the Virtual controller page draws the virtual controller as the game is being sent it: two sticks that move, two triggers that fill and the buttons, lit while they are down, with the same in words beside it."
+      - "The editor shows the same picture for the profile as it is on screen, before it is saved."
+      - "The picture is drawn from plain shapes and is the picture of no real product. Nothing is said by a lit colour alone, and a screen reader gets the words."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/padView.test.ts#no report yet reads as a controller at rest"
+      - "src/features/virtual-controller/core/padView.test.ts#says where the sticks stand, how far the triggers are pressed and what is down"
+      - "src/features/virtual-controller/core/padView.test.ts#uses the names of a DualShock 4 when the game sees one"
+      - "src/features/virtual-controller/main.test.ts#sends the live view of the running virtual controller: what the game is being sent"
+      - "src/features/virtual-controller/main.test.ts#detects the control the user moves, and sends the live view for an edited profile"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, the running panel shows it live, and Stand down stops it"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-launch/02-running.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's finding 39. The picture has been seen on the fake machine only; on the real driver it shows what RigReady sends, which VPAD-005 is to compare with what a game receives."
+
+  - id: VPAD-009
+    title: What a part does in one game is kept apart from its plain description
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "A part's plain description fits any game. What the part does in one game is a note of its own, shown as 'In <game>: ...', and only a starting point named for that game carries such notes: HOTAS to gamepad and the wheel starting point name no game."
+      - "A copy of a starting point for one game keeps the game in its name and on its row. The editor removes all the notes in one press and leaves the mapping as it is."
+      - "A copy made from the earlier Ace Combat 8 starting point shows its old descriptions as notes for that game, so they can be removed too."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/gameNotes.test.ts#says which game a note is about"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#removes the game and its notes and keeps everything else"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#turns the earlier Ace Combat 8 hints of a copy into notes for that game"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#leaves any other profile as it is"
+      - "src/features/virtual-controller/core/profile.test.ts#only the starting point named for a game carries notes for a game"
+      - "src/features/virtual-controller/core/profile.test.ts#names a copy for what it was copied from"
+      - "src/features/virtual-controller/core/profile.test.ts#a copy of the earlier Ace Combat 8 starting point shows its notes as notes for that game"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/01-page.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+      - "artifacts/screens/virtual-controller-editor/08-notes-removed.png"
+    notes:
+      - "2026-11-12: the owner's finding 37."
+
+  - id: VPAD-010
+    title: The Ace Combat 8 starting point can hold both triggers at once
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "The Ace Combat 8 starting point has 'One throttle axis on both triggers' off: the throttle drives RT alone and a button (the speed brake switch, say) drives LT, so both can be held together for the game's high-G turn. The editor says when to turn the switch off."
+      - "Its notes for the game say only what players' guides agree on, and claim nothing for A, B, X and Y; its description says that the guides do not agree there and sends the user to the game's controls screen."
+      - "The manual page for the game says which flight control setting is meant (Expert for a stick) and how the high-G turn is flown."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/profile.test.ts#the starting points are valid, map nothing yet and say what each part is for"
+      - "src/features/virtual-controller/core/profile.test.ts#only the starting point named for a game carries notes for a game"
+      - "src/features/virtual-controller/core/mapping.test.ts#triggers from their own pedals, or from a button, when the throttle is not split"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's findings 36 and 40. Done here is what the app offers. Whether the game takes it that way is not known: nobody has flown this layout or read the game's controls screen, and that is kept open in VPAD-005."
 
   # ---------------------------------------------------------------------------
   # STREAM DECK
@@ -7495,6 +7879,63 @@ requirements:
       - "artifacts/screens/a11y-keyboard/04-focus-on-launch.png"
       - "artifacts/screens/a11y-keyboard/05-launched.png"
 
+  - id: NFR-012
+    title: Every place that asks a program to close asks all of it together and says why it stayed open
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "One rule in src/core/processes.ts for every place that closes a program: the processes of one program are asked together and the process list afterwards decides, so a helper without a window that is listed first, or one that is gone by its turn, is no failure. It holds for Stand down of the app checks (processes, Stream Deck app, TrackIR), for 'Ask them to close for me' of the backup restore, for the Stream Deck profile restore and for the wheel software restore."
+      - "A program that is still running afterwards is named with the reason, in the words Stand down uses: it was asked to close and stayed open (some apps only go to the tray); it has no window to ask; Windows did not let RigReady close it. Where the PC gives no reason, none is made up."
+      - "Where the user can let RigReady end the program, that is named as it is on screen, and only where it can still help (not after Windows refused, not when it was already used). Stand down of the Stream Deck app names the setup switch 'Force it closed if it does not close': a new setting of that check, off by default, also in a setup made before it existed. The Stream Deck restore names its button 'End Stream Deck and restore'. Every check that can be told to force keeps the switch under the one name forceClose."
+      - "Where nothing can be switched, nothing is pointed at. TrackIR is always ended after the wait, so a TrackIR that is still running is named with the reason and 'Close it yourself.'. The backup restore and the wheel software restore never force: they say 'Close it yourself, then restore again. Nothing was restored.' and restore nothing."
+      - "The wheel software restore names the program that is open (the Fanatec App, Logitech G HUB) and shows the reason inside the question, which stays open. After a program stayed open, the button of that question and of the Stream Deck one reads 'Restore again' where RigReady cannot end the program, instead of promising again to close it."
+    notes:
+      - "2026-11-12: follows FLY-023, which fixed this for the processes check after the sitting. These closers still asked processes of one name one after another, stopped at the first that stayed, and dropped the reason."
+      - "2026-11-12: not changed. When a later program of a backup restore stays open, the tools already closed for that restore are not started again."
+    status: done
+    evidence:
+      - "src/core/processes.test.ts#offers force only where it can still help"
+      - "src/core/processes.test.ts#has nothing to say when nothing of the app is running, and asks nobody"
+      - "src/core/processes.test.ts#closes an app of several processes as one, helper without a window first"
+      - "src/core/processes.test.ts#says when the app had to be forced"
+      - "src/core/processes.test.ts#names the app, says why it is still running, and names the Force switch"
+      - "src/core/processes.test.ts#does not name the switch where it cannot help: already on, or Windows refused"
+      - "src/core/processes.test.ts#passes on another failure as it is"
+      - "src/features/backup/core/sources.test.ts#a tool of several processes is closed as one: a helper without a window, listed first, does not stop the restore"
+      - "src/features/backup/core/sources.test.ts#a program that stays open is named with the reason, is never forced, and nothing is restored"
+      - "src/features/racing/core/backups.test.ts#a Fanatec App that stays open is named with the reason, is never forced, and nothing is restored"
+      - "src/features/racing/core/backups.test.ts#G HUB is two processes and one program: its agent has no window, comes first, and goes with the window"
+      - "src/features/stream-deck/core/backups.test.ts#asks before ending a Stream Deck that will not quit, and says why it is still running"
+      - "src/features/stream-deck/core/backups.test.ts#does not offer to end a Stream Deck that Windows will not let RigReady close"
+      - "src/features/stream-deck/core/checks.test.ts#on Stand down, a Stream Deck that stays open says why and names the Force switch"
+      - "src/features/stream-deck/core/checks.test.ts#the Force switch is off unless the setup switches it on, also in a setup made before it existed"
+      - "src/features/stream-deck/core/checks.test.ts#asks every Stream Deck process together: a helper without a window goes with the window"
+      - "src/features/stream-deck/core/checks.test.ts#says whether ending Stream Deck can still help, by the code of the error"
+      - "src/features/stream-deck/core/checks.test.ts#passes on other close failures as they are"
+      - "src/features/trackir/core/trackir.test.ts#on Stand down, a TrackIR that only goes to the tray is ended, and said so"
+      - "src/features/trackir/core/trackir.test.ts#on Stand down, a TrackIR that is still running is named with the reason, and no switch is pointed at"
+      - "src/features/trackir/core/trackir.test.ts#asks every TrackIR process together: one that is gone by its turn is no failure"
+      - "tests/unit/crossFeature.test.ts#every check that can be told to force keeps the switch under that one name, off until switched on"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: Stand down says why the Stream Deck app is still running and names the Force switch, which the setup editor shows"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: Stand down says why TrackIR is still running when Windows will not let RigReady close it"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: the Stream Deck restore says why the app is still running, and offers to end it only where that can help"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: restoring the wheel software settings names the app that is open and says why it stayed open"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: restoring a backup says why a program it was asked to close is still running, and restores nothing"
+      - "artifacts/screens/close-together-stream-deck-stand-down/01-the-switch-in-the-setup.png"
+      - "artifacts/screens/close-together-stream-deck-stand-down/02-still-running.png"
+      - "artifacts/screens/close-together-stream-deck-stand-down/03-forced.png"
+      - "artifacts/screens/close-together-trackir-stand-down/01-still-running.png"
+      - "artifacts/screens/close-together-trackir-stand-down/02-forced.png"
+      - "artifacts/screens/close-together-stream-deck-restore/01-windows-does-not-allow-it.png"
+      - "artifacts/screens/close-together-stream-deck-restore/02-went-to-the-tray.png"
+      - "artifacts/screens/close-together-stream-deck-restore/03-ended-and-restored.png"
+      - "artifacts/screens/close-together-wheel-software-restore/01-the-app-is-open.png"
+      - "artifacts/screens/close-together-wheel-software-restore/02-still-running.png"
+      - "artifacts/screens/close-together-wheel-software-restore/03-restored.png"
+      - "artifacts/screens/close-together-backup-restore/01-still-running.png"
+      - "artifacts/screens/close-together-backup-restore/02-restored.png"
+
   # ---------------------------------------------------------------------------
   # THE FINAL PASS: HOW THE WHOLE APPLICATION LOOKS, MOVES AND IS NAVIGATED
   # ---------------------------------------------------------------------------
@@ -7805,6 +8246,24 @@ requirements:
       - "artifacts/screens/manual-links/03-palette.png"
       - "artifacts/screens/manual-links-notices/01-notices.png"
       - "artifacts/screens/manual-links-dcs/01-dcs-running.png"
+
+  - id: WOW-UI-013
+    title: A new page starts at its top
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "After a move to another page the new page is at its top, wherever the last one was scrolled to: from Create setup to Play, from the setup editor to Play, from one Configure page to the next."
+      - "Going back or forward returns to where that page was. A change that keeps the page's address (a chosen device, a tab the page keeps in its query) leaves the scroll alone, so a page that brings a line into view still does. A tab with an address of its own (DCS bindings, the AI page) starts at its top."
+    status: done
+    evidence:
+      - 'src/renderer/shell/nav.test.ts#a new page starts at its top, wherever the last one was scrolled to'
+      - 'src/renderer/shell/nav.test.ts#going back or forward returns to where that page was'
+      - "src/renderer/shell/nav.test.ts#a change that keeps the page's address, a chosen device or a tab in the query, leaves the scroll alone"
+      - 'src/renderer/shell/nav.test.ts#a tab with an address of its own starts at its top'
+      - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch'
+      - 'artifacts/screens/setup-from-game-gamepad/04-second-setup-starts-at-the-top.png'
+    notes: "From the sitting of 2026-11-12. It showed where the next page could draw at once from what was already loaded: Play after a second setup was created stayed as far down as Create setup was. A page that loads first was at its top already."
 
   # ---------------------------------------------------------------------------
   # SECURITY (docs/research/security-review-2026-11.md, SECURITY.md)

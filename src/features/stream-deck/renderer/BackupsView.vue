@@ -4,7 +4,14 @@ import ChangePreview from '../../../renderer/components/ChangePreview.vue';
 import { errorText } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import type { Overview } from '../contract';
-import type { Backup, RestoreOutcome, RestorePreview } from '../core/model';
+import {
+  CANNOT_CLOSE,
+  END_AND_RESTORE_LABEL,
+  STILL_RUNNING,
+  type Backup,
+  type RestoreOutcome,
+  type RestorePreview,
+} from '../core/model';
 import { formatBytes, formatDate, plural, useStreamDeckStore } from './store';
 
 const props = defineProps<{ overview: Overview }>();
@@ -114,8 +121,19 @@ async function exportBackup(backup: Backup): Promise<void> {
 const preview = ref<RestorePreview>();
 const previewError = ref<string>();
 const restorePlugins = ref(false);
-/** Stream Deck ignored the polite request to quit: ending it needs a second yes. */
-const stubborn = ref<string>();
+/**
+ * Stream Deck stayed open when it was asked to quit: the reason, and whether ending it can
+ * still help. Ending it needs a second yes, and is not offered where it cannot work.
+ */
+const stubborn = ref<{ text: string; canEnd: boolean }>();
+/**
+ * The button of a restore that changes files. After Windows did not let RigReady close the
+ * app, it does not say again that RigReady will close it: the user closes it and tries again.
+ */
+const restoreLabel = computed(() => {
+  if (stubborn.value) return 'Restore again';
+  return preview.value?.appRunning ? 'Close Stream Deck and restore' : 'Restore';
+});
 /** An app restore is waiting for the user to confirm in the Stream Deck app. */
 const appRestore = ref<{ backup: Backup; result?: { found: string[]; missing: string[] } }>();
 
@@ -141,10 +159,13 @@ async function restore(force = false): Promise<void> {
   });
   busy.value = false;
   if (!result.ok) {
-    if (result.error.code === 'streamDeck.stillRunning') {
-      stubborn.value = errorText(result.error);
+    const { code, message: why } = result.error;
+    if (code === STILL_RUNNING || code === CANNOT_CLOSE) {
+      previewError.value = undefined;
+      stubborn.value = { text: why, canEnd: code === STILL_RUNNING };
       return;
     }
+    stubborn.value = undefined;
     previewError.value = errorText(result.error);
     return;
   }
@@ -585,12 +606,12 @@ defineExpose({ openBackup });
           </v-alert>
           <v-alert
             v-if="stubborn"
-            type="warning"
+            :type="stubborn.canEnd ? 'warning' : 'error'"
             variant="tonal"
             density="compact"
             data-testid="sd-restore-stubborn"
           >
-            {{ stubborn }}
+            {{ stubborn.text }}
           </v-alert>
         </template>
         <template v-else>
@@ -629,13 +650,13 @@ defineExpose({ openBackup });
         >
         <template v-if="preview.method === 'files'">
           <v-btn
-            v-if="stubborn"
+            v-if="stubborn?.canEnd"
             color="error"
             :loading="busy"
             data-testid="sd-restore-force"
             @click="restore(true)"
           >
-            End Stream Deck and restore
+            {{ END_AND_RESTORE_LABEL }}
           </v-btn>
           <v-btn
             v-else
@@ -644,7 +665,7 @@ defineExpose({ openBackup });
             data-testid="sd-restore-confirm"
             @click="restore()"
           >
-            {{ preview.appRunning ? 'Close Stream Deck and restore' : 'Restore' }}
+            {{ restoreLabel }}
           </v-btn>
         </template>
         <v-btn

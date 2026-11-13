@@ -184,6 +184,11 @@ export const CaptureStepSchema = z.object({
   type: z.string(),
   label: z.string(),
   picker: PickerInfoSchema,
+  /**
+   * Checks the step cannot work without (the driver a virtual controller needs), as they
+   * go into the setup. Offered with the step while the step is kept.
+   */
+  checks: z.array(CaptureCandidateSchema.shape.check),
 });
 export type CaptureStep = z.infer<typeof CaptureStepSchema>;
 

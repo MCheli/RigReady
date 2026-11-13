@@ -1,0 +1,40 @@
+description: Racing rig where one car has custom controls in iRacing, on a button box and a handbrake
+rig: mark-full
+extends: racing-fresh.yaml
+# The car's controls.cfg is made up: the recorded file for all cars with eight records
+# changed (src/features/iracing-bindings/core/carFixture.test.ts lists them and holds the
+# file to them). The button box and the handbrake are invented devices with test ids; the
+# button box is plugged in, the handbrake is not.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_1209&PID_0001\6&2c41a7f0&0&9'
+      vendorId: '1209'
+      productId: '0001'
+      name: Button Box
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Example
+    controller:
+      name: Button Box
+      guid: 5EED0001-7A11-11EF-8004-444553540000
+      productGuid: 00011209-0000-0000-0000-504944564944
+      vendorId: '1209'
+      productId: '0001'
+      numAxes: 0
+      numButtons: 32
+      numHats: 0
+      axisNames: []
+  - op: writeFile
+    path: Documents/iRacing/setups/mx5 mx52016/controls.cfg
+    from: data/iracing-bindings/controls-car.cfg
+  - op: writeFile
+    path: Documents/iRacing/setups/mx5 mx52016/joyCalib.yaml
+    from: data/iracing-bindings/joyCalib-car.yaml
+  # A car that was driven but has no custom controls: it must not show as a set.
+  - op: writeFile
+    path: Documents/iRacing/setups/ferrari296gt3/baseline.sto
+    content: 'not a real setup'

@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { readZip } from '../../../core/files/zip';
+import { err } from '../../../core/result';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type {
   BackupOutcomeView,
@@ -338,7 +339,9 @@ describe('restoring while the game or tool is running', () => {
     app.ports.processes.stubborn.add('le mans ultimate.exe');
     await expect(
       app.invoke('backup:restore', { id: outcome.backup.id, choices, closePrograms: true })
-    ).rejects.toThrow(/Le Mans Ultimate did not close when asked.*Nothing was restored/);
+    ).rejects.toThrow(
+      'Le Mans Ultimate is still running: it did not close when asked. Close it yourself, then restore again. Nothing was restored.'
+    );
     expect(app.ports.processes.closed.at(-1)!.options.force).toBe(false);
     expect(await fs.readFile(bindings, 'utf8')).toBe('{}');
 
@@ -389,6 +392,86 @@ describe('restoring while the game or tool is running', () => {
     const undone = await app.ports.files.undoGroup(report.groupId!);
     expect(undone.ok).toBe(true);
     expect(await fs.readFile(fanatecPrefs(app), 'utf8')).toBe('{}');
+  });
+
+  it('a tool of several processes is closed as one: a helper without a window, listed first, does not stop the restore', async () => {
+    const app = await start();
+    await add(app, 'Fanatec App settings');
+    const original = await fs.readFile(fanatecPrefs(app));
+    const outcome = await fullBackup(app);
+    await fs.writeFile(fanatecPrefs(app), '{}');
+    const exe = path.join(app.home, 'Program Files', 'Fanatec', 'FanatecUI', 'UI', 'Fanatec.exe');
+    await mutate(app, [{ op: 'startProcess', name: 'Fanatec.exe', path: exe }]);
+    const owner = app.ports.state.processes.find((p) => p.name === 'Fanatec.exe')!;
+    const helper = { ...owner, pid: owner.pid + 1 };
+    app.ports.state.processes.unshift(helper);
+    const close = app.ports.processes.close.bind(app.ports.processes);
+    const asked: number[] = [];
+    app.ports.processes.close = async (pid, options) => {
+      asked.push(pid);
+      if (pid === helper.pid) {
+        return err('process.stillRunning', `Process ${pid} has no window to close.`, 'noWindow');
+      }
+      // The owner of the window closes, and its helper goes with it.
+      await close(helper.pid, options);
+      return close(pid, options);
+    };
+
+    const preview = await app.invoke<RestorePreviewView>('backup:previewRestore', {
+      id: outcome.backup.id,
+    });
+    const report = await app.invoke<RestoreReportView>('backup:restore', {
+      id: outcome.backup.id,
+      choices: choicesOf(preview),
+      closePrograms: true,
+    });
+    expect(asked).toEqual([helper.pid, owner.pid]);
+    expect(report.failed).toEqual([]);
+    expect(report.closed).toEqual([{ name: 'Fanatec App', restarted: true }]);
+    expect(await fs.readFile(fanatecPrefs(app))).toEqual(original);
+  });
+
+  it('a program that stays open is named with the reason, is never forced, and nothing is restored', async () => {
+    const app = await start();
+    await add(app, 'Fanatec App settings');
+    const outcome = await fullBackup(app);
+    await fs.writeFile(fanatecPrefs(app), '{}');
+    const exe = path.join(app.home, 'Program Files', 'Fanatec', 'FanatecUI', 'UI', 'Fanatec.exe');
+    await mutate(app, [{ op: 'startProcess', name: 'Fanatec.exe', path: exe }]);
+    const preview = await app.invoke<RestorePreviewView>('backup:previewRestore', {
+      id: outcome.backup.id,
+    });
+    const restore = (): Promise<RestoreReportView> =>
+      app.invoke<RestoreReportView>('backup:restore', {
+        id: outcome.backup.id,
+        choices: choicesOf(preview),
+        closePrograms: true,
+      });
+    const after = 'Close it yourself, then restore again. Nothing was restored.';
+
+    // Its X only sends it to the tray.
+    await mutate(app, [{ op: 'failProcessClose', name: 'Fanatec.exe', why: 'ignored' }]);
+    await expect(restore()).rejects.toThrow(
+      `restore.stillRunning Fanatec App is still running: it was asked to close and stayed open. Some apps only go to the tray when asked. ${after}`
+    );
+    // It runs as administrator.
+    await mutate(app, [{ op: 'failProcessClose', name: 'Fanatec.exe', why: 'refused' }]);
+    await expect(restore()).rejects.toThrow(
+      `restore.stillRunning Fanatec App is still running: Windows did not let RigReady close it. It may be running as administrator. ${after}`
+    );
+    // It has no window to ask.
+    await mutate(app, [{ op: 'failProcessClose', name: 'Fanatec.exe', why: 'noWindow' }]);
+    await expect(restore()).rejects.toThrow(
+      `restore.stillRunning Fanatec App is still running: it has no window, so it could not be asked to close. ${after}`
+    );
+    expect(app.ports.processes.closed).toHaveLength(3);
+    expect(app.ports.processes.closed.every((c) => c.options.force === false)).toBe(true);
+    expect(await fs.readFile(fanatecPrefs(app), 'utf8')).toBe('{}');
+    expect(app.ports.processes.started).toEqual([]);
+
+    // Closed by hand, the same restore goes through.
+    await mutate(app, [{ op: 'stopProcess', name: 'Fanatec.exe' }]);
+    expect((await restore()).failed).toEqual([]);
   });
 
   it('TrackIR: restores Settings.xml, ProfileMap.dat and the profiles through the change journal', async () => {

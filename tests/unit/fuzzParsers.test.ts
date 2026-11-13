@@ -13,6 +13,8 @@ import { hasYamlComments } from '../../src/core/profile/store';
 import { parseAppManifest } from '../../src/core/steam';
 import { parseVdf, steamLibraryPaths } from '../../src/core/vdf';
 import { parseGaming } from '../../src/core/hidhide';
+import { readCalibration } from '../../src/features/iracing-bindings/core/calibration';
+import { parseControlsFile } from '../../src/features/iracing-bindings/core/controlsFile';
 import { parseIni } from '../../src/features/racing/core/assettoCorsa';
 import { parseRelaxedJson } from '../../src/features/racing/core/beamng/beamng';
 import { parseControlsCfg } from '../../src/features/racing/core/iracing/controlsCfg';
@@ -102,6 +104,19 @@ const PARSERS: Parser[] = [
     sample: ['Documents', 'iRacing', 'joyCalib.yaml'],
     parse: (bytes) => parseJoyCalib(text(bytes)),
     accepted: isOk,
+  },
+  {
+    name: 'iRacing controls.cfg, every action (binary)',
+    sample: ['Documents', 'iRacing', 'controls.cfg'],
+    parse: (bytes) => parseControlsFile(bytes),
+    accepted: isOk,
+    bomIsDamage: true,
+  },
+  {
+    name: 'iRacing joyCalib.yaml, device and axis names',
+    sample: ['Documents', 'iRacing', 'joyCalib.yaml'],
+    parse: (bytes) => readCalibration(text(bytes)),
+    accepted: (r) => (r as unknown[]).length > 0,
   },
   {
     name: 'BeamNG relaxed JSON',

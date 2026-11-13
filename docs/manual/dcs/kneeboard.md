@@ -54,7 +54,7 @@ Pages are of use only if you can open the kneeboard and turn its pages from wher
 | `]` | Kneeboard Next Page |
 | `[` | Kneeboard Previous Page |
 
-The dialog shows where each of the three is bound for this aircraft now, controllers first. When the two page keys are on no controller it says so, because binding only "show or hide" to a button leaves you with the first page and no way to turn it without the keyboard. **Bind the page keys** opens [DCS bindings](bindings.md) on this aircraft with the kneeboard's actions found; bind each to a button there. When both are on a controller the dialog has nothing more to say.
+The dialog shows where each of the three is bound for this aircraft now, controllers first. When the two page keys are on no controller it says so, because binding only "show or hide" to a button leaves you with the first page and no way to turn it without the keyboard. **Bind the page keys** opens [DCS bindings](bindings.md) on this aircraft with the kneeboard's actions found; bind each to a button there. When both are on a controller the dialog has nothing more to say. The bind dialog of DCS bindings says the same when you bind **Kneeboard ON/OFF** there, and offers to bind the page actions next; see [Show or hide the kneeboard](bindings.md#show-or-hide-the-kneeboard).
 
 ![The pages turn only from the keyboard](../../../artifacts/screens/kneeboard-keys/01-pages-turn-only-from-the-keyboard.png)
 

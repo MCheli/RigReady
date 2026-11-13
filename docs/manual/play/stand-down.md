@@ -39,7 +39,11 @@ Stand down asks an app to close the way its window's X button does, and waits te
 
 The line ends with what you can do: close it yourself, or switch on **Force it closed if it does not close** for that check in [the setup editor](../setups/editor.md). With that on, RigReady ends the program when it has not closed after the wait. An app that runs as administrator cannot be forced either, unless RigReady runs as administrator too; for that one the line only says to close it yourself.
 
+The **Stream Deck app** check has the same switch, off until you switch it on: the Stream Deck window only goes to the tray when asked, so without the switch the line names it as still running. **TrackIR** has no switch. It is always ended when it has not closed after the wait, and the line then says "Closed TrackIR (it had to be forced)".
+
 An app made of several programs with the same name is closed as one: all of them are asked, and it counts as closed when none is left.
+
+The same is said wherever RigReady asks a program to close before it restores files (a [backup](../protect/restore.md), the [Stream Deck profiles](../hardware/stream-deck.md), the [wheel software settings](../games/wheel.md)): the program is named with the reason, and nothing is restored while it is open.
 
 ## When the game is still running
 

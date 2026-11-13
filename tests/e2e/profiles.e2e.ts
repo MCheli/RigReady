@@ -303,12 +303,16 @@ test('setups: choosing a detected game fills in what Launch starts, and the setu
   await page.getByTestId('capture-game-dcs').click();
   await page.getByTestId('capture-name').locator('input').fill('DCS UH-1H');
   // The Steam edition is started through Steam, so Steam can update and authorise it first.
+  await expect(page.getByTestId('capture-launch-steam')).toHaveClass(/v-btn--active/);
+  await expect(page.getByTestId('capture-launch-steam-app').locator('input')).toHaveValue('223750');
+  await page.getByTestId('capture-launch-program').click();
   await expect(page.getByTestId('capture-launch-exe').locator('input')).toHaveValue(
     path.join(home, 'Program Files (x86)', 'Steam', 'steam.exe')
   );
   await expect(page.getByTestId('capture-launch-args').locator('input')).toHaveValue(
     '-applaunch 223750'
   );
+  await page.getByTestId('capture-launch-steam').click();
   const version = page.locator(
     '[data-testid="capture-candidate"][data-title="DCS World not updated since verified"]'
   );

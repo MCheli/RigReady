@@ -1,0 +1,152 @@
+{
+  "profiles": [
+    {
+      "id": "my-flight-stick-to-gamepad",
+      "name": "My flight stick to gamepad",
+      "kind": "xbox360",
+      "sticks": {
+        "lx": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_X"
+          },
+          "deadzone": 0.03,
+          "hint": "Roll: the stick left and right"
+        },
+        "ly": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_Y"
+          },
+          "invert": true,
+          "deadzone": 0.03,
+          "hint": "Pitch: pull back to climb"
+        },
+        "rx": { "deadzone": 0.05, "hint": "Yaw: rudder pedals or the stick twist" },
+        "ry": { "deadzone": 0.1, "hint": "Camera up and down (a hat or a mini stick), if you want it" }
+      },
+      "throttle": {
+        "split": 0.5,
+        "deadzone": 0.05,
+        "hint": "Throttle: forward accelerates (RT), back slows down (LT); put the split at your idle detent"
+      },
+      "buttons": {
+        "a": { "hint": "Fire the gun or missile, as set in the game" },
+        "b": { "hint": "Special weapon" },
+        "x": { "hint": "Change target" },
+        "y": { "hint": "Change view" },
+        "rs": { "hint": "Lock on (R3 in the Standard layout)" },
+        "ls": { "hint": "Evasive manoeuvres (L3 with the left stick)" },
+        "left": { "hint": "Change weapon" },
+        "right": { "hint": "Change weapon" },
+        "up": { "hint": "Zoom the reticle" },
+        "down": { "hint": "Zoom the reticle" },
+        "start": { "hint": "Pause and the menu" },
+        "back": { "hint": "Target information" }
+      }
+    },
+    {
+      "id": "my-flight-stick-to-gamepad-2",
+      "name": "My flight stick to gamepad",
+      "kind": "xbox360",
+      "sticks": {
+        "lx": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_X"
+          },
+          "deadzone": 0.03,
+          "hint": "Roll: the stick left and right"
+        },
+        "ly": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_Y"
+          },
+          "invert": true,
+          "deadzone": 0.03,
+          "hint": "Pitch: pull back to climb"
+        },
+        "rx": {
+          "source": {
+            "device": { "name": "T-Pendular-Rudder", "guid": "7F3956A0-B756-11F0-801B-444553540000" },
+            "input": "JOY_Z"
+          },
+          "deadzone": 0.05,
+          "hint": "Yaw: rudder pedals or the stick twist"
+        },
+        "ry": { "deadzone": 0.1, "hint": "Camera up and down (a hat or a mini stick), if you want it" }
+      },
+      "throttle": {
+        "source": {
+          "device": { "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R", "guid": "806DDF00-B756-11F0-8022-444553540000" },
+          "input": "JOY_X"
+        },
+        "split": 0.5,
+        "deadzone": 0.05,
+        "hint": "Throttle: forward accelerates (RT), back slows down (LT); put the split at your idle detent"
+      },
+      "buttons": {
+        "a": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_BTN1"
+          },
+          "hint": "Fire the gun or missile, as set in the game"
+        },
+        "b": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_BTN2"
+          },
+          "hint": "Special weapon"
+        },
+        "x": { "hint": "Change target" },
+        "y": { "hint": "Change view" },
+        "rs": { "hint": "Lock on (R3 in the Standard layout)" },
+        "ls": { "hint": "Evasive manoeuvres (L3 with the left stick)" },
+        "left": { "hint": "Change weapon" },
+        "right": { "hint": "Change weapon" },
+        "up": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_BTN_POV1_U"
+          },
+          "hint": "Zoom the reticle"
+        },
+        "down": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_BTN_POV1_D"
+          },
+          "hint": "Zoom the reticle"
+        },
+        "start": { "hint": "Pause and the menu" },
+        "back": { "hint": "Target information" }
+      }
+    },
+    {
+      "id": "my-space-stick",
+      "name": "My space stick",
+      "kind": "xbox360",
+      "sticks": {
+        "lx": {
+          "source": {
+            "device": { "name": "WINWING Orion Joystick Base 2 + JGRIP-F16", "guid": "806DDF00-B756-11F0-8023-444553540000" },
+            "input": "JOY_X"
+          },
+          "deadzone": 0.03,
+          "hint": "Roll: the stick left and right"
+        },
+        "ly": { "invert": true, "deadzone": 0.03, "hint": "Pitch: pull back for \"stick down\"" },
+        "rx": { "deadzone": 0.05, "hint": "Yaw: rudder pedals or the stick twist" },
+        "ry": { "deadzone": 0.1, "hint": "A mini stick or a second axis, if the game uses one" }
+      },
+      "throttle": { "split": 0.5, "deadzone": 0.05, "hint": "Throttle: forward on RT, back on LT" },
+      "buttons": {
+        "a": { "hint": "Trigger" },
+        "b": { "hint": "Weapon release" }
+      }
+    }
+  ]
+}

@@ -2,21 +2,23 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as yaml from 'js-yaml';
-import type { ChecklistReport } from '../../../core/checks/engine';
+import {
+  choiceFor,
+  keptByDefault,
+  offered,
+  proposedSetup,
+  stepAction,
+  stepChecks,
+  stepDefault,
+  stepsFor,
+  type CaptureChoice,
+} from '../../../core/captureDefaults';
+import { dedupeCandidates, type ChecklistReport } from '../../../core/checks/engine';
 import type { CaptureCandidate } from '../../../core/checks/registry';
 import type { Profile } from '../../../core/profile/schema';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { CaptureResult, NewProfile } from '../contract';
 import { rigKind, suggestGame, withoutDeskLayout, withoutOwnPad } from './capture';
-import {
-  choiceFor,
-  keptByDefault,
-  offered,
-  stepAction,
-  stepDefault,
-  stepsFor,
-  type CaptureChoice,
-} from './captureDefaults';
 
 let app: WiredApp;
 afterEach(() => app?.cleanup());
@@ -34,23 +36,31 @@ function clickThrough(
   const variant = variants[0]?.variant;
   const choice = choiceFor(captured, gameId, variant?.id ?? '');
   // A step with a clear choice is kept; one the person would have to choose is not.
-  const steps = stepsFor(captured.steps, choice).flatMap((step, index) => {
+  const keptSteps = stepsFor(captured.steps, choice).flatMap((step, index) => {
     const action = stepAction(step, stepDefault(step), 'a' + (index + 1));
-    return action ? [action] : [];
+    return action ? [{ step, action }] : [];
   });
+  const steps = keptSteps.map((kept) => kept.action);
   const launch = game?.installs[0]?.launch;
+  const checks = captured.candidates
+    .filter((c) => keptByDefault(c, choice))
+    .map((c) => ({
+      ...c.check,
+      ...(c.ask && answers[c.key]
+        ? { params: { ...c.check.params, [c.ask.param]: answers[c.key] } }
+        : {}),
+    }));
+  // A kept step brings the check it cannot work without.
+  const withSteps = stepChecks(
+    keptSteps.map((kept) => kept.step),
+    new Set(),
+    checks
+  );
   return {
     name: variant?.setupName ?? game?.name ?? 'This rig',
     ...(gameId ? { game: gameId } : {}),
     ...(launch ? { launch } : {}),
-    checks: captured.candidates
-      .filter((c) => keptByDefault(c, choice))
-      .map((c) => ({
-        ...c.check,
-        ...(c.ask && answers[c.key]
-          ? { params: { ...c.check.params, [c.ask.param]: answers[c.key] } }
-          : {}),
-      })) as NewProfile['checks'],
+    checks: [...checks, ...withSteps] as NewProfile['checks'],
     ...(steps.length > 0 ? { actions: { preLaunch: steps, postLaunch: [], standDown: [] } } : {}),
     tracked: captured.tracked
       .filter((t) => offered(t, choice) && t.selectedByDefault)
@@ -64,6 +74,14 @@ function clickThrough(
       })),
   };
 }
+
+const driverCheck = {
+  type: 'virtual-controller.driver',
+  title: 'Virtual controller driver installed',
+  required: true,
+  params: {},
+  remediation: { type: 'virtual-controller.installDriver', params: {} },
+};
 
 const savedYaml = async (id: string): Promise<Profile> =>
   yaml.load(await fs.readFile(app.wiring.context.profiles.fileFor(id), 'utf8')) as Profile;
@@ -561,6 +579,63 @@ describe('CFG-PROFILE-017: a new setup starts from the game', () => {
     expect(created.checks.map((c) => c.title)).not.toContain('TrackIR software');
   });
 
+  it('a helper made for one game is kept for that game only: DCS-SRS for DCS, not for another flight sim', async () => {
+    app = await wiredApp('flying-fresh');
+    await mutate(app, [
+      {
+        op: 'startProcess',
+        name: 'SR-ClientRadio.exe',
+        path: 'C:\\Program Files\\DCS-SimpleRadio-Standalone\\SR-ClientRadio.exe',
+      },
+    ]);
+    const captured = await capture();
+    const srs = captured.candidates.find((c) => c.title === 'DCS-SRS');
+    // The rig proposes it, as a flight helper that is running: that used to tick it for
+    // every flight game.
+    expect(srs).toMatchObject({
+      group: 'apps',
+      kind: 'flight',
+      selectedByDefault: true,
+      forGames: ['dcs'],
+    });
+    const kept = (game: string): string[] => proposedSetup(captured, game).kept.map((c) => c.title);
+    expect(kept('dcs')).toEqual(expect.arrayContaining(['DCS-SRS', 'SimAppPro']));
+    // Another flight sim keeps the flight helpers that are for any game, and not this one.
+    expect(kept('msfs2024')).toContain('SimAppPro');
+    expect(kept('msfs2024')).not.toContain('DCS-SRS');
+    expect(kept('iracing')).not.toContain('DCS-SRS');
+    // It stays on the page for them, to be ticked by hand.
+    expect(offered(srs!, choiceFor(captured, 'msfs2024'))).toBe(true);
+    // With no game chosen nothing says it does not fit.
+    expect(kept('')).toContain('DCS-SRS');
+  });
+
+  it('a program two parts of RigReady know keeps the games it is made for, whichever of the two stays', () => {
+    const candidate = (key: string, extra: Partial<CaptureCandidate>): CaptureCandidate => ({
+      key,
+      group: 'apps',
+      title: key,
+      selectedByDefault: false,
+      check: { type: 'x.y', title: key, required: true, params: {} },
+      ...extra,
+    });
+    const kept = dedupeCandidates([
+      candidate('process:sr-clientradio.exe', {
+        program: 'SR-ClientRadio.exe',
+        generic: true,
+        forGames: ['dcs'],
+      }),
+      candidate('radio:srs', { program: 'sr-clientradio.exe' }),
+    ]);
+    expect(kept).toEqual([expect.objectContaining({ key: 'radio:srs', forGames: ['dcs'] })]);
+    // What the one that stays says itself is not replaced.
+    const own = dedupeCandidates([
+      candidate('process:a.exe', { program: 'a.exe', generic: true, forGames: ['dcs'] }),
+      candidate('x:a', { program: 'A.exe', forGames: ['msfs2024'] }),
+    ]);
+    expect(own).toEqual([expect.objectContaining({ key: 'x:a', forGames: ['msfs2024'] })]);
+  });
+
   it('on a rig with both, a racing game keeps the wheel and no flight gear, and a flight sim the other way round', async () => {
     app = await wiredApp('flying-fresh');
     const captured = await capture();
@@ -725,6 +800,8 @@ describe('CFG-PROFILE-018: the virtual controller in a new setup', () => {
             }),
           ],
         }),
+        // The step cannot work without the driver: the check for it comes along, with its fix.
+        checks: [driverCheck],
       },
     ]);
     // Only for the game that needs it.
@@ -749,7 +826,15 @@ describe('CFG-PROFILE-018: the virtual controller in a new setup', () => {
         params: { profile: 'my-ace-combat-stick', profileName: 'My Ace Combat stick' },
       }),
     ]);
-    expect((await savedYaml('ace-nights')).actions?.preLaunch).toHaveLength(1);
+    const saved = await savedYaml('ace-nights');
+    expect(saved.actions?.preLaunch).toHaveLength(1);
+    // With the step, the setup checks that the driver the step needs is installed.
+    expect(input.checks.filter((c) => c.type === driverCheck.type)).toEqual([driverCheck]);
+    expect(saved.checks).toContainEqual(expect.objectContaining(driverCheck));
+    // A game that needs no such step is not given the check.
+    expect(clickThrough(captured, 'dcs').checks.some((c) => c.type === driverCheck.type)).toBe(
+      false
+    );
     // The flight gear the game is fed from is kept; the head tracker and the helpers are not.
     const titles = created.checks.map((c) => c.title);
     expect(titles).toContain('T-Pendular-Rudder');

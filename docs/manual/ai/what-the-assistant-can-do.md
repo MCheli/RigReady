@@ -16,7 +16,7 @@ The [built-in assistant](built-in-assistant.md) and an assistant [connected over
 | `rig_make_ready` | Runs **Make ready** for a setup | Yes, under **Always ask** |
 | `rig_launch` | Launches a setup's game | Yes, unless you chose **Never ask** |
 | `rig_stand_down` | Runs **Stand down**, and can ask the game to close | Yes, under **Always ask** |
-| `setup_create_from_rig` | Creates a setup from the rig as it is now, like the capture page | Yes, under **Always ask** |
+| `setup_create_from_rig` | Creates a setup from the rig as it is now, with what the [New setup page](../setups/capture.md) would keep for the game: its gear and helpers, the files it backs up, and a step before launch when the game needs one | Yes, under **Always ask** |
 | `device_find_by_press` | Waits for you to press a button and names the device | No |
 | `programs_find` | Finds where programs are installed by name or vendor (SimAppPro, TrackIR, SRS, Stream Deck, VoiceAttack, Tacview, OpenKneeboard, Pit House, G HUB), with path variables | No: it only reads |
 | `setup_read` | Reads one setup: what Launch starts, every check with its fix, and every step, in a line each | No: it only reads |

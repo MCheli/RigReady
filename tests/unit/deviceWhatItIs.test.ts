@@ -13,7 +13,7 @@ import type { Profile } from '../../src/core/profile/schema';
 import type { Overview } from '../../src/features/devices/core/model';
 import type { RigGlance } from '../../src/features/fly/contract';
 import type { CaptureResult } from '../../src/features/profiles/contract';
-import { choiceFor, keptByDefault } from '../../src/features/profiles/core/captureDefaults';
+import { choiceFor, keptByDefault } from '../../src/core/captureDefaults';
 import { pictureModel } from '../../src/features/sharing/core/picture';
 import { wiredApp, type WiredApp } from '../helpers';
 

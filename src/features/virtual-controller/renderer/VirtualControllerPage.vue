@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import EmptyState from '../../../renderer/components/EmptyState.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
+import type { PadReport } from '../../../shared/models';
 import { virtualControllerContract, type ProfileSummary, type VcState } from '../contract';
 import { PART_LABELS } from '../core/profile';
+import { setupNames } from '../core/usedBy';
 import ExternalLink from './ExternalLink.vue';
+import PadPicture from './PadPicture.vue';
 
 const api = useClient(virtualControllerContract);
 const router = useRouter();
@@ -17,6 +20,10 @@ const message = ref<string>();
 const busy = ref<string>();
 const hide = ref(false);
 const deleting = ref<ProfileSummary>();
+/** The tick in the delete prompt: asked for when a setup uses the profile. */
+const agreed = ref(false);
+/** What the running virtual controller is sending, for the picture in the running panel. */
+const live = ref<PadReport>();
 
 async function load(): Promise<void> {
   const result = await api.state();
@@ -30,19 +37,49 @@ async function load(): Promise<void> {
 
 let offMachine: (() => void) | undefined;
 let offChanged: (() => void) | undefined;
+let offLive: (() => void) | undefined;
 onMounted(() => {
   void load();
   offMachine = onMachineChanged(() => void load());
   offChanged = api.on('changed', () => void load());
+  offLive = api.on('live', (event) => {
+    if (event.plugged) live.value = event.report;
+  });
 });
 onBeforeUnmount(() => {
   offMachine?.();
   offChanged?.();
+  offLive?.();
+  void api.live({ on: false });
+});
+
+// The picture follows the virtual controller while one runs, and stops asking when none does.
+const runningId = computed(() => view.value?.running?.profileId);
+watch(runningId, (id) => {
+  live.value = undefined;
+  void api.live({ on: id !== undefined });
 });
 
 const driverReady = computed(() => view.value?.driver.installed && view.value.driver.running);
 const kindName = (kind: string): string => (kind === 'ds4' ? 'DualShock 4' : 'Xbox 360 controller');
 const parts = (list: string[]): string => list.map((p) => PART_LABELS[p] ?? p).join(', ');
+
+/** Which setups start the profile, in words: deleting it breaks their step. */
+function usedText(profile: ProfileSummary): string {
+  if (profile.usedBy.length === 0) return 'No setup uses it';
+  const setups = profile.usedBy.length === 1 ? 'the setup' : 'the setups';
+  return `Used by ${setups} ${setupNames(profile.usedBy)}`;
+}
+
+/** Deleting asks for a tick first when a setup uses the profile, or when that is not known. */
+const mustAgree = computed(
+  () => (deleting.value?.usedBy.length ?? 0) > 0 || view.value?.setupsNote !== undefined
+);
+
+function askDelete(profile: ProfileSummary): void {
+  agreed.value = false;
+  deleting.value = profile;
+}
 
 async function start(profile: ProfileSummary): Promise<void> {
   busy.value = `start:${profile.id}`;
@@ -69,10 +106,12 @@ async function stop(): Promise<void> {
 }
 
 async function copy(profile: ProfileSummary): Promise<void> {
+  // A second press before the first copy is made makes no second copy.
+  if (busy.value) return;
   busy.value = `copy:${profile.id}`;
   error.value = undefined;
-  const name = profile.name.replace(/\s*\(.*\)\s*$/, '') || profile.name;
-  const result = await api.copy({ from: profile.id, name: `My ${name.toLowerCase()}` });
+  // RigReady names the copy: never a name another profile has.
+  const result = await api.copy({ from: profile.id });
   busy.value = undefined;
   if (!result.ok) {
     error.value = errorText(result.error);
@@ -83,13 +122,16 @@ async function copy(profile: ProfileSummary): Promise<void> {
 
 async function remove(): Promise<void> {
   const profile = deleting.value;
-  if (!profile) return;
+  if (!profile || busy.value) return;
   busy.value = `remove:${profile.id}`;
-  const result = await api.remove({ id: profile.id });
+  error.value = undefined;
+  message.value = undefined;
+  const result = await api.remove({ id: profile.id, evenIfUsed: mustAgree.value && agreed.value });
   busy.value = undefined;
   deleting.value = undefined;
-  if (result.ok) message.value = `Deleted ${profile.name}`;
-  else error.value = errorText(result.error);
+  if (!result.ok) error.value = errorText(result.error);
+  else if (result.value.removed) message.value = `Deleted ${profile.name} (${profile.id})`;
+  else error.value = `${profile.name} (${profile.id}) was not there any more.`;
   await load();
 }
 
@@ -237,6 +279,12 @@ function cannotStart(profile: ProfileSummary): string | undefined {
             >Stop</v-btn
           >
         </div>
+        <div class="vc-running-live" data-testid="vc-running-live">
+          <PadPicture :report="live" :kind="view.running.kind" />
+          <div class="rr-row-sub">
+            What the game is being sent, live. Move the stick or press a button to see it here.
+          </div>
+        </div>
       </div>
 
       <h2 class="rr-section-title">Your profiles</h2>
@@ -268,6 +316,13 @@ function cannotStart(profile: ProfileSummary): string | undefined {
           />
         </div>
         <div
+          v-if="view.setupsNote"
+          class="rr-row-sub rr-warn vc-hide-why"
+          data-testid="vc-setups-note"
+        >
+          <v-icon icon="mdi-alert" size="14" /> {{ view.setupsNote }}
+        </div>
+        <div
           v-for="p in view.profiles.mine"
           :key="p.id"
           class="rr-row"
@@ -279,9 +334,26 @@ function cannotStart(profile: ProfileSummary): string | undefined {
             <div class="rr-row-title">{{ p.name }}</div>
             <div class="rr-row-sub">
               {{ kindName(p.kind) }} · {{ p.mapped }} {{ p.mapped === 1 ? 'part' : 'parts' }} mapped
+              <span v-if="p.game"> · notes for {{ p.game }}</span>
+              · id <span class="rr-mono" data-testid="vc-profile-id">{{ p.id }}</span>
               <span v-if="p.missing.length" class="rr-warn" data-testid="vc-profile-missing">
                 · <v-icon icon="mdi-alert" size="13" /> not connected: {{ parts(p.missing) }}</span
               >
+            </div>
+            <div
+              class="rr-row-sub"
+              :class="{ 'vc-used': p.usedBy.length > 0 }"
+              data-testid="vc-profile-used"
+            >
+              <v-icon
+                :icon="p.usedBy.length > 0 ? 'mdi-link-variant' : 'mdi-link-variant-off'"
+                size="13"
+              />
+              {{ usedText(p) }}
+            </div>
+            <div v-if="p.sameName" class="rr-row-sub rr-warn" data-testid="vc-profile-same-name">
+              <v-icon icon="mdi-alert" size="13" /> Another profile has this name. Tell them apart
+              by the id, or give one a new name with Edit.
             </div>
             <div v-if="cannotStart(p)" class="rr-row-sub" data-testid="vc-profile-why">
               {{ cannotStart(p) }}
@@ -302,9 +374,9 @@ function cannotStart(profile: ProfileSummary): string | undefined {
             size="small"
             variant="text"
             icon="mdi-delete-outline"
-            :aria-label="`Delete ${p.name}`"
+            :aria-label="p.sameName ? `Delete ${p.name} (${p.id})` : `Delete ${p.name}`"
             data-testid="vc-delete"
-            @click="deleting = p"
+            @click="askDelete(p)"
           />
         </div>
       </div>
@@ -337,9 +409,9 @@ function cannotStart(profile: ProfileSummary): string | undefined {
 
       <h2 class="rr-section-title vc-section">Using it</h2>
       <div class="rr-panel vc-note" data-testid="vc-using">
-        A profile belongs to no game. Start one here, from the tray or the command palette for any
-        program that reads a standard controller, or add the step "Start a virtual controller" to a
-        setup's steps before launch: Stand down then stops it. In an emulator, choose the "Xbox 360
+        A profile works with any program that reads a standard controller. Start one here, from the
+        tray or from the command palette, or add the step "Start a virtual controller" to a setup's
+        steps before launch: Stand down then stops it. In an emulator, choose the "Xbox 360
         controller" (XInput) or "DualShock 4" as the pad and map it once in the emulator.
       </div>
 
@@ -356,20 +428,91 @@ function cannotStart(profile: ProfileSummary): string | undefined {
 
     <v-dialog
       :model-value="deleting !== undefined"
-      max-width="440"
+      max-width="520"
       @update:model-value="deleting = undefined"
     >
-      <v-card data-testid="vc-delete-confirm">
-        <v-card-title>Delete {{ deleting?.name }}?</v-card-title>
-        <v-card-text
-          >The profile is removed from RigReady. Setups that start it will fail.</v-card-text
-        >
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" data-testid="vc-delete-cancel" @click="deleting = undefined"
-            >Cancel</v-btn
+      <v-card v-if="deleting" data-testid="vc-delete-confirm">
+        <v-card-title class="vc-delete-title">Delete "{{ deleting.name }}"?</v-card-title>
+        <v-card-text>
+          <div class="vc-delete-which" data-testid="vc-delete-which">
+            Id <span class="rr-mono">{{ deleting.id }}</span> · {{ kindName(deleting.kind) }} ·
+            {{ deleting.mapped }} {{ deleting.mapped === 1 ? 'part' : 'parts' }} mapped
+          </div>
+          <div v-if="deleting.sameName" class="rr-warn vc-delete-line" data-testid="vc-delete-same">
+            <v-icon icon="mdi-alert" size="15" /> Another profile has the same name. Check the id
+            above: it is the only thing that tells them apart.
+          </div>
+          <v-alert
+            v-if="deleting.usedBy.length > 0"
+            type="warning"
+            variant="tonal"
+            density="compact"
+            class="vc-delete-line"
+            data-testid="vc-delete-used"
           >
-          <v-btn color="error" data-testid="vc-delete-go" @click="remove">Delete</v-btn>
+            <div class="vc-delete-strong">
+              {{ deleting.usedBy.length === 1 ? 'A setup uses' : 'Setups use' }} this profile:
+            </div>
+            <div class="vc-delete-setups" role="list">
+              <div
+                v-for="s in deleting.usedBy"
+                :key="s.id"
+                role="listitem"
+                data-testid="vc-delete-setup"
+              >
+                {{ s.name }}
+              </div>
+            </div>
+            <div>
+              What breaks: the step "Start a virtual controller" of
+              {{ deleting.usedBy.length === 1 ? 'that setup' : 'each of those setups' }} fails at
+              launch, and the game gets no virtual controller. A game that reads only a gamepad then
+              does not see your controls. It stays broken until you choose another profile in that
+              step.
+            </div>
+          </v-alert>
+          <div v-else-if="view?.setupsNote" class="rr-warn vc-delete-line">
+            <v-icon icon="mdi-alert" size="15" /> {{ view.setupsNote }} If a setup starts this
+            profile, that step will fail at launch.
+          </div>
+          <div v-else class="vc-delete-line" data-testid="vc-delete-unused">
+            No setup uses it. The profile is removed from RigReady. This cannot be undone.
+          </div>
+          <v-checkbox
+            v-if="mustAgree"
+            v-model="agreed"
+            class="vc-delete-agree"
+            density="compact"
+            hide-details
+            color="primary"
+            :label="
+              deleting.usedBy.length > 0
+                ? `Delete it anyway. I know ${setupNames(deleting.usedBy)} will lose ${deleting.usedBy.length === 1 ? 'its' : 'their'} virtual controller.`
+                : 'Delete it anyway.'
+            "
+            data-testid="vc-delete-agree"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <span v-if="mustAgree && !agreed" class="rr-row-sub vc-delete-why"
+            >Tick the box to delete it.</span
+          >
+          <v-spacer />
+          <v-btn
+            :variant="mustAgree ? 'flat' : 'text'"
+            :color="mustAgree ? 'primary' : undefined"
+            data-testid="vc-delete-cancel"
+            @click="deleting = undefined"
+            >{{ mustAgree ? 'Keep it' : 'Cancel' }}</v-btn
+          >
+          <v-btn
+            color="error"
+            :disabled="mustAgree && !agreed"
+            :loading="busy === `remove:${deleting.id}`"
+            data-testid="vc-delete-go"
+            @click="remove"
+            >Delete</v-btn
+          >
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -413,6 +556,39 @@ function cannotStart(profile: ProfileSummary): string | undefined {
 }
 .vc-running {
   margin-bottom: 20px;
+}
+.vc-running-live {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 16px 14px;
+}
+.vc-used {
+  color: inherit;
+}
+.vc-delete-title {
+  white-space: normal;
+}
+.vc-delete-which {
+  font-size: var(--rr-text-sm);
+}
+.vc-delete-line {
+  margin-top: 12px;
+}
+.vc-delete-strong {
+  font-weight: 600;
+}
+.vc-delete-agree {
+  margin-top: 10px;
+}
+.vc-delete-setups {
+  margin: 4px 0 8px;
+  padding-left: 12px;
+  border-left: 2px solid currentColor;
+  font-weight: 600;
+}
+.vc-delete-why {
+  padding-left: 12px;
 }
 .vc-hide {
   padding: 6px 12px 0;

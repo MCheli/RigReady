@@ -9,7 +9,7 @@ import type {
 } from '../../../core/checks/registry';
 import type { GameRegistry } from '../../../core/games';
 import { allPathVariables, collapsePath, expandPath } from '../../../core/pathVariables';
-import { closeTogether, stillRunningText } from '../../../core/processes';
+import { closeAtStandDown, FORCE_CLOSE_LABEL } from '../../../core/processes';
 import { err, ok, type Result } from '../../../core/result';
 import type { GameKind, ProcessInfo } from '../../../shared/models';
 
@@ -52,8 +52,8 @@ export class SessionStarts {
 /** How long Stand down waits for a program to close after asking it to. */
 export const CLOSE_WAIT_MS = 10_000;
 
-/** What the setup editor calls `forceClose`, for the hint that points at it. */
-export const FORCE_CLOSE_LABEL = 'Force it closed if it does not close';
+/** What the setup editor calls `forceClose`: the hint that points at it is in core. */
+export { FORCE_CLOSE_LABEL };
 
 /** Paths stored in a profile may start with a path variable ({PROGRAM_FILES_X86}/TrackIR5/...). */
 export type ResolvePath = (stored: string, ctx: CheckContext) => Promise<Result<string>>;
@@ -68,8 +68,8 @@ export function pathResolver(games: GameRegistry): ResolvePath {
 /**
  * Asks every matching program to close; terminates only when allowed. A program of several
  * processes is one program: all are asked at once and it counts as closed when none is
- * left (closeTogether). One that is still running is named with the reason, and with what
- * can be done about it.
+ * left. One that is still running is named with the reason, and with what can be done
+ * about it (closeAtStandDown in core, which every check that closes an app goes by).
  */
 export async function closePrograms(
   ctx: CheckContext,
@@ -81,21 +81,10 @@ export async function closePrograms(
   const targets = processes.value.filter(
     (p) => sameName(p.name, name) && (options.match ? options.match(p) : true)
   );
-  if (targets.length === 0) return ok(null);
-  const closed = await closeTogether(ctx.ports.processes, targets, {
+  return closeAtStandDown(ctx.ports.processes, targets, name, {
     waitMs: options.waitMs ?? CLOSE_WAIT_MS,
     force: options.force,
   });
-  if (closed.state === 'failed') return { ok: false, error: closed.error };
-  if (closed.state === 'stillRunning') {
-    // Forcing cannot end a program Windows does not let RigReady touch, so it is not offered.
-    const hint =
-      options.force || closed.why === 'refused'
-        ? 'Close it yourself.'
-        : `Close it yourself, or switch on "${FORCE_CLOSE_LABEL}" for this check in the setup.`;
-    return err('process.stillRunning', stillRunningText(name, closed.why), hint);
-  }
-  return ok(closed.terminated ? `Closed ${name} (it had to be forced)` : `Closed ${name}`);
 }
 
 export function createProcessRunningCheck(
@@ -256,6 +245,11 @@ export interface KnownApp {
   icon: string;
   helper?: boolean;
   kind?: GameKind;
+  /**
+   * The games it is made for, by game module id, when it is of no use with any other
+   * (DCS-SRS talks to DCS only). A new setup keeps it by default only for those games.
+   */
+  games?: string[];
   close?: boolean;
   /** What it is for, in a few words. */
   purpose?: string;
@@ -285,7 +279,10 @@ export const KNOWN_APPS: Record<string, KnownApp> = {
     'WinWing panels, displays and backlight',
     'flight'
   ),
-  'sr-clientradio.exe': helper('DCS-SRS', 'mdi-radio-handheld', 'radio for multiplayer', 'flight'),
+  'sr-clientradio.exe': {
+    ...helper('DCS-SRS', 'mdi-radio-handheld', 'radio for multiplayer', 'flight'),
+    games: ['dcs'],
+  },
   'target.exe': helper('Thrustmaster TARGET', 'mdi-controller', 'controller scripts', 'flight'),
   'helios control center.exe': helper(
     'Helios',
@@ -380,6 +377,7 @@ export function createProcessCapture(games: GameRegistry): CaptureDefinition {
           tier: known ? 'main' : 'more',
           icon: known?.icon ?? 'mdi-application-outline',
           ...(known?.kind ? { kind: known.kind } : {}),
+          ...(known?.games ? { forGames: known.games } : {}),
           ...(known?.close ? { standDownNote: 'closed at Stand down' } : {}),
           check: {
             type: PROCESS_RUNNING,

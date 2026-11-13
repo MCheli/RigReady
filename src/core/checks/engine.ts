@@ -627,6 +627,8 @@ export const CaptureCandidateSchema = z.object({
       .optional(),
   }),
   game: z.string().optional(),
+  forGames: z.array(z.string()).optional(),
+  microphone: z.boolean().optional(),
   ask: z
     .object({
       param: z.string(),
@@ -689,9 +691,11 @@ export function dedupeCandidates(candidates: CaptureCandidate[]): CaptureCandida
   const keepSelected = (kept: CaptureCandidate, gone: CaptureCandidate): void => {
     dropped.add(gone);
     if (gone.selectedByDefault) kept.selectedByDefault = true;
-    // How the program is shown (icon, family) is known to whoever knows the program.
+    // How the program is shown (icon, family) and the games it is made for are known to
+    // whoever knows the program.
     if (kept.icon === undefined && gone.icon !== undefined) kept.icon = gone.icon;
     if (kept.kind === undefined && gone.kind !== undefined) kept.kind = gone.kind;
+    if (kept.forGames === undefined && gone.forGames !== undefined) kept.forGames = gone.forGames;
   };
   for (const candidate of candidates) {
     for (const covered of candidate.covers ?? []) {
