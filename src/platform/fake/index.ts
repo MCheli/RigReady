@@ -393,7 +393,19 @@ export class FakeInputProvider implements InputProvider {
       enumerationIndex: device.enumerationIndex ?? position,
     }));
   }
+  /** Which controller has which number, as it was when the last readings were kept. */
+  private listed = '';
+  /**
+   * Forgets the last readings once a controller came or went, as the real reader does: a
+   * number then belongs to another controller, so an old reading must not be replayed for it.
+   */
+  private followList(): void {
+    const now = this.state.input.map((d) => `${d.index}:${d.guid}`).join('|');
+    if (now !== this.listed) this.latest.clear();
+    this.listed = now;
+  }
   subscribe(listener: (states: InputState[]) => void): () => void {
+    this.followList();
     this.listeners.add(listener);
     if (this.latest.size > 0) listener([...this.latest.values()]);
     return () => {
@@ -402,6 +414,7 @@ export class FakeInputProvider implements InputProvider {
   }
   /** Test hook: deliver input as if the user pressed something. */
   emit(states: InputState[]): void {
+    this.followList();
     for (const state of states) this.latest.set(state.index, state);
     for (const listener of this.listeners) listener(states);
   }
