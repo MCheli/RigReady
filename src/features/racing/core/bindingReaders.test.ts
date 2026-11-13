@@ -80,6 +80,11 @@ describe('binding readers of the racing games, on the racing rig', () => {
     // iRacing names axes its own way (joyCalib.yaml); here they are DirectInput's.
     expect(on(wheel, 'Throttle')).toEqual([{ kind: 'axis', axis: 'Z' }]);
     expect(on(wheel, 'Brake')).toEqual([{ kind: 'axis', axis: 'RZ' }]);
+    // The clutch is on Y, which joyCalib.yaml calls "Combined Pedals" as the driver does.
+    expect(on(wheel, 'Clutch')).toEqual([{ kind: 'axis', axis: 'Y' }]);
+    expect(wheel.bindings.find((b) => b.actionId === 'Clutch')).toMatchObject({
+      inputLabel: 'Clutch or combined pedals',
+    });
     // Steer left and steer right are the two halves of one axis: one thing to the driver.
     expect(on(wheel, 'Steering')).toEqual([{ kind: 'axis', axis: 'X' }]);
     expect(wheel.bindings.some((b) => /Steer (left|right)/.test(b.action))).toBe(false);

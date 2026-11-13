@@ -48,3 +48,35 @@ export function readCalibration(text: string): CalibratedDevice[] {
   }
   return devices.filter((d) => d.instanceGuid !== '');
 }
+
+const FANATEC_VENDOR = '0EB7';
+/** USB product ids of Fanatec wheel bases (docs/research/racing.md 1.3). */
+const FANATEC_BASES: ReadonlySet<string> = new Set([
+  '0001',
+  '0004',
+  '0005',
+  '0006',
+  '0007',
+  '0011',
+  '0020',
+  '0197',
+  '0E03',
+]);
+
+/**
+ * An axis name from joyCalib.yaml, as the page shows it. iRacing copies the names the
+ * controller's driver gives. The Fanatec driver calls the Y axis of its bases "Combined
+ * Pedals" whatever the pedal mode, but with the pedals separate the clutch is on it, and
+ * Windows does not say which mode the base is in. So that one is shown as "Clutch or
+ * combined pedals", the name the input tester and the Wheel page give the axis
+ * (tests/unit/wheelAxisNames.test.ts holds the three together). Every other name is shown
+ * as iRacing has it.
+ */
+export function shownAxisName(name: string, ids?: { vendorId: string; productId: string }): string {
+  const fanatecBase =
+    ids?.vendorId.toUpperCase() === FANATEC_VENDOR &&
+    FANATEC_BASES.has(ids.productId.toUpperCase());
+  return fanatecBase && name.trim().toLowerCase() === 'combined pedals'
+    ? 'Clutch or combined pedals'
+    : name;
+}

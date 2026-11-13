@@ -95,3 +95,43 @@ test('profiles: with the wheel of a RigReady 1 setup unplugged, RigReady says it
   await expect(page.getByTestId('profiles-message')).toContainText('Opened the folder in Explorer');
   expect(await fs.readdir(path.join(dataRoot, 'profiles'))).toEqual([OLD]);
 });
+
+test('profiles: a wheel base RigReady 1 listed once for each of its two controllers is asked about and brought over once', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch(
+    'profiles-version-one-two-controllers',
+    'profiles-version-one-two-controllers'
+  );
+  await go(page, '/configure/profiles');
+  const old = page.getByTestId('profile-earlier');
+  await expect(old).toContainText('q7v2rk4tw9x1mze.yaml · made by RigReady 1');
+  await expect(old.getByTestId('profile-earlier-summary')).toHaveText(
+    'RigReady can bring it over: 2 checks. 1 part has no match in this version.'
+  );
+
+  await old.getByTestId('profile-earlier-bring').click();
+  const dialog = page.getByTestId('profile-bring-dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId('profile-bring-checks').locator('li')).toHaveText([
+    'FANATEC Podium Wheel Base DD2: connected: the FANATEC Podium Wheel Base DD2 plugged in now (0EB7:0007)',
+    'TrackIR 5: TrackIR5.exe is running (optional)',
+  ]);
+  await expect(dialog).toContainText(
+    'RigReady 1 had "FANATEC Podium Wheel Base DD2" twice, both the same check. The new setup has it once.'
+  );
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('bring-over');
+
+  await dialog.getByTestId('profile-bring-go').click();
+  await expect(page.getByTestId('profiles-message')).toContainText('Brought "LMU" over');
+  await go(page, '/');
+  await expect(page.getByTestId('profile-switcher')).toContainText('LMU');
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+  // The base is one item on the Play screen, not two.
+  await page.getByTestId('group-toggle-devices').click();
+  await expect(
+    page.locator('[data-testid="check-row"][data-title="FANATEC Podium Wheel Base DD2"]')
+  ).toHaveCount(1);
+  await shot('play');
+});

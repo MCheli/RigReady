@@ -156,6 +156,12 @@ describe('iRacing bindings: the set for all cars', () => {
       },
       differs: false,
     });
+    // The clutch is on Y, which joyCalib.yaml calls "Combined Pedals" as the Fanatec driver
+    // does in every pedal mode: shown as the input tester and the Wheel page name it.
+    expect(action(view, 'Clutch').binding).toMatchObject({
+      kind: 'axis',
+      input: 'Clutch or combined pedals',
+    });
     expect(action(view, 'SteerLeft').binding?.input).toBe('Wheel Axis, turning left');
     expect(action(view, 'SteerRight').binding?.input).toBe('Wheel Axis, turning right');
     expect(action(view, 'ShiftUp').binding).toMatchObject({ kind: 'button', input: 'Button 5' });
