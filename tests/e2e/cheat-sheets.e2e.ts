@@ -33,6 +33,7 @@ const CONTROLLERS = {
     buttons: 62,
     hats: 0,
   },
+  takeoff: { index: 4, name: 'WINWING F18 TAKEOFF PANEL 2', axes: 0, buttons: 64, hats: 0 },
 } as const;
 type Controller = (typeof CONTROLLERS)[keyof typeof CONTROLLERS];
 
@@ -299,6 +300,74 @@ test('cheat sheets: labels, a pressed control lights up, notes, search and by ac
   await expect(page.getByTestId('detail-title')).toHaveText('Button 20');
 });
 
+test('cheat sheets: what the owner pressed on his rig lights the control it belongs to, on the grip, the throttle and the take-off panel', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-hornet', 'cheat-sheets-second-look');
+  const { page, shot, sendInput } = run;
+  await page.setViewportSize({ width: 1500, height: 1250 });
+  await openSheets(page);
+  const picture = page.locator('[data-testid="sheet-view"] svg');
+  const head = (anchor: string) => picture.locator(`[data-anchor="${anchor}"] .cs-bhead`);
+
+  // The grip rests with 1 and 7 held (its top front lever and paddle let go). Right on the
+  // right side hat is 16, and the hat no longer says nobody has checked it.
+  await device(page, 'Stick').click();
+  await expect(head('side-hat')).toHaveText('Right side hat · 14–18');
+  await sendInput([state(CONTROLLERS.stick, { pressed: [1, 7] })]);
+  await sendInput([state(CONTROLLERS.stick, { pressed: [1, 7, 16] })]);
+  await expect(control(page, 'button:16')).toHaveClass(/cs-on/);
+  await expect(control(page, 'button:16')).toContainText('→');
+  await expect(control(page, 'button:18')).toContainText('←');
+  await shot('stick-right-side-hat-right');
+  await sendInput([state(CONTROLLERS.stick, { pressed: [1, 7] })]);
+  await expect(control(page, 'button:16')).not.toHaveClass(/cs-on/);
+
+  // The throttle rests on 23, 30, 31, 4, 41 and 58. The slider under the left handle's
+  // knob, slid to one end, gives 59 and lets go of 58; the knob is its axis alone, and the
+  // front hats carry no "?".
+  await device(page, 'Throttle').click();
+  await expect(head('left-switch')).toHaveText('Left handle slider · 57–59');
+  await expect(head('left-knob')).toHaveText('Left handle knob · RZ');
+  await expect(head('left-hat')).not.toContainText('?');
+  await expect(head('front-hat')).not.toContainText('?');
+  const rest = [23, 30, 31, 4, 41, 58];
+  await sendInput([state(CONTROLLERS.throttle, { pressed: rest })]);
+  await sendInput([
+    state(CONTROLLERS.throttle, { pressed: [...rest.filter((n) => n !== 58), 59] }),
+  ]);
+  await expect(control(page, 'button:59')).toHaveClass(/cs-on/);
+  await expect(control(page, 'button:58')).not.toHaveClass(/cs-on/);
+  await expect(control(page, 'button:59')).toContainText('59 one end');
+  // 60 to 62 lit on nothing on the real throttle: they wait under More controls with 45 to 49.
+  for (const n of [45, 49, 60, 61, 62]) {
+    await expect(control(page, `button:${n}`)).toHaveClass(/cs-empty/);
+  }
+  await shot('throttle-slider-one-end');
+  // Back to the middle; seen on the page before the next device is opened, as a change on
+  // the throttle that arrived later would bring the throttle forward again.
+  await sendInput([state(CONTROLLERS.throttle, { pressed: rest })]);
+  await expect(control(page, 'button:58')).toHaveClass(/cs-on/);
+  await expect(control(page, 'button:59')).not.toHaveClass(/cs-on/);
+
+  // The take-off panel: pulling the brake handle out gives 40 and lets go of 30, where it
+  // rests. The wing fold handle, which had 30, is the one control left with a "?".
+  const panelRest = [3, 7, 8, 10, 12, 15, 18, 30, 32, 35];
+  await page.locator('[data-testid="sheet-device"][data-title*="TAKEOFF"]').click();
+  await expect(head('brake')).toHaveText('EMERG / PARK BRK handle · 30, 38–41');
+  await expect(head('wing-fold')).toContainText('?');
+  await sendInput([state(CONTROLLERS.takeoff, { pressed: panelRest })]);
+  await sendInput([
+    state(CONTROLLERS.takeoff, { pressed: [...panelRest.filter((n) => n !== 30), 40] }),
+  ]);
+  await expect(control(page, 'button:40')).toHaveClass(/cs-on/);
+  await expect(control(page, 'button:30')).not.toHaveClass(/cs-on/);
+  await expect(control(page, 'button:40')).toContainText('out');
+  await shot('takeoff-brake-out');
+  await sendInput([state(CONTROLLERS.takeoff, { pressed: panelRest })]);
+  await expect(control(page, 'button:30')).toHaveClass(/cs-on/);
+});
+
 test('cheat sheets: a press never lights nothing - a button no control is known to press still shows, and lights up', async ({
   rig,
 }) => {
@@ -307,13 +376,13 @@ test('cheat sheets: a press never lights nothing - a button no control is known 
   await page.setViewportSize({ width: 1500, height: 1250 });
   await openSheets(page);
 
-  // The throttle reports buttons 45 to 49. No control of the drawing is known to press
-  // them and nothing is bound to them: with "Unbound controls" on they still have a place.
+  // The throttle reports buttons 45 to 49 and 60 to 62. No control of the drawing is known
+  // to press them and nothing is bound to them: with "Unbound controls" on they still have a place.
   await device(page, 'Throttle').click();
   await expect(page.getByTestId('sheet-layout-source')).toHaveText('RigReady drawing');
   const picture = page.locator('[data-testid="sheet-view"] svg');
   await expect(picture).toContainText('MORE CONTROLS · not on the drawing');
-  for (const n of [45, 46, 47, 48, 49]) {
+  for (const n of [45, 46, 47, 48, 49, 60, 61, 62]) {
     await expect(control(page, `button:${n}`)).toHaveCount(1);
     await expect(control(page, `button:${n}`)).toHaveClass(/cs-empty/);
   }
