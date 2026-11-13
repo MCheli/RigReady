@@ -47,7 +47,7 @@ const MODIFIERS: Record<string, keyof Omit<Hotkey, 'key'>> = {
 };
 
 const NEEDS_MODIFIER =
-  'Hold Ctrl, Alt or the Windows key with it, so it cannot be pressed by accident while typing or flying.';
+  'Hold Ctrl, Alt or the Windows key with it, so it cannot be pressed by accident while typing or playing.';
 
 function checked(hotkey: Hotkey): Result<Hotkey> {
   if (!hotkey.ctrl && !hotkey.alt && !hotkey.win) return err('hotkey.invalid', NEEDS_MODIFIER);

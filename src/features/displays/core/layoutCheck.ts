@@ -267,7 +267,7 @@ export function createDisplayCapture(deps: LayoutDeps): CaptureDefinition {
                 ask: {
                   param: SAVE_AS,
                   label: 'Save this arrangement as a layout named',
-                  placeholder: 'Flying',
+                  placeholder: 'e.g. Racing or Flying',
                   hint: 'Optional. Changing the saved layout later changes every setup that uses it.',
                 },
               }),

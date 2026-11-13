@@ -66,10 +66,10 @@ const LABELS: Record<string, string> = {
 };
 
 const HINTS: Record<string, string> = {
-  path: 'A full path, or one starting with a variable such as {DCS_USER}/Config/options.lua',
+  path: 'A full path, or one starting with a variable such as {DOCUMENTS} or {SAVED_GAMES}',
   exe: 'A full path, or one starting with a variable such as {PROGRAM_FILES_X86}/...',
   args: 'Each argument on its own line; nothing is ever joined into a command line',
-  pattern: 'Folders only, e.g. *.diff.lua',
+  pattern: 'Folders only, e.g. *.ini',
   name: 'The program or service name, e.g. TrackIR5.exe',
   stopOnStandDown:
     'On: always closed. Off: never. Until you set it, only an app RigReady started is closed.',

@@ -82,7 +82,7 @@ export const CLIENT_KINDS: { kind: ClientKind; title: string; sub: string }[] = 
   {
     kind: 'claude-code-http',
     title: 'Claude Code, by address (needs a token)',
-    sub: "The Claude Code form above does the same with no token. This one puts a token on a command line, where the terminal may keep it in its history, and in Claude Code's own settings file, both in plain text.",
+    sub: "The Claude Code form above does the same with no token. This command leaves the pairing's token in your terminal's history and in Claude Code's settings, both in plain text. Forget on that pairing, below, cuts it off at once.",
   },
   {
     kind: 'cursor-http',

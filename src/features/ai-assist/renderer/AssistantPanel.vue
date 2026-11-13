@@ -368,9 +368,9 @@ async function openBudget(): Promise<void> {
               Settings says not to ask. What it drafts is saved only when you press Save.
               <ManualLink page="ai/built-in-assistant">How it works</ManualLink>
             </p>
-            <p v-if="nothingYet">
-              Ask for help with your rig: "Set up a DCS session with SimAppPro, TrackIR and SRS",
-              "Why is my rig not ready?", "Write a check that SRS answers on its port".
+            <p v-if="nothingYet" data-testid="assistant-examples">
+              Ask for help with your rig: "Make my setup start Stream Deck and TrackIR", "Why is my
+              rig not ready?", "Write a check that SimHub answers on its port".
             </p>
           </div>
 

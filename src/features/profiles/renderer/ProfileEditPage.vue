@@ -575,7 +575,7 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
           :model-value="draft.gameInstall ?? ''"
           :items="installItems"
           label="Install this setup uses"
-          hint="Its folders are what {DCS_INSTALL} and {DCS_USER} mean for this setup's checks, fixes and launch."
+          hint="Its folders are what this game's path variables mean for this setup's checks, fixes and launch."
           persistent-hint
           data-testid="edit-game-install"
           @update:model-value="setInstall($event)"
@@ -625,7 +625,7 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
           v-else-if="launchKind === 'steam'"
           v-model="steamApp"
           label="Steam app id"
-          hint="The number in the game's Steam store address, e.g. 223750 for DCS World"
+          hint="The number in the game's Steam store address."
           persistent-hint
           data-testid="edit-steam-app"
         />

@@ -28,7 +28,7 @@ Among the actions:
 - **Apply a monitor layout** by name. The layout is applied and the "Keep this monitor layout?" question is asked every time, as on the Monitors page ([Monitor layouts](../monitors-and-audio/layouts.md)).
 - **Back up now**: the same full backup as the button on the [Backups page](../protect/backups.md).
 - **Find a device**: press a button on any controller and RigReady names it ([Devices](../hardware/devices.md#find-a-device-by-pressing-a-button)).
-- Open the [bindings](../dcs/bindings.md) or the [cheat sheet](../dcs/cheat-sheets.md) of an aircraft.
+- Open the [DCS bindings](../dcs/bindings.md) of an aircraft, or the [cheat sheet](../dcs/cheat-sheets.md) of an aircraft or a car.
 - **Copy the diagnostics report**: the report on the clipboard without opening the [page](diagnostics.md).
 - **Keyboard shortcuts** ([the whole list](keyboard-shortcuts.md)) and **About RigReady**.
 - **Open the manual** and **Open the manual page for this screen**: the manual's front page, or its page about the screen you are on, in your browser (the same as the question mark in the header).

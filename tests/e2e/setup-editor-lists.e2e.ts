@@ -218,6 +218,9 @@ test('setup editor: a setup Steam starts shows as "Through Steam" with the game\
   await expect(page.getByTestId('edit-launch-exe')).toHaveCount(0);
   await expect(page.getByTestId('edit-launch-args')).toHaveCount(0);
   await page.getByTestId('edit-steam-app').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('edit-steam-app')).toContainText(
+    "The number in the game's Steam store address."
+  );
   await shot('through-steam');
 
   // Another number is saved the way the setup already launches: through its own Steam.
