@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { simFamily } from './family';
+import { familyOf, simFamily } from './family';
 
 type Case = [vendorId: string, productId: string, family: 'flight' | 'racing', what: string];
 
@@ -116,5 +116,21 @@ describe('which family of sims a device is for', () => {
     expect(simFamily('044f', 'b10a')).toBe('flight');
     expect(simFamily('16d0', '0d61')).toBe('racing');
     expect(simFamily('1234', '5678')).toBeUndefined();
+  });
+});
+
+describe('DEV-017: what the user said a device is used for', () => {
+  const wheel = { vendorId: '0EB7', productId: '0007', name: 'FANATEC Podium Wheel Base DD2' };
+  const unknown = { vendorId: '2341', productId: '8036', name: 'Arduino Leonardo' };
+
+  it('comes before what RigReady knows of the maker; "both" is no family; nothing said is the maker', () => {
+    expect(familyOf(wheel)).toBe('racing');
+    expect(familyOf(wheel, {})).toBe('racing');
+    expect(familyOf(wheel, { usedFor: 'flight' })).toBe('flight');
+    expect(familyOf(wheel, { usedFor: 'both' })).toBeUndefined();
+    expect(familyOf(unknown)).toBeUndefined();
+    expect(familyOf(unknown, { usedFor: 'racing' })).toBe('racing');
+    expect(familyOf(unknown, { usedFor: 'flight' })).toBe('flight');
+    expect(familyOf(unknown, { usedFor: 'both' })).toBeUndefined();
   });
 });

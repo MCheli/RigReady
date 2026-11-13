@@ -19,7 +19,7 @@ The line under the picture says what is in it: how many monitors, controllers an
 ## What is drawn
 
 - **Monitors**: from the setup's [monitor layout](../monitors-and-audio/layouts.md) check, each with its name and size, the main display marked. A setup that does not check the layout gets the monitors as they are now, and the page says so. A setup with neither says "This setup does not arrange the monitors."
-- **Controllers**: one per device the setup checks, with the name you gave it on the [Devices page](../hardware/devices.md) (the hardware's own name underneath when they differ), an icon by its kind (stick, throttle, pedals, wheel, panel, screen, tracker, deck), and "optional" when the check is optional. A rig with more controllers than fit shows as many as fit and counts the rest.
+- **Controllers**: one per device the setup checks, with the name you gave it on the [Devices page](../hardware/devices.md) (the hardware's own name underneath when they differ), an icon by its kind (stick, throttle, pedals, wheel, panel, screen, tracker, deck), and "optional" when the check is optional. The kind is what you said the device is on the Devices page ([Say what a device is](../hardware/devices.md#say-what-a-device-is)), or else what its name says; a kind the picture has no drawing for gets the nearest one (a yoke is drawn as a stick). Only the drawing is in the picture. A rig with more controllers than fit shows as many as fit and counts the rest.
 - **Helper apps**: the apps the setup checks, by the check's title.
 
 ![A square picture](../../../artifacts/screens/share-picture/rig-square.png)

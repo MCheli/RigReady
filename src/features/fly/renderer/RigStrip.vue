@@ -127,7 +127,8 @@ const STATE: Record<RigState, { icon: string; tone: string; says: string }> = {
 const chips = computed(() => {
   const short = chipNames(props.devices.map((device) => device.title));
   return props.devices.map((device, index) => {
-    const kind = deviceKind(device.title);
+    // What the user said the device is comes before what its name says.
+    const kind = props.glance?.kinds?.[device.itemId] ?? deviceKind(device.title);
     const look = STATE[device.state];
     return {
       ...device,

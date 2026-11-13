@@ -5,6 +5,7 @@ import type {
   CheckDefinition,
   CheckOutcome,
 } from '../../../core/checks/registry';
+import { GEAR_KINDS, KIND_ICON, type DeviceKind } from '../../../core/gearKind';
 import type { Ports } from '../../../core/ports';
 import { ProfileStore } from '../../../core/profile/store';
 import { ok } from '../../../core/result';
@@ -24,8 +25,8 @@ import {
   sameModel,
   vidPid,
 } from './identity';
-import { simFamily } from './family';
-import { deviceNames, deviceStores, findName, lastSighting } from './store';
+import { familyOf } from './family';
+import { deviceNames, deviceStores, findEntry, findName, lastSighting, saidOf } from './store';
 
 export const DEVICE_CONNECTED = 'device.connected';
 
@@ -207,6 +208,8 @@ export function identityFor(device: DeviceInfo, all: DeviceInfo[]): DeviceParams
   return narrowIdentity(device, all);
 }
 
+const isGear = (kind: DeviceKind): boolean => (GEAR_KINDS as readonly DeviceKind[]).includes(kind);
+
 export const deviceCapture: CaptureDefinition = {
   id: 'devices',
   label: 'Devices',
@@ -218,6 +221,11 @@ export const deviceCapture: CaptureDefinition = {
     const candidates = peripherals.map((device) => {
       const params = identityFor(device, peripherals);
       const given = names.ok ? findName(names.value.names, device, peripherals)?.name : undefined;
+      // What the user said this device is, on the Devices page. It comes before what
+      // Windows and the maker's name say.
+      const said = names.ok
+        ? saidOf(findEntry(names.value.whatItIs, device, peripherals))
+        : undefined;
       const id = vidPid(device);
       const how = identifiedBy(params);
       // Identical devices without names of their own are told apart by position in the list.
@@ -225,7 +233,14 @@ export const deviceCapture: CaptureDefinition = {
       const twin =
         twins.length > 1 ? { index: twins.indexOf(device) + 1, of: twins.length } : undefined;
       const title = given ?? (twin ? `${device.name} (${twin.index} of ${twin.of})` : device.name);
-      const kind = simFamily(device.vendorId, device.productId, device.name);
+      const kind = familyOf(device, said);
+      // Sim gear is proposed; keyboards, mice and the rest are the user's call. Sim gear
+      // is what Windows lists as a game controller, unless the user said what the device
+      // is: then a stick is sim gear whatever Windows says, and a keyboard is not. A device
+      // the user only said a use for (flight, racing or both) is sim gear as well.
+      const proposed = said?.kind
+        ? isGear(said.kind)
+        : device.isGameController || said?.usedFor !== undefined;
       return {
         key: `device:${device.instanceId}`,
         group: 'devices' as const,
@@ -236,11 +251,14 @@ export const deviceCapture: CaptureDefinition = {
             : how === 'port'
               ? `${id} · identified by USB port`
               : id,
-        // Sim gear is pre-selected; keyboards, mice, headsets and the rest are the user's call.
-        selectedByDefault: device.isGameController,
-        tier: device.isGameController ? ('main' as const) : ('more' as const),
-        icon: device.isGameController ? 'mdi-controller' : 'mdi-usb',
-        ...(kind && device.isGameController ? { kind } : {}),
+        selectedByDefault: proposed,
+        tier: proposed ? ('main' as const) : ('more' as const),
+        icon: said?.kind
+          ? KIND_ICON[said.kind]
+          : device.isGameController
+            ? 'mdi-controller'
+            : 'mdi-usb',
+        ...(kind && proposed ? { kind } : {}),
         device: {
           vendorId: device.vendorId,
           productId: device.productId,
@@ -249,15 +267,16 @@ export const deviceCapture: CaptureDefinition = {
           identifiedBy: how,
           ...(twin ? { twin } : {}),
           ...(given ? { model: device.name } : {}),
+          ...(said?.kind ? { saidKind: said.kind } : {}),
         },
         check: { type: DEVICE_CONNECTED, title, required: true, params },
       };
     });
-    // Game controllers first, as the capture screen lists them; names in order within each.
+    // Sim gear first, as the capture screen lists it; names in order within each.
     return ok(
       candidates.sort(
         (a, b) =>
-          Number(b.device.gameController) - Number(a.device.gameController) ||
+          Number(b.selectedByDefault) - Number(a.selectedByDefault) ||
           a.title.localeCompare(b.title)
       )
     );

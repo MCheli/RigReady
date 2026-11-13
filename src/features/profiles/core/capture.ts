@@ -53,14 +53,16 @@ export async function captureGames(ctx: Ctx): Promise<CaptureGame[]> {
 }
 
 /**
- * The family of sims the connected gear is for: the one most of the game controllers
- * belong to. Undefined when there is none or it is a tie.
+ * The family of sims the connected gear is for: the one most of the sim gear belongs to.
+ * Only sim gear says a family (the devices check gives one to nothing else): the game
+ * controllers, and what the user said is sim gear on the Devices page, whatever Windows
+ * lists it as. Undefined when there is none or it is a tie.
  */
 export function rigKind(candidates: CaptureCandidate[]): GameKind | undefined {
   let flight = 0;
   let racing = 0;
   for (const candidate of candidates) {
-    if (!candidate.device?.gameController) continue;
+    if (!candidate.device) continue;
     if (candidate.kind === 'flight') flight += 1;
     else if (candidate.kind === 'racing') racing += 1;
   }

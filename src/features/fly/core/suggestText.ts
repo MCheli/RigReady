@@ -1,4 +1,4 @@
-import { deviceKind, KIND_ICON, KIND_NAME } from './deviceKind';
+import { deviceKind, KIND_ICON, KIND_NAME, type DeviceKind } from './deviceKind';
 
 /**
  * The words of the quiet suggestion: what gave the other setup away, and how much of this
@@ -16,9 +16,11 @@ export interface SuggestionWords {
 export function suggestionWords(suggestion: {
   name: string;
   device: string;
+  /** What the user said the device is, when they said: it comes before what the name says. */
+  kind?: DeviceKind | undefined;
   missing: number;
 }): SuggestionWords {
-  const kind = deviceKind(suggestion.device);
+  const kind = suggestion.kind ?? deviceKind(suggestion.device);
   // A device nobody knows the kind of is called by its own name.
   const subject = kind === 'other' ? suggestion.device : KIND_NAME[kind];
   const rest =

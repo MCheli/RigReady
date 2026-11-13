@@ -4,6 +4,7 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import type { InputDevice, InputState } from '../../../shared/models';
 import { devicesContract } from '../contract';
 import type { BindingSource, BoundInputs } from '../../../core/boundInputs';
+import type { DeviceKind, DeviceUse } from '../../../core/gearKind';
 import { controllerChanges, ownerOf } from '../core/controllers';
 import type { DeviceIdentity } from '../core/identity';
 import { ActivityLog, widen, type AxisRange } from '../core/input';
@@ -39,6 +40,21 @@ export const useDevicesStore = defineStore('devices', () => {
 
   async function rename(key: string, name: string): Promise<string | undefined> {
     const result = await api.rename({ key, name });
+    if (!result.ok) return errorText(result.error);
+    await load();
+    return undefined;
+  }
+
+  /**
+   * Says what a device is and what it is used for; null leaves that part to RigReady.
+   * Answers with why it could not be stored, or nothing once it is, and reads the
+   * devices again so the page shows what is stored and not what was clicked.
+   */
+  async function setWhatItIs(
+    key: string,
+    said: { kind: DeviceKind | null; usedFor: DeviceUse | null }
+  ): Promise<string | undefined> {
+    const result = await api.setWhatItIs({ key, ...said });
     if (!result.ok) return errorText(result.error);
     await load();
     return undefined;
@@ -96,6 +112,7 @@ export const useDevicesStore = defineStore('devices', () => {
     loading,
     load,
     rename,
+    setWhatItIs,
     setNotifications,
     forCheck,
     deviceOfController,

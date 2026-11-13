@@ -196,3 +196,51 @@ describe('USB map limits', () => {
     expect(over.activeProfile).toBe('Hornet');
   });
 });
+
+describe('DEV-017: what a device is, in the overview', () => {
+  it('says what RigReady reads of each device by itself, and what the user said beside it', () => {
+    const stick = device({
+      vendorId: '044F',
+      productId: '0402',
+      name: 'Joystick - HOTAS Warthog',
+      instanceId: 'USB\\VID_044F&PID_0402\\5&a&0&7',
+    });
+    const box = device({});
+    const overview = buildOverview(
+      inputs({
+        devices: [stick, box],
+        input: [
+          controller({
+            index: 3,
+            guid: 'G9',
+            vendorId: '',
+            productId: '',
+            name: 'Bluetooth wheel',
+          }),
+        ],
+        data: DevicesDataSchema.parse({
+          whatItIs: [
+            {
+              vendorId: '1234',
+              productId: '0001',
+              instanceId: box.instanceId,
+              kind: 'panel',
+              usedFor: 'both',
+            },
+            { vendorId: '0000', productId: '0000', guid: 'g9', usedFor: 'racing' },
+          ],
+        }),
+      })
+    );
+    const named = (name: string) => overview.devices.find((d) => d.name === name)!;
+    // Read from its name and its maker; nothing said.
+    expect(named('Joystick - HOTAS Warthog').reads).toEqual({ kind: 'stick', usedFor: 'flight' });
+    expect(named('Joystick - HOTAS Warthog').said).toBeUndefined();
+    // Nothing RigReady can read; the user said both parts.
+    expect(named('Box').reads).toEqual({ kind: 'other' });
+    expect(named('Box').said).toEqual({ kind: 'panel', usedFor: 'both' });
+    // A controller without a USB device: found by its GUID, in any case of the letters.
+    expect(named('Bluetooth wheel').reads).toEqual({ kind: 'wheel' });
+    expect(named('Bluetooth wheel').said).toEqual({ usedFor: 'racing' });
+  });
+});

@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import {
+  DEVICE_KINDS,
+  DEVICE_USES,
+  KIND_ICON,
+  KIND_NAME,
+  type DeviceKind,
+  type DeviceUse,
+} from '../../../core/gearKind';
 import type { RigDevice } from '../core/model';
 import { useDevicesStore } from './store';
 
@@ -23,6 +31,8 @@ const renameError = ref<string>();
 const field = ref<{ focus(): void } | null>(null);
 
 const icon = computed(() => {
+  // What the user said it is comes before anything its name says.
+  if (props.device.said?.kind) return KIND_ICON[props.device.said.kind];
   if (props.device.kind !== 'controller') return 'mdi-usb-port';
   const name = props.device.productName.toLowerCase();
   if (/wheel|dd2|base dd/.test(name)) return 'mdi-steering';
@@ -31,6 +41,50 @@ const icon = computed(() => {
   if (/joystick|stick|grip/.test(name)) return 'mdi-controller-classic-outline';
   return 'mdi-gamepad-square-outline';
 });
+
+/**
+ * "What is this device?": the user's word on the kind of gear and what it is used for.
+ * The first choice of each list is RigReady's own reading, which is what counts until the
+ * user says otherwise, and choosing it again takes an answer back.
+ */
+const READING = 'reading';
+const USE_NAME: Record<DeviceUse, string> = { flight: 'Flight', racing: 'Racing', both: 'Both' };
+const kindChoices = computed(() => [
+  {
+    title:
+      props.device.reads.kind === 'other'
+        ? 'Not known'
+        : `${KIND_NAME[props.device.reads.kind]}, from its name`,
+    value: READING,
+  },
+  ...DEVICE_KINDS.map((kind) => ({
+    title: kind === 'other' ? 'Something else' : KIND_NAME[kind],
+    value: kind as string,
+  })),
+]);
+const useChoices = computed(() => [
+  {
+    title: props.device.reads.usedFor
+      ? `${USE_NAME[props.device.reads.usedFor]}, from its maker`
+      : 'Not known',
+    value: READING,
+  },
+  ...DEVICE_USES.map((use) => ({ title: USE_NAME[use], value: use as string })),
+]);
+const saying = ref(false);
+const sayError = ref<string>();
+
+/** Stores one part of the answer and keeps the other as it is. The page then shows what is stored. */
+async function say(change: { kind?: string; usedFor?: string }): Promise<void> {
+  const part = <T extends string>(chosen: string | undefined, now: T | undefined): T | null =>
+    chosen === undefined ? (now ?? null) : chosen === READING ? null : (chosen as T);
+  saying.value = true;
+  sayError.value = await store.setWhatItIs(props.device.key, {
+    kind: part<DeviceKind>(change.kind, props.device.said?.kind),
+    usedFor: part<DeviceUse>(change.usedFor, props.device.said?.usedFor),
+  });
+  saying.value = false;
+}
 
 const identifiedBy = computed(() => {
   switch (props.device.identifiedBy) {
@@ -178,6 +232,50 @@ function test(): void {
             @click="startRename"
             >{{ device.givenName ? 'Rename' : 'Name it' }}</v-btn
           >
+        </dd>
+        <dt class="device-field-tall">What it is</dt>
+        <dd>
+          <v-select
+            :model-value="device.said?.kind ?? READING"
+            :items="kindChoices"
+            :disabled="saying"
+            density="compact"
+            variant="outlined"
+            hide-details
+            class="device-what"
+            aria-label="What it is"
+            data-testid="device-what-kind"
+            :data-said="device.said?.kind ?? ''"
+            @update:model-value="(value: string) => say({ kind: value })"
+          />
+        </dd>
+        <dt class="device-field-tall">Used for</dt>
+        <dd>
+          <v-select
+            :model-value="device.said?.usedFor ?? READING"
+            :items="useChoices"
+            :disabled="saying"
+            density="compact"
+            variant="outlined"
+            hide-details
+            class="device-what"
+            aria-label="Used for"
+            data-testid="device-what-use"
+            :data-said="device.said?.usedFor ?? ''"
+            @update:model-value="(value: string) => say({ usedFor: value })"
+          />
+          <div
+            v-if="sayError"
+            class="rr-bad device-note"
+            role="alert"
+            data-testid="device-what-error"
+          >
+            {{ sayError }}
+          </div>
+          <div class="rr-muted device-note" data-testid="device-what-hint">
+            Change these when RigReady has it wrong or does not know. They decide the picture beside
+            the device and which new setups tick it. What you choose stays on this PC.
+          </div>
         </dd>
         <dt>Reports itself as</dt>
         <dd>
@@ -380,6 +478,17 @@ function test(): void {
 .device-fields dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+/* A row with a list in it: the label sits level with the list, not above it. */
+.device-fields dt.device-field-tall {
+  padding-top: 10px;
+}
+.device-what {
+  max-width: 280px;
+}
+/* The lists read at the size of the fields around them. */
+.device-what :deep(.v-field) {
+  font-size: 14px;
 }
 .device-controller {
   display: flex;

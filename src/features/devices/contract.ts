@@ -1,10 +1,16 @@
 import { z } from 'zod';
+import { DEVICE_KINDS, DEVICE_USES } from '../../core/gearKind';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 import { DeviceInfoSchema, InputDeviceSchema, InputStateSchema } from '../../shared/models';
 import { BindingSourceSchema, BoundInputsSchema } from '../../core/boundInputs';
 import { HealthReportSchema } from './core/health';
 import { DeviceIdentitySchema } from './core/identity';
-import { NotificationModeSchema, OverviewSchema, UsbMapSchema } from './core/model';
+import {
+  DeviceSaidSchema,
+  NotificationModeSchema,
+  OverviewSchema,
+  UsbMapSchema,
+} from './core/model';
 
 export const devicesContract = defineContract(
   'devices',
@@ -45,6 +51,24 @@ export const devicesContract = defineContract(
       {
         describe:
           'Gives a device a name in RigReady; an empty name removes it. key is a device key from devices:overview.',
+        tier: 'change',
+      }
+    ),
+    /**
+     * Says what a device is and what it is used for, for a device RigReady cannot tell or
+     * has wrong. Null leaves that part unsaid (and takes an earlier answer back). Answers
+     * with what is now stored for the device. `key` is RigDevice.key.
+     */
+    setWhatItIs: channel(
+      z.object({
+        key: z.string().min(1),
+        kind: z.enum(DEVICE_KINDS).nullable(),
+        usedFor: z.enum(DEVICE_USES).nullable(),
+      }),
+      DeviceSaidSchema,
+      {
+        describe:
+          'Says what a device is (kind: stick, throttle, pedals, wheel, panel and so on) and what it is used for (usedFor: flight, racing or both), for a device RigReady cannot tell from its name or has wrong. null leaves that part unsaid and takes an earlier answer back. The answer decides the picture beside the device and which new setups keep it. It is kept in RigReady on this PC. key is a device key from devices:overview.',
         tier: 'change',
       }
     ),

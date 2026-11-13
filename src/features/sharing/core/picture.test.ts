@@ -208,6 +208,40 @@ describe('what the picture of a setup shows', () => {
   });
 });
 
+describe('DEV-017: what the owner said a device is, in the picture', () => {
+  it('draws the device as what the owner said, with the nearest drawing the picture has', async () => {
+    const app = await start();
+    const profile = await profileOf(app, 'dcs-f-a-18c');
+    const listed = await app.ports.devices.list();
+    if (!listed.ok) throw new Error('list');
+    const key = listed.value.find((d) => d.productId === 'B68F')!.instanceId;
+    const drawn = async (): Promise<string | undefined> =>
+      (await pictureModel(app.wiring.context, profile)).devices.find(
+        (d) => (d.model ?? d.name) === 'T-Pendular-Rudder'
+      )?.kind;
+    expect(await drawn()).toBe('pedals');
+    const drawings = [
+      ['wheel', 'wheel'],
+      ['yoke', 'stick'],
+      ['display', 'screen'],
+      ['tracker', 'tracker'],
+      ['shifter', 'other'],
+      ['keyboard', 'other'],
+    ] as const;
+    for (const [kind, drawing] of drawings) {
+      await app.invoke('devices:setWhatItIs', { key, kind, usedFor: null });
+      expect(await drawn(), kind).toBe(drawing);
+    }
+    // Only a use said: the drawing is told from the name, as before.
+    await app.invoke('devices:setWhatItIs', { key, kind: null, usedFor: 'racing' });
+    expect(await drawn()).toBe('pedals');
+    // Only the drawing goes into the picture: the answer is not among its words.
+    await app.invoke('devices:setWhatItIs', { key, kind: 'wheel', usedFor: 'racing' });
+    const model = await pictureModel(app.wiring.context, profile);
+    expect(JSON.stringify(model)).not.toMatch(/usedFor|saidKind|whatItIs|"said"/);
+  });
+});
+
 describe('nothing personal is in the picture', () => {
   it('has no serial, user name, PC name, path, device id or monitor id, whatever the setup and the names say', async () => {
     const app = await wiredApp('share-picture', {

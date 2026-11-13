@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import type { DeviceKind } from '../gearKind';
 import type { Logger } from '../logger';
 import type { Ports } from '../ports';
 import type { CheckGroup, CheckItem } from '../profile/schema';
@@ -298,6 +299,11 @@ export interface CaptureDevice {
   twin?: { index: number; of: number };
   /** The name the device reports, when the title is a name the owner gave it. */
   model?: string;
+  /**
+   * The kind of gear the user said this device is, on the Devices page. It comes before
+   * what the name says when the capture screen decides whether a game reads the device.
+   */
+  saidKind?: DeviceKind;
 }
 
 export interface CaptureMonitor {

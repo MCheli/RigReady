@@ -36,6 +36,28 @@ describe('the words of the offer', () => {
     });
   });
 
+  it('DEV-017: goes by what the owner said the device is before what its name says', () => {
+    expect(
+      suggestionWords({ name: 'ACC', device: 'Arduino Leonardo', kind: 'wheel', missing: 1 })
+    ).toEqual({
+      icon: 'mdi-steering',
+      title: 'Wheel connected: switch to ACC?',
+      sub: 'Arduino Leonardo is here, and 1 device this setup needs is not.',
+    });
+    // Said to be something else: it is called by its own name, whatever the name looks like.
+    expect(
+      suggestionWords({
+        name: 'Truck',
+        device: 'FANATEC Podium Wheel Base DD2',
+        kind: 'other',
+        missing: 2,
+      })
+    ).toMatchObject({
+      icon: 'mdi-usb',
+      title: 'FANATEC Podium Wheel Base DD2 connected: switch to Truck?',
+    });
+  });
+
   it('calls a device nobody knows the kind of by its own name', () => {
     expect(suggestionWords({ name: 'Truck', device: 'SKRS', missing: 2 })).toEqual({
       icon: 'mdi-usb',
@@ -203,5 +225,44 @@ describe('the setup the gear on the desk is for', () => {
     };
     expect((await suggestion())?.profileId).toBe(IRACING);
     expect(other).toBe(0);
+  });
+});
+
+describe('DEV-017: what the owner said the telling device is', () => {
+  it('goes along with the offer, and asking for it is no second look at the machine', async () => {
+    app = await wiredApp('fly-suggest');
+    const listed = await app.ports.devices.list();
+    if (!listed.ok) throw new Error('list');
+    const base = listed.value.find((d) => d.vendorId === '0EB7' && d.productId === '0007')!;
+    await app.invoke('devices:setWhatItIs', {
+      key: base.instanceId,
+      kind: 'panel',
+      usedFor: null,
+    });
+
+    const devices = app.ports.devices;
+    let reads = 0;
+    const list = devices.list.bind(devices);
+    devices.list = async () => {
+      reads += 1;
+      return list();
+    };
+    expect(await suggestion()).toEqual({
+      profileId: IRACING,
+      name: 'iRacing',
+      device: WHEEL,
+      kind: 'panel',
+      missing: 11,
+    });
+    expect(reads).toBe(1);
+
+    // Taken back: the offer is the one from before, told from the name.
+    await app.invoke('devices:setWhatItIs', { key: base.instanceId, kind: null, usedFor: null });
+    expect(await suggestion()).toEqual({
+      profileId: IRACING,
+      name: 'iRacing',
+      device: WHEEL,
+      missing: 11,
+    });
   });
 });

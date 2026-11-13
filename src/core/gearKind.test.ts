@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { GEAR_KINDS, deviceKind, playedWith } from './gearKind';
+import {
+  DEVICE_KINDS,
+  DEVICE_USES,
+  GEAR_KINDS,
+  KIND_ICON,
+  KIND_NAME,
+  deviceKind,
+  playedWith,
+} from './gearKind';
 
 describe('what kind of gear a name is', () => {
   it('tells flight gear, racing gear and the rest from the name Windows gives', () => {
@@ -53,5 +61,20 @@ describe('CFG-PROFILE-017: what a game is played with', () => {
   it('hands out its own list: changing the answer does not change the next one', () => {
     playedWith({ kind: 'flight' }).gear!.push('wheel');
     expect(playedWith({ kind: 'flight' }).gear).not.toContain('wheel');
+  });
+});
+
+describe('DEV-017: the kinds a device can be said to be', () => {
+  it('every kind has a picture and a word of its own, and every kind of sim gear is one of them', () => {
+    for (const kind of DEVICE_KINDS) {
+      expect(KIND_ICON[kind], kind).toMatch(/^mdi-/);
+      expect(KIND_NAME[kind], kind).toMatch(/^[A-Z]/);
+    }
+    expect(new Set(Object.values(KIND_NAME)).size).toBe(DEVICE_KINDS.length);
+    for (const gear of GEAR_KINDS) expect(DEVICE_KINDS).toContain(gear);
+    // What a name nobody knows reads as is a kind too: "something else".
+    expect(deviceKind('Arduino Leonardo')).toBe('other');
+    expect(DEVICE_KINDS).toContain('other');
+    expect(DEVICE_USES).toEqual(['flight', 'racing', 'both']);
   });
 });

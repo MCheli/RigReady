@@ -6,6 +6,7 @@ import {
   CommandPreviewSchema,
   StepResultSchema,
 } from '../../core/checks/engine';
+import { DEVICE_KINDS } from '../../core/gearKind';
 import { CheckGroupSchema } from '../../core/profile/schema';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 import { GameKindSchema, RotationSchema } from '../../shared/models';
@@ -38,6 +39,12 @@ export const RigGlanceSchema = z.object({
   itemId: z.string().optional(),
   /** Why the monitors cannot be drawn. */
   error: z.string().optional(),
+  /**
+   * The kind of gear the user said a device of the setup is (on the Devices page), by
+   * checklist item id. Only what was said: the picture of any other device is told from
+   * its name.
+   */
+  kinds: z.record(z.string(), z.enum(DEVICE_KINDS)).optional(),
 });
 export type RigGlance = z.infer<typeof RigGlanceSchema>;
 
@@ -50,6 +57,8 @@ export const SuggestionSchema = z.object({
   name: z.string(),
   /** The device that gives it away: required by that setup and not by the one on screen. */
   device: z.string(),
+  /** The kind of gear the user said that device is, when they said. Else its name tells. */
+  kind: z.enum(DEVICE_KINDS).optional(),
   /** How many devices the setup on screen requires that are not connected. */
   missing: z.number().int().min(1),
 });

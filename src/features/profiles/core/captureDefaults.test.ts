@@ -190,3 +190,35 @@ describe('CFG-PROFILE-018: the step a gamepad game needs', () => {
     expect(stepAction(step([stickPad]), 'gone', 'a1')).toBeUndefined();
   });
 });
+
+describe('DEV-017: what the user said a device is, in a new setup', () => {
+  const said = (kind: string, extra: Record<string, unknown> = {}) =>
+    device('Arduino Leonardo', { device: { saidKind: kind }, ...extra });
+
+  it('the kind the user said comes before the kind the name says', () => {
+    expect(gearOf(device('Arduino Leonardo'))).toBeUndefined();
+    expect(gearOf(said('wheel'))).toBe('wheel');
+    expect(gearOf(said('tracker'))).toBe('tracker');
+    // The name says wheel; the user says it is not sim gear at all.
+    const base = 'FANATEC Podium Wheel Base DD2';
+    expect(gearOf(device(base))).toBe('wheel');
+    expect(gearOf(device(base, { device: { model: base, saidKind: 'mouse' } }))).toBeUndefined();
+    expect(gearOf(device(base, { device: { model: base, saidKind: 'other' } }))).toBeUndefined();
+  });
+
+  it('a device said to be a wheel is kept for a racing sim and left unticked for a flight sim', () => {
+    // Nothing said: gear nobody can tell is kept for either.
+    expect(keptByDefault(device('Arduino Leonardo'), racing)).toBe(true);
+    expect(keptByDefault(device('Arduino Leonardo'), flight)).toBe(true);
+    expect(keptByDefault(said('wheel'), racing)).toBe(true);
+    expect(keptByDefault(said('wheel'), flight)).toBe(false);
+    expect(keptByDefault(said('stick'), flight)).toBe(true);
+    expect(keptByDefault(said('stick'), racing)).toBe(false);
+    // What it is used for narrows it further: a panel suits both, this one is for racing.
+    expect(keptByDefault(said('panel'), flight)).toBe(true);
+    expect(keptByDefault(said('panel', { kind: 'racing' }), flight)).toBe(false);
+    expect(keptByDefault(said('panel', { kind: 'racing' }), racing)).toBe(true);
+    // It stays offered either way: the user can tick it.
+    expect(offered({ ...said('wheel'), game: undefined }, flight)).toBe(true);
+  });
+});

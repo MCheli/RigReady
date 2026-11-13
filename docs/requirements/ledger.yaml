@@ -2479,6 +2479,54 @@ requirements:
       - "artifacts/screens/devices-tester-wheel/01-wheel-view.png"
       - "artifacts/screens/devices-tester-wheel/02-wheel-view-raw.png"
 
+  - id: DEV-017
+    title: The user can say what a device is and what it is used for, and every page that reads either goes by it
+    job: configure
+    area: devices
+    priority: p2
+    done_means:
+      - "On the Devices page an open row has two lists: 'What it is' (stick, yoke, throttle, pedals, wheel, shifter, head tracker, button deck, display unit, panel, headset, keyboard, mouse, something else) and 'Used for' (flight, racing, both). The first line of each is RigReady's own reading with where it comes from ('Keyboard, from its name', 'Flight, from its maker') or 'Not known'; choosing it takes the answer back. A choice is stored at once and the row shows what is stored."
+      - "The answer is kept in RigReady's data folder (devices.json), under the identity a name is kept under and found by the same rules: the model, a unique serial or the port, a controller without a USB device by its GUID, and never a guess between identical devices. A file from before reads as no answers. No setup and no shared bundle carries it."
+      - "Any feature asks through core: (await ctx.names.devices()).whatIs(query). The Play page's rig strip and suggestion, a new setup's defaults and the picture of a setup put the user's answer before the reading from the name or the maker."
+      - "A new setup: gear said to be for racing is ticked for a racing game and not for a flight sim, and the other way round; 'both' is ticked for either. A device said to be sim gear is proposed even when Windows does not list it as a game controller; one said to be a keyboard, a mouse or something else is listed with the other USB devices and not ticked. Setups that exist do not change."
+      - "With nothing said everything reads as before. Asking costs the Play page's suggestion no second look at the machine."
+      - "For a device or a controller that is no longer connected the page gets an error in words and nothing is stored. A kind or a use outside the lists is refused."
+    notes:
+      - "2026-11-12: items 11 and 12 of the fixed-lists audit. The scenario's controller (an Arduino Leonardo board, 2341:8036) is written by hand, not recorded. Not tried on the real rig."
+      - "2026-11-12: the Devices row and the picture of a setup each still read a name by rules of their own. Both now put the user's answer first; with nothing said they can still differ from the Play page for some names."
+    status: done
+    evidence:
+      - "src/features/devices/core/store.test.ts#is kept under the identity a name is kept under, and found by the same rules"
+      - "src/features/devices/core/store.test.ts#one part can be said without the other; a new answer replaces the old; nothing said removes it"
+      - "src/features/devices/core/store.test.ts#a controller without a USB device of its own is answered for by its GUID"
+      - "src/features/devices/core/store.test.ts#a file from before has no answers, and an answer outside the lists is not read"
+      - 'src/features/devices/core/family.test.ts#comes before what RigReady knows of the maker; "both" is no family; nothing said is the maker'
+      - "src/features/devices/core/deviceCheck.test.ts#proposes what the user said is sim gear, whatever Windows lists it as, with its picture and its family"
+      - "src/features/devices/core/overview.test.ts#says what RigReady reads of each device by itself, and what the user said beside it"
+      - "src/features/devices/main.test.ts#keeps what the user says a device is beside what RigReady reads, part by part, and it survives a restart"
+      - "src/features/devices/main.test.ts#answers for a controller without a USB device by its GUID, and refuses what it cannot keep"
+      - "src/features/fly/core/rig.test.ts#says the kind by checklist item, only for the devices something was said about, monitors or not"
+      - "src/features/fly/core/suggest.test.ts#goes along with the offer, and asking for it is no second look at the machine"
+      - "src/features/profiles/core/captureDefaults.test.ts#the kind the user said comes before the kind the name says"
+      - "src/features/profiles/core/captureDefaults.test.ts#a device said to be a wheel is kept for a racing sim and left unticked for a flight sim"
+      - "src/features/profiles/core/capture.test.ts#gear the user said is for racing counts for the family, whatever Windows lists it as"
+      - "src/features/sharing/core/picture.test.ts#draws the device as what the owner said, with the nearest drawing the picture has"
+      - "src/core/gearKind.test.ts#every kind has a picture and a word of its own, and every kind of sim gear is one of them"
+      - "src/core/names.test.ts#hands the devices the asker has just read to the source, so they are not listed twice"
+      - "src/core/names.test.ts#with no source, a source that only knows names, or one that fails, nothing is known and nothing breaks"
+      - "tests/unit/deviceWhatItIs.test.ts#a controller no list knows is offered to a flight and a racing setup alike, with no picture of its own"
+      - "tests/unit/deviceWhatItIs.test.ts#once the user says it is a wheel for racing, the names port, a new setup, the rig strip and the picture all go by that"
+      - "tests/unit/deviceWhatItIs.test.ts#a device said to be for both is kept for either family; one said to be a mouse is left for the user to tick"
+      - "tests/e2e/devices-what-is.e2e.ts#devices: the user says what an unknown controller is, and new setups and the Play page go by it"
+      - "artifacts/screens/devices-what-is/01-not-known.png"
+      - "artifacts/screens/devices-what-is/02-read-by-rigready.png"
+      - "artifacts/screens/devices-what-is/03-choices.png"
+      - "artifacts/screens/devices-what-is/04-said-wheel-for-racing.png"
+      - "artifacts/screens/devices-what-is/05-new-racing-setup.png"
+      - "artifacts/screens/devices-what-is/06-new-flight-setup.png"
+      - "artifacts/screens/devices-what-is/07-play-page.png"
+      - "artifacts/screens/devices-what-is/08-taken-back.png"
+
   # ---------------------------------------------------------------------------
   # THE FINAL PASS — the tools: troubleshooting and learning the rig
   # ---------------------------------------------------------------------------
