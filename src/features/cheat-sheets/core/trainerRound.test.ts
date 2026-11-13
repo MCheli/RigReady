@@ -307,6 +307,70 @@ describe('a switch that stays where it is put', () => {
     expect(round.note).toBeUndefined();
   });
 
+  it('three-way, put back slowly: the next card waits for it, and the way back does not answer it', () => {
+    // The card after "up" asks for the place the switch rests in.
+    const round = begin(
+      [card('up', on(THROTTLE, 20)), card('down', on(THROTTLE, 21))],
+      [[0, THROTTLE, [21]]]
+    );
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, []],
+          [1120, THROTTLE, [20]],
+          // Over half a second in the middle on the way back down.
+          [2500, THROTTLE, []],
+          [3100, THROTTLE, [21]],
+        ],
+        8000
+      )
+    ).toEqual(['1470 kept up right', '1470 right up', '3400 asking down']);
+    // It is back where it rests, which is what the card asks: that is said, not counted.
+    expect(round.session.phase).toBe('asking');
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:21' }]);
+    expect(round.session.results()).toMatchObject({ firstTry: 1, missed: [] });
+  });
+
+  it('a lever with a button for each place, resting on the way back: the next card waits for it too', () => {
+    // Button 30 where it rests, 31 half way, 32 at the far end. The next card asks for 30.
+    const round = begin(
+      [card('far', on(THROTTLE, 32)), card('home', on(THROTTLE, 30))],
+      [[0, THROTTLE, [30]]]
+    );
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, [31]],
+          [1100, THROTTLE, [32]],
+          // Back by way of the middle, with a rest there.
+          [2500, THROTTLE, [31]],
+          [3200, THROTTLE, [30]],
+        ],
+        8000
+      )
+    ).toEqual(['1450 kept far right', '1450 right far', '3500 asking home']);
+    expect(round.session.phase).toBe('asking');
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:30' }]);
+  });
+
+  it('three-way, left in the middle: the next card comes after two seconds all the same', () => {
+    const round = begin(threeWay, [[0, THROTTLE, [21]]]);
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, []],
+          [1120, THROTTLE, [20]],
+          [2500, THROTTLE, []],
+        ],
+        8000
+      )
+    ).toEqual(['1470 kept up right', '1470 right up', `${2500 + MAX_REST_MS} asking b`]);
+    expect(round.note).toBeUndefined();
+  });
+
   it('three-way, put back late: on the next card it is told and not counted', () => {
     const round = begin(threeWay, [[0, THROTTLE, [21]]]);
     expect(
@@ -317,18 +381,37 @@ describe('a switch that stays where it is put', () => {
           [1120, THROTTLE, [20]],
           // Left in the middle until the next card is up, then put back down.
           [2500, THROTTLE, []],
-          [3100, THROTTLE, [21]],
+          [5000, THROTTLE, [21]],
         ],
         8000
       )
     ).toEqual([
       '1470 kept up right',
       '1470 right up',
-      '2800 asking b',
-      '3450 not counted button:21: back-to-rest',
+      '4500 asking b',
+      '5350 not counted button:21: back-to-rest',
     ]);
     expect(round.session.phase).toBe('asking');
     expect(round.session.results().missed).toEqual([]);
+  });
+
+  it('in place and asked for: moved away to let go of it, the next card does not wait for it', () => {
+    // Button 11 is held when its card comes up. Away and back answers it; away again lets go.
+    const round = begin(
+      [card('flip', on(THROTTLE, 11)), card('b', on(THROTTLE, 6))],
+      [[0, THROTTLE, [11]]]
+    );
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, [10]],
+          [1300, THROTTLE, [11]],
+          [2500, THROTTLE, [10]],
+        ],
+        8000
+      )
+    ).toEqual(['1650 kept flip right', '1650 right flip', '2800 asking b']);
   });
 
   it('already where the card asks: answers when it is moved away and straight back', () => {
@@ -808,8 +891,31 @@ describe('the sitting of 12 November 2026, played back', () => {
     expect(round.session.results().missed.map((c) => c.id)).toEqual(['Left throttle to IDLE']);
   });
 
-  it('243.8 s, with a slower hand: the handle reaches OFF after "Zoom in" is up', () => {
+  it('243.8 s, with a slower hand: "Zoom in" waits until the handle is at OFF again', () => {
     const round = begin(handles, [[0, THROTTLE, [1, 2]]], [THROTTLE]);
+    round.reveal(240_000);
+    expect(
+      play(
+        round,
+        [
+          [242_250, THROTTLE, [1]],
+          [242_350, THROTTLE, [1, 31]],
+          // Off the detent, and 600 ms on the way before it is at OFF.
+          [243_700, THROTTLE, [1]],
+          [244_300, THROTTLE, [1, 2]],
+        ],
+        249_999
+      )
+    ).toEqual(['242700 corrected Left throttle to IDLE', '244600 asking Zoom in']);
+    expect(round.note).toBeUndefined();
+  });
+
+  it('243.8 s, with a slower hand and "Left throttle to OFF" next: the way back is not its answer', () => {
+    const round = begin(
+      [handles[0]!, card('Left throttle to OFF', on(THROTTLE, 2))],
+      [[0, THROTTLE, [1, 2]]],
+      [THROTTLE]
+    );
     round.reveal(240_000);
     expect(
       play(
@@ -822,10 +928,29 @@ describe('the sitting of 12 November 2026, played back', () => {
         ],
         249_999
       )
+    ).toEqual(['242700 corrected Left throttle to IDLE', '244600 asking Left throttle to OFF']);
+    expect(round.session.phase).toBe('asking');
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:2' }]);
+  });
+
+  it('243.8 s, with a hand that takes over two seconds: back at OFF on the next card, it is told and not counted', () => {
+    const round = begin(handles, [[0, THROTTLE, [1, 2]]], [THROTTLE]);
+    round.reveal(240_000);
+    expect(
+      play(
+        round,
+        [
+          [242_250, THROTTLE, [1]],
+          [242_350, THROTTLE, [1, 31]],
+          [243_700, THROTTLE, [1]],
+          [246_500, THROTTLE, [1, 2]],
+        ],
+        249_999
+      )
     ).toEqual([
       '242700 corrected Left throttle to IDLE',
-      '244000 asking Zoom in',
-      '244650 not counted button:2: back-to-rest',
+      '245700 asking Zoom in',
+      '246850 not counted button:2: back-to-rest',
     ]);
     expect(round.session.phase).toBe('asking');
   });

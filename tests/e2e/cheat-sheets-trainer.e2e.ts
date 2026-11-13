@@ -562,7 +562,18 @@ test('trainer: only a control that is held or tapped answers a card; one on its 
   expect(cards.filter((c) => c.wrong > 0 || c.right !== 1)).toEqual([]);
 });
 
-test('trainer: an action bound in several places is named and lit in every one of them, and any of them is right', async ({
+interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+/** A box that is not on the page: no comparison with it holds. */
+const NOWHERE: Box = { x: NaN, y: NaN, width: NaN, height: NaN };
+/** A full HD screen at 125%, less the taskbar: a common window with room for two drawings. */
+const WIDE = { width: 1536, height: 816 };
+
+test('trainer: an action bound in several places is named and lit in every one of them, any of them is right, and two drawings are side by side in a wide window', async ({
   rig,
 }) => {
   test.setTimeout(240_000);
@@ -721,7 +732,21 @@ test('trainer: an action bound in several places is named and lit in every one o
     if (now.card.id === up.id && !shown) {
       shown = true;
       await expect(verdict).toContainText('Press the control for it on Stick or Throttle');
-      await expect(trainer.getByTestId('trainer-device-panel')).toHaveCount(2);
+      const panels = trainer.getByTestId('trainer-device-panel');
+      await expect(panels).toHaveCount(2);
+      const boxes = async (): Promise<[Box, Box]> => {
+        const at = async (i: number): Promise<Box> =>
+          (await panels.nth(i).boundingBox()) ?? NOWHERE;
+        return [await at(0), await at(1)];
+      };
+      const sideBySide = async (): Promise<boolean> => {
+        const [a, b] = await boxes();
+        return Math.abs(a.y - b.y) < 1 && b.x >= a.x + a.width;
+      };
+      const oneBelowTheOther = async (): Promise<boolean> => {
+        const [a, b] = await boxes();
+        return Math.abs(a.x - b.x) < 1 && b.y >= a.y + a.height;
+      };
       await trainer.getByTestId('trainer-show').click();
       await expect(verdict).toHaveAttribute('data-phase', 'shown');
       await expect(verdict).toContainText(
@@ -733,12 +758,44 @@ test('trainer: an action bound in several places is named and lit in every one o
       await lit(pictureOf(throttleKey), 'button:25', 'target');
       await lit(pictureOf(throttleKey), 'button:28', 'target');
       expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+
+      // The window as it opens has no room for two drawings that can be read: they are one
+      // below the other, and the second one is further down the page.
+      const narrow = await page.evaluate(() => {
+        const { innerWidth, innerHeight } = globalThis as unknown as {
+          innerWidth: number;
+          innerHeight: number;
+        };
+        return { width: innerWidth, height: innerHeight };
+      });
+      expect(narrow.width).toBeLessThan(1500);
+      await expect.poll(oneBelowTheOther).toBe(true);
+
+      // A wide window (a full HD screen at 125%, less the taskbar): the two drawings are side
+      // by side, as wide as each other, and on screen whole together with the card. Hands are
+      // on the controls: there is nothing to scroll to see what is lit.
+      await page.setViewportSize(WIDE);
+      await expect.poll(sideBySide).toBe(true);
+      const [left, right] = await boxes();
+      expect(left.width).toBeGreaterThanOrEqual(400);
+      expect(Math.abs(left.width - right.width)).toBeLessThan(1);
+      await expect(trainer.getByTestId('trainer-card')).toBeInViewport({ ratio: 1 });
+      await expect(panels.nth(0)).toBeInViewport({ ratio: 1 });
+      await expect(panels.nth(1)).toBeInViewport({ ratio: 1 });
+      await lit(pictureOf(stickKey), 'button:32', 'target');
+      await lit(pictureOf(throttleKey), 'button:25', 'target');
+      expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
       await shot('lit-on-both-devices');
-      // The two pictures are taller than the window: the second one, further down.
+
+      // Narrow again: one below the other, as before.
+      await page.setViewportSize(narrow);
+      await expect.poll(oneBelowTheOther).toBe(true);
       await pictureOf(throttleKey).scrollIntoViewIfNeeded();
       await shot('lit-on-the-other-device');
-      await verdict.scrollIntoViewIfNeeded();
+
       // The one on the stick is it too, and the page says where the others are.
+      await page.setViewportSize(WIDE);
+      await expect.poll(sideBySide).toBe(true);
       await run.sendInput([stateOf(stick, ['button:32'])]);
       await expect(verdict).toHaveAttribute('data-phase', 'corrected');
       await expect(verdict).toContainText(
@@ -746,8 +803,13 @@ test('trainer: an action bound in several places is named and lit in every one o
       );
       await expect(pictureOf(stickKey)).toHaveAttribute('data-right', 'button:32');
       await expect(pictureOf(throttleKey)).toHaveAttribute('data-right', 'button:25 button:28');
+      expect(await sideBySide()).toBe(true);
       await shot('right-on-either-device');
       await run.sendInput([stateOf(stick)]);
+      await all.movedOn(now.ask);
+      // A card on one device has the page at the width it always had.
+      await page.setViewportSize(narrow);
+      continue;
     } else {
       await all.hold(now.answer);
       await expect(verdict).toHaveAttribute('data-phase', 'right');

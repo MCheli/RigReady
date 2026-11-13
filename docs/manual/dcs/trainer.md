@@ -10,9 +10,11 @@ order: 100
 
 A card is one action that a button or a hat direction of a connected controller ([Devices](../hardware/devices.md)) does when pressed on its own. Axes are not pressed, a control that needs a modifier is two things to learn at once, and keyboard keys are not on a controller, so none of those make cards. When you have bindings of your own for the aircraft, only those are asked; what DCS binds by default on every device is not what anyone flies with. Each card shows the plain-language name from the [binding guide](binding-guide-and-ai.md) where there is one, and what DCS calls it.
 
-An action that is bound in more than one place is still one card. Every place is named and lit on the picture, as in "Button 25 or Button 28 on Throttle", and any of them is right. When the places are on two devices, both pictures are shown.
+An action that is bound in more than one place is still one card. Every place is named and lit on the picture, as in "Button 25 or Button 28 on Throttle", and any of them is right. When the places are on two devices, both pictures are shown. In a wide window, about 1500 pixels or more, they are side by side, so that you see what is lit without scrolling while your hands are on the controls. In a narrower window they are one below the other.
 
 ![An action bound to two buttons, both lit after a miss](../../../artifacts/screens/cheat-sheets-trainer-places/01-both-places-after-a-miss.png)
+
+![An action on two devices, the two pictures side by side](../../../artifacts/screens/cheat-sheets-trainer-places/04-lit-on-both-devices.png)
 
 **Practise** narrows a round to one device or takes all of them. A round for one device asks only for the places on that device. A device of the sheet that is not connected is left out and named.
 
@@ -32,7 +34,7 @@ At the end the page says how many of the cards were right first time and lists t
 
 ## What counts as an answer
 
-A control answers a card when you tap it or hold it for a moment, about a third of a second. While you hold it, a thin line grows across the card until it counts. The next card comes once you have let go of it and the controls are still, so the way back to rest happens before the next card and not on it.
+A control answers a card when you tap it or hold it for a moment, about a third of a second. While you hold it, a thin line grows across the card until it counts. The next card comes once you have let go of it, the controls are still and every switch is back where it was when the card came up, so the way back to rest happens before the next card and not on it. A switch that you do not put back holds the next card for two seconds and no longer.
 
 A control that is only passed on the way, like the positions a lever goes through before it stops, is not an answer. Nothing is said of it and it is not a miss.
 

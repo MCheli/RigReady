@@ -21,8 +21,11 @@ import { TrainerSession, type Press, type TrainerCard, type Verdict } from './tr
  *     one on a controller the round is not about are told to the user and not counted.
  *     The right control always counts.
  *  4. The next card comes when the control that answered is let go, the verdict has been
- *     up long enough to read, and nothing on the controllers has changed or travelled for
- *     a moment: the way back to rest happens before the card, not on it.
+ *     up long enough to read, nothing on the controllers has changed or travelled for a
+ *     moment, and every switch is back where it was when the card came up: the way back
+ *     to rest happens before the card, not on it. A slow way back would otherwise end on
+ *     the next card, and answer it if that card asks for the place the switch rests in.
+ *     A switch that is left where it was put holds the next card back for MAX_REST_MS.
  *
  * Time is passed in, so a recorded sequence plays back the same way every time.
  */
@@ -35,7 +38,10 @@ export const TAP_QUIET_MS = 200;
 export const SHOW_MS = 650;
 /** The next card waits until the controllers have been still for this long. */
 export const REST_MS = 300;
-/** But no longer than this, for a rig that never is: an axis that wanders, a hand on a lever. */
+/**
+ * But no longer than this, for a rig that never is: an axis that wanders, a hand on a lever,
+ * a switch that is not put back.
+ */
 export const MAX_REST_MS = 2000;
 /** Axis travel (of the full -1..1 range) that means a lever is on its way; less is jitter. */
 export const AXIS_TRAVEL = 0.15;
@@ -117,6 +123,8 @@ export class TrainerRound {
   private seen = new Set<string>();
   /** The same for the card before. */
   private carried = new Set<string>();
+  /** Controls that were held when the card on screen came up: where things were. */
+  private home: Press[] = [];
   private verdictAt = 0;
   /** When anything last changed or travelled on any controller. */
   private activity = -Infinity;
@@ -183,7 +191,9 @@ export class TrainerRound {
     );
     const free = this.freeAt();
     if (free !== undefined) {
-      times.push(Math.max(free, Math.min(this.activity + REST_MS, free + MAX_REST_MS)));
+      const latest = free + MAX_REST_MS;
+      // A switch on its way back brings the card by being put back, which is input, not time.
+      times.push(this.away() ? latest : Math.max(free, Math.min(this.activity + REST_MS, latest)));
     }
     return times.length > 0 ? Math.min(...times) : undefined;
   }
@@ -242,6 +252,7 @@ export class TrainerRound {
       for (const control of held) {
         this.rested.add(key(guid, control));
         this.seen.add(key(guid, control));
+        this.home.push({ guid, control });
       }
       return;
     }
@@ -354,7 +365,7 @@ export class TrainerRound {
 
   /**
    * When the card on screen is done with and the answering control let go: from then on
-   * the next card waits only for the controllers to be still.
+   * the next card waits only for the controllers to be still and back where they were.
    */
   private freeAt(): number | undefined {
     const { phase, answered } = this.session;
@@ -364,10 +375,27 @@ export class TrainerRound {
     return Math.max(this.verdictAt + SHOW_MS, known?.changed.get(answered.control) ?? -Infinity);
   }
 
+  /**
+   * A switch of the round that was in its place when the card came up is not there now: it
+   * is on its way back, or it was left where it was put. A way back that ended on the next
+   * card would answer it, if that card asks for the place the switch rests in. The control
+   * that answered is not waited for: letting go of it is what brings the next card.
+   */
+  private away(): boolean {
+    const answered = this.session.answered;
+    return this.home.some(
+      ({ guid, control }) =>
+        (!this.devices || this.devices.has(guid)) &&
+        !(answered?.guid === guid && answered.control === control) &&
+        !(this.known.get(guid)?.held.has(control) ?? false)
+    );
+  }
+
   private atRest(now: number): boolean {
     const free = this.freeAt();
     if (free === undefined || now < free) return false;
-    return now - this.activity >= REST_MS || now - free >= MAX_REST_MS;
+    if (now - free >= MAX_REST_MS) return true;
+    return now - this.activity >= REST_MS && !this.away();
   }
 
   private advance(step: RoundStep): void {
@@ -378,10 +406,12 @@ export class TrainerRound {
     // is held now is where things rest.
     this.carried = this.seen;
     this.seen = new Set();
+    this.home = [];
     for (const [guid, known] of this.known) {
       for (const control of known.held) {
         this.seen.add(key(guid, control));
         this.rested.add(key(guid, control));
+        this.home.push({ guid, control });
       }
     }
     if (this.session.phase === 'done') step.finished = true;
