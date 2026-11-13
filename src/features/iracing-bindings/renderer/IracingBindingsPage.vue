@@ -17,6 +17,7 @@ import {
 } from '../contract';
 import DeviceState from './DeviceState.vue';
 import EditDialog from './EditDialog.vue';
+import GoneDevices from './GoneDevices.vue';
 import { listed } from '../core/names';
 import ProfilesSection from './ProfilesSection.vue';
 import { shownActions } from './rows';
@@ -440,6 +441,8 @@ const cheatSheet = computed(() => ({
               </div>
             </div>
           </section>
+
+          <GoneDevices :set="view.set.id" :repair-route="overview.repairRoute" />
 
           <section class="ib-section" data-testid="iracing-bindings-shared">
             <div class="ib-section-head">

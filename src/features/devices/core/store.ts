@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
 import { JsonStore } from '../../../core/jsonStore';
-import type { DeviceNameQuery, DeviceNames, DeviceSaid } from '../../../core/names';
+import type { DeviceKnown, DeviceNameQuery, DeviceNames, DeviceSaid } from '../../../core/names';
 import type { Clock, FileStore, KnownFolders } from '../../../core/ports';
 import { ok, type Result } from '../../../core/result';
 import type { DeviceInfo, InputDevice } from '../../../shared/models';
@@ -153,12 +153,18 @@ export function saidOf(
  * The name is only ever something to show; what a check matches on stays the identity.
  *
  * What the user said a device is (`what`, answered by `whatIs`) is found the same way.
+ *
+ * `known` answers from `seen` (the history) and from the names and answers: a model is the
+ * owner's when one was seen plugged in on this PC, or named, or said what it is. Without
+ * `seen` (the history could not be read) there is no `known` at all, so no asker takes a
+ * damaged history for "never seen".
  */
 export function deviceNames(
   entries: NameEntry[],
   devices: DeviceInfo[],
   controllers: Pick<InputDevice, 'guid' | 'usbInstanceId'>[] = [],
-  what: WhatEntry[] = []
+  what: WhatEntry[] = [],
+  seen?: SeenEntry[]
 ): DeviceNames {
   const present = devices.filter((d) => !d.isHub);
   const narrowed = <T extends { serial?: string | undefined; instanceId?: string | undefined }>(
@@ -196,9 +202,19 @@ export function deviceNames(
     );
     return stored.length === 1 ? stored[0] : undefined;
   };
+  const known = (model: { vendorId: string; productId: string }): DeviceKnown | undefined => {
+    const sighting = [...(seen ?? [])]
+      .filter((e) => sameModel(e, model))
+      .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen))[0];
+    if (sighting) return { name: sighting.name, lastSeen: sighting.lastSeen };
+    const named = entries.find((e) => sameModel(e, model));
+    if (named) return { name: named.name };
+    return what.some((e) => sameModel(e, model)) ? {} : undefined;
+  };
   return {
     nameOf: (query) => lookup(entries, query)?.name,
     whatIs: (query) => saidOf(lookup(what, query)),
+    ...(seen ? { known } : {}),
   };
 }
 

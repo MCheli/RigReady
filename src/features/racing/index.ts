@@ -45,6 +45,11 @@ export default defineFeature({
       group: 'files',
     },
     { type: 'racing.iracingService', label: 'iRacing helper service running', group: 'apps' },
+    {
+      type: 'racing.iracingCalibration',
+      label: 'Wheel and pedals calibrated in iRacing',
+      group: 'files',
+    },
     { type: 'racing.bindingSet', label: 'Racing bindings are the saved set', group: 'files' },
     {
       type: 'racing.wheelSettings',

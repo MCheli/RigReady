@@ -1,0 +1,22 @@
+description: iRacing bindings that name controllers no longer on the PC, and one that is only unplugged
+rig: mark-full
+extends: iracing-bindings-profiles.yaml
+# The control profile "Baseline" of iracing-bindings-profiles, with seven more bindings on
+# three controllers that are not plugged in (made-up ids, written by a script from the layout
+# in docs/research/iracing-bindings.md; src/features/iracing-bindings/core/cleanup.test.ts
+# holds the file to that):
+# - "Load Cell Pedals" (USB 1209:5ED1): Throttle2, Brake2 and Clutch2 on its axes. RigReady has
+#   never seen it on this PC: gone.
+# - a button box (USB 1209:5ED2) that joyCalib.yaml does not name: Flash headlights, Push to
+#   pass and DRS on buttons 1, 3 and 4. Never seen: gone.
+# - the recorded rig's T-Pendular-Rudder (unplugged by racing-fresh): Handbrake on its axis 2.
+#   The Devices page's history saw it on 10 Nov 2026, so it is the owner's and only unplugged.
+mutations:
+  - op: writeFile
+    path: Documents/iRacing/profiles/controls/Baseline/controls.cfg
+    from: data/iracing-bindings/profile-cleanup.cfg
+  - op: writeFile
+    path: Documents/iRacing/profiles/controls/Baseline/joyCalib.yaml
+    from: data/iracing-bindings/profile-cleanup-joyCalib.yaml
+data:
+  devices-history.json: data/iracing-bindings/devices-history-cleanup.json

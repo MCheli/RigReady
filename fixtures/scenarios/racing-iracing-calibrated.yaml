@@ -1,0 +1,9 @@
+description: iRacing with a control profile, the wheel plugged in and calibrated in it
+rig: mark-full
+extends: iracing-bindings-profiles.yaml
+# The control profile "Baseline" names the DD2 in its joyCalib.yaml under the id the wheel
+# has now, with its four axes measured (the owner's real file with the recorded rig's
+# made-up id). The pedals are plugged into the base, so they are axes of it. The setup has
+# the check "Wheel and pedals calibrated in iRacing".
+profiles:
+  - profiles/racing-iracing-calibration.yaml
