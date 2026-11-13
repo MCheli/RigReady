@@ -211,3 +211,11 @@ The TWCS is the throttle of Thrustmaster's T.16000M FCS HOTAS, which the market 
 - **Names.** Thrustmaster names only the mini-stick, the antenna axis, the rocker and the POV; the other controls are numbers. The map names them by where they are: "Wheel switch", "Button by the wheel" (3), "Button by the dial" (2), "Middle hat" (7 to 10), "Lower hat" (11 to 14), "Bottom button" (1), and the pedals' three axes as one control, "TFRP pedals, plugged in", anchored at the socket.
 - The manual draws the two sides without saying which is the left one, so the views are named by what is on them ("Side with the mini-stick", "Side with the hats"), and each hat's ways are as the manual draws them looking at that side.
 - Still assumed: nothing. Nothing on this drawing carries a "?". Not checked by a press: nobody at the rig has a TWCS.
+
+### Looked at the same evening and not drawn
+
+- **Thrustmaster T.Flight HOTAS X (044F:B108)**, the most sold set in the market research. Its manual (the copy at manualsdir.com, `manuals/753181`) numbers the parts of the set 1 to 13, but all the action buttons are one number ("11. Action buttons"), so it says which buttons there are, not which number each one sends. The game's defaults name actions, not controls. No drawing and no named map yet.
+- **Logitech Extreme 3D Pro (046D:C215)**, the one stick of the generic test PC. Its buttons carry their numbers on the device, but no copy of Logitech's guide with the numbered figure could be opened this evening, and the game ships no defaults for it. Left for a source that can be read.
+- **Thrustmaster T.16000M, key by key.** The drawing keeps naming each bank of base buttons as one control. The copies of its manual that could be opened were either too large to fetch or a retailer's text without Thrustmaster's figure, so which key of a bank is which number is still not settled.
+- **Logitech / Saitek X56 (X-56 Rhino)**: its user manual (the copy Amazon hosts, `m.media-amazon.com/images/I/B1RrYk4zbuL.pdf`) shows the stick and the throttle with groups of controls lettered A to G ("Thumb HATs, switches and castle", "Base controls with 7 toggles and 2 rotaries") and numbers none; the game has defaults for it in the F-16C only. No drawing.
+- **VKB Gladiator, TCA Sidestick and Quadrant**: not reached this evening; section 8's method applies to each when it is.
