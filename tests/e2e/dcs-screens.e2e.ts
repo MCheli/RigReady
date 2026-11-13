@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from './harness';
 import { expectSaveBarPinned } from './saveBar';
+import { expectUnderPointer, middle, steadyBox, stillPage } from './settled';
 
 /**
  * The DCS Screens tab after the sitting of 12 November: the screens carry the names the
@@ -39,12 +40,30 @@ async function openScreens(page: Page): Promise<void> {
   await expect(page.getByTestId('screen-map-box')).toHaveCount(3);
 }
 
-/** Chooses in one of the tab's monitor lists, and waits until the list has closed again. */
+/**
+ * Chooses in one of the tab's monitor lists, and waits until the list has closed again.
+ * An open list moves with the page, and the page still moves after a choice: the list that
+ * closes hands the focus back to its field, which can scroll the page, and the preview of the
+ * edit arrives later. A click measured before such a move lands beside the option, and on
+ * GitHub's runners the list stayed open on its old value. So the page is let come to rest
+ * first, and the option is checked to be under the pointer before the button goes down.
+ */
 async function choose(page: Page, testId: string, option: string): Promise<void> {
   const open = page.locator('.v-overlay--active [role="listbox"]');
-  await page.getByTestId(testId).click();
-  await open.getByRole('option', { name: option, exact: true }).click();
+  const field = page.getByTestId(testId);
+  await expect(page.getByTestId('save-bar-why').filter({ hasText: 'Checking' })).toHaveCount(0);
+  await stillPage(page);
+  await field.click();
+  const item = open.getByRole('option', { name: option, exact: true });
+  await expect(item).toBeVisible();
+  await stillPage(page);
+  const point = middle(await steadyBox(item));
+  await page.mouse.move(...point);
+  await expectUnderPointer(item, point);
+  await page.mouse.down();
+  await page.mouse.up();
   await expect(open).toHaveCount(0);
+  await expect(field).toContainText(option);
 }
 
 const pair = (page: Page, planId: string) =>

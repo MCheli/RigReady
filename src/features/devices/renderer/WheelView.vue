@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { InputDevice } from '../../../shared/models';
-import { axisRaw } from '../core/input';
-import { pedalTravel, steering, type WheelAxis, type WheelAxisRole } from '../core/wheelAxes';
+import { axisRaw, axisWindowsLabel } from '../core/input';
+import {
+  clutchAxis,
+  pedalTravel,
+  steering,
+  type WheelAxis,
+  type WheelAxisRole,
+} from '../core/wheelAxes';
 import { useInputStore } from './store';
 
 /**
@@ -39,18 +45,36 @@ const wheel = computed(() => {
   };
 });
 
+/** The clutch can be on two axes, by the base's pedal mode; the bar follows the one that moves. */
+const clutchOnTwo = computed(
+  () =>
+    props.axes.some((a) => a.role === 'clutch') &&
+    props.axes.some((a) => a.role === 'clutchOrCombined')
+);
+
 const pedals = computed(() => {
   void input.versions[props.device.index];
+  const key = (index: number): string => `${props.device.index}:${index}`;
   return PEDALS.flatMap((role) => {
-    const axis = props.axes.find((a) => a.role === role);
+    const axis =
+      role === 'clutch'
+        ? clutchAxis(props.axes, (index) => ({
+            rest: input.rests.get(key(index)),
+            range: input.ranges.get(key(index)),
+          }))
+        : props.axes.find((a) => a.role === role);
     if (!axis) return [];
     const value = state.value?.axes[axis.index];
-    const rest = input.rests.get(`${props.device.index}:${axis.index}`);
+    const rest = input.rests.get(key(axis.index));
     const percent = value === undefined ? undefined : Math.round(pedalTravel(value, rest) * 100);
     return [
       {
         role,
-        name: axis.name,
+        // Y keeps its axis name ("Clutch or combined pedals") below; as the bar it is the clutch.
+        name: role === 'clutch' ? 'Clutch' : axis.name,
+        /** What Windows calls the axis the bar reads: "Y axis", "Slider 1". */
+        from: axisWindowsLabel(props.device, axis.index),
+        axis: props.device.axisNames[axis.index],
         percent,
         raw: value === undefined ? undefined : axisRaw(value),
       },
@@ -95,6 +119,7 @@ const pedals = computed(() => {
         class="pedal"
         data-testid="tester-pedal"
         :data-pedal="p.name"
+        :data-axis="p.axis"
         :data-percent="p.percent"
       >
         <div class="pedal-bar">
@@ -106,6 +131,7 @@ const pedals = computed(() => {
           <template v-else>{{ p.percent }}%</template>
         </div>
         <div class="pedal-name">{{ p.name }}</div>
+        <div class="pedal-from rr-muted" data-testid="tester-pedal-from">{{ p.from }}</div>
       </div>
     </div>
 
@@ -115,6 +141,10 @@ const pedals = computed(() => {
       <template v-if="pedals.length">
         Each bar counts from where its pedal was at the first reading. If a bar looks the wrong way
         round, let go of the pedals and choose Start again.
+      </template>
+      <template v-if="clutchOnTwo">
+        The clutch is on the Y axis or on Slider 1, depending on the base's pedal mode, which
+        Windows does not report. The Clutch bar reads the one that moves.
       </template>
     </p>
   </section>
@@ -191,6 +221,11 @@ const pedals = computed(() => {
   font-variant-numeric: tabular-nums;
 }
 .pedal-name {
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.pedal-from {
+  font-size: var(--rr-text-xs);
   text-align: center;
   overflow-wrap: anywhere;
 }

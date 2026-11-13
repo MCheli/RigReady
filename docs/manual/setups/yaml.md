@@ -139,6 +139,10 @@ RigReady 1 kept its setups in the same folder in another format (a `checklistIte
 | A monitor layout, a script check, or "restore a file" as a fix | Not brought over: RigReady 1 kept its monitor layouts in a form this version cannot match to your monitors, it never ran script checks, and this version puts back only copies it kept itself |
 | A launch program | The same program and arguments. Without one, the game as RigReady finds it on this PC. Scripts around the launch and files kept for backup are named, not brought over |
 
+Two parts that become the same check are brought over once. RigReady 1 listed a wheel base that Windows shows as two controllers (a Fanatec Podium base) once for each, under one name; this version checks the device, which is one, so the question names it once and says "RigReady 1 had "…" twice, both the same check. The new setup has it once." If one of them was required, the check is required.
+
+![The wheel base RigReady 1 listed twice, asked about once](../../../artifacts/screens/profiles-version-one-two-controllers/01-bring-over.png)
+
 When nothing in the file has a match, or something must change first, the line says plainly that RigReady cannot bring the setup over and why; create it again with **New setup from this rig** ([Creating a setup from the rig](capture.md)). **Open the folder** shows the file in Explorer either way. The old file stays where it is until you delete it.
 
 ![A setup from RigReady 1, before it is brought over](../../../artifacts/screens/profiles-version-one/02-bring-over.png)

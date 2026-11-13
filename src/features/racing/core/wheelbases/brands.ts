@@ -48,6 +48,12 @@ export interface WheelBrand {
   controllersNote?: string;
   /** DirectInput axis -> what it is, on the base, where a source says so. */
   baseAxes?: Record<string, string>;
+  /**
+   * DirectInput axis -> the name the maker's driver gives it, where RigReady says something
+   * else (baseAxes). Games copy the driver's names into their files (iRacing's joyCalib.yaml),
+   * so a binding is still matched by them, and shown under RigReady's name.
+   */
+  driverAxes?: Record<string, string>;
   software: BrandSoftware[];
   /** One line: what the software is needed for. */
   softwareNote: string;
@@ -74,9 +80,13 @@ export const WHEEL_BRAND_LIST: WheelBrand[] = [
       "The base is in compatibility (yellow) mode and reports itself as a ClubSport Wheel Base V2.5. Bindings saved in PC mode do not match it in iRacing, Le Mans Ultimate or BeamNG.drive. Switch it to PC (red) mode in the base's menu or the Fanatec App.",
     controllersNote:
       'A Podium base normally shows up as two controllers with the same name; both are the base, not a duplicate, and games use the first.',
+    // The driver calls Y "Combined Pedals" whatever the pedal mode, but with the pedals
+    // separate the clutch is on Y and Slider 1 sits still. Windows does not say which mode
+    // the base is in, so Y is named for both.
+    driverAxes: { Y: 'Combined Pedals' },
     baseAxes: {
       X: 'Wheel',
-      Y: 'Combined pedals',
+      Y: 'Clutch or combined pedals',
       Z: 'Accelerator',
       RX: 'X rotation',
       RY: 'Y rotation',

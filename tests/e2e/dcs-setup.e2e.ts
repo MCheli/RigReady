@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { checkRow, expect, test } from './harness';
+import { middle, steadyBox, stillPage } from './settled';
 
 /** DCS World setup without SimAppPro: overview, screens, Export.lua, options.lua, SimAppPro checks. */
 
@@ -137,14 +138,14 @@ test('dcs-setup: screens are imported from SimAppPro, written as RigReady.lua an
   await shot('in-use');
 
   // Crop more off the top of the left DDI by dragging its top edge down.
-  await page.locator('[data-testid="screen-map-box"][data-name="LEFT_MFCD"]').click();
-  const handle = page.locator(
-    '[data-testid="screen-map-box"][data-name="LEFT_MFCD"] [data-testid="screen-map-handle-n"]'
-  );
-  const box = (await handle.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const leftDdi = page.locator('[data-testid="screen-map-box"][data-name="LEFT_MFCD"]');
+  await leftDdi.click();
+  await stillPage(page);
+  const [edgeX, edgeY] = middle(await steadyBox(leftDdi.getByTestId('screen-map-handle-n')));
+  await page.mouse.move(edgeX, edgeY);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 12, { steps: 4 });
+  await expect(leftDdi).toHaveClass(/\bdragging\b/);
+  await page.mouse.move(edgeX, edgeY + 12, { steps: 4 });
   await page.mouse.up();
   await expect(page.locator('[data-testid="screens-crop-LEFT_MFCD-top"] input')).not.toHaveValue(
     '256'
@@ -162,6 +163,9 @@ test('dcs-setup: screens are imported from SimAppPro, written as RigReady.lua an
   await expect(page.getByTestId('screens-changes')).toContainText(
     'Replace (it was edited outside RigReady)'
   );
+  // A notice above the map says so too.
+  const editedNotice = page.getByText('RigReady.lua was changed outside RigReady.');
+  await expect(editedNotice).toBeVisible();
   await page.getByTestId('screens-apply').click();
   await expect(page.getByTestId('screens-overwrite')).toBeVisible();
   await expect(page.getByTestId('screens-overwrite')).toContainText('x = 6670;');
@@ -171,21 +175,25 @@ test('dcs-setup: screens are imported from SimAppPro, written as RigReady.lua an
   expect(
     await fs.readFile(dcsFile(home, 'Config', 'MonitorSetup', 'RigReady.lua'), 'utf8')
   ).toContain('x = 6664;');
+  // The page reads the files again after writing and only then drops the notice: the map
+  // moves up by its height. A slow runner measured the map before that and pressed below the AMPCD.
+  await expect(editedNotice).toHaveCount(0);
+  await expect(page.getByTestId('screens-apply')).toHaveText('In use');
 
   // Drag the AMPCD onto the ultrawide: it moves there, and RigReady points out it covers the main view.
   const ampcd = page.locator('[data-testid="screen-map-box"][data-name="CENTER_MFCD"]');
+  const ultrawide = page.locator('[data-testid="screen-map-display"][data-name="LC49G95T"]');
   await expect(page.getByTestId('screens-overwrite')).toHaveCount(0);
   await expect(page.locator('.v-overlay__scrim')).toHaveCount(0);
   await page.getByTestId('screen-map').scrollIntoViewIfNeeded();
-  const from = (await ampcd.boundingBox())!;
-  const ultrawide = (await page
-    .locator('[data-testid="screen-map-display"][data-name="LC49G95T"]')
-    .boundingBox())!;
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await stillPage(page);
+  const from = await steadyBox(ampcd);
+  await page.mouse.move(...middle(from));
   await page.mouse.down();
-  await page.mouse.move(ultrawide.x + ultrawide.width / 2, ultrawide.y + ultrawide.height / 2, {
-    steps: 8,
-  });
+  // The press took the AMPCD, and the ultrawide shows it will take the drop before the button is let go.
+  await expect(ampcd).toHaveClass(/\bdragging\b/);
+  await page.mouse.move(...middle(await steadyBox(ultrawide)), { steps: 8 });
+  await expect(ultrawide).toHaveClass(/\btarget\b/);
   await page.mouse.up();
   await expect(page.getByTestId('screens-monitor-CENTER_MFCD')).toContainText('LC49G95T');
   await expect(page.getByTestId('screens-warnings')).toContainText(

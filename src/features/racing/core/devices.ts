@@ -1,4 +1,4 @@
-import { brandOf } from './wheelbases/brands';
+import { brandOf, type WheelBrand } from './wheelbases/brands';
 import { productOf } from './wheelbases/products';
 
 /** Controller identity helpers shared by the racing games and the wheel checks. */
@@ -44,7 +44,41 @@ export const neutralAxisName = (axis: string): string =>
  * the generic name otherwise.
  */
 export function axisName(axis: string, vendorId?: string, productId?: string): string {
-  const product = productOf(vendorId, productId);
-  const named = product?.role === 'base' ? brandOf(product.brand)?.baseAxes?.[axis] : undefined;
+  const named = brandOfBase(vendorId, productId)?.baseAxes?.[axis];
   return named ?? GENERIC_AXES[axis] ?? axis;
+}
+
+function brandOfBase(vendorId?: string, productId?: string): WheelBrand | undefined {
+  const product = productOf(vendorId, productId);
+  return product?.role === 'base' ? brandOf(product.brand) : undefined;
+}
+
+const plainName = (text: string): string =>
+  text
+    .toLowerCase()
+    .replace(/\s+axis$/, '')
+    .trim();
+
+/**
+ * The DirectInput axis ("Y") a game's name for it stands for, when the game copied the name
+ * the maker's driver gives ("Combined Pedals") and RigReady calls that axis otherwise.
+ */
+export function driverAxisOf(
+  name: string,
+  vendorId?: string,
+  productId?: string
+): string | undefined {
+  const wanted = plainName(name);
+  const names = brandOfBase(vendorId, productId)?.driverAxes ?? {};
+  return Object.keys(names).find((axis) => plainName(names[axis]!) === wanted);
+}
+
+/**
+ * An axis name a game shows (iRacing's from joyCalib.yaml, which copies the driver's), as
+ * RigReady says it: "Combined Pedals" on a Fanatec base is "Clutch or combined pedals", as
+ * on the Wheel page and in the input tester. Every other name is left as the game has it.
+ */
+export function gameAxisName(name: string, vendorId?: string, productId?: string): string {
+  const axis = driverAxisOf(name, vendorId, productId);
+  return axis ? axisName(axis, vendorId, productId) : name;
 }
