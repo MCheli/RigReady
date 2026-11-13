@@ -159,6 +159,13 @@ const WINDOWS_PROGRAMS = new Set([
 const RIGREADY_PROGRAMS = new Set(['rigready.exe', 'electron.exe']);
 
 /**
+ * Steam, which runs every Steam game: closing it before one game's restore would close all
+ * of them, and counting it as one game running would hold back RigReady's updates for as long
+ * as Steam is open. A Steam game is named by its Steam app id instead.
+ */
+const STEAM_PROGRAMS = new Set(['steam.exe', 'steamwebhelper.exe', 'steamservice.exe']);
+
+/**
  * Why an image name may not stand for a game's program, as the end of a sentence ("it is
  * part of Windows"); undefined when it may.
  */
@@ -166,6 +173,9 @@ export function protectedProgramReason(name: string): string | undefined {
   const key = name.trim().toLowerCase();
   if (RIGREADY_PROGRAMS.has(key)) return 'it is RigReady itself';
   if (WINDOWS_PROGRAMS.has(key)) return 'it is part of Windows';
+  if (STEAM_PROGRAMS.has(key)) {
+    return 'it is Steam, which runs every Steam game. For a Steam game, give its Steam app id';
+  }
   return undefined;
 }
 

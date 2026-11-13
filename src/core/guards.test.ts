@@ -83,6 +83,12 @@ describe('programs that are never a game’s', () => {
       expect(protectedProgramReason(name), name).toBe('it is part of Windows');
     }
     expect(protectedProgramReason('RigReady.exe')).toBe('it is RigReady itself');
+    // Steam runs every Steam game: never one game's program, never closed for one game.
+    for (const name of ['steam.exe', 'Steam.exe', 'steamwebhelper.exe', 'SteamService.exe']) {
+      expect(protectedProgramReason(name), name).toBe(
+        'it is Steam, which runs every Steam game. For a Steam game, give its Steam app id'
+      );
+    }
     expect(protectedProgramReason(' electron.exe ')).toBe('it is RigReady itself');
     expect(protectedProgramReason('StarHauler.exe')).toBeUndefined();
 
@@ -92,6 +98,7 @@ describe('programs that are never a game’s', () => {
       "it is in RigReady's own folder"
     );
     expect(file('C:\\Program Files\\RigReady\\RigReady.exe')).toBe('it is RigReady itself');
+    expect(file('C:\\Program Files (x86)\\Steam\\steam.exe')).toMatch(/^it is Steam/);
     expect(file('\\\\server\\share\\game.exe')).toBe('it is not a file on a drive of this PC');
     expect(file(path.join(rig.home, 'Games', 'Star Hauler', 'StarHauler.exe'))).toBeUndefined();
   });
@@ -102,13 +109,14 @@ describe('programs that are never a game’s', () => {
     app.wiring.context.games.register({
       id: 'user-rogue-game',
       name: 'Rogue Game',
-      processes: ['explorer.exe', 'RigReady.exe', 'RogueGame.exe'],
+      processes: ['explorer.exe', 'RigReady.exe', 'steam.exe', 'RogueGame.exe'],
       detect: async () => ok([]),
       configLocations: async () => ok([{ id: 'settings', label: 'Settings', path: settings }]),
     });
     await mutate(app, [
       { op: 'startProcess', name: 'explorer.exe', path: 'C:\\Windows\\explorer.exe' },
       { op: 'startProcess', name: 'RigReady.exe', path: 'C:\\Apps\\RigReady\\RigReady.exe' },
+      { op: 'startProcess', name: 'steam.exe', path: 'C:\\Program Files (x86)\\Steam\\steam.exe' },
     ]);
     const target = { label: 'Rogue Game settings', target: path.join(settings, 'a.ini') };
     const none = await runningHolders(app.wiring.context, [target]);
