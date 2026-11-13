@@ -56,6 +56,34 @@ describe('a provider that fails', () => {
     expect((await rig.ports.displays.read()).ok).toBe(false);
   });
 
+  it('the input reader can be made not to start: with an error, or by never answering', async () => {
+    const rig = await rigOn('generic-fresh');
+    await mutate(rig, [
+      { op: 'failProvider', port: 'input', message: 'Could not start the input reader.' },
+    ]);
+    expect(await rig.ports.input.start()).toEqual({
+      ok: false,
+      error: {
+        code: 'input.read',
+        message: 'Could not start the input reader.',
+        detail: 'The driver call failed (0x80004005).',
+      },
+    });
+    await mutate(rig, [
+      { op: 'failProvider', port: 'input', fail: false },
+      { op: 'hangProvider', port: 'input' },
+    ]);
+    let answered = false;
+    void rig.ports.input.start().then(() => {
+      answered = true;
+    });
+    // Everything that could have answered by now has; a start that hangs has not.
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(answered).toBe(false);
+    await mutate(rig, [{ op: 'hangProvider', port: 'input', hang: false }]);
+    expect((await rig.ports.input.start()).ok).toBe(true);
+  });
+
   it('every check of a setup reports the failure as not met, with the message', async () => {
     const app: WiredApp = await wiredApp('flying-all-good', { files: [] });
     cleanups.push(app.cleanup);

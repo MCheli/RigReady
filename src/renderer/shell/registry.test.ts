@@ -95,6 +95,23 @@ const MANIFESTS: FeatureManifest[] = [
   },
   // No screen at all.
   { id: 'processes' },
+  // A page in the navigation, and a window of its own that is not a place to go.
+  {
+    id: 'overlay',
+    nav: [
+      {
+        title: 'Overlay',
+        icon: 'mdi-o',
+        to: '/configure/overlay',
+        order: 330,
+        section: 'Controls',
+      },
+    ],
+    routes: [
+      { path: '/configure/overlay', component: blank },
+      { path: '/overlay/window', component: blank, meta: { bare: true, title: 'Window' } },
+    ],
+  },
 ];
 
 const shell = {} as CommandShell;
@@ -162,6 +179,11 @@ describe('pages for the palette, from the manifests alone', () => {
     expect(pages.filter((p) => p.to === '/configure/devices')).toHaveLength(1);
   });
 
+  it('leaves out a bare page: a window of its own is opened by the app, not gone to', () => {
+    expect(byRoute('/configure/overlay')).toMatchObject({ title: 'Overlay' });
+    expect(byRoute('/overlay/window')).toBeUndefined();
+  });
+
   it('orders them as the navigation does, each sub-page right after its page, Play first', () => {
     expect(pages.map((p) => p.to)).toEqual([
       '/fly',
@@ -171,6 +193,7 @@ describe('pages for the palette, from the manifests alone', () => {
       '/configure/racing',
       '/configure/racing/assetto-corsa',
       '/configure/dcs-bindings',
+      '/configure/overlay',
       '/configure/devices',
       '/configure/devices/test',
       '/configure/devices/usb',

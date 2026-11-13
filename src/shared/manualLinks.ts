@@ -124,6 +124,9 @@ export const MANUAL_LINKS: Record<string, ManualLink> = {
   '/configure/cheat-sheets': { page: 'dcs/cheat-sheets' },
   '/configure/cheat-sheets/quick': { page: 'dcs/cheat-sheets' },
   '/configure/cheat-sheets/learn': { page: 'dcs/trainer' },
+  '/configure/overlay': { page: 'play/overlay' },
+  // The overlay's own window over the game: it has no help button, the page is the same.
+  '/overlay/:widget': { page: 'play/overlay' },
 
   // Hardware
   '/configure/devices': { page: 'hardware/devices' },
