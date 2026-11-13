@@ -51,6 +51,9 @@ const kind = computed(() => {
   return games.length > 0 && games.every((g) => g.kind === 'racing') ? 'racing' : 'flight';
 });
 
+/** Only a PC with DCS is told about DCS bindings: a racing rig never meets the word. */
+const hasDcs = computed(() => (found.value?.games ?? []).some((g) => g.id === 'dcs'));
+
 const WHAT = [
   {
     icon: 'mdi-clipboard-check-outline',
@@ -206,6 +209,10 @@ const facts = computed(() => {
     <p class="welcome-tip">
       Get the rig the way you fly or race first (gear plugged in, helper apps running, monitors
       arranged) and RigReady captures it as it is.
+    </p>
+    <p v-if="hasDcs" class="welcome-tip" data-testid="welcome-dcs-bindings">
+      RigReady reads the DCS bindings you already have from DCS's own files, so there is nothing to
+      import.
     </p>
     <div v-if="!assistantSkipped" class="welcome-assistant" data-testid="welcome-assistant">
       <v-icon icon="mdi-robot-outline" size="18" />

@@ -6639,6 +6639,8 @@ requirements:
       - "While the PC is still being looked at the readings show their outline, three side by side where the readings will be, and when it cannot be looked at the panel says so instead of showing nothing."
       - "At twice the text size, where the page is half as wide, the panel puts one thing under the other: nothing sticks out of the window and the first step is still there."
       - "A PC whose only game is a racing one is greeted with the wheel for a mark; one without any sim says that any other game still works. The panel passes the axe and colour-only scans on each."
+    notes:
+      - "2026-11-12: the owner asked that the DCS bindings people already have are pulled in with nothing to do. They are: RigReady reads DCS's own files each time (BIND-DCS-003), before any setup exists, and imports nothing. On a PC with DCS the welcome now says so in one line; a PC without DCS is not told about DCS. The same sentence is in the manual (DCS bindings, The first run) and on the site."
     status: done
     evidence:
       - "src/features/fly/core/welcome.test.ts#says which games, game controllers and monitors were found on this PC"
@@ -6651,6 +6653,10 @@ requirements:
       - "artifacts/screens/welcome/03-large-text.png"
       - "artifacts/screens/welcome-racing/01-welcome.png"
       - "artifacts/screens/welcome-generic/01-welcome.png"
+      - "tests/e2e/welcome-dcs-bindings.e2e.ts#welcome: a PC with DCS is told its DCS bindings are read as they are, and a racing PC is not told about DCS"
+      - "artifacts/screens/welcome-dcs-bindings/01-welcome-with-dcs.png"
+      - "artifacts/screens/welcome-dcs-bindings/02-bindings-already-there.png"
+      - "artifacts/screens/welcome-no-dcs/01-welcome-racing-pc.png"
 
   - id: WOW-UI-009
     title: An About panel - version, what RigReady does, the licence, where to find it
