@@ -6,8 +6,9 @@ import { expect, test } from './harness';
  * The popular controllers RigReady knows besides the owner's WinWing set: the
  * Thrustmaster HOTAS Warthog stick and throttle, the T.16000M and the Saitek X52 Pro,
  * plugged into the recorded rig. A device has a drawing only where the picture is known
- * to match the real thing (the Warthog stick and the T.16000M); the Warthog throttle and
- * the X52 Pro show as a list that claims no places. Either way there is a label block
+ * to match the real thing (the Warthog stick and throttle and the T.16000M, each drawn
+ * from Thrustmaster's numbered drawings); the X52 Pro shows as a list that claims no
+ * places. Either way there is a label block
  * per physical control, named the way the maker names them, with DCS's own Hornet
  * defaults for the device on them, and a kneeboard page by day and by night.
  */
@@ -44,8 +45,14 @@ const DEVICES = [
   {
     slug: 'warthog-throttle',
     title: 'Throttle - HOTAS Warthog',
-    says: 'Controls named for the Thrustmaster HOTAS Warthog throttle (no drawing of it yet)',
-    heads: ['Coolie switch · H1', 'MS mic switch · 2–6', 'Throttles · RZ, Z'],
+    says: 'RigReady drawing',
+    heads: [
+      'Coolie switch · H1',
+      'MS mic switch · 2–6',
+      'SC slew control · X, Y, 1',
+      'Flaps · 22–23',
+      'Throttles · RZ, Z',
+    ],
   },
   {
     slug: 't16000m',

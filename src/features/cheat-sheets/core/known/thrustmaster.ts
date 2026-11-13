@@ -64,7 +64,8 @@ export const warthogThrottle: KnownDeviceInput = {
       [6, 'Aft'],
       [2, 'Press'],
     ]),
-    pov('coolie', 'Coolie switch', 1, 4),
+    // Thrustmaster's manual lists the coolie as the throttle's 8-way hat.
+    pov('coolie', 'Coolie switch', 1),
     positions('spd', 'SPD speed brake', [
       [7, 'Fwd'],
       [8, 'Aft'],
