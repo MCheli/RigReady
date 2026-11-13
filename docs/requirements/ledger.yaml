@@ -1806,6 +1806,58 @@ requirements:
       - 'src/features/mcp/core/curated.test.ts#a game that is not on this PC is refused in words, and nothing is saved'
     notes: "Before this the tool kept everything the rig proposed, whatever the game: a setup made through an assistant for iRacing came with the flight gear ticked, which the page stopped doing in CFG-PROFILE-017."
 
+  - id: CFG-PROFILE-023
+    title: An app RigReady does not know can be offered in every new setup ("Always offer this app")
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "On New setup from this rig, a running program RigReady has no name for has \"Always offer this app\" on its line. Choosing it keeps the program's image name, a name for it and the path Windows reports for the running program in <data folder>/processes/known.json, and the line becomes what RigReady read back: ticked, \"Always offered\", with \"Stop offering it\"."
+      - "From then on every new setup lists that program with the helpers RigReady knows, ticked, while it runs, under the user's name for it; Stand down closes it only when the user switched that on. Make ready starts it through the process port with the path of the running program and an argument array, never a typed path."
+      - "Settings > Apps offered in new setups lists the user's apps with their path, renames them, switches Close at Stand down and takes them off the list."
+      - "The never list of the capture is authoritative: RigReady itself, Windows' own programs and anything in the Windows folder or off a drive of this PC never get the button and are refused when asked, and an entry naming one in a hand-edited known.json is left out when the file is read back, listed under Not used with why, never ticked and never closed at Stand down."
+      - "A damaged known.json is never overwritten: the known helpers are still offered and adding says why it cannot. Nothing outside RigReady's data folder is written."
+    status: done
+    evidence:
+      - 'src/features/processes/core/ownApps.test.ts#a program RigReady does not know is kept as Windows reported it, and is then offered ticked, under its name, with the launch fix from the running program'
+      - 'src/features/processes/core/ownApps.test.ts#closes it at Stand down only when the user says so'
+      - 'src/features/processes/core/ownApps.test.ts#never takes RigReady, a program of Windows or the Windows folder, whichever way it comes'
+      - 'src/features/processes/core/ownApps.test.ts#a list edited by hand is checked again when it is read: what the never list refuses is left out and said'
+      - 'src/features/processes/core/ownApps.test.ts#a damaged list is never overwritten: the known apps are still offered, and adding says why it cannot'
+      - 'src/features/processes/core/ownApps.test.ts#the New setup page offers it, Settings lists it, renames it and takes it off again'
+      - 'tests/e2e/processes-own-apps.e2e.ts#processes: an app RigReady does not know is offered in every new setup once the user asks, and the list is kept in Settings'
+      - 'artifacts/screens/processes-own-apps/01-unknown-app.png'
+      - 'artifacts/screens/processes-own-apps/02-always-offered.png'
+      - 'artifacts/screens/processes-own-apps/03-settings.png'
+      - 'artifacts/screens/processes-own-apps/04-next-setup.png'
+    notes: "Audit of fixed lists, 12 Nov 2026, item 4: the 31 helper apps RigReady knows were a list the user could not add to, so the same unknown app had to be dug out for every new setup."
+
+  - id: CFG-PROFILE-024
+    title: A setup RigReady 1 left behind is named, and brought over when it can be with confidence
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "Every setup file RigReady 1 left in profiles/ is named on the Setups page with its name and file, and says what RigReady can make of it."
+      - "Bring it over is offered when every part it brings has an exact match in this version: a running app (with its start-the-program or tell-me fix), a device by its numbers or by the one connected device of its name, a config file with or without its pattern, and the launch program or the game as found on this PC. The confirmation shows the new setup's checks, what Launch starts, and every part left out with why (monitor layouts, script checks, restore-a-file fixes, scripts around the launch, files kept for backup)."
+      - "Nothing is guessed: a device known only by a name that no connected device, or several, carry stops it, with what to do. When nothing has a match, or something stops it, the line says plainly that RigReady cannot bring the setup over and why, with Open the folder."
+      - "The old file is only read, never changed or removed without the user's say; the new setup is written through FileStore the way New setup from this rig writes one, remembers which file it came from, and the same file is not brought over twice."
+    status: done
+    evidence:
+      - 'src/features/profiles/core/versionOne.test.ts#is brought over: the wheel by the one connected device of its name, the app as it was, the monitor layout named and left out, and the old file untouched'
+      - 'src/features/profiles/core/versionOne.test.ts#guesses nothing: with the wheel unplugged it says to connect it and look again, and writes nothing'
+      - 'src/features/profiles/core/versionOne.test.ts#every kind of RigReady 1 check: what has an exact match comes over, the rest is named with why'
+      - 'src/features/profiles/core/versionOne.test.ts#says plainly when nothing in it has a match, and makes nothing'
+      - 'src/features/profiles/core/versionOne.test.ts#only a file RigReady 1 made, by a setup id, is ever looked at'
+      - 'tests/e2e/profiles-version-one.e2e.ts#profiles: a setup RigReady 1 left is brought over with what has an exact match, and the old file stays as it was'
+      - 'tests/e2e/profiles-version-one.e2e.ts#profiles: with the wheel of a RigReady 1 setup unplugged, RigReady says it cannot bring it over and opens the folder'
+      - 'artifacts/screens/profiles-version-one/01-listed.png'
+      - 'artifacts/screens/profiles-version-one/02-bring-over.png'
+      - 'artifacts/screens/profiles-version-one/03-brought-over.png'
+      - 'artifacts/screens/profiles-version-one/04-play.png'
+      - 'artifacts/screens/profiles-version-one-unplugged/01-cannot.png'
+    notes: "Sitting of 12 Nov 2026: the owner's RigReady 1 setup (LMU) sat in the profiles folder, listed apart with no way to bring it over. The RigReady 1 format is the one of src/shared/profileTypes.ts at the v1.1.0 tag; the test data is fixtures/scenarios/data/version-one, not the owner's folder."
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------

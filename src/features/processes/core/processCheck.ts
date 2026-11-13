@@ -9,9 +9,11 @@ import type {
 } from '../../../core/checks/registry';
 import type { GameRegistry } from '../../../core/games';
 import { allPathVariables, collapsePath, expandPath } from '../../../core/pathVariables';
+import { isWithin } from '../../../core/paths';
 import { closeTogether, stillRunningText } from '../../../core/processes';
 import { err, ok, type Result } from '../../../core/result';
 import type { GameKind, ProcessInfo } from '../../../shared/models';
+import type { OwnApp, OwnApps } from './ownApps';
 
 export const PROCESS_RUNNING = 'process.running';
 export const PROCESS_LAUNCH = 'process.launch';
@@ -356,66 +358,241 @@ export const KNOWN_APPS: Record<string, KnownApp> = {
 /** Never offered: RigReady itself and the shells it might be started from. */
 const NEVER = new Set(['rigready.exe', 'electron.exe']);
 
-/** Proposes the running apps; their paths are stored with a path variable where one applies. */
-export function createProcessCapture(games: GameRegistry): CaptureDefinition {
+/**
+ * Windows' own programs that also run from outside the Windows folder, or whose name is
+ * one Windows uses: never on the user's own list of apps to offer, whatever that list
+ * says. Stand down closes an app by its name, so an entry for one of these would close
+ * part of Windows.
+ */
+const WINDOWS_OWN = new Set([
+  'applicationframehost.exe',
+  'audiodg.exe',
+  'backgroundtaskhost.exe',
+  'conhost.exe',
+  'cscript.exe',
+  'csrss.exe',
+  'ctfmon.exe',
+  'dllhost.exe',
+  'dwm.exe',
+  'explorer.exe',
+  'fontdrvhost.exe',
+  'lockapp.exe',
+  'lsass.exe',
+  'msedgewebview2.exe',
+  'mshta.exe',
+  'msiexec.exe',
+  'openconsole.exe',
+  'regsvr32.exe',
+  'rundll32.exe',
+  'runtimebroker.exe',
+  'searchhost.exe',
+  'searchindexer.exe',
+  'securityhealthsystray.exe',
+  'services.exe',
+  'shellexperiencehost.exe',
+  'shellhost.exe',
+  'sihost.exe',
+  'smartscreen.exe',
+  'smss.exe',
+  'spoolsv.exe',
+  'startmenuexperiencehost.exe',
+  'svchost.exe',
+  'systemsettings.exe',
+  'tabtip.exe',
+  'taskhostw.exe',
+  'taskmgr.exe',
+  'textinputhost.exe',
+  'userinit.exe',
+  'wininit.exe',
+  'winlogon.exe',
+  'wmiprvse.exe',
+  'wscript.exe',
+]);
+/** The command shells of Windows (the Command Prompt, both PowerShells): never offered either. */
+const COMMAND_SHELL = /^(?:cmd|powershell|pwsh)\.exe$/;
+
+const DRIVE_PATH = /^[a-z]:\\/i;
+
+/**
+ * Why a program may not go on the user's own list of apps to offer, or undefined when it
+ * may. The one rule for both ways in: the "Always offer this app" button, and the list as
+ * it is read back from disk, where a hand edit can put anything.
+ */
+export function refusedToRemember(
+  name: string,
+  exePath: string,
+  windowsDir: string
+): string | undefined {
+  const key = name.toLowerCase();
+  if (NEVER.has(key) || key.startsWith('rigready')) return 'it is RigReady itself';
+  if (WINDOWS_OWN.has(key) || COMMAND_SHELL.test(key)) return 'it is part of Windows';
+  if (!DRIVE_PATH.test(exePath)) return 'it does not run from a drive of this PC';
+  if (WINDOWS_DIR.test(exePath) || isWithin(windowsDir, exePath)) {
+    return 'it runs from the Windows folder';
+  }
+  if (!sameName(baseName(exePath), name)) return `its path does not end in ${name}`;
+  return undefined;
+}
+
+const PROCESS_KEY = 'process:';
+
+/**
+ * Proposes the running apps; their paths are stored with a path variable where one applies.
+ * With `own`, the apps the user asked to be offered are proposed like known helpers, and an
+ * app RigReady does not know can be added to that list.
+ */
+export function createProcessCapture(games: GameRegistry, own?: OwnApps): CaptureDefinition {
+  const capture = async (ctx: CheckContext): Promise<Result<CaptureCandidate[]>> => {
+    const processes = await ctx.ports.processes.list();
+    if (!processes.ok) return processes;
+    const variables = await allPathVariables(ctx, games);
+    const windowsDir = ctx.ports.folders.windows();
+    const mine = own ? await own.read(windowsDir) : undefined;
+    // A damaged list leaves the known apps as they are; its section in Settings says why.
+    if (mine && !mine.ok) ctx.log.warn(`own apps not read: ${mine.error.message}`);
+    const yours = mine?.ok ? mine.value.apps : [];
+    const yoursFor = (process: ProcessInfo): OwnApp | undefined =>
+      process.path === undefined
+        ? undefined
+        : yours.find((a) => sameName(a.name, process.name) && samePath(a.path, process.path!));
+    // The copy the user asked for comes first when two programs have its name.
+    const ordered = [...processes.value].sort(
+      (a, b) => Number(yoursFor(b) !== undefined) - Number(yoursFor(a) !== undefined)
+    );
+    const byName = new Map<string, CaptureCandidate & { known: boolean; helper: boolean }>();
+    for (const process of ordered) {
+      // Only programs we could start again: a known path, and not part of Windows.
+      if (!process.path || WINDOWS_DIR.test(process.path)) continue;
+      const key = process.name.toLowerCase();
+      if (byName.has(key) || NEVER.has(key)) continue;
+      const known = KNOWN_APPS[key];
+      const yourApp = known ? undefined : yoursFor(process);
+      const isHelper = known?.helper === true || yourApp !== undefined;
+      const close = known?.close === true || yourApp?.closeAtStandDown === true;
+      const title = known?.name ?? yourApp?.title ?? process.name.replace(/\.exe$/i, '');
+      const rememberable =
+        own !== undefined &&
+        !known &&
+        refusedToRemember(process.name, process.path, windowsDir) === undefined;
+      byName.set(key, {
+        key: `${PROCESS_KEY}${key}`,
+        group: 'apps',
+        title,
+        description: known?.purpose
+          ? `For ${known.purpose} · ${process.name}`
+          : yourApp
+            ? `Always offered · ${process.path}`
+            : process.path,
+        selectedByDefault: isHelper,
+        known: known !== undefined || yourApp !== undefined,
+        helper: isHelper,
+        program: process.name,
+        generic: true,
+        // What a rig usually runs is listed; the rest is behind "show all".
+        tier: known || yourApp ? 'main' : 'more',
+        icon: known?.icon ?? (yourApp ? 'mdi-pin-outline' : 'mdi-application-outline'),
+        ...(known?.kind ? { kind: known.kind } : {}),
+        ...(known?.games ? { forGames: known.games } : {}),
+        ...(close ? { standDownNote: 'closed at Stand down' } : {}),
+        ...(rememberable
+          ? { remember: { capture: 'processes', remembered: yourApp !== undefined } }
+          : {}),
+        check: {
+          type: PROCESS_RUNNING,
+          title,
+          required: true,
+          params: {
+            name: process.name,
+            // A helper that is only useful in the sim is closed again by Stand down.
+            ...(close ? { stopOnStandDown: true } : {}),
+          },
+          remediation: {
+            type: PROCESS_LAUNCH,
+            // The path Windows reports for the running program, never one that was typed.
+            params: { exe: collapsePath(process.path, variables), args: [] },
+          },
+        },
+      });
+    }
+    return ok(
+      [...byName.values()]
+        .sort(
+          (a, b) =>
+            Number(b.helper) - Number(a.helper) ||
+            Number(b.known) - Number(a.known) ||
+            a.title.localeCompare(b.title)
+        )
+        .map(({ known: _known, helper: _helper, ...candidate }) => candidate)
+    );
+  };
   return {
     id: 'processes',
     label: 'Apps',
-    async capture(ctx) {
-      const processes = await ctx.ports.processes.list();
-      if (!processes.ok) return processes;
-      const variables = await allPathVariables(ctx, games);
-      const byName = new Map<string, CaptureCandidate & { known: boolean; helper: boolean }>();
-      for (const process of processes.value) {
-        // Only programs we could start again: a known path, and not part of Windows.
-        if (!process.path || WINDOWS_DIR.test(process.path)) continue;
-        const key = process.name.toLowerCase();
-        if (byName.has(key) || NEVER.has(key)) continue;
-        const known = KNOWN_APPS[key];
-        const isHelper = known?.helper === true;
-        const title = known?.name ?? process.name.replace(/\.exe$/i, '');
-        byName.set(key, {
-          key: `process:${key}`,
-          group: 'apps',
-          title,
-          description: known?.purpose ? `For ${known.purpose} · ${process.name}` : process.path,
-          selectedByDefault: isHelper,
-          known: known !== undefined,
-          helper: isHelper,
-          program: process.name,
-          generic: true,
-          // What a rig usually runs is listed; the rest is behind "show all".
-          tier: known ? 'main' : 'more',
-          icon: known?.icon ?? 'mdi-application-outline',
-          ...(known?.kind ? { kind: known.kind } : {}),
-          ...(known?.games ? { forGames: known.games } : {}),
-          ...(known?.close ? { standDownNote: 'closed at Stand down' } : {}),
-          check: {
-            type: PROCESS_RUNNING,
-            title,
-            required: true,
-            params: {
-              name: process.name,
-              // A helper that is only useful in the sim is closed again by Stand down.
-              ...(known?.close ? { stopOnStandDown: true } : {}),
-            },
-            remediation: {
-              type: PROCESS_LAUNCH,
-              params: { exe: collapsePath(process.path, variables), args: [] },
-            },
-          },
-        });
-      }
-      return ok(
-        [...byName.values()]
-          .sort(
-            (a, b) =>
-              Number(b.helper) - Number(a.helper) ||
-              Number(b.known) - Number(a.known) ||
-              a.title.localeCompare(b.title)
-          )
-          .map(({ known: _known, helper: _helper, ...candidate }) => candidate)
-      );
-    },
+    capture,
+    ...(own ? { remember: (key, on, ctx) => rememberApp(own, capture, key, on, ctx) } : {}),
   };
+}
+
+/**
+ * "Always offer this app": the running program goes on the user's own list with the path
+ * Windows reports for it, or comes off it. Answers with the candidate as the capture now
+ * proposes it, which reads the list back from disk; none when the program is not running.
+ */
+async function rememberApp(
+  own: OwnApps,
+  capture: (ctx: CheckContext) => Promise<Result<CaptureCandidate[]>>,
+  key: string,
+  on: boolean,
+  ctx: CheckContext
+): Promise<Result<{ candidate?: CaptureCandidate }>> {
+  const name = key.startsWith(PROCESS_KEY) ? key.slice(PROCESS_KEY.length) : '';
+  if (!name) return err('process.remember', 'That is not one of the running apps.');
+  const windowsDir = ctx.ports.folders.windows();
+  if (on) {
+    const listed = await ctx.ports.processes.list();
+    if (!listed.ok) return listed;
+    // The same copy the capture lists: the first one of that name outside Windows.
+    const running = listed.value.find(
+      (p) => sameName(p.name, name) && p.path !== undefined && !WINDOWS_DIR.test(p.path)
+    );
+    if (!running?.path) {
+      return err(
+        'process.notRunning',
+        `${name} is not running now, so RigReady cannot see where it is.`,
+        'Start it, then choose "Always offer this app" again.'
+      );
+    }
+    const known = KNOWN_APPS[name];
+    if (known) return err('process.known', `RigReady offers ${known.name} already.`);
+    const refused = refusedToRemember(running.name, running.path, windowsDir);
+    if (refused) {
+      return err('process.refused', `RigReady does not offer ${running.name}: ${refused}.`);
+    }
+    const added = await own.add(
+      {
+        name: running.name,
+        title: running.name.replace(/\.exe$/i, ''),
+        path: running.path,
+        closeAtStandDown: false,
+        added: ctx.ports.clock.now().toISOString(),
+      },
+      windowsDir
+    );
+    if (!added.ok) return added;
+  } else {
+    const removed = await own.remove(name, windowsDir);
+    if (!removed.ok) return removed;
+  }
+  const again = await capture(ctx);
+  if (!again.ok) return again;
+  const candidate = again.value.find((c) => c.key === key);
+  if (candidate && candidate.remember?.remembered !== on) {
+    return err(
+      'process.remember',
+      on
+        ? `RigReady could not keep ${name} on its list of apps to offer.`
+        : `${name} is still on RigReady's list of apps to offer.`
+    );
+  }
+  return ok(candidate ? { candidate } : {});
 }
