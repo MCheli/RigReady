@@ -46,7 +46,7 @@ let previewRun = 0;
 async function loadPreview(): Promise<void> {
   const run = ++previewRun;
   previewBusy.value = true;
-  const result = await store.api.kneeboardPreview({
+  const result = await store.api.windowKneeboardPreview({
     ...ref_.value,
     ...(previewDevice.value ? { deviceKey: previewDevice.value } : {}),
     style: previewStyle.value,

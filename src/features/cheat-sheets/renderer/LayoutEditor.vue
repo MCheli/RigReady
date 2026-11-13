@@ -3,16 +3,15 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { errorText } from '../../../renderer/ipc';
 import {
   controlName,
-  HAT_ARROWS,
   HAT_DIRECTIONS,
   placedControls,
   type DeviceLayout,
   type LayoutControl,
 } from '../core/layout';
 import {
-  DRAWING_FORMAT,
-  DRAWING_VERSION,
+  applyChanges,
   drawingFor,
+  photo as photos,
   type DeviceDrawing,
   type DrawingChanges,
   type PhysicalControl,
@@ -21,6 +20,8 @@ import {
 import { pictureFor, renderPictureSvg } from '../core/picture';
 import { renderDeviceSvg } from '../core/render';
 import type { SheetDevice } from '../core/sheet';
+import { choosePhoto } from './photoIntake';
+import PhotoPlacer from './PhotoPlacer.vue';
 import { useCheatSheets } from './store';
 
 /**
@@ -28,11 +29,17 @@ import { useCheatSheets } from './store';
  * place themselves, and the user drags the dot of a control to where it really is, picks
  * the side its label goes on, renames it, or puts a photo of the device in place of the
  * drawing. Any other device (or one whose owner chose to) is a layout of cards: drag label
- * cards, their pointers and group frames into place, over a photo if the user has one; or
- * make a drawing of it from a photo. Pressing a control on the real device selects it.
- * Nothing is stored until Save.
+ * cards, their pointers and group frames into place, over a photo if the user has one. Or
+ * the user makes a drawing from their own photos of the device (see PhotoPlacer): press a
+ * control, click where it is. Pressing a control on the real device selects it. Nothing is
+ * stored until Save.
  */
-const props = defineProps<{ device: SheetDevice; pressed: string[] }>();
+const props = defineProps<{
+  device: SheetDevice;
+  pressed: string[];
+  /** Opened to make a drawing from a photo: the file is asked for at once. */
+  photo?: boolean;
+}>();
 const emit = defineEmits<{ close: [saved: boolean] }>();
 const store = useCheatSheets();
 
@@ -70,13 +77,57 @@ const changes = (): DrawingChanges => (layout.value.drawing ??= emptyChanges());
 /** The physical control selected on the drawing. */
 const picked = ref<string>();
 
+// ---- a drawing from the user's own photos ----
+/**
+ * The user's drawing when its picture is their photos, with what they changed on it since
+ * worked in. It is edited by the photo placer, not by dragging dots on the sheet.
+ */
+const ownPhotos = computed<DeviceDrawing | undefined>(() => {
+  const now = layout.value.drawing;
+  if (!now?.custom || !photos.isPhotoDrawing(now.custom)) return undefined;
+  return applyChanges(now.custom, now);
+});
+/** Photos with nothing placed yet are not a drawing that can be saved or shared. */
+const draft = computed(() => ownPhotos.value?.controls.length === 0);
+const mode = computed(() => (ownPhotos.value ? 'photos' : drawing.value ? 'drawing' : 'cards'));
+
+function setPhotos(next: DeviceDrawing): void {
+  layout.value.drawing = { ...emptyChanges(), custom: next };
+  delete layout.value.background;
+  dirty.value = true;
+}
+
+/** Asks for a photo of the device and starts a drawing from it. False when none was taken. */
+async function usePhotos(): Promise<boolean> {
+  error.value = '';
+  message.value = '';
+  const got = await choosePhoto(store.api, 0);
+  if (got.problem) error.value = got.problem;
+  if (!got.photo) return false;
+  setPhotos(
+    photos.photoDrawing(
+      {
+        title: props.device.title,
+        vendorId: props.device.vendorId!,
+        productId: props.device.productId!,
+      },
+      got.photo
+    )
+  );
+  selected.value = undefined;
+  picked.value = undefined;
+  return true;
+}
+
 const svg = computed(() =>
-  drawing.value
-    ? renderPictureSvg(edited.value, { theme: 'dark', showEmpty: true, edit: true })
-    : renderDeviceSvg(
-        { layout: layout.value, controls: props.device.controls },
-        { theme: 'dark', edit: true }
-      )
+  ownPhotos.value
+    ? ''
+    : drawing.value
+      ? renderPictureSvg(edited.value, { theme: 'dark', showEmpty: true, edit: true })
+      : renderDeviceSvg(
+          { layout: layout.value, controls: props.device.controls },
+          { theme: 'dark', edit: true }
+        )
 );
 
 const idsOf = (control: LayoutControl): string[] =>
@@ -109,6 +160,8 @@ watch([selected, picked], paint);
 watch(
   () => props.pressed,
   (now, before) => {
+    // On photos a press is for the placer: it waits for a click on the photo.
+    if (ownPhotos.value) return;
     const fresh = now.find((id) => !(before ?? []).includes(id));
     if (fresh && drawing.value) {
       const found = drawing.value.controls.find((c) => c.inputs.some((i) => i.id === fresh));
@@ -292,6 +345,8 @@ function up(event: PointerEvent): void {
 
 function key(event: KeyboardEvent): void {
   if ((event.target as HTMLElement).closest('input, textarea')) return;
+  // The photo placer has its own keys.
+  if (ownPhotos.value) return;
   const step = event.shiftKey ? 10 : 1;
   const delta: Record<string, [number, number]> = {
     ArrowLeft: [-step, 0],
@@ -440,127 +495,6 @@ function imageSize(image: string): Promise<{ w: number; h: number }> {
     probe.onerror = () => resolve({ w: 4, h: 3 });
     probe.src = image;
   });
-}
-
-/** A physical control for one input (or one hat) of the device, for a drawing of the user's. */
-function controlFor(id: string): PhysicalControl {
-  const hat = /^hat:(\d)$/.exec(id);
-  const base = { at: { x: 0, y: 0 }, hidden: false, assumed: false } as const;
-  if (hat) {
-    return {
-      ...base,
-      id: `hat-${hat[1]}`,
-      name: `Hat ${hat[1]}`,
-      glyph: 'hat',
-      inputs: HAT_DIRECTIONS.map((d) => ({ id: `hat:${hat[1]}:${d}`, tag: HAT_ARROWS[d] })),
-    };
-  }
-  return {
-    ...base,
-    id: id.replace(':', '-'),
-    name: controlName(id),
-    glyph: id.startsWith('axis:') ? 'axis' : 'button',
-    inputs: [{ id }],
-  };
-}
-
-/**
- * A drawing of the user's own from a photo of the device: the photo, with a dot for every
- * axis and hat it reports and every button that does something, set out in a grid on the
- * photo for the user to drag onto the real controls.
- */
-async function drawOnPhoto(): Promise<void> {
-  error.value = '';
-  const result = await store.api.pickBackground();
-  if (!result.ok) {
-    error.value = errorText(result.error);
-    return;
-  }
-  const image = result.value.image;
-  if (!image) return;
-  const size = await imageSize(image);
-  const width = 500;
-  const height = Math.round(Math.max(200, Math.min(1400, (width * size.h) / size.w)));
-  const reports = props.device.reports;
-  const ids = [
-    ...(reports?.axes ?? []).map((a) => `axis:${a}`),
-    ...Array.from({ length: reports?.hats ?? 0 }, (_, i) => `hat:${i + 1}`),
-  ];
-  for (const control of props.device.controls) {
-    if (control.bindings.length === 0 && !control.note) continue;
-    const hat = /^hat:(\d):/.exec(control.id);
-    const id = hat ? `hat:${hat[1]}` : control.id;
-    if (!ids.includes(id)) ids.push(id);
-  }
-  if (ids.length === 0) {
-    error.value =
-      'This device reports no controls and has nothing bound, so there is nothing to place.';
-    return;
-  }
-  const columns = Math.ceil(Math.sqrt(ids.length));
-  const rows = Math.ceil(ids.length / columns);
-  const controls = ids.slice(0, 200).map((id, i) => {
-    const control = controlFor(id);
-    const column = i % columns;
-    const row = Math.floor(i / columns);
-    control.at = {
-      x: Math.round(width * (0.15 + (0.7 * (column + 0.5)) / columns)),
-      y: Math.round(height * (0.15 + (0.7 * (row + 0.5)) / rows)),
-    };
-    return control;
-  });
-  const own: DeviceDrawing = {
-    format: DRAWING_FORMAT,
-    version: DRAWING_VERSION,
-    name: `${props.device.title} (my drawing)`.slice(0, 120),
-    match: { vendorId: props.device.vendorId!, productIds: [props.device.productId!], names: [] },
-    view: 'A photo of the device',
-    size: { width, height },
-    paths: [],
-    texts: [],
-    image,
-    controls,
-    columnWidth: 300,
-  };
-  layout.value.drawing = { ...emptyChanges(), custom: own };
-  delete layout.value.background;
-  selected.value = undefined;
-  dirty.value = true;
-  message.value = `A dot for each of ${controls.length} controls is on the photo. Drag each onto its control, then Save.`;
-}
-
-/** Inputs the device reports that a drawing of the user's does not place yet. */
-const missing = computed(() => {
-  const own = layout.value.drawing?.custom;
-  if (!custom.value || !own) return [];
-  const placed = new Set(own.controls.flatMap((c) => c.inputs.map((i) => i.id)));
-  const reports = props.device.reports;
-  const ids = [
-    ...(reports?.axes ?? []).map((a) => `axis:${a}`),
-    ...Array.from({ length: reports?.hats ?? 0 }, (_, i) => `hat:${i + 1}`),
-    ...Array.from({ length: Math.min(reports?.buttons ?? 0, 128) }, (_, i) => `button:${i + 1}`),
-  ];
-  const bound = new Set(
-    props.device.controls.filter((c) => c.bindings.length > 0).map((c) => c.id)
-  );
-  return ids
-    .filter((id) => (id.startsWith('hat:') ? !placed.has(`${id}:U`) : !placed.has(id)))
-    .map((id) => ({
-      key: id,
-      label: id.startsWith('button:')
-        ? `${id.slice(7)}${bound.has(id) ? ' •' : ''}`
-        : controlName(id.startsWith('hat:') ? `${id}:U` : id).replace(/ up$/, ''),
-    }));
-});
-
-function addToDrawing(id: string): void {
-  const own = layout.value.drawing?.custom;
-  if (!own || own.controls.length >= 200) return;
-  const control = controlFor(id);
-  control.at = { x: Math.round(own.size.width / 2), y: Math.round(own.size.height / 2) };
-  own.controls.push(control);
-  picked.value = control.id;
-  dirty.value = true;
 }
 
 // ---- controls the device has that are not on the layout ----
@@ -727,6 +661,13 @@ async function reset(): Promise<void> {
 onMounted(() => {
   paint();
   window.addEventListener('keydown', key);
+  // Opened to make a drawing from a photo: the file is asked for at once. Closing the file
+  // dialog closes the editor again; a file that is refused leaves its reason on the page.
+  if (props.photo && !ownPhotos.value) {
+    void usePhotos().then((taken) => {
+      if (!taken && !error.value) emit('close', false);
+    });
+  }
 });
 onBeforeUnmount(() => window.removeEventListener('keydown', key));
 </script>
@@ -735,10 +676,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
   <div class="ed" data-testid="layout-editor" :data-dirty="dirty">
     <div class="ed-bar">
       <div class="rr-row-main">
-        <div class="ed-title" data-testid="editor-mode" :data-mode="drawing ? 'drawing' : 'cards'">
-          {{ drawing ? 'Drawing' : 'Layout' }} of {{ device.title }}
+        <div class="ed-title" data-testid="editor-mode" :data-mode="mode">
+          {{ mode === 'photos' ? 'Photos' : drawing ? 'Drawing' : 'Layout' }} of {{ device.title }}
         </div>
-        <div v-if="drawing" class="rr-row-sub">
+        <div v-if="mode === 'photos'" class="rr-row-sub" data-testid="editor-photos-sub">
+          {{
+            draft
+              ? 'Nothing is placed yet. You can save once one control is placed.'
+              : 'Save at any time. What is not placed yet shows in a list under the photo.'
+          }}
+          Saved for this device model.
+        </div>
+        <div v-else-if="drawing" class="rr-row-sub">
           Drag a dot to where the control is; its label follows. Press a control on the device to
           find it. Saved for this device model.
         </div>
@@ -750,7 +699,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
       <v-btn size="small" variant="text" data-testid="editor-import" @click="importLayout"
         >Import…</v-btn
       >
-      <v-btn size="small" variant="text" data-testid="editor-export" @click="exportLayout"
+      <v-btn
+        size="small"
+        variant="text"
+        :disabled="draft"
+        data-testid="editor-export"
+        @click="exportLayout"
         >Share as file…</v-btn
       >
       <v-btn
@@ -771,7 +725,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
         color="primary"
         variant="flat"
         :loading="busy"
-        :disabled="!dirty"
+        :disabled="!dirty || draft"
         data-testid="editor-save"
         @click="save"
         >Save layout</v-btn
@@ -789,7 +743,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
     </v-alert>
     <div v-if="message" class="ed-message" data-testid="editor-message">{{ message }}</div>
 
-    <div class="ed-row">
+    <PhotoPlacer
+      v-if="ownPhotos"
+      :device="device"
+      :drawing="ownPhotos"
+      :pressed="pressed"
+      :shipped="Boolean(shipped)"
+      @update:drawing="setPhotos"
+      @problem="error = $event"
+      @cards="useCards"
+      @shipped="useDrawing"
+    />
+    <div v-else class="ed-row">
       <!-- The SVG is built by core/render from escaped text. -->
       <!-- eslint-disable vue/no-v-html -->
       <div
@@ -884,34 +849,30 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
           @update:model-value="dirty = true"
         />
 
-        <template v-if="custom">
-          <div class="rr-section-title mt-4">Not on the drawing ({{ missing.length }})</div>
-          <div v-if="missing.length === 0" class="rr-muted ed-hint">Every control is placed.</div>
-          <div v-else class="ed-tray" data-testid="editor-missing">
-            <button
-              v-for="chip in missing"
-              :key="chip.key"
-              type="button"
-              class="ed-chip"
-              data-testid="editor-missing-chip"
-              :data-control="chip.key"
-              @click="addToDrawing(chip.key)"
-            >
-              {{ chip.label }}
-            </button>
-          </div>
-        </template>
-
         <div class="rr-section-title mt-4">Instead</div>
-        <v-btn
-          size="small"
-          variant="text"
-          prepend-icon="mdi-card-outline"
-          data-testid="editor-use-cards"
-          @click="useCards"
-          >Arrange cards myself</v-btn
-        >
-        <div v-if="custom" class="rr-row-sub">Your drawing and its photo are dropped.</div>
+        <div class="ed-actions">
+          <v-btn
+            size="small"
+            variant="text"
+            prepend-icon="mdi-camera-outline"
+            data-testid="editor-use-photos"
+            @click="usePhotos"
+            >Use my own photos…</v-btn
+          >
+          <v-btn
+            size="small"
+            variant="text"
+            prepend-icon="mdi-card-outline"
+            data-testid="editor-use-cards"
+            @click="useCards"
+            >Arrange cards myself</v-btn
+          >
+        </div>
+        <div class="rr-row-sub">
+          With photos you press each control, then click where it is on your photo.
+          {{ custom ? 'Your drawing is' : 'What you changed on this drawing is' }} dropped either
+          way.
+        </div>
       </aside>
 
       <aside v-else class="ed-side rr-panel">
@@ -1034,28 +995,29 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
         </div>
 
         <div class="rr-section-title mt-4">Drawing</div>
-        <v-btn
-          v-if="shipped"
-          size="small"
-          variant="tonal"
-          prepend-icon="mdi-draw"
-          data-testid="editor-use-drawing"
-          @click="useDrawing"
-          >Use RigReady's drawing</v-btn
-        >
-        <template v-else>
+        <div class="ed-actions">
+          <v-btn
+            v-if="shipped"
+            size="small"
+            variant="tonal"
+            prepend-icon="mdi-draw"
+            data-testid="editor-use-drawing"
+            @click="useDrawing"
+            >Use RigReady's drawing</v-btn
+          >
           <v-btn
             size="small"
             variant="tonal"
-            prepend-icon="mdi-image-edit-outline"
+            prepend-icon="mdi-camera-outline"
             data-testid="editor-photo-drawing"
-            @click="drawOnPhoto"
+            @click="usePhotos"
             >Make a drawing from a photo…</v-btn
           >
-          <div class="rr-row-sub mt-1">
-            The labels then place themselves around the photo. You drag a dot onto each control.
-          </div>
-        </template>
+        </div>
+        <div class="rr-row-sub mt-1">
+          From a photo: press each control on the device, then click where it is on your photo. The
+          labels place themselves around it.
+        </div>
       </aside>
     </div>
   </div>

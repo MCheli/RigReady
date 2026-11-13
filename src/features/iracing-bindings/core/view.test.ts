@@ -504,14 +504,20 @@ describe('iRacing bindings: reading only', () => {
     expect(await filesOf(iracingDir(a))).toEqual(before);
   });
 
-  it('has two channels, and both only read', () => {
+  it('has two channels that read; the ones that change are kept from a local AI', () => {
     const channels = Object.entries(iracingBindingsContract.channels).map(([name, def]) => [
       name,
       def.meta?.tier,
     ]);
+    // "off" keeps a channel out of the tools a local AI is given. Changing a binding stays
+    // there until iRacing has taken a file RigReady changed (change.test.ts has the switch).
     expect(channels).toEqual([
       ['overview', 'read'],
       ['set', 'read'],
+      ['changePreview', 'off'],
+      ['change', 'off'],
+      ['listenStart', 'off'],
+      ['listenStop', 'off'],
     ]);
   });
 });

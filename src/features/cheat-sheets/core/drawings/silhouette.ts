@@ -124,6 +124,24 @@ export const ImageDataSchema = z
   .max(MAX_IMAGE_CHARS)
   .regex(/^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/);
 
+/** At most this many photos in one drawing. */
+export const MAX_VIEWS = 6;
+
+/**
+ * One photo of the device with a name of its own ("Front", "Back", "Top"): a view. A
+ * device seen from several sides has several, each in its own box of the drawing; a
+ * control is on the view its anchor lies in.
+ */
+export const DrawingViewSchema = z.object({
+  name: z.string().min(1).max(40),
+  image: ImageDataSchema,
+  x: coordinate,
+  y: coordinate,
+  w: z.number().min(1).max(10000),
+  h: z.number().min(1).max(10000),
+});
+export type DrawingView = z.infer<typeof DrawingViewSchema>;
+
 export const DrawingMatchSchema = z
   .object({
     vendorId: hex4,
@@ -157,6 +175,11 @@ export const DeviceDrawingSchema = z.object({
    * the paths may be left out: the controls are anchored on the picture.
    */
   image: ImageDataSchema.optional(),
+  /**
+   * Photos of the device, each a named view in its own box of the drawing. With them the
+   * paths may be left out too. Two or more are shown with their names over them.
+   */
+  views: z.array(DrawingViewSchema).max(MAX_VIEWS).optional(),
   texts: z.array(DrawingTextSchema).max(60).default([]),
   controls: z.array(PhysicalControlSchema).min(1).max(200),
   /** How much room the labels get, in canvas units (the canvas is 1000 wide). */
@@ -272,8 +295,15 @@ export function parseDrawing(
 ): { ok: true; drawing: DeviceDrawing } | { ok: false; reason: string } {
   const parsed = DeviceDrawingSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, reason: z.prettifyError(parsed.error) };
-  if (parsed.data.paths.length === 0 && !parsed.data.image) {
+  const views = parsed.data.views ?? [];
+  if (parsed.data.paths.length === 0 && !parsed.data.image && views.length === 0) {
     return { ok: false, reason: 'A drawing needs paths or a picture of the device.' };
+  }
+  for (const view of views) {
+    const { width, height } = parsed.data.size;
+    if (view.x < 0 || view.y < 0 || view.x + view.w > width + 1 || view.y + view.h > height + 1) {
+      return { ok: false, reason: `The photo "${view.name}" lies outside the drawing.` };
+    }
   }
   const seen = new Set<string>();
   for (const control of parsed.data.controls) {

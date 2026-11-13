@@ -3,6 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { onMachineChanged } from '../../../renderer/machine';
 import { CATEGORIES, CATEGORY_IDS, categoryTrail, type CategoryId } from '../core/categories';
+import { photo as photos } from '../core/drawings';
+import { knownDeviceFor } from '../core/known';
 import { controlName } from '../core/layout';
 import { kindsOn } from '../core/pages';
 import { pictureFor } from '../core/picture';
@@ -23,6 +25,8 @@ const kind = ref<CategoryId>();
 const selected = ref<string>();
 const showEmpty = ref(true);
 const editing = ref(false);
+/** The editor was opened to make a drawing from a photo: it asks for the file at once. */
+const fromPhoto = ref(false);
 const printing = ref(false);
 const kneeboard = ref(false);
 const noteDraft = ref('');
@@ -178,10 +182,25 @@ const SOURCE_TEXT = {
 
 /** How the picture is drawn: RigReady's drawing, the user's, cards, or a list. */
 const picture = computed(() => (device.value ? pictureFor(device.value) : undefined));
+/** How far a drawing from the user's own photos is; undefined for any other picture. */
+const photoProgress = computed(() => {
+  const now = picture.value;
+  const d = device.value;
+  if (!d || now?.kind !== 'drawing' || now.source !== 'custom') return undefined;
+  if (!photos.isPhotoDrawing(now.drawing)) return undefined;
+  const bound = d.controls.filter((c) => c.bindings.length > 0 || c.note).map((c) => c.id);
+  return photos.placement(now.drawing, d.reports, bound, knownDeviceFor(d)?.controls ?? []);
+});
 const pictureText = computed(() => {
   const now = picture.value;
   if (!now || !device.value) return '';
   if (now.kind === 'drawing') {
+    const progress = photoProgress.value;
+    if (progress) {
+      return progress.unplaced.length === 0
+        ? `Your photos, all ${progress.total} controls placed`
+        : `Your photos, ${progress.placed} of ${progress.total} controls placed`;
+    }
     return now.source === 'custom'
       ? 'Your drawing'
       : now.source === 'changed'
@@ -198,6 +217,13 @@ const pictureText = computed(() => {
 /** What the sheet says about its picture: the drawing's notes, or the layout's. */
 const pictureNotes = computed(() => {
   const now = picture.value;
+  const progress = photoProgress.value;
+  if (progress) {
+    // A half-done photo is still a sheet: what is missing is said, and where it shows.
+    return progress.unplaced.length === 0
+      ? undefined
+      : `Not placed on a photo yet: ${progress.text}. They are in the list under the photo. To place them, use Edit drawing.`;
+  }
   if (now?.kind === 'drawing') return now.source === 'custom' ? undefined : now.drawing.notes;
   if (now?.kind === 'list' && now.known) return now.known.notes;
   return device.value?.layoutSource !== 'user' ? device.value?.layout.notes : undefined;
@@ -222,12 +248,14 @@ function quickLook(): void {
 
 async function editorClosed(saved: boolean): Promise<void> {
   editing.value = false;
+  fromPhoto.value = false;
   store.holdDevice = false;
   if (saved) await store.refresh();
 }
 
-function startEditing(): void {
+function startEditing(photo = false): void {
   store.holdDevice = true;
+  fromPhoto.value = photo;
   editing.value = true;
 }
 
@@ -432,7 +460,13 @@ onBeforeUnmount(() => {
         </aside>
 
         <section v-if="device" class="cs-main">
-          <LayoutEditor v-if="editing" :device="device" :pressed="pressed" @close="editorClosed" />
+          <LayoutEditor
+            v-if="editing"
+            :device="device"
+            :pressed="pressed"
+            :photo="fromPhoto"
+            @close="editorClosed"
+          />
           <template v-else>
             <div class="cs-head">
               <div class="rr-row-main">
@@ -460,12 +494,22 @@ onBeforeUnmount(() => {
                 data-testid="sheet-show-empty"
               />
               <v-btn
+                v-if="picture?.kind !== 'drawing'"
+                size="small"
+                variant="text"
+                prepend-icon="mdi-camera-outline"
+                data-testid="sheet-photo-drawing"
+                :disabled="!device.vendorId || !device.productId"
+                @click="startEditing(true)"
+                >Use my photo…</v-btn
+              >
+              <v-btn
                 size="small"
                 variant="text"
                 prepend-icon="mdi-vector-square-edit"
                 data-testid="sheet-edit-layout"
                 :disabled="!device.vendorId || !device.productId"
-                @click="startEditing"
+                @click="startEditing()"
                 >{{ picture?.kind === 'drawing' ? 'Edit drawing' : 'Edit layout' }}</v-btn
               >
               <v-btn
