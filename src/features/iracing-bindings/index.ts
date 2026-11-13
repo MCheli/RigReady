@@ -1,11 +1,9 @@
 import { defineFeature } from '../../shared/feature';
 
-/**
- * A page and nothing else: no navigation entry. The Bindings game picker will link to
- * this route; until then it is reached from the command palette (commands.ts) or by link.
- */
+/** A page and nothing else: reached from the one Bindings entry and its game picker. */
 export default defineFeature({
   id: 'iracing-bindings',
+  bindings: [{ game: 'iracing', name: 'iRacing', to: '/configure/iracing-bindings', order: 20 }],
   routes: [
     {
       path: '/configure/iracing-bindings',

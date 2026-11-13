@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { CheckGroupSchema, type CheckGroup, type CheckItem, type Profile } from '../profile/schema';
 import { GameKindSchema } from '../../shared/models';
 import { DEVICE_KINDS } from '../gearKind';
+import { err, type Result } from '../result';
 import type {
   CaptureCandidate,
   CheckContext,
@@ -673,6 +674,7 @@ export const CaptureCandidateSchema = z.object({
     )
     .optional(),
   standDownNote: z.string().optional(),
+  remember: z.object({ capture: z.string(), remembered: z.boolean() }).optional(),
 });
 
 const processName = (candidate: CaptureCandidate): string | undefined =>
@@ -741,4 +743,22 @@ export async function captureCandidates(
     }
   }
   return { candidates: dedupeCandidates(candidates), problems };
+}
+
+/**
+ * "Always offer this app" on the capture screen: the capture that proposed the candidate
+ * keeps offering it in every new setup, or stops. Answers with the candidate as it is now.
+ */
+export async function rememberCandidate(
+  registry: CheckRegistry,
+  captureId: string,
+  key: string,
+  on: boolean,
+  ctx: CheckContext
+): Promise<Result<{ candidate?: CaptureCandidate }>> {
+  const capture = registry.allCaptures().find((c) => c.id === captureId);
+  if (!capture?.remember) {
+    return err('capture.remember', 'RigReady cannot offer this in every new setup.');
+  }
+  return capture.remember(key, on, ctx);
 }

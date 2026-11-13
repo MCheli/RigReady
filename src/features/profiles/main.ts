@@ -1,8 +1,10 @@
+import { rememberCandidate } from '../../core/checks/engine';
 import { bind, defineFeatureMain } from '../../core/feature';
 import { ok } from '../../core/result';
 import { profilesContract } from './contract';
 import { captureRig } from './core/capture';
 import { waitForPress } from './core/identify';
+import { bringOverEarlier, planEarlier } from './core/versionOne';
 import {
   browse,
   cloneProfile,
@@ -60,8 +62,14 @@ export default defineFeatureMain({
           const set = await ctx.profiles.setLastProfileId(id, ctx.ports.clock.now());
           return set.ok ? ok({ used: true }) : set;
         },
+        earlierPlan: async ({ id }) => {
+          const planned = await planEarlier(ctx, id);
+          return planned.ok ? ok(planned.value.view) : planned;
+        },
+        bringOver: ({ id }) => bringOverEarlier(ctx, id),
         clone: ({ id }) => cloneProfile(ctx, id),
         capture: async () => ok(await captureRig(ctx)),
+        remember: ({ capture, key, on }) => rememberCandidate(ctx.checks, capture, key, on, ctx),
         create: (input) => createProfile(ctx, input),
         types: async () => ok(await describeTypes(ctx)),
         pickers: () => pickers(ctx),

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
+import { setupGameName } from '../../../core/games';
 import {
   allPathVariables,
   collapsePath,
@@ -12,6 +13,7 @@ import { err, ok, type Result } from '../../../core/result';
 import type { ParamPicker } from '../../../core/checks/registry';
 import { storedPathKey, trackedExtension, trackedSuggestions } from './capture';
 import { GAME_LABEL, GAME_PARAM, gamesPicker, resolvePicker, usesGamesList } from './paramPickers';
+import { broughtOverFiles } from './brought';
 import type {
   CheckTypeInfo,
   DetectedGame,
@@ -135,7 +137,12 @@ async function validate(ctx: Ctx, profile: Profile): Promise<Result<void>> {
 }
 
 /** Creates a profile from checks chosen in the capture screen. */
-export async function createProfile(ctx: Ctx, input: NewProfile): Promise<Result<Profile>> {
+export async function createProfile(
+  ctx: Ctx,
+  input: NewProfile,
+  /** Main's own additions, never the window's: where a brought-over setup came from. */
+  more: { extensions?: Record<string, unknown> } = {}
+): Promise<Result<Profile>> {
   // The capture screen offers the files to back up and the user ticks them: a path the
   // renderer sends that main did not offer is refused, never stored for a later backup to read.
   if (input.tracked && input.tracked.length > 0) {
@@ -166,7 +173,7 @@ export async function createProfile(ctx: Ctx, input: NewProfile): Promise<Result
     createdAt: now,
     updatedAt: now,
     checks,
-    extensions: trackedExtension(input.tracked ?? []),
+    extensions: { ...trackedExtension(input.tracked ?? []), ...more.extensions },
     ...(input.gameInstall ? { gameInstall: input.gameInstall } : {}),
     ...(input.description ? { description: input.description } : {}),
     ...(input.game ? { game: input.game } : {}),
@@ -219,14 +226,10 @@ export async function overview(ctx: Ctx): Promise<Result<ProfileOverview>> {
   if (!listed.ok) return listed;
   const lastUsed = await ctx.profiles.lastUsed();
   const last = await ctx.profiles.lastProfileId();
+  const brought = broughtOverFiles(listed.value.profiles.map((p) => p.profile));
   return ok({
     profiles: listed.value.profiles.map(({ profile, file, hasComments }) => {
-      const gameName =
-        profile.game === 'other'
-          ? profile.gameName
-          : profile.game
-            ? (ctx.games.get(profile.game)?.name ?? profile.game)
-            : undefined;
+      const gameName = setupGameName(profile, ctx.games);
       return {
         profile,
         file,
@@ -236,7 +239,11 @@ export async function overview(ctx: Ctx): Promise<Result<ProfileOverview>> {
       };
     }),
     invalid: listed.value.invalid,
-    earlier: listed.value.earlier,
+    // A file RigReady 1 left says when it was brought over already, and as which setup.
+    earlier: listed.value.earlier.map((old) => {
+      const as = brought.get(path.basename(old.file));
+      return as ? { ...old, broughtOver: { id: as.id, name: as.name } } : old;
+    }),
     ...(last ? { lastProfileId: last } : {}),
   });
 }

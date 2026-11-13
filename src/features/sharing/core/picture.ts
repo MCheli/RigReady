@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
 import { sha256 } from '../../../core/files/fileStore';
 import type { DeviceKind as SaidKind } from '../../../core/gearKind';
+import { setupGameName } from '../../../core/games';
 import type { Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
 import { privacyContext, Scanner } from './privacy';
@@ -249,7 +250,7 @@ export async function pictureModel(ctx: PictureCtx, profile: Profile): Promise<P
       }));
   }
 
-  const game = profile.game ? (ctx.games.get(profile.game)?.name ?? profile.game) : undefined;
+  const game = setupGameName(profile, ctx.games);
   return {
     name: clean(profile.name) || 'Setup',
     ...(game ? { game: clean(game) } : {}),

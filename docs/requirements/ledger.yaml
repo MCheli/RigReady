@@ -1809,6 +1809,58 @@ requirements:
       - 'src/features/mcp/core/curated.test.ts#a game that is not on this PC is refused in words, and nothing is saved'
     notes: "Before this the tool kept everything the rig proposed, whatever the game: a setup made through an assistant for iRacing came with the flight gear ticked, which the page stopped doing in CFG-PROFILE-017."
 
+  - id: CFG-PROFILE-023
+    title: An app RigReady does not know can be offered in every new setup ("Always offer this app")
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "On New setup from this rig, a running program RigReady has no name for has \"Always offer this app\" on its line. Choosing it keeps the program's image name, a name for it and the path Windows reports for the running program in <data folder>/processes/known.json, and the line becomes what RigReady read back: ticked, \"Always offered\", with \"Stop offering it\"."
+      - "From then on every new setup lists that program with the helpers RigReady knows, ticked, while it runs, under the user's name for it; Stand down closes it only when the user switched that on. Make ready starts it through the process port with the path of the running program and an argument array, never a typed path."
+      - "Settings > Apps offered in new setups lists the user's apps with their path, renames them, switches Close at Stand down and takes them off the list."
+      - "The never list of the capture is authoritative: RigReady itself, Windows' own programs and anything in the Windows folder or off a drive of this PC never get the button and are refused when asked, and an entry naming one in a hand-edited known.json is left out when the file is read back, listed under Not used with why, never ticked and never closed at Stand down."
+      - "A damaged known.json is never overwritten: the known helpers are still offered and adding says why it cannot. Nothing outside RigReady's data folder is written."
+    status: done
+    evidence:
+      - 'src/features/processes/core/ownApps.test.ts#a program RigReady does not know is kept as Windows reported it, and is then offered ticked, under its name, with the launch fix from the running program'
+      - 'src/features/processes/core/ownApps.test.ts#closes it at Stand down only when the user says so'
+      - 'src/features/processes/core/ownApps.test.ts#never takes RigReady, a program of Windows or the Windows folder, whichever way it comes'
+      - 'src/features/processes/core/ownApps.test.ts#a list edited by hand is checked again when it is read: what the never list refuses is left out and said'
+      - 'src/features/processes/core/ownApps.test.ts#a damaged list is never overwritten: the known apps are still offered, and adding says why it cannot'
+      - 'src/features/processes/core/ownApps.test.ts#the New setup page offers it, Settings lists it, renames it and takes it off again'
+      - 'tests/e2e/processes-own-apps.e2e.ts#processes: an app RigReady does not know is offered in every new setup once the user asks, and the list is kept in Settings'
+      - 'artifacts/screens/processes-own-apps/01-unknown-app.png'
+      - 'artifacts/screens/processes-own-apps/02-always-offered.png'
+      - 'artifacts/screens/processes-own-apps/03-settings.png'
+      - 'artifacts/screens/processes-own-apps/04-next-setup.png'
+    notes: "Audit of fixed lists, 12 Nov 2026, item 4: the 31 helper apps RigReady knows were a list the user could not add to, so the same unknown app had to be dug out for every new setup."
+
+  - id: CFG-PROFILE-024
+    title: A setup RigReady 1 left behind is named, and brought over when it can be with confidence
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "Every setup file RigReady 1 left in profiles/ is named on the Setups page with its name and file, and says what RigReady can make of it."
+      - "Bring it over is offered when every part it brings has an exact match in this version: a running app (with its start-the-program or tell-me fix), a device by its numbers or by the one connected device of its name, a config file with or without its pattern, and the launch program or the game as found on this PC. The confirmation shows the new setup's checks, what Launch starts, and every part left out with why (monitor layouts, script checks, restore-a-file fixes, scripts around the launch, files kept for backup)."
+      - "Nothing is guessed: a device known only by a name that no connected device, or several, carry stops it, with what to do. When nothing has a match, or something stops it, the line says plainly that RigReady cannot bring the setup over and why, with Open the folder."
+      - "The old file is only read, never changed or removed without the user's say; the new setup is written through FileStore the way New setup from this rig writes one, remembers which file it came from, and the same file is not brought over twice."
+    status: done
+    evidence:
+      - 'src/features/profiles/core/versionOne.test.ts#is brought over: the wheel by the one connected device of its name, the app as it was, the monitor layout named and left out, and the old file untouched'
+      - 'src/features/profiles/core/versionOne.test.ts#guesses nothing: with the wheel unplugged it says to connect it and look again, and writes nothing'
+      - 'src/features/profiles/core/versionOne.test.ts#every kind of RigReady 1 check: what has an exact match comes over, the rest is named with why'
+      - 'src/features/profiles/core/versionOne.test.ts#says plainly when nothing in it has a match, and makes nothing'
+      - 'src/features/profiles/core/versionOne.test.ts#only a file RigReady 1 made, by a setup id, is ever looked at'
+      - 'tests/e2e/profiles-version-one.e2e.ts#profiles: a setup RigReady 1 left is brought over with what has an exact match, and the old file stays as it was'
+      - 'tests/e2e/profiles-version-one.e2e.ts#profiles: with the wheel of a RigReady 1 setup unplugged, RigReady says it cannot bring it over and opens the folder'
+      - 'artifacts/screens/profiles-version-one/01-listed.png'
+      - 'artifacts/screens/profiles-version-one/02-bring-over.png'
+      - 'artifacts/screens/profiles-version-one/03-brought-over.png'
+      - 'artifacts/screens/profiles-version-one/04-play.png'
+      - 'artifacts/screens/profiles-version-one-unplugged/01-cannot.png'
+    notes: "Sitting of 12 Nov 2026: the owner's RigReady 1 setup (LMU) sat in the profiles folder, listed apart with no way to bring it over. The RigReady 1 format is the one of src/shared/profileTypes.ts at the v1.1.0 tag; the test data is fixtures/scenarios/data/version-one, not the owner's folder."
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------
@@ -4272,14 +4324,15 @@ requirements:
     priority: p1
     done_means:
       - "Every shipped drawing was checked against a real map (the maker's number map or manual, and the game's default profile for the device); the table of device, source, what was fixed and what stays unconfirmed is in docs/research/controller-drawings.md."
-      - "A device whose places no source confirms has no drawing: it shows as its named list, which claims no places, and the page says 'Controls named for the <device> (no drawing of it yet)'. This is so for the Thrustmaster HOTAS Warthog throttle and the Saitek / Logitech X52 Pro."
+      - "A device whose places no source confirms has no drawing: it shows as its named list, which claims no places, and the page says 'Controls named for the <device> (no drawing of it yet)'. This is so for the Saitek / Logitech X52 Pro; it was for the Thrustmaster HOTAS Warthog throttle until it was drawn again from Thrustmaster's numbered drawings (SHEET-028)."
       - "The '?' mark is kept for exactly the controls whose number or direction is not confirmed from a real source; LAYOUT-FORMAT.md says so for drawings other people make."
       - "The manual says which devices have a drawing, which have a named list, and what '?' means."
     notes:
       - "2026-11-12: the owner in the sitting: 'We got to redo all of these diagrams because as they stand today, they are just too misleading.' The two withdrawn drawings are in the history of this repository and come back once a source settles their places."
+      - "2026-11-12, evening: the Warthog throttle came back, drawn from Thrustmaster's numbered drawings (SHEET-028). The X52 Pro was looked at again and stays a named list: Logitech's user guide names the kinds of control on photos but numbers none, and only a third party's map says which number is which button (docs/research/controller-drawings.md section 10)."
     status: done
     evidence:
-      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#shows no picture of a device whose places are not known to match it: the Warthog throttle and the X52 Pro are their named lists"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#shows no picture of a device whose places are not known to match it: the X52 Pro is its named list"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
       - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
       - "docs/research/controller-drawings.md"
@@ -4434,6 +4487,50 @@ requirements:
       - "artifacts/screens/cheat-sheets-photo/01-nothing-placed.png"
       - "artifacts/screens/cheat-sheets-photo-named/01-refused-not-a-picture.png"
       - "artifacts/screens/cheat-sheets-photo-named/02-refused-too-large.png"
+
+  - id: SHEET-028
+    title: The Thrustmaster HOTAS Warthog throttle is drawn again, every control where Thrustmaster's drawings put it
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The Warthog throttle (044F:0404) has a drawing in RigReady's flat style, made from nothing, CC0, in three views: the handles from the front (the coolie switch and the slew control on the right handle, the left throttle button on the left one), the thumb side of the right handle (mic switch, speed brake, boat switch, china hat, top to bottom), and the base from above (the flaps switch left of the slot, fuel flow, engine operate, APU and gear horn right of it, the slider wheel on the right edge, EAC, radar altimeter and autopilot on the strip nearest the pilot, the pinky switch on the left handle)."
+      - "Every control of the throttle's named map (SHEET-017) is on the drawing with the map's name and inputs; every place is settled by Thrustmaster's numbered drawings in the throttle's manual and agrees with figure 70 of the game's A-10C manual and with the game's A-10C profile for the throttle. docs/research/controller-drawings.md section 10 cites them. No control carries the '?' mark."
+      - "For DCS's Hornet defaults and for every input bound, at the app's size and filled for a kneeboard page, no two leader lines cross and every label block is on the page; the sheet says 'RigReady drawing'."
+    notes:
+      - "2026-11-12: withdrawn earlier the same day (SHEET-021) because its first drawing put the thumb switches on the left handle. Redrawn from the maker's manual, which numbers every control on three drawings. The coolie is named an 8-way hat, as Thrustmaster lists it."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
+      - "docs/research/controller-drawings.md"
+      - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/05-warthog-throttle-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/06-warthog-throttle-kneeboard-night-page.png"
+
+  - id: SHEET-029
+    title: The Thrustmaster TWCS throttle is named and drawn as Thrustmaster's manual numbers it
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The TWCS throttle (044F:B687, name 'TWCS Throttle') is a known device: every button, the hat and every axis it reports has a name, numbered as Thrustmaster's manual draws them (the mini-stick X, Y and its press 6, the wheel switch 4 and 5, buttons 2 and 3, the antenna dial on the first slider, the rocker on RZ, the 8-way POV hat, the hats 7 to 10 and 11 to 14, button 1, the throttle on Z), and TFRP pedals plugged into it are named too (rudder on the second slider, toe brakes on RY and RX). The game's defaults for the TWCS agree with every number."
+      - "It has a drawing in RigReady's flat style, made from nothing, CC0, in three views: the side of the handle with the mini-stick, the side with the hats, and the base from above with the socket the pedals report through. Every control of the map is on it with the map's name and inputs, each where the manual draws it; no control carries the '?' mark. docs/research/controller-drawings.md section 10 cites the sources."
+      - "For DCS's Hornet defaults and for every input bound, at the app's size and filled for a kneeboard page, no two leader lines cross and every label block is on the page; the sheet says 'RigReady drawing'."
+    notes:
+      - "2026-11-12: the TWCS was left out of the known devices on 11 November because its manual prints the button figure as an image; read as a picture, it numbers both sides of the handle. The manual does not say which side is the left one, so the views are named by what is on them. Nobody at the rig has a TWCS, so no press has checked it."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/known/known.test.ts#the TWCS throttle: numbered as Thrustmaster’s manual draws it, the pedals plugged into it as well"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
+      - "docs/research/controller-drawings.md"
+      - "docs/research/device-control-names.md"
+      - "artifacts/screens/cheat-sheets-known-devices/13-twcs-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/14-twcs-throttle-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/15-twcs-throttle-kneeboard-night-page.png"
 
   # ---------------------------------------------------------------------------
   # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)
@@ -6070,6 +6167,7 @@ requirements:
       - "On a PC without iRacing the page says so and shows no list; with iRacing but no controls.cfg yet it says there is no bindings file."
     notes:
       - "2026-11-12: the page is reached from the command palette ('iRacing bindings') and by its address, /configure/iracing-bindings. It has no menu entry: the Games menu and the game picker in Bindings are built on another branch and will replace this registration."
+      - "2026-11-12, later: the page joined the one Bindings entry of the menu (NAV-GAMES-002). Its manifest declares it as the bindings page of iRacing, so the game picker above every bindings page lists it beside DCS, and Bindings opens it when it was the game shown last or, on first use, when the setup in use is for iRacing. The palette command stays."
     status: done
     evidence:
       - "src/features/iracing-bindings/core/view.test.ts#lists every action, bound or not, with the device and input in plain words"
@@ -6695,6 +6793,121 @@ requirements:
       - "src/features/games/ace-combat-8/module.test.ts#a PC without the game finds nothing and suggests nothing"
     notes:
       - "2026-11-11: the settings folder and the program path come from community guides (docs/research/gamepad-emulation.md); the game was not on the rig when it was recorded, so the scenario virtual-controller-ready writes them by hand."
+
+  - id: GAME-ADD-001
+    title: Add a game of your own on the Games page
+    job: configure
+    area: games
+    priority: p1
+    done_means:
+      - "Configure > Games has Add a game. Its dialog takes the game's program (native file picker), a name (suggested from the program's folder), the kind (flight, racing or neither), settings folders (native folder picker), an optional Steam app id, and the program names that mean the game is running (the program's own name to start with)."
+      - "The game is kept in <data folder>/games/custom.json with its paths in the standard variables ({DOCUMENTS}/...), read at start and turned into a game module through simpleGame. It is listed with the built-in games, marked Added by you; found where its program is, or in Steam by its app id; launched; its settings folders listed and suggested on the Backups page; its program names used for Running and to close it before a restore."
+      - "Its first settings folder is a path variable of its own ({USER_<NAME>}, labelled), so its setups and backups stay portable."
+      - "Its id is user- and its name, never the id of a game RigReady ships, and a name another game already has is refused."
+      - "\"Add a game\" in the command palette (Ctrl+K) opens the Games page with the dialog; it adds nothing by itself."
+    status: done
+    evidence:
+      - "src/features/games/core/customGames.test.ts#the palette command “Add a game” opens the Games page with the dialog, and adds nothing itself"
+      - "artifacts/screens/games-own-change-remove/08-palette-add.png"
+      - "src/features/games/core/customGames.test.ts#a game added from the native pickers is found, launched, backed up and offered for a setup like a built-in one"
+      - "src/features/games/core/customGames.test.ts#reads the games in custom.json at start and turns each into a game module"
+      - "src/features/games/core/customGames.test.ts#a game sold on Steam is found and started through Steam by its app id alone"
+      - "src/features/games/core/customGames.test.ts#ids start with user-, never take another game’s, and names are not doubled"
+      - "src/features/games/core/customGames.test.ts#names a game after its folder, past the folders that say nothing"
+      - "tests/e2e/games-add.e2e.ts#games: a game is added from its program and settings folder, and a new setup offers it beside Another game"
+      - "artifacts/screens/games-add-a-game/01-empty.png"
+      - "artifacts/screens/games-add-a-game/03-filled.png"
+      - "artifacts/screens/games-add-a-game/04-games.png"
+      - "artifacts/screens/games-add-a-game/05-game.png"
+
+  - id: GAME-ADD-002
+    title: Change and remove a game you added, without breaking its setups
+    job: configure
+    area: games
+    priority: p1
+    done_means:
+      - "A game the user added has Change and Remove on its page. Change opens the same dialog with what the game has and keeps the game's id."
+      - "Remove first says which setups are for the game. Those setups then become setups for “Another game” with the game's name; every path in them that starts with the game's folder variable is written out in full; they check and launch as before."
+      - "A change or a removal is reported only after custom.json, and each setup it changed, are read back holding it."
+      - "A setup for a game whose entry was taken out of custom.json by hand is shown on Play, in the setups list and in the setup editor as “Another game”, never by its id; adding the game again under its name brings it back."
+    status: done
+    evidence:
+      - "src/features/games/core/customGames.test.ts#a setup for a game taken out of custom.json by hand is shown as “Another game”, never by its id"
+      - "src/core/games.test.ts#names a setup’s game by its module, its typed name, or “Another game” for a game the user added that is gone; never by a user- id"
+      - "src/features/games/core/customGames.test.ts#a removed game’s setups keep working as “Another game”, and the page said which they were"
+      - "src/features/games/core/customGames.test.ts#says it did not save or remove when the file does not hold the change afterwards"
+      - "tests/e2e/games-add.e2e.ts#games: a game the user added is changed and removed, and its setup keeps working as Another game"
+      - "artifacts/screens/games-own-change-remove/03-changed.png"
+      - "artifacts/screens/games-own-change-remove/04-remove-asks.png"
+      - "artifacts/screens/games-own-change-remove/05-removed.png"
+      - "artifacts/screens/games-own-change-remove/06-play.png"
+
+  - id: GAME-ADD-003
+    title: The settings folders of a game you added cannot open the whole PC to backups
+    job: configure
+    area: games
+    priority: p1
+    done_means:
+      - "Settings folders come only from the native folder picker: the window sends back a ref main handed out, never a path."
+      - "A drive root, the Windows folder, Program Files, ProgramData, the user folder and any folder above it, RigReady's own folder, the whole Documents, Saved Games, Desktop and AppData folders, and a whole Steam library are refused with the reason: in the picker, and when custom.json is read back (the folder is left out and the game's row and page say so)."
+      - "Whether a path may be tracked for backup no longer lets a game's folder or suggestion that is too broad vouch for it, whatever a game module names; the folders a shared setup's import may write to apply the same test."
+    status: done
+    evidence:
+      - "src/features/sharing/core/importRoots.test.ts#takes a game’s own settings folder, never one a game names that is too broad"
+      - "src/core/guards.test.ts#refuses a drive root, Windows, Program Files, the user folder, RigReady’s folder and a whole Steam library; takes a game’s own folder"
+      - "src/features/games/core/customGames.test.ts#refuses a drive, Windows, Program Files, the user folder and RigReady’s own folder in the picker"
+      - "src/features/games/core/customGames.test.ts#a hand-edited file cannot open a whole drive or the user folder to backups and restores"
+      - "src/features/games/core/customGames.test.ts#backup does not let any game’s folder that is too broad vouch for a path (the code that decides)"
+      - "tests/e2e/games-add.e2e.ts#games: a game is added from its program and settings folder, and a new setup offers it beside Another game"
+      - "artifacts/screens/games-add-a-game/02-folder-refused.png"
+      - "artifacts/screens/games-own-change-remove/01-games.png"
+
+  - id: GAME-ADD-004
+    title: The program of a game you added is started safely, and only its own programs are closed
+    job: configure
+    area: games
+    priority: p1
+    done_means:
+      - "The program comes only from the native file picker. It must be a .exe outside Windows and RigReady's own folder and not RigReady itself, and it is started with an argument list (processes.start), never a command line; nothing typed in the dialog reaches it."
+      - "Program names that are Windows' own (explorer.exe, svchost.exe, cmd.exe and the like), Steam's (steam.exe: a Steam game is named by its app id) or RigReady's are refused when the game is saved and left out when custom.json is read back. A restore never asks such a program to close, whatever a game module names."
+    status: done
+    evidence:
+      - "src/core/guards.test.ts#refuses Windows’ own programs and RigReady itself, by name and by file, in any case"
+      - "src/core/guards.test.ts#a restore never asks a part of Windows to close, whatever a game names"
+      - "src/features/games/core/customGames.test.ts#takes the program only from the file picker, refuses Windows and RigReady, and never a path from the window"
+      - "src/features/games/core/customGames.test.ts#a hand-edited file cannot make RigReady start or close Windows’ programs or RigReady"
+      - "src/features/games/core/customGames.test.ts#a game added from the native pickers is found, launched, backed up and offered for a setup like a built-in one"
+
+  - id: GAME-ADD-005
+    title: A shared setup for a game added by hand arrives as “Another game” on a PC without it
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "A shared setup whose game is a user- game this PC does not have is imported as a setup for “Another game” with that game's name (from the setup's compatibility list); the compatibility report and the setup part of the import say so."
+      - "When this PC has a game added under the same name, the setup keeps it."
+    status: done
+    evidence:
+      - "src/features/games/core/customGames.test.ts#comes in as “Another game” with that game’s name, and the import says so"
+      - "src/features/games/core/customGames.test.ts#keeps the game when this PC has a game of the same name added"
+      - "tests/e2e/games-add.e2e.ts#games: a shared setup for a game added by hand arrives on a PC without it as Another game, and the import says so"
+      - "artifacts/screens/games-share-own-import/01-report.png"
+      - "artifacts/screens/games-share-own-import/02-imported.png"
+
+  - id: GAME-ADD-006
+    title: Your games beside “Another game” in a new setup and in the setup editor
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "In a new setup the user's games that were found are the last game tiles, beside “Another game”, marked “added by you”; choosing one brings its program as the launch target, as a built-in game does."
+      - "In the setup editor the user's games are listed last, above “Other game…”, as “<name> (added by you)”."
+    status: done
+    evidence:
+      - "tests/e2e/games-add.e2e.ts#games: a game is added from its program and settings folder, and a new setup offers it beside Another game"
+      - "src/features/games/core/customGames.test.ts#a game added from the native pickers is found, launched, backed up and offered for a setup like a built-in one"
+      - "artifacts/screens/games-add-a-game/06-capture.png"
+      - "artifacts/screens/games-add-a-game/08-editor.png"
 
   # ---------------------------------------------------------------------------
   # VIRTUAL CONTROLLER (gamepad emulation)
@@ -8258,6 +8471,111 @@ requirements:
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-palette/02-typed.png"
       - "artifacts/screens/shell-palette/04-recent.png"
+
+  - id: NAV-GAMES-001
+    title: The menu names no game - one Games entry, from which the pages about a game open
+    job: platform
+    area: shell
+    priority: p1
+    done_means:
+      - "The Games section of the Configure menu has one entry, Games. The DCS World page and the Racing page have no entry of their own; a feature declares such a page in its manifest (gamePages: title, icon, route, one line, the games it is about), and no feature imports another for it."
+      - "The Games page offers each such page with a card (its name and one line) when one of its games is found on this PC: DCS World and Racing on the owner's rig, neither on a PC without those games. Without the game, the game's own page still leads there ('Set up DCS World')."
+      - "Both pages keep their routes (/configure/dcs and its tabs, /configure/racing and its game pages), and the menu marks Games while one of them or a page below it is open; the Wheel page, inside the Racing page's address, keeps its own entry under Hardware."
+      - "A game that gets a page of its own, or a bindings page, adds no row to the menu (unit test with a third game)."
+    notes:
+      - "2026-11-12: the owner's decision 1A at the sitting ('It might be better to have something like a bindings menu and then have options for what games are supported there'). The menu went from twenty entries to eighteen. A card is shown only when one of its games is found, so that a PC without DCS is not offered a DCS page first; the owner judges that at the second look."
+    status: done
+    evidence:
+      - "src/shared/feature.test.ts#names no game: Games under Games, Bindings first under Controls"
+      - "src/shared/feature.test.ts#a game that gets a bindings page or a page of its own adds no entry"
+      - "src/shared/feature.test.ts#each game page under Games, each bindings page under Bindings, named as their entries were"
+      - "src/renderer/shell/nav.test.ts#NAV-GAMES-001: a page that stands under an entry belongs to it, and so do the pages below it"
+      - "tests/e2e/games-menu.e2e.ts#games menu: one Games entry, and DCS World and Racing open from their cards on Games"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: on a PC without DCS every tab says so the same way, SimAppPro included"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "tests/e2e/tour.e2e.ts#tour: every page on"
+      - "artifacts/screens/games-menu/01-games.png"
+      - "artifacts/screens/games-menu/02-dcs-world.png"
+      - "artifacts/screens/games-menu/03-racing.png"
+
+  - id: NAV-GAMES-002
+    title: One Bindings entry with a game picker
+    job: configure
+    area: shell
+    priority: p1
+    done_means:
+      - "The Controls section starts with one entry, Bindings, the shell's own. A feature declares its game's bindings page in its manifest (bindings: game, name, route, order); DCS and iRacing do, so the picker lists 'DCS' and 'iRacing'. A game without a bindings page is not listed."
+      - "A Game picker stands above every game's bindings page, and the menu marks Bindings on each; choosing another game opens its page. The pages keep their routes (/configure/dcs-bindings and its tabs, /configure/iracing-bindings)."
+      - "Bindings opens the game shown last, chosen in the picker or opened by a link, also after RigReady was closed and started again."
+      - "On first use it opens the game of the setup in use when that game has a bindings page (DCS on the flying rig, iRacing on the racing rig), and otherwise the first game of the picker."
+    status: done
+    evidence:
+      - "src/renderer/shell/bindings.test.ts#the game shown last, while it still has a page"
+      - "src/renderer/shell/bindings.test.ts#on first use the game of the setup in use, when it has a page"
+      - "src/renderer/shell/bindings.test.ts#asks about the setup only when no game has been shown yet"
+      - "src/renderer/shell/bindings.test.ts#comes from the first feature that knows"
+      - "tests/unit/paletteCommands.test.ts#NAV-GAMES-002: knows the game the setup in use is for, which Bindings opens on first use"
+      - "src/shared/feature.test.ts#the Bindings entry is the shell’s, and only there while a feature has a bindings page"
+      - "tests/e2e/games-menu.e2e.ts#bindings: one entry with a game picker; the setup’s game on first use, then the game chosen last"
+      - "tests/e2e/games-menu.e2e.ts#bindings: on the racing rig the first use opens iRacing, the game of its setup"
+      - "artifacts/screens/games-menu-bindings/01-dcs.png"
+      - "artifacts/screens/games-menu-bindings/02-picker-open.png"
+      - "artifacts/screens/games-menu-bindings/03-iracing.png"
+      - "artifacts/screens/games-menu-racing/01-first-use.png"
+
+  - id: NAV-GAMES-003
+    title: The command palette after the menu stopped naming games
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The palette lists Bindings, and the pages that left the menu under the names their entries had ('DCS World', 'Racing', 'DCS bindings', 'iRacing bindings'), with the section as the hint, right after the entry they now stand under; the pages below them are still named after them ('DCS World: Screens')."
+      - "A feature's commands keep their heading ('DCS bindings') and its place; only Play's commands come first."
+      - "Choosing Bindings in the palette opens a game's bindings page, as the menu entry does."
+    status: done
+    evidence:
+      - "src/renderer/shell/registry.test.ts#keeps the names of the pages that left the menu, with the section they were in"
+      - "src/renderer/shell/registry.test.ts#orders them where their entries stood: under Games after Games, under Bindings after Bindings"
+      - "src/renderer/shell/registry.test.ts#a feature whose page left the menu keeps its heading and its place among the headings"
+      - "src/renderer/shell/registry.test.ts#only Play comes first, with the Bindings entry and the places in"
+      - "tests/e2e/games-menu.e2e.ts#palette and links: the pages that left the menu keep their names and their addresses"
+      - "tests/e2e/shell.e2e.ts#palette: Ctrl+K finds every page and the commands of the features, by keyboard alone"
+      - "artifacts/screens/games-menu-links/01-palette.png"
+
+  - id: NAV-GAMES-004
+    title: No link in the app leads nowhere
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "Every fixed in-app address in the shipped sources (a page's link, a check's 'Open ...', a palette command, a button) opens a route a manifest declares or the shell's Bindings route; a unit test reads them all."
+      - "The Stream Deck findings about DCS-ExportScript and DCS-BIOS offer 'Open DCS World: Export.lua', which opens that tab (the link named a route that did not exist, /configure/dcs-setup, so the page hid it)."
+      - "The walks over every route (the tour, the crawl, the accessibility scan, the second generic PC) follow the Bindings address to the page it opens instead of failing on it."
+      - "Text that names a place in the menu says where it is now: 'Configure > Games > DCS World > Screens', 'Configure > Games > Racing', 'Configure > Bindings with DCS chosen', in the app and in the manual."
+    notes:
+      - "2026-11-12: one place keeps the old words on purpose: the comment at the top of the monitor setup file RigReady writes for DCS ('Change it in RigReady (Configure > DCS World > Screens)'). RigReady compares that file with what it would write, so new words would make every file written before differ and ask for a rewrite."
+    status: done
+    evidence:
+      - "tests/unit/routeLinks.test.ts#every fixed address written in the shipped sources opens a page"
+      - "tests/unit/routeLinks.test.ts#knows a dead address when it sees one"
+      - "src/features/stream-deck/core/health.test.ts"
+      - "tests/e2e/games-menu.e2e.ts#palette and links: the pages that left the menu keep their names and their addresses"
+      - "tests/e2e/nfr.e2e.ts#nfr: every route of every feature renders, and no visible control is a stub"
+      - "tests/e2e/generic-second-pc.e2e.ts#second generic PC: every Configure page renders; DCS, monitors and devices are this PC’s own"
+      - "artifacts/screens/games-menu-links/02-finding.png"
+      - "artifacts/screens/games-menu-links/03-export-lua.png"
+
+  - id: NAV-GAMES-005
+    title: With one game on the list, the Bindings picker still names it
+    job: configure
+    area: shell
+    priority: p3
+    done_means:
+      - "When only one game has a bindings page, the strip above the page says 'Game' and the game's name instead of a list with one choice."
+    notes:
+      - "2026-11-12: built (src/renderer/components/BindingsGamePicker.vue), not shown: every build has two games with a bindings page since the iRacing bindings were merged, and no scenario can take one away, so there is no picture of it and no test reaches it."
+    status: in_progress
+    evidence: []
 
   - id: WOW-UI-002
     title: Palette commands call their feature and a toast reports what really happened

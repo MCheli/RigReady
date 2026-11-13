@@ -191,7 +191,8 @@ test('backup: a racing restore and a BeamNG copy show what each file becomes bef
   await fs.writeFile(path.join(older, '00060eb7.diff'), JSON.stringify({ bindings: [] }));
 
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="iracing"]').click();
   await page.getByTestId('backup-now').click();
   await expect(page.getByTestId('backup-message')).toHaveText('Backed up 3 files.');
@@ -219,7 +220,8 @@ test('backup: a racing restore and a BeamNG copy show what each file becomes bef
   await expect(page.getByTestId('backup-message')).toContainText('Restored 3 files');
   expect(await fs.readFile(path.join(iracing, 'app.ini'), 'utf8')).toBe(ini);
 
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="beamng"]').click();
   await page.getByTestId('beamng-copy-older').click();
   const copy = page.getByTestId('beamng-copy-confirm');

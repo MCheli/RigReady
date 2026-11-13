@@ -8,7 +8,8 @@ import type { Backup, Finding, Inventory, PluginSummary, StreamDeckStatus } from
  * plugins whose own dependency (a DCS export script) is missing, and backup hygiene.
  */
 
-export const DCS_SETUP_ROUTE = { label: 'Open DCS setup', to: '/configure/dcs-setup' };
+/** The Export.lua tab of the DCS World page (Games, then DCS World), which adds the line. */
+export const DCS_SETUP_ROUTE = { label: 'Open DCS World: Export.lua', to: '/configure/dcs/export' };
 
 const count = (n: number, one: string, many = `${one}s`): string =>
   `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
@@ -94,7 +95,7 @@ function dcsInterfaceFindings(plugin: PluginSummary, dcs: DcsExportState): Findi
         severity: 'bad',
         title: `${actions} will stay blank in DCS: DCS-ExportScript is not loaded`,
         detail: `${base} ${plugin.name} gets cockpit data from DCS-ExportScript and sends key presses through it. ${reason} Lamps, displays and dials on these keys will not update, and presses will not reach the cockpit.`,
-        fix: `Add DCS-ExportScript back: put the DCS-ExportScript folder in ${where}\\Scripts and add its dofile line to Export.lua. RigReady's DCS setup screen does the Export.lua part for you, with a backup first.`,
+        fix: `Add DCS-ExportScript back: put the DCS-ExportScript folder in ${where}\\Scripts and add its dofile line to Export.lua. The Export.lua tab of RigReady's DCS World page does the Export.lua part for you, with a backup first.`,
         route: DCS_SETUP_ROUTE,
         link: {
           label: 'DCS-ExportScript on GitHub',
@@ -127,7 +128,7 @@ function dcsBiosFindings(plugin: PluginSummary, dcs: DcsExportState): Finding[] 
       severity: 'bad',
       title: `${count(plugin.actions, 'action')} ${plugin.actions === 1 ? 'needs' : 'need'} DCS-BIOS, which DCS does not load`,
       detail: `${plugin.name} talks to DCS through DCS-BIOS, and ${dcs.folders[0]!.label}\\Scripts\\Export.lua does not load it. Used in: ${usedIn(plugin)}.`,
-      fix: 'Install DCS-BIOS and make sure Export.lua loads it. RigReady’s DCS setup screen checks the Export.lua lines.',
+      fix: 'Install DCS-BIOS and make sure Export.lua loads it. The Export.lua tab of RigReady’s DCS World page checks the Export.lua lines.',
       route: DCS_SETUP_ROUTE,
     },
   ];

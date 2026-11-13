@@ -32,7 +32,7 @@ The setup path variables `{IRACING_USER}` (the Documents folder) and `{IRACING_I
 
 ## The bindings and controllers page
 
-**Configure > Racing > iRacing** (also reached with **Bindings and controllers** on the game page) reads two files and shows them matched to what is connected now.
+**Configure > Games > Racing > iRacing** (also reached with **Bindings and controllers** on the game page) reads two files and shows them matched to what is connected now.
 
 **Controllers iRacing knows** comes from `joyCalib.yaml` and `controls.cfg`. Each controller shows the name you gave it on the [Devices page](../hardware/devices.md), the name iRacing stored, how many bindings use it, whether it is calibrated and which axes, a short form of its id, and a state:
 

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { CheckContext } from '../../../core/checks/registry';
-import type { GameModule, GameRegistry } from '../../../core/games';
+import { isUserGame, type GameModule, type GameRegistry } from '../../../core/games';
 import { err, ok, type Result } from '../../../core/result';
 import type { ProcessInfo } from '../../../shared/models';
 import type { GameSummary } from '../contract';
@@ -19,13 +19,14 @@ export async function summarizeGame(
     id: module.id,
     name: module.name,
     ...(extras?.kind ? { kind: extras.kind } : {}),
+    ...(isUserGame(module.id) ? { addedByYou: true } : {}),
     installs: [],
     running: false,
     configLocations: [],
     trackedFiles: [],
     notes: extras?.notes ?? [],
     facts: [],
-    problems: [],
+    problems: [...(extras?.problems ?? [])],
   };
   try {
     const installs = await module.detect(ctx);

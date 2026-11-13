@@ -29,6 +29,14 @@ Each section lists what was found, with a tick per line and a count of what is k
 
 What belongs to another game, or to another aircraft or car, is not shown. A helper of the other family (a wheel app in a flight setup) is listed but not kept unless you tick it. Ticks you set by hand stay when you change the game.
 
+### Apps RigReady does not know
+
+A program RigReady has no name for sits behind **Show N other running apps**, and would have to be found there again for every new setup. **Always offer this app** on its line ends that: the line is ticked and says "Always offered", and from then on every new setup lists the program with the helpers RigReady knows, ticked, whenever it is running. **Stop offering it** undoes that. RigReady keeps the program's name and the path Windows reports for it while it runs; Make ready starts it from that path, never from a path that was typed. Programs of Windows and RigReady itself never have the button.
+
+![Always offer this app](../../../artifacts/screens/processes-own-apps/02-always-offered.png)
+
+The list, the name each program is shown by and whether Stand down closes it are in **Configure > Settings > Apps offered in new setups** ([Settings](../app/settings.md#apps-offered-in-new-setups)).
+
 ## Before launch
 
 A game that reads a gamepad and not sim gear (Ace Combat 8, for example) gets one more section, **Before launch**, with the step **Start a virtual controller**. Choose which of your virtual controllers it starts, by name. The line under the list says what kind of controller it is and which gear feeds it. The one in use now comes chosen, or the only one you have. Without a choice the step is not kept.

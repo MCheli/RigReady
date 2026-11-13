@@ -79,6 +79,41 @@ describe('the shipped device maps', () => {
     expect(throttle.get('button:30')).toBe('Idle detents Left');
     expect(throttle.get('axis:RZ')).toBe('Throttles Left');
     expect(throttle.get('hat:1:U')).toBe('Coolie switch ↑');
+    // Thrustmaster lists the throttle's hat as 8-way.
+    expect(throttle.get('hat:1:DL')).toBe('Coolie switch ↙');
+  });
+
+  it('the TWCS throttle: numbered as Thrustmaster’s manual draws it, the pedals plugged into it as well', () => {
+    const twcs = knownDeviceFor({ vendorId: '044F', productId: 'B687' })!;
+    expect(twcs.name).toBe('Thrustmaster TWCS throttle');
+    expect(knownDeviceFor({ name: 'TWCS Throttle' })?.id).toBe('tm-twcs-throttle');
+    const labels = knownLabels(twcs);
+    expect(labels.get('axis:X')).toBe('Mini-stick ↔');
+    expect(labels.get('button:6')).toBe('Mini-stick Press');
+    expect(labels.get('button:4')).toBe('Wheel switch ↑');
+    expect(labels.get('button:5')).toBe('Wheel switch ↓');
+    expect(labels.get('button:3')).toBe('Button by the wheel');
+    expect(labels.get('button:2')).toBe('Button by the dial');
+    expect(labels.get('axis:SLIDER1')).toBe('Antenna dial');
+    expect(labels.get('axis:RZ')).toBe('Rocker');
+    expect(labels.get('axis:Z')).toBe('Throttle');
+    expect(labels.get('hat:1:UR')).toBe('POV hat ↗');
+    expect([7, 8, 9, 10].map((n) => labels.get(`button:${n}`))).toEqual([
+      'Middle hat ↑',
+      'Middle hat →',
+      'Middle hat ↓',
+      'Middle hat ←',
+    ]);
+    expect([11, 12, 13, 14].map((n) => labels.get(`button:${n}`))).toEqual([
+      'Lower hat ↑',
+      'Lower hat →',
+      'Lower hat ↓',
+      'Lower hat ←',
+    ]);
+    expect(labels.get('button:1')).toBe('Bottom button');
+    expect(labels.get('axis:SLIDER2')).toBe('TFRP pedals, plugged in Rudder');
+    expect(labels.get('axis:RY')).toBe('TFRP pedals, plugged in Left brake');
+    expect(labels.get('axis:RX')).toBe('TFRP pedals, plugged in Right brake');
   });
 
   it('a list of a known device has a block per physical control, and the others after it', () => {

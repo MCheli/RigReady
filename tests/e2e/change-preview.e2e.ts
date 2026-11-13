@@ -36,7 +36,8 @@ test('change preview: the iRacing id repair lists the files it rewrites before i
   const controls = path.join(home, 'Documents', 'iRacing', 'controls.cfg');
   const before = await fs.readFile(controls);
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="iracing"]').click();
   await page.getByTestId('iracing-repair').click();
 
@@ -94,7 +95,8 @@ test('change preview: copying BeamNG bindings to a new controller names the file
     })
   );
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="beamng"]').click();
   const old = page.locator('[data-testid="beamng-map"][data-file="00010eb7.diff"]');
   await old.getByTestId('beamng-copy-target').click();
@@ -120,7 +122,8 @@ test("change preview: restoring RigReady's DCS files shows what is put back, and
   const run = await rig.launch('dcs-setup-flying', 'backup-change-preview-dcs');
   const { page, shot, home } = run;
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-dcs').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-dcs').click();
   await page.getByTestId('dcs-tab-screens').click();
   await expect(page.getByTestId('screen-map-box')).toHaveCount(3);
   // SimAppPro's plan is matched by position alone here: the user says the screens are right first.

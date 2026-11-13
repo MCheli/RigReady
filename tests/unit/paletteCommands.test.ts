@@ -311,6 +311,19 @@ describe('Play commands (the fly feature)', () => {
     const none = await open('flying-fresh');
     expect(await moduleOf('fly').setupKind!(none.shell)).toBeUndefined();
   });
+
+  it('NAV-GAMES-002: knows the game the setup in use is for, which Bindings opens on first use', async () => {
+    const flying = await open('flying-all-good');
+    expect(await moduleOf('fly').setupGame!(flying.shell)).toBe('dcs');
+    await app!.cleanup();
+    const racing = await open('tour-racing');
+    expect(await moduleOf('fly').setupGame!(racing.shell)).toBe('iracing');
+    await app!.cleanup();
+    const none = await open('flying-fresh');
+    expect(await moduleOf('fly').setupGame!(none.shell)).toBeUndefined();
+    // The only feature that says it, so the shell asks no other.
+    expect(modules.filter((m) => m.setupGame).map((m) => m.feature)).toEqual(['fly']);
+  });
 });
 
 describe('Monitors commands', () => {

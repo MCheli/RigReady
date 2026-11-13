@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, scenarioRig, type TestRig } from '../../tests/helpers';
-import { gameRunning } from './games';
+import { asAnotherGame, GameRegistry, gameRunning, setupGameName } from './games';
+import { ok } from './result';
 
 /**
  * The one definition of "the game is running" that every feature refusing to write a game's
@@ -29,5 +30,28 @@ describe('gameRunning', () => {
     // When the list of programs cannot be read, nothing is known to be running.
     await mutate(rig, [{ op: 'failProvider', port: 'processes', message: 'no list today' }]);
     expect(await gameRunning(rig, sim)).toBe(false);
+  });
+});
+
+describe('setupGameName', () => {
+  it('names a setup’s game by its module, its typed name, or “Another game” for a game the user added that is gone; never by a user- id', () => {
+    const games = new GameRegistry();
+    games.register({
+      id: 'user-star-hauler',
+      name: 'Star Hauler',
+      detect: async () => ok([]),
+      configLocations: async () => ok([]),
+    });
+    expect(setupGameName({}, games)).toBeUndefined();
+    expect(setupGameName({ game: 'other', gameName: 'Rally Pro' }, games)).toBe('Rally Pro');
+    expect(setupGameName({ game: 'user-star-hauler' }, games)).toBe('Star Hauler');
+    expect(setupGameName({ game: 'user-gone' }, games)).toBe('Another game');
+    expect(setupGameName({ game: 'user-gone', gameName: 'Gone Game' }, games)).toBe('Gone Game');
+    // A game a newer RigReady knows is named by its id, as before.
+    expect(setupGameName({ game: 'future-sim' }, games)).toBe('future-sim');
+    expect(asAnotherGame({ game: 'user-gone', gameInstall: 'D:\\Gone' }, '  Gone Game ')).toEqual({
+      game: 'other',
+      gameName: 'Gone Game',
+    });
   });
 });

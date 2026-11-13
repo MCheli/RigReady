@@ -7,7 +7,8 @@ import { checkRow, expect, test } from './harness';
 
 const openDcs = async (page: Page, tab?: 'screens' | 'export' | 'simapppro'): Promise<void> => {
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-dcs').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-dcs').click();
   if (tab) await page.getByTestId(`dcs-tab-${tab}`).click();
 };
 
@@ -604,7 +605,14 @@ test('dcs-setup: on a PC without DCS every tab says so the same way, SimAppPro i
 }) => {
   // The owner's rig with DCS removed: SimAppPro is installed, DCS is not.
   const { page, shot } = await rig.launch('dcs-bindings-no-dcs', 'dcs-setup-no-dcs');
-  await openDcs(page);
+  // Without DCS, Games offers no DCS World card; the game's own page still leads there.
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-games').click();
+  await page.locator('[data-testid="game-row"][data-game="dcs"]').click();
+  await expect(page.getByTestId('game-bindings')).toHaveText('Set up DCS World');
+  await page.getByTestId('game-bindings').click();
+  await expect(page.getByTestId('dcs-page')).toBeVisible();
+  await expect(page.getByTestId('nav-games')).toHaveAttribute('aria-current', 'location');
   for (const tab of ['overview', 'screens', 'export', 'simapppro'] as const) {
     await page.getByTestId(`dcs-tab-${tab}`).click();
     const missing = page.getByTestId('dcs-not-found');

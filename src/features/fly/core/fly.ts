@@ -11,6 +11,7 @@ import {
   type StepResult,
 } from '../../../core/checks/engine';
 import type { MainContext } from '../../../core/feature';
+import { setupGameName } from '../../../core/games';
 import { JsonStore } from '../../../core/jsonStore';
 import { allPathVariables, expandPath } from '../../../core/pathVariables';
 import { closeTogether, stillRunningText } from '../../../core/processes';
@@ -165,8 +166,7 @@ export class Fly {
   }
 
   private gameName(profile: Profile): string | undefined {
-    if (profile.game === 'other') return profile.gameName;
-    return profile.game ? (this.ctx.games.get(profile.game)?.name ?? profile.game) : undefined;
+    return setupGameName(profile, this.ctx.games);
   }
 
   async view(profile: Profile, problem?: string): Promise<ProfileView> {

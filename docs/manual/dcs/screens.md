@@ -4,7 +4,7 @@ description: Put the main view and the cockpit displays on your monitors: RigRea
 order: 20
 ---
 
-DCS can draw the cockpit displays of some aircraft, the DDIs and the AMPCD of the F/A-18C for example, on separate screens. Which screen each display lands on is set in a monitor setup file. The **Screens** tab of **Configure > DCS World** makes that file from your monitor layout, so you need neither SimAppPro nor a text editor for it.
+DCS can draw the cockpit displays of some aircraft, the DDIs and the AMPCD of the F/A-18C for example, on separate screens. Which screen each display lands on is set in a monitor setup file. The **Screens** tab of **Configure > Games > DCS World** makes that file from your monitor layout, so you need neither SimAppPro nor a text editor for it.
 
 ## How DCS does it
 

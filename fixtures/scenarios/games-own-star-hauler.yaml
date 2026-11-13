@@ -1,0 +1,9 @@
+description: A generic PC where the user added Star Hauler on the Games page (its file edited by hand since), with a setup for it
+rig: generic-rig
+extends: generic-custom-game.yaml
+# games/custom.json holds Star Hauler with a settings folder that is a whole drive, and an
+# entry that is not a game: both are left out when the file is read, and said so.
+profiles:
+  - profiles/games-star-hauler.yaml
+data:
+  games/custom.json: data/games/custom.json

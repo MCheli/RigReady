@@ -23,6 +23,7 @@ import {
   type CaptureStep,
 } from '../contract';
 import MonitorDiagram from './MonitorDiagram.vue';
+import RememberApp from './RememberApp.vue';
 import { pickerItems, pickerNote, type PickerItem, type PickerNote } from './pickerForm';
 import { newSetupLaunch, steamAppOf, steamAppProblem, type LaunchKind } from './steamLaunch';
 
@@ -82,7 +83,12 @@ const stepCheckLeft = reactive<Record<string, boolean>>({});
 
 const candidates = computed(() => captured.value?.candidates ?? []);
 const games = computed(() => captured.value?.games ?? []);
-const installed = computed(() => games.value.filter((g) => g.installs.length > 0));
+/** The games found here; the ones the user added ("user-...") last, beside "Another game". */
+const installed = computed(() => {
+  const found = games.value.filter((g) => g.installs.length > 0);
+  const own = (g: CaptureGame): boolean => g.id.startsWith('user-');
+  return [...found.filter((g) => !own(g)), ...found.filter(own)];
+});
 const chosenGame = computed(() => games.value.find((g) => g.id === game.value));
 const chosenInstall = computed(
   () =>
@@ -122,6 +128,13 @@ function applyDefaults(): void {
 function toggle(candidate: Candidate, value: boolean | null): void {
   selected[candidate.key] = value === true;
   touched[candidate.key] = true;
+}
+/** "Always offer this app" answered: the row is what the capture proposes now, and kept. */
+function replaced(old: Candidate, now: Candidate | undefined): void {
+  const list = captured.value?.candidates ?? [];
+  const at = list.findIndex((c) => c.key === old.key);
+  if (at >= 0) list.splice(at, 1, ...(now ? [now] : []));
+  if (now?.remember?.remembered) toggle(now, true);
 }
 
 const argsLine = (args: string[]): string =>
@@ -575,6 +588,7 @@ onMounted(capture);
                   <span class="cap-tile-name">{{ g.name }}</span>
                   <span class="cap-tile-sub">
                     <template v-if="g.running">running now</template>
+                    <template v-else-if="g.id.startsWith('user-')">added by you</template>
                     <template v-else>{{
                       g.installs.length > 1
                         ? `${g.installs.length} installs`
@@ -993,6 +1007,7 @@ onMounted(capture);
                   class="cap-ask"
                   data-testid="candidate-ask"
                 />
+                <RememberApp :candidate="candidate" @changed="replaced(candidate, $event)" />
               </div>
               <v-btn-toggle
                 v-if="selected[candidate.key]"
@@ -1063,6 +1078,7 @@ onMounted(capture);
                         candidate.description
                       }}</span>
                     </div>
+                    <RememberApp :candidate="candidate" @changed="replaced(candidate, $event)" />
                   </div>
                 </div>
               </template>
