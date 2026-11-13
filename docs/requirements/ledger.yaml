@@ -1916,6 +1916,21 @@ requirements:
       - "artifacts/screens/profiles-version-one-two-controllers/01-bring-over.png"
       - "artifacts/screens/profiles-version-one-two-controllers/02-play.png"
 
+  - id: CFG-PROFILE-FIXLABEL-001
+    title: The setup editor names an item's fix with the names in its label as written
+    job: configure
+    area: profiles
+    priority: p3
+    done_means:
+      - "The line under an item in the setup editor says 'fix: ' and the fix's label with only an ordinary first word lowered ('start SimAppPro', 'switch iRacing’s control profile'); a first word that is a name or an abbreviation, and every word after it, keep their capitals."
+    notes:
+      - "2026-11-13: the editor lowered the whole label ('start simapppro', 'switch iracing’s control profile'), found while adding the iRacing control profile check."
+    status: done
+    evidence:
+      - "src/features/profiles/renderer/inSentence.test.ts#lowers only an ordinary first word, and keeps names and abbreviations as written"
+      - "tests/e2e/setup-editor-fix-label.e2e.ts#setup editor: the fix of an item keeps the names in its label"
+      - "artifacts/screens/setup-editor-fix-label/01-fix-label.png"
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------
