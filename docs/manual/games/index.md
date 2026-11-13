@@ -4,7 +4,7 @@ description: Which games RigReady knows and how deeply, how a game is found on t
 order: 70
 ---
 
-RigReady knows a fixed set of games. For each one it can find the install, read its version, launch it, and name the files worth backing up. For some it goes further: it reads the bindings as the game's files hold them, matches the controllers the game knows to the ones connected now, and repairs or copies binding files. Any other game still works with a setup of its own.
+RigReady knows a set of games. For each one it can find the install, read its version, launch it, and name the files worth backing up. For some it goes further: it reads the bindings as the game's files hold them, matches the controllers the game knows to the ones connected now, and repairs or copies binding files. Any other game can be added on the Games page, or still works with a setup of its own.
 
 This section covers every game other than DCS World, which has [its own section](../dcs/index.md): this page lists the games and what each gets, describes **Configure > Games** and the Racing page under it and the checks a racing setup gets, and the pages that follow cover each game and the Fanatec wheel.
 
@@ -22,7 +22,7 @@ This section covers every game other than DCS World, which has [its own section]
 | [Microsoft Flight Simulator (2020), X-Plane 12 and 11, IL-2 Sturmovik: Great Battles, Falcon BMS](more-flight-and-racing-games.md#flight) | Detection (Steam, and the Store, standalone or registry install each game has), launch, files to back up. |
 | [Assetto Corsa Competizione, rFactor 2, Automobilista 2, EA SPORTS WRC, F1 25 and F1 24, DiRT Rally 2.0, RaceRoom](more-flight-and-racing-games.md#racing) | Detection in Steam (DiRT Rally 2.0 also from the Store), launch through Steam, files to back up. |
 | [Ace Combat 8](ace-combat-8.md) | Detection, launch through Steam, files to back up, and a starting profile for flying it with your own stick through a [virtual controller](../hardware/virtual-controller.md). |
-| [Any other game](other-games.md) | A setup with a checklist, a launch target you give, and tracked files. |
+| [Any other game](other-games.md) | **Add a game** on the Games page: its program, settings folders and kind, and it is found, launched, offered in new setups and backed up like the others. Or a setup for "Another game" with a launch target you give. |
 
 The four racing games with a bindings page also supply their bindings to the [cheat sheets](../dcs/cheat-sheets.md), the [trainer](../dcs/trainer.md) and the [input tester](../hardware/input-tester.md), so a cheat sheet can show what every button of a wheel does in iRacing or in BeamNG.drive. The wheel is drawn for the Fanatec bases RigReady has layouts for; any other wheel gets a labelled list of its controls.
 
@@ -40,7 +40,9 @@ A game is "running" when one of its known programs is in the process list. For i
 
 ## Configure > Games
 
-The page lists every game RigReady knows, found games first with where they were found (Steam, Standalone, Microsoft Store), the version, "update waiting" when Steam has one, a **Running** chip, and how many settings files are worth backing up. Games not found are listed under **Not found on this PC**.
+The page lists every game RigReady knows and every game you added, found games first with where they were found (Steam, Standalone, Microsoft Store), the version, "update waiting" when Steam has one, a **Running** chip, and how many settings files are worth backing up. A game you added is marked **Added by you**. Games not found are listed under **Not found on this PC**.
+
+**Add a game** adds one RigReady does not know: its program and settings folders, chosen in Windows' own pickers, its kind and the programs that mean it is running. See [Add it to the Games page](other-games.md#add-it-to-the-games-page).
 
 Above the list, a card for each page RigReady has about a game you have: **DCS World** (its screens, Export.lua and SimAppPro; see [DCS World](../dcs/index.md)) when DCS is found, and **Racing** (below) when iRacing, Le Mans Ultimate, BeamNG.drive or Assetto Corsa is. These pages have no entry of their own in the menu, so the menu stays the same whatever games you have, and **Games** stays marked in the menu while one of them is open. Without the game there is no card; the game's own page still leads to its page.
 

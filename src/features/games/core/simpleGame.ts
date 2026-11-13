@@ -27,11 +27,16 @@ import {
 export interface SimpleGameSpec {
   id: string;
   name: string;
-  kind: 'flight' | 'racing';
+  /** Absent for a game that is neither (a game the user added can be). */
+  kind?: 'flight' | 'racing';
   /** Steam app id, when the game is sold on Steam. */
   steamAppId?: string;
-  /** The game's program, relative to its folder. The folder chosen by hand must contain it. */
-  exe: string;
+  /**
+   * The game's program, relative to its folder. The folder chosen by hand must contain it.
+   * Absent when the game cannot be pointed at by hand (a game the user added names its
+   * program itself).
+   */
+  exe?: string;
   /** Also require `exe` in a Steam install (only when its place in the Steam folder is known). */
   steamNeedsExe?: boolean;
   /** Installs found another way: the publisher's launcher, a standalone installer, the Store. */
@@ -46,7 +51,8 @@ export interface SimpleGameSpec {
   tracked(ctx: CheckContext, installs: GameInstall[]): Promise<TrackedFileSuggestion[]>;
   /** Version of an install that is not a Steam one. */
   otherVersion?(ctx: CheckContext, install: GameInstall): Promise<string | undefined>;
-  manualLabel: string;
+  /** What to choose when the game is pointed at by hand ("the X-Plane 12 folder"); needs `exe`. */
+  manualLabel?: string;
   notes: string[];
   facts?(ctx: CheckContext, installs: GameInstall[]): Promise<string[]>;
 }
@@ -69,7 +75,7 @@ export function simpleGame(spec: SimpleGameSpec): { module: GameModule; extras: 
       );
       if (!same) installs.push(other);
     }
-    if (installs.length === 0) {
+    if (installs.length === 0 && spec.exe && spec.manualLabel) {
       const manual = await manualInstall(ctx, spec.id, spec.exe);
       if (manual) installs.push(manual);
     }
@@ -79,7 +85,7 @@ export function simpleGame(spec: SimpleGameSpec): { module: GameModule; extras: 
   const module: GameModule = {
     id: spec.id,
     name: spec.name,
-    kind: spec.kind,
+    ...(spec.kind ? { kind: spec.kind } : {}),
     processes: spec.processes,
     closeBeforeRestore: { why: spec.closeWhy },
 
@@ -113,8 +119,10 @@ export function simpleGame(spec: SimpleGameSpec): { module: GameModule; extras: 
   };
 
   const extras: GameModuleExtras = {
-    kind: spec.kind,
-    manualFolder: { exe: spec.exe, label: spec.manualLabel },
+    ...(spec.kind ? { kind: spec.kind } : {}),
+    ...(spec.exe && spec.manualLabel
+      ? { manualFolder: { exe: spec.exe, label: spec.manualLabel } }
+      : {}),
     notes: spec.notes,
     ...(spec.facts ? { facts: async (ctx) => spec.facts!(ctx, await findInstalls(ctx)) } : {}),
   };
