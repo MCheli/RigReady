@@ -81,7 +81,14 @@ export interface SessionHooks {
   hidden(): void;
   /** Stand down is starting: a countdown to one that would run by itself is over. */
   standDownStarted(): void;
+  /** That Stand down is over, whether it ran to its end or not. */
+  standDownEnded(): void;
   stoodDown(): void;
+  /**
+   * Launch, Make ready or a fix is about to change the rig: a countdown to Stand down is
+   * over before anything starts.
+   */
+  gettingReady(): void;
 }
 
 export interface FlyOptions {
@@ -340,11 +347,32 @@ export class Fly {
     );
   }
 
+  /**
+   * Said by Launch, Make ready and a fix before they change anything. A Stand down that is
+   * running would close what they start, so they do not run beside it. A countdown to one
+   * is over from here on: it would run out in the middle of what they do (sessions.ts).
+   * A check changes nothing, and so leaves both alone.
+   */
+  private readying(): Result<void> {
+    if (this.standDownRunning) {
+      return err(
+        'fly.standDownRunning',
+        'Stand down is running.',
+        'Nothing was changed. Try again when it has finished.'
+      );
+    }
+    this.sessions?.gettingReady();
+    return ok(undefined);
+  }
+
   async fix(
     profileId: string,
     itemId: string,
     confirmed: boolean
   ): Promise<Result<{ step: StepResult; result: CheckResult }>> {
+    // Before anything is awaited: a countdown must not run out while this works.
+    const ready = this.readying();
+    if (!ready.ok) return ready;
     const found = await this.profile(profileId);
     if (!found.ok) return found;
     const fixed = await fixItem(found.value.profile, itemId, this.ctx.checks, this.ctx, {
@@ -361,6 +389,8 @@ export class Fly {
     profileId: string,
     options: { runId?: string; approved?: string[] } = {}
   ): Promise<Result<ActionReport>> {
+    const ready = this.readying();
+    if (!ready.ok) return ready;
     const found = await this.profile(profileId);
     if (!found.ok) return found;
     const approved = options.approved ? new Set(options.approved) : undefined;
@@ -472,6 +502,10 @@ export class Fly {
     profileId: string,
     options: { runId?: string; resumeAfter?: number; approved?: string[] } = {}
   ): Promise<Result<LaunchResult>> {
+    // Play ends the countdown now, not once the game is up: the actions before the launch
+    // and the game's start can take longer than what is left of it.
+    const ready = this.readying();
+    if (!ready.ok) return ready;
     const found = await this.profile(profileId);
     if (!found.ok) return found;
     const profile = found.value.profile;
@@ -654,6 +688,7 @@ export class Fly {
       return await this.runStandDown(profileId, options);
     } finally {
       this.standDownRunning = false;
+      this.sessions?.standDownEnded();
     }
   }
 

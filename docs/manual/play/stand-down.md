@@ -49,6 +49,8 @@ The same is said wherever RigReady asks a program to close before it restores fi
 
 Stand down from the Play screen looks first. If the game is running it asks: **DCS World is still running. Stand down closes the helper apps. Should it close the game too?** with **Leave it running**, **Close it too** and **Cancel**. The game is closed the way an app is: asked, then waited for, never forced. From the tray, the compact view and the command palette the game is always left running; only the Play screen can close it.
 
+When **Close it too** closes the game, no countdown starts: the Stand down you pressed is the one for this session. The same goes for a game you close yourself while that Stand down runs.
+
 ## Stand down when the game closes
 
 Every setup stands down by itself when its game closes, unless you switch that off for the setup. RigReady watches the game. Once it is gone, a notice in the bottom right corner of the window counts down: **Stand down in 1 minute**, then the seconds. It says what will happen: "DCS World has closed. When the time is up, RigReady stands down DCS F/A-18C: it closes the helper apps and puts the rig back, as the Stand down button does." The notice is on every page. The **Welcome back** line on the Play screen says the same in one line, and so does the session line of the [compact view](compact-view.md).
@@ -59,6 +61,8 @@ Every setup stands down by itself when its game closes, unless you switch that o
 - **Change this for the setup** opens the setup editor, where the switch is.
 - The small button at the top right of the notice moves the countdown to the top bar. Use it when the notice lies over something you need, such as the setup editor's **Save** and **Cancel**. The countdown ("Stand down in 4:05") and its **Cancel** are then in the bar on every page. Press the countdown there to bring the notice back.
 - The game starting again ends the countdown too. So does Stand down pressed by hand (it runs at once, and once), and so does quitting RigReady. Closing the window to the tray is not quitting: the countdown goes on.
+- **Launch**, **Make ready** and a fix end the countdown the moment you press them, before they start anything, and the line says "Stand down was cancelled. Nothing was closed." A launch can take longer than what is left of the countdown, and nothing it starts is closed under it. **Re-check all** does not end the countdown: it changes nothing.
+- Launch, Make ready and a fix do not run while Stand down is running, wherever they are asked for (the tray, a shortcut, an assistant). They say "Stand down is running." Try again when it has finished.
 
 ![The countdown in the top bar](../../../artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png)
 

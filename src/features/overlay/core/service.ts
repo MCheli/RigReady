@@ -170,6 +170,12 @@ export class OverlayService {
   private checking = false;
   /** One thing at a time: what changes the overlay runs in the order it was asked for. */
   private queue: Promise<unknown> = Promise.resolve();
+  /**
+   * RigReady is quitting. What was already under way (a read of the bindings can take a
+   * quarter of a minute) finishes without showing a window or listening to anything, and
+   * nothing new starts.
+   */
+  private disposed = false;
 
   constructor(
     private readonly ctx: Ctx,
@@ -378,6 +384,7 @@ export class OverlayService {
 
   /** On quit: stops listening and takes the windows away. */
   async dispose(): Promise<void> {
+    this.disposed = true;
     this.unlisten();
     for (const widget of [...this.shown.keys()]) {
       this.shown.delete(widget);
@@ -696,6 +703,7 @@ export class OverlayService {
 
   /** Brings what is up in line with the settings. */
   private async reconcile(): Promise<void> {
+    if (this.disposed) return;
     if (!this.settings.on) {
       await this.takeDown();
       return;
@@ -744,6 +752,7 @@ export class OverlayService {
 
   /** Shows a widget's window where it belongs, or leaves it when it is there already. */
   private async show(kind: WidgetKind): Promise<void> {
+    if (this.disposed) return;
     const { overlays } = this.ctx.ports;
     const stored = this.settings.widgets[kind.id];
     const size = kind.size(stored?.options);
@@ -774,6 +783,8 @@ export class OverlayService {
     if (shown.ok) {
       this.shown.set(kind.id, signature);
       this.problems.delete(kind.id);
+      // RigReady quit while it was being shown: it goes, as the others did.
+      if (this.disposed) await this.hide(kind.id);
     } else {
       this.shown.delete(kind.id);
       this.moving.delete(kind.id);
@@ -932,7 +943,13 @@ export class OverlayService {
   /** Runs one thing after the other, and turns anything thrown into an answer. */
   private run<T>(work: () => Promise<Result<T>>): Promise<Result<T>> {
     const done = this.queue
-      .then(work)
+      .then((): Promise<Result<T>> =>
+        this.disposed
+          ? Promise.resolve(
+              err('overlay.closed', 'RigReady is closing, so the overlay is not changed.')
+            )
+          : work()
+      )
       .catch((e): Result<T> => fromThrown('overlay.failed', 'The overlay could not do that.', e));
     this.queue = done;
     return done;

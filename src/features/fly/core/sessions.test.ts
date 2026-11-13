@@ -908,6 +908,131 @@ describe('stand down by itself when the game closes', () => {
     expect((await tracker.current()).phase).toBe('running');
   });
 
+  it('Play pressed late in the countdown ends it at once: nothing is stood down while the launch is still under way', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly, tracker, states } = await closedAfterHalfAnHour();
+    // 50 s into the minute. The game then takes 15 s to start, longer than what is left of
+    // the countdown, and the watch loop looks at the process list meanwhile, as it does
+    // every 2 s in the app.
+    app.clock.advance(50_000);
+    const processes = app.wiring.context.ports.processes;
+    const start = processes.start.bind(processes);
+    const atStart: SessionState[] = [];
+    processes.start = async (target) => {
+      atStart.push(await tracker.current());
+      app.clock.advance(15_000);
+      await tracker.poll();
+      return start(target);
+    };
+    const launched = await fly.launch(P);
+    expect(launched.ok && launched.value.outcome).toBe('launched');
+    // Nothing the launch needs was closed, and no Stand down ran or was reported.
+    expect(closedApps()).toEqual([]);
+    expect(states.some((s) => s.standingDown || s.stoodDown)).toBe(false);
+    // The countdown was over before the game was started, and the screen said so.
+    expect(atStart[0]).toMatchObject({ phase: 'ended', standDownHeld: 'cancelled' });
+    expect(atStart[0]!.standDownAt).toBeUndefined();
+    expect(await tracker.current()).toMatchObject({ phase: 'running', startedAt: iso() });
+    expect(notified()).toHaveLength(1);
+  });
+
+  it('Make ready or a fix during the countdown ends it before it changes anything; a check does not', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly, tracker, states } = await closedAfterHalfAnHour();
+    app.clock.advance(20_000);
+    // The Play screen checks again every few seconds by itself: that is no reason to stop.
+    expect((await fly.check(P)).ok).toBe(true);
+    expect((await tracker.current()).standDownAt).toBeDefined();
+    expect((await fly.makeReady(P)).ok).toBe(true);
+    expect(await tracker.current()).toMatchObject({ phase: 'ended', standDownHeld: 'cancelled' });
+    app.clock.advance(5 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+
+    // Another session, and this time one item's fix is pressed during the countdown.
+    await fly.launch(P);
+    app.clock.advance(30 * MINUTE);
+    await closeGame();
+    await tracker.poll();
+    expect((await tracker.current()).standDownAt).toBeDefined();
+    app.clock.advance(20_000);
+    await fly.fix(P, 'c13', true);
+    expect(await tracker.current()).toMatchObject({ phase: 'ended', standDownHeld: 'cancelled' });
+    app.clock.advance(5 * MINUTE);
+    await tracker.poll();
+    expect(closedApps()).toEqual([]);
+    expect(states.some((s) => s.standingDown || s.stoodDown)).toBe(false);
+  });
+
+  it('Play, Make ready and a fix do not run beside a Stand down that is running: nothing is started under it', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const { fly } = make();
+    await fly.launch(P);
+    const startedBefore = app.ports.processes.started.length;
+    const down = fly.standDown(P);
+    const refused = {
+      ok: false,
+      error: { code: 'fly.standDownRunning', message: 'Stand down is running.' },
+    };
+    const [launch, ready, fix] = await Promise.all([
+      fly.launch(P),
+      fly.makeReady(P),
+      fly.fix(P, 'c13', true),
+    ]);
+    expect(launch).toMatchObject(refused);
+    expect(ready).toMatchObject(refused);
+    expect(fix).toMatchObject(refused);
+    const done = await down;
+    expect(done.ok && done.value.headline).toBe('Closed 1 app');
+    expect(app.ports.processes.started).toHaveLength(startedBefore);
+    // Once it has finished, they run again.
+    expect((await fly.makeReady(P)).ok).toBe(true);
+  });
+
+  it('Stand down pressed by hand with "close the game": no countdown starts under it, the window stays where it is, and Windows is told nothing more', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    await setupSays(true, 5);
+    const { fly, tracker, log, states } = make();
+    tracker.presence('main', false);
+    await fly.launch(P);
+    app.clock.advance(30 * MINUTE);
+    // The watch loop looks while that Stand down is still at work: the game is gone, and
+    // the rest of Stand down has not run yet. Then again, past the end of a countdown.
+    const processes = app.wiring.context.ports.processes;
+    const close = processes.close.bind(processes);
+    let looked = false;
+    processes.close = async (pid, options) => {
+      const closed = await close(pid, options);
+      const list = await processes.list();
+      const gone = list.ok && !list.value.some((p) => p.name.toLowerCase() === 'dcs.exe');
+      if (gone && !looked) {
+        looked = true;
+        await tracker.poll();
+        app.clock.advance(6000);
+        await tracker.poll();
+      }
+      return closed;
+    };
+    const down = await fly.standDown(P, { closeGame: true });
+    expect(looked).toBe(true);
+    expect(down.ok && down.value.headline).toBe('Closed 2 apps');
+    expect(closedApps()).toEqual(['TrackIR5.exe', 'DCS.exe']);
+    // No countdown, no window brought up for one, no Stand down by itself.
+    expect(states.some((s) => s.standDownAt !== undefined)).toBe(false);
+    expect(states.some((s) => s.standingDown || s.stoodDown)).toBe(false);
+    expect(app.ports.window.shown).toEqual([]);
+    expect(notified()).toEqual([]);
+    expect(await tracker.current()).toEqual({ phase: 'idle' });
+    // The session is on the record with its length.
+    expect((await log.history()).sessions).toMatchObject([{ durationSeconds: 1800 }]);
+    // Once that Stand down is over, a game that closes by itself counts down again.
+    await fly.launch(P);
+    app.clock.advance(30 * MINUTE);
+    await closeGame();
+    await tracker.poll();
+    expect((await tracker.current()).standDownSeconds).toBe(5);
+  });
+
   it('RigReady quit during the countdown: nothing is stood down then or at the next start, and nothing says it was', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
     const { tracker, states } = await closedAfterHalfAnHour();

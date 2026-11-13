@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ProfileSchema } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
 import type { DisplayInfo, InputDevice, InputState } from '../../../shared/models';
@@ -266,6 +266,43 @@ describe('turning the overlay on and off', () => {
     expect(seen.presses).toEqual([]);
     // Still on for the next start.
     expect((await savedSettings(app)).on).toBe(true);
+  });
+
+  it('quit while it is still coming up: nothing comes up after the quit, and nothing is listened to', async () => {
+    const first = await flying();
+    await first.service.dispose();
+    // RigReady starts again with the overlay left on, and is quit while the overlay is still
+    // reading what it needs (the screens here; the bindings of DCS can take a quarter of a
+    // minute). The input reader is stopped right after the quit.
+    const { app } = first;
+    const read = app.ports.displays.read.bind(app.ports.displays);
+    let answer: (() => void) | undefined;
+    app.ports.displays.read = () =>
+      new Promise((resolve) => {
+        answer = () => void read().then(resolve);
+      });
+    let listened = 0;
+    const subscribe = app.ports.input.subscribe.bind(app.ports.input);
+    app.ports.input.subscribe = (listener) => {
+      listened++;
+      return subscribe(listener);
+    };
+    const again = make(app);
+    const starting = again.service.start();
+    await vi.waitFor(() => expect(answer).toBeDefined());
+    await again.service.dispose();
+    answer!();
+    await starting;
+    await again.service.idle();
+    expect(app.ports.overlays.panels.size).toBe(0);
+    expect(listened).toBe(0);
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [5])]);
+    expect(again.seen.presses).toEqual([]);
+    // Asked for anything after the quit, it does nothing and says why.
+    expect(await again.service.setOn(true)).toMatchObject({ ok: false });
+    expect(app.ports.overlays.panels.size).toBe(0);
   });
 
   it('tells the page and the windows only what is new', async () => {
