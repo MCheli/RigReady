@@ -435,14 +435,28 @@ requirements:
     done_means:
       - "Stand down closes every app the profile marks closeOnStandDown (default true for apps started by RigReady in this session, false otherwise)."
       - "Apps are asked to close gracefully first and are force-terminated only after 10 s and only if the item allows force (default false); unclosed apps are listed."
+      - "An app that is still running after it was asked is named with the reason (it was asked and stayed open; it has no window to ask; Windows did not let RigReady ask it) and with what to do: close it yourself, or switch on 'Force it closed if it does not close' for the check, named as the setup editor names it. Forcing is not suggested for a program Windows does not let RigReady touch. An app of several processes with one name is closed as one: every process is asked before any is waited for, a helper that goes with its parent is no failure, and the app counts as closed when none of them is left."
       - "Stand down never closes the game itself unless the game is still running and the user confirms."
       - "Scenario mark-flight after a Make ready that started TrackIR and SimAppPro: Stand down results in the fake ProcessProvider receiving stop for both and the summary 'Closed 2 apps'."
+    notes:
+      - "2026-11-12: from the sitting, where trophi.ai.exe was still running after Stand down and the screen only said it did not close when asked. Three causes were in RigReady: processes of one name were asked one after another and the rest were not asked once one stayed; a helper that went with its parent was counted as a failure; and the reason the Windows provider knew was not passed on. The fourth criterion covers them. How the Windows provider tells the reasons apart (src/platform/windows/processes.ts) is not covered by a test, because a test never closes a real program; the reasons are tested from the port upwards with fakes."
     status: done
     evidence:
       - 'src/features/fly/core/fly.test.ts#closes only the apps RigReady started this session, politely, and says how many'
       - 'src/features/fly/core/fly.test.ts#never closes the game unless asked, closes what launch actions started, and runs its own actions'
       - 'src/features/processes/core/processCheck.test.ts#stand down closes politely: always, never, or only what RigReady started this session'
       - 'src/features/processes/core/processCheck.test.ts#stand down lists an app that will not close, and forces it only when the item allows'
+      - 'src/features/processes/core/processCheck.test.ts#an app that stays open says why, and what to do: the hint names the switch in the setup'
+      - 'src/features/processes/core/processCheck.test.ts#an app that stays open is ended when the setup lets it be forced, and closes again when it behaves'
+      - 'src/features/processes/core/processCheck.test.ts#an app of several processes is closed as one, whichever of them comes first'
+      - 'src/core/processes.test.ts#a helper with no window comes first in the list: the owner of the window is still asked, and the program counts as closed when all of it is gone'
+      - 'src/core/processes.test.ts#a helper that is already gone when it is asked is no failure'
+      - 'src/core/processes.test.ts#a program that only goes to the tray is still running, and the reason is the one of the process that was asked'
+      - 'src/core/processes.test.ts#says so when Windows did not let it be asked, and when it has no window at all'
+      - 'src/core/processes.test.ts#names the program and says what happened'
+      - 'tests/unit/crossFeature.test.ts#the switch that lets Stand down force a program closed'
+      - 'tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: with RigReady in the tray Windows says when it starts and what it did; a step that did not work is named and nothing says it was done'
+      - 'artifacts/screens/fly-stand-down-step-failed/01-step-failed.png'
       - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
       - 'artifacts/screens/fly-launch-actions/03-game-running.png'
       - 'artifacts/screens/fly-launch-actions/04-stood-down.png'
@@ -568,7 +582,7 @@ requirements:
       - 'src/features/fly/core/fly.test.ts#FLY-030: says the game is starting by its own name, on the screen at once and for Windows when the window hides'
       - "tests/e2e/launch-moment.e2e.ts#play: from the click on Launch the page says \"Starting\" with the game's name, and Windows says it as the window goes away"
       - 'tests/e2e/launch-moment.e2e.ts#play: with "hide after launch" off the window stays and Windows is not asked to say anything'
-      - 'tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to'
+      - 'tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself'
       - 'artifacts/screens/launch-starting/01-starting.png'
     notes: "From the sitting of 2026-11-12: the window went away at once and the game took most of a minute to show, which read as a launch that had failed. RigReady still hides when the launch answers, not when the game's own window is there: no port can see another program's window. The notification itself is proven as what the app hands to Windows; how Windows draws it is not pictured."
 
@@ -644,8 +658,8 @@ requirements:
     done_means:
       - "After a launch the Play screen shows the session: which game is running, 'Session in progress since <time>', and a running clock (h:mm:ss, tabular numerals). A game handed to Steam is shown as waited for, and its session begins when the game's own program runs; one that never shows up within fifteen minutes is not a session. While the game runs, Enter starts nothing."
       - "When the game's program is gone (RigReady looks every two seconds), the screen says 'Welcome back' with the setup, how long the session was and when it closed, and Stand down becomes the primary action, on Enter. Dismiss puts the screen back without standing down. Stand down used while the game was still open leaves nothing to offer when it closes."
-      - "A setting in the Play menu, off by default, stands down by itself when the game closes; the screen then says what Stand down did, or that it did not finish."
-      - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and either 'Stand down when you are done' or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
+      - "Stand down runs by itself when the game closes, after a countdown the user can cancel. It is on by default; every setup has its own switch and its own countdown length, one minute by default (the details are WOW-FLY-008). The screen then says what Stand down did, names each step that did not work, or says that it did not finish. A game that closed within two minutes of starting starts no countdown, and the Welcome back line says so."
+      - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and one of: 'Stand down when you are done' (no countdown started), 'Stand down starts in <length>. Open RigReady to cancel.' (a countdown started, and the window is brought back on screen), or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
       - "Every session is recorded in {RIGREADY_HOME}/fly/sessions.json: setup, game, start, length, seconds from opening the setup to every required check being met, what had to be fixed (by Make ready or a fix button), the first required item that was not met, and whether it was launched not ready. A game whose programs RigReady does not know is recorded without a length. A session in progress survives a restart of RigReady: it is picked up when the game still runs, and recorded without a length when it closed meanwhile."
       - "A damaged history file is left exactly as it is and named; the history goes on in the next file (sessions.1.json ...). The newest thousand sessions are kept."
       - "Under the setup's name the screen says 'Last session <today | yesterday | weekday | date>, <length>', or 'No session yet': the same words for every game, with no word of flying, so they read naturally to someone who only races. While a setup's first session is under way the line does not say there was none."
@@ -659,8 +673,9 @@ requirements:
       - "src/features/fly/core/sessions.test.ts#with no window on screen, Windows says it; with one on screen, the screen does"
       - "src/features/fly/core/sessions.test.ts#a launch that hides RigReady leaves nobody at its window, whatever was done there a moment before"
       - "src/features/fly/core/sessions.test.ts#a window in the tray is not on screen, and one that stopped saying so for a minute is gone"
-      - "src/features/fly/core/sessions.test.ts#stands down by itself when asked to, says what it did, and leaves the welcome on screen"
-      - "src/features/fly/core/sessions.test.ts#a Stand down that fails by itself says so instead of \"stood down\""
+      - "src/features/fly/core/sessions.test.ts#a setup saved before this existed counts down for one minute, then runs Stand down and says what it did"
+      - "src/features/fly/core/sessions.test.ts#a game that closes within two minutes of starting starts no countdown, and the screen is told why"
+      - "src/features/fly/core/sessions.test.ts#a Stand down that cannot run says why instead of \"stood down\""
       - "src/features/fly/core/sessions.test.ts#stood down while the game was still open: when it closes there is nothing left to offer"
       - "src/features/fly/core/sessions.test.ts#is a session from the moment the game itself runs, not from the hand-off"
       - "src/features/fly/core/sessions.test.ts#that never shows up is not a session: after a quarter of an hour RigReady stops waiting"
@@ -676,17 +691,98 @@ requirements:
       - "src/features/fly/core/sessionText.test.ts#sessions, hours, and what needed fixing most"
       - "tests/e2e/fly-session.e2e.ts#session: the game running with its clock, Welcome back when it closes, and Stand down as the one action"
       - "tests/e2e/fly-session.e2e.ts#session: Dismiss puts the screen back without standing down"
-      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to"
+      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself"
       - "tests/e2e/fly-session.e2e.ts#history: \"last session\" on the setup, the totals in one line, and every session with what it took to be ready"
       - "tests/e2e/fly-session.e2e.ts#session: a game started through Steam is waited for, and the session begins when the game itself runs"
       - "artifacts/screens/fly-session/01-no-history-yet.png"
       - "artifacts/screens/fly-session/02-in-session.png"
       - "artifacts/screens/fly-session/03-welcome-back.png"
       - "artifacts/screens/fly-session/04-stood-down.png"
-      - "artifacts/screens/fly-session-away/01-stood-down-by-itself.png"
+      - "artifacts/screens/fly-session-away/01-closed-at-once.png"
       - "artifacts/screens/fly-session-steam/01-waiting-for-steam.png"
       - "artifacts/screens/fly-history/01-last-session.png"
       - "artifacts/screens/fly-history/02-history.png"
+
+  - id: WOW-FLY-008
+    title: Stand down by itself when the game closes - a switch and a countdown for every setup
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "Every setup has its own switch 'Stand down when the game closes' (on by default) and its own countdown length (one minute by default; the editor offers 10 seconds to 10 minutes, the setup file takes 5 to 3600 seconds). Both are in the setup editor under 'When the game closes' and in the setup file under extensions.fly (standDownOnClose, standDownAfterSeconds). A setup saved before this existed gets the defaults, and so does a value a hand edit got wrong."
+      - "When the game the setup started has closed and the switch is on, a countdown starts. It is visible wherever the user is: a notice at the bottom right of every page of the main window ('Stand down in 42 seconds', one sentence that says what will happen, Cancel, and 'Change this for the setup'), the Welcome back line of the Play screen, and the session line of the compact view with its own Cancel. When nobody is at a RigReady window, Windows says 'Stand down starts in <length>. Open RigReady to cancel.' and the window is brought back on screen."
+      - "The notice lies over the bottom right corner of the page, where a page may have buttons of its own (the setup editor's Save and Cancel). While it counts it can be moved to the top bar: the countdown, as a clock that is never cut short ('Stand down in 4:05'), and its Cancel are then in the bar on every page and cover nothing, and pressing the countdown there brings the notice back. What Stand down did is always said in the notice."
+      - "When the time is up the same Stand down the button runs is run, once. The notice and the Welcome back line then say what it did: 'Stood down' with its summary only when every step worked; 'Stand down ran, but N step(s) need(s) attention' with each step that did not work; 'Stand down did not finish' with the reason when it could not run. The result stays until the user presses OK. With nobody at a window the same is a Windows notification."
+      - "Cancel ends the countdown: nothing is closed, the screen says 'Stand down was cancelled. Nothing was closed.', and Stand down stays the primary action. Cancel pressed after Stand down has started changes nothing, and the answer says so."
+      - "The game running again during the countdown ends the countdown, closes nothing, and is a new session. Every program name known for the game is watched, so a launcher that exits while the real game runs does not end the session."
+      - "A game that closes within two minutes of starting starts no countdown. The screen says why, and Stand down is still there to press."
+      - "The compact view keeps to its small window: 'Welcome back', how long the session was and the Stand down line are three lines that are on screen without scrolling, at the window size a user may have kept from before. A reason too long for one line there has a short form ('It closed too soon: Stand down did not start.') with the full sentence as its tooltip."
+      - "Stand down pressed by hand during the countdown ends the countdown and runs once; a second Stand down while one is running is refused. Dismiss, or a new launch, during the countdown stands nothing down."
+      - "RigReady quit during the countdown stands nothing down, then or at the next start, and nothing says it did. A window that is only hidden in the tray is not a quit: the countdown goes on."
+      - "When the running programs cannot be read at the end of the countdown, Stand down waits for a look that works."
+      - "With the switch off, the game closing is 'Welcome back' and nothing is closed by itself, however long it is left."
+    notes:
+      - "2026-11-12: the owner's decision: on by default, a switch and a countdown length for every setup, a countdown that can be cancelled. It replaces the Play-menu setting of WOW-FLY-003, which was off by default and had no countdown. A fly/preferences.json from before still reads; its autoStandDown is ignored."
+      - "2026-11-12: known limits. With nobody at the PC, a desk layout applied by Stand down still asks 'Keep this monitor layout?'; unanswered, the layout goes back and the step is listed as not done. A launcher under a name RigReady does not know that stays open for more than two minutes cannot be told apart from the game closing."
+    status: done
+    evidence:
+      - "src/core/profile/standDownOnClose.test.ts#a setup saved before this existed gets the defaults: on, one minute"
+      - "src/core/profile/standDownOnClose.test.ts#reads the switch and the length the setup holds"
+      - "src/core/profile/standDownOnClose.test.ts#a value a hand edit got wrong falls back to its default, the other is kept"
+      - "src/core/profile/standDownOnClose.test.ts#writes the answer into the setup and keeps what else is there"
+      - "src/core/profile/standDownOnClose.test.ts#keeps a length inside the limits"
+      - "src/features/fly/core/sessions.test.ts#a setup saved before this existed counts down for one minute, then runs Stand down and says what it did"
+      - "src/features/fly/core/sessions.test.ts#counts down for as long as the setup says"
+      - "src/features/fly/core/sessions.test.ts#a setup that switches it off gets Welcome back and nothing by itself, however long it is left"
+      - "src/features/fly/core/sessions.test.ts#Cancel ends the countdown: nothing is closed, and Stand down is still there to press"
+      - "src/features/fly/core/sessions.test.ts#Cancel after Stand down has started changes nothing: the answer says it is running"
+      - "src/features/fly/core/sessions.test.ts#Play pressed while Stand down runs by itself: the new session keeps the screen, and the old result is not shown over it"
+      - "src/features/fly/core/sessions.test.ts#the game running again during the countdown ends the countdown and is a new session"
+      - "src/features/fly/core/sessions.test.ts#a game that closes within two minutes of starting starts no countdown, and the screen is told why"
+      - "src/features/fly/core/sessions.test.ts#a launcher that exits while the real game runs is one session: it ends when the last known program is gone"
+      - "src/features/fly/core/sessions.test.ts#a launcher that exits a moment before the real game shows up: no countdown, and the game is a session when it runs"
+      - "src/features/fly/core/sessions.test.ts#Stand down pressed by hand during the countdown ends the countdown: one Stand down runs, not two"
+      - "src/features/fly/core/sessions.test.ts#a second Stand down while one is running is refused: it does not run on top of the first"
+      - "src/features/fly/core/sessions.test.ts#Dismiss, or Play again, during the countdown: nothing is stood down"
+      - "src/features/fly/core/sessions.test.ts#RigReady quit during the countdown: nothing is stood down then or at the next start, and nothing says it was"
+      - "src/features/fly/core/sessions.test.ts#when the running programs cannot be read at the end of the countdown, Stand down waits for a look that works"
+      - "src/features/fly/core/sessions.test.ts#a step that did not work is named: it never reads as stood down"
+      - "src/features/fly/core/sessions.test.ts#a Stand down that cannot run says why instead of \"stood down\""
+      - "src/features/fly/core/sessions.test.ts#a Stand down that throws is said the same way, and the next one can still run"
+      - "src/features/fly/core/sessionText.test.ts#counts down in whole seconds and minutes, and never says zero"
+      - "src/features/fly/core/sessionText.test.ts#counts down as a clock where there is little room, in step with the heading"
+      - "src/features/fly/core/sessionText.test.ts#a clock that is a moment behind never shows more than the countdown is long"
+      - "src/features/fly/core/sessionText.test.ts#says \"Stood down\" only when every step worked"
+      - "src/features/fly/core/sessionText.test.ts#a Stand down that could not run says so, with the reason when there is one"
+      - "src/features/fly/core/sessionText.test.ts#says why it is not going to run this time"
+      - "src/features/fly/core/sessionText.test.ts#says it in one short line where there is little room, and never that it ran"
+      - "tests/e2e/fly-compact.e2e.ts#compact: the dial, the setup and the one action in a small window on top; the whole routine is done from there"
+      - "src/features/fly/core/fly.test.ts#a preferences file from before the switch moved into the setup still reads"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: every setup has its own switch and countdown length; the countdown then stands the rig down and says what it did"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the countdown says what will happen and when, and Cancel ends it with nothing closed"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the countdown is on every page and in the compact view, and the game starting again ends it"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: Cancel in the compact view ends the countdown everywhere"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the notice can be moved to the top bar, where it covers no button of the page, and Cancel there ends the countdown with nothing closed"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: with RigReady in the tray Windows says when it starts and what it did; a step that did not work is named and nothing says it was done"
+      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself"
+      - "artifacts/screens/fly-stand-down-setting/01-on-by-default.png"
+      - "artifacts/screens/fly-stand-down-setting/02-lengths.png"
+      - "artifacts/screens/fly-stand-down-setting/03-stood-down-by-itself.png"
+      - "artifacts/screens/fly-stand-down-setting/04-switched-off.png"
+      - "artifacts/screens/fly-stand-down-setting/05-off-nothing-by-itself.png"
+      - "artifacts/screens/fly-stand-down-countdown/01-countdown.png"
+      - "artifacts/screens/fly-stand-down-countdown/02-cancelled.png"
+      - "artifacts/screens/fly-stand-down-everywhere/01-on-another-page.png"
+      - "artifacts/screens/fly-stand-down-everywhere/02-game-is-back.png"
+      - "artifacts/screens/fly-stand-down-everywhere/03-closed-again-at-once.png"
+      - "artifacts/screens/fly-stand-down-top-bar/01-over-the-setup-editor.png"
+      - "artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png"
+      - "artifacts/screens/fly-stand-down-top-bar/03-cancelled-from-the-top-bar.png"
+      - "artifacts/screens/fly-stand-down-compact/01-compact-countdown.png"
+      - "artifacts/screens/fly-stand-down-compact/02-compact-cancelled.png"
+      - "artifacts/screens/fly-compact/04-welcome-back.png"
+      - "artifacts/screens/fly-stand-down-step-failed/01-step-failed.png"
+      - "artifacts/screens/fly-session-away/01-closed-at-once.png"
 
   - id: WOW-FLY-004
     title: The rig at a glance - monitors to scale and devices as chips
@@ -4137,6 +4233,7 @@ requirements:
       - "Tokens are shown as the provider reports them; a cost only where the price is known."
     notes:
       - "2026-11-11: provider facts and sources in docs/research/ai-providers.md. Azure OpenAI is left out (api-key header and deployment names)."
+      - "2026-11-12: the model field draws its arrow as a plain icon, because Vuetify draws its own as an element with the role of a button and no name; the fix of 11 Nov (e80e9a3) had not reached main and was applied again by hand. Neither axe nor the route crawl fails without it (the element is hidden from assistive technology and out of the tab order, and the crawl excepts exactly that), so tests/e2e/assistant-estimates.e2e.ts looks through the AI section for anything with the role of a button and no name: with the fix taken out, that check failed on the arrow and on nothing else. Test in Settings now waits for a settings change that is still on its way, so that pressed straight after Store key it tests the key just stored; before, the last step of the first scenario test below failed once in two runs with 'Works.' for the key that was being replaced. The dollar figures of this entry are worded as estimates since ASSIST-008."
     status: done
     evidence:
       - "src/features/ai-assist/core/openai.test.ts#puts the schema in response_format, strict, with the context first and the key nowhere in it"
@@ -4168,15 +4265,38 @@ requirements:
       - "With an AI provider set up (a key, or a server on this PC), an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without one there is no button and the palette opens the panel and says a provider is needed; drafts from MCP assistants are shown either way. The binding guide keeps its own view and links to the panel."
       - "The assistant is offered the MCP server's guided catalogue (task-level tools, rigready_channels, rigready_call), never an 'off' channel, and every call goes through the one gate the MCP server uses: confirm policy, question in the window under 'Built-in assistant', one change at a time, rate limit, activity record and the Safety page name."
       - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER}."
+    notes:
+      - "2026-11-12: the panel was reworked after the owner's first use on the rig. A request that failed stays ready and one press sends it again, with the message back in the box; the conversation is the one scrolling region, with proposals where they were made; replies are shown formatted; every request says what reading it costs, and a ceiling per question stops and asks (ASSIST-005). The unit tests below prove this on the real code paths: the panel's store against the wired app, the log through the real logger. Open: tests/e2e/assistant.e2e.ts was extended and has a second test ('assistant: a request the provider refuses can be sent again with one press', scenario assistant-refused). Neither has been run since the rework, because no window may be opened while the rig sitting runs. The two screenshots below show the panel as it was before; they, the other six of artifacts/screens/assistant and the two new ones of artifacts/screens/assistant-refused (refused, answered-after-retry) wait to be taken by that run. Back to done once the run has passed and the screenshots are committed."
+      - "2026-11-12, after the sitting: windows were allowed again. Both tests of tests/e2e/assistant.e2e.ts passed against the build of this commit, with the isolated launch, and the eight screenshots of artifacts/screens/assistant and the two of artifacts/screens/assistant-refused were taken by that run and are committed with it. Back to done. The dollar figures in them are worded as estimates (ASSIST-008)."
+      - "2026-11-12, later: the renderer of replies now counts its own work, and reads ahead of its place for the end of a link only up to a fixed number of characters for each character of the reply. A reply that spends that keeps all of its text and gets no more links; a long reply written to be read keeps every one. Its test holds it to counted steps, for each hard text and for one twice as long, so the result is the same on every machine; the 1500 ms on the clock stay as a loose backstop. Compared once with the renderer as it was on one million random texts (a run that is not kept in the repository): none was parsed differently."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
       - "src/features/ai-assist/core/assistant.test.ts#a read runs, a change is asked in the window under its name, a refusal is recorded, an off channel is refused"
       - "src/features/ai-assist/core/assistant.test.ts#never sends a request that was not prepared and shown"
       - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
+      - "src/features/ai-assist/core/assistant.test.ts#keeps the request when the provider refuses it: trying again is the same request, once more"
+      - "src/features/ai-assist/core/assistant.test.ts#drops a request whose provider changed in Settings, says so, and a new one can be built at once"
+      - "src/features/ai-assist/core/assistant.test.ts#a read through \"Call one channel\" is a read, named by what the channel does"
+      - "src/features/ai-assist/core/assistant.test.ts#stops between tools: what ran is kept, what did not says so, and Continue goes on"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#the scenario the window test plays: refused once, answered on the next press, counted once"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#belongs to one conversation: a failed first send, a dropped request or a new conversation never carries it over"
+      - "src/features/ai-assist/renderer/assistantText.test.ts#puts a draft right after the tool row that made it, and what was drafted elsewhere at the end"
+      - "src/features/ai-assist/core/providerLog.test.ts#a refused send and a refused key test each leave one line; a finished question leaves its numbers"
+      - "src/features/ai-assist/core/providerLog.test.ts#never writes the key, the request or its address query, however the provider answers"
+      - "src/features/ai-assist/core/markdown.test.ts#HTML stays text: no node is ever made of a tag"
+      - "src/features/ai-assist/core/markdown.test.ts#a link leads to a plain web address or it is no link"
+      - "src/features/ai-assist/renderer/markdownView.test.ts#makes a link of an https address only, opened in the system browser and never in the window"
+      - "src/features/ai-assist/core/service.test.ts#says apart what the binding guide sends and what the assistant sends, and where it goes"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "tests/e2e/assistant.e2e.ts#assistant: a request the provider refuses can be sent again with one press"
       - "artifacts/screens/assistant/01-panel-open.png"
       - "artifacts/screens/assistant/02-first-request.png"
+      - "artifacts/screens/assistant-refused/01-refused.png"
+      - "artifacts/screens/assistant-refused/02-answered-after-retry.png"
+      - "src/features/ai-assist/core/markdown.test.ts#stays quick and shallow on text built to be slow or deep"
+      - "src/features/ai-assist/core/markdown.test.ts#makes no more links in a text that costs too much to read, and loses none of it"
+      - "src/features/ai-assist/core/markdown.test.ts#keeps every link of a long reply written to be read"
 
   - id: ASSIST-002
     title: Find where helper programs are installed
@@ -4186,6 +4306,9 @@ requirements:
     done_means:
       - "programs_find (built-in assistant and MCP) looks for programs by name or vendor in Program Files, Program Files (x86), LocalAppData\\Programs, the Steam libraries and the uninstall entries of the registry, reading only, and answers with exe paths in stored form with path variables."
       - "It knows the folder names the usual names hide (SRS, TrackIR, Stream Deck, Pit House, G HUB) and leaves out uninstallers and crash handlers; names it did not find are listed."
+    notes:
+      - "2026-11-12: unchanged in what it does. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
+      - "2026-11-12, after the sitting: that run has passed and the screenshot shows the panel as it is now; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/programs.test.ts#finds SimAppPro, TrackIR and Stream Deck with path variables applied, and says what it did not find"
@@ -4201,9 +4324,13 @@ requirements:
     done_means:
       - "setup_propose (built-in assistant and MCP) makes a draft of a new setup or of checks and launch steps added to one, validated against the registered check and fix types; it is shown in the assistant panel with every item and the setup as it would be saved."
       - "Nothing is written until the user presses Save, which saves through profiles:create or profiles:save; a setup changed after the assistant read it is not overwritten. A script.run the assistant proposes always asks before it runs."
+    notes:
+      - "2026-11-12: two reading tools were added beside setup_propose, for the built-in assistant and MCP: setup_read (one setup in a line per item) and setup_types (the check and fix types, one type's params on request), so an assistant no longer reads every setup and every schema to propose one. Saving a draft is a plain write in RigReady's data folder, as in the setup editor: it is not backed up and not listed on the Safety page, and the panel and the manual no longer say it is. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#finds the programs, proposes a setup, and the user saves it"
+      - "src/features/ai-assist/core/setupTools.test.ts#setup_read answers one setup in a fraction of what the whole list takes, and asks nobody"
+      - "src/features/ai-assist/core/setupTools.test.ts#setup_types lists the types in a tenth of what their schemas take, and one type on request"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/04-setup-proposal.png"
 
@@ -4216,6 +4343,9 @@ requirements:
       - "script_draft makes a .ps1 or .cmd draft with a plain explanation; one that asks for elevation is refused. The panel shows the whole file as it would be saved, the explanation and warnings; Save writes it through FileStore into <data root>/scripts/assistant with a header, and records its SHA-256 as the approval."
       - "The setup step it goes into asks before every run, whatever the setup says. Before it runs as a check, a fix or a step, the file is hashed again; a changed file is not run and is shown again in the panel until the user approves the text as it is now."
       - "No assistant can run it: while an assistant's call is carried out, a script from that folder is refused, and rig_make_ready's approvePrograms never covers it. Scripts never run elevated, and shared setups keep leaving scripts out."
+    notes:
+      - "2026-11-12: unchanged in what it does. The screenshots show the panel before the rework of ASSIST-001 (2026-11-12) and are taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
+      - "2026-11-12, after the sitting: that run has passed and the screenshots show the panel as it is now; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#is saved into the data folder with a header, approved by hash, refused when changed and for an assistant"
@@ -4235,12 +4365,24 @@ requirements:
     done_means:
       - "The assistant talks to the provider of AI-008 (Anthropic, OpenAI, or an OpenAI-compatible server, a local one included) with that provider's own key, over Anthropic's Messages API or Chat Completions with tools; the conversation, tool calls and tool results are carried over faithfully either way."
       - "The preview names the host; a request whose provider, address or model changed in Settings after it was shown is not sent. A refusal or an unreadable answer is an error, never an empty success. Tokens are shown; a cost only where the price is known."
+    notes:
+      - "2026-11-12: what a question costs was cut and is said honestly. On the Anthropic wire the instructions and the end of the conversation are marked for the provider's cache, so every request after the first reads what was already sent at the cached price; cache writes and reads are priced as such in the estimate before sending and in the totals; the preview says which request of the question it is and that the amount is for reading only; a ceiling per question (Settings, $0.25 unless changed, 0 for none) stops and asks before a question passes it, also with the preview switched off. No redirect is followed. Measured with a scripted model (src/features/ai-assist/core/cost.test.ts): the owner's first two questions, replayed request for request, went from about $0.70 to about $0.19, and to about $0.09 with the narrower tools. A cost and the ceiling exist only where the price is known. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
+      - "2026-11-12, after the sitting: that run has passed and the screenshot shows the panel as it is now. By the owner's rule of the same day, what this entry calls a cost is shown as an estimate that names its prices (ASSIST-008), the prices can be typed (ASSIST-009), and the first amount the user sets as the ceiling needs an acknowledgement (ASSIST-010)."
     status: done
     evidence:
       - "src/features/ai-assist/core/wire.test.ts#turns the conversation into Chat Completions: system first, functions, tool calls and tool messages"
       - "src/features/ai-assist/core/wire.test.ts#reads tool calls from a local server, which needs no key, at its own address only"
       - "src/features/ai-assist/core/wire.test.ts#sends a key only in the header, and the Anthropic wire to api.anthropic.com"
       - "src/features/ai-assist/core/wire.test.ts#a refusal and an unreadable answer are errors, never an empty success"
+      - "src/features/ai-assist/core/wire.test.ts#marks the instructions and the end of the conversation, so the next request reads both from the cache"
+      - "src/features/ai-assist/core/wire.test.ts#moves the mark with the conversation and never leaves one behind in it"
+      - "src/features/ai-assist/core/wire.test.ts#never follows a redirect: the key goes to the host the preview named and nowhere else"
+      - "src/features/ai-assist/core/cost.test.ts#the first session played again as it went costs less than half of what it did"
+      - "src/features/ai-assist/core/cost.test.ts#what is shown before a request is sent is what reading it costs, with the cache as it is"
+      - "src/features/ai-assist/core/cost.test.ts#a question that reads on and on stops at the ceiling and asks, before it is passed"
+      - "src/features/ai-assist/core/assistant.test.ts#shows the ceiling with the request, stops before going past it, and goes on only with a yes"
+      - "src/features/ai-assist/core/assistant.test.ts#0 means no ceiling, and a model without a known price has none"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#never goes past the ceiling by itself: it stops, says so, and goes on only on the press"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/02-first-request.png"
 
@@ -4252,10 +4394,138 @@ requirements:
     done_means:
       - "manual_search (each hit with its https://rigready.io/docs/<section>/<page>/ address) and manual_read (one page in full, the same code as the rigready://docs resources) are task-level tools, so the built-in assistant and MCP assistants both have them."
       - "The built-in assistant's instructions say to search and read the manual before answering a how-to question or proposing a change, and to link the page it used; a how-to question with the scripted provider leads to a search, a read and an answer that links the page."
+    notes:
+      - "2026-11-12: manual_read also takes a section (a heading of the page) and then answers that section only; without one it answers the page in full, as before. manual_search names the section each hit stands under, so an assistant can read the part it needs."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#answers a how-to question from the manual: searches it, reads the page and links it"
+      - "src/features/mcp/core/manual.test.ts#reads the whole page without a section, and only the section under the title with one"
+      - "src/features/mcp/core/manual.test.ts#a search names the sections its lines stand under"
       - "src/features/mcp/server/server.test.ts#lists the tools, runs a read, and reads the guide and a manual page"
+
+  - id: ASSIST-007
+    title: A monthly budget on what RigReady estimates, which warns and then stops sending
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "RigReady adds up, per calendar month of this PC, the estimates of every request the built-in assistant and the binding guide got an answer to, each at the prices in force when it was sent, and shows the sum in Settings under AI with the number of requests and how many had no prices. The sum is kept whether or not a budget is set."
+      - "A monthly budget in dollars can be set there; it is off (0) until the user sets an amount. From 80 percent of it, Settings and every request that waits for Send say so. At the budget, or before a request whose estimate would take the month past it, nothing is sent, for the assistant and the binding guide alike, checked when a request is made ready and again when it is sent. The user can raise the budget or set it to 0 at any time; a new calendar month starts from nothing."
+      - "The message that holds a request back says it stopped on RigReady's estimate, not on a bill, gives the estimate and the budget, says that nothing was sent and where the true figure is; the user's message stays in the box. While a budget is set, a count that cannot be read stops sending and does not let a request pass."
+    notes:
+      - "2026-11-12: the owner's decision of 12 Nov (a monthly budget that warns and then stops sending; the user can change it or turn it off). Calls made in building it, for the owner to confirm: off until an amount is set, the warning from 80 percent, and no 'continue past' for the month (the ceiling of one question has one). Not in the month's estimate, though a provider may charge for them: a request the user stopped, a request that failed on its way, the small request Test sends in Settings, and a request to a model without prices (those are counted as a number and shown; a server on this PC without prices is not counted at all). The manual says so."
+      - "2026-11-12, later: the message that holds a request back says where the budget is changed, and the panel covers that place. Under it there is now a button, 'Open the budget in Settings': it closes the panel and shows the monthly budget in Settings with its amount selected, from whichever page the panel was opened on. Wording and look were decided in building it."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/budget.test.ts#names the calendar month of this PC, and a month starts on its first day"
+      - "src/features/ai-assist/core/budget.test.ts#is off at 0, warns from 80 percent, and stops at the budget or before the request that would pass it"
+      - "src/features/ai-assist/core/budget.test.ts#says it stopped on the estimate, never on a bill, and where the true figure is"
+      - "src/features/ai-assist/core/budget.test.ts#starts switched off and counts nothing against a limit until the user sets one"
+      - "src/features/ai-assist/core/budget.test.ts#counts every answered request, warns from 80 percent, then stops and sends nothing"
+      - "src/features/ai-assist/core/budget.test.ts#checks again when a request that was shown is sent, and keeps it ready while the budget holds it"
+      - "src/features/ai-assist/core/budget.test.ts#holds the binding guide back as well, before a request is shown and again when it is sent"
+      - "src/features/ai-assist/core/budget.test.ts#says what the month is estimated at each time a request was counted, for the page that shows it"
+      - "src/features/ai-assist/core/budget.test.ts#starts a new calendar month from nothing"
+      - "src/features/ai-assist/core/budget.test.ts#sends nothing it cannot count: an unreadable count stops it while a budget is set, and the budget can still be turned off"
+      - "src/features/ai-assist/core/budget.test.ts#keeps requests without prices out of the estimate, and says how many there were"
+      - "src/features/ai-assist/core/budget.test.ts#does not count a server on this PC that was given no prices"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says what the month is estimated at, over how many requests, and what had no prices"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#warns from 80 percent, and says when it stopped that it stopped on the estimate"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says in the request that waits when the month is close to its budget, and nothing before"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says in Settings what the budget does, and when it does nothing"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#does not make a message ready once the month is at its budget: nothing is sent, the reason says it stopped on the estimate, and the message stays"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#warns in the request when the month is close, keeps a request ready that Send could not take, and sends it once the budget is raised"
+      - "tests/e2e/assistant-estimates.e2e.ts#assistant estimates: prices are named and can be typed, a limit needs an acknowledgement, and the monthly budget stops on the estimate"
+      - "artifacts/screens/assistant-estimates/05-budget-on.png"
+      - "artifacts/screens/assistant-estimates/07-month-close-to-budget.png"
+      - "artifacts/screens/assistant-estimates/08-request-close-to-budget.png"
+      - "artifacts/screens/assistant-estimates/09-stopped-on-the-estimate.png"
+      - "artifacts/screens/assistant-estimates/10-month-stopped.png"
+      - "artifacts/screens/assistant-estimates/11-budget-from-the-stop.png"
+
+  - id: ASSIST-008
+    title: Every dollar figure for an AI request is an estimate that says where its prices came from
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Every dollar figure the app shows for an AI request (before a request is sent, while a question runs, the totals of a conversation, the binding guide's dialog and its line after an answer, the month in Settings) is worded 'estimated $X' and names the prices it was worked out from: 'built-in prices of <the month they were recorded>', 'your own prices', or both for a sum over the two. No figure is shown where the prices cannot be named, and the word cost never stands beside a number."
+      - "Where figures are shown, the app says they are estimates and not a bill and that the provider's console shows what is charged; Settings also says that a spending limit set at the provider is the one that holds, and to set one there."
+      - "The log line of a finished question carries the estimate as estimatedDollars with the prices it came from, and no field named cost."
+      - "A request held back at the ceiling of one question or at the monthly budget says that it stopped on RigReady's estimate, not on a bill."
+    notes:
+      - "2026-11-12: the owner's rule of 12 Nov. Token counts are the provider's and exact; dollars are RigReady's arithmetic on them with prices that can be out of date, so no figure is presented as a bill. The manual (the assistant, AI providers, Settings, the binding guide) and the changelog are worded the same way. Older entries of this ledger (AI-006, AI-008, ASSIST-005) still say 'cost' in what they were done against; what they mean is this estimate."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/prices.test.ts#gives the source of the prices with every estimate the assistant shows"
+      - "src/features/ai-assist/core/prices.test.ts#gives the source with the estimates of the binding guide too"
+      - "src/features/ai-assist/core/prices.test.ts#says mixed for a sum over requests estimated at built-in and at own prices"
+      - "src/features/ai-assist/core/prices.test.ts#stops at the ceiling in words that say it stopped on the estimate, not on a bill"
+      - "src/features/ai-assist/core/budget.test.ts#says it stopped on the estimate, never on a bill, and where the true figure is"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#names the prices behind an estimate: built-in as of the month they were recorded, the user's own, or both"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#shows no figure without prices, and none whose prices it cannot name"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#never words a figure as a cost or a bill"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says that estimates are not a bill, where the true figure is, and to set a limit at the provider"
+      - "src/features/ai-assist/core/providerLog.test.ts#a refused send and a refused key test each leave one line; a finished question leaves its numbers"
+      - "tests/e2e/assistant-estimates.e2e.ts#assistant estimates: prices are named and can be typed, a limit needs an acknowledgement, and the monthly budget stops on the estimate"
+      - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: a suggestion round trip shows what is sent, checks the answer, and applies only what is ticked after review"
+      - "artifacts/screens/assistant-estimates/06-request-estimate.png"
+      - "artifacts/screens/assistant/02-first-request.png"
+      - "artifacts/screens/ai-assist-suggest/01-payload.png"
+
+  - id: ASSIST-009
+    title: The prices behind the estimates can be typed per model, with a reset to the built-in ones
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Settings under AI has, for the chosen model, the four prices in dollars per million tokens: input, output, cache read and cache write. For the Anthropic and OpenAI models RigReady lists they start as its built-in prices, and the row says the month those were recorded. Save prices keeps the user's own numbers for that service and model; Reset to built-in goes back."
+      - "A model without built-in prices (any other model id, a compatible service, a server on this PC) starts with empty fields. Until the user has typed all four, no dollar figure is shown for it and neither the ceiling of one question nor the monthly budget takes an amount for it. A price is a number from 0 to 10,000; anything else is refused and the prices stay as they were."
+      - "Estimates use the user's prices from the moment they are saved. A request that was shown at other prices is not sent: it is made ready again with its new estimate and shown first."
+    notes:
+      - "2026-11-12: the owner's rule of 12 Nov: the user must be able to put in the numbers themselves, clearly labelled. The user's prices are kept in the feature's settings in RigReady's data folder, by service and model. The built-in table was recorded in November 2026 from the providers' price lists."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/prices.test.ts#has built-in prices for the listed models of Anthropic and OpenAI, and for no other"
+      - "src/features/ai-assist/core/prices.test.ts#counts fresh input, cache writes, cache reads and output each at its own price"
+      - "src/features/ai-assist/core/prices.test.ts#puts the user's own prices before the built-in ones, by service and model"
+      - "src/features/ai-assist/core/prices.test.ts#starts from the built-in prices of the chosen model and says when they were recorded"
+      - "src/features/ai-assist/core/prices.test.ts#estimates with the user's own prices once they are set, per model, and goes back to the built-in ones on reset"
+      - "src/features/ai-assist/core/prices.test.ts#shows no dollar figure and applies no limit for a model without prices, until the user enters them"
+      - "src/features/ai-assist/core/prices.test.ts#does not send a request that was shown at other prices: its estimate no longer holds"
+      - "src/features/ai-assist/core/prices.test.ts#refuses a price that is not a number from 0 to 10,000, and keeps the prices it had"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#reads a typed price per million tokens, 0 included, and nothing that is not one"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#shows a price as it would be typed"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says where the prices in the fields come from, with the month the built-in ones were recorded"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#offers a reset only for the user's own prices, and says what it goes back to"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#makes a request shown at other prices ready again with its new estimate, and never sends it by itself"
+      - "src/features/ai-assist/renderer/assistantStore.test.ts#works the estimate of the request on screen out again when Settings says the prices changed"
+      - "tests/e2e/assistant-estimates.e2e.ts#assistant estimates: prices are named and can be typed, a limit needs an acknowledgement, and the monthly budget stops on the estimate"
+      - "artifacts/screens/assistant-estimates/01-built-in-prices.png"
+      - "artifacts/screens/assistant-estimates/02-no-prices.png"
+      - "artifacts/screens/assistant-estimates/03-own-prices.png"
+
+  - id: ASSIST-010
+    title: A limit in dollars is turned on only with an acknowledgement that it works on estimates
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Turning on the monthly budget, or setting an amount of the user's own for the ceiling of one question (the first amount the user sets, and any amount after 0), opens a dialog that says the limit is counted from RigReady's estimates at the prices in Settings, that it is not the provider's bill, and that the hard limit belongs at the provider. The limit is turned on only once the user ticked that they understand this; Cancel changes nothing."
+      - "RigReady itself refuses to turn a limit on without the acknowledgement and changes nothing. The time of the acknowledgement is stored with the feature's settings, and Settings shows the day."
+    notes:
+      - "2026-11-12: the owner's rule of 12 Nov. The ceiling of one question starts at $0.25 without an acknowledgement, as it did before this rule, because taking it away would leave a new user with no stop at all; whether that starting amount should wait for an acknowledgement too is a question for the owner."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/budget.test.ts#refuses to turn the monthly budget on without it, changes nothing, and keeps when it was given"
+      - "src/features/ai-assist/core/budget.test.ts#asks for it before the first amount the user sets as the ceiling of one question"
+      - "src/features/ai-assist/core/budget.test.ts#refuses an amount that is not one before it asks for anything"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says the limit is counted from estimates at the prices in Settings, is not the bill, and that the hard limit belongs at the provider"
+      - "src/features/ai-assist/renderer/estimateText.test.ts#says when it was acknowledged, from the time that was stored"
+      - "tests/e2e/assistant-estimates.e2e.ts#assistant estimates: prices are named and can be typed, a limit needs an acknowledgement, and the monthly budget stops on the estimate"
+      - "artifacts/screens/assistant-estimates/04-acknowledge.png"
+      - "artifacts/screens/assistant-estimates/05-budget-on.png"
 
   # ---------------------------------------------------------------------------
   # MCP SERVER — any AI assistant on the PC uses RigReady (docs/research/mcp-server.md)
@@ -4270,9 +4540,12 @@ requirements:
       - "Every channel of every feature contract appears exactly once in the MCP catalogue, named ipc_<feature>_<key>, with a JSON Schema converted from its zod input, a description and a tier (read, change, launch, off) taken from the contract's own metadata; a feature exposes a new channel by writing its contract, with no shared-code edit."
       - "Every channel has a description and a tier (the test fails on one without), and channels that hand out a secret, use the user's API key, open dialogs or only serve a window are off and never offered."
       - "The guided surface (the default) offers the task-level tools plus rigready_channels (the reference) and rigready_call, which reaches every offered channel through the same gate; the full surface also lists every channel as its own tool."
+    notes:
+      - "2026-11-12: rigready_channels, the reference, answers in three steps: the features, one feature in a line per channel, one channel with its schemas. An assistant that looked up one channel used to be handed the whole feature with every schema."
     status: done
     evidence:
       - "src/features/mcp/core/catalogue.test.ts#every channel of every real contract appears exactly once, with a sound schema and words"
+      - "src/features/mcp/core/dispatch.test.ts#the features, then one feature in a line per channel, then one channel in full"
       - "src/features/mcp/core/catalogue.test.ts#derives a tool per channel, named from the channel, with its schema, description and tier"
       - "src/features/mcp/core/catalogue.test.ts#the channels still without metadata are exactly the known ones"
       - "src/features/mcp/core/catalogue.test.ts#a channel that would hand an assistant a secret is off"

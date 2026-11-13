@@ -177,7 +177,7 @@ test('session: Dismiss puts the screen back without standing down', async ({ rig
   await expect(page.getByTestId('group-apps')).toContainText('3 of 3 OK');
 });
 
-test('session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to', async ({
+test('session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself', async ({
   rig,
 }) => {
   const run = await rig.launch('flying-all-good', 'fly-session-away');
@@ -202,49 +202,31 @@ test('session: with RigReady in the tray Windows says Welcome back, and Stand do
         body: 'DCS F/A-18C: less than a minute. Stand down when you are done.',
       },
     ]);
+  // No countdown started, so the window was not brought back for one.
+  expect(await windowVisible(app)).toBe(false);
   await showWindow(app);
   await expect(page.getByTestId('fly-session-title')).toHaveText('Welcome back');
-  // Nothing was done by itself: the helper apps still run.
+  // The setup stands down by itself when its game closes (fly-stand-down-on-close.e2e.ts),
+  // but not after a game that closed within two minutes of starting. The screen says why.
+  await expect(page.getByTestId('fly-session-down')).toHaveAttribute('data-state', 'held');
+  await expect(page.getByTestId('fly-session-down')).toHaveText(
+    'It closed within two minutes of starting, so Stand down did not start by itself.'
+  );
+  await expect(page.getByTestId('stand-down-notice')).toHaveCount(0);
+  // Nothing was done by itself: the helper apps still run, and Stand down is one press away.
   await expect(page.getByTestId('group-apps')).toContainText('3 of 3 OK');
+  await expect(page.getByTestId('fly-actions')).toHaveAttribute('data-primary', 'standDown');
+  await focusNothing(page);
+  expect(await accessible(page)).toEqual([]);
+  await shot('closed-at-once');
   await page.getByTestId('fly-session-dismiss').click();
   await expect(page.getByTestId('fly-session')).toHaveCount(0);
 
-  // The setting, off until asked for.
+  // Stand down when the game closes is the setup's own switch now, not a tick in this menu.
   await page.getByTestId('fly-more').click();
-  const setting = page.getByTestId('fly-auto-stand-down');
-  await expect(setting).toContainText('Stand down when the game closes');
-  await expect(setting.locator('.mdi-checkbox-blank-outline')).toBeVisible();
-  await setting.click();
-  await expect(setting.locator('.mdi-checkbox-marked-outline')).toBeVisible();
+  await expect(page.getByTestId('fly-minimize-pref')).toBeVisible();
+  await expect(page.getByTestId('fly-auto-stand-down')).toHaveCount(0);
   await page.keyboard.press('Escape');
-  await expect(setting).toBeHidden();
-
-  await clickAndLeave(page.getByTestId('launch'));
-  await expect.poll(() => windowVisible(app)).toBe(false);
-  await closeGame(run);
-  await expect
-    .poll(async () => (await notifications(app)).at(-1))
-    .toEqual({
-      title: 'Welcome back',
-      body: 'DCS F/A-18C: less than a minute. Stood down: Closed 1 app.',
-    });
-  // Two launches, each with its "Starting" and its "Welcome back".
-  expect(await notifications(app)).toHaveLength(4);
-  await showWindow(app);
-  // Back at the screen: it says what was done, and the checklist shows the rig stood down.
-  await expect(page.getByTestId('fly-session-title')).toHaveText('Welcome back');
-  await expect(page.getByTestId('fly-session-down')).toHaveText('Stood down: Closed 1 app');
-  await expect(checkRow(page, 'TrackIR5')).toHaveAttribute('data-status', 'fail');
-  expect(await accessible(page)).toEqual([]);
-  // Stand down is done: it is not offered as the thing to do.
-  await expect(page.getByTestId('fly-actions')).toHaveAttribute('data-primary', 'readyAndLaunch');
-  await focusNothing(page);
-  await shot('stood-down-by-itself');
-  // The choice is kept.
-  const preferences = JSON.parse(
-    await fs.readFile(path.join(run.dataRoot, 'fly', 'preferences.json'), 'utf8')
-  ) as Record<string, unknown>;
-  expect(preferences).toMatchObject({ autoStandDown: true, minimizeOnLaunch: true });
 });
 
 /** Writes files below the data root, then starts RigReady again on them. */

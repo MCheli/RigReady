@@ -1,0 +1,11 @@
+description: Flying, everything ready, and the game is already running
+rig: mark-full
+extends: flying-all-good.yaml
+# The game runs from the start, so a session kept in fly/sessions.json is picked up as
+# still in progress. That is how a scenario test gets a session that is older than a few
+# seconds without waiting for one: it writes the session, starts RigReady again, and then
+# closes the game with a stopProcess mutation.
+mutations:
+  - op: startProcess
+    name: DCS.exe
+    path: 'C:\Program Files (x86)\Steam\steamapps\common\DCSWorld\bin\DCS.exe'

@@ -1,8 +1,10 @@
 import type { CheckGroup } from '../../../core/profile/schema';
+import { standDownWaitText } from '../../../core/profile/standDownOnClose';
 
 /**
- * The words for a session: how long it was, when it was, what the history adds up to.
- * Pure and free of Node, so the screen and the notification say the same thing.
+ * The words for a session: how long it was, when it was, what the history adds up to, and
+ * what Stand down by itself is doing. Pure and free of Node, so the screen and the
+ * notification say the same thing.
  */
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -123,6 +125,86 @@ export interface SessionTotals {
   readySeconds?: number | undefined;
   /** Sessions launched with something required not met. */
   notReady: number;
+}
+
+// ---- Stand down by itself, after the game closed ----
+
+/** What a Stand down that ran by itself did. */
+export interface StoodDown {
+  /** False when it could not run, or stopped before its end. */
+  finished: boolean;
+  /** "Closed 2 apps", as the Stand down button reports it. */
+  headline: string;
+  /** How many steps did not work. */
+  failed: number;
+  /** Those steps, each in its own words. */
+  problems: string[];
+}
+
+/** One step that did not work, named: "TrackIR: TrackIR5.exe is still running: ...". */
+export function problemText(step: { title: string; message: string }): string {
+  const message = step.message.trim();
+  if (message === '') return `${step.title} did not work.`;
+  // A message that names the thing itself needs no name in front of it.
+  return message.toLowerCase().includes(step.title.toLowerCase())
+    ? message
+    : `${step.title}: ${message}`;
+}
+
+/**
+ * What a Stand down that ran by itself has to say. `ok` only when every step worked: a
+ * Stand down that left something undone never reads as done, and says what was left.
+ */
+export function stoodDownText(down: StoodDown): { ok: boolean; title: string; lines: string[] } {
+  if (!down.finished) {
+    return { ok: false, title: 'Stand down did not finish', lines: down.problems };
+  }
+  if (down.failed === 0) return { ok: true, title: 'Stood down', lines: [down.headline] };
+  return {
+    ok: false,
+    title: `Stand down ran, but ${down.failed} ${down.failed === 1 ? 'step needs' : 'steps need'} attention`,
+    lines: down.problems,
+  };
+}
+
+/** The same in one line: "Stood down: Closed 2 apps". */
+export function stoodDownLine(down: StoodDown): string {
+  const { title, lines } = stoodDownText(down);
+  return lines.length > 0 ? `${title}: ${lines.join(' ')}` : title;
+}
+
+/**
+ * Seconds until Stand down starts by itself, for a window's clock that reads `now`.
+ * Never more than the countdown's own length: a clock read a moment before the countdown
+ * started must not show "1 minute 1 second" for a countdown of one minute.
+ */
+export function countdownLeft(standDownAt: string, now: number, length?: number): number {
+  const left = Math.max(0, (Date.parse(standDownAt) - now) / 1000);
+  return length === undefined ? left : Math.min(left, length);
+}
+
+/** The countdown as its heading: "Stand down in 42 seconds". */
+export function countdownTitle(secondsLeft: number): string {
+  const left = Math.ceil(secondsLeft);
+  return left > 0 ? `Stand down in ${standDownWaitText(left)}` : 'Stand down is about to start';
+}
+
+/** The countdown where there is little room, in the app bar: "Stand down in 4:05". */
+export function countdownShort(secondsLeft: number): string {
+  const left = Math.max(0, Math.ceil(secondsLeft));
+  return `Stand down in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+}
+
+/**
+ * Why Stand down is not running by itself this time, although the setup asks for it.
+ * `short` is for the compact view, where it has one line under how long the session was;
+ * the full sentence is that line's tooltip.
+ */
+export function standDownHeldText(held: 'cancelled' | 'quickExit', short = false): string {
+  if (held === 'cancelled') return 'Stand down was cancelled. Nothing was closed.';
+  return short
+    ? 'It closed too soon: Stand down did not start.'
+    : 'It closed within two minutes of starting, so Stand down did not start by itself.';
 }
 
 /** The history in one line: "12 sessions, 14 h; TrackIR needed starting 6 times". */

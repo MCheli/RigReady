@@ -4,7 +4,13 @@ import { LATEST_PROTOCOL_VERSION, type McpServerFactory } from '@modelcontextpro
 import type { ContractRegistry } from '../../../core/contracts';
 import { JsonStore } from '../../../core/jsonStore';
 import type { Logger } from '../../../core/logger';
-import type { HostCaller, HostedTool, McpRegistry, ToolHost } from '../../../core/mcp';
+import type {
+  HostCaller,
+  HostedResult,
+  HostedTool,
+  McpRegistry,
+  ToolHost,
+} from '../../../core/mcp';
 import type { Ports } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChannelDef, Envelope } from '../../../shared/ipc';
@@ -212,7 +218,7 @@ export class McpService {
           tier: t.tier,
           inputSchema: t.inputSchema,
         })),
-      call: async (caller: HostCaller, name: string, args: unknown): Promise<Result<unknown>> => {
+      call: async (caller: HostCaller, name: string, args: unknown): Promise<HostedResult> => {
         const catalogue = this.guidedCatalogue();
         const spec = catalogue.tools.find((t) => t.name === name);
         if (!spec) {
@@ -231,7 +237,13 @@ export class McpService {
           { pairingId: caller.id, client: caller.name, signal: caller.signal },
           planned.value
         );
-        return outcome.ok ? ok(outcome.value) : { ok: false, error: outcome.error };
+        // What was really called, as the record has it: the channel and its tier for a call
+        // of one channel, so the caller can show a read as a read.
+        const { tier, summary, channel } = outcome.activity;
+        const made = { tier, summary, ...(channel ? { channel } : {}) };
+        return outcome.ok
+          ? { ...ok(outcome.value), made }
+          : { ok: false, error: outcome.error, made };
       },
     };
   }

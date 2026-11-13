@@ -84,6 +84,8 @@ export interface RigState {
     hang: HangablePort[];
     /** Program names (lower case) that do not start. */
     startFails: Record<string, 'error' | 'neverRuns'>;
+    /** Program names (lower case) that stay open when asked to close, and why. */
+    closeFails?: Record<string, 'ignored' | 'noWindow' | 'refused'>;
     /** Ports whose reads fail, with the message they fail with. */
     fail?: Partial<Record<HangablePort, string>>;
     /** Every read and write of a file's content takes this long (see slowFiles). */
@@ -226,6 +228,18 @@ const StateMutationSchemas = [
     /** Image name, e.g. DCS.exe. */
     name: z.string(),
     mode: z.enum(['error', 'neverRuns', 'off']).default('error'),
+  }),
+  /**
+   * Makes a program stay open when it is asked to close, for the reason a real one has:
+   * `ignored` (it only goes to the tray), `noWindow` (there is nothing to ask) or `refused`
+   * (it runs as administrator, so Windows lets RigReady neither ask nor force it). Forcing
+   * ends the first two. `why: off` ends it.
+   */
+  z.object({
+    op: z.literal('failProcessClose'),
+    /** Image name, e.g. TrackIR5.exe. */
+    name: z.string(),
+    why: z.enum(['ignored', 'noWindow', 'refused', 'off']).default('ignored'),
   }),
   z.object({ op: z.literal('stopProcess'), name: z.string() }),
   z.object({ op: z.literal('startProcess'), name: z.string(), path: z.string() }),
@@ -607,6 +621,13 @@ export function mutateState(state: RigState, mutation: StateMutation): void {
       const faults = (state.faults ??= { hang: [], startFails: {} });
       if (mutation.mode === 'off') delete faults.startFails[mutation.name.toLowerCase()];
       else faults.startFails[mutation.name.toLowerCase()] = mutation.mode;
+      break;
+    }
+    case 'failProcessClose': {
+      const faults = (state.faults ??= { hang: [], startFails: {} });
+      const closeFails = (faults.closeFails ??= {});
+      if (mutation.why === 'off') delete closeFails[mutation.name.toLowerCase()];
+      else closeFails[mutation.name.toLowerCase()] = mutation.why;
       break;
     }
     case 'stopProcess': {

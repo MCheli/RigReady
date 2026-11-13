@@ -15,7 +15,7 @@ order: 50
 - A line of words above the button: what stands in the way ("Not ready: TrackIR: Not running and 2 more"), or what the last action came to.
 - The one button: **Make ready and launch**, **Launch**, **Make ready** or **Stand down**, chosen the same way as on the Play screen ([Make ready and launch](make-ready-and-launch.md)). Enter presses it.
 - **Re-check**, and **Stand down** as a small link. [Stand down](stand-down.md) from here closes the helper apps and always leaves a running game alone.
-- The session line: "DCS World is running" with the clock, and **Welcome back** when the game closes ([Sessions and history](sessions.md)).
+- The session line: "DCS World is running" with the clock, and **Welcome back** when the game closes ([Sessions and history](sessions.md)). While the countdown to Stand down runs, the line counts down and has **Cancel** ([Stand down](stand-down.md#stand-down-when-the-game-closes)). After that it says in one line what Stand down did, or why it did not start; hold the pointer over a line that is cut short to read all of it.
 - A button at the top right that opens the full window.
 
 The window remembers where you left it.
