@@ -16,6 +16,8 @@ Say what you found, which version, and how to reproduce it. A diagnostics report
 | Older 2.x releases | No: update to the newest one |
 | 1.1.0 and earlier | No. Version 1 does not update itself; install 2.x from rigready.io/download |
 
+Version 2.0.0 is in final testing and not published yet. Until it is, the only public installer is 1.1.0, which gets no fixes.
+
 ## What the program touches
 
 - **Runs as you, never as administrator.** The installer is per user (`%LOCALAPPDATA%\Programs\RigReady`), nothing asks for elevation, and the registry is only read, except the per-user "start with Windows" entry.
@@ -32,6 +34,6 @@ Problems found by a review or reported privately are tracked privately until a r
 
 ## How a fix reaches you
 
-An installed copy checks GitHub for a new version a few seconds after it starts and once a day, downloads it in the background, and installs it when you restart or quit RigReady, never while a game runs. A release whose title or notes start with `[security]` is shown on every screen with the install one click away. The download's SHA-512 is checked against the release feed, and once releases are signed, the installer's Authenticode signature is checked against the publisher name built into the app. `docs/manual/app/updates.md` describes it for users; `docs/RELEASING.md` has the hotfix runbook.
+An installed copy checks GitHub for a new version a few seconds after it starts and once a day, downloads it in the background, and installs it when you restart or quit RigReady, never while a game runs. A release whose title or notes start with `[security]` is shown on every screen with the install one click away. The download's SHA-512 is checked against the release feed, and a signed copy also checks the installer's Authenticode signature against the publisher name built into it. Release builds are signed since 2.0.0-beta.2, with the publisher "Mark Cheli". `docs/manual/app/updates.md` describes it for users; `docs/RELEASING.md` has the hotfix runbook.
 
 If automatic checks are off, nothing is checked: watch the releases page or press Check now in Settings.
