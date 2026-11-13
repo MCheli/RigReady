@@ -2332,6 +2332,36 @@ requirements:
       - "2026-11-12: the owner's finding 38. Before, a dialog taller than the window scrolled as a whole, the buttons with the rows, and the reason for a refusal was under the last row, where it scrolled away with them. A dialog keeps its own buttons; it does not use the shared Save bar."
       - '2026-11-13: review L24. The dialog could be closed while a save ran; the late answer then said Saved "undefined", or closed the dialog of a layout opened meanwhile. The step failed before the fix: Escape closed the dialog.'
 
+  - id: DISP-021
+    title: Stand down by itself warns when its desk layout has not been kept with these monitors, and Replace counts as kept
+    job: fly
+    area: displays
+    priority: p1
+    done_means:
+      - "While the countdown before a Stand down by itself runs, its notice says when the desk layout has not been kept with the monitors connected now, so Stand down will ask 'Keep this monitor layout?': 'The desk layout \"Desk\" has not been kept with these monitors yet. Stay and press Keep it when RigReady asks, or the monitors stay as they are.' The Windows notification for a countdown nobody is watching says the same. Nothing is said when the layout is known to work, when there is nothing to change, or when the step will fail and say why. Working it out never holds the countdown up for more than three seconds."
+      - "The question is never skipped because nobody is there: a desk layout that was not kept still goes back when its countdown runs out."
+      - "When it goes back, the Stand down result says what to do next time in one sentence: 'Desk monitor layout: The new monitor layout was not kept, so the previous one is back. Next time, stay for the question and press Keep it.'"
+      - "'Replace with the monitors as they are now' records the layout as kept for the monitors connected at that moment, by the rule of DISP-010 (src/features/displays/core/proven.ts explains how each of its four points is met): the same targets Make ready and Stand down would apply, the same monitors, a person in RigReady's window, and a read-back after saving that finds the monitors exactly as the layout says. It does not count for an assistant, while a keep question is open, or when the monitors changed or cannot be read; a layout replaced with some monitors connected is still asked about with others."
+      - "Make ready shows no countdown or notice of its own before it applies a layout: a person pressed it, and its keep question already says it is asked once."
+    notes:
+      - "2026-11-13: second look on the rig, finding SD1. Desk was replaced with the MFD screens connected; after the swap to the racing gear (MFD screens unplugged) the Stand down after iRacing closed asked about Desk with nobody there, and Desk went back. The rule stays: a layout nobody saw is undone. The countdown's line comes from an optional StandDownStep.needsYou (src/core/checks/registry.ts), which the displays feature's desk step answers through LayoutApplier.wouldAsk."
+    status: done
+    evidence:
+      - "src/features/fly/core/sessions.test.ts#says, with the countdown and in Windows, when the desk layout has not been kept with these monitors yet; once kept it says nothing"
+      - "src/features/fly/core/sessions.test.ts#a Stand down nobody stayed for: the desk layout goes back, and the result says what to do next time"
+      - "src/features/fly/core/sessions.test.ts#a Replace with the monitors as they are counts as kept: nothing to warn of"
+      - "src/features/fly/core/sessions.test.ts#never holds the countdown up: what Stand down will need is left unsaid when it does not come in time"
+      - "src/features/displays/core/deskLayout.test.ts#counts as kept with these monitors: the next Stand down puts that layout back without the question"
+      - "src/features/displays/core/deskLayout.test.ts#does not count when an assistant replaced the layout: it cannot see the screens"
+      - "src/features/displays/core/deskLayout.test.ts#is asked about again: the countdown says so first, and when it goes back the result says what to do next time"
+      - "src/features/displays/core/deskLayout.test.ts#says nothing before a Stand down that has nothing to change, or that will fail and say why"
+      - "src/features/displays/core/applier.test.ts#counts as kept with these monitors: Make ready and Stand down apply it without the question, and nothing is left to warn of"
+      - "src/features/displays/core/applier.test.ts#does not count for an assistant, while a question is open, or when the monitors are not as the layout says by now"
+      - "src/features/displays/core/applier.test.ts#is not remembered when nothing remembers kept layouts, or the file cannot be written, and says why"
+      - "tests/e2e/fly-stand-down-keep.e2e.ts#stand down on close: the countdown says the desk layout has not been kept with these monitors yet; with nobody there it goes back, and the result says what to do next time"
+      - "artifacts/screens/fly-stand-down-keep-notice/01-not-kept-yet.png"
+      - "artifacts/screens/fly-stand-down-keep-notice/02-went-back.png"
+
   # ---------------------------------------------------------------------------
   # DEVICES AND TROUBLESHOOTING
   # ---------------------------------------------------------------------------

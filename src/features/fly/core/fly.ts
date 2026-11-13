@@ -793,6 +793,28 @@ export class Fly {
     return ok({ ...report, steps, headline: parts.join(' · ') });
   }
 
+  /**
+   * What a Stand down of this setup will need a person at the screens for, one line per
+   * step that will (StandDownStep.needsYou): said with the countdown before a Stand down
+   * by itself. Changes nothing; a step that fails to say is left out and logged.
+   */
+  async standDownNeedsYou(profileId: string): Promise<string[]> {
+    const found = await this.profile(profileId);
+    if (!found.ok) return [];
+    const ctx = withProfile(this.ctx, found.value.profile);
+    const lines: string[] = [];
+    for (const step of this.ctx.checks.standDownSteps()) {
+      if (!step.needsYou) continue;
+      try {
+        const line = await step.needsYou(ctx);
+        if (line) lines.push(line);
+      } catch (thrown) {
+        this.ctx.log.warn(`stand-down step ${step.id} could not say what it needs`, thrown);
+      }
+    }
+    return lines;
+  }
+
   // ---- preferences ----
 
   async preferences(): Promise<Result<Preferences>> {
