@@ -3,6 +3,7 @@ import type { HoldingProgram } from './backupSources';
 import type { MainContext } from './feature';
 import { isWithin } from './paths';
 import { allPathVariables, expandPath } from './pathVariables';
+import { closeTogether, stillRunningText } from './processes';
 import { err, ok, type Result } from './result';
 import type { ProcessInfo } from '../shared/models';
 
@@ -161,10 +162,16 @@ export interface Reopen {
   exe?: string;
 }
 
+/** What follows the reason when a program stayed open and the restore did not start. */
+const NOT_RESTORED = 'Close it yourself, then restore again. Nothing was restored.';
+
 /**
  * Asks each program to close, the way its own Exit would, and waits. Never ends a
- * program by force: one that does not close is named and the restore does not start.
- * Resolves with the tools to start again afterwards.
+ * program by force: one that does not close is named, with the reason, and the restore
+ * does not start. Resolves with the tools to start again afterwards.
+ *
+ * A program is all of its processes: they are asked together and the process list decides
+ * (closeTogether), so a helper without a window that happens to come first is no failure.
  */
 export async function closeHolders(
   ctx: HoldersContext,
@@ -177,15 +184,19 @@ export async function closeHolders(
   for (const program of programs) {
     const names = new Set(program.processes.map((p) => p.toLowerCase()));
     const targets = list.value.filter((p) => names.has(p.name.toLowerCase()));
-    for (const target of targets) {
-      const closed = await ctx.ports.processes.close(target.pid, { waitMs, force: false });
-      if (!closed.ok) {
-        return err(
-          'restore.stillRunning',
-          `${program.name} did not close when asked. Close it yourself, then restore again. Nothing was restored.`,
-          closed.error.message
-        );
-      }
+    const closed = await closeTogether(ctx.ports.processes, targets, { waitMs, force: false });
+    if (closed.state === 'stillRunning') {
+      return err(
+        'restore.stillRunning',
+        `${stillRunningText(program.name, closed.why)} ${NOT_RESTORED}`
+      );
+    }
+    if (closed.state === 'failed') {
+      return err(
+        'restore.stillRunning',
+        `${program.name} could not be closed. ${NOT_RESTORED}`,
+        closed.error.message
+      );
     }
     if (program.restart) {
       const exe = targets.find((t) => t.path)?.path;
@@ -197,10 +208,7 @@ export async function closeHolders(
   for (const program of programs) {
     const names = new Set(program.processes.map((p) => p.toLowerCase()));
     if (after.value.some((p) => names.has(p.name.toLowerCase()))) {
-      return err(
-        'restore.stillRunning',
-        `${program.name} is still running. Close it yourself, then restore again. Nothing was restored.`
-      );
+      return err('restore.stillRunning', `${program.name} is still running. ${NOT_RESTORED}`);
     }
   }
   return ok(reopen);

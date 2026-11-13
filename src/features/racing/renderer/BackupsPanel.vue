@@ -54,6 +54,8 @@ const previewError = ref<string>();
 async function askRestore(backup: BindingBackup): Promise<void> {
   preview.value = undefined;
   previewError.value = undefined;
+  appOpen.value = undefined;
+  stillRunning.value = undefined;
   confirmRestore.value = backup;
   const result = await api.restorePreview({ game: props.game, id: backup.id });
   if (confirmRestore.value !== backup) return;
@@ -68,8 +70,13 @@ const CHANGE_LABEL = {
   renamed: 'Renamed',
   deleted: 'Deleted',
 } as const;
-/** The Fanatec App is open: offer to close it, restore, and start it again. */
-const appOpen = ref(false);
+/**
+ * The wheel software is open, in the words of the restore that was refused ("The Fanatec
+ * App is open. ..."): offer to close it, restore, and start it again.
+ */
+const appOpen = ref<string>();
+/** It was asked to close and is still running: the reason, and that nothing was restored. */
+const stillRunning = ref<string>();
 
 async function load(): Promise<void> {
   const result = await api.backups({ game: props.game });
@@ -139,12 +146,15 @@ async function restore(closeApp = false): Promise<void> {
   busy.value = false;
   if (result.ok) {
     confirmRestore.value = undefined;
-    appOpen.value = false;
     message.value = result.value.message;
     notifyMachineChanged();
     emit('restored');
   } else if (result.error.code === 'racing.appOpen') {
-    appOpen.value = true;
+    appOpen.value = result.error.message;
+    stillRunning.value = undefined;
+  } else if (result.error.code === 'racing.stillRunning') {
+    // The dialog stays: once the app is closed by hand, the same button restores.
+    stillRunning.value = errorText(result.error);
   } else {
     confirmRestore.value = undefined;
     error.value = errorText(result.error);
@@ -340,22 +350,29 @@ onMounted(load);
           </div>
           <p class="rc-hint mt-3">{{ closedHint }}</p>
           <v-alert
-            v-if="appOpen"
+            v-if="stillRunning"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mt-3"
+            data-testid="restore-still-running"
+          >
+            {{ stillRunning }}
+          </v-alert>
+          <v-alert
+            v-else-if="appOpen"
             type="warning"
             variant="tonal"
             density="compact"
             class="mt-3"
             data-testid="restore-app-open"
           >
-            The Fanatec App is open. RigReady can close it, restore, and start it again.
+            {{ appOpen }} RigReady can close it, restore, and start it again.
           </v-alert>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            variant="text"
-            data-testid="restore-cancel"
-            @click="((confirmRestore = undefined), (appOpen = false))"
+          <v-btn variant="text" data-testid="restore-cancel" @click="confirmRestore = undefined"
             >Cancel</v-btn
           >
           <v-btn
@@ -364,8 +381,10 @@ onMounted(load);
             :loading="busy"
             data-testid="restore-close-app"
             @click="restore(true)"
-            >Close the app and restore</v-btn
           >
+            <!-- After it stayed open, the user closes it: the button no longer says RigReady will. -->
+            {{ stillRunning ? 'Restore again' : 'Close the app and restore' }}
+          </v-btn>
           <v-btn
             v-else
             color="primary"

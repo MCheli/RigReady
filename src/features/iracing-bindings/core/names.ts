@@ -256,17 +256,30 @@ const PUNCTUATION = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
 /** Codes 128 to 172: the letters and signs of other keyboard layouts, in iRacing's order. */
 const OTHER_LAYOUTS = '¡¢£¤¥¦§¨ªº²³´µ¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖÙÚÛÜÝßÿ';
 
-function keyName(keyCode: number): string {
+/** The name of a key code iRacing's own table has; undefined for any other number. */
+function tableName(keyCode: number): string | undefined {
+  if (!Number.isInteger(keyCode)) return undefined;
   if ((keyCode >= 48 && keyCode <= 57) || (keyCode >= 65 && keyCode <= 90)) {
     return String.fromCharCode(keyCode);
   }
   if (keyCode >= 197 && keyCode <= 212) return `F${keyCode - 196}`;
-  const named =
+  return (
     KEYS[keyCode] ??
     (keyCode >= 96 ? PUNCTUATION[keyCode - 96] : undefined) ??
-    (keyCode >= 128 ? OTHER_LAYOUTS[keyCode - 128] : undefined);
-  // A code iRacing's own table does not have is shown as its number.
-  return named ?? `Key ${keyCode}`;
+    (keyCode >= 128 ? OTHER_LAYOUTS[keyCode - 128] : undefined)
+  );
+}
+
+// A code iRacing's own table does not have is shown as its number.
+const keyName = (keyCode: number): string => tableName(keyCode) ?? `Key ${keyCode}`;
+
+/** Whether iRacing's own table has this key code. Nothing else is ever written as a key. */
+export const iracingKeyKnown = (keyCode: number): boolean => tableName(keyCode) !== undefined;
+
+/** iRacing's code for a punctuation key, by the character the key types without Shift. */
+export function iracingPunctuationCode(character: string): number | undefined {
+  const at = character.length === 1 ? PUNCTUATION.indexOf(character) : -1;
+  return at < 0 ? undefined : 96 + at;
 }
 
 /**
@@ -281,4 +294,16 @@ export function iracingKeyLabel(keyCode: number, modifiers: number): string {
   if (modifiers & 0x03) parts.push('Shift');
   parts.push(keyName(keyCode));
   return parts.join('+');
+}
+
+/**
+ * A binding as it reads inside a sentence: "Button 5 on Button Box", "Ctrl+R on the
+ * keyboard", "Not bound".
+ */
+export function inWords(
+  binding: { kind: string; input: string; deviceName: string } | undefined
+): string {
+  if (!binding) return 'Not bound';
+  if (binding.kind === 'key') return `${binding.input} on the keyboard`;
+  return binding.deviceName ? `${binding.input} on ${binding.deviceName}` : binding.input;
 }

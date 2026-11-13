@@ -35,6 +35,7 @@ import {
   type DeviceLayout,
 } from './layout';
 import { KNEEBOARD_SIZE, printDocument, type PageStyle, type PaperSize } from './pages';
+import { photoKindProblem, photoSizeProblem, pictureKind, sheetWithoutPictures } from './photoFile';
 import { buildSheet, sheetTitle, type Sheet } from './sheet';
 import { CheatSheetStore } from './store';
 
@@ -208,6 +209,15 @@ export class CheatSheets {
     );
   }
 
+  /**
+   * The sheet as an assistant may read it: all of it but the user's own photos, which
+   * stay in RigReady's folder and in RigReady's own windows.
+   */
+  async sheetToRead(game: string, aircraftId: string): Promise<Result<Sheet>> {
+    const sheet = await this.sheet(game, aircraftId);
+    return sheet.ok ? ok(sheetWithoutPictures(sheet.value)) : sheet;
+  }
+
   async setNote(
     game: string,
     aircraftId: string,
@@ -374,6 +384,39 @@ export class CheatSheets {
       );
     }
     return ok({ image });
+  }
+
+  /**
+   * Asks for a photo of the device for a drawing of the user's own. The file is read
+   * where it lies and nothing is written here: the photo is saved with the layout, in
+   * RigReady's folder, when the user saves. What is not a picture, or is too large, is
+   * refused with the reason.
+   */
+  async pickPhoto(): Promise<Result<{ image: string | null; file?: string }>> {
+    const { dialogs, files } = this.ctx.ports;
+    const picked = await dialogs.open({
+      title: 'Choose a photo of the device',
+      filters: [{ name: 'Photos', extensions: ['jpg', 'jpeg', 'png', 'webp'] }],
+    });
+    if (!picked.ok) return picked;
+    const file = picked.value[0];
+    if (!file) return ok({ image: null });
+    const name = path.basename(file);
+    const stat = await files.stat(file);
+    if (!stat.ok) return stat;
+    if (!stat.value) return err('sheet.image', `${name} is not there any more.`);
+    const tooLarge = photoSizeProblem(name, stat.value.size);
+    if (tooLarge) return err('sheet.image', tooLarge);
+    const bytes = await files.readBytes(file);
+    if (!bytes.ok) return bytes;
+    const kind = pictureKind(bytes.value);
+    if (kind === undefined || kind === 'heic') {
+      return err('sheet.image', photoKindProblem(name, kind));
+    }
+    return ok({
+      image: `data:${kind};base64,${Buffer.from(bytes.value).toString('base64')}`,
+      file: name,
+    });
   }
 
   // ---- print ----
@@ -564,14 +607,22 @@ export class CheatSheets {
     return ok(`Wrote ${n} kneeboard page${n === 1 ? '' : 's'} to ${outcome.value.folder}`);
   }
 
-  /** One page exactly as the export would write it, as PNG bytes. */
-  async kneeboardPreview(input: {
-    game: string;
-    aircraftId: string;
-    deviceKey?: string | undefined;
-    style: PageStyle;
-  }): Promise<Result<{ image: string; width: number; height: number }>> {
-    const sheet = await this.sheet(input.game, input.aircraftId);
+  /**
+   * One page exactly as the export would write it, as PNG bytes. With `photos` off the
+   * user's own photos are left out of it: the page as an assistant may see it.
+   */
+  async kneeboardPreview(
+    input: {
+      game: string;
+      aircraftId: string;
+      deviceKey?: string | undefined;
+      style: PageStyle;
+    },
+    photos = true
+  ): Promise<Result<{ image: string; width: number; height: number }>> {
+    const sheet = photos
+      ? await this.sheet(input.game, input.aircraftId)
+      : await this.sheetToRead(input.game, input.aircraftId);
     if (!sheet.ok) return sheet;
     const options = KneeboardOptionsSchema.parse({
       devices: input.deviceKey ? [input.deviceKey] : [],

@@ -71,7 +71,7 @@ The owner chose to ship the drawings in 2.0. What changed against the prototype,
 
 ### User-made drawings (shipped, small)
 
-- **From a photo.** For a device RigReady has no drawing of, the card editor offers "Make a drawing from a photo". It makes a drawing of the user's own (`drawing.custom` in their layout): the photo, with a dot for every axis and hat the device reports and every button that does something, set out in a grid for the user to drag onto the real controls; more controls can be added from "Not on the drawing". The labels then place themselves around the photo like a shipped drawing's.
+- **From the user's photos.** "Use my photo" over a sheet (and "Make a drawing from a photo" in the card editor) makes a drawing of the user's own (`drawing.custom` in their layout) from one to six photos of the device, each a named view. The user presses a control and clicks its place on the photo; a hat is one control with all its ways; what is not placed yet stays on the sheet in a list under the photos. The labels place themselves around the photos like a shipped drawing's. Section 9 has the detail.
 - **Import a drawing file.** Import accepts a `rigready-device-drawing` JSON file (the format in `LAYOUT-FORMAT.md`: paths and/or a photo as a data URL, plus the controls with their anchors) as well as a layout file. It is checked like any import (the schema, an anchor off the drawing, an input on two controls, the device it is for) and becomes the user's own drawing of the device. Share as file exports the layout with the drawing in it, which Import reads back.
 - Everything is stored through the cheat-sheet store in RigReady's data folder; nothing outside it is written except where the user asks to save a shared file (through FileStore, as before).
 
@@ -160,4 +160,16 @@ Section 7's estimate holds: about a day for one device, most of it finding a sou
 
 ### What a photo with annotations would take
 
-It exists in a small form (section 6): "Make a drawing from a photo" puts the user's photo in place of the outline with a dot per control to drag into place, and the labels place themselves round it. What it lacks to be the easy road for a device RigReady has not drawn: a way to place a dot by pressing the control (press, then click where it is on the photo) instead of dragging dots from a grid; several photos for one device (a grip has a back, a front and sides); grouping the four ways of a hat into one control while placing; and a way to share the result without sharing the photo's background.
+Until 12 November it existed in a small form (section 6): a dot per control, set out in a grid over the user's photo, to drag into place. What it lacked to be the easy road for a device RigReady has not drawn: a way to place a dot by pressing the control instead of dragging dots from a grid; several photos for one device (a grip has a back, a front and sides); and grouping the ways of a hat into one control while placing. Section 9 is what was built.
+
+## 9. The photo route (2026-11-12)
+
+The owner asked for it to be "really easy for the user to upload a photo of their stick for binding and then annotating". What was built, and why:
+
+- **Press, then click.** The person presses a control on the device and clicks its place on the photo. Nobody types a button number, and nobody has to know one. A press of a control that is placed already offers to move it. Undo takes back any change, as often as wanted. A device that is not connected is placed from the list of what is bound on it.
+- **A hat is one control.** A hat Windows reports as a hat comes whole with its first push. A hat that reports buttons is asked for one way at a time ("Push it up", "Push it right", ..., "Press it in"), and its ways share one place and one label block. On a model RigReady knows the controls of by name (section 8), a press gives the whole control with the maker's name.
+- **Several photos.** Up to six, each a named view, one under the other on the sheet with its name over it. A control is on the photo its place lies in.
+- **Half-done is useful.** The page says how many controls are placed and names the rest. What is not placed is listed under the photos on the sheet, in the trainer and on a kneeboard page, so a press always lights something.
+- **The photos stay on the PC.** A chosen file is checked by what it holds, not by its name: JPEG, PNG or WebP, up to 25 MB, refused with the reason otherwise. RigReady keeps its own smaller copy, drawn again as a JPEG, which leaves behind what the camera stored in the file (where and when). The copy is in the layout file in RigReady's data folder. It leaves the PC only on a page the user prints, exports or shares. What an AI assistant can read of a sheet leaves the photos out.
+
+Known limits: several tall photos make a small picture on one kneeboard page (a page per photo is not built); a shared file holds the whole photo, background and all (there is no cropping); an HEIC photo has to be converted first.

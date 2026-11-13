@@ -3,7 +3,14 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { fixturesDir } from '../../../../tests/helpers';
 import { parseControlsFile } from './controlsFile';
-import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './names';
+import {
+  inWords,
+  iracingActionGroup,
+  iracingActionLabel,
+  iracingKeyKnown,
+  iracingKeyLabel,
+  iracingPunctuationCode,
+} from './names';
 
 describe('names of iRacing actions', () => {
   it('names the common actions in plain words', () => {
@@ -97,5 +104,46 @@ describe('names of iRacing keys', () => {
   it('shows a code it does not know as its number', () => {
     expect(iracingKeyLabel(250, 0)).toBe('Key 250');
     expect(iracingKeyLabel(7, 0)).toBe('Key 7');
+  });
+
+  it('knows which codes are in iRacing’s table: only those are ever written', () => {
+    for (const code of [8, 9, 13, 32, 48, 57, 65, 90, 114, 197, 212]) {
+      expect(iracingKeyKnown(code), String(code)).toBe(true);
+    }
+    for (const code of [0, 7, 250, 255, 256, -1, 72.5, NaN]) {
+      expect(iracingKeyKnown(code), String(code)).toBe(false);
+    }
+    // A code that is known is exactly one that has a name of its own.
+    for (let code = 0; code < 256; code++) {
+      expect(iracingKeyKnown(code), String(code)).toBe(iracingKeyLabel(code, 0) !== `Key ${code}`);
+    }
+  });
+
+  it('finds the code of a punctuation key by what the key types', () => {
+    expect(iracingPunctuationCode('=')).toBe(114);
+    expect(iracingPunctuationCode('-')).toBe(108);
+    expect(iracingPunctuationCode('[')).toBe(118);
+    expect(iracingPunctuationCode(']')).toBe(120);
+    // The code names the same character again.
+    for (const character of ";',./\\`") {
+      expect(iracingKeyLabel(iracingPunctuationCode(character)!, 0)).toBe(character);
+    }
+    for (const not of ['', 'a', '1', ' ', '==', 'é']) {
+      expect(iracingPunctuationCode(not), not).toBeUndefined();
+    }
+  });
+});
+
+describe('a binding inside a sentence', () => {
+  it('says the input and what it is on', () => {
+    expect(inWords(undefined)).toBe('Not bound');
+    expect(inWords({ kind: 'button', input: 'Button 5', deviceName: 'Button Box' })).toBe(
+      'Button 5 on Button Box'
+    );
+    expect(inWords({ kind: 'key', input: 'Ctrl+R', deviceName: 'Keyboard' })).toBe(
+      'Ctrl+R on the keyboard'
+    );
+    // A controller the file names but nothing else does has no name to add.
+    expect(inWords({ kind: 'button', input: 'Button 2', deviceName: '' })).toBe('Button 2');
   });
 });

@@ -1,6 +1,6 @@
 import type { ProcessInfo } from '../shared/models';
 import type { CloseOptions, ProcessProvider } from './ports';
-import { err, type Result, type RigError } from './result';
+import { err, ok, type Result, type RigError } from './result';
 
 /**
  * Why a program is still running after it was asked to close. A provider says it in the
@@ -35,6 +35,17 @@ export function stillRunningText(name: string, why: StillRunningWhy | undefined)
           ? 'Windows did not let RigReady close it. It may be running as administrator.'
           : 'it did not close when asked.';
   return `${name} is still running: ${reason}`;
+}
+
+/** What the setup editor calls a check's `forceClose`, for the hint that points at it. */
+export const FORCE_CLOSE_LABEL = 'Force it closed if it does not close';
+
+/**
+ * Whether ending the program by force can still help. Not when that was already tried, and
+ * not when Windows did not let RigReady near it: forcing fails the same way.
+ */
+export function forceCanHelp(why: StillRunningWhy | undefined, forced: boolean): boolean {
+  return !forced && why !== 'refused';
 }
 
 export type ClosedTogether =
@@ -93,6 +104,34 @@ export async function closeTogether(
     state: 'stillRunning',
     why: (['ignored', 'refused', 'noWindow'] as const).find((why) => whys.includes(why)),
   };
+}
+
+/**
+ * Closes one app for a check's Stand down and words what happened, the same for every
+ * check that closes an app: "Closed X", "Closed X (it had to be forced)", or an error that
+ * names the app, says why it is still running, and says what can be done. The check's Force
+ * switch is named only where it can help. `force`: that switch is on, or the check always
+ * ends its app. `null` when nothing of the app was running.
+ */
+export async function closeAtStandDown(
+  processes: ProcessProvider,
+  targets: Pick<ProcessInfo, 'pid'>[],
+  name: string,
+  options: { waitMs: number; force: boolean }
+): Promise<Result<string | null>> {
+  if (targets.length === 0) return ok(null);
+  const closed = await closeTogether(processes, targets, options);
+  if (closed.state === 'failed') return { ok: false, error: closed.error };
+  if (closed.state === 'stillRunning') {
+    return err(
+      'process.stillRunning',
+      stillRunningText(name, closed.why),
+      forceCanHelp(closed.why, options.force)
+        ? `Close it yourself, or switch on "${FORCE_CLOSE_LABEL}" for this check in the setup.`
+        : 'Close it yourself.'
+    );
+  }
+  return ok(closed.terminated ? `Closed ${name} (it had to be forced)` : `Closed ${name}`);
 }
 
 /**

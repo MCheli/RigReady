@@ -9,8 +9,9 @@ import { err, ok, type Result } from '../../../core/result';
  *
  * Every byte of the file is kept (head, the 68 bytes of each record, tail), so a file
  * that was read can be put together again unchanged, and each record says whether
- * RigReady understands all of its bytes (`understood`). RigReady reads this file; it
- * does not write bindings into it (see the research for why).
+ * RigReady understands all of its bytes (`understood`). This file only reads. The one
+ * writer is edit.ts: it changes one record and is behind a switch that is off (see the
+ * research for what is still to be proven).
  */
 
 /** Bytes after the name of each record. */

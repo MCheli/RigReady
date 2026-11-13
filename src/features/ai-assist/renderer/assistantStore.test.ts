@@ -418,9 +418,7 @@ describe('ASSIST-001 while the assistant works', () => {
     );
     const asked = running.events.length;
     const sending = store.send();
-    await vi.waitFor(() =>
-      expect(running.events.slice(asked).some((e) => e.channel === 'mcp:event:confirm')).toBe(true)
-    );
+    await running.event('mcp:event:confirm', asked);
     await vi.waitFor(() => expect(kinds(store)).toEqual(['user', 'tool', 'assistant']));
     expect(store.sending).toBe(true);
     expect(store.progress).toMatchObject({ phase: 'tool', round: 2 });
