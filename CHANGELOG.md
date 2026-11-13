@@ -102,7 +102,7 @@ For those who tried the betas: what changed after the second look on the rig.
 - Drawings: the ViperAce grip, the F-15EX throttle and take-off panel 2 match presses on a real rig, and their "?" marks are gone. The wing fold handle is drawn with its positions.
 - Wheels: the input tester shows a Fanatec clutch pedal as the clutch whichever axis the base puts it on, and the Y axis is called "Clutch or combined pedals".
 - Bringing over a RigReady 1 setup no longer lists the same check twice.
-- Updates are checked against the publisher's full certificate details, not only the name, and the release build stops if those details no longer match.
+- Installed copies now know the publisher's full certificate details as well as its name, and try the full details first, so an update passes without the updater's warning about checking the name only. The release build checks the full details itself and stops if they no longer match.
 - Clicking a switch's title in Settings or on the Overlay page turns the switch on or off.
 - The setup editor keeps the capitals in a fix's name.
 - For contributors: Claude Code skills that guide adding a device or a game, and a guide to building and running your own copy.
