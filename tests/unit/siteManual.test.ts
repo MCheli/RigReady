@@ -3,12 +3,15 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   DESCRIPTION_LENGTH,
+  MOVED_PAGES,
   breadcrumbs,
   buildManual,
   manualUrl,
+  movedPages,
   pageHeadings,
   pageOf,
   parseFrontMatter,
+  redirectPage,
   repoPath,
   searchIndex,
   sidebarTree,
@@ -139,6 +142,34 @@ describe('the manual', () => {
     expect(() => link('../lost/index.md')).toThrow(/does not exist/);
   });
 
+  it('keeps the old address of a page that moved, sending the reader on to it', () => {
+    const manual = buildManual(files);
+    expect(movedPages(manual, { 'getting-started/make-ready.md': 'play/make-ready.md' })).toEqual([
+      {
+        path: '/docs/getting-started/make-ready/',
+        to: '/docs/play/make-ready/',
+        title: 'Make ready',
+      },
+    ]);
+    // A page that is still there did not move; one that moved must land somewhere.
+    expect(() => movedPages(manual, { 'play/make-ready.md': 'play/zebra.md' })).toThrow(
+      /still there/
+    );
+    expect(() => movedPages(manual, { 'play/gone.md': 'play/nowhere.md' })).toThrow(
+      /does not exist/
+    );
+    const html = redirectPage('/docs/play/make-ready/', 'Make <ready>', 'rigready.io');
+    // At once, with the section of the page the old link pointed at, and without script too.
+    expect(html).toContain('location.replace("/docs/play/make-ready/" + location.hash)');
+    expect(html).toContain('<meta http-equiv="refresh" content="0; url=/docs/play/make-ready/">');
+    expect(html).toContain('<a href="/docs/play/make-ready/">Make &lt;ready&gt;</a>');
+    // Search engines are told where the page is now, and not to list the old address.
+    expect(html).toContain(
+      '<link rel="canonical" href="https://rigready.io/docs/play/make-ready/">'
+    );
+    expect(html).toContain('<meta name="robots" content="noindex">');
+  });
+
   it('names pictures and resolves their paths', () => {
     expect(
       repoPath('docs/manual/play/make-ready.md', '../../../artifacts/screens/fly-rig/01.png')
@@ -226,6 +257,27 @@ describe('docs/manual as it is', () => {
       expect(e.description, e.url).toBeTruthy();
     }
     expect(index.find((e) => e.url === '/docs/dcs/kneeboard/')?.section).toBe('DCS World');
+  });
+
+  it('has the cheat sheets and the trainer under Controls, not under one game, and their old addresses still lead there', async () => {
+    const manual = buildManual(await read());
+    const index = searchIndex(manual);
+    for (const url of ['/docs/controls/cheat-sheets/', '/docs/controls/trainer/']) {
+      expect(index.find((e) => e.url === url)?.section, url).toBe('Controls');
+    }
+    expect(movedPages(manual)).toEqual([
+      {
+        path: '/docs/dcs/cheat-sheets/',
+        to: '/docs/controls/cheat-sheets/',
+        title: 'Cheat sheets',
+      },
+      {
+        path: '/docs/dcs/trainer/',
+        to: '/docs/controls/trainer/',
+        title: 'Learn your controls (the trainer)',
+      },
+    ]);
+    expect(Object.keys(MOVED_PAGES)).toEqual(['dcs/cheat-sheets.md', 'dcs/trainer.md']);
   });
 });
 

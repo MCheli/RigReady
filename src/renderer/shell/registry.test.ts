@@ -12,6 +12,7 @@ import {
   humanize,
   listDynamic,
   listed,
+  offeredHere,
   pageCommands,
   staticCommands,
 } from './registry';
@@ -644,5 +645,97 @@ describe('NAV-GAMES-003 the palette after the menu stopped naming games', () => 
     expect([...new Set(all.map((c) => c.group))]).toEqual(['Play', 'DCS bindings', 'About', GO_TO]);
     const routes = all.filter((c) => c.group === GO_TO).map((c) => c.to);
     expect(routes.slice(0, 2)).toEqual(['/fly', '/fly/compact']);
+  });
+
+  describe('NAV-GAMES-006 a page about a game only where the game is found', () => {
+    const GUIDE: FeatureManifest = {
+      id: 'ai-assist',
+      nav: [
+        {
+          title: 'Binding guide',
+          icon: 'mdi-s',
+          to: '/configure/ai-assist',
+          order: 310,
+          section: 'Controls',
+          games: ['dcs'],
+        },
+      ],
+      routes: [{ path: '/configure/ai-assist/:tab?', component: blank }],
+    };
+    const WITH_GUIDE = [...MENU, GUIDE];
+    // The DCS World and DCS bindings tabs, as their features name them, and one action each.
+    const modules: FeatureCommands[] = [
+      { feature: 'fly', commands: [{ id: 'fly.recheck', title: 'Re-check', run }] },
+      {
+        feature: 'dcs-setup',
+        commands: [
+          { id: 'dcs-setup.screens', title: 'DCS World: Screens', to: '/configure/dcs/screens' },
+        ],
+      },
+      {
+        feature: 'dcs-bindings',
+        commands: [
+          {
+            id: 'dcs-bindings.tab.devices',
+            title: 'DCS bindings: Devices',
+            to: '/configure/dcs-bindings/devices',
+          },
+          { id: 'dcs-bindings.clean', title: 'Clean up the defaults', run },
+        ],
+      },
+      {
+        feature: 'ai-assist',
+        commands: [
+          { id: 'ai-assist.assistant', title: 'Open the assistant', group: 'Assistant', run },
+        ],
+      },
+    ];
+    const all = staticCommands(WITH_GUIDE, modules);
+    const offered = (found: readonly string[] | undefined) =>
+      offeredHere(all, WITH_GUIDE, found).map((c) => c.title);
+    const DCS_PAGES = [
+      'DCS World',
+      'DCS World: Screens',
+      'Binding guide',
+      'DCS bindings',
+      'DCS bindings: Devices',
+    ];
+
+    it('on a PC without DCS there is no DCS World, no DCS bindings and no binding guide', () => {
+      for (const found of [[], ['iracing']]) {
+        const titles = offered(found);
+        expect(
+          titles.filter((t) => DCS_PAGES.includes(t)),
+          String(found)
+        ).toEqual([]);
+        // What is about no game, or about a game that is here, stays.
+        expect(titles).toEqual(expect.arrayContaining(['Bindings', 'Games', 'Devices', 'Wheel']));
+        // The actions stay: one that is about DCS checks for it when it runs.
+        expect(titles).toEqual(
+          expect.arrayContaining(['Re-check', 'Clean up the defaults', 'Open the assistant'])
+        );
+      }
+      expect(offered(['iracing'])).toEqual(
+        expect.arrayContaining(['Racing', 'Racing: Lmu', 'iRacing bindings'])
+      );
+      expect(offered([])).not.toContain('iRacing bindings');
+      expect(offered([])).not.toContain('Racing');
+    });
+
+    it('on a PC with DCS they are all there, in the order they had', () => {
+      expect(offered(['dcs'])).toEqual(expect.arrayContaining(DCS_PAGES));
+      expect(offered(['dcs', 'iracing'])).toEqual(all.map((c) => c.title));
+      // When what is found could not be told, nothing is held back.
+      expect(offered(undefined)).toEqual(all.map((c) => c.title));
+    });
+
+    it('only Play comes first, whatever is held back', () => {
+      for (const found of [[], ['iracing'], ['dcs'], undefined]) {
+        const kept = offeredHere(all, WITH_GUIDE, found);
+        expect(kept[0], String(found)).toMatchObject({ id: 'fly.recheck', group: 'Play' });
+        const routes = kept.filter((c) => c.group === GO_TO).map((c) => c.to);
+        expect(routes.slice(0, 2)).toEqual(['/fly', '/fly/compact']);
+      }
+    });
   });
 });

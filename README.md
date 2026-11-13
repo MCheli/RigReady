@@ -43,8 +43,8 @@ Setting up bindings for a rig full of controllers takes hours. RigReady helps yo
 
 - **Capture a setup.** Record the controllers, apps, layout and audio as they are now, then edit. [Capture](docs/manual/setups/capture.md)
 - **DCS bindings.** See the bindings in effect, edit them with a preview, clear the defaults DCS adds to every device, and copy controls between aircraft. [DCS bindings](docs/manual/dcs/bindings.md)
-- **Cheat sheets.** Each device drawn with what every control does, for DCS aircraft and the racing games, printable and exportable as DCS kneeboard pages. [Cheat sheets](docs/manual/dcs/cheat-sheets.md)
-- **Learn them.** A trainer names an action and you press the control; binding guides for twenty aircraft, from the F/A-18C, F-16C, A-10C and F-14 to the Ka-50, UH-1H and P-51D, walk through what to bind first. [Trainer](docs/manual/dcs/trainer.md)
+- **Cheat sheets.** Each device drawn with what every control does, for DCS aircraft and the racing games, printable and exportable as DCS kneeboard pages. [Cheat sheets](docs/manual/controls/cheat-sheets.md)
+- **Learn them.** A trainer names an action and you press the control; binding guides for twenty aircraft, from the F/A-18C, F-16C, A-10C and F-14 to the Ka-50, UH-1H and P-51D, walk through what to bind first. [Trainer](docs/manual/controls/trainer.md)
 - **Back up and restore.** One click backs up setups, game files and settings; a restore shows what will change before it does. [Backups](docs/manual/protect/backups.md), [moving to a new PC](docs/manual/protect/new-pc.md)
 - **Share it.** Share a setup as a file with personal details reviewed and removed, or make a picture of the rig to show people. [Sharing](docs/manual/protect/sharing.md)
 

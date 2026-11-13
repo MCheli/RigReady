@@ -131,6 +131,47 @@ export function buildManual(files) {
   return { landing, sections, pages: reading, byFile: new Map(reading.map((p) => [p.file, p])) };
 }
 
+/**
+ * Pages of the manual that moved, the old file -> the new one (relative to docs/manual). The site
+ * keeps each old address as a page that sends the reader on, so a link from an older RigReady, a
+ * bookmark or a search result still lands on the page. Links inside the repository name the new
+ * file; a link to the old one fails the build like any link to a page that does not exist.
+ */
+export const MOVED_PAGES = {
+  // Both work for the racing games too (12 Nov 2026): out of the DCS World section.
+  'dcs/cheat-sheets.md': 'controls/cheat-sheets.md',
+  'dcs/trainer.md': 'controls/trainer.md',
+};
+
+/**
+ * The old addresses of the pages that moved, each with the address and title of the page it
+ * moved to. Throws when an old page is still there, or the page it moved to is not.
+ */
+export function movedPages(manual, moved = MOVED_PAGES) {
+  return Object.entries(moved).map(([from, to]) => {
+    if (manual.byFile.has(from)) {
+      throw new Error(`${MANUAL_DIR}/${from} moved to ${to}, but it is still there`);
+    }
+    const page = manual.byFile.get(to);
+    if (!page) throw new Error(`${MANUAL_DIR}/${from} moved to ${to}, which does not exist`);
+    return { path: manualUrl(from), to: page.url, title: page.title };
+  });
+}
+
+/**
+ * The page at an old address: it sends the reader on at once, keeping the part after "#" (a
+ * section of the page), names the new address for search engines, and is a link without script.
+ */
+export function redirectPage(to, title, domain) {
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
+<meta name="robots" content="noindex"><link rel="canonical" href="https://${domain}${to}">
+<script>location.replace(${JSON.stringify(to)} + location.hash);</script>
+<meta http-equiv="refresh" content="0; url=${to}"></head>
+<body><p>This page moved: <a href="${to}">${esc(title)}</a></p></body></html>
+`;
+}
+
 /** The trail from the manual's landing page to a page: [{ title, url }, ...]. */
 export function breadcrumbs(manual, page, rootTitle = 'Manual') {
   const trail = [{ title: rootTitle, url: manual.landing.url }];

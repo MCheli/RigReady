@@ -1,15 +1,17 @@
 import { computed, ref, shallowRef, watch, type ComputedRef, type Ref } from 'vue';
 import type { Router } from 'vue-router';
-import type { CommandShell, FeatureCommands } from '../../shared/feature';
+import type { CommandShell, FeatureCommands, FoundGames } from '../../shared/feature';
 import type { GameKind } from '../../shared/models';
 import { featureCommands, manifests } from '../features';
 import { useClient } from '../ipc';
 import { notifyMachineChanged, onMachineChanged } from '../machine';
+import { followGamesFound } from './games';
 import { followSetupKind } from './kind';
 import { manualPageOfRoute, openManual } from './manual';
 import { parseRecent, remember } from './palette';
 import {
   listDynamic,
+  offeredHere,
   sortCommands,
   staticCommands,
   type ListedCommand,
@@ -79,6 +81,34 @@ export async function followRigKind(router: Router): Promise<() => void> {
     createCommandShell(router),
     (kind) => {
       rigKind.value = kind;
+    },
+    onMachineChanged
+  );
+}
+
+/**
+ * The games found on this PC (games.ts): the menu and the palette offer an entry or a page
+ * about a game only when it is found. Nothing is found until the first answer, so an entry
+ * about a game appears rather than flashes away; undefined (could not be told) offers all.
+ */
+export const gamesFound = ref<FoundGames>([]);
+
+/** Starts following them. Called once, when the shell is up; returns the function that stops it. */
+export async function followFoundGames(router: Router): Promise<() => void> {
+  let modules: FeatureCommands[];
+  try {
+    modules = await featureCommands();
+  } catch {
+    // A command module that does not load is reported by the palette when it is opened.
+    // Nothing can say which games are here, so nothing is held back.
+    gamesFound.value = undefined;
+    return () => undefined;
+  }
+  return followGamesFound(
+    modules,
+    createCommandShell(router),
+    (found) => {
+      gamesFound.value = found;
     },
     onMachineChanged
   );
@@ -241,12 +271,18 @@ export function usePaletteCommands(router: Router): PaletteCommands {
     return loaded;
   }
 
+  // A page about a game is offered only where the game is found (the binding guide, the
+  // DCS World and DCS bindings pages and their tabs on a PC with DCS).
   const commands = computed(() =>
-    sortCommands([
-      ...staticCommands(manifests, modules.value),
-      ...Object.values(listings.value).flatMap((listing) => listing.commands),
-      ...own,
-    ])
+    offeredHere(
+      sortCommands([
+        ...staticCommands(manifests, modules.value),
+        ...Object.values(listings.value).flatMap((listing) => listing.commands),
+        ...own,
+      ]),
+      manifests,
+      gamesFound.value
+    )
   );
   const problems = computed(() => [
     ...(loadProblem.value ? [`Commands could not be loaded: ${loadProblem.value}`] : []),
