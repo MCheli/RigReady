@@ -243,6 +243,18 @@ const actions = {
 for (const event of ['unhandledRejection', 'uncaughtException'])
   process.on(event, (e) => console.error(`${event}: ${e?.message ?? e}`));
 
+// What a failed call tells its caller: the error's message alone, without the "at ..." lines
+// Playwright adds to the message of a failed evaluate.
+function plainMessage(e) {
+  const message =
+    typeof e?.message === 'string' ? e.message : 'the call failed: see the driver output';
+  return message
+    .split('\n')
+    .filter((line) => !/^\s+at\s/.test(line))
+    .join('\n')
+    .slice(0, 2000);
+}
+
 http
   .createServer(async (req, res) => {
     const name = (req.url ?? '/').replace(/^\/+/, '').split('?')[0];
@@ -261,7 +273,9 @@ http
       if (!['launch', 'close', 'stop'].includes(name) && !page) throw new Error('not launched');
       reply(200, await fn(body ? JSON.parse(body) : {}));
     } catch (e) {
-      reply(500, { error: String(e?.message ?? e).slice(0, 2000) });
+      // The whole error goes to the driver's own output; the caller gets its message.
+      console.error(`${JSON.stringify(name)} failed:`, e);
+      reply(500, { error: plainMessage(e) });
     }
   })
   .on('error', (e) => {
