@@ -316,3 +316,115 @@ describe('rim variants: a setup expects one set of bindings', () => {
     expect(captured.candidates.some((c) => /rim/i.test(c.title))).toBe(false);
   });
 });
+
+/**
+ * iRacing 2026 Season 3 and later read a control profile (app.ini [ControlProfiles]), not the
+ * older Documents\iRacing\controls.cfg. A set of bindings is the profile's files; a backup
+ * made before control profiles holds files iRacing no longer reads, and is never taken for
+ * the bindings iRacing uses.
+ */
+describe('saved iRacing bindings with control profiles', () => {
+  const run = async (
+    backupId: string
+  ): Promise<{ pass: boolean; summary: string; details?: string[] }> => {
+    const definition = app!.wiring.context.checks.check('racing.bindingSet')!;
+    return definition.run(
+      definition.params.parse({ game: 'iracing', backupId, name: 'GT3 rim' }),
+      app!.wiring.context
+    );
+  };
+  const fix = async (backupId: string) => {
+    const definition = app!.wiring.context.checks.remediation('racing.restoreBindingSet')!;
+    return definition.run(
+      definition.params.parse({ game: 'iracing', backupId, name: 'GT3 rim' }),
+      app!.wiring.context
+    );
+  };
+
+  it('saves, compares and restores the profile iRacing uses; the older file is not part of the set', async () => {
+    app = await wiredApp('iracing-bindings-profiles', { files: ['Documents/iRacing/**'] });
+    const dir = path.join(app.ports.folders.documents(), 'iRacing');
+    const profile = path.join(dir, 'profiles', 'controls', 'Baseline');
+    const backup = await app.invoke<BindingBackup>('racing:backup', {
+      game: 'iracing',
+      name: 'GT3 rim',
+    });
+    expect(backup.files.map((f) => [path.relative(dir, f.path), f.label])).toEqual([
+      [
+        path.join('profiles', 'controls', 'Baseline', 'controls.cfg'),
+        'Bindings (controls.cfg, profile “Baseline”)',
+      ],
+      [
+        path.join('profiles', 'controls', 'Baseline', 'joyCalib.yaml'),
+        'Calibration (joyCalib.yaml, profile “Baseline”)',
+      ],
+      ['app.ini', 'Options and force feedback (app.ini)'],
+    ]);
+    expect(await run(backup.id)).toMatchObject({
+      pass: true,
+      summary: 'iRacing has the bindings saved as "GT3 rim"',
+    });
+
+    // A change to the older file is not a change to the bindings iRacing uses.
+    const older = path.join(dir, 'controls.cfg');
+    await fs.writeFile(older, 'the older file, changed');
+    expect((await run(backup.id)).pass).toBe(true);
+
+    // Another rim's bindings in the profile: the set differs, and its fix puts it back.
+    const original = await fs.readFile(path.join(profile, 'controls.cfg'));
+    await fs.writeFile(path.join(profile, 'controls.cfg'), 'bindings for the formula rim');
+    expect(await run(backup.id)).toMatchObject({
+      pass: false,
+      summary: 'iRacing has other bindings than "GT3 rim": 1 of 2 files differ',
+      details: ['controls.cfg is not the one saved in "GT3 rim".'],
+    });
+    const fixed = await fix(backup.id);
+    expect(fixed.ok && fixed.value).toBe(
+      'Restored the iRacing bindings saved as "GT3 rim" (2 files); the ones that were there are backed up'
+    );
+    expect((await fs.readFile(path.join(profile, 'controls.cfg'))).equals(original)).toBe(true);
+    expect(await fs.readFile(older, 'utf8')).toBe('the older file, changed');
+  });
+
+  it('a set saved before control profiles is said to hold files iRacing no longer reads, and is not restored', async () => {
+    // Saved on the iRacing of April 2026, which read Documents\iRacing\controls.cfg.
+    app = await wiredApp('racing-fresh', { files: ['Documents/iRacing/**'] });
+    const backup = await app.invoke<BindingBackup>('racing:backup', {
+      game: 'iracing',
+      name: 'GT3 rim',
+    });
+    expect(backup.files.map((f) => path.basename(f.path))).toEqual([
+      'controls.cfg',
+      'joyCalib.yaml',
+      'app.ini',
+    ]);
+    expect((await run(backup.id)).pass).toBe(true);
+
+    // iRacing updates to 2026 Season 3: the bindings move into the profile "Baseline".
+    const data = path.join(process.cwd(), 'fixtures', 'scenarios', 'data', 'iracing-bindings');
+    await mutate(app, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/app.ini',
+        from: path.join(data, 'app-profiles.ini'),
+      },
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/Baseline/controls.cfg',
+        from: path.join(data, 'profile-controls.cfg'),
+      },
+    ]);
+    const text =
+      '"GT3 rim" was saved before iRacing kept its bindings in control profiles, so it holds files iRacing no longer reads. Back up the bindings again on Configure › Games › Racing › iRacing and use that backup.';
+    expect(await run(backup.id)).toEqual({
+      pass: false,
+      summary: '"GT3 rim" holds iRacing bindings from before control profiles',
+      details: [text],
+    });
+    const before = await app.ports.files.journal();
+    const fixed = await fix(backup.id);
+    expect(!fixed.ok && fixed.error.message).toBe(text);
+    const after = await app.ports.files.journal();
+    expect(after.ok && after.value.length).toBe(before.ok ? before.value.length : -1);
+  });
+});

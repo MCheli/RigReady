@@ -7,12 +7,13 @@ import type {
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import type { GameRegistry } from '../../../core/games';
+import { inControlProfiles, locateIracingControls } from '../../../core/iracingControls';
 import type { ProfileStore } from '../../../core/profile/store';
 import { err, ok, type Result } from '../../../core/result';
 import type { Clock } from '../../../core/ports';
 import { isToolBackup, type BackupGame, type BindingBackup } from '../contract';
 import { backupsRoot, listBackups, restoreBackup } from './backups';
-import { RACING_GAMES, type RacingContext, type RacingGameId } from './context';
+import { locationOf, RACING_GAMES, type RacingContext, type RacingGameId } from './context';
 
 /**
  * A setup that expects one particular set of bindings: the way to keep a variant of a
@@ -72,6 +73,42 @@ export interface SetComparison {
   files: string[];
   /** Those that differ from the set now, or are missing. */
   different: string[];
+  /**
+   * Binding files of the set that the game no longer reads: an iRacing backup made before
+   * iRacing kept control profiles holds the older controls.cfg. Not compared, not restored.
+   */
+  notRead: string[];
+}
+
+/**
+ * The binding files of a backup that the game no longer reads, by path. Only iRacing has
+ * them: once it keeps control profiles, a file outside profiles\controls is not its bindings.
+ */
+async function notReadByGame(
+  ctx: RacingContext,
+  game: RacingGameId,
+  backup: BindingBackup
+): Promise<Set<string>> {
+  if (game !== 'iracing') return new Set();
+  const folder = await locationOf(ctx, 'iracing', 'documents');
+  if (!folder) return new Set();
+  const located = await locateIracingControls(ctx.ports.files, folder);
+  if (located.kind !== 'profiles') return new Set();
+  return new Set(
+    backup.files
+      .filter((f) => isBindingFile(game, f) && !inControlProfiles(folder, f.path))
+      .map((f) => f.path)
+  );
+}
+
+/** True for a file of a backup that holds bindings the game still reads. */
+export async function bindingFilter(
+  ctx: RacingContext,
+  game: RacingGameId,
+  backup: BindingBackup
+): Promise<(file: { path: string; restorable: boolean }) => boolean> {
+  const notRead = await notReadByGame(ctx, game, backup);
+  return (file) => isBindingFile(game, file) && !notRead.has(file.path);
 }
 
 /** How the game's binding files compare with a backup now. Reads only. */
@@ -81,12 +118,18 @@ export async function compareWithSet(
   backupId: string
 ): Promise<SetComparison> {
   const backup = (await listBackups(ctx, game)).find((b) => b.id === backupId);
-  if (!backup) return { files: [], different: [] };
+  if (!backup) return { files: [], different: [], notRead: [] };
   const dir = path.join(backupsRoot(ctx, game), backup.id);
   const files: string[] = [];
   const different: string[] = [];
+  const notRead: string[] = [];
+  const skipped = await notReadByGame(ctx, game, backup);
   for (const file of backup.files.filter((f) => isBindingFile(game, f))) {
     const name = path.basename(file.path);
+    if (skipped.has(file.path)) {
+      notRead.push(name);
+      continue;
+    }
     files.push(name);
     const stored = await ctx.ports.files.readBytes(path.join(dir, file.stored));
     const current = (await ctx.ports.files.exists(file.path))
@@ -98,8 +141,12 @@ export async function compareWithSet(
       Buffer.compare(Buffer.from(stored.value), Buffer.from(current.value)) === 0;
     if (!same) different.push(name);
   }
-  return { backup, files, different };
+  return { backup, files, different, notRead };
 }
+
+/** Why a set whose files the game no longer reads cannot be its bindings. */
+const notReadText = (label: string): string =>
+  `"${label}" was saved before iRacing kept its bindings in control profiles, so it holds files iRacing no longer reads. Back up the bindings again on Configure › Games › Racing › iRacing and use that backup.`;
 
 const savedOn = (backup: Pick<BindingBackup, 'createdAt'>): string =>
   new Date(backup.createdAt).toLocaleString('en-GB', {
@@ -166,6 +213,13 @@ export function bindingSetCheck(games: GameRegistry): CheckDefinition<BindingSet
         };
       }
       const label = setLabel(compared.backup, params.name);
+      if (compared.files.length === 0 && compared.notRead.length > 0) {
+        return {
+          pass: false,
+          summary: `"${label}" holds iRacing bindings from before control profiles`,
+          details: [notReadText(label)],
+        };
+      }
       if (compared.files.length === 0) {
         return { pass: false, summary: `"${label}" holds no binding files` };
       }
@@ -200,8 +254,13 @@ export function restoreBindingSetFix(games: GameRegistry): RemediationDefinition
         return err('racing.backup', `The saved bindings "${params.name}" no longer exist.`);
       }
       const label = setLabel(before.backup, params.name);
+      // Never put back a file the game no longer reads and call that its bindings.
+      if (before.files.length === 0 && before.notRead.length > 0) {
+        return err('racing.backup', notReadText(label));
+      }
+      const only = await bindingFilter(rctx, params.game, before.backup);
       const restored = await restoreBackup(rctx, params.game, params.backupId, {
-        only: (file) => isBindingFile(params.game, file),
+        only,
         what: `"${label}"`,
       });
       if (!restored.ok) return restored;
