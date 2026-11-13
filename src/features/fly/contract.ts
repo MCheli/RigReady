@@ -121,10 +121,35 @@ export const SessionStateSchema = z.object({
   startedAt: z.string().optional(),
   endedAt: z.string().optional(),
   durationSeconds: z.number().int().optional(),
-  /** Stand down is running by itself right now (the user asked for that). */
+  /**
+   * The countdown: Stand down runs by itself at this time (ISO) unless it is cancelled,
+   * because the setup says so. Absent when nothing is counting down.
+   */
+  standDownAt: z.string().optional(),
+  /** How long that countdown is in all, in seconds (what the setup says). */
+  standDownSeconds: z.number().int().optional(),
+  /**
+   * Why Stand down is not going to run by itself this time, although the setup asks for
+   * it: "cancelled" (the user cancelled the countdown) or "quickExit" (the game closed so
+   * soon after it started that it may not have been a session at all).
+   */
+  standDownHeld: z.enum(['cancelled', 'quickExit']).optional(),
+  /** Stand down is running by itself right now (the countdown is over). */
   standingDown: z.boolean().optional(),
-  /** Stand down ran by itself: what it did. */
-  stoodDown: z.object({ headline: z.string(), failed: z.number().int() }).optional(),
+  /**
+   * Stand down ran by itself: what it did. "failed" counts the steps that did not work
+   * and "problems" says which, each in its own words. A Stand down that could not run at
+   * all says so in the headline and counts as one failure.
+   */
+  stoodDown: z
+    .object({
+      /** False when Stand down could not run, or stopped before its end. */
+      finished: z.boolean(),
+      headline: z.string(),
+      failed: z.number().int(),
+      problems: z.array(z.string()),
+    })
+    .optional(),
 });
 export type SessionState = z.infer<typeof SessionStateSchema>;
 
@@ -236,8 +261,6 @@ export type LaunchResult = z.infer<typeof LaunchResultSchema>;
 export const PreferencesSchema = z.object({
   /** After a successful launch, hide RigReady to the tray. */
   minimizeOnLaunch: z.boolean().default(true),
-  /** When the game closes, run Stand down without being asked. */
-  autoStandDown: z.boolean().default(false),
   /** Two quiet notes when the rig becomes ready. */
   readyTone: z.boolean().default(false),
 });
@@ -249,7 +272,6 @@ export type Preferences = z.infer<typeof PreferencesSchema>;
  */
 export const PreferencesPatchSchema = z.object({
   minimizeOnLaunch: z.boolean().optional(),
-  autoStandDown: z.boolean().optional(),
   readyTone: z.boolean().optional(),
 });
 export type PreferencesPatch = z.infer<typeof PreferencesPatchSchema>;
@@ -380,7 +402,7 @@ export const flyContract = defineContract(
     }),
     preferences: channel(noInput, PreferencesSchema, {
       describe:
-        'Answers with the Play screen preferences: hide RigReady after a launch, Stand down by itself when the game closes, and the ready tone. Changes nothing.',
+        'Answers with the Play screen preferences: hide RigReady after a launch, and the ready tone. Changes nothing. (Stand down when the game closes is set per setup, in the setup itself.)',
       tier: 'read',
     }),
     setPreferences: channel(PreferencesPatchSchema, PreferencesSchema, {
@@ -403,12 +425,19 @@ export const flyContract = defineContract(
     /** The session of the moment: none, a game running, or one that just closed. */
     session: channel(noInput, SessionStateSchema, {
       describe:
-        'Answers with the session of the moment: none, a game starting or running, or one that just closed. Changes nothing.',
+        'Answers with the session of the moment: none, a game starting or running, or one that just closed. For one that closed it also says whether Stand down is counting down to run by itself (and when), is running, or what it did. Changes nothing.',
       tier: 'read',
     }),
     /** "Welcome back" was read: back to normal without standing down. */
     dismissSession: channel(noInput, SessionStateSchema, {
-      describe: 'Dismisses the welcome back notice of a closed session without running Stand down.',
+      describe:
+        'Dismisses the welcome back notice of a closed session without running Stand down. A countdown to Stand down that is running is cancelled with it.',
+      tier: 'read',
+    }),
+    /** Cancel on the countdown: Stand down does not run by itself this time. */
+    cancelStandDown: channel(noInput, SessionStateSchema, {
+      describe:
+        'Cancels the countdown to the Stand down that runs by itself after the game closed. Nothing is closed or changed; Stand down can still be run by hand. Answers with the session as it is now: when Stand down had already started, it carries on and the answer says so.',
       tier: 'read',
     }),
     /** Every recorded session, newest first, and what they add up to. */

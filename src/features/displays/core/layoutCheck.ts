@@ -121,7 +121,7 @@ export function createLayoutCheck(deps: LayoutDeps): CheckDefinition<LayoutParam
 }
 
 export function createApplyLayoutRemediation(
-  deps: LayoutDeps & { applier: Pick<LayoutApplier, 'applyAndWait'> }
+  deps: LayoutDeps & { applier: Pick<LayoutApplier, 'applyKnown'> }
 ): RemediationDefinition<LayoutParams> {
   return {
     type: DISPLAY_APPLY,
@@ -148,8 +148,10 @@ export function createApplyLayoutRemediation(
         return err('display.invalid', 'The layout cannot be applied.', analysis.problems.join(' '));
       }
       if (analysis.changes.length === 0) return ok('The monitors already match the layout');
-      // Waits for Keep or Go back: what follows in Make ready must know which layout is there.
-      const applied = await deps.applier.applyAndWait(analysis.targets);
+      // A layout kept before on this PC, with these monitors, is applied without the
+      // question (see proven.ts). Any other waits for Keep or Go back: what follows in Make
+      // ready must know which layout is there.
+      const applied = await deps.applier.applyKnown(analysis.targets);
       if (!applied.ok) return applied;
       // Read back: "applied" is only said when the monitors are as the layout says.
       const after = await ctx.ports.displays.read();

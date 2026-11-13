@@ -25,7 +25,7 @@ Type, and the list becomes the matches, best first; letters you typed are highli
 Among the actions:
 
 - **Make ready**, **Launch** and **Stand down** ([Make ready and launch](../play/make-ready-and-launch.md), [Stand down](../play/stand-down.md)) for the setup in use, and [switching to another setup](../play/switching-setups.md).
-- **Apply a monitor layout** by name. The layout is applied and the "Keep this monitor layout?" question is asked, as on the Monitors page ([Monitor layouts](../monitors-and-audio/layouts.md)).
+- **Apply a monitor layout** by name. The layout is applied and the "Keep this monitor layout?" question is asked every time, as on the Monitors page ([Monitor layouts](../monitors-and-audio/layouts.md)).
 - **Back up now**: the same full backup as the button on the [Backups page](../protect/backups.md).
 - **Find a device**: press a button on any controller and RigReady names it ([Devices](../hardware/devices.md#find-a-device-by-pressing-a-button)).
 - Open the [bindings](../dcs/bindings.md) or the [cheat sheet](../dcs/cheat-sheets.md) of an aircraft.

@@ -61,7 +61,7 @@ export const PROMPTS: McpPromptDefinition[] = [
             text: steps(
               `My bindings${args['aircraft'] ? ` for ${args['aircraft']}` : ''}${args['game'] ? ` in ${args['game']}` : ''} are not right. Help me fix them without losing anything.`,
               [
-                'Read rigready://guide. Then call rigready_channels with the feature "dcs-bindings" (DCS World) or "racing" (the racing games) and read its reference.',
+                'Read rigready://guide. Then call rigready_channels with the feature "dcs-bindings" (DCS World) or "racing" (the racing games) to see its channels in a line each; ask it for one channel (channel: "<feature>:<name>") before you call that channel.',
                 'Read the overview channel of that feature to learn which aircraft or cars have bindings and whether device ids have gone stale (Windows changed a device id).',
                 'Read the bindings of the aircraft or car and list the problems the app found, in my words.',
                 'For every change: call the plan or preview channel first, show me exactly what would be written, and ask me before calling the channel that writes. The game must be closed.',

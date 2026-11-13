@@ -142,6 +142,14 @@ test('compact: the dial, the setup and the one action in a small window on top; 
   await expect(session).toContainText('Welcome back');
   await expect(session).toContainText(/less than a minute · closed\s+at \d\d:\d\d/);
   await expect(primary).toContainText('Stand down');
+  // It closed within two minutes of starting, so nothing counts down to a Stand down by
+  // itself. The small window says so in one short line; the whole sentence is its tooltip.
+  const down = popup.getByTestId('fly-session-down');
+  await expect(down).toHaveText('It closed too soon: Stand down did not start.');
+  await expect(down).toHaveAttribute(
+    'title',
+    'It closed within two minutes of starting, so Stand down did not start by itself.'
+  );
   // Still everything on screen, with the session in it.
   expect(await fits(popup)).toBe(true);
   expect(await accessible(popup)).toEqual([]);

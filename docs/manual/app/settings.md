@@ -12,7 +12,7 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 **Start with Windows.** RigReady starts in the tray when you sign in, without opening its window. It is off by default. The switch shows what Windows actually has: when Windows will not accept the entry, or has it switched off, the page says so. See [Start with Windows is off](../troubleshooting/start-with-windows-off.md).
 
-**Keep running in the tray when the window is closed.** On by default: closing the window hides RigReady to the [tray](../one-click/tray.md), and **Quit** in the tray icon's menu ends it. Off: closing the window quits.
+**Keep RigReady in the tray when you close the window.** On by default: closing the window hides it, and RigReady keeps running with its icon in the [tray](../one-click/tray.md), next to the clock. Windows may keep that icon under the ^ arrow. **Quit** in the icon's menu ends RigReady. Off: closing the window quits RigReady, and its tray icon goes away too. The line under the switch says which of the two closing the window does now. From anywhere, Ctrl+K and "tray" finds this switch.
 
 ## Monitor layouts
 
@@ -22,7 +22,7 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 **Keep automatic backups for.** How many days the automatic copies of changed files are kept (30 by default, 1 to 3650), and how many of the newest changes are always kept whatever their age (50 by default). Older copies are removed when RigReady starts. See [the Safety page](../protect/safety-page.md).
 
-**Monitor layout revert timer.** How many seconds a newly applied layout waits for you to keep it before it goes back by itself: 15 by default, 5 to 120.
+**Monitor layout revert timer.** How many seconds a newly applied layout waits for you to keep it before it goes back by itself: 15 by default, 5 to 120. When an AI assistant asked for the change, the wait is at least 60 seconds. Make ready and Stand down do not ask at all about a layout you kept before ([Monitor layouts](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)).
 
 **Check timeout.** How many seconds one check may run before it is reported as timed out: 5 by default, 1 to 60. A check can have its own limit in [the setup editor](../setups/editor.md).
 
@@ -38,7 +38,7 @@ Optional; everything except the AI help in the binding guide works without it. S
 
 The key is encrypted with Windows' own data protection (DPAPI, through Electron's safeStorage) and written to `secrets\` in the data folder. Only your Windows account on this PC can decrypt it; the file is useless on another PC or to another user. The key is never written to the settings file, the log, a backup, a shared setup or a picture. If Windows cannot encrypt for your account at that moment, the key is refused rather than stored in plain text.
 
-**Model.** Pick from the list (for Anthropic and OpenAI with their prices per million tokens) or type any model id the service offers. **Test** sends one small request to the chosen host and says whether the key, the address and the model work, and why not. **Exactly what is sent** lists what every request contains, what never leaves the PC, and the one host that receives it. See [the binding guide and AI](../dcs/binding-guide-and-ai.md) and [privacy](privacy.md).
+**Model.** Pick from the list or type any model id the service offers. **Test** sends one small request to the chosen host and says whether the key, the address and the model work, and why not. **Prices for this model** are the four prices per million tokens (input, output, cache read, cache write) from which every dollar figure for that model is estimated. For the Anthropic and OpenAI models RigReady lists they start as its built-in prices, shown with the month they were recorded; for any other model they are empty until you type them, and no dollar figure is shown until then. **Save prices** keeps your own numbers, and **Reset to built-in** goes back. **Ask before the estimate for one question passes** is the amount at which the [built-in assistant](../ai/built-in-assistant.md#estimates-prices-and-limits) stops and asks before it sends another request for the same question; 0 means it never stops on its estimate. **Stop sending when the estimate for a month reaches** is a monthly budget for the assistant and the binding guide: RigReady warns from 80 percent of it and then sends nothing more that month; 0, as it starts, means no budget. Both limits work on RigReady's estimates, not on your provider's bill, so turning one on asks you to acknowledge that first, and both are switched off for a model without prices. The limit that holds is the one you set in your provider's console. **Exactly what is sent** lists, for the binding guide and for the assistant, what a request contains and what never leaves the PC, and the one host that receives it. See [the binding guide and AI](../dcs/binding-guide-and-ai.md) and [privacy](privacy.md).
 
 ![AI assistance with a server on this PC](../../../artifacts/screens/ai-assist-providers/02-local-server.png)
 
@@ -66,4 +66,5 @@ The version, the update channel it follows, and that RigReady is open source und
 
 - **The log level.** The **Detailed log** switch is on the [Diagnostics](diagnostics.md) page. The environment variable `RIGREADY_LOG_LEVEL` (debug, info, warn or error) overrides it for a run.
 - **How many backups are kept.** On the [Backups](../protect/backups.md) page, above the list.
-- **Play screen options** such as standing down when the game closes, hiding RigReady after launch and the ready tone are in the Play screen's own menu; see [The Play menu](../play/the-menu.md).
+- **Play screen options** such as hiding RigReady after launch and the ready tone are in the Play screen's own menu; see [The Play menu](../play/the-menu.md).
+- **Standing down when the game closes.** Each setup has its own switch and countdown length, in [the setup editor](../setups/editor.md#when-the-game-closes).

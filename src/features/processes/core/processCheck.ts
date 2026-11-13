@@ -9,6 +9,7 @@ import type {
 } from '../../../core/checks/registry';
 import type { GameRegistry } from '../../../core/games';
 import { allPathVariables, collapsePath, expandPath } from '../../../core/pathVariables';
+import { closeTogether, stillRunningText } from '../../../core/processes';
 import { err, ok, type Result } from '../../../core/result';
 import type { GameKind, ProcessInfo } from '../../../shared/models';
 
@@ -51,6 +52,9 @@ export class SessionStarts {
 /** How long Stand down waits for a program to close after asking it to. */
 export const CLOSE_WAIT_MS = 10_000;
 
+/** What the setup editor calls `forceClose`, for the hint that points at it. */
+export const FORCE_CLOSE_LABEL = 'Force it closed if it does not close';
+
 /** Paths stored in a profile may start with a path variable ({PROGRAM_FILES_X86}/TrackIR5/...). */
 export type ResolvePath = (stored: string, ctx: CheckContext) => Promise<Result<string>>;
 
@@ -61,7 +65,12 @@ export function pathResolver(games: GameRegistry): ResolvePath {
   };
 }
 
-/** Asks every matching program to close; terminates only when allowed. */
+/**
+ * Asks every matching program to close; terminates only when allowed. A program of several
+ * processes is one program: all are asked at once and it counts as closed when none is
+ * left (closeTogether). One that is still running is named with the reason, and with what
+ * can be done about it.
+ */
 export async function closePrograms(
   ctx: CheckContext,
   name: string,
@@ -73,25 +82,20 @@ export async function closePrograms(
     (p) => sameName(p.name, name) && (options.match ? options.match(p) : true)
   );
   if (targets.length === 0) return ok(null);
-  let terminated = false;
-  for (const target of targets) {
-    const closed = await ctx.ports.processes.close(target.pid, {
-      waitMs: options.waitMs ?? CLOSE_WAIT_MS,
-      force: options.force,
-    });
-    if (!closed.ok) {
-      if (closed.error.code === 'process.stillRunning') {
-        return err(
-          'process.stillRunning',
-          `${name} is still running: it did not close when asked.`,
-          options.force ? undefined : 'Close it yourself, or let Stand down force it in the setup.'
-        );
-      }
-      return closed;
-    }
-    if (closed.value.outcome === 'terminated') terminated = true;
+  const closed = await closeTogether(ctx.ports.processes, targets, {
+    waitMs: options.waitMs ?? CLOSE_WAIT_MS,
+    force: options.force,
+  });
+  if (closed.state === 'failed') return { ok: false, error: closed.error };
+  if (closed.state === 'stillRunning') {
+    // Forcing cannot end a program Windows does not let RigReady touch, so it is not offered.
+    const hint =
+      options.force || closed.why === 'refused'
+        ? 'Close it yourself.'
+        : `Close it yourself, or switch on "${FORCE_CLOSE_LABEL}" for this check in the setup.`;
+    return err('process.stillRunning', stillRunningText(name, closed.why), hint);
   }
-  return ok(terminated ? `Closed ${name} (it had to be forced)` : `Closed ${name}`);
+  return ok(closed.terminated ? `Closed ${name} (it had to be forced)` : `Closed ${name}`);
 }
 
 export function createProcessRunningCheck(

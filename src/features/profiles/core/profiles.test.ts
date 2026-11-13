@@ -644,7 +644,7 @@ describe('CFG-PROFILE-019: the lists the editor picks from', () => {
     )!;
     expect(role.optionLabels).toEqual({
       default: 'Default device',
-      communications: 'Default for calls',
+      communications: 'Default for comms',
       both: 'Both',
     });
 

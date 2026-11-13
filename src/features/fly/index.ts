@@ -1,5 +1,7 @@
 import { defineFeature } from '../../shared/feature';
 import Presence from './renderer/Presence.vue';
+import StandDownBarItem from './renderer/StandDownBarItem.vue';
+import StandDownNotice from './renderer/StandDownNotice.vue';
 
 export default defineFeature({
   id: 'fly',
@@ -17,5 +19,8 @@ export default defineFeature({
       meta: { mode: 'fly', title: 'Compact view' },
     },
   ],
-  overlays: [Presence],
+  // On every screen: who is at a window, and the countdown to a Stand down by itself.
+  overlays: [Presence, StandDownNotice],
+  // In the app bar: the same countdown, once its notice was put away.
+  barItems: [StandDownBarItem],
 });

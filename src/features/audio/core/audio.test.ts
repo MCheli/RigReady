@@ -52,7 +52,7 @@ describe('audio.defaultDevice check', () => {
     });
     expect(await audioDefaultCheck.run(input, rig.ctx)).toEqual({
       pass: true,
-      summary: 'Default input, also for calls',
+      summary: 'Default input, also for comms',
     });
   });
 
@@ -72,22 +72,22 @@ describe('audio.defaultDevice check', () => {
 
   it('checks the communications default only when the setup asks for it', async () => {
     rig = await scenarioRig('audio-headset-ready', NO_FILES);
-    // The recorded rig gives calls to the Dell's speakers, not the headset.
+    // The recorded rig gives comms to the Dell's speakers, not the headset.
     expect((await audioDefaultCheck.run(output, rig.ctx)).pass).toBe(true);
     expect(await audioDefaultCheck.run({ ...output, role: 'both' }, rig.ctx)).toEqual({
       pass: false,
-      summary: 'Default for calls is DELL G3223D (NVIDIA High Definition Audio)',
+      summary: 'Default for comms is DELL G3223D (NVIDIA High Definition Audio)',
     });
     expect(await audioDefaultCheck.run({ ...output, role: 'communications' }, rig.ctx)).toEqual({
       pass: false,
-      summary: 'Default for calls is DELL G3223D (NVIDIA High Definition Audio)',
+      summary: 'Default for comms is DELL G3223D (NVIDIA High Definition Audio)',
     });
     await mutate(rig, [
       { op: 'setAudioDefault', flow: 'playback', match: { id: HEADPHONES.id }, role: 'both' },
     ]);
     expect(await audioDefaultCheck.run({ ...output, role: 'communications' }, rig.ctx)).toEqual({
       pass: true,
-      summary: 'Default output for calls',
+      summary: 'Default output for comms',
     });
   });
 
@@ -149,7 +149,7 @@ describe('audio.setDefault fix', () => {
       'Make Headphones (Arctis Pro Wireless Game) the default output'
     );
     expect(fix.describe({ ...output, role: 'communications' })).toBe(
-      'Make Headphones (Arctis Pro Wireless Game) the default for calls'
+      'Make Headphones (Arctis Pro Wireless Game) the default for comms'
     );
     expect(await fix.run(output, rig.ctx)).toEqual({
       ok: true,
@@ -159,13 +159,13 @@ describe('audio.setDefault fix', () => {
       { id: HEADPHONES.id, roles: ['console', 'multimedia'] },
     ]);
     expect((await audioDefaultCheck.run(output, rig.ctx)).pass).toBe(true);
-    // Calls still go where they went.
+    // Comms still go where they went.
     expect(rig.ports.state.audio.defaultCommsPlayback?.name).toContain('DELL');
     expect(
       await fix.run({ flow: 'recording', ...HEADSET_MIC, role: 'communications' }, rig.ctx)
     ).toEqual({
       ok: true,
-      value: 'Made Headset Microphone (Arctis Pro Wireless Chat) the default for calls',
+      value: 'Made Headset Microphone (Arctis Pro Wireless Chat) the default for comms',
     });
   });
 
@@ -226,7 +226,7 @@ describe('audio.setDefault fix', () => {
     expect(await standDown(output, rig.ctx)).toEqual({ ok: true, value: null });
   });
 
-  it('Stand down also restores the calls default and reports failures', async () => {
+  it('Stand down also restores the comms default and reports failures', async () => {
     rig = await scenarioRig('audio-headset-ready', NO_FILES);
     const previous = new PreviousDefaults();
     const fix = createSetDefaultRemediation(previous);
@@ -235,7 +235,7 @@ describe('audio.setDefault fix', () => {
     await fix.run(both, rig.ctx);
     expect(await standDown(both, rig.ctx)).toEqual({
       ok: true,
-      value: 'DELL G3223D (NVIDIA High Definition Audio) is the default for calls again',
+      value: 'DELL G3223D (NVIDIA High Definition Audio) is the default for comms again',
     });
     await fix.run(both, rig.ctx);
     rig.ports.audio.setDefault = async () => err('audio.setDefault', 'COM failed');
@@ -247,7 +247,7 @@ describe('audio.setDefault fix', () => {
 });
 
 describe('audio capture', () => {
-  it('offers the default output and input, and the calls device only when it differs', async () => {
+  it('offers the default output and input, and the comms device only when it differs', async () => {
     rig = await scenarioRig('flying-fresh', NO_FILES);
     const result = await audioCapture.capture(rig.ctx);
     if (!result.ok) throw new Error('capture failed');
@@ -266,7 +266,7 @@ describe('audio capture', () => {
         },
       ],
       [
-        'Sound output for calls: DELL G3223D (NVIDIA High Definition Audio)',
+        'Sound output for comms: DELL G3223D (NVIDIA High Definition Audio)',
         false,
         false,
         expect.objectContaining({ role: 'communications' }),
@@ -329,14 +329,14 @@ describe('Audio page and Fly, through IPC', () => {
       role: 'communications',
     });
     expect(calls.message).toBe(
-      'Headphones (Arctis Pro Wireless Game) is now the default for calls'
+      'Headphones (Arctis Pro Wireless Game) is now the default for comms'
     );
     const both = await app.invoke<{ message: string }>('audio:setDefault', {
       id: HEADSET_MIC.id,
       role: 'both',
     });
     expect(both.message).toBe(
-      'Headset Microphone (Arctis Pro Wireless Chat) is now the default input, also for calls'
+      'Headset Microphone (Arctis Pro Wireless Chat) is now the default input, also for comms'
     );
     await expect(app.invoke('audio:setDefault', { id: '{gone}', role: 'default' })).rejects.toThrow(
       /no longer connected/

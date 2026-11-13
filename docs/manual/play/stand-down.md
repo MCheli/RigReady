@@ -21,13 +21,25 @@ Then it closes the programs that launch steps started (each step has **Close it 
 
 ## The desk layout
 
-One saved layout can be the desk layout: choose it with **Use as desk layout** on **Configure > Monitors**, or under **Desk layout** on **Configure > Settings**; the two are the same choice. Stand down applies it last, with the same **Keep this monitor layout?** countdown as any layout change. When no desk layout is chosen, the step is listed as skipped ("No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are") and the monitor check's own revert is what puts the screens back. When the chosen layout was deleted since, the step fails and says to choose another in either place. See [Monitors and audio](../monitors-and-audio/index.md).
+One saved layout can be the desk layout: choose it with **Use as desk layout** on **Configure > Monitors**, or under **Desk layout** on **Configure > Settings**; the two are the same choice. Stand down applies it last. The first time, it asks **Keep this monitor layout?** with the countdown; once you have kept the desk layout with the same monitors connected, it is applied without the question ([When RigReady asks, and when it does not](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)). When no desk layout is chosen, the step is listed as skipped ("No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are") and the monitor check's own revert is what puts the screens back. When the chosen layout was deleted since, the step fails and says to choose another in either place. See [Monitors and audio](../monitors-and-audio/index.md).
 
 ![Back at the desk](../../../artifacts/screens/fly-stand-down-desk/02-at-the-desk.png)
 
 ## What it reports
 
-The headline counts what was closed: "Closed 2 apps", "No apps to close", and "1 step needs attention" when something did not close. Every step is listed with what it said, for example "TrackIR5.exe is still running: it did not close when asked." Afterwards the checklist is run again, so the screen shows the rig as it is now (usually Not ready, which is right: you are at the desk).
+The headline counts what was closed: "Closed 2 apps", "No apps to close", and "1 step needs attention" when something did not close. Every step is listed with what it said. Afterwards the checklist is run again, so the screen shows the rig as it is now (usually Not ready, which is right: you are at the desk).
+
+## An app that is still running
+
+Stand down asks an app to close the way its window's X button does, and waits ten seconds. An app that is still there afterwards is named, with the reason:
+
+- "TrackIR5.exe is still running: it was asked to close and stayed open. Some apps only go to the tray when asked."
+- "… it has no window, so it could not be asked to close."
+- "… Windows did not let RigReady close it. It may be running as administrator."
+
+The line ends with what you can do: close it yourself, or switch on **Force it closed if it does not close** for that check in [the setup editor](../setups/editor.md). With that on, RigReady ends the program when it has not closed after the wait. An app that runs as administrator cannot be forced either, unless RigReady runs as administrator too; for that one the line only says to close it yourself.
+
+An app made of several programs with the same name is closed as one: all of them are asked, and it counts as closed when none is left.
 
 ## When the game is still running
 
@@ -35,6 +47,33 @@ Stand down from the Play screen looks first. If the game is running it asks: **D
 
 ## Stand down when the game closes
 
-The Play menu has **Stand down when the game closes**. With it on, RigReady watches the game and, once it is gone, stands down by itself. The **Welcome back** line says "Standing down…" and then what was done. The game is gone by then, so there is nothing to ask about closing it. If nobody is at a window of RigReady, a Windows notification says the same. See [Sessions and history](sessions.md).
+Every setup stands down by itself when its game closes, unless you switch that off for the setup. RigReady watches the game. Once it is gone, a notice in the bottom right corner of the window counts down: **Stand down in 1 minute**, then the seconds. It says what will happen: "DCS World has closed. When the time is up, RigReady stands down DCS F/A-18C: it closes the helper apps and puts the rig back, as the Stand down button does." The notice is on every page. The **Welcome back** line on the Play screen says the same in one line, and so does the session line of the [compact view](compact-view.md).
 
-If you stood down while the game was still open, nothing is offered again when it closes.
+![The countdown](../../../artifacts/screens/fly-stand-down-countdown/01-countdown.png)
+
+- **Cancel** ends the countdown. Nothing is closed, the line says "Stand down was cancelled. Nothing was closed.", and the Stand down button is there for when you are done.
+- **Change this for the setup** opens the setup editor, where the switch is.
+- The small button at the top right of the notice moves the countdown to the top bar. Use it when the notice lies over something you need, such as the setup editor's **Save** and **Cancel**. The countdown ("Stand down in 4:05") and its **Cancel** are then in the bar on every page. Press the countdown there to bring the notice back.
+- The game starting again ends the countdown too. So does Stand down pressed by hand (it runs at once, and once), and so does quitting RigReady. Closing the window to the tray is not quitting: the countdown goes on.
+
+![The countdown in the top bar](../../../artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png)
+
+When the time is up, Stand down runs: the same one the button runs. The game is gone by then, so there is nothing to ask about closing it. The notice then says what was done: **Stood down** with "Closed 2 apps", or **Stand down ran, but 1 step needs attention** with each step that did not work, or **Stand down did not finish** with the reason. It stays until you press **OK**. It says "Stood down" only when every step worked.
+
+![Stood down by itself](../../../artifacts/screens/fly-stand-down-setting/03-stood-down-by-itself.png)
+
+If nobody is at a window of RigReady when the game closes, a Windows notification says when Stand down starts ("DCS F/A-18C: 1 h 42 min. Stand down starts in 1 minute. Open RigReady to cancel."), the window comes back on screen, and a second notification says what was done. See [Sessions and history](sessions.md).
+
+### The switch and the countdown length
+
+Both are in the setup editor, under **When the game closes** ([The setup editor](../setups/editor.md#when-the-game-closes)): the switch **Stand down when the game closes**, on by default, and **Countdown**, one minute by default. A setup saved before the switch existed has both defaults. With the switch off nothing is closed by itself: the screen says Welcome back and the Stand down button waits for you.
+
+![The switch in the setup editor](../../../artifacts/screens/fly-stand-down-setting/01-on-by-default.png)
+
+### When it does not start by itself
+
+- The game closed within two minutes of starting. A game that stops right after it started, or a launcher that hands over to the game, should not close the helper apps you are about to need. The line says "It closed within two minutes of starting, so Stand down did not start by itself." The compact view has one short line for it: "It closed too soon: Stand down did not start."
+- You stood down while the game was still open. Nothing is offered again when it closes.
+- RigReady was not running when the game closed. At its next start it records the session and closes nothing.
+
+A step that asks a question still asks it. The desk layout's **Keep this monitor layout?** is one: when nobody answers, the layout goes back, and Stand down lists that step as not done.

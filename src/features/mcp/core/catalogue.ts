@@ -153,8 +153,20 @@ export function curatedTools(registry: McpRegistry): ToolSpec[] {
 }
 
 export const ChannelsToolInput = z.object({
-  /** One feature's channels; every feature's when left out. */
-  feature: z.string().max(60).optional(),
+  feature: z
+    .string()
+    .max(60)
+    .optional()
+    .describe(
+      'A feature id ("fly", "profiles"): its channels in a line each. Left out, with no channel: the features in a line each.'
+    ),
+  channel: z
+    .string()
+    .max(120)
+    .optional()
+    .describe(
+      'One channel by its full name ("profiles:save"): what it takes and answers, in full, as JSON Schema.'
+    ),
 });
 
 export const CallToolInput = z.object({
@@ -171,7 +183,7 @@ export function builtinTools(): ToolSpec[] {
       name: BUILTIN_CHANNELS_TOOL,
       title: 'The channel reference',
       description:
-        'Lists the IPC channels of RigReady an assistant may call with rigready_call: name, what each does, what it takes and answers (JSON Schema), and whether it only reads, changes the rig or launches a game. Give a feature id ("fly", "profiles", "dcs-bindings") for one feature, or nothing for the list of features with a line each. Read the reference before calling a channel; never guess a field.',
+        'The reference of the IPC channels of RigReady an assistant may call with rigready_call, in three steps, each as short as it can be. Nothing: the features in a line each. A feature id ("fly", "profiles", "dcs-bindings"): its channels in a line each, with what each does and whether it only reads, changes the rig or launches a game. A channel ("profiles:save"): what that one channel takes and answers, in full, as JSON Schema. Read a channel\'s own reference before calling it; never guess a field.',
       tier: 'read',
       kind: 'builtin',
       inputSchema: inputJsonSchema(ChannelsToolInput).schema,
@@ -235,15 +247,45 @@ export function catalogueProblems(catalogue: Catalogue): string[] {
 export function renderFeatureReference(reference: ChannelReference[], feature: string): string {
   const rows = reference.filter((r) => r.feature === feature);
   const lines = [`# Channels of the ${feature} feature`, ''];
-  for (const row of rows) {
-    lines.push(`## ${row.channel}`, '');
-    lines.push(`${row.description}`, '');
-    lines.push(`- Tool: \`${row.tool}\`${row.tier === 'off' ? ' (not offered)' : ''}`);
-    lines.push(`- Tier: ${tierLabel(row.tier)}`);
-    lines.push(`- Input: \`${JSON.stringify(row.inputSchema)}\``);
-    if (row.outputSchema) lines.push(`- Output: \`${JSON.stringify(row.outputSchema)}\``);
-    lines.push('');
+  for (const row of rows) lines.push(...channelLines(row));
+  return lines.join('\n');
+}
+
+/** One channel in full: what it does, its tier, and what it takes and answers. */
+function channelLines(row: ChannelReference): string[] {
+  const lines = [`## ${row.channel}`, '', `${row.description}`, ''];
+  lines.push(`- Tool: \`${row.tool}\`${row.tier === 'off' ? ' (not offered)' : ''}`);
+  lines.push(`- Tier: ${tierLabel(row.tier)}`);
+  lines.push(`- Input: \`${JSON.stringify(row.inputSchema)}\``);
+  if (row.outputSchema) lines.push(`- Output: \`${JSON.stringify(row.outputSchema)}\``);
+  lines.push('');
+  return lines;
+}
+
+/** The reference of one channel, as the reference tool answers it. */
+export function renderChannelReference(row: ChannelReference): string {
+  return channelLines(row).join('\n');
+}
+
+/**
+ * A feature's channels in a line each, as the reference tool answers it: enough to pick the
+ * channel, without the schemas. The whole reference of a feature is tens of thousands of
+ * characters, and an assistant pays for all of them again with every later request.
+ */
+export function renderFeatureSummary(reference: ChannelReference[], feature: string): string {
+  const rows = reference.filter((r) => r.feature === feature);
+  const offered = rows.filter((r) => r.tier !== 'off');
+  const lines = [`# Channels of the ${feature} feature`, ''];
+  for (const row of offered) {
+    lines.push(`- \`${row.channel}\` (${tierLabel(row.tier)}): ${row.description}`);
   }
+  if (rows.length > offered.length) {
+    lines.push('', `${rows.length - offered.length} more are not offered to assistants.`);
+  }
+  lines.push(
+    '',
+    `For what one channel takes and answers, ask again with channel: "${feature}:<name>".`
+  );
   return lines.join('\n');
 }
 

@@ -1,4 +1,5 @@
 import type { CloseOptions, ProcessProvider, Shell } from '../../core/ports';
+import type { StillRunningWhy } from '../../core/processes';
 import { err, ok, type Result } from '../../core/result';
 import type { LaunchTarget, ProcessInfo } from '../../shared/models';
 import {
@@ -94,7 +95,10 @@ export class WindowsProcessProvider implements ProcessProvider {
       // The windows the user can see are what the X button would close. A program that
       // lives in the tray has none, so its hidden top-level windows are asked instead.
       const targets = windows.some((w) => w.visible) ? windows.filter((w) => w.visible) : windows;
-      for (const window of targets) PostMessageW(window.handle, WM_CLOSE, 0, 0);
+      // Windows does not deliver the message to a program that runs as administrator when
+      // RigReady does not: then nothing was asked, and the answer says so.
+      let asked = 0;
+      for (const window of targets) if (PostMessageW(window.handle, WM_CLOSE, 0, 0)) asked++;
       const deadline = Date.now() + waitMs;
       for (;;) {
         if (WaitForSingleObject(handle, 0) === WAIT_OBJECT_0) return ok({ outcome: 'closed' });
@@ -102,11 +106,18 @@ export class WindowsProcessProvider implements ProcessProvider {
         await sleep(100);
       }
       if (!options.force) {
+        // The detail is the reason, for the wording (StillRunningWhy in core/processes.ts).
+        if (targets.length === 0) {
+          return err(
+            'process.stillRunning',
+            `Process ${pid} has no window to close and is still running.`,
+            'noWindow' satisfies StillRunningWhy
+          );
+        }
         return err(
           'process.stillRunning',
-          targets.length === 0
-            ? `Process ${pid} has no window to close and is still running.`
-            : `Process ${pid} did not close within ${Math.round(waitMs / 1000)} s.`
+          `Process ${pid} did not close within ${Math.round(waitMs / 1000)} s.`,
+          (asked === 0 ? 'refused' : 'ignored') satisfies StillRunningWhy
         );
       }
       if (!TerminateProcess(handle, 0)) {

@@ -282,7 +282,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     name: 'rig_make_ready',
     title: 'Make the rig ready',
     description:
-      'Runs every available fix of a setup in the order Make ready does (start apps, apply the monitor layout, set audio, restore files), then checks again. Answers with what each step did and what is still not met. A fix that starts a program the setup names as needing confirmation runs only with approvePrograms; a script an assistant wrote is never run this way (the user runs it from RigReady). A monitor layout it applies reverts by itself unless the user keeps it in RigReady.',
+      'Runs every available fix of a setup in the order Make ready does (start apps, apply the monitor layout, set audio, restore files), then checks again. Answers with what each step did and what is still not met. A fix that starts a program the setup names as needing confirmation runs only with approvePrograms; a script an assistant wrote is never run this way (the user runs it from RigReady). A monitor layout that was kept on this PC before is applied at once; any other reverts by itself unless the user keeps it in the RigReady window, and the call waits for that answer.',
     input: z.object({
       setup: SetupArg.optional(),
       approvePrograms: z
@@ -391,7 +391,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     name: 'rig_stand_down',
     title: 'Stand down',
     description:
-      "After a session: closes the helper apps the setup marks for closing, puts the monitors back into the desk layout (with the keep-or-revert countdown) and runs the setup's stand-down actions. With closeGame, the game is asked to close first. Answers with what each step did.",
+      "After a session: closes the helper apps the setup marks for closing, puts the monitors back into the desk layout (at once when that layout was kept on this PC before, otherwise it reverts by itself unless the user keeps it in the RigReady window) and runs the setup's stand-down actions. With closeGame, the game is asked to close first. Answers with what each step did.",
     input: z.object({
       setup: SetupArg.optional(),
       closeGame: z
@@ -558,7 +558,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     name: 'manual_search',
     title: 'Search the manual',
     description:
-      'Finds the pages of the RigReady manual that hold every word of the query, best first, with the matching lines and the URI to read each page in full (rigready://docs/...).',
+      'Finds the pages of the RigReady manual that hold every word of the query, best first, with the matching lines, the sections (headings) those lines stand under, and the URI to read each page in full (rigready://docs/...). To read one of those sections only, give it to manual_read.',
     input: z.object({ query: z.string().trim().min(2).max(200) }),
     output: z.object({
       hits: z.array(
@@ -567,6 +567,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
           url: z.string(),
           title: z.string(),
           lines: z.array(z.string()),
+          sections: z.array(z.string()).optional(),
         })
       ),
     }),
@@ -578,7 +579,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     name: 'manual_read',
     title: 'Read a manual page',
     description:
-      'Reads one page of the RigReady manual in full, as Markdown: give its path ("setups/scripts"), its rigready://docs URI or its https://rigready.io/docs/ address, as manual_search returned it. The same text as the rigready://docs resources. Link the page (url) when you answer from it.',
+      'Reads one page of the RigReady manual in full, as Markdown: give its path ("setups/scripts"), its rigready://docs URI or its https://rigready.io/docs/ address, as manual_search returned it. The same text as the rigready://docs resources. With section (a heading of the page, as manual_search names them) it reads only that part: ask for the section when one answers the question, the whole page when it does not. Link the page (url) when you answer from it.',
     input: z.object({
       page: z
         .string()
@@ -586,12 +587,23 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
         .min(1)
         .max(200)
         .describe('"setups/scripts", "rigready://docs/setups/scripts" or its rigready.io address.'),
+      section: z
+        .string()
+        .trim()
+        .max(200)
+        .optional()
+        .describe(
+          'A heading of the page, to read only what stands under it. Left out: the whole page.'
+        ),
     }),
     output: z.object({ title: z.string(), url: z.string(), uri: z.string(), text: z.string() }),
     tier: 'read',
-    summarize: (input) => `Read the manual page ${input.page}`,
+    summarize: (input) =>
+      input.section
+        ? `Read "${input.section}" of the manual page ${input.page}`
+        : `Read the manual page ${input.page}`,
     run: async (input) => {
-      const read = readManualPage(deps.manual(), input.page);
+      const read = readManualPage(deps.manual(), input.page, input.section);
       if (!read.ok) return err('mcp.manual', read.message);
       return ok({
         title: read.page.title,

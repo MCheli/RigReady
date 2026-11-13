@@ -29,7 +29,7 @@ Reading never asks: checks, previews, the bindings, the log and this manual.
 ## The same safeguards as in the window
 
 - Every file RigReady changes is backed up first and listed on the [Safety page](../protect/safety-page.md), where **Undo** puts it back.
-- A monitor layout goes back by itself unless you press **Keep** in RigReady.
+- A monitor layout goes back by itself unless you press **Keep it** in RigReady. When an assistant asked for the change you get at least a minute to answer, and the question names the assistant. Only a layout you kept yourself before, with the same monitors connected, is applied by Make ready and Stand down without the question ([When RigReady asks, and when it does not](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)).
 - Binding files are not written while DCS is running.
 - One change at a time: while one runs, another assistant's change is refused with "RigReady is still busy".
 

@@ -34,4 +34,4 @@ The result of an action from the tray is a Windows notification: "DCS F/A-18C is
 
 ## Closing the window, starting with Windows
 
-Closing the window puts RigReady in the tray rather than quitting, unless you turned that off in **Configure > Settings**. **Start with Windows** starts RigReady hidden, in the tray, so the state is there before you open anything. See [Settings](../app/settings.md).
+Closing the window puts RigReady in the tray rather than quitting. Windows may keep the icon under the ^ arrow. With **Keep RigReady in the tray when you close the window** off in **Configure > Settings**, closing the window quits RigReady and the icon goes away. **Start with Windows** starts RigReady hidden, in the tray, so the state is there before you open anything. See [Settings](../app/settings.md).

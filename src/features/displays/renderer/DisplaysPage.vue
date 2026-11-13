@@ -11,17 +11,28 @@ import {
   type LayoutView,
   type MonitorView,
 } from '../contract';
+import type { ArrowSeen } from '../core/arrange';
 import { orientationText } from '../core/labels';
+import { joinNames } from '../core/plan';
 import ApplyLayoutDialog from './ApplyLayoutDialog.vue';
 import EditLayoutDialog from './EditLayoutDialog.vue';
 import MonitorMap from './MonitorMap.vue';
+import NewLayoutDialog from './NewLayoutDialog.vue';
 
 const api = useClient(displaysContract);
 const view = ref<DisplaysView>();
 const loadError = ref<string>();
 const error = ref<string>();
 const notice = ref<string>();
+/** The notice is about something that did not stay (a layout that went back), not a success. */
+const noticeWarns = ref(false);
 const identifying = ref(false);
+
+/** Shows one line about what just happened, or clears it. */
+function say(text?: string, warns = false): void {
+  notice.value = text;
+  noticeWarns.value = warns;
+}
 
 async function load(): Promise<void> {
   const result = await api.view();
@@ -36,14 +47,14 @@ async function load(): Promise<void> {
 /** Runs a change; on success shows the new state and an optional message. */
 async function act(action: Promise<Result<DisplaysView>>, message?: string): Promise<boolean> {
   error.value = undefined;
-  notice.value = undefined;
+  say();
   const result = await action;
   if (!result.ok) {
     error.value = errorText(result.error);
     return false;
   }
   view.value = result.value;
-  if (message) notice.value = message;
+  if (message) say(message);
   return true;
 }
 
@@ -54,10 +65,10 @@ const reverting = ref(false);
 async function undoLast(): Promise<void> {
   reverting.value = true;
   error.value = undefined;
-  notice.value = undefined;
+  say();
   const result = await api.revert();
   reverting.value = false;
-  if (result.ok) notice.value = 'Put back the layout from before the last change';
+  if (result.ok) say('Put back the layout from before the last change');
   else error.value = errorText(result.error);
   await load();
 }
@@ -68,7 +79,7 @@ const layouts = computed(() => view.value?.layouts ?? []);
 async function identify(): Promise<void> {
   identifying.value = true;
   error.value = undefined;
-  notice.value = undefined;
+  say();
   const result = await api.identify();
   identifying.value = false;
   if (!result.ok) {
@@ -77,25 +88,33 @@ async function identify(): Promise<void> {
   }
   const { shown, off } = result.value;
   upright.value = true;
-  notice.value =
+  say(
     `Each monitor that is on shows its number for 5 seconds (${shown} ${shown === 1 ? 'monitor' : 'monitors'}).` +
-    (off > 0
-      ? ` ${off} turned-off ${off === 1 ? 'monitor cannot' : 'monitors cannot'} show one.`
-      : '');
+      (off > 0
+        ? ` ${off} turned-off ${off === 1 ? 'monitor cannot' : 'monitors cannot'} show one.`
+        : '')
+  );
 }
 
-// "Which way is up?": offered after Identify, which draws an arrow on every screen.
+// "Which way is up?": offered after Identify, which draws an arrow on every screen. The
+// person says where the arrow points on a screen, and that screen is turned so it points up.
 const upright = ref(false);
-const flipping = ref<string>();
+const turning = ref<{ id: string; arrow: ArrowSeen }>();
+const ARROWS: { arrow: ArrowSeen; word: string; icon: string; testid: string }[] = [
+  { arrow: 'left', word: 'Left', icon: 'mdi-arrow-left-bold', testid: 'upright-turn-left' },
+  // The half turn keeps the id it always had.
+  { arrow: 'down', word: 'Down', icon: 'mdi-arrow-down-bold', testid: 'upright-flip' },
+  { arrow: 'right', word: 'Right', icon: 'mdi-arrow-right-bold', testid: 'upright-turn-right' },
+];
 
-async function flip(monitor: MonitorView): Promise<void> {
-  flipping.value = monitor.id;
+async function turn(monitor: MonitorView, arrow: ArrowSeen): Promise<void> {
+  turning.value = { id: monitor.id, arrow };
   error.value = undefined;
-  notice.value = undefined;
-  // Answers once the "Keep this layout?" question is answered.
-  const result = await api.flip({ id: monitor.id });
-  flipping.value = undefined;
-  if (result.ok) notice.value = result.value.message;
+  say();
+  // Answers once the "Keep this layout?" question is answered, and says which way it went.
+  const result = await api.turn({ id: monitor.id, arrow });
+  turning.value = undefined;
+  if (result.ok) say(result.value.message, !result.value.kept);
   else error.value = errorText(result.error);
   await load();
 }
@@ -153,19 +172,34 @@ const identityLine = (m: MonitorView): string => {
 
 const saveOpen = ref(false);
 const saveName_ = ref('');
+const newOpen = ref(false);
 const renaming = ref<{ id: string; name: string }>();
 const deleting = ref<LayoutView>();
+/** The layout "Replace with the monitors as they are now" is being asked about. */
+const replacing = ref<LayoutView>();
 const editing = ref<LayoutView>();
 const applying = ref<string>();
 const expanded = ref(new Set<string>());
 
+/** Why Save refused, shown in its dialog: the page's own error line is behind it. */
+const saveError = ref<string>();
+
+function openSave(): void {
+  saveError.value = undefined;
+  saveOpen.value = true;
+}
+
 async function saveCurrent(): Promise<void> {
   const name = saveName_.value.trim();
   if (!name) return;
+  saveError.value = undefined;
   if (await act(api.saveLayout({ name }), `Saved the monitors as they are now as "${name}"`)) {
     saveOpen.value = false;
     saveName_.value = '';
+    return;
   }
+  saveError.value = error.value;
+  error.value = undefined;
 }
 
 async function confirmRename(): Promise<void> {
@@ -191,11 +225,31 @@ function toggleDesk(layout: LayoutView): void {
   );
 }
 
-function replaceWithCurrent(layout: LayoutView): void {
-  void act(
-    api.updateLayout({ id: layout.id }),
-    `"${layout.name}" now holds the monitors as they are`
-  );
+/**
+ * Replacing overwrites the saved arrangement, and nothing brings it back ("Undo last change"
+ * puts the monitors back, not a saved layout). So it is asked first, with what would change.
+ */
+async function confirmReplace(): Promise<void> {
+  if (!replacing.value) return;
+  const { id, name } = replacing.value;
+  if (await act(api.updateLayout({ id }), `"${name}" now holds the monitors as they are`)) {
+    replacing.value = undefined;
+  }
+}
+
+function onCreated(next: DisplaysView, name: string): void {
+  newOpen.value = false;
+  error.value = undefined;
+  view.value = next;
+  say(`Saved "${name}". The monitors were not changed.`);
+}
+
+/** "This layout does not list X, so applying it leaves that monitor as it is." */
+function untouchedText(layout: LayoutView): string {
+  const labels = layout.untouched.map((m) => m.label);
+  return labels.length === 1
+    ? `This layout does not list ${labels[0]}, so applying it leaves that monitor as it is.`
+    : `This layout does not list ${joinNames(labels)}, so applying it leaves those monitors as they are.`;
 }
 
 function toggleExpanded(id: string): void {
@@ -205,9 +259,14 @@ function toggleExpanded(id: string): void {
   expanded.value = next;
 }
 
-function onApplied(message: string): void {
+/**
+ * The apply dialog answers only after "Keep this layout?" was answered, so this line is
+ * about what is really there: applied and kept, or not kept and back as it was.
+ */
+function onApplied(result: { kept: boolean; message: string }): void {
   applying.value = undefined;
-  notice.value = message;
+  error.value = undefined;
+  say(result.message, !result.kept);
   void load();
 }
 
@@ -215,7 +274,7 @@ function onEdited(next: DisplaysView): void {
   const name = editing.value?.name;
   editing.value = undefined;
   view.value = next;
-  notice.value = `Saved "${name}"`;
+  say(`Saved "${name}"`);
 }
 
 const statusText = (l: LayoutView): string => {
@@ -295,12 +354,13 @@ onBeforeUnmount(() => stop?.());
     </v-alert>
     <v-alert
       v-if="notice"
-      type="info"
+      :type="noticeWarns ? 'warning' : 'info'"
       variant="tonal"
       class="mb-4"
       closable
       data-testid="displays-notice"
-      @click:close="notice = undefined"
+      :data-tone="noticeWarns ? 'warn' : 'info'"
+      @click:close="say()"
     >
       {{ notice }}
     </v-alert>
@@ -311,9 +371,10 @@ onBeforeUnmount(() => stop?.());
         <div class="rr-row-main">
           <div class="rr-row-title">Which way is up?</div>
           <div class="rr-row-sub">
-            Each screen shows its number and an arrow, which must point up. A screen mounted on its
-            side can be upright in two ways, and only you can see which. If the arrow points down on
-            a screen, turn that screen here; you get the usual time to keep it or go back.
+            Each screen shows its number and an arrow, which must point up. Only you can see which
+            way it points. If the arrow on a screen points down or to one side, press the button for
+            the way it points, and RigReady turns that screen's picture. You get the usual time to
+            keep it or go back.
           </div>
         </div>
         <v-btn
@@ -345,17 +406,27 @@ onBeforeUnmount(() => stop?.());
             >
           </div>
         </div>
-        <v-btn
-          size="small"
-          variant="text"
-          prepend-icon="mdi-rotate-3d-variant"
-          :loading="flipping === m.id"
-          :disabled="flipping !== undefined"
-          data-testid="upright-flip"
-          @click="flip(m)"
+        <div
+          class="displays-arrows"
+          role="group"
+          :aria-label="`Where the arrow on ${m.label} points`"
         >
-          Arrow points down: turn it
-        </v-btn>
+          <span class="rr-muted displays-arrows-lead">The arrow points</span>
+          <v-btn
+            v-for="a in ARROWS"
+            :key="a.arrow"
+            size="small"
+            variant="tonal"
+            :prepend-icon="a.icon"
+            :loading="turning?.id === m.id && turning.arrow === a.arrow"
+            :disabled="turning !== undefined"
+            :aria-label="`The arrow on ${m.label} points ${a.arrow}: turn it`"
+            :data-testid="a.testid"
+            @click="turn(m, a.arrow)"
+          >
+            {{ a.word }}
+          </v-btn>
+        </div>
       </div>
     </div>
 
@@ -466,15 +537,29 @@ onBeforeUnmount(() => stop?.());
         <div class="rr-section-title mb-0">Saved layouts</div>
         <v-spacer />
         <v-btn
+          variant="text"
+          prepend-icon="mdi-monitor-multiple"
+          :disabled="!monitors.some((m) => m.enabled)"
+          data-testid="layout-new-open"
+          @click="newOpen = true"
+        >
+          New layout
+        </v-btn>
+        <v-btn
           color="primary"
           variant="tonal"
           prepend-icon="mdi-content-save-outline"
           data-testid="layout-save-open"
-          @click="saveOpen = true"
+          @click="openSave"
         >
           Save current as layout
         </v-btn>
       </div>
+      <p class="rr-muted displays-layouts-rule" data-testid="layouts-rule">
+        A layout changes only the monitors it lists. A monitor that was not connected when the
+        layout was saved stays as it is, on or off. To have a layout switch a monitor off, make the
+        layout while that monitor is connected: with New layout, leave it unticked.
+      </p>
 
       <v-alert
         v-if="view.layoutsError"
@@ -539,7 +624,7 @@ onBeforeUnmount(() => stop?.());
                   prepend-icon="mdi-monitor-arrow-down"
                   title="Replace with the monitors as they are now"
                   data-testid="layout-replace"
-                  @click="replaceWithCurrent(l)"
+                  @click="replacing = l"
                 />
                 <v-list-item
                   :prepend-icon="l.isDesk ? 'mdi-desk' : 'mdi-desk'"
@@ -559,6 +644,13 @@ onBeforeUnmount(() => stop?.());
           <div class="displays-layout-map">
             <MonitorMap :monitors="l.monitors" :max-height="120" compact />
           </div>
+          <p
+            v-if="l.untouched.length"
+            class="rr-muted displays-untouched"
+            data-testid="layout-untouched"
+          >
+            {{ untouchedText(l) }}
+          </p>
           <div class="displays-layout-foot">
             <button
               v-if="l.status !== 'current'"
@@ -604,7 +696,8 @@ onBeforeUnmount(() => stop?.());
         <v-card-text>
           <p class="rr-muted mb-3">
             Saves which monitors are on, where they are, how they are turned and which one is the
-            main display.
+            main display. A monitor that is not connected now will not be in the layout, so applying
+            the layout leaves it as it is.
           </p>
           <v-text-field
             v-model="saveName_"
@@ -614,6 +707,15 @@ onBeforeUnmount(() => stop?.());
             data-testid="layout-save-name"
             @keyup.enter="saveCurrent"
           />
+          <v-alert
+            v-if="saveError"
+            type="error"
+            variant="tonal"
+            class="mt-3"
+            data-testid="layout-save-error"
+          >
+            {{ saveError }}
+          </v-alert>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -694,6 +796,73 @@ onBeforeUnmount(() => stop?.());
       </v-card>
     </v-dialog>
 
+    <!-- Replace with the monitors as they are now: asked first, because nothing undoes it -->
+    <v-dialog
+      :model-value="replacing !== undefined"
+      max-width="520"
+      @update:model-value="replacing = undefined"
+    >
+      <v-card v-if="replacing" data-testid="layout-replace-dialog">
+        <v-card-title>Replace "{{ replacing.name }}"?</v-card-title>
+        <v-card-text>
+          <template v-if="replacing.status === 'current'">
+            <p data-testid="layout-replace-same">
+              The monitors already match this layout, so replacing it changes nothing you would
+              notice.
+            </p>
+          </template>
+          <template v-else>
+            <p>
+              "{{ replacing.name }}" will hold the monitors as they are now. The arrangement it
+              holds today is gone for good: Undo last change puts the monitors back, not a saved
+              layout.
+            </p>
+            <template v-if="replacing.differences.length">
+              <div class="rr-section-title displays-replace-title">
+                How the monitors differ from it now
+              </div>
+              <ul class="displays-diff" data-testid="layout-replace-differences">
+                <li v-for="line in replacing.differences" :key="line">{{ line }}</li>
+              </ul>
+            </template>
+            <p v-if="replacing.missing.length" data-testid="layout-replace-missing">
+              {{ joinNames(replacing.missing) }}
+              {{ replacing.missing.length === 1 ? 'is' : 'are' }} not connected, so
+              {{ replacing.missing.length === 1 ? 'it stays' : 'they stay' }} in this layout as
+              saved.
+            </p>
+            <p v-if="replacing.untouched.length" data-testid="layout-replace-added">
+              {{ joinNames(replacing.untouched.map((m) => m.label)) }}
+              {{ replacing.untouched.length === 1 ? 'is' : 'are' }} not in this layout today.
+              Replacing adds {{ replacing.untouched.length === 1 ? 'it' : 'them' }}, on or off as
+              {{ replacing.untouched.length === 1 ? 'it is' : 'they are' }} now.
+            </p>
+          </template>
+          <p class="rr-muted displays-replace-note">The monitors themselves are not changed.</p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" data-testid="layout-replace-cancel" @click="replacing = undefined">
+            Cancel
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            data-testid="layout-replace-confirm"
+            @click="confirmReplace"
+          >
+            Replace
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <NewLayoutDialog
+      :open="newOpen"
+      :monitors="monitors"
+      @close="newOpen = false"
+      @saved="onCreated"
+    />
     <ApplyLayoutDialog :layout-id="applying" @close="applying = undefined" @applied="onApplied" />
     <EditLayoutDialog :layout="editing" @close="editing = undefined" @saved="onEdited" />
   </div>
@@ -749,6 +918,33 @@ onBeforeUnmount(() => stop?.());
 }
 .displays-layouts-head {
   margin-bottom: 10px;
+  gap: 8px;
+}
+.displays-layouts-rule {
+  max-width: 760px;
+  margin: 0 0 14px;
+  font-size: 13px;
+}
+.displays-arrows {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.displays-arrows-lead {
+  font-size: 13px;
+  margin-right: 2px;
+}
+.displays-untouched {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+}
+.displays-replace-title {
+  margin-top: 12px;
+}
+.displays-replace-note {
+  margin: 12px 0 0;
+  font-size: 13px;
 }
 .displays-layouts {
   display: grid;

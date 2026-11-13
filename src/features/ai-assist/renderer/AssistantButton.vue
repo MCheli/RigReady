@@ -3,8 +3,9 @@ import { onBeforeUnmount, onMounted } from 'vue';
 import { useAssistantStore } from './assistantStore';
 
 /**
- * The assistant's button in the app bar. Only there once an Anthropic key is stored: without
- * one the assistant cannot work, and the bar stays as it was.
+ * The assistant's button in the app bar. Only there once a provider is ready to answer: without
+ * one the assistant cannot work, and the bar stays as it was. It is always mounted, so what the
+ * panel must hear while it is closed (settings changed, progress of a request) is heard here.
  */
 const store = useAssistantStore();
 const offs: (() => void)[] = [];
@@ -12,7 +13,8 @@ onMounted(() => {
   void store.refreshStatus();
   void store.refreshDrafts();
   offs.push(
-    store.api.on('settingsChanged', () => void store.refreshStatus()),
+    store.api.on('settingsChanged', () => void store.settingsChanged()),
+    store.api.on('assistantProgress', (now) => store.onProgress(now)),
     store.api.on('draftsChanged', () => void store.refreshDrafts())
   );
 });

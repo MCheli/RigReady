@@ -412,9 +412,14 @@ function preferredMode(
  * The active paths plus one path for every monitor in `ids` that is connected but off,
  * each with a new source mode of the size its target asks for. With it, turning monitors
  * on, moving, rotating and turning others off is one SetDisplayConfig call instead of
- * two. Undefined when a monitor to turn on has no free path, or is asked for a size or
- * refresh rate other than the one it prefers: the caller then lets Windows turn it on
- * first (enableTargets) and arranges it afterwards.
+ * two. Undefined when a monitor to turn on has no free path, is asked for a size or
+ * refresh rate other than the one it prefers, or is asked for no refresh rate at all: the
+ * caller then lets Windows turn it on first (enableTargets) and arranges it afterwards.
+ *
+ * The signal a monitor prefers is what its EDID lists first, and for many fast monitors
+ * that is 60 Hz (the owner's DELL G3223D: 2560x1440 at 59.95 Hz, while it offers 165 Hz).
+ * A target without a refresh rate leaves the rate to Windows, so it must not be turned on
+ * with that signal here: that would drop a monitor that ran faster to 60 Hz.
  */
 function configWithEnabled(
   targets: Map<string, DisplayTarget>,
@@ -449,11 +454,11 @@ function configWithEnabled(
     }
     if (!remaining.has(id)) continue;
     const target = targets.get(id)!;
+    // No rate asked: Windows chooses, with what it remembers of this monitor.
+    if (target.refreshHz === undefined) return undefined;
     const preferred = preferredMode(all.paths, o);
     if (!preferred) return undefined;
-    if (target.refreshHz !== undefined && Math.abs(target.refreshHz - preferred.refreshHz) >= 1) {
-      return undefined;
-    }
+    if (Math.abs(target.refreshHz - preferred.refreshHz) >= 1) return undefined;
     const turned = target.rotation === 90 || target.rotation === 270;
     const wantWidth = turned ? target.height : target.width;
     const wantHeight = turned ? target.width : target.height;
@@ -754,7 +759,8 @@ export class WindowsDisplayProvider implements DisplayProvider {
       // or when Windows refuses that, Windows turns them on first and they are arranged after.
       const combined = toEnable.size > 0 ? configWithEnabled(wanted, toEnable) : undefined;
       if (toEnable.size > 0 && !combined) {
-        this.lastAtomicFailure = 'no combined configuration (a size is missing or no free path)';
+        this.lastAtomicFailure =
+          'no combined configuration (a size or refresh rate is missing, or no free path)';
       }
       // First choice: everything in one SetDisplayConfig call, new sizes and refresh rates
       // included. It counts only when the monitors then really have those modes.
