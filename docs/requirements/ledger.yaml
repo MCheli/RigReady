@@ -2699,12 +2699,12 @@ requirements:
       - "The corner is the aircraft's, by its unit type, from a table of the aircraft whose own scripts were read (docs/research/dcs.md 5.1): the bottom right for 18 unit types, the bottom left, 32 pixels in, for 9 (A-10A, the MiG-29s, Su-27, J-11A, Su-33, Su-25T, Christen Eagle II)."
       - "For an aircraft that is not in the table no box is drawn, and the line says 'RigReady does not know where DCS shows the kneeboard in the <aircraft>, so it is not drawn on the map.' A setup with no aircraft has no box either. No place is shown that was not read from the game's scripts."
       - "A line under the map names the aircraft and the monitor the kneeboard is on, and says whether all of it is on a screen, and how much when not; when not, it says that DCS chooses the place and the monitor setup file cannot move it, and links to the manual section that says what can be done."
-      - "Scenario mark-flight (7424 x 1440 window), F/A-18C: the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen, at its right end. A saved setup with the Su-25T has the box at the left end of the wide screen and the line says bottom left; with an aircraft that is not in the table (AH-64D) there is no box and the line says RigReady does not know (E2E)."
+      - "Scenario mark-flight (7424 x 1440 window), F/A-18C: the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen, at its right end. With the Su-25T added from '+ Aircraft' the box is at the left end of the wide screen and the line says bottom left; with an aircraft that is not in the table (AH-64D_BLK_II, added by name) there is no box and the line says RigReady does not know (E2E)."
       - "RigReady writes no KNEEBOARD entry into RigReady.lua, because nothing in an unchanged DCS reads one."
     notes:
       - "2026-11-12 sitting, finding 19: the kneeboard opened on the right MFD screen with only its top left corner readable. This entry is the part that could be done from DCS's scripts alone: the user is told before flying. The choice of place is DCS-MON-010."
       - "From reading the scripts of one install; not checked in the game."
-      - "The aircraft with a kneeboard on the left have no displays to send to a screen, so '+ Aircraft' does not offer them and the tab does not start on them. The left box is seen only in a setup that already has such an aircraft (one saved by an assistant, for example). On a rig like the owner's, a user who flies one of them still gets the F/A-18C's box unless the setup has their aircraft."
+      - "RigReady found no display in the files of the aircraft with a kneeboard on the left. '+ Aircraft' offers them all the same since DCS-MON-011, under 'No display found in their files', so the user can add one and see its box. The tab still does not start on them: on a rig like the owner's, a user who flies one gets the F/A-18C's box until they add their aircraft."
     status: done
     evidence:
       - "src/features/dcs-setup/core/screens.test.ts#is the bottom right of the whole window: on the rig of the sitting, the right small screen"
@@ -2732,6 +2732,45 @@ requirements:
       - "2026-11-12 sitting, finding 19 (the owner: 'just show on the main screen on the left side or something like that, or at least have some control over where it shows'). Not started beyond research: a monitor setup file cannot place the kneeboard, and where DCS keeps a kneeboard moved by hand in the game was not found in its scripts. docs/research/dcs.md 5.1 lists four candidates; each needs DCS running, so each is for a sitting. Changing one of the game's own scripts is a product decision for the owner."
     status: todo
     evidence: []
+
+  - id: DCS-MON-011
+    title: An aircraft or a display RigReady did not find is added by name on the Screens tab
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "'+ Aircraft' has three parts: the installed aircraft with the displays RigReady found for them; under 'No display found in their files', the installed aircraft where it found none; and 'Another aircraft, by name', which stays in view while the list scrolls. An aircraft already in the setup is not offered again."
+      - "'Another aircraft, by name' takes the name DCS has for the aircraft. A name an installed aircraft has, whatever capitals were typed, adds that aircraft with what RigReady knows of it, and the box says which one. Any other name is added as typed. 'Display by name' adds a row to the aircraft in view, which is placed and cropped like any other; the cross on the row takes the name off the list and out of the file."
+      - "The tab says what RigReady knows and no more. The heading and the empty text say no display was found, not that the aircraft has none. A row for a name RigReady has not seen shows the name as typed and says: 'RigReady has not seen this name in this aircraft's files. If the aircraft does not ask DCS for it, nothing is drawn there.' An aircraft that is not installed where RigReady looks carries: 'RigReady has not found an aircraft called <name> in DCS on this PC. It cannot check this name, or any display you add for it.' The footnote says a name is written as typed and cannot be checked against the game."
+      - "Only what can be a name is taken. A display name: letters, digits and _, starting with a letter or _, at most 64 characters, and not a word of the Lua language, a name the monitor setup file uses itself, or DCS's name for the main view. An aircraft name: letters, digits, spaces and _ . + -, starting with a letter or a digit, at most 64 characters. The name shown for an aircraft is one line of plain text, at most 60 characters. Anything else is refused with the reason in plain words: in the box, where 'Add' stays off, and in the service for a caller over IPC or the MCP server."
+      - "The file writer holds the rule itself: generateSetup leaves out every name that fails it and reports an error, dcs-setup:applyScreens writes nothing while the preview has an error, and text that is not a name (the name shown, the monitor names) is written on one line inside a comment or a quoted string whatever it holds. With names that are not only names, the generated file is the same, byte for byte, as without them (unit). What an aircraft's files or SimAppPro's plan name is held to the same rule when it is read."
+      - "A setup with an added aircraft and added displays is written to Saved Games/DCS/Config/MonitorSetup/RigReady.lua through FileStore, one backup group, with each name as typed under its aircraft, and is there again when the tab is reopened (unit and E2E)."
+    notes:
+      - "2026-11-12, the audit of fixed lists, item 3 and block 24: an aircraft the scan missed could not be added, and the footnote read as if it had no displays."
+      - "RigReady cannot know whether an added name is right: that shows only in the game. Not checked in the game."
+      - "The list of monitor setup files further down the tab still shows only names in capital letters as a file's displays; a name added in other letters is written and placed, but not listed there."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screenNames.test.ts#takes the names DCS aircraft use for their displays"
+      - "src/features/dcs-setup/core/screenNames.test.ts#refuses any other display name, and says why in plain words"
+      - "src/features/dcs-setup/core/screenNames.test.ts#takes the names DCS has for aircraft, and refuses anything else"
+      - "src/features/dcs-setup/core/screenNames.test.ts#wants the name shown for an aircraft to be one short line"
+      - "src/features/dcs-setup/core/screenNames.test.ts#does not list a name out of an aircraft file that the setup file could not carry"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is offered for every installed aircraft, with or without displays found in its files"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is written as typed, through the file store, when it can only be a name"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is refused with the reason, and nothing is written, when it has any other character"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is refused with the reason, and nothing is written, when the file already uses the word"
+      - "src/features/dcs-setup/core/screenNames.test.ts#is refused, and nothing is written, when the name shown for the aircraft has a line break"
+      - "src/features/dcs-setup/core/screenNames.test.ts#leaves out a display name that is not only a name"
+      - "src/features/dcs-setup/core/screenNames.test.ts#leaves out an aircraft whose name is not only a name"
+      - "src/features/dcs-setup/core/screenNames.test.ts#keeps the name shown for an aircraft inside one comment and one string, whatever it holds"
+      - "src/features/dcs-setup/core/screenNames.test.ts#writes a name with quotes in it as text, and the file still reads as plain data"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: an aircraft or a display RigReady did not find is added by name, a name that cannot be one is refused with the reason, and the tab says what it knows"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: the screen editor offers every installed aircraft with the displays its cockpit scripts name, starting on the setup in use"
+      - "artifacts/screens/dcs-screens-by-name/01-aircraft-menu.png"
+      - "artifacts/screens/dcs-screens-by-name/02-name-refused.png"
+      - "artifacts/screens/dcs-screens-by-name/03-display-added-by-name.png"
+      - "artifacts/screens/dcs-screens-by-name/04-aircraft-added-by-name.png"
 
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines

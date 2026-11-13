@@ -338,7 +338,7 @@ test('dcs-setup: the screen editor offers every installed aircraft with the disp
 
   // Every installed aircraft that can export a display, read from its own scripts.
   await page.getByTestId('screens-add-aircraft').click();
-  const menu = page.locator('.v-overlay--active .v-list');
+  const menu = page.getByTestId('screens-aircraft-menu');
   for (const label of [
     'A-10C II Tank Killer',
     'A-10C Warthog',
@@ -349,8 +349,14 @@ test('dcs-setup: the screen editor offers every installed aircraft with the disp
     'Ka-50 Black Shark 3',
   ])
     await expect(menu.getByText(label, { exact: true })).toBeVisible();
-  await expect(menu.getByText('UH-1H', { exact: false })).toHaveCount(0);
-  await expect(menu.getByText('P-51D', { exact: false })).toHaveCount(0);
+  // Installed aircraft with no display found in their files are offered apart, under a
+  // heading that says so, and never with displays.
+  await expect(menu).toContainText('No display found in their files');
+  for (const unit of ['UH-1H', 'P-51D']) {
+    const item = page.getByTestId(`screens-add-without-${unit}`);
+    await expect(item).toHaveCount(1);
+    await expect(item.locator('.v-list-item-subtitle')).toHaveCount(0);
+  }
   await shot('installed-aircraft');
 
   await menu.getByText('F-15E Suite 4+', { exact: true }).click();
