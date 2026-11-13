@@ -82,8 +82,13 @@ export const cheatSheetsContract = defineContract(
     /** The whole sheet of one aircraft: every device with its layout and labels. */
     sheet: channel(sheetRef, SheetSchema, {
       describe:
-        "The whole cheat sheet of one aircraft: every controller with its drawing and the label of each bound control, plus the user's notes. game and aircraftId come from cheat-sheets:overview. Changes nothing.",
+        "The whole cheat sheet of one aircraft: every controller with its drawing and the label of each bound control, plus the user's notes. A photo the user put in a drawing is left out: a grey box stands in its place, and RigReady keeps the photo when such a layout is saved again. game and aircraftId come from cheat-sheets:overview. Changes nothing.",
       tier: 'read',
+    }),
+    /** The same sheet with the user's photos in it, for RigReady's own windows only. */
+    windowSheet: channel(sheetRef, SheetSchema, {
+      describe: "The cheat sheet for RigReady's own windows, with the user's photos.",
+      tier: 'off',
     }),
     setNote: channel(
       sheetRef.extend({
@@ -147,6 +152,15 @@ export const cheatSheetsContract = defineContract(
       }),
       { describe: 'Opens a file dialog to pick a background image for a layout.', tier: 'off' }
     ),
+    /**
+     * Asks for a photo of the device for a drawing of the user's own and returns it as a
+     * data URL. A file that is not a picture, or is too large, is refused with the reason.
+     */
+    pickPhoto: channel(
+      noInput,
+      z.object({ image: z.string().nullable(), file: z.string().optional() }),
+      { describe: 'Opens a file dialog to pick a photo of a device for a drawing.', tier: 'off' }
+    ),
 
     savePdf: channel(
       sheetRef.extend({
@@ -163,7 +177,7 @@ export const cheatSheetsContract = defineContract(
         "Whether cheat sheet kneeboard pages for one aircraft are in DCS's Kneeboard folder and up to date. Changes nothing.",
       tier: 'read',
     }),
-    /** One page as it would be exported, as a PNG data URL. */
+    /** One page as it would be exported, as a PNG data URL, without the user's photos. */
     kneeboardPreview: channel(
       sheetRef.extend({
         deviceKey: z.string().optional(),
@@ -172,8 +186,20 @@ export const cheatSheetsContract = defineContract(
       z.object({ image: z.string(), width: z.number(), height: z.number() }),
       {
         describe:
-          'One kneeboard page of a cheat sheet as it would be exported, light or night, as a PNG image. deviceKey comes from cheat-sheets:sheet. Changes nothing.',
+          'One kneeboard page of a cheat sheet as it would be exported, light or night, as a PNG image. A photo the user put in a drawing is left out of this picture: a grey box stands in its place. deviceKey comes from cheat-sheets:sheet. Changes nothing.',
         tier: 'read',
+      }
+    ),
+    /** The same page with the user's photos on it, for RigReady's own windows only. */
+    windowKneeboardPreview: channel(
+      sheetRef.extend({
+        deviceKey: z.string().optional(),
+        style: z.enum(['light', 'night']),
+      }),
+      z.object({ image: z.string(), width: z.number(), height: z.number() }),
+      {
+        describe: "One kneeboard page for RigReady's own windows, with the user's photos.",
+        tier: 'off',
       }
     ),
     /** What the export would write and remove in the kneeboard folder, before it does. */
