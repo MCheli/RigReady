@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   CHECK_GROUPS,
@@ -11,6 +11,7 @@ import {
   type ProfileActions,
 } from '../../../core/profile/schema';
 import { errorText, useClient } from '../../../renderer/ipc';
+import { useStillHere } from '../../../renderer/stillHere';
 import {
   profilesContract,
   type CheckTypeInfo,
@@ -54,9 +55,7 @@ const leaving = ref(false);
 const fileMessage = ref<string>();
 /** The setup as it was last saved: its desktop shortcut is made from that, not from the draft. */
 const saved = ref<{ name: string; launches: boolean }>();
-/** Set when this page goes away. A save that answers later must not move the user. */
-let gone = false;
-onBeforeUnmount(() => (gone = true));
+const stillHere = useStillHere();
 
 const PHASES = [
   { key: 'preLaunch', title: 'Before launch', sub: 'Run in order before the game starts.' },
@@ -452,7 +451,7 @@ async function save(): Promise<void> {
   saving.value = true;
   error.value = undefined;
   problems.value = [];
-  const from = router.currentRoute.value.fullPath;
+  const here = stillHere();
   const result = await api.save(next);
   saving.value = false;
   if (!result.ok) {
@@ -468,9 +467,7 @@ async function save(): Promise<void> {
   original.value = snapshot();
   // A save can answer after the user has gone on to another page (Play, on a slow or busy
   // PC). They stay where they went: only a user still on this editor is taken to the list.
-  if (!gone && router.currentRoute.value.fullPath === from) {
-    await router.push('/configure/profiles');
-  }
+  if (here()) await router.push('/configure/profiles');
 }
 
 function cancel(): void {
