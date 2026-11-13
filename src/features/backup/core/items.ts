@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { credentialReason } from '../../../core/credentials';
+import { broadFolderTest } from '../../../core/guards';
 import { allowedRoots, isWithin } from '../../../core/paths';
 import {
   collapsePath,
@@ -128,12 +129,17 @@ async function mayTrack(ctx: Ctx, absolute: string, variables: PathVariables): P
   // A drive letter only: never \\server\share, \\?\C:\... or \\.\device.
   if (!/^[a-zA-Z]:[\\/]/.test(absolute)) return false;
   if (within(await allowedRoots(ctx.ports))) return true;
+  // What a game or a tool names vouches only for a folder of its own: a game the user added
+  // (or its hand-edited file) that names a whole drive, Windows or the user folder opens
+  // nothing (GAME-ADD-003).
+  const tooBroad = await broadFolderTest(ctx.ports);
+  const narrow = (roots: string[]): string[] => roots.filter((root) => !tooBroad(root));
   // The folders of the games (DCS_INSTALL, DCS_USER, ...): every variable a game module adds.
   const standard = await standardPathVariables(ctx.ports);
   const gameFolders = Object.entries(variables)
     .filter(([name]) => !(name in standard))
     .map(([, folder]) => folder);
-  if (within(gameFolders)) return true;
+  if (within(narrow(gameFolders))) return true;
   const expandAll = (stored: string[]): string[] =>
     stored.flatMap((p) => {
       const expanded = expandPath(p, variables);
@@ -143,7 +149,7 @@ async function mayTrack(ctx: Ctx, absolute: string, variables: PathVariables): P
   if (!scopes.ok) return false;
   if (within(expandAll(scopes.value.flatMap((s) => s.items.map((i) => i.path))))) return true;
   const suggestions = await collectSuggestions(ctx, scopes.value);
-  return within(expandAll(suggestions.map((s) => s.path)));
+  return within(narrow(expandAll(suggestions.map((s) => s.path))));
 }
 
 export interface ItemPreview {

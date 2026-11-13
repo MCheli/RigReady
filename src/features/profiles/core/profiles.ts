@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
+import { setupGameName } from '../../../core/games';
 import {
   allPathVariables,
   collapsePath,
@@ -228,12 +229,7 @@ export async function overview(ctx: Ctx): Promise<Result<ProfileOverview>> {
   const brought = broughtOverFiles(listed.value.profiles.map((p) => p.profile));
   return ok({
     profiles: listed.value.profiles.map(({ profile, file, hasComments }) => {
-      const gameName =
-        profile.game === 'other'
-          ? profile.gameName
-          : profile.game
-            ? (ctx.games.get(profile.game)?.name ?? profile.game)
-            : undefined;
+      const gameName = setupGameName(profile, ctx.games);
       return {
         profile,
         file,

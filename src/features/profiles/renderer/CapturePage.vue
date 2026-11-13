@@ -83,7 +83,12 @@ const stepCheckLeft = reactive<Record<string, boolean>>({});
 
 const candidates = computed(() => captured.value?.candidates ?? []);
 const games = computed(() => captured.value?.games ?? []);
-const installed = computed(() => games.value.filter((g) => g.installs.length > 0));
+/** The games found here; the ones the user added ("user-...") last, beside "Another game". */
+const installed = computed(() => {
+  const found = games.value.filter((g) => g.installs.length > 0);
+  const own = (g: CaptureGame): boolean => g.id.startsWith('user-');
+  return [...found.filter((g) => !own(g)), ...found.filter(own)];
+});
 const chosenGame = computed(() => games.value.find((g) => g.id === game.value));
 const chosenInstall = computed(
   () =>
@@ -583,6 +588,7 @@ onMounted(capture);
                   <span class="cap-tile-name">{{ g.name }}</span>
                   <span class="cap-tile-sub">
                     <template v-if="g.running">running now</template>
+                    <template v-else-if="g.id.startsWith('user-')">added by you</template>
                     <template v-else>{{
                       g.installs.length > 1
                         ? `${g.installs.length} installs`

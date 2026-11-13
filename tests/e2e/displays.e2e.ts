@@ -685,6 +685,9 @@ test('monitors: turning a screen in the editor moves the screens beside it, and 
   const upright = async (label: string) => {
     await line(label).getByTestId('edit-rotation').click();
     await page.getByRole('option', { name: 'Portrait (90°)' }).click();
+    // Wait for this menu to close: while it fades out, the next screen's menu would show a
+    // second "Portrait (90°)" and the pick would match both.
+    await expect(page.getByRole('option', { name: 'Portrait (90°)' })).toHaveCount(0);
     await expect(line(label).getByTestId('edit-mode')).toContainText('768x1024');
   };
   const note = dialog.getByTestId('edit-note');

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
+import { broadFolderTest } from '../../../core/guards';
 import { CompatibilitySchema } from './compat';
 import { privacyContext as corePrivacyContext, type PrivacyContext } from './privacy';
 
@@ -67,13 +68,20 @@ export async function privacyContext(
   return corePrivacyContext(ctx, ctx.games, extraSerials);
 }
 
-/** Folders an import may write to: Documents, Saved Games and every game's own config folder. */
+/**
+ * Folders an import may write to: Documents, Saved Games and every game's own config folder.
+ * A game's folder counts only when it is a folder of its own: one that is too broad (a whole
+ * drive, Windows, the user folder; core/guards.ts) is left out, whatever a game module names.
+ */
 export async function importRoots(ctx: Ctx): Promise<string[]> {
   const roots = [ctx.ports.folders.documents(), ctx.ports.folders.savedGames()];
+  const tooBroad = await broadFolderTest(ctx.ports);
   for (const module of ctx.games.all()) {
     try {
       const locations = await module.configLocations(ctx);
-      if (locations.ok) roots.push(...locations.value.map((l) => l.path));
+      if (locations.ok) {
+        roots.push(...locations.value.map((l) => l.path).filter((folder) => !tooBroad(folder)));
+      }
     } catch (e) {
       ctx.log.error(`config locations of ${module.id} threw`, e);
     }
