@@ -6754,6 +6754,25 @@ requirements:
     notes:
       - "2026-11-12: the owner's findings 36 and 40. Done here is what the app offers. Whether the game takes it that way is not known: nobody has flown this layout or read the game's controls screen, and that is kept open in VPAD-005."
 
+  - id: VPAD-011
+    title: A renamed virtual controller profile has its new name in every setup that starts it
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "After a profile is renamed and saved, the Play page of a setup that starts it ('Before launch'), the list of the step in the setup editor and the line of the fix beside a check all say the new name."
+      - "RigReady writes the new name into every step and fix that kept the old one, through the setup store. A step that kept no name is left as it is, and so is everything else in the setup."
+      - "The line of the fix says the name the profile has now even when the setup holds another, and the name the setup holds when the profile is gone."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/main.test.ts#after a profile is renamed, a setup that starts it says the new name: on the Play page, in the list of its step, beside a check it fixes and in the setup itself"
+      - "src/features/virtual-controller/core/usedBy.test.ts#gives a setup the new name of a renamed profile wherever it keeps the old one, and nothing else"
+      - test: "tests/e2e/virtual-controller.e2e.ts#virtual controller: a renamed profile has its new name on the Play page of the setup that starts it"
+      - "artifacts/screens/virtual-controller-renamed/01-renamed.png"
+      - "artifacts/screens/virtual-controller-renamed/02-play-says-the-new-name.png"
+    notes:
+      - "2026-11-12: a setup keeps the profile's name beside its id, and the Play page reads the name there (FLY-029), so a renamed profile kept its old name on Play. A setup that cannot be written keeps the old name until its step is chosen again; that is logged, and the rename itself stands."
+
   # ---------------------------------------------------------------------------
   # STREAM DECK
   # ---------------------------------------------------------------------------
