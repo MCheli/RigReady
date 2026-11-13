@@ -25,4 +25,6 @@ Windows desktop app that verifies a flight/racing sim rig is ready, fixes what i
 
 ## This machine
 
+This section is about the maintainer's own PC. On any other PC, skip it: follow `docs/contributing/` and the skills in `.claude/skills/` instead, and treat your own rig the same careful way.
+
 This PC is the owner's real rig. Real hardware is present. Run the app for tests only with the isolated launch described in `docs/ARCHITECTURE.md` (temp `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `RIGREADY_HOME`). A safety copy of `Saved Games\DCS` is at `C:\Users\Owner\RigReady-safety-backup-2026-10-03`.

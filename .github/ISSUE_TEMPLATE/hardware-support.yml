@@ -1,0 +1,92 @@
+name: Support for my hardware
+description: Ask for RigReady to know a controller, wheel base, pedals, panel or button box better, or say you will add it yourself.
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Any USB game controller already works in RigReady: it is listed on Configure > Devices and in the input tester, and **Use my photo…** makes a cheat sheet of it for you. This form is for more than that: RigReady knowing what the device is, its controls named the maker's way, a drawing on the cheat sheet, or the wheel view in the input tester.
+
+        You can add it yourself, with or without coding experience: clone the repository, open Claude Code in it and describe the device. [Add your hardware](https://github.com/MCheli/RigReady/blob/main/docs/contributing/add-hardware.md) walks through it.
+
+        The vendor and product ID and the name the device reports are fine to share. Leave out its serial number and instance path. Please do not attach the maker's pictures or manual pages: a link is enough.
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Maker and model, and the grip or rim if it has one.
+      placeholder: Thrustmaster HOTAS Warthog throttle
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What it is
+      options:
+        - Joystick, stick base or grip
+        - Throttle
+        - Rudder pedals
+        - Wheel base or wheel rim
+        - Racing pedals
+        - Shifter or handbrake
+        - Button box or cockpit panel
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: usb-id
+    attributes:
+      label: Vendor and product ID
+      description: >-
+        In RigReady, Configure > Devices, click Find a device, press a button on the device, then click its highlighted row and copy "Vendor : product" from its details.
+        Or in Windows' Device Manager, the device's Properties > Details > Hardware Ids, the numbers after VID_ and PID_.
+      placeholder: 044F:0404
+    validations:
+      required: true
+  - type: input
+    id: reported-name
+    attributes:
+      label: The name it reports
+      description: As the input tester shows it.
+      placeholder: Throttle - HOTAS Warthog
+  - type: input
+    id: inputs
+    attributes:
+      label: Axes, buttons and hats
+      description: How many of each the input tester shows for it.
+      placeholder: 5 axes, 32 buttons, 1 hat
+  - type: checkboxes
+    id: wanted
+    attributes:
+      label: What you would like RigReady to do with it
+      options:
+        - label: Know whether it is flight or racing gear
+        - label: Name its buttons and axes the way the maker does
+        - label: Draw it on the cheat sheet
+        - label: Show the wheel and pedal view, with the maker's axis names, in the input tester
+        - label: Something else (below)
+  - type: textarea
+    id: sources
+    attributes:
+      label: Where its controls are documented
+      description: Links to the maker's manual or support page with a numbered drawing of the controls, or a game's default profile for the device. Links only.
+  - type: dropdown
+    id: help
+    attributes:
+      label: Can you help?
+      options:
+        - I would like to add it myself
+        - I can press buttons and try a build on my rig
+        - I can only report it
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: RigReady version, if you have it installed
+      placeholder: 2.0.0
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: What RigReady shows for the device now, and what you expected. A screenshot helps; check it for serial numbers and personal details first.
