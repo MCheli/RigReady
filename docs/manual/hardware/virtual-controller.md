@@ -56,7 +56,7 @@ For every stick direction, trigger, button and d-pad direction:
 
 **The live picture** near the top draws the whole virtual controller: two sticks, two triggers and the buttons, lit while they are down, with the same in words beside it ("LT 0% · RT 62%", "Left stick: 40% right", "Pressed: A"). Move a control you mapped and watch what a game would get; nothing needs saving first.
 
-**Save and Back** are in a bar along the bottom of the window that stays there however far you scroll. The bar says **Unsaved changes** when what is on screen differs from what was saved, and why Save is off when it is (a name another profile has, for one). Leaving the editor with unsaved changes asks first.
+**Save and Back** are in a bar along the bottom of the window that stays there however far you scroll. The bar says **Unsaved changes** when what is on screen differs from what was saved, and why Save is off when it is (a name another profile has, for one). Leaving the editor with unsaved changes asks first. A change you make while a save is still being written stays on screen, and the bar goes on saying **Unsaved changes** until you save again.
 
 ![Save stays in view at the end of the page](../../../artifacts/screens/virtual-controller-editor/06-scrolled-save-in-view.png)
 

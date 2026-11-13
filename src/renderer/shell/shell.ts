@@ -6,6 +6,7 @@ import { featureCommands, manifests } from '../features';
 import { useClient } from '../ipc';
 import { notifyMachineChanged, onMachineChanged } from '../machine';
 import { followGamesFound } from './games';
+import { goTo } from './go';
 import { followSetupKind } from './kind';
 import { manualPageOfRoute, openManual } from './manual';
 import { parseRecent, remember } from './palette';
@@ -56,7 +57,7 @@ export function returnFocus(open: Ref<boolean>): void {
 /**
  * Raised to open the page shown now afresh: a command that links to the page already on
  * screen must find it reading the parameters of the link, whether or not the page watches
- * its route.
+ * its route. Never over changes that are not saved without asking (go.ts).
  */
 export const pageEpoch = ref(0);
 
@@ -114,17 +115,15 @@ export async function followFoundGames(router: Router): Promise<() => void> {
   );
 }
 
-const leaf = (matched: { path: string }[]): string | undefined => matched[matched.length - 1]?.path;
-
 /** What a command gets from the shell. */
 export function createCommandShell(router: Router): CommandShell {
   return {
     client: (contract) => useClient(contract),
-    async go(to) {
-      const same = leaf(router.resolve(to).matched) === leaf(router.currentRoute.value.matched);
-      await router.push(to);
-      if (same) pageEpoch.value++;
-    },
+    // The page on screen is opened afresh, unless that would drop changes the user keeps.
+    go: (to) =>
+      goTo(router, to, () => {
+        pageEpoch.value++;
+      }),
     route: () => router.currentRoute.value.fullPath,
     machineChanged: () => notifyMachineChanged(),
     // Replaced per run by the runner, which owns the toast the line is shown in.

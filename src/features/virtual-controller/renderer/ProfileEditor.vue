@@ -7,6 +7,7 @@ import SaveBar from '../../../renderer/components/SaveBar.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import type { PadReport } from '../../../shared/models';
 import { virtualControllerContract } from '../contract';
+import { afterSave, stable } from '../core/editing';
 import { gameNoteCount, gameNoteText, withoutGameNotes } from '../core/gameNotes';
 import { wheelRange } from '../core/mapping';
 import { nameKey, nameTakenText } from '../core/names';
@@ -57,13 +58,6 @@ const id = computed(() => String(route.query['id'] ?? ''));
 /** No profile, or one that is not there (deleted, or a link from elsewhere). */
 const missing = ref(false);
 
-/** One text for one content, whatever order the parts were touched in. */
-const stable = (value: unknown): string =>
-  JSON.stringify(value, (_key, v: unknown) =>
-    v !== null && typeof v === 'object' && !Array.isArray(v)
-      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
-      : v
-  );
 /** The profile as it was read or last saved. */
 const savedCopy = ref<string>();
 const savedName = ref('');
@@ -248,12 +242,16 @@ async function save(): Promise<void> {
   if (!profile.value || saving.value) return;
   saving.value = true;
   saveError.value = undefined;
-  const result = await api.save({
-    profile: JSON.parse(JSON.stringify(profile.value)) as PadProfile,
-  });
+  const sent = JSON.parse(JSON.stringify(profile.value)) as PadProfile;
+  const result = await api.save({ profile: sent });
   saving.value = false;
   if (result.ok) {
-    taken(result.value);
+    // The form stays open during the save: what was changed meanwhile is kept, and the bar
+    // still says it is not saved.
+    const next = afterSave(profile.value ?? result.value, stable(sent), result.value);
+    profile.value = next.shown;
+    savedCopy.value = next.savedCopy;
+    savedName.value = result.value.name;
     savedText.value = `Saved ${result.value.name}`;
   } else {
     saveError.value = errorText(result.error);

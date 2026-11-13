@@ -23,7 +23,8 @@ import MonitorMap from './MonitorMap.vue';
  * the dialog under the pointer, and the button being pressed would move away from it.
  */
 const props = defineProps<{ layout: LayoutView | undefined }>();
-const emit = defineEmits<{ close: []; saved: [view: DisplaysView] }>();
+/** `saved` names the layout that was saved: the one the dialog showed when Save was pressed. */
+const emit = defineEmits<{ close: []; saved: [view: DisplaysView, name: string] }>();
 
 const api = useClient(displaysContract);
 const rows = ref<LayoutMonitor[]>([]);
@@ -102,12 +103,17 @@ function leave(row: LayoutMonitor, key: 'x' | 'y'): void {
   delete typing.value[field(row, key)];
 }
 
+/**
+ * While a save runs the dialog stays open (Cancel, Escape and a click beside it wait for the
+ * answer), so the answer is about the layout on screen and is said once it is in.
+ */
 async function save(): Promise<void> {
-  if (!props.layout) return;
+  const layout = props.layout;
+  if (!layout || saving.value) return;
   saving.value = true;
   error.value = undefined;
   const result = await api.editLayout({
-    id: props.layout.id,
+    id: layout.id,
     displays: rows.value.map((r) => ({
       id: r.id,
       name: r.name,
@@ -123,8 +129,13 @@ async function save(): Promise<void> {
     })),
   });
   saving.value = false;
-  if (result.ok) emit('saved', result.value);
+  if (result.ok) emit('saved', result.value, layout.name);
   else error.value = errorText(result.error);
+}
+
+/** Closed by Cancel, Escape or a click beside it: not while a save is waiting for its answer. */
+function close(): void {
+  if (!saving.value) emit('close');
 }
 </script>
 
@@ -134,7 +145,8 @@ async function save(): Promise<void> {
     :model-value="layout !== undefined"
     max-width="880"
     scrollable
-    @update:model-value="emit('close')"
+    :persistent="saving"
+    @update:model-value="close"
   >
     <v-card v-if="layout" data-testid="edit-dialog">
       <v-card-title>Edit "{{ layout.name }}"</v-card-title>
@@ -230,7 +242,9 @@ async function save(): Promise<void> {
       </v-alert>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="emit('close')">Cancel</v-btn>
+        <v-btn variant="text" :disabled="saving" data-testid="edit-layout-cancel" @click="close"
+          >Cancel</v-btn
+        >
         <v-btn
           color="primary"
           variant="flat"
