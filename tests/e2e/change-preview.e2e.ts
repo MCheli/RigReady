@@ -123,6 +123,8 @@ test("change preview: restoring RigReady's DCS files shows what is put back, and
   await page.getByTestId('nav-dcs').click();
   await page.getByTestId('dcs-tab-screens').click();
   await expect(page.getByTestId('screen-map-box')).toHaveCount(3);
+  // SimAppPro's plan is matched by position alone here: the user says the screens are right first.
+  await page.getByTestId('screens-pairing-confirm').click();
   await page.getByTestId('screens-apply').click();
   await expect(page.getByTestId('screens-done')).toContainText(
     'DCS will use the RigReady screen setup'

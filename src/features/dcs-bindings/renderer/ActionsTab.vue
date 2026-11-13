@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import type { BindingView, CommandView, DeviceView } from '../core/model';
 import { useBindingsStore } from './store';
 
 /** Every action of the aircraft, by category, with what is bound to it on every device. */
 const store = useBindingsStore();
 const view = computed(() => store.view!);
-const search = ref('');
+// Another page can send the user here looking for something ("kneeboard"): ?find=<text>.
+const asked = useRoute().query['find'];
+const search = ref(typeof asked === 'string' ? asked : '');
 const filter = ref<'all' | 'bound' | 'unbound'>('all');
 const category = ref('All categories');
 const limit = ref(80);

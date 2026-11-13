@@ -107,6 +107,20 @@ test('dcs-setup: screens are imported from SimAppPro, written as RigReady.lua an
   await expect(page.getByTestId('screens-lua')).toContainText('x = 5896;');
   await shot('file-preview');
 
+  // The three small screens are the same size and have no names of their own here, so
+  // SimAppPro's plan is matched by position alone: RigReady says so and writes nothing
+  // until the user has looked at which screen is which.
+  await expect(page.getByTestId('screens-pairing')).toHaveAttribute('data-certain', 'false');
+  await expect(page.locator('[data-testid="screens-pair"][data-plan="002"]')).toContainText(
+    'Matched by position alone. 3 screens of this layout are the same size'
+  );
+  await expect(page.getByTestId('screens-blocked')).toHaveText(
+    'Check which screen is which first.'
+  );
+  await expect(page.getByTestId('screens-apply')).toBeDisabled();
+  await page.getByTestId('screens-pairing-confirm').click();
+  await expect(page.getByTestId('screens-pairing-checked')).toHaveText('You checked these.');
+
   await page.getByTestId('screens-apply').click();
   await expect(page.getByTestId('screens-done')).toContainText(
     'DCS will use the RigReady screen setup'
@@ -530,6 +544,8 @@ test('dcs-setup: simapppro-rewrote-monitorsetup — SimAppPro puts its setup bac
   const { page, shot, home } = run;
   await openDcs(page, 'screens');
   await expect(page.getByTestId('screen-map-box')).toHaveCount(3);
+  // Matched by position alone: the user says the screens are right before anything is written.
+  await page.getByTestId('screens-pairing-confirm').click();
   await page.getByTestId('screens-apply').click();
   await expect(page.getByTestId('screens-done')).toContainText(
     'DCS will use the RigReady screen setup'

@@ -2086,6 +2086,65 @@ requirements:
       - "artifacts/screens/devices-hidhide/02-devices.png"
       - "artifacts/screens/devices-hidhide/03-hidhide-panel.png"
 
+  - id: DEV-015
+    title: The input tester follows a plug or unplug, and never shows a controller under another one's name
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "When a game controller is plugged in or unplugged, the window is told the new list by itself, before any input of the new list, with no visit to the Devices tab and no Refresh. The tester's cards and chips follow."
+      - "A controller is known by its own GUID, not by its number in Windows' list. When a number passes to another controller, that controller shows under its own name with nothing held, no ranges reached and no lines in the log; a reading from before the change is not shown for it."
+      - "Lines an unplugged controller wrote stay in the log under that controller's name."
+      - "The single view follows its controller to a new number. When its controller is unplugged it says 'That controller is not connected any more.' and does not pass to another controller."
+      - "Scenario devices-flying-then-wheel (mark-full with the wheel base unplugged): after the button box, the pedals and the stick are unplugged and the wheel base plugged in, the tester opened from the Wheel page lists 'FANATEC Podium Wheel Base DD2' and no flight device."
+    notes:
+      - "2026-11-12: sitting finding 49. Proven on the fake reader, which now forgets its last readings when the list changes as the Windows reader does. Not repeated on the real rig. The recorded rig has one DD2 controller, not the two the real rig showed."
+      - "2026-11-12: pages other than the tester still reload shortly after a plug, while the Windows reader looks for new controllers every two seconds; a link to a controller by number made from an old list can open another controller, under its own name."
+    status: done
+    evidence:
+      - "src/features/devices/core/controllers.test.ts#knows a controller by its GUID, not by its number"
+      - "src/features/devices/core/controllers.test.ts#never finds a device for a controller that only has the number of one of its controllers"
+      - "src/features/devices/core/controllers.test.ts#says which numbers passed to another controller, and whether anything changed at all"
+      - "src/features/devices/core/controllers.test.ts#writes a line for a list that differs whenever who sits where does"
+      - "src/features/devices/core/input.test.ts#never passes the lines of one controller on to the next one with its number"
+      - "src/features/devices/main.test.ts#tells the window when a controller came or went, by itself and before any input of the new list"
+      - "tests/e2e/devices-wheel.e2e.ts#devices: after the flight gear is swapped for the wheel, the tester names the wheel base and never a device that is gone"
+      - "artifacts/screens/devices-swap-to-wheel/01-flying.png"
+      - "artifacts/screens/devices-swap-to-wheel/02-wheel-named.png"
+      - "artifacts/screens/devices-swap-to-wheel/03-wheel-input.png"
+      - "artifacts/screens/devices-swap-to-wheel/04-wheel-gone.png"
+      - "artifacts/screens/devices-swap-to-wheel/05-box-after-wheel.png"
+
+  - id: DEV-016
+    title: A wheel base in the input tester is drawn as a wheel and pedals, under the Wheel page's axis names
+    job: troubleshoot
+    area: devices
+    priority: p2
+    done_means:
+      - "For a wheel base whose axes have a source (Fanatec), the single view shows 'Wheel and pedals' in place of the plot of two axes: the steering as a wheel that turns with the reading in words ('Left 37%', 'Centre', 'Right 100%'), and Clutch, Brake and Accelerator as three named bars."
+      - "The axes below and the activity log use the names the Wheel page uses (Wheel, Combined pedals, Accelerator, Brake, Clutch, Dial), with Windows' name underneath; with raw values on, the DirectInput names. One test walks the whole table of wheel products and holds the two pages to the same names."
+      - "The steering is the share of the travel to one side, not degrees: RigReady does not read the rotation set on the base. A pedal counts from the end it rested at on its first reading."
+      - "A controller with no source for its axes, a base added by hand among them, keeps the general view and Windows' names."
+      - "The wheel's highest value reads 'Right 100%'; 99% shows only when the value is below the top."
+    notes:
+      - "2026-11-12: sitting finding 50. The 99% the real wheel showed at full lock is not rounding in the tester (unit test). What raw value the real wheel sends there was not looked at: it needs a person at the wheel."
+    status: done
+    evidence:
+      - "src/features/devices/core/wheelAxes.test.ts#names the axes the maker names, and no others"
+      - "src/features/devices/core/wheelAxes.test.ts#names nothing on a controller RigReady has no source for"
+      - "src/features/devices/core/wheelAxes.test.ts#lists the axes by what they are, with their place among the controller's axes"
+      - "src/features/devices/core/wheelAxes.test.ts#says the side and the share of the travel to that side"
+      - "src/features/devices/core/wheelAxes.test.ts#calls the wheel straight within 1% of the travel of the centre, and no further"
+      - "src/features/devices/core/wheelAxes.test.ts#counts from the high end when the first reading was there"
+      - "src/features/devices/core/wheelAxes.test.ts#reads 100% when the wheel reports its highest value, and 99% only when it does not"
+      - "src/features/devices/core/input.test.ts#calls the axes of a wheel base what its maker calls them, with the Windows name at hand"
+      - "src/features/devices/core/input.test.ts#writes a wheel under the names of its axes"
+      - "tests/unit/wheelAxisNames.test.ts#the tester names every axis of every known wheel product as the Wheel page does"
+      - "tests/unit/wheelAxisNames.test.ts#the tester draws a wheel for exactly the bases whose axes the Wheel page has a source for"
+      - "tests/e2e/devices-wheel.e2e.ts#devices: the input tester draws a wheel base as a wheel and pedals, with the names the Wheel page uses"
+      - "artifacts/screens/devices-tester-wheel/01-wheel-view.png"
+      - "artifacts/screens/devices-tester-wheel/02-wheel-view-raw.png"
+
   # ---------------------------------------------------------------------------
   # THE FINAL PASS — the tools: troubleshooting and learning the rig
   # ---------------------------------------------------------------------------
@@ -2526,6 +2585,136 @@ requirements:
       - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: a rotated MFD screen also warns about the DCS monitor setup, and both clear after the layout fix"
       - "artifacts/screens/dcs-setup-mfd-rotated/01-both-warn.png"
       - "artifacts/screens/dcs-setup-mfd-rotated/02-both-clear.png"
+
+  - id: DCS-MON-006
+    title: The Screens tab calls every monitor by the name the user gave it
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Wherever the Screens tab shows a monitor (the map, the main view's monitors, the list of each display, the pairing with SimAppPro's plan, the warnings, the crop note and the Description line of RigReady.lua) it uses the name given on the Monitors page; a monitor without one keeps Windows' name."
+      - "The same holds for a screen setup saved before the names were given and for a monitor layout saved with a setup, whatever the monitors are doing now."
+      - "Scenario mark-flight with the three small screens named 'MFD left', 'MFD centre' and 'MFD right' on the Monitors page: the tab shows those names and 'USB_Monitor' nowhere (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 15: the tab said 'USB_Monitor (1 of 3)' for screens the owner had named. The names are read through ctx.names.monitors(), which the displays feature already provides; nothing in src/features/displays changed."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#are used for the layout as it is now, for a setup saved before they were given, and in the file"
+      - "src/features/dcs-setup/core/screens.test.ts#are used for a layout saved with a setup, whatever the monitors are doing now"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: the screens carry the user's names, and SimAppPro's plan follows the names, is shown, corrected and only then written"
+      - "artifacts/screens/dcs-screens-named/01-paired-by-name.png"
+      - "artifacts/screens/dcs-screens-named/02-corrected-by-hand.png"
+
+  - id: DCS-MON-007
+    title: SimAppPro's plan is paired with the monitors by name, shown, and put right before anything is written
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Each screen of SimAppPro's plan is paired with a monitor of the layout: first by the side the user's name for a monitor speaks of ('MFD left' for the screen that carries LEFT_MFCD), then by the plan's exact place and size, then the one monitor of that size that is left. Two monitors named for the same side are not guessed between. Only {APPDATA}/SimAppPro/GameExtendDisplay/MFD/DCS_config.json is read."
+      - "A pairing is certain only when the name and the plan's place agree, or when the place fits and no other monitor of the layout has that size. The tab lists every pairing with its reason. While one is not certain, 'Use in DCS' is off and says why, until the user has changed the list or pressed 'These are right'."
+      - "The user changes a pairing in the list; choosing a monitor another screen of the plan has makes the two change places; the setup, the map and the file preview follow, and nothing is written before 'Use in DCS'."
+      - "The stop is in the service, not only in the page: dcs-setup:applyScreens refuses (dcs.screens.pairing) a setup that uses what the last SimAppPro import put on a monitor it was not sure of, unless the call says the user checked the pairing (pairingChecked). The refusal names the displays and monitors in doubt in plain words, and a caller over IPC or the MCP server gets the same text. What the setup in use already has is not asked about again, so Make ready can still put a deleted RigReady.lua back. Applying part of the setup first, or editing it, does not get around the question. dcs-setup:previewScreens hands back the pairing to show (pairingToCheck), and the page asks with it when it is not already asking, for example after another monitor layout was chosen."
+      - "Correcting a pairing changes only the pairing. What the user did to the setup since the import stays: a crop the user set goes with its display to the newly paired monitor when the two are the same size, a display the user moved or took off stays where they put it, and aircraft, displays and main screens they added are kept. When the newly paired monitor is another size the crop starts from zero and the list says which display to set again."
+      - "Scenario mark-flight, whose plan has the left display where the middle screen is now: with the screens named, RigReady.lua is written with LEFT_MFCD at x = 5128, CENTER_MFCD at 5896 and RIGHT_MFCD at 6664, and the tab says the plan is from before the screens were put in this order. Without names the pairing is by position and the tab says three screens are the same size (E2E, both). A crop top of 240 set on the Left DDI and the AMPCD set to 'Not shown' before a row is changed are still so after it, and the written file has y = 240 (E2E)."
+      - "'Identify screens' on the tab shows, on every monitor that is on, its number, its name and what this setup puts on it, and says how many monitors show it."
+    notes:
+      - "2026-11-12 sitting, finding 16: the import went by position alone and put each display on the wrong screen, because the screens had been put in another order since SimAppPro saved its plan."
+      - "The service remembers its last import only while it runs. After a restart the page imports again when no setup is saved, and a setup that is in use needs no question. A scenario run uses the fake overlay port, so what Identify draws on the real screens is proven by the unit test of the requests it makes, not by a picture."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/pairingGate.test.ts#refuses the plan as it was imported, says why, and writes it once the user said it is right"
+      - "src/features/dcs-setup/core/pairingGate.test.ts#is not got around by editing the setup, or by applying part of it first"
+      - "src/features/dcs-setup/core/pairingGate.test.ts#does not ask when the user chose every screen in doubt by hand"
+      - "src/features/dcs-setup/core/pairingGate.test.ts#refuses an assistant the same way, with the reason in the answer it gets"
+      - "src/features/dcs-setup/core/service.test.ts#puts back a deleted RigReady.lua"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#moves the two swapped displays and takes the crop the user set along"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#leaves alone a display the user moved or took off by hand"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#keeps aircraft, displays and main screens the user added"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#says so when a crop the user set cannot go along to a screen of another size"
+      - "src/features/dcs-setup/core/pairingChange.test.ts#does not ask again about what the setup in use already has"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: the question about the pairing is asked again when another monitor layout is chosen"
+      - "artifacts/screens/dcs-screens-layout/01-asked-again.png"
+      - "artifacts/screens/dcs-screens-layout/02-written-after-answer.png"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#follows the names the user gave the screens when the plan is from another order"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#is certain when the names and the plan agree"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#says so when it has only the position to go by and the screens look alike"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#takes the user's own pairing over its own, and leaves out a screen they chose none for"
+      - "src/features/dcs-setup/core/simAppProImport.test.ts#does not guess between two monitors named for the same side"
+      - "src/features/dcs-setup/core/screens.test.ts#goes by the names when the screens were put in another order since the plan was saved"
+      - "src/features/dcs-setup/core/screens.test.ts#says it is not certain when the screens have no names and look alike"
+      - "src/features/dcs-setup/core/screens.test.ts#shows each monitor's number, its name and what the setup puts on it"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: the screens carry the user's names, and SimAppPro's plan follows the names, is shown, corrected and only then written"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: Identify screens works from this tab, and the map shows where DCS will draw the kneeboard"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: screens are imported from SimAppPro, written as RigReady.lua and selected in DCS"
+      - "artifacts/screens/dcs-screens-named/01-paired-by-name.png"
+      - "artifacts/screens/dcs-screens-named/02-corrected-by-hand.png"
+      - "artifacts/screens/dcs-screens-named/03-written.png"
+      - "artifacts/screens/dcs-screens-kneeboard/02-identified.png"
+
+  - id: DCS-MON-008
+    title: A crop goes with its display to another monitor of the same size
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "Choosing another monitor for a display keeps its crop when the new monitor has the size of the old one. On a monitor of another size the crop starts from zero and a line under the display says so, with both sizes."
+      - "A display set to 'Not shown' and put back on a monitor of the same size has its crop again."
+      - "Scenario mark-flight: the Left DDI with a crop of 8, 240, 8, 6 moved from 'MFD left' to 'MFD centre' keeps it and the file preview shows it; moved to the 5120 x 1440 screen it has none and the tab says 'The crop was not kept' (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 17: choosing another monitor for a display reset its crop to zero. Dragging a display to another screen on the map is as it was."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#keeps the crop when the new monitor is the same size"
+      - "src/features/dcs-setup/core/screens.test.ts#drops the crop, and says so, when the new monitor is another size"
+      - "src/features/dcs-setup/core/screens.test.ts#has nothing to keep, and nothing to say, when there was no crop"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: a crop goes with its display to a screen of the same size, and the tab says so when it cannot"
+      - "artifacts/screens/dcs-screens-crop/01-crop-kept.png"
+      - "artifacts/screens/dcs-screens-crop/02-crop-not-kept.png"
+
+  - id: DCS-MON-009
+    title: The Screens tab shows where DCS will draw the kneeboard
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "The map of the Screens tab draws the place DCS gives the kneeboard for this setup's window, for the aircraft whose displays the tab is showing, marked 'Kneeboard' (DCS's own rule: a bottom corner of the whole window, half its height wide; docs/research/dcs.md 5.1)."
+      - "The corner is the aircraft's, by its unit type, from a table of the aircraft whose own scripts were read (docs/research/dcs.md 5.1): the bottom right for 18 unit types, the bottom left, 32 pixels in, for 9 (A-10A, the MiG-29s, Su-27, J-11A, Su-33, Su-25T, Christen Eagle II)."
+      - "For an aircraft that is not in the table no box is drawn, and the line says 'RigReady does not know where DCS shows the kneeboard in the <aircraft>, so it is not drawn on the map.' A setup with no aircraft has no box either. No place is shown that was not read from the game's scripts."
+      - "A line under the map names the aircraft and the monitor the kneeboard is on, and says whether all of it is on a screen, and how much when not; when not, it says that DCS chooses the place and the monitor setup file cannot move it, and links to the manual section that says what can be done."
+      - "Scenario mark-flight (7424 x 1440 window), F/A-18C: the box is on 'MFD right', running out below it, and the line says 62%. With the wide screen alone in the window all of it is on that screen, at its right end. A saved setup with the Su-25T has the box at the left end of the wide screen and the line says bottom left; with an aircraft that is not in the table (AH-64D) there is no box and the line says RigReady does not know (E2E)."
+      - "RigReady writes no KNEEBOARD entry into RigReady.lua, because nothing in an unchanged DCS reads one."
+    notes:
+      - "2026-11-12 sitting, finding 19: the kneeboard opened on the right MFD screen with only its top left corner readable. This entry is the part that could be done from DCS's scripts alone: the user is told before flying. The choice of place is DCS-MON-010."
+      - "From reading the scripts of one install; not checked in the game."
+      - "The aircraft with a kneeboard on the left have no displays to send to a screen, so '+ Aircraft' does not offer them and the tab does not start on them. The left box is seen only in a setup that already has such an aircraft (one saved by an assistant, for example). On a rig like the owner's, a user who flies one of them still gets the F/A-18C's box unless the setup has their aircraft."
+    status: done
+    evidence:
+      - "src/features/dcs-setup/core/screens.test.ts#is the bottom right of the whole window: on the rig of the sitting, the right small screen"
+      - "src/features/dcs-setup/core/screens.test.ts#is all on the main screen when the window is that screen alone"
+      - "src/features/dcs-setup/core/screens.test.ts#is never wider than half the window"
+      - "src/features/dcs-setup/core/screens.test.ts#is the bottom left, 32 pixels in, for an aircraft that declares it on the left"
+      - "src/features/dcs-setup/core/screens.test.ts#knows the side only of the aircraft whose scripts were read"
+      - "tests/e2e/dcs-screens.e2e.ts#dcs-screens: Identify screens works from this tab, and the map shows where DCS will draw the kneeboard"
+      - "tests/unit/manualLinks.test.ts"
+      - "docs/research/dcs.md"
+      - "artifacts/screens/dcs-screens-kneeboard/01-kneeboard-runs-off-the-right-screen.png"
+      - "artifacts/screens/dcs-screens-kneeboard/03-kneeboard-all-on-the-wide-screen.png"
+      - "artifacts/screens/dcs-screens-kneeboard/04-kneeboard-on-the-left.png"
+      - "artifacts/screens/dcs-screens-kneeboard/05-kneeboard-place-not-known.png"
+
+  - id: DCS-MON-010
+    title: The user chooses where DCS shows the kneeboard
+    job: configure
+    area: dcs-monitors
+    priority: p1
+    done_means:
+      - "On the Screens tab the user chooses where the kneeboard shows; the default has all of it readable on the main screen."
+      - "The choice is written through FileStore with a backup, by a means an unchanged DCS honours and that passes a multiplayer server's file check, and it is confirmed in the game."
+    notes:
+      - "2026-11-12 sitting, finding 19 (the owner: 'just show on the main screen on the left side or something like that, or at least have some control over where it shows'). Not started beyond research: a monitor setup file cannot place the kneeboard, and where DCS keeps a kneeboard moved by hand in the game was not found in its scripts. docs/research/dcs.md 5.1 lists four candidates; each needs DCS running, so each is for a sitting. Changing one of the game's own scripts is a product decision for the owner."
+    status: todo
+    evidence: []
 
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines
@@ -3274,6 +3463,86 @@ requirements:
       - "artifacts/screens/cheat-sheets-check-add/01-added-in-the-dialog.png"
       - "artifacts/screens/cheat-sheets-check-add/02-on-the-fly-screen.png"
       - "artifacts/screens/cheat-sheets-check-add/03-made-ready.png"
+
+  - id: KNEE-001
+    title: A kneeboard or printed list shows every row it says it has
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The 'Key actions' page and a device's large-print list never drop a row to fit: rows are planned by the lines they wrap to at the page's width (long device names mean fewer rows on a page), and what does not fit goes on to a further page. The header says which rows a page has ('Actions 1 to 12 of 20'), a kind of action that carries over is marked 'continued', and an action bound in many places is counted once."
+      - "Further pages take the number of the first with a letter ('RigReady - 01b - Key actions 2.png', 'RigReady - 02b - Stick list.png', 'RigReady - 02c - Stick list 2.png'), so DCS shows them straight after it. A device name too long for a file name is cut and still ends in ' list'."
+      - "Every list page ends with a short bar, and the export looks for that bar in each rendered picture. A page without it is planned again with fewer rows; when it is still cut off nothing is written and the dialog names the page. Pages exported before this are reported as stale."
+      - "Scenario mark-flight with long device names (cheat-sheets-long-names): the real renderer writes the key actions over two pages and every list page has its bar (E2E, reading the PNG files). The printed 'Most important actions' goes on to a further page the same way."
+      - "Scenario mark-flight (cheat-sheets-hornet), printed on A4: the 71 most important actions take two pages. Measured in the print layout, every column ends inside its page, all 71 are there, and together they are taller than the two columns of one page (E2E). The PDF has one page a device and those two."
+    notes:
+      - "2026-11-12 sitting, finding 11: the exported 'Key actions' page said '24 actions' and showed 7. The page was planned by a row count that did not know how long the device names were, and whatever ran off the page was cut without a word."
+      - "The printed summary had the same fault: on the full rig its one page cut the list off at the bottom edge. The PDF of the full rig therefore has 13 pages where it had 12. The planner is careful with paper (it cannot look at a printed page afterwards as it does at a kneeboard picture), so the first of the two pages is about two thirds full."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/pages.test.ts#gives every action a row, and goes on in the next column and on the next page"
+      - "src/features/cheat-sheets/core/pages.test.ts#plans a row by the lines it wraps to, so long device names mean fewer rows on a page"
+      - "src/features/cheat-sheets/core/pages.test.ts#gives an action bound in many places further rows, and counts it once"
+      - "src/features/cheat-sheets/core/pages.test.ts#shows every key action of the kneeboard summary, each page ending with the bar that is checked"
+      - "src/features/cheat-sheets/core/pages.test.ts#shows every action of a device on its large-print list, without the device name in each row"
+      - "src/features/cheat-sheets/core/pages.test.ts#prints every one of the most important actions, on a further page when one is not enough"
+      - "src/features/cheat-sheets/core/pageCheck.test.ts#is not found when it was cut off, or when something else merely has its colour"
+      - "src/features/cheat-sheets/core/pageCheck.test.ts#wants every mark of the page in the picture"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#puts every key action on a page when the device names are long, over as many pages as that takes"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#checks every rendered list page, plans again with fewer rows when one came out cut off, and writes nothing when it still is"
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#says that pages with a list from before the fix need a new export"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: with long device names every key action still gets a place, over as many pages as that takes"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: print layout and PDF, one page per device plus a summary"
+      - "artifacts/screens/cheat-sheets-print/03-summary-first-page.png"
+      - "artifacts/screens/cheat-sheets-print/04-summary-second-page.png"
+      - "artifacts/screens/kneeboard-long-names/01-preview-key-actions.png"
+      - "artifacts/screens/kneeboard-long-names/02-exported.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-key-actions-1.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-key-actions-2.png"
+      - "artifacts/screens/kneeboard-outputs/long-names-stick-list.png"
+
+  - id: KNEE-002
+    title: Kneeboard page numbers stay put between exports
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "A device keeps the page number it had in the last export, also when a change of bindings moves it up or down the cheat sheet. A device exported for the first time gets the number after those that already have a page. The numbers have no gaps."
+      - "Scenario mark-flight (cheat-sheets-hornet): after the pedals lose their bindings, a new export writes the same file names as the first ('RigReady - 04 - Pedals.png' still fourth) and removes nothing (E2E, reading the folder)."
+    notes:
+      - "2026-11-12 sitting, finding 22: a new export would have moved the pedals from page 4 to page 11 and renumbered seven others. The order came from the sheet, which lists devices with bindings first; it now comes from the record of the last export."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboard.test.ts#keeps every device on the page it had when the bindings change which device comes first"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: every device keeps its page number when the bindings change which device comes first"
+      - "artifacts/screens/kneeboard-page-numbers/01-first-export.png"
+      - "artifacts/screens/kneeboard-page-numbers/02-bindings-changed.png"
+      - "artifacts/screens/kneeboard-page-numbers/03-same-numbers.png"
+
+  - id: KNEE-003
+    title: The kneeboard dialog says which keys turn the pages and offers to bind them
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The kneeboard dialog shows where 'show or hide the kneeboard', 'next page' and 'previous page' are bound for the aircraft, controllers first, read from the bindings in effect (the game's defaults included). The glance view, the mark point and the shortcut actions are not taken for them."
+      - "When the two page keys are on no controller it says that the pages turn only from the keyboard, or from nothing when one is unbound, names the game's two actions, and offers 'Bind the page keys'. An aircraft without the actions gets no such note."
+      - "The offer opens the game's bindings page on that aircraft with the kneeboard's actions found. Once both are bound to a controller the note is gone and the dialog shows the buttons."
+      - "Scenario mark-flight (cheat-sheets-hornet): the note shows; from the offer both page keys are bound to stick buttons by pressing them; back in the dialog it reads 'Button 33 on Stick' and 'Button 35 on Stick' and the note is gone (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bindings page itself gives no such hint when show or hide is bound there, which is the bindings feature's to add."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads it from the game's name for the action"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#leaves out the glance view, the mark point and everything that is not the kneeboard"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#says the pages turn only from the keyboard when show or hide is on a button"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#has nothing to say once both page keys are on a controller"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#says nothing turns the pages when a page key is bound to nothing at all"
+      - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads DCS's own keys, finds none on a controller, and offers the page to bind them on"
+      - "tests/e2e/kneeboard.e2e.ts#kneeboard: the dialog says which keys turn the pages, and offers the page to bind them on"
+      - "artifacts/screens/kneeboard-keys/01-pages-turn-only-from-the-keyboard.png"
+      - "artifacts/screens/kneeboard-keys/02-bindings-page-on-the-kneeboard-actions.png"
+      - "artifacts/screens/kneeboard-keys/03-page-keys-on-the-stick.png"
 
   - id: SHEET-014
     title: Every control is drawn once, and kinds are told apart in the night style
@@ -4991,6 +5260,47 @@ requirements:
       - "2026-11-11: open questions per brand are listed at the end of docs/research/wheelbases.md (Moza's second ids and preset folder, the Simagic EVO software, Thrustmaster T818 and TMX ids, Simucube, Asetek and Cammus process names, every brand's axis map)."
     status: todo
     evidence: []
+
+  - id: RACE-WHEEL-005
+    title: A wheel base RigReady does not know is seen, said to be unknown, and can be added as my wheel
+    job: troubleshoot
+    area: wheel
+    priority: p1
+    done_means:
+      - "With no base from the table connected, the Wheel page and the Racing overview say 'No wheel base RigReady knows is connected', never that the PC has no wheel base. The software panel says 'No wheel software RigReady knows is installed'."
+      - "A connected controller that is not in the table but looks like a wheel base (its name says wheel, steering or direct drive, or its USB vendor id belongs to a maker of wheel bases only, and it has axes and buttons) is named: 'RigReady sees <name>, but does not know this model', with the reason. A stick, a button box, pedals or a shifter is not called a wheel."
+      - "'My wheel is not listed' lists the connected controllers that are not a known base; the user picks one and may type the maker. RigReady keeps the choice in {RIGREADY_HOME}/racing/wheels.json and nowhere else, starts no program, and 'Forget this wheel' takes it back. A model from the table, a controller that is not connected and an id that is no USB id are refused. A wheels file that cannot be read adds no wheel and is not replaced."
+      - "An added base gets what needs nothing model-specific: connected or not and how many controllers games see, the 'Wheel base connected' check in a setup (fails when unplugged, no mode checked), its axes in the input tester, and the game pages as for any controller. The page lists these, and lists as not available for this model: the maker's software, the mode, axis names, profile and settings files, rotation with tuning presets and recommended settings, and the wheel's parts. A maker's name typed in is a label and gives the base nothing of that maker."
+      - "A base from the table stays the base of the page when both are connected; the added one is listed as also connected."
+    notes:
+      - "2026-11-12: the device layer has no force feedback flag and no device kind for a game controller, so 'looks like a wheel base' rests on the name and on the USB vendor ids of makers that sell wheel bases only (Fanatec, Simagic, Asetek, Cammus). Anything else the user picks by hand."
+      - "2026-11-12: tested on a made-up controller (VRS DirectForce Pro, 0483:A355) on the recorded rig, not on a real base outside the table."
+    status: done
+    evidence:
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a connected base that is not in the table is seen and said to be unknown, never \"no wheel base\""
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#with nothing it knows connected it says only that, and a stick or a button box is not called a wheel"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#what looks like a wheel base: a name that says so, or a wheel maker's id on something with axes and buttons"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#\"My wheel is not listed\": the user picks it, RigReady remembers it in its own folder and shows what it can"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#the lists of what an unlisted base gets and does not get are plain, and neither claims the other"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a setup can check an added base: connected passes, unplugged fails, and the mode is said to be unchecked"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a setup made for a known base names the added base when that is what is connected instead"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a base RigReady knows stays the base of the page; an added one beside it is listed as also connected"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#adding is refused for a model RigReady knows, for one that is not connected, and for ids that are not USB ids"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#\"Forget this wheel\" takes it out of the list, and forgetting one that was never added changes nothing"
+      - "src/features/racing/core/wheelbases/unlisted.test.ts#a wheels file that cannot be read adds no wheel, and adding says what is wrong instead of replacing it"
+      - "tests/e2e/wheel-not-listed.e2e.ts#racing: a wheel base RigReady does not know is seen, named as unknown, then added as my wheel"
+      - "tests/e2e/wheel-not-listed.e2e.ts#racing: with no base plugged in, the Wheel page claims only what RigReady knows"
+      - "artifacts/screens/racing-wheel-not-listed/01-racing-card-seen.png"
+      - "artifacts/screens/racing-wheel-not-listed/02-seen.png"
+      - "artifacts/screens/racing-wheel-not-listed/03-add.png"
+      - "artifacts/screens/racing-wheel-not-listed/04-my-wheel.png"
+      - "artifacts/screens/racing-wheel-not-listed/05-scope.png"
+      - "artifacts/screens/racing-wheel-not-listed/06-racing-card-mine.png"
+      - "artifacts/screens/racing-wheel-not-listed/07-capture.png"
+      - "artifacts/screens/racing-wheel-not-listed/08-unplugged.png"
+      - "artifacts/screens/racing-wheel-not-listed/09-forgotten.png"
+      - "artifacts/screens/racing-wheel-none/01-none.png"
+      - "artifacts/screens/racing-wheel-none/02-picker.png"
 
   - id: GAME-MSFS-001
     title: Detect Microsoft Flight Simulator 2024 and its settings
