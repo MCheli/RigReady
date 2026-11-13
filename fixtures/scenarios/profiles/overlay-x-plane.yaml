@@ -1,0 +1,9 @@
+schemaVersion: 1
+id: overlay-x-plane
+name: X-Plane evening
+# A game RigReady has a module for and no binding reader: the overlay is off here to begin with.
+game: x-plane-12
+createdAt: '2026-11-13T09:00:00.000Z'
+updatedAt: '2026-11-13T09:00:00.000Z'
+checks:
+  - { id: c1, type: device.connected, title: WINWING Orion Joystick Base 2 + JGRIP-F16, required: true, params: { vendorId: '4098', productId: BEA8 } }

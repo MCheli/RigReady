@@ -55,13 +55,32 @@ export const ExamplePressSchema = PressRowSchema.pick({
 });
 export type ExamplePress = z.infer<typeof ExamplePressSchema>;
 
+/** A setup whose monitor layout turns off the screen a part of the overlay was put on. */
+export const OffInSchema = z.object({
+  /** The setup's name. */
+  setup: z.string(),
+  /** The saved layout it uses, by name; absent when the setup keeps a layout of its own. */
+  layout: z.string().optional(),
+});
+export type OffIn = z.infer<typeof OffInSchema>;
+
 export const WidgetPlaceSchema = z.object({
   /** The screen it is shown on now (a monitor id); absent when no screen is on. */
   screen: z.string().optional(),
   screenName: z.string().optional(),
   at: AtSchema,
+  /**
+   * True: it goes on the main screen of the monitor layout in use, whichever monitor that
+   * is. Absent: it was put on one monitor (`screen`, or `away` while that one is off).
+   */
+  main: z.literal(true).optional(),
   /** The screen the user put it on, when that one is not on and the main screen stands in. */
   away: z.string().optional(),
+  /**
+   * The setups with the overlay on whose monitor layout turns that screen off: while such a
+   * layout is in use, the main screen stands in. Only for a part put on one monitor.
+   */
+  offIn: z.array(OffInSchema).optional(),
 });
 
 export const WidgetStateSchema = z.object({
@@ -82,7 +101,8 @@ export const WidgetStateSchema = z.object({
   problem: z.string().optional(),
   /**
    * Lines for the preview on the page to judge the size and the number of lines by. Only
-   * while the overlay is off, and only for the page: no window of the overlay is up then.
+   * while the overlay is not up (off, or off in the setup in use), and only for the page: no
+   * window of the overlay is up then.
    */
   examples: z.array(ExamplePressSchema).optional(),
 });
@@ -113,16 +133,55 @@ export const OverlaySourceSchema = z.object({
 });
 export type OverlaySource = z.infer<typeof OverlaySourceSchema>;
 
+/** A setup, and whether the overlay shows while it is the one in use. */
+export const SetupOverlaySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** The game it is for, by name, when it names one. */
+  game: z.string().optional(),
+  /** The overlay shows while this setup is the one in use. */
+  on: z.boolean(),
+  /** The user switched it in the setup. False: what the setup's game gives to begin with. */
+  chosen: z.boolean(),
+  /**
+   * Why the overlay cannot say what a press does in this setup (what RigReady cannot read for
+   * its game), which is also why it is off there to begin with. Absent: it can.
+   */
+  why: z.string().optional(),
+});
+export type SetupOverlay = z.infer<typeof SetupOverlaySchema>;
+
+/** What a setup for a game starts with, for the switch in the setup editor. */
+export const SetupDefaultSchema = z.object({
+  /** On to begin with: RigReady can read the game's bindings, so a press is shown with what it does. */
+  startsOn: z.boolean(),
+  /** Why it cannot, when it cannot. */
+  why: z.string().optional(),
+  /** The overlay itself is turned on (the switch on the Overlay page). */
+  overlayOn: z.boolean(),
+});
+export type SetupDefault = z.infer<typeof SetupDefaultSchema>;
+
 export const OverlayStateSchema = z.object({
-  /** The user's switch: the overlay is up whenever RigReady runs. */
+  /**
+   * The user's switch on the Overlay page: the overlay is up whenever RigReady runs, while
+   * the setup in use has it on (every setup has its own switch, `setups`).
+   */
   on: z.boolean(),
   widgets: z.array(WidgetStateSchema),
   /** The screens that are on: where a widget can be put. */
   screens: z.array(OverlayScreenSchema),
   source: OverlaySourceSchema,
+  /** Every setup, by name, and whether the overlay shows in it. */
+  setups: z.array(SetupOverlaySchema),
   /**
-   * Whether the controllers are being read. Only while the overlay is on: that is when they
-   * are read for it.
+   * The overlay is on and the setup in use has it off, so nothing is put over the game and
+   * the controllers are not read for it until a setup that has it on is played.
+   */
+  offInSetup: z.object({ id: z.string(), name: z.string() }).optional(),
+  /**
+   * Whether the controllers are being read. Only while the overlay is up (on, and on in the
+   * setup in use): that is when they are read for it.
    */
   input: z.object({ ok: z.boolean(), problem: z.string().optional() }).optional(),
   /** The settings file could not be read or written: nothing is changed until it can be. */

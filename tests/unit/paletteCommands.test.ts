@@ -647,6 +647,22 @@ describe('Overlay commands', () => {
     expect(app!.ports.overlays.panels.size).toBe(0);
   });
 
+  it('turned on while the setup in use has it off, it says so and leads to that setup', async () => {
+    const { shell } = await open('dcs-bindings-hornet', BINDING_FILES);
+    const { profiles } = app!.wiring.context;
+    const hornet = await profiles.get('dcs-bindings-hornet');
+    if (!hornet.ok) throw new Error(hornet.error.message);
+    await profiles.save({ ...hornet.value, extensions: { overlay: { on: false } } });
+    const on = await run(await find('overlay', shell, 'Turn the overlay on'), shell);
+    expect(on).toEqual({
+      tone: 'warn',
+      text: 'The overlay is on, but the setup in use, “DCS F/A-18C”, has it off',
+      detail: 'It comes up when you play a setup that has it on.',
+      action: { label: 'Open the setup', to: '/configure/profiles/dcs-bindings-hornet' },
+    });
+    expect(app!.ports.overlays.panels.size).toBe(0);
+  });
+
   it('on a PC without a game it comes on, and says that presses are shown without what they do', async () => {
     const { shell } = await open('generic-fresh');
     const on = await run(await find('overlay', shell, 'Turn the overlay on'), shell);

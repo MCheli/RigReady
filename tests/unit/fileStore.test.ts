@@ -242,6 +242,30 @@ describe('ProfileStore', () => {
     });
     expect(await profiles.lastProfileId()).toBeUndefined();
   });
+
+  it('says when a setup is saved, deleted or another one is in use, and not for a refused save', async () => {
+    const profiles = new ProfileStore(store, dataRoot);
+    let heard = 0;
+    const stop = profiles.onChanged(() => heard++);
+    // One listener that fails does not keep the others from hearing it.
+    profiles.onChanged(() => {
+      throw new Error('a listener that fails');
+    });
+    await profiles.save(profile('alpha', 'Alpha'));
+    expect(heard).toBe(1);
+    await profiles.save({ ...profile('x', ''), name: '' });
+    expect(heard).toBe(1);
+    await profiles.setLastProfileId('alpha');
+    expect(heard).toBe(2);
+    // The same setup in use again is no change.
+    await profiles.setLastProfileId('alpha', new Date('2026-10-04T10:00:00Z'));
+    expect(heard).toBe(2);
+    await profiles.remove('alpha');
+    expect(heard).toBe(3);
+    stop();
+    await profiles.save(profile('bravo', 'Bravo'));
+    expect(heard).toBe(3);
+  });
 });
 
 describe('node platform', () => {
