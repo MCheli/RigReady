@@ -4229,6 +4229,7 @@ requirements:
       - "The manual says which devices have a drawing, which have a named list, and what '?' means."
     notes:
       - "2026-11-12: the owner in the sitting: 'We got to redo all of these diagrams because as they stand today, they are just too misleading.' The two withdrawn drawings are in the history of this repository and come back once a source settles their places."
+      - "2026-11-12, evening: the Warthog throttle came back, drawn from Thrustmaster's numbered drawings (SHEET-028). The X52 Pro was looked at again and stays a named list: Logitech's user guide names the kinds of control on photos but numbers none, and only a third party's map says which number is which button (docs/research/controller-drawings.md section 10)."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#shows no picture of a device whose places are not known to match it: the X52 Pro is its named list"
