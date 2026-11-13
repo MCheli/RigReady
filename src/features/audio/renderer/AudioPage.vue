@@ -79,8 +79,9 @@ onBeforeUnmount(() => stop?.());
         <h1 class="rr-page-title">Audio</h1>
         <p class="rr-page-sub">
           Which sound output and microphone Windows uses. Windows keeps two defaults per kind: one
-          for everything, and one for calls (voice chat apps such as Discord or SRS). A setup can
-          check both and put them right with Make ready.
+          for everything, and one for comms (voice chat apps such as Discord or SRS). Windows calls
+          that one the default communications device. A setup can check both and put them right with
+          Make ready.
         </p>
       </div>
       <v-spacer />
@@ -152,15 +153,15 @@ onBeforeUnmount(() => stop?.());
                   class="audio-badge"
                   data-testid="audio-badge-calls"
                 >
-                  Calls
+                  Comms
                 </span>
               </div>
               <div class="rr-row-sub">
                 <template v-if="device.isDefault && device.isCommunications">
-                  Used for everything, including calls
+                  Used for everything, including comms
                 </template>
-                <template v-else-if="device.isDefault">Used for everything except calls</template>
-                <template v-else-if="device.isCommunications">Used for calls only</template>
+                <template v-else-if="device.isDefault">Used for everything except comms</template>
+                <template v-else-if="device.isCommunications">Used for comms only</template>
                 <template v-else>Not in use</template>
               </div>
             </div>
@@ -184,7 +185,7 @@ onBeforeUnmount(() => stop?.());
               data-testid="audio-use-for-calls"
               @click="setDefault(device, 'communications')"
             >
-              Use for calls
+              Use for comms
             </v-btn>
           </div>
           <div

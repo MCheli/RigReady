@@ -969,6 +969,8 @@ requirements:
     done_means:
       - "An audio check with role recording passes when the Windows default recording device matches; the communications default is checked only when the profile asks for it."
       - "Scenario mark-flight + mic-default-webcam fails 'Headset mic is default input' with the current default named."
+    notes:
+      - '2026-11-12: what the user reads for the communications default is "comms" (was "for calls", which the owner did not understand). The Audio page says once that Windows calls it the default communications device. Test ids kept.'
     status: done
     evidence:
       - "src/features/audio/core/audio.test.ts#checks the communications default only when the setup asks for it"
