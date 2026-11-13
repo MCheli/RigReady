@@ -10,4 +10,17 @@ export default defineFeature({
       component: () => import('./renderer/IracingBindingsPage.vue'),
     },
   ],
+  checkTypes: [
+    {
+      type: 'iracing-bindings.controlProfile',
+      label: 'iRacing control profile',
+      group: 'files',
+    },
+  ],
+  remediationTypes: [
+    {
+      type: 'iracing-bindings.setControlProfile',
+      label: 'Switch iRacing’s control profile',
+    },
+  ],
 });

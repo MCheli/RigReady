@@ -102,6 +102,10 @@ The aircraft's binding files belong to the device IDs Windows has now, and the c
 
 The controllers in iRacing's own files are connected, and none has a new Windows ID. No fields, no fix; the row points to Configure > Games > Racing > iRacing ([Repair: a wheel with a new Windows ID](../games/iracing.md#repair-a-wheel-with-a-new-windows-id)).
 
+### iRacing control profile (`iracing-bindings.controlProfile`)
+
+iRacing uses the chosen [control profile](../games/iracing-bindings.md#control-profiles) for all cars: `app.ini` names it in `[ControlProfiles]` as `Global=`. Field: `profile`, chosen by name in [the setup editor](editor.md) from the profiles on this PC. Fix: **Switch iRacing’s control profile** (`iracing-bindings.setControlProfile`), which sets that line in `app.ini` after a backup, changes nothing else in the file and notes the profile that was there. [Stand down](../play/stand-down.md) puts that profile back, unless the profile was changed in iRacing since. Both steps fail with the reason while the iRacing simulator runs, because it writes `app.ini` when it closes; Stand down tries again the next time. No profile folder is made or removed: when the chosen profile is not on this PC, no fix is offered and the row says so.
+
 ### Racing bindings are the saved set (`racing.bindingSet`)
 
 A racing game's binding files are the ones saved in a named backup ([Use in a setup](../games/iracing.md#backups)). Fields: `game` (iracing, lmu, beamng, assetto-corsa), `backupId`, `name`. Fix: **Restore the saved racing bindings** (`racing.restoreBindingSet`).

@@ -756,6 +756,10 @@ describe('iRacing bindings: reading only', () => {
       ['change', 'off'],
       ['listenStart', 'off'],
       ['listenStop', 'off'],
+      // Copying bindings between control profiles, ticked and approved on the page.
+      ['copyCompare', 'off'],
+      ['copyPreview', 'off'],
+      ['copy', 'off'],
     ]);
   });
 });
