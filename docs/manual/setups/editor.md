@@ -16,7 +16,7 @@ The button at the top right opens the setup's file **in your editor** or shows i
 
 - **Name**: what the [Play screen](../play/index.md), the [tray](../one-click/tray.md) and the shortcut call it, up to 80 characters. The id in the file name does not change when you rename.
 - **Game**: no particular game, a game RigReady knows (marked "not found on this PC" when it is not installed), or **Other game…** with a **Game name**. Choosing a known game fills in what Launch starts, when nothing was chosen yet.
-- **Install this setup uses**: shown when the game is installed more than once (DCS stable and open beta). Its folders are then what `{DCS_INSTALL}` and `{DCS_USER}` mean for this setup's checks, fixes and launch; see [Path variables](path-variables.md).
+- **Install this setup uses**: shown when the game is installed more than once (DCS stable and open beta). Its folders are then what the game's path variables (`{DCS_INSTALL}` and `{DCS_USER}` for DCS) mean for this setup's checks, fixes and launch; see [Path variables](path-variables.md).
 - **Notes**: a line or two for yourself.
 
 ## Launch
@@ -76,4 +76,4 @@ Every setup has its own answer. What the countdown looks like, and when it does 
 
 ## Saving
 
-**Save** is enabled once something changed; "Unsaved changes" says so at the bottom. A save checks every field: a check or step whose fields are wrong is opened and the problems are listed ("c3 "TrackIR" fix: exe: Too small"), and a path with an unknown variable is refused. A file that holds hand-written YAML comments warns **Your comments will be lost** before it is overwritten. **Cancel** asks before discarding changes. The Play screen picks up a saved setup at once.
+**Save** is enabled once something changed; "Unsaved changes" says so at the bottom. A save checks every field: a check or step whose fields are wrong is opened and the problems are listed ("c3 "TrackIR" fix: exe: Too small"), and a path with an unknown variable is refused. A file that holds hand-written YAML comments warns **Your comments will be lost** before it is overwritten. **Cancel** asks before discarding changes. After a save you are back on the list of setups; if you went on to another page, such as Play, while the save was still being written, you stay there. The Play screen picks up a saved setup at once.

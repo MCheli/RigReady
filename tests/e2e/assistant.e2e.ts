@@ -54,6 +54,11 @@ test('assistant: sets up a DCS session and writes a script that asks before it r
   await expect(page.getByTestId('assistant-promise')).toContainText(
     'Every request is shown before it is sent.'
   );
+  // The examples fit whatever the user plays: none of them takes them for a DCS pilot.
+  await expect(page.getByTestId('assistant-examples')).toContainText(
+    '"Make my setup start Stream Deck and TrackIR", "Why is my rig not ready?", "Write a check that SimHub answers on its port".'
+  );
+  await expect(page.getByTestId('assistant-examples')).not.toContainText('DCS');
   await shot('panel-open');
 
   // Every request is shown first; nothing goes until Send.

@@ -4,7 +4,7 @@ description: Use your own key from Anthropic, OpenAI, Google Gemini, OpenRouter 
 order: 5
 ---
 
-The AI help in the [binding guide](../dcs/binding-guide-and-ai.md) uses a model you choose, with your own key. RigReady has no account or server of its own and never sees your key or your requests. Set it up under **Configure > Settings > AI assistance**.
+The [built-in assistant](built-in-assistant.md), for any game, and the AI help in the [binding guide](../dcs/binding-guide-and-ai.md), for DCS aircraft, use a model you choose, with your own key. RigReady has no account or server of its own and never sees your key or your requests. Set it up under **Configure > Settings > AI assistance**.
 
 ## The choices
 

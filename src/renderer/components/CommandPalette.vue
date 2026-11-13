@@ -243,7 +243,7 @@ function onKeydown(event: KeyboardEvent): void {
         </div>
       </div>
       <div v-else class="rr-palette-none" role="status" data-testid="palette-none">
-        Nothing matches “{{ query.trim() }}”. Try the name of a page, a setup or an aircraft.
+        Nothing matches “{{ query.trim() }}”. Try the name of a page, a setup, an aircraft or a car.
       </div>
 
       <div

@@ -1431,8 +1431,10 @@ requirements:
       - "The profile editor changes name, description, game, install choice, launch target (executable, arguments list, working directory). The monitor layout a setup uses is its Monitors check, edited like any other check; the desk layout Stand down returns to is an app setting (Settings)."
       - "Changes are saved only on Save; Cancel leaves the file byte-identical (unit test compares file hashes)."
       - "Renaming a profile keeps its id stable, so last-used and backups still reference it."
+      - "Save takes the user to the list of setups only while they are still in the editor: a save that answers after they went on to another page (Play) leaves them there, and that page follows the saved setup (scenario with the save slowed by slowFiles)."
     notes:
       - "2026-10-03: the layout sentence corrected to the architecture: a setup has no layout field of its own; its layout is the display.layout check item (by layout name), and the desk layout is settings.deskLayoutId."
+      - "2026-11-12: a save that answered after the user had opened Play took them back to the Setups list. On GitHub's slower runners this failed integration.e2e.ts (install choice) now and then, always with the Setups list on screen. ProfileEditPage now moves only a user still in the editor, and the scenario slows the save on purpose."
     status: done
     evidence:
       - "tests/e2e/profiles.e2e.ts#setups: name, notes, install, and what Launch starts are edited; Cancel leaves the file as it was; a rename keeps the id"
@@ -4373,7 +4375,7 @@ requirements:
       - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
       - "docs/research/controller-drawings.md"
       - "src/features/cheat-sheets/LAYOUT-FORMAT.md"
-      - "docs/manual/dcs/cheat-sheets.md"
+      - "docs/manual/controls/cheat-sheets.md"
       - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
       - "artifacts/screens/cheat-sheets-known-devices/10-x52-pro.png"
 
@@ -5092,6 +5094,7 @@ requirements:
       - "2026-11-12, after the sitting: windows were allowed again. Both tests of tests/e2e/assistant.e2e.ts passed against the build of this commit, with the isolated launch, and the eight screenshots of artifacts/screens/assistant and the two of artifacts/screens/assistant-refused were taken by that run and are committed with it. Back to done. The dollar figures in them are worded as estimates (ASSIST-008)."
       - "2026-11-12, later: the renderer of replies now counts its own work, and reads ahead of its place for the end of a link only up to a fixed number of characters for each character of the reply. A reply that spends that keeps all of its text and gets no more links; a long reply written to be read keeps every one. Its test holds it to counted steps, for each hard text and for one twice as long, so the result is the same on every machine; the 1500 ms on the clock stay as a loose backstop. Compared once with the renderer as it was on one million random texts (a run that is not kept in the repository): none was parsed differently."
       - "2026-11-12, later still: 'Exactly what is sent' in Settings goes use by use. The assistant comes first and says it works the same whatever is played (a racing sim such as iRacing, a flight sim such as DCS, or anything else), with what a proposed setup or a drafted script sends; AI help in the binding guide follows, marked as for DCS aircraft only, with the line that nothing in its list is sent by someone who does not fly DCS."
+      - "2026-11-12, the wording pass (the owner's findings 27 and 37): the panel's examples are for any game ('Make my setup start Stream Deck and TrackIR', 'Why is my rig not ready?', 'Write a check that SimHub answers on its port'), and 'Who answers' in Settings > AI says first what AI does whatever is played, then what the Binding guide page adds for DCS aircraft. tests/e2e/assistant.e2e.ts and tests/e2e/ai-assist.e2e.ts assert both words, and the pictures artifacts/screens/assistant/01-panel-open.png and artifacts/screens/ai-assist-key/01-settings.png were taken again by that run."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
@@ -5568,6 +5571,7 @@ requirements:
       - "No token is written to the log, whole or cut short: a value of the form rr_ followed by sixteen or more hex characters is written as rr_***, bare, in a header or in JSON. A diagnostics export holds none, and neither does the notice about an unexpected error."
       - "A token an assistant puts into a call, or a program into its answer, is masked before the question, the list and the log show the line; masking comes before cutting."
       - "A request with a token that is not known leaves one line in the log without the token, then a count."
+      - "The Claude Code form by address says that its command leaves the pairing's token in the terminal's history and in Claude Code's settings, both in plain text, and that Forget on that pairing cuts it off at once. The manual's page on the MCP server says the same."
     status: done
     evidence:
       - "src/features/mcp/core/tokenCare.test.ts#pairing, the text to paste, Copy, a new bridge token and a refused request leave no token behind"
@@ -5580,6 +5584,9 @@ requirements:
       - "tests/unit/logging.test.ts#never writes a pairing token of the MCP server, whole or cut short"
       - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
       - "artifacts/screens/mcp-settings/03-paired.png"
+      - "src/features/mcp/core/tokenCare.test.ts#the Claude Code form by address says where its command leaves the token, and that Forget cuts it off"
+      - "tests/e2e/mcp.e2e.ts#mcp: the Claude Code form by address says where its command leaves the token, and that Forget cuts it off"
+      - "artifacts/screens/mcp-claude-code-address/01-claude-code-by-address.png"
 
   # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE
@@ -8693,6 +8700,56 @@ requirements:
     status: in_progress
     evidence: []
 
+  - id: NAV-GAMES-006
+    title: An entry or a page about a game is offered only where the game is found
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The menu shows Binding guide (DCS aircraft only) only when DCS World is found on this PC, by the same list of games the Games page shows its DCS World card by. A navigation entry declares the games it is about (games: ['dcs']); the shell asks the games feature which are found (gamesFound in its commands.ts) at start and whenever the machine changes, and no feature imports another for it."
+      - "The command palette lists a page about a game only where that game is found: Binding guide, DCS World and its tabs (Screens, Export.lua, SimAppPro), DCS bindings and its tabs need DCS; the Racing page and iRacing bindings need their racing games. Actions are not held back, and only Play's commands come first."
+      - "The route stays: a link to the binding guide on a PC without DCS opens the page, which says 'DCS World was not found on this PC'. No link in the app leads nowhere (NAV-GAMES-004)."
+      - "When which games are here cannot be told (the list fails, or no feature knows), everything is offered as before. When DCS is installed while RigReady runs, the entry and the pages arrive without a restart."
+    notes:
+      - "2026-11-13: follow-up of the wording pass (findings 27 and 37), items 1 and 2 of its 'more than wording'. Until the first answer nothing about a game is offered, so on a PC with DCS the entry appears a moment after start rather than flashing away on a PC without. The Bindings game picker still lists every game with a bindings page, DCS included, and on a PC with no setup and no game chosen yet Bindings opens the first, DCS: not changed here."
+    status: done
+    evidence:
+      - "src/shared/feature.test.ts#the menu has the binding guide only on a PC with DCS"
+      - "src/shared/feature.test.ts#a page is about the games of the nearest entry or page it lies in"
+      - "src/renderer/shell/registry.test.ts#on a PC without DCS there is no DCS World, no DCS bindings and no binding guide"
+      - "src/renderer/shell/registry.test.ts#only Play comes first, whatever is held back"
+      - "src/renderer/shell/games.test.ts#asks at once and again when the machine changed, until it is stopped"
+      - "src/renderer/shell/games.test.ts#when the games cannot be read, or no feature knows, it says it cannot tell"
+      - "tests/unit/offeredByGame.test.ts#a PC with no game: no binding guide in the menu, no DCS page in the palette"
+      - "tests/unit/offeredByGame.test.ts#a PC whose only game is iRacing: no DCS, and the racing pages are there"
+      - "tests/unit/offeredByGame.test.ts#a PC with DCS, the owner’s rig or another: the binding guide and every DCS page"
+      - "tests/e2e/offered-by-game.e2e.ts#a PC whose only game is iRacing: no binding guide in the menu, no DCS page in the palette, and a link still opens the guide"
+      - "tests/e2e/offered-by-game.e2e.ts#with DCS the binding guide and the DCS pages are offered, and they arrive when DCS is installed while RigReady runs"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "artifacts/screens/offered-racing-pc/01-menu.png"
+      - "artifacts/screens/offered-racing-pc/02-palette.png"
+      - "artifacts/screens/offered-racing-pc/03-palette-bind.png"
+      - "artifacts/screens/offered-racing-pc/04-palette-dcs.png"
+      - "artifacts/screens/offered-racing-pc/05-guide-by-link.png"
+      - "artifacts/screens/offered-dcs-arrives/01-menu-with-dcs.png"
+      - "artifacts/screens/offered-dcs-arrives/02-palette-with-dcs.png"
+
+  - id: NAV-GAMES-007
+    title: The manual keeps what works for every game out of the DCS section
+    job: platform
+    area: shell
+    priority: p3
+    done_means:
+      - "The manual pages on cheat sheets and the trainer, which serve DCS and the racing games alike, are in a section about no single game (docs/manual/controls, 'Controls', after the games sections), with an index page and a line on the manual's front page; the DCS World section points there and keeps the kneeboard pages, which are DCS's."
+      - "Every old link still works: the app's manual links, every link inside the manual and the README name the new pages; the website keeps the old addresses (/docs/dcs/cheat-sheets/, /docs/dcs/trainer/) as pages that send the reader on at once, the part after # kept, so a link from an older RigReady or a bookmark still lands."
+    status: done
+    evidence:
+      - "tests/unit/siteManual.test.ts#has the cheat sheets and the trainer under Controls, not under one game, and their old addresses still lead there"
+      - "tests/unit/siteManual.test.ts#keeps the old address of a page that moved, sending the reader on to it"
+      - "tests/unit/siteManual.test.ts#links only to pages and pictures that exist"
+      - "tests/unit/manualLinks.test.ts#names only pages that exist in docs/manual"
+      - "tests/e2e/manual-links.e2e.ts#manual links: the help button opens the manual page of the screen shown"
+
   - id: WOW-UI-002
     title: Palette commands call their feature and a toast reports what really happened
     job: platform
@@ -8930,6 +8987,7 @@ requirements:
       - "Only the word on screen changed: the folder, the routes, the IPC channels, meta.mode and the test ids are what they were (mode-fly, /fly, fly:check)."
     notes:
       - "2026-10-04: this entry is the shell and the palette's commands. Copy in other places that still says Fly (the capture page, the tray, the user guide) is not covered by it."
+      - "2026-11-12, the wording pass after the owner's findings 27 and 37: text a racing-only user meets on pages every game shares no longer takes them for a DCS pilot. Settings > AI says what AI does for any game before it names the DCS binding guide; the assistant's examples, the hints and examples of tracked files, the setup editor and the capture, the example name of a monitor layout, the snapshot and print explanations, the palette's line when nothing matches, the hotkey refusal and the Restore button's icon no longer assume DCS or flying; the Binding guide page says at its top that it is for DCS World; the manual pages that said the same were changed with them. Places that name DCS because the feature is DCS-only were left. tests/e2e/wording.e2e.ts walks the shared places on a PC whose only game is iRacing."
     status: done
     evidence:
       - "src/renderer/shell/registry.test.ts#the page the mode switch opens is called what the switch calls it: Play"
@@ -8941,6 +8999,8 @@ requirements:
       - "tests/e2e/look.e2e.ts#look: an empty state has a drawing, says what is missing, and leads somewhere"
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-shortcuts/01-shortcuts.png"
+      - "tests/e2e/wording.e2e.ts#wording: on a PC whose only game is iRacing, the shared pages speak of any game"
+      - "artifacts/screens/wording-racing/01-settings-ai.png"
 
   - id: WOW-UI-012
     title: The app links to its manual, page by page
@@ -8984,6 +9044,30 @@ requirements:
       - 'tests/e2e/setup-from-game.e2e.ts#new setup: a game that reads a gamepad is offered "Start a virtual controller" by name, and Play says so before the launch'
       - 'artifacts/screens/setup-from-game-gamepad/04-second-setup-starts-at-the-top.png'
     notes: "From the sitting of 2026-11-12. It showed where the next page could draw at once from what was already loaded: Play after a second setup was created stayed as far down as Create setup was. A page that loads first was at its top already."
+
+  - id: WOW-UI-014
+    title: A page never moves you on after you have left it
+    job: platform
+    area: shell
+    priority: p1
+    done_means:
+      - "A page that moves the user on once RigReady has done what they asked (a new setup saved, Save in the setup editor, Play or Clone on the Setups page, Make a copy on Virtual controller) does so only while the user is still on that page. If they went on to another page before the answer came (a slow disk, a busy PC), they stay there, and what they asked for is done all the same."
+      - "Each is tested with its files slowed on purpose (the slowFiles mutation) and a move to another page before the answer: the user is still there once main has answered (the four in save-then-move-on.e2e.ts go to Monitors; the editor's save goes to Play in integration.e2e.ts)."
+    status: done
+    evidence:
+      - "src/renderer/stillHere.test.ts#yes, while the user is on the page where they pressed the button"
+      - "src/renderer/stillHere.test.ts#no, once the user went on to another page before the answer came"
+      - "src/renderer/stillHere.test.ts#no, when the page that asked was left and opened afresh in the meantime"
+      - "tests/e2e/integration.e2e.ts#dcs: a setup chooses which DCS install it uses, and says so when that install is gone"
+      - "tests/e2e/save-then-move-on.e2e.ts#a new setup saved slowly: going on to Monitors before it answers keeps you there"
+      - "tests/e2e/save-then-move-on.e2e.ts#Play on a setup in the list answered slowly: going on to Monitors before it answers keeps you there"
+      - "tests/e2e/save-then-move-on.e2e.ts#a setup cloned slowly: going on to Monitors before the copy is made keeps you there"
+      - "tests/e2e/save-then-move-on.e2e.ts#a virtual controller profile copied slowly: going on to Monitors before the copy is made keeps you there"
+      - "artifacts/screens/save-then-move-on-capture/01-still-on-monitors.png"
+      - "artifacts/screens/save-then-move-on-play/01-still-on-monitors.png"
+      - "artifacts/screens/save-then-move-on-clone/01-still-on-monitors.png"
+      - "artifacts/screens/save-then-move-on-vc-copy/01-still-on-monitors.png"
+    notes: "2026-11-12: found through integration.e2e.ts on GitHub's runners, where the setup editor's save answered after the test had opened Play and took it back to the Setups list (fixed in pull request 96; the editor now uses the same helper as the others). The same pattern was in these four places; each failed its new scenario before the fix (the page ended on Play, the copy's editor or the virtual controller editor) and passes after."
 
   # ---------------------------------------------------------------------------
   # SECURITY (docs/research/security-review-2026-11.md, SECURITY.md)

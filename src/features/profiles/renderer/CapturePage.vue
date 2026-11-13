@@ -16,6 +16,7 @@ import {
 import type { CaptureCandidateSchema } from '../../../core/checks/engine';
 import { CHECK_GROUPS, type CheckGroup } from '../../../core/profile/schema';
 import { errorText, useClient } from '../../../renderer/ipc';
+import { useStillHere } from '../../../renderer/stillHere';
 import {
   profilesContract,
   type CaptureGame,
@@ -37,6 +38,7 @@ type Launch = NonNullable<CaptureGame['installs'][number]['launch']>;
 
 const api = useClient(profilesContract);
 const router = useRouter();
+const stillHere = useStillHere();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -484,6 +486,7 @@ async function browseProgram(): Promise<void> {
 async function save(): Promise<void> {
   saving.value = true;
   error.value = undefined;
+  const here = stillHere();
   const severalInstalls = (chosenGame.value?.installs.length ?? 0) > 1;
   const result = await api.create({
     name: name.value,
@@ -526,7 +529,8 @@ async function save(): Promise<void> {
     error.value = errorText(result.error);
     return;
   }
-  await router.push('/');
+  // Play opens on the new setup, unless the user went on to another page while it saved.
+  if (here()) await router.push('/');
 }
 
 const gameIcon = (kind: CaptureGame['kind']): string =>
@@ -681,7 +685,7 @@ onMounted(capture);
                 <v-text-field
                   v-model="name"
                   label="Name of the setup"
-                  placeholder="DCS F/A-18C"
+                  placeholder="e.g. GT3 or F/A-18C"
                   data-testid="capture-name"
                   @update:model-value="nameEdited = true"
                 />
@@ -763,7 +767,7 @@ onMounted(capture);
                   <v-text-field
                     v-model="launchExe"
                     label="Program"
-                    placeholder="C:\Games\DCS World\bin\DCS.exe"
+                    placeholder="C:\Games\My Game\game.exe"
                     class="rr-mono-input"
                     data-testid="capture-launch-exe"
                   >

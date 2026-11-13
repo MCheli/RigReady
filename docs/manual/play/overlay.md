@@ -4,7 +4,7 @@ description: "A small see-through list over the game that shows each button you 
 order: 70
 ---
 
-**Configure > Overlay** puts a small see-through list over the game. Each button or hat you press on a controller appears in it at once, with what the game does on it for the aircraft or car you are in, and fades away a few seconds later. It is for learning a cockpit while you fly it, and for seeing why a press did nothing. It goes with the [trainer](../dcs/trainer.md), which asks you the same controls at the desk.
+**Configure > Overlay** puts a small see-through list over the game. Each button or hat you press on a controller appears in it at once, with what the game does on it for the aircraft or car you are in, and fades away a few seconds later. It is for learning the controls while you fly or drive, and for seeing why a press did nothing. It goes with the [trainer](../controls/trainer.md), which asks you the same controls at the desk.
 
 Clicks go through the overlay to the game, and it never takes the keyboard. While nothing is pressed there is nothing on the screen.
 
@@ -15,6 +15,8 @@ Clicks go through the overlay to the game, and it never takes the keyboard. Whil
 - It shows over the desktop and over a game that runs in a window or as a borderless window.
 - Over a game in exclusive full screen it may not show. If you do not see it there, set the game to borderless.
 - It does not show inside a VR headset. The overlay is a window on a monitor, and a headset is not one.
+
+Not yet verified on a real rig: the overlay passed its tests in the app on recorded data, but nobody has looked at it over a running game yet, or dragged it into place with the mouse on real monitors. The [changelog](../../../CHANGELOG.md) lists it under known limitations.
 
 ## Turning it on
 

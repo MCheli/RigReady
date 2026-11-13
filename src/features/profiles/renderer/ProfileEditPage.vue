@@ -11,6 +11,7 @@ import {
   type ProfileActions,
 } from '../../../core/profile/schema';
 import { errorText, useClient } from '../../../renderer/ipc';
+import { useStillHere } from '../../../renderer/stillHere';
 import {
   profilesContract,
   type CheckTypeInfo,
@@ -54,6 +55,7 @@ const leaving = ref(false);
 const fileMessage = ref<string>();
 /** The setup as it was last saved: its desktop shortcut is made from that, not from the draft. */
 const saved = ref<{ name: string; launches: boolean }>();
+const stillHere = useStillHere();
 
 const PHASES = [
   { key: 'preLaunch', title: 'Before launch', sub: 'Run in order before the game starts.' },
@@ -449,6 +451,7 @@ async function save(): Promise<void> {
   saving.value = true;
   error.value = undefined;
   problems.value = [];
+  const here = stillHere();
   const result = await api.save(next);
   saving.value = false;
   if (!result.ok) {
@@ -462,7 +465,9 @@ async function save(): Promise<void> {
     return;
   }
   original.value = snapshot();
-  await router.push('/configure/profiles');
+  // A save can answer after the user has gone on to another page (Play, on a slow or busy
+  // PC). They stay where they went: only a user still on this editor is taken to the list.
+  if (here()) await router.push('/configure/profiles');
 }
 
 function cancel(): void {
@@ -567,7 +572,7 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
           :model-value="draft.gameInstall ?? ''"
           :items="installItems"
           label="Install this setup uses"
-          hint="Its folders are what {DCS_INSTALL} and {DCS_USER} mean for this setup's checks, fixes and launch."
+          hint="Its folders are what this game's path variables mean for this setup's checks, fixes and launch."
           persistent-hint
           data-testid="edit-game-install"
           @update:model-value="setInstall($event)"
@@ -617,7 +622,7 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
           v-else-if="launchKind === 'steam'"
           v-model="steamApp"
           label="Steam app id"
-          hint="The number in the game's Steam store address, e.g. 223750 for DCS World"
+          hint="The number in the game's Steam store address."
           persistent-hint
           data-testid="edit-steam-app"
         />

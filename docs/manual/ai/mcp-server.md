@@ -78,7 +78,7 @@ Most assistants need none of this: **Connect** and the texts under **Set it up b
 
 1. Turn on **Let AI assistants use RigReady**. The line under it says where it listens, for example `http://127.0.0.1:29170/mcp`.
 2. Under **Assistants that connect over HTTP**, type a name for it ("Claude Code", "My laptop's Cursor") and press **Pair**.
-3. Under **Set it up by hand**, choose **Claude Code, by address (needs a token)**, **Cursor, by address (needs a token)** or **Any other client, by address (needs a token)**. The text now carries the token, drawn as `<token hidden>`. **Copy with the token** puts the whole text on the clipboard, where it stays until you copy something else. **Show the token** draws it on the page and **Hide the token** hides it again.
+3. Under **Set it up by hand**, choose **Claude Code, by address (needs a token)**, **Cursor, by address (needs a token)** or **Any other client, by address (needs a token)**. The text now carries the token, drawn as `<token hidden>`. **Copy with the token** puts the whole text on the clipboard, where it stays until you copy something else. **Show the token** draws it on the page and **Hide the token** hides it again. The Claude Code command leaves the pairing's token in your terminal's history and in Claude Code's settings, both in plain text; **Forget** on that pairing (step 5) cuts it off at once.
 4. Paste the text into the assistant's settings before you leave the page: RigReady keeps only a fingerprint of the token, so it cannot show it again. **Done, take it off this page** removes it from the page.
 5. The pairing is listed with its last call. **Forget** stops its token from working at once.
 

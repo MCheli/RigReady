@@ -122,9 +122,9 @@ export const MANUAL_LINKS: Record<string, ManualLink> = {
     },
   },
   '/configure/ai-assist/:tab?': { page: 'dcs/binding-guide-and-ai' },
-  '/configure/cheat-sheets': { page: 'dcs/cheat-sheets' },
-  '/configure/cheat-sheets/quick': { page: 'dcs/cheat-sheets' },
-  '/configure/cheat-sheets/learn': { page: 'dcs/trainer' },
+  '/configure/cheat-sheets': { page: 'controls/cheat-sheets' },
+  '/configure/cheat-sheets/quick': { page: 'controls/cheat-sheets' },
+  '/configure/cheat-sheets/learn': { page: 'controls/trainer' },
   '/configure/overlay': { page: 'play/overlay' },
   // The overlay's own window over the game: it has no help button, the page is the same.
   '/overlay/:widget': { page: 'play/overlay' },

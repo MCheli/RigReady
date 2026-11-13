@@ -14,7 +14,7 @@ With nothing typed:
 
 - **Recent**: the five commands you used last.
 - The actions, under the heading of the area they belong to (Play, Backups, Monitors, Devices and so on), six per heading; the rest are found by typing.
-- **Go to**: every page, in the order of the side navigation. A page reached from inside another is named after it, for example "DCS World: Screens". The pages that open from Games and from Bindings keep their own names, "DCS World", "Racing", "DCS bindings" and "iRacing bindings", and stand right after Games and Bindings. A page that is not in the side navigation comes last.
+- **Go to**: every page, in the order of the side navigation. A page reached from inside another is named after it, for example "DCS World: Screens". The pages that open from Games and from Bindings keep their own names, "DCS World", "Racing", "DCS bindings" and "iRacing bindings", and stand right after Games and Bindings. A page that is not in the side navigation comes last. A page about one game is listed only when that game is found on this PC, as on the Games page: without DCS there is no "DCS World", no "DCS bindings" and no "Binding guide". The Racing page and a racing game's bindings follow the racing games the same way.
 
 Type, and the list becomes the matches, best first; letters you typed are highlighted in the names. A command you used recently gets a small head start in a near tie, never in a clear one. Pages are also found by other words: "undo" finds [Safety](../protect/safety-page.md), "restore" and "new pc" find Backups, "bug" finds the diagnostics report.
 
@@ -28,7 +28,7 @@ Among the actions:
 - **Apply a monitor layout** by name. The layout is applied and the "Keep this monitor layout?" question is asked every time, as on the Monitors page ([Monitor layouts](../monitors-and-audio/layouts.md)).
 - **Back up now**: the same full backup as the button on the [Backups page](../protect/backups.md).
 - **Find a device**: press a button on any controller and RigReady names it ([Devices](../hardware/devices.md#find-a-device-by-pressing-a-button)).
-- Open the [bindings](../dcs/bindings.md) or the [cheat sheet](../dcs/cheat-sheets.md) of an aircraft.
+- Open the [DCS bindings](../dcs/bindings.md) of an aircraft, or the [cheat sheet](../controls/cheat-sheets.md) of an aircraft or a car.
 - **Copy the diagnostics report**: the report on the clipboard without opening the [page](diagnostics.md).
 - **Keyboard shortcuts** ([the whole list](keyboard-shortcuts.md)) and **About RigReady**.
 - **Open the manual** and **Open the manual page for this screen**: the manual's front page, or its page about the screen you are on, in your browser (the same as the question mark in the header).

@@ -768,6 +768,9 @@ test('cheat sheets: print layout and PDF, one page per device plus a summary', a
   // Every device with something bound is ticked; the bare ICP is not.
   await expect(dialog.getByTestId('print-device')).toHaveCount(12);
   await expect(dialog.locator('[data-testid="print-device"] input:checked')).toHaveCount(11);
+  await expect(dialog).toContainText(
+    'One page per device with the aircraft or car and the device name on top'
+  );
   await shot('dialog');
   await page.getByTestId('print-save').click();
   // One page per chosen device (11) and the summary, which takes two pages here: see the

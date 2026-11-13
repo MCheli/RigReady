@@ -14,7 +14,7 @@ This section covers all of it: the copies RigReady makes by itself, the backups 
 
 **Backups you make.** **Back up now** on the **Backups** page puts every tracked file and every setup into one zip file that you can keep anywhere, including on another PC. A restore wizard puts any part of it back. See [backups](backups.md), [tracked files](tracked-files.md) and [restore](restore.md).
 
-**Snapshots.** A snapshot is a named copy of one tracked item, for example the bindings of one aircraft before you rebind the throttle. You can compare it with the files as they are now, line by line, and put it back. See [snapshots](snapshots.md).
+**Snapshots.** A snapshot is a named copy of one tracked item, for example a game's bindings before you rebind the throttle. You can compare it with the files as they are now, line by line, and put it back. See [snapshots](snapshots.md).
 
 A fourth tool watches rather than copies: each time a setup's game starts, RigReady records its tracked files, so when something stops working you can see exactly [what changed](what-changed.md) since it last worked.
 

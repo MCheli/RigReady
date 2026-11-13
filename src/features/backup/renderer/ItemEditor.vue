@@ -113,7 +113,7 @@ const canSave = computed(
         <v-text-field
           v-model="label"
           label="Name"
-          placeholder="DCS bindings"
+          placeholder="e.g. Game settings"
           data-testid="item-label"
         />
         <v-select v-model="game" :items="gameChoices" label="Game" data-testid="item-game" />
@@ -122,8 +122,8 @@ const canSave = computed(
         <v-text-field
           v-model="path"
           label="Path"
-          placeholder="{SAVED_GAMES}/DCS/Config/Input"
-          hint="Use a variable such as {DOCUMENTS} or {DCS_USER} so it works on any PC; a full path is turned into one when it can be."
+          placeholder="{DOCUMENTS}/My Game"
+          hint="Use a variable such as {DOCUMENTS} or {SAVED_GAMES} so it works on any PC; a full path is turned into one when it can be."
           persistent-hint
           data-testid="item-path"
         />

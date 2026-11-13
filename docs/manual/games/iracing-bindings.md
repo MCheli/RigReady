@@ -51,7 +51,7 @@ If a file holds a kind of binding RigReady has not seen before, the row says "A 
 
 ## The cheat sheet
 
-**Cheat sheet** opens the [cheat sheets](../dcs/cheat-sheets.md) for iRacing with the set you were looking at.
+**Cheat sheet** opens the [cheat sheets](../controls/cheat-sheets.md) for iRacing with the set you were looking at.
 
 ## Why the page does not change bindings
 
