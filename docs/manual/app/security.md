@@ -52,11 +52,11 @@ Game files (DCS Lua, iRacing and other games' settings), imported `.rigready` fi
 
 ## Updates are checked before they are installed
 
-A new version comes from the project's GitHub releases and nowhere else. The download's checksum is compared with the release feed, and a file that does not match is thrown away. Once releases are signed, the installer's signature is checked against the publisher's name built into the app, and anything unsigned or signed by someone else is refused. An update is installed only when you restart RigReady or quit it, never while a game is running. A release that fixes a security problem is announced on every screen with the install one click away. See [updates](updates.md).
+A new version comes from the project's GitHub releases and nowhere else. The download's checksum is compared with the release feed, and a file that does not match is thrown away. Releases are signed with the publisher name Mark Cheli, which is built into the app, and the installer's signature is checked against it: anything unsigned or signed by someone else is refused. An update is installed only when you restart RigReady or quit it, never while a game is running. A release that fixes a security problem is announced on every screen with the install one click away. See [updates](updates.md).
 
 ## Verifying the installer
 
-On Windows, right-click `RigReady-Setup-<version>.exe`, **Properties**, **Digital Signatures**. A release from before signing has no signature; the download page and the release notes say when the first signed release is out, and under which name. Every release also carries `latest.yml` with the installer's SHA-512, which PowerShell can compare:
+On Windows, right-click `RigReady-Setup-<version>.exe`, **Properties**, **Digital Signatures**. Every RigReady 2 release is signed: the tab shows **Mark Cheli**, and the signature's details say it is OK. Version 1.1.0 and earlier are not signed. Every release also carries `latest.yml` with the installer's SHA-512, which PowerShell can compare:
 
 ```
 $sha = [Security.Cryptography.SHA512]::Create()

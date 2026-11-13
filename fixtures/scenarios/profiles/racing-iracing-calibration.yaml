@@ -1,0 +1,14 @@
+schemaVersion: 1
+id: racing-iracing-calibration
+name: iRacing
+game: iracing
+createdAt: '2026-11-13T12:00:00.000Z'
+updatedAt: '2026-11-13T12:00:00.000Z'
+launch:
+  exe: C:\Program Files (x86)\iRacing\ui\iRacingUI.exe
+  args: []
+  cwd: C:\Program Files (x86)\iRacing\ui
+checks:
+  - { id: c1, type: device.connected, title: FANATEC Podium Wheel Base DD2, required: true, params: { vendorId: 0EB7, productId: '0007' } }
+  - { id: c2, type: racing.iracingDevices, title: iRacing knows the wheel, required: true, params: {} }
+  - { id: c3, type: racing.iracingCalibration, title: Wheel and pedals calibrated in iRacing, required: false, params: {} }

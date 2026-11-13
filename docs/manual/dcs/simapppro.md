@@ -44,6 +44,6 @@ Once RigReady has written a screen setup or an Export.lua line, it watches those
 
 ![Export.lua rewritten by SimAppPro](../../../artifacts/screens/dcs-setup-simapppro-rewrote/01-simapppro-page-changed.png)
 
-## Not yet verified
+## Seen in DCS
 
-The MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not yet been verified in the real game: they passed their tests on recorded data from one rig, and the [changelog](../../../CHANGELOG.md) lists this under known limitations. [MFD screens and the monitor setup](screens.md#what-to-check-in-dcs) says what to check the first time.
+On the rig RigReady was built on, with SimAppPro closed, DCS drew the MFD displays from RigReady's monitor setup, each on its own screen. [MFD screens and the monitor setup](screens.md#what-to-check-in-dcs) says what to check the first time on your own rig.

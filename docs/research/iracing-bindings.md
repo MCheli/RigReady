@@ -148,6 +148,20 @@ CalibrationInfo:
 
 `controls.cfg` names a device only by its GUIDs and an axis only by a number. This file gives both a name. It lists only controllers that were calibrated, so a button box with no axes may be missing from it **[I]**. When the file is missing or cannot be read, axes are shown by number and the page says why.
 
+### What proves a controller is calibrated (read 13 Nov 2026)
+
+Read on the copies of the owner's real files (`Documents\iRacing\joyCalib.yaml`, the profile `Baseline`'s, and the per-car profile `Test Profile CTSV`'s; all three are byte for byte the same, 654 bytes, CRLF):
+
+- **[V]** One entry per controller, keyed by `InstanceGUID` and `ProductGUID` in iRacing's `{UPPER-CASE}` spelling, with the name iRacing shows. The rig has one entry, the DD2. Its pedals are plugged into the base, so they are axes 0 to 2 of the base's entry (`Combined Pedals`, `Brake`, `Accelerator`) beside axis 3 (`Wheel Axis`).
+- **[V]** Every axis has `CalibMin`, `CalibCenter` and `CalibMax`. All four have 0 and 65535 for min and max. The pedals have their centre at the maximum (65535); the wheel has 33145, not the arithmetic middle (32767), so the centre was measured where the wheel rests, not filled in.
+- **[V]** The file was written in the same second as `controls.cfg` when the owner last calibrated (`racing.md` 2.2), and copied unchanged into each profile.
+- **[W]** iRacing asks to calibrate a controller connected to another USB port, and its own fix for calibration trouble is to delete `controls.cfg` and `joyCalib.yaml` and run the wizard again (https://support.iracing.com/support/solutions/articles/31000133335). A new port can give the controller a new instance GUID (`racing.md` 1.2).
+- **[I]** So RigReady takes a controller as calibrated when the `joyCalib.yaml` of the profile iRacing uses has an entry with the instance GUID Windows gives the controller now, and that entry has at least one axis whose `CalibMax` is above its `CalibMin`. An entry with the same product GUID under another instance GUID is the same model under an older Windows id: iRacing treats it as new and asks again.
+- **[I]** A wheel base that Windows lists as two DirectInput controllers of one USB device (the same `usbInstanceId`) is calibrated when one of them is, because iRacing calibrates one collection (`racing.md` 2.5, step 3). Separate units of one model are judged one by one, and when Windows does not say which USB device a controller belongs to, each controller is judged on its own: a second identical pedal set is never passed on the first one's entry. An entry of the same model is an older Windows id only when no controller plugged in now has it.
+- **[?]** What iRacing writes for a controller it lists but never finished calibrating; whether it checks the ranges or only the presence of the entry; which axes it requires for a pedal set of its own on USB (no such file has been read); whether a car's own profile with a `joyCalib.yaml` of its own is used for calibration in that car. The check reads the profile for all cars only.
+
+The check `racing.iracingCalibration` (`src/features/racing/core/iracingCalibration.ts`) applies this to the wheel and pedals plugged in now: what the owner said on the Devices page first (a device said to be flight gear is left out), then the wheel bases and pedals of the racing table by USB id, then the name, with rudder pedals for flying left out by name. Tests: `src/features/racing/core/iracingCalibration.test.ts`.
+
 ## How devices are identified
 
 - A binding names its controller by the DirectInput **instance GUID** and **product GUID** **[V]**. The product GUID holds the USB vendor and product ids and is the same on every PC. The instance GUID belongs to this PC and can change when Windows lists the controller again (`racing.md` 1.2).
@@ -155,6 +169,21 @@ CalibrationInfo:
 - RigReady matches a controller in the file to what is plugged in like this: the same instance GUID is **Connected**; no such GUID but a controller of the same vendor and product that the file does not name is **New Windows id**; neither is **Not connected**; when Windows gave no list the page says **Cannot tell**.
 - The name shown is the name the owner gave the controller in RigReady, with the hardware name next to it. The hardware name is, in order: the `DeviceName` of `joyCalib.yaml`, the name of the connected controller, and last the USB ids from the product GUID.
 - Pointing iRacing at a new instance GUID is the existing repair of `src/features/racing` (`racing.md` 2.5). The bindings page links to it and does not repeat it. Since 13 Nov it changes the control profile iRacing uses, found by the same rule as this page (see "Two readers of one file").
+
+## Bindings of controllers that are gone
+
+A set of bindings keeps every controller it was ever bound on until the user clears each binding in iRacing's Options. `src/features/iracing-bindings/core/cleanup.ts` lists the controllers of a set that are not plugged in under the instance GUID the file names, and decides for each, by its product GUID (USB vendor and product id):
+
+| What it is | When | What RigReady does |
+|---|---|---|
+| moved | a controller of the same model is plugged in under an id the file does not name | never clears; points to the id repair in `src/features/racing` |
+| unplugged | none is plugged in, but RigReady knows the model as the owner's: the Devices page's history (`devices-history.json`) saw one plugged in, or the owner named one or said what it is; or another controller of the model is plugged in | never clears; says it is unplugged, and when RigReady last saw it |
+| unknown | Windows gave no list of controllers, the product GUID holds no USB ids, or the history or the names and answers (`devices.json`) cannot be read | never clears |
+| gone | none of the above | offers to clear, controller by controller, nothing ticked |
+
+Clearing a record sets bytes +8 to +67 to zero, which is what iRacing has for every action that was never bound, axis actions included (`Throttle2`, `Brake2` and `Clutch2` in the real file). Unlike the writer of one binding it also clears an axis record: the reason the writer refuses an axis (iRacing calibrates an axis as it binds it) is about setting one, not taking one away. The first two fields of each record, every other record and the header stay byte for byte; `joyCalib.yaml` is not touched. The list the user reviews, the bytes that would be written and the token that holds the user to that review all come from one read of the file, so a binding another program adds meanwhile is never cleared unlisted. The result is checked as a stranger's file before it is written, and the change goes through FileStore with a backup, as changing one binding does, and never while the simulator runs. **[I]** That iRacing reads a record cleared this way rests on two facts: it is byte for byte the record iRacing itself keeps for an unbound action, and iRacing 2026.11 used records RigReady wrote into the profile on the rig (13 Nov). A cleared record in particular has not been loaded on the rig yet. Tests: `src/features/iracing-bindings/core/cleanup.test.ts`, on a profile whose seven extra bindings on made-up controllers were written by a script from the layout above.
+
+**[I]** The devices history only knows what RigReady saw since it was installed: a controller unplugged before RigReady first ran is "gone" to it. That is why nothing is ticked for the user and each row says "If it is yours and only unplugged, leave it."
 
 ## Control profiles (iRacing 2026 Season 3 and later)
 
@@ -182,6 +211,16 @@ What RigReady does with it:
 - Tests: the "control profiles" block of `core/view.test.ts`, "writes the control profile iRacing uses, never the older controls.cfg beside it" in `core/change.test.ts`, and the scenarios `iracing-bindings-profiles` and `iracing-bindings-profile-car` with their tests in `tests/e2e/iracing-bindings.e2e.ts` and `tests/e2e/iracing-bindings-edit.e2e.ts`.
 
 **[?]** Whether iRacing writes the profile when it closes, or only when something is changed in Options (it did not rewrite either file on 13 Nov, when nothing was changed). Whether it ever imports the older file again (for instance when the older file is newer than the profile). Whether a profile can be given to several cars, and what the key looks like for a car whose path has a space or a slash.
+
+### Managing the profiles: listing, copying, switching (13 Nov 2026)
+
+What RigReady does, and on what it rests:
+
+- **Listing.** The page lists every folder under `profiles\controls`, marks the one `Global` names, and gives each the cars whose `[ControlProfiles]` line names it (the first line of a car counts, keys and profile names matched whatever their case, as the lookup above). A car on the profile for all cars is listed under that profile here, although it has no set of its own in the picker. A line naming a profile with no folder is listed as not on this PC. The lines are read with the shared reader in `src/core/iracingControls.ts`. Code: `core/profiles.ts`.
+- **Copying bindings between profiles.** For each ticked action the record in the target ends with the 60 bytes (+8 to +67) of the same action's record in the source, through the same writer as a change on the page (`core/edit.ts`); the target keeps its own first two fields and every other byte. So a copied record is iRacing's own bytes, from a file iRacing wrote. Test: copying `LookUp` and `ToggleUIVisibleDrive` from the 12:27 car profile into Baseline gives, byte for byte, the car profile iRacing wrote ("copies the two bindings and gives byte for byte the profile iRacing wrote with them" in `core/copy.test.ts`). Copied: a button (one bit), a key, and "not bound" (which clears). Code: `core/copy.ts`.
+- **Not copied: axes and calibration.** An axis record holds iRacing's axis number and the controller's two GUIDs; the axis's range is in `joyCalib.yaml`, and iRacing calibrates an axis as it binds it. Even with the same device ids in both profiles and the record's bytes iRacing's own, copying the record alone would pair it with the other profile's calibration, and RigReady has no writer for `joyCalib.yaml`. No file in which RigReady placed an axis record has been loaded by iRacing. So an action on an axis in either profile is left as it is, and the review says so with the reason (BIND-IRACING-008 holds the open work). Profiles iRacing makes start as a copy of one another (the 12:27 profile's `joyCalib.yaml` is Baseline's, byte for byte), so the axes usually agree already.
+- **Switching the profile for all cars.** A setup item sets the value of `Global=` in `[ControlProfiles]` of `app.ini` and nothing else: the file is handled as bytes, one character per byte, the value is replaced in place, and the result must read back with that profile and every other line and byte as it was (tests in `core/appIni.test.ts`, on the recorded `app.ini` with the 12:27 section, CRLF and the `[AutoLoadHUD]` `global=` included). Only a printable ASCII name that is one plain folder name and holds no `;` is written. RigReady never adds the section or the line: an `app.ini` without `Global=` is left alone with a plain reason. It writes through FileStore with a backup, only while `iRacingSim64DX11.exe` is not running (it writes `app.ini` when it closes, **[I]** from the `.ini` behaviour in `racing.md` 2.2), and notes the profile that was there in `<data root>/iracing-bindings/profile-switch.json`; Stand down puts that one back unless `app.ini` names another profile by then. Code: `core/appIni.ts`, `core/profileSwitch.ts`.
+- **[?] Not yet seen on the rig:** iRacing starting with a `Global=` RigReady wrote, and iRacing keeping that line when it closes. The HUD profiles are "loaded at Sim startup" **[W]**, so the switch is made before iRacing starts and checked again after it closes (the five-minute rig script of this round).
 
 ## The rig tests of 13 Nov 2026
 

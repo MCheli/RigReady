@@ -1,0 +1,9 @@
+description: Racing rig with two iRacing control profiles and a setup that switches to the car's one
+rig: mark-full
+extends: iracing-bindings-profile-car.yaml
+# app.ini names "Baseline" for all cars and "Test Profile CTSV" for the Cadillac CTS-V, as on
+# the owner's rig at 12:27 on 13 Nov 2026. The setup "iRacing Cadillac CTS-V" switches the
+# profile for all cars to "Test Profile CTSV" at Make ready, and Stand down puts "Baseline"
+# back (src/features/iracing-bindings/core/profileSwitch.ts).
+profiles:
+  - profiles/iracing-cts-v.yaml

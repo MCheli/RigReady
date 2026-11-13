@@ -8,7 +8,8 @@
  * without a source, or when the source fails, there are simply no names.
  *
  * The same lookup answers what the user said a device is (`whatIs`): the kind of gear and
- * what it is used for, for a device RigReady cannot tell or has wrong.
+ * what it is used for, for a device RigReady cannot tell or has wrong. And whether a model
+ * of device is known as the owner's (`known`): seen on this PC, named or said what it is.
  */
 
 import type { DeviceInfo } from '../shared/models';
@@ -46,6 +47,18 @@ export interface DeviceSaid {
   usedFor?: DeviceUse;
 }
 
+/**
+ * What RigReady remembers of a model of device on this PC: one was plugged in while it
+ * watched (the Devices page's history of where and when each device was seen), or the
+ * owner named one or said what it is.
+ */
+export interface DeviceKnown {
+  /** The name it had when RigReady last saw it, or the name the owner gave it. */
+  name?: string;
+  /** When RigReady last saw one plugged in (an ISO time); absent when only the owner's word says so. */
+  lastSeen?: string;
+}
+
 /** The device names as they are now. */
 export interface DeviceNames {
   /** The name the user gave this device, when there is one. */
@@ -56,6 +69,14 @@ export interface DeviceNames {
    * `names.whatIs?.(device)`.
    */
   whatIs?(device: DeviceNameQuery): DeviceSaid | undefined;
+  /**
+   * Whether a device of this model is known to RigReady as the owner's (`DeviceKnown`), for
+   * a feature that must not take the owner's gear for gone because it is unplugged today.
+   * Undefined for a model RigReady has never seen on this PC. The method itself is absent
+   * when that cannot be told (no source, or the history cannot be read): an asker must then
+   * treat every device as possibly the owner's, never as one never seen.
+   */
+  known?(model: { vendorId: string; productId: string }): DeviceKnown | undefined;
 }
 
 const HEX4 = /^[0-9A-Fa-f]{4}$/;

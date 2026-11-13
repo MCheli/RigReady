@@ -245,6 +245,34 @@ describe('device history', () => {
     ).toBeDefined();
   });
 
+  it('says a model is known when one was seen, named or said what it is; nothing without the history', () => {
+    const t1 = new Date('2026-10-02T21:14:00Z');
+    const t2 = new Date('2026-11-10T18:30:00Z');
+    const pedals = device({
+      vendorId: '044F',
+      productId: 'B68F',
+      name: 'T-Pendular-Rudder',
+      instanceId: 'USB\\VID_044F&PID_B68F\\8&348856f8&0&2',
+    });
+    let history = recordSeen(HistorySchema.parse({}), [pedals], t1);
+    history = recordSeen(history, [], t2);
+    const named = withName(empty, device({ vendorId: '1209', productId: '0001' }), [], 'Old box');
+    const said = withWhat(empty, device({ vendorId: '1209', productId: '0002' }), [], {
+      kind: 'pedals',
+    });
+    const names = deviceNames(named.names, [], [], said.whatItIs, history.seen);
+    // Seen: the name it had and when it went away; in any spelling of the ids.
+    expect(names.known?.({ vendorId: '044f', productId: 'b68f' })).toEqual({
+      name: 'T-Pendular-Rudder',
+      lastSeen: t2.toISOString(),
+    });
+    expect(names.known?.({ vendorId: '1209', productId: '0001' })).toEqual({ name: 'Old box' });
+    expect(names.known?.({ vendorId: '1209', productId: '0002' })).toEqual({});
+    expect(names.known?.({ vendorId: '1209', productId: '0003' })).toBeUndefined();
+    // A history that could not be read gives no answer at all, never "not seen".
+    expect(deviceNames(named.names, []).known).toBeUndefined();
+  });
+
   it('is kept under the data root and a damaged file is started again', async () => {
     rig = await scenarioRig('flying-all-good', { files: [] });
     const stores = deviceStores(rig.ports);

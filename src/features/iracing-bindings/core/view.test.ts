@@ -754,8 +754,17 @@ describe('iRacing bindings: reading only', () => {
       ['set', 'read'],
       ['changePreview', 'off'],
       ['change', 'off'],
+      // The cleanup of controllers that are gone (cleanup.test.ts): the list reads; clearing
+      // is ticked and approved by a person on the page.
+      ['goneDevices', 'read'],
+      ['clearGonePreview', 'off'],
+      ['clearGone', 'off'],
       ['listenStart', 'off'],
       ['listenStop', 'off'],
+      // Copying bindings between control profiles, ticked and approved on the page.
+      ['copyCompare', 'off'],
+      ['copyPreview', 'off'],
+      ['copy', 'off'],
     ]);
   });
 });

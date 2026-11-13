@@ -77,9 +77,12 @@
       </p>
       <p>
         On that PC, tests read the real devices, monitors, audio and controllers, and changed and
-        restored the real monitor layout and audio devices. Changes to game files (bindings, the
-        DCS screen setup, backups and restores, the iRacing repair) were tested on copies of that
-        rig's files, not the live ones.
+        restored the real monitor layout and audio devices. The automated tests changed game files
+        (bindings, the DCS screen setup, backups and restores, the iRacing repair) only on copies of
+        that rig's files. On the rig itself, with its owner there, RigReady also changed the live
+        files: a DCS binding, the DCS screen setup, a line in DCS's Export.lua, and iRacing button
+        and key bindings. Each was then used in its game, and Undo put the DCS and iRacing binding
+        files back byte for byte.
       </p>
       <p>
         It has been used on one rig, so reports from other hardware help most, through the

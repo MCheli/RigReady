@@ -296,7 +296,8 @@ pre code {
   flex: none;
 }
 
-/* Hero: one line for all three jobs, then the three of them as cards ------------------------- */
+/* Hero: the line and what it means beside three screenshots, then the four steps around a
+   session --------------------------------------------------------------------------------- */
 
 .hero {
   position: relative;
@@ -444,16 +445,109 @@ pre code {
   }
 }
 
-/* The colour of each job, used for its card, its kicker and its section. */
-.pillar:nth-child(1),
+/* One sentence of the headline per line where there is room for it. */
+.hero-copy h1 span {
+  display: block;
+}
+
+/* Under the hero: the four steps around a session, numbered in order, each with its screenshot
+   whole. Two to a row, so a whole window can still be read at the card's width. */
+.steps {
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin: clamp(48px, 7vw, 80px) 0 0;
+  padding: 0;
+}
+.step {
+  counter-increment: step;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+/* The box keeps the window's proportions, so the pictures line up across a row even before they
+   load. */
+.step-shot {
+  aspect-ratio: 1250 / 821;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.step-shot img {
+  height: 100%;
+  object-fit: contain;
+}
+.step-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 18px 20px 20px;
+}
+.step h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 1.25rem;
+}
+.step h2::before {
+  content: counter(step);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--ok);
+  border-radius: 50%;
+  color: var(--ok);
+  font: 700 0.9rem var(--font-display);
+}
+.step p {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+}
+.step-link {
+  margin-top: auto;
+  font-size: 0.92rem;
+}
+.steps-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 62em;
+  margin: 24px 0 0;
+  color: var(--text-2);
+  font-size: 0.98rem;
+}
+.steps-note svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (max-width: 600px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The colour of each section, used for its kicker and its steps. */
 .ready {
   --tone: var(--ok);
 }
-.pillar:nth-child(2),
 .controls {
   --tone: var(--accent);
 }
-.pillar:nth-child(3),
 .troubleshoot {
   --tone: var(--warn);
 }
@@ -463,82 +557,6 @@ pre code {
   font: 700 0.8rem/1.3 var(--font-display);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.pillars {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-  margin: clamp(48px, 7vw, 80px) 0 0;
-  padding: 0;
-}
-.pillar {
-  display: flex;
-  flex-direction: column;
-  padding: 26px 26px 22px;
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--tone);
-  border-radius: 12px;
-  background: var(--surface);
-}
-.pillar-icon {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 16px;
-  padding: 8px;
-  border-radius: 10px;
-  background: var(--surface-2);
-  fill: none;
-  stroke: var(--tone);
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.pillar h2 {
-  font-size: 1.35rem;
-  margin-bottom: 10px;
-}
-.pillar h2 a {
-  color: var(--text);
-  text-decoration: none;
-}
-.pillar h2 a:hover {
-  color: var(--tone);
-}
-.pillar > p:not(.kicker) {
-  margin-bottom: 14px;
-}
-.pillar ul {
-  list-style: none;
-  margin: 0 0 18px;
-  padding: 0;
-  font-size: 0.95rem;
-}
-.pillar ul li {
-  position: relative;
-  padding: 7px 0 7px 18px;
-  border-top: 1px solid var(--border);
-  color: var(--text);
-}
-.pillar ul li::before {
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: 0.95em;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--tone);
-}
-.pillar-link {
-  margin-top: auto;
-  font-size: 0.92rem;
-}
-@media (max-width: 900px) {
-  .pillars {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* The instrument: a working model of the Play screen ----------------------------------------- */

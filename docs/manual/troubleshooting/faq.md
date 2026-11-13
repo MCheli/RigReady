@@ -32,7 +32,7 @@ No. It uses the network only to check for [updates](../app/updates.md), which yo
 
 ## What does "not yet verified on real hardware" mean?
 
-A few features passed their tests on recorded data from one rig but have not been tried in the real game or on the real device yet. The app marks them, and the [changelog](../../../CHANGELOG.md) lists them under known limitations: a [binding written by RigReady](../dcs/bindings.md) checked in DCS's own controls screen, [MFD displays](../dcs/screens.md) drawn by DCS from RigReady's monitor setup with SimAppPro closed, the [iRacing device ID repair](../games/iracing.md) with a wheel whose ID really changed, [restoring a Stream Deck backup](../hardware/stream-deck.md) file by file, the [taskbar](../one-click/taskbar.md) badge and buttons on a real taskbar, the [ready tone](../play/the-menu.md)'s sound, a real press of the [hotkey](../one-click/hotkey.md), and the [overlay](../play/overlay.md) over a running game. They work as far as tests can tell; treat them with a little more care.
+A few features passed their tests on recorded data from one rig but have not been tried in the real game or on the real device yet. The app marks them, and the [changelog](../../../CHANGELOG.md) lists them under known limitations: the [iRacing device ID repair](../games/iracing.md) with a wheel whose ID really changed, [restoring a Stream Deck backup](../hardware/stream-deck.md) file by file, the [taskbar](../one-click/taskbar.md) badge and buttons on a real taskbar, the [ready tone](../play/the-menu.md)'s sound, a real press of the [hotkey](../one-click/hotkey.md), and dragging the [overlay](../play/overlay.md) into place with the mouse. They work as far as tests can tell; treat them with a little more care.
 
 ## Is it free?
 

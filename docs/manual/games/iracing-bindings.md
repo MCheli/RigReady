@@ -1,6 +1,6 @@
 ---
 title: iRacing bindings
-description: Every action in iRacing and what it is bound to, for all cars and each car with its own controls, and binding an action to a button or a key.
+description: Every action in iRacing and what it is bound to, for all cars and each car, binding an action to a button or a key, and the control profiles.
 order: 15
 ---
 
@@ -29,6 +29,47 @@ RigReady reads the profile `app.ini` names, and says so beside **Bindings for**:
 
 The line under the field says how many cars have bindings of their own. The path of the file being shown is at the bottom of the page. The address of the page keeps the chosen car, so opening the page again by its address shows the same car.
 
+## Control profiles
+
+On an iRacing with control profiles, **Control profiles** lists every profile folder under `Documents\iRacing\profiles\controls`. The one iRacing uses for all cars is marked **All cars**, and each profile says which cars `app.ini` gives it, by iRacing's short name for the car ("Car with this profile: cadillacctsvr."). A profile no car uses says so. A line of `app.ini` that names a profile with no folder is listed as **Not on this PC**, because iRacing cannot load it either. You choose and make profiles in iRacing itself: **Options**, then **Controls**.
+
+![The control profiles, and which cars use them](../../../artifacts/screens/iracing-profiles-copy/01-profiles.png)
+
+### Copying bindings between profiles
+
+**Copy bindings between profiles** copies buttons and keys from one profile into another, for example the bindings you added to a car's profile back into the one for all cars.
+
+1. Choose **Copy from** and **Into**. The box lists every action whose button or key differs between the two, with what each profile has, and says how many are the same in both.
+2. Each action where the first profile has a button or a key is ticked. Where the first profile has nothing, copying would clear the binding in the other; such an action says so and is not ticked until you tick it. **Tick all** and **Tick none** do what they say.
+3. Press **Review copying**. RigReady shows the file that will change before anything is written.
+4. Press **Copy**. RigReady backs up the profile's `controls.cfg`, changes the ticked actions and nothing else in it, and reads the file back before it says what it copied. The profile you copy from is not changed. The copy is one entry on the [Safety page](../protect/safety-page.md), with **Undo**.
+
+![Choosing what to copy](../../../artifacts/screens/iracing-profiles-copy/02-copy-choose.png)
+
+![The file that will change, before anything is written](../../../artifacts/screens/iracing-profiles-copy/03-copy-review.png)
+
+Some bindings are left as they are, under **Left as they are**, each with the reason:
+
+- An axis, in either profile, and the calibration in `joyCalib.yaml`. iRacing calibrates an axis as it binds it, so bind axes in iRacing.
+- An action the other profile does not have (a profile made by an older iRacing has fewer actions).
+- A binding RigReady cannot read exactly, or a key RigReady has no name for.
+
+As with any change here, close the iRacing simulator first. While it runs, the box says so and **Copy** is not offered.
+
+![While iRacing runs, nothing is copied](../../../artifacts/screens/iracing-profiles-copy/05-iracing-running.png)
+
+### A setup that switches the profile
+
+A setup can make iRacing use a profile for all cars while you play with it: add the check **iRacing control profile** to the setup and choose the profile ([Checks and fixes](../setups/checks.md#iracing-control-profile-iracing-bindingscontrolprofile)). **Make ready** then sets that profile in `app.ini`, and **Stand down** puts back the one that was there before.
+
+![The setup before Make ready](../../../artifacts/screens/iracing-profiles-switch/01-not-ready.png)
+
+![After Make ready](../../../artifacts/screens/iracing-profiles-switch/03-made-ready.png)
+
+![Stand down puts the profile back](../../../artifacts/screens/iracing-profiles-switch/05-stood-down.png)
+
+Nothing is written while the iRacing simulator runs: it writes `app.ini` when it closes and would put its own profile back. Make ready then says so, and Stand down says so and tries again the next time.
+
 ## The controllers
 
 **Controllers and keyboard in this set** lists every controller the file names, and the keyboard, each with the number of actions bound on it. A controller shows the name you gave it on the [Devices page](../hardware/devices.md), or the name iRacing stored in `joyCalib.yaml`, or its USB ids when nothing else knows it. Each controller has a state:
@@ -41,6 +82,23 @@ The line under the field says how many cars have bindings of their own. The path
 Above the list of actions there is a button for each of them; it shows only the actions bound on that device.
 
 ![A wheel that Windows gave a new id](../../../artifacts/screens/iracing-bindings-moved-wheel/01-new-windows-id.png)
+
+## Controllers iRacing will not find
+
+A set of bindings often still names a wheel, pedals or a button box you sold or swapped long ago. **Controllers iRacing will not find** lists every controller of the set that is not plugged in under the id the file names, with its bindings and what RigReady makes of it:
+
+- **Not seen on this PC**: no controller of that model is plugged in, and RigReady has never seen one on this PC. RigReady knows the devices it has seen from the [Devices page](../hardware/devices.md)'s history of where and when each device was plugged in, and from the names and answers you gave there. Only these can be cleared.
+- **Unplugged**: not plugged in today, but RigReady has seen it on this PC (it says when), or you named it, or another controller of the same model is plugged in. Its bindings stay. If Windows gives it a new id when you plug it back in, the [iRacing page](iracing.md) points iRacing at the new id.
+- **New Windows id**: the same model is plugged in under another id. Clearing is never offered: **Open the iRacing page** leads to the repair, which makes its bindings work again.
+- **Cannot tell**: Windows did not list the controllers, or RigReady cannot read what it knows about your devices (the Devices page’s history and names). Nothing is offered.
+
+To clear the bindings of a controller that is gone, tick it (nothing is ticked for you), then **Review clearing**. The review lists every binding that goes, device by device, and the file that changes: the `controls.cfg` of the set, in the control profile iRacing uses. **Clear** writes it after a backup, as one change you can undo on the [Safety page](../protect/safety-page.md). Each action is then not bound, exactly as iRacing has an action that was never bound; every other binding and `joyCalib.yaml` stay as they are. Nothing is written while the iRacing simulator runs, or when the file changed after the review.
+
+![Two controllers that are gone, and one only unplugged](../../../artifacts/screens/iracing-bindings-cleanup/01-offer.png)
+
+![The review before clearing](../../../artifacts/screens/iracing-bindings-cleanup/02-review.png)
+
+![After clearing the pedals](../../../artifacts/screens/iracing-bindings-cleanup/03-cleared.png)
 
 ## The list of actions
 
@@ -84,6 +142,10 @@ Every action that takes a button or a key has **Change** in the last column. A b
 ![What will change, before anything is saved](../../../artifacts/screens/iracing-bindings-edit-profile/02-review-before-save.png)
 
 **Clear this binding** in the same box removes a binding, with the same review first.
+
+The action you just saved stays in the list with its new binding, even when the search or a filter would now hide it (with **Not bound** on, an action you just bound is no longer "not bound"). It goes when you change the search or a filter.
+
+![A row just saved stays in sight under Not bound](../../../artifacts/screens/iracing-profiles-kept-row/01-kept-under-not-bound.png)
 
 Some things stay with iRacing, and the page says so where they come up:
 

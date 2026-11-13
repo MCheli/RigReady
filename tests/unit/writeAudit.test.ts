@@ -295,6 +295,8 @@ describe('the source rule: a feature that writes files shows the change first', 
       'racing:lmuRepair': 'racing:lmuRepairPreview',
       'racing:acRepair': 'racing:acRepairPreview',
       'iracing-bindings:change': 'iracing-bindings:changePreview',
+      'iracing-bindings:clearGone': 'iracing-bindings:clearGonePreview',
+      'iracing-bindings:copy': 'iracing-bindings:copyPreview',
       'profiles:createShortcut': 'profiles:shortcutPreview',
       'profiles:removeShortcut': 'profiles:shortcutPreview',
       'mcp:connect': 'mcp:connectPreview',
@@ -372,6 +374,30 @@ describe('a preview says exactly what is then written', () => {
     const target = app;
     const written = await during(target, () => target.invoke('racing:iracingRepair', { mapping }));
     expectSame(preview, written, target.ports.folders.dataRoot());
+  });
+
+  it('iRacing: clearing the bindings of a controller that is gone', async () => {
+    app = await wiredApp('iracing-bindings-cleanup', { files: ['Documents/iRacing/**'] });
+    const gone = await app.invoke<{ devices: { key: string; verdict: string }[] }>(
+      'iracing-bindings:goneDevices',
+      { set: 'all' }
+    );
+    const devices = gone.devices.filter((d) => d.verdict === 'gone').map((d) => d.key);
+    expect(devices).toHaveLength(2);
+    const before = await journal(app);
+    const review = await app.invoke<{ preview: ChangePreview; seen: string }>(
+      'iracing-bindings:clearGonePreview',
+      { set: 'all', devices }
+    );
+    expect(await journal(app)).toEqual(before);
+    expect(review.preview.files.map((f) => [f.label, f.change])).toEqual([
+      ['controls.cfg', 'modified'],
+    ]);
+    const target = app;
+    const written = await during(target, () =>
+      target.invoke('iracing-bindings:clearGone', { set: 'all', devices, seen: review.seen })
+    );
+    expectSame(review.preview, written, target.ports.folders.dataRoot());
   });
 
   it('Le Mans Ultimate: putting the new name of a renamed wheel base into the bindings', async () => {

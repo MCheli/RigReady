@@ -33,10 +33,17 @@ async function openDevices(page: Page): Promise<void> {
 const toTop = (page: Page): Promise<void> =>
   page.getByTestId('devices-page').evaluate((el) => el.scrollIntoView({ block: 'start' }));
 
-/** Picks one choice of a list on the device's row, the way a user does: open it, click the line. */
+/**
+ * Picks one choice of a list on the device's row, the way a user does: open it, click the line.
+ * The line is looked for in the open list only: two lists can both offer "Not known", and the one
+ * chosen from before may still be fading out when the next opens.
+ */
 async function choose(page: Page, row: Locator, list: string, choice: string): Promise<void> {
   await row.getByTestId(list).click();
-  await page.getByRole('option', { name: choice, exact: true }).click();
+  await page
+    .locator('.v-overlay--active')
+    .getByRole('option', { name: choice, exact: true })
+    .click();
 }
 
 /** The page as it is now: readable, every control named, no state said by colour alone. */

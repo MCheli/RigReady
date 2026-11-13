@@ -232,9 +232,9 @@ const getActions = stable
 page({
   path: '/',
   page: 'home',
-  title: 'RigReady: get the sim rig ready, keep your controls, find what is wrong',
+  title: 'RigReady: less time on rig chores, more time flying and racing',
   description:
-    'A free, open-source Windows app for flight and racing sim rigs: it gets the rig ready and launches the game, keeps your bindings backed up, and shows what each controller does.',
+    'A free, open-source Windows app for flight and racing sim rigs that does the work around the game, from setting up your controls to putting your desk back.',
   main: fill(
     await read('site/pages/home.html'),
     { HERO_ACTIONS: heroActions, GET_NOTE: getNote, GET_ACTIONS: getActions, REPO_URL },
@@ -272,7 +272,7 @@ const releaseCard = stable
 <p class="download-version">RigReady ${esc(stable.version)}</p>
 <p class="download-meta">Released ${longDate(stable.date)}. Installer, ${megabytes(stable.installer.size)}.</p>
 <p><a class="button primary" href="${stable.installer.url}">${ICON_DOWNLOAD}Download ${esc(stable.installer.name)}</a></p>
-<p class="small">Windows SmartScreen may warn the first time the installer runs, until it has earned a reputation with Microsoft: choose <em>More info</em>, then <em>Run anyway</em>. <a href="${stable.page}">Release notes</a> and every earlier version are on <a href="${REPO_URL}/releases">GitHub Releases</a>.</p>
+<p class="small">The installer is signed by Mark Cheli. Windows SmartScreen may still warn the first time it runs, until it has earned a reputation with Microsoft: choose <em>More info</em>, check that the publisher is Mark Cheli, then <em>Run anyway</em>. <a href="${stable.page}">Release notes</a> and every earlier version are on <a href="${REPO_URL}/releases">GitHub Releases</a>.</p>
 </div>
 ${betaLine}`
   : `<div class="download-card">

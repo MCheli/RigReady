@@ -14,17 +14,19 @@
         <li>Windows 10 or 11, 64-bit.</li>
         <li>Installs for your account only. It never asks for administrator rights.</li>
         <li>
-          The installer is not code-signed yet, so the first time it starts, Windows shows "Windows
-          protected your PC" (Microsoft Defender SmartScreen, publisher unknown). Choose
-          <em>More info</em>, then <em>Run anyway</em>. Your browser may also ask whether to keep
-          the file. Updates the app downloads itself install without either question.
+          The installer is code-signed with the publisher name "Mark Cheli", through Microsoft's
+          Artifact Signing service. Until it has earned a reputation with Microsoft, Windows may
+          still show "Windows protected your PC" (Microsoft Defender SmartScreen) the first time it
+          starts: choose <em>More info</em>, check that the publisher is Mark Cheli, then
+          <em>Run anyway</em>. A RigReady 2 installer that names no publisher, or another one, is
+          not from this page: do not run it. Your browser may also ask whether to keep the file.
+          Updates the app downloads itself install without either question.
         </li>
         <li>
-          Until it is signed, you can check the installer yourself: every release lists its SHA-512
-          in <code>latest.yml</code>, and the manual shows the
+          You can check the installer yourself: its Properties, Digital Signatures, name Mark Cheli,
+          every release lists its SHA-512 in <code>latest.yml</code>, and the manual shows the
           <a href="/docs/app/security/#verifying-the-installer">PowerShell lines that compare it</a
-          >. The app checks the same value before it installs an update. Signing is set up and waits
-          for the publisher's identity check with Microsoft.
+          >. The app checks the same value and the signature before it installs an update.
         </li>
         <li>
           Only the update check and AI requests you send with your own key leave the PC. No account,
