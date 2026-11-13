@@ -2,6 +2,10 @@
 
 Thank you for helping. RigReady changes files that take people many hours to recreate, so the rules below are strict on purpose.
 
+## Add your hardware or game
+
+Clone the repository, open [Claude Code](https://claude.com/claude-code) in it, and describe your hardware or game: "Add support for my Thrustmaster TCA Quadrant", or "I play Automobilista 2, can RigReady read its bindings?". The skills in `.claude/skills/` walk you through it one step at a time, from the research to a proof on your own rig and the pull request, and keep to the rules below. The same steps for a person: [Add your hardware or game](docs/contributing/README.md), [Add your hardware](docs/contributing/add-hardware.md), [Add your game](docs/contributing/add-game.md). To use a change on your own PC without sending it in: [Build and run your own copy](docs/contributing/local-build.md).
+
 ## Before you start
 
 Read `docs/PRODUCT.md` (what the app is), `docs/ARCHITECTURE.md` (how it is put together) and `docs/CONTRIBUTING-FEATURES.md` (how to add a feature, step by step, and what the shared code already provides). The manual in `docs/manual/` describes the app as a user sees it and is published at <https://rigready.io/docs/>; a change to what the app does changes its page too (`site/README.md` says how the manual is built and checked).
@@ -47,4 +51,4 @@ Most of RigReady was written by AI coding agents directed by the maintainer ([ho
 
 ## Reporting a problem
 
-Open an issue at <https://github.com/MCheli/rigready/issues/new/choose>: there is a form for something that went wrong and one for a report of how RigReady does on your hardware. Paste the diagnostics report (Configure > Diagnostics > Copy diagnostics), which has personal details removed. A security problem is reported privately, as `SECURITY.md` describes.
+Open an issue at <https://github.com/MCheli/rigready/issues/new/choose>: there is a form for something that went wrong, one for a report of how RigReady does on your hardware, and one each to ask for support for your hardware or your game. Paste the diagnostics report (Configure > Diagnostics > Copy diagnostics), which has personal details removed. A security problem is reported privately, as `SECURITY.md` describes.

@@ -64,7 +64,7 @@ The monitors are arranged as the setup expects: which are on, where they are, th
 
 ### DCS monitor setup fits the monitors (`dcs.monitorSetup`)
 
-DCS's options.lua selects the expected monitor setup, and DCS's window matches what the setup's monitors span. Fields: `setup`, the monitor setup's name; `window`, its width and height. Fix: **Write the RigReady screen setup** (`dcs.writeScreenSetup`), which writes RigReady's own monitor setup file and selects it ([MFD screens and the monitor setup](../dcs/screens.md)).
+DCS's options.lua selects the expected monitor setup, and DCS's window matches what the setup's monitors span. Fields: `setup`, the monitor setup's name; `window`, its width and height. Fix: **Write the RigReady screen setup** (`dcs.writeScreenSetup`), which writes RigReady's own monitor setup file and selects it ([MFD screens and the monitor setup](../dcs/screens.md)). When the difference comes from **Use in DCS** on the DCS Screens tab, the row says so, and its button **Update the setup** makes the check expect the new values ([Setups made before "Use in DCS"](../dcs/screens.md#setups-made-before-use-in-dcs)).
 
 ## Audio
 
@@ -88,7 +88,7 @@ DCS's [Export.lua](../dcs/export-lua.md) has the line for each tool the setup ne
 
 ### DCS graphics options (`dcs.options`)
 
-Options in DCS's options.lua are as expected ([Checks in a setup](../dcs/screens.md#checks-in-a-setup)). Fields, each optional but at least one: `multiMonitorSetup`, `width`, `height`, `fullScreen`, `vr`. Fix: **Set the DCS options** (`dcs.setOptions`). DCS must be closed for the fix to write.
+Options in DCS's options.lua are as expected ([Checks in a setup](../dcs/screens.md#checks-in-a-setup)). Fields, each optional but at least one: `multiMonitorSetup`, `width`, `height`, `fullScreen`, `vr`. Fix: **Set the DCS options** (`dcs.setOptions`). DCS must be closed for the fix to write. When the difference comes from **Use in DCS**, the row says so, and **Update the setup** makes the check and its fix expect the new values. A fix that would undo the RigReady screen setup in use (a window that no longer covers its monitors, another monitor setup, full screen) says so on the row, and Make ready asks before it runs it ([Setups made before "Use in DCS"](../dcs/screens.md#setups-made-before-use-in-dcs)).
 
 ### DCS files RigReady manages are unchanged (`dcs.managedFiles`)
 

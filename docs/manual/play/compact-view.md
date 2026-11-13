@@ -26,4 +26,4 @@ Pressing **Launch** on a rig that is Not ready turns the button into **Launch an
 
 ## What it leaves to the full window
 
-A fix or a launch step that runs a program you have to confirm ([Scripts](../setups/scripts.md)) is shown to you before it runs, and there is no room for that here. The button is then greyed and the line says: "This setup runs a program that is shown to you first. That is done in the full window." Open the full window and run it from there.
+A fix or a launch step that runs a program you have to confirm ([Scripts](../setups/scripts.md)) is shown to you before it runs, and there is no room for that here. The button is then greyed and the line says: "This setup runs a program that is shown to you first. That is done in the full window." The same goes for Make ready while a fix would undo something you set elsewhere, such as "Set the DCS options" after "Use in DCS" ([Setups made before "Use in DCS"](../dcs/screens.md#setups-made-before-use-in-dcs)): "A fix of this setup would undo something you set elsewhere, and asks you first. That is done in the full window." Open the full window and run it from there.

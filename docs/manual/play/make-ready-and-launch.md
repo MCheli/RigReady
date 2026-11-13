@@ -24,7 +24,7 @@ Enter presses the main button when nothing else has the keyboard: a focused text
 
 ## What is asked first
 
-Before anything runs, every fix and every launch step that starts a program you have to confirm is shown to you, one at a time: **Run this program?** with the program, each argument as it will be passed, and the folder. **Run it** or **Skip** ([Scripts](../setups/scripts.md)). Only then does the run go through by itself. A skipped fix is listed as "Skipped by you" and ends up under **Needs you**.
+Before anything runs, every fix and every launch step that starts a program you have to confirm is shown to you, one at a time: **Run this program?** with the program, each argument as it will be passed, and the folder. **Run it** or **Skip** ([Scripts](../setups/scripts.md)). So is a fix that would undo something you set elsewhere: **Run this fix anyway?** with why, for example that setting the DCS options the setup expects would undo "Use in DCS" on the DCS Screens tab ([Setups made before "Use in DCS"](../dcs/screens.md#setups-made-before-use-in-dcs)). **Run it anyway** or **Skip**. The row says the same before you press anything. Only then does the run go through by itself. A skipped fix is listed as "Skipped by you" and ends up under **Needs you**.
 
 ## The order of the fixes
 

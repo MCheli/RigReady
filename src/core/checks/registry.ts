@@ -71,6 +71,23 @@ export interface CheckAcknowledge<P> {
   label: string;
   /** Resolves with the item's new params, which the profile then stores. */
   run(params: P, ctx: CheckContext): Promise<Result<P>>;
+  /**
+   * Optional: whether the action is offered on this result. Absent: on every result that is
+   * not met. Asked again before `run`, so a button shown earlier cannot act on a change
+   * that has gone since.
+   */
+  offered?(params: P, ctx: CheckContext): Promise<boolean>;
+  /**
+   * Optional: the item's fix params to store with the new params, for a fix that sets what
+   * the check expects (left as it was, it would put back what was just confirmed). Gets the
+   * fix as the setup has it and the check's params before and after. Undefined: the fix
+   * stays as it is.
+   */
+  fixParams?(
+    fix: { type: string; params: Record<string, unknown> },
+    before: P,
+    after: P
+  ): Record<string, unknown> | undefined;
 }
 
 export interface CheckDefinition<P = unknown> {
@@ -198,6 +215,13 @@ export interface RemediationDefinition<P = unknown> {
    * that exact command. Make ready asks first; the tray skips it.
    */
   confirm?(params: P): CommandPreview | undefined;
+  /**
+   * Optional: why this fix should not run without a yes right now, in one or two sentences
+   * (it would undo something the user set elsewhere), or undefined. The text is shown with
+   * the item; Make ready and the fix button ask first, and where nobody can be asked (the
+   * tray, a palette command) the fix is not run.
+   */
+  warning?(params: P, ctx: CheckContext): Promise<string | undefined>;
   /**
    * Optional: whether the fix can run at all right now (e.g. a backup copy exists).
    * When it cannot, no fix is offered and the reason is shown on the item. When it can,

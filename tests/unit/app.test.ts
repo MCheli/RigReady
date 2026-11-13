@@ -157,10 +157,10 @@ describe('Fly, end to end on scenarios', () => {
     // The test answers the question itself, to see that Make ready waits for it.
     app.layoutAnswer = 'wait';
     let finished = false;
+    const eventsBefore = app.events.length;
     const making = app.invoke<ActionReport>('fly:makeReady', P).finally(() => (finished = true));
-    await expect
-      .poll(async () => (await app.invoke<{ pending: boolean }>('displays:pending')).pending)
-      .toBe(true);
+    // The question is up once the layout says it was applied: wait for that event, not a clock.
+    await app.event('displays:event:applied', eventsBefore);
     // Never kept on this PC before, so Make ready asks, and says it asks only this once.
     expect(app.events).toEqual([
       { channel: 'displays:event:applied', payload: { seconds: 15, firstTime: true } },

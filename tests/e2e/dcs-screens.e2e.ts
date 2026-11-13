@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
-import { expect, test } from './harness';
+import { checkRow, expect, test } from './harness';
 import { expectSaveBarPinned } from './saveBar';
 import { expectUnderPointer, middle, steadyBox, stillPage } from './settled';
 
@@ -602,4 +602,107 @@ test('dcs-screens: "Use in DCS" stays in the window from the top of the tab to i
   await page.getByTestId('nav-displays').click();
   await expect(page.getByTestId('displays-page')).toBeVisible();
   await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
+});
+
+test('dcs-screens: "Use in DCS" offers to update the setups that expect the old window, and the Play screen says so when one is left', async ({
+  rig,
+}) => {
+  // The owner's rig on 13 Nov: the F/A-18C setup was made with the MFD screens right of the
+  // ultrawide, and expects DCS's window 7424 × 1440.
+  const run = await rig.launch('dcs-setup-flying', 'dcs-screens-follow-setups');
+  const { page, shot, home } = run;
+  const options = path.join(home, 'Saved Games', 'DCS', 'Config', 'options.lua');
+  const setupText = (): Promise<string> =>
+    fs.readFile(path.join(run.dataRoot, 'profiles', 'dcs-setup-hornet.yaml'), 'utf8');
+  await page.getByTestId('mode-configure').click();
+  await openScreens(page);
+  const use = page.getByTestId('screens-apply');
+  const offer = page.getByTestId('screens-setups');
+
+  // The first time: the setup expects SimAppPro's monitor setup, and is offered, ticked.
+  await page.getByTestId('screens-pairing-confirm').click();
+  await expect(offer.getByTestId('screens-setup')).toHaveText(
+    'DCS F/A-18C: DCS monitor setup, monitor setup "wwtMonitor" → "rigready"'
+  );
+  await expect(offer).toContainText('the Play screen would call the new values wrong');
+  await use.click();
+  await expect(page.getByTestId('screens-done')).toContainText(
+    'Updated the setup "DCS F/A-18C": DCS monitor setup: monitor setup "wwtMonitor" → "rigready"'
+  );
+  await expect(offer).toHaveCount(0);
+
+  // The MFD screens go below the ultrawide, and the tab is used with the monitors as they are.
+  await run.mutate([
+    { op: 'setDisplay', match: { name: 'USB_Monitor', index: 0 }, set: { x: 0, y: 1440 } },
+    { op: 'setDisplay', match: { name: 'USB_Monitor', index: 1 }, set: { x: 2156, y: 1440 } },
+    { op: 'setDisplay', match: { name: 'USB_Monitor', index: 2 }, set: { x: 4352, y: 1440 } },
+  ]);
+  await choose(page, 'screens-layout', 'Monitors as they are now');
+  const changes = page.getByTestId('screens-changes');
+  await expect(changes).toContainText('width 7424 → 5120');
+  await expect(changes).toContainText('height 1440 → 2464');
+  // Each setup is named with what changes in it, and is updated with it unless unticked.
+  await expect(offer.getByTestId('screens-follow-setups')).toContainText(
+    'Also update the setup that expects the old values'
+  );
+  await expect(offer.getByTestId('screens-setup')).toHaveText(
+    'DCS F/A-18C: DCS graphics options, width 7424 → 5120, height 1440 → 2464 (the check and its fix)'
+  );
+  await expect(offer).toContainText(
+    'Left as it is, Make ready would put the old values back and undo this.'
+  );
+  await expect(offer.locator('input')).toBeChecked();
+  await offer.scrollIntoViewIfNeeded();
+  await shot('offer');
+
+  // Declined: DCS gets the new window, the setup stays as it was.
+  await offer.locator('input').uncheck();
+  await use.click();
+  await expect(page.getByTestId('screens-done')).toContainText('options.lua width 7424 → 5120');
+  await expect(page.getByTestId('screens-done')).not.toContainText('Updated the setup');
+  expect(await fs.readFile(options, 'utf8')).toContain('["height"] = 2464');
+  expect(await setupText()).toContain('width: 7424');
+
+  // The Play screen says where the difference comes from, what the fix would do, and offers
+  // to update the setup instead.
+  await page.getByTestId('mode-fly').click();
+  await page.getByTestId('profile-switcher').click();
+  await page.getByRole('option', { name: 'DCS F/A-18C' }).click();
+  const row = checkRow(page, 'DCS graphics options');
+  await expect(row).toHaveAttribute('data-status', 'warn');
+  await expect(row).toContainText(
+    '"Use in DCS" set width 5120 and height 2464 for the RigReady screen setup, and this setup still expects the older values. Update the setup to keep the new ones.'
+  );
+  await expect(row.getByTestId('fix-warning')).toContainText(
+    'This fix would undo "Use in DCS": it sets width 7424 and height 1440, so DCS\'s window would no longer cover'
+  );
+  await expect(row.getByTestId('check-acknowledge')).toHaveText('Update the setup');
+  await row.scrollIntoViewIfNeeded();
+  await shot('play-screen-says-so');
+
+  // Its fix asks first, with why, and Skip changes nothing.
+  await row.getByTestId('check-fix').click();
+  const asked = page.getByTestId('confirm-warning');
+  await expect(asked).toBeVisible();
+  await expect(asked.getByTestId('confirm-warning-text')).toContainText(
+    'This fix would undo "Use in DCS"'
+  );
+  await shot('fix-asks-first');
+  await asked.getByTestId('confirm-warning-skip').click();
+  await expect(asked).toHaveCount(0);
+  expect(await fs.readFile(options, 'utf8')).toContain('["height"] = 2464');
+
+  // "Update the setup": the check and its fix take the new values, and the check passes.
+  await row.getByTestId('check-acknowledge').click();
+  // Nothing in the group needs attention any more, so it closes: open it to see the row.
+  const group = page.getByTestId('group-toggle-files');
+  await expect(group).toContainText('2 of 2 OK');
+  if ((await group.getAttribute('aria-expanded')) !== 'true') await group.click();
+  await expect(row).toHaveAttribute('data-status', 'pass');
+  await expect(row.getByTestId('check-summary')).toHaveText('5120x2464, windowed, VR off');
+  const updated = await setupText();
+  expect(updated).toContain('width: 5120');
+  expect(updated).not.toContain('width: 7424');
+  await row.scrollIntoViewIfNeeded();
+  await shot('setup-updated');
 });

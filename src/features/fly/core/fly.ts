@@ -1,5 +1,6 @@
 import path from 'node:path';
 import {
+  acknowledgeOffered,
   fixItem,
   makeReady,
   runCheckItem,
@@ -416,13 +417,33 @@ export class Fly {
     }
     const params = definition.params.safeParse(item.params);
     if (!params.success) return err('fly.invalidItem', 'This check is not set up correctly.');
-    const next = await definition.acknowledge.run(params.data, withProfile(this.ctx, profile));
+    const ctx = withProfile(this.ctx, profile);
+    // The button was shown for a result that may be out of date by now.
+    if (!(await acknowledgeOffered(item, this.ctx.checks, ctx))) {
+      return err('fly.noAcknowledge', 'This item has nothing to confirm any more.');
+    }
+    const next = await definition.acknowledge.run(params.data, ctx);
     if (!next.ok) return next;
+    const fixParams =
+      item.remediation &&
+      definition.acknowledge.fixParams?.(
+        { type: item.remediation.type, params: item.remediation.params },
+        params.data,
+        next.value
+      );
     const updated: Profile = {
       ...profile,
       updatedAt: this.ctx.ports.clock.now().toISOString(),
       checks: profile.checks.map((c) =>
-        c.id === itemId ? { ...c, params: next.value as Record<string, unknown> } : c
+        c.id === itemId
+          ? {
+              ...c,
+              params: next.value as Record<string, unknown>,
+              ...(c.remediation && fixParams
+                ? { remediation: { ...c.remediation, params: fixParams } }
+                : {}),
+            }
+          : c
       ),
     };
     const saved = await this.ctx.profiles.save(updated);
