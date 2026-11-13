@@ -117,12 +117,25 @@ const shortcutBlocked = computed(() => {
 
 // ---- basics ----
 
+/** The games the user added ("user-...") come last, beside "Other game…". */
+const ownGame = (id: string): boolean => id.startsWith('user-');
 const gameItems = computed(() => [
   { title: 'No particular game', value: '' },
-  ...games.value.map((g) => ({
-    title: g.installs.length > 0 ? g.name : `${g.name} (not found on this PC)`,
+  ...[
+    ...games.value.filter((g) => !ownGame(g.id)),
+    ...games.value.filter((g) => ownGame(g.id)),
+  ].map((g) => ({
+    title:
+      (ownGame(g.id) ? `${g.name} (added by you)` : g.name) +
+      (g.installs.length > 0 ? '' : ' (not found on this PC)'),
     value: g.id,
   })),
+  // A game the user added that is no longer on the Games page: shown as such, never as its id.
+  ...(draft.value?.game &&
+  ownGame(draft.value.game) &&
+  !games.value.some((g) => g.id === draft.value?.game)
+    ? [{ title: 'Another game (not on the Games page)', value: draft.value.game }]
+    : []),
   { title: 'Other game…', value: 'other' },
 ]);
 const detectedLaunch = computed(() => {

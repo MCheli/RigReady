@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
+import { isUserGame } from '../../../core/games';
 import type { Profile } from '../../../core/profile/schema';
 
 import { CompatibilitySchema, type Compatibility } from './schema';
@@ -196,7 +197,10 @@ export async function compareWithMachine(
           kind: 'game',
           required: s.required,
           found: false,
-          detail: 'RigReady does not know this game',
+          // A game the other PC's user added: the import makes it "Another game" (GAME-ADD-005).
+          detail: isUserGame(s.game)
+            ? 'Added by hand on the other PC: the setup comes in for “Another game”'
+            : 'RigReady does not know this game',
         });
         continue;
       }

@@ -6,6 +6,7 @@ import { sameGuid } from '../../../core/directInput';
 import { sha256 } from '../../../core/files/fileStore';
 import { readZip } from '../../../core/files/zip';
 import { inspectZip } from '../../../core/files/zipInspect';
+import { asAnotherGame, isUserGame, USER_GAME_PREFIX } from '../../../core/games';
 import { isWithin } from '../../../core/paths';
 import { allPathVariables, expandPath, variableOf } from '../../../core/pathVariables';
 import { ProfileSchema, type Profile } from '../../../core/profile/schema';
@@ -200,6 +201,9 @@ async function plan(ctx: Ctx, bundle: OpenedBundle): Promise<Plan[]> {
           `${bundle.profile.checks.length} checks` +
           (missing.length
             ? `; ${missing.length} for devices not found here are kept, switched off and marked "device not found"`
+            : '') +
+          (userGameMissing(ctx, bundle.profile.game)
+            ? `; for “Another game” called ${userGameName(bundle.manifest, bundle.profile.game!)}, a game added by hand on the other PC`
             : ''),
         importable: true,
       },
@@ -525,6 +529,17 @@ export async function undoImport(
   return ok({ files: undone.value.entries.length - setups.length, setupRemoved });
 }
 
+/** A game the user added on the PC the setup comes from, which this PC does not have. */
+export function userGameMissing(ctx: Pick<Ctx, 'games'>, game: string | undefined): boolean {
+  return isUserGame(game) && ctx.games.get(game!) === undefined;
+}
+
+/** The name of such a game, as the setup's compatibility list carries it. */
+function userGameName(manifest: BundleManifest, game: string): string {
+  const listed = manifest.compatibility.software.find((s) => s.kind === 'game' && s.game === game);
+  return listed?.name ?? game.slice(USER_GAME_PREFIX.length).replace(/-/g, ' ');
+}
+
 async function importProfile(ctx: Ctx, bundle: OpenedBundle): Promise<Result<Profile>> {
   const existing = await ctx.profiles.list();
   const names = new Set((existing.ok ? existing.value : []).map((p) => p.name.toLowerCase()));
@@ -535,10 +550,14 @@ async function importProfile(ctx: Ctx, bundle: OpenedBundle): Promise<Result<Pro
   const present = devices.ok ? devices.value : [];
   const now = ctx.ports.clock.now().toISOString();
   // Stripped once more, then locked: whatever could still run asks first, always.
-  const { profile: clean } = requireConfirmation(
+  const { profile: locked } = requireConfirmation(
     stripRunnable(bundle.profile).profile,
     (type) => ctx.checks.remediation(type)?.confirm !== undefined
   );
+  // For a game the other PC's user added and this PC does not have: "Another game" (GAME-ADD-005).
+  const clean = userGameMissing(ctx, locked.game)
+    ? asAnotherGame(locked, userGameName(bundle.manifest, locked.game!))
+    : locked;
   const profile: Profile = {
     ...clean,
     id: await ctx.profiles.uniqueId(name),
