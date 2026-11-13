@@ -615,7 +615,7 @@ test('racing: "Save presets" stays in the window from the top of the wheel page 
   await expectSaveBarPinned(page, save, shot);
 
   // Another page of the menu: the value typed would be lost, so the bar asks.
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
   await expect(page.getByTestId('save-bar-leave')).toBeVisible();
   await shot('leaving-asks');
   await page.getByTestId('save-bar-leave-stay').click();
@@ -631,8 +631,8 @@ test('racing: "Save presets" stays in the window from the top of the wheel page 
   await shot('saved');
 
   // Nothing is unsaved now, and nothing is asked.
-  await page.getByTestId('nav-racing').click();
-  await expect(page.getByTestId('racing-wheel-summary')).toBeVisible();
+  await page.getByTestId('nav-games').click();
+  await expect(page.getByTestId('games-page')).toBeVisible();
   await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
   await expect(page.getByTestId('save-bar')).toHaveCount(0);
 });
