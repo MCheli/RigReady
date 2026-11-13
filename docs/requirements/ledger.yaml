@@ -3174,6 +3174,24 @@ requirements:
       - "artifacts/screens/dcs-screens-by-name/03-display-added-by-name.png"
       - "artifacts/screens/dcs-screens-by-name/04-aircraft-added-by-name.png"
 
+  - id: DCS-MON-012
+    title: The button that puts a screen setup to use in DCS stays in view on the Screens tab
+    job: configure
+    area: dcs-monitors
+    priority: p2
+    done_means:
+      - "On the Screens tab, 'Use in DCS' is in the shared bar on the bottom edge of the window, in view at the top of the tab and at its end, at the usual window size."
+      - "The bar says 'Not in DCS yet' while what is shown differs from what DCS uses, and 'DCS uses this setup' with the button reading 'In use' and off when it does not. What stops the button is said in words beside it, and after a press the bar says what was done."
+      - "Leaving the tab asks nothing: what the tab shows is RigReady's proposal until it is put to use."
+    status: done
+    evidence:
+      - test: 'tests/e2e/dcs-screens.e2e.ts#dcs-screens: "Use in DCS" stays in the window from the top of the tab to its end, with what stops it and what it did beside it'
+      - "artifacts/screens/dcs-screens-save-bar/01-top-of-the-page.png"
+      - "artifacts/screens/dcs-screens-save-bar/02-end-of-the-page.png"
+      - "artifacts/screens/dcs-screens-save-bar/03-used-in-dcs.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. The button was at the end of the editor, above the list of files, and scrolled out of view. Edits that are not yet used in DCS are dropped when the tab is left, as before; the bar does not ask about them."
+
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines
     job: configure

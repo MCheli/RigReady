@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from './harness';
+import { expectSaveBarPinned } from './saveBar';
 
 /**
  * The DCS Screens tab after the sitting of 12 November: the screens carry the names the
@@ -105,9 +106,7 @@ test("dcs-screens: the screens carry the user's names, and SimAppPro's plan foll
   await expect(lua).toContainText(viewportAt('CENTER_MFCD', 5896));
   await expect(lua).toContainText(viewportAt('RIGHT_MFCD', 6664));
   // Not certain, so nothing can be written before the user has looked.
-  await expect(page.getByTestId('screens-blocked')).toHaveText(
-    'Check which screen is which first.'
-  );
+  await expect(page.getByTestId('save-bar-why')).toHaveText('Check which screen is which first.');
   await expect(page.getByTestId('screens-apply')).toBeDisabled();
 
   // Before looking at the pairing the user works on the setup: the top of the left
@@ -148,7 +147,7 @@ test("dcs-screens: the screens carry the user's names, and SimAppPro's plan foll
   await expect(page.getByTestId('screens-apply')).toBeDisabled();
   await page.getByTestId('screens-pairing-confirm').click();
   await expect(page.getByTestId('screens-pairing-checked')).toHaveText('You checked these.');
-  await expect(page.getByTestId('screens-blocked')).toHaveCount(0);
+  await expect(page.getByTestId('save-bar-why')).toHaveCount(0);
   await page.getByTestId('screens-apply').click();
   await expect(page.getByTestId('screens-done')).toContainText('Created RigReady.lua');
   await expect(page.getByTestId('screens-status')).toContainText(
@@ -191,9 +190,7 @@ test('dcs-screens: the question about the pairing is asked again when another mo
     "RigReady could not be sure of every screen when it read the plan. Look at each one, then say they are right. To change which screen is which, import SimAppPro's plan again."
   );
   await expect(page.getByTestId('screens-pair-monitor-002')).toHaveClass(/v-input--disabled/);
-  await expect(page.getByTestId('screens-blocked')).toHaveText(
-    'Check which screen is which first.'
-  );
+  await expect(page.getByTestId('save-bar-why')).toHaveText('Check which screen is which first.');
   await expect(page.getByTestId('screens-apply')).toBeDisabled();
   await panel.scrollIntoViewIfNeeded();
   await shot('asked-again');
@@ -205,7 +202,7 @@ test('dcs-screens: the question about the pairing is asked again when another mo
   await expect(fs.access(written)).rejects.toThrow();
   await page.getByTestId('screens-pairing-confirm').click();
   await expect(page.getByTestId('screens-pairing-checked')).toHaveText('You checked these.');
-  await expect(page.getByTestId('screens-blocked')).toHaveCount(0);
+  await expect(page.getByTestId('save-bar-why')).toHaveCount(0);
   await page.getByTestId('screens-apply').click();
   await expect(page.getByTestId('screens-done')).toContainText('Created RigReady.lua');
   await fs.access(written);
@@ -540,4 +537,48 @@ test('dcs-screens: an aircraft or a display RigReady did not find is added by na
   await page.getByTestId('screens-aircraft-Su-25T').click();
   await expect(row('TV_DISPLAY').getByTestId('screens-name-unseen')).toBeVisible();
   await expect(page.getByTestId('screens-monitor-TV_DISPLAY')).toContainText('MFD left');
+});
+
+test('dcs-screens: "Use in DCS" stays in the window from the top of the tab to its end, with what stops it and what it did beside it', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('dcs-setup-flying', 'dcs-screens-save-bar');
+  await page.getByTestId('mode-configure').click();
+  await openScreens(page);
+  const use = page.getByTestId('screens-apply');
+
+  // The tab is much longer than the window. The button it is for is in the window at the
+  // top and at the end, and beside it stands why it cannot be pressed yet.
+  await expect(use).toHaveText('Use in DCS');
+  await expect(use).toBeDisabled();
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Not in DCS yet');
+  await expect(page.getByTestId('save-bar-why')).toHaveText('Check which screen is which first.');
+  await expectSaveBarPinned(page, use, shot);
+  // A tab has no way back of its own, so the bar has no Back.
+  await expect(page.getByTestId('save-bar-back')).toHaveCount(0);
+
+  // Pressed at the end of the tab, far from the top where the status is: what it did
+  // stands beside the button, and the button says the setup is in use.
+  await page.getByTestId('screens-pairing-confirm').click();
+  await expect(page.getByTestId('save-bar-why')).toHaveCount(0);
+  await page.getByTestId('screens-files').scrollIntoViewIfNeeded();
+  await expect(use).toBeInViewport({ ratio: 1 });
+  await use.click();
+  await expect(page.getByTestId('save-bar-saved')).toContainText(
+    'DCS will use the RigReady screen setup the next time it starts'
+  );
+  await expect(page.getByTestId('save-bar-saved')).toBeInViewport({ ratio: 1 });
+  await expect(use).toHaveText('In use');
+  await expect(use).toBeDisabled();
+  await shot('used-in-dcs');
+
+  // The bar asks nothing on the way out of this tab: "not in DCS yet" is also what a tab
+  // nobody touched says, when RigReady's own proposal has not been written yet.
+  const top = crop(page, 'LEFT_MFCD', 'top');
+  await top.fill('240');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Not in DCS yet');
+  await expect(use).toHaveText('Use in DCS');
+  await page.getByTestId('nav-displays').click();
+  await expect(page.getByTestId('displays-page')).toBeVisible();
+  await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
 });
