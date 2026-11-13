@@ -401,7 +401,19 @@ export class FakeInputProvider implements InputProvider {
       enumerationIndex: device.enumerationIndex ?? position,
     }));
   }
+  /** Which controller has which number, as it was when the last readings were kept. */
+  private listed = '';
+  /**
+   * Forgets the last readings once a controller came or went, as the real reader does: a
+   * number then belongs to another controller, so an old reading must not be replayed for it.
+   */
+  private followList(): void {
+    const now = this.state.input.map((d) => `${d.index}:${d.guid}`).join('|');
+    if (now !== this.listed) this.latest.clear();
+    this.listed = now;
+  }
   subscribe(listener: (states: InputState[]) => void): () => void {
+    this.followList();
     this.listeners.add(listener);
     if (this.latest.size > 0) listener([...this.latest.values()]);
     return () => {
@@ -410,6 +422,7 @@ export class FakeInputProvider implements InputProvider {
   }
   /** Test hook: deliver input as if the user pressed something. */
   emit(states: InputState[]): void {
+    this.followList();
     for (const state of states) this.latest.set(state.index, state);
     for (const listener of this.listeners) listener(states);
   }
@@ -907,15 +920,34 @@ export class FakeDialogs implements Dialogs {
   }
 }
 
-/** Returns a real PNG of the requested size (one colour) and a stub PDF; records the HTML. */
+/**
+ * Returns a real PNG of the requested size (one colour) and a stub PDF; records the HTML.
+ *
+ * The fake lays nothing out. A page that names a colour it must show (an element with
+ * data-must-show="#rrggbb", which a caller looks for in the picture to know that nothing
+ * was cut off) gets a strip of that colour, as a page whose content all fits would show
+ * it. `cutOff` decides per page whether to leave the strips out instead, as when the
+ * content runs off the page.
+ */
 export class FakeRender implements Render {
   readonly calls: { kind: 'png' | 'pdf'; html: string; width?: number; height?: number }[] = [];
+  /** Return true for a page that is to come out with its content cut off. */
+  cutOff: (html: string) => boolean = () => false;
   async png(html: string, size: { width: number; height: number }): Promise<Result<Uint8Array>> {
     if (size.width < 1 || size.height < 1 || size.width > 8192 || size.height > 8192) {
       return err('render.size', 'The image size must be between 1 and 8192 pixels.');
     }
     this.calls.push({ kind: 'png', html, ...size });
-    return ok(solidPng(size.width, size.height));
+    const marks = this.cutOff(html)
+      ? []
+      : [...html.matchAll(/data-must-show="#([0-9a-fA-F]{6})"/g)].map(
+          (m): [number, number, number] => [
+            parseInt(m[1]!.slice(0, 2), 16),
+            parseInt(m[1]!.slice(2, 4), 16),
+            parseInt(m[1]!.slice(4, 6), 16),
+          ]
+        );
+    return ok(solidPng(size.width, size.height, [255, 255, 255], marks));
   }
   async pdf(html: string): Promise<Result<Uint8Array>> {
     this.calls.push({ kind: 'pdf', html });

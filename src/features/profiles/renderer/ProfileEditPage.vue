@@ -22,9 +22,11 @@ import { isDuplicate, nextId } from '../core/duplicates';
 import ActionEditor from './ActionEditor.vue';
 import ItemEditor from './ItemEditor.vue';
 import ParamsForm from './ParamsForm.vue';
+import { followedBy, mergeFollowed } from './pickerForm';
 import ShortcutPanel from './ShortcutPanel.vue';
 import StandDownOnCloseEditor from './StandDownOnCloseEditor.vue';
 import { defaultsOf, plain } from './schemaForm';
+import { launchKindOf, steamAppShown, steamLaunchFor, type LaunchKind } from './steamLaunch';
 
 const props = defineProps<{ id: string }>();
 const api = useClient(profilesContract);
@@ -44,7 +46,9 @@ const remediations = ref<RemediationTypeInfo[]>([]);
 const pickers = ref<Pickers>();
 const games = ref<DetectedGame[]>([]);
 const open = ref<Record<string, boolean>>({});
-const launchKind = ref<'program' | 'steam' | 'none'>('none');
+const launchKind = ref<LaunchKind>('none');
+/** The number in the "Steam app id" field. */
+const steamApp = ref('');
 const commentsWarning = ref(false);
 const leaving = ref(false);
 const fileMessage = ref<string>();
@@ -62,7 +66,12 @@ const PHASES = [
 ] as const;
 
 const snapshot = (): string =>
-  JSON.stringify({ draft: draft.value, actions: actions.value, launchKind: launchKind.value });
+  JSON.stringify({
+    draft: draft.value,
+    actions: actions.value,
+    launchKind: launchKind.value,
+    steamApp: steamApp.value,
+  });
 const dirty = computed(() => draft.value !== undefined && snapshot() !== original.value);
 
 onMounted(async () => {
@@ -86,7 +95,10 @@ onMounted(async () => {
   actions.value = profileActions(loaded.value.profile);
   hasComments.value = loaded.value.hasComments;
   file.value = loaded.value.file;
-  launchKind.value = draft.value.steamAppId ? 'steam' : draft.value.launch ? 'program' : 'none';
+  // A game Steam starts is "Through Steam", also when the setup stores that as steam.exe
+  // with the game's number (a setup made from this rig does).
+  launchKind.value = launchKindOf(draft.value);
+  steamApp.value = steamAppShown(draft.value);
   saved.value = { name: draft.value.name, launches: launchKind.value !== 'none' };
   original.value = snapshot();
 });
@@ -166,8 +178,10 @@ function setGame(value: string): void {
 
 function useDetected(): void {
   if (!draft.value || !detectedLaunch.value) return;
-  draft.value = { ...draft.value, launch: plain(detectedLaunch.value) };
-  launchKind.value = 'program';
+  const { steamAppId: _steam, ...rest } = draft.value;
+  draft.value = { ...rest, launch: plain(detectedLaunch.value) };
+  launchKind.value = launchKindOf(draft.value);
+  steamApp.value = steamAppShown(draft.value);
 }
 
 const launchParams = computed(() => ({
@@ -212,17 +226,28 @@ function addCheck(type: CheckTypeInfo): void {
     'c',
     draft.value.checks.map((c) => c.id)
   );
-  const fix = type.fixes?.[0]
-    ? remediations.value.find((r) => r.type === type.fixes![0])
-    : undefined;
+  const fixes = type.fixes ?? [];
+  const fix = remediations.value.find((r) => r.type === fixes[0]);
+  const params = defaultsOf(type.schema);
+  // A check of something chosen from a list comes with the one fix that takes the same
+  // choice (a saved layout, and the fix that applies it): it is chosen once, in the check.
+  const shared = fix && fixes.length === 1 ? followedBy(type.pickers, fix.pickers) : undefined;
+  const starts = fix?.kind === 'action' && type.type === 'process.running';
   const item: CheckItem = {
     id,
     type: type.type,
     title: 'New check',
     required: !type.advisory,
-    params: defaultsOf(type.schema),
-    ...(fix && fix.kind === 'action' && type.type === 'process.running'
-      ? { remediation: { type: fix.type, params: defaultsOf(fix.schema) } }
+    params,
+    ...(fix && (starts || shared)
+      ? {
+          remediation: {
+            type: fix.type,
+            params: shared
+              ? mergeFollowed(defaultsOf(fix.schema), params, shared)
+              : defaultsOf(fix.schema),
+          },
+        }
       : {}),
   };
   draft.value = { ...draft.value, checks: [...draft.value.checks, item] };
@@ -393,9 +418,7 @@ function build(): Profile | undefined {
   return {
     ...rest,
     ...(launchKind.value === 'program' && launch?.exe ? { launch } : {}),
-    ...(launchKind.value === 'steam' && draft.value.steamAppId
-      ? { steamAppId: draft.value.steamAppId }
-      : {}),
+    ...(launchKind.value === 'steam' ? steamLaunchFor(draft.value, steamApp.value) : {}),
     ...(any > 0 ? { actions: actions.value } : {}),
   };
 }
@@ -578,12 +601,11 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
         </template>
         <v-text-field
           v-else-if="launchKind === 'steam'"
-          :model-value="draft.steamAppId ?? ''"
+          v-model="steamApp"
           label="Steam app id"
           hint="The number in the game's Steam store address, e.g. 223750 for DCS World"
           persistent-hint
           data-testid="edit-steam-app"
-          @update:model-value="draft = { ...draft!, steamAppId: $event || undefined }"
         />
         <div v-else class="rr-row-sub">The Play screen offers no Launch button for this setup.</div>
       </div>

@@ -4,6 +4,7 @@ import type {
   CheckDefinition,
   CheckOutcome,
   NewCheckItem,
+  ParamPicker,
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import { layoutToTargets, type DisplayLayoutStore } from '../../../core/displays/layouts';
@@ -56,12 +57,47 @@ async function expectedFor(params: LayoutParams, deps: LayoutDeps): Promise<Expe
 
 const monitors = (n: number): string => `${n} ${n === 1 ? 'monitor' : 'monitors'}`;
 
+/**
+ * The saved layouts, by name, for the setup editor: choosing one fills in its name and
+ * its monitors, so nobody types a layout id or writes the monitors out by hand.
+ */
+export function layoutPicker(layouts: Pick<DisplayLayoutStore, 'list'>): ParamPicker {
+  return {
+    list: 'displays.layouts',
+    param: 'layoutId',
+    label: 'Layout',
+    fills: ['layoutName', 'displays'],
+    empty: 'You have no saved layout yet. Save one on Configure > Monitors, then choose it here.',
+    unpicked: 'No saved layout is chosen: this setup keeps the arrangement it was made with.',
+    async choices() {
+      const saved = await layouts.list();
+      if (!saved.ok) return saved;
+      return ok(
+        [...saved.value]
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((layout) => {
+            const on = layout.displays.filter((d) => d.enabled).length;
+            return {
+              value: layout.id,
+              label: layout.name,
+              detail: `${monitors(layout.displays.length)}, ${on} on`,
+              fill: { layoutName: layout.name, displays: layout.displays },
+            };
+          })
+      );
+    },
+  };
+}
+
 export function createLayoutCheck(deps: LayoutDeps): CheckDefinition<LayoutParams> {
   return {
     type: DISPLAY_LAYOUT,
     group: 'displays',
     label: 'Monitor layout',
     params: LayoutParamsSchema,
+    // The one fix that fits: it applies the layout this check compares with.
+    fixes: [DISPLAY_APPLY],
+    picker: layoutPicker(deps.layouts),
     async run(params, ctx): Promise<CheckOutcome> {
       const layout = await ctx.ports.displays.read();
       if (!layout.ok) return { pass: false, summary: layout.error.message };
@@ -92,6 +128,7 @@ export function createApplyLayoutRemediation(
     label: 'Apply the monitor layout',
     order: 200,
     params: LayoutParamsSchema,
+    picker: layoutPicker(deps.layouts),
     describe: (p) =>
       p.layoutName ? `Apply the "${p.layoutName}" layout` : 'Apply the monitor layout',
     async run(params, ctx) {

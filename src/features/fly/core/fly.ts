@@ -28,6 +28,7 @@ import {
   type ProfileView,
 } from '../contract';
 import { actionConfirmation, realSleep, runAction, startedProgram, type Sleep } from './actions';
+import { startingNotice } from './launchText';
 import type { LastSession } from './sessionText';
 
 export type Ctx = Pick<MainContext, 'ports' | 'log' | 'checks' | 'profiles' | 'settings' | 'games'>;
@@ -509,7 +510,12 @@ export class Fly {
     }
 
     const title = profile.name;
-    report('launch', 'game', title, 'running');
+    // Said from the moment the game is started until its own window is there to see.
+    const starting = startingNotice(
+      this.gameName(profile) ?? profile.name,
+      isSteamHandoff(profile)
+    );
+    report('launch', 'game', title, 'running', starting.title);
     const fail = (message: string): Result<LaunchResult> => {
       steps.push({ itemId: 'game', title, ok: false, message, phase: 'launch' });
       report('launch', 'game', title, 'failed', message);
@@ -600,6 +606,7 @@ export class Fly {
       steps,
       postLaunchPending: post.length,
       minimize,
+      ...(minimize ? { starting } : {}),
     });
   }
 

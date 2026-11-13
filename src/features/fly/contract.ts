@@ -250,6 +250,11 @@ export const LaunchResultSchema = z.object({
   postLaunchPending: z.number().int().default(0),
   /** The window should get out of the way (the user's preference). */
   minimize: z.boolean().default(false),
+  /**
+   * Set with `minimize`: what Windows says as the window goes away, so the moment before
+   * the game shows does not read as a failure. The game by its own name.
+   */
+  starting: z.object({ title: z.string(), body: z.string() }).optional(),
 });
 export type LaunchResult = z.infer<typeof LaunchResultSchema>;
 

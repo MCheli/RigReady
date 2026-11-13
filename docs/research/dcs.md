@@ -558,6 +558,69 @@ scan_path(terrain_path); scan_path(common_path); scan_path(user_path)
 - **Size:** the image is stretched onto a quad of aspect `GetAspect()` (the kneeboard's own aspect). No fixed resolution is required. A portrait 3:4 image such as **768×1024** is the usual recommendation; 1536×2048 is sharper in VR [web: [flyawaysimulation.com kneeboard guide](https://flyawaysimulation.com/ask/answers/dcs-world-kneeboard-files-custom-pages/), [forum topic/214760](https://forum.dcs.world/topic/214760-custom-kneeboards/)]. PNG is best for text-heavy cheat sheets.
 - Pages are loaded when the cockpit loads, so new files show up in the next mission [inferred].
 
+### 5.1 Where DCS draws the kneeboard
+
+Researched 2026-11-12, after the sitting of that day found the kneeboard on the right MFD screen with most of it unreadable. Read only; no game was started, so nothing here was tried in the cockpit.
+
+**DCS works the place out from the size of its window alone** [source]. `INSTALL\Scripts\Aircrafts\_Common\Cockpit\KNEEBOARD\indicator\init.lua` ends with:
+
+```lua
+allow_manual_viewport_placement = true
+manual_viewport_dlg             = "Scripts/UI/KneeboardCanvas.dlg"
+...
+update_screenspace_diplacement(SelfWidth/SelfHeight,is_left)
+...
+dedicated_viewport_arcade = dedicated_viewport
+```
+
+and `update_screenspace_diplacement` in `_Common\Cockpit\ViewportHandling.lua` is:
+
+```lua
+local w = LockOn_Options.screen.width     -- the whole DCS window
+local h = LockOn_Options.screen.height
+local default_width  = 0.5 * h            -- never more than h, never more than 0.5 * w
+local default_height = default_width / aspect
+local default_y      = h - default_height
+local default_x      = w - default_width  -- 0 when is_left
+dedicated_viewport   = {default_x,default_y,default_width,default_height}
+```
+
+- The aspect is 0.142 / 0.214 = 0.6636 (`declare_kneeboard_device.lua`), so the kneeboard is half the window's height wide and about three quarters of the window's height tall, at the **bottom right corner of the DCS window**.
+- **The side is the aircraft's, and it is in the aircraft's own scripts** [source, read again 2026-11-12]. `is_left` is false unless the aircraft's `device_init.lua` sets it or loads `KNEEBOARD\declare_kneeboard_device_left.lua` (which is `is_left = true` and then the common declaration). The common declaration then picks `KNEEBOARD\indicator\init_left.lua` (again `is_left = true`, then `init.lua`). With `is_left`, `update_screenspace_diplacement` sets `default_x = x0` (0), and `init.lua` adds `manual_viewport_margin_left = 32` to it. So the kneeboard of such an aircraft is the same size, at the **bottom left corner of the DCS window, 32 pixels in from the left edge**.
+- **Which aircraft, by unit type as `make_flyable` or `MAC_flyable` names it in each `Mods\aircraft\<module>\entry.lua` of this install** [source]:
+  - Left: `A-10A`, `MiG-29A`, `MiG-29G`, `MiG-29S`, `Su-27`, `J-11A`, `Su-33` (each flies with `Cockpit\KneeboardLeft\device_init.lua`, which loads `declare_kneeboard_device_left.lua`), `Su-25T` (`Cockpit\Scripts\device_init.lua` loads it too) and `Christen Eagle II` (`Cockpit\device_init.lua` sets `is_left = true` before the common declaration).
+  - Right: `A-10C`, `A-10C_2`, `F-14A-95-GR`, `F-14A-135-GR-Early`, `F-14A-135-GR`, `F-14B`, `F-15C`, `F-15ESE`, `F-16C_50`, `F-86F Sabre`, `FA-18C_hornet`, `Ka-50`, `Ka-50_3`, `P-51D`, `P-51D-30-NA`, `Su-25`, `TF-51D`, `UH-1H`. Each one's `device_init.lua` loads the common declaration with `is_left` not set (the F-15E has a declaration of its own that names the common `indicator\init.lua`), and no cockpit script of theirs mentions `is_left`.
+  - Any other aircraft (a module that is not in this install, a community mod): **not known.** Its scripts were not read, and a module may set `is_left` or bring a kneeboard of its own.
+- In VR the same sum uses the size of the UI main view (`get_UIMainView()`), not the window.
+- **On this rig:** window 7424 × 1440, so the kneeboard is 720 × 1085 at x = 6704, y = 355. The right MFD screen is 768 × 1024 at x = 6656, so the kneeboard is on it, over the Right DDI, and its bottom 416 pixels are on no screen (62% shows) [inferred from the source; it matches what the owner saw].
+
+**A monitor setup file cannot move it** [source]. The MFD displays call `try_find_assigned_viewport("LEFT_MFCD")`, which looks the name up in the monitor setup file. The kneeboard's `init.lua` never calls it, so a `KNEEBOARD = { x, y, width, height }` entry in `RigReady.lua` is read by nothing. RigReady therefore writes none: it would be a setting that does nothing.
+
+**DCS has a way to move it by hand, and where it keeps the place is not known.** `allow_manual_viewport_placement = true` and `Scripts\UI\KneeboardCanvas.dlg` (a frame that can be dragged and resized, with a yellow tab, `sticky_note.png`) say the kneeboard can be dragged in the game. `bin\CockpitBase.dll` carries the matching strings (`manual_viewport_dlg`, `manual_viewport_margin_*`, `kneeboardCanvasUpdater`). No file name for a saved place was found in the scripts or the DLL's strings, and neither the recorded `options.lua` nor the names of the files in `SG\Config` show one; the owner has never moved his kneeboard, so a file that only appears after the first drag cannot be ruled out [inferred].
+
+**Candidates, none tried.** Each needs DCS running, so each is for a sitting:
+
+1. Drag the kneeboard by its yellow tab (mouse pointer on, kneeboard shown), leave the mission, come back. Is the place kept? If so, list `SG\Config` again and find the file that changed: that file is what RigReady could write.
+2. `INSTALL\Scripts\Export.lua` carries a commented sample, `GetIndicator(1)` then `MFD:assign_dedicated_viewport(0,0,1024,768)`, in `LuaExportOnHumanStart`. If the kneeboard is an indicator that call reaches, one line in `SG\Scripts\Export.lua` could place it, and RigReady already manages that file with a backup. Unknown: the kneeboard's indicator number per aircraft, and whether the call works from the export environment at all.
+3. A `.lua` page in `SG\Kneeboard` runs in the kneeboard's own Lua environment (section 5: "a `.lua` file becomes a scripted page"). Whether a page script may set `dedicated_viewport` after the indicator is built is unknown.
+4. Changing the game's own script: adding `try_find_assigned_viewport("KNEEBOARD")` to the end of the kneeboard's `init.lua`, or setting `is_left`. This is known to the DCS community as the way to give the kneeboard a viewport [web, not checked for this version]. RigReady does not do it: it is a file in the install, every update and repair puts the original back, and whether the changed file passes the multiplayer file check has not been established.
+
+**What RigReady does with this** (`src/features/dcs-setup/core/screens.ts`, `kneeboardPlace`): the Screens tab draws the kneeboard's place on its map from the same sum, on the side the list above gives for the aircraft shown (`KNEEBOARD_SIDES`), and says how much of it is on a screen, so the user learns it before flying. For an aircraft that is not on the list it draws no box and says that RigReady does not know where that aircraft shows the kneeboard. It offers no control that moves the kneeboard, because no way that stock DCS honours is known yet.
+
+### 5.2 The keys the kneeboard needs
+
+`INSTALL\Config\Input\Aircrafts\common_keyboard_binding.lua` gives every aircraft these keys [source]:
+
+| Key | Action |
+|---|---|
+| `RShift + K` | Kneeboard ON/OFF |
+| `K` | Kneeboard glance view |
+| `]` | Kneeboard Next Page |
+| `[` | Kneeboard Previous Page |
+| `RCtrl + K` | Kneeboard current position mark point |
+
+`common_joystick_binding.lua` lists the same actions with no button. So a pilot who binds ON/OFF to a button can open the kneeboard from the stick and then cannot turn a page without the keyboard, which is what the owner met on 2026-11-12. RigReady's kneeboard dialog shows where the three keys are bound and offers the bindings page when the page keys are on no controller (`src/features/cheat-sheets/core/kneeboardKeys.ts`).
+
 ---
 
 ## 6. options.lua and other pre-flight checks

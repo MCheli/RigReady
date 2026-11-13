@@ -597,8 +597,21 @@ async function start(): Promise<void> {
       }
       // After a launch the window gets out of the way, when the user wants that.
       if (channel === 'fly:launch') {
-        const value = envelope.value as { outcome?: string; minimize?: boolean };
+        const value = envelope.value as {
+          outcome?: string;
+          minimize?: boolean;
+          starting?: { title: string; body: string };
+        };
         if (value.outcome === 'launched' && value.minimize && mainWindow) {
+          // A game can take most of a minute to show anything. The window that goes away
+          // now leaves a line behind, so the empty screen does not read as a failure. A
+          // launch from the tray says its own piece, and a window nobody saw leaves nothing.
+          const seen = mainWindow.isVisible() && !mainWindow.isMinimized();
+          if (seen && !trayBusy && value.starting) {
+            void ports.notifications.notify(value.starting).then((sent) => {
+              if (!sent.ok) log.warn('the starting notification could not be shown', sent.error);
+            });
+          }
           if (tray) mainWindow.hide();
           else mainWindow.minimize();
         }

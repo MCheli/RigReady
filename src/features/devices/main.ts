@@ -12,6 +12,7 @@ import {
   matchesDevice,
 } from './core/deviceCheck';
 import { boundInputsOf, type BindingSource } from './core/bound';
+import { controllersSignature } from './core/controllers';
 import { analyzeHealth, healthText, type HealthReport, type Sample } from './core/health';
 import { hidHideCached } from '../../core/hidhide';
 import type { Overview } from './core/model';
@@ -31,6 +32,8 @@ import { buildUsbMap } from './core/usbMap';
 
 /** How long the overview waits for the DirectInput reader before showing devices without it. */
 const INPUT_WAIT_MS = 4000;
+/** While a window watches input, the list of controllers is compared this often. */
+const CONTROLLERS_CHECK_MS = 500;
 /** Live input reaches the window at most this often. */
 const INPUT_FLUSH_MS = 16;
 
@@ -148,12 +151,32 @@ function setupDevices(ctx: MainContext) {
       pending[at] = state;
     else pending.push(state);
   };
+  // The DirectInput reader finds a new or a removed controller by itself, a moment after
+  // Windows reports the plug, and does not say when it has. Screens reload on Windows'
+  // report, which can be too early to see the reader's new list. So while a window watches
+  // input the list is compared here, on every input and a few times a second, and sent when
+  // it differs: before any input of the new list, so that nothing a controller does is
+  // ever shown under the controller that had its number before.
+  let sentControllers: string | undefined;
+  let controllersTimer: ReturnType<typeof setInterval> | undefined;
+  const followControllers = (): void => {
+    if (watchers.size === 0) return;
+    const now = ports.input.devices();
+    const signature = controllersSignature(now);
+    if (signature === sentControllers) return;
+    // Input still waiting was read from the list as it was: its numbers mean others now.
+    if (sentControllers !== undefined) pending = [];
+    sentControllers = signature;
+    ctx.emit(devicesContract, 'controllers', { devices: now });
+  };
   const watch = async (client: string, on: boolean): Promise<Result<{ watching: boolean }>> => {
     if (!on) {
       watchers.delete(client);
       if (watchers.size === 0) {
         stopWatching?.();
         stopWatching = undefined;
+        clearInterval(controllersTimer);
+        controllersTimer = undefined;
         pending = [];
       }
       return ok({ watching: false });
@@ -161,7 +184,16 @@ function setupDevices(ctx: MainContext) {
     const started = await startInput();
     if (!started.ok) return started;
     watchers.add(client);
+    // A window that starts to watch gets the list as it is now, whatever it read before.
+    sentControllers = undefined;
+    followControllers();
+    if (!controllersTimer) {
+      controllersTimer = setInterval(followControllers, CONTROLLERS_CHECK_MS);
+      // Never a reason to keep the app running.
+      controllersTimer.unref();
+    }
     stopWatching ??= ports.input.subscribe((states) => {
+      followControllers();
       for (const state of states) queueState(state);
       flushTimer ??= setTimeout(flush, INPUT_FLUSH_MS);
     });
@@ -286,6 +318,8 @@ function setupDevices(ctx: MainContext) {
     stopWatching?.();
     notifier.dispose();
     clearTimeout(flushTimer);
+    clearInterval(controllersTimer);
+    watchers.clear();
     await queue;
     if (known) await updateHistory(stores, known, ports.clock);
   };
