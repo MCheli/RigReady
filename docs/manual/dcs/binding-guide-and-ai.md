@@ -46,7 +46,7 @@ The aircraft then says **Your own guide**, and the guide is used wherever a guid
 
 - **Open the file** opens the kept file in Notepad. Change it, save, and press **Read it again**.
 - An edit that does not fit the format is reported with what is wrong, and the guide is not used until the file is fixed or deleted.
-- **Delete this guide** asks first, then removes the file: the aircraft has no guide again, and the file cannot be brought back.
+- **Delete this guide** asks first, then removes the file: the aircraft has no guide again. A copy is kept: the change is listed on [the Safety page](../protect/safety-page.md), where **Undo** puts the file back. No assistant can delete a guide of your own.
 
 The file is `ai-assist\guides\<aircraft>.yaml` under [the data folder](../app/index.md). RigReady writes nothing anywhere else for it.
 
@@ -77,7 +77,7 @@ Once a provider is set up the Binding guide page gets an **AI help** tab, and th
 - **Suggest a setup** asks for a binding plan for this aircraft on your controllers.
 - **Ask about this setup** takes a question of up to 600 characters, for example "What am I missing for carrier landings?", and answers in plain text.
 - **Explain** on an action in the walkthrough asks what it does in the real aircraft and in DCS, when you use it and where it belongs.
-- **Draft a guide**, for an aircraft without one, has the model write a guide in the same format from the aircraft's own action list. It is saved under RigReady's folder, marked as drafted by AI wherever it is shown, and every action in it was checked against the aircraft's real action list; nobody checked the advice. **Delete the drafted guide** removes it. A draft is not offered while a guide file of your own is kept for the aircraft.
+- **Draft a guide**, for an aircraft without one, has the model write a guide in the same format from the aircraft's own action list. It is saved under RigReady's folder, marked as drafted by AI wherever it is shown, and every action in it was checked against the aircraft's real action list; nobody checked the advice. **Delete the drafted guide** removes it, with a copy kept and Undo on the Safety page. A draft is not offered while a guide file of your own is kept for the aircraft.
 
 ### What is sent
 

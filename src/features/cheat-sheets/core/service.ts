@@ -13,7 +13,7 @@ import type { ChangePreview } from '../../../shared/changePreview';
 import type { InputDevice } from '../../../shared/models';
 import { builtinLayoutFor } from './builtin';
 import { convertJoystickDiagrams } from './convert';
-import { DRAWING_FORMAT, drawingMatches, parseDrawing } from './drawings';
+import { DRAWING_FORMAT, drawingMatches, MAX_PICTURE_CHARS, parseDrawing } from './drawings';
 import {
   Kneeboard,
   KneeboardOptionsSchema,
@@ -377,10 +377,10 @@ export class CheatSheets {
     const bytes = await files.readBytes(file);
     if (!bytes.ok) return bytes;
     const image = `data:${type};base64,${Buffer.from(bytes.value).toString('base64')}`;
-    if (image.length > MAX_BACKGROUND_CHARS) {
+    if (image.length > MAX_PICTURE_CHARS) {
       return err(
         'sheet.image',
-        'That picture is too large for a layout (about 6 MB at most). Save a smaller copy and try again.'
+        'That picture is too large for a layout (about 5 MB at most). Save a smaller copy and try again.'
       );
     }
     return ok({ image });

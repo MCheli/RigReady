@@ -346,4 +346,75 @@ describe('a drawing of the user’s own', () => {
     expect(plan.callouts.map((c) => c.head)).toEqual(['Rudder · Z', 'Left brake · Y']);
     expect(crossings(plan.callouts)).toBe(0);
   });
+
+  it('holds no more picture than the window lets a layout have: a shared file over it is refused with the reason', async () => {
+    const running = await start();
+    const device = { vendorId: '044F', productId: 'B68F', name: 'Thrustmaster TPR Pedals' };
+    /** A picture of about this many characters of data URL text. */
+    const picture = (chars: number): string =>
+      `data:image/jpeg;base64,${'A'.repeat(chars - 'data:image/jpeg;base64,'.length)}`;
+    const photos = (...sizes: number[]) => ({
+      format: DRAWING_FORMAT,
+      version: DRAWING_VERSION,
+      name: 'My pedals',
+      match: { vendorId: '044F', productIds: ['B68F'] },
+      size: { width: 200, height: 100 * sizes.length },
+      views: sizes.map((chars, i) => ({
+        name: `Photo ${i + 1}`,
+        image: picture(chars),
+        x: 0,
+        y: 100 * i,
+        w: 200,
+        h: 100,
+      })),
+      controls: [
+        { id: 'rudder', name: 'Rudder', at: { x: 40, y: 30 }, inputs: [{ id: 'axis:Z' }] },
+      ],
+    });
+    const base = builtinLayoutFor('044F', 'B68F')!;
+    const layoutWith = (extra: Record<string, unknown>) => ({ ...base, ...extra });
+    const files: Record<string, unknown> = {
+      // Each photo fits on its own, and the files are small enough to be read at all.
+      'two-photos.rrdrawing.json': photos(3_600_000, 3_600_000),
+      'six-photos.json': layoutWith({
+        drawing: { anchors: {}, sides: {}, names: {}, custom: photos(...Array(6).fill(1_200_000)) },
+      }),
+      'photo-and-picture.json': layoutWith({
+        background: { image: picture(4_000_000), x: 0, y: 0, w: 100, h: 100, opacity: 1 },
+        drawing: { anchors: {}, sides: {}, names: {}, custom: photos(3_500_000) },
+      }),
+      'just-fits.json': layoutWith({
+        drawing: { anchors: {}, sides: {}, names: {}, custom: photos(3_400_000, 3_400_000) },
+      }),
+    };
+    const docs = path.join(running.home, 'Documents');
+    await fs.mkdir(docs, { recursive: true });
+    for (const [name, content] of Object.entries(files)) {
+      await fs.writeFile(path.join(docs, name), JSON.stringify(content));
+      running.ports.dialogs.script.open.push([`Documents/${name}`]);
+    }
+    const reason =
+      /too large together \(\d+\.\d MB\)\. A layout holds about 5 MB of pictures at most/;
+    const drawing = running.invoke('cheat-sheets:importLayout', device);
+    await expect(drawing).rejects.toThrow(/two-photos\.rrdrawing\.json is not a usable drawing/);
+    await expect(drawing).rejects.toThrow(reason);
+    for (const name of ['six-photos.json', 'photo-and-picture.json']) {
+      const refused = running.invoke('cheat-sheets:importLayout', device);
+      await expect(refused, name).rejects.toThrow(`${name} is not a usable layout`);
+      await expect(refused, name).rejects.toThrow(reason);
+    }
+    const fits = await running.invoke<{ layout: DeviceLayout }>(
+      'cheat-sheets:importLayout',
+      device
+    );
+    expect(fits.layout.drawing?.custom?.views).toHaveLength(2);
+
+    // Nothing over it is saved either, however it is sent.
+    await expect(
+      running.invoke('cheat-sheets:saveLayout', {
+        ...device,
+        layout: files['photo-and-picture.json'],
+      })
+    ).rejects.toThrow(reason);
+  });
 });

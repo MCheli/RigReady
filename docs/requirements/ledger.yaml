@@ -4511,6 +4511,7 @@ requirements:
       - "A chosen file is told by what it holds, not by its name: JPEG, PNG and WebP are taken; a file that is not a picture, an empty file, an HEIC photo and a file over 25 MB are refused, each with the reason and what to do, and nothing changes."
       - "The photos show in RigReady's own windows and on the pages the user exports. What an AI assistant can read of a sheet or a kneeboard page has a plain grey box where each photo is, and everything else as it is; no assistant is offered the file dialog."
       - "A layout that was read without its photos and is saved again keeps its photos."
+      - "All the pictures of one layout together (the picture behind it, its drawing's picture and photos) are at most 7 million characters of data URL text, about 5 MB, in the window and in the layout and drawing formats alike. A layout or drawing file over it is refused on import with 'The pictures in it are too large together (… MB). A layout holds about 5 MB of pictures at most.', and none is saved, however it is sent."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/photoFile.test.ts#is told by its first bytes: JPEG, PNG and WebP are photos, HEIC is named, the rest is not a picture"
@@ -4520,6 +4521,7 @@ requirements:
       - "src/features/cheat-sheets/core/photoFile.test.ts#gets its photos back from the saved layout, each at its place, or says it cannot"
       - "src/features/cheat-sheets/core/photoFile.test.ts#are in RigReady’s own windows and on the pages the user exports, and left out of what an assistant reads"
       - "src/features/cheat-sheets/core/photoFile.test.ts#stay saved when a layout read without them is saved again, and a box with no photo behind it is refused"
+      - "src/features/cheat-sheets/core/picture.test.ts#holds no more picture than the window lets a layout have: a shared file over it is refused with the reason"
       - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - press a control and click its place, undo, move and take off, a hat as one, two named photos, a half-done sheet"
       - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: a file that is not a picture or is too large is refused with the reason, and a control known by name comes whole"
       - "artifacts/screens/cheat-sheets-photo/01-nothing-placed.png"
@@ -5048,7 +5050,8 @@ requirements:
     priority: p3
     done_means:
       - "For an aircraft RigReady ships no guide for, the Binding guide page offers 'Import a guide file' and 'Write your own' with no AI key. The import takes the file picked in the Windows dialog, reads it with the parser every guide goes through and keeps a copy in the data folder; the starter is a short guide, valid as it stands, on real actions of the aircraft, with the format explained in its first lines."
-      - "'Open the file' starts Notepad with the kept file as its one argument (Shell.launch with an argument array); 'Read it again' reads the file after an edit, and an edit that does not fit is shown with what is wrong; 'Delete this guide' asks first."
+      - "'Open the file' starts Notepad with the kept file as its one argument (Shell.launch with an argument array); 'Read it again' reads the file after an edit, and an edit that does not fit is shown with what is wrong; 'Delete this guide' asks first, keeps a copy, and the Safety page puts the file back."
+      - "An assistant (an MCP client or the built-in one) can delete a guide an AI drafted, with the same copy kept and Undo on the Safety page. It never deletes a guide the user wrote or imported, nor a guide file that cannot be read as either, under any confirm policy: deleteDraft refuses it with ai.ownGuide, and the window's own delete (deleteGuide) is not offered to assistants."
       - "A file that is not a guide, that is for another aircraft or that is larger than 512 KB is refused with the reason. A kept guide file is never replaced by an import, a starter or a draft by AI. Nothing is written outside the data folder."
       - "A pattern in a guide is at most 100 characters, repeats no group, and uses *, + or {…} at most twice; a guide holds at most 40 patterns. The same holds for the shipped guides, a guide drafted by AI, an imported guide and a guide written by hand, each time the file is read."
       - "A request for AI help says whose guide it carries, in the preview and in the request itself, and 'Exactly what is sent' in Settings says that a guide of the user's own is part of such a request."
@@ -5065,6 +5068,8 @@ requirements:
       - "src/features/ai-assist/core/ownGuide.test.ts#starts a short guide that is valid as it stands, on real actions of the aircraft, with the format explained"
       - "src/features/ai-assist/core/ownGuide.test.ts#reads the file again after an edit, and says what is wrong with an edit that does not fit"
       - "src/features/ai-assist/core/ownGuide.test.ts#\"Open the file\" starts Notepad with the kept guide file as its one argument, and with no other file"
+      - "src/features/ai-assist/core/ownGuide.test.ts#deleting takes the guide file away, keeps a copy, and the Safety page puts it back"
+      - "src/features/ai-assist/core/ownGuide.test.ts#refuses it under every confirm policy, and deletes a guide AI drafted with a copy kept"
       - "src/features/ai-assist/core/ownGuide.test.ts#is refused while a guide file of your own is kept, and nothing is sent"
       - "src/features/ai-assist/core/ownGuide.test.ts#a request shown before the guide was imported sends nothing afterwards and leaves the file alone"
       - "src/features/ai-assist/core/ownGuide.test.ts#names a guide of your own as yours, in the preview and in the request itself"
@@ -5088,7 +5093,7 @@ requirements:
     done_means:
       - "With an AI provider set up (a key, or a server on this PC), an Assistant button is in the app bar on every screen and 'Open the assistant' is in the command palette; without one there is no button and the palette opens the panel and says a provider is needed; drafts from MCP assistants are shown either way. The binding guide keeps its own view and links to the panel."
       - "The assistant is offered the MCP server's guided catalogue (task-level tools, rigready_channels, rigready_call), never an 'off' channel, and every call goes through the one gate the MCP server uses: confirm policy, question in the window under 'Built-in assistant', one change at a time, rate limit, activity record and the Safety page name."
-      - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER}."
+      - "Every request is built first and shown (a line per part, the exact JSON a click away); nothing is sent before Send, or before the user ticked 'Don't show this again for this conversation'. The key goes only in the request header to the one host the preview named; tool answers have the user's folder written as {USER} however it is written there: in any case, with either slash or doubled in JSON, in its short (8.3) form, without its drive, and in a file:/// address with escaped characters, in any script. Only the whole folder is taken: other names and paths go as they are, and the PC's name is written as {PC} in any case."
     notes:
       - "2026-11-12: the panel was reworked after the owner's first use on the rig. A request that failed stays ready and one press sends it again, with the message back in the box; the conversation is the one scrolling region, with proposals where they were made; replies are shown formatted; every request says what reading it costs, and a ceiling per question stops and asks (ASSIST-005). The unit tests below prove this on the real code paths: the panel's store against the wired app, the log through the real logger. Open: tests/e2e/assistant.e2e.ts was extended and has a second test ('assistant: a request the provider refuses can be sent again with one press', scenario assistant-refused). Neither has been run since the rework, because no window may be opened while the rig sitting runs. The two screenshots below show the panel as it was before; they, the other six of artifacts/screens/assistant and the two new ones of artifacts/screens/assistant-refused (refused, answered-after-retry) wait to be taken by that run. Back to done once the run has passed and the screenshots are committed."
       - "2026-11-12, after the sitting: windows were allowed again. Both tests of tests/e2e/assistant.e2e.ts passed against the build of this commit, with the isolated launch, and the eight screenshots of artifacts/screens/assistant and the two of artifacts/screens/assistant-refused were taken by that run and are committed with it. Back to done. The dollar figures in them are worded as estimates (ASSIST-008)."
@@ -5100,6 +5105,10 @@ requirements:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
       - "src/features/ai-assist/core/assistant.test.ts#a read runs, a change is asked in the window under its name, a refusal is recorded, an off channel is refused"
       - "src/features/ai-assist/core/assistant.test.ts#never sends a request that was not prepared and shown"
+      - "src/features/ai-assist/core/assistant.test.ts#in any case, with either slash, doubled in JSON, and without its drive"
+      - "src/features/ai-assist/core/assistant.test.ts#in its short (8.3) form, or a mix of short and long"
+      - "src/features/ai-assist/core/assistant.test.ts#in a file:/// URL with escaped characters, in any script"
+      - "src/features/ai-assist/core/assistant.test.ts#leaves other names and paths as they are, and writes the PC name as {PC} in any case"
       - "src/features/mcp/server/server.test.ts#a change waits for the user in the window: allowed it runs, denied it does not"
       - "src/features/ai-assist/core/assistant.test.ts#keeps the request when the provider refuses it: trying again is the same request, once more"
       - "src/features/ai-assist/core/assistant.test.ts#drops a request whose provider changed in Settings, says so, and a new one can be built at once"
@@ -5152,11 +5161,15 @@ requirements:
     done_means:
       - "setup_propose (built-in assistant and MCP) makes a draft of a new setup or of checks and launch steps added to one, validated against the registered check and fix types; it is shown in the assistant panel with every item and the setup as it would be saved."
       - "Nothing is written until the user presses Save, which saves through profiles:create or profiles:save; a setup changed after the assistant read it is not overwritten. A script.run the assistant proposes always asks before it runs."
+      - "setup_read, setup_propose and script_draft take a setup by its id, or by its whole name in any case and in any script (Cyrillic, CJK, Greek, or marks only). A part of a name, a name no setup has and a name two setups share are refused with ai.setup and a message that names the setups, never a guess."
     notes:
       - "2026-11-12: two reading tools were added beside setup_propose, for the built-in assistant and MCP: setup_read (one setup in a line per item) and setup_types (the check and fix types, one type's params on request), so an assistant no longer reads every setup and every schema to propose one. Saving a draft is a plain write in RigReady's data folder, as in the setup editor: it is not backed up and not listed on the Safety page, and the panel and the manual no longer say it is. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#finds the programs, proposes a setup, and the user saves it"
+      - "src/features/ai-assist/core/setupTools.test.ts#takes the id, or the whole name in any case, and nothing less"
+      - "src/features/ai-assist/core/setupTools.test.ts#matches a name in any script exactly, and never takes one for a name it is not"
+      - "src/features/ai-assist/core/setupTools.test.ts#never guesses between two: it names them, and names all when none fits"
       - "src/features/ai-assist/core/setupTools.test.ts#setup_read answers one setup in a fraction of what the whole list takes, and asks nobody"
       - "src/features/ai-assist/core/setupTools.test.ts#setup_types lists the types in a tenth of what their schemas take, and one type on request"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
@@ -5169,6 +5182,7 @@ requirements:
     priority: p2
     done_means:
       - "script_draft makes a .ps1 or .cmd draft with a plain explanation; one that asks for elevation is refused. The panel shows the whole file as it would be saved, the explanation and warnings; Save writes it through FileStore into <data root>/scripts/assistant with a header, and records its SHA-256 as the approval."
+      - "The panel names the setup the script goes into as that setup is called, and Save adds it to that setup by its id. A setup the assistant names that no setup is called is refused before anything is shown."
       - "The setup step it goes into asks before every run, whatever the setup says. Before it runs as a check, a fix or a step, the file is hashed again; a changed file is not run and is shown again in the panel until the user approves the text as it is now."
       - "No assistant can run it: while an assistant's call is carried out, a script from that folder is refused, and rig_make_ready's approvePrograms never covers it. Scripts never run elevated, and shared setups keep leaving scripts out."
     notes:
@@ -5177,6 +5191,7 @@ requirements:
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#is saved into the data folder with a header, approved by hash, refused when changed and for an assistant"
+      - "src/features/ai-assist/core/assistant.test.ts#goes into the setup it names exactly, in any script; a name no setup has is refused"
       - "src/features/ai-assist/core/assistant.test.ts#refuses a script that asks for administrator rights"
       - "src/features/ai-assist/core/assistant.test.ts#a script.run step for an assistant script always asks, whatever the setup says"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
@@ -5193,6 +5208,7 @@ requirements:
     done_means:
       - "The assistant talks to the provider of AI-008 (Anthropic, OpenAI, or an OpenAI-compatible server, a local one included) with that provider's own key, over Anthropic's Messages API or Chat Completions with tools; the conversation, tool calls and tool results are carried over faithfully either way."
       - "The preview names the host; a request whose provider, address or model changed in Settings after it was shown is not sent. A refusal or an unreadable answer is an error, never an empty success. Tokens are shown; a cost only where the price is known."
+      - "The ceiling per question is read from Settings for every request of the question: lowered while a question runs, it holds its next request back; after the user's yes past it, the question may reach as much again of the ceiling as it is then; turned off, nothing holds the question back. The user's own Stop leaves no failure line in the log."
     notes:
       - "2026-11-12: what a question costs was cut and is said honestly. On the Anthropic wire the instructions and the end of the conversation are marked for the provider's cache, so every request after the first reads what was already sent at the cached price; cache writes and reads are priced as such in the estimate before sending and in the totals; the preview says which request of the question it is and that the amount is for reading only; a ceiling per question (Settings, $0.25 unless changed, 0 for none) stops and asks before a question passes it, also with the preview switched off. No redirect is followed. Measured with a scripted model (src/features/ai-assist/core/cost.test.ts): the owner's first two questions, replayed request for request, went from about $0.70 to about $0.19, and to about $0.09 with the narrower tools. A cost and the ceiling exist only where the price is known. The screenshot shows the panel before the rework of ASSIST-001 (2026-11-12) and is taken again with the next run of tests/e2e/assistant.e2e.ts, which was extended and has not been run since; see the note on ASSIST-001."
       - "2026-11-12, after the sitting: that run has passed and the screenshot shows the panel as it is now. By the owner's rule of the same day, what this entry calls a cost is shown as an estimate that names its prices (ASSIST-008), the prices can be typed (ASSIST-009), and the first amount the user sets as the ceiling needs an acknowledgement (ASSIST-010)."
@@ -5210,6 +5226,8 @@ requirements:
       - "src/features/ai-assist/core/cost.test.ts#a question that reads on and on stops at the ceiling and asks, before it is passed"
       - "src/features/ai-assist/core/assistant.test.ts#shows the ceiling with the request, stops before going past it, and goes on only with a yes"
       - "src/features/ai-assist/core/assistant.test.ts#0 means no ceiling, and a model without a known price has none"
+      - "src/features/ai-assist/core/assistant.test.ts#a ceiling lowered in Settings while a question runs holds for its next request"
+      - "tests/unit/failureLog.test.ts#writes nothing for an answer that worked, nor for a Stop the user pressed"
       - "src/features/ai-assist/renderer/assistantStore.test.ts#never goes past the ceiling by itself: it stops, says so, and goes on only on the press"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "artifacts/screens/assistant/02-first-request.png"
@@ -7972,7 +7990,7 @@ requirements:
     done_means:
       - "Every channel of every feature that answers with an error leaves one line in the log at the normal level: the channel, the error's code and the message the user was shown. Never the input, and never the error's detail. The same error of the same channel is written once a minute, with a count of the ones in between; the user's own Stop writes nothing."
       - "Every request to an AI provider that fails leaves one line: the host, the path, the model, the HTTP status, the provider's own error type, error code and message, and the id the provider gave the request. Never the key, the request text or an address's query. A send the panel refused is in the log the same way, and so is the case of a question that has used the requests it may make."
-      - "The MCP server leaves a line for every change, every launch and every call that did not go through: who, which tool and how it ended, never the input or the answer."
+      - "The MCP server leaves a line for every change, every launch and every call that did not go through: who, which tool and channel, how it ended and, for a call that did not work, the error's code. Never the input or the answer, nor the call's line in words or its message, which can hold them; those stay in the list of what assistants did."
       - "A diagnostics export of such a failure holds those lines, and holds no API key and no pairing token."
     status: done
     evidence:
@@ -7985,6 +8003,7 @@ requirements:
       - "src/features/ai-assist/core/providerLog.test.ts#holds the status, the reason, the error type and the request id, and what the panel told the user"
       - "src/features/mcp/core/tokenCare.test.ts#a port another program holds: the export says which channel failed and why"
       - "src/features/mcp/core/tokenCare.test.ts#a change an assistant made, and a call that failed, each leave a line with who and what"
+      - "src/features/mcp/core/tokenCare.test.ts#a call's line names the tool, the channel and how it ended, never what the call was given"
 
   # ---------------------------------------------------------------------------
   # WINDOWS INTEGRATION — flying in one double-click (the final pass, 2026-10-04)

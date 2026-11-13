@@ -74,7 +74,7 @@ From then on your photos are the picture of that device model everywhere a RigRe
 
 **Your photos stay on this PC.** They are kept in [RigReady's folder](../app/index.md) and nothing is uploaded. They leave it only when you say so: on a page you print or save as PDF, on kneeboard pages you export (those are written to the game's kneeboard folder), and in the file **Share as file…** makes, which holds the photos so that someone with the same device can import them. RigReady keeps its own smaller copy of each photo, drawn again as a JPEG, so where and when the photo was taken is not kept with it.
 
-RigReady takes JPEG, PNG and WebP photos of up to 25 MB. A file that is not a picture, or is too large, is refused with the reason, and nothing changes. An iPhone's HEIC photo has to be saved or sent as a JPEG first.
+RigReady takes JPEG, PNG and WebP photos of up to 25 MB, and keeps its own smaller copy of each. All the pictures of one layout together hold about 5 MB at most; a layout or drawing file someone shares with more is refused on import with the reason. A file that is not a picture, or is too large, is refused with the reason, and nothing changes. An iPhone's HEIC photo has to be saved or sent as a JPEG first.
 
 **Discard my layout** drops your photos and goes back to what RigReady ships for the device.
 
@@ -101,7 +101,7 @@ A layout says where the label cards of one device model sit on the picture. **Ed
 - Drag cards, their pointers and group frames into place; the arrow keys nudge the selected one. Press a control on the device to find its card.
 - The field **Printed on the device** is the label on the card, such as "OSB 6". **Add pointer** draws a line from the card to a spot on the picture.
 - **Add a group frame** draws a labelled frame; a control inside carries the frame's name, and the frame moves its contents with it.
-- **Choose a photo or drawing…** puts a PNG, JPEG, WebP or SVG picture of about 6 MB at most behind the cards, with a strength slider.
+- **Choose a photo or drawing…** puts a PNG, JPEG, WebP or SVG picture of about 5 MB at most behind the cards, with a strength slider.
 - **Not on the layout** lists every control the device reports that is not placed; a dot marks one that has a binding. Click one to add it. A control with a binding is never left off a sheet: unplaced ones are added below the picture under "More controls".
 - **Import…** reads a RigReady layout or drawing file, or a Joystick Diagrams SVG template, which becomes the background with a card at each placeholder. **Share as file…** saves your layout or drawing as a file to give to someone else. **Discard my layout** goes back to what RigReady ships.
 

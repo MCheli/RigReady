@@ -190,8 +190,14 @@ export const aiAssistContract = defineContract(
     }),
     deleteDraft: channel(Aircraft, z.object({ deleted: z.boolean() }), {
       describe:
-        "Deletes the binding guide kept for one aircraft in RigReady's data folder: one the AI drafted, or the user's own.",
+        "Deletes the binding guide an AI drafted for one aircraft in RigReady's data folder. A copy is kept and Undo is on the Safety page. A guide the user wrote or imported is refused: only the user deletes that, in RigReady's window.",
       tier: 'change',
+    }),
+    /** The window's Delete, after the user said yes: whichever guide is kept, the user's own included. */
+    deleteGuide: channel(Aircraft, z.object({ deleted: z.boolean() }), {
+      describe:
+        "Deletes the binding guide file kept for one aircraft, the user's own included, after the user said yes in RigReady's window. Only a window of the app does this.",
+      tier: 'off',
     }),
     importGuide: channel(Aircraft, z.object({ imported: z.boolean(), items: z.number().int() }), {
       describe:

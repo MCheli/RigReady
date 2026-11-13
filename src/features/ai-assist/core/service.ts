@@ -172,7 +172,7 @@ export function whatIsSent(provider: ChatProvider | undefined): WhatIsSent {
       "Sent with every request: your messages and the assistant's answers in the conversation so far, RigReady's instructions for the assistant, and the list of tools it may use (their names, descriptions and arguments).",
       "Sent: what each tool answered when the assistant used it. A tool can answer what RigReady itself can show you: your setups and their checks and steps, whether the rig is ready, what is connected and running, where programs are installed, the names of your devices, the bindings and settings RigReady reads from your games, and pages of RigReady's manual.",
       'Every tool the assistant used is listed in the conversation. Open its row to read exactly what it answered, which is exactly what is sent.',
-      "Before a tool's answer is sent, the path of your Windows user folder is replaced by {USER}, and the PC's name by {PC} when it has five or more characters. Nothing else is taken out: other names and paths go as they are.",
+      "Before a tool's answer is sent, the path of your Windows user folder is replaced by {USER}, in any case, in its short form and in a file:/// address too, and the PC's name by {PC} when it has five or more characters. Nothing else is taken out: other names and paths go as they are.",
       'Not sent: anything no tool was used for. The assistant cannot read the PC in any other way.',
       'Each request is shown before it is sent, with its exact text one click away, unless you ticked "Don\'t show this again for this conversation".',
       'A setup it proposes or a script it drafts comes back in its answer and waits in RigReady until you save it or throw it away. Saving it sends nothing.',
@@ -1442,12 +1442,40 @@ export class AiAssist {
     return proposals.value.apply(proposal.value);
   }
 
+  /**
+   * Deletes a guide an AI drafted. A guide of the user's own, or a file that cannot be read
+   * as either, is refused: only the user deletes that, in the window (`deleteGuide`).
+   */
   async deleteDraft(aircraftId: string): Promise<Result<{ deleted: boolean }>> {
+    if (await this.ownGuideKept(aircraftId)) {
+      return err(
+        'ai.ownGuide',
+        "The guide kept for this aircraft is the user's own, so it was not deleted. Only the user can delete it, in RigReady's window."
+      );
+    }
+    return this.removeGuide(aircraftId, 'Delete a binding guide drafted by AI');
+  }
+
+  /** The window's Delete, after the user said yes: whichever guide is kept. */
+  async deleteGuide(aircraftId: string): Promise<Result<{ deleted: boolean }>> {
+    return this.removeGuide(aircraftId, 'Delete a binding guide');
+  }
+
+  /**
+   * Removes the guide file kept for an aircraft. It is in the data folder, so the journal is
+   * asked for by name: a copy is kept first, and the Safety page can put it back.
+   */
+  private async removeGuide(
+    aircraftId: string,
+    reason: string
+  ): Promise<Result<{ deleted: boolean }>> {
     const file = this.draftPath(aircraftId);
     if (!(await this.ctx.ports.files.exists(file))) return ok({ deleted: false });
-    const removed = await this.ctx.ports.files.remove(file, {
-      reason: 'Delete the binding guide kept for an aircraft',
-    });
-    return removed.ok ? ok({ deleted: true }) : removed;
+    const removed = await this.ctx.ports.files.remove(file, { reason, journal: true });
+    if (!removed.ok) return removed;
+    if (await this.ctx.ports.files.exists(file)) {
+      return err('ai.guideFile', 'The guide file is still there. It could not be deleted.');
+    }
+    return ok({ deleted: true });
   }
 }
