@@ -969,6 +969,8 @@ requirements:
     done_means:
       - "An audio check with role recording passes when the Windows default recording device matches; the communications default is checked only when the profile asks for it."
       - "Scenario mark-flight + mic-default-webcam fails 'Headset mic is default input' with the current default named."
+    notes:
+      - '2026-11-12: what the user reads for the communications default is "comms" (was "for calls", which the owner did not understand). The Audio page says once that Windows calls it the default communications device. Test ids kept.'
     status: done
     evidence:
       - "src/features/audio/core/audio.test.ts#checks the communications default only when the setup asks for it"
@@ -5890,6 +5892,9 @@ requirements:
       - "Closing the window hides it to the tray (setting, default on); the tray icon reflects readiness of the last-used profile (green, yellow, red) when checks have run."
       - "Tray menu offers: Open, profile list with quick switch, Make ready, Launch, Stand down, Quit."
       - "Only one instance runs; starting a second focuses the first."
+    notes:
+      - '2026-11-12: at the sitting the owner closed the window and found no icon in the tray. RigReady 1 kept its settings in the same file and wrote "minimizeToTray": false there for a switch that was disabled, and this version read that as a choice. A settings file version 1 wrote (a "version" key, no "schemaVersion") is now read without that one value, on disk and out of a backup; nothing is written at the start. A file this version has saved holds a choice and is left as it is, so a PC that ran an earlier test build of this version keeps "off" until the switch is turned on.'
+      - '2026-11-12: so that nobody is surprised by what closing the window does, the switch is now called "Keep RigReady in the tray when you close the window", the line under it says what closing the window does in either position (and that Windows may keep the icon under the ^ arrow), and "tray" in the command palette finds Settings.'
     status: done
     evidence:
       - 'tests/unit/tray.test.ts#the icon badge follows readiness: none until checked, then green, yellow or red'
@@ -5898,6 +5903,12 @@ requirements:
       - 'tests/e2e/tray.e2e.ts#tray: closing the window keeps RigReady in the tray, and starting it again brings the window back'
       - 'artifacts/screens/tray/01-not-ready.png'
       - 'artifacts/screens/tray-single-instance/01-shown-again.png'
+      - 'tests/unit/settings.test.ts#the settings file RigReady 1 left behind does not switch "keep in the tray" off; a choice made in this version stays'
+      - 'src/features/backup/core/backup.test.ts#settings RigReady 1 left behind, restored from a backup, do not switch "keep in the tray" off'
+      - 'tests/e2e/close-to-tray.e2e.ts#closing the window: on the settings RigReady 1 left behind RigReady stays in the tray, the setting is found by "tray" and says what closing does, and switched off it quits'
+      - 'artifacts/screens/close-to-tray/01-found-by-tray.png'
+      - 'artifacts/screens/close-to-tray/02-on-says-what-closing-does.png'
+      - 'artifacts/screens/close-to-tray/03-off-says-closing-quits.png'
 
   - id: PLAT-003
     title: Auto-update with channels
@@ -6981,6 +6992,8 @@ requirements:
       - "While the PC is still being looked at the readings show their outline, three side by side where the readings will be, and when it cannot be looked at the panel says so instead of showing nothing."
       - "At twice the text size, where the page is half as wide, the panel puts one thing under the other: nothing sticks out of the window and the first step is still there."
       - "A PC whose only game is a racing one is greeted with the wheel for a mark; one without any sim says that any other game still works. The panel passes the axe and colour-only scans on each."
+    notes:
+      - "2026-11-12: the owner asked that the DCS bindings people already have are pulled in with nothing to do. They are: RigReady reads DCS's own files each time (BIND-DCS-003), before any setup exists, and imports nothing. On a PC with DCS the welcome now says so in one line; a PC without DCS is not told about DCS. The same sentence is in the manual (DCS bindings, The first run) and on the site."
     status: done
     evidence:
       - "src/features/fly/core/welcome.test.ts#says which games, game controllers and monitors were found on this PC"
@@ -6993,6 +7006,10 @@ requirements:
       - "artifacts/screens/welcome/03-large-text.png"
       - "artifacts/screens/welcome-racing/01-welcome.png"
       - "artifacts/screens/welcome-generic/01-welcome.png"
+      - "tests/e2e/welcome-dcs-bindings.e2e.ts#welcome: a PC with DCS is told its DCS bindings are read as they are, and a racing PC is not told about DCS"
+      - "artifacts/screens/welcome-dcs-bindings/01-welcome-with-dcs.png"
+      - "artifacts/screens/welcome-dcs-bindings/02-bindings-already-there.png"
+      - "artifacts/screens/welcome-no-dcs/01-welcome-racing-pc.png"
 
   - id: WOW-UI-009
     title: An About panel - version, what RigReady does, the licence, where to find it

@@ -12,7 +12,7 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 **Start with Windows.** RigReady starts in the tray when you sign in, without opening its window. It is off by default. The switch shows what Windows actually has: when Windows will not accept the entry, or has it switched off, the page says so. See [Start with Windows is off](../troubleshooting/start-with-windows-off.md).
 
-**Keep running in the tray when the window is closed.** On by default: closing the window hides RigReady to the [tray](../one-click/tray.md), and **Quit** in the tray icon's menu ends it. Off: closing the window quits.
+**Keep RigReady in the tray when you close the window.** On by default: closing the window hides it, and RigReady keeps running with its icon in the [tray](../one-click/tray.md), next to the clock. Windows may keep that icon under the ^ arrow. **Quit** in the icon's menu ends RigReady. Off: closing the window quits RigReady, and its tray icon goes away too. The line under the switch says which of the two closing the window does now. From anywhere, Ctrl+K and "tray" finds this switch.
 
 ## Monitor layouts
 
