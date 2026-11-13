@@ -296,6 +296,14 @@ const PAGES: ConfigurePage[] = [
     ],
     never: ['WINWING', 'F/A-18C'],
   },
+  // Last, so that the numbered screenshots of the pages above keep their names.
+  {
+    name: 'iracing-bindings',
+    route: '/configure/iracing-bindings',
+    testId: 'iracing-bindings-page',
+    says: ['iRacing was not found on this PC', 'iRacing game page'],
+    notFound: 'iRacing',
+  },
 ];
 
 /** Something still loading. */
