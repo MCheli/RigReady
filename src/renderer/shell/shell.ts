@@ -93,6 +93,15 @@ export async function followRigKind(router: Router): Promise<() => void> {
  * about a game appears rather than flashes away; undefined (could not be told) offers all.
  */
 export const gamesFound = ref<FoundGames>([]);
+/** The first answer is in: `gamesFound` is what is found, not what is not known yet. */
+let gamesFoundKnown = false;
+
+/**
+ * The games found on this PC for a decision that cannot wait for the first answer (which
+ * page Bindings opens): what is followed once it is known, and `ask` until then.
+ */
+export const gamesFoundNow = async (ask: () => Promise<FoundGames>): Promise<FoundGames> =>
+  gamesFoundKnown ? gamesFound.value : ask();
 
 /** Starts following them. Called once, when the shell is up; returns the function that stops it. */
 export async function followFoundGames(router: Router): Promise<() => void> {
@@ -103,6 +112,7 @@ export async function followFoundGames(router: Router): Promise<() => void> {
     // A command module that does not load is reported by the palette when it is opened.
     // Nothing can say which games are here, so nothing is held back.
     gamesFound.value = undefined;
+    gamesFoundKnown = true;
     return () => undefined;
   }
   return followGamesFound(
@@ -110,6 +120,7 @@ export async function followFoundGames(router: Router): Promise<() => void> {
     createCommandShell(router),
     (found) => {
       gamesFound.value = found;
+      gamesFoundKnown = true;
     },
     onMachineChanged
   );

@@ -4,7 +4,7 @@ import { useRoute, type RouteLocationNormalizedLoaded } from 'vue-router';
 import { navSectionsOf } from '../../shared/feature';
 import BindingsGamePicker from '../components/BindingsGamePicker.vue';
 import { bindingsPages, manifests, places } from '../features';
-import { bindingsPageAt } from '../shell/bindings';
+import { bindingsOffered, bindingsPageAt } from '../shell/bindings';
 import { ariaCurrent, currentEntry } from '../shell/nav';
 import { gamesFound, pageEpoch } from '../shell/shell';
 
@@ -32,8 +32,14 @@ const entries = computed(() =>
 );
 const current = computed(() => currentEntry(entries.value, route.path, places));
 
-/** On a game's bindings page, the game picker of Bindings stands above it. */
+/**
+ * On a game's bindings page, the game picker of Bindings stands above it. It lists the
+ * games found on this PC, and the one on screen, which a link opens on any PC.
+ */
 const bindings = computed(() => bindingsPageAt(bindingsPages, route.path));
+const bindingsHere = computed(() =>
+  bindingsOffered(bindingsPages, gamesFound.value, bindings.value)
+);
 </script>
 
 <template>
@@ -64,7 +70,7 @@ const bindings = computed(() => bindingsPageAt(bindingsPages, route.path));
       </div>
     </nav>
     <div class="configure-content">
-      <BindingsGamePicker v-if="bindings" :pages="bindingsPages" :current="bindings" />
+      <BindingsGamePicker v-if="bindings" :pages="bindingsHere" :current="bindings" />
       <router-view v-slot="{ Component, route: shown }">
         <component :is="Component" :key="viewKey(shown)" />
       </router-view>

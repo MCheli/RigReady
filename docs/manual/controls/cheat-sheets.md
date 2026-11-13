@@ -78,6 +78,10 @@ RigReady takes JPEG, PNG and WebP photos of up to 25 MB, and keeps its own small
 
 **Discard my layout** drops your photos and goes back to what RigReady ships for the device.
 
+**Use RigReady's drawing** and **Arrange cards myself**, under **Instead**, put RigReady's drawing or the cards in place of your photos. Undo cannot bring the photos back, so both ask **Drop your photos?** first; **Keep the photos** leaves everything as it was. What is saved stays until you save.
+
+While the editor is open, **By device**, **By action** and the aircraft or car wait, like the list of devices: save or cancel first.
+
 ## Edit drawing
 
 **Edit drawing** opens a device that has a drawing. (With your own photos it opens the photos, as above.) The labels still place themselves; you correct the drawing:

@@ -24,6 +24,7 @@ import {
   kneeboardSide,
   monitorLabels,
   moveCrop,
+  typedAircraft,
   unitNameProblem,
   viewportNameProblem,
   type Crop,
@@ -565,7 +566,8 @@ function addNamed(): void {
   const typed = typedName.value.trim();
   if (namingProblem.value) return;
   if (naming.value === 'aircraft') {
-    addAircraft(namedAircraft.value ?? { unit: typed, label: typed });
+    // A DCS name can be longer than the name shown: that one is cut to fit.
+    addAircraft(namedAircraft.value ?? typedAircraft(typed));
   } else if (aircraft.value) {
     const unit = aircraft.value.unit;
     keptNames.value[unit] = [...(keptNames.value[unit] ?? []), typed];

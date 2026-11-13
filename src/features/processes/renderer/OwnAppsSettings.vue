@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
-import { processesContract, type OwnAppsView } from '../contract';
+import { forgettable, processesContract, type OwnAppsView } from '../contract';
 
 /**
  * Settings > Apps offered in new setups: the programs the user asked RigReady to offer in
@@ -137,7 +137,7 @@ onMounted(load);
             <div class="rr-row-sub">{{ entry.why }}</div>
           </div>
           <v-btn
-            v-if="/\.exe$/i.test(entry.name)"
+            v-if="forgettable(entry.name)"
             size="small"
             variant="text"
             :loading="busy === entry.name"

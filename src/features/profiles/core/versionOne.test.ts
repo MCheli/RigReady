@@ -123,6 +123,50 @@ describe('a setup RigReady 1 left behind', () => {
     });
   });
 
+  it('makes nothing when the plan changed after it was shown: another device of that name was plugged in meanwhile', async () => {
+    app = await wiredApp('first-run-after-version-one', {
+      files: ['Program Files (x86)/Steam/**'],
+    });
+    const shown = await app.invoke<EarlierPlan>('profiles:earlierPlan', { id: OLD });
+    expect(shown.checks[0]!.what).toContain('(0EB7:0007)');
+    expect(shown.seen).toMatch(/^[0-9a-f]{64}$/);
+
+    // Before Save: the wheel is swapped for another base whose name has the same words.
+    await mutate(app, [
+      { op: 'unplugDevice', match: WHEEL },
+      {
+        op: 'plugDevice',
+        device: {
+          instanceId: 'USB\\VID_0EB7&PID_0020\\MADE-UP-FOR-THIS-TEST',
+          vendorId: '0EB7',
+          productId: '0020',
+          name: 'FANATEC Podium Wheel Base DD2 (second)',
+          isHid: true,
+          isGameController: true,
+          isHub: false,
+          hubChain: [],
+        },
+      },
+    ]);
+    const now = await app.invoke<EarlierPlan>('profiles:earlierPlan', { id: OLD });
+    expect(now.canBringOver).toBe(true);
+    expect(now.checks[0]!.what).toContain('(0EB7:0020)');
+    expect(now.seen).not.toBe(shown.seen);
+
+    expect(await call(app, 'profiles:bringOver', { id: OLD, seen: shown.seen })).toMatchObject({
+      ok: false,
+      error: {
+        code: 'profile.earlierChanged',
+        message:
+          'What "LMU" would bring over changed since it was shown, so no setup was made. Look at it again.',
+      },
+    });
+    expect(await fs.readdir(path.dirname(oldFile(app)))).toEqual([`${OLD}.yaml`]);
+    // The plan shown now is the one made.
+    const made = await app.invoke<Profile>('profiles:bringOver', { id: OLD, seen: now.seen });
+    expect(made.checks[0]!.params).toMatchObject({ vendorId: '0EB7', productId: '0020' });
+  });
+
   it('guesses nothing: with the wheel unplugged it says to connect it and look again, and writes nothing', async () => {
     app = await wiredApp('first-run-after-version-one', { files: [] });
     await mutate(app, [{ op: 'unplugDevice', match: WHEEL }]);

@@ -58,7 +58,14 @@ const where = computed(() =>
       : 'A key on the keyboard. iRacing does not take a button for this action.'
 );
 
+/**
+ * Counts the listens and their ends. A listen that was cut short (Clear, Close, another
+ * action) while main was still starting the controllers takes no key and no press after.
+ */
+let listens = 0;
+
 async function stopListening(): Promise<void> {
+  listens++;
   window.removeEventListener('keydown', onKey, true);
   off?.();
   off = undefined;
@@ -85,7 +92,8 @@ async function choose(binding: WantedBinding | null): Promise<void> {
     note.value = errorText(result.error);
     return;
   }
-  request.value = wanted;
+  // Save writes only into the file this was worked out from.
+  request.value = { ...wanted, seen: result.value.seen };
   review.value = result.value;
 }
 
@@ -130,10 +138,13 @@ function onKey(event: KeyboardEvent): void {
 
 async function listen(): Promise<void> {
   note.value = undefined;
+  const mine = ++listens;
   if (takesButton.value) {
     off = api.on('pressed', onPressed);
     reporting = true;
     const started = await api.listenStart();
+    // Cut short meanwhile: stopListening has run and told main to stop.
+    if (mine !== listens) return;
     if (!started.ok) {
       reporting = false;
       off();

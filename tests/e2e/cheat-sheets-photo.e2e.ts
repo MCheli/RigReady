@@ -726,7 +726,12 @@ test('cheat sheets: a file that is not a picture or is too large is refused with
   await expect(p.canvas.locator('image')).toHaveCount(1);
   await expect(p.progress).toHaveText('0 of 10 controls placed');
   await expect(page.getByTestId('editor-save')).toBeDisabled();
+  // Asked first: the photos would go, with no undo.
   await page.getByTestId('photo-use-shipped').click();
+  await expect(page.getByTestId('photo-drop-text')).toHaveText(
+    "RigReady's drawing takes their place. Your photos and everything placed on them leave this layout, and Undo cannot bring them back. What is saved stays as it is until you save."
+  );
+  await page.getByTestId('photo-drop-go').click();
   await expect(mode).toHaveAttribute('data-mode', 'drawing');
   await page.getByTestId('editor-cancel').click();
   await page.getByTestId('save-bar-leave-go').click();
@@ -793,8 +798,20 @@ test('cheat sheets: a device that is not connected is placed from the list of it
     await expect(mode).toHaveAttribute('data-mode', 'photos');
   }
 
-  // "Arrange cards myself" leaves the photos for the cards; cancelled, the photos stay.
+  // "Arrange cards myself" asks first: kept, the photos and what is placed stay as they are.
   await page.getByTestId('photo-use-cards').click();
+  await expect(page.getByTestId('photo-drop')).toBeVisible();
+  await expect(page.getByTestId('photo-drop-text')).toContainText('The cards take their place.');
+  await shot('drop-photos-asked');
+  await page.getByTestId('photo-drop-stay').click();
+  await expect(page.getByTestId('photo-drop')).toHaveCount(0);
+  await expect(mode).toHaveAttribute('data-mode', 'photos');
+  await expect(p.dot('axis-Z')).toBeVisible();
+  await expect(p.progress).toHaveText('1 of 4 controls placed');
+
+  // Dropped, they leave for the cards; cancelled, the photos stay.
+  await page.getByTestId('photo-use-cards').click();
+  await page.getByTestId('photo-drop-go').click();
   await expect(mode).toHaveAttribute('data-mode', 'cards');
   await page.getByTestId('editor-cancel').click();
   await page.getByTestId('save-bar-leave-go').click();

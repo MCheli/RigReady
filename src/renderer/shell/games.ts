@@ -1,6 +1,23 @@
 import type { CommandShell, FeatureCommands, FoundGames } from '../../shared/feature';
 
 /**
+ * The games found on this PC now, from the feature that knows. Undefined when that cannot
+ * be told (no feature knows, or the one that does failed). Never throws.
+ */
+export async function gamesFoundBy(
+  modules: readonly FeatureCommands[],
+  shell: CommandShell
+): Promise<FoundGames> {
+  const knowing = modules.find((module) => module.gamesFound);
+  try {
+    return knowing ? await knowing.gamesFound!(shell) : undefined;
+  } catch {
+    // The list of games could not be read (the Games page says why): nothing is held back.
+    return undefined;
+  }
+}
+
+/**
  * Keeps the shell told which games are found on this PC, so that the menu and the command
  * palette offer an entry or a page about a game only where the game is (the binding guide
  * where DCS is), as the Games page offers a game page's card. The shell does not know what
@@ -17,19 +34,12 @@ export function followGamesFound(
   report: (found: FoundGames) => void,
   onMachineChanged: (listener: () => void) => () => void
 ): () => void {
-  const knowing = modules.find((module) => module.gamesFound);
   let stopped = false;
   let asked = 0;
 
   async function ask(): Promise<void> {
     const mine = ++asked;
-    let found: FoundGames;
-    try {
-      found = knowing ? await knowing.gamesFound!(shell) : undefined;
-    } catch {
-      // The list of games could not be read (the Games page says why): nothing is held back.
-      found = undefined;
-    }
+    const found = await gamesFoundBy(modules, shell);
     // An answer that was overtaken by a later question is not the state now.
     if (!stopped && mine === asked) report(found);
   }

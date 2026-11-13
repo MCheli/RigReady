@@ -216,6 +216,8 @@ test('share: Import pressed again from the keyboard while the import runs import
   await page.keyboard.press('Enter');
   await expect(go).toHaveAttribute('aria-busy', 'true');
   await page.keyboard.press('Enter');
+  // Cancel waits too: it would hide an import that goes ahead, and its Undo with it.
+  await expect(page.getByTestId('import-cancel')).toBeDisabled();
   await mutate([{ op: 'slowFiles', ms: 0 }]);
   await expect(page.getByTestId('import-result-summary')).toContainText(
     'Added the setup "Squadron F/A-18C"'

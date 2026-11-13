@@ -120,14 +120,26 @@ const NOT_TEXT = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu;
 /** Text for one line: whatever is not text on a line becomes a space. */
 export const oneLine = (text: string): string => text.replace(NOT_TEXT, ' ').trim();
 
-/** The name shown for an aircraft, made from text out of a file: one line, 60 characters at most. */
+/** The longest name shown for an aircraft. A DCS name can be longer (64): it is cut to this. */
+const LABEL_MAX = 60;
+
+/**
+ * The name shown for an aircraft, made from text out of a file: one line, 60 characters at
+ * most. Without such text it is the aircraft's DCS name, cut to fit just the same.
+ */
 export const aircraftLabel = (text: string, unit: string): string =>
-  oneLine(text).slice(0, 60).trim() || unit;
+  oneLine(text).slice(0, LABEL_MAX).trim() || unit.slice(0, LABEL_MAX).trim();
+
+/** An aircraft the user typed by its DCS name: shown under that name, as far as a label holds it. */
+export const typedAircraft = (unit: string): { unit: string; label: string } => ({
+  unit,
+  label: aircraftLabel(unit, unit),
+});
 
 /** Why text cannot be the name shown for an aircraft; undefined when it can. */
 export function aircraftLabelProblem(label: string): string | undefined {
   if (label.trim() === '') return 'An aircraft needs a name to show.';
-  if (label.length > 60) return 'The name shown for an aircraft has at most 60 characters.';
+  if (label.length > LABEL_MAX) return 'The name shown for an aircraft has at most 60 characters.';
   if (label.replace(NOT_TEXT, ' ') !== label) {
     return 'The name shown for an aircraft is one line of plain text.';
   }
@@ -136,7 +148,7 @@ export function aircraftLabelProblem(label: string): string | undefined {
 
 export const AircraftScreensSchema = z.object({
   unit: UnitSchema,
-  label: z.string().min(1).max(60),
+  label: z.string().min(1).max(LABEL_MAX),
   placements: z.array(PlacementSchema).default([]),
 });
 export type AircraftScreens = z.infer<typeof AircraftScreensSchema>;

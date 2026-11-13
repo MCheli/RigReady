@@ -7,6 +7,13 @@ export const ImageNameSchema = z
   .max(100)
   .regex(/^[^\\/:*?"<>|\x00-\x1f]+\.exe$/i, 'An image name such as SimTool.exe');
 
+/**
+ * Whether an entry of the list, by the name processes:ownApps gives it, can be taken off
+ * from the window (processes:forgetOwnApp takes image names only). One that cannot, a path
+ * typed into the file by hand, is taken out of the file by hand.
+ */
+export const forgettable = (name: string): boolean => ImageNameSchema.safeParse(name).success;
+
 /** The apps the user asked RigReady to offer in every new setup, as the Settings page shows them. */
 export const OwnAppsViewSchema = z.object({
   /** `<data folder>/processes/known.json`. */

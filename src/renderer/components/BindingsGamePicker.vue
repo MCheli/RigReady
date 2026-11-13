@@ -5,8 +5,9 @@ import type { BindingsPage } from '../../shared/feature';
 
 /**
  * The game picker of Bindings, above every game's bindings page: which game's bindings are
- * on screen, and the others that have a page. The pages come from the features' manifests
- * (`bindings`); with one game on the list it still says which game it is.
+ * on screen, and the other games found on this PC that have a page. The pages come from the
+ * features' manifests (`bindings`), sorted out by the layout (`bindingsOffered`); with one
+ * game on the list it still says which game it is.
  */
 const props = defineProps<{ pages: readonly BindingsPage[]; current: BindingsPage }>();
 const router = useRouter();

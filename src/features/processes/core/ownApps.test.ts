@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { CaptureCandidate } from '../../../core/checks/registry';
 import { GameRegistry } from '../../../core/games';
 import { scenarioRig, wiredApp, type TestRig, type WiredApp } from '../../../../tests/helpers';
-import type { OwnAppsView } from '../contract';
+import { forgettable, type OwnAppsView } from '../contract';
 import { OwnApps } from './ownApps';
 import {
   createLaunchRemediation,
@@ -388,5 +388,33 @@ describe('always offer this app, through the app', () => {
     });
     // RigReady's own data only: nothing outside the data folder was changed.
     expect(await app.ports.files.journal()).toEqual({ ok: true, value: [] });
+  });
+
+  it('Remove from the list is offered only for an entry it can take off, and takes it off by the name shown', async () => {
+    app = await wiredApp('flying-fresh', { files: [] });
+    const file = knownFile(app.ports.folders.dataRoot());
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(
+      file,
+      JSON.stringify({
+        apps: [
+          // Hand edits: a name with a space before it and no title; a path for a name.
+          { name: ' Foo.exe', path: 'D:\\Tools\\Foo.exe' },
+          { name: 'C:\\Tools\\x.exe', title: 'X', path: 'C:\\Tools\\x.exe' },
+        ],
+      })
+    );
+    const view = await app.invoke<OwnAppsView>('processes:ownApps');
+    expect(view.refused.map((r) => r.name)).toEqual(['Foo.exe', 'C:\\Tools\\x.exe']);
+    // The button is shown where the channel takes the name, and nowhere else.
+    expect(view.refused.map((r) => forgettable(r.name))).toEqual([true, false]);
+    const handler = app.wiring.handlers.get('processes:forgetOwnApp')!;
+    expect(await handler({ name: 'C:\\Tools\\x.exe' })).toMatchObject({ ok: false });
+
+    const gone = await app.invoke<OwnAppsView>('processes:forgetOwnApp', { name: 'Foo.exe' });
+    expect(gone.refused.map((r) => r.name)).toEqual(['C:\\Tools\\x.exe']);
+    expect(JSON.parse(await fs.readFile(file, 'utf8')).apps).toEqual([
+      { name: 'C:\\Tools\\x.exe', title: 'X', path: 'C:\\Tools\\x.exe' },
+    ]);
   });
 });

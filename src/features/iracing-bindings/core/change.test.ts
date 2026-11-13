@@ -313,6 +313,32 @@ describe('changing an iRacing binding: the write', () => {
     expect((await review(a, request)).same).toBe(true);
   });
 
+  it('writes nothing when the file changed after the preview: what the user approved may not hold', async () => {
+    const a = await start(true);
+    const shown = await review(a, FLASH_ON_7);
+    expect(shown.seen).toMatch(/^[0-9a-f]{64}$/);
+    // Meanwhile something else binds Button 7 of the box in the same file (iRacing, a
+    // second window): the preview named no conflict, and now there would be one.
+    await change(a, { set: 'all', action: 'BlackBoxShowNext', binding: boxButton(7) });
+    const before = await bytesOf(allCars(a));
+    const entries = (await journal(a)).length;
+
+    expect(await refused(a, 'change', { ...FLASH_ON_7, seen: shown.seen })).toBe(
+      'iracing-bindings.edit.changed'
+    );
+    const answer = await call(a, 'change', { ...FLASH_ON_7, seen: shown.seen });
+    expect(answer.ok ? '' : answer.error.message).toBe(
+      'controls.cfg changed after the change was shown, so nothing was written. Look at the change again.'
+    );
+    expect(equal(await bytesOf(allCars(a)), before)).toBe(true);
+    expect(await journal(a)).toHaveLength(entries);
+
+    // Looked at again, the conflict is named, and that preview can be saved.
+    const again = await review(a, FLASH_ON_7);
+    expect(again.conflicts.map((c) => c.id)).toContain('BlackBoxShowNext');
+    expect((await change(a, { ...FLASH_ON_7, seen: again.seen })).changed).toBe(true);
+  });
+
   it('binds a key and clears a binding, each as one entry of its own', async () => {
     const a = await start(true);
     const before = await bytesOf(allCars(a));
@@ -564,6 +590,33 @@ describe('changing an iRacing binding: binding by pressing', () => {
     a.ports.input.emit([stateOf(box)]);
     a.ports.input.emit([stateOf(box, [5])]);
     expect(pressed(a)).toHaveLength(4);
+  });
+
+  it('a listen stopped while the controllers were still starting reports nothing afterwards', async () => {
+    const a = await start(true);
+    const box = a.ports.input.devices().find((d) => d.name === 'Button Box')!;
+    // The input reader takes its time to start (seconds, on a real PC).
+    const input = a.ports.input;
+    const real = input.start.bind(input);
+    const held: (() => void)[] = [];
+    input.start = () => new Promise((resolve) => held.push(() => void real().then(resolve)));
+    const starting = call(a, 'listenStart');
+    await expect.poll(() => held.length).toBe(1);
+    // The user pressed Clear, or Close, before it answered: the page stops listening.
+    expect(await call(a, 'listenStop')).toEqual({ ok: true, value: { listening: false } });
+    held[0]!();
+    expect(await starting).toEqual({ ok: true, value: { listening: false } });
+    input.start = real;
+
+    a.ports.input.emit([stateOf(box)]);
+    a.ports.input.emit([stateOf(box, [5])]);
+    expect(pressed(a)).toEqual([]);
+    // A listen nothing cuts short still hears the press.
+    expect(await call(a, 'listenStart')).toEqual({ ok: true, value: { listening: true } });
+    a.ports.input.emit([stateOf(box)]);
+    a.ports.input.emit([stateOf(box, [5])]);
+    expect(pressed(a)).toHaveLength(1);
+    await call(a, 'listenStop');
   });
 
   it('calls a controller by the name its owner gave it', () => {

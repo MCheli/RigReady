@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { MainContext } from '../../../core/feature';
+import { sha256 } from '../../../core/files/fileStore';
 import { loadDataYaml } from '../../../core/files/yaml';
 import { allPathVariables, collapsePath, type PathVariables } from '../../../core/pathVariables';
 import { madeByVersionOne } from '../../../core/profile/earlier';
@@ -359,7 +360,7 @@ export async function planEarlier(ctx: Ctx, id: string): Promise<Result<Planned>
 
   const brought = parts.filter((p) => p.check);
   const already = await broughtOverAs(ctx, fileName);
-  const view: EarlierPlan = {
+  const shown: Omit<EarlierPlan, 'seen'> = {
     id,
     file: ctx.profiles.fileFor(id),
     name,
@@ -377,16 +378,17 @@ export async function planEarlier(ctx: Ctx, id: string): Promise<Result<Planned>
     ...(already ? { broughtOver: { id: already.id, name: already.name } } : {}),
     canBringOver: !already && blocked.length === 0 && (brought.length > 0 || launch !== undefined),
   };
-  if (!view.canBringOver) return ok({ view });
-  return ok({
-    view,
-    setup: {
-      name,
-      checks: brought.map((p) => p.check!),
-      ...(module ? { game: module.id } : {}),
-      ...(launch ? { launch } : {}),
-    },
-  });
+  const setup: NewProfile | undefined = shown.canBringOver
+    ? {
+        name,
+        checks: brought.map((p) => p.check!),
+        ...(module ? { game: module.id } : {}),
+        ...(launch ? { launch } : {}),
+      }
+    : undefined;
+  // What the user is shown and what Bring it over would write, as one fingerprint.
+  const view: EarlierPlan = { ...shown, seen: sha256(JSON.stringify({ shown, setup })) };
+  return ok(setup ? { view, setup } : { view });
 }
 
 /** The setup that was brought over from this file, when there is one. */
@@ -397,13 +399,25 @@ async function broughtOverAs(ctx: Ctx, fileName: string): Promise<Profile | unde
 
 /**
  * Makes the setup the plan shows, through the same path as New setup from this rig. The
- * plan is made again here, from the file as it is now: nothing the window sends is used.
- * The old file is not touched.
+ * plan is made again here, from the file as it is now: nothing the window sends is used
+ * but `seen`, the fingerprint of the plan it showed. When the plan made now is another (a
+ * device of that name plugged in or out meanwhile), nothing is made. The old file is not
+ * touched.
  */
-export async function bringOverEarlier(ctx: Ctx, id: string): Promise<Result<Profile>> {
+export async function bringOverEarlier(
+  ctx: Ctx,
+  id: string,
+  seen?: string
+): Promise<Result<Profile>> {
   const planned = await planEarlier(ctx, id);
   if (!planned.ok) return planned;
   const { view, setup } = planned.value;
+  if (seen !== undefined && seen !== view.seen) {
+    return err(
+      'profile.earlierChanged',
+      `What "${view.name}" would bring over changed since it was shown, so no setup was made. Look at it again.`
+    );
+  }
   if (view.broughtOver) {
     return err(
       'profile.earlierDone',

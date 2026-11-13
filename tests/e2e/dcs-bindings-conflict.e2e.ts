@@ -54,7 +54,15 @@ test('bindings: an MFD knob that is also bound to pitch is reported and fixed', 
 test('bindings: a PC without DCS says so instead of showing empty lists', async ({ rig }) => {
   const { page, shot } = await rig.launch('dcs-bindings-no-dcs', 'bindings-no-dcs');
   await page.getByTestId('mode-configure').click();
+  // Bindings opens a game found here (iRacing on this rig), and its picker offers no DCS.
   await page.getByTestId('nav-bindings').click();
+  await expect(page.getByTestId('iracing-bindings-page')).toBeVisible();
+  await expect(page.getByTestId('bindings-game-picker')).not.toContainText('DCS');
+  // A link to DCS's bindings still opens the page, which says plainly that DCS is not here.
+  await page.evaluate(() => {
+    (globalThis as unknown as { location: { hash: string } }).location.hash =
+      '#/configure/dcs-bindings';
+  });
   await expect(page.getByTestId('bind-not-found')).toContainText(
     'DCS World was not found on this PC'
   );
