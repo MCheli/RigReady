@@ -63,7 +63,7 @@ A view that creeps, a button that does nothing, a panel the game no longer knows
 
 ### Optional AI help with setup and bindings
 
-AI is off until you turn it on, and nothing else in RigReady needs it. It comes in two forms, and either works without the other. Either way, every change is backed up first and can be undone on the Safety page.
+AI is off until you turn it on, and nothing else in RigReady needs it. It comes in two forms, and either works without the other. Either way, every change to a file is backed up first and can be undone on the Safety page.
 
 - **With your own key from Anthropic, OpenAI, Google or a local model**, the built-in assistant helps anywhere in RigReady, for any game: it finds where helper programs such as SimAppPro, TrackIR, SRS or Stream Deck are installed, proposes the checks and launch steps of a ready check, and writes scripts for what no check covers. Changes it asks for go through the same questions and the same Safety page as an MCP assistant, and nothing it drafts is saved until you press Save. In the binding guide the same key suggests a plan for your controllers, answers questions about the aircraft and explains any action. You see what will be sent before each request, and it goes only to the provider you chose (or nowhere, with a model on your PC).
 
