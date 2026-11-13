@@ -212,7 +212,7 @@ describe('iRacing in RigReady', () => {
       calibrated: true,
     });
     expect(view.devices[0]!.axes.map((a) => a.name)).toEqual([
-      'Combined Pedals',
+      'Clutch or combined pedals',
       'Brake',
       'Accelerator',
       'Wheel Axis',
@@ -223,6 +223,9 @@ describe('iRacing in RigReady', () => {
       input: 'Accelerator',
       deviceName: 'FANATEC Podium Wheel Base DD2',
     });
+    // iRacing's clutch is on Y, which the Fanatec driver (and joyCalib.yaml) calls "Combined
+    // Pedals" in every pedal mode.
+    expect(byAction.get('Clutch')).toMatchObject({ input: 'Clutch or combined pedals' });
     expect(byAction.get('SteerRight')!.input).toBe('Wheel Axis, turning right');
     expect(byAction.get('ShiftUp')!.input).toBe('Button 5');
     expect(byAction.get('Ignition')).toMatchObject({ deviceName: 'Keyboard', input: 'I' });

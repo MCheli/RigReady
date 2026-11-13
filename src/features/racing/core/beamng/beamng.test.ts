@@ -62,7 +62,7 @@ describe('BeamNG.drive bindings', () => {
     expect(wheel.removed).toContainEqual({
       action: 'accelerate',
       label: 'Throttle',
-      input: 'Combined pedals',
+      input: 'Clutch or combined pedals',
     });
     expect(wheel.forceFeedback).toContainEqual({
       label: 'Steering rotation (degrees)',
@@ -101,7 +101,7 @@ describe('BeamNG.drive bindings', () => {
     expect(labels).toContain('Brake=Brake');
     expect(labels).toContain('Shift Up=Button 5');
     expect(labels).toContain('Throttle=Accelerator*');
-    expect(labels).not.toContain('Throttle=Combined pedals');
+    expect(labels).not.toContain('Throttle=Clutch or combined pedals');
     const pickup = view.maps.find((m) => m.vehicle === 'pickup')!;
     expect(pickup.bindings[0]).toMatchObject({ label: 'Horn', input: 'Button 8' });
   });

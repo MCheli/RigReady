@@ -34,6 +34,8 @@ const BASE: Controller = {
 };
 /** Its axes by position: X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2. */
 const WHEEL = 0;
+/** "Combined Pedals" to the driver; the clutch while the pedals are separate. */
+const Y = 1;
 const ACCELERATOR = 2;
 const BRAKE = 5;
 const CLUTCH = 6;
@@ -244,7 +246,14 @@ test('devices: the input tester draws a wheel base as a wheel and pedals, with t
 
   // The axes below go by the names the Wheel page uses, each with what Windows calls it.
   // The two axes no source names keep the Windows name.
-  for (const name of ['Wheel', 'Combined pedals', 'Accelerator', 'Brake', 'Clutch', 'Dial'])
+  for (const name of [
+    'Wheel',
+    'Clutch or combined pedals',
+    'Accelerator',
+    'Brake',
+    'Clutch',
+    'Dial',
+  ])
     await expect(axis(name)).toHaveCount(1);
   await expect(axis('Wheel').getByTestId('axis-windows')).toHaveText('X axis');
   await expect(axis('Brake').getByTestId('axis-windows')).toHaveText('Z rotation');
@@ -278,4 +287,56 @@ test('devices: the input tester draws a wheel base as a wheel and pedals, with t
   await page.getByTestId('tester-pick').filter({ hasText: 'Orion Joystick Base 2' }).click();
   await expect(page.getByTestId('plot-section')).toBeVisible();
   await expect(page.getByTestId('tester-wheel')).toHaveCount(0);
+});
+
+test('devices: with the pedals separate, the clutch on Y fills the Clutch bar and is never called combined pedals alone', async ({
+  rig,
+}) => {
+  const { page, shot, sendInput } = await rig.launch('devices-rig', 'devices-tester-clutch');
+  const pedal = (name: string) =>
+    page.locator(`[data-testid="tester-pedal"][data-pedal="${name}"]`);
+  const axis = (name: string) => page.locator(`[data-testid="axis"][data-axis="${name}"]`);
+
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-devices').click();
+  await page.getByTestId('devices-tab-test').click();
+  await expect(page.getByTestId('compact-controller')).toHaveCount(12);
+  await card(page, BASE.index).click();
+  await expect(page.getByTestId('tester-wheel')).toBeVisible();
+
+  // As the base read at the second look: every pedal rests high, Slider 1 at 100% and still,
+  // the dial at 50%. Nothing pressed, so every bar reads 0%.
+  const REST = { [WHEEL]: 0, [Y]: 1, [ACCELERATOR]: 1, [BRAKE]: 1, [CLUTCH]: 1, 7: 0 };
+  await sendInput([state(BASE, { axes: REST })]);
+  for (const name of ['Clutch', 'Brake', 'Accelerator'])
+    await expect(pedal(name)).toHaveAttribute('data-percent', '0');
+  await expect(page.getByTestId('tester-wheel-note')).toContainText(
+    "The clutch is on the Y axis or on Slider 1, depending on the base's pedal mode, which Windows does not report. The Clutch bar reads the one that moves."
+  );
+
+  // The clutch pressed all the way: Y falls from its rest, Slider 1 does not move.
+  await sendInput([state(BASE, { axes: { ...REST, [Y]: -1 } })]);
+  await expect(pedal('Clutch')).toHaveAttribute('data-percent', '100');
+  await expect(pedal('Clutch')).toHaveAttribute('data-axis', 'Y');
+  await expect(pedal('Clutch')).toContainText('100%');
+  await expect(pedal('Clutch').getByTestId('tester-pedal-from')).toHaveText('Y axis');
+  await expect(pedal('Brake')).toHaveAttribute('data-percent', '0');
+  await expect(pedal('Accelerator')).toHaveAttribute('data-percent', '0');
+  // The axis keeps a name that is true in either pedal mode, and so does the activity list.
+  await expect(axis('Clutch or combined pedals')).toHaveCount(1);
+  await expect(axis('Clutch or combined pedals').getByTestId('axis-windows')).toHaveText('Y axis');
+  await expect(page.getByTestId('tester-last-input')).toContainText(
+    'Clutch or combined pedals moved 100% → 0%'
+  );
+  // Case matters: "Clutch or combined pedals" is the only way the log names Y.
+  await expect(page.getByTestId('tester-log')).not.toContainText('Combined pedals');
+  await shot('clutch-pressed');
+  expect(await problemsOn(page)).toEqual([]);
+
+  // Half way back, and let go.
+  await sendInput([state(BASE, { axes: { ...REST, [Y]: 0 } })]);
+  await expect(pedal('Clutch')).toHaveAttribute('data-percent', '50');
+  await sendInput([state(BASE, { axes: REST })]);
+  await expect(pedal('Clutch')).toHaveAttribute('data-percent', '0');
+  await expect(pedal('Clutch')).toHaveAttribute('data-axis', 'Y');
 });
