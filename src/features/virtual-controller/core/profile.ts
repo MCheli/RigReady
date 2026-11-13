@@ -53,6 +53,8 @@ const ShapeFields = {
   range: z.number().min(0.05).max(1).default(1),
   /** What this part is for, in a few words ("Pitch: pull back to climb"). */
   hint: z.string().max(200).optional(),
+  /** What the part does in the game the profile names in `game`; shown as "In <game>: ...". */
+  gameHint: z.string().max(200).optional(),
 };
 
 export const StickAxisSchema = z.object({ source: SourceSchema.optional(), ...ShapeFields });
@@ -74,6 +76,8 @@ export const SplitThrottleSchema = z.object({
   deadzone: z.number().min(0).max(0.9).default(0.05),
   curve: z.number().min(0.2).max(5).default(1),
   hint: z.string().max(200).optional(),
+  /** What the part does in the game the profile names in `game`; shown as "In <game>: ...". */
+  gameHint: z.string().max(200).optional(),
 });
 export type SplitThrottle = z.infer<typeof SplitThrottleSchema>;
 
@@ -102,6 +106,8 @@ export const ButtonNameSchema = z.enum(BUTTON_NAMES as [ButtonName, ...ButtonNam
 export const ButtonMapSchema = z.object({
   source: SourceSchema.optional(),
   hint: z.string().max(200).optional(),
+  /** What the part does in the game the profile names in `game`; shown as "In <game>: ...". */
+  gameHint: z.string().max(200).optional(),
 });
 export type ButtonMap = z.infer<typeof ButtonMapSchema>;
 
@@ -114,6 +120,12 @@ export const PadProfileSchema = z.object({
   id: z.string().regex(PROFILE_ID),
   name: z.string().trim().min(1).max(80),
   description: z.string().max(1000).optional(),
+  /**
+   * The game the notes in `gameHint` are for ("Ace Combat 8"). Absent for a profile that
+   * leans to no game. The notes are kept apart from the plain hints so a copy used for
+   * another game can drop them.
+   */
+  game: z.string().trim().min(1).max(80).optional(),
   /** The controller games see. */
   kind: VirtualPadKindSchema.default('xbox360'),
   sticks: z

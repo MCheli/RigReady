@@ -12,11 +12,14 @@ import {
   startRemediation,
   stopRemediation,
 } from './core/checks';
+import { copyName } from './core/builtins';
 import { Emulator } from './core/emulator';
 import { computeReport, isVirtualPadLike, planMapping } from './core/mapping';
 import { profileSources, type PadProfile } from './core/profile';
 import type { Running } from './core/running';
+import { distinctLabels, nameKey } from './core/names';
 import { ProfileStore } from './core/store';
+import { setupNames, setupsByPadProfile, type SetupRef } from './core/usedBy';
 import { DRIVER_DOWNLOAD, HIDHIDE_DOWNLOAD } from './links';
 
 /** The live view sends at most this often. */
@@ -24,8 +27,16 @@ const LIVE_MS = 33;
 
 let active: Emulator | undefined;
 
-function summary(profile: PadProfile, builtin: boolean, devices: InputDevice[]): ProfileSummary {
-  const plan = planMapping(profile, devices);
+/** What the page needs to know beyond one profile: the names in use and who uses what. */
+interface Around {
+  devices: InputDevice[];
+  /** How many profiles have each name (by nameKey). */
+  names: Map<string, number>;
+  usedBy: Map<string, SetupRef[]>;
+}
+
+function summary(profile: PadProfile, builtin: boolean, around: Around): ProfileSummary {
+  const plan = planMapping(profile, around.devices);
   return {
     id: profile.id,
     name: profile.name,
@@ -34,6 +45,9 @@ function summary(profile: PadProfile, builtin: boolean, devices: InputDevice[]):
     builtin,
     mapped: profileSources(profile).length,
     missing: plan.missing,
+    ...(profile.game ? { game: profile.game } : {}),
+    sameName: (around.names.get(nameKey(profile.name)) ?? 0) > 1,
+    usedBy: around.usedBy.get(profile.id) ?? [],
   };
 }
 
@@ -48,9 +62,31 @@ export default defineFeatureMain({
         ctx.emit(virtualControllerContract, 'changed', {
           ...(running ? { running } : {}),
           ...(note ? { note } : {}),
-          profiles: all.ok ? all.value.mine.map((p) => ({ id: p.id, name: p.name })) : [],
+          profiles: all.ok ? distinctLabels(all.value.mine) : [],
         });
       });
+    };
+
+    /**
+     * Which setups start each profile, from the setups themselves (the core store every
+     * feature reads them through). `note` is set when that could not be found out in
+     * full: the page then says so, and a delete is confirmed as if a setup used the profile.
+     */
+    const setupsUsing = async (): Promise<{ by: Map<string, SetupRef[]>; note?: string }> => {
+      const listed = await ctx.profiles.listDetailed();
+      if (!listed.ok) {
+        return {
+          by: new Map(),
+          note: `The setups could not be read (${listed.error.message}), so RigReady cannot say which setups use a profile.`,
+        };
+      }
+      const by = setupsByPadProfile(listed.value.profiles.map((p) => p.profile));
+      const unread = listed.value.invalid.length;
+      if (unread === 0) return { by };
+      return {
+        by,
+        note: `${unread === 1 ? 'One setup file' : `${unread} setup files`} could not be read, so a setup that uses a profile may be missing here.`,
+      };
     };
     const emulator = new Emulator(ctx.ports, log, announce);
     active = emulator;
@@ -106,14 +142,20 @@ export default defineFeatureMain({
     };
 
     const state = async (): Promise<Result<VcState>> => {
-      const [service, cli, all, found] = await Promise.all([
+      const [service, cli, all, found, setups] = await Promise.all([
         ctx.ports.services.get(DRIVER_SERVICE),
         findHidHideCli(ctx.ports),
         store.all(),
         controllers(),
+        setupsUsing(),
       ]);
       if (!all.ok) return all;
-      const devices = found.ok ? found.value : [];
+      const names = new Map<string, number>();
+      for (const p of [...all.value.builtin, ...all.value.mine]) {
+        names.set(nameKey(p.name), (names.get(nameKey(p.name)) ?? 0) + 1);
+      }
+      const around: Around = { devices: found.ok ? found.value : [], names, usedBy: setups.by };
+      const devices = around.devices;
       const running = emulator.current();
       return ok({
         driver: {
@@ -125,8 +167,8 @@ export default defineFeatureMain({
         hidHide: { installed: cli !== undefined, downloadUrl: HIDHIDE_DOWNLOAD },
         ...(running ? { running } : {}),
         profiles: {
-          builtin: all.value.builtin.map((p) => summary(p, true, devices)),
-          mine: all.value.mine.map((p) => summary(p, false, devices)),
+          builtin: all.value.builtin.map((p) => summary(p, true, around)),
+          mine: all.value.mine.map((p) => summary(p, false, around)),
         },
         controllers: devices.map((d) => ({
           name: d.name,
@@ -136,6 +178,7 @@ export default defineFeatureMain({
           numHats: d.numHats,
         })),
         ...(found.ok ? {} : { inputError: found.error.message }),
+        ...(setups.note ? { setupsNote: setups.note } : {}),
       });
     };
 
@@ -147,7 +190,7 @@ export default defineFeatureMain({
           if (!all.ok) return all;
           return ok({
             running: emulator.current() ?? null,
-            profiles: all.value.mine.map((p) => ({ id: p.id, name: p.name })),
+            profiles: distinctLabels(all.value.mine),
           });
         },
         profile: ({ id }) => store.get(id),
@@ -157,13 +200,33 @@ export default defineFeatureMain({
           return saved;
         },
         copy: async ({ from, name }) => {
-          const copied = await store.copy(from, name);
+          const source = await store.get(from);
+          if (!source.ok) return source;
+          const copied = await store.copy(from, name ?? copyName(source.value));
           if (copied.ok) announce(emulator.current());
           return copied;
         },
-        remove: async ({ id }) => {
+        remove: async ({ id, evenIfUsed }) => {
           if (emulator.current()?.profileId === id) {
             return err('vc.inUse', 'This profile is running. Stop the virtual controller first.');
+          }
+          const all = await store.all();
+          if (!all.ok) return all;
+          // Only a profile that is there is asked about: one that is gone answers
+          // "nothing removed" below, and a starting point is refused by the store.
+          if (!evenIfUsed && all.value.mine.some((p) => p.id === id)) {
+            // A profile a setup starts is not deleted by one press: that is how a setup
+            // lost its virtual controller on 12 November 2026.
+            const setups = await setupsUsing();
+            const users = setups.by.get(id) ?? [];
+            if (users.length > 0) {
+              return err(
+                'vc.usedBySetups',
+                `${users.length === 1 ? 'The setup' : 'The setups'} ${setupNames(users)} ${users.length === 1 ? 'starts' : 'start'} this profile (${id}). Deleting it breaks that step: the game would start without a virtual controller.`,
+                users.map((s) => s.id).join(', ')
+              );
+            }
+            if (setups.note) return err('vc.setupsUnread', setups.note);
           }
           const removed = await store.remove(id);
           if (!removed.ok) return removed;
