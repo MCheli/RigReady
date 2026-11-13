@@ -343,13 +343,14 @@ pre code {
   color: var(--muted);
 }
 
-/* The four stages, numbered in order. */
+/* The four stages, numbered in order: two to a row, so a whole window can still be read at the
+   card's width. */
 .stages {
   list-style: none;
   counter-reset: stage;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
   margin: clamp(40px, 6vw, 64px) 0 0;
   padding: 0;
 }
@@ -362,9 +363,17 @@ pre code {
   border-radius: 12px;
   background: var(--surface);
 }
-.stage .tile-shot {
-  border-width: 0 0 1px;
-  border-radius: 0;
+/* Each stage's screenshot whole, at the card's width. The box keeps the window's proportions, so
+   the pictures line up across a row even before they load. */
+.stage-shot {
+  aspect-ratio: 1250 / 821;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.stage-shot img {
+  height: 100%;
+  object-fit: contain;
 }
 .stage-body {
   display: flex;
@@ -399,15 +408,6 @@ pre code {
   margin-top: auto;
   font-size: 0.92rem;
 }
-/* A Play screen has no sidebar: the picture is cut from its middle instead of its top left. */
-.tile-shot.play img {
-  width: 201.6%;
-  margin: -12.9% 0 0 -22.6%;
-}
-/* After Stand down: what it closed and put back, under the monitors it moved. */
-.tile-shot.stood-down img {
-  margin-top: -60.5%;
-}
 .stages-note {
   display: flex;
   gap: 12px;
@@ -427,11 +427,6 @@ pre code {
   stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-@media (max-width: 1100px) {
-  .stages {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 @media (max-width: 600px) {
   .stages {
