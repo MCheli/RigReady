@@ -8,6 +8,7 @@ import {
   type Pickers,
   type RemediationTypeInfo,
 } from '../contract';
+import { inSentence } from './inSentence';
 import ParamsForm from './ParamsForm.vue';
 import { followedBy, follows, mergeFollowed, titleFromChoice, type Followed } from './pickerForm';
 import { defaultsOf } from './schemaForm';
@@ -229,7 +230,7 @@ function pickService(service: Pickers['services'][number]): void {
           <div class="rr-row-title" :class="{ 'rr-muted': item.disabled }">{{ item.title }}</div>
           <div class="rr-row-sub">
             {{ type?.label ?? `Unknown type ${item.type}` }}
-            <template v-if="fixType"> · fix: {{ fixType.label.toLowerCase() }}</template>
+            <template v-if="fixType"> · fix: {{ inSentence(fixType.label) }}</template>
             <span v-if="item.disabled" data-testid="edit-check-off">
               · off: not checked, not fixed, not counted</span
             >

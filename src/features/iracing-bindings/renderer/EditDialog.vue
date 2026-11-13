@@ -13,13 +13,13 @@ import {
   type WantedBinding,
 } from '../contract';
 import { iracingKeyOf } from '../core/keys';
-import { inWords } from '../core/names';
+import { inWords, listed } from '../core/names';
 
 /**
  * Changes one binding of one set: press the button or the key, or clear it. What would
  * change is shown first (the binding now and after, what else the same input does, the
- * file), and nothing is written until the user says so. The page only has this while
- * changing bindings is switched on (core/change.ts).
+ * file), and nothing is written until the user presses Save there: a press only asks main
+ * for the review (changePreview); `change` is called from the review's Save alone.
  */
 const props = defineProps<{
   /** The action to change. The dialog is open while there is one. */
@@ -189,11 +189,21 @@ async function save(): Promise<void> {
   emit('saved', result.value);
 }
 
-/** "A", "A and B", "A, B and C". */
-const listed = (names: string[]): string =>
-  names.length <= 1
-    ? (names[0] ?? '')
-    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+/** Where the change lands, in the box: every car it reaches, never fewer. */
+const setLine = (s: BindingSet): string =>
+  s.general
+    ? 'In the bindings for all cars'
+    : s.sharedWith?.length
+      ? `In the profile “${s.profile ?? ''}”, for ${listed([s.name, ...s.sharedWith])}`
+      : `In the custom controls of ${s.name}`;
+
+/** "For" in the review: the cars a save changes. */
+const forWhom = (s: BindingSet): string =>
+  s.general
+    ? 'All cars'
+    : s.sharedWith?.length
+      ? `${listed([s.name, ...s.sharedWith])}: they share the profile “${s.profile ?? ''}”`
+      : `${s.name} only`;
 
 const clearing = computed(() => request.value?.binding === null);
 const title = computed(() => {
@@ -226,9 +236,7 @@ onBeforeUnmount(() => void stopListening());
       <v-card-text>
         <div class="rr-row-title" data-testid="iracing-edit-action">{{ action.name }}</div>
         <div class="rr-row-sub" data-testid="iracing-edit-set">
-          {{
-            set.general ? 'In the bindings for all cars' : `In the custom controls of ${set.name}`
-          }}
+          {{ setLine(set) }}
         </div>
         <div class="rr-row-sub mb-4" data-testid="iracing-edit-now">
           Now: {{ inWords(action.binding) }}
@@ -305,7 +313,7 @@ onBeforeUnmount(() => void stopListening());
         <dd data-testid="iracing-save-after">{{ review.after }}</dd>
         <dt>For</dt>
         <dd data-testid="iracing-save-set">
-          {{ review.set.general ? 'All cars' : `${review.set.name} only` }}
+          {{ forWhom(review.set) }}
         </dd>
       </dl>
       <v-alert
@@ -344,13 +352,13 @@ onBeforeUnmount(() => void stopListening());
       </template>
     </template>
     <template #after>
-      <div class="ibe-trial" data-testid="iracing-save-trial">
-        <v-icon icon="mdi-flask-outline" class="rr-warn" />
-        <div>
-          Not yet tried in iRacing. RigReady changes this one binding and leaves the rest of the
-          file as it was. If iRacing shows wrong or missing bindings afterwards, close iRacing and
-          undo the change on the Safety page.
-        </div>
+      <div class="ibe-note mt-3" data-testid="iracing-save-undo">
+        <v-icon icon="mdi-information-outline" size="16" class="rr-muted" />
+        <span>
+          Nothing is written until you press Save in iRacing’s file. RigReady then changes this one
+          binding and leaves the rest of the file as it was. If iRacing shows a wrong or missing
+          binding afterwards, close iRacing and undo the change on the Safety page.
+        </span>
       </div>
       <v-alert
         v-if="saveError"
@@ -403,16 +411,5 @@ onBeforeUnmount(() => void stopListening());
 .ibe-change dd {
   margin: 0;
   font-weight: 600;
-}
-.ibe-trial {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 10px 14px;
-  border-radius: var(--rr-radius);
-  border: 1px solid color-mix(in srgb, var(--rr-warn) 45%, var(--rr-border));
-  background: var(--rr-surface-2);
-  font-size: 13px;
-  line-height: 1.5;
 }
 </style>

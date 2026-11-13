@@ -12,7 +12,7 @@ import type {
   SetView,
   WantedBinding,
 } from '../contract';
-import { EDIT_SWITCH, editingOn, pressedOf, refuseWhenOff } from './change';
+import { pressedOf } from './change';
 import { RECORD_BYTES, parseControlsFile } from './controlsFile';
 import { KEPT_BYTES } from './edit';
 
@@ -20,10 +20,8 @@ const WHEEL = '45D4BEA1-60A1-17D8-8001-444553540000';
 const BOX = '5EED0001-7A11-11EF-8004-444553540000';
 const HANDBRAKE = '5EED0002-7A11-11EF-8005-444553540000';
 const CAR = 'car:mx5 mx52016';
-const OFF = {
-  code: 'iracing-bindings.edit.off',
-  message: 'RigReady does not change iRacing bindings yet. Change them in iRacing.',
-};
+/** The switch changing bindings was behind until 13 Nov 2026. It does nothing now. */
+const OLD_SWITCH = 'RIGREADY_IRACING_EDIT';
 const CLOSE_FIRST =
   'Close iRacing first. iRacing writes its bindings when it closes and would undo the change.';
 const SIMULATOR = {
@@ -35,19 +33,19 @@ const SIMULATOR = {
 let app: WiredApp | undefined;
 let switchBefore: string | undefined;
 beforeEach(() => {
-  switchBefore = process.env[EDIT_SWITCH];
-  delete process.env[EDIT_SWITCH];
+  // As RigReady ships: nothing in its environment about iRacing bindings.
+  switchBefore = process.env[OLD_SWITCH];
+  delete process.env[OLD_SWITCH];
 });
 afterEach(async () => {
-  if (switchBefore === undefined) delete process.env[EDIT_SWITCH];
-  else process.env[EDIT_SWITCH] = switchBefore;
+  if (switchBefore === undefined) delete process.env[OLD_SWITCH];
+  else process.env[OLD_SWITCH] = switchBefore;
   await app?.cleanup();
   app = undefined;
 });
 
 /** The racing rig with a car that has custom controls and a button box plugged in. */
-async function start(on: boolean): Promise<WiredApp> {
-  if (on) process.env[EDIT_SWITCH] = '1';
+async function start(): Promise<WiredApp> {
   return (app = await wiredApp('iracing-bindings-car', { files: ['Documents/iRacing/**'] }));
 }
 /** A channel as the page calls it, answer and all. */
@@ -105,50 +103,33 @@ const key = (keyCode: number, modifiers = 0): WantedBinding => ({
 });
 const FLASH_ON_7: ChangeRequest = { set: 'all', action: 'HeadlightFlash', binding: boxButton(7) };
 
-describe('changing an iRacing binding: switched off unless someone turns it on', () => {
-  it('is on only when RIGREADY_IRACING_EDIT is exactly 1', () => {
-    expect(EDIT_SWITCH).toBe('RIGREADY_IRACING_EDIT');
-    expect(editingOn({})).toBe(false);
-    expect(editingOn({ [EDIT_SWITCH]: '1' })).toBe(true);
-    for (const value of ['', '0', 'true', 'yes', ' 1', '1 ', 'on']) {
-      expect(editingOn({ [EDIT_SWITCH]: value }), value).toBe(false);
-    }
-    // Read when asked, not when the program starts: the test turns it off above.
-    expect(editingOn()).toBe(false);
-    expect(refuseWhenOff({})).toMatchObject({ ok: false, error: OFF });
-    expect(refuseWhenOff({ [EDIT_SWITCH]: '1' })).toEqual({ ok: true, value: undefined });
+describe('changing an iRacing binding: on as RigReady ships', () => {
+  it('needs no switch: with nothing in the environment every channel of it answers', async () => {
+    const a = await start();
+    expect(process.env[OLD_SWITCH]).toBeUndefined();
+    const general = await bytesOf(allCars(a));
+    // The overview no longer says whether changing is on: it always is.
+    expect(Object.keys(await a.invoke<Overview>('iracing-bindings:overview'))).not.toContain(
+      'editing'
+    );
+    expect(await call(a, 'changePreview', FLASH_ON_7)).toMatchObject({ ok: true });
+    expect(await call(a, 'listenStart')).toEqual({ ok: true, value: { listening: true } });
+    expect(await call(a, 'listenStop')).toEqual({ ok: true, value: { listening: false } });
+    // Neither the review nor listening writes anything: only `change` does.
+    expect(equal(await bytesOf(allCars(a)), general)).toBe(true);
+    expect(await journal(a)).toEqual([]);
+    expect(await call(a, 'change', FLASH_ON_7)).toMatchObject({ ok: true });
+    expect(await journal(a)).toHaveLength(1);
   });
 
-  it('refuses every channel of it, reads nothing, listens to nothing and writes nothing', async () => {
-    const a = await start(false);
-    const general = await bytesOf(allCars(a));
-    const car = await bytesOf(carFile(a));
-    expect((await a.invoke<Overview>('iracing-bindings:overview')).editing).toBe(false);
-
-    for (const request of [
-      FLASH_ON_7,
-      { set: CAR, action: 'Starter', binding: null },
-      { set: 'all', action: 'HeadlightFlash', binding: key(72) },
-      // Not looked at either: a set and an action that do not exist get the same answer.
-      { set: 'car:nothing', action: 'Nothing', binding: null },
-    ]) {
-      expect(await call(a, 'changePreview', request)).toMatchObject({ ok: false, error: OFF });
-      expect(await call(a, 'change', request)).toMatchObject({ ok: false, error: OFF });
+  it('turns nothing off when the old switch is set to anything', async () => {
+    for (const value of ['0', '', 'off']) {
+      process.env[OLD_SWITCH] = value;
+      const a = await start();
+      expect(await call(a, 'changePreview', FLASH_ON_7), value).toMatchObject({ ok: true });
+      await a.cleanup();
+      app = undefined;
     }
-    expect(await call(a, 'listenStart')).toMatchObject({ ok: false, error: OFF });
-    expect(await call(a, 'listenStop')).toEqual({ ok: true, value: { listening: false } });
-
-    // A press on the button box reaches nobody.
-    const box = a.ports.input.devices().find((d) => d.name === 'Button Box')!;
-    a.ports.input.emit([stateOf(box)]);
-    a.ports.input.emit([stateOf(box, [7])]);
-    expect(a.events.filter((e) => e.channel.startsWith('iracing-bindings:'))).toEqual([]);
-
-    expect(equal(await bytesOf(allCars(a)), general)).toBe(true);
-    expect(equal(await bytesOf(carFile(a)), car)).toBe(true);
-    expect(await journal(a)).toEqual([]);
-    // Reading goes on as before.
-    expect((await setOf(a, 'all')).counts.actions).toBe(367);
   });
 });
 
@@ -167,9 +148,8 @@ function stateOf(device: InputDevice, held: number[] = [], patch: Partial<InputS
 
 describe('changing an iRacing binding: what the user is shown first', () => {
   it('says what the action has now and would have, and writes nothing', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(allCars(a));
-    expect((await a.invoke<Overview>('iracing-bindings:overview')).editing).toBe(true);
 
     const shown = await review(a, FLASH_ON_7);
     expect(shown).toMatchObject({
@@ -195,7 +175,7 @@ describe('changing an iRacing binding: what the user is shown first', () => {
   });
 
   it('names what the same key or button already does in that set', async () => {
-    const a = await start(true);
+    const a = await start();
     // S is the starter, and moves the camera in iRacing's camera editor.
     const s = await review(a, { set: 'all', action: 'HeadlightFlash', binding: key(83) });
     expect(s.after).toBe('S on the keyboard');
@@ -238,7 +218,7 @@ describe('changing an iRacing binding: what the user is shown first', () => {
   });
 
   it('says so when saving would change nothing', async () => {
-    const a = await start(true);
+    const a = await start();
     const same = await review(a, { set: 'all', action: 'Starter', binding: key(83) });
     expect(same).toMatchObject({
       before: 'S on the keyboard',
@@ -253,7 +233,7 @@ describe('changing an iRacing binding: what the user is shown first', () => {
 
 describe('changing an iRacing binding: the write', () => {
   it('binds a button: a backup first, one entry on the Safety page, only that record changed, and Undo puts the file back', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(allCars(a));
     const car = await bytesOf(carFile(a));
 
@@ -298,7 +278,7 @@ describe('changing an iRacing binding: the write', () => {
   });
 
   it('writes exactly the file the preview showed', async () => {
-    const a = await start(true);
+    const a = await start();
     const request: ChangeRequest = {
       set: 'all',
       action: 'BlackBoxShowNext',
@@ -314,7 +294,7 @@ describe('changing an iRacing binding: the write', () => {
   });
 
   it('writes nothing when the file changed after the preview: what the user approved may not hold', async () => {
-    const a = await start(true);
+    const a = await start();
     const shown = await review(a, FLASH_ON_7);
     expect(shown.seen).toMatch(/^[0-9a-f]{64}$/);
     // Meanwhile something else binds Button 7 of the box in the same file (iRacing, a
@@ -328,7 +308,7 @@ describe('changing an iRacing binding: the write', () => {
     );
     const answer = await call(a, 'change', { ...FLASH_ON_7, seen: shown.seen });
     expect(answer.ok ? '' : answer.error.message).toBe(
-      'controls.cfg changed after the change was shown, so nothing was written. Look at the change again.'
+      'controls.cfg, or which file or cars it is for, changed after the change was shown, so nothing was written. Look at the change again.'
     );
     expect(equal(await bytesOf(allCars(a)), before)).toBe(true);
     expect(await journal(a)).toHaveLength(entries);
@@ -340,7 +320,7 @@ describe('changing an iRacing binding: the write', () => {
   });
 
   it('binds a key and clears a binding, each as one entry of its own', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(allCars(a));
 
     const bound = await change(a, { set: 'all', action: 'HeadlightFlash', binding: key(72, 0x30) });
@@ -385,7 +365,7 @@ describe('changing an iRacing binding: the write', () => {
   });
 
   it('changes one car’s set in that car’s file and leaves the file for all cars alone', async () => {
-    const a = await start(true);
+    const a = await start();
     const general = await bytesOf(allCars(a));
     const before = await bytesOf(carFile(a));
     // In this car Look left is not bound; for all cars it is on the wheel.
@@ -411,11 +391,192 @@ describe('changing an iRacing binding: the write', () => {
       general: 'FANATEC Podium Wheel Base DD2: Button 4',
     });
   });
+
+  it('writes the control profile iRacing uses, never the older controls.cfg beside it', async () => {
+    const a = (app = await wiredApp('iracing-bindings-profiles', {
+      files: ['Documents/iRacing/**'],
+    }));
+    const profile = path.join(iracingDir(a), 'profiles', 'controls', 'Baseline', 'controls.cfg');
+    const older = await bytesOf(allCars(a));
+    const before = await bytesOf(profile);
+
+    // The same two changes as the rig test of 13 Nov 2026: a wheel button and Shift+J.
+    const button = await change(a, {
+      set: 'all',
+      action: 'HeadlightFlash',
+      binding: { kind: 'button', device: WHEEL, button: 8 },
+    });
+    expect(button).toMatchObject({ changed: true, file: profile });
+    const afterButton = await bytesOf(profile);
+    expectOnlyThatRecord(before, afterButton, 'HeadlightFlash');
+    const keyed = await change(a, { set: 'all', action: 'BlackBoxShowNext', binding: key(74, 3) });
+    expect(keyed).toMatchObject({ changed: true, file: profile });
+    expectOnlyThatRecord(afterButton, await bytesOf(profile), 'BlackBoxShowNext');
+
+    // The records as iRacing has them for the same button and the same key elsewhere.
+    const parsed = parseControlsFile(await bytesOf(profile));
+    if (!parsed.ok) throw new Error(parsed.error.message);
+    const hex = (action: string): string =>
+      Buffer.from(parsed.value.records.find((r) => r.action === action)!.data).toString('hex');
+    expect(hex('HeadlightFlash')).toBe(
+      '000000000600000002000000800000000000000000000000000000000000000000000000' +
+        'a1bed445a160d8178001444553540000b70e0700000000000000504944564944'
+    );
+    expect(hex('BlackBoxShowNext')).toBe(
+      '0100000006000000040000004a00000000000300' + '00'.repeat(48)
+    );
+    // The size of the file and its header stay as iRacing wrote them.
+    expect(afterButton.length).toBe(before.length);
+    expect(equal((await bytesOf(profile)).subarray(0, 0xab), before.subarray(0, 0xab))).toBe(true);
+
+    // The older file is not touched, and both entries on the Safety page name the profile.
+    expect(equal(await bytesOf(allCars(a)), older)).toBe(true);
+    expect((await journal(a)).map((e) => e.path)).toEqual([profile, profile]);
+    expect(await bindingOf(a, 'all', 'BlackBoxShowNext')).toMatchObject({ input: 'Shift+J' });
+  });
+});
+
+/** The rig of 12:27 on 13 Nov 2026: Baseline for all cars, and the CTS-V's own profile. */
+async function startCarProfile(): Promise<WiredApp> {
+  return (app = await wiredApp('iracing-bindings-profile-car', {
+    files: ['Documents/iRacing/**'],
+  }));
+}
+const profileOf = (a: WiredApp, name: string): string =>
+  path.join(iracingDir(a), 'profiles', 'controls', name, 'controls.cfg');
+const writeIni = (a: WiredApp, lines: string): Promise<void> =>
+  mutate(a, [
+    {
+      op: 'writeFile',
+      path: 'Documents/iRacing/app.ini',
+      content: `[Audio]\r\nvolume=1\r\n\r\n[ControlProfiles]\r\n${lines}\r\n[Drive Screen]\r\nblackBox=2\r\n`,
+    },
+  ]);
+const CTSV = 'car:cadillacctsvr';
+const FLASH_ON_WHEEL_8: ChangeRequest = {
+  set: CTSV,
+  action: 'HeadlightFlash',
+  binding: { kind: 'button', device: WHEEL, button: 8 },
+};
+
+describe('changing an iRacing binding: a car’s own control profile', () => {
+  it('previews, backs up and writes the car’s profile, and nothing else', async () => {
+    const a = await startCarProfile();
+    const car = profileOf(a, 'Test Profile CTSV');
+    const baseline = profileOf(a, 'Baseline');
+    const before = await bytesOf(car);
+    const baselineBefore = await bytesOf(baseline);
+    const older = await bytesOf(allCars(a));
+
+    const shown = await review(a, FLASH_ON_WHEEL_8);
+    expect(shown.set).toMatchObject({ id: CTSV, file: car, profile: 'Test Profile CTSV' });
+    expect(shown.set.sharedWith).toBeUndefined();
+    expect(shown.preview.files.map((f) => f.path)).toEqual([car]);
+    expect(equal(await bytesOf(car), before)).toBe(true);
+
+    const result = await change(a, { ...FLASH_ON_WHEEL_8, seen: shown.seen });
+    expect(result).toEqual({
+      changed: true,
+      message:
+        'Saved in iRacing’s file for cadillacctsvr: Flash headlights is now bound to Button 8 on FANATEC Podium Wheel Base DD2. Undo is on the Safety page.',
+      file: car,
+    });
+    expectOnlyThatRecord(before, await bytesOf(car), 'HeadlightFlash');
+    // The profile for all cars and the older file beside the profiles are left as they were.
+    expect(equal(await bytesOf(baseline), baselineBefore)).toBe(true);
+    expect(equal(await bytesOf(allCars(a)), older)).toBe(true);
+    const entries = await journal(a);
+    expect(entries.map((e) => [e.path, e.groupReason])).toEqual([
+      [
+        car,
+        'iRacing bindings for cadillacctsvr: Flash headlights bound to Button 8 on FANATEC Podium Wheel Base DD2',
+      ],
+    ]);
+    expect(equal(await bytesOf(entries[0]!.backupPath!), before)).toBe(true);
+    expect((await a.ports.files.undoGroup(entries[0]!.groupId!)).ok).toBe(true);
+    expect(equal(await bytesOf(car), before)).toBe(true);
+  });
+
+  it('names every car that shares the profile, before saving and after', async () => {
+    const a = await startCarProfile();
+    // Two cars on one profile: a change for one is a change for both.
+    await writeIni(
+      a,
+      'cadillacctsvr=Test Profile CTSV\r\nbmwm4gt3=Test Profile CTSV\r\nGlobal=Baseline'
+    );
+    const sets = (await a.invoke<Overview>('iracing-bindings:overview')).sets;
+    expect(sets.map((s) => [s.id, s.sharedWith])).toEqual([
+      ['all', undefined],
+      ['car:bmwm4gt3', ['cadillacctsvr']],
+      [CTSV, ['bmwm4gt3']],
+    ]);
+    const shown = await review(a, FLASH_ON_WHEEL_8);
+    expect(shown.set.sharedWith).toEqual(['bmwm4gt3']);
+    const result = await change(a, { ...FLASH_ON_WHEEL_8, seen: shown.seen });
+    const scope = 'cadillacctsvr and bmwm4gt3, which share the profile “Test Profile CTSV”';
+    expect(result.message).toBe(
+      `Saved in iRacing’s file for ${scope}: Flash headlights is now bound to Button 8 on FANATEC Podium Wheel Base DD2. Undo is on the Safety page.`
+    );
+    expect((await journal(a)).map((e) => e.groupReason)).toEqual([
+      `iRacing bindings for ${scope}: Flash headlights bound to Button 8 on FANATEC Podium Wheel Base DD2`,
+    ]);
+    // The other car has the change too, as the message said.
+    expect(await bindingOf(a, 'car:bmwm4gt3', 'HeadlightFlash')).toMatchObject({
+      input: 'Button 8',
+    });
+  });
+
+  it('writes nothing when another car joined the profile after the preview', async () => {
+    const a = await startCarProfile();
+    const car = profileOf(a, 'Test Profile CTSV');
+    const shown = await review(a, FLASH_ON_WHEEL_8);
+    await writeIni(
+      a,
+      'cadillacctsvr=Test Profile CTSV\r\nbmwm4gt3=Test Profile CTSV\r\nGlobal=Baseline'
+    );
+    const before = await bytesOf(car);
+    expect(await refused(a, 'change', { ...FLASH_ON_WHEEL_8, seen: shown.seen })).toBe(
+      'iracing-bindings.edit.changed'
+    );
+    expect(equal(await bytesOf(car), before)).toBe(true);
+    expect(await journal(a)).toEqual([]);
+  });
+
+  it('writes nothing when app.ini points All cars at another profile with the same bytes', async () => {
+    const a = await startCarProfile();
+    const baseline = profileOf(a, 'Baseline');
+    const copy = profileOf(a, 'Copy');
+    await mutate(a, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/Copy/controls.cfg',
+        from: baseline,
+      },
+    ]);
+    expect(equal(await bytesOf(copy), await bytesOf(baseline))).toBe(true);
+    const request: ChangeRequest = {
+      set: 'all',
+      action: 'HeadlightFlash',
+      binding: { kind: 'button', device: WHEEL, button: 8 },
+    };
+    const shown = await review(a, request);
+    expect(shown.set.file).toBe(baseline);
+    // iRacing now uses the copy for all cars: the same content, another file.
+    await writeIni(a, 'cadillacctsvr=Test Profile CTSV\r\nGlobal=Copy');
+    const copyBefore = await bytesOf(copy);
+    const baselineBefore = await bytesOf(baseline);
+    expect(await refused(a, 'change', { ...request, seen: shown.seen })).toBe(
+      'iracing-bindings.edit.changed'
+    );
+    expect(equal(await bytesOf(copy), copyBefore)).toBe(true);
+    expect(equal(await bytesOf(baseline), baselineBefore)).toBe(true);
+    expect(await journal(a)).toEqual([]);
+  });
 });
 
 describe('changing an iRacing binding: when it is refused', () => {
   it('while iRacing runs: the reason is shown before saving and nothing is written', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(allCars(a));
     // The launcher is not the simulator: it does not write these files.
     await mutate(a, [
@@ -441,7 +602,7 @@ describe('changing an iRacing binding: when it is refused', () => {
   });
 
   it('when RigReady cannot see which programs run: not knowing is not "closed"', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(allCars(a));
     await mutate(a, [{ op: 'failProvider', port: 'processes', message: 'Access denied.' }]);
     const why =
@@ -456,7 +617,7 @@ describe('changing an iRacing binding: when it is refused', () => {
   });
 
   it('a controller that is not plugged in, and a button the controller does not have', async () => {
-    const a = await start(true);
+    const a = await start();
     for (const device of [HANDBRAKE, 'keyboard', '', '..\\..\\x']) {
       const request = {
         set: 'all',
@@ -494,7 +655,7 @@ describe('changing an iRacing binding: when it is refused', () => {
   });
 
   it('a set or an action that is not there, an axis, and a kind the action does not take', async () => {
-    const a = await start(true);
+    const a = await start();
     const before = await bytesOf(allCars(a));
     const wanted = key(72);
     const cases: [ChangeRequest, string][] = [
@@ -533,7 +694,7 @@ describe('changing an iRacing binding: when it is refused', () => {
   });
 
   it('a file iRacing damaged or that is not a bindings file', async () => {
-    const a = await start(true);
+    const a = await start();
     await fs.writeFile(allCars(a), 'not a bindings file');
     expect(await refused(a, 'changePreview', FLASH_ON_7)).toBe('iracing-bindings.file');
     expect(await refused(a, 'change', FLASH_ON_7)).toBe('iracing-bindings.file');
@@ -547,7 +708,7 @@ describe('changing an iRacing binding: binding by pressing', () => {
     a.events.filter((e) => e.channel === 'iracing-bindings:event:pressed').map((e) => e.payload);
 
   it('reports what is pressed on any controller while the page listens, and stops when told', async () => {
-    const a = await start(true);
+    const a = await start();
     const box = a.ports.input.devices().find((d) => d.name === 'Button Box')!;
     const wheel = a.ports.input.devices().find((d) => d.guid === WHEEL)!;
     expect(await call(a, 'listenStart')).toEqual({ ok: true, value: { listening: true } });
@@ -593,7 +754,7 @@ describe('changing an iRacing binding: binding by pressing', () => {
   });
 
   it('a listen stopped while the controllers were still starting reports nothing afterwards', async () => {
-    const a = await start(true);
+    const a = await start();
     const box = a.ports.input.devices().find((d) => d.name === 'Button Box')!;
     // The input reader takes its time to start (seconds, on a real PC).
     const input = a.ports.input;
