@@ -1,8 +1,8 @@
 # Changelog
 
-## 2.0.0 (not released)
+## 2.0.0 (2026-11-13)
 
-A rebuild from the ground up. Nothing of 1.1.0's code or update channel carries over. The setup files version 1 left in `~/.rigready` are left as they are: they are listed apart on the Setups page, where one can be brought over as a new setup from the parts that convert exactly, or deleted. RigReady 1 also left "Keep in the tray" switched off in the settings file, behind a switch nobody could use; this version ignores that value, so closing the window keeps RigReady in the tray. A 2.0 beta (up to beta 4) that saved the settings kept the off value as a choice: if closing the window quits RigReady, turn on **Keep RigReady in the tray when you close the window** once in Configure > Settings. Version 2.0.0 has not been published; there is no installer to download yet.
+A rebuild from the ground up. Nothing of 1.1.0's code or update channel carries over. The setup files version 1 left in `~/.rigready` are left as they are: they are listed apart on the Setups page, where one can be brought over as a new setup from the parts that convert exactly, or deleted. RigReady 1 also left "Keep in the tray" switched off in the settings file, behind a switch nobody could use; this version ignores that value, so closing the window keeps RigReady in the tray. A 2.0 beta (up to beta 4) that saved the settings kept the off value as a choice: if closing the window quits RigReady, turn on **Keep RigReady in the tray when you close the window** once in Configure > Settings.
 
 The first signed release. The installer, RigReady.exe and the uninstaller carry a code signature with the publisher name "Mark Cheli", issued through Microsoft's Artifact Signing service, so Windows names the publisher in its dialogs and in the file's properties. Installed copies check that signature before they install an update, and refuse one that is unsigned or signed under another name. SmartScreen may still warn the first time the installer runs, until the installer has earned a reputation with Microsoft.
 
@@ -12,9 +12,9 @@ The first signed release. The installer, RigReady.exe and the uninstaller carry 
 - One screen for the setup used last: a readiness dial, the rig drawn with its monitors and devices so a problem shows as a place, a grouped checklist, and a fix beside every failing item.
 - One action, Make ready and launch (or Enter): the fixes run in order as visible steps and the game is launched once everything required is met. Make ready, Launch and Stand down are also there on their own.
 - Required items make the rig Not ready; optional items only warn. Launch is never blocked, and nothing is launched past a required problem without asking.
-- The session is followed: in progress, then Welcome back with Stand down as the main action. Unless the setup switches it off, Stand down then runs by itself after a countdown you can cancel; the countdown length is set for each setup. A history of sessions says what needed fixing most often.
+- The session is followed: in progress, then Welcome back with Stand down as the main action. Unless the setup switches it off, Stand down then runs by itself after a countdown you can cancel; the countdown length is set for each setup. When the desk monitor layout has not yet been kept with the monitors connected now, the countdown says so and asks you to stay and press Keep it. A history of sessions says what needed fixing most often.
 - Stand down and a restore ask all the processes of a helper program to close together, and name one that stays open with the reason. A restore never forces a program closed; Stand down does so only where the check allows it.
-- An overlay over the game, off until you turn it on: a small see-through list of each button or hat you press and what the game does on it for the aircraft or car you are in. Each line fades after a few seconds. You choose the screen, the place, the size, the number of lines and how long a press stays. It is a window on a monitor, not inside a VR headset.
+- An overlay over the game, off until you turn it on: a small see-through list of each button or hat you press and what the game does on it for the aircraft or car you are in. Each line fades after a few seconds. Each setup has its own switch for it, on to begin with only where RigReady can read that game's bindings, so it can be on in one game and off in another. You choose the screen (or "The main screen", which follows the monitor layout in use), the place, the size, the number of lines and how long a press stays; the page warns when the chosen monitor is off in a setup's layout. It is a window on a monitor, not inside a VR headset.
 - A compact view that stays on top, a quiet offer to switch when the gear plugged in fits another setup, an optional ready tone.
 - One double-click: a desktop shortcut per setup, `RigReady.exe --launch "<setup>"` (also `--make-ready` and `--setup`), a taskbar Jump List, a status badge, progress and three buttons on the taskbar button, an optional global hotkey.
 - Tray icon with the same actions; optional start with Windows.
@@ -36,12 +36,12 @@ The first signed release. The installer, RigReady.exe and the uninstaller carry 
 
 **DCS World**
 - Installs across Steam libraries and standalone; update waiting; aircraft list.
-- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one; without SimAppPro, for every installed aircraft that can export a display, read from the aircraft's own files. An aircraft or a display RigReady did not find can be added by name.
+- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one; without SimAppPro, for every installed aircraft that can export a display, read from the aircraft's own files. An aircraft or a display RigReady did not find can be added by name. When **Use in DCS** changes DCS's window, it offers to update the setups that still expect the old one, naming each and what changes, in one action you can undo; a setup left as it was says so on the Play screen, and "Set the DCS options" asks before it would undo the screen setup in use.
 - Export.lua managed one tool at a time; overwrites by other programs are noticed.
 - Bindings for every DCS aircraft: effective bindings (defaults plus your changes), editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots. Binding the kneeboard button says when its pages cannot be turned from a controller, and offers to bind those next. Binding guides and curated priority lists exist for the aircraft listed in the manual.
-- Cheat sheets of what every control does, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
-- Simple outline drawings, each control placed by its button number: the WinWing Orion stick (ViperAce F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles, the MFD frames, the UFC with its HUD, the ICP, the startup panel and take-off panel 2, and the Thrustmaster HOTAS Warthog stick and throttle, the T.16000M and the TWCS throttle. Each has a label block and leader line per control, placed so that no two lines cross. A press on a control the drawing does not show is listed under "More controls". The Saitek / Logitech X52 Pro has its controls named, without a drawing. A drawing can be corrected or shown over a photo of the device. For any device, a sheet can be made from your own photos (press a control, then click where it is) or imported from a file; the photos stay on this PC. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
-- Twenty binding guides, covering the F/A-18C, F-16C, A-10C II and A-10C, A-10A, F-14 (pilot and RIO), F-15E (pilot and WSO), F-15C, MiG-29, Su-27 and J-11A, Su-33, Su-25T, Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. For any other aircraft you can import a guide file or write your own, with no AI key, or have optional AI help draft one.
+- Cheat sheets of what every control does, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control. A throttle stop or a switch position counts once it has been there a moment, and you leave it there; a missed card comes back at the end of the round.
+- Simple outline drawings, each control placed by its button number: the WinWing Orion stick (ViperAce F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles, the MFD frames, the UFC with its HUD, the ICP, the startup panel and take-off panel 2, and the Thrustmaster HOTAS Warthog stick and throttle, the T.16000M and the TWCS throttle. Each has a label block and leader line per control, placed so that no two lines cross. The ViperAce grip, the F-15EX throttle and take-off panel 2 (its brake and wing fold handles included) were checked against presses on a real rig, and a drawing knows where a control rests, such as a throttle at IDLE. A press on a control the drawing does not show is listed under "More controls". The Saitek / Logitech X52 Pro has its controls named, without a drawing. A drawing can be corrected or shown over a photo of the device. For any device, a sheet can be made from your own photos (press a control, then click where it is) or imported from a file; the photos stay on this PC. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
+- Twenty binding guides for DCS, covering the F/A-18C, F-16C, A-10C II and A-10C, A-10A, F-14 (pilot and RIO), F-15E (pilot and WSO), F-15C, MiG-29, Su-27 and J-11A, Su-33, Su-25T, Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. For any other aircraft you can import a guide file or write your own, with no AI key, or have optional AI help draft one.
 - Optional AI help with your own key from Anthropic (the default), OpenAI, or any OpenAI-compatible service: presets for Google Gemini, OpenRouter, Mistral, and Ollama and LM Studio on your own PC. Each provider keeps its own encrypted key, gets a Test button and a model you can type, and only its one host is contacted (https, or http to this PC only).
 
 
@@ -57,7 +57,10 @@ The first signed release. The installer, RigReady.exe and the uninstaller carry 
 
 **Racing and other games**
 - iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
-- iRacing bindings: every action iRacing has, bound or not, and what is bound to it, for all cars and for each car with custom controls, with the controllers matched to what is plugged in and the inputs that do more than one thing. The page shows bindings and does not change them; it says why.
+- iRacing bindings: every action iRacing has, bound or not, and what is bound to it, read from the control profile iRacing uses (iRacing keeps bindings in control profiles since 2026 Season 3), for all cars and for each car with a profile of its own, with the controllers matched to what is plugged in and the inputs that do more than one thing. An action can be bound to a controller button or a key, or cleared: RigReady shows the change first, writes nothing until you press Save, backs the file up and lists the change on the Safety page with Undo. A button and a key bound this way were used by iRacing in a test drive. Axes, hat switches and the number pad keys are bound in iRacing itself.
+- iRacing control profiles: the bindings page lists every profile and which cars use each. Buttons and keys can be copied from one profile into another after a review, with a backup and Undo. A setup can switch the profile iRacing uses at Make ready and put the old one back at Stand down. The iRacing page, its checks, cheat sheets, backups and the controller ID repair use the profile iRacing loads.
+- Controllers iRacing will not find: the bindings of a controller that is gone can be cleared after a review, with Undo. A controller that is only unplugged is never offered. An optional setup check warns when iRacing will ask to calibrate the wheel or pedals plugged in now.
+- Binding guides for iRacing by class of car: GT3, GT4, LMDh and prototypes, formula and open-wheel, oval, and dirt. They show what is bound, walk you through binding buttons and keys with each change shown first, and say that the wheel and pedals are bound in iRacing itself. Their plain names for actions also appear on the iRacing bindings page and the cheat sheets.
 - Assetto Corsa controller repair: when Windows lists the controllers in another order than when `controls.ini` was saved (a USB port change, a controller added), the page shows which controller each binding really acts on now and renumbers the file after a preview, with a backup and Undo. Identical controllers are asked for, never guessed.
 - Microsoft Flight Simulator 2024 and 2020, X-Plane 12 and 11, IL-2 Sturmovik: Great Battles, Falcon BMS, Assetto Corsa EVO, Assetto Corsa Rally, Assetto Corsa Competizione, rFactor 2, Automobilista 2, EA SPORTS WRC, F1 25 and F1 24, DiRT Rally 2.0, RaceRoom, ACE COMBAT 8: detection, launch, files to back up.
 - A virtual controller for games and emulators that read only a gamepad: a virtual Xbox 360 controller or DualShock 4 driven by a stick, wheel, pedals or throttle, with deadzones, curves, a steering range and a throttle split over both triggers, started by hand or by a setup, optionally hiding the real controllers with HidHide, with a live picture of the pad while it runs. Needs the ViGEmBus driver, which you install yourself.
@@ -82,17 +85,35 @@ The first signed release. The installer, RigReady.exe and the uninstaller carry 
 - Motion is short and switched off when Windows is asked to reduce it. A page that is still reading shows its outline.
 - Security: a review of the whole application (`docs/research/security-review-2026-11.md`), a `SECURITY.md` with the reporting path, and a Security page in the manual. A release marked `[security]` is announced on every screen with the install one click away. Every permission a page could ask for is refused; the windows that draw cheat sheets and pictures cannot reach the network; what a second start hands to the running app is validated first. A setup or backup whose YAML would multiply itself into millions of values is refused, and a restore never writes into the Start menu or its Startup folder.
 
+### New since 2.0.0-beta.5
+
+For those who tried the betas: what changed after the second look on the rig.
+
+- iRacing: the bindings come from the control profile iRacing uses (2026 Season 3 and later), not the older `controls.cfg`. The iRacing page, its checks, cheat sheets, backups and the controller ID repair use it too, and say so when a profile cannot be found.
+- iRacing: bind an action to a controller button or a key from the bindings page, with the change shown before anything is written. Button and key bindings made this way were used by iRacing in a test drive.
+- iRacing: the control profiles and which cars use each; copying buttons and keys from one profile into another; a setup that switches the profile at Make ready and puts it back at Stand down.
+- iRacing: clearing the bindings of controllers that are gone, with Undo, and a check that warns when iRacing will ask to calibrate the wheel or pedals.
+- iRacing: binding guides for GT3, GT4, LMDh and prototypes, formula, oval and dirt cars.
+- iRacing: the black box actions carry iRacing's own names, such as "Next black box".
+- The overlay: a switch in each setup, on to begin with only where RigReady can read the game's bindings. "The main screen" follows the layout in use, and the page warns when the overlay's monitor is off in a setup's layout.
+- Stand down's countdown says when the desk layout has not been kept with the monitors connected now. "Replace with the monitors as they are now" counts as keeping it.
+- DCS: "Use in DCS" offers to update the setups that expect DCS's old window, and "Set the DCS options" asks before it would undo the screen setup in use.
+- The trainer: a switch position or the stop of a lever, such as a throttle at IDLE, counts once it is there, with no need to let go, and a missed card comes back at the end of the round.
+- Drawings: the ViperAce grip, the F-15EX throttle and take-off panel 2 match presses on a real rig, and their "?" marks are gone. The wing fold handle is drawn with its positions.
+- Wheels: the input tester shows a Fanatec clutch pedal as the clutch whichever axis the base puts it on, and the Y axis is called "Clutch or combined pedals".
+- Bringing over a RigReady 1 setup no longer lists the same check twice.
+- Updates are checked against the publisher's full certificate details, not only the name, and the release build stops if those details no longer match.
+- Clicking a switch's title in Settings or on the Overlay page turns the switch on or off.
+- The setup editor keeps the capitals in a fix's name.
+- For contributors: Claude Code skills that guide adding a device or a game, and a guide to building and running your own copy.
+
 ### Known limitations
 
 **Not yet verified in the real game or on real hardware.** These passed tests on recorded data from one rig. Each has instructions in `docs/requirements/ledger.yaml` under the id shown.
-- A binding written by RigReady has not been checked in DCS's own controls screen (BIND-DCS-008).
-- MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not been looked at (SAP-001).
 - The iRacing device ID repair has not been tried with a wheel whose Windows ID really changed (RACE-IRACING-005).
 - The Wheel page has only been tried on a real Fanatec base. Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek and Cammus bases were tested on recorded data made from their published USB IDs; the page says so and links the hardware report form (RACE-WHEEL-001).
 - The Assetto Corsa controller repair has not been tried in the game with a controller that really moved (RACE-AC-001).
-- The iRacing bindings of a car with custom controls were read only from a file made for the tests: no per-car file written by iRacing has been read yet (BIND-IRACING-003).
-- The overlay has not been looked at over a running game, and dragging it into place with the mouse has not been tried on a real rig (OVERLAY-002, OVERLAY-005).
-- Stand down by itself when the game closes was tested only with a game the tests pretend is running, not after a real game closed.
+- Dragging the overlay into place with the mouse has not been tried on a real rig (OVERLAY-005).
 - The virtual controller ran on the real driver once, with ACE COMBAT 8, and nothing recorded it. Hiding the real controllers while a game runs, a DualShock 4 profile and the ACE COMBAT 8 starting point as it is now have not been tried (VPAD-005).
 - A monitor switched back on by a layout that asks for no refresh rate should keep the rate it had; this has not been tried on real monitors (DISP-019).
 - Which way is up on sideways-mounted screens cannot be read from Windows; Monitors > Identify asks once.
@@ -101,15 +122,16 @@ The first signed release. The installer, RigReady.exe and the uninstaller carry 
 
 **By design, for now**
 - Many DCS actions (mostly keyboard and view commands) can be shown but not edited; they are marked "bind in DCS".
-- iRacing bindings are shown, not changed. Changing one is built and switched off until iRacing has loaded a file RigReady wrote (BIND-IRACING-007); axes and hat switches are not built yet (BIND-IRACING-008).
+- For iRacing, RigReady binds buttons and keys. Axes, hat switches and the number pad keys are bound in iRacing itself (BIND-IRACING-008).
+- DCS opens its kneeboard in the bottom right corner of its whole window, which can be on a small screen. The Screens tab shows where; RigReady cannot choose the place yet (DCS-MON-010).
 - The overlay is a window on a monitor. It does not show inside a VR headset (OVERLAY-007), and over a game in exclusive full screen it may not show at all; set the game to borderless.
 - WinWing backlight sync, UFC and ICP displays and vibration still need SimAppPro running. `docs/research/winwing-direct-control.md` describes what replacing it would take.
 - Tuning values of a Fanatec wheel base live on the base and cannot be read; the Wheel page keeps a hand-entered copy.
 - TrackIR's active profile cannot be switched from outside TrackIR.
-- The binding guides were written from general knowledge of the aircraft and have not been reviewed by a pilot. Action names are checked against the installed DCS.
+- The binding guides were written from general knowledge of the aircraft and cars, and have not been reviewed by a pilot or a racing driver. Action names are checked against the installed DCS and against iRacing's own list of actions.
 - The trainer asks buttons and hats only: no axes, modifier combinations or keyboard.
 - A single backup is built in memory and capped at 2 GB.
-- Windows 10 and 11 only.
+- Windows 10 and 11 only. It has not yet been tried on a real Windows 10 PC.
 
 ## 2.0.0-beta.5 (2026-11-13)
 

@@ -199,8 +199,18 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/cheat-sheets-trainer/missed-comes-back-at-the-end.png": {
+    "file": "cheat-sheets-trainer--missed-comes-back-at-the-end.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/cheat-sheets-trainer/06-round-over.png": {
     "file": "cheat-sheets-trainer--06-round-over.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-trainer-stops/right-and-left-there.png": {
+    "file": "cheat-sheets-trainer-stops--right-and-left-there.webp",
     "width": 1250,
     "height": 821
   },
@@ -209,8 +219,8 @@
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/cheat-sheets-trainer-in-place/01-already-in-place.png": {
-    "file": "cheat-sheets-trainer-in-place--01-already-in-place.webp",
+  "artifacts/screens/cheat-sheets-trainer-stops/01-already-there.png": {
+    "file": "cheat-sheets-trainer-stops--01-already-there.webp",
     "width": 1250,
     "height": 821
   },
@@ -399,6 +409,21 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/dcs-screens-follow-setups/01-offer.png": {
+    "file": "dcs-screens-follow-setups--01-offer.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-follow-setups/02-play-screen-says-so.png": {
+    "file": "dcs-screens-follow-setups--02-play-screen-says-so.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-follow-setups/03-fix-asks-first.png": {
+    "file": "dcs-screens-follow-setups--03-fix-asks-first.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/dcs-setup-simapppro/03-simapppro-page.png": {
     "file": "dcs-setup-simapppro--03-simapppro-page.webp",
     "width": 1250,
@@ -444,13 +469,108 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/ai-assist-iracing/01-game-picker.png": {
+    "file": "ai-assist-iracing--01-game-picker.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-iracing/02-class-picker.png": {
+    "file": "ai-assist-iracing--02-class-picker.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-iracing-car/01-suggested-class.png": {
+    "file": "ai-assist-iracing-car--01-suggested-class.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-iracing/03-priorities.png": {
+    "file": "ai-assist-iracing--03-priorities.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-iracing-bind/01-walkthrough-step.png": {
+    "file": "ai-assist-iracing-bind--01-walkthrough-step.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-iracing/04-axis-item.png": {
+    "file": "ai-assist-iracing--04-axis-item.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-iracing-car/02-own-guide.png": {
+    "file": "ai-assist-iracing-car--02-own-guide.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/iracing-bindings-all-cars/01-all-cars.png": {
     "file": "iracing-bindings-all-cars--01-all-cars.webp",
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/iracing-bindings-profiles/01-profile.png": {
+    "file": "iracing-bindings-profiles--01-profile.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-profile-car/01-car-profile.png": {
+    "file": "iracing-bindings-profile-car--01-car-profile.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-profiles-copy/01-profiles.png": {
+    "file": "iracing-profiles-copy--01-profiles.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-profiles-copy/02-copy-choose.png": {
+    "file": "iracing-profiles-copy--02-copy-choose.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-profiles-copy/03-copy-review.png": {
+    "file": "iracing-profiles-copy--03-copy-review.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-profiles-copy/05-iracing-running.png": {
+    "file": "iracing-profiles-copy--05-iracing-running.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-profiles-switch/01-not-ready.png": {
+    "file": "iracing-profiles-switch--01-not-ready.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-profiles-switch/03-made-ready.png": {
+    "file": "iracing-profiles-switch--03-made-ready.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-profiles-switch/05-stood-down.png": {
+    "file": "iracing-profiles-switch--05-stood-down.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/iracing-bindings-moved-wheel/01-new-windows-id.png": {
     "file": "iracing-bindings-moved-wheel--01-new-windows-id.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-cleanup/01-offer.png": {
+    "file": "iracing-bindings-cleanup--01-offer.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-cleanup/02-review.png": {
+    "file": "iracing-bindings-cleanup--02-review.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-cleanup/03-cleared.png": {
+    "file": "iracing-bindings-cleanup--03-cleared.webp",
     "width": 1250,
     "height": 821
   },
@@ -469,8 +589,18 @@
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/iracing-bindings-all-cars/03-why-read-only.png": {
-    "file": "iracing-bindings-all-cars--03-why-read-only.webp",
+  "artifacts/screens/iracing-bindings-all-cars/03-editing-notice.png": {
+    "file": "iracing-bindings-all-cars--03-editing-notice.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-edit-profile/02-review-before-save.png": {
+    "file": "iracing-bindings-edit-profile--02-review-before-save.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-profiles-kept-row/01-kept-under-not-bound.png": {
+    "file": "iracing-profiles-kept-row--01-kept-under-not-bound.webp",
     "width": 1250,
     "height": 821
   },
@@ -484,8 +614,28 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/racing-iracing-profiles/01-profile.png": {
+    "file": "racing-iracing-profiles--01-profile.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-iracing-profiles/03-confirm.png": {
+    "file": "racing-iracing-profiles--03-confirm.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/racing-iracing-repair/02-moved.png": {
     "file": "racing-iracing-repair--02-moved.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-iracing-calibrated/01-passing.png": {
+    "file": "racing-iracing-calibrated--01-passing.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-iracing-uncalibrated/01-failing.png": {
+    "file": "racing-iracing-uncalibrated--01-failing.webp",
     "width": 1250,
     "height": 821
   },
@@ -676,6 +826,11 @@
   },
   "artifacts/screens/devices-tester-wheel/01-wheel-view.png": {
     "file": "devices-tester-wheel--01-wheel-view.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-tester-clutch/01-clutch-pressed.png": {
+    "file": "devices-tester-clutch--01-clutch-pressed.webp",
     "width": 1250,
     "height": 821
   },
@@ -957,12 +1112,22 @@
   "artifacts/screens/overlay/05-preview.png": {
     "file": "overlay--05-preview.webp",
     "width": 398,
-    "height": 302
+    "height": 303
+  },
+  "artifacts/screens/overlay-setups/07-off-in-the-setup-in-use.png": {
+    "file": "overlay-setups--07-off-in-the-setup-in-use.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/overlay-setups/03-off-in-a-setup-layout.png": {
+    "file": "overlay-setups--03-off-in-a-setup-layout.webp",
+    "width": 1250,
+    "height": 821
   },
   "artifacts/screens/overlay/02-preview-off.png": {
     "file": "overlay--02-preview-off.webp",
     "width": 974,
-    "height": 323
+    "height": 324
   },
   "artifacts/screens/overlay/06-on.png": {
     "file": "overlay--06-on.webp",
@@ -999,6 +1164,11 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/fly-stand-down-keep-notice/01-not-kept-yet.png": {
+    "file": "fly-stand-down-keep-notice--01-not-kept-yet.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png": {
     "file": "fly-stand-down-top-bar--02-in-the-top-bar.webp",
     "width": 1250,
@@ -1011,6 +1181,11 @@
   },
   "artifacts/screens/fly-stand-down-setting/01-on-by-default.png": {
     "file": "fly-stand-down-setting--01-on-by-default.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-stand-down-keep-notice/02-went-back.png": {
+    "file": "fly-stand-down-keep-notice--02-went-back.webp",
     "width": 1250,
     "height": 821
   },
@@ -1174,6 +1349,11 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/overlay-setups/06-no-bindings-reason.png": {
+    "file": "overlay-setups--06-no-bindings-reason.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/profile-capture/07-setups.png": {
     "file": "profile-capture--07-setups.webp",
     "width": 1250,
@@ -1196,6 +1376,11 @@
   },
   "artifacts/screens/profile-hand-edit/01-broken-edit.png": {
     "file": "profile-hand-edit--01-broken-edit.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profiles-version-one-two-controllers/01-bring-over.png": {
+    "file": "profiles-version-one-two-controllers--01-bring-over.webp",
     "width": 1250,
     "height": 821
   },
