@@ -210,7 +210,6 @@ describe('a lever with buttons along its travel', () => {
         8000
       )
     ).toEqual([
-      '1160 not counted button:41: too-quick',
       '1550 kept x right',
       '1550 right x',
       // The next card waited for the lever to be back and still.
@@ -231,11 +230,13 @@ describe('a lever with buttons along its travel', () => {
         ],
         8000
       )
-    ).toEqual(['1450 not counted button:1: too-quick']);
+    ).toEqual([]);
+    expect(round.note).toBeUndefined();
     expect(round.session.phase).toBe('asking');
     expect(round.session.results().missed).toEqual([]);
   });
 
+  // Of the positions it passes, only the one the card asks for is told as let go too soon.
   it('swept through the right position without stopping, is answered by where it stopped', () => {
     const round = begin([card('x', on(STICK, 41)), card('y', on(STICK, 9))], rest);
     expect(
@@ -251,12 +252,7 @@ describe('a lever with buttons along its travel', () => {
         ],
         3000
       )
-    ).toEqual([
-      '1160 not counted button:41: too-quick',
-      '1320 not counted button:42: too-quick',
-      '1710 kept x missed',
-      '1710 wrong x',
-    ]);
+    ).toEqual(['1160 not counted button:41: too-quick', '1710 kept x missed', '1710 wrong x']);
     expect(round.session.wrongPress).toEqual({ guid: STICK, control: 'button:3' });
   });
 });
@@ -311,6 +307,70 @@ describe('a switch that stays where it is put', () => {
     expect(round.note).toBeUndefined();
   });
 
+  it('three-way, put back slowly: the next card waits for it, and the way back does not answer it', () => {
+    // The card after "up" asks for the place the switch rests in.
+    const round = begin(
+      [card('up', on(THROTTLE, 20)), card('down', on(THROTTLE, 21))],
+      [[0, THROTTLE, [21]]]
+    );
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, []],
+          [1120, THROTTLE, [20]],
+          // Over half a second in the middle on the way back down.
+          [2500, THROTTLE, []],
+          [3100, THROTTLE, [21]],
+        ],
+        8000
+      )
+    ).toEqual(['1470 kept up right', '1470 right up', '3400 asking down']);
+    // It is back where it rests, which is what the card asks: that is said, not counted.
+    expect(round.session.phase).toBe('asking');
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:21' }]);
+    expect(round.session.results()).toMatchObject({ firstTry: 1, missed: [] });
+  });
+
+  it('a lever with a button for each place, resting on the way back: the next card waits for it too', () => {
+    // Button 30 where it rests, 31 half way, 32 at the far end. The next card asks for 30.
+    const round = begin(
+      [card('far', on(THROTTLE, 32)), card('home', on(THROTTLE, 30))],
+      [[0, THROTTLE, [30]]]
+    );
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, [31]],
+          [1100, THROTTLE, [32]],
+          // Back by way of the middle, with a rest there.
+          [2500, THROTTLE, [31]],
+          [3200, THROTTLE, [30]],
+        ],
+        8000
+      )
+    ).toEqual(['1450 kept far right', '1450 right far', '3500 asking home']);
+    expect(round.session.phase).toBe('asking');
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:30' }]);
+  });
+
+  it('three-way, left in the middle: the next card comes after two seconds all the same', () => {
+    const round = begin(threeWay, [[0, THROTTLE, [21]]]);
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, []],
+          [1120, THROTTLE, [20]],
+          [2500, THROTTLE, []],
+        ],
+        8000
+      )
+    ).toEqual(['1470 kept up right', '1470 right up', `${2500 + MAX_REST_MS} asking b`]);
+    expect(round.note).toBeUndefined();
+  });
+
   it('three-way, put back late: on the next card it is told and not counted', () => {
     const round = begin(threeWay, [[0, THROTTLE, [21]]]);
     expect(
@@ -321,18 +381,37 @@ describe('a switch that stays where it is put', () => {
           [1120, THROTTLE, [20]],
           // Left in the middle until the next card is up, then put back down.
           [2500, THROTTLE, []],
-          [3100, THROTTLE, [21]],
+          [5000, THROTTLE, [21]],
         ],
         8000
       )
     ).toEqual([
       '1470 kept up right',
       '1470 right up',
-      '2800 asking b',
-      '3450 not counted button:21: back-to-rest',
+      '4500 asking b',
+      '5350 not counted button:21: back-to-rest',
     ]);
     expect(round.session.phase).toBe('asking');
     expect(round.session.results().missed).toEqual([]);
+  });
+
+  it('in place and asked for: moved away to let go of it, the next card does not wait for it', () => {
+    // Button 11 is held when its card comes up. Away and back answers it; away again lets go.
+    const round = begin(
+      [card('flip', on(THROTTLE, 11)), card('b', on(THROTTLE, 6))],
+      [[0, THROTTLE, [11]]]
+    );
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, [10]],
+          [1300, THROTTLE, [11]],
+          [2500, THROTTLE, [10]],
+        ],
+        8000
+      )
+    ).toEqual(['1650 kept flip right', '1650 right flip', '2800 asking b']);
   });
 
   it('already where the card asks: answers when it is moved away and straight back', () => {
@@ -340,18 +419,137 @@ describe('a switch that stays where it is put', () => {
       [card('rest', on(THROTTLE, 10)), card('b', on(THROTTLE, 6))],
       [[0, THROTTLE, [10]]]
     );
-    // Held since before the card, it is not an answer however long it stays.
+    // Held since before the card, it is not an answer however long it stays. The round
+    // knows that the control asked for is in place, so the card can say so.
     expect(play(round, [], 2999)).toEqual([]);
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:10' }]);
+    // Moved away, it is in place no longer. Moved back, it is weighed like any press.
+    expect(play(round, [[3000, THROTTLE, [11]]], 3100)).toEqual([]);
+    expect(round.inPlace).toEqual([]);
+    expect(play(round, [[3200, THROTTLE, [10]]], 3300)).toEqual([]);
+    expect(round.inPlace).toEqual([]);
+    expect(play(round, [], 3999)).toEqual(['3550 kept rest right', '3550 right rest']);
+    expect(round.inPlace).toEqual([]);
+    // The position it passed on the way there and back was not told.
+    expect(round.note).toBeUndefined();
+  });
+
+  it('in place when its card comes up later, and still after a miss on that card', () => {
+    // Button 10 is held all along. The first card is answered with Button 6.
+    const round = begin(
+      [card('b', on(THROTTLE, 6)), card('rest', on(THROTTLE, 10))],
+      [[0, THROTTLE, [10]]]
+    );
+    const there = [{ guid: THROTTLE, control: 'button:10' }];
+    expect(round.inPlace).toEqual([]);
     expect(
       play(
         round,
         [
-          [3000, THROTTLE, [11]],
-          [3200, THROTTLE, [10]],
+          [1000, THROTTLE, [10, 6]],
+          [1500, THROTTLE, [10]],
         ],
-        3999
+        2999
       )
-    ).toEqual(['3200 not counted button:11: too-quick', '3550 kept rest right', '3550 right rest']);
+    ).toEqual(['1350 kept b right', '1350 right b', '2000 asking rest']);
+    expect(round.inPlace).toEqual(there);
+    // Another control is taken for the answer: a miss. The control asked for is lit now,
+    // and it is still where it was.
+    expect(
+      play(
+        round,
+        [
+          [3000, THROTTLE, [10, 7]],
+          [4000, THROTTLE, [10]],
+        ],
+        4400
+      )
+    ).toEqual(['3350 kept rest missed', '3350 wrong rest']);
+    expect(round.inPlace).toEqual(there);
+    expect(
+      play(
+        round,
+        [
+          [4500, THROTTLE, []],
+          [4700, THROTTLE, [10]],
+        ],
+        5999
+      )
+    ).toEqual(['5050 corrected rest']);
+    expect(round.inPlace).toEqual([]);
+  });
+
+  it('bound in two places with one of them in place: the other one answers', () => {
+    const round = begin(
+      [card('both', on(THROTTLE, 10), on(THROTTLE, 25)), card('b', on(THROTTLE, 6))],
+      [[0, THROTTLE, [10]]]
+    );
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:10' }]);
+    expect(play(round, [[1000, THROTTLE, [10, 25]]], 1999)).toEqual([
+      '1350 kept both right',
+      '1350 right both',
+    ]);
+    expect(round.inPlace).toEqual([]);
+  });
+});
+
+describe('a control let go too soon to count', () => {
+  const deck = [card('a', on(THROTTLE, 5)), card('b', on(THROTTLE, 6))];
+  const rest: Row[] = [[0, THROTTLE, []]];
+
+  it('is not told when it is a position a lever only passes on its way', () => {
+    // A lever passes Buttons 8 and 9 and stops where no button is.
+    const round = begin(deck, rest);
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, [8]],
+          [1080, THROTTLE, [9]],
+          [1160, THROTTLE, []],
+        ],
+        2999
+      )
+    ).toEqual([]);
+    expect(round.note).toBeUndefined();
+    expect(round.session.phase).toBe('asking');
+    expect(round.session.results().missed).toEqual([]);
+  });
+
+  it('is told when it is the control the card asks for, which counts once it is held', () => {
+    // In a hurry: Button 9 is let go as Button 5 goes down, and 5 is let go at once.
+    const round = begin(deck, rest);
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, [9]],
+          [1080, THROTTLE, [5]],
+          [1160, THROTTLE, []],
+          [2000, THROTTLE, [5]],
+        ],
+        2999
+      )
+    ).toEqual(['1160 not counted button:5: too-quick', '2350 kept a right', '2350 right a']);
+    expect(round.note).toBeUndefined();
+  });
+
+  it('after a miss, is told for the control that is lit and for no other', () => {
+    const round = begin(deck, rest);
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, [9]],
+          // Button 9 is let go as Button 8 goes down, 8 as 5 does, and 5 is let go at once.
+          [2000, THROTTLE, [8]],
+          [2080, THROTTLE, [5]],
+          [2160, THROTTLE, []],
+        ],
+        2999
+      )
+    ).toEqual(['1350 kept a missed', '1350 wrong a', '2160 not counted button:5: too-quick']);
+    expect(round.session.phase).toBe('wrong');
   });
 });
 
@@ -370,12 +568,7 @@ describe('a hat', () => {
         ],
         2000
       )
-    ).toEqual([
-      '1060 not counted hat:1:U: too-quick',
-      '1120 not counted hat:1:UR: too-quick',
-      '1470 kept right right',
-      '1470 right right',
-    ]);
+    ).toEqual(['1470 kept right right', '1470 right right']);
   });
 
   it('tapped, answers like a button', () => {
@@ -698,8 +891,31 @@ describe('the sitting of 12 November 2026, played back', () => {
     expect(round.session.results().missed.map((c) => c.id)).toEqual(['Left throttle to IDLE']);
   });
 
-  it('243.8 s, with a slower hand: the handle reaches OFF after "Zoom in" is up', () => {
+  it('243.8 s, with a slower hand: "Zoom in" waits until the handle is at OFF again', () => {
     const round = begin(handles, [[0, THROTTLE, [1, 2]]], [THROTTLE]);
+    round.reveal(240_000);
+    expect(
+      play(
+        round,
+        [
+          [242_250, THROTTLE, [1]],
+          [242_350, THROTTLE, [1, 31]],
+          // Off the detent, and 600 ms on the way before it is at OFF.
+          [243_700, THROTTLE, [1]],
+          [244_300, THROTTLE, [1, 2]],
+        ],
+        249_999
+      )
+    ).toEqual(['242700 corrected Left throttle to IDLE', '244600 asking Zoom in']);
+    expect(round.note).toBeUndefined();
+  });
+
+  it('243.8 s, with a slower hand and "Left throttle to OFF" next: the way back is not its answer', () => {
+    const round = begin(
+      [handles[0]!, card('Left throttle to OFF', on(THROTTLE, 2))],
+      [[0, THROTTLE, [1, 2]]],
+      [THROTTLE]
+    );
     round.reveal(240_000);
     expect(
       play(
@@ -712,10 +928,29 @@ describe('the sitting of 12 November 2026, played back', () => {
         ],
         249_999
       )
+    ).toEqual(['242700 corrected Left throttle to IDLE', '244600 asking Left throttle to OFF']);
+    expect(round.session.phase).toBe('asking');
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:2' }]);
+  });
+
+  it('243.8 s, with a hand that takes over two seconds: back at OFF on the next card, it is told and not counted', () => {
+    const round = begin(handles, [[0, THROTTLE, [1, 2]]], [THROTTLE]);
+    round.reveal(240_000);
+    expect(
+      play(
+        round,
+        [
+          [242_250, THROTTLE, [1]],
+          [242_350, THROTTLE, [1, 31]],
+          [243_700, THROTTLE, [1]],
+          [246_500, THROTTLE, [1, 2]],
+        ],
+        249_999
+      )
     ).toEqual([
       '242700 corrected Left throttle to IDLE',
-      '244000 asking Zoom in',
-      '244650 not counted button:2: back-to-rest',
+      '245700 asking Zoom in',
+      '246850 not counted button:2: back-to-rest',
     ]);
     expect(round.session.phase).toBe('asking');
   });
@@ -764,11 +999,7 @@ describe('the sitting of 12 November 2026, played back', () => {
         ],
         208_999
       )
-    ).toEqual([
-      '207580 not counted button:59: too-quick',
-      '208250 kept Throttle (Right) - OFF right',
-      '208250 right Throttle (Right) - OFF',
-    ]);
+    ).toEqual(['208250 kept Throttle (Right) - OFF right', '208250 right Throttle (Right) - OFF']);
   });
 
   it('176.1 s: Button 8 of the startup panel in the round for the throttle', () => {
