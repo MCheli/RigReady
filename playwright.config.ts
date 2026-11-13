@@ -23,5 +23,7 @@ export default defineConfig({
   retries: slow ? 1 : 0,
   workers: 2,
   shard: shard ? { current: Number(shard[1]), total: Number(shard[2]) } : null,
-  reporter: [['list']],
+  // The second reporter adds the tests that passed only at a second attempt to the job
+  // summary on GitHub, so a green run does not hide them.
+  reporter: [['list'], ['./tests/e2e/retriedReporter.ts']],
 });

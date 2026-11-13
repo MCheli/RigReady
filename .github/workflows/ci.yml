@@ -30,11 +30,18 @@ concurrency:
 # (Vitest's --shard) and the scenario flows (the Playwright config reads E2E_SHARD). Each has
 # one job that sums its parts up under the name the branch ruleset requires:
 # "Check (typecheck, lint, format, unit tests, ledger)" and "Scenario end-to-end".
+#
+# Every job has a time limit. Without one a job that hangs holds its runner for GitHub's six
+# hours. Each limit is about three times the longest that job took in the first six runs of
+# this layout on main (2026-11-13), rounded up to five minutes: the longest is in the comment
+# beside the limit. A job that comes near its limit has become slow or is stuck: find out
+# which before giving it more time.
 jobs:
   # `npm run check` without its unit tests, in the command's own order.
   static:
     name: Typecheck, lint, format, ledger
     runs-on: windows-latest
+    timeout-minutes: 10 # longest seen: 2 min 27 s
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -61,6 +68,7 @@ jobs:
   unit:
     name: Unit tests (shard ${{ matrix.shard }} of 4)
     runs-on: windows-latest
+    timeout-minutes: 25 # longest seen: 7 min 38 s
     strategy:
       # One shard failing must not stop the others: their results say whether the failure is
       # one test or the runner.
@@ -106,6 +114,7 @@ jobs:
   coverage:
     name: Unit test coverage (the shards together)
     runs-on: windows-latest
+    timeout-minutes: 10 # longest seen: 1 min 2 s
     needs: unit
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -139,6 +148,7 @@ jobs:
   check:
     name: Check (typecheck, lint, format, unit tests, ledger)
     runs-on: ubuntu-latest
+    timeout-minutes: 5 # longest seen: 4 s
     needs: [static, unit, coverage]
     if: always()
     steps:
@@ -156,6 +166,7 @@ jobs:
   e2e:
     name: Scenario end-to-end (shard ${{ matrix.shard }} of 4)
     runs-on: windows-latest
+    timeout-minutes: 35 # longest seen: 11 min 29 s
     strategy:
       # One shard failing must not stop the others: their results say whether the failure is
       # one test or the runner.
@@ -205,6 +216,7 @@ jobs:
   e2e-result:
     name: Scenario end-to-end
     runs-on: ubuntu-latest
+    timeout-minutes: 5 # longest seen: 4 s
     needs: e2e
     if: always()
     steps:
@@ -218,6 +230,7 @@ jobs:
   packaged:
     name: Packaged smoke (the unpacked app, as built for release)
     runs-on: windows-latest
+    timeout-minutes: 15 # longest seen: 4 min 13 s
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
