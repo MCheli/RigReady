@@ -18,8 +18,8 @@ import { inWords } from '../core/names';
 /**
  * Changes one binding of one set: press the button or the key, or clear it. What would
  * change is shown first (the binding now and after, what else the same input does, the
- * file), and nothing is written until the user says so. The page only has this while
- * changing bindings is switched on (core/change.ts).
+ * file), and nothing is written until the user presses Save there: a press only asks main
+ * for the review (changePreview); `change` is called from the review's Save alone.
  */
 const props = defineProps<{
   /** The action to change. The dialog is open while there is one. */
@@ -344,13 +344,13 @@ onBeforeUnmount(() => void stopListening());
       </template>
     </template>
     <template #after>
-      <div class="ibe-trial" data-testid="iracing-save-trial">
-        <v-icon icon="mdi-flask-outline" class="rr-warn" />
-        <div>
-          Not yet tried in iRacing. RigReady changes this one binding and leaves the rest of the
-          file as it was. If iRacing shows wrong or missing bindings afterwards, close iRacing and
-          undo the change on the Safety page.
-        </div>
+      <div class="ibe-note mt-3" data-testid="iracing-save-undo">
+        <v-icon icon="mdi-information-outline" size="16" class="rr-muted" />
+        <span>
+          Nothing is written until you press Save in iRacing’s file. RigReady then changes this one
+          binding and leaves the rest of the file as it was. If iRacing shows a wrong or missing
+          binding afterwards, close iRacing and undo the change on the Safety page.
+        </span>
       </div>
       <v-alert
         v-if="saveError"
@@ -403,16 +403,5 @@ onBeforeUnmount(() => void stopListening());
 .ibe-change dd {
   margin: 0;
   font-weight: 600;
-}
-.ibe-trial {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 10px 14px;
-  border-radius: var(--rr-radius);
-  border: 1px solid color-mix(in srgb, var(--rr-warn) 45%, var(--rr-border));
-  background: var(--rr-surface-2);
-  font-size: 13px;
-  line-height: 1.5;
 }
 </style>

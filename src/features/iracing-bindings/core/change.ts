@@ -15,29 +15,12 @@ import { findSet, setView, simulatorOf, type BindingsContext } from './view';
  * made by edit.ts; this finds the file, says what the change means, and puts it in place
  * through FileStore (a backup first, one entry on the Safety page).
  *
- * It is behind a switch that is off unless someone turns it on, because no file RigReady
- * changed has been loaded by iRacing yet (docs/research/iracing-bindings.md has the proof
- * that is still to be done on the rig).
+ * A button and a key written here were used by iRacing 2026.11.02.01 on the owner's rig on
+ * 13 Nov 2026 (docs/research/iracing-bindings.md, "The rig tests of 13 Nov 2026").
  */
-
-/** Set to "1" in RigReady's environment to turn changing iRacing bindings on for that run. */
-export const EDIT_SWITCH = 'RIGREADY_IRACING_EDIT';
-
-export const editingOn = (env: NodeJS.ProcessEnv = process.env): boolean =>
-  env[EDIT_SWITCH] === '1';
 
 const WHY_CLOSED =
   'Close iRacing first. iRacing writes its bindings when it closes and would undo the change.';
-
-/** An error while the switch is off; nothing is looked at, read or written. */
-export function refuseWhenOff(env?: NodeJS.ProcessEnv): Result<void> {
-  return editingOn(env)
-    ? ok(undefined)
-    : err(
-        'iracing-bindings.edit.off',
-        'RigReady does not change iRacing bindings yet. Change them in iRacing.'
-      );
-}
 
 /**
  * Why the file cannot be written right now, when it cannot. Not knowing whether iRacing is
@@ -129,11 +112,8 @@ const actionOf = (view: SetView, id: string): SetView['actions'][number] | undef
 export async function reviewChange(
   ctx: BindingsContext,
   request: ChangeRequest,
-  names: DeviceNames,
-  env?: NodeJS.ProcessEnv
+  names: DeviceNames
 ): Promise<Result<ChangeReview>> {
-  const on = refuseWhenOff(env);
-  if (!on.ok) return on;
   const planned = await plan(ctx, request, names);
   if (!planned.ok) return planned;
   const { view, after, change } = planned.value;
@@ -166,17 +146,15 @@ export async function reviewChange(
 }
 
 /**
- * Writes one change into the set's controls.cfg: refused while the switch is off and while
- * iRacing runs, a backup first, and the file is read back before anything is called done.
+ * Writes one change into the set's controls.cfg: refused while iRacing runs, a backup
+ * first, and the file is read back before anything is called done. The page calls this
+ * only from the review's Save button, never straight after a press.
  */
 export async function applyChange(
   ctx: BindingsContext,
   request: ChangeRequest,
-  names: DeviceNames,
-  env?: NodeJS.ProcessEnv
+  names: DeviceNames
 ): Promise<Result<ChangeResult>> {
-  const on = refuseWhenOff(env);
-  if (!on.ok) return on;
   const blocked = await whyBlocked(ctx);
   if (blocked) return err('iracing-bindings.edit.blocked', blocked);
   const planned = await plan(ctx, request, names);

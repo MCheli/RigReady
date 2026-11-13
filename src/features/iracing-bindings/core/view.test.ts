@@ -262,7 +262,53 @@ describe('iRacing bindings: control profiles (iRacing 2026 Season 3 and later)',
     }
   });
 
-  it('reads a car’s own profile when app.ini names one for its folder', async () => {
+  it('reads a car’s own profile as iRacing names it in app.ini, with no car folder needed', async () => {
+    const a = await start(PROFILE);
+    // Exactly what iRacing 2026.11 wrote on the owner's rig on 13 Nov 2026 after a profile
+    // was made in its Options and given to the Cadillac CTS-V: the key is iRacing's path
+    // name of the car, the value the profile's folder, spaces and all. The profile is the
+    // real one, with the recorded rig's made-up wheel id.
+    await mutate(a, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/Test Profile CTSV/controls.cfg',
+        from: DATA('profile-car-controls.cfg'),
+      },
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/Test Profile CTSV/joyCalib.yaml',
+        from: DATA('profile-joyCalib.yaml'),
+      },
+    ]);
+    await setIni('[ControlProfiles]\r\ncadillacctsvr=Test Profile CTSV\r\nGlobal=Baseline\r\n');
+    const view = await overviewOf(a);
+    // No folder of the car under Documents\iRacing\setups: the line alone makes the set.
+    expect(view.carFolders).toBe(0);
+    expect(view.sets).toEqual([
+      { id: 'all', name: 'All cars', general: true, file: profileFile(a), profile: 'Baseline' },
+      {
+        id: 'car:cadillacctsvr',
+        name: 'cadillacctsvr',
+        general: false,
+        file: profileFile(a, 'Test Profile CTSV'),
+        profile: 'Test Profile CTSV',
+      },
+    ]);
+    // That profile was a copy of Baseline as it was then, with the two bindings RigReady
+    // had written into it at 12:16; the profile for all cars here is the one of 10:45.
+    const car = await setOf(a, 'car:cadillacctsvr');
+    expect(car.counts).toMatchObject({ actions: 369, unread: 0, differs: 2 });
+    expect(car.actions.find((x) => x.id === 'LookUp')).toMatchObject({
+      binding: { kind: 'button', input: 'Button 10' },
+      differs: true,
+      general: 'Not bound',
+    });
+    expect(car.actions.find((x) => x.id === 'ToggleUIVisibleDrive')?.binding?.input).toBe(
+      'Shift+J'
+    );
+  });
+
+  it('lists a car only when its profile has a controls.cfg, and the older car files as not read', async () => {
     const a = await start(PROFILE);
     await mutate(a, [
       {
@@ -276,11 +322,9 @@ describe('iRacing bindings: control profiles (iRacing 2026 Season 3 and later)',
         path: 'Documents/iRacing/setups/mx5 mx52016/controls.cfg',
         from: DATA('controls-car.cfg'),
       },
-      // A line for a car that was never driven here is not a set.
-      { op: 'writeFile', path: 'Documents/iRacing/setups/ferrari296gt3/x.sto', content: 'x' },
     ]);
     await setIni(
-      '[ControlProfiles]\r\nGlobal=Baseline\r\nmx5 mx52016=mx5 mx52016\r\nporsche992rgt3=Baseline\r\n'
+      '[ControlProfiles]\r\nGlobal=Baseline\r\nmx5 mx52016=mx5 mx52016\r\nporsche992rgt3=Gone\r\nferrari296gt3=..\\Baseline\r\n'
     );
     const view = await overviewOf(a);
     expect(view.sets.map((s) => [s.id, s.profile])).toEqual([
@@ -293,8 +337,7 @@ describe('iRacing bindings: control profiles (iRacing 2026 Season 3 and later)',
       path.join(iracingDir(a), 'setups', 'mx5 mx52016', 'controls.cfg'),
     ]);
     // Compared with the profile for all cars: the eight records the car file changes.
-    const car = await setOf(a, CAR);
-    expect(car.counts.differs).toBe(8);
+    expect((await setOf(a, CAR)).counts.differs).toBe(8);
   });
 
   it('reads app.ini’s section whatever its case, and skips comments and padding', () => {
@@ -702,8 +745,8 @@ describe('iRacing bindings: reading only', () => {
       name,
       def.meta?.tier,
     ]);
-    // "off" keeps a channel out of the tools a local AI is given. Changing a binding stays
-    // there until iRacing has taken a file RigReady changed (change.test.ts has the switch).
+    // "off" keeps a channel out of the tools a local AI is given. A binding is changed by a
+    // person on the page, who presses the input and approves the change there.
     expect(channels).toEqual([
       ['overview', 'read'],
       ['set', 'read'],

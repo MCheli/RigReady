@@ -19,10 +19,8 @@ import DeviceState from './DeviceState.vue';
 import EditDialog from './EditDialog.vue';
 
 /**
- * Every action of one iRacing binding set and what it is bound to. As shipped it only
- * reads: the page has no way to change a binding, and says why. Changing one binding is
- * built behind a switch that is off (overview.editing; docs/research/iracing-bindings.md
- * has what is still to be proven), and nothing of it is on the page until it is on.
+ * Every action of one iRacing binding set and what it is bound to, and Change on each
+ * action that takes a button or a key (EditDialog.vue: press, review, then Save).
  */
 const api = useClient(iracingBindingsContract);
 const route = useRoute();
@@ -39,7 +37,6 @@ const onlyUnbound = ref(false);
 const onlyDiffers = ref(false);
 /** Device key to show the bindings of, or '' for all. */
 const device = ref('');
-const showWhy = ref(false);
 const showCamera = ref(false);
 
 /** The action whose binding is being changed, while the dialog is open. */
@@ -100,15 +97,29 @@ onBeforeUnmount(() => off?.());
 const setItems = computed(() =>
   (overview.value?.sets ?? []).map((s) => ({
     value: s.id,
-    title: s.general ? s.name : `${s.name} (custom controls)`,
+    // A car with a profile of its own is named by the car path iRacing writes in app.ini.
+    title: s.general
+      ? s.name
+      : s.profile
+        ? `${s.name} (profile “${s.profile}”)`
+        : `${s.name} (custom controls)`,
   }))
 );
 
 /** "2 cars have a folder in iRacing. 1 has custom controls; the others use the bindings for all cars." */
 const carsLine = computed(() => {
   const o = overview.value;
-  if (!o || o.carFolders === 0) return '';
+  if (!o) return '';
   const custom = o.sets.filter((s) => !s.general).length;
+  // With control profiles a car's own bindings come from app.ini, folder or not.
+  if (o.source.kind === 'profiles') {
+    if (custom === 0)
+      return 'No car has a control profile of its own, so the profile for all cars applies.';
+    return custom === 1
+      ? '1 car has a control profile of its own; the others use the profile for all cars.'
+      : `${custom} cars have control profiles of their own; the others use the profile for all cars.`;
+  }
+  if (o.carFolders === 0) return '';
   const folders =
     o.carFolders === 1
       ? '1 car has a folder in iRacing.'
@@ -190,10 +201,8 @@ async function onSaved(result: ChangeResult): Promise<void> {
   await loadSet();
 }
 
-/** Columns of the table: the car's "All cars has", and "Change" while that is switched on. */
-const columns = computed(
-  () => 3 + (view.value?.set.general ? 0 : 1) + (overview.value?.editing ? 1 : 0)
-);
+/** Columns of the table: action, bound to, on, the car's "All cars has", and Change. */
+const columns = computed(() => 4 + (view.value?.set.general ? 0 : 1));
 
 const cheatSheet = computed(() => ({
   path: '/configure/cheat-sheets',
@@ -266,62 +275,21 @@ const cheatSheet = computed(() => ({
       </EmptyState>
 
       <template v-else>
-        <div
-          v-if="overview.editing"
-          class="ib-notice ib-trial"
-          data-testid="iracing-bindings-trial"
-        >
-          <v-icon icon="mdi-flask-outline" class="rr-warn" />
+        <div class="ib-notice" data-testid="iracing-bindings-editing">
+          <v-icon icon="mdi-pencil-outline" class="rr-muted" />
           <div class="ib-notice-main">
-            <div class="ib-notice-title">
-              You can change bindings here. This is new, and not yet tried in iRacing.
+            <div class="ib-notice-title">You can change bindings here.</div>
+            <div data-testid="iracing-bindings-proven">
+              A button and a key bound here were used by iRacing in a test drive on 13 November 2026
+              (iRacing 2026.11.02.01).
             </div>
             <div>
-              Change binds an action to a button or a key, or clears it. RigReady shows what will
-              change first and makes a backup of the file. Undo is on the
+              Press Change, then the button or the key. RigReady shows what will change and writes
+              nothing until you press Save. It makes a backup of the file first; Undo is on the
               <router-link to="/configure/safety" data-testid="iracing-bindings-safety-link"
                 >Safety page</router-link
               >. An axis or a hat switch is bound in iRacing itself: Options, then Controls.
             </div>
-          </div>
-        </div>
-        <div v-else class="ib-notice" data-testid="iracing-bindings-readonly">
-          <v-icon icon="mdi-eye-outline" class="rr-muted" />
-          <div class="ib-notice-main">
-            <div class="ib-notice-title">This page shows bindings. It does not change them.</div>
-            <div>
-              To change a binding, use iRacing itself: Options, then Controls. The change shows here
-              afterwards.
-            </div>
-            <v-btn
-              variant="text"
-              size="small"
-              class="ib-why"
-              :append-icon="showWhy ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-              :aria-expanded="showWhy"
-              data-testid="iracing-bindings-why"
-              @click="showWhy = !showWhy"
-              >Why RigReady does not change them</v-btn
-            >
-            <ul v-if="showWhy" class="ib-reasons" data-testid="iracing-bindings-reasons">
-              <li>
-                iRacing does not publish how controls.cfg is built. RigReady reads it from what one
-                real file showed.
-              </li>
-              <li>
-                Parts of the file are not understood: the settings at its top, some marks on each
-                action, and its last two bytes.
-              </li>
-              <li>
-                That one file has no hat switch binding, and no car in it has custom controls. So
-                RigReady has never seen how iRacing writes those.
-              </li>
-              <li>
-                No file changed by RigReady has been tried in iRacing. A wrong byte could make
-                iRacing drop your bindings.
-              </li>
-              <li>Reading is safe: RigReady opens the files and writes nothing.</li>
-            </ul>
           </div>
         </div>
 
@@ -330,7 +298,7 @@ const cheatSheet = computed(() => ({
           <div class="ib-notice-main">
             The iRacing simulator is running. It writes its files when it closes, so a binding
             changed in this session may not show here yet.
-            <span v-if="overview.editing" data-testid="iracing-bindings-running-edit">
+            <span data-testid="iracing-bindings-running-edit">
               Close iRacing before you change a binding here: when it closes it would write its own
               bindings over the change.
             </span>
@@ -598,7 +566,7 @@ const cheatSheet = computed(() => ({
                     <th scope="col">Bound to</th>
                     <th scope="col">On</th>
                     <th v-if="!view.set.general" scope="col">All cars has</th>
-                    <th v-if="overview.editing" scope="col">Change</th>
+                    <th scope="col">Change</th>
                   </tr>
                 </thead>
                 <tbody v-for="g in groups" :key="g.name">
@@ -631,7 +599,7 @@ const cheatSheet = computed(() => ({
                         {{ a.general }}
                       </template>
                     </td>
-                    <td v-if="overview.editing" class="ib-change">
+                    <td class="ib-change">
                       <button
                         v-if="canChange(a)"
                         type="button"
@@ -678,7 +646,6 @@ const cheatSheet = computed(() => ({
           </section>
 
           <EditDialog
-            v-if="overview.editing"
             :action="changing"
             :set="view.set"
             @close="changing = undefined"
@@ -737,16 +704,6 @@ const cheatSheet = computed(() => ({
 }
 .ib-notice-title {
   font-weight: 600;
-}
-.ib-why {
-  margin: 6px 0 0 -12px;
-}
-.ib-reasons {
-  margin: 6px 0 2px 18px;
-  max-width: 760px;
-}
-.ib-reasons li {
-  margin-top: 4px;
 }
 .ib-pick {
   display: flex;
@@ -837,9 +794,6 @@ const cheatSheet = computed(() => ({
 }
 .ib-general {
   color: var(--rr-muted);
-}
-.ib-trial {
-  border-color: color-mix(in srgb, var(--rr-warn) 45%, var(--rr-border));
 }
 .ib-saved {
   display: flex;

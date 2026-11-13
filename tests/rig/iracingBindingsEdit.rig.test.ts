@@ -41,7 +41,6 @@ import type {
   SetView,
   WantedBinding,
 } from '../../src/features/iracing-bindings/contract';
-import { EDIT_SWITCH } from '../../src/features/iracing-bindings/core/change';
 import {
   RECORD_BYTES,
   encodeControlsFile,
@@ -151,7 +150,6 @@ describe.skipIf(step !== 'before')(
     let copyFolder: string;
     let copy: string;
     let original: Buffer;
-    let switchBefore: string | undefined;
     const untouched = new Map<string, string>();
     const changed: string[] = [];
 
@@ -191,8 +189,6 @@ describe.skipIf(step !== 'before')(
         throw new Error('RigReady did not take the temp profile. Nothing was changed.');
       }
       wiring = wireFeatures({ features: discoverFeatures(), ports, log: nullLogger, send() {} });
-      switchBefore = process.env[EDIT_SWITCH];
-      process.env[EDIT_SWITCH] = '1';
       // The file for all cars as the page finds it: the control profile iRacing uses.
       const general = (await call<Overview>('overview')).sets.find((s) => s.general);
       if (!general) throw new Error('RigReady found no bindings for all cars in the copies.');
@@ -201,8 +197,6 @@ describe.skipIf(step !== 'before')(
     });
 
     afterAll(async () => {
-      if (switchBefore === undefined) delete process.env[EDIT_SWITCH];
-      else process.env[EDIT_SWITCH] = switchBefore;
       for (const feature of wiring?.features ?? []) await feature.dispose?.();
       await ports?.input.stop();
       if (home) await fs.rm(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
@@ -260,7 +254,6 @@ describe.skipIf(step !== 'before')(
       expect(path.resolve(ports.folders.dataRoot())).toBe(path.resolve(home, 'rigready'));
       const overview = await call<Overview>('overview');
       expect(path.resolve(overview.folder ?? '')).toBe(path.resolve(copyFolder));
-      expect(overview.editing).toBe(true);
       expect(overview.simRunning, 'iRacing is open. Close it and run this again.').toBe(false);
       for (const set of overview.sets) expect(inside(copyFolder, set.file)).toBe(true);
       expect(inside(copyFolder, copy)).toBe(true);

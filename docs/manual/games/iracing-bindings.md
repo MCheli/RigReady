@@ -1,10 +1,10 @@
 ---
 title: iRacing bindings
-description: Every action in iRacing and what it is bound to, for all cars and for each car with custom controls, with search, shared inputs and the controllers.
+description: Every action in iRacing and what it is bound to, for all cars and each car with its own controls, and binding an action to a button or a key.
 order: 15
 ---
 
-The iRacing bindings page lists every action iRacing has, bound or not, and what is bound to it. It reads the file iRacing itself uses: the control profile iRacing loads, or on an older iRacing, `controls.cfg` in `Documents\iRacing`. It shows bindings. It does not change them.
+The iRacing bindings page lists every action iRacing has, bound or not, and what is bound to it. It reads the file iRacing itself uses: the control profile iRacing loads, or on an older iRacing, `controls.cfg` in `Documents\iRacing`. It can also bind an action to a controller button or a key, or clear a binding, one at a time; see [Changing a binding](#changing-a-binding).
 
 Open it with **Configure > Bindings** and choose **iRacing** in the **Game** picker above the page, or with [the command palette](../app/command-palette.md): press **Ctrl+K** and type "iRacing bindings". Bindings opens the game you looked at last, so the next time it is iRacing straight away.
 
@@ -20,9 +20,14 @@ RigReady reads the profile `app.ini` names, and says so beside **Bindings for**:
 
 ## Which bindings you are looking at
 
-**Bindings for** chooses the set. **All cars** is the file every car uses unless it has its own. On an older iRacing, a car is in the list only when its folder under `Documents\iRacing\setups` holds a `controls.cfg`, which iRacing writes when you tick "Use custom controls for this car". On an iRacing with control profiles, a car is in the list when `app.ini` gives it a profile of its own. Such a car shows as its iRacing folder name with "(custom controls)", for example "mx5 mx52016 (custom controls)".
+**Bindings for** chooses the set. **All cars** is the file every car uses unless it has its own.
 
-The line under the field says how many cars have a folder and how many have custom controls. The path of the file being shown is at the bottom of the page. The address of the page keeps the chosen car, so opening the page again by its address shows the same car.
+- On an iRacing with control profiles, a car is in the list when you gave it a profile of its own in iRacing's Options. `app.ini` names the car only by iRacing's short name for it, so that is what the list shows, with the profile: for example "cadillacctsvr (profile “Test Profile CTSV”)" for the Cadillac CTS-V.
+- On an older iRacing, a car is in the list when its folder under `Documents\iRacing\setups` holds a `controls.cfg`, which iRacing writes when you tick "Use custom controls for this car". Such a car shows as its folder name with "(custom controls)", for example "mx5 mx52016 (custom controls)".
+
+![A car with a control profile of its own](../../../artifacts/screens/iracing-bindings-profile-car/01-car-profile.png)
+
+The line under the field says how many cars have bindings of their own. The path of the file being shown is at the bottom of the page. The address of the page keeps the chosen car, so opening the page again by its address shows the same car.
 
 ## The controllers
 
@@ -61,21 +66,30 @@ If a file holds a kind of binding RigReady has not seen before, the row says "A 
 
 **Cheat sheet** opens the [cheat sheets](../controls/cheat-sheets.md) for iRacing with the set you were looking at.
 
-## Why the page does not change bindings
+## Changing a binding
 
-To change a binding, use iRacing itself: **Options**, then **Controls**. The change shows on this page afterwards. iRacing writes its files when the simulator closes, so while the simulator runs the page says that a binding changed in this session may not show yet.
+Every action that takes a button or a key has **Change** in the last column. A button and a key bound this way were used by iRacing 2026.11.02.01 in a test drive on 13 November 2026, and the notice at the top of the page says so.
 
-RigReady does not write bindings into `controls.cfg`, and the page has no edit buttons. **Why RigReady does not change them** gives the reasons on the page:
+![The notice, and Change on each action](../../../artifacts/screens/iracing-bindings-all-cars/03-editing-notice.png)
 
-- iRacing does not publish how `controls.cfg` is built. RigReady reads it from what one real file showed.
-- Parts of the file are not understood: the settings at its top, some marks on each action, and its last two bytes.
-- That one file has no hat switch binding, and no car in it has custom controls. So RigReady has never seen how iRacing writes those.
-- No file changed by RigReady has been tried in iRacing. A wrong byte could make iRacing drop your bindings.
-- Reading is safe: RigReady opens the files and writes nothing.
+1. Press **Change** on the action. The box shows the action, the set it is in, and what it has now.
+2. Press **Press the button or the key**, then press a button on any controller, or a key with or without Shift, Ctrl and Alt. **Esc** stops listening.
+3. RigReady shows what will change: what the action has now, what it would have, whether it is for all cars or one car, the file, and every other action the same button or key already does. Nothing is written yet. Pressing the button again, or holding it, changes nothing.
+4. Press **Save in iRacing’s file** to write it, or **Cancel** to leave everything as it was. RigReady backs up the whole file first, changes that one action and nothing else, and reads the file back before it says "Saved". Each change is one entry on the [Safety page](../protect/safety-page.md), with **Undo**.
 
-![The reasons, as the page gives them](../../../artifacts/screens/iracing-bindings-all-cars/03-why-read-only.png)
+![What will change, before anything is saved](../../../artifacts/screens/iracing-bindings-edit-profile/02-review-before-save.png)
 
-The one change RigReady does make to these files is the repair of a wheel with a new Windows id, on the [iRacing page](iracing.md). It replaces one id with another of the same length, backs the files up first, and says in its own dialog that it has not yet been verified on real hardware. It changes the older `controls.cfg` files, not a control profile.
+**Clear this binding** in the same box removes a binding, with the same review first.
+
+Some things stay with iRacing, and the page says so where they come up:
+
+- An axis: iRacing calibrates an axis as it binds it. An action on an axis shows "In iRacing" instead of **Change**.
+- A hat switch, and the number pad keys.
+- A binding RigReady cannot read.
+
+Close the iRacing simulator before you change a binding: it writes its own bindings when it closes and would undo the change. While it runs, the page says so and **Save** is not offered. Changes go into the file iRacing reads: the control profile for all cars, or a car's own set when you chose that car. The older `controls.cfg` beside a profile is never written.
+
+The other change RigReady makes to these files is the repair of a wheel with a new Windows id, on the [iRacing page](iracing.md). It replaces one id with another of the same length, backs the files up first, and says in its own dialog that it has not yet been verified on real hardware. It changes the older `controls.cfg` files, not a control profile.
 
 ## When there is nothing to show
 

@@ -25,7 +25,7 @@ import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './names
  * What the iRacing bindings page shows: the sets iRacing keeps (one for all cars, one for
  * each car with custom controls) and, for one set, every action with what is bound to it.
  * Everything here reads; nothing is written to iRacing's files (changing one binding is
- * in change.ts, behind a switch).
+ * in change.ts).
  */
 
 /** What this code needs: the ports, and the game registry for where iRacing keeps its files. */
@@ -110,9 +110,11 @@ async function oldFiles(ctx: BindingsContext, folder: string, cars: string[]): P
 
 /**
  * The sets iRacing uses, "All cars" first. An iRacing with control profiles loads the
- * profile that app.ini [ControlProfiles] names: "Global" for all cars, and for a car, the
- * line whose key is that car's folder name (inferred: no real file with one has been seen).
- * The older controls.cfg files are then listed as not read. Without a profiles folder (an
+ * profile that app.ini [ControlProfiles] names: "Global" for all cars, and for a car, a
+ * line whose key is iRacing's path name of the car and whose value is the profile's folder
+ * ("cadillacctsvr=Test Profile CTSV", as iRacing 2026.11 wrote it on the owner's rig). A
+ * car is listed from that line alone: it needs no folder of its own under Documents. The
+ * older controls.cfg files are then listed as not read. Without a profiles folder (an
  * iRacing from before them) the sets are those files: one for all cars, and one for each
  * car that has its own.
  */
@@ -157,13 +159,17 @@ async function locateSets(ctx: BindingsContext, folder: string, cars: string[]):
   } else {
     sets.push({ id: ALL_CARS, name: 'All cars', general: true, file: globalFile, profile: global });
   }
-  for (const car of cars) {
-    const line = lines.find((l) => l.key.toLowerCase() === car.toLowerCase());
-    const file = line ? fileOf(line.value) : undefined;
-    if (line && file && (await ctx.ports.files.exists(file))) {
+  // Every other line is one car, by the path name iRacing gives it; the first line wins.
+  const carLines = lines
+    .filter((l) => l.key.toLowerCase() !== 'global')
+    .filter((l, i, all) => all.findIndex((o) => o.key === l.key) === i)
+    .sort((a, b) => a.key.localeCompare(b.key));
+  for (const line of carLines) {
+    const file = fileOf(line.value);
+    if (file && (await ctx.ports.files.exists(file))) {
       sets.push({
-        id: `${CAR_PREFIX}${car}`,
-        name: car,
+        id: `${CAR_PREFIX}${line.key}`,
+        name: line.key,
         general: false,
         file,
         profile: line.value,
@@ -190,11 +196,7 @@ export function simulatorOf(ctx: BindingsContext): { processes: string[] } {
   return { processes: module?.closeBeforeRestore?.processes ?? module?.processes ?? [] };
 }
 
-export async function overview(
-  ctx: BindingsContext,
-  repairRoute?: string,
-  editing = false
-): Promise<Overview> {
+export async function overview(ctx: BindingsContext, repairRoute?: string): Promise<Overview> {
   const module = ctx.games.get(GAME);
   const installs = module ? await module.detect(ctx) : undefined;
   const folder = await userFolder(ctx);
@@ -210,7 +212,6 @@ export async function overview(
     source: located.source,
     carFolders: cars.length,
     ...(repairRoute ? { repairRoute } : {}),
-    editing,
   };
 }
 
