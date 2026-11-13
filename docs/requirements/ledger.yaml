@@ -1896,6 +1896,26 @@ requirements:
       - "Sitting of 12 Nov 2026: the owner's RigReady 1 setup (LMU) sat in the profiles folder, listed apart with no way to bring it over. The RigReady 1 format is the one of src/shared/profileTypes.ts at the v1.1.0 tag; the test data is fixtures/scenarios/data/version-one, not the owner's folder."
       - "2026-11-13: review L5. The plan was made again at Save from the devices as they were then, while the window confirmed the plan it had fetched earlier, so the setup written could name another device than the one shown. earlierPlan now carries a fingerprint of what it shows and would write (seen), and bringOver refuses when the plan made at Save has another. The unit test failed before the fix. The other half of L5, a device known by name matched with 'includes' ('Throttle' in 'TWCS Throttle'), is left: the plan names the device it took, and changing the match is a decision on what RigReady 1's names meant."
 
+  - id: CFG-PROFILE-025
+    title: Parts of a RigReady 1 setup that become the same check are asked about and brought over once
+    job: configure
+    area: profiles
+    priority: p2
+    done_means:
+      - "Two or more parts of a RigReady 1 setup that come out as the same check (same type, the same params and the same fix) are one check in the question and in the setup Bring it over writes, at the place and under the title of the first. It is required when any of them was."
+      - "The question says what was joined: 'RigReady 1 had \"<title>\" twice, both the same check. The new setup has it once.' (or the titles, when they differ). Parts left out or blocked the same way are named once."
+      - "A wheel base Windows shows as two controllers with one USB id (a Fanatec Podium base) is one device in a new setup from the rig or from a game as well."
+    notes:
+      - "2026-11-13: second look, finding E1a. The owner's RigReady 1 setup listed the DD2 twice (once per controller, by name) and the question showed 'FANATEC Podium Wheel Base DD2: connected ...' twice. The test file has the shape of his, with a made-up setup id (fixtures/scenarios/data/profiles). The capture was already right: it proposes devices by USB device, not by controller."
+    status: done
+    evidence:
+      - "src/features/profiles/core/versionOne.test.ts#a wheel base RigReady 1 listed once for each of its two controllers is asked about and brought over as one check"
+      - "src/features/profiles/core/versionOne.test.ts#joins only checks that are the same in every part, and keeps the stricter of required and optional"
+      - "src/features/profiles/core/capture.test.ts#a wheel base that games see as two controllers is one device in a new setup from the game"
+      - "tests/e2e/profiles-version-one.e2e.ts#profiles: a wheel base RigReady 1 listed once for each of its two controllers is asked about and brought over once"
+      - "artifacts/screens/profiles-version-one-two-controllers/01-bring-over.png"
+      - "artifacts/screens/profiles-version-one-two-controllers/02-play.png"
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------
@@ -2332,6 +2352,36 @@ requirements:
       - "2026-11-12: the owner's finding 38. Before, a dialog taller than the window scrolled as a whole, the buttons with the rows, and the reason for a refusal was under the last row, where it scrolled away with them. A dialog keeps its own buttons; it does not use the shared Save bar."
       - '2026-11-13: review L24. The dialog could be closed while a save ran; the late answer then said Saved "undefined", or closed the dialog of a layout opened meanwhile. The step failed before the fix: Escape closed the dialog.'
 
+  - id: DISP-021
+    title: Stand down by itself warns when its desk layout has not been kept with these monitors, and Replace counts as kept
+    job: fly
+    area: displays
+    priority: p1
+    done_means:
+      - "While the countdown before a Stand down by itself runs, its notice says when the desk layout has not been kept with the monitors connected now, so Stand down will ask 'Keep this monitor layout?': 'The desk layout \"Desk\" has not been kept with these monitors yet. Stay and press Keep it when RigReady asks, or the monitors stay as they are.' The Windows notification for a countdown nobody is watching says the same. Nothing is said when the layout is known to work, when there is nothing to change, or when the step will fail and say why. Working it out never holds the countdown up for more than three seconds."
+      - "The question is never skipped because nobody is there: a desk layout that was not kept still goes back when its countdown runs out."
+      - "When it goes back, the Stand down result says what to do next time in one sentence: 'Desk monitor layout: The new monitor layout was not kept, so the previous one is back. Next time, stay for the question and press Keep it.'"
+      - "'Replace with the monitors as they are now' records the layout as kept for the monitors connected at that moment, by the rule of DISP-010 (src/features/displays/core/proven.ts explains how each of its four points is met): the same targets Make ready and Stand down would apply, the same monitors, a person in RigReady's window, and a read-back after saving that finds the monitors exactly as the layout says. It does not count for an assistant, while a keep question is open, or when the monitors changed or cannot be read; a layout replaced with some monitors connected is still asked about with others."
+      - "Make ready shows no countdown or notice of its own before it applies a layout: a person pressed it, and its keep question already says it is asked once."
+    notes:
+      - "2026-11-13: second look on the rig, finding SD1. Desk was replaced with the MFD screens connected; after the swap to the racing gear (MFD screens unplugged) the Stand down after iRacing closed asked about Desk with nobody there, and Desk went back. The rule stays: a layout nobody saw is undone. The countdown's line comes from an optional StandDownStep.needsYou (src/core/checks/registry.ts), which the displays feature's desk step answers through LayoutApplier.wouldAsk."
+    status: done
+    evidence:
+      - "src/features/fly/core/sessions.test.ts#says, with the countdown and in Windows, when the desk layout has not been kept with these monitors yet; once kept it says nothing"
+      - "src/features/fly/core/sessions.test.ts#a Stand down nobody stayed for: the desk layout goes back, and the result says what to do next time"
+      - "src/features/fly/core/sessions.test.ts#a Replace with the monitors as they are counts as kept: nothing to warn of"
+      - "src/features/fly/core/sessions.test.ts#never holds the countdown up: what Stand down will need is left unsaid when it does not come in time"
+      - "src/features/displays/core/deskLayout.test.ts#counts as kept with these monitors: the next Stand down puts that layout back without the question"
+      - "src/features/displays/core/deskLayout.test.ts#does not count when an assistant replaced the layout: it cannot see the screens"
+      - "src/features/displays/core/deskLayout.test.ts#is asked about again: the countdown says so first, and when it goes back the result says what to do next time"
+      - "src/features/displays/core/deskLayout.test.ts#says nothing before a Stand down that has nothing to change, or that will fail and say why"
+      - "src/features/displays/core/applier.test.ts#counts as kept with these monitors: Make ready and Stand down apply it without the question, and nothing is left to warn of"
+      - "src/features/displays/core/applier.test.ts#does not count for an assistant, while a question is open, or when the monitors are not as the layout says by now"
+      - "src/features/displays/core/applier.test.ts#is not remembered when nothing remembers kept layouts, or the file cannot be written, and says why"
+      - "tests/e2e/fly-stand-down-keep.e2e.ts#stand down on close: the countdown says the desk layout has not been kept with these monitors yet; with nobody there it goes back, and the result says what to do next time"
+      - "artifacts/screens/fly-stand-down-keep-notice/01-not-kept-yet.png"
+      - "artifacts/screens/fly-stand-down-keep-notice/02-went-back.png"
+
   # ---------------------------------------------------------------------------
   # DEVICES AND TROUBLESHOOTING
   # ---------------------------------------------------------------------------
@@ -2633,7 +2683,7 @@ requirements:
     priority: p2
     done_means:
       - "For a wheel base whose axes have a source (Fanatec), the single view shows 'Wheel and pedals' in place of the plot of two axes: the steering as a wheel that turns with the reading in words ('Left 37%', 'Centre', 'Right 100%'), and Clutch, Brake and Accelerator as three named bars."
-      - "The axes below and the activity log use the names the Wheel page uses (Wheel, Combined pedals, Accelerator, Brake, Clutch, Dial), with Windows' name underneath; with raw values on, the DirectInput names. One test walks the whole table of wheel products and holds the two pages to the same names."
+      - "The axes below and the activity log use the names the Wheel page uses (Wheel, Clutch or combined pedals, Accelerator, Brake, Clutch, Dial), with Windows' name underneath; with raw values on, the DirectInput names. One test walks the whole table of wheel products and holds the two pages to the same names."
       - "The steering is the share of the travel to one side, not degrees: RigReady does not read the rotation set on the base. A pedal counts from the end it rested at on its first reading."
       - "A controller with no source for its axes, a base added by hand among them, keeps the general view and Windows' names."
       - "The wheel's highest value reads 'Right 100%'; 99% shows only when the value is below the top."
@@ -2703,6 +2753,34 @@ requirements:
       - "artifacts/screens/devices-what-is/06-new-flight-setup.png"
       - "artifacts/screens/devices-what-is/07-play-page.png"
       - "artifacts/screens/devices-what-is/08-taken-back.png"
+
+  - id: DEV-018
+    title: The clutch of a Fanatec base is shown as the clutch whichever axis carries it, and Y is never called combined pedals alone
+    job: troubleshoot
+    area: devices
+    priority: p1
+    done_means:
+      - "The Y axis of a Fanatec base is called 'Clutch or combined pedals' in the input tester, its activity log, the Wheel page, BeamNG.drive's bindings and both iRacing pages (which copy the driver's 'Combined Pedals' from joyCalib.yaml). The driver gives Y that name in every pedal mode, and Windows does not say which mode the base is in, so no page claims one."
+      - "The Clutch bar of the tester's wheel view reads whichever of Slider 1 and Y moves: Slider 1 once it moves, Y once it moves from a rest at one end of its travel, as a pedal does. A Y that rests mid-way (accelerator and brake together) is never drawn as the clutch. Until either moves the bar reads Slider 1. Each bar names the axis it reads, and the note says why the clutch can be on two axes."
+      - "With the pedals separate (the clutch on Y, Slider 1 still at its top), pressing the clutch all the way reads 'Clutch 100%' and the log says 'Clutch or combined pedals moved 100% → 0%'."
+      - "iRacing and the racing binding readers still match a binding on 'Combined Pedals' to Y; one test walks every wheel product and holds the four pages to the same names."
+    notes:
+      - "2026-11-13: second look, finding W1. On the owner's DD2, controller 1 of 2: the clutch pedal moved Y, Slider 1 sat at 100%, and the tester said 'Clutch 0%' and 'Combined pedals moved'. His iRacing binds Clutch to Y. The combined-mode layout (Y mid-way, where the clutch then goes) comes from how a combined axis works, not from a test on the base in that mode."
+    status: done
+    evidence:
+      - "src/features/devices/core/wheelAxes.test.ts#reads Y when the clutch pedal moves it and Slider 1 sits still, as on the rig at the second look"
+      - "src/features/devices/core/wheelAxes.test.ts#reads Slider 1 once it moves, whatever Y does"
+      - "src/features/devices/core/wheelAxes.test.ts#never takes Y for the clutch when it rests mid-way, as accelerator and brake together do"
+      - "src/features/devices/core/wheelAxes.test.ts#keeps to Slider 1 while nothing has moved more than a wobble"
+      - "src/features/devices/core/wheelAxes.test.ts#a base with only one of the two: Slider 1 always, Y only once it moved as a pedal"
+      - "src/features/devices/core/input.test.ts#writes a wheel under the names of its axes"
+      - "tests/unit/wheelAxisNames.test.ts#an axis name iRacing copied from the driver is shown on both iRacing pages as the tester names the axis"
+      - "src/features/racing/core/bindingReaders.test.ts#reads iRacing: the wheel with its pedals and paddles as controls, the keyboard apart"
+      - "src/features/racing/core/iracing/iracing.test.ts#lists bindings per device in plain language, matched to the connected wheel"
+      - "src/features/racing/core/beamng/beamng.test.ts#lists the diff bindings per device with the force feedback of the steering binding"
+      - "src/features/iracing-bindings/core/view.test.ts#lists every action, bound or not, with the device and input in plain words"
+      - "tests/e2e/devices-wheel.e2e.ts#devices: with the pedals separate, the clutch on Y fills the Clutch bar and is never called combined pedals alone"
+      - "artifacts/screens/devices-tester-clutch/01-clutch-pressed.png"
 
   # ---------------------------------------------------------------------------
   # THE FINAL PASS — the tools: troubleshooting and learning the rig

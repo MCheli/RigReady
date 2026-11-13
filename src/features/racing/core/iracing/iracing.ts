@@ -13,7 +13,7 @@ import {
   refuseWhileRunning,
   type RacingContext,
 } from '../context';
-import { vidPidFromProductGuid } from '../devices';
+import { gameAxisName, vidPidFromProductGuid } from '../devices';
 import {
   devicesInControls,
   parseControlsCfg,
@@ -120,7 +120,7 @@ function deviceViews(files: IracingFiles, live: InputDevice[] | undefined): Irac
       calibrated: calib !== undefined,
       axes: (calib?.axes ?? []).map((a) => ({
         axis: a.axis,
-        name: a.name || `Axis ${a.axis}`,
+        name: a.name ? gameAxisName(a.name, ids?.vendorId, ids?.productId) : `Axis ${a.axis}`,
         range:
           a.min !== undefined && a.max !== undefined
             ? `${a.min}–${a.max}${a.center !== undefined ? `, centre ${a.center}` : ''}`
@@ -184,7 +184,11 @@ export async function iracingView(ctx: RacingContext): Promise<IracingView> {
     const deviceName = nameOf.get(device) ?? 'Unknown controller';
     if (b.kind === 'axis') {
       const calib = files.calibration?.find((c) => c.instanceGuid === device);
-      const axisName = calib?.axes.find((a) => a.axis === b.axis)?.name || `Axis ${b.axis}`;
+      const named = calib?.axes.find((a) => a.axis === b.axis)?.name;
+      const ids = vidPidFromProductGuid(b.productGuid);
+      const axisName = named
+        ? gameAxisName(named, ids?.vendorId, ids?.productId)
+        : `Axis ${b.axis}`;
       const half = /^Steer(Left|Right)$/.test(record.action)
         ? b.direction === 1
           ? ', turning right'
