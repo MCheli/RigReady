@@ -34,7 +34,7 @@ The guides were written from general knowledge of the cars and of iRacing's cont
 ![The classes, then the cars with controls of their own](../../../artifacts/screens/ai-assist-iracing/02-class-picker.png)
 
 - **A class** works on the bindings for all cars: the control profile iRacing uses for every car without its own. The line under the title names it, for example "This guide works on the bindings for all cars, in iRacing's control profile “Baseline”." **See them all** opens the iRacing bindings page on the same bindings.
-- **A car with controls of its own** works on that car's own bindings. iRacing's folder names are not a list of classes, so RigReady suggests a class only where the folder name itself says so: a name with "gt3", "gt4", "gtp", "lmdh", "lmp1" to "lmp3" or "dirt" in it uses that class's guide, and the page says why ("RigReady uses the GT3 guide here, because the car's folder name has “gt3” in it."). Any other car has no guide until you give it one (below).
+- **A car with controls of its own** works on that car's own bindings. Cars whose lines in `app.ini` name the same profile share one file, so a change for one is a change for all of them; the review before saving names every one. iRacing's folder names are not a list of classes, so RigReady suggests a class only where the folder name itself says so: a name with "gt3", "gt4", "gtp", "lmdh", "lmp1" to "lmp3" or "dirt" in it uses that class's guide, and the page says why ("RigReady uses the GT3 guide here, because the car's folder name has “gt3” in it."). Any other car has no guide until you give it one (below).
 
 ![A car whose folder name says GT3](../../../artifacts/screens/ai-assist-iracing-car/01-suggested-class.png)
 
@@ -54,7 +54,7 @@ Then the plan per device: the wheel rim, the pedals, the shifter and handbrake, 
 
 The items in order of importance, one at a time, each with what it does, when you use it, where it belongs, a tip when there is one, and each of its actions with what iRacing's file binds it to now.
 
-**Bind** on an action starts listening: press a button on a controller or a key on the keyboard (**Esc** stops). What would change is shown first, from the [iRacing bindings page](iracing-bindings.md)'s own preview: what the action has now and would have, whether it is for all cars or one car, what else the same button or key already does, and the file. Nothing is written before **Save in iRacing's file**; the file is backed up first, and **Undo** is on [the Safety page](../protect/safety-page.md). The change goes into the control profile iRacing uses, never into the older `controls.cfg` that iRacing no longer reads. While iRacing is running nothing is saved, because iRacing writes its bindings when it closes; the page and the preview say so.
+**Bind** on an action starts listening: press a button on a controller or a key on the keyboard (**Esc** stops). What would change is shown first, from the [iRacing bindings page](iracing-bindings.md)'s own preview: what the action has now and would have, which cars it is for, what else the same button or key already does, and the file. Nothing is written before **Save in iRacing's file**; the file is backed up first, and **Undo** is on [the Safety page](../protect/safety-page.md). The change goes into the control profile iRacing uses, never into the older `controls.cfg` that iRacing no longer reads. While iRacing is running nothing is saved, because iRacing writes its bindings when it closes; the page and the preview say so.
 
 ![A wheel button, shown before it is saved](../../../artifacts/screens/ai-assist-iracing-bind/01-walkthrough-step.png)
 
@@ -89,4 +89,3 @@ With your own key, the **AI help** tab can, for iRacing:
 
 - On a PC with neither DCS World nor iRacing, the page says so and the menu has no Binding guide entry.
 - When iRacing is installed but its bindings cannot be read (no control profile named for all cars, or none written yet), the page shows the reason from the iRacing bindings page.
-- In a run of RigReady where changing iRacing bindings is off, the page says so, shows what is bound, and every item that is not bound says **Bind in iRacing**.

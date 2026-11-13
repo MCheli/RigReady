@@ -19,6 +19,7 @@ import { draftSchema, draftTask, validateDraft } from './draft';
 import { describeInput, fits, hasInput } from './inputs';
 import {
   classGuides,
+  forCars,
   classInName,
   iracingEntries,
   iracingParts,
@@ -624,8 +625,7 @@ export class AiAssist {
     const view = await source.set(entry.set);
     if (!view.ok) return view;
     const found = await this.guideFor(entry.id);
-    const editing = overview.editing;
-    const parts = iracingParts(entry, view.value, editing);
+    const parts = iracingParts(entry, view.value);
     return ok({
       game: 'iracing',
       aircraftId: entry.id,
@@ -636,7 +636,6 @@ export class AiAssist {
         set: entry.set,
         setName: view.value.set.name,
         ...(view.value.set.profile ? { profile: view.value.set.profile } : {}),
-        editing,
         simRunning: overview.simRunning,
         notes: view.value.notes,
       },
@@ -754,7 +753,6 @@ export class AiAssist {
               set: s.iracing.set,
               setName: s.iracing.setName,
               ...(s.iracing.profile ? { profile: s.iracing.profile } : {}),
-              editing: s.iracing.editing,
               simRunning: s.iracing.simRunning,
               notes: s.iracing.notes,
             },
@@ -950,18 +948,13 @@ export class AiAssist {
           .find((a) => a.actionId === actionId)
       : undefined;
     if (!action) return err('ai.iracingAction', 'That action is not in the guide shown here.');
-    if (!s.iracing?.editing) {
-      return err(
-        'ai.iracingOff',
-        'RigReady does not change iRacing bindings in this run. Bind it in iRacing: Options, then Controls.'
-      );
-    }
     if (!action.editable) {
       return err(
         'ai.iracingInGame',
         `${action.label} belongs on an axis. Bind it in iRacing: Options, then Controls.`
       );
     }
+    if (!s.iracing) return err('ai.iracingOnly', 'This binds iRacing actions only.');
     return ok({ source, set: s.iracing.set, label: action.label });
   }
 
@@ -981,6 +974,7 @@ export class AiAssist {
     return ok({
       actionId,
       label,
+      forCars: forCars(r.set),
       before: r.before,
       after: r.after,
       same: r.same,

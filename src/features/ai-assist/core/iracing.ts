@@ -47,8 +47,6 @@ export const IracingOverviewSchema = z.object({
   simRunning: z.boolean(),
   sets: z.array(SetSchema),
   source: z.object({ problem: z.string().optional() }).optional(),
-  /** Changing a binding is on in this run of RigReady. */
-  editing: z.boolean(),
 });
 export type IracingOverview = z.infer<typeof IracingOverviewSchema>;
 
@@ -105,6 +103,12 @@ export const IracingWantedSchema = z.discriminatedUnion('kind', [
 export type IracingWanted = z.infer<typeof IracingWantedSchema>;
 
 export const IracingReviewSchema = z.object({
+  /** The set the change is for: every car it applies to. */
+  set: z.object({
+    general: z.boolean(),
+    name: z.string(),
+    sharedWith: z.array(z.string()).optional(),
+  }),
   action: z.object({ id: z.string(), name: z.string() }),
   before: z.string(),
   after: z.string(),
@@ -115,6 +119,14 @@ export const IracingReviewSchema = z.object({
   seen: z.string(),
 });
 export type IracingReview = z.infer<typeof IracingReviewSchema>;
+
+/** "All cars", "porsche992rgt3 only", or every car of a profile several cars share. */
+export function forCars(set: IracingReview['set']): string {
+  if (set.general) return 'All cars';
+  const cars = [set.name, ...(set.sharedWith ?? [])];
+  if (cars.length === 1) return `${set.name} only`;
+  return `${cars.slice(0, -1).join(', ')} and ${cars[cars.length - 1]}, which share one profile`;
+}
 
 export const IracingChangedSchema = z.object({ changed: z.boolean(), message: z.string() });
 export type IracingChanged = z.infer<typeof IracingChangedSchema>;
@@ -230,12 +242,11 @@ const UNREAD = 'A binding RigReady cannot read';
  * The set's actions and bindings as a guide is matched against them. iRacing's own id is
  * the action's name ("BrakeBiasInc"): that is the name its controls file and the iRacing
  * bindings page give it. An action that only takes an axis is bound in iRacing; any other
- * takes a button or a key, which RigReady writes while editing is on.
+ * takes a button or a key, which RigReady writes through the iRacing bindings feature.
  */
 export function iracingParts(
   entry: IracingEntry,
-  view: IracingSet,
-  editing: boolean
+  view: IracingSet
 ): { actions: BoundAction[]; bindings: AircraftBindings; controllers: ControllerRef[] } {
   const actions: BoundAction[] = view.actions.map((a) => {
     const axisOnly = a.accepts.length > 0 && a.accepts.every((k) => k === 'axis');
@@ -244,7 +255,7 @@ export function iracingParts(
       name: a.id,
       category: [a.group],
       kind: axisOnly ? 'axis' : 'button',
-      editable: editing && (a.accepts.includes('button') || a.accepts.includes('key')),
+      editable: a.accepts.includes('button') || a.accepts.includes('key'),
     };
   });
   const devices = new Map<string, BoundDevice>();

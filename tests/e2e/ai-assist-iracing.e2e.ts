@@ -9,11 +9,9 @@ import { expect, test, type RunningApp } from './harness';
  * iRacing itself, and a walkthrough step that binds a wheel button and a key through the
  * iRacing bindings feature, shown first and saved into the control profile iRacing uses.
  *
- * Changing iRacing bindings is turned on for these runs as a build that has it runs; the
- * files are copies in a temp folder (fixtures/scenarios/ai-assist-iracing.yaml).
+ * The files are copies in a temp folder (fixtures/scenarios/ai-assist-iracing.yaml).
  */
 
-const SWITCH_ON = { env: { RIGREADY_IRACING_EDIT: '1' } };
 const WHEEL_GUID = '45D4BEA1-60A1-17D8-8001-444553540000';
 
 interface Answer<T> {
@@ -81,7 +79,7 @@ async function openIracingGuide(page: Page): Promise<void> {
 test('ai-assist-iracing: pick iRacing and a class, see the priorities, and an axis to bind in iRacing', async ({
   rig,
 }) => {
-  const run = await rig.launch('ai-assist-iracing', 'ai-assist-iracing', SWITCH_ON);
+  const run = await rig.launch('ai-assist-iracing', 'ai-assist-iracing');
   const { page, shot } = run;
   await openIracingGuide(page);
 
@@ -99,14 +97,15 @@ test('ai-assist-iracing: pick iRacing and a class, see the priorities, and an ax
   await expect(page.getByTestId('ai-aircraft')).toContainText('GT3');
   await page.getByTestId('ai-aircraft').click();
   const options = page.getByRole('option');
-  await expect(options).toHaveCount(8);
+  await expect(options).toHaveCount(9);
   await expect(options.nth(0)).toContainText('GT3');
   await expect(options.nth(0)).toContainText('Guide included');
   await expect(options.nth(3)).toContainText('Formula and open-wheel');
   await expect(options.nth(6)).toContainText('cadillacctsvr (own controls)');
   await expect(options.nth(6)).toContainText('No guide yet');
-  await expect(options.nth(7)).toContainText('porsche992rgt3 (own controls)');
-  await expect(options.nth(7)).toContainText('Uses the GT3 guide');
+  await expect(options.nth(7)).toContainText('ferrari296gt3 (own controls)');
+  await expect(options.nth(8)).toContainText('porsche992rgt3 (own controls)');
+  await expect(options.nth(8)).toContainText('Uses the GT3 guide');
   await shot('class-picker');
   await options.nth(0).click();
 
@@ -155,7 +154,7 @@ test('ai-assist-iracing: pick iRacing and a class, see the priorities, and an ax
 test('ai-assist-iracing: the walkthrough binds a wheel button and a key into iRacing’s profile, shown first', async ({
   rig,
 }) => {
-  const run = await rig.launch('ai-assist-iracing', 'ai-assist-iracing-bind', SWITCH_ON);
+  const run = await rig.launch('ai-assist-iracing', 'ai-assist-iracing-bind');
   const { page, shot } = run;
   await openIracingGuide(page);
   await page.getByTestId('ai-game').click();
@@ -225,7 +224,7 @@ test('ai-assist-iracing: the walkthrough binds a wheel button and a key into iRa
 test('ai-assist-iracing: a car whose folder name says GT3 uses that guide, and says why', async ({
   rig,
 }) => {
-  const run = await rig.launch('ai-assist-iracing', 'ai-assist-iracing-car', SWITCH_ON);
+  const run = await rig.launch('ai-assist-iracing', 'ai-assist-iracing-car');
   const { page, shot } = run;
   await openIracingGuide(page);
   await page.getByTestId('ai-game').click();

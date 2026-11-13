@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { streamedMessage } from '../../../../tests/aiStream';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import { ok } from '../../../core/result';
@@ -22,7 +22,6 @@ import { AiAssist } from './service';
  * profile iRacing uses (fixtures/scenarios/ai-assist-iracing.yaml).
  */
 
-const SWITCH = 'RIGREADY_IRACING_EDIT';
 /** The wheel base of the recorded rig (a made-up id): connected, 108 buttons. */
 const WHEEL = '45D4BEA1-60A1-17D8-8001-444553540000';
 const GT3 = 'iracing:gt3';
@@ -31,15 +30,7 @@ const CADILLAC = 'iracing:car:cadillacctsvr';
 const KEY = 'sk-ant-api03-SECRETSECRETSECRET-abcdEFGH';
 
 let app: WiredApp | undefined;
-let before: string | undefined;
-beforeEach(() => {
-  before = process.env[SWITCH];
-  // Changing iRacing bindings is on, as it is in a build that has it.
-  process.env[SWITCH] = '1';
-});
 afterEach(async () => {
-  if (before === undefined) delete process.env[SWITCH];
-  else process.env[SWITCH] = before;
   await app?.cleanup();
   app = undefined;
 });
@@ -97,6 +88,7 @@ describe('the binding guide for iRacing: classes and cars', () => {
       ['iracing:oval', 'Oval', 'shipped', undefined],
       ['iracing:dirt', 'Dirt', 'shipped', undefined],
       [CADILLAC, 'cadillacctsvr (own controls)', null, undefined],
+      ['iracing:car:ferrari296gt3', 'ferrari296gt3 (own controls)', 'shipped', 'GT3'],
       [PORSCHE, 'porsche992rgt3 (own controls)', 'shipped', 'GT3'],
     ]);
     // DCS's list is asked for apart and stays what it was.
@@ -107,7 +99,18 @@ describe('the binding guide for iRacing: classes and cars', () => {
       kind: 'shipped',
       suggested: { className: 'GT3', token: 'gt3' },
     });
-    expect(porsche.iracing).toMatchObject({ set: 'car:porsche992rgt3', setName: 'porsche992rgt3' });
+    expect(porsche.iracing).toMatchObject({
+      set: 'car:porsche992rgt3',
+      setName: 'porsche992rgt3',
+      profile: 'GT3 Cars',
+    });
+    // The two GT3 cars share one profile: a change for one is for both, and the review says so.
+    const review = await a.invoke<IracingReviewView>('ai-assist:iracingBindPreview', {
+      aircraftId: PORSCHE,
+      actionId: 'HeadlightFlash',
+      binding: { kind: 'button', device: WHEEL, button: 44 },
+    });
+    expect(review.forCars).toBe('porsche992rgt3 and ferrari296gt3, which share one profile');
     const cadillac = await guideOf(a, CADILLAC);
     expect(cadillac.guide).toBeNull();
     expect(cadillac.iracing).toMatchObject({
@@ -125,7 +128,6 @@ describe('the binding guide for iRacing: classes and cars', () => {
       set: 'all',
       setName: 'All cars',
       profile: 'Baseline',
-      editing: true,
       simRunning: false,
       notes: [],
     });
@@ -207,6 +209,7 @@ describe('the walkthrough binds iRacing buttons and keys through the iRacing bin
     expect(review).toMatchObject({
       actionId: 'HeadlightFlash',
       label: 'Flash headlights',
+      forCars: 'All cars',
       before: 'Not bound',
       same: false,
       conflicts: [],
@@ -349,6 +352,7 @@ describe('the walkthrough binds iRacing buttons and keys through the iRacing bin
     expect(own.guide?.kind).toBe('own');
     const review = await a.invoke<IracingReviewView>('ai-assist:iracingBindPreview', request);
     expect(review.preview.files[0]!.path).toBe(profile(a, 'Test Profile CTSV'));
+    expect(review.forCars).toBe('cadillacctsvr only');
     const saved = await a.invoke<{ message: string }>('ai-assist:iracingBind', {
       ...request,
       seen: review.seen,
@@ -361,37 +365,41 @@ describe('the walkthrough binds iRacing buttons and keys through the iRacing bin
     expect((await bindingIn(a, 'all', 'PitSpeedLimiter'))!.binding?.input).not.toBe('Button 43');
   });
 
-  it('with changing iRacing bindings off, shows what is bound and binds nothing', async () => {
+  it('says so, and binds nothing, when the iRacing bindings answer in a form it does not know', async () => {
     const a = await start();
     const real = iracingThroughChannels((channel, input) =>
       a.wiring.context.invoke(channel, input)
     );
-    const off = new AiAssist({
+    // The set read as it is, but the overview with a field the guide needs gone.
+    const odd = iracingThroughChannels(async (channel, input) => {
+      const answer = await a.wiring.context.invoke(channel, input);
+      return channel === 'iracing-bindings:overview' && answer.ok
+        ? ok({ ...(answer.value as object), sets: 'all' })
+        : answer;
+    });
+    expect(await odd.overview()).toMatchObject({ ok: false, error: { code: 'ai.iracingAnswer' } });
+    expect((await real.overview()).ok).toBe(true);
+    const guide = new AiAssist({
       ports: a.ports,
       log: a.ctx.log,
       bindings: a.wiring.context.bindings,
-      iracing: {
-        ...real,
-        overview: async () => {
-          const o = await real.overview();
-          return o.ok ? ok({ ...o.value, editing: false }) : o;
-        },
+      iracing: odd,
+    });
+    expect(await guide.aircraft('iracing')).toMatchObject({
+      ok: false,
+      error: {
+        message: 'The iRacing bindings answered in a form the binding guide does not know.',
       },
     });
-    const view = await off.guide(GT3);
-    if (!view.ok) throw new Error(view.error.message);
-    expect(view.value.iracing?.editing).toBe(false);
-    const headlights = itemOf(view.value, 'headlights');
-    expect(headlights.actions[0]!.editable).toBe(false);
-    // Nothing RigReady can bind now: bind it in iRacing.
-    expect(headlights.status).toBe('inGame');
-    expect(itemOf(view.value, 'shift').status).toBe('bound');
-    const refused = await off.iracingPreview(GT3, 'HeadlightFlash', {
-      kind: 'button',
-      device: WHEEL,
-      button: 40,
-    });
-    expect(refused).toMatchObject({ ok: false, error: { code: 'ai.iracingOff' } });
+    const bytes = await fs.readFile(profile(a));
+    expect(
+      await guide.iracingPreview(GT3, 'HeadlightFlash', {
+        kind: 'button',
+        device: WHEEL,
+        button: 40,
+      })
+    ).toMatchObject({ ok: false });
+    expect((await fs.readFile(profile(a))).equals(bytes)).toBe(true);
   });
 });
 

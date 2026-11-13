@@ -116,8 +116,6 @@ export const GuideViewSchema = z.object({
       setName: z.string(),
       /** The control profile those bindings are in, when iRacing keeps profiles. */
       profile: z.string().optional(),
-      /** Changing a binding is on in this run of RigReady. */
-      editing: z.boolean(),
       /** The simulator runs, so nothing is written until it closes. */
       simRunning: z.boolean(),
       notes: z.array(z.string()),
@@ -154,6 +152,8 @@ export type AircraftList = z.infer<typeof AircraftListSchema>;
 export const IracingReviewViewSchema = z.object({
   actionId: z.string(),
   label: z.string(),
+  /** Every car the change applies to: "All cars", "porsche992rgt3 only", or a shared profile's cars. */
+  forCars: z.string(),
   before: z.string(),
   after: z.string(),
   /** Saving would change nothing: the action has exactly this already. */

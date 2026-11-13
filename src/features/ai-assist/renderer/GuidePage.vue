@@ -224,18 +224,7 @@ onBeforeUnmount(() => {
           for this car takes its place.
         </p>
         <v-alert
-          v-if="!store.guide.iracing.editing"
-          type="info"
-          variant="tonal"
-          density="compact"
-          class="mb-3"
-          data-testid="ai-iracing-off"
-        >
-          RigReady does not change iRacing bindings in this run. The guide shows what is bound; bind
-          in iRacing itself: Options, then Controls.
-        </v-alert>
-        <v-alert
-          v-else-if="store.guide.iracing.simRunning"
+          v-if="store.guide.iracing.simRunning"
           type="warning"
           variant="tonal"
           density="compact"

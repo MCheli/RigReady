@@ -314,3 +314,26 @@ export function inWords(
   if (binding.kind === 'key') return `${binding.input} on the keyboard`;
   return binding.deviceName ? `${binding.input} on ${binding.deviceName}` : binding.input;
 }
+
+/** "A", "A and B", "A, B and C". */
+export const listed = (names: string[]): string =>
+  names.length <= 1
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
+/**
+ * Every car a change to a set reaches, in words, so the page never claims less than it
+ * changes: "all cars", "mx5 mx52016", or for a control profile that several cars use,
+ * "cadillacctsvr and bmwm4gt3, which share the profile “Test Profile CTSV”".
+ */
+export function setScope(set: {
+  general: boolean;
+  name: string;
+  profile?: string | undefined;
+  sharedWith?: string[] | undefined;
+}): string {
+  if (set.general) return 'all cars';
+  const others = set.sharedWith ?? [];
+  if (others.length === 0) return set.name;
+  return `${listed([set.name, ...others])}, which share the profile “${set.profile ?? ''}”`;
+}

@@ -13,8 +13,9 @@ status must be Valid and the certificate's subject must be the publisher, decide
 electron-updater decides it (windowsExecutableCodeSignatureVerifier.js: a publisher without "="
 must equal the subject's CN; a full distinguished name is compared key by key). The installer is
 then run silently into a temporary folder (/S /D=<folder>), RigReady.exe and "Uninstall
-RigReady.exe" there are verified the same way, resources\app-update.yml there must name the
-publisher, and the uninstaller is run silently and waited for.
+RigReady.exe" there are verified the same way, electron-updater must accept the installer by the
+full DN in the publisher names of resources\app-update.yml there (scripts/verify-update-signature.ts,
+which needs the repository's node_modules), and the uninstaller is run silently and waited for.
 
 The installer is the real RigReady: it writes the per-user uninstall entry and shortcuts of
 RigReady for the account that runs this, and the uninstaller removes them. So the install part
@@ -198,17 +199,19 @@ try {
 
     $feedFile = Join-Path $installDir 'resources\app-update.yml'
     if (-not (Test-Path -LiteralPath $feedFile)) { throw "$feedFile is missing" }
-    $feed = Get-Content -LiteralPath $feedFile -Raw
-    $named = [regex]::Match($feed, '(?m)^publisherName:[ \t]*(?:\[[ \t]*(.+?)[ \t]*\]|\r?\n[ \t]*-[ \t]*(.+?))[ \t]*\r?$')
-    if (-not $named.Success) {
-      throw "resources\app-update.yml of the install names no publisher: the installed app would not verify its updates"
+    # The publisher names of the install, read by electron-updater as the installed app reads
+    # them, must accept the installer by the full DN (scripts/verify-update-signature.ts).
+    Write-Step 'electron-updater checks the installer with resources\app-update.yml of the install'
+    Push-Location (Split-Path $PSScriptRoot -Parent)
+    try {
+      & npx tsx (Join-Path $PSScriptRoot 'verify-update-signature.ts') --installer $installerPath --feed $feedFile
+      $checked = $LASTEXITCODE
+    } finally {
+      Pop-Location
     }
-    $value = if ($named.Groups[1].Success) { $named.Groups[1].Value } else { $named.Groups[2].Value }
-    $value = $value.Trim().Trim('"').Trim("'")
-    if ($value -cne $Publisher) {
-      throw "resources\app-update.yml of the install names the publisher `"$value`", not `"$Publisher`""
+    if ($checked -ne 0) {
+      throw "the publisher names in resources\app-update.yml of the install do not accept the installer by the full DN (exit code $checked)"
     }
-    Write-Step "resources\app-update.yml names the publisher $value"
     Write-Step 'the installer, the installed program and the uninstaller are signed by the publisher'
   }
 } catch {

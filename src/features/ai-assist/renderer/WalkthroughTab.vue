@@ -62,7 +62,6 @@ const position = computed(() => {
 /** The words beside an action RigReady does not bind here. */
 function cannot(kind: 'button' | 'axis'): string {
   if (!iracing.value) return 'Bind in DCS: RigReady cannot write this one yet';
-  if (!guide.value.iracing?.editing) return 'Bind in iRacing: Options, then Controls';
   return kind === 'axis'
     ? 'An axis: bind it in iRacing, Options, then Controls'
     : 'Bind in iRacing: Options, then Controls';
@@ -223,12 +222,9 @@ function next(): void {
           <div>
             <div class="rr-row-title">Bind this in iRacing: Options, then Controls</div>
             <div class="rr-row-sub">
-              <template v-if="guide.iracing?.editing">
-                RigReady binds buttons and keys in iRacing. An axis, such as the wheel or a pedal,
-                is bound and calibrated in iRacing itself, and so is a hat switch.
-              </template>
-              <template v-else> RigReady does not change iRacing bindings in this run. </template>
-              iRacing writes its bindings when it closes; this page then shows what you bound.
+              RigReady binds buttons and keys in iRacing. An axis, such as the wheel or a pedal, is
+              bound and calibrated in iRacing itself, and so is a hat switch. iRacing writes its
+              bindings when it closes; this page then shows what you bound.
             </div>
           </div>
         </div>

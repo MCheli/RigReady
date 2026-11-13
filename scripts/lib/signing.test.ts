@@ -17,6 +17,7 @@ const complete: Record<string, string> = {
   RIGREADY_SIGN_ACCOUNT: 'rigready-signing',
   RIGREADY_SIGN_PROFILE: 'rigready-public-trust',
   RIGREADY_SIGN_PUBLISHER: 'Example Person',
+  RIGREADY_SIGN_PUBLISHER_DN: 'CN=Example Person, O=Example Person, L=Sometown, S=XX, C=US',
   AZURE_TENANT_ID: '00000000-0000-0000-0000-000000000001',
   AZURE_CLIENT_ID: '00000000-0000-0000-0000-000000000002',
   AZURE_CLIENT_SECRET: 'not-a-real-secret',
@@ -28,7 +29,11 @@ const signed: SigningDecision = {
   account: 'rigready-signing',
   profile: 'rigready-public-trust',
   publisher: 'Example Person',
+  publisherDn: 'CN=Example Person, O=Example Person, L=Sometown, S=XX, C=US',
 };
+
+/** The names a signed build puts into the feed file: the whole subject first, then the CN. */
+const names = ['CN=Example Person, O=Example Person, L=Sometown, S=XX, C=US', 'Example Person'];
 
 /** The shape of package.json's build, with only what signing touches. */
 const build: BuildConfig = {
@@ -40,12 +45,13 @@ const build: BuildConfig = {
 };
 
 describe('signingFromEnv', () => {
-  it('the seven names are the four variables and the three secrets, in that order', () => {
+  it('the eight names are the five variables and the three secrets, in that order', () => {
     expect(SIGNING_NAMES).toEqual([
       'RIGREADY_SIGN_ENDPOINT',
       'RIGREADY_SIGN_ACCOUNT',
       'RIGREADY_SIGN_PROFILE',
       'RIGREADY_SIGN_PUBLISHER',
+      'RIGREADY_SIGN_PUBLISHER_DN',
       'AZURE_TENANT_ID',
       'AZURE_CLIENT_ID',
       'AZURE_CLIENT_SECRET',
@@ -67,18 +73,19 @@ describe('signingFromEnv', () => {
     });
   });
 
-  it('all seven set is a signed build with the four values, trimmed', () => {
+  it('all eight set is a signed build with the five values, trimmed', () => {
     expect(signingFromEnv(complete)).toEqual(signed);
     expect(
       signingFromEnv({
         ...complete,
         RIGREADY_SIGN_PUBLISHER: '  Example Person ',
+        RIGREADY_SIGN_PUBLISHER_DN: ' CN=Example Person, O=Example Person, L=Sometown, S=XX, C=US ',
         RIGREADY_SIGN_ENDPOINT: 'https://eus.codesigning.azure.net/',
       })
     ).toEqual(signed);
   });
 
-  it.each(SIGNING_NAMES)('%s missing from the other six fails, naming it', (name) => {
+  it.each(SIGNING_NAMES)('%s missing from the other seven fails, naming it', (name) => {
     const env = { ...complete, [name]: '' };
     expect(() => signingFromEnv(env)).toThrow(/half configured/);
     expect(() => signingFromEnv(env)).toThrow(new RegExp(`but ${name} is not`));
@@ -93,6 +100,27 @@ describe('signingFromEnv', () => {
       );
     }
   );
+
+  it("the DN must be the certificate's whole subject, read as electron-updater reads it, with the publisher as its CN", () => {
+    for (const dn of [
+      'Example Person',
+      'CN=Example Person',
+      'CN=Someone Else, O=Example Person, C=US',
+      'O=Example Person, C=US',
+    ]) {
+      expect(() => signingFromEnv({ ...complete, RIGREADY_SIGN_PUBLISHER_DN: dn })).toThrow(
+        /^RIGREADY_SIGN_PUBLISHER_DN must be the certificate's whole subject as Get-AuthenticodeSignature shows it/
+      );
+    }
+    expect(() =>
+      signingFromEnv({ ...complete, RIGREADY_SIGN_PUBLISHER_DN: 'CN=Example Person' })
+    ).toThrow(/with RIGREADY_SIGN_PUBLISHER as its CN; it is "CN=Example Person"$/);
+    // Quoted values are read as electron-updater's parser reads them: the quotes are not part.
+    const quoted = 'CN="Example Person", O="Example, Person", C=US';
+    expect(signingFromEnv({ ...complete, RIGREADY_SIGN_PUBLISHER_DN: quoted })).toMatchObject({
+      publisherDn: quoted,
+    });
+  });
 
   it('the endpoint must be an Artifact Signing endpoint', () => {
     for (const endpoint of [
@@ -120,7 +148,7 @@ describe('applySigning', () => {
     expect(result.publish![0]).not.toHaveProperty('publisherName');
   });
 
-  it('a signed build selects Azure signing as app-builder-lib reads it, requires it, and names the publisher in the feed', () => {
+  it('a signed build selects Azure signing as app-builder-lib reads it, requires it, and names the DN and then the CN in the feed', () => {
     const before = JSON.stringify(build);
     const result = applySigning(build, signed);
     expect(result).toEqual({
@@ -128,7 +156,8 @@ describe('applySigning', () => {
       forceCodeSigning: true,
       win: {
         ...build.win,
-        // WindowsSignAzureManager.signFile reads exactly these keys.
+        // WindowsSignAzureManager.signFile reads exactly these keys. Its publisherName is one
+        // string in app-builder-lib 26.18's schema and is not passed to the signing: the CN.
         azureSignOptions: {
           publisherName: 'Example Person',
           endpoint: 'https://eus.codesigning.azure.net',
@@ -137,12 +166,13 @@ describe('applySigning', () => {
         },
       },
       // PublishManager.getAppUpdatePublishConfiguration takes publish[0].publisherName (a list).
+      // electron-updater tries the names in order: the DN, then the CN as the fallback.
       publish: [
         {
           provider: 'github',
           owner: 'example',
           repo: 'rigready',
-          publisherName: ['Example Person'],
+          publisherName: names,
         },
       ],
     });
@@ -157,7 +187,7 @@ describe('applySigning', () => {
       publish: [...build.publish!, { provider: 'generic', url: 'https://x' }],
     };
     expect(applySigning(two, signed).publish).toEqual([
-      { ...build.publish![0], publisherName: ['Example Person'] },
+      { ...build.publish![0], publisherName: names },
       { provider: 'generic', url: 'https://x' },
     ]);
     expect(() => applySigning({ ...build, publish: [] }, signed)).toThrow(/no publish entry/);
@@ -191,12 +221,17 @@ describe('appUpdateProblem: the feed file inside the package', () => {
     ).toMatch(/names a publisher \(\["Example Person"\]\) in an unsigned build/);
   });
 
-  it('a signed build must name exactly the publisher, as a list', () => {
-    expect(
-      appUpdateProblem({ ...feed, publisherName: ['Example Person'] }, signed)
-    ).toBeUndefined();
-    expect(appUpdateProblem(feed, signed)).toMatch(
-      /should name the publisher \["Example Person"\]/
+  it('a signed build must name exactly the publisher, as a list: the DN, then the CN', () => {
+    expect(appUpdateProblem({ ...feed, publisherName: names }, signed)).toBeUndefined();
+    expect(appUpdateProblem(feed, signed)).toContain(
+      'should name the publisher ["CN=Example Person, O=Example Person, L=Sometown, S=XX, C=US","Example Person"]'
+    );
+    // The CN alone is what made electron-updater warn "Signature validated using only CN".
+    expect(appUpdateProblem({ ...feed, publisherName: ['Example Person'] }, signed)).toMatch(
+      /it has \["Example Person"\]/
+    );
+    expect(appUpdateProblem({ ...feed, publisherName: [...names].reverse() }, signed)).toMatch(
+      /it has \["Example Person","CN=Example Person/
     );
     expect(appUpdateProblem({ ...feed, publisherName: ['Someone Else'] }, signed)).toMatch(
       /it has \["Someone Else"\]/

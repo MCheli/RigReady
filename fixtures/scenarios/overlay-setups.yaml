@@ -1,0 +1,10 @@
+description: The overlay in each setup, at the desk with the Dell as the main screen
+rig: mark-full
+# The recorded rig as it is: the desk layout, the Dell on and main. The flight and the racing
+# setup both apply a layout with the Dell off (the owner's Flying and Widescreen only), so an
+# overlay put on the Dell is warned about. DCS and iRacing have bindings RigReady can read;
+# X-Plane 12 has no binding reader, so its setup has the overlay off to begin with.
+profiles:
+  - profiles/dcs-f-a-18c.yaml
+  - profiles/racing-iracing.yaml
+  - profiles/overlay-x-plane.yaml

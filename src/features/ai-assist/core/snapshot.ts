@@ -46,8 +46,6 @@ export interface Snapshot {
     setName: string;
     /** The control profile the set is in, when iRacing keeps profiles. */
     profile?: string;
-    /** Changing a binding is on in this run of RigReady. */
-    editing: boolean;
     /** The simulator runs: it writes its files when it closes, so nothing is written now. */
     simRunning: boolean;
     notes: string[];

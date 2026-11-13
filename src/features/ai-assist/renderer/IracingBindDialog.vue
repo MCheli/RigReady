@@ -12,7 +12,6 @@ import { useAiStore } from './store';
 const store = useAiStore();
 const current = computed(() => store.iracingBinding);
 const review = computed(() => current.value?.review);
-const where = computed(() => store.guide?.iracing?.setName ?? 'All cars');
 
 /** "A", "A and B", "A, B and C". */
 const listed = (names: string[]): string =>
@@ -48,9 +47,7 @@ const alsoCamera = computed(() =>
         <dt>After saving</dt>
         <dd data-testid="ai-iracing-after">{{ review.after }}</dd>
         <dt>For</dt>
-        <dd data-testid="ai-iracing-set">
-          {{ where === 'All cars' ? 'All cars' : `${where} only` }}
-        </dd>
+        <dd data-testid="ai-iracing-set">{{ review.forCars }}</dd>
       </dl>
       <v-alert
         v-if="review.blocked"
