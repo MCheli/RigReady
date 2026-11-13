@@ -31,9 +31,12 @@ test('dcs: a setup chooses which DCS install it uses, and says so when that inst
   await menuItem(page, /DCS World OpenBeta \(standalone\)/).click();
   await expect(install).toContainText('DCS World OpenBeta (standalone)');
   await shot('install-chosen');
+  // The save takes a moment (a slow disk, a busy PC) and Play is opened before it answers:
+  // the answer leaves the user on Play, and Play follows the saved setup once it lands.
+  await mutate([{ op: 'slowFiles', ms: 1500 }]);
   await page.getByTestId('edit-save').click();
-
   await page.getByTestId('mode-fly').click();
+  await mutate([{ op: 'slowFiles', ms: 0 }]);
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
   await page.getByTestId('group-toggle-files').click();
   await expect(checkRow(page, 'DCS options')).toHaveAttribute('data-status', 'pass');
