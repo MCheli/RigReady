@@ -169,9 +169,22 @@ describe('iRacing cleanup: which controllers are gone', () => {
     const view = await goneOf(a);
     expect(view.devices.map((d) => d.verdict)).toEqual(['unknown', 'unknown', 'unknown']);
     expect(device(view, PEDALS)!.why).toBe(
-      'RigReady cannot read its list of the devices it has seen, so it cannot tell whether this one is yours. It leaves its bindings alone.'
+      'RigReady cannot read what it knows about your devices (the Devices page’s history and names), so it cannot tell whether this one is yours. It leaves its bindings alone.'
     );
     expect(await call(a, 'clearGonePreview', { set: 'all', devices: [PEDALS] })).toMatchObject({
+      ok: false,
+      error: { code: 'iracing-bindings.cleanup.notGone' },
+    });
+  });
+
+  it('cannot tell when the names and answers cannot be read, even with the history there', async () => {
+    const a = await start();
+    // The history is fine, but the owner's names (devices.json) are damaged: a controller
+    // known only by its name must not be taken for one never seen.
+    await fs.writeFile(path.join(a.ports.folders.dataRoot(), 'devices.json'), '{ damaged');
+    const view = await goneOf(a);
+    expect(view.devices.map((d) => d.verdict)).toEqual(['unknown', 'unknown', 'unknown']);
+    expect(await call(a, 'clearGone', { set: 'all', devices: [PEDALS] })).toMatchObject({
       ok: false,
       error: { code: 'iracing-bindings.cleanup.notGone' },
     });
@@ -372,6 +385,43 @@ describe('iRacing cleanup: clearing the bindings of a gone controller', () => {
     });
     expect(equal(await bytesOf(profile(a)), before)).toBe(true);
     expect(await journal(a)).toEqual([]);
+  });
+
+  it('lists, writes and checks one read of the file: a binding added meanwhile is never cleared unlisted', async () => {
+    const a = await start();
+    const file = profile(a);
+    // Another program binds the handbrake on the pedals right after RigReady's first read.
+    const files = a.ports.files;
+    const read = files.readBytes.bind(files);
+    let first = true;
+    files.readBytes = async (p: string) => {
+      const answer = await read(p);
+      if (first && path.resolve(p).toLowerCase() === path.resolve(file).toLowerCase()) {
+        first = false;
+        const parsed = parseControlsFile(await bytesOf(file));
+        if (!parsed.ok) throw new Error(parsed.error.message);
+        const record = parsed.value.records.find((r) => r.action === 'Handbrake')!;
+        record.data = encodeRecordData(record.flag, record.mask, {
+          kind: 'axis',
+          axis: 3,
+          instanceGuid: PEDALS,
+          productGuid: '5ED11209-0000-0000-0000-504944564944',
+          direction: 0,
+        });
+        await fs.writeFile(file, encodeControlsFile(parsed.value));
+      }
+      return answer;
+    };
+    const shown = await review(a, { set: 'all', devices: [PEDALS] });
+    expect(shown.bindings.map((b) => b.action)).toEqual(PEDAL_ACTIONS);
+    // The token is that read's: the file has changed since, so nothing is written.
+    expect(
+      await call(a, 'clearGone', { set: 'all', devices: [PEDALS], seen: shown.seen })
+    ).toMatchObject({ ok: false, error: { code: 'iracing-bindings.cleanup.changed' } });
+    expect(await journal(a)).toEqual([]);
+    // Looked at again, the new binding is listed with the others before anything goes.
+    const again = await review(a, { set: 'all', devices: [PEDALS] });
+    expect(again.bindings.map((b) => b.action)).toContain('Handbrake');
   });
 
   it('writes nothing when the file changed after the review', async () => {

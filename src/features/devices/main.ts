@@ -68,10 +68,10 @@ function setupDevices(ctx: MainContext) {
     const names = data.ok ? data.value.names : [];
     // What the user said each device is, for the same askers (`whatIs`).
     const what = data.ok ? data.value.whatItIs : [];
-    // Where and when each device was seen, for `known`. A history that cannot be read
-    // gives no answer at all, never "not seen".
+    // Where and when each device was seen, for `known`, which also counts the names and
+    // answers. When either file cannot be read there is no answer at all, never "not seen".
     const history = await stores.history.read();
-    const seen = history.ok ? history.value.seen : undefined;
+    const seen = history.ok && data.ok ? history.value.seen : undefined;
     // Nothing named and nothing said: there is nothing to find, so the machine is not asked.
     if (names.length === 0 && what.length === 0) return deviceNames([], [], [], [], seen);
     // The asker's own list when it has one: the devices are never listed twice for one answer.

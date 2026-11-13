@@ -30,8 +30,9 @@ import { productOf } from './wheelbases/products';
  *   it now and at least one axis with a range (CalibMax above CalibMin). An entry under
  *   another instance GUID with the same product GUID is the same model under an older
  *   Windows id: iRacing treats the controller as new and asks again (racing.md 2.5).
- * - [I] A model is judged as a whole: a wheel base that shows up as two DirectInput
- *   controllers is calibrated when one of them is, as iRacing calibrates one collection.
+ * - [I] A wheel base that shows up as two DirectInput controllers of one USB device is
+ *   calibrated when one of them is, as iRacing calibrates one collection. Separate units of
+ *   one model are judged one by one (`gearCalibration`).
  *
  * The wheel and pedals are the controllers plugged in now that are racing gear: what the
  * owner said on the Devices page first (a device said to be flight gear is left out), then
@@ -84,8 +85,14 @@ const hasRange = (entry: CalibratedDevice): boolean =>
   entry.axes.some((a) => a.min !== undefined && a.max !== undefined && a.max > a.min);
 
 /**
- * Each model of wheel and pedals plugged in now, with whether iRacing has calibrated it.
+ * Each wheel and pedal set plugged in now, with whether iRacing has calibrated it.
  * `calibration` is the profile's joyCalib.yaml as read (empty when there is none).
+ *
+ * One physical device is one entry: DirectInput controllers that Windows says belong to the
+ * same USB device (`usbInstanceId`, a base listed as two collections) are judged together,
+ * and calibrated when one of them is. Without that, each controller is judged on its own,
+ * so two identical pedal sets are never taken for one; a base listed twice may then warn,
+ * but never passes for a unit iRacing has not calibrated.
  */
 export function gearCalibration(
   live: InputDevice[],
@@ -96,9 +103,9 @@ export function gearCalibration(
   for (const controller of live) {
     const gear = racingGearOf(controller, names);
     if (!gear) continue;
-    const key = `${controller.vendorId ?? ''}:${controller.productId ?? ''}:${
-      controller.vendorId ? '' : cleanGuid(controller.guid)
-    }`.toUpperCase();
+    const key = controller.usbInstanceId
+      ? `usb:${controller.usbInstanceId.toUpperCase()}`
+      : `guid:${cleanGuid(controller.guid)}`;
     const model = models.get(key) ?? { gear, controllers: [] };
     model.controllers.push(controller);
     models.set(key, model);
@@ -110,13 +117,12 @@ export function gearCalibration(
       calibration.find((e) => e.instanceGuid === cleanGuid(c.guid))
     );
     const calibrated = entries.some((e) => e !== undefined && hasRange(e));
-    const older = calibration.some((e) =>
-      controllers.some(
-        (c) =>
-          c.productGuid !== '' &&
-          e.productGuid === cleanGuid(c.productGuid) &&
-          e.instanceGuid !== cleanGuid(c.guid)
-      )
+    // An entry of the same model is an older id only when no controller plugged in now has
+    // it: an identical second unit is uncalibrated, not the first one under a new id.
+    const older = calibration.some(
+      (e) =>
+        !live.some((c) => cleanGuid(c.guid) === e.instanceGuid) &&
+        controllers.some((c) => c.productGuid !== '' && e.productGuid === cleanGuid(c.productGuid))
     );
     const given =
       first.vendorId && first.productId

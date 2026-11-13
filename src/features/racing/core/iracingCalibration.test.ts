@@ -242,11 +242,46 @@ describe('iRacing calibration check: what counts', () => {
     expect(gearCalibration([wheel], [], NO_NAMES)[0]!.state).toBe('missing');
   });
 
-  it('judges a base that shows up as two controllers once: calibrated when one of them is', () => {
-    const second = { ...wheel, index: 1, guid: '45D4BEA1-60A1-17D8-8002-444553540000' };
-    expect(gearCalibration([wheel, second], [entry(WHEEL, WHEEL_PRODUCT)], NO_NAMES)).toEqual([
+  it('judges a base that shows up as two controllers of one USB device once: calibrated when one of them is', () => {
+    const usb = 'USB\\VID_0EB7&PID_0007\\6&2C41A7F0&0&4';
+    const one = { ...wheel, usbInstanceId: usb };
+    const second = {
+      ...wheel,
+      index: 1,
+      guid: '45D4BEA1-60A1-17D8-8002-444553540000',
+      usbInstanceId: usb,
+    };
+    expect(gearCalibration([one, second], [entry(WHEEL, WHEEL_PRODUCT)], NO_NAMES)).toEqual([
       expect.objectContaining({ state: 'calibrated' }),
     ]);
+  });
+
+  it('never takes two units of one model for one: each pedal set must be calibrated', () => {
+    const product = '5ED11209-0000-0000-0000-504944564944';
+    const pedals = (guid: string, usbInstanceId?: string): InputDevice =>
+      controller({
+        name: 'Load Cell Pedals',
+        guid,
+        productGuid: product,
+        vendorId: '1209',
+        productId: '5ED1',
+        ...(usbInstanceId ? { usbInstanceId } : {}),
+      });
+    const calibrated = '5EED00C1-7A11-11EF-8001-444553540000';
+    const other = '5EED00C2-7A11-11EF-8002-444553540000';
+    // Windows says they are two USB devices.
+    const two = [
+      pedals(calibrated, 'USB\\VID_1209&PID_5ED1\\6&1&0&1'),
+      pedals(other, 'USB\\VID_1209&PID_5ED1\\6&1&0&2'),
+    ];
+    // Or it does not say: then each controller counts on its own.
+    const unsaid = [pedals(calibrated), pedals(other)];
+    for (const live of [two, unsaid]) {
+      // The second is not the first under a new id: the first is plugged in with its own.
+      expect(
+        gearCalibration(live, [entry(calibrated, product)], NO_NAMES).map((g) => g.state)
+      ).toEqual(['calibrated', 'missing']);
+    }
   });
 
   it('uses the name the owner gave a device', () => {

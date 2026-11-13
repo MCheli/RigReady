@@ -15,7 +15,7 @@ import { seenOf, whyBlocked } from './change';
 import { RECORD_BYTES, encodeControlsFile, parseControlsFile } from './controlsFile';
 import { KEPT_BYTES } from './edit';
 import { listed, setScope } from './names';
-import { setView, type BindingsContext } from './view';
+import { findSet, setView, type BindingsContext } from './view';
 
 /**
  * Cleaning up the bindings of controllers that are gone: a set of iRacing bindings often
@@ -75,7 +75,7 @@ const WHY = {
   noModel:
     'RigReady cannot tell which model of controller this is, so it leaves its bindings alone.',
   noHistory:
-    'RigReady cannot read its list of the devices it has seen, so it cannot tell whether this one is yours. It leaves its bindings alone.',
+    'RigReady cannot read what it knows about your devices (the Devices page’s history and names), so it cannot tell whether this one is yours. It leaves its bindings alone.',
   gone: 'Not plugged in, and RigReady has never seen it on this PC. If it is yours and only unplugged, leave it.',
 };
 
@@ -105,13 +105,17 @@ function verdictOf(
   return { verdict: 'gone', why: WHY.gone };
 }
 
-/** The set as the page shows it, and the controllers of it that are not plugged in. */
+/**
+ * The set as the page shows it, and the controllers of it that are not plugged in. With
+ * `bytes`, from exactly those bytes of the set's file rather than a read of its own.
+ */
 async function survey(
   ctx: BindingsContext,
   set: string,
-  names: DeviceNames
+  names: DeviceNames,
+  bytes?: Uint8Array
 ): Promise<Result<{ view: SetView; gone: GoneView }>> {
-  const view = await setView(ctx, set, names);
+  const view = await setView(ctx, set, names, bytes);
   if (!view.ok) return view;
   const started = await ctx.ports.input.start();
   const live = started.ok ? started.value : undefined;
@@ -231,14 +235,30 @@ interface Plan {
   names: string[];
 }
 
+/**
+ * The change, worked out from one read of the set's file: what the review lists, the bytes
+ * that would be written and the `seen` token all come from the same snapshot, so a binding
+ * another program adds meanwhile is never cleared without having been shown.
+ */
 async function plan(
   ctx: BindingsContext,
   request: ClearGoneRequest,
   names: DeviceNames
 ): Promise<Result<Plan>> {
-  const surveyed = await survey(ctx, request.set, names);
+  const found = await findSet(ctx, request.set);
+  if (!found.ok) return found;
+  const file = found.value.set.file;
+  const bytes = await ctx.ports.files.readBytes(file);
+  if (!bytes.ok) {
+    return err('iracing-bindings.read', `RigReady could not read ${file}.`, bytes.error.message);
+  }
+  const surveyed = await survey(ctx, request.set, names, bytes.value);
   if (!surveyed.ok) return surveyed;
   const { view, gone } = surveyed.value;
+  // app.ini pointed the set at another file between the two looks: start again.
+  if (view.set.file.toLowerCase() !== file.toLowerCase()) {
+    return refuse('changed', 'Which file iRacing uses changed while RigReady read it. Look again.');
+  }
   const chosen: GoneDevice[] = [];
   for (const key of new Set(request.devices.map((d) => d.toUpperCase()))) {
     const device = gone.devices.find((d) => sameGuid(d.key, key));
@@ -252,20 +272,23 @@ async function plan(
     }
     chosen.push(device);
   }
-  const file = view.set.file;
-  const bytes = await ctx.ports.files.readBytes(file);
-  if (!bytes.ok) {
-    return err('iracing-bindings.read', `RigReady could not read ${file}.`, bytes.error.message);
-  }
   const cleared = clearDevices(
     bytes.value,
     chosen.map((d) => d.key)
   );
   if (!cleared.ok) return cleared;
-  const done = new Set(cleared.value.actions);
-  const bindings = chosen.flatMap((d) =>
-    d.bindings.filter((b) => done.has(b.action)).map((b) => ({ device: d.key, ...b }))
-  );
+  const bindings = chosen.flatMap((d) => d.bindings.map((b) => ({ device: d.key, ...b })));
+  // From one snapshot the two agree; should they not, nothing unlisted is ever written.
+  const shown = new Set(bindings.map((b) => b.action));
+  if (
+    cleared.value.actions.length !== bindings.length ||
+    cleared.value.actions.some((a) => !shown.has(a))
+  ) {
+    return refuse(
+      'mismatch',
+      'RigReady would have cleared more than it can show. Nothing was changed.'
+    );
+  }
   return ok({
     review: {
       set: view.set,
