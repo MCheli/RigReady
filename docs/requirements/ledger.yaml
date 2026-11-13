@@ -1809,6 +1809,58 @@ requirements:
       - 'src/features/mcp/core/curated.test.ts#a game that is not on this PC is refused in words, and nothing is saved'
     notes: "Before this the tool kept everything the rig proposed, whatever the game: a setup made through an assistant for iRacing came with the flight gear ticked, which the page stopped doing in CFG-PROFILE-017."
 
+  - id: CFG-PROFILE-023
+    title: An app RigReady does not know can be offered in every new setup ("Always offer this app")
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "On New setup from this rig, a running program RigReady has no name for has \"Always offer this app\" on its line. Choosing it keeps the program's image name, a name for it and the path Windows reports for the running program in <data folder>/processes/known.json, and the line becomes what RigReady read back: ticked, \"Always offered\", with \"Stop offering it\"."
+      - "From then on every new setup lists that program with the helpers RigReady knows, ticked, while it runs, under the user's name for it; Stand down closes it only when the user switched that on. Make ready starts it through the process port with the path of the running program and an argument array, never a typed path."
+      - "Settings > Apps offered in new setups lists the user's apps with their path, renames them, switches Close at Stand down and takes them off the list."
+      - "The never list of the capture is authoritative: RigReady itself, Windows' own programs and anything in the Windows folder or off a drive of this PC never get the button and are refused when asked, and an entry naming one in a hand-edited known.json is left out when the file is read back, listed under Not used with why, never ticked and never closed at Stand down."
+      - "A damaged known.json is never overwritten: the known helpers are still offered and adding says why it cannot. Nothing outside RigReady's data folder is written."
+    status: done
+    evidence:
+      - 'src/features/processes/core/ownApps.test.ts#a program RigReady does not know is kept as Windows reported it, and is then offered ticked, under its name, with the launch fix from the running program'
+      - 'src/features/processes/core/ownApps.test.ts#closes it at Stand down only when the user says so'
+      - 'src/features/processes/core/ownApps.test.ts#never takes RigReady, a program of Windows or the Windows folder, whichever way it comes'
+      - 'src/features/processes/core/ownApps.test.ts#a list edited by hand is checked again when it is read: what the never list refuses is left out and said'
+      - 'src/features/processes/core/ownApps.test.ts#a damaged list is never overwritten: the known apps are still offered, and adding says why it cannot'
+      - 'src/features/processes/core/ownApps.test.ts#the New setup page offers it, Settings lists it, renames it and takes it off again'
+      - 'tests/e2e/processes-own-apps.e2e.ts#processes: an app RigReady does not know is offered in every new setup once the user asks, and the list is kept in Settings'
+      - 'artifacts/screens/processes-own-apps/01-unknown-app.png'
+      - 'artifacts/screens/processes-own-apps/02-always-offered.png'
+      - 'artifacts/screens/processes-own-apps/03-settings.png'
+      - 'artifacts/screens/processes-own-apps/04-next-setup.png'
+    notes: "Audit of fixed lists, 12 Nov 2026, item 4: the 31 helper apps RigReady knows were a list the user could not add to, so the same unknown app had to be dug out for every new setup."
+
+  - id: CFG-PROFILE-024
+    title: A setup RigReady 1 left behind is named, and brought over when it can be with confidence
+    job: configure
+    area: profiles
+    priority: p1
+    done_means:
+      - "Every setup file RigReady 1 left in profiles/ is named on the Setups page with its name and file, and says what RigReady can make of it."
+      - "Bring it over is offered when every part it brings has an exact match in this version: a running app (with its start-the-program or tell-me fix), a device by its numbers or by the one connected device of its name, a config file with or without its pattern, and the launch program or the game as found on this PC. The confirmation shows the new setup's checks, what Launch starts, and every part left out with why (monitor layouts, script checks, restore-a-file fixes, scripts around the launch, files kept for backup)."
+      - "Nothing is guessed: a device known only by a name that no connected device, or several, carry stops it, with what to do. When nothing has a match, or something stops it, the line says plainly that RigReady cannot bring the setup over and why, with Open the folder."
+      - "The old file is only read, never changed or removed without the user's say; the new setup is written through FileStore the way New setup from this rig writes one, remembers which file it came from, and the same file is not brought over twice."
+    status: done
+    evidence:
+      - 'src/features/profiles/core/versionOne.test.ts#is brought over: the wheel by the one connected device of its name, the app as it was, the monitor layout named and left out, and the old file untouched'
+      - 'src/features/profiles/core/versionOne.test.ts#guesses nothing: with the wheel unplugged it says to connect it and look again, and writes nothing'
+      - 'src/features/profiles/core/versionOne.test.ts#every kind of RigReady 1 check: what has an exact match comes over, the rest is named with why'
+      - 'src/features/profiles/core/versionOne.test.ts#says plainly when nothing in it has a match, and makes nothing'
+      - 'src/features/profiles/core/versionOne.test.ts#only a file RigReady 1 made, by a setup id, is ever looked at'
+      - 'tests/e2e/profiles-version-one.e2e.ts#profiles: a setup RigReady 1 left is brought over with what has an exact match, and the old file stays as it was'
+      - 'tests/e2e/profiles-version-one.e2e.ts#profiles: with the wheel of a RigReady 1 setup unplugged, RigReady says it cannot bring it over and opens the folder'
+      - 'artifacts/screens/profiles-version-one/01-listed.png'
+      - 'artifacts/screens/profiles-version-one/02-bring-over.png'
+      - 'artifacts/screens/profiles-version-one/03-brought-over.png'
+      - 'artifacts/screens/profiles-version-one/04-play.png'
+      - 'artifacts/screens/profiles-version-one-unplugged/01-cannot.png'
+    notes: "Sitting of 12 Nov 2026: the owner's RigReady 1 setup (LMU) sat in the profiles folder, listed apart with no way to bring it over. The RigReady 1 format is the one of src/shared/profileTypes.ts at the v1.1.0 tag; the test data is fixtures/scenarios/data/version-one, not the owner's folder."
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------
@@ -4224,14 +4276,15 @@ requirements:
     priority: p1
     done_means:
       - "Every shipped drawing was checked against a real map (the maker's number map or manual, and the game's default profile for the device); the table of device, source, what was fixed and what stays unconfirmed is in docs/research/controller-drawings.md."
-      - "A device whose places no source confirms has no drawing: it shows as its named list, which claims no places, and the page says 'Controls named for the <device> (no drawing of it yet)'. This is so for the Thrustmaster HOTAS Warthog throttle and the Saitek / Logitech X52 Pro."
+      - "A device whose places no source confirms has no drawing: it shows as its named list, which claims no places, and the page says 'Controls named for the <device> (no drawing of it yet)'. This is so for the Saitek / Logitech X52 Pro; it was for the Thrustmaster HOTAS Warthog throttle until it was drawn again from Thrustmaster's numbered drawings (SHEET-028)."
       - "The '?' mark is kept for exactly the controls whose number or direction is not confirmed from a real source; LAYOUT-FORMAT.md says so for drawings other people make."
       - "The manual says which devices have a drawing, which have a named list, and what '?' means."
     notes:
       - "2026-11-12: the owner in the sitting: 'We got to redo all of these diagrams because as they stand today, they are just too misleading.' The two withdrawn drawings are in the history of this repository and come back once a source settles their places."
+      - "2026-11-12, evening: the Warthog throttle came back, drawn from Thrustmaster's numbered drawings (SHEET-028). The X52 Pro was looked at again and stays a named list: Logitech's user guide names the kinds of control on photos but numbers none, and only a third party's map says which number is which button (docs/research/controller-drawings.md section 10)."
     status: done
     evidence:
-      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#shows no picture of a device whose places are not known to match it: the Warthog throttle and the X52 Pro are their named lists"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#shows no picture of a device whose places are not known to match it: the X52 Pro is its named list"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
       - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
       - "docs/research/controller-drawings.md"
@@ -4386,6 +4439,50 @@ requirements:
       - "artifacts/screens/cheat-sheets-photo/01-nothing-placed.png"
       - "artifacts/screens/cheat-sheets-photo-named/01-refused-not-a-picture.png"
       - "artifacts/screens/cheat-sheets-photo-named/02-refused-too-large.png"
+
+  - id: SHEET-028
+    title: The Thrustmaster HOTAS Warthog throttle is drawn again, every control where Thrustmaster's drawings put it
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The Warthog throttle (044F:0404) has a drawing in RigReady's flat style, made from nothing, CC0, in three views: the handles from the front (the coolie switch and the slew control on the right handle, the left throttle button on the left one), the thumb side of the right handle (mic switch, speed brake, boat switch, china hat, top to bottom), and the base from above (the flaps switch left of the slot, fuel flow, engine operate, APU and gear horn right of it, the slider wheel on the right edge, EAC, radar altimeter and autopilot on the strip nearest the pilot, the pinky switch on the left handle)."
+      - "Every control of the throttle's named map (SHEET-017) is on the drawing with the map's name and inputs; every place is settled by Thrustmaster's numbered drawings in the throttle's manual and agrees with figure 70 of the game's A-10C manual and with the game's A-10C profile for the throttle. docs/research/controller-drawings.md section 10 cites them. No control carries the '?' mark."
+      - "For DCS's Hornet defaults and for every input bound, at the app's size and filled for a kneeboard page, no two leader lines cross and every label block is on the page; the sheet says 'RigReady drawing'."
+    notes:
+      - "2026-11-12: withdrawn earlier the same day (SHEET-021) because its first drawing put the thumb switches on the left handle. Redrawn from the maker's manual, which numbers every control on three drawings. The coolie is named an 8-way hat, as Thrustmaster lists it."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
+      - "docs/research/controller-drawings.md"
+      - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/05-warthog-throttle-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/06-warthog-throttle-kneeboard-night-page.png"
+
+  - id: SHEET-029
+    title: The Thrustmaster TWCS throttle is named and drawn as Thrustmaster's manual numbers it
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The TWCS throttle (044F:B687, name 'TWCS Throttle') is a known device: every button, the hat and every axis it reports has a name, numbered as Thrustmaster's manual draws them (the mini-stick X, Y and its press 6, the wheel switch 4 and 5, buttons 2 and 3, the antenna dial on the first slider, the rocker on RZ, the 8-way POV hat, the hats 7 to 10 and 11 to 14, button 1, the throttle on Z), and TFRP pedals plugged into it are named too (rudder on the second slider, toe brakes on RY and RX). The game's defaults for the TWCS agree with every number."
+      - "It has a drawing in RigReady's flat style, made from nothing, CC0, in three views: the side of the handle with the mini-stick, the side with the hats, and the base from above with the socket the pedals report through. Every control of the map is on it with the map's name and inputs, each where the manual draws it; no control carries the '?' mark. docs/research/controller-drawings.md section 10 cites the sources."
+      - "For DCS's Hornet defaults and for every input bound, at the app's size and filled for a kneeboard page, no two leader lines cross and every label block is on the page; the sheet says 'RigReady drawing'."
+    notes:
+      - "2026-11-12: the TWCS was left out of the known devices on 11 November because its manual prints the button figure as an image; read as a picture, it numbers both sides of the handle. The manual does not say which side is the left one, so the views are named by what is on them. Nobody at the rig has a TWCS, so no press has checked it."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/known/known.test.ts#the TWCS throttle: numbered as Thrustmaster’s manual draws it, the pedals plugged into it as well"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
+      - "docs/research/controller-drawings.md"
+      - "docs/research/device-control-names.md"
+      - "artifacts/screens/cheat-sheets-known-devices/13-twcs-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/14-twcs-throttle-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/15-twcs-throttle-kneeboard-night-page.png"
 
   # ---------------------------------------------------------------------------
   # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)

@@ -24,8 +24,11 @@ interface Controller {
 /** The button box of the recorded rig: 41 buttons and two sliders, no drawing, no names. */
 const PANEL_GUID = 'DF6F4BD0-FA0C-11F0-8002-444553540000';
 const PANEL_FILE = '3344-C259.rrlayout.json';
-/** The Warthog throttle the scenario plugs in: RigReady knows its controls by name. */
-const THROTTLE_GUID = '3A7C1E21-7A11-11EF-8002-444553540000';
+/**
+ * The X52 Pro the scenario plugs in: RigReady knows its controls by name but has no
+ * drawing of it (the Warthog throttle, used here before, has a drawing since 12 Nov).
+ */
+const NAMED_GUID = '3A7C1E23-7A11-11EF-8004-444553540000';
 /** The Warthog stick of the same scenario: RigReady has a drawing of it. */
 const STICK_GUID = '3A7C1E20-7A11-11EF-8001-444553540000';
 
@@ -613,9 +616,9 @@ test('cheat sheets: a file that is not a picture or is too large is refused with
   });
   await fs.truncate(path.join(run.home, 'Documents', 'too-large.png'), 26 * 1024 * 1024);
   await openSheets(page);
-  const throttle = await controller(page, THROTTLE_GUID);
-  await run.sendInput([stateOf(throttle)]);
-  await deviceEntry(page, throttle.name).click();
+  const x52 = await controller(page, NAMED_GUID);
+  await run.sendInput([stateOf(x52)]);
+  await deviceEntry(page, x52.name).click();
   const source = page.getByTestId('sheet-layout-source');
   await expect(source).toHaveAttribute('data-picture', 'list');
 
@@ -640,67 +643,68 @@ test('cheat sheets: a file that is not a picture or is too large is refused with
   await expect(mode).toHaveAttribute('data-mode', 'photos');
   await expect(problem).toHaveCount(0);
   const p = placer(page);
-  // RigReady knows the 20 controls of this throttle by name: they are what is counted.
-  await expect(p.progress).toHaveText('0 of 20 controls placed');
+  // The 16 controls RigReady knows by name count once each, with the 15 inputs its map
+  // leaves out (the wheel and MFD buttons, the rotaries, the slider).
+  await expect(p.progress).toHaveText('0 of 31 controls placed');
 
-  // One position of the mic switch is pressed: the whole switch waits for its one place.
-  await tap(run, throttle, 'button:3');
-  await expect(p.ask).toHaveText('MS mic switch: click where it is on the photo.');
-  await expect(p.more).toContainText('Its 5 ways share this one place.');
-  await p.click(0.36, 0.27);
-  await expect(p.dot('ms')).toBeVisible();
-  await expect(p.progress).toHaveText('1 of 20 controls placed');
-  // Another position of it is the same control: it is on the photo already.
-  await tap(run, throttle, 'button:5');
-  await expect(p.prompt).toHaveAttribute('data-state', 'move');
-  await expect(p.ask).toHaveText('MS mic switch is on the photo already.');
-  await page.getByTestId('photo-armed-take-off').click();
-  await expect(p.ask).toHaveText('MS mic switch is off the photo.');
-  await expect(p.dot('ms')).toHaveCount(0);
-  await page.getByTestId('photo-undo').click();
-  await expect(p.dot('ms')).toBeVisible();
-
-  // The hat Windows reports as a hat: one push, to a corner even, and it is the coolie switch.
-  await tap(run, throttle, 'hat:1:UR');
-  await expect(p.ask).toHaveText('Coolie switch: click where it is on the photo.');
+  // One way of the stick's top hat is pressed: the whole hat waits for its one place.
+  await tap(run, x52, 'button:20');
+  await expect(p.ask).toHaveText('Stick top hat: click where it is on the photo.');
   await expect(p.more).toContainText('Its 4 ways share this one place.');
+  await p.click(0.36, 0.27);
+  await expect(p.dot('h1')).toBeVisible();
+  await expect(p.progress).toHaveText('1 of 31 controls placed');
+  // Another way of it is the same control: it is on the photo already.
+  await tap(run, x52, 'button:22');
+  await expect(p.prompt).toHaveAttribute('data-state', 'move');
+  await expect(p.ask).toHaveText('Stick top hat is on the photo already.');
+  await page.getByTestId('photo-armed-take-off').click();
+  await expect(p.ask).toHaveText('Stick top hat is off the photo.');
+  await expect(p.dot('h1')).toHaveCount(0);
+  await page.getByTestId('photo-undo').click();
+  await expect(p.dot('h1')).toBeVisible();
+
+  // The hat Windows reports as a hat: one push, to a corner even, and it is the POV hat.
+  await tap(run, x52, 'hat:1:UR');
+  await expect(p.ask).toHaveText('Stick POV hat: click where it is on the photo.');
+  await expect(p.more).toContainText('Its 8 ways share this one place.');
   await p.click(0.64, 0.27);
-  await expect(p.dot('coolie')).toBeVisible();
+  await expect(p.dot('pov')).toBeVisible();
   // Through "Place a hat" it is the same control: a hat that does not press.
   await page.getByTestId('photo-hat').click();
-  await tap(run, throttle, 'hat:1:U');
+  await tap(run, x52, 'hat:1:U');
   await expect(p.ask).toHaveText('Press it in.');
-  await expect(p.more).toHaveText('Coolie switch, step 5 of 5. So far: all its ways.');
+  await expect(p.more).toHaveText('Stick POV hat, step 5 of 5. So far: all its ways.');
   await page.getByTestId('photo-hat-skip').click();
-  await expect(p.ask).toHaveText('Coolie switch is on the photo already.');
+  await expect(p.ask).toHaveText('Stick POV hat is on the photo already.');
   await page.getByTestId('photo-cancel').click();
 
-  // Both throttle levers are one control with two ways: moving one arms it.
-  await run.sendInput([stateOf(throttle, [], { 2: 0.9 })]);
-  await expect(p.ask).toHaveText('Throttles: click where it is on the photo.');
-  await expect(p.more).toContainText('Its 2 ways share this one place.');
+  // The stick's roll, pitch and twist are one control with three ways: moving one arms it.
+  await run.sendInput([stateOf(x52, [], { 0: 0.9 })]);
+  await expect(p.ask).toHaveText('Stick: click where it is on the photo.');
+  await expect(p.more).toContainText('Its 3 ways share this one place.');
   await p.click(0.5, 0.45);
-  await expect(p.dot('throttles')).toBeVisible();
-  await run.sendInput([stateOf(throttle)]);
-  await expect(p.progress).toHaveText('3 of 20 controls placed');
+  await expect(p.dot('stick')).toBeVisible();
+  await run.sendInput([stateOf(x52)]);
+  await expect(p.progress).toHaveText('3 of 31 controls placed');
   await shot('named-controls');
 
   await page.getByTestId('editor-save').click();
   await expect(source).toHaveAttribute('data-picture', 'drawing');
-  await expect(source).toHaveText('Your photos, 3 of 20 controls placed');
+  await expect(source).toHaveText('Your photos, 3 of 31 controls placed');
   const sheet = page.getByTestId('sheet-view');
   await expect(sheet.locator('svg image.cs-view')).toHaveCount(1);
   for (const [anchor, head] of [
-    ['ms', 'MS mic switch'],
-    ['coolie', 'Coolie switch'],
-    ['throttles', 'Throttles'],
+    ['h1', 'Stick top hat'],
+    ['pov', 'Stick POV hat'],
+    ['stick', 'Stick'],
   ] as const) {
     await expect(sheet.locator(`[data-anchor="${anchor}"] .cs-bhead`)).toContainText(head);
   }
   await expect(page.getByTestId('sheet-picture-notes')).toContainText('Not placed on a photo yet:');
   await shot('sheet-named');
 
-  // Discarded, the throttle is the named list it was.
+  // Discarded, the X52 Pro is the named list it was.
   await page.getByTestId('sheet-edit-layout').click();
   await expect(mode).toHaveAttribute('data-mode', 'photos');
   await page.getByTestId('editor-reset').click();

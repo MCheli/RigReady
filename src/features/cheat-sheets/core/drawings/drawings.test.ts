@@ -237,7 +237,9 @@ describe('the shipped drawings', () => {
       'WinWing F/A-18 startup panel',
       'WinWing F/A-18 take-off panel 2',
       'Thrustmaster HOTAS Warthog joystick',
+      'Thrustmaster HOTAS Warthog throttle',
       'Thrustmaster T.16000M stick',
+      'Thrustmaster TWCS throttle',
     ]);
     expect(drawingFor({ vendorId: '4098', productId: 'BEA8' })?.name).toContain('F-16EX');
     expect(drawingFor({ vendorId: '4098', productId: 'bee1' })?.name).toContain('MFD1');
@@ -385,7 +387,7 @@ describe('the shipped drawings', () => {
     };
     expect(parseDrawing(twice)).toMatchObject({ ok: false, reason: /more than one control/ });
     expect(parseDrawing({ format: 'nope' })).toMatchObject({ ok: false });
-    expect(DRAWINGS).toHaveLength(11);
+    expect(DRAWINGS).toHaveLength(13);
     expect(pathBox('M 10 20 L 30 40 C 1 2 3 4 50 60 Z')).toEqual({ x: 1, y: 2, w: 49, h: 58 });
     expect(pathBox('M 260 588 A 20 20 0 1 0 300 588 A 20 20 0 1 0 260 588 Z')).toEqual({
       x: 260,
@@ -1018,7 +1020,14 @@ const POPULAR = [
     vendorId: '044F',
     productId: '0402',
   },
+  {
+    name: 'Throttle - HOTAS Warthog',
+    known: 'tm-warthog-throttle',
+    vendorId: '044F',
+    productId: '0404',
+  },
   { name: 'T.16000M', known: 'tm-t16000m', vendorId: '044F', productId: 'B10A' },
+  { name: 'TWCS Throttle', known: 'tm-twcs-throttle', vendorId: '044F', productId: 'B687' },
 ] as const;
 
 /**
@@ -1026,13 +1035,6 @@ const POPULAR = [
  * show as their named list, which claims no places.
  */
 const LISTED = [
-  {
-    name: 'Throttle - HOTAS Warthog',
-    known: 'tm-warthog-throttle',
-    vendorId: '044F',
-    productId: '0404',
-    head: 'MS mic switch · 2–6',
-  },
   {
     name: 'Saitek X52 Pro Flight Controller',
     known: 'saitek-x52-pro',
@@ -1231,7 +1233,7 @@ describe('the drawings of the popular Thrustmaster controllers', () => {
     }
   });
 
-  it('shows no picture of a device whose places are not known to match it: the Warthog throttle and the X52 Pro are their named lists', async () => {
+  it('shows no picture of a device whose places are not known to match it: the X52 Pro is its named list', async () => {
     const sheet = await popularSheet();
     for (const entry of LISTED) {
       expect(drawingFor({ vendorId: entry.vendorId, productId: entry.productId })).toBeUndefined();
