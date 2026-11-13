@@ -147,6 +147,13 @@ const PAGES: ConfigurePage[] = [
     notFound: 'iRacing',
   },
   {
+    name: 'iracing-bindings',
+    route: '/configure/iracing-bindings',
+    testId: 'iracing-bindings-page',
+    says: ['iRacing was not found on this PC', 'iRacing game page'],
+    notFound: 'iRacing',
+  },
+  {
     name: 'racing-lmu',
     route: '/configure/racing/lmu',
     testId: 'lmu-page',
