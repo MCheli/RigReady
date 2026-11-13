@@ -1,8 +1,10 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import v8 from 'node:v8';
+import vm from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { loadScenario } from '../../src/platform/fake';
-import { applyMutations } from '../../src/platform/fake/scenario';
+import { applyMutations, never } from '../../src/platform/fake/scenario';
 import { fixturesDir, markFull, rigFromState, scenarioRig, tempDir } from '../helpers';
 
 describe('mark-full fixture', () => {
@@ -333,5 +335,29 @@ describe('fake providers behave like the machine', () => {
     } finally {
       await rig.cleanup();
     }
+  });
+});
+
+describe('a read that never answers', () => {
+  it('is kept alive, so whoever waits for it is not cleared out of memory', async () => {
+    // Node clears its memory on request once this is switched on.
+    v8.setFlagsFromString('--expose-gc');
+    const clearMemory = vm.runInNewContext('gc') as () => void;
+    let cleared = 0;
+    const watch = new FinalizationRegistry<string>(() => cleared++);
+    // What waits for the read. In the app that is the answer Electron owes the window:
+    // when it is cleared away unanswered, Electron tells the window "reply was never sent",
+    // and the page shows an error where it should go on waiting.
+    const wait = (): void => {
+      const reply = { send: (): void => undefined };
+      watch.register(reply, 'the reply');
+      void never().then(() => reply.send());
+    };
+    wait();
+    for (let round = 0; round < 5; round++) {
+      clearMemory();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(cleared).toBe(0);
   });
 });
