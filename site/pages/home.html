@@ -2,11 +2,14 @@
   <div class="wrap">
     <div class="hero-top">
       <div class="hero-copy">
-        <h1 id="hero-title">Get the rig ready, keep your controls, find what is wrong.</h1>
+        <h1 id="hero-title">
+          <span>Less time on rig chores.</span>
+          <span>More time flying and racing.</span>
+        </h1>
         <p class="lead">
-          RigReady is a free Windows app for flight and racing sim rigs. It checks the rig before
-          you launch and fixes what it can, helps you set up, save and bring back your bindings, and
-          shows what every controller is doing when something is off.
+          RigReady is a free Windows app for flight and racing sim rigs. It does the work around the
+          game: setting up your controls and screens, learning what every button does, getting
+          everything running before you launch, and putting your desk back after.
         </p>
         <div class="actions">{{HERO_ACTIONS}}</div>
       </div>
@@ -49,59 +52,104 @@
       </div>
     </div>
 
-    <ul class="pillars" id="features" aria-label="What RigReady does">
-      <li class="pillar">
-        <svg class="pillar-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="8.5" />
-          <path d="m8.2 12.3 2.6 2.6 5-5.4" />
-        </svg>
-        <p class="kicker">Before a session</p>
-        <h2><a href="#ready">Ready to launch</a></h2>
-        <p>
-          Checks the rig for the setup you are about to use, fixes what is off, and starts the game.
-        </p>
-        <ul>
-          <li>Controllers, helper apps, monitors, audio, game files</li>
-          <li>Make ready runs every fix in order</li>
-          <li>Stand down puts the desk back</li>
-        </ul>
-        <a class="pillar-link" href="/docs/play/">The Play screen in the manual</a>
+    <ol
+      class="steps"
+      id="features"
+      aria-label="What RigReady does, from setting up to putting away"
+    >
+      <li class="step">
+        <button type="button" class="shot step-shot" data-lightbox>
+          <img
+            src="/img/screens/bindings.webp"
+            width="1250"
+            height="821"
+            alt="Bindings with its Game picker open, offering DCS and iRacing"
+          />
+        </button>
+        <div class="step-body">
+          <h2>Set it up</h2>
+          <p>
+            Bind your controls for DCS and iRacing, with a preview first and Undo after, helped by
+            binding guides for DCS aircraft and iRacing car classes. It also sets up monitor
+            layouts, DCS's MFD screens and Export.lua without SimAppPro, and iRacing's control
+            profiles.
+          </p>
+          <a class="step-link" href="/docs/controls/">Bindings in the manual</a>
+        </div>
       </li>
-      <li class="pillar">
-        <svg class="pillar-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 6h9M18 6h1M5 12h3M12 12h7M5 18h11M20 18h-1" />
-          <circle cx="16" cy="6" r="2" />
-          <circle cx="10" cy="12" r="2" />
-          <circle cx="18" cy="18" r="2" />
-        </svg>
-        <p class="kicker">Setting up</p>
-        <h2><a href="#controls">Controls, set up and saved</a></h2>
-        <p>
-          Bindings, cheat sheets and backups, so a new aircraft or a new PC does not start from
-          nothing.
-        </p>
-        <ul>
-          <li>See, edit and clean up DCS bindings</li>
-          <li>Cheat sheets and kneeboard pages</li>
-          <li>Back up, restore, move to a new PC</li>
-        </ul>
-        <a class="pillar-link" href="/docs/protect/">Backups in the manual</a>
+      <li class="step">
+        <button type="button" class="shot step-shot" data-lightbox>
+          <img
+            src="/img/screens/trainer.webp"
+            width="1250"
+            height="821"
+            alt="The trainer asking for Look left in iRacing, beside a drawing of the Fanatec wheel and pedals"
+          />
+        </button>
+        <div class="step-body">
+          <h2>Learn it</h2>
+          <p>
+            Cheat sheets show what every control on your stick, throttle, wheel or button box does,
+            on paper or as DCS kneeboard pages. The trainer names an action and you press its
+            control. The overlay lists each button you press and what it does in that aircraft or
+            car.
+          </p>
+          <a class="step-link" href="/docs/controls/trainer/">The trainer in the manual</a>
+        </div>
       </li>
-      <li class="pillar">
-        <svg class="pillar-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 12h4l2.5-6 4 12 2.5-6H21" />
-        </svg>
-        <p class="kicker">When something is off</p>
-        <h2><a href="#troubleshoot">See what the rig is doing</a></h2>
-        <p>Every button, axis and USB port the way a game sees them, so a fault has a name.</p>
-        <ul>
-          <li>Find a device by pressing a button</li>
-          <li>Input tester and health check</li>
-          <li>USB map and new device IDs</li>
-        </ul>
-        <a class="pillar-link" href="/docs/hardware/">Hardware tools in the manual</a>
+      <li class="step">
+        <button type="button" class="shot step-shot" data-lightbox>
+          <img
+            src="/img/screens/play-not-ready.webp"
+            width="1250"
+            height="821"
+            alt="The Play screen for a DCS F/A-18C setup: not ready, with four problems and a fix beside each"
+          />
+        </button>
+        <div class="step-body">
+          <h2>Launch</h2>
+          <p>
+            One check before the session covers the stick and throttle or wheel and pedals, helper
+            apps, monitors and MFD screens, audio and game files. Make ready fixes what is off, in
+            order, and starts the game. When a control acts up, the input tester, health check and
+            USB map help find out why.
+          </p>
+          <a class="step-link" href="/docs/play/">The Play screen in the manual</a>
+        </div>
       </li>
-    </ul>
+      <li class="step">
+        <button type="button" class="shot step-shot" data-lightbox>
+          <img
+            src="/img/screens/stand-down-countdown.webp"
+            width="1250"
+            height="821"
+            alt="DCS World has closed and Stand down counts down from 59 seconds, with Cancel"
+          />
+        </button>
+        <div class="step-body">
+          <h2>Put it away</h2>
+          <p>
+            After the session, Stand down closes the helper apps and puts your monitors back in the
+            desk layout. It can run by itself when the game closes, after a countdown you can
+            cancel.
+          </p>
+          <a class="step-link" href="/docs/play/stand-down/">Stand down in the manual</a>
+        </div>
+      </li>
+    </ol>
+
+    <p class="steps-note">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6z" />
+        <path d="m8.8 12.2 2.3 2.3 4.3-4.6" />
+      </svg>
+      <span>
+        Every change RigReady makes to a game or tool file is backed up first and can be undone on
+        the <a href="/docs/protect/safety-page/">Safety page</a> while its backup is kept. When
+        Windows gives a controller a new ID, device ID repair carries its bindings over, so the game
+        still finds it.
+      </span>
+    </p>
   </div>
 </section>
 
@@ -218,7 +266,7 @@
       </p>
     </header>
 
-    <ul class="tiles">
+    <ul class="tiles tiles-4">
       <li class="tile">
         <button type="button" class="tile-shot shot" data-lightbox>
           <img
@@ -238,26 +286,6 @@
       <li class="tile">
         <button type="button" class="tile-shot shot" data-lightbox>
           <img
-            src="/img/screens/bindings.webp"
-            width="1250"
-            height="821"
-            loading="lazy"
-            alt="Bindings with its Game picker open, offering DCS and iRacing"
-          />
-        </button>
-        <h3>Bindings</h3>
-        <p>
-          RigReady reads the DCS bindings you already have from DCS's own files, so there is nothing
-          to import. See the bindings in effect, edit them with a preview, clear the defaults DCS
-          adds to every device, and copy controls between aircraft. For iRacing it lists every
-          action and what it is bound to, for all cars and per car, read only.
-          <a href="/docs/dcs/bindings/">DCS bindings</a>,
-          <a href="/docs/games/iracing-bindings/">iRacing bindings</a>
-        </p>
-      </li>
-      <li class="tile">
-        <button type="button" class="tile-shot shot" data-lightbox>
-          <img
             src="/img/screens/cheat-sheets-warthog.webp"
             width="1486"
             height="1250"
@@ -267,28 +295,10 @@
         </button>
         <h3>Cheat sheets</h3>
         <p>
-          Each device drawn with what every control does, for DCS aircraft and the racing games.
-          A controller with no drawing gets a sheet from your own photo of it. Print it or export it
+          Each device drawn with what every control does, for DCS aircraft and the racing games. A
+          controller with no drawing gets a sheet from your own photo of it. Print it or export it
           as a DCS kneeboard page.
           <a href="/docs/controls/cheat-sheets/">Cheat sheets</a>
-        </p>
-      </li>
-      <li class="tile">
-        <button type="button" class="tile-shot shot" data-lightbox>
-          <img
-            src="/img/screens/trainer.webp"
-            width="1250"
-            height="821"
-            loading="lazy"
-            alt="The trainer asking for Look left on a Fanatec wheel base"
-          />
-        </button>
-        <h3>Learn them</h3>
-        <p>
-          The trainer names an action and you press the control. Twenty binding guides, from the F/A-18C
-          and F-16C to the Ka-50 and P-51D, walk through what to bind first. Over the game, the
-          overlay lists each button you press and what it does there. <a href="/docs/controls/trainer/">Trainer</a>,
-          <a href="/docs/play/overlay/">The overlay</a>
         </p>
       </li>
       <li class="tile">
@@ -336,10 +346,10 @@
         />
       </button>
       <figcaption>
-        <strong>The overlay.</strong> A small see-through list over the game: each button you
-        press, and what it does in the aircraft or car you are in. It shows over the desktop and
-        over a game in a window or borderless window, not in exclusive full screen or in VR (not
-        yet tried over a running game). <a href="/docs/play/overlay/">The overlay</a>
+        <strong>The overlay.</strong> A small see-through list over the game: each button you press,
+        and what it does in the aircraft or car you are in. It shows over the desktop and over a
+        game in a window or borderless window, not in exclusive full screen or in VR (not yet tried
+        over a running game). <a href="/docs/play/overlay/">The overlay</a>
       </figcaption>
     </figure>
 
@@ -452,8 +462,9 @@
       </li>
     </ul>
     <p class="section-lead">
-      Wheel bases of every major brand, Stream Deck and TrackIR have pages of their own, and RigReady notices
-      when HidHide is hiding a device. In the manual: <a href="/docs/hardware/">Hardware</a>.
+      Wheel bases of every major brand, Stream Deck and TrackIR have pages of their own, and
+      RigReady notices when HidHide is hiding a device. In the manual:
+      <a href="/docs/hardware/">Hardware</a>.
     </p>
   </div>
 </section>
@@ -464,8 +475,8 @@
       <h2 id="ai-title">Optional AI help with setup and bindings</h2>
       <p>
         AI is off until you turn it on, and nothing else in RigReady needs it. It comes in two
-        forms, and either works without the other. Either way, every change is backed up first and
-        can be undone on the Safety page.
+        forms, and either works without the other. Either way, every change to a file is backed up
+        first and can be undone on the Safety page.
       </p>
     </header>
     <div class="ai-grid">
@@ -478,7 +489,6 @@
           and explains any action. You see what will be sent before each request, it goes only to
           the provider you chose, and nothing is saved until you press Save. With Ollama or LM
           Studio it never leaves your PC.
-
         </p>
         <figure class="frame">
           <button type="button" class="shot" data-lightbox>
@@ -521,9 +531,8 @@
     <h2 id="games-title">Flight and racing</h2>
     <p class="section-lead">
       Any game works with a checklist, launch, tracked files and backups, and one RigReady does not
-      know can be added on the Games page, to be found, launched and backed up like the rest.
-      These get more; the manual
-      has a section on <a href="/docs/dcs/">DCS World</a> and a page per
+      know can be added on the Games page, to be found, launched and backed up like the rest. These
+      get more; the manual has a section on <a href="/docs/dcs/">DCS World</a> and a page per
       <a href="/docs/games/">game</a>:
     </p>
     <div class="games-grid">
@@ -534,12 +543,25 @@
               <th scope="row">DCS World</th>
               <td>
                 The deepest support. Steam and standalone installs, MFD screen setup, Export.lua,
-                options, bindings, cheat sheets, kneeboard pages, and twenty binding guides,
-                from the F/A-18C, F-16C and A-10C to the Ka-50, UH-1H and P-51D.
+                options, cheat sheets, kneeboard pages, and twenty binding guides, from the F/A-18C,
+                F-16C and A-10C to the Ka-50, UH-1H and P-51D.
+                <a href="/docs/dcs/bindings/">Bindings</a> are read from DCS's own files, so there
+                is nothing to import: edit them with a preview, clear the defaults DCS adds to every
+                device, and copy controls between aircraft.
               </td>
             </tr>
             <tr>
-              <th scope="row">iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa</th>
+              <th scope="row">iRacing</th>
+              <td>
+                <a href="/docs/games/iracing-bindings/">Bindings</a> changed from RigReady with a
+                preview, one button or key at a time; axes and hat switches are still bound in
+                iRacing. Binding guides by car class, from GT3 and GT4 to formula, oval and dirt.
+                Control profiles, cheat sheets and the trainer, backup and restore, and checks for a
+                racing setup.
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Le Mans Ultimate, BeamNG.drive, Assetto Corsa</th>
               <td>
                 A page per game with its bindings and controllers, cheat sheets and the trainer,
                 backup and restore, and checks for a racing setup.
@@ -547,7 +569,8 @@
             </tr>
             <tr>
               <th scope="row">
-                Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally, ACE COMBAT 8
+                Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally, ACE COMBAT
+                8
               </th>
               <td>Detection, config locations, backup suggestions and launch.</td>
             </tr>
@@ -556,8 +579,8 @@
               <td>
                 Any USB game controller, monitor and audio device Windows sees. Pages for wheel
                 bases (tested on a real Fanatec; Moza, Logitech, Simagic, Thrustmaster and others on
-                recorded data only), Stream Deck and TrackIR. WinWing devices work as controllers; their
-                backlights and displays still need SimAppPro, and RigReady checks that it is
+                recorded data only), Stream Deck and TrackIR. WinWing devices work as controllers;
+                their backlights and displays still need SimAppPro, and RigReady checks that it is
                 running.
               </td>
             </tr>
@@ -617,9 +640,9 @@
       </li>
       <li>
         RigReady itself sends only two things off your PC: the update check to GitHub, and AI
-        requests you send yourself, with your own key, to the one AI provider you chose. An assistant you connect over MCP
-        reads only what you allow, and sends it wherever that assistant runs. There is no account,
-        no telemetry and no crash reporting.
+        requests you send yourself, with your own key, to the one AI provider you chose. An
+        assistant you connect over MCP reads only what you allow, and sends it wherever that
+        assistant runs. There is no account, no telemetry and no crash reporting.
       </li>
       <li>
         A shared setup never carries scripts or launch commands. An imported file is checked for
@@ -661,7 +684,7 @@
         help most: what you have, what you expected, and what happened.
       </p>
       <p>
-        You don't need a cockpit to work on it. The app is tested end to end on recorded rigs, and
+        You don't need a sim rig to work on it. The app is tested end to end on recorded rigs, and
         every requirement is listed with the test that proves it.
       </p>
     </div>
