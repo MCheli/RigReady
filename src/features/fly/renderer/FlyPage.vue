@@ -40,6 +40,21 @@ function answer(ok: boolean): void {
   confirmation.value?.resolve(ok);
   confirmation.value = undefined;
 }
+/** A fix that would undo something the user set elsewhere: asked about, with why, before it runs. */
+const warned = ref<{ title: string; warning: string; resolve: (ok: boolean) => void }>();
+function askAnyway(title: string, warning: string): Promise<boolean> {
+  return new Promise((resolve) => (warned.value = { title, warning, resolve }));
+}
+function answerWarned(ok: boolean): void {
+  warned.value?.resolve(ok);
+  warned.value = undefined;
+}
+/** Everything a fix asks before it runs: the program it starts, and its warning. */
+async function approveFix(result: CheckResult): Promise<boolean> {
+  if (result.confirm && !(await askToRun(result.title, result.confirm))) return false;
+  if (result.fixWarning && !(await askAnyway(result.title, result.fixWarning))) return false;
+  return true;
+}
 
 const launchWarning = ref(false);
 const paused = ref<{ at: number; message: string; output?: string; approved: string[] }>();
@@ -233,22 +248,25 @@ async function openHistory(): Promise<void> {
 async function fixOne(itemId: string): Promise<void> {
   const result = fly.results[itemId];
   if (!result) return;
-  if (result.confirm) {
-    if (!(await askToRun(result.title, result.confirm))) return;
+  if (result.confirm || result.fixWarning) {
+    if (!(await approveFix(result))) return;
     await fly.fix(itemId, true);
   } else {
     await fly.fix(itemId);
   }
 }
 
-/** Fixes that run a program are asked about first, one by one, showing exactly what runs. */
+/**
+ * Fixes that run a program, or would undo something set elsewhere, are asked about first,
+ * one by one, showing exactly what runs and why to think twice.
+ */
 async function fixApprovals(): Promise<string[]> {
   const approved: string[] = [];
   for (const item of fly.items) {
     const result = fly.results[item.itemId];
-    if (!result || result.status === 'pass' || result.fixKind !== 'action' || !result.confirm)
-      continue;
-    if (await askToRun(result.title, result.confirm)) approved.push(item.itemId);
+    if (!result || result.status === 'pass' || result.fixKind !== 'action') continue;
+    if (!result.confirm && !result.fixWarning) continue;
+    if (await approveFix(result)) approved.push(item.itemId);
   }
   return approved;
 }
@@ -1106,6 +1124,28 @@ onBeforeUnmount(() => {
           <v-spacer />
           <v-btn variant="text" data-testid="confirm-run-skip" @click="answer(false)">Skip</v-btn>
           <v-btn color="primary" data-testid="confirm-run-ok" @click="answer(true)">Run it</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog :model-value="warned !== undefined" max-width="560" persistent>
+      <v-card data-testid="confirm-warning">
+        <v-card-title>Run this fix anyway?</v-card-title>
+        <v-card-text>
+          <p class="mb-3">“{{ warned?.title }}”</p>
+          <p class="rr-warn" data-testid="confirm-warning-text">
+            <v-icon icon="mdi-alert" size="16" /> {{ warned?.warning }}
+          </p>
+          <p class="rr-row-sub mt-3">Skip it, and nothing changes.</p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" data-testid="confirm-warning-skip" @click="answerWarned(false)"
+            >Skip</v-btn
+          >
+          <v-btn color="primary" data-testid="confirm-warning-ok" @click="answerWarned(true)"
+            >Run it anyway</v-btn
+          >
         </v-card-actions>
       </v-card>
     </v-dialog>

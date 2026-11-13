@@ -174,6 +174,28 @@ export const ApplyScreensSchema = z.object({
    * is right. Needed only while the last import was not certain of a pairing this setup uses.
    */
   pairingChecked: z.boolean().default(false),
+  /**
+   * Setups to update to the new values in the same change: ids from previewScreens'
+   * `setups`, the ones the user left ticked. A setup is updated only when it still expects
+   * exactly the values options.lua had; none is updated unless named here.
+   */
+  followSetups: z.array(z.string()).max(500).default([]),
+});
+
+/** A setup whose checks expect options.lua as it is now, and what "Use in DCS" would change in it. */
+export const SetupFollowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  items: z.array(
+    z.object({
+      itemId: z.string(),
+      title: z.string(),
+      /** "width 7424 → 5120" */
+      changes: z.array(z.string()),
+      /** The item's fix changes too. */
+      fix: z.boolean(),
+    })
+  ),
 });
 
 export const ScreensPreviewSchema = z.object({
@@ -193,6 +215,11 @@ export const ScreensPreviewSchema = z.object({
     diff: z.array(LineDiffSchema),
   }),
   optionChanges: z.array(z.string()),
+  /**
+   * Setups that expect options.lua as it is now, where these changes would leave them
+   * expecting the old values (and their fix putting those back). Offered to update with it.
+   */
+  setups: z.array(SetupFollowSchema).default([]),
   dcsRunning: z.boolean(),
 });
 export type ScreensPreview = z.infer<typeof ScreensPreviewSchema>;
@@ -303,13 +330,13 @@ export const dcsSetupContract = defineContract('dcs-setup', {
   ),
   previewScreens: channel(ApplyScreensSchema, ScreensPreviewSchema, {
     describe:
-      'Shows what applying a screen setup would write (RigReady.lua and the options.lua keys), with errors found and files edited outside RigReady. When the answer has pairingToCheck, the setup uses a pairing from the last SimAppPro import that RigReady was not sure of: show the user those pairings before anything else. Nothing is changed. Call it before dcs-setup:applyScreens and show the user.',
+      'Shows what applying a screen setup would write (RigReady.lua and the options.lua keys), with errors found and files edited outside RigReady, and the setups that expect the options as they are now (setups), each with what would change in it. When the answer has pairingToCheck, the setup uses a pairing from the last SimAppPro import that RigReady was not sure of: show the user those pairings before anything else. Nothing is changed. Call it before dcs-setup:applyScreens and show the user.',
     tier: 'read',
   }),
   /** Writes RigReady.lua and selects it in options.lua, as one undoable change. */
   applyScreens: channel(ApplyScreensSchema, MessageSchema, {
     describe:
-      'Writes RigReady.lua and selects it in options.lua (and sets the resolution when setResolution) as one change that can be undone. Call dcs-setup:previewScreens first and show the user. DCS must be closed. Refused with the reason dcs.screens.pairing while the setup uses a pairing from the last SimAppPro import that RigReady was not sure of: show the user which screen was paired with which monitor, and pass pairingChecked true only after the user has said the pairing is right.',
+      'Writes RigReady.lua and selects it in options.lua (and sets the resolution when setResolution) as one change that can be undone. Call dcs-setup:previewScreens first and show the user, with the setups it lists: followSetups names the ones the user agreed to update to the new values in the same change. DCS must be closed. Refused with the reason dcs.screens.pairing while the setup uses a pairing from the last SimAppPro import that RigReady was not sure of: show the user which screen was paired with which monitor, and pass pairingChecked true only after the user has said the pairing is right.',
     tier: 'change',
   }),
   exportLua: channel(noInput, ExportStateSchema, {

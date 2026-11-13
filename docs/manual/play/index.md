@@ -56,7 +56,7 @@ Each row has:
 - More lines when there is more to say, and a **Program output** panel when a script printed something.
 - A fix button, when the check has a fix, labelled with what the fix does: "Start TrackIR5.exe", "Apply the "Flying" layout", "Restore options.lua from the copy you saved of 2026-10-03 12:00". After it ran, the row says what happened; when the fix did not help, it links to the setup editor.
 - **Show instructions**, when the fix only tells you what to do.
-- The check's own button, when it has one, for example **Mark verified** on the game-updated check.
+- The check's own button, when it has one, for example **Mark verified** on the game-updated check, or **Update the setup** on a DCS check whose values "Use in DCS" changed.
 - **Diagnose** on a device row that is not met, which opens the [Devices page](../hardware/devices.md) on that device.
 - The time it was last checked, and a button to check that row again.
 
