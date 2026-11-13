@@ -177,6 +177,7 @@ const face = (now: TrainerRound): string =>
     now.note?.press.control,
     now.weighing?.since,
     now.holding,
+    now.inPlace.length,
   ].join('|');
 
 /** Plays the round on: `play` is one step of it. */
@@ -261,6 +262,16 @@ const afterAnswer = computed(() =>
 );
 /** A control that is held and being weighed as the answer. */
 const weighing = computed(() => round.value?.weighing?.press.control ?? '');
+/**
+ * The control asked for has been where the card asks since before the card came up. Where
+ * a control rests is not a press, so the card says how to answer with it.
+ */
+const inPlace = computed(() => {
+  if (!round.value?.inPlace.length || phase.value === 'done') return '';
+  const which =
+    answers.value.length > 1 ? 'One of the controls for it is' : 'The control for it is';
+  return `${which} already in place. Move it away and straight back.`;
+});
 
 const deviceOf = (guid: string): SheetDevice | undefined =>
   store.sheet?.devices.find((d) => d.guid?.toUpperCase() === guid);
@@ -348,6 +359,18 @@ const pictures = computed<Picture[]>(() => {
   });
 });
 
+/**
+ * More than one drawing is up: the page takes the room to set them side by side, so that
+ * nobody has to scroll with their hands on the controls.
+ */
+const paired = computed(
+  () =>
+    card.value !== undefined &&
+    phase.value !== 'idle' &&
+    phase.value !== 'done' &&
+    pictures.value.length > 1
+);
+
 const results = computed(() => {
   void phase.value;
   return round.value?.session.results();
@@ -388,6 +411,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="rr-page trainer"
+    :class="{ 'is-paired': paired }"
     data-testid="trainer-page"
     :data-live="store.watching"
     :data-heard="store.pressed.size"
@@ -642,7 +666,12 @@ onBeforeUnmount(() => {
                 </span>
               </template>
             </div>
-            <!-- A press that was not taken as an answer: said, so that nothing is silently ignored. -->
+            <!-- The control asked for is held and has not moved: said, or the card would only wait. -->
+            <div v-if="inPlace" class="trainer-note" role="status" data-testid="trainer-in-place">
+              <v-icon icon="mdi-information-outline" size="18" />
+              <span>{{ inPlace }}</span>
+            </div>
+            <!-- A press that was not taken as an answer, and why. A position that was only passed is not a press and is not said. -->
             <div
               v-if="note"
               class="trainer-note"
@@ -803,9 +832,18 @@ onBeforeUnmount(() => {
   gap: 18px;
   padding: 18px 20px;
 }
+/*
+ * An action on two devices has two drawings. The page then takes the room to set them side
+ * by side, up to the size one drawing has on its own, so that nobody has to scroll with
+ * their hands on the controls.
+ */
+.trainer.is-paired {
+  max-width: 1616px;
+}
 .trainer-round-view {
   display: grid;
-  grid-template-columns: minmax(300px, 5fr) minmax(0, 7fr);
+  /* The card takes five twelfths, from 300px up to the 400px it has on a page of full width. */
+  grid-template-columns: clamp(300px, calc((100% - 16px) * 5 / 12), 400px) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -918,9 +956,13 @@ onBeforeUnmount(() => {
   gap: 8px;
   margin-top: 16px;
 }
+/*
+ * Side by side while each drawing gets 400px or more, which is about what one has in the
+ * smallest window; with less room they go one below the other.
+ */
 .trainer-pictures {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
   gap: 16px;
   min-width: 0;
 }
