@@ -65,10 +65,16 @@ With **Make ready and launch**, the game starts only when every required check i
 
 ## The launch itself
 
+Before you click, the Play screen says under its buttons what Launch does around the game: "Before launch: Start VoiceAttack, Warm up the hub, Check TrackIR answers" and "After launch: Start SRS", each step by its name, in the order it runs. Past three steps the rest are counted ("and 2 more"). A setup without steps has no such line.
+
+![What Launch will do, under the buttons](../../../artifacts/screens/launch-plan/01-before-the-click.png)
+
 1. The setup's steps **Before launch** run in order. A step set to stop the launch when it fails does just that: the dialog **A step before launch failed** shows what it printed, and you choose **Launch anyway** (the launch goes on after that step) or **Cancel**.
-2. The game is started: a program, or Steam is asked to start it (see [Launch targets and steps](../setups/launch.md)). RigReady waits up to 30 seconds for the program to appear; "Launched DCS.exe" or "Asked Steam to start DCS F/A-18C" is said only then.
+2. The game is started: a program, or Steam is asked to start it (see [Launch targets and steps](../setups/launch.md)). RigReady waits up to 30 seconds for the program to appear; "Launched DCS.exe" or "Asked Steam to start DCS F/A-18C" is said only then. Meanwhile the line under the buttons reads "Starting DCS World", with the name of the setup's own game, so a game that takes a while to show does not look like a launch that failed.
 3. The steps **After launch** run in the background, each at its delay after the start. A failure there is reported and logged, and never touches the game.
-4. The window gets out of the way when **Hide RigReady after Launch** is on, as it is by default: it goes to the tray. See [The Play menu](the-menu.md). A [desktop shortcut](../one-click/desktop-shortcut.md) or the [hotkey](../one-click/hotkey.md) runs the same Make ready without opening the window first.
+4. The window gets out of the way when **Hide RigReady after Launch** is on, as it is by default: it goes to the tray, and a Windows notification with the same "Starting ..." line says the game is on its way and that RigReady is out of the way while you play. See [The Play menu](the-menu.md). A [desktop shortcut](../one-click/desktop-shortcut.md) or the [hotkey](../one-click/hotkey.md) runs the same Make ready without opening the window first.
+
+![The game is starting](../../../artifacts/screens/launch-starting/01-starting.png)
 
 From then on the screen shows the session: [Sessions and history](sessions.md).
 

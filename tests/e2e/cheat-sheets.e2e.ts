@@ -708,11 +708,12 @@ test('cheat sheets: print layout and PDF, one page per device plus a summary', a
   await expect(dialog.locator('[data-testid="print-device"] input:checked')).toHaveCount(11);
   await shot('dialog');
   await page.getByTestId('print-save').click();
-  await expect(page.getByTestId('print-saved')).toHaveAttribute('data-pages', '12');
+  // One page per chosen device (11) and the summary, which takes two pages here: see the
+  // measuring at the end of this test.
+  await expect(page.getByTestId('print-saved')).toHaveAttribute('data-pages', '13');
   const pdf = await fs.readFile(path.join(run.home, 'Documents', 'hornet.pdf'));
   expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-  // One page per chosen device and the summary page.
-  expect(pdfPages(pdf)).toBe(12);
+  expect(pdfPages(pdf)).toBe(13);
   await fs.mkdir(outputs, { recursive: true });
   await fs.writeFile(path.join(outputs, 'fa-18c-cheat-sheet-a4.pdf'), pdf);
 
@@ -747,11 +748,76 @@ test('cheat sheets: print layout and PDF, one page per device plus a summary', a
   await expect(page.locator('#cs-print-root .page')).toHaveCount(3);
   await expect(page.locator('#cs-print-root .page').first().locator('.ac')).toHaveText('F/A-18C');
   await expect(page.locator('#cs-print-root .page').first().locator('.dev')).toContainText('Stick');
+  const screen = await page.evaluate(() => {
+    const view = globalThis as unknown as { innerWidth: number; innerHeight: number };
+    return { width: view.innerWidth, height: view.innerHeight };
+  });
   await page.emulateMedia({ media: 'print' });
   await page.setViewportSize({ width: 794, height: 1123 });
   await expect(page.locator('#cs-print-root')).toBeVisible();
   await expect(page.getByTestId('configure-nav')).toBeHidden();
   await shot('printout');
+
+  // The summary on A4 paper. This aircraft has more important actions than one page holds
+  // in two columns (the panels' long names take two lines a row). The page used to cut the
+  // list off at its bottom edge without saying so; now the list goes on to a second page.
+  // Both are measured here in the real print layout, not planned.
+  await page.emulateMedia({ media: null });
+  await page.setViewportSize(screen);
+  await page.getByTestId('print-summary').locator('input').check();
+  await page.getByTestId('print-a4').locator('input').check();
+  await page.getByTestId('print-print').click();
+  await expect
+    .poll(() => page.evaluate(() => (globalThis as unknown as { printed: number }).printed))
+    .toBe(2);
+  const root = page.locator('#cs-print-root');
+  await expect(root).toHaveAttribute('data-pages', '5');
+  await expect(root.locator('.page[data-device]')).toHaveCount(3);
+  const summary = root.locator('.page[data-summary="true"]');
+  await expect(summary).toHaveCount(2);
+  await expect(summary.nth(0).locator('.dev')).toContainText('Most important actions (1)');
+  await expect(summary.nth(1).locator('.dev')).toContainText('Most important actions (2)');
+  await page.emulateMedia({ media: 'print' });
+  await page.setViewportSize({ width: 794, height: 1123 });
+  const measured = await summary.evaluateAll((pages) => {
+    // (The specs are compiled without the browser's own types.)
+    interface Part {
+      lastElementChild: Part | null;
+      getBoundingClientRect(): { top: number; bottom: number; height: number };
+      querySelector(selector: string): Part | null;
+      querySelectorAll(selector: string): ArrayLike<Part>;
+    }
+    return (pages as unknown as Part[]).map((section) => {
+      const list = section.querySelector('.list')!;
+      const box = list.getBoundingClientRect();
+      const columns = Array.from(list.querySelectorAll('.col')).map((col) => {
+        const last = col.lastElementChild;
+        return last ? last.getBoundingClientRect().bottom - box.top : 0;
+      });
+      return { room: box.height, columns, rows: list.querySelectorAll('.row').length };
+    });
+  });
+  // On this rig: 952 px of room a page; the columns end at 591 and 658 px on the first page
+  // and at 647 and 326 px on the second (40 and 31 actions).
+  // Nothing is cut off: every column ends inside the room its page has for the list, and
+  // the two pages together have every one of the 71 actions the summary is made of.
+  for (const one of measured) {
+    for (const column of one.columns) expect(column).toBeLessThanOrEqual(one.room + 0.5);
+  }
+  expect(measured.reduce((sum, one) => sum + one.rows, 0)).toBe(71);
+  // And one page could not have held them: the columns together are taller than the two
+  // columns of a page.
+  const tall = measured.flatMap((one) => one.columns).reduce((sum, column) => sum + column, 0);
+  expect(tall).toBeGreaterThan(2 * measured[0]!.room);
+  // For the pictures the pages before are taken away (the printout does not scroll), after
+  // the measuring: turning the page.
+  await root.locator('.page[data-device]').evaluateAll((pages) => {
+    for (const one of pages) one.remove();
+  });
+  await shot('summary-first-page');
+  await summary.nth(0).evaluate((one) => one.remove());
+  await expect(summary).toHaveCount(1);
+  await shot('summary-second-page');
 });
 
 test('cheat sheets: kneeboard pages - preview, export, the user’s own pages untouched, update and remove', async ({
@@ -779,10 +845,16 @@ test('cheat sheets: kneeboard pages - preview, export, the user’s own pages un
 
   // Export both styles.
   await page.getByTestId('kneeboard-style-both').click();
+  // 24 pages are rendered for the comparison and again for the export: about 7 seconds
+  // each time on this rig when nothing else runs, so the usual 10 are too few on a busy one.
   await page.getByTestId('kneeboard-export').click();
-  await expect(page.getByTestId('kneeboard-export-confirm')).toContainText('created');
+  await expect(page.getByTestId('kneeboard-export-confirm')).toContainText('created', {
+    timeout: 40_000,
+  });
   await page.getByTestId('kneeboard-export-go').click();
-  await expect(page.getByTestId('kneeboard-done')).toHaveAttribute('data-written', '24');
+  await expect(page.getByTestId('kneeboard-done')).toHaveAttribute('data-written', '24', {
+    timeout: 40_000,
+  });
   await expect(page.getByTestId('kneeboard-done')).toContainText('Left alone');
   await expect(page.getByTestId('kneeboard-status')).toHaveAttribute('data-state', 'current');
   await shot('exported');

@@ -8,31 +8,34 @@ import { CATEGORIES } from '../core/categories';
 import { controlName } from '../core/layout';
 import type { SheetDevice } from '../core/sheet';
 import {
+  alsoDoes,
   EMPTY_PROGRESS,
   pickDeck,
+  placesOf,
   seededRandom,
   summarize,
-  TrainerSession,
   type AircraftProgress,
   type Press,
   type TrainerCard,
   type Verdict,
 } from '../core/trainer';
+import { HOLD_MS, TrainerRound, type InputFrame, type RoundStep } from '../core/trainerRound';
 import type { TrainerDeck } from '../trainerContract';
 import TrainerPicture from './TrainerPicture.vue';
 import { useCheatSheets } from './store';
 
 /**
  * "Learn your controls": RigReady names an action, you press the control for it on the
- * real device, and it says at once whether that was it, with the control lit on the
- * picture of the device. A missed card comes back later in the round; a round ends with
- * what went right and what did not, and what you know is kept per aircraft.
+ * real device, and it says whether that was it, with every control that does the action
+ * lit on the picture of its device. A missed card comes back later in the round; a round
+ * ends with what went right and what did not, and what you know is kept per aircraft.
+ *
+ * Which of the things the controllers report is an answer, and when the next card comes,
+ * is decided by core/trainerRound. This page feeds it what the controllers say and the time.
  */
 
 /** Cards in a round. */
 const ROUND = 10;
-/** A verdict stays on screen at least this long, however quickly the control is let go. */
-const SHOW_MS = 650;
 
 const store = useCheatSheets();
 const route = useRoute();
@@ -43,22 +46,29 @@ const keepError = ref('');
 const loading = ref(false);
 /** Only this device's controls; empty for all of them. */
 const deviceKey = ref('');
-const session = shallowRef<TrainerSession>();
+/** The round being played. It is changed in place: `triggerRef` says when. */
+const round = shallowRef<TrainerRound>();
 const stopped = ref(false);
 const progress = shallowRef<AircraftProgress>(EMPTY_PROGRESS);
-/** Live presses count once the controllers have said what is held to begin with. */
-const armed = ref(false);
 
 // ---- the cards of the aircraft ----
 
 let asked = 0;
-async function loadDeck(): Promise<void> {
-  session.value = undefined;
-  stopped.value = false;
-  deck.value = undefined;
+/**
+ * Reads the cards. `keepRound` is for a round that is over: its summary stays on screen
+ * while the cards behind it are read again.
+ */
+async function loadDeck(keepRound = false): Promise<void> {
+  if (!keepRound) {
+    endRound();
+    stopped.value = false;
+    deck.value = undefined;
+  }
   if (!store.choice) return;
   const mine = ++asked;
   loading.value = true;
+  // What the round answered is written before what is remembered is read again.
+  if (keepRound) await keeping;
   const result = await store.api.trainerDeck({ game: store.game, aircraftId: store.aircraftId });
   if (mine !== asked) return;
   loading.value = false;
@@ -95,25 +105,51 @@ const percent = (part: number, whole: number): number =>
 
 // ---- a round ----
 
-let verdictAt = 0;
-let advanceTimer: ReturnType<typeof setTimeout> | undefined;
+/** The round's clock: it only has to run evenly. */
+const clock = (): number => performance.now();
+let timer: ReturnType<typeof setTimeout> | undefined;
+/** Cards put on screen in the rounds before this one. */
+const askedBefore = ref(0);
 /** Counts every card put on screen, so the same card asked twice running still reads as a new one. */
-const asks = ref(0);
+const asks = computed(() => askedBefore.value + (round.value?.shown ?? 0));
+
+/** What every controller that has been heard from holds right now. */
+function frames(): InputFrame[] {
+  return [...store.pressed].map(([guid, pressed]) => ({
+    guid,
+    pressed,
+    axes: store.axes.get(guid),
+  }));
+}
+
+function endRound(): void {
+  clearTimeout(timer);
+  timer = undefined;
+  askedBefore.value += round.value?.shown ?? 0;
+  round.value = undefined;
+}
 
 function start(only?: string[]): void {
   if (!deck.value) return;
+  const all = deck.value.cards;
   const seed = Number(route.query['seed']) || Date.now();
-  session.value = new TrainerSession(
-    pickDeck(deck.value.cards, progress.value, {
-      size: ROUND,
-      random: seededRandom(seed),
-      ...(deviceKey.value ? { deviceKey: deviceKey.value } : {}),
-      ...(only ? { only } : {}),
-    })
-  );
+  const cards = pickDeck(all, progress.value, {
+    size: ROUND,
+    random: seededRandom(seed),
+    ...(deviceKey.value ? { deviceKey: deviceKey.value } : {}),
+    ...(only ? { only } : {}),
+  });
+  // A round for one device is about that device's controllers only.
+  const mine = all.flatMap((c) => c.answers).filter((a) => a.deviceKey === deviceKey.value);
+  endRound();
+  round.value = new TrainerRound(cards, {
+    now: clock(),
+    // What is held as the round begins is where the controls rest (a switch that is on).
+    held: frames(),
+    ...(deviceKey.value ? { devices: [...new Set(mine.map((a) => a.guid))] } : {}),
+  });
   stopped.value = false;
   keepError.value = '';
-  asks.value++;
 }
 
 // What is remembered is written one answer after the other, in the order they were given.
@@ -131,118 +167,131 @@ function keep(answers: Verdict[], finished = false): void {
   });
 }
 
-function settle(verdict: Verdict | undefined, before: string | undefined): void {
-  const now = session.value;
-  if (!now) return;
-  if (now.phase !== before) verdictAt = Date.now();
-  triggerRef(session);
-  if (verdict) keep([verdict]);
+/** What is on screen that a step of the round can change. */
+const face = (now: TrainerRound): string =>
+  [
+    now.session.phase,
+    now.shown,
+    now.note?.why,
+    now.note?.press.guid,
+    now.note?.press.control,
+    now.weighing?.since,
+    now.holding,
+  ].join('|');
+
+/** Plays the round on: `play` is one step of it. */
+function step(play: (now: TrainerRound) => RoundStep): void {
+  const now = round.value;
+  if (!now || stopped.value) return;
+  const before = face(now);
+  const { verdicts, finished } = play(now);
+  if (verdicts.length > 0) keep(verdicts);
+  if (finished) keep([], true);
+  if (face(now) !== before) triggerRef(round);
+  // The round says when time alone will change it: a control held long enough, a tap
+  // that stayed a tap, the controls at rest for the next card.
+  clearTimeout(timer);
+  timer = undefined;
+  const due = now.due();
+  if (due === undefined) return;
+  timer = setTimeout(
+    () => {
+      timer = undefined;
+      step((r) => r.tick(clock()));
+    },
+    Math.max(0, due - clock()) + 1
+  );
 }
 
-function onPress(press: Press): void {
-  const now = session.value;
-  if (!now || now.phase === 'done' || stopped.value) return;
-  const before = now.phase;
-  settle(now.press(press), before);
-}
-
-function showMe(): void {
-  const now = session.value;
-  if (!now) return;
-  const before = now.phase;
-  settle(now.reveal(), before);
-}
-
-function next(): void {
-  const now = session.value;
-  if (!now?.canAdvance) return;
-  clearTimeout(advanceTimer);
-  advanceTimer = undefined;
-  now.advance();
-  asks.value++;
-  triggerRef(session);
-  if (now.phase === 'done') keep([], true);
-}
+const showMe = (): void => step((now) => now.reveal(clock()));
+const next = (): void => step((now) => now.next());
 
 function stop(): void {
-  clearTimeout(advanceTimer);
-  advanceTimer = undefined;
+  clearTimeout(timer);
+  timer = undefined;
   stopped.value = true;
-}
-
-/** The next card comes when the control that answered this one is let go. */
-function maybeAdvance(): void {
-  const now = session.value;
-  if (!now?.answered || (now.phase !== 'right' && now.phase !== 'corrected')) return;
-  const held = store.pressed.get(now.answered.guid)?.includes(now.answered.control) ?? false;
-  if (held) {
-    clearTimeout(advanceTimer);
-    advanceTimer = undefined;
-    return;
-  }
-  advanceTimer ??= setTimeout(
-    () => {
-      advanceTimer = undefined;
-      next();
-    },
-    Math.max(0, SHOW_MS - (Date.now() - verdictAt))
-  );
 }
 
 // ---- live input ----
 
-let previous = new Map<string, string[]>();
+// Every report of the controllers goes to the round as it arrives (the store replaces
+// `axes` last, on each of them), so that a quick tap is never lost between two redraws.
 watch(
-  () => store.pressed,
-  (now) => {
-    // The first thing the controllers say is what is held already (a switch that is on):
-    // that is where things rest, not a press.
-    if (!armed.value) {
-      previous = new Map(now);
-      return;
-    }
-    const fresh: Press[] = [];
-    for (const [guid, held] of now) {
-      const before = previous.get(guid) ?? [];
-      for (const control of held) {
-        if (!before.includes(control) && !control.startsWith('axis:'))
-          fresh.push({ guid, control });
-      }
-    }
-    previous = new Map(now);
-    for (const press of fresh) onPress(press);
-    maybeAdvance();
-  }
+  () => store.axes,
+  () => step((now) => now.input(clock(), frames())),
+  { flush: 'sync' }
 );
 
 // ---- what is on screen ----
 
-const card = computed<TrainerCard | undefined>(() => session.value?.card);
-const phase = computed(() => (stopped.value ? 'done' : (session.value?.phase ?? 'idle')));
-/** The control the picture is about: the one that answered, else the first that would. */
-const answer = computed(() => session.value?.answered ?? card.value?.answers[0]);
-const pictureDevice = computed(() =>
-  store.sheet?.devices.find((d) => d.key === answer.value?.deviceKey)
-);
-/** Where the action is, in words: "Button 20 on Stick". */
+const card = computed<TrainerCard | undefined>(() => round.value?.session.card);
+const phase = computed(() => (stopped.value ? 'done' : (round.value?.session.phase ?? 'idle')));
+/** Every control that does the action on the card. */
+const answers = computed(() => card.value?.answers ?? []);
+/** The one of them that was pressed. */
+const answered = computed(() => {
+  void phase.value;
+  return round.value?.session.answered;
+});
+/** Where the action is, in words: "Button 20 on Stick", "Button 25 or Button 28 on Throttle". */
 const place = (a: { name: string; device: string }): string => `${a.name} on ${a.device}`;
+const where = computed(() => placesOf(answers.value));
+/** The other places that do the same as the one that was pressed: "Button 25 does it too." */
+const also = computed(() => (answered.value ? alsoDoes(answers.value, answered.value) : ''));
+/** The devices the card may be answered on. */
 const places = computed(() => {
-  const names = [...new Set((card.value?.answers ?? []).map((a) => a.device))];
+  const names = [...new Set(answers.value.map((a) => a.device))];
   return names.length <= 1
     ? (names[0] ?? '')
     : `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
 });
+/** The answering control is still held: letting go of it brings the next card. */
+const holding = computed(() => round.value?.holding ?? false);
+/** What follows "Right": where it was pressed, where else it is, and what brings the next card. */
+const afterAnswer = computed(() =>
+  answered.value
+    ? [
+        `${place(answered.value)}.`,
+        also.value,
+        holding.value ? 'Let go of it for the next card.' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
+    : ''
+);
+/** A control that is held and being weighed as the answer. */
+const weighing = computed(() => round.value?.weighing?.press.control ?? '');
+
+const deviceOf = (guid: string): SheetDevice | undefined =>
+  store.sheet?.devices.find((d) => d.guid?.toUpperCase() === guid);
+const pressName = (press: Press): string =>
+  `${controlName(press.control)} on ${deviceOf(press.guid)?.title ?? 'another controller'}`;
+
+/** A press that was not taken as an answer, and why, in words. */
+const note = computed(() => {
+  const now = round.value?.note;
+  if (!now || phase.value === 'done') return undefined;
+  const pressed = pressName(now.press);
+  const only = deck.value?.devices.find((d) => d.key === deviceKey.value)?.title ?? 'one device';
+  const text = {
+    'other-device': `That was ${pressed}. This round is for ${only} only, so it is not counted.`,
+    'last-card': `${pressed} was in use on the card before, so it is not counted here.`,
+    'back-to-rest': `${pressed} went back to where it was, so it is not counted.`,
+    'too-quick': `${pressed} was let go too soon to count. Hold a control for a moment to answer with it.`,
+  }[now.why];
+  return { why: now.why, control: now.press.control, text };
+});
 
 /** The control that was pressed by mistake, and what it does. */
 const wrong = computed(() => {
-  const press = session.value?.wrongPress;
+  const press = round.value?.session.wrongPress;
   if (!press) return undefined;
-  const device = store.sheet?.devices.find((d) => d.guid?.toUpperCase() === press.guid);
+  const device = deviceOf(press.guid);
   const control = device?.controls.find((c) => c.id === press.control);
   return {
     deviceKey: device?.key,
     control: press.control,
-    where: `${controlName(press.control)} on ${device?.title ?? 'another controller'}`,
+    where: pressName(press),
     // Named as a card names it: the plain name where the sheet has one.
     does: (control?.bindings ?? [])
       .filter((b) => b.modifiers.length === 0)
@@ -255,61 +304,83 @@ interface Picture {
   /** Controls whose labels are written out. */
   reveal: string[];
   held: string[];
-  right?: string | undefined;
+  /** After a right answer: every control of the device that does the action. */
+  right: string[];
   wrong?: string | undefined;
-  target?: string | undefined;
+  /** After a miss: every control of the device that does the action. */
+  target: string[];
 }
-const picture = computed<Picture | undefined>(() => {
+/**
+ * A picture for every device the action is on, the one it was answered on first: an action
+ * bound in two places is lit in both.
+ */
+const pictures = computed<Picture[]>(() => {
   const now = phase.value;
-  const shown = answer.value;
-  const device = pictureDevice.value;
-  if (!shown || !device) return undefined;
-  const onDevice = wrong.value?.deviceKey === device.key ? wrong.value.control : undefined;
-  const held = device.guid ? (store.pressed.get(device.guid.toUpperCase()) ?? []) : [];
-  if (now === 'right' || now === 'corrected') {
-    return { device, reveal: [shown.control], right: shown.control, held };
-  }
-  if (now === 'wrong') {
-    return {
-      device,
-      reveal: [shown.control, ...(onDevice ? [onDevice] : [])],
-      target: shown.control,
-      wrong: onDevice,
-      held,
-    };
-  }
-  if (now === 'shown') return { device, reveal: [shown.control], target: shown.control, held };
-  return { device, reveal: [], held };
+  const keys = [
+    ...new Set([
+      ...(answered.value ? [answered.value.deviceKey] : []),
+      ...answers.value.map((a) => a.deviceKey),
+    ]),
+  ];
+  return keys.flatMap((key): Picture[] => {
+    const device = store.sheet?.devices.find((d) => d.key === key);
+    if (!device) return [];
+    const all = answers.value.filter((a) => a.deviceKey === key).map((a) => a.control);
+    const missed = wrong.value?.deviceKey === key ? wrong.value.control : undefined;
+    const held = device.guid ? (store.pressed.get(device.guid.toUpperCase()) ?? []) : [];
+    if (now === 'right' || now === 'corrected') {
+      return [{ device, reveal: all, right: all, target: [], held }];
+    }
+    if (now === 'wrong') {
+      return [
+        {
+          device,
+          reveal: [...all, ...(missed ? [missed] : [])],
+          right: [],
+          target: all,
+          wrong: missed,
+          held,
+        },
+      ];
+    }
+    if (now === 'shown') return [{ device, reveal: all, right: [], target: all, held }];
+    return [{ device, reveal: [], right: [], target: [], held }];
+  });
 });
 
 const results = computed(() => {
   void phase.value;
-  return session.value?.results();
+  return round.value?.session.results();
 });
-const settledCount = computed(() => session.value?.settled ?? 0);
-const total = computed(() => session.value?.total ?? 0);
+/** The missed cards a round can still ask: in the cards as they are now, on the device chosen. */
+const missedLeft = computed(() => {
+  const now = new Set(pool.value.map((c) => c.id));
+  return (results.value?.missed ?? []).filter((c) => now.has(c.id)).map((c) => c.id);
+});
+const settledCount = computed(() => round.value?.session.settled ?? 0);
+const total = computed(() => round.value?.session.total ?? 0);
 
 let offMachine: (() => void) | undefined;
-let armTimer: ReturnType<typeof setTimeout> | undefined;
 onMounted(async () => {
   const game = typeof route.query['game'] === 'string' ? route.query['game'] : '';
   const aircraft = typeof route.query['aircraft'] === 'string' ? route.query['aircraft'] : '';
   await store.load(game && aircraft ? `${game}/${aircraft}` : undefined);
   await loadDeck();
   offMachine = onMachineChanged(() => {
-    // A device plugged in or out changes which cards there are, but not in mid-round.
+    // A device plugged in or out changes which cards there are, but not in mid-round. After
+    // a round its summary stays: what was missed is not taken away because a device came or
+    // went. The next round is drawn from the cards as they are now.
     void store.refresh();
-    if (!session.value || phase.value === 'done') void loadDeck();
+    if (!round.value) void loadDeck();
+    else if (phase.value === 'done') void loadDeck(true);
   });
+  // The controllers say what they hold as soon as they are listened to. The round takes the
+  // first thing each of them says for where its controls rest.
   await store.acquire();
-  // The controllers report what is held as soon as they are listened to; after that,
-  // anything newly down is a press.
-  armTimer = setTimeout(() => (armed.value = true), 400);
 });
 onBeforeUnmount(() => {
   offMachine?.();
-  clearTimeout(advanceTimer);
-  clearTimeout(armTimer);
+  clearTimeout(timer);
   void store.release();
 });
 </script>
@@ -318,15 +389,16 @@ onBeforeUnmount(() => {
   <div
     class="rr-page trainer"
     data-testid="trainer-page"
-    :data-live="store.watching && armed"
+    :data-live="store.watching"
+    :data-heard="store.pressed.size"
     :data-phase="phase"
   >
     <div class="d-flex align-start ga-2">
       <div>
         <h1 class="rr-page-title">Learn your controls</h1>
         <p class="rr-page-sub">
-          RigReady names an action and you press the control for it on the real device. It says at
-          once whether that was it, and what you miss comes back until you have it.
+          RigReady names an action and you press the control for it on the real device. It says
+          whether that was it, and what you miss comes back until you have it.
         </p>
       </div>
       <v-spacer />
@@ -469,7 +541,8 @@ onBeforeUnmount(() => {
           </div>
           <div class="rr-row-sub">
             A round asks {{ Math.min(ROUND, pool.length) }} of them, the ones you know least first.
-            Keep your hands on the controls: letting go of the right one brings the next card.
+            Keep your hands on the controls: tap or hold the one you mean, and letting go of the
+            right one brings the next card. A control you only pass on the way is not counted.
             <template v-if="deck.unplugged.length">
               {{ deck.unplugged.join(', ') }}
               {{ deck.unplugged.length === 1 ? 'is' : 'are' }} not connected and left out.
@@ -520,46 +593,67 @@ onBeforeUnmount(() => {
             {{ deck.gameName.replace(/ World$/, '') }} calls it “{{ card.action }}”
           </div>
 
-          <div class="trainer-verdict" data-testid="trainer-verdict" :data-phase="phase">
-            <template v-if="phase === 'asking'">
-              <v-icon icon="mdi-gesture-tap-button" size="20" class="rr-muted" />
-              <span
-                >Press the control for it on <strong>{{ places }}</strong
-                >.</span
-              >
-            </template>
-            <template v-else-if="phase === 'right' && answer">
-              <v-icon icon="mdi-check-circle-outline" size="20" class="rr-ok" />
-              <span
-                ><strong>Right.</strong> {{ place(answer) }}. Let go of it for the next card.</span
-              >
-            </template>
-            <template v-else-if="phase === 'wrong' && wrong && answer">
-              <v-icon icon="mdi-close-circle-outline" size="20" class="rr-bad" />
-              <span>
-                <strong>Not that one.</strong> You pressed {{ wrong.where
-                }}<template v-if="wrong.does.length"
-                  >, which is {{ wrong.does.join(' / ') }}</template
-                >. It is <strong>{{ place(answer) }}</strong
-                >, lit on the picture: press it to go on.
-              </span>
-            </template>
-            <template v-else-if="phase === 'shown' && answer">
-              <v-icon icon="mdi-lightbulb-on-outline" size="20" class="rr-muted" />
-              <span>
-                It is <strong>{{ place(answer) }}</strong
-                >, lit on the picture. Press it to go on.
-              </span>
-            </template>
-            <template v-else-if="phase === 'corrected' && answer">
-              <v-icon icon="mdi-check" size="20" class="rr-muted" />
-              <span>
-                That is it: {{ place(answer) }}. Let go of it for the next card.
-                <template v-if="session?.comesBack">
-                  This one comes back later in the round.</template
+          <div class="trainer-says">
+            <div
+              class="trainer-verdict"
+              :class="{ 'is-weighing': weighing }"
+              :style="{ '--trainer-hold': `${HOLD_MS}ms` }"
+              data-testid="trainer-verdict"
+              :data-phase="phase"
+              :data-weighing="weighing"
+            >
+              <template v-if="phase === 'asking'">
+                <v-icon icon="mdi-gesture-tap-button" size="20" class="rr-muted" />
+                <span
+                  >Press the control for it on <strong>{{ places }}</strong
+                  >.</span
                 >
-              </span>
-            </template>
+              </template>
+              <template v-else-if="phase === 'right' && answered">
+                <v-icon icon="mdi-check-circle-outline" size="20" class="rr-ok" />
+                <span><strong>Right.</strong> {{ afterAnswer }}</span>
+              </template>
+              <template v-else-if="phase === 'wrong' && wrong">
+                <v-icon icon="mdi-close-circle-outline" size="20" class="rr-bad" />
+                <span>
+                  <strong>Not that one.</strong> You pressed {{ wrong.where
+                  }}<template v-if="wrong.does.length"
+                    >, which is {{ wrong.does.join(' / ') }}</template
+                  >. It is <strong>{{ where }}</strong
+                  >, lit on the picture: press {{ answers.length > 1 ? 'one of them' : 'it' }} to go
+                  on.
+                </span>
+              </template>
+              <template v-else-if="phase === 'shown'">
+                <v-icon icon="mdi-lightbulb-on-outline" size="20" class="rr-muted" />
+                <span>
+                  It is <strong>{{ where }}</strong
+                  >, lit on the picture. Press {{ answers.length > 1 ? 'one of them' : 'it' }} to go
+                  on.
+                </span>
+              </template>
+              <template v-else-if="phase === 'corrected' && answered">
+                <v-icon icon="mdi-check" size="20" class="rr-muted" />
+                <span>
+                  That is it: {{ afterAnswer }}
+                  <template v-if="round?.session.comesBack">
+                    This one comes back later in the round.</template
+                  >
+                </span>
+              </template>
+            </div>
+            <!-- A press that was not taken as an answer: said, so that nothing is silently ignored. -->
+            <div
+              v-if="note"
+              class="trainer-note"
+              role="status"
+              data-testid="trainer-note"
+              :data-why="note.why"
+              :data-control="note.control"
+            >
+              <v-icon icon="mdi-information-outline" size="18" />
+              <span>{{ note.text }}</span>
+            </div>
           </div>
 
           <div class="trainer-card-actions">
@@ -584,16 +678,23 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="picture" class="rr-panel trainer-device-panel">
-          <div class="rr-section-title">{{ picture.device.title }}</div>
-          <TrainerPicture
-            :device="picture.device"
-            :reveal="picture.reveal"
-            :right="picture.right"
-            :wrong="picture.wrong"
-            :target="picture.target"
-            :held="picture.held"
-          />
+        <div v-if="pictures.length" class="trainer-pictures">
+          <div
+            v-for="picture in pictures"
+            :key="picture.device.key"
+            class="rr-panel trainer-device-panel"
+            data-testid="trainer-device-panel"
+          >
+            <div class="rr-section-title">{{ picture.device.title }}</div>
+            <TrainerPicture
+              :device="picture.device"
+              :reveal="picture.reveal"
+              :right="picture.right"
+              :wrong="picture.wrong"
+              :target="picture.target"
+              :held="picture.held"
+            />
+          </div>
         </div>
       </div>
 
@@ -610,7 +711,7 @@ onBeforeUnmount(() => {
               {{ results.firstTry }} of {{ results.asked }} right first time
             </div>
             <div class="rr-row-sub">
-              <template v-if="stopped && session?.phase !== 'done'">
+              <template v-if="stopped && round?.session.phase !== 'done'">
                 The round was stopped before its end, so it does not count as played. What you
                 answered is kept.
               </template>
@@ -624,11 +725,11 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <v-btn
-            v-if="results.missed.length"
+            v-if="missedLeft.length"
             variant="tonal"
             color="primary"
             data-testid="trainer-again-missed"
-            @click="start(results.missed.map((c) => c.id))"
+            @click="start(missedLeft)"
             >Practise the missed</v-btn
           >
           <v-btn color="primary" data-testid="trainer-again" @click="start()">Another round</v-btn>
@@ -636,7 +737,7 @@ onBeforeUnmount(() => {
         <ul v-if="results.missed.length" class="trainer-missed" data-testid="trainer-missed">
           <li v-for="m in results.missed" :key="m.id">
             <span class="trainer-missed-action">{{ m.plain ?? m.action }}</span>
-            <span class="rr-muted"> · {{ m.answers.map(place).join(' or ') }}</span>
+            <span class="rr-muted"> · {{ placesOf(m.answers) }}</span>
           </li>
         </ul>
       </div>
@@ -762,12 +863,15 @@ onBeforeUnmount(() => {
   margin-top: 4px;
   font-size: 13.5px;
 }
+.trainer-says {
+  flex: 1;
+  margin-top: 18px;
+}
 .trainer-verdict {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  flex: 1;
-  margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid var(--rr-border);
   font-size: 14.5px;
@@ -776,11 +880,49 @@ onBeforeUnmount(() => {
 .trainer-verdict .v-icon {
   margin-top: 1px;
 }
+/* A control is held and being taken for the answer: the line above the words fills up. */
+.trainer-verdict.is-weighing::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--rr-accent);
+  transform-origin: left;
+  animation: trainer-weigh var(--trainer-hold, 350ms) linear both;
+}
+@keyframes trainer-weigh {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.trainer-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--rr-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.trainer-note .v-icon {
+  margin-top: 1px;
+}
 .trainer-card-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 16px;
+}
+.trainer-pictures {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 .trainer-device-panel {
   padding: 14px 16px 16px;
@@ -816,6 +958,9 @@ onBeforeUnmount(() => {
   .trainer-meter > div,
   .trainer-round > div {
     transition: none;
+  }
+  .trainer-verdict.is-weighing::before {
+    animation: none;
   }
 }
 </style>

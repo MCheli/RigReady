@@ -1,59 +1,12 @@
 /**
- * What kind of thing a device of a setup is, told from its name: enough to draw the right
- * picture beside it. General knowledge about sim hardware names; a name nobody recognises
- * is simply a device.
+ * What kind of thing a device of a setup is: the picture and the word for it. The kinds,
+ * and the rule that tells them from a name, live in core: setups made from the rig use
+ * them too.
  */
 
-export type DeviceKind =
-  | 'stick'
-  | 'yoke'
-  | 'throttle'
-  | 'pedals'
-  | 'wheel'
-  | 'shifter'
-  | 'tracker'
-  | 'deck'
-  | 'display'
-  | 'panel'
-  | 'headset'
-  | 'keyboard'
-  | 'mouse'
-  | 'other';
+import { deviceKind, type DeviceKind } from '../../../core/gearKind';
 
-/**
- * In order: the first that matches wins, so "Throttle Base" is a throttle and "Wheel Base"
- * a wheel before "Base" makes either a stick. A few names come before the general rules
- * because a later word would mislead: Moza's AB9 is a flight base although Moza makes
- * wheels, and the MTLP panel's name is cut to "Landing Pane" by DirectInput.
- */
-const RULES: [DeviceKind, RegExp][] = [
-  ['stick', /\b(moza ab\d|mh16|sidestick|t\.?a320 (co)?pilot)\b/i],
-  ['panel', /\bmtlp\b/i],
-  ['pedals', /\b(pedals?|rudder|tpr|t-?pendular|crosswind|slaw|mfg|t-?lcm|t3pa)\b/i],
-  ['throttle', /\b(throttles?|collective|quadrant|twcs|taurus|stecs|q-?eng)\b/i],
-  ['shifter', /\b(shifter|handbrake|h-?pattern|sequential|gear ?shift)\b/i],
-  ['yoke', /\b(yoke|alpha flight controls|velocity ?one flight)\b/i],
-  [
-    'wheel',
-    /\b(wheel|podium|clubsport|csl|steering|direct ?drive|dd[12]|simucube|moza|simagic|cammus|invicta|forte|la prima|velocity ?one race|t\d{3}(rs|gt|x)?|t-?gt|ts-?(pc|xw)|tmx|g(25|27|29|920|923)|driving force)\b/i,
-  ],
-  ['tracker', /\b(track ?ir|tobii|head ?track\w*|eye ?track\w*|smoothtrack)\b/i],
-  ['deck', /\b(stream ?deck|loupedeck)\b/i],
-  ['headset', /\b(headset|headphones?|quest|reverb|pimax|vr)\b/i],
-  ['display', /\b(mfd|ufc|hud|icp|ded|pfd|eicas)\d*\b|\b(display|screen)\b/i],
-  ['panel', /\b(panel|button ?box|switch ?box|control ?box|console)\b/i],
-  ['keyboard', /\bkeyboard\b/i],
-  ['mouse', /\b(mouse|trackball)\b/i],
-  [
-    'stick',
-    /\b(joystick|stick|flightstick|fighterstick|combatstick|grip|jgrip|gunfighter|gladiator|warbrd|mongoos\w*|alpha|orion|ursa|hotas|t\.?16000m?|base)\b/i,
-  ],
-];
-
-export function deviceKind(name: string): DeviceKind {
-  for (const [kind, pattern] of RULES) if (pattern.test(name)) return kind;
-  return 'other';
-}
+export { deviceKind, type DeviceKind };
 
 /** The picture for each kind, from the bundled Material Design set. */
 export const KIND_ICON: Record<DeviceKind, string> = {

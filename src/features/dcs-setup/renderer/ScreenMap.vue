@@ -22,10 +22,24 @@ export interface MapBox {
   bad?: boolean;
 }
 
+/**
+ * Something DCS draws that the user cannot place here (the kneeboard): an outline with a
+ * tag, over the viewports, that takes no clicks so the viewports under it still drag.
+ */
+export interface MapOutline {
+  key: string;
+  label: string;
+  /** Desktop coordinates. */
+  rect: Rect;
+  /** Drawn as a problem (not all of it on one monitor). */
+  bad?: boolean;
+}
+
 const props = defineProps<{
   displays: DesktopDisplay[];
   mainIds: string[];
   boxes: MapBox[];
+  outlines?: MapOutline[];
   /** The DCS window, outlined when given. */
   window?: Rect | undefined;
 }>();
@@ -39,7 +53,11 @@ const MIN = 40;
 
 const labels = computed(() => monitorLabels(props.displays));
 const area = computed<Rect>(() => {
-  const rects: Rect[] = [...props.displays, ...props.boxes.map((b) => b.rect)];
+  const rects: Rect[] = [
+    ...props.displays,
+    ...props.boxes.map((b) => b.rect),
+    ...(props.outlines ?? []).map((o) => o.rect),
+  ];
   return rects.length ? boundingBox(rects) : { x: 0, y: 0, width: 1, height: 1 };
 });
 
@@ -264,6 +282,18 @@ const named = (
         />
       </template>
     </div>
+    <div
+      v-for="outline in outlines ?? []"
+      :key="outline.key"
+      class="smap-outline"
+      :class="{ bad: outline.bad }"
+      :style="pct(outline.rect)"
+      data-testid="screen-map-outline"
+      :data-name="outline.key"
+      :data-bad="!!outline.bad"
+    >
+      <span class="smap-outline-tag">{{ outline.label }}</span>
+    </div>
   </div>
 </template>
 
@@ -384,6 +414,33 @@ const named = (
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+/* Drawn over the viewports and takes no clicks: what is under it can still be dragged. */
+.smap-outline {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  border: 1px dashed var(--rr-ok);
+  border-radius: 3px;
+  pointer-events: none;
+}
+.smap-outline.bad {
+  border-color: var(--rr-warn);
+}
+.smap-outline-tag {
+  margin: 0 3px 3px 0;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  line-height: 16px;
+  white-space: nowrap;
+  color: var(--rr-bg);
+  background: var(--rr-ok);
+}
+.smap-outline.bad .smap-outline-tag {
+  background: var(--rr-warn);
 }
 /* A viewport over the corner of a small monitor shows that monitor's name above its own text,
    so the two never lie on top of each other. */

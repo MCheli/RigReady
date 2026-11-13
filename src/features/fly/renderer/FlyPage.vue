@@ -6,6 +6,7 @@ import { CHECK_GROUPS, GROUP_TITLES } from '../../../core/profile/schema';
 import { errorText } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import type { History } from '../contract';
+import { planLines } from '../core/launchText';
 import { lastSessionLine } from '../core/sessionText';
 import CheckRow from './CheckRow.vue';
 import HistoryDialog from './HistoryDialog.vue';
@@ -288,6 +289,17 @@ async function doLaunch(resumeAfter?: number, approvedBefore?: string[]): Promis
   });
   if (outcome.paused) paused.value = { ...outcome.paused, approved };
 }
+
+// ---- what Launch will do ----
+
+/** The steps Launch runs before the game and once it is up, so none of them is a surprise. */
+const plan = computed(() => (fly.active?.canLaunch ? planLines(fly.view?.actions ?? []) : []));
+/** The game is on its way: said by its own name from the moment it is started. */
+const starting = computed(
+  () =>
+    fly.activity?.entries.find((entry) => entry.phase === 'launch' && entry.state === 'running')
+      ?.message
+);
 
 function launchAnyway(): void {
   const state = paused.value;
@@ -789,6 +801,16 @@ onBeforeUnmount(() => {
             Stand down
           </v-btn>
         </div>
+        <!-- What Launch does around the game; while the game comes up, that it is starting. -->
+        <p v-if="starting" class="fly-plan fly-starting" role="status" data-testid="fly-starting">
+          <v-progress-circular indeterminate size="14" width="2" aria-hidden="true" />
+          <span>{{ starting }}</span>
+        </p>
+        <p v-else-if="plan.length" class="fly-plan" data-testid="fly-plan">
+          <span v-for="line in plan" :key="line.phase" :data-testid="`fly-plan-${line.phase}`">
+            {{ line.text }}
+          </span>
+        </p>
       </section>
 
       <RigStrip
@@ -1241,6 +1263,21 @@ onBeforeUnmount(() => {
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--rr-border);
+}
+/* Under the buttons: what Launch runs around the game, or that the game is starting. */
+.fly-plan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 20px;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--rr-muted);
+}
+.fly-starting {
+  gap: 8px;
+  font-size: 14px;
+  color: inherit;
 }
 /* The key that runs the primary action, on the button itself. */
 .fly-key {

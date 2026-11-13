@@ -455,7 +455,7 @@ describe('a preview says exactly what is then written', () => {
     const { setup } = await app.invoke<{ setup: unknown }>('dcs-setup:importSimAppPro', {
       desktopId: 'current',
     });
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     await app.invoke('dcs-setup:applyExport', { kind: 'add', tool: 'dcs-bios' });
     const dcs = path.join(app.ports.folders.savedGames(), 'DCS');
     const options = path.join(dcs, 'Config', 'options.lua');
@@ -651,7 +651,7 @@ describe('fixes Make ready runs name the files they write, before and after', ()
     const { setup } = await app.invoke<{ setup: unknown }>('dcs-setup:importSimAppPro', {
       desktopId: 'current',
     });
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     await app.invoke('dcs-setup:applyExport', { kind: 'add', tool: 'dcs-bios' });
     await saveSetup(app, 'p', [
       {
