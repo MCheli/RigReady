@@ -425,6 +425,11 @@ export class OverlayService {
       await this.readSettings();
       const inUse = await this.readSetups();
       await this.readSource(inUse);
+      // What was read can take the overlay up or down (the game's bindings came or went, so
+      // the setup's switch did too): the windows follow it before anything is answered, and
+      // also when the choice is refused below.
+      await this.reconcile();
+      this.announce();
       const { game, setup, choices } = this.source;
       const key = setup?.id ?? '';
       if (aircraftId !== null) {
@@ -943,6 +948,9 @@ export class OverlayService {
     this.stopBindings = this.ctx.bindings.onChanged(() => {
       void this.run(async () => {
         await this.readSource(await this.readSetups());
+        // Bindings that came or went can turn the setup's switch: the windows and the
+        // listening follow it before the page and the windows are told.
+        await this.reconcile();
         this.announce();
         return ok(undefined);
       });

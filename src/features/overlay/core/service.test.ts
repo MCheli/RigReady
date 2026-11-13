@@ -1405,6 +1405,61 @@ describe('each setup has its own switch for the overlay', () => {
     expect(put.widgets[0]!.place.offIn).toEqual([{ setup: 'DCS F/A-18C' }, { setup: 'iRacing' }]);
   });
 
+  /**
+   * The overlay turned on over the Hornet setup, which never had its switch set, with the
+   * controllers it listens to counted; then the bindings of DCS are gone from the PC, so the
+   * setup's switch is off from then on.
+   */
+  async function bindingsGoAway(): Promise<Made & { listening: () => number }> {
+    const made = await overlay();
+    let listening = 0;
+    const input = made.app.ports.input;
+    const subscribe = input.subscribe.bind(input);
+    vi.spyOn(input, 'subscribe').mockImplementation((listener) => {
+      listening++;
+      const stop = subscribe(listener);
+      return () => {
+        listening--;
+        stop();
+      };
+    });
+    value(await made.service.setOn(true));
+    expect(made.app.ports.overlays.panels.size).toBe(1);
+    expect(listening).toBe(1);
+    vi.spyOn(made.app.wiring.context.bindings.get('dcs')!, 'available').mockResolvedValue(false);
+    return { ...made, listening: () => listening };
+  }
+
+  /** What the page and the windows were last told is what is up, and nothing is read for it. */
+  function downAndSaidSo(made: Made & { listening: () => number }): void {
+    const { app, service, seen, listening } = made;
+    expect(app.ports.overlays.panels.size).toBe(0);
+    expect(listening()).toBe(0);
+    const told = seen.changed.at(-1)!;
+    expect(told.offInSetup).toEqual({ id: 'dcs-bindings-hornet', name: 'DCS F/A-18C' });
+    expect(told.widgets[0]!.showing).toBe(false);
+    expect(told.input).toBeUndefined();
+    expect(value(service.current())).toEqual(told);
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [5])]);
+    expect(rowsOf(service)).toEqual([]);
+  }
+
+  it('bindings gone while it is up: a bindings change takes it down before anyone is told', async () => {
+    const made = await bindingsGoAway();
+    made.app.wiring.context.bindings.notifyChanged({ game: 'dcs' });
+    await made.service.idle();
+    downAndSaidSo(made);
+  });
+
+  it('bindings gone while it is up: choosing an aircraft takes it down, also when the choice is refused', async () => {
+    const made = await bindingsGoAway();
+    const refused = await made.service.chooseAircraft('UH-1H');
+    expect(refused).toMatchObject({ ok: false, error: { code: 'overlay.aircraft' } });
+    downAndSaidSo(made);
+  });
+
   it('turned off on the Overlay page it shows in no setup, and nothing is done when setups change', async () => {
     const { app, service, seen } = await overlay();
     const { profiles } = app.wiring.context;
