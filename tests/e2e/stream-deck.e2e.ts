@@ -5,7 +5,7 @@ import { checkRow, expect, test } from './harness';
 
 /** Configure > Stream Deck on the owner's rig and on a new PC. */
 
-const DCS_WORLD = '042F7366-9A23-444F-9AE6-327A9DB7979F';
+const DCS_WORLD = '740F9206-1F71-436A-9AD2-920C8CD6972C';
 const OLD_BACKUP = 'Documents/DCS Backup/Stream Deck - 02-03-2024 - 19-16.streamDeckProfilesBackup';
 
 async function openStreamDeck(page: Page): Promise<void> {

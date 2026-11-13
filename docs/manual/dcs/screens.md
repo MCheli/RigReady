@@ -88,7 +88,23 @@ RigReady accepts only what can be a name. A display name has only letters, digit
 
 ## Writing it
 
-**What "Use in DCS" will do** lists the change before it happens: create, update or keep RigReady.lua, and which options.lua keys change (the monitor setup, and with **Also size the DCS window to W × H, windowed** ticked, the width, height, aspect ratio and full screen off). **Show the file** shows the Lua that will be written. **Use in DCS** writes both files as one change, reads them back, and reports that DCS will use the setup the next time it starts. The button reads **In use** when nothing needs changing.
+**What "Use in DCS" will do** lists the change before it happens: create, update or keep RigReady.lua, and which options.lua keys change (the monitor setup, and with **Also size the DCS window to W × H, windowed** ticked, the width, height, aspect ratio and full screen off). **Show the file** shows the Lua that will be written. **Use in DCS** writes both files as one change, reads them back, and reports that DCS will use the setup the next time it starts. The button reads **In use** when nothing needs changing. It sits in a bar at the bottom of the window, so it stays in view however far the tab is scrolled; the bar says "Not in DCS yet" until the setup is written, and "DCS uses this setup" after.
+
+### Setups made before "Use in DCS"
+
+A setup made earlier can expect options.lua as it was then: its **DCS graphics options** check expects the old window size, and its fix, **Set the DCS options**, would put that size back and undo what **Use in DCS** just did. The same goes for a **DCS monitor setup** check that expects SimAppPro's monitor setup, or the old window.
+
+So when **Use in DCS** would change the monitor setup, the width, the height or full screen, **What "Use in DCS" will do** also lists every setup whose check (and its fix) expects exactly the values options.lua has now, with what changes in each: "DCS F/A-18C: DCS graphics options, width 7424 → 5120, height 1440 → 2464 (the check and its fix)". The line **Also update the setup that expects the old values** is ticked: **Use in DCS** then updates them in the same change, and the result names each one. Untick it to leave them as they are. A setup whose check expects other values, a window of its own for example, is your choice and is never listed or changed. The setups are written with the DCS files as one action, so **Configure > Safety** lists them together and one **Undo** puts back all of it.
+
+![Use in DCS offers to update the setup that expects the old window](../../../artifacts/screens/dcs-screens-follow-setups/01-offer.png)
+
+A setup left as it was, or one made later with the old values, says so on the [Play screen](../play/index.md): its row names what "Use in DCS" set, the button **Update the setup** makes the check and its fix expect the new values, and the fix warns that it would undo "Use in DCS" and which screens DCS's window would no longer cover. Make ready asks before it runs that fix (**Run this fix anyway?**); the tray and the command palette do not run it.
+
+![The Play screen says where the difference comes from](../../../artifacts/screens/dcs-screens-follow-setups/02-play-screen-says-so.png)
+
+![Make ready asks before a fix that would undo "Use in DCS"](../../../artifacts/screens/dcs-screens-follow-setups/03-fix-asks-first.png)
+
+### When RigReady.lua was edited
 
 If RigReady.lua was changed outside RigReady since it last wrote it, writing shows the differences first and asks whether to keep their version or replace it. The file is backed up either way and can be put back from **Configure > Safety** ([The Safety page](../protect/safety-page.md)).
 
@@ -101,7 +117,7 @@ If RigReady.lua was changed outside RigReady since it last wrote it, writing sho
 A DCS setup can carry three checks about this; capturing a setup offers them. See [checks](../setups/checks.md).
 
 - **DCS monitor setup fits the monitors**: every rectangle of the selected file lies on the monitors as they are arranged now, the DCS window in options.lua is large enough, and the monitors the saved screen setup uses are where it was made for them. A USB screen is recognised by its serial number, so moving it to another port is not a change. The fix, **Write the RigReady screen setup**, writes the saved setup again.
-- **DCS graphics options**: the width, height, full screen and VR keys as they were when the setup was captured, with the fix **Set the DCS options**.
+- **DCS graphics options**: the width, height, full screen and VR keys as they were when the setup was captured, with the fix **Set the DCS options**. When the difference comes from **Use in DCS**, the row says so and offers **Update the setup**, and the fix asks before it runs ([Setups made before "Use in DCS"](#setups-made-before-use-in-dcs)).
 - **DCS files RigReady manages are unchanged**: see [SimAppPro](simapppro.md).
 
 ## What to check in DCS

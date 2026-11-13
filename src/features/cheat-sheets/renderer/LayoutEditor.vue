@@ -470,6 +470,19 @@ function putBack(): void {
   dirty.value = true;
 }
 
+/**
+ * Set while "Drop your photos?" is asked: what the user chose in place of their photos.
+ * The photos and what was placed on them would go with no undo, so it is asked first.
+ */
+const dropping = ref<'cards' | 'drawing'>();
+
+function dropPhotos(): void {
+  const instead = dropping.value;
+  dropping.value = undefined;
+  if (instead === 'cards') useCards();
+  else if (instead === 'drawing') useDrawing();
+}
+
 /** The cards of the layout instead of the drawing (the layout of 1.x, its places kept). */
 function useCards(): void {
   delete layout.value.drawing;
@@ -760,8 +773,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
       :shipped="Boolean(shipped)"
       @update:drawing="setPhotos"
       @problem="error = $event"
-      @cards="useCards"
-      @shipped="useDrawing"
+      @cards="dropping = 'cards'"
+      @shipped="dropping = 'drawing'"
     />
     <div v-else class="ed-row">
       <!-- The SVG is built by core/render from escaped text. -->
@@ -1029,6 +1042,34 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
         </div>
       </aside>
     </div>
+
+    <v-dialog
+      :model-value="dropping !== undefined"
+      max-width="440"
+      @update:model-value="dropping = undefined"
+    >
+      <v-card data-testid="photo-drop">
+        <v-card-title>Drop your photos?</v-card-title>
+        <v-card-text data-testid="photo-drop-text">
+          {{ dropping === 'cards' ? 'The cards take' : "RigReady's drawing takes" }} their place.
+          Your photos and everything placed on them leave this layout, and Undo cannot bring them
+          back. What is saved stays as it is until you save.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" data-testid="photo-drop-go" @click="dropPhotos"
+            >Drop the photos</v-btn
+          >
+          <v-btn
+            color="primary"
+            variant="flat"
+            data-testid="photo-drop-stay"
+            @click="dropping = undefined"
+            >Keep the photos</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

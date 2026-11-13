@@ -1,0 +1,62 @@
+---
+title: Learn your controls (the trainer)
+description: The trainer names an action and you press its control on the device: rounds of ten, right or wrong on a tap or a hold, missed cards come back, progress kept.
+order: 20
+---
+
+**Learn** on the [Cheat sheets](cheat-sheets.md) page opens **Learn your controls**: RigReady names an action, you press the control for it on the real device, and it says whether that was it, with the control lit on the picture of the device. What you miss comes back until you have it.
+
+## What is asked
+
+A card is one action that a button or a hat direction of a connected controller ([Devices](../hardware/devices.md)) does when pressed on its own. Axes are not pressed, a control that needs a modifier is two things to learn at once, and keyboard keys are not on a controller, so none of those make cards. When you have bindings of your own for the aircraft or car, only those are asked; what the game binds by default on every device is not what anyone plays with. Each card shows what the game calls the action, and for a DCS aircraft the plain-language name from the [binding guide](../dcs/binding-guide-and-ai.md) where there is one.
+
+An action that is bound in more than one place is still one card. Every place is named and lit on the picture, as in "Button 25 or Button 28 on Throttle", and any of them is right. When the places are on two devices, both pictures are shown. In a wide window, about 1500 pixels or more, they are side by side, so that you see what is lit without scrolling while your hands are on the controls. In a narrower window they are one below the other.
+
+![An action bound to two buttons, both lit after a miss](../../../artifacts/screens/cheat-sheets-trainer-places/01-both-places-after-a-miss.png)
+
+![An action on two devices, the two pictures side by side](../../../artifacts/screens/cheat-sheets-trainer-places/04-lit-on-both-devices.png)
+
+**Practise** narrows a round to one device or takes all of them. A round for one device asks only for the places on that device. A device of the sheet that is not connected is left out and named.
+
+## A round
+
+A round asks ten cards, the ones you know least first: never asked, then missed last time, then right once, then learned, shuffled within each. **Start a round** begins. Keep your hands on the controls.
+
+- **Press the control for it on <device>.** Tap the control or hold it. The right control lights green on the picture: **Right**. Let go of it and the next card comes. A switch or a throttle stop is not let go: leave it where you put it, and the next card comes with it there.
+- The wrong control: **Not that one.** RigReady says what you pressed and what that does, lights the right control on the picture, and waits for you to press it. The card comes back at the end of the round, after every card not asked yet, up to three times in a round. When it comes back it says **Asked again**, so it does not look like the round starting over.
+- **Show me** gives the answer away, which counts as a miss. **Next** moves on by hand; **Stop the round** ends it early.
+
+![A wrong answer](../../../artifacts/screens/cheat-sheets-trainer/04-wrong.png)
+
+![A missed card, asked again at the end of the round](../../../artifacts/screens/cheat-sheets-trainer/missed-comes-back-at-the-end.png)
+
+At the end the page says how many of the cards were right first time and lists the missed ones with where they are. **Practise the missed** starts a round of just those; **Another round** draws afresh. A round stopped before its end does not count as played, but the answers given are kept. A device plugged in or taken out while this is on screen leaves it there; the next round is drawn from the cards as they are then.
+
+![The end of a round](../../../artifacts/screens/cheat-sheets-trainer/06-round-over.png)
+
+## What counts as an answer
+
+A control answers a card when you tap it or hold it for a moment, about a third of a second. While you hold it, a thin line grows across the card until it counts. The next card comes once you have let go of it, the controls are still and every switch is back where it was when the card came up, so the way back to rest happens before the next card and not on it. A switch that you do not put back holds the next card for two seconds and no longer.
+
+A switch position or a throttle stop, like a handle at IDLE or OFF, counts once it has been there for that moment, and you leave it there: the next card comes with it where you put it, and the card says **Leave it there for the next card**. RigReady takes a position for one that stays when the control was resting in it, or in another position of the same control, as a card came up. Which buttons are positions of one control comes from the drawing of the device on its [cheat sheet](cheat-sheets.md), or from the list of controls of a device RigReady knows. A switch whose positions nothing tells apart from buttons, and that was never seen resting in one of them, is still let go, or put back, for the next card.
+
+![A throttle stop: right, and left there](../../../artifacts/screens/cheat-sheets-trainer-stops/right-and-left-there.png)
+
+A control that is only passed on the way, like the positions a lever goes through before it stops, is not an answer. Nothing is said of it and it is not a miss.
+
+Some of what a controller reports is not an answer either. RigReady says so under the card, and it is not counted as a miss:
+
+- The control the card asks for, when it was let go too soon to count, as when a lever sweeps through it. Hold it for a moment.
+- A control that goes back to where it was earlier in the round, like a lever returning to its stop.
+- The control used on the card before, the first time it comes on again.
+- In a round for one device, a press on another device.
+
+![A press on another device, said and not counted](../../../artifacts/screens/cheat-sheets-trainer-rule/05-on-another-device.png)
+
+Where a switch or a lever rests is not a press either. A switch that is on when a card comes up is drawn as held and is not taken for an answer. When a card asks for the position a control is already in, the card says **Already there: move it away and back to answer.** Move it away, for a throttle handle at IDLE to OFF, and the card says **Now move it back**. Another position of the same control on the way is not a wrong answer, however long it stays there. Back where the card asks, it counts after a moment like any other answer, and you leave it there.
+
+![A card whose control is already there](../../../artifacts/screens/cheat-sheets-trainer-stops/01-already-there.png)
+
+## What is remembered
+
+For each game and aircraft (the [racing games](../games/index.md) have cards too), RigReady keeps in [its own folder](../app/index.md) how often each card was right and wrong, how many times running it was right first time, and how many rounds were played to the end. A card is learned when it was right first time twice running. The bar at the top shows how many of the current cards are learned and how many have been asked at all; it is still there after a restart, and a card whose binding is gone no longer counts.

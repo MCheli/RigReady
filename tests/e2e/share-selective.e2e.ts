@@ -178,6 +178,67 @@ test("share: imported binding files under another PC's device IDs open Bindings,
   await shot('device-ids');
 });
 
+test('share: Import pressed again from the keyboard while the import runs imports once', async ({
+  rig,
+}) => {
+  const source = await rig.launch('share-dcs', 'share-import-once-export', {
+    dialogs: { save: ['Documents/Squadron F-A-18C.rigready'] },
+  });
+  await exportSetup(source.page);
+  const file = path.join(source.home, 'Documents', 'Squadron F-A-18C.rigready');
+
+  const friend = await rig.launch('share-racing-pc', 'share-import-once', {
+    dialogs: { open: [[file]] },
+  });
+  const { page, shot, mutate, dataRoot, home } = friend;
+  // The friend changed one of the bindings the file holds, and keeps both: theirs, and the
+  // shared one beside it as a copy.
+  const joystick = path.join(
+    home,
+    'Saved Games',
+    'DCS',
+    'Config',
+    'Input',
+    'FA-18C_hornet',
+    'joystick'
+  );
+  const rudder = 'T-Pendular-Rudder {0F1424B4-D566-14a0-801B-444553540000}';
+  await fs.appendFile(path.join(joystick, `${rudder}.diff.lua`), '\n-- changed on this PC\n');
+  await openImport(page);
+  await expect(page.getByTestId('import-conflict')).toBeVisible();
+  await page.getByTestId('import-conflict-keepboth').locator('input').check();
+  const go = page.getByTestId('import-apply');
+
+  // A slow PC: the import takes a few seconds, and Enter is pressed a second time on the
+  // busy button meanwhile.
+  await mutate([{ op: 'slowFiles', ms: 1500 }]);
+  await go.focus();
+  await page.keyboard.press('Enter');
+  await expect(go).toHaveAttribute('aria-busy', 'true');
+  await page.keyboard.press('Enter');
+  // Cancel waits too: it would hide an import that goes ahead, and its Undo with it.
+  await expect(page.getByTestId('import-cancel')).toBeDisabled();
+  await mutate([{ op: 'slowFiles', ms: 0 }]);
+  await expect(page.getByTestId('import-result-summary')).toContainText(
+    'Added the setup "Squadron F/A-18C"'
+  );
+  await shot('imported-once');
+  expect(await fs.readdir(path.join(dataRoot, 'profiles'))).toEqual(['squadron-f-a-18c.yaml']);
+
+  // One import, so one change to undo on the Safety page, and one copy of the rudder's
+  // shared bindings beside the friend's own.
+  await page.getByTestId('nav-safety').click();
+  await expect(
+    page.locator(
+      `[data-testid="change-group"][data-reason='Import shared setup "Squadron F/A-18C"']`
+    )
+  ).toHaveCount(1);
+  expect((await fs.readdir(joystick)).filter((f) => f.startsWith(rudder)).sort()).toEqual([
+    `${rudder} (shared).diff.lua`,
+    `${rudder}.diff.lua`,
+  ]);
+});
+
 test('share: Import and Cancel stay in the window from the top of what a file holds to its end, and Import says why it is off when nothing is ticked', async ({
   rig,
 }) => {

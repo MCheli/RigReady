@@ -35,6 +35,13 @@ export function iracingDevicesCheck(games: GameRegistry): CheckDefinition<Record
       const view = await iracingView({ ...ctx, games });
       if (!view.userFolder)
         return { pass: false, summary: 'The iRacing folder in Documents was not found' };
+      if (view.source?.problem) {
+        return {
+          pass: false,
+          summary: 'RigReady cannot tell which control profile iRacing uses',
+          details: [view.source.problem],
+        };
+      }
       if (!view.calibrationFound && !view.controlsFound) {
         return { pass: false, summary: 'iRacing has no bindings or calibration yet' };
       }
@@ -301,14 +308,16 @@ export async function racingOverview(ctx: RacingContext): Promise<RacingOverview
         running = view.running;
         const moved = view.devices.filter((d) => d.state === 'moved').length;
         const missing = view.devices.filter((d) => d.state === 'missing').length;
-        attention = moved + missing > 0;
-        bindings = !view.controlsFound
-          ? 'No bindings yet'
-          : moved > 0
-            ? `${moved} controller${moved === 1 ? ' has' : 's have'} a new Windows id`
-            : missing > 0
-              ? `${missing} controller${missing === 1 ? '' : 's'} not connected`
-              : `${view.bindings.length} bindings · controllers connected`;
+        attention = moved + missing > 0 || view.source?.problem !== undefined;
+        bindings = view.source?.problem
+          ? 'Cannot tell which control profile iRacing uses'
+          : !view.controlsFound
+            ? 'No bindings yet'
+            : moved > 0
+              ? `${moved} controller${moved === 1 ? ' has' : 's have'} a new Windows id`
+              : missing > 0
+                ? `${missing} controller${missing === 1 ? '' : 's'} not connected`
+                : `${view.bindings.length} bindings · controllers connected`;
       } else if (game.id === 'lmu') {
         const view = await lmuView(ctx);
         running = view.running;

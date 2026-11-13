@@ -44,7 +44,11 @@ import {
  * - The countdown is what the user sees and can cancel. RigReady's window is brought
  *   back from the tray when it starts, and Windows says so too when nobody is at a window.
  * - Cancel, Dismiss, pressing Play again and the game coming back each end the countdown.
- *   Nothing is closed in any of these cases, and nothing says it was.
+ *   Nothing is closed in any of these cases, and nothing says it was. Play, Make ready and
+ *   a fix end it the moment they are pressed, before they start anything: a launch can take
+ *   longer than what is left of the countdown, and Stand down would then close, in the
+ *   middle of the launch, the apps the launch had just started. A check does not end it:
+ *   the Play screen checks again every few seconds by itself, and a check changes nothing.
  * - A game that closes within two minutes of starting (QUICK_EXIT_MS) starts no
  *   countdown. It may have crashed, been started by mistake, or be a launcher handing
  *   over to the real game, and standing down under a game that is about to run would
@@ -59,6 +63,11 @@ import {
  *   and the setup's own switch are what is left for that one.
  * - Stand down pressed by hand during the countdown ends the countdown the moment it
  *   starts, so two never run at once. The one that was pressed reports as it always does.
+ * - Stand down pressed by hand while the game runs, with "close the game": the game
+ *   closes while that Stand down is still running. No countdown starts under it: the one
+ *   that was pressed is this session's Stand down, so the window is not brought up and
+ *   Windows is not told about another. The same when the user closes the game while a
+ *   Stand down pressed by hand runs.
  * - RigReady quit during the countdown: the countdown ends with the app. Nothing is stood
  *   down then or at the next start, and nothing says it was. (A window closed to the tray
  *   is not a quit: the countdown carries on.)
@@ -99,6 +108,8 @@ export const AWAY_MS = 2 * 60_000;
 export const QUICK_EXIT_MS = 2 * 60_000;
 /** How long RigReady keeps looking for a game that closed to come back, at least. */
 export const LOOK_BACK_MS = 15 * 60_000;
+/** How long the countdown waits to hear what its Stand down will need a person for. */
+export const NEEDS_YOU_MS = 3000;
 
 /** What the history adds up to. */
 export function sessionTotals(sessions: SessionRecord[]): SessionTotals {
@@ -257,6 +268,11 @@ export interface TrackerDeps {
   ): Promise<Result<{ headline: string; failed: number; problems: string[] }>>;
   /** What the setup says about standing down by itself when its game closes. */
   standDownOnClose(profileId: string): Promise<StandDownOnClose>;
+  /**
+   * What that Stand down will need a person at the screens for, one line each: said with
+   * the countdown, so whoever is there knows to stay. Changes nothing.
+   */
+  standDownNeedsYou?(profileId: string): Promise<string[]>;
   /** Brings RigReady's window where it can be seen: a countdown nobody sees cannot be cancelled. */
   showWindow(): Promise<void>;
 }
@@ -271,6 +287,8 @@ export interface TrackerOptions {
   quickExitMs?: number;
   /** LOOK_BACK_MS unless a test says otherwise. */
   lookBackMs?: number;
+  /** NEEDS_YOU_MS unless a test says otherwise. */
+  needsYouMs?: number;
 }
 
 interface Fixed {
@@ -337,12 +355,16 @@ export class SessionTracker {
   /** What each window of RigReady last said about being in use, when, and since when that is so. */
   private readonly windows = new Map<string, { visible: boolean; at: number; since: number }>();
   private resumed: Promise<void> | undefined;
+  /** The Stand down after the countdown is running. */
   private standingDown = false;
+  /** A Stand down started by hand is running (see standDownStarted and standDownEnded). */
+  private byHand = false;
   private readonly sleep: Sleep;
   private readonly pollMs: number;
   private readonly startGraceMs: number;
   private readonly quickExitMs: number;
   private readonly lookBackMs: number;
+  private readonly needsYouMs: number;
 
   constructor(
     private readonly ctx: Ctx,
@@ -355,6 +377,7 @@ export class SessionTracker {
     this.startGraceMs = options.startGraceMs ?? 15 * 60_000;
     this.quickExitMs = options.quickExitMs ?? QUICK_EXIT_MS;
     this.lookBackMs = options.lookBackMs ?? LOOK_BACK_MS;
+    this.needsYouMs = options.needsYouMs ?? NEEDS_YOU_MS;
   }
 
   private now(): Date {
@@ -533,6 +556,8 @@ export class SessionTracker {
 
   private async end(live: Live, now: Date): Promise<void> {
     const token = ++this.token;
+    // Taken now: a Stand down by hand that ends while the record is written still counts.
+    const handled = live.stoodDown || this.byHand;
     this.live = undefined;
     this.prep = undefined;
     const { processes, ...rest } = live.record;
@@ -540,8 +565,9 @@ export class SessionTracker {
     this.report(await this.log.finish({ ...rest, durationSeconds: seconds }));
     // Play was pressed meanwhile: that session has its own state.
     if (token !== this.token) return;
-    if (live.stoodDown) {
-      // Stand down already ran while the game was open: there is nothing left to offer.
+    if (handled) {
+      // Stand down already ran while the game was open, or one pressed by hand is running
+      // now (it may be what closed the game): there is nothing left to offer.
       this.set({ phase: 'idle' });
       return;
     }
@@ -556,6 +582,10 @@ export class SessionTracker {
     };
     const said = `${rest.profileName}: ${durationText(seconds)}.`;
     const wish = await this.deps.standDownOnClose(rest.profileId);
+    if (token !== this.token) return;
+    // What that Stand down will need someone at the screens for, said with its countdown.
+    const counts = wish.enabled && seconds * 1000 >= this.quickExitMs;
+    const needsYou = counts ? await this.needsYou(rest.profileId) : [];
     if (token !== this.token) return;
     const after: After = {
       profileId: rest.profileId,
@@ -588,12 +618,44 @@ export class SessionTracker {
       ...ended,
       standDownAt: new Date(after.standDownAt).toISOString(),
       standDownSeconds: wish.seconds,
+      ...(needsYou.length > 0 ? { standDownNeedsYou: needsYou } : {}),
     });
     // Windows says it when nobody was at a window, and then the window comes to them.
     await this.notifyWhenAway(
-      `${said} Stand down starts in ${standDownWaitText(wish.seconds)}. Open RigReady to cancel.`
+      [
+        `${said} Stand down starts in ${standDownWaitText(wish.seconds)}. Open RigReady to cancel.`,
+        ...needsYou,
+      ].join(' ')
     );
     await this.deps.showWindow();
+  }
+
+  /**
+   * What the Stand down after the countdown will need a person for. Never holds the
+   * countdown up for long: a step that cannot say in time (a monitor read that hangs) is
+   * left unsaid, and the countdown starts without it.
+   */
+  private async needsYou(profileId: string): Promise<string[]> {
+    const ask = this.deps.standDownNeedsYou;
+    if (!ask) return [];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<undefined>((resolve) => {
+      timer = setTimeout(() => resolve(undefined), this.needsYouMs);
+      (timer as { unref?: () => void }).unref?.();
+    });
+    try {
+      const lines = await Promise.race([ask(profileId), late]);
+      if (lines !== undefined) return lines;
+      this.ctx.log.warn(
+        'what Stand down will need was not known in time; the countdown said nothing about it'
+      );
+      return [];
+    } catch (thrown) {
+      this.ctx.log.warn('what Stand down will need could not be worked out', thrown);
+      return [];
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /** Looks for the game to come back, and at the clock while a countdown runs. */
@@ -707,10 +769,31 @@ export class SessionTracker {
   standDownStarted(): void {
     // The countdown's own Stand down says this too; that one is already accounted for.
     if (this.standingDown) return;
+    // Until it ends, the game closing (by this Stand down or by the user) starts nothing.
+    this.byHand = true;
     const after = this.after;
     if (after?.standDownAt === undefined) return;
     after.standDownAt = undefined;
     this.set(after.ended);
+  }
+
+  /** The Stand down started by hand is over, whatever came of it. */
+  standDownEnded(): void {
+    if (this.standingDown) return;
+    this.byHand = false;
+  }
+
+  /**
+   * Play, Make ready or a fix was pressed: the rig is being made ready again. A countdown
+   * that was running is over before anything is started, and until the game is up the
+   * screen says it was cancelled. Nothing is closed, and nothing says it was. RigReady
+   * still looks for the game to come back, as after Cancel.
+   */
+  gettingReady(): void {
+    const after = this.after;
+    if (after?.standDownAt === undefined) return;
+    after.standDownAt = undefined;
+    this.set({ ...after.ended, standDownHeld: 'cancelled' });
   }
 
   /** Stand down ran (by the user, on the screen or from the tray). */

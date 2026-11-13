@@ -1,12 +1,14 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router';
-import { BINDINGS_ENTRY } from '../shared/feature';
+import { BINDINGS_ENTRY, type FoundGames } from '../shared/feature';
 import { bindingsPages, featureCommands, featureRoutes, firstConfigurePath } from './features';
 import ConfigureLayout from './layouts/ConfigureLayout.vue';
+import NoBindings from './layouts/NoBindings.vue';
 import NotFound from './layouts/NotFound.vue';
 import { bindingsPageAt, bindingsTarget, setupGameOf, windowMemory } from './shell/bindings';
+import { gamesFoundBy } from './shell/games';
 import { scrollOnMove } from './shell/nav';
 import { routeKinds } from './shell/routes';
-import { createCommandShell } from './shell/shell';
+import { createCommandShell, gamesFoundNow } from './shell/shell';
 
 const { fly: flyRoutes, bare: bareRoutes, configure: configureRoutes } = routeKinds(featureRoutes);
 
@@ -22,9 +24,25 @@ async function setupGame(): Promise<string | undefined> {
 }
 
 /**
+ * The games found on this PC as Bindings is opened: the ones the menu follows, or asked
+ * now when Bindings is opened before their first answer. Undefined: cannot be told.
+ */
+const foundNow = (): Promise<FoundGames> =>
+  gamesFoundNow(async () => {
+    try {
+      return await gamesFoundBy(await featureCommands(), createCommandShell(router));
+    } catch {
+      // The command modules did not load: every game's bindings are offered, as the menu does.
+      return undefined;
+    }
+  });
+
+/**
  * The menu's Bindings entry: it has no page of its own and opens the bindings page of the
- * game shown last, or on first use of the setup's game. The address stays valid for links
- * and the palette; `meta.forwards` tells a walk through every route that it lands elsewhere.
+ * game shown last, or on first use of the setup's game, among the games found on this PC.
+ * Where none of them is found it says so (NoBindings). The address stays valid for links
+ * and the palette; `meta.forwards` tells a walk through every route that it lands elsewhere
+ * wherever a game with bindings is found.
  */
 const bindingsRoute: RouteRecordRaw[] =
   bindingsPages.length === 0
@@ -32,11 +50,16 @@ const bindingsRoute: RouteRecordRaw[] =
     : [
         {
           path: BINDINGS_ENTRY.to.slice('/configure/'.length),
-          // Never drawn: the guard always sends on, to one of the pages above.
-          component: NotFound,
+          // Drawn only on a PC without any of those games; elsewhere the guard sends on.
+          component: NoBindings,
           meta: { forwards: true },
           beforeEnter: async (to) => {
-            const page = await bindingsTarget(bindingsPages, windowMemory, setupGame);
+            const page = await bindingsTarget(
+              bindingsPages,
+              windowMemory,
+              setupGame,
+              await foundNow()
+            );
             return page ? { path: page.to, query: to.query, hash: to.hash } : true;
           },
         },

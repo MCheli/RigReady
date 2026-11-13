@@ -25,7 +25,7 @@ describe('Stream Deck detection', () => {
       installed: true,
       version: '7.4.2.22730',
       running: true,
-      devices: [{ name: 'Stream Deck XL', productId: '008F', serial: 'A00NA33331P1UB' }],
+      devices: [{ name: 'Stream Deck XL', productId: '008F', serial: 'S11FD24013B3QA' }],
       profilesV3: true,
     });
     expect(status.ok && status.value.exePath).toBe(
@@ -181,10 +181,10 @@ describe('Stream Deck inventory', () => {
   });
 
   it('decodes the device id Stream Deck stores in a profile', () => {
-    expect(parseDeviceUuid('@(1)[4057/143/A00NA33331P1UB]')).toEqual({
+    expect(parseDeviceUuid('@(1)[4057/143/S11FD24013B3QA]')).toEqual({
       vendorId: '0FD9',
       productId: '008F',
-      serial: 'A00NA33331P1UB',
+      serial: 'S11FD24013B3QA',
     });
     expect(parseDeviceUuid('@(1)[4057/128]')).toEqual({ vendorId: '0FD9', productId: '0080' });
     expect(parseDeviceUuid(undefined)).toBeUndefined();

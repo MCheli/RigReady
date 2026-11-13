@@ -1,7 +1,13 @@
-﻿/**
+/**
  * Plain-language names for iRacing's binding action ids. The list of ids comes from the
- * file itself (367 on the owner's rig); the common ones have a hand-written label and
- * the rest are spelled out from their id ("BrakeBiasInc" -> "Brake bias up").
+ * file itself (369 in the control profile on the owner's rig); the common ones have a
+ * hand-written label and the rest are spelled out from their id ("BrakeBiasInc" ->
+ * "Brake bias up").
+ *
+ * The iRacing bindings page (src/features/iracing-bindings/core/names.ts) names the same
+ * actions, and a feature may not import another, so the table is kept in both places.
+ * tests/unit/iracingActionNames.test.ts holds the two together: every action of the
+ * recorded files has the same name and group on both sides.
  */
 
 const LABELS: Record<string, string> = {
@@ -54,11 +60,18 @@ const LABELS: Record<string, string> = {
   SplitsDeltaNext: 'Next delta mode',
   SplitsDeltaPrev: 'Previous delta mode',
   DashBoxToggle: 'Dash box',
-  BlackBoxToggle: 'Black box on/off',
-  BlackBoxNext: 'Next black box',
-  BlackBoxPrev: 'Previous black box',
+  // iRacing's "Next Black Box" and "Previous Black Box", unassigned by default, are
+  // BlackBoxShowNext and BlackBoxShowPrev. The arrows and Space work inside the box shown:
+  // BlackBoxNext is Down, "select next control" (docs/research/iracing-bindings.md).
+  BlackBoxShowNext: 'Next black box',
+  BlackBoxShowPrev: 'Previous black box',
+  BlackBoxToggle: 'Black box toggle control',
+  BlackBoxNext: 'Black box next control',
+  BlackBoxPrev: 'Black box previous control',
   BlackBoxInc: 'Black box value up',
   BlackBoxDec: 'Black box value down',
+  PitSummaryToggle: 'Pit summary on/off',
+  ToggleUIVisibleDrive: 'Hide or show the driving UI',
   TriggerScreenshotCapture: 'Screenshot',
   TriggerGiantScreenshotCapture: 'High-resolution screenshot',
   ToggleVideoCapture: 'Record video',
@@ -71,43 +84,61 @@ const LABELS: Record<string, string> = {
   InLapToggle: 'In-lap mode',
 };
 
+/** Short forms in the ids, written out. Lower case unless the word is always in capitals. */
 const WORDS: Record<string, string> = {
   Inc: 'up',
   Dec: 'down',
-  Level: '(axis)',
-  Rpy: 'Replay',
-  Cam: 'Camera',
-  DCam: 'Driver camera',
+  Rpy: 'replay',
+  Cam: 'camera',
+  DCam: 'driver camera',
   MGUK: 'MGU-K',
   ABS: 'ABS',
   DRS: 'DRS',
   FFB: 'force feedback',
-  TChat: 'Text chat',
-  VChat: 'Voice chat',
-  SPCC: 'Spotter',
+  TChat: 'text chat',
+  VChat: 'voice chat',
+  SPCC: 'spotter',
   LFE: 'LFE',
   FOV: 'field of view',
   UI: 'UI',
   RPM: 'RPM',
+  IR: 'IR',
   FF: 'fast forward',
   Rew: 'rewind',
+  Adv: 'advance',
   Drv: 'driver',
   Q: 'queue',
+  // The tape over the grille for qualifying, not a queue.
+  QTape: 'qualifying tape',
   RF: 'right front',
-  Hys: 'Hybrid',
+  Hys: 'hybrid',
   irsdk: 'telemetry',
-  Irsdk: 'Telemetry',
+  Irsdk: 'telemetry',
+  Prev: 'previous',
+  Anounce: 'announce',
+  Cust: 'custom',
+  Sect: 'sector',
+  Pct: 'percent',
+  Lat: 'latitude',
+  Long: 'longitude',
+  Alt: 'altitude',
+  Pos: 'position',
+  Ctrl: 'control',
+  Mult: 'multiplier',
+  Accel: 'acceleration',
 };
 
 /** "BrakeBiasFineInc" -> "Brake bias fine up". */
 function spellOut(id: string): string {
   const tokens = id.match(
-    /DCam|MGUK|TChat|VChat|SPCC|LFE|FOV|ABS|DRS|FFB|RPM|UI(?=[A-Z]|$)|RF(?=[A-Z])|irsdk|Irsdk|[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+/g
+    /DCam|MGUK|TChat|VChat|SPCC|LFE|FOV|ABS|DRS|FFB|RPM|QTape|UI(?=[A-Z]|$)|RF(?=[A-Z])|irsdk|Irsdk|[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+/g
   ) ?? [id];
   const words = tokens.map((t, i) => {
+    // "...Level" at the end is the axis form of an adjustment; "BoostLevelInc" is not.
+    if (t === 'Level' && i === tokens.length - 1 && i > 0) return '(axis)';
     const mapped = WORDS[t];
     if (mapped) return mapped;
-    return i === 0 ? t : /^[A-Z][a-z]/.test(t) ? t.toLowerCase() : t;
+    return /^[A-Z][a-z]/.test(t) ? t.toLowerCase() : t;
   });
   const text = words.join(' ').replace(/\s+/g, ' ').trim();
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -132,16 +163,21 @@ export function iracingActionLabel(id: string): string {
 export function iracingActionGroup(
   id: string
 ): 'Driving' | 'In-car adjustments' | 'Cameras and replay' | 'Interface and chat' {
+  // The controls themselves. "BrakeBiasInc" and "ThrottleShapeLevel" are adjustments.
   if (
-    /^(Throttle|Brake|Clutch|Steer|Shift|Gear|Ignition|Starter|PitSpeedLimiter|RevLimiter|PushToPass|DRS|Handbrake|Reset|Look|HeadlightFlash|ClutchLaunchAssist|TearOffVisor|.*Wipers|HandUpWarning|TellTaleReset)/.test(
+    /^((Throttle|Brake|Clutch|ShiftUp|ShiftDown)2?|Steer(Left|Right)|Gear\w+|Ignition|Starter|PitSpeedLimiter|RevLimiter|PushToPass|DRS|Handbrake|Reset|Look\w+|HeadlightFlash|ClutchLaunchAssist|TearOffVisor|\w+Wipers|HandUpWarning|TellTaleReset|Hys\w+Hold)$/.test(
       id
     )
   ) {
     return 'Driving';
   }
   if (
-    /(Inc|Dec|Level|Toggle)$/.test(id) &&
-    !/^(Cam|DCam|Rpy|Scale|BlackBox|Toggle|VChat|SPCC|LFE|TrueForce|Master)/.test(id)
+    (/(Inc|Dec|Level|Toggle)$/.test(id) &&
+      !/^(Cam|DCam|Rpy|Scale|BlackBox|DashBox|Toggle|TChat|VChat|SPCC|LFE|TrueForce|Master)/.test(
+        id
+      )) ||
+    id === 'TractionControlArm' ||
+    id === 'LowFuelAccept'
   ) {
     return 'In-car adjustments';
   }

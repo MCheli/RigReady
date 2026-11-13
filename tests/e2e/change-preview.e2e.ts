@@ -197,7 +197,7 @@ test('change preview: a Stream Deck restore and a snapshot put-back list their f
     'Elgato',
     'StreamDeck',
     'ProfilesV3',
-    '042F7366-9A23-444F-9AE6-327A9DB7979F.sdProfile'
+    '740F9206-1F71-436A-9AD2-920C8CD6972C.sdProfile'
   );
   const manifest = path.join(profile, 'manifest.json');
   const good = await fs.readFile(manifest, 'utf8');

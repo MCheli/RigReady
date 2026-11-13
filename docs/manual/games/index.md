@@ -13,7 +13,7 @@ This section covers every game other than DCS World, which has [its own section]
 | Game | What RigReady does |
 |---|---|
 | DCS World | The deepest: installs, the Saved Games folder, screen setup, Export.lua, bindings with editing, cleanup, device ID repair, copying between aircraft and snapshots, cheat sheets, kneeboard pages and binding guides. See [DCS World](../dcs/index.md). |
-| [iRacing](iracing.md) | Detection, launch, files to back up, a page with the controllers and bindings from `controls.cfg` and `joyCalib.yaml`, a device ID repair, quick backups, checks for a racing setup. |
+| [iRacing](iracing.md) | Detection, launch, files to back up, a page with the controllers and bindings from the control profile iRacing uses (`controls.cfg` and `joyCalib.yaml`), a device ID repair, quick backups, checks for a racing setup, and [binding guides by class of car](iracing-binding-guide.md). |
 | [Le Mans Ultimate](le-mans-ultimate.md) | Detection, launch through Steam, files to back up, a page with controllers, force feedback and bindings from `direct input.json`, a repair for a renamed controller, quick backups, checks. |
 | [BeamNG.drive](beamng.md) | Detection, launch through Steam, the versioned user folder, a page with one binding map per controller, copying bindings from an older version or to a replacement controller, quick backups, checks. |
 | [Assetto Corsa](assetto-corsa.md) | Detection, launch through Steam, files to back up, a page with the controllers, bindings and force feedback from `controls.ini`, quick backups. |
@@ -24,7 +24,7 @@ This section covers every game other than DCS World, which has [its own section]
 | [Ace Combat 8](ace-combat-8.md) | Detection, launch through Steam, files to back up, and a starting profile for flying it with your own stick through a [virtual controller](../hardware/virtual-controller.md). |
 | [Any other game](other-games.md) | **Add a game** on the Games page: its program, settings folders and kind, and it is found, launched, offered in new setups and backed up like the others. Or a setup for "Another game" with a launch target you give. |
 
-The four racing games with a bindings page also supply their bindings to the [cheat sheets](../dcs/cheat-sheets.md), the [trainer](../dcs/trainer.md) and the [input tester](../hardware/input-tester.md), so a cheat sheet can show what every button of a wheel does in iRacing or in BeamNG.drive. The wheel is drawn for the Fanatec bases RigReady has layouts for; any other wheel gets a labelled list of its controls.
+The four racing games with a bindings page also supply their bindings to the [cheat sheets](../controls/cheat-sheets.md), the [trainer](../controls/trainer.md) and the [input tester](../hardware/input-tester.md), so a cheat sheet can show what every button of a wheel does in iRacing or in BeamNG.drive. The wheel is drawn for the Fanatec bases RigReady has layouts for; any other wheel gets a labelled list of its controls.
 
 ## How a game is found
 

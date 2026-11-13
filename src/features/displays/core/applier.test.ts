@@ -59,11 +59,15 @@ async function onTheDesk(options: { known?: false; proven?: Partial<KnownToWork[
     fire = fn;
     return () => (fire = undefined);
   };
+  // Who waits for the question: woken when the guard asks, so no test waits on a clock.
+  const askWaiters: Array<() => void> = [];
   const guard = new RevertGuard(
     displays,
     {
-      armed: (seconds, askedBy) =>
-        events.push(askedBy ? `asked for ${seconds} s by ${askedBy}` : `asked for ${seconds} s`),
+      armed: (seconds, askedBy) => {
+        events.push(askedBy ? `asked for ${seconds} s by ${askedBy}` : `asked for ${seconds} s`);
+        for (const wake of askWaiters.splice(0)) wake();
+      },
       settled: (outcome) => events.push(outcome),
     },
     15,
@@ -90,7 +94,8 @@ async function onTheDesk(options: { known?: false; proven?: Partial<KnownToWork[
     window,
     options.known === false ? undefined : known
   );
-  const asked = (): Promise<void> => expect.poll(() => guard.pending).toBe(true);
+  const asked = (): Promise<void> =>
+    guard.pending ? Promise.resolve() : new Promise((resolve) => askWaiters.push(resolve));
   const backToDesk = async (): Promise<void> => {
     const back = await displays.apply(desk);
     if (!back.ok) throw new Error(back.error.message);
@@ -188,7 +193,7 @@ describe('a layout applied by Make ready or Stand down', () => {
     const dell = rig.ports.state.displays.find((d) => d.name === 'DELL G3223D')!;
     rig.ports.state.displays.push({
       ...structuredClone(dell),
-      id: '\\\\?\\display#tv00001#5&1509d400&0&uid4999#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
+      id: '\\\\?\\display#tv00001#5&8816e581&0&uid4999#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
       name: 'TV',
       enabled: false,
       primary: false,
@@ -470,5 +475,87 @@ describe('a change an assistant asked for', () => {
     expect(await running).toEqual(NOT_KEPT);
     expect(t.on()).toEqual(t.deskOn);
     expect(await t.kept()).toBe(false);
+  });
+});
+
+describe('a layout replaced with the monitors as they are now', () => {
+  /** The monitors as Replace reads them, before it saves the layout. */
+  async function readNow() {
+    const read = await rig.ports.displays.read();
+    if (!read.ok) throw new Error('read failed');
+    return read.value.displays;
+  }
+
+  it('counts as kept with these monitors: Make ready and Stand down apply it without the question, and nothing is left to warn of', async () => {
+    const t = await onTheDesk();
+    const before = await readNow();
+    // Never kept: a Stand down of it would ask, and the countdown says so first.
+    expect(await t.applier.wouldAsk(t.desk, before)).toBe(true);
+    expect(await t.applier.seen(t.desk, before)).toBe(true);
+    expect(t.log).toEqual([
+      'display layout replaced with the monitors as they are: counts as kept',
+    ]);
+    // Nothing was applied and nothing was asked.
+    expect(t.events).toEqual([]);
+    expect(await t.recovery.read()).toBeUndefined();
+
+    // Off to fly; later Stand down puts the desk back.
+    const flown = await rig.ports.displays.apply(t.flying);
+    expect(flown.ok).toBe(true);
+    const inFlight = await readNow();
+    expect(await t.applier.wouldAsk(t.desk, inFlight)).toBe(false);
+    expect(await t.applier.applyKnown(t.desk)).toMatchObject({ ok: true });
+    expect(t.events).toEqual([]);
+    expect(t.count.unasked).toBe(1);
+    expect(t.on()).toEqual(t.deskOn);
+  });
+
+  it('does not count for an assistant, while a question is open, or when the monitors are not as the layout says by now', async () => {
+    const t = await onTheDesk();
+    const before = await readNow();
+    // An assistant cannot see the screens.
+    expect(await runAsAssistant('Claude Desktop', () => t.applier.seen(t.desk, before))).toBe(
+      false
+    );
+    // A change nobody has answered yet is on the screens.
+    expect((await t.applier.apply(t.flying)).ok).toBe(true);
+    expect(await t.applier.seen(t.desk, before)).toBe(false);
+    t.timeout();
+    await expect.poll(() => t.events).toEqual(['asked for 15 s', 'reverted']);
+    expect(t.on()).toEqual(t.deskOn);
+
+    // A screen was unplugged after the read the layout was made from.
+    const mfd = rig.ports.state.displays.find((d) => d.name === 'USB_Monitor')!;
+    rig.ports.state.displays = rig.ports.state.displays.filter((d) => d !== mfd);
+    expect(await t.applier.seen(t.desk, before)).toBe(false);
+    rig.ports.state.displays.push(mfd);
+    // Or turned in Windows meanwhile.
+    const { rotation, width, height } = mfd;
+    Object.assign(mfd, { rotation: 90, width: height, height: width });
+    expect(await t.applier.seen(t.desk, before)).toBe(false);
+    Object.assign(mfd, { rotation, width, height });
+    // The monitors cannot be read again.
+    const realRead = rig.ports.displays.read.bind(rig.ports.displays);
+    rig.ports.displays.read = async () => err('display.read', 'Could not read the monitors.');
+    expect(await t.applier.seen(t.desk, before)).toBe(false);
+    rig.ports.displays.read = realRead;
+    // What the layout comes to cannot be said: a monitor named twice.
+    expect(await t.applier.seen([...t.desk, t.desk[0]!], before)).toBe(false);
+
+    expect(t.log).toEqual([]);
+    expect(await t.applier.wouldAsk(t.desk, before)).toBe(true);
+  });
+
+  it('is not remembered when nothing remembers kept layouts, or the file cannot be written, and says why', async () => {
+    const without = await onTheDesk({ known: false });
+    expect(await without.applier.seen(without.desk, await readNow())).toBe(false);
+    expect(await without.applier.wouldAsk(without.desk, await readNow())).toBe(true);
+    await rig.cleanup();
+
+    const t = await onTheDesk({
+      proven: { add: async () => err('file.write', 'The disk is full.') },
+    });
+    expect(await t.applier.seen(t.desk, await readNow())).toBe(false);
+    expect(t.log).toEqual(['could not remember the replaced monitor layout: The disk is full.']);
   });
 });

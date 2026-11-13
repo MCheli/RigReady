@@ -4,7 +4,10 @@ import {
   AiStatusSchema,
   AircraftListSchema,
   AppliedSchema,
+  GuideGameSchema,
+  GuideGamesSchema,
   GuideViewSchema,
+  IracingReviewViewSchema,
   MonthBudgetSchema,
   PlanSchema,
   PreparedSchema,
@@ -27,6 +30,7 @@ import {
   TurnOutcomeSchema,
   AssistantProgressSchema,
 } from './core/assistantModel';
+import { IracingWantedSchema } from './core/iracing';
 
 const By = z.string().trim().min(1).max(80).default('An assistant');
 const DraftId = z.object({ draftId: z.string().max(40) });
@@ -38,16 +42,26 @@ const Round = z.object({ roundId: z.string(), selected: z.array(z.string()).max(
 export const aiAssistContract = defineContract(
   'ai-assist',
   {
-    /** The aircraft DCS has bindings for, and which have a guide. */
-    aircraft: channel(noInput, AircraftListSchema, {
+    /** The games the binding guide has guides for, and whether each is on this PC. */
+    games: channel(noInput, GuideGamesSchema, {
       describe:
-        'The aircraft DCS has bindings for, and which have a binding guide. Aircraft ids here are what the other ai-assist channels take.',
+        'The games the binding guide covers (DCS World and iRacing) and whether each is found on this PC. Pass a game id to ai-assist:aircraft.',
       tier: 'read',
     }),
+    /** The aircraft DCS has bindings for, or iRacing's classes and cars, and which have a guide. */
+    aircraft: channel(
+      z.object({ game: GuideGameSchema.optional() }).optional(),
+      AircraftListSchema,
+      {
+        describe:
+          'What the binding guide lists for one game (dcs when no game is given): the aircraft DCS has bindings for, or for iracing the classes of car RigReady has guides for (GT3, GT4, LMDh and prototypes, formula, oval, dirt) and each car with controls of its own. The ids here are what the other ai-assist channels take as aircraftId.',
+        tier: 'read',
+      }
+    ),
     /** The guide for one aircraft with what is bound now, progress and staged changes. */
     guide: channel(Aircraft, GuideViewSchema, {
       describe:
-        'The binding guide for one aircraft with what is bound now, progress and staged changes. aircraftId comes from ai-assist:aircraft.',
+        'The binding guide for one aircraft, or one iRacing class or car, with what is bound now, progress and staged changes. aircraftId comes from ai-assist:aircraft.',
       tier: 'read',
     }),
     setProgress: channel(
@@ -104,6 +118,33 @@ export const aiAssistContract = defineContract(
         'Undoes bindings written from the guide. groupId comes from the applyStaged result or safety:journal.',
       tier: 'change',
     }),
+    /**
+     * iRacing: what binding one action of the guide to a button or a key would change, from the
+     * iRacing bindings feature's own preview. Nothing is written.
+     */
+    iracingBindPreview: channel(
+      Aircraft.extend({ actionId: z.string().max(80), binding: IracingWantedSchema }),
+      IracingReviewViewSchema,
+      {
+        describe:
+          "Shows what binding one action of an iRacing guide to a controller button or a key would change in iRacing's file, through the iRacing bindings feature. Writes nothing. Only a window of the app binds by pressing.",
+        tier: 'off',
+      }
+    ),
+    /** iRacing: writes it through the iRacing bindings feature, a backup first. */
+    iracingBind: channel(
+      Aircraft.extend({
+        actionId: z.string().max(80),
+        binding: IracingWantedSchema,
+        seen: z.string().regex(/^[0-9a-f]{64}$/),
+      }),
+      z.object({ changed: z.boolean(), message: z.string() }),
+      {
+        describe:
+          "Binds one action of an iRacing guide to a controller button or a key in iRacing's own file, through the iRacing bindings feature, after a backup. Refused while iRacing runs. Undo is on the Safety page. Only a window of the app does this.",
+        tier: 'off',
+      }
+    ),
     /** Starts reporting presses on any controller as `pressed` events. */
     listenStart: channel(noInput, z.object({ listening: z.boolean() }), {
       describe: 'Starts reporting presses on any controller to the page.',
@@ -190,8 +231,14 @@ export const aiAssistContract = defineContract(
     }),
     deleteDraft: channel(Aircraft, z.object({ deleted: z.boolean() }), {
       describe:
-        "Deletes the binding guide kept for one aircraft in RigReady's data folder: one the AI drafted, or the user's own.",
+        "Deletes the binding guide an AI drafted for one aircraft in RigReady's data folder. A copy is kept and Undo is on the Safety page. A guide the user wrote or imported is refused: only the user deletes that, in RigReady's window.",
       tier: 'change',
+    }),
+    /** The window's Delete, after the user said yes: whichever guide is kept, the user's own included. */
+    deleteGuide: channel(Aircraft, z.object({ deleted: z.boolean() }), {
+      describe:
+        "Deletes the binding guide file kept for one aircraft, the user's own included, after the user said yes in RigReady's window. Only a window of the app does this.",
+      tier: 'off',
     }),
     importGuide: channel(Aircraft, z.object({ imported: z.boolean(), items: z.number().int() }), {
       describe:

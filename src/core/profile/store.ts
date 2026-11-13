@@ -85,11 +85,35 @@ function lineHasComment(line: string): boolean {
 export class ProfileStore {
   /** The last version of each profile that loaded, for when a hand edit breaks the file. */
   private readonly valid = new Map<string, Profile>();
+  private readonly changeListeners = new Set<() => void>();
 
   constructor(
     private readonly files: FileStore,
     private readonly dataRoot: string
   ) {}
+
+  /**
+   * Subscribes to the changes RigReady makes to the setups: one saved, one deleted, another
+   * one in use. For a feature that acts on the setup in use while nothing else asks it to
+   * look (the overlay). A file changed by hand outside RigReady is not seen here. Returns
+   * the unsubscribe function.
+   */
+  onChanged(listener: () => void): () => void {
+    this.changeListeners.add(listener);
+    return () => {
+      this.changeListeners.delete(listener);
+    };
+  }
+
+  private changed(): void {
+    for (const listener of [...this.changeListeners]) {
+      try {
+        listener();
+      } catch {
+        // A listener that fails must not stop the others or the change that was just made.
+      }
+    }
+  }
 
   get dir(): string {
     return path.join(this.dataRoot, 'profiles');
@@ -231,17 +255,28 @@ export class ProfileStore {
     return ok({ profile: parsed.data, hasComments: hasYamlComments(text.value) });
   }
 
-  async save(profile: Profile): Promise<Result<Profile>> {
+  /**
+   * Writes the profile file. A save that is part of a user action changing other files too
+   * passes that action's `group` and `journal: true`, so the Safety page lists the setup
+   * with the files and one Undo puts it back with them.
+   */
+  async save(
+    profile: Profile,
+    options: { reason?: string; group?: ChangeGroup; journal?: boolean } = {}
+  ): Promise<Result<Profile>> {
     const parsed = ProfileSchema.safeParse(profile);
     if (!parsed.success) {
       return err('profile.invalid', 'The profile is not valid.', z.prettifyError(parsed.error));
     }
     const text = yaml.dump(parsed.data, { noRefs: true, lineWidth: 120 });
     const written = await this.files.write(this.fileFor(parsed.data.id), text, {
-      reason: `Save profile ${parsed.data.name}`,
+      reason: options.reason ?? `Save profile ${parsed.data.name}`,
+      ...(options.group ? { group: options.group } : {}),
+      ...(options.journal ? { journal: true } : {}),
     });
     if (!written.ok) return written;
     this.valid.set(parsed.data.id, structuredClone(parsed.data));
+    this.changed();
     return ok(parsed.data);
   }
 
@@ -270,6 +305,7 @@ export class ProfileStore {
       const next = await this.mostRecentlyUsed(rest.lastUsed, id);
       await this.writeState(next ? { ...rest, lastProfileId: next } : rest);
     }
+    this.changed();
     return ok(undefined);
   }
 
@@ -334,10 +370,12 @@ export class ProfileStore {
   /** Remembers the profile as the one in use; `at` also records when it was used. */
   async setLastProfileId(id: string, at?: Date): Promise<Result<void>> {
     const state = await this.readState();
-    return this.writeState({
+    const written = await this.writeState({
       ...state,
       lastProfileId: id,
       lastUsed: at ? { ...state.lastUsed, [id]: at.toISOString() } : state.lastUsed,
     });
+    if (written.ok && state.lastProfileId !== id) this.changed();
+    return written;
   }
 }

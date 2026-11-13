@@ -86,7 +86,7 @@ export const ProposeSetupInputSchema = z.object({
     .string()
     .max(120)
     .optional()
-    .describe('An existing setup to add to, by id or name. Left out: a new setup.'),
+    .describe('An existing setup to add to, by id or by its whole name. Left out: a new setup.'),
   newSetup: z
     .object({
       name: z.string().trim().min(1).max(80),
@@ -109,7 +109,7 @@ export const ProposeSetupInputSchema = z.object({
 export type ProposeSetupInput = z.infer<typeof ProposeSetupInputSchema>;
 
 export const ScriptUseSchema = z.object({
-  setup: z.string().max(120).describe('The setup the script is for, by id or name.'),
+  setup: z.string().max(120).describe('The setup the script is for, by id or by its whole name.'),
   as: z
     .enum(['check', 'fix', 'preLaunch', 'postLaunch', 'standDown'])
     .describe('A check of its own, the fix of an existing check, or a step around the launch.'),

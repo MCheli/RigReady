@@ -1,12 +1,21 @@
 import { sameGuid } from '../../../core/directInput';
+import { sha256 } from '../../../core/files/fileStore';
 import { changePreview } from '../../../core/files/preview';
 import { gameRunning } from '../../../core/games';
 import type { ControllerPress } from '../../../core/inputPresses';
 import type { DeviceNames } from '../../../core/names';
 import { err, ok, type Result } from '../../../core/result';
-import type { ChangeRequest, ChangeResult, ChangeReview, Pressed, SetView } from '../contract';
+import type {
+  BindingSet,
+  ChangeRequest,
+  ChangeResult,
+  ChangeReview,
+  Pressed,
+  SetView,
+} from '../contract';
 import { changeBinding, type Change, type NewBinding } from './edit';
-import { inWords } from './names';
+import { iracingKeyOf } from './keys';
+import { inWords, setScope } from './names';
 import { findSet, setView, simulatorOf, type BindingsContext } from './view';
 
 /**
@@ -14,29 +23,12 @@ import { findSet, setView, simulatorOf, type BindingsContext } from './view';
  * made by edit.ts; this finds the file, says what the change means, and puts it in place
  * through FileStore (a backup first, one entry on the Safety page).
  *
- * It is behind a switch that is off unless someone turns it on, because no file RigReady
- * changed has been loaded by iRacing yet (docs/research/iracing-bindings.md has the proof
- * that is still to be done on the rig).
+ * A button and a key written here were used by iRacing 2026.11.02.01 on the owner's rig on
+ * 13 Nov 2026 (docs/research/iracing-bindings.md, "The rig tests of 13 Nov 2026").
  */
-
-/** Set to "1" in RigReady's environment to turn changing iRacing bindings on for that run. */
-export const EDIT_SWITCH = 'RIGREADY_IRACING_EDIT';
-
-export const editingOn = (env: NodeJS.ProcessEnv = process.env): boolean =>
-  env[EDIT_SWITCH] === '1';
 
 const WHY_CLOSED =
   'Close iRacing first. iRacing writes its bindings when it closes and would undo the change.';
-
-/** An error while the switch is off; nothing is looked at, read or written. */
-export function refuseWhenOff(env?: NodeJS.ProcessEnv): Result<void> {
-  return editingOn(env)
-    ? ok(undefined)
-    : err(
-        'iracing-bindings.edit.off',
-        'RigReady does not change iRacing bindings yet. Change them in iRacing.'
-      );
-}
 
 /**
  * Why the file cannot be written right now, when it cannot. Not knowing whether iRacing is
@@ -54,12 +46,36 @@ interface Plan {
   view: SetView;
   after: SetView;
   change: Change;
+  /** What this plan was made from: the file, the cars it is for, and its content. */
+  seen: string;
 }
+
+/**
+ * One SHA-256 for what the user approves: which file the set is (app.ini can point "All
+ * cars" at another profile with the same bytes), which cars it applies to, and the bytes.
+ * Save writes nothing when any of the three is no longer what the preview showed.
+ */
+export const seenOf = (set: BindingSet, bytes: Uint8Array): string =>
+  sha256(
+    JSON.stringify({
+      file: set.file.toLowerCase(),
+      cars: [set.name, ...(set.sharedWith ?? [])],
+      content: sha256(bytes),
+    })
+  );
 
 /** The binding asked for, with the ids of the controller as it is plugged in now. */
 async function wanted(ctx: BindingsContext, request: ChangeRequest): Promise<Result<NewBinding>> {
   const to = request.binding;
   if (to === null || to.kind === 'key') return ok(to);
+  if (to.kind === 'keyPress') {
+    const key = iracingKeyOf(to);
+    if (key.kind === 'key') return ok(key);
+    return err(
+      'iracing-bindings.edit.key',
+      key.kind === 'waiting' ? 'Press the key that goes with Shift, Ctrl or Alt.' : key.why
+    );
+  }
   // Both ids come from the controller Windows lists, never from the page.
   const started = await ctx.ports.input.start();
   if (!started.ok) {
@@ -111,7 +127,12 @@ async function plan(
   if (!view.ok) return view;
   const after = await setView(ctx, request.set, names, change.value.bytes);
   if (!after.ok) return after;
-  return ok({ view: view.value, after: after.value, change: change.value });
+  return ok({
+    view: view.value,
+    after: after.value,
+    change: change.value,
+    seen: seenOf(found.value.set, bytes.value),
+  });
 }
 
 const actionOf = (view: SetView, id: string): SetView['actions'][number] | undefined =>
@@ -121,11 +142,8 @@ const actionOf = (view: SetView, id: string): SetView['actions'][number] | undef
 export async function reviewChange(
   ctx: BindingsContext,
   request: ChangeRequest,
-  names: DeviceNames,
-  env?: NodeJS.ProcessEnv
+  names: DeviceNames
 ): Promise<Result<ChangeReview>> {
-  const on = refuseWhenOff(env);
-  if (!on.ok) return on;
   const planned = await plan(ctx, request, names);
   if (!planned.ok) return planned;
   const { view, after, change } = planned.value;
@@ -153,30 +171,38 @@ export async function reviewChange(
       .map((a) => ({ ...a, cameraEditor: /^Cam[A-Z]/.test(a.id) })),
     ...(blocked ? { blocked } : {}),
     preview: preview.value,
+    seen: planned.value.seen,
   });
 }
 
 /**
- * Writes one change into the set's controls.cfg: refused while the switch is off and while
- * iRacing runs, a backup first, and the file is read back before anything is called done.
+ * Writes one change into the set's controls.cfg: refused while iRacing runs, a backup
+ * first, and the file is read back before anything is called done. The page calls this
+ * only from the review's Save button, never straight after a press.
  */
 export async function applyChange(
   ctx: BindingsContext,
   request: ChangeRequest,
-  names: DeviceNames,
-  env?: NodeJS.ProcessEnv
+  names: DeviceNames
 ): Promise<Result<ChangeResult>> {
-  const on = refuseWhenOff(env);
-  if (!on.ok) return on;
   const blocked = await whyBlocked(ctx);
   if (blocked) return err('iracing-bindings.edit.blocked', blocked);
   const planned = await plan(ctx, request, names);
   if (!planned.ok) return planned;
+  // Worked out again from the file as it is now: when that is not the file the preview was
+  // made from, its "now", its conflicts and what the user approved may not hold.
+  if (request.seen !== undefined && request.seen !== planned.value.seen) {
+    return err(
+      'iracing-bindings.edit.changed',
+      'controls.cfg, or which file or cars it is for, changed after the change was shown, so nothing was written. Look at the change again.'
+    );
+  }
   const { view, after, change } = planned.value;
   const name = actionOf(view, request.action)?.name ?? request.action;
   const to = inWords(actionOf(after, request.action)?.binding);
   const file = view.set.file;
-  const where = view.set.general ? 'for all cars' : `for ${view.set.name}`;
+  // Every car the file is for, here and on the Safety page.
+  const where = `for ${setScope(view.set)}`;
   if (change.same) {
     return ok({
       changed: false,

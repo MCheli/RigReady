@@ -10,7 +10,7 @@ Some games read only a gamepad: Ace Combat 8, many console ports, older driving 
 
 ## The driver
 
-A virtual controller needs the **ViGEmBus** driver by Nefarius Software Solutions, the driver most tools of this kind use (DS4Windows, x360ce and others). RigReady never installs a driver: you install it yourself, once.
+A virtual controller needs the **ViGEmBus** driver by Nefarius Software Solutions, the driver most tools of this kind use (DS4Windows, x360ce and others). RigReady never installs a driver: you install it yourself, once. Its author retired the project and archived it on 2 November 2023, so 1.22.0 is the last release and no fixes will come.
 
 1. On the Virtual controller page, **Open the ViGEmBus releases page** (it asks before opening your browser), and download the setup of the newest release, 1.22.0.
 2. Run it. Windows asks for administrator rights; that is the driver's setup asking, not RigReady.
@@ -34,7 +34,7 @@ A profile says which of your controls drives each part of the virtual controller
 
 **Notes for one game.** A starting point made for one game also says, under a part's plain description, what the part does in that game: "In Ace Combat 8: Lock on". These are notes only; they change nothing a game is sent. A copy keeps them, and its row says "notes for Ace Combat 8". To use the copy for another game, press **Remove the notes for Ace Combat 8** in the editor: the controls you chose stay. The other starting points name no game.
 
-**Names.** No two profiles share a name. A copy gets a name of its own ("My HOTAS", then "My HOTAS 2"), and the editor does not save a name another profile already has. Profiles that shared a name before this rule still load: each says so on its row, and the id on the row tells them apart.
+**Names.** No two profiles share a name. A copy gets a name of its own ("My HOTAS", then "My HOTAS 2"), and the editor does not save a name another profile already has. Profiles that shared a name before this rule still load: each says so on its row, and the id on the row tells them apart. The copy opens in the editor; if you went on to another page while it was being made, you stay there and the copy is in the list.
 
 **Which setups use it.** Each of your profiles says which setups start it, such as 'Used by the setup "Ace Combat 8"', or "No setup uses it".
 
@@ -56,7 +56,7 @@ For every stick direction, trigger, button and d-pad direction:
 
 **The live picture** near the top draws the whole virtual controller: two sticks, two triggers and the buttons, lit while they are down, with the same in words beside it ("LT 0% · RT 62%", "Left stick: 40% right", "Pressed: A"). Move a control you mapped and watch what a game would get; nothing needs saving first.
 
-**Save and Back** are in a bar along the bottom of the window that stays there however far you scroll. The bar says **Unsaved changes** when what is on screen differs from what was saved, and why Save is off when it is (a name another profile has, for one). Leaving the editor with unsaved changes asks first.
+**Save and Back** are in a bar along the bottom of the window that stays there however far you scroll. The bar says **Unsaved changes** when what is on screen differs from what was saved, and why Save is off when it is (a name another profile has, for one). Leaving the editor with unsaved changes asks first. A change you make while a save is still being written stays on screen, and the bar goes on saying **Unsaved changes** until you save again.
 
 ![Save stays in view at the end of the page](../../../artifacts/screens/virtual-controller-editor/06-scrolled-save-in-view.png)
 

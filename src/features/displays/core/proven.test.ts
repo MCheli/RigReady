@@ -5,7 +5,7 @@ import { monitorKeys, notAsAsked, proofOf, sameProof } from './proven';
 /** "Known to work on this PC": what counts as the same change with the same monitors. */
 
 const dell: DisplayInfo = {
-  id: '\\\\?\\display#deld139#5&1509d400&0&uid4355#{e6f07b5f}',
+  id: '\\\\?\\display#deld139#5&8816e581&0&uid4355#{e6f07b5f}',
   name: 'DELL G3223D',
   enabled: true,
   primary: true,
@@ -17,7 +17,7 @@ const dell: DisplayInfo = {
   refreshHz: 60,
 };
 const wide: DisplayInfo = {
-  id: '\\\\?\\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f}',
+  id: '\\\\?\\display#sam7053#5&8816e581&0&uid4357#{e6f07b5f}',
   name: 'LC49G95T',
   enabled: true,
   primary: false,
@@ -40,8 +40,8 @@ const mfd = (port: string, usbSerial: string, x: number): DisplayInfo => ({
   rotation: 0,
   usbSerial,
 });
-const left = mfd('a&2c1ac5a9', 'WWIN-1', 7680);
-const right = mfd('a&270816bc', 'WWIN-2', 8704);
+const left = mfd('a&5a2ab1a5', 'WWIN-1', 7680);
+const right = mfd('a&618400bb', 'WWIN-2', 8704);
 const desk = (): DisplayInfo[] => [dell, wide, left, right].map((d) => ({ ...d }));
 
 const on = (d: DisplayInfo, extra: Partial<DisplayTarget>): DisplayTarget => ({
@@ -113,7 +113,7 @@ describe('the same change with the same monitors', () => {
 
   it('is the same when a USB screen was moved to another port', () => {
     const before = proofOf(flying(), desk())!;
-    const moved = { ...left, id: left.id.replace('a&2c1ac5a9', 'b&11111111') };
+    const moved = { ...left, id: left.id.replace('a&5a2ab1a5', 'b&11111111') };
     const connected = desk().map((d) => (d.id === left.id ? moved : d));
     const targets = flying().map((t) => (t.id === left.id ? { ...t, id: moved.id } : t));
     expect(sameProof(before, proofOf(targets, connected)!)).toBe(true);

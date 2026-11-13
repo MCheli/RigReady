@@ -8,9 +8,12 @@ import type { ScreensPreview, ScreensState } from '../contract';
 import { scanViewportNames } from './cockpitDisplays';
 import { evaluateMonitorSetup } from './monitorFiles';
 import {
+  AircraftScreensSchema,
+  aircraftLabel,
   aircraftLabelProblem,
   generateSetup,
   NO_CROP,
+  typedAircraft,
   unitNameProblem,
   viewportNameProblem,
   type AircraftScreens,
@@ -127,6 +130,20 @@ describe('the names a display or an aircraft can have', () => {
     expect(unitNameProblem('')).toBe('Type the name DCS has for the aircraft.');
     for (const unit of [...HOSTILE.filter((h) => !/^[A-Z -]+$/.test(h)), ' F-16', 'F/A-18C'])
       expect(unitNameProblem(unit)).toBe(UNIT_RULE);
+  });
+
+  it('an aircraft typed by a DCS name of up to 64 characters makes a setup that can be sent and saved', () => {
+    for (const unit of ['F-16C_50', 'A'.repeat(60), 'A'.repeat(61), `F${'-1'.repeat(31)}A`]) {
+      expect(unitNameProblem(unit), unit).toBeUndefined();
+      const typed = typedAircraft(unit);
+      expect(typed.unit).toBe(unit);
+      expect(AircraftScreensSchema.safeParse(typed).success, unit).toBe(true);
+      expect(aircraftLabelProblem(typed.label), unit).toBeUndefined();
+    }
+    expect(typedAircraft('A'.repeat(64)).label).toBe('A'.repeat(60));
+    // Out of a file without a name to show, the DCS name stands in, cut to fit too.
+    expect(aircraftLabel('', 'B'.repeat(64))).toBe('B'.repeat(60));
+    expect(aircraftLabel('\n', 'C'.repeat(59) + ' D')).toBe('C'.repeat(59));
   });
 
   it('wants the name shown for an aircraft to be one short line', () => {

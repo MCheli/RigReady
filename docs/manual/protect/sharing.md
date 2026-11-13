@@ -61,6 +61,8 @@ The report then shows:
 
 For files that differ, choose **Replace mine (each is backed up first)** or **Keep mine and add theirs as (shared) copies**.
 
+**Import** and **Cancel** stay at the bottom of the window however long the report is. Import is off until at least one thing is ticked, and says so. While the import runs, Cancel waits for it, so what was imported and its **Undo** are always shown.
+
 ![An import report](../../../artifacts/screens/share-import/02-report.png)
 
 ## After an import

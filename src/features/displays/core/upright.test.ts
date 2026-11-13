@@ -186,18 +186,18 @@ describe('identity on the Monitors page', () => {
     const v = await view();
     expect(v.monitors.find((m) => m.name === 'LC49G95T')).toMatchObject({
       connector: 'DisplayPort',
-      serial: 'H4ZR900542',
+      serial: 'O8HO530811',
       identical: false,
     });
     expect(v.monitors.find((m) => m.name === 'DELL G3223D')).toMatchObject({
       enabled: false,
       connector: 'DisplayPort',
-      serial: '12NFXG3',
+      serial: '25PGII6',
     });
     expect(mfds(v).map((m) => [m.connector, m.serial, m.usbSerial, m.toldApartBy])).toEqual([
-      ['USB', '1', 'WWIN29320221210163532', 'serial'],
-      ['USB', '1', 'WWIN29320221210092611', 'serial'],
-      ['USB', '1', 'WWIN29320221210093818', 'serial'],
+      ['USB', '1', 'PBOC22104847830214489', 'serial'],
+      ['USB', '1', 'ZJPC47736095181552826', 'serial'],
+      ['USB', '1', 'NVFC74178362619330533', 'serial'],
     ]);
     // Without the USB serials only the port is left to go by.
     for (const d of app.ports.state.displays) delete d.usbSerial;
@@ -220,8 +220,8 @@ describe('identity on the Monitors page', () => {
     // Every screen on another port: new ids, and the first id now belongs to another screen.
     const usb = app.ports.state.displays.filter((d) => d.name === 'USB_Monitor');
     const firstId = usb[0]!.id;
-    usb[0]!.id = firstId.replace('2c1ac5a9', '11111111');
-    usb[1]!.id = usb[1]!.id.replace('270816bc', '22222222');
+    usb[0]!.id = firstId.replace('5a2ab1a5', '11111111');
+    usb[1]!.id = usb[1]!.id.replace('618400bb', '22222222');
     usb[2]!.id = firstId;
     expect((await check()).results[0]).toMatchObject({ status: 'pass' });
 

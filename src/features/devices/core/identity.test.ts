@@ -61,8 +61,8 @@ describe('device identity', () => {
   it('reads the port from a generated instance suffix, not from a serial', () => {
     expect(portOf('USB\\VID_044F&PID_B68F\\8&348856f8&0&2')).toBe(2);
     expect(portOf('USB\\VID_8087&PID_0033\\5&cc3f949&0&14')).toBe(14);
-    expect(portOf('USB\\VID_4098&PID_BEE2\\80E62062A4E6D221B2465002')).toBeUndefined();
-    expect(portOf('USB\\VID_2109&PID_2817\\MSFT20000000000')).toBeUndefined();
+    expect(portOf('USB\\VID_4098&PID_BEE2\\52F94702D5B0D916B2951379')).toBeUndefined();
+    expect(portOf('USB\\VID_2109&PID_2817\\XLDI05432476451')).toBeUndefined();
   });
 
   it('describes where a device is plugged in, with the port path from the computer', () => {

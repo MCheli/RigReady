@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import type { BoundControl } from '../../../core/bindings';
 import { CONTROL_ID, ControlIdSchema } from './controlId';
-import { DrawingChangesSchema } from './drawings/silhouette';
+import {
+  DrawingChangesSchema,
+  drawingPictureChars,
+  MAX_PICTURE_CHARS,
+  tooMuchPicture,
+} from './drawings/silhouette';
 
 /**
  * The RigReady device layout format: where the controls of one controller model sit on a
@@ -113,40 +118,49 @@ const hex4 = z
 /** At most this much image data (as a data URL) in one layout file: about 6 MB of picture. */
 export const MAX_BACKGROUND_CHARS = 8_000_000;
 
-export const DeviceLayoutSchema = z.object({
-  format: z.literal(LAYOUT_FORMAT),
-  version: z.literal(LAYOUT_VERSION),
-  /** "WinWing MFD1 button frame". */
-  name: z.string().min(1).max(120),
-  /** Which devices this layout is for: USB vendor id and one or more product ids. */
-  match: z.object({
-    vendorId: hex4,
-    productIds: z.array(hex4).min(1).max(32),
-  }),
-  author: z.string().max(120).optional(),
-  /** Layouts shared with others should say how they may be used; shipped ones are CC0-1.0. */
-  license: z.string().max(60).optional(),
-  /** Anything the user should know: "Button order on the grip is assumed". */
-  notes: z.string().max(600).optional(),
-  canvas: z.object({ width: size, height: size }),
-  /** A photo or drawing behind the controls, as a PNG, JPEG, WebP or SVG data URL. */
-  background: BoxSchema.extend({
-    image: z
-      .string()
-      .max(MAX_BACKGROUND_CHARS)
-      .regex(/^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/),
-    opacity: z.number().min(0.05).max(1).default(1),
-  }).optional(),
-  shapes: z.array(LayoutShapeSchema).max(400).default([]),
-  groups: z.array(LayoutGroupSchema).max(200).default([]),
-  controls: z.array(LayoutControlSchema).max(600),
-  /**
-   * The device is drawn from a drawing (RigReady's, or `custom`, the user's own) rather
-   * than from the cards above, with these changes. A layout without it is drawn as cards:
-   * every layout saved before drawings existed keeps the places its owner gave the cards.
-   */
-  drawing: DrawingChangesSchema.optional(),
-});
+export const DeviceLayoutSchema = z
+  .object({
+    format: z.literal(LAYOUT_FORMAT),
+    version: z.literal(LAYOUT_VERSION),
+    /** "WinWing MFD1 button frame". */
+    name: z.string().min(1).max(120),
+    /** Which devices this layout is for: USB vendor id and one or more product ids. */
+    match: z.object({
+      vendorId: hex4,
+      productIds: z.array(hex4).min(1).max(32),
+    }),
+    author: z.string().max(120).optional(),
+    /** Layouts shared with others should say how they may be used; shipped ones are CC0-1.0. */
+    license: z.string().max(60).optional(),
+    /** Anything the user should know: "Button order on the grip is assumed". */
+    notes: z.string().max(600).optional(),
+    canvas: z.object({ width: size, height: size }),
+    /** A photo or drawing behind the controls, as a PNG, JPEG, WebP or SVG data URL. */
+    background: BoxSchema.extend({
+      image: z
+        .string()
+        .max(MAX_BACKGROUND_CHARS)
+        .regex(/^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/),
+      opacity: z.number().min(0.05).max(1).default(1),
+    }).optional(),
+    shapes: z.array(LayoutShapeSchema).max(400).default([]),
+    groups: z.array(LayoutGroupSchema).max(200).default([]),
+    controls: z.array(LayoutControlSchema).max(600),
+    /**
+     * The device is drawn from a drawing (RigReady's, or `custom`, the user's own) rather
+     * than from the cards above, with these changes. A layout without it is drawn as cards:
+     * every layout saved before drawings existed keeps the places its owner gave the cards.
+     */
+    drawing: DrawingChangesSchema.optional(),
+  })
+  .superRefine((layout, ctx) => {
+    // All its pictures together; a drawing of its own over the limit says so itself.
+    const drawn = layout.drawing?.custom ? drawingPictureChars(layout.drawing.custom) : 0;
+    const chars = (layout.background?.image.length ?? 0) + drawn;
+    if (chars > MAX_PICTURE_CHARS && drawn <= MAX_PICTURE_CHARS) {
+      ctx.addIssue({ code: 'custom', message: tooMuchPicture(chars) });
+    }
+  });
 export type DeviceLayout = z.infer<typeof DeviceLayoutSchema>;
 export type DeviceLayoutInput = z.input<typeof DeviceLayoutSchema>;
 

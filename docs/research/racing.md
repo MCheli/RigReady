@@ -49,7 +49,7 @@ Launch through Steam with `steam://rungameid/<appid>`. Pass it as an argument to
 All three games read the wheel through DirectInput, which gives two GUIDs per device:
 
 - **Product GUID** encodes VID and PID: `{PPPPVVVV-0000-0000-0000-504944564944}`. The last 6 bytes are ASCII `PIDVID`. For the DD2 it is `{00070EB7-0000-0000-0000-504944564944}`, meaning PID `0x0007` and VID `0x0EB7`. It is stable across ports and PCs.
-- **Instance GUID** is per device instance on this PC, for example `{20B0BED0-03A4-11F1-8001-444553540000}`. The last 6 bytes are ASCII `DEST\0\0`. It is time-based (UUID v1) and generated locally. It is **not** stable across PCs and may change after re-enumeration.
+- **Instance GUID** is per device instance on this PC, for example `{45D4BEA1-60A1-17D8-8001-444553540000}`. The last 6 bytes are ASCII `DEST\0\0`. It is time-based (UUID v1) and generated locally. It is **not** stable across PCs and may change after re-enumeration.
 
 Where Windows keeps instance GUIDs (read-only, no admin needed):
 
@@ -67,7 +67,7 @@ HKCU\System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectIn
     8&333F9D8D&0&0002 = 02
 ```
 
-The `GUID` value is the raw little-endian GUID. `D0 BE B0 20 A4 03 F1 11 80 01 …` is `{20B0BED0-03A4-11F1-8001-444553540000}`, exactly the GUID in iRacing's `joyCalib.yaml` and LMU's trace log. Each of the DD2's HID game-controller collections gets its own slot (`…8001…`, `…8002…`).
+The `GUID` value is the raw little-endian GUID. `D0 BE B0 20 A4 03 F1 11 80 01 …` is `{45D4BEA1-60A1-17D8-8001-444553540000}`, exactly the GUID in iRacing's `joyCalib.yaml` and LMU's trace log. Each of the DD2's HID game-controller collections gets its own slot (`…8001…`, `…8002…`).
 
 Also useful:
 - `HKCU\System\CurrentControlSet\Control\MediaResources\Joystick\DINPUT.DLL\CurrentJoystickSettings\Joystick<N>OEMName` lists the current winmm joystick slots. The DD2 is `Joystick12OEMName = VID_0EB7&PID_0007` here. The slot number in `Calibration\0\Joystick Id` (0) does not match the current slot (12), but the GUID has stayed the same since February (seen in April logs). **[I]** The instance GUID is tied to the calibration slot record, not to the winmm joystick ID.
@@ -103,9 +103,9 @@ Facts a device check can rely on:
 2. **No USB serial number.** The instance ID `7&9A60DAA&0&3` is the generated, port-derived form (contains `&`). Moving the base to another port gives a different USB instance ID and a new HID parent (`7&2A952C6A…` vs `8&333F9D8D…` above). The device check must therefore identify the base by VID/PID (only one DD2 per rig is realistic). Rule 4 in PRODUCT.md is satisfied by VID/PID alone here; record the USB location path only as a hint.
 3. **Three HID collections, two of them joysticks.** Games see **two DirectInput devices with the same name**. Verified from logs:
    - BeamNG: `FANATEC Podium Wheel Base DD2 … created as joystick0` and `… created as joystick1`. joystick0 has 108 buttons, 8 axes and 1 POV. joystick1 has 63 buttons.
-   - LMU: adds `{…8001…}`, then rejects `{…8002…}` with `Did not add device with guid {20B0BED0-03A4-11F1-8002-444553540000}: Fanatec device not recognized by Fanatec SDK.`
+   - LMU: adds `{…8001…}`, then rejects `{…8002…}` with `Did not add device with guid {45D4BEA1-60A1-17D8-8002-444553540000}: Fanatec device not recognized by Fanatec SDK.`
    - A checklist must expect **2 game-controller collections + 1 vendor collection** for one physical DD2, and must not flag the second as a duplicate or rogue device.
-4. Axis names on COL01 (DirectInput, from the BeamNG log): X `Wheel Axis`, Y `Combined Pedals`, Z `Accelerator`, RX `X Rotation`, RY `Y Rotation`, RZ `Brake`, Slider0 `Clutch`, Slider1 `Dial`. The names come from the Fanatec driver's OEM registry entries (`HKLM\…\Joystick\OEM\VID_0EB7&PID_0007\Axes\0..6`). Without the driver they would be generic.
+4. Axis names on COL01 (DirectInput, from the BeamNG log): X `Wheel Axis`, Y `Combined Pedals`, Z `Accelerator`, RX `X Rotation`, RY `Y Rotation`, RZ `Brake`, Slider0 `Clutch`, Slider1 `Dial`. The names come from the Fanatec driver's OEM registry entries (`HKLM\…\Joystick\OEM\VID_0EB7&PID_0007\Axes\0..6`). Without the driver they would be generic. **The names do not follow the pedal mode [V, 13 Nov 2026]:** on this rig, with the pedals separate, the clutch pedal moves Y ("Combined Pedals") and Slider0 ("Clutch") sits still at its top; iRacing's `Clutch` and LMU's `Clutch In` are bound to Y. In combined mode Y carries the accelerator and brake together, resting mid-way. Windows does not report the mode, so RigReady calls Y "Clutch or combined pedals" and its input tester draws the clutch from whichever of the two moves.
 5. `REV_0691` is the USB bcdDevice. **[?]** Whether it changes with firmware is unknown.
 6. The DD2 sits behind a hub on this rig (`Hub_#0009`). iRacing support advises against hubs [W, URL above]. The USB map could show this as information, not as a failure.
 7. HidHide is installed (`nefarius_HidHide_Updater` in the Run key). Its blacklist (`HKLM\SYSTEM\CurrentControlSet\Services\HidHide\Parameters`) **needs admin to read**: access was denied here. Use the HidHide CLI or client API, not that key, to check whether the DD2 is hidden.
@@ -212,7 +212,7 @@ The format is `key=value`, padded with spaces, then a TAB, then `; comment`. An 
 CalibrationInfo:
  DeviceList:
  - DeviceName: 'FANATEC Podium Wheel Base DD2'
-   InstanceGUID: '{20B0BED0-03A4-11F1-8001-444553540000}'
+   InstanceGUID: '{45D4BEA1-60A1-17D8-8001-444553540000}'
    ProductGUID: '{00070EB7-0000-0000-0000-504944564944}'
    AxisList:
    - Axis: 0
@@ -280,7 +280,7 @@ Excerpt (the `Throttle` record, bound to Accelerator, axis 2 of the DD2):
 
 ```
 "Throttle\0" 00000000 1F000000 01000000 02000000 00000000
-             D0BEB020 A403F111 80014445 53540000   <- instance GUID {20B0BED0-03A4-11F1-8001-444553540000}
+             A1BED445 A160D817 80014445 53540000   <- instance GUID {45D4BEA1-60A1-17D8-8001-444553540000}
              B70E0700 00000000 00005049 44564944   <- product GUID  {00070EB7-0000-0000-0000-504944564944} ("PIDVID")
              00000000 00000000 00000000 00000000
 ```
@@ -422,9 +422,9 @@ Borderless=1
 **Device identity (LMU).** The key is `"<product name>:<instance name>-<16 hex>"`, for example `FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5`. The trace log ties it to the instance GUID:
 
 ```
-hwinput.cpp  5706: Trying to add device with guid {20B0BED0-03A4-11F1-8001-444553540000}
+hwinput.cpp  5706: Trying to add device with guid {45D4BEA1-60A1-17D8-8001-444553540000}
 hwinput.cpp  2247: Controller unique name: FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5
-hwinput.cpp  2300: Initialization successfull. Device - Name:FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5  VIPDID 70EB7  InstanceID:{20B0BED0-03A4-11F1-8001-444553540000}
+hwinput.cpp  2300: Initialization successfull. Device - Name:FANATEC Podium Wheel Base DD2:FSDeviceWheelDD-4EDAB5C3015B4FC5  VIPDID 70EB7  InstanceID:{45D4BEA1-60A1-17D8-8001-444553540000}
 hwinput.cpp  2109: Got maximum steering wheel range for … from Fanatec driver 900
 ```
 

@@ -1,4 +1,69 @@
 {
+  "artifacts/screens/assistant/01-panel-open.png": {
+    "file": "assistant--01-panel-open.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant/02-first-request.png": {
+    "file": "assistant--02-first-request.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant-estimates/01-built-in-prices.png": {
+    "file": "assistant-estimates--01-built-in-prices.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant-estimates/09-stopped-on-the-estimate.png": {
+    "file": "assistant-estimates--09-stopped-on-the-estimate.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant-estimates/04-acknowledge.png": {
+    "file": "assistant-estimates--04-acknowledge.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant/03-found-programs.png": {
+    "file": "assistant--03-found-programs.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant/04-setup-proposal.png": {
+    "file": "assistant--04-setup-proposal.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant/05-script-draft.png": {
+    "file": "assistant--05-script-draft.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant/06-run-asks-first.png": {
+    "file": "assistant--06-run-asks-first.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/assistant/08-changed-shown-again.png": {
+    "file": "assistant--08-changed-shown-again.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/mcp-connect/01-found.png": {
+    "file": "mcp-connect--01-found.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/mcp-connect/02-preview.png": {
+    "file": "mcp-connect--02-preview.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/mcp-connect/03-connected.png": {
+    "file": "mcp-connect--03-connected.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/mcp-settings/03-paired.png": {
     "file": "mcp-settings--03-paired.webp",
     "width": 1250,
@@ -49,6 +114,11 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/ai-assist-providers/02-local-server.png": {
+    "file": "ai-assist-providers--02-local-server.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/shell-shortcuts/02-twice-the-text-size.png": {
     "file": "shell-shortcuts--02-twice-the-text-size.webp",
     "width": 1250,
@@ -79,6 +149,81 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/cheat-sheets-sheet/02-pressed.png": {
+    "file": "cheat-sheets-sheet--02-pressed.webp",
+    "width": 1486,
+    "height": 1250
+  },
+  "artifacts/screens/cheat-sheets-free-buttons/02-throttle-button-45-pressed.png": {
+    "file": "cheat-sheets-free-buttons--02-throttle-button-45-pressed.webp",
+    "width": 1486,
+    "height": 1250
+  },
+  "artifacts/screens/cheat-sheets-quick/01-quick-look.png": {
+    "file": "cheat-sheets-quick--01-quick-look.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-photo/02-pressed-waits-for-its-place.png": {
+    "file": "cheat-sheets-photo--02-pressed-waits-for-its-place.webp",
+    "width": 1486,
+    "height": 1250
+  },
+  "artifacts/screens/cheat-sheets-photo/05-half-done.png": {
+    "file": "cheat-sheets-photo--05-half-done.webp",
+    "width": 1486,
+    "height": 1250
+  },
+  "artifacts/screens/cheat-sheets-photo/06-sheet-half-done.png": {
+    "file": "cheat-sheets-photo--06-sheet-half-done.webp",
+    "width": 1486,
+    "height": 1250
+  },
+  "artifacts/screens/cheat-sheets-drawing-editor/01-drawing-editor.png": {
+    "file": "cheat-sheets-drawing-editor--01-drawing-editor.webp",
+    "width": 1486,
+    "height": 1250
+  },
+  "artifacts/screens/cheat-sheets-trainer-places/01-both-places-after-a-miss.png": {
+    "file": "cheat-sheets-trainer-places--01-both-places-after-a-miss.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-trainer-places/04-lit-on-both-devices.png": {
+    "file": "cheat-sheets-trainer-places--04-lit-on-both-devices.webp",
+    "width": 1522,
+    "height": 816
+  },
+  "artifacts/screens/cheat-sheets-trainer/04-wrong.png": {
+    "file": "cheat-sheets-trainer--04-wrong.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-trainer/06-round-over.png": {
+    "file": "cheat-sheets-trainer--06-round-over.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-trainer-rule/05-on-another-device.png": {
+    "file": "cheat-sheets-trainer-rule--05-on-another-device.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/cheat-sheets-trainer-in-place/01-already-in-place.png": {
+    "file": "cheat-sheets-trainer-in-place--01-already-in-place.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-own-guide/01-two-ways-in.png": {
+    "file": "ai-assist-own-guide--01-two-ways-in.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-own-guide/02-imported.png": {
+    "file": "ai-assist-own-guide--02-imported.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/ai-assist-walkthrough/01-press-the-control.png": {
     "file": "ai-assist-walkthrough--01-press-the-control.webp",
     "width": 1250,
@@ -86,6 +231,11 @@
   },
   "artifacts/screens/ai-assist-suggest/01-payload.png": {
     "file": "ai-assist-suggest--01-payload.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/ai-assist-compatible-suggest/02-suggestions.png": {
+    "file": "ai-assist-compatible-suggest--02-suggestions.webp",
     "width": 1250,
     "height": 821
   },
@@ -109,30 +259,15 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/bindings-kneeboard-pages/01-show-or-hide-needs-the-page-actions.png": {
+    "file": "bindings-kneeboard-pages--01-show-or-hide-needs-the-page-actions.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/bindings-edit/04-review.png": {
     "file": "bindings-edit--04-review.webp",
     "width": 1250,
     "height": 821
-  },
-  "artifacts/screens/cheat-sheets-sheet/02-pressed.png": {
-    "file": "cheat-sheets-sheet--02-pressed.webp",
-    "width": 1500,
-    "height": 1250
-  },
-  "artifacts/screens/cheat-sheets-quick/01-quick-look.png": {
-    "file": "cheat-sheets-quick--01-quick-look.webp",
-    "width": 1250,
-    "height": 821
-  },
-  "artifacts/screens/cheat-sheets-drawing-editor/01-drawing-editor.png": {
-    "file": "cheat-sheets-drawing-editor--01-drawing-editor.webp",
-    "width": 1500,
-    "height": 1250
-  },
-  "artifacts/screens/cheat-sheets-drawing-editor/03-photo-drawing.png": {
-    "file": "cheat-sheets-drawing-editor--03-photo-drawing.webp",
-    "width": 1500,
-    "height": 1250
   },
   "artifacts/screens/bindings-copy/01-proposals.png": {
     "file": "bindings-copy--01-proposals.webp",
@@ -184,6 +319,26 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/kneeboard-page-numbers/03-same-numbers.png": {
+    "file": "kneeboard-page-numbers--03-same-numbers.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/kneeboard-keys/01-pages-turn-only-from-the-keyboard.png": {
+    "file": "kneeboard-keys--01-pages-turn-only-from-the-keyboard.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-kneeboard/01-kneeboard-runs-off-the-right-screen.png": {
+    "file": "dcs-screens-kneeboard--01-kneeboard-runs-off-the-right-screen.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-kneeboard/04-kneeboard-on-the-left.png": {
+    "file": "dcs-screens-kneeboard--04-kneeboard-on-the-left.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/cheat-sheets-check/03-stale.png": {
     "file": "cheat-sheets-check--03-stale.webp",
     "width": 1250,
@@ -194,8 +349,53 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/dcs-screens-named/02-corrected-by-hand.png": {
+    "file": "dcs-screens-named--02-corrected-by-hand.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-layout/01-asked-again.png": {
+    "file": "dcs-screens-layout--01-asked-again.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-named/01-paired-by-name.png": {
+    "file": "dcs-screens-named--01-paired-by-name.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-module-displays/02-installed-aircraft.png": {
+    "file": "dcs-setup-module-displays--02-installed-aircraft.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-setup-module-displays/03-f-15e-placed.png": {
+    "file": "dcs-setup-module-displays--03-f-15e-placed.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/dcs-setup-screens/05-cropped.png": {
     "file": "dcs-setup-screens--05-cropped.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-by-name/01-aircraft-menu.png": {
+    "file": "dcs-screens-by-name--01-aircraft-menu.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-by-name/02-name-refused.png": {
+    "file": "dcs-screens-by-name--02-name-refused.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-by-name/03-display-added-by-name.png": {
+    "file": "dcs-screens-by-name--03-display-added-by-name.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/dcs-screens-by-name/04-aircraft-added-by-name.png": {
+    "file": "dcs-screens-by-name--04-aircraft-added-by-name.webp",
     "width": 1250,
     "height": 821
   },
@@ -209,16 +409,6 @@
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/cheat-sheets-trainer/04-wrong.png": {
-    "file": "cheat-sheets-trainer--04-wrong.webp",
-    "width": 1250,
-    "height": 821
-  },
-  "artifacts/screens/cheat-sheets-trainer/06-round-over.png": {
-    "file": "cheat-sheets-trainer--06-round-over.webp",
-    "width": 1250,
-    "height": 821
-  },
   "artifacts/screens/generic-configure/04-games.png": {
     "file": "generic-configure--04-games.webp",
     "width": 1250,
@@ -226,6 +416,11 @@
   },
   "artifacts/screens/racing-games/05-assetto-corsa.png": {
     "file": "racing-games--05-assetto-corsa.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-ac-repair/01-moved.png": {
+    "file": "racing-ac-repair--01-moved.webp",
     "width": 1250,
     "height": 821
   },
@@ -239,13 +434,48 @@
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/racing-game-pages/01-games.png": {
-    "file": "racing-game-pages--01-games.webp",
+  "artifacts/screens/games-menu/01-games.png": {
+    "file": "games-menu--01-games.webp",
     "width": 1250,
     "height": 821
   },
   "artifacts/screens/racing-game-pages/03-not-found.png": {
     "file": "racing-game-pages--03-not-found.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-all-cars/01-all-cars.png": {
+    "file": "iracing-bindings-all-cars--01-all-cars.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-moved-wheel/01-new-windows-id.png": {
+    "file": "iracing-bindings-moved-wheel--01-new-windows-id.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-all-cars/04-search.png": {
+    "file": "iracing-bindings-all-cars--04-search.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-car/02-car-differs.png": {
+    "file": "iracing-bindings-car--02-car-differs.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-all-cars/07-shared-inputs.png": {
+    "file": "iracing-bindings-all-cars--07-shared-inputs.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-all-cars/03-why-read-only.png": {
+    "file": "iracing-bindings-all-cars--03-why-read-only.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/iracing-bindings-not-here/01-not-on-this-pc.png": {
+    "file": "iracing-bindings-not-here--01-not-on-this-pc.webp",
     "width": 1250,
     "height": 821
   },
@@ -269,8 +499,38 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/games-more-sims/01-games.png": {
+    "file": "games-more-sims--01-games.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/games-more-sims/02-falcon-bms.png": {
+    "file": "games-more-sims--02-falcon-bms.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/games-more-sims/03-acc.png": {
+    "file": "games-more-sims--03-acc.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/racing-game-pages/05-msfs2024.png": {
     "file": "racing-game-pages--05-msfs2024.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/games-add-a-game/03-filled.png": {
+    "file": "games-add-a-game--03-filled.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/games-add-a-game/04-games.png": {
+    "file": "games-add-a-game--04-games.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/games-own-change-remove/04-remove-asks.png": {
+    "file": "games-own-change-remove--04-remove-asks.webp",
     "width": 1250,
     "height": 821
   },
@@ -289,6 +549,31 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/wheel-moza/01-wheel.png": {
+    "file": "wheel-moza--01-wheel.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-wheel-not-listed/02-seen.png": {
+    "file": "racing-wheel-not-listed--02-seen.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-wheel-not-listed/03-add.png": {
+    "file": "racing-wheel-not-listed--03-add.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/racing-wheel-not-listed/04-my-wheel.png": {
+    "file": "racing-wheel-not-listed--04-my-wheel.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/wheel-logitech/02-profiles.png": {
+    "file": "wheel-logitech--02-profiles.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/racing-wheel/02-presets.png": {
     "file": "racing-wheel--02-presets.webp",
     "width": 1250,
@@ -301,6 +586,11 @@
   },
   "artifacts/screens/first-run/01-welcome.png": {
     "file": "first-run--01-welcome.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/mcp-welcome/01-welcome-step.png": {
+    "file": "mcp-welcome--01-welcome-step.webp",
     "width": 1250,
     "height": 821
   },
@@ -319,8 +609,23 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/games-menu-bindings/02-picker-open.png": {
+    "file": "games-menu-bindings--02-picker-open.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/manual-links/02-devices-header.png": {
+    "file": "manual-links--02-devices-header.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/devices-list/02-found.png": {
     "file": "devices-list--02-found.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-what-is/04-said-wheel-for-racing.png": {
+    "file": "devices-what-is--04-said-wheel-for-racing.webp",
     "width": 1250,
     "height": 821
   },
@@ -369,6 +674,16 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/devices-tester-wheel/01-wheel-view.png": {
+    "file": "devices-tester-wheel--01-wheel-view.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/devices-swap-to-wheel/03-wheel-input.png": {
+    "file": "devices-swap-to-wheel--03-wheel-input.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/stream-deck-health/01-health.png": {
     "file": "stream-deck-health--01-health.webp",
     "width": 1250,
@@ -414,6 +729,41 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/virtual-controller-editor/01-page.png": {
+    "file": "virtual-controller-editor--01-page.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/virtual-controller-no-driver/01-no-driver.png": {
+    "file": "virtual-controller-no-driver--01-no-driver.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/virtual-controller-same-names/03-delete-used.png": {
+    "file": "virtual-controller-same-names--03-delete-used.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/virtual-controller-editor/03-editor.png": {
+    "file": "virtual-controller-editor--03-editor.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/virtual-controller-editor/06-scrolled-save-in-view.png": {
+    "file": "virtual-controller-editor--06-scrolled-save-in-view.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/virtual-controller-launch/02-running.png": {
+    "file": "virtual-controller-launch--02-running.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/virtual-controller-launch/01-launched.png": {
+    "file": "virtual-controller-launch--01-launched.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/audio-page/01-as-recorded.png": {
     "file": "audio-page--01-as-recorded.webp",
     "width": 1250,
@@ -424,13 +774,13 @@
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/displays-upright/02-which-way-is-up.png": {
-    "file": "displays-upright--02-which-way-is-up.webp",
+  "artifacts/screens/display-quarter-turn/01-which-way-is-up.png": {
+    "file": "display-quarter-turn--01-which-way-is-up.webp",
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/displays-upright/03-turned.png": {
-    "file": "displays-upright--03-turned.webp",
+  "artifacts/screens/display-quarter-turn/02-turned-a-quarter.png": {
+    "file": "display-quarter-turn--02-turned-a-quarter.webp",
     "width": 1250,
     "height": 821
   },
@@ -439,13 +789,38 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/display-rate-raised/01-same-name-says-how.png": {
+    "file": "display-rate-raised--01-same-name-says-how.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-new-and-replace/01-new-layout.png": {
+    "file": "display-new-and-replace--01-new-layout.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/display-refresh-rate/01-rate-in-layout.png": {
     "file": "display-refresh-rate--01-rate-in-layout.webp",
     "width": 1250,
     "height": 821
   },
-  "artifacts/screens/display-layouts/03-layouts.png": {
-    "file": "display-layouts--03-layouts.webp",
+  "artifacts/screens/display-rate-raised/02-replace-shows-the-new-rate.png": {
+    "file": "display-rate-raised--02-replace-shows-the-new-rate.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-layout-cards/01-cards.png": {
+    "file": "display-layout-cards--01-cards.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-layout-cards/02-a-monitor-no-layout-lists.png": {
+    "file": "display-layout-cards--02-a-monitor-no-layout-lists.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-new-and-replace/04-replace-asks-first.png": {
+    "file": "display-new-and-replace--04-replace-asks-first.webp",
     "width": 1250,
     "height": 821
   },
@@ -469,6 +844,21 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/display-not-kept/01-countdown-ran-out.png": {
+    "file": "display-not-kept--01-countdown-ran-out.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-known-layout/01-first-make-ready-asks.png": {
+    "file": "display-known-layout--01-first-make-ready-asks.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-assistant-asks/01-asked-by-an-assistant.png": {
+    "file": "display-assistant-asks--01-asked-by-an-assistant.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/display-recovery/01-offer.png": {
     "file": "display-recovery--01-offer.webp",
     "width": 1250,
@@ -476,6 +866,11 @@
   },
   "artifacts/screens/display-edit/02-edited.png": {
     "file": "display-edit--02-edited.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/display-edit-turn/02-all-three-upright.png": {
+    "file": "display-edit-turn--02-all-three-upright.webp",
     "width": 1250,
     "height": 821
   },
@@ -549,6 +944,31 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/launch-plan/01-before-the-click.png": {
+    "file": "launch-plan--01-before-the-click.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/launch-starting/01-starting.png": {
+    "file": "launch-starting--01-starting.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/overlay/05-preview.png": {
+    "file": "overlay--05-preview.webp",
+    "width": 398,
+    "height": 302
+  },
+  "artifacts/screens/overlay/02-preview-off.png": {
+    "file": "overlay--02-preview-off.webp",
+    "width": 974,
+    "height": 323
+  },
+  "artifacts/screens/overlay/06-on.png": {
+    "file": "overlay--06-on.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/fly-session/02-in-session.png": {
     "file": "fly-session--02-in-session.webp",
     "width": 1250,
@@ -571,6 +991,26 @@
   },
   "artifacts/screens/fly-stand-down-desk/02-at-the-desk.png": {
     "file": "fly-stand-down-desk--02-at-the-desk.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-stand-down-countdown/01-countdown.png": {
+    "file": "fly-stand-down-countdown--01-countdown.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png": {
+    "file": "fly-stand-down-top-bar--02-in-the-top-bar.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-stand-down-setting/03-stood-down-by-itself.png": {
+    "file": "fly-stand-down-setting--03-stood-down-by-itself.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-stand-down-setting/01-on-by-default.png": {
+    "file": "fly-stand-down-setting--01-on-by-default.webp",
     "width": 1250,
     "height": 821
   },
@@ -694,6 +1134,16 @@
     "width": 1250,
     "height": 821
   },
+  "artifacts/screens/processes-own-apps/02-always-offered.png": {
+    "file": "processes-own-apps--02-always-offered.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/setup-from-game-gamepad/01-gamepad-game.png": {
+    "file": "setup-from-game-gamepad--01-gamepad-game.webp",
+    "width": 1250,
+    "height": 821
+  },
   "artifacts/screens/profile-capture-game/02-on-fly.png": {
     "file": "profile-capture-game--02-on-fly.webp",
     "width": 1250,
@@ -711,6 +1161,16 @@
   },
   "artifacts/screens/profile-edit-item/01-editing-trackir.png": {
     "file": "profile-edit-item--01-editing-trackir.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/editor-lists-virtual-controller/01-two-of-one-name.png": {
+    "file": "editor-lists-virtual-controller--01-two-of-one-name.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/fly-stand-down-setting/02-lengths.png": {
+    "file": "fly-stand-down-setting--02-lengths.webp",
     "width": 1250,
     "height": 821
   },
@@ -736,6 +1196,11 @@
   },
   "artifacts/screens/profile-hand-edit/01-broken-edit.png": {
     "file": "profile-hand-edit--01-broken-edit.webp",
+    "width": 1250,
+    "height": 821
+  },
+  "artifacts/screens/profiles-version-one/02-bring-over.png": {
+    "file": "profiles-version-one--02-bring-over.webp",
     "width": 1250,
     "height": 821
   },

@@ -9,14 +9,18 @@ import {
   type BoundHatDirection,
   type BoundInput,
 } from '../../../core/bindings';
+import type { IracingControls } from '../../../core/iracingControls';
 import { err, ok, type Result } from '../../../core/result';
 import type { InputDevice } from '../../../shared/models';
 import { AC_AXES, acActionLabel, parseIni } from './assettoCorsa';
 import { beamngView } from './beamng/beamng';
 import { racingCategory, type RacingCategory } from './categories';
 import { cleanGuid, liveControllers, locationOf, type RacingContext } from './context';
-import { axisName, vidPidFromProductGuid } from './devices';
-import { readFiles as readIracingFiles } from './iracing/iracing';
+import { axisName, driverAxisOf, gameAxisName, vidPidFromProductGuid } from './devices';
+import {
+  locateFiles as locateIracingFiles,
+  readFiles as readIracingFiles,
+} from './iracing/iracing';
 import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './iracing/labels';
 import { readLmuFiles } from './lmu/lmu';
 
@@ -167,7 +171,10 @@ async function quietly(ctx: RacingContext, game: string, check: () => Promise<bo
 
 // ---- iRacing ----
 
-/** iRacing names axes in joyCalib.yaml ("Wheel Axis", "Brake"); DirectInput calls them X, RZ. */
+/**
+ * iRacing names axes in joyCalib.yaml with the driver's names ("Wheel Axis", "Combined
+ * Pedals", "Brake"); DirectInput calls them X, Y, RZ.
+ */
 export function axisFromName(
   name: string,
   vendorId?: string,
@@ -180,6 +187,8 @@ export function axisFromName(
       .trim();
   const wanted = plain(name);
   if (!wanted) return undefined;
+  const driver = driverAxisOf(name, vendorId, productId);
+  if (driver) return neutralAxis(driver);
   for (const ids of [
     [vendorId, productId],
     [undefined, undefined],
@@ -210,57 +219,53 @@ function iracingAction(id: string): { id: string; name: string; category: Racing
 
 const CAR_PREFIX = 'car:';
 
-async function iracingCars(ctx: RacingContext, documents: string): Promise<string[]> {
-  const cars = await ctx.ports.files.list(path.join(documents, 'setups'));
-  const out: string[] = [];
-  for (const car of cars.ok ? cars.value.sort() : []) {
-    if (await ctx.ports.files.exists(path.join(documents, 'setups', car, 'controls.cfg'))) {
-      out.push(car);
-    }
-  }
-  return out;
-}
+/**
+ * Whether iRacing has a set for all cars to show: its controls.cfg is there, or iRacing keeps
+ * control profiles (then a profile that cannot be found is said in so many words when the
+ * set is opened, never replaced by the older file).
+ */
+const hasGeneral = async (ctx: RacingContext, located: IracingControls): Promise<boolean> =>
+  located.kind === 'profiles' ||
+  (located.general !== undefined && (await ctx.ports.files.exists(located.general.controls)));
 
 export function iracingReader(ctx: RacingContext): BindingReader {
-  const documents = (): Promise<string | undefined> => locationOf(ctx, 'iracing', 'documents');
   return {
     game: 'iracing',
     gameName: 'iRacing',
     available: () =>
       quietly(ctx, 'iRacing', async () => {
-        const folder = await documents();
-        return (
-          folder !== undefined && (await ctx.ports.files.exists(path.join(folder, 'controls.cfg')))
-        );
+        const found = await locateIracingFiles(ctx);
+        return found !== undefined && (await hasGeneral(ctx, found.located));
       }),
     async aircraft() {
-      const folder = await documents();
-      if (!folder) return ok([]);
-      const general = await ctx.ports.files.exists(path.join(folder, 'controls.cfg'));
-      const cars = await iracingCars(ctx, folder);
+      const found = await locateIracingFiles(ctx);
+      if (!found) return ok([]);
+      const general = await hasGeneral(ctx, found.located);
       return ok([
         ...(general ? [{ ...GENERAL, name: 'All cars' }] : []),
-        ...cars.map((car): BoundAircraft => ({
-          id: `${CAR_PREFIX}${car}`,
-          name: car,
+        ...found.located.cars.map(({ car }): BoundAircraft => ({
+          id: `${CAR_PREFIX}${car!}`,
+          name: car!,
           hasUserBindings: true,
         })),
       ]);
     },
     async bindings(aircraftId): Promise<Result<AircraftBindings>> {
-      const folder = await documents();
-      if (!folder) return err('racing.bindings', 'The iRacing folder in Documents was not found.');
+      const found = await locateIracingFiles(ctx);
+      if (!found) return err('racing.bindings', 'The iRacing folder in Documents was not found.');
       let car: string | undefined;
       if (aircraftId !== ALL_CARS) {
         // Only a car iRacing really has custom controls for: the id never becomes a path by itself.
-        car = (await iracingCars(ctx, folder)).find((c) => `${CAR_PREFIX}${c}` === aircraftId);
+        car = found.located.cars.find((c) => `${CAR_PREFIX}${c.car!}` === aircraftId)?.car;
         if (!car) return err('racing.bindings', 'iRacing has no custom controls for that car.');
       }
       const files = await readIracingFiles(ctx, car);
       if (!files?.controls) {
         return err(
           'racing.bindings',
-          files?.problems[0] ?? 'iRacing has no controls.cfg yet: bind something in iRacing first.'
+          (car === undefined ? files?.located.problem : undefined) ??
+            files?.problems[0] ??
+            'iRacing has no controls.cfg yet: bind something in iRacing first.'
         );
       }
       // A car's folder usually has no calibration of its own; the general one names the axes.
@@ -318,7 +323,9 @@ export function iracingReader(ctx: RacingContext): BindingReader {
             : undefined;
           device.drafts.push(
             binding(`axis ${b.axis}`, axis ? { kind: 'axis', axis } : undefined, action, {
-              label: named || `Axis ${b.axis}`,
+              label: named
+                ? gameAxisName(named, device.vendorId, device.productId)
+                : `Axis ${b.axis}`,
               ...(half ? { half } : {}),
             })
           );

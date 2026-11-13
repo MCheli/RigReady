@@ -1,5 +1,4 @@
 import path from 'node:path';
-import * as yaml from 'js-yaml';
 import { z } from 'zod';
 import type { BindingProposal, BindingReader, BindingRegistry } from '../../../core/bindings';
 import { JsonStore } from '../../../core/jsonStore';
@@ -18,16 +17,36 @@ import {
 import { budgetStopMessage, MonthSpend } from './budget';
 import { draftSchema, draftTask, validateDraft } from './draft';
 import { describeInput, fits, hasInput } from './inputs';
+import {
+  classGuides,
+  forCars,
+  classInName,
+  iracingEntries,
+  iracingParts,
+  isIracingId,
+  IRACING_PREFIX,
+  type IracingBindings,
+  type IracingEntry,
+  type IracingOverview,
+  type IracingWanted,
+} from './iracing';
 import { guideProblem, MAX_GUIDE_BYTES, starterGuide } from './ownGuide';
 import {
+  GAME_ROLES,
+  gameOfKey,
+  GUIDE_GAME_NAMES,
+  GUIDE_GAMES,
+  guideKey,
   matchActions,
+  packText,
   parsePack,
-  PLACE_TITLES,
+  placeTitle,
+  plainLabels,
   resolvePack,
-  ROLE_TITLES,
-  ROLES,
-  TIER_TITLES,
+  roleTitle,
+  tierTitle,
   TIERS,
+  type GuideGame,
   type Pack,
 } from './pack';
 import {
@@ -46,7 +65,9 @@ import {
   type WhatIsSent,
   type AircraftList,
   type AppliedView,
+  type GuideGames,
   type GuideView,
+  type IracingReviewView,
   type PlanView,
   type Prepared,
   type Progress,
@@ -57,7 +78,7 @@ import {
   type StagedView,
   type UsageView,
 } from './model';
-import { shippedPack } from './shipped';
+import { shipped, shippedPack } from './shipped';
 import { contextText, takeSnapshot, type GuideKind, type Snapshot } from './snapshot';
 import { jsonText } from './openai';
 import {
@@ -85,7 +106,7 @@ import {
   questionTask,
   suggestionSchema,
   suggestionTask,
-  SYSTEM_PROMPT,
+  systemPrompt,
   validatePlan,
   type SuggestionPlan,
 } from './suggest';
@@ -94,6 +115,11 @@ export interface AiAssistContext {
   ports: Ports;
   log: Logger;
   bindings: BindingRegistry;
+  /**
+   * iRacing's bindings, from the iRacing bindings feature (its channels, in main.ts). Absent
+   * where that feature is not wired: the guide then has nothing for iRacing.
+   */
+  iracing?: IracingBindings;
   /** Told how a streamed request is coming along; the app passes it on to the page. */
   onProgress?: (progress: SendProgress) => void;
   /** Told what the month is estimated at each time a request was counted, for Settings. */
@@ -150,17 +176,18 @@ const ProgressFileSchema = z.object({ aircraft: z.record(z.string(), ProgressSch
  * What is and is not sent, shown in Settings: by use, because the two uses send different
  * things. The assistant, which is the same for every game, sends the conversation and
  * whatever the tools it used answered. AI help in the binding guide, which is for DCS
- * aircraft only, sends a fixed, narrow description of one aircraft's bindings. The assistant
- * comes first: it is the part that everyone who sets up AI uses, whatever they play.
+ * aircraft and iRacing cars, sends a fixed, narrow description of one aircraft's or one
+ * class's bindings. The assistant comes first: it is the part that everyone who sets up AI
+ * uses, whatever they play.
  */
 export function whatIsSent(provider: ChatProvider | undefined): WhatIsSent {
   const guide = {
-    title: 'AI help in the binding guide (DCS aircraft only)',
+    title: 'AI help in the binding guide (DCS aircraft and iRacing cars)',
     lines: [
-      'Only when you ask for AI help on the Binding guide page, which covers DCS aircraft. If you do not fly DCS, nothing in this list is ever sent.',
-      "Sent: the aircraft's name, and DCS's list of its actions (ids, names, categories) with what each is bound to now.",
-      'Sent: for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
-      "Sent: the guide for the aircraft when there is one (RigReady's, one drafted by AI, or your own): its summary and each item with its title, tier, place and what it does. And your question.",
+      'Only when you ask for AI help on the Binding guide page, which covers DCS aircraft and iRacing cars. If you play neither, nothing in this list is ever sent.',
+      'Sent for a DCS aircraft: its name, and DCS\'s list of its actions (ids, names, categories) with what each is bound to now; for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
+      "Sent for iRacing: the class or car's name, iRacing's list of actions (ids and groups) with what each is bound to now in those bindings, and the DirectInput product name of each connected controller they name.",
+      "Sent: the guide when there is one (RigReady's, one drafted by AI, or your own): its summary and each item with its title, tier, place and what it does. And your question.",
       'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or any other content of your files.',
       'Every request is shown to you in full before it is sent.',
     ],
@@ -172,7 +199,7 @@ export function whatIsSent(provider: ChatProvider | undefined): WhatIsSent {
       "Sent with every request: your messages and the assistant's answers in the conversation so far, RigReady's instructions for the assistant, and the list of tools it may use (their names, descriptions and arguments).",
       "Sent: what each tool answered when the assistant used it. A tool can answer what RigReady itself can show you: your setups and their checks and steps, whether the rig is ready, what is connected and running, where programs are installed, the names of your devices, the bindings and settings RigReady reads from your games, and pages of RigReady's manual.",
       'Every tool the assistant used is listed in the conversation. Open its row to read exactly what it answered, which is exactly what is sent.',
-      "Before a tool's answer is sent, the path of your Windows user folder is replaced by {USER}, and the PC's name by {PC} when it has five or more characters. Nothing else is taken out: other names and paths go as they are.",
+      "Before a tool's answer is sent, the path of your Windows user folder is replaced by {USER}, in any case, in its short form and in a file:/// address too, and the PC's name by {PC} when it has five or more characters. Nothing else is taken out: other names and paths go as they are.",
       'Not sent: anything no tool was used for. The assistant cannot read the PC in any other way.',
       'Each request is shown before it is sent, with its exact text one click away, unless you ticked "Don\'t show this again for this conversation".',
       'A setup it proposes or a script it drafts comes back in its answer and waits in RigReady until you save it or throw it away. Saving it sends nothing.',
@@ -248,6 +275,12 @@ const GUIDE_IN_A_REQUEST: Record<GuideKind, string> = {
     'The guide drafted by AI for this aircraft: its summary and each item with its title, tier, place and what it does',
   own: 'Your own guide for this aircraft: its summary and each item with its title, tier, place and what it does',
 };
+const IRACING_GUIDE_IN_A_REQUEST: Record<GuideKind, string> = {
+  shipped: "RigReady's binding guide for this class of car",
+  drafted:
+    'The guide drafted by AI for this car: its summary and each item with its title, tier, place and what it does',
+  own: 'Your own guide for this car: its summary and each item with its title, tier, place and what it does',
+};
 
 export class AiAssist {
   private readonly settings: JsonStore<typeof SettingsSchema>;
@@ -312,18 +345,36 @@ export class AiAssist {
     return parsed.ok ? { pack: parsed.value } : { problem: guideProblem(parsed.error) };
   }
 
-  /** The shipped guide, or the one kept for an aircraft: drafted by AI, or the user's own. */
-  async guideFor(
-    aircraftId: string
-  ): Promise<{ pack: Pack; kind: 'shipped' | 'drafted' | 'own' } | undefined> {
+  /**
+   * The shipped guide, or the one kept for an aircraft or an iRacing car: drafted by AI, or the
+   * user's own. An iRacing car without one uses the class guide its folder name says, if any.
+   */
+  async guideFor(aircraftId: string): Promise<
+    | {
+        pack: Pack;
+        kind: 'shipped' | 'drafted' | 'own';
+        suggested?: { className: string; token: string };
+      }
+    | undefined
+  > {
     const pack = shippedPack(aircraftId);
     if (pack) return { pack, kind: 'shipped' };
     const stored = await this.stored(aircraftId);
-    if (!stored?.pack) {
-      if (stored) this.ctx.log.warn(`ai-assist: the guide file for ${aircraftId} cannot be used`);
-      return undefined;
+    if (stored && !stored.pack) {
+      this.ctx.log.warn(`ai-assist: the guide file for ${aircraftId} cannot be used`);
     }
-    return { pack: stored.pack, kind: stored.pack.drafted ? 'drafted' : 'own' };
+    if (stored?.pack) return { pack: stored.pack, kind: stored.pack.drafted ? 'drafted' : 'own' };
+    if (stored || !isIracingId(aircraftId)) return undefined;
+    const carSet = aircraftId.slice(IRACING_PREFIX.length);
+    const inName = carSet.startsWith('car:') ? classInName(carSet.slice(4)) : undefined;
+    const classPack = inName ? shippedPack(`${IRACING_PREFIX}${inName.classId}`) : undefined;
+    return classPack && inName
+      ? {
+          pack: classPack,
+          kind: 'shipped',
+          suggested: { className: classPack.aircraft.name, token: inName.token },
+        }
+      : undefined;
   }
 
   /** True when a draft by AI would replace a guide file the user wrote or imported. */
@@ -342,7 +393,9 @@ export class AiAssist {
     if (shippedPack(aircraftId)) {
       return err(
         'ai.guideShipped',
-        'RigReady includes a guide for this aircraft and uses that one.'
+        isIracingId(aircraftId)
+          ? 'RigReady includes a guide for this class and uses that one. A guide of your own is for one car with controls of its own in iRacing.'
+          : 'RigReady includes a guide for this aircraft and uses that one.'
       );
     }
     if (await this.ctx.ports.files.exists(this.draftPath(aircraftId))) {
@@ -364,7 +417,10 @@ export class AiAssist {
     if (!room.ok) return room;
     const { files, dialogs } = this.ctx.ports;
     const picked = await dialogs.open({
-      title: `Import a binding guide for the ${room.value.aircraftName}`,
+      title:
+        room.value.game === 'iracing'
+          ? `Import a binding guide for ${room.value.aircraftName}`
+          : `Import a binding guide for the ${room.value.aircraftName}`,
       filters: [{ name: 'Binding guide', extensions: ['yaml', 'yml'] }],
     });
     if (!picked.ok) return picked;
@@ -388,12 +444,17 @@ export class AiAssist {
     const pack = parsed.value;
     const wanted = aircraftId.toLowerCase();
     const forThis = [pack.aircraft.id, ...(pack.aircraft.also ?? [])].some(
-      (id) => id.toLowerCase() === wanted
+      (id) => guideKey(pack.game, id) === wanted
     );
     if (!forThis) {
+      const shown = gameOfKey(aircraftId);
       return err(
         'ai.guideAircraft',
-        `That guide is for the ${pack.aircraft.name} (${pack.aircraft.id}). The aircraft shown here is the ${room.value.aircraftName} (${aircraftId}).`
+        pack.game !== shown
+          ? `That guide is for ${GUIDE_GAME_NAMES[pack.game]}. The guide shown here is for ${GUIDE_GAME_NAMES[shown]}.`
+          : shown === 'iracing'
+            ? `That guide is for ${pack.aircraft.name} (${pack.aircraft.id}). The car shown here is ${room.value.aircraftName} (${aircraftId.slice(IRACING_PREFIX.length)}).`
+            : `That guide is for the ${pack.aircraft.name} (${pack.aircraft.id}). The aircraft shown here is the ${room.value.aircraftName} (${aircraftId}).`
       );
     }
     const written = await files.write(this.draftPath(aircraftId), text.value, {
@@ -409,9 +470,25 @@ export class AiAssist {
     if (!room.ok) return room;
     const s = room.value;
     if (s.actions.length === 0) {
-      return err('ai.guideActions', `DCS lists no actions for the ${s.aircraftName} yet.`);
+      return err(
+        'ai.guideActions',
+        s.game === 'iracing'
+          ? 'iRacing lists no actions in these bindings yet.'
+          : `DCS lists no actions for the ${s.aircraftName} yet.`
+      );
     }
-    const text = starterGuide({ id: aircraftId, name: s.aircraftName }, s.actions);
+    const text =
+      s.game === 'iracing'
+        ? starterGuide(
+            // The car's folder, without the game in front: what an iRacing guide names.
+            {
+              id: aircraftId.slice(IRACING_PREFIX.length),
+              name: s.iracing?.setName ?? s.aircraftName,
+            },
+            s.actions,
+            'iracing'
+          )
+        : starterGuide({ id: aircraftId, name: s.aircraftName }, s.actions);
     const checked = parsePack(text, 'The starter guide');
     if (!checked.ok) return err(checked.error.code, guideProblem(checked.error));
     const written = await this.ctx.ports.files.write(this.draftPath(aircraftId), text, {
@@ -431,10 +508,39 @@ export class AiAssist {
     return started.ok ? ok({ opened: true }) : started;
   }
 
-  async aircraft(): Promise<Result<AircraftList>> {
+  /** The games the guide has guides for, and whether each is found here, for the page's picker. */
+  async games(): Promise<Result<GuideGames>> {
+    const games = await Promise.all(
+      GUIDE_GAMES.map(async (id) => ({
+        id,
+        name: GUIDE_GAME_NAMES[id],
+        available: id === 'dcs' ? await this.dcsAvailable() : await this.iracingAvailable(),
+      }))
+    );
+    return ok({ games });
+  }
+
+  private async dcsAvailable(): Promise<boolean> {
+    const reader = this.ctx.bindings.get(GAME);
+    return reader !== undefined && (await reader.available());
+  }
+
+  /** iRacing counts as found when its program is: the page then says what is missing, if anything. */
+  private async iracingAvailable(): Promise<boolean> {
+    const overview = await this.ctx.iracing?.overview();
+    return overview?.ok === true && overview.value.installed;
+  }
+
+  async aircraft(game: GuideGame = 'dcs'): Promise<Result<AircraftList>> {
+    if (game === 'iracing') return this.iracingList();
     const reader = this.ctx.bindings.get(GAME);
     if (!reader || !(await reader.available())) {
-      return ok({ available: false, gameName: reader?.gameName ?? 'DCS World', aircraft: [] });
+      return ok({
+        game,
+        available: false,
+        gameName: reader?.gameName ?? 'DCS World',
+        aircraft: [],
+      });
     }
     const list = await reader.aircraft();
     if (!list.ok) return list;
@@ -447,15 +553,107 @@ export class AiAssist {
         Number(b.guide !== null) - Number(a.guide !== null) ||
         Number(b.hasUserBindings) - Number(a.hasUserBindings)
     );
-    return ok({ available: true, gameName: reader.gameName, aircraft });
+    return ok({ game, available: true, gameName: reader.gameName, aircraft });
+  }
+
+  /** The iRacing classes RigReady has a guide for, then each car with controls of its own. */
+  private async iracingEntries(): Promise<
+    Result<{ entries: IracingEntry[]; installed: boolean; overview?: IracingOverview }>
+  > {
+    const source = this.ctx.iracing;
+    if (!source) return ok({ entries: [], installed: false });
+    const overview = await source.overview();
+    if (!overview.ok) return overview;
+    const classes = classGuides(shipped().values()).map((p) => ({
+      id: p.aircraft.id,
+      name: p.aircraft.name,
+    }));
+    return ok({
+      entries: overview.value.installed ? iracingEntries(overview.value, classes) : [],
+      installed: overview.value.installed,
+      overview: overview.value,
+    });
+  }
+
+  private async iracingList(): Promise<Result<AircraftList>> {
+    const found = await this.iracingEntries();
+    if (!found.ok) return found;
+    // The classes work on the bindings for all cars: without them there is nothing to show yet.
+    const overview = found.value.overview;
+    if (found.value.installed && overview && !overview.sets.some((s) => s.general)) {
+      return ok({
+        game: 'iracing',
+        available: true,
+        gameName: 'iRacing',
+        aircraft: [],
+        problem:
+          overview.source?.problem ??
+          'iRacing has no bindings file yet. Set up your controls in iRacing once, and the guide fills in.',
+      });
+    }
+    const aircraft = await Promise.all(
+      found.value.entries.map(async (entry) => {
+        const guide = await this.guideFor(entry.id);
+        return {
+          id: entry.id,
+          name: entry.name,
+          hasUserBindings: true,
+          guide: guide?.kind ?? null,
+          ...(guide?.suggested ? { uses: guide.suggested.className } : {}),
+        };
+      })
+    );
+    return ok({ game: 'iracing', available: found.value.installed, gameName: 'iRacing', aircraft });
   }
 
   private async snapshot(aircraftId: string): Promise<Result<Snapshot>> {
+    if (isIracingId(aircraftId)) return this.iracingSnapshot(aircraftId);
     const reader = this.reader();
     if (!reader.ok) return reader;
     const found = await this.guideFor(aircraftId);
     const taken = await takeSnapshot(reader.value, aircraftId, found?.pack);
     return taken.ok && found ? ok({ ...taken.value, guideKind: found.kind }) : taken;
+  }
+
+  /**
+   * An iRacing class or car with the bindings it is about: "All cars" for a class, the car's
+   * own set for a car. Read through the iRacing bindings feature, fresh every time.
+   */
+  private async iracingSnapshot(aircraftId: string): Promise<Result<Snapshot>> {
+    const source = this.ctx.iracing;
+    if (!source) return err('ai.noIracing', 'RigReady cannot read iRacing bindings here.');
+    const listed = await this.iracingEntries();
+    if (!listed.ok) return listed;
+    const wanted = aircraftId.toLowerCase();
+    const entry = listed.value.entries.find((e) => e.id.toLowerCase() === wanted);
+    if (!entry) {
+      return err(
+        'ai.iracingEntry',
+        listed.value.installed
+          ? 'The binding guide has no such class, and iRacing has no car with controls of its own by that name.'
+          : 'iRacing was not found on this PC.'
+      );
+    }
+    const overview = listed.value.overview!;
+    const view = await source.set(entry.set);
+    if (!view.ok) return view;
+    const found = await this.guideFor(entry.id);
+    const parts = iracingParts(entry, view.value);
+    return ok({
+      game: 'iracing',
+      aircraftId: entry.id,
+      aircraftName: entry.name,
+      ...parts,
+      ...(found ? { pack: found.pack, guideKind: found.kind } : {}),
+      iracing: {
+        set: entry.set,
+        setName: view.value.set.name,
+        ...(view.value.set.profile ? { profile: view.value.set.profile } : {}),
+        simRunning: overview.simRunning,
+        notes: view.value.notes,
+        axisActions: view.value.actions.filter((a) => a.accepts.includes('axis')).map((a) => a.id),
+      },
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -500,9 +698,11 @@ export class AiAssist {
     const progress = await this.progressOf(aircraftId);
     if (!progress.ok) return progress;
     const s = snapshot.value;
+    const game = s.game;
     const items = found ? resolvePack(found.pack, s.actions, s.bindings) : [];
     const { staged, ...rest } = progress.value;
     return ok({
+      game,
       aircraftId,
       aircraftName: s.aircraftName,
       guide: found
@@ -511,10 +711,11 @@ export class AiAssist {
             summary: found.pack.summary,
             sources: found.pack.sources,
             ...(found.pack.drafted ? { drafted: found.pack.drafted } : {}),
-            roles: ROLES.flatMap((role) => {
+            ...(found.suggested ? { suggested: found.suggested } : {}),
+            roles: GAME_ROLES[found.pack.game].flatMap((role) => {
               const plan = found.pack.roles[role];
               return plan
-                ? [{ role, title: ROLE_TITLES[role], summary: plan.summary, items: plan.items }]
+                ? [{ role, title: roleTitle(game, role), summary: plan.summary, items: plan.items }]
                 : [];
             }),
           }
@@ -522,7 +723,7 @@ export class AiAssist {
       stored: kept ? (kept.problem ? { problem: kept.problem } : {}) : null,
       tiers: TIERS.map((tier) => ({
         tier,
-        title: TIER_TITLES[tier],
+        title: tierTitle(game, tier),
         items: items
           .filter((r) => r.item.tier === tier)
           .map((r) => ({
@@ -530,9 +731,9 @@ export class AiAssist {
             title: r.item.title,
             tier: r.item.tier,
             place: r.item.place,
-            placeTitle: PLACE_TITLES[r.item.place],
+            placeTitle: placeTitle(game, r.item.place),
             role: r.item.role,
-            roleTitle: ROLE_TITLES[r.item.role],
+            roleTitle: roleTitle(game, r.item.role),
             need: r.item.need,
             what: r.item.what,
             when: r.item.when,
@@ -560,6 +761,17 @@ export class AiAssist {
         role: c.role,
         guid: c.guid,
       })),
+      ...(s.iracing
+        ? {
+            iracing: {
+              set: s.iracing.set,
+              setName: s.iracing.setName,
+              ...(s.iracing.profile ? { profile: s.iracing.profile } : {}),
+              simRunning: s.iracing.simRunning,
+              notes: s.iracing.notes,
+            },
+          }
+        : {}),
     });
   }
 
@@ -591,6 +803,12 @@ export class AiAssist {
     aircraftId: string,
     change: { actionId: string; deviceGuid: string; input: string }
   ): Promise<Result<GuideView>> {
+    if (isIracingId(aircraftId)) {
+      return err(
+        'ai.iracingStage',
+        'In iRacing the guide binds one action at a time: press the control, look at the change, then save it.'
+      );
+    }
     const snapshot = await this.snapshot(aircraftId);
     if (!snapshot.ok) return snapshot;
     const s = snapshot.value;
@@ -717,6 +935,104 @@ export class AiAssist {
     if (!proposals.ok) return proposals;
     const undone = await proposals.value.undo(groupId);
     return undone.ok ? ok({ undone: true }) : undone;
+  }
+
+  // -------------------------------------------------------------------------
+  // iRacing: one button or key at a time, through the iRacing bindings feature
+  // -------------------------------------------------------------------------
+
+  /**
+   * The set and the guide's label for an action the guide offers to bind here. Only an action
+   * of the guide shown, and only one RigReady may write: an axis or a hat is bound in iRacing.
+   */
+  private async iracingTarget(
+    aircraftId: string,
+    actionId: string
+  ): Promise<Result<{ source: IracingBindings; set: string; label: string }>> {
+    const source = this.ctx.iracing;
+    if (!isIracingId(aircraftId) || !source) {
+      return err('ai.iracingOnly', 'This binds iRacing actions only.');
+    }
+    const snapshot = await this.iracingSnapshot(aircraftId);
+    if (!snapshot.ok) return snapshot;
+    const s = snapshot.value;
+    const action = s.pack
+      ? resolvePack(s.pack, s.actions, s.bindings)
+          .flatMap((i) => i.actions)
+          .find((a) => a.actionId === actionId)
+      : undefined;
+    if (!action) return err('ai.iracingAction', 'That action is not in the guide shown here.');
+    if (!action.editable) {
+      return err(
+        'ai.iracingInGame',
+        `${action.label} belongs on an axis. Bind it in iRacing: Options, then Controls.`
+      );
+    }
+    if (!s.iracing) return err('ai.iracingOnly', 'This binds iRacing actions only.');
+    return ok({ source, set: s.iracing.set, label: action.label });
+  }
+
+  /** What binding one action of the guide to this button or key would change. Writes nothing. */
+  async iracingPreview(
+    aircraftId: string,
+    actionId: string,
+    binding: IracingWanted
+  ): Promise<Result<IracingReviewView>> {
+    const target = await this.iracingTarget(aircraftId, actionId);
+    if (!target.ok) return target;
+    const { source, set, label } = target.value;
+    const review = await source.changePreview({ set, action: actionId, binding });
+    if (!review.ok) return review;
+    const labels = await this.iracingLabels(set);
+    const r = review.value;
+    return ok({
+      actionId,
+      label,
+      forCars: forCars(r.set),
+      before: r.before,
+      after: r.after,
+      same: r.same,
+      conflicts: r.conflicts.map((c) => ({ ...c, name: labels[c.id] ?? c.name })),
+      ...(r.blocked ? { blocked: r.blocked } : {}),
+      preview: r.preview,
+      seen: r.seen,
+    });
+  }
+
+  /**
+   * Writes it, through the iRacing bindings feature: a backup first and Undo on the Safety
+   * page. `seen` is the file as the preview read it; a file that changed since is refused.
+   */
+  async iracingBind(
+    aircraftId: string,
+    actionId: string,
+    binding: IracingWanted,
+    seen: string
+  ): Promise<Result<{ changed: boolean; message: string }>> {
+    const target = await this.iracingTarget(aircraftId, actionId);
+    if (!target.ok) return target;
+    const { source, set } = target.value;
+    const changed = await source.change({ set, action: actionId, binding, seen });
+    if (!changed.ok) return changed;
+    this.ctx.log.info(
+      `ai-assist: iRacing ${actionId} ${changed.value.changed ? 'bound' : 'left as it was'} from the guide`
+    );
+    return ok({ changed: changed.value.changed, message: changed.value.message });
+  }
+
+  /**
+   * Plain labels of iRacing's actions by its own id, for the pages that list them: a car's own
+   * guide first, then the class guides. The shipped guides use one label per action, so the
+   * class shown does not change a name.
+   */
+  async iracingLabels(setId: string): Promise<Record<string, string>> {
+    const labels: Record<string, string> = {};
+    const add = (pack: Pack | undefined): void => {
+      for (const [name, label] of Object.entries(plainLabels(pack))) labels[name] ??= label;
+    };
+    if (setId.startsWith('car:')) add((await this.guideFor(`${IRACING_PREFIX}${setId}`))?.pack);
+    for (const pack of classGuides(shipped().values())) add(pack);
+    return labels;
   }
 
   // -------------------------------------------------------------------------
@@ -1104,6 +1420,12 @@ export class AiAssist {
     let task: string;
     let schema: Record<string, unknown> | undefined;
     let question = '';
+    if (input.kind === 'suggest' && s.game === 'iracing') {
+      return err(
+        'ai.iracingSuggest',
+        'Suggest a setup is for DCS aircraft. For iRacing, the walkthrough binds with you, one control at a time.'
+      );
+    }
     if (input.kind === 'suggest') {
       if (s.controllers.length === 0) {
         return err(
@@ -1117,14 +1439,29 @@ export class AiAssist {
       if (await this.ownGuideKept(input.aircraftId)) {
         return err(
           'ai.guideExists',
-          'This aircraft has a guide file of your own, and a draft would replace it. Delete it on the Binding guide page first.'
+          s.game === 'iracing'
+            ? 'This car has a guide file of your own, and a draft would replace it. Delete it on the Binding guide page first.'
+            : 'This aircraft has a guide file of your own, and a draft would replace it. Delete it on the Binding guide page first.'
+        );
+      }
+      if (s.game === 'iracing' && shippedPack(input.aircraftId)) {
+        return err(
+          'ai.guideShipped',
+          'RigReady includes a guide for this class and uses that one.'
         );
       }
       task = draftTask(s);
-      schema = draftSchema();
+      schema = draftSchema(s.game);
     } else if (input.kind === 'explain') {
       const action = s.actions.find((a) => a.id === input.actionId);
-      if (!action) return err('ai.action', `${s.aircraftName} has no such action.`);
+      if (!action) {
+        return err(
+          'ai.action',
+          s.game === 'iracing'
+            ? 'iRacing has no such action.'
+            : `${s.aircraftName} has no such action.`
+        );
+      }
       question = `What does "${action.name}" do?`;
       task = questionTask(s, question, action.id);
     } else {
@@ -1137,7 +1474,7 @@ export class AiAssist {
     }
     const body = provider.value.body({
       model,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt(s),
       context: contextText(s),
       task,
       ...(schema ? { schema } : {}),
@@ -1178,11 +1515,17 @@ export class AiAssist {
       local: provider.value.local,
       retriesOnce,
       contents: [
-        `${s.actions.length} actions of the ${s.aircraftName}, with what each is bound to now`,
+        s.game === 'iracing'
+          ? `${s.actions.length} iRacing actions, with what each is bound to now in the bindings for ${s.iracing?.setName ?? 'All cars'}`
+          : `${s.actions.length} actions of the ${s.aircraftName}, with what each is bound to now`,
         `${s.controllers.length} ${s.controllers.length === 1 ? 'controller' : 'controllers'}: ${s.controllers.map((c) => c.name).join(', ') || 'none'}`,
         s.pack
-          ? GUIDE_IN_A_REQUEST[s.guideKind ?? 'shipped']
-          : 'No guide (there is none for this aircraft)',
+          ? s.game === 'iracing'
+            ? IRACING_GUIDE_IN_A_REQUEST[s.guideKind ?? 'shipped']
+            : GUIDE_IN_A_REQUEST[s.guideKind ?? 'shipped']
+          : s.game === 'iracing'
+            ? 'No guide (there is none for this car)'
+            : 'No guide (there is none for this aircraft)',
         question ? `Your question: "${question}"` : 'The task: what RigReady asks the model to do',
       ],
       streamed: STREAMED.has(input.kind),
@@ -1325,8 +1668,13 @@ export class AiAssist {
         );
       }
       const at = new Date(this.ctx.ports.clock.now()).toISOString();
+      // iRacing's ids get the plain labels the class guides give them, where they have one.
+      const labels =
+        request.snapshot.game === 'iracing'
+          ? await this.iracingLabels(request.snapshot.iracing?.set ?? 'all')
+          : {};
       const draft = await this.checked(requestId, request, key.value, controller, (text, model) =>
-        validateDraft(text, request.snapshot, model, at)
+        validateDraft(text, request.snapshot, model, at, labels)
       );
       if (!draft.ok) return draft;
       const { value, usage } = draft.value;
@@ -1338,7 +1686,10 @@ export class AiAssist {
       }
       const written = await this.ctx.ports.files.write(
         this.draftPath(request.aircraftId),
-        `# Drafted by ${usage.model} for RigReady. Format: see packs/README.md in RigReady's source.\n${yaml.dump(value.pack, { lineWidth: 100 })}`,
+        packText(
+          value.pack,
+          `# Drafted by ${usage.model} for RigReady. Format: see packs/README.md in RigReady's source.\n`
+        ),
         { reason: 'Binding guide drafted by AI' }
       );
       if (!written.ok) return written;
@@ -1442,12 +1793,40 @@ export class AiAssist {
     return proposals.value.apply(proposal.value);
   }
 
+  /**
+   * Deletes a guide an AI drafted. A guide of the user's own, or a file that cannot be read
+   * as either, is refused: only the user deletes that, in the window (`deleteGuide`).
+   */
   async deleteDraft(aircraftId: string): Promise<Result<{ deleted: boolean }>> {
+    if (await this.ownGuideKept(aircraftId)) {
+      return err(
+        'ai.ownGuide',
+        "The guide kept for this aircraft is the user's own, so it was not deleted. Only the user can delete it, in RigReady's window."
+      );
+    }
+    return this.removeGuide(aircraftId, 'Delete a binding guide drafted by AI');
+  }
+
+  /** The window's Delete, after the user said yes: whichever guide is kept. */
+  async deleteGuide(aircraftId: string): Promise<Result<{ deleted: boolean }>> {
+    return this.removeGuide(aircraftId, 'Delete a binding guide');
+  }
+
+  /**
+   * Removes the guide file kept for an aircraft. It is in the data folder, so the journal is
+   * asked for by name: a copy is kept first, and the Safety page can put it back.
+   */
+  private async removeGuide(
+    aircraftId: string,
+    reason: string
+  ): Promise<Result<{ deleted: boolean }>> {
     const file = this.draftPath(aircraftId);
     if (!(await this.ctx.ports.files.exists(file))) return ok({ deleted: false });
-    const removed = await this.ctx.ports.files.remove(file, {
-      reason: 'Delete the binding guide kept for an aircraft',
-    });
-    return removed.ok ? ok({ deleted: true }) : removed;
+    const removed = await this.ctx.ports.files.remove(file, { reason, journal: true });
+    if (!removed.ok) return removed;
+    if (await this.ctx.ports.files.exists(file)) {
+      return err('ai.guideFile', 'The guide file is still there. It could not be deleted.');
+    }
+    return ok({ deleted: true });
   }
 }

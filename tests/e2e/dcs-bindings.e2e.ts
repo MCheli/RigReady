@@ -8,8 +8,8 @@ import { checkRow, expect, test, type RunningApp } from './harness';
 const STICK = 'WINWING Orion Joystick Base 2 + JGRIP-F16';
 const THROTTLE = 'WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R';
 const WHEEL = 'FANATEC Podium Wheel Base DD2';
-const STICK_ID = '806DDF00-B756-11f0-8023-444553540000';
-const OLD_STICK_ID = 'D3437B70-A035-11EE-8001-444553540000';
+const STICK_ID = '480FAD44-D166-18c0-8023-444553540000';
+const OLD_STICK_ID = 'B5401E72-C482-10DA-8001-444553540000';
 
 const joystickDir = (run: RunningApp, aircraft = 'FA-18C_hornet'): string =>
   path.join(run.home, 'Saved Games', 'DCS', 'Config', 'Input', aircraft, 'joystick');
@@ -117,7 +117,7 @@ test('bindings: every control of a device and what it does (UFC1 + HUD1)', async
 
   await expect(page.getByTestId('dev-select')).toContainText('WINWING UFC1 + HUD1');
   await expect(page.getByTestId('dev-meta')).toContainText('Attached');
-  await expect(page.getByTestId('dev-meta')).toContainText('806E0610-B756-11f0-8026-444553540000');
+  await expect(page.getByTestId('dev-meta')).toContainText('757B5173-A027-19e9-8026-444553540000');
   // Every control is listed: 8 axes and 128 buttons, bound or not.
   await expect(page.getByTestId('dev-row')).toHaveCount(136);
   await expect(row(page, 'JOY_BTN2')).toContainText('UFC Keyboard Pushbutton - 1');
@@ -339,7 +339,7 @@ test('bindings: problems found and fixed with a preview', async ({ rig }) => {
   const plan = page.getByTestId('plan-dialog');
   await expect(plan).toContainText('Clean up 12 unwanted default bindings (F/A-18C)');
   await expect(plan.getByTestId('plan-file')).toHaveAttribute('data-action', 'create');
-  await expect(plan).toContainText(`${WHEEL} {20B0BED0-03A4-11f1-8001-444553540000}.diff.lua`);
+  await expect(plan).toContainText(`${WHEEL} {45D4BEA1-60A1-17d8-8001-444553540000}.diff.lua`);
   await expect(plan).toContainText("Pitch: cancel DCS's default Y axis");
   await shot('cleanup-preview');
   await plan.getByTestId('plan-apply').click();
@@ -348,7 +348,7 @@ test('bindings: problems found and fixed with a preview', async ({ rig }) => {
   );
   await expect(page.getByTestId('prob-defaults')).toHaveCount(0);
   const created = await fs.readFile(
-    path.join(joystickDir(run), `${WHEEL} {20B0BED0-03A4-11f1-8001-444553540000}.diff.lua`),
+    path.join(joystickDir(run), `${WHEEL} {45D4BEA1-60A1-17d8-8001-444553540000}.diff.lua`),
     'utf8'
   );
   expect(created).toContain('["a2001cdnil"] = {\n\t\t\t["name"] = "Pitch",\n\t\t\t["removed"] = {');
@@ -402,7 +402,7 @@ test('bindings: clear a whole device, with the count stated first', async ({ rig
   const { page, shot } = run;
   const file = path.join(
     joystickDir(run),
-    'WINWING MFD1-R {806E0610-B756-11f0-8024-444553540000}.diff.lua'
+    'WINWING MFD1-R {757B5173-A027-19e9-8024-444553540000}.diff.lua'
   );
   const original = await fs.readFile(file, 'utf8');
   await openBindings(page, 'devices');
@@ -474,7 +474,7 @@ test('bindings: Windows changed the device IDs; move the bindings back, and undo
   await expect(page.getByTestId('ids-orphan')).toHaveCount(10);
   const stick = page.locator(`[data-testid="ids-orphan"][data-device="${STICK}"]`);
   await expect(stick).toHaveAttribute('data-status', 'ready');
-  await expect(stick.getByTestId('ids-old')).toHaveText('D3437B70-A035-11ee-8001-444553540000');
+  await expect(stick.getByTestId('ids-old')).toHaveText('B5401E72-C482-10da-8001-444553540000');
   await expect(stick.getByTestId('ids-new')).toHaveText(STICK_ID);
   await expect(stick).toContainText('2 files in FA-18C_hornet, UH-1H');
   await expect(stick).toContainText('also named in 1 modifier or settings file');

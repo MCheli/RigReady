@@ -24,6 +24,7 @@ import {
   kneeboardSide,
   monitorLabels,
   moveCrop,
+  typedAircraft,
   unitNameProblem,
   viewportNameProblem,
   type Crop,
@@ -48,6 +49,28 @@ watch(viewing, (file) => {
 });
 const setResolution = ref(true);
 const preview = ref<ScreensPreview>();
+/**
+ * The setups that expect options.lua as it is now are updated with it, unless the user
+ * unticks them: left as they are, their fix would put the old values back.
+ */
+const followSetups = ref(true);
+const followLabel = computed(() => {
+  const count = preview.value?.setups.length ?? 0;
+  return count === 1
+    ? 'Also update the setup that expects the old values'
+    : `Also update the ${count} setups that expect the old values`;
+});
+/** What leaving them costs: a fix that sets the old values undoes "Use in DCS"; a check only complains. */
+const followNote = computed(() => {
+  const setups = preview.value?.setups ?? [];
+  const one = setups.length === 1;
+  const fixes = setups.some((s) => s.items.some((i) => i.fix));
+  return fixes
+    ? `Left as ${one ? 'it is' : 'they are'}, Make ready would put the old values back and undo this.`
+    : `Left as ${one ? 'it is' : 'they are'}, the Play screen would call the new values wrong.`;
+});
+const followLine = (item: ScreensPreview['setups'][number]['items'][number]): string =>
+  `${item.title}, ${item.changes.join(', ')}${item.fix ? ' (the check and its fix)' : ''}`;
 const showLua = ref(false);
 const confirmOverwrite = ref(false);
 const busy = ref(false);
@@ -565,7 +588,8 @@ function addNamed(): void {
   const typed = typedName.value.trim();
   if (namingProblem.value) return;
   if (naming.value === 'aircraft') {
-    addAircraft(namedAircraft.value ?? { unit: typed, label: typed });
+    // A DCS name can be longer than the name shown: that one is cut to fit.
+    addAircraft(namedAircraft.value ?? typedAircraft(typed));
   } else if (aircraft.value) {
     const unit = aircraft.value.unit;
     keptNames.value[unit] = [...(keptNames.value[unit] ?? []), typed];
@@ -642,6 +666,7 @@ async function apply(overwriteEdited = false): Promise<void> {
     setResolution: setResolution.value,
     overwriteEdited,
     pairingChecked: pairingChecked.value,
+    followSetups: followSetups.value ? (preview.value?.setups.map((s) => s.id) ?? []) : [],
   });
   busy.value = false;
   if (!result.ok) {
@@ -649,6 +674,8 @@ async function apply(overwriteEdited = false): Promise<void> {
     return;
   }
   done.value = result.value;
+  // The choice was about these setups; the next offer is about others, and starts ticked.
+  followSetups.value = true;
   started.value = undefined;
   pairing.value = undefined;
   pairingChecked.value = false;
@@ -1171,6 +1198,27 @@ onBeforeUnmount(() => {
             data-testid="screens-set-resolution"
             :label="`Also size the DCS window to ${generated?.window.width} × ${generated?.window.height}, windowed`"
           />
+          <div v-if="preview?.setups.length" class="scr-follow" data-testid="screens-setups">
+            <v-checkbox
+              v-model="followSetups"
+              density="compact"
+              hide-details
+              data-testid="screens-follow-setups"
+              :label="followLabel"
+            />
+            <ul class="scr-list">
+              <li
+                v-for="s in preview.setups"
+                :key="s.id"
+                data-testid="screens-setup"
+                :data-id="s.id"
+              >
+                <strong>{{ s.name }}</strong
+                >: {{ s.items.map(followLine).join('; ') }}
+              </li>
+            </ul>
+            <p class="rr-row-sub">{{ followNote }}</p>
+          </div>
           <p class="rr-row-sub">
             Every change is backed up first and can be undone on the Safety page. DCS picks it up
             the next time it starts.
@@ -1510,6 +1558,13 @@ onBeforeUnmount(() => {
 .scr-done {
   margin-top: 12px;
   font-size: 13px;
+}
+.scr-follow {
+  margin-top: 4px;
+}
+.scr-follow .scr-list,
+.scr-follow .rr-row-sub {
+  margin-left: 40px;
 }
 .scr-write :deep(.v-label) {
   font-size: 13.5px;

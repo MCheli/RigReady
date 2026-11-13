@@ -77,56 +77,33 @@ test('iRacing bindings: every action for all cars, with search, filters and shar
   await row(page, 'ShiftDown').scrollIntoViewIfNeeded();
   await shot('actions');
 
-  // Reading only, and the page says why.
-  const readonly = page.getByTestId('iracing-bindings-readonly');
-  await expect(readonly).toContainText('This page shows bindings. It does not change them.');
-  await expect(readonly).toContainText('use iRacing itself: Options, then Controls');
-  await page.getByTestId('iracing-bindings-why').click();
-  const reasons = page.getByTestId('iracing-bindings-reasons');
-  await expect(reasons.locator('li')).toHaveCount(5);
-  await expect(reasons).toContainText('iRacing does not publish how controls.cfg is built');
-  await expect(reasons).toContainText('No file changed by RigReady has been tried in iRacing');
-  await shot('why-read-only');
-  // Nothing in the list can be pressed or typed into, and no button offers a change.
-  await expect(
-    page.getByTestId('iracing-bindings-table').locator('button, input, select, a')
-  ).toHaveCount(0);
-  const buttons = await root.getByRole('button').allInnerTexts();
-  expect(
-    buttons.filter((name) =>
-      /^(change|edit|bind|rebind|assign|save|apply|clear|remove|delete|copy)/i.test(name)
-    )
-  ).toEqual([]);
-  // Changing a binding is built but switched off (iracing-bindings-edit.e2e.ts turns it
-  // on). While it is off the page has no trace of it: no column, no button, no dialog.
-  await expect(page.getByTestId('iracing-bindings-trial')).toHaveCount(0);
-  await expect(page.getByTestId('iracing-bindings-change')).toHaveCount(0);
-  await expect(page.getByTestId('iracing-bindings-in-iracing')).toHaveCount(0);
-  await expect(page.getByTestId('iracing-edit')).toHaveCount(0);
+  // Changing a binding is on as RigReady ships (this run sets nothing in its environment),
+  // and the notice says what was proven in iRacing and that nothing is saved unseen.
+  const notice = page.getByTestId('iracing-bindings-editing');
+  await expect(notice).toContainText('You can change bindings here.');
+  await expect(page.getByTestId('iracing-bindings-proven')).toHaveText(
+    'A button and a key bound here were used by iRacing in a test drive on 13 November 2026 (iRacing 2026.11.02.01).'
+  );
+  await expect(notice).toContainText(
+    'Press Change, then the button or the key. RigReady shows what will change and writes nothing until you press Save.'
+  );
+  await expect(notice).toContainText(
+    'An axis or a hat switch is bound in iRacing itself: Options, then Controls.'
+  );
+  await expect(notice).not.toContainText('not yet tried');
+  await expect(page.getByTestId('iracing-bindings-readonly')).toHaveCount(0);
   await expect(page.getByTestId('iracing-bindings-table').locator('thead th')).toHaveText([
     'Action',
     'Bound to',
     'On',
+    'Change',
   ]);
-  // Asked directly, the app refuses as well: the switch is in the main process.
-  const refused = (await page.evaluate(() =>
-    (
-      globalThis as unknown as {
-        rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
-      }
-    ).rigready.invoke('iracing-bindings:change', {
-      set: 'all',
-      action: 'HeadlightFlash',
-      binding: { kind: 'key', keyCode: 72, modifiers: 0 },
-    })
-  )) as { ok: boolean; error?: { code: string; message: string } };
-  expect(refused.ok).toBe(false);
-  expect(refused.error?.code).toBe('iracing-bindings.edit.off');
-  expect(refused.error?.message).toBe(
-    'RigReady does not change iRacing bindings yet. Change them in iRacing.'
+  await expect(row(page, 'Handbrake').getByTestId('iracing-bindings-change')).toBeVisible();
+  await expect(row(page, 'Throttle').getByTestId('iracing-bindings-in-iracing')).toHaveText(
+    'In iRacing'
   );
-  await page.getByTestId('iracing-bindings-why').click();
-  await expect(reasons).toHaveCount(0);
+  await notice.scrollIntoViewIfNeeded();
+  await shot('editing-notice');
 
   // Search by the name of an action, by iRacing's own id, and by the name of a controller.
   const filter = page.getByTestId('iracing-bindings-filter').locator('input');
@@ -220,7 +197,7 @@ test('iRacing bindings: a car with custom controls, and what it changes', async 
     'Not plugged in. Its 1 binding does nothing until it is.'
   );
   // The click on the option can leave the page scrolled; the picture is of the top.
-  await page.getByTestId('iracing-bindings-readonly').scrollIntoViewIfNeeded();
+  await page.getByTestId('iracing-bindings-editing').scrollIntoViewIfNeeded();
   await shot('car');
 
   // What this car changes, next to what all cars have.
@@ -317,8 +294,93 @@ test('iRacing bindings: a PC without iRacing gets a plain "not found", and no li
   await expect(page.locator('.v-alert.text-error, .v-alert.bg-error')).toHaveCount(0);
   await expect(page.getByTestId('iracing-bindings-error')).toHaveCount(0);
   await expect(page.getByTestId('iracing-bindings-table')).toHaveCount(0);
-  await expect(page.getByTestId('iracing-bindings-readonly')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-bindings-editing')).toHaveCount(0);
   await expect(page.getByTestId('iracing-bindings-cheat-sheet')).toHaveCount(0);
   await shot('not-on-this-pc');
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+});
+
+test('iRacing bindings: an iRacing with control profiles shows the profile it uses', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('iracing-bindings-profiles', 'iracing-bindings-profiles');
+  await page.getByTestId('mode-configure').click();
+  await go(page, ROUTE);
+  // iRacing 2026.11 reads the profile app.ini names; the older controls.cfg is left as it was.
+  await expect(page.getByTestId('iracing-bindings-source')).toHaveText(
+    'iRacing keeps bindings in control profiles. It uses the profile “Baseline” for all cars. The older controls.cfg from before control profiles is not read by iRacing any more, so this page does not show it.'
+  );
+  await expect(page.getByTestId('iracing-bindings-counts')).toHaveText(
+    '369 actions · 183 bound · 186 not bound'
+  );
+  await expect(page.getByTestId('iracing-bindings-file')).toContainText(
+    'Documents\\iRacing\\profiles\\controls\\Baseline\\controls.cfg'
+  );
+  await expect(device(page, WHEEL)).toHaveAttribute('data-state', 'connected');
+  await shot('profile');
+  // The two actions the profile added, and the black box actions by iRacing's own names.
+  const filter = page.getByTestId('iracing-bindings-filter').locator('input');
+  await filter.fill('black box');
+  await expect(row(page, 'BlackBoxShowNext')).toContainText('Next black box');
+  await expect(row(page, 'BlackBoxNext')).toContainText('Black box next control');
+  await filter.fill('pit summary');
+  await expect(rows(page)).toHaveCount(1);
+  await expect(row(page, 'PitSummaryToggle')).toContainText('Not bound');
+  await filter.fill('');
+  await page.getByTestId('iracing-bindings-source').scrollIntoViewIfNeeded();
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+});
+
+test('iRacing bindings: a car with a control profile of its own, named as iRacing names it', async ({
+  rig,
+}) => {
+  const run = await rig.launch('iracing-bindings-profile-car', 'iracing-bindings-profile-car');
+  const { page, shot } = run;
+  await page.getByTestId('mode-configure').click();
+  await go(page, ROUTE);
+  // The car has no folder under Documents: its line in app.ini is all there is.
+  await expect(page.getByTestId('iracing-bindings-cars-line')).toHaveText(
+    '1 car has a control profile of its own; the others use the profile for all cars.'
+  );
+  await page.getByTestId('iracing-bindings-set').click();
+  const choice = 'cadillacctsvr (profile “Test Profile CTSV”)';
+  await expect(page.locator('.v-overlay--active').getByRole('option')).toHaveText([
+    'All cars',
+    choice,
+  ]);
+  await openOption(page, choice).click();
+  await expect(page.getByTestId('iracing-bindings-counts')).toHaveText(
+    '369 actions · 185 bound · 184 not bound · 2 differ from All cars'
+  );
+  await expect(page.getByTestId('iracing-bindings-file')).toContainText(
+    'profiles\\controls\\Test Profile CTSV\\controls.cfg'
+  );
+  expect(await hash(page)).toContain('set=car:cadillacctsvr');
+  await page.getByTestId('iracing-bindings-only-differs').click();
+  await expect(rows(page)).toHaveCount(2);
+  await expect(row(page, 'LookUp')).toContainText('Button 10');
+  await expect(row(page, 'ToggleUIVisibleDrive')).toContainText('Shift+J');
+  await page.getByTestId('iracing-bindings-editing').scrollIntoViewIfNeeded();
+  await shot('car-profile');
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+
+  // app.ini names a profile for all cars that is not there, and the car's own still is:
+  // the page says it cannot tell which bindings iRacing uses, and shows no list at all.
+  await run.mutate([
+    {
+      op: 'writeFile',
+      path: 'Documents/iRacing/app.ini',
+      content:
+        '[ControlProfiles]\r\ncadillacctsvr=Test Profile CTSV\r\nGlobal=Gone\r\n\r\n[Drive Screen]\r\nblackBox=2\r\n',
+    },
+  ]);
+  await go(page, '/configure/games/iracing');
+  await go(page, ROUTE);
+  await expect(page.getByTestId('iracing-bindings-source-problem')).toContainText(
+    'iRacing uses the control profile “Gone” for all cars, but RigReady found no controls.cfg in it.'
+  );
+  await expect(page.getByTestId('iracing-bindings-table')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-bindings-set')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-bindings-change')).toHaveCount(0);
+  await shot('profile-not-found');
 });

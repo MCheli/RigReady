@@ -1,6 +1,6 @@
 ---
 title: The setup editor
-description: "Every part of Configure > Setups > Edit: name and game, what Launch starts, the shortcut, the checklist, the steps, and Stand down when the game closes."
+description: "Every part of Configure > Setups > Edit: name and game, what Launch starts, the shortcut, the checklist, the steps, Stand down on close, and the overlay."
 order: 20
 ---
 
@@ -74,6 +74,14 @@ Every setup has its own answer. What the countdown looks like, and when it does 
 
 ![When the game closes](../../../artifacts/screens/fly-stand-down-setting/02-lengths.png)
 
+## Overlay
+
+**Show the overlay in this setup**: whether the [overlay](../play/overlay.md) is over the game while this setup is the one in use. A setup starts with it on when RigReady can read the bindings of its game, so the overlay can say what each press does, and off when it cannot; the line under the switch then says why ("RigReady cannot read the bindings of X-Plane 12"). Switch it the way you want it for this setup, for example on for DCS and off for iRacing; it is saved with the setup. **Open Overlay** goes to the page where the overlay is turned on as a whole and where its place and look are set, the same for every setup.
+
+![A setup whose game RigReady cannot read the bindings of: off to begin with, and why](../../../artifacts/screens/overlay-setups/06-no-bindings-reason.png)
+
 ## Saving
 
-**Save** is enabled once something changed; "Unsaved changes" says so at the bottom. A save checks every field: a check or step whose fields are wrong is opened and the problems are listed ("c3 "TrackIR" fix: exe: Too small"), and a path with an unknown variable is refused. A file that holds hand-written YAML comments warns **Your comments will be lost** before it is overwritten. **Cancel** asks before discarding changes. After a save you are back on the list of setups; if you went on to another page, such as Play, while the save was still being written, you stay there. The Play screen picks up a saved setup at once.
+**Save** is enabled once something changed; "Unsaved changes" says so at the bottom. A save checks every field: a check or step whose fields are wrong is opened and the problems are listed ("c3 "TrackIR" fix: exe: Too small"), and a path with an unknown variable is refused. A file that holds hand-written YAML comments warns **Your comments will be lost** before it is overwritten. **Cancel** asks before discarding changes, and so does every other way out of the editor with changes that are not saved: the menu on the left, **Play**, or a link on the page. **Discard** goes where you were going and leaves the setup file as it was; **Keep editing** stays with your changes. A change that is already in a save under way is not asked about: that save goes on. After a save you are back on the list of setups; if you went on to another page, such as Play, while the save was still being written, you stay there. A change you make while the save is still being written stays on screen, still marked "Unsaved changes", and you stay in the editor with it. The Play screen picks up a saved setup at once.
+
+The editor can be sent to another setup while it is open: **Change this for the setup** on the Stand down countdown, or **Open setup** in the assistant. It then shows that setup. If the one on screen has changes that are not saved, it first asks **Discard your changes?** and names it; **Keep editing** stays with your changes.

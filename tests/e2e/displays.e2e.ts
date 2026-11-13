@@ -335,6 +335,35 @@ test('monitors: edit a layout by hand; overlapping monitors are refused with a r
   await shot('edited');
 });
 
+test('monitors: while an edited layout is being saved, the dialog waits for the answer, and the notice names the layout that was saved', async ({
+  rig,
+}) => {
+  const { page, shot, mutate } = await rig.launch('displays-layouts', 'display-edit-slow');
+  await openMonitors(page);
+  await menu(page, 'Desk', 'layout-edit');
+  const dialog = page.getByTestId('edit-dialog');
+  await expect(dialog).toBeVisible();
+  const save = dialog.getByTestId('edit-save');
+  const cancel = dialog.getByRole('button', { name: 'Cancel', exact: true });
+  await expect(cancel).toBeEnabled();
+
+  // A slow PC: every file read and write takes a moment and a half.
+  await mutate([{ op: 'slowFiles', ms: 1500 }]);
+  await save.click();
+  await expect(save).toHaveAttribute('aria-busy', 'true');
+  // Escape, a click beside the dialog and Cancel all wait for the answer.
+  await page.keyboard.press('Escape');
+  await page.mouse.click(8, 8);
+  await expect(dialog).toBeVisible();
+  await expect(cancel).toBeDisabled();
+  await shot('saving');
+
+  await mutate([{ op: 'slowFiles', ms: 0 }]);
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId('displays-notice')).toContainText('Saved "Desk"');
+  await expect(page.getByTestId('displays-notice')).not.toContainText('undefined');
+});
+
 test('monitors: a saved layout keeps each refresh rate, says when Windows runs another, and puts it back', async ({
   rig,
 }) => {
@@ -800,7 +829,7 @@ test('monitors: a layout card names every screen in desk order, and says which c
     {
       op: 'plugDisplay',
       display: {
-        id: '\\\\?\\display#tv00001#5&1509d400&0&uid4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
+        id: '\\\\?\\display#tv00001#5&8816e581&0&uid4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
         name: 'TV',
         edid: 'TV00001',
         serial: 'TV0000001',

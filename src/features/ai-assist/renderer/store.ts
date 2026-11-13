@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, toRaw } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import { aiAssistContract } from '../contract';
+import type { IracingWanted } from '../core/iracing';
 import type {
   AiStatus,
   AircraftList,
   AppliedView,
+  GuideGames,
   GuideView,
+  IracingReviewView,
   ItemView,
   PlanView,
   Prepared,
@@ -15,6 +18,19 @@ import type {
   SendProgress,
   Sent,
 } from '../core/model';
+import type { GuideGame } from '../core/pack';
+
+/** One iRacing binding the walkthrough is about to save, after the user pressed it. */
+export interface IracingBinding {
+  actionId: string;
+  binding: IracingWanted;
+  review?: IracingReviewView;
+  error?: string;
+  busy: boolean;
+}
+
+/** Keys that only modify another: while one is held the walkthrough waits for the key. */
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'OS']);
 
 type SuggestRound = Extract<Sent, { kind: 'suggest' }>;
 type Answer = Extract<Sent, { kind: 'answer' }>;
@@ -29,6 +45,14 @@ export interface Review {
 
 export const useAiStore = defineStore('ai-assist', () => {
   const api = useClient(aiAssistContract);
+  /** The games the guide covers, and whether each is on this PC. */
+  const games = ref<GuideGames['games']>([]);
+  /** The game shown; undefined while none of them is on this PC. */
+  const game = ref<GuideGame>();
+  /** iRacing: the binding just pressed, shown before it is saved. */
+  const iracingBinding = ref<IracingBinding>();
+  /** iRacing: what the last save said ("Saved in iRacing's file ..."). */
+  const iracingSaved = ref<string>();
   const list = ref<AircraftList>();
   const aircraftId = ref<string>();
   const guide = ref<GuideView>();
@@ -91,33 +115,98 @@ export const useAiStore = defineStore('ai-assist', () => {
     if (!known) itemId.value = result.value.progress.current ?? items.value[0]?.id;
   }
 
-  async function load(): Promise<void> {
-    const [aircraft, ai] = await Promise.all([api.aircraft(), api.status()]);
+  /** Counts the loads: one that a later load overtook changes nothing when it is answered. */
+  let loads = 0;
+  /** The game last asked for, by the picker or the address, before its load is answered. */
+  let requested: GuideGame | undefined;
+
+  /**
+   * Reads which games are here, then the list of the game shown: the one asked for, the one
+   * shown before while it is still here, or the first that is. The latest load wins.
+   */
+  async function load(wanted?: GuideGame): Promise<void> {
+    const mine = ++loads;
+    if (wanted) requested = wanted;
+    const ask = wanted ?? requested;
+    const [found, ai] = await Promise.all([api.games(), api.status()]);
+    if (mine !== loads) return;
     if (ai.ok) status.value = ai.value;
+    if (!found.ok) {
+      error.value = errorText(found.error);
+      loading.value = false;
+      return;
+    }
+    games.value = found.value.games;
+    const here = found.value.games.filter((g) => g.available).map((g) => g.id);
+    const pick =
+      ask && found.value.games.some((g) => g.id === ask)
+        ? ask
+        : game.value && here.includes(game.value)
+          ? game.value
+          : here[0];
+    game.value = pick;
+    if (!pick) {
+      list.value = undefined;
+      guide.value = undefined;
+      loading.value = false;
+      return;
+    }
+    const aircraft = await api.aircraft({ game: pick });
+    if (mine !== loads) return;
     if (!aircraft.ok) {
       error.value = errorText(aircraft.error);
       loading.value = false;
       return;
     }
     list.value = aircraft.value;
+    error.value = undefined;
     const known = aircraft.value.aircraft.some((a) => a.id === aircraftId.value);
     const id = known ? aircraftId.value : aircraft.value.aircraft[0]?.id;
     if (id) await loadGuide(id);
-    loading.value = false;
+    else guide.value = undefined;
+    if (mine === loads) loading.value = false;
   }
 
-  async function selectAircraft(id: string): Promise<void> {
-    if (id === aircraftId.value) return;
+  /** Forgets what belongs to the aircraft or class shown, before another is shown. */
+  function forgetShown(): void {
+    // A guide read for what was shown is not put on screen when it is answered.
+    generation++;
     itemId.value = undefined;
     round.value = undefined;
     answers.value = [];
     explanations.value = {};
     drafted.value = undefined;
     guideNote.value = undefined;
+    iracingBinding.value = undefined;
+    iracingSaved.value = undefined;
+    pressNote.value = undefined;
+  }
+
+  async function selectGame(id: GuideGame): Promise<void> {
+    // The latest choice counts, even while the one before it is still being read.
+    if (id === (requested ?? game.value)) return;
+    requested = id;
+    if (listeningFor.value) await stopListening();
+    forgetShown();
+    aircraftId.value = undefined;
+    guide.value = undefined;
+    saved.value = undefined;
+    // What went wrong for the other game is not this one's.
+    error.value = undefined;
+    list.value = undefined;
+    await load(id);
+  }
+
+  async function selectAircraft(id: string): Promise<void> {
+    if (id === aircraftId.value) return;
+    if (listeningFor.value) await stopListening();
+    forgetShown();
     await loadGuide(id);
   }
 
   async function goTo(id: string): Promise<void> {
+    // A press meant for the item on screen is not taken for another one.
+    if (listeningFor.value) await stopListening();
     itemId.value = id;
     if (aircraftId.value) await api.setCurrent({ aircraftId: aircraftId.value, itemId: id });
   }
@@ -126,6 +215,7 @@ export const useAiStore = defineStore('ai-assist', () => {
   async function finish(state: 'done' | 'skipped'): Promise<void> {
     const current = item.value;
     if (!current || !aircraftId.value || !guide.value) return;
+    if (listeningFor.value) await stopListening();
     const all = items.value;
     const at = all.findIndex((i) => i.id === current.id);
     const settled = new Set([
@@ -186,19 +276,122 @@ export const useAiStore = defineStore('ai-assist', () => {
 
   // ---------------------------------------------------------------- pressing a control
 
+  const iracingShown = (): boolean => guide.value?.game === 'iracing';
+
+  /**
+   * Counts the listens and their ends. The controllers can take a moment to start: a listen
+   * that was stopped meanwhile (the page left, another item chosen) takes nothing after.
+   */
+  let listens = 0;
+
   async function listen(actionId: string): Promise<void> {
     pressNote.value = undefined;
+    iracingSaved.value = undefined;
+    const mine = ++listens;
+    const iracing = iracingShown();
+    // Set before the controllers answer, so that leaving the page meanwhile stops it.
+    listeningFor.value = actionId;
+    if (iracing) window.addEventListener('keydown', onKey, true);
     const started = await api.listenStart();
-    if (!started.ok) {
-      pressNote.value = errorText(started.error);
+    if (mine !== listens) {
+      // Stopped while it started: main was already told to stop, but may have started after.
+      if (started.ok) await api.listenStop();
       return;
     }
-    listeningFor.value = actionId;
+    if (!started.ok) {
+      pressNote.value = errorText(started.error);
+      // In iRacing a key can still be bound without the controllers.
+      if (!iracing) {
+        listens++;
+        listeningFor.value = undefined;
+      }
+    }
   }
 
   async function stopListening(): Promise<void> {
+    listens++;
     listeningFor.value = undefined;
+    window.removeEventListener('keydown', onKey, true);
     await api.listenStop();
+  }
+
+  /** iRacing: a key pressed while the walkthrough listens is the binding asked for. */
+  function onKey(event: KeyboardEvent): void {
+    if (!listeningFor.value) return;
+    // Only for an action of the item on screen.
+    if (!item.value?.actions.some((a) => a.actionId === listeningFor.value)) {
+      void stopListening();
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void stopListening();
+      return;
+    }
+    // While it listens, a key is the answer: it must not click a button or open the palette.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (event.repeat || MODIFIER_KEYS.has(event.key)) return;
+    void previewIracing(listeningFor.value, {
+      kind: 'keyPress',
+      key: event.key,
+      code: event.code,
+      shiftKey: event.shiftKey,
+      ctrlKey: event.ctrlKey,
+      altKey: event.altKey,
+      metaKey: event.metaKey,
+    });
+  }
+
+  /** iRacing: asks what this binding would change, for the user to look at. Writes nothing. */
+  async function previewIracing(actionId: string, binding: IracingWanted): Promise<void> {
+    const id = aircraftId.value;
+    if (!id) return;
+    await stopListening();
+    pressNote.value = undefined;
+    iracingBinding.value = { actionId, binding, busy: true };
+    const result = await api.iracingBindPreview({ aircraftId: id, actionId, binding });
+    // Closed, or another action chosen, meanwhile.
+    if (iracingBinding.value?.actionId !== actionId || aircraftId.value !== id) return;
+    if (!result.ok) {
+      iracingBinding.value = undefined;
+      pressNote.value = errorText(result.error);
+      return;
+    }
+    iracingBinding.value = { actionId, binding, review: result.value, busy: false };
+  }
+
+  /** iRacing: saves the binding shown, through the iRacing bindings feature. */
+  async function saveIracing(): Promise<void> {
+    const current = iracingBinding.value;
+    const id = aircraftId.value;
+    if (!current?.review || current.busy || !id) return;
+    const saving: IracingBinding = { ...current, busy: true, error: undefined };
+    iracingBinding.value = saving;
+    const result = await api.iracingBind({
+      aircraftId: id,
+      actionId: current.actionId,
+      binding: current.binding,
+      seen: current.review.seen,
+    });
+    // The dialog was closed, or another car or game chosen, while it saved.
+    // The store keeps a reactive copy: compare the object it wraps.
+    const still = toRaw(iracingBinding.value) === saving && aircraftId.value === id;
+    if (!result.ok) {
+      if (still) iracingBinding.value = { ...current, busy: false, error: errorText(result.error) };
+      return;
+    }
+    // Saved either way: the pages that show bindings read them again.
+    notifyMachineChanged();
+    if (!still) return;
+    iracingBinding.value = undefined;
+    iracingSaved.value = result.value.message;
+    await loadGuide(id);
+  }
+
+  function cancelIracing(): void {
+    iracingBinding.value = undefined;
   }
 
   async function pressed(press: {
@@ -211,6 +404,23 @@ export const useAiStore = defineStore('ai-assist', () => {
     const actionId = listeningFor.value;
     const action = item.value?.actions.find((a) => a.actionId === actionId);
     if (!actionId || !action || !aircraftId.value) return;
+    if (iracingShown()) {
+      const button = /^JOY_BTN(\d+)$/.exec(press.input);
+      if (press.kind === 'axis') {
+        pressNote.value = `That was an axis on ${press.deviceName}. This action needs a button or a key; an axis is bound in iRacing.`;
+      } else if (press.kind !== 'button' || !button) {
+        pressNote.value = `That was a hat switch on ${press.deviceName}. RigReady binds buttons and keys in iRacing. Bind a hat switch in iRacing: Options, then Controls.`;
+      } else if (Number(button[1]) > 128) {
+        pressNote.value = 'iRacing bindings hold buttons 1 to 128 of a controller.';
+      } else {
+        await previewIracing(actionId, {
+          kind: 'button',
+          device: press.guid,
+          button: Number(button[1]),
+        });
+      }
+      return;
+    }
     const isAxis = press.kind === 'axis';
     if (isAxis !== (action.kind === 'axis')) {
       pressNote.value =
@@ -373,13 +583,21 @@ export const useAiStore = defineStore('ai-assist', () => {
     selected.value = next;
   }
 
-  async function deleteDraft(): Promise<void> {
+  /**
+   * Deletes the guide file kept for the aircraft shown: the draft by AI (`draft`), or after
+   * the user said yes in the dialog, whichever guide it is. A copy is kept for the Safety page.
+   */
+  async function deleteGuide(which: 'draft' | 'kept'): Promise<void> {
     if (!aircraftId.value) return;
-    const result = await api.deleteDraft({ aircraftId: aircraftId.value });
+    const input = { aircraftId: aircraftId.value };
+    const result = await (which === 'draft' ? api.deleteDraft(input) : api.deleteGuide(input));
     if (!result.ok) error.value = errorText(result.error);
     drafted.value = undefined;
     guideNote.value = undefined;
     await load();
+    if (result.ok && result.value.deleted) {
+      guideNote.value = 'The guide is deleted. The Safety page can put it back.';
+    }
   }
 
   /** A guide file the user picks in the Windows dialog, for the aircraft shown. */
@@ -429,6 +647,13 @@ export const useAiStore = defineStore('ai-assist', () => {
 
   return {
     api,
+    games,
+    game,
+    iracingBinding,
+    iracingSaved,
+    selectGame,
+    saveIracing,
+    cancelIracing,
     list,
     aircraftId,
     guide,
@@ -477,7 +702,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     progressed,
     cancelSend,
     toggle,
-    deleteDraft,
+    deleteGuide,
     importGuide,
     startOwnGuide,
     openGuideFile,

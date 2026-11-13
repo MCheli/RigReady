@@ -65,12 +65,12 @@ describe('devices: the overview', () => {
     expect(mfd).toMatchObject({
       vendorId: '4098',
       productId: 'BEE2',
-      serial: '80E62062A4E6D221B2465002',
-      instanceId: 'USB\\VID_4098&PID_BEE2\\80E62062A4E6D221B2465002',
+      serial: '52F94702D5B0D916B2951379',
+      instanceId: 'USB\\VID_4098&PID_BEE2\\52F94702D5B0D916B2951379',
       identifiedBy: 'ids',
       requiredBy: ['DCS F/A-18C'],
       hidden: false,
-      controllers: [expect.objectContaining({ guid: '806E0610-B756-11F0-8024-444553540000' })],
+      controllers: [expect.objectContaining({ guid: '757B5173-A027-19E9-8024-444553540000' })],
     });
     const pedals = overview.devices.find((d) => d.productName === 'T-Pendular-Rudder')!;
     expect(pedals.serial).toBeUndefined();
@@ -87,7 +87,7 @@ describe('devices: the overview', () => {
     app.ports.state.input.push({
       ...dd2,
       index: app.ports.state.input.length,
-      guid: '20B0BED0-03A4-11F1-8002-444553540000',
+      guid: '45D4BEA1-60A1-17D8-8002-444553540000',
       numButtons: 63,
       numAxes: 0,
       numHats: 0,
@@ -100,8 +100,8 @@ describe('devices: the overview', () => {
     expect(wheels).toHaveLength(1);
     expect(wheels[0]).toMatchObject({ twins: 1, controllersShared: false, identifiedBy: 'ids' });
     expect(wheels[0]!.controllers.map((c) => c.guid)).toEqual([
-      '20B0BED0-03A4-11F1-8001-444553540000',
-      '20B0BED0-03A4-11F1-8002-444553540000',
+      '45D4BEA1-60A1-17D8-8001-444553540000',
+      '45D4BEA1-60A1-17D8-8002-444553540000',
     ]);
   });
 

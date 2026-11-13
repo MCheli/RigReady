@@ -288,7 +288,7 @@ const WIDE_TWO: Turn[] = [
  * needed in one turn.
  */
 const NARROW_ONE: Turn[] = [
-  { calls: [{ name: 'setup_read', input: { setup: 'F/A-18C' } }], out: 300 },
+  { calls: [{ name: 'setup_read', input: { setup: 'DCS F/A-18C' } }], out: 300 },
   { say: ANSWER_ONE, out: 600 },
 ];
 const NARROW_TWO: Turn[] = [

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 /**
  * Removes the Windows user name from paths inside text, and nothing else.
  * "C:\Users\Owner\Saved Games" -> "C:\Users\User\Saved Games" (also / and \\ forms).
@@ -35,4 +37,264 @@ export function sanitizeIdentifiers(text: string): string {
   return text
     .replace(/\b7656119\d{10}\b/g, NEUTRAL_STEAM_ID)
     .replace(/("Player (?:Name|Nick)"\s*:\s*")[^"]*(")/g, '$1Player$2');
+}
+
+/**
+ * What a recording holds that names one unit of hardware: the serial numbers of devices and
+ * monitors, the instance GUIDs Windows gave game controllers (DirectInput, also in the
+ * registry's calibration slots) and audio endpoints, and the parent id prefix in each
+ * monitor's instance id. The shapes are those of the recorded JSON files; only the fields read
+ * here matter.
+ */
+export interface RecordedIdentity {
+  devices: readonly { serial?: string }[];
+  displays: readonly { id?: string; serial?: string; usbSerial?: string }[];
+  input: readonly { guid: string }[];
+  audio: { devices: readonly { id: string }[] };
+  registry: Record<string, Record<string, { type: string; value: unknown }>>;
+}
+
+/** A serial number that names no unit: shorter than four characters, or one character repeated. */
+export function isPlaceholderSerial(serial: string): boolean {
+  return serial.length < 4 || /^(.)\1*$/s.test(serial);
+}
+
+const DIGITS = '0123456789';
+const HEX_LETTERS = 'ABCDEF';
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+/** A stream of bytes that depends only on `seed`: the same seed always gives the same bytes. */
+function byteStream(seed: string): () => number {
+  let block = 0;
+  let bytes = Buffer.alloc(0);
+  let at = 0;
+  return () => {
+    if (at >= bytes.length) {
+      bytes = createHash('sha256').update(`rigready-fixture\0${seed}\0${block++}`).digest();
+      at = 0;
+    }
+    return bytes[at++]!;
+  };
+}
+
+/**
+ * Replaces the characters at `positions` with made-up ones of the same kind: a digit for a
+ * digit, a letter for a letter (taken from `letters`), in the same case. Other characters stay.
+ */
+function madeUp(value: string, positions: number[], letters: string, seed: string): string {
+  const next = byteStream(seed);
+  const out = [...value];
+  for (const i of positions) {
+    const c = value[i]!;
+    if (c >= '0' && c <= '9') out[i] = DIGITS[next() % DIGITS.length]!;
+    else if (/[a-z]/i.test(c)) {
+      const letter = letters[next() % letters.length]!;
+      out[i] = c === c.toLowerCase() ? letter.toLowerCase() : letter;
+    }
+  }
+  return out.join('');
+}
+
+/**
+ * A stable made-up serial number of the same shape: same length, digits where the real one
+ * has digits, letters where it has letters (only A to F when the whole serial is hex), the
+ * same case, every other character as it was. The same serial always gives the same result.
+ */
+export function madeUpSerial(serial: string): string {
+  const letters = /^[0-9a-f]+$/i.test(serial) ? HEX_LETTERS : LETTERS;
+  const positions = [...serial].map((_, i) => i);
+  for (let attempt = 0; ; attempt++) {
+    const seed = `serial\0${serial.toUpperCase()}\0${attempt}`;
+    const result = madeUp(serial, positions, letters, seed);
+    if (result.toUpperCase() !== serial.toUpperCase()) return result;
+  }
+}
+
+/** DirectInput's instance GUIDs all end in the same node: the bytes of "DEST". */
+const DIRECTINPUT_NODE = '444553540000';
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Character positions of a GUID's time (time low, time mid, time high after the version digit). */
+const TIME_POSITIONS = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 15, 16, 17];
+/** Character positions of the clock sequence (after the variant digit) and the node. */
+const TAIL_POSITIONS = [20, 21, 22, ...Array.from({ length: 12 }, (_, i) => 24 + i)];
+
+/**
+ * A stable made-up GUID of the same shape. What tells one unit from another changes: the
+ * time (or the random part) and any node that is not DirectInput's. What tells nothing stays:
+ * the version digit, the variant digit, and in a DirectInput GUID its slot counter and its
+ * fixed node, so a controller's slots still read as slots. A DirectInput GUID is made up from
+ * its time alone: controllers Windows saw at the same moment share their made-up time too.
+ */
+export function madeUpGuid(guid: string): string {
+  if (!GUID.test(guid)) throw new Error(`Not a GUID: ${guid.length} characters`);
+  const upper = guid.toUpperCase();
+  const directInput = upper[14] === '1' && upper.endsWith(DIRECTINPUT_NODE);
+  const positions = directInput ? TIME_POSITIONS : [...TIME_POSITIONS, ...TAIL_POSITIONS];
+  const seed = directInput ? upper.slice(0, 18) : upper;
+  for (let attempt = 0; ; attempt++) {
+    const result = madeUp(guid, positions, HEX_LETTERS, `guid\0${seed}\0${attempt}`);
+    if (result.toUpperCase() !== upper) return result;
+  }
+}
+
+const ANY_GUID =
+  /(?<![0-9a-z])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-z])/gi;
+
+/**
+ * Every GUID in a text replaced by its made-up stand-in (`madeUpGuid`), in the letter case it
+ * was written in. For files whose GUIDs were all made by one PC for its own use: the profile,
+ * page and action ids of Stream Deck's profiles, in their folder names and in their manifests.
+ */
+export function madeUpGuidsIn(text: string): string {
+  return text.replace(ANY_GUID, (found) => inCaseOf(found, madeUpGuid(found.toUpperCase())));
+}
+
+/**
+ * The part of a Windows instance id that Windows made up from where the device sits, its
+ * parent id prefix: a level, "&", and up to eight hex digits in lower case. "a&2f0d36b1" in a
+ * monitor's `\\?\display#reg0319#a&2f0d36b1&0&uid256#{...}`, "6&3c1e07a5" in a USB device's
+ * `USB\VID_1234&PID_5678\6&3c1e07a5&0&2` when it has no serial. The numbers after it only
+ * count ports.
+ */
+const PARENT_PREFIX = /^([0-9a-f]{1,2})&([0-9a-f]{1,8})$/i;
+
+/**
+ * A stable made-up parent id prefix of the same shape: the same level, then as many hex digits,
+ * a digit where the real one has a digit and a letter (A to F) where it has a letter, in its
+ * case, and not starting with 0, as Windows never writes one. It is made up from the hex digits
+ * alone, so ids that shared a prefix still share one.
+ */
+export function madeUpParentPrefix(prefix: string): string {
+  const match = PARENT_PREFIX.exec(prefix);
+  if (!match) throw new Error(`Not a parent id prefix: ${prefix.length} characters`);
+  const [, level, hex] = match as unknown as [string, string, string];
+  const positions = [...hex].map((_, i) => i);
+  for (let attempt = 0; ; attempt++) {
+    const result = madeUp(hex, positions, HEX_LETTERS, `parent\0${hex.toLowerCase()}\0${attempt}`);
+    if (result.toLowerCase() !== hex.toLowerCase() && result[0] !== '0')
+      return `${level}&${result}`;
+  }
+}
+
+/** The parent id prefix in a monitor's instance id, as Windows' display configuration gives it. */
+function displayParentPrefix(id: string | undefined): string | undefined {
+  return id ? /#([0-9a-f]{1,2}&[0-9a-f]{1,8})&/i.exec(id)?.[1] : undefined;
+}
+
+const swapBytes = (part: string): string => part.match(/../g)!.reverse().join('');
+
+/** A GUID's 16 bytes as Windows keeps them in the registry: hex, the first three groups byte-swapped. */
+export function guidRegistryBytes(guid: string): string {
+  const h = guid.replace(/-/g, '');
+  return (
+    swapBytes(h.slice(0, 8)) + swapBytes(h.slice(8, 12)) + swapBytes(h.slice(12, 16)) + h.slice(16)
+  );
+}
+
+function guidFromRegistryBytes(hex: string): string | undefined {
+  if (!/^[0-9a-f]{32}$/i.test(hex)) return undefined;
+  const h = hex.toUpperCase();
+  return [
+    swapBytes(h.slice(0, 8)),
+    swapBytes(h.slice(8, 12)),
+    swapBytes(h.slice(12, 16)),
+    h.slice(16, 20),
+    h.slice(20),
+  ].join('-');
+}
+
+/**
+ * Every serial number, instance GUID and monitor parent id prefix in a recording, each with its
+ * made-up stand-in. Serials that name no unit (`isPlaceholderSerial`) are left as they are.
+ */
+export function identityReplacements(recording: RecordedIdentity): Map<string, string> {
+  const map = new Map<string, string>();
+  const serial = (value: string | undefined): void => {
+    if (value && !isPlaceholderSerial(value)) map.set(value, madeUpSerial(value));
+  };
+  const guid = (value: string | undefined): void => {
+    if (value && GUID.test(value)) map.set(value.toUpperCase(), madeUpGuid(value.toUpperCase()));
+  };
+  for (const device of recording.devices) serial(device.serial);
+  for (const display of recording.displays) {
+    serial(display.serial);
+    serial(display.usbSerial);
+    const prefix = displayParentPrefix(display.id);
+    if (prefix) map.set(prefix.toLowerCase(), madeUpParentPrefix(prefix.toLowerCase()));
+  }
+  for (const controller of recording.input) guid(controller.guid);
+  for (const [key, values] of Object.entries(recording.registry)) {
+    const raw = values['GUID'];
+    if (
+      /\\Calibration\\\d+$/i.test(key) &&
+      raw?.type === 'binary' &&
+      typeof raw.value === 'string'
+    ) {
+      guid(guidFromRegistryBytes(raw.value));
+    }
+  }
+  for (const endpoint of recording.audio.devices) {
+    guid(/\{([0-9a-f-]{36})\}$/i.exec(endpoint.id)?.[1]);
+  }
+  return map;
+}
+
+/** `target` in the letter case of `source`, position by position. */
+function inCaseOf(source: string, target: string): string {
+  return [...target]
+    .map((c, i) => {
+      const s = source[i] ?? '';
+      if (s >= 'a' && s <= 'z') return c.toLowerCase();
+      if (s >= 'A' && s <= 'Z') return c.toUpperCase();
+      return c;
+    })
+    .join('');
+}
+
+/**
+ * Replaces every serial and GUID of `replacements` in a text, in any letter case; a GUID also
+ * without its dashes and in the registry's byte order. Each keeps the case it was written in
+ * (DCS writes the third group of a GUID in lower case). Only whole values are replaced, never
+ * part of a longer run of letters and digits.
+ */
+export function replaceIdentity(text: string, replacements: ReadonlyMap<string, string>): string {
+  if (replacements.size === 0) return text;
+  const spellings = new Map<string, string>();
+  for (const [from, to] of replacements) {
+    spellings.set(from.toLowerCase(), to);
+    if (GUID.test(from)) {
+      spellings.set(from.replace(/-/g, '').toLowerCase(), to.replace(/-/g, ''));
+      spellings.set(guidRegistryBytes(from).toLowerCase(), guidRegistryBytes(to));
+    }
+  }
+  const alternatives = [...spellings.keys()]
+    .sort((a, b) => b.length - a.length)
+    .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const pattern = new RegExp(`(?<![0-9a-z])(?:${alternatives.join('|')})(?![0-9a-z])`, 'gi');
+  return text.replace(pattern, (found) => inCaseOf(found, spellings.get(found.toLowerCase())!));
+}
+
+/**
+ * Replaces the 16 raw bytes of every GUID of `replacements`, in the order Windows keeps them
+ * (iRacing's controls.cfg holds each controller's instance GUID that way), with those of its
+ * made-up stand-in. Everything else in the data stays as it is.
+ */
+export function replaceIdentityBytes(
+  data: Buffer,
+  replacements: ReadonlyMap<string, string>
+): Buffer {
+  let out = data;
+  for (const [from, to] of replacements) {
+    if (!GUID.test(from)) continue;
+    const needle = Buffer.from(guidRegistryBytes(from), 'hex');
+    const stand = Buffer.from(guidRegistryBytes(to), 'hex');
+    let at = out.indexOf(needle);
+    if (at === -1) continue;
+    out = Buffer.from(out);
+    while (at !== -1) {
+      stand.copy(out, at);
+      at = out.indexOf(needle, at + needle.length);
+    }
+  }
+  return out;
 }

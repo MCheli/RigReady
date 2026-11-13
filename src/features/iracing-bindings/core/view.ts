@@ -10,13 +10,14 @@ import {
   type Action,
   type ActionBinding,
   type BindingSet,
+  type BindingSource,
   type Device,
   type DeviceState,
   type Overview,
   type SetView,
   type SharedInput,
 } from '../contract';
-import { readCalibration, type CalibratedDevice } from './calibration';
+import { readCalibration, shownAxisName, type CalibratedDevice } from './calibration';
 import { parseControlsFile, usbIdsOf, type ControlRecord, type ControlsFile } from './controlsFile';
 import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './names';
 
@@ -24,7 +25,7 @@ import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './names
  * What the iRacing bindings page shows: the sets iRacing keeps (one for all cars, one for
  * each car with custom controls) and, for one set, every action with what is bound to it.
  * Everything here reads; nothing is written to iRacing's files (changing one binding is
- * in change.ts, behind a switch).
+ * in change.ts).
  */
 
 /** What this code needs: the ports, and the game registry for where iRacing keeps its files. */
@@ -53,24 +54,154 @@ async function carFolders(ctx: BindingsContext, folder: string): Promise<string[
   return listed.ok ? [...listed.value].sort((a, b) => a.localeCompare(b)) : [];
 }
 
-/** The sets iRacing keeps, "All cars" first; a car is one only when it has a controls.cfg of its own. */
-async function findSets(
-  ctx: BindingsContext,
-  folder: string,
-  cars: string[]
-): Promise<BindingSet[]> {
-  const sets: BindingSet[] = [];
-  const general = path.join(folder, CONTROLS);
-  if (await ctx.ports.files.exists(general)) {
-    sets.push({ id: ALL_CARS, name: 'All cars', general: true, file: general });
+/** Where iRacing keeps its control profiles (2026 Season 3 and later). */
+const PROFILES = path.join('profiles', 'controls');
+
+/** The [ControlProfiles] lines of app.ini, key and value, in file order. Reads only. */
+export function controlProfileLines(text: string): { key: string; value: string }[] {
+  const out: { key: string; value: string }[] = [];
+  let inSection = false;
+  for (const line of text.split(/\r?\n/)) {
+    const section = /^\s*\[(.+)\]\s*$/.exec(line);
+    if (section) {
+      inSection = section[1]!.trim().toLowerCase() === 'controlprofiles';
+      continue;
+    }
+    if (!inSection || /^\s*;/.test(line)) continue;
+    const at = line.indexOf('=');
+    if (at <= 0) continue;
+    // iRacing pads a value and puts a comment after a tab: "key=value    \t; what it is".
+    const value = line
+      .slice(at + 1)
+      .replace(/\t.*$/, '')
+      .replace(/\s;.*$/, '')
+      .trim();
+    out.push({ key: line.slice(0, at).trim(), value });
   }
-  for (const car of cars) {
-    const file = path.join(folder, 'setups', car, CONTROLS);
-    if (await ctx.ports.files.exists(file)) {
-      sets.push({ id: `${CAR_PREFIX}${car}`, name: car, general: false, file });
+  return out;
+}
+
+/** A profile name from app.ini, when it can only be one folder under profiles\controls. */
+const asFolderName = (name: string): string | undefined =>
+  name.length > 0 &&
+  name.length <= 200 &&
+  name !== '.' &&
+  name !== '..' &&
+  !/[\\/:*?"<>|\x00-\x1f]/.test(name) &&
+  !/[. ]$/.test(name)
+    ? name
+    : undefined;
+
+interface Located {
+  sets: BindingSet[];
+  source: BindingSource;
+}
+
+/** The bindings files from before control profiles that are on this PC. */
+async function oldFiles(ctx: BindingsContext, folder: string, cars: string[]): Promise<string[]> {
+  const files = [
+    path.join(folder, CONTROLS),
+    ...cars.map((car) => path.join(folder, 'setups', car, CONTROLS)),
+  ];
+  const found: string[] = [];
+  for (const file of files) if (await ctx.ports.files.exists(file)) found.push(file);
+  return found;
+}
+
+/**
+ * The sets iRacing uses, "All cars" first. An iRacing with control profiles loads the
+ * profile that app.ini [ControlProfiles] names: "Global" for all cars, and for a car, a
+ * line whose key is iRacing's path name of the car and whose value is the profile's folder
+ * ("cadillacctsvr=Test Profile CTSV", as iRacing 2026.11 wrote it on the owner's rig). A
+ * car is listed from that line alone: it needs no folder of its own under Documents. A car
+ * whose line names the profile for all cars has no bindings of its own and is not listed.
+ * The older controls.cfg files are then listed as not read. Without a profiles folder (an
+ * iRacing from before them) the sets are those files: one for all cars, and one for each
+ * car that has its own.
+ *
+ * The rest of the app finds the same files with src/core/iracingControls.ts once that is
+ * merged (features may not import each other); tests/unit/iracingControlProfiles.test.ts
+ * holds the two rules together. Change both or neither.
+ */
+async function locateSets(ctx: BindingsContext, folder: string, cars: string[]): Promise<Located> {
+  const profiles = path.join(folder, PROFILES);
+  if (!(await ctx.ports.files.exists(profiles))) {
+    const sets: BindingSet[] = [];
+    const general = path.join(folder, CONTROLS);
+    if (await ctx.ports.files.exists(general)) {
+      sets.push({ id: ALL_CARS, name: 'All cars', general: true, file: general });
+    }
+    for (const car of cars) {
+      const file = path.join(folder, 'setups', car, CONTROLS);
+      if (await ctx.ports.files.exists(file)) {
+        sets.push({ id: `${CAR_PREFIX}${car}`, name: car, general: false, file });
+      }
+    }
+    return { sets, source: { kind: 'files', oldFiles: [] } };
+  }
+
+  const ini = path.join(folder, 'app.ini');
+  const text = (await ctx.ports.files.exists(ini))
+    ? await ctx.ports.files.readText(ini)
+    : undefined;
+  const lines = text?.ok ? controlProfileLines(text.value) : [];
+  const fileOf = (profile: string): string | undefined => {
+    const name = asFolderName(profile);
+    return name ? path.join(profiles, name, CONTROLS) : undefined;
+  };
+  const sets: BindingSet[] = [];
+  const global = lines.find((l) => l.key.toLowerCase() === 'global')?.value || undefined;
+  const globalFile = global ? fileOf(global) : undefined;
+  let problem: string | undefined;
+  if (!text?.ok) {
+    problem =
+      'iRacing keeps control profiles, but RigReady could not read app.ini, which says which profile iRacing uses.';
+  } else if (!global) {
+    problem =
+      'iRacing keeps control profiles, but app.ini names none for all cars, so RigReady cannot tell which bindings iRacing uses.';
+  } else if (!globalFile || !(await ctx.ports.files.exists(globalFile))) {
+    problem = `iRacing uses the control profile “${global}” for all cars, but RigReady found no controls.cfg in it.`;
+  } else {
+    sets.push({ id: ALL_CARS, name: 'All cars', general: true, file: globalFile, profile: global });
+  }
+  // Every other line is one car, by the path name iRacing gives it; the first line for a
+  // car counts, whatever its case. A car on the profile for all cars has none of its own.
+  const onGeneral = (value: string): boolean =>
+    sets.some((s) => s.general) && value.toLowerCase() === global!.toLowerCase();
+  const carLines = lines
+    .filter((l) => l.key.toLowerCase() !== 'global')
+    .filter((l, i, all) => all.findIndex((o) => o.key.toLowerCase() === l.key.toLowerCase()) === i)
+    .filter((l) => !onGeneral(l.value))
+    .sort((a, b) => a.key.localeCompare(b.key));
+  for (const line of carLines) {
+    const file = fileOf(line.value);
+    if (file && (await ctx.ports.files.exists(file))) {
+      sets.push({
+        id: `${CAR_PREFIX}${line.key}`,
+        name: line.key,
+        general: false,
+        file,
+        profile: line.value,
+      });
     }
   }
-  return sets;
+  // Cars that name the same profile share one file: a change for one is a change for all.
+  for (const set of sets) {
+    if (set.general) continue;
+    const others = sets
+      .filter((s) => !s.general && s !== set && s.file.toLowerCase() === set.file.toLowerCase())
+      .map((s) => s.name);
+    if (others.length) set.sharedWith = others;
+  }
+  return {
+    sets,
+    source: {
+      kind: 'profiles',
+      ...(global ? { profile: global } : {}),
+      ...(problem ? { problem } : {}),
+      oldFiles: await oldFiles(ctx, folder, cars),
+    },
+  };
 }
 
 /**
@@ -82,23 +213,22 @@ export function simulatorOf(ctx: BindingsContext): { processes: string[] } {
   return { processes: module?.closeBeforeRestore?.processes ?? module?.processes ?? [] };
 }
 
-export async function overview(
-  ctx: BindingsContext,
-  repairRoute?: string,
-  editing = false
-): Promise<Overview> {
+export async function overview(ctx: BindingsContext, repairRoute?: string): Promise<Overview> {
   const module = ctx.games.get(GAME);
   const installs = module ? await module.detect(ctx) : undefined;
   const folder = await userFolder(ctx);
   const cars = folder ? await carFolders(ctx, folder) : [];
+  const located: Located = folder
+    ? await locateSets(ctx, folder, cars)
+    : { sets: [], source: { kind: 'files', oldFiles: [] } };
   return {
     installed: installs?.ok === true && installs.value.length > 0,
     ...(folder ? { folder } : {}),
     simRunning: await gameRunning(ctx, simulatorOf(ctx)),
-    sets: folder ? await findSets(ctx, folder, cars) : [],
+    sets: located.sets,
+    source: located.source,
     carFolders: cars.length,
     ...(repairRoute ? { repairRoute } : {}),
-    editing,
   };
 }
 
@@ -118,14 +248,15 @@ export async function findSet(ctx: BindingsContext, id: string): Promise<Result<
   if (!folder) {
     return err('iracing-bindings.notFound', 'The iRacing folder in Documents was not found.');
   }
-  const sets = await findSets(ctx, folder, await carFolders(ctx, folder));
+  const { sets, source } = await locateSets(ctx, folder, await carFolders(ctx, folder));
   const set = sets.find((s) => s.id === id);
   if (!set) {
     return err(
       'iracing-bindings.noSet',
-      id === ALL_CARS
-        ? 'iRacing has no controls.cfg yet. Bind something in iRacing first; this page then fills in.'
-        : 'iRacing has no custom controls for that car.'
+      id !== ALL_CARS
+        ? 'iRacing has no custom controls for that car.'
+        : (source.problem ??
+            'iRacing has no controls.cfg yet. Bind something in iRacing first; this page then fills in.')
     );
   }
   return ok({ folder, sets, set });
@@ -142,6 +273,7 @@ async function load(
   ctx: BindingsContext,
   set: BindingSet,
   folder: string,
+  generalFile: string | undefined,
   withBytes?: Uint8Array
 ): Promise<Result<LoadedSet>> {
   const bytes = withBytes ? ok(withBytes) : await ctx.ports.files.readBytes(set.file);
@@ -154,10 +286,11 @@ async function load(
   }
   const file = parseControlsFile(bytes.value);
   if (!file.ok) return file;
-  // A car's folder may hold a calibration of its own; the general one names the rest.
+  // The calibration beside the set's file; for a car, the one for all cars names the rest.
+  const generalFolder = generalFile ? path.dirname(generalFile) : folder;
   const places = set.general
-    ? [path.join(folder, CALIBRATION)]
-    : [path.join(path.dirname(set.file), CALIBRATION), path.join(folder, CALIBRATION)];
+    ? [path.join(path.dirname(set.file), CALIBRATION)]
+    : [path.join(path.dirname(set.file), CALIBRATION), path.join(generalFolder, CALIBRATION)];
   const calibration: CalibratedDevice[] = [];
   let calibrationUnread = false;
   for (const place of places) {
@@ -206,7 +339,7 @@ function resolve(
   const name = deviceName(b.instanceGuid);
   if (b.kind === 'axis') {
     const named = calibration.find((c) => c.instanceGuid === b.instanceGuid)?.axes.get(b.axis);
-    const axis = named ?? `Axis ${b.axis}`;
+    const axis = named ? shownAxisName(named, usbIdsOf(b.productGuid)) : `Axis ${b.axis}`;
     // Steering is one axis in two halves: each action has one way of turning.
     const half = /^Steer(Left|Right)\d?$/.exec(record.action)?.[1];
     // The last field is 1 on the second half of the steering axis. What another value
@@ -269,6 +402,27 @@ function stateOf(
 }
 
 /**
+ * The set with the plain names another feature knows for iRacing's actions (the binding
+ * guide's, by iRacing's own id, through ctx.bindings.labels). Where there is none, the name
+ * stays this feature's own. A name is for reading: the id stays what is matched and shown.
+ */
+export function withPlainNames(
+  view: Result<SetView>,
+  labels: Record<string, string>
+): Result<SetView> {
+  if (!view.ok) return view;
+  const named = <T extends { id: string; name: string }>(action: T): T => {
+    const label = labels[action.id]?.trim();
+    return label ? { ...action, name: label } : action;
+  };
+  return ok({
+    ...view.value,
+    actions: view.value.actions.map(named),
+    shared: view.value.shared.map((s) => ({ ...s, actions: s.actions.map(named) })),
+  });
+}
+
+/**
  * Every action of one set with what is bound to it. With `withBytes`, the set as it would
  * be with those bytes in its file: how a change is shown before it is saved.
  */
@@ -281,7 +435,7 @@ export async function setView(
   const found = await findSet(ctx, id);
   if (!found.ok) return found;
   const { folder, sets, set } = found.value;
-  const loaded = await load(ctx, set, folder, withBytes);
+  const loaded = await load(ctx, set, folder, sets.find((s) => s.general)?.file, withBytes);
   if (!loaded.ok) return loaded;
   const { file, calibration } = loaded.value;
 
@@ -340,7 +494,9 @@ export async function setView(
   const notes: string[] = [];
   if (!set.general) {
     const generalSet = sets.find((s) => s.general);
-    const generalLoaded = generalSet ? await load(ctx, generalSet, folder) : undefined;
+    const generalLoaded = generalSet
+      ? await load(ctx, generalSet, folder, generalSet.file)
+      : undefined;
     if (generalLoaded?.ok) {
       general = new Map(generalLoaded.value.file.records.map((r) => [r.action, r]));
       generalCalibration = generalLoaded.value.calibration;

@@ -421,3 +421,49 @@ test('setups: name, notes, install, and what Launch starts are edited; Cancel le
   await expect(page.getByTestId('profile-switcher')).toContainText('Hornet on the beta');
   await shot('renamed-on-fly');
 });
+
+test('setups: leaving the editor by the menu or by Play with unsaved changes asks first; Keep editing keeps them', async ({
+  rig,
+}) => {
+  const { page, shot, dataRoot } = await rig.launch('flying-all-good', 'profile-edit-leave');
+  const file = path.join(dataRoot, 'profiles', 'dcs-f-a-18c.yaml');
+  const before = await fs.readFile(file);
+  const name = page.getByTestId('edit-name').locator('input');
+
+  // Nothing changed: the menu leaves at once.
+  await openEditor(page, 'DCS F/A-18C');
+  await page.getByTestId('nav-devices').click();
+  await expect(page.getByTestId('devices-page')).toBeVisible();
+  await expect(page.getByTestId('discard-warning')).toHaveCount(0);
+
+  // A change, then the menu: asked first, and Keep editing keeps the change on screen.
+  await openEditor(page, 'DCS F/A-18C');
+  await name.fill('Hornet, renamed');
+  await page.getByTestId('nav-devices').click();
+  await expect(page.getByTestId('discard-warning')).toBeVisible();
+  await expect(page.getByTestId('discard-leave')).toHaveText(
+    'Your changes to "DCS F/A-18C" are not saved, and leaving the editor drops them. Its file stays exactly as it was.'
+  );
+  await shot('asked-on-the-menu');
+  await page.getByTestId('discard-stay').click();
+  await expect(page.getByTestId('discard-warning')).toHaveCount(0);
+  await expect(page.getByTestId('profile-edit-page')).toBeVisible();
+  await expect(name).toHaveValue('Hornet, renamed');
+
+  // Play asks too. Discard goes there, and the file is byte for byte what it was.
+  await page.getByTestId('mode-fly').click();
+  await expect(page.getByTestId('discard-leave')).toBeVisible();
+  await shot('asked-on-play');
+  await page.getByTestId('discard-confirm').click();
+  await expect(page.getByTestId('fly-status-title')).toBeVisible();
+  expect((await fs.readFile(file)).equals(before)).toBe(true);
+
+  // A way out once agreed to is not agreed to for good: the next change asks again.
+  await openEditor(page, 'DCS F/A-18C');
+  await name.fill('Hornet again');
+  await page.getByTestId('nav-devices').click();
+  await expect(page.getByTestId('discard-leave')).toBeVisible();
+  await page.getByTestId('discard-confirm').click();
+  await expect(page.getByTestId('devices-page')).toBeVisible();
+  expect((await fs.readFile(file)).equals(before)).toBe(true);
+});

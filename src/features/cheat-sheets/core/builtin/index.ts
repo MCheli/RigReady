@@ -463,17 +463,20 @@ function takeoff(): LayoutBuilder {
     [26, 'LO'],
     [27, 'RO'],
   ]);
+  // Both handles as moved on the owner's panel (13 Nov 2026): the wing fold handle gives
+  // 28 to 30 for its three positions and 31 while it is pushed in; the brake handle gives
+  // one button per move and none while it rests.
   b.stack('WING FOLD', x(2), y, w, [
     [28, 'FOLD'],
     [29, 'HOLD'],
     [30, 'SPREAD'],
-    [31, 'PULL'],
+    [31, 'PUSH'],
   ]);
-  b.stack('PARK BRAKE', x(3), y, w, [
-    [38, 'STOW'],
-    [39, 'PULL'],
-    [40, 'CCW'],
-    [41, 'CW'],
+  b.stack('EMERG / PARK BRK', x(3), y, w, [
+    [40, 'Out'],
+    [41, 'In'],
+    [39, 'Left'],
+    [38, 'Right'],
   ]);
   b.stack('HOOK', x(4), y, w, [[32, 'UP'], [33], [34, 'DOWN']]);
   b.stack('LDG GEAR', x(5), y, w, [[35, 'UP'], [36], [37, 'DOWN']]);

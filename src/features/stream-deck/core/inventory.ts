@@ -173,7 +173,7 @@ export function pluginForAction(uuid: string, installed: InstalledPlugin[]): str
   return parts.length >= 4 ? parts.slice(0, 3).join('.') : uuid;
 }
 
-/** "@(1)[4057/143/A00NA33331P1UB]": vendor and product id in decimal, then the serial. */
+/** "@(1)[4057/143/S11FD24013B3QA]": vendor and product id in decimal, then the serial. */
 export function parseDeviceUuid(
   uuid: string | undefined
 ): { vendorId: string; productId: string; serial?: string } | undefined {

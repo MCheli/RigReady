@@ -3,6 +3,12 @@ import path from 'node:path';
 import type { Locator, Page } from '@playwright/test';
 import { axeViolations, colourOnlyStatus } from './a11y';
 import { expect, screensDir, test, type RunningApp } from './harness';
+import {
+  EMPTY_PROGRESS,
+  pickDeck,
+  seededRandom,
+  type TrainerCard,
+} from '../../src/features/cheat-sheets/core/trainer';
 import { HOLD_MS } from '../../src/features/cheat-sheets/core/trainerRound';
 
 /**
@@ -334,7 +340,7 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await expect(verdict).toHaveAttribute('data-phase', 'wrong');
   await hold(second.answer);
   await expect(verdict).toHaveAttribute('data-phase', 'corrected');
-  await expect(verdict).toContainText('This one comes back later in the round');
+  await expect(verdict).toContainText('This one comes back at the end of the round');
   for (const control of controls(second)) await lit(picture, control, 'right');
   await letGo(second.answer);
   await movedOn(second.ask);
@@ -351,11 +357,34 @@ test('trainer: an action is named, the control is pressed on the device, right o
   await letGo(third.answer);
   await movedOn(third.ask);
 
-  // ---- The rest of the round, all right. The two missed cards come back in it.
-  const rest = await finish();
-  expect(rest).toContain(second.card.id);
-  expect(rest).toContain(third.card.id);
+  // ---- The rest of the round, all right. The two missed cards come back at its end, after
+  // every card not asked yet and in the order they were missed, and each says it is asked
+  // again: coming back as the next card, one looked like the round starting over.
+  const rest: string[] = [];
+  for (;;) {
+    const now = await round.turn();
+    if (!now) break;
+    rest.push(now.card.id);
+    const back = now.card.id === second.card.id || now.card.id === third.card.id;
+    await expect(card).toHaveAttribute('data-again', String(back));
+    await expect(card.getByTestId('trainer-asked-again')).toHaveCount(back ? 1 : 0);
+    if (now.card.id === second.card.id) {
+      await expect(card.getByTestId('trainer-asked-again')).toHaveText(
+        'Asked again: you missed it earlier in this round.'
+      );
+      await expect(count).toHaveText('8 of 10 done');
+      // The numbered pictures stay as the manual has them.
+      await page.screenshot({
+        path: path.join(screensDir, 'cheat-sheets-trainer', 'missed-comes-back-at-the-end.png'),
+      });
+    }
+    await hold(now.answer);
+    await expect(verdict).toHaveAttribute('data-phase', 'right');
+    await letGo(now.answer);
+    await movedOn(now.ask);
+  }
   expect(rest).toHaveLength(9);
+  expect(rest.slice(-2)).toEqual([second.card.id, third.card.id]);
   await expect(summary.getByTestId('trainer-score')).toHaveText('8 of 10 right first time');
   const missed = summary.getByTestId('trainer-missed');
   await expect(missed.locator('li')).toHaveCount(2);
@@ -1013,15 +1042,16 @@ test('trainer: a card whose control is already in place says so, and a control t
   expect((await current()).card.id).toBe(asked.card.id);
   await expect(count).toHaveText('0 of 1 done');
   await expect(inPlace).toHaveText(
-    `${asked.places.length > 1 ? 'One of the controls for it is' : 'The control for it is'} already in place. Move it away and straight back.`
+    `${asked.places.length > 1 ? 'One of the controls for it is already there' : 'Already there'}: move it away and back to answer.`
   );
   await expect(note).toHaveCount(0);
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
   await shot('already-in-place');
 
-  // ---- Moved away: it is in place no longer, and the line goes.
+  // ---- Moved away: it is in place no longer, and the card says to move it back.
   await run.sendInput([onThrottle()]);
   await expect(inPlace).toHaveCount(0);
+  await expect(trainer.getByTestId('trainer-move-back')).toHaveText('Now move it back.');
   await expect(verdict).toHaveAttribute('data-phase', 'asking');
 
   // ---- And straight back. Time is stopped while it is held, so that the moment it is
@@ -1032,6 +1062,7 @@ test('trainer: a card whose control is already in place says so, and a control t
   await run.sendInput([onThrottle([asked.answer.control])]);
   await expect(verdict).toHaveAttribute('data-weighing', asked.answer.control);
   await expect(verdict).toHaveClass(/is-weighing/);
+  await expect(trainer.getByTestId('trainer-move-back')).toHaveCount(0);
   // Half of the moment goes by. The line is drawn by the window, not by the page's clock,
   // so it is put at the same point.
   await page.clock.runFor(HOLD_MS / 2);
@@ -1056,10 +1087,148 @@ test('trainer: a card whose control is already in place says so, and a control t
   await page.clock.runFor(HOLD_MS);
   await expect(verdict).toHaveAttribute('data-phase', 'right');
   await expect(verdict).not.toHaveClass(/is-weighing/);
+  // It rested there before: a position it stays in, so it is left there.
+  await expect(verdict).toContainText('Leave it there for the next card.');
   await page.clock.resume();
   await expect(count).toHaveText('1 of 1 done');
-  await run.sendInput([onThrottle()]);
+  // The round ends with the control still where it was put.
   await expect(summary.getByTestId('trainer-score')).toHaveText('1 of 1 right first time');
+});
+
+test('trainer: a throttle stop or a switch position counts once it is reached and held a moment, and is left there; one already there as its card comes up is moved away and back', async ({
+  rig,
+}) => {
+  test.setTimeout(120_000);
+  const flow = 'cheat-sheets-trainer-stops';
+  const run = await rig.launch('cheat-sheets-hornet', flow);
+  const { page, shot } = run;
+  // The time of the page is the test's to stop, so that what is on screen while a position
+  // is held can be looked at before the next card comes.
+  await page.clock.install();
+  await openSheets(page);
+  const fake = await hornet(page);
+  const throttleKey = fake.keyOf('Throttle');
+  const throttle = fake.controllerFor(throttleKey);
+  const on = (control: string): Card =>
+    fake.deck.cards.find((c) =>
+      c.answers.some((a) => a.deviceKey === throttleKey && a.control === control)
+    )!;
+  // The left handle's two stops, as the owner's F/A-18C binds them.
+  const idle = on('button:31');
+  const off = on('button:2');
+  expect(idle.action).toBe('Throttle (Left) - IDLE');
+  expect(off.action).toBe('Throttle (Left) - OFF');
+
+  // A round that asks "to IDLE" first and "to OFF" second: the page shuffles with the seed
+  // in its address, the way this finds it.
+  let seed = 0;
+  for (let s = 1; s < 500_000 && seed === 0; s++) {
+    const round = pickDeck(fake.deck.cards as unknown as TrainerCard[], EMPTY_PROGRESS, {
+      size: 10,
+      random: seededRandom(s),
+      deviceKey: throttleKey,
+    });
+    if (round[0]?.id === idle.id && round[1]?.id === off.id) seed = s;
+  }
+  expect(seed).toBeGreaterThan(0);
+  await page.evaluate((hash) => {
+    (globalThis as unknown as { location: { hash: string } }).location.hash = hash;
+  }, `#/configure/cheat-sheets/learn?game=dcs&aircraft=FA-18C_hornet&seed=${seed}`);
+  const trainer = page.getByTestId('trainer-page');
+  await trainer.getByTestId('trainer-device').click();
+  await page.getByRole('option', { name: /^Throttle · / }).click();
+
+  // The throttle as it rests on the owner's rig: both handles at IDLE (31 left, 30 right),
+  // the thumb switches, the finger lever and the left handle switch in the middle.
+  const REST = ['button:23', 'button:30', 'button:31', 'button:4', 'button:41', 'button:58'];
+  const without = (gone: string): string[] => REST.filter((c) => c !== gone);
+  await run.sendInput([stateOf(throttle, REST)]);
+  await heard(trainer, 1);
+  await trainer.getByTestId('trainer-start').click();
+  const { card, count, verdict, note, current, movedOn } = roundOf(run, fake, throttleKey);
+  const inPlace = trainer.getByTestId('trainer-in-place');
+  const moveBack = trainer.getByTestId('trainer-move-back');
+  const picture = trainer.getByTestId('trainer-picture');
+
+  // ---- "To IDLE", with the handle at IDLE as the card comes up. Where it rests is not an
+  // answer, and the card says so from the start.
+  const first = await current();
+  expect(first.card.id).toBe(idle.id);
+  await expect(card.getByTestId('trainer-action')).toHaveText(idle.plain ?? idle.action);
+  await expect(inPlace).toHaveText('Already there: move it away and back to answer.');
+  await expect(picture.locator('.cs-ctl[data-control="button:31"]')).toHaveClass(/cs-on/);
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+  await shot('already-there');
+
+  // ---- To OFF, and a good while there: on its way away and back, as the card asks. It is
+  // not a wrong answer (OFF is another card's), nothing is weighed, nothing is said but
+  // what to do next. A clock can only be stopped ahead of where it is, so it is stopped
+  // well ahead: nothing in the round waits on time while the question is open.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 10_000);
+  await run.sendInput([stateOf(throttle, without('button:31'))]);
+  await run.sendInput([stateOf(throttle, [...without('button:31'), 'button:2'])]);
+  await expect(moveBack).toHaveText('Now move it back.');
+  await expect(inPlace).toHaveCount(0);
+  // The page has the handle at OFF (the picture and the round are told at once).
+  await expect(picture.locator('.cs-ctl[data-control="button:2"]')).toHaveClass(/cs-on/);
+  await page.clock.runFor(HOLD_MS * 3);
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+  await expect(verdict).toHaveAttribute('data-weighing', '');
+  await expect(note).toHaveCount(0);
+  await expect(count).toHaveText('0 of 10 done');
+  // Nothing waits on time now, so the clock runs again for the picture.
+  await page.clock.resume();
+  await shot('moved-away');
+
+  // ---- Back to IDLE: weighed for a moment, then right. Not to be let go: it stays there.
+  // The clock is stopped again, so that the card can be looked at before the next one comes.
+  // A stopped page draws no frames, so its pictures are taken without waiting for one.
+  const still = (name: string) =>
+    page.screenshot({ path: path.join(screensDir, flow, `${name}.png`) });
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 10_000);
+  await run.sendInput([stateOf(throttle, without('button:31'))]);
+  await run.sendInput([stateOf(throttle, REST)]);
+  await expect(verdict).toHaveAttribute('data-weighing', 'button:31');
+  await expect(moveBack).toHaveCount(0);
+  await page.clock.runFor(HOLD_MS + 50);
+  await expect(verdict).toHaveAttribute('data-phase', 'right');
+  await expect(verdict).toContainText(
+    'Right. Button 31 on Throttle. Leave it there for the next card.'
+  );
+  await expect(verdict).not.toContainText('Let go');
+  await expect(count).toHaveText('1 of 10 done');
+  await still('right-and-left-there');
+
+  // ---- The next card comes with the handle still at IDLE.
+  await page.clock.resume();
+  await movedOn(first.ask);
+
+  // ---- "To OFF": moved there and left there. Right a moment later, and the next card comes
+  // with it at OFF: IDLE, where it was, is not waited for.
+  const second = await current();
+  expect(second.card.id).toBe(off.id);
+  await expect(inPlace).toHaveCount(0);
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 10_000);
+  await run.sendInput([stateOf(throttle, without('button:31'))]);
+  await run.sendInput([stateOf(throttle, [...without('button:31'), 'button:2'])]);
+  await expect(verdict).toHaveAttribute('data-weighing', 'button:2');
+  await page.clock.runFor(HOLD_MS + 50);
+  await expect(verdict).toHaveAttribute('data-phase', 'right');
+  await expect(verdict).toContainText(
+    'Right. Button 2 on Throttle. Leave it there for the next card.'
+  );
+  await expect(count).toHaveText('2 of 10 done');
+  await still('stop-left-there');
+  await page.clock.resume();
+  await movedOn(second.ask);
+  await expect(verdict).toHaveAttribute('data-phase', 'asking');
+  await expect(note).toHaveCount(0);
+
+  // Both were right first time, and are kept so.
+  await expect
+    .poll(async () => (await kept(run)).cards[off.id])
+    .toMatchObject({ right: 1, wrong: 0, streak: 1 });
+  expect((await kept(run)).cards[idle.id]).toMatchObject({ right: 1, wrong: 0, streak: 1 });
 });
 
 test('trainer: a racing game is asked the same way, on the buttons of the wheel', async ({

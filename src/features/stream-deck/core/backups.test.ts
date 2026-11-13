@@ -15,7 +15,7 @@ const MB = 1024 * 1024;
 const FILES = ['AppData/Roaming/Elgato/**', 'Program Files/Elgato/**'];
 const OLD_BACKUP = 'Documents/DCS Backup/Stream Deck - 02-03-2024 - 19-16.streamDeckProfilesBackup';
 const ELGATO_AUTO = 'Stream Deck - 2026-10-01-09-12-44.streamDeckProfilesBackup';
-const DCS_WORLD = '042F7366-9A23-444F-9AE6-327A9DB7979F';
+const DCS_WORLD = '740F9206-1F71-436A-9AD2-920C8CD6972C';
 const F16 = '7D3A1C55-2B64-4E2F-9C0E-5F1A9E6B2D10';
 
 async function setup(scenario = 'stream-deck-owner', maxBytes = 200 * MB) {

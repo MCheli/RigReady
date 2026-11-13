@@ -16,19 +16,19 @@ Rule for implementers: everything below that names the owner's paths, PIDs or se
 
 | Device | VID:PID (hex) | USB serial (instance) | DirectInput/OEM name (registry) |
 |---|---|---|---|
-| Orion Joystick Base 2 + F-16 grip | 4098:BEA8 | 82E72012C416422192F650B2 | WINWING Orion Joystick Base 2 + JGRIP-F16 |
-| Orion Throttle Base 1 + F-15EX handles | 4098:BD26 | 14067062F4E6C33163562052 | WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R |
-| MFD1-L button frame | 4098:BEE1 | 6EFA7012E446232143263042 | WINWING MFD1-L |
-| MFD1-C button frame | 4098:BEE0 | 53BD7012E446232143263042 | WINWING MFD1-C |
-| MFD1-R button frame | 4098:BEE2 | 80E62062A4E6D221B2465002 | WINWING MFD1-R |
-| UFC1 + HUD1 | 4098:BEDE | AE372062A4E6D221B2465002 | WINWING UFC1 + HUD1 |
-| ICP | 4098:BF06 | 8E3C6012D4664221F33630B2 | WINWING ICP |
-| F18 Startup Panel | 4098:BE03 | 0FA12062F4362231C4766072 | WINWING F18 STARTUP PANEL |
-| F18 Takeoff Panel 2 | 4098:BF05 | B167D012E4465321A2E63072 | WINWING F18 TAKEOFF PANEL 2 |
-| MFD USB screens (x3) | 17E9:FF00 (DisplayLink) | WWIN29320221210092611 / …093818 / …163532 | n/a (Display class "WINWING USB 3.0 Display1") |
+| Orion Joystick Base 2 + F-16 grip | 4098:BEA8 | 22D55963A162301390D140A0 | WINWING Orion Joystick Base 2 + JGRIP-F16 |
+| Orion Throttle Base 1 + F-15EX handles | 4098:BD26 | 43246085F6B9D37844328767 | WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R |
+| MFD1-L button frame | 4098:BEE1 | 8EAA7079D834839151957409 | WINWING MFD1-L |
+| MFD1-C button frame | 4098:BEE0 | 75BB4533E728022501736627 | WINWING MFD1-C |
+| MFD1-R button frame | 4098:BEE2 | 52F94702D5B0D916B2951379 | WINWING MFD1-R |
+| UFC1 + HUD1 | 4098:BEDE | DD741978C0B0C192F4206238 | WINWING UFC1 + HUD1 |
+| ICP | 4098:BF06 | 4E2E9327A3187152B92813B5 | WINWING ICP |
+| F18 Startup Panel | 4098:BE03 | 9EF92793D9984080B4841193 | WINWING F18 STARTUP PANEL |
+| F18 Takeoff Panel 2 | 4098:BF05 | F601F748F9599339D6F63447 | WINWING F18 TAKEOFF PANEL 2 |
+| MFD USB screens (x3) | 17E9:FF00 (DisplayLink) | ZJPC47736095181552826 / …093818 / …163532 | n/a (Display class "WINWING USB 3.0 Display1") |
 | Thrustmaster TPR | 044F:B68F | (no serial: `8&348856F8&0&2`) | T-Pendular-Rudder |
 | Virpil control panel | 3344:C259 (COL01 game controller + COL02 vendor) | `FF` | R-VPC Panel #1 |
-| Stream Deck XL (model 20GAT9902) | 0FD9:008F | A00NA33331P1UB | n/a |
+| Stream Deck XL (model 20GAT9902) | 0FD9:008F | S11FD24013B3QA | n/a |
 | TrackIR 5 | 131D:0159 | (no serial) | n/a (class NaturalPointDevices) |
 
 - WinWing's VID is **0x4098** (16536 decimal). SimAppPro's own JSON stores VID/PID in decimal, for example `"vid": 16536, "pid": 48808`.
@@ -86,7 +86,7 @@ Each export is a 768x1024 portrait screen cropped by `tailorMonitor` {left 8, to
 
 - They are **DisplayLink USB 3.0 graphics devices** (VID 0x17E9, PID 0xFF00, composite with MI_00/MI_01), driver "DisplayLink USB Device" 11.5.6380.0 (`oem3.inf`). No "DisplayLink Graphics" program is installed, so the driver came from Windows Update or from SimAppPro's bundle.
 - After the driver binds, each screen is a **plain Windows monitor**: `DISPLAY\REG0319\…`, EDID name `USB_Monitor`, manufacturer `REG`, **EDID serial "0" on all three**. They cannot be told apart by EDID.
-- **How to tell the screens apart:** take the monitor's PnP parent `USB\VID_17E9&PID_FF00&MI_00\…`, then its parent `USB\VID_17E9&PID_FF00\WWIN2932022121009xxxx`. That is the composite device, whose instance ID is the **USB serial**, unique per screen. Match the DisplayConfig target `monitorDevicePath` (it contains `REG0319#a&2c1ac5a9&0&UID256`) to the `DISPLAY\REG0319\A&2C1AC5A9&0&UID256` instance, walk up to the serial, and store **that serial** in the profile (PRODUCT.md rule 4).
+- **How to tell the screens apart:** take the monitor's PnP parent `USB\VID_17E9&PID_FF00&MI_00\…`, then its parent `USB\VID_17E9&PID_FF00\<serial>`. That is the composite device, whose instance ID is the **USB serial**, unique per screen. Match the DisplayConfig target `monitorDevicePath` (it contains `REG0319#a&5a2ab1a5&0&UID256`) to the `DISPLAY\REG0319\A&5A2AB1A5&0&UID256` instance, walk up to the serial, and store **that serial** in the profile (PRODUCT.md rule 4).
 - Current Windows state (desk layout): Dell 2560x1440 is primary at 0,0. The Samsung is at 2560. The three USB screens are **1024x768 landscape** at 7680, 8704 and 9728. SimAppPro's flight plan expects the Samsung at 0,0 and the USB screens **portrait 768x1024** at 5120/5888/6656. So flying needs a layout with **rotation** (DisplayConfig `DISPLAYCONFIG_ROTATION_ROTATE90/270`) and the Samsung at the origin. Without that, `options.lua` width 7424 and the viewports land in the wrong place.
 - **Which physical MFD frame (L/C/R HID) a screen belongs to cannot be derived reliably.** For L and R the USB location paths happen to share a hub branch (MFD1-L HID `…USB(6)#USB(4)#USB(1)#USB(3)` and screen …093818 `…USB(25)#USB(4)#USB(1)#USB(2)`), but for C they do not. Every hub's ContainerId is the generic `{9F4B56F0-…}`. Use an **"Identify" flow**: show a big label on each USB screen and ask the user which MFD it sits in.
 
@@ -171,7 +171,7 @@ No SimAppPro runtime is involved in MFD drawing. **Feasibility: fully replaceabl
 **Locations:**
 
 - Install: `C:\Program Files\Elgato\StreamDeck\StreamDeck.exe`. Process name `StreamDeck`. It listens on TCP 127.0.0.1:28196 and [::]:28198 (plugin websocket).
-- Profiles: `%APPDATA%\Elgato\StreamDeck\ProfilesV3\<UUID>.sdProfile\`. Each has a `manifest.json` (`{"Device":{"Model":"20GAT9902","UUID":"@(1)[4057/143/A00NA33331P1UB]"},"Name":…,"Pages":{…},"Version":"3.0"}`; the device UUID is VID/PID in decimal plus the USB serial), plus `Profiles\<page UUID>\manifest.json` (actions) and `Images\`.
+- Profiles: `%APPDATA%\Elgato\StreamDeck\ProfilesV3\<UUID>.sdProfile\`. Each has a `manifest.json` (`{"Device":{"Model":"20GAT9902","UUID":"@(1)[4057/143/S11FD24013B3QA]"},"Name":…,"Pages":{…},"Version":"3.0"}`; the device UUID is VID/PID in decimal plus the USB serial), plus `Profiles\<page UUID>\manifest.json` (actions) and `Images\`.
 - Plugins: `%APPDATA%\Elgato\StreamDeck\Plugins\<plugin-uuid>.sdPlugin\manifest.json`. **Some manifests are not plain JSON** (Elgato's Discord plugin failed to parse), so parse defensively.
 - Automatic backups: `%APPDATA%\Elgato\StreamDeck\BackupV3\Stream Deck - YYYY-MM-DD-HH-MM-SS.streamDeckProfilesBackup`. There are seven (Aug–Oct 2026, about 96 MB each). Elgato makes one on every app update ([Elgato help](https://help.elgato.com/hc/en-us/articles/360048424432)) [Web]; the frequency here suggests other triggers too.
 - Registry: `HKCU\Software\Elgato Systems GmbH\StreamDeck` (Devices, wndGeometry, …). File associations for `.streamDeckProfilesBackup`, `.streamDeckProfile` and `.streamDeckPlugin` all run `"…\StreamDeck.exe" "%1"`.

@@ -38,13 +38,17 @@ If Windows is set to reduce motion ([Motion](../app/text-size.md#motion)), the t
 
 A Fanatec wheel base is drawn as what it is, in place of the plot of two axes. **Wheel and pedals** shows the steering as a wheel that turns, with the reading under it ("Left 37%", "Centre", "Right 100%"), and the clutch, the brake and the accelerator as three named bars that fill while the pedal is pressed.
 
-The reading is the share of the travel to one side, not degrees. Windows reports the share only, and RigReady does not read the rotation set on the base, so no angle is shown. The picture turns a quarter turn at the end of the travel, whatever the real rotation is. Each pedal bar counts from where the pedal was at its first reading. If a bar looks the wrong way round, let go of the pedals and choose **Start again**.
+The reading is the share of the travel to one side, not degrees. Windows reports the share only, and RigReady does not read the rotation set on the base, so no angle is shown. The picture turns a quarter turn at the end of the travel, whatever the real rotation is. Each pedal bar counts from where the pedal was at its first reading, and names the axis it reads under it ("Z axis"). If a bar looks the wrong way round, let go of the pedals and choose **Start again**.
 
-The axes below go by the names the [Wheel page](../games/wheel.md#axes) uses (Wheel, Combined pedals, Accelerator, Brake, Clutch, Dial), each with the name Windows gives it underneath ("X axis"). The activity log uses the same names ("Wheel moved 50% → 70%"). With **Raw values** on, the names are the DirectInput ones as for any controller.
+The clutch can be on one of two axes. The Fanatec driver calls the Y axis "Combined pedals" and Slider 1 "Clutch", whatever the base's pedal mode. With the pedals separate, the clutch is on Y and Slider 1 does not move; with the pedals combined, Y carries the accelerator and the brake together. Windows does not say which mode the base is in, so the **Clutch** bar reads the one that moves: Slider 1 once it moves, Y once it moves from a rest at one end, as a pedal does. A combined axis rests in the middle, so it is never taken for the clutch. Until either moves, the bar reads Slider 1.
+
+The axes below go by the names the [Wheel page](../games/wheel.md#axes) uses (Wheel, Clutch or combined pedals, Accelerator, Brake, Clutch, Dial), each with the name Windows gives it underneath ("X axis"). The activity log uses the same names ("Wheel moved 50% → 70%", "Clutch or combined pedals moved 100% → 0%"). With **Raw values** on, the names are the DirectInput ones as for any controller.
 
 A wheel base of any other make, and one you added with [My wheel is not listed](../games/wheel.md#my-wheel-is-not-listed), keeps the general view and the names Windows gives: no source says what its axes are.
 
 ![A wheel base in the tester](../../../artifacts/screens/devices-tester-wheel/01-wheel-view.png)
+
+![The clutch pressed with the pedals separate: the Clutch bar reads Y](../../../artifacts/screens/devices-tester-clutch/01-clutch-pressed.png)
 
 ## When a controller is plugged in or unplugged
 

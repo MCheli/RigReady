@@ -4,6 +4,7 @@ import {
   type BoundAircraft,
   type BoundDevice,
 } from '../../../core/bindings';
+import { z } from 'zod';
 import type { BindingReader } from '../../../core/bindings';
 import { boundControl, boundInputsOf, type BoundInputs } from '../../../core/boundInputs';
 import type { MainContext } from '../../../core/feature';
@@ -27,11 +28,23 @@ import type {
   OverlayState,
   PressAction,
   PressRow,
+  SetupDefault,
+  SetupOverlay,
   WidgetState,
 } from './model';
-import { overlayScreens, placeSignature, resolvePlace, screenNames, storedMonitor } from './place';
+import {
+  mainScreen,
+  offInLayouts,
+  overlayScreens,
+  placeSignature,
+  resolvePlace,
+  screenNames,
+  storedMonitor,
+  type SetupLayout,
+} from './place';
 import { PressTracker } from './presses';
 import { NO_SETTINGS, type At, type OverlaySettings, type StoredMonitor } from './settings';
+import { overlayChoice } from './setupChoice';
 import { OverlayStore } from './store';
 import {
   RECENT_PRESSES,
@@ -51,8 +64,14 @@ import {
  * the game and aircraft the setup in use is for (`ctx.bindings`, the lookup the input tester
  * uses) and put in the list the windows draw.
  *
- * Nothing here runs on a timer. What can change behind its back (another setup played, the
- * screens rearranged, a binding changed in the game) is looked at again when the user
+ * The user's switch on the Overlay page turns the overlay on as a whole; each setup then says
+ * whether it is up while that setup is the one in use (`setupChoice.ts`), and a setup that
+ * says nothing has it up where RigReady can read the bindings of its game. A setup saved, or
+ * another one played, is heard from the setups themselves (`ctx.profiles.onChanged`), so the
+ * overlay goes up or down with it at once.
+ *
+ * Nothing here runs on a timer. What can change behind its back (a setup file edited by hand,
+ * the screens rearranged, a binding changed in the game) is looked at again when the user
  * presses something and it has been a while, and whenever the Overlay page is read. An
  * overlay nobody presses anything for shows nothing, and does nothing.
  */
@@ -68,7 +87,10 @@ export const INPUT_WAIT_MS = 4000;
 export const panelId = (widget: string): string => `overlay-${widget}`;
 export const panelRoute = (widget: string): string => `/overlay/${widget}`;
 
-type Ctx = Pick<MainContext, 'ports' | 'log' | 'profiles' | 'games' | 'names' | 'bindings'>;
+type Ctx = Pick<
+  MainContext,
+  'ports' | 'log' | 'profiles' | 'games' | 'names' | 'bindings' | 'layouts'
+>;
 
 export interface OverlayEvents {
   /** The state changed: the page and the windows take this instead of reading again. */
@@ -101,6 +123,51 @@ interface InputStatus {
   ok: boolean;
   problem?: string;
 }
+
+/** Whose bindings name the presses for a setup, or why there are none. */
+interface Found {
+  reader?: BindingReader;
+  /** The game the setup names, when no reader is found for it. */
+  game?: { id: string; name: string };
+  /** Why there is no reader, as the start of a sentence that goes on after it. */
+  why?: string;
+}
+
+/**
+ * The monitor check a setup applies its monitor layout with (the displays feature's
+ * `display.layout`): only as far as the overlay needs it, to see which monitors it turns off.
+ */
+const LayoutCheckSchema = z.object({
+  layoutId: z.string().optional(),
+  displays: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        serial: z.string().optional(),
+        usbSerial: z.string().optional(),
+        enabled: z.boolean(),
+      })
+    )
+    .min(1),
+});
+const LAYOUT_CHECK = 'display.layout';
+
+/** "the bindings of X were not found" as the first words of a sentence. */
+const sentence = (words: string): string => words.charAt(0).toUpperCase() + words.slice(1);
+
+/** Why the overlay is off in a setup to begin with, and cannot say what a press does there. */
+const whyOff = (why: string | undefined): string =>
+  `${sentence(why ?? 'RigReady cannot read the bindings of this game')}, so the overlay cannot say what a press does.`;
+
+/** What the words for a press depend on in a setup: when it is the same, they are too. */
+const sourceKey = (setup: Profile | undefined): string =>
+  JSON.stringify([
+    setup?.id,
+    setup?.name,
+    setup?.game,
+    setup?.gameName,
+    aircraftNamedBy(setup?.checks ?? []),
+  ]);
 
 const NO_NAMES: DeviceNames = { nameOf: () => undefined };
 const NO_SCREEN = 'No screen is on, so there is nothing to show the overlay on.';
@@ -143,10 +210,20 @@ export class OverlayService {
   private pressOptions: RecentPressesOptions = recentPresses.read(undefined);
 
   private source: Source = { choices: [] };
+  /** The setup the source was read for, as far as the words depend on it (`sourceKey`). */
+  private sourceFor = '';
   /** The example lines for the page, worked out once for the source and the names. */
   private examples: ExamplePress[] | undefined;
-  /** The setup that was last played when the source was read. */
+  /** The setup that was last played when the setups were read. */
   private lastSetup: string | undefined;
+  /** Every setup, and whether the overlay shows in it. */
+  private setups: SetupOverlay[] = [];
+  /** The monitor layouts of the setups that have it on. */
+  private setupLayouts: SetupLayout[] = [];
+  /** RigReady changed a setup, or played another one, since they were last read. */
+  private setupsStale = false;
+  private setupsCheck = false;
+  private readonly stopSetups: () => void;
   private deviceNames: DeviceNames = NO_NAMES;
   private readonly deviceLabels = new Map<string, string>();
   private displays: DisplayInfo[] = [];
@@ -170,6 +247,12 @@ export class OverlayService {
   private checking = false;
   /** One thing at a time: what changes the overlay runs in the order it was asked for. */
   private queue: Promise<unknown> = Promise.resolve();
+  /**
+   * RigReady is quitting. What was already under way (a read of the bindings can take a
+   * quarter of a minute) finishes without showing a window or listening to anything, and
+   * nothing new starts.
+   */
+  private disposed = false;
 
   constructor(
     private readonly ctx: Ctx,
@@ -179,6 +262,9 @@ export class OverlayService {
   ) {
     this.store = new OverlayStore(ctx.ports.files, ctx.ports.folders);
     this.feed = new PressFeed(limitsOf(this.pressOptions));
+    // Another setup played, or the overlay switched in one: the overlay goes up or down at
+    // once, also while it is down and nothing is pressed that would make it look.
+    this.stopSetups = ctx.profiles.onChanged(() => this.onSetupsChanged());
   }
 
   // ---- what the page and the windows ask ----
@@ -247,26 +333,31 @@ export class OverlayService {
   }
 
   /**
-   * Puts a widget at a place, on a screen that is on when one is named and on the screen it
-   * already belongs to otherwise.
+   * Puts a widget at a place: on a screen that is on when one is named, on the main screen of
+   * whatever monitor layout is in use when `screen` is null, and on the screen it already
+   * belongs to otherwise.
    */
   place(
     widget: string,
-    to: { screen?: string | undefined; at: At }
+    to: { screen?: string | null | undefined; at: At }
   ): Promise<Result<OverlayState>> {
     return this.run(async () => {
       const kind = widgetKind(widget);
       if (!kind) return noWidget(widget);
       await this.readDisplays();
-      let monitor: StoredMonitor | undefined;
-      if (to.screen !== undefined) {
+      /** Null: the main screen, whichever monitor that is. Undefined: the one it is on. */
+      let monitor: StoredMonitor | null | undefined;
+      if (to.screen === null) {
+        monitor = null;
+      } else if (to.screen !== undefined) {
         const id = to.screen.toLowerCase();
         const display = this.displays.find((d) => d.id.toLowerCase() === id && usable(d));
         if (!display) return err('overlay.screen', 'That screen is not on.');
         monitor = storedMonitor(display, this.nameOf(display));
       }
       const written = await this.store.update((current) => {
-        const kept = monitor ?? current.widgets[kind.id]?.place?.monitor;
+        const kept =
+          monitor === null ? undefined : (monitor ?? current.widgets[kind.id]?.place?.monitor);
         return {
           ...current,
           widgets: {
@@ -297,6 +388,13 @@ export class OverlayService {
       if (moving) {
         await this.refresh(false);
         if (!this.settings.on) return err('overlay.off', 'Turn the overlay on first.');
+        const off = this.offInSetup();
+        if (off) {
+          return err(
+            'overlay.offInSetup',
+            `The overlay is off in the setup in use, “${off.name}”. Turn it on in that setup first.`
+          );
+        }
         this.moving.add(kind.id);
         await this.show(kind);
         if (!this.shown.has(kind.id)) {
@@ -325,7 +423,13 @@ export class OverlayService {
   chooseAircraft(aircraftId: string | null): Promise<Result<OverlayState>> {
     return this.run(async () => {
       await this.readSettings();
-      await this.readSource();
+      const inUse = await this.readSetups();
+      await this.readSource(inUse);
+      // What was read can take the overlay up or down (the game's bindings came or went, so
+      // the setup's switch did too): the windows follow it before anything is answered, and
+      // also when the choice is refused below.
+      await this.reconcile();
+      this.announce();
       const { game, setup, choices } = this.source;
       const key = setup?.id ?? '';
       if (aircraftId !== null) {
@@ -355,9 +459,34 @@ export class OverlayService {
       });
       if (!written.ok) return written;
       this.settings = written.value;
-      await this.readSource();
+      await this.readSource(inUse);
       return ok(this.announce());
     });
+  }
+
+  /**
+   * What a setup for this game starts with, for its switch in the setup editor: on when
+   * RigReady can read the game's bindings on this PC, so the overlay can say what a press
+   * does, and off with the reason otherwise. Nothing here knows a game by name: it is what the
+   * game's binding reader finds. Not queued behind a long read of the bindings: it reads no
+   * binding file, and changes nothing.
+   */
+  async setupDefault(setup: Pick<Profile, 'game' | 'gameName'>): Promise<Result<SetupDefault>> {
+    try {
+      const found = await this.bindingsFor(setup);
+      const settings = await this.store.read();
+      return ok({
+        startsOn: found.reader !== undefined,
+        ...(found.reader ? {} : { why: whyOff(found.why) }),
+        overlayOn: settings.ok ? settings.value.on : this.settings.on,
+      });
+    } catch (e) {
+      return fromThrown(
+        'overlay.failed',
+        'What the overlay does in this setup could not be read.',
+        e
+      );
+    }
   }
 
   // ---- the life of the app ----
@@ -378,7 +507,10 @@ export class OverlayService {
 
   /** On quit: stops listening and takes the windows away. */
   async dispose(): Promise<void> {
+    this.disposed = true;
+    this.stopSetups();
     this.unlisten();
+    this.unlistenBindings();
     for (const widget of [...this.shown.keys()]) {
       this.shown.delete(widget);
       try {
@@ -527,13 +659,38 @@ export class OverlayService {
     await this.readSettings();
     await this.readDisplays();
     await this.readPad();
-    if (full || (await this.lastPlayed()) !== this.lastSetup) {
-      this.fullAt = now;
-      await this.readSource();
-      await this.readNames();
-      this.tracker.keep(this.ctx.ports.input.devices());
+    if (full || this.setupsStale || (await this.lastPlayed()) !== this.lastSetup) {
+      this.setupsStale = false;
+      const inUse = await this.readSetups();
+      // Only the overlay's switch of a setup changed: the words for a press have not, unless
+      // it comes up again now. Down, it heard nothing of a binding changed in the game, so
+      // they are read afresh then, as when it is turned on.
+      const resuming = !this.stopInput && this.up();
+      if (full || resuming || sourceKey(inUse) !== this.sourceFor) {
+        this.fullAt = now;
+        await this.readSource(inUse);
+        await this.readNames();
+        this.tracker.keep(this.ctx.ports.input.devices());
+      }
     }
     await this.reconcile();
+  }
+
+  /**
+   * RigReady saved a setup, deleted one or played another: the overlay goes up or down with
+   * the setup in use. While it is turned off there is nothing to bring in line, and the page
+   * reads everything again when it opens.
+   */
+  private onSetupsChanged(): void {
+    this.setupsStale = true;
+    if (this.disposed || !this.settings.on || this.setupsCheck) return;
+    this.setupsCheck = true;
+    void this.run(async () => {
+      this.setupsCheck = false;
+      await this.refresh(false);
+      this.announce();
+      return ok(undefined);
+    });
   }
 
   private async readSettings(): Promise<void> {
@@ -591,23 +748,75 @@ export class OverlayService {
     }
   }
 
-  /** The setup in use: the one played last, or the first there is. */
-  private async setupInUse(): Promise<Profile | undefined> {
+  /**
+   * Every setup and whether the overlay shows in it: what the user switched in the setup, or
+   * else on where RigReady can read the bindings of its game. With them, the monitor layouts
+   * of those that have it on. Answers the setup in use: the one played last, or the first.
+   */
+  private async readSetups(): Promise<Profile | undefined> {
     this.lastSetup = await this.lastPlayed();
+    let all: Profile[] = [];
     try {
-      const all = await this.ctx.profiles.list();
-      if (!all.ok) return undefined;
-      return all.value.find((profile) => profile.id === this.lastSetup) ?? all.value[0];
+      const listed = await this.ctx.profiles.list();
+      if (listed.ok) all = listed.value;
     } catch {
       // Setups that cannot be read are no setup here: the overlay then goes by the
       // bindings that are on this PC, as it does before a setup is made.
-      return undefined;
+      all = [];
     }
+    const lookups = new Map<string, Promise<Found>>();
+    const setups: SetupOverlay[] = [];
+    const layouts: SetupLayout[] = [];
+    for (const profile of all) {
+      const game = JSON.stringify([profile.game, profile.game === 'other' ? profile.gameName : '']);
+      let lookup = lookups.get(game);
+      if (!lookup) {
+        lookup = this.bindingsFor(profile);
+        lookups.set(game, lookup);
+      }
+      const found = await lookup;
+      const chosen = overlayChoice(profile);
+      const on = chosen ?? found.reader !== undefined;
+      setups.push({
+        id: profile.id,
+        name: profile.name,
+        on,
+        chosen: chosen !== undefined,
+        ...(found.reader ? {} : { why: whyOff(found.why) }),
+      });
+      if (on) {
+        const layout = await this.layoutOf(profile);
+        if (layout) layouts.push(layout);
+      }
+    }
+    this.setups = setups;
+    this.setupLayouts = layouts;
+    return all.find((profile) => profile.id === this.lastSetup) ?? all[0];
+  }
+
+  /** The monitor layout Make ready applies for a setup: its monitor check, when it has one on. */
+  private async layoutOf(profile: Profile): Promise<SetupLayout | undefined> {
+    const check = profile.checks.find((c) => c.type === LAYOUT_CHECK && !c.disabled);
+    const params = LayoutCheckSchema.safeParse(check?.params);
+    if (!params.success) return undefined;
+    const { layoutId, displays } = params.data;
+    if (layoutId) {
+      try {
+        const saved = await this.ctx.layouts.get(layoutId);
+        if (saved.ok) {
+          return { setup: profile.name, layout: saved.value.name, monitors: saved.value.displays };
+        }
+      } catch (e) {
+        this.ctx.log.warn('a saved monitor layout could not be read for the overlay', e);
+      }
+    }
+    // The copy the setup keeps, which its check goes by when the saved layout is gone.
+    return { setup: profile.name, monitors: displays };
   }
 
   /** Where the words for a press come from: the setup in use, its game, the aircraft. */
-  private async readSource(): Promise<void> {
-    const setup = await this.setupInUse();
+  private async readSource(setup: Profile | undefined): Promise<void> {
+    this.sourceFor = sourceKey(setup);
     const source: Source = { choices: [] };
     if (setup) source.setup = { id: setup.id, name: setup.name };
     const reader = await this.readerFor(setup, source);
@@ -658,6 +867,18 @@ export class OverlayService {
     setup: Profile | undefined,
     source: Source
   ): Promise<BindingReader | undefined> {
+    const found = await this.bindingsFor(setup);
+    if (found.reader) return found.reader;
+    if (found.game) source.game = found.game;
+    source.problem = `${sentence(found.why ?? 'the bindings could not be read')}, so presses are shown without what they do.`;
+    return undefined;
+  }
+
+  /**
+   * The binding reader for a setup (`undefined`: no setup at all), or why there is none. The
+   * same answer decides whether the overlay is on in a setup to begin with.
+   */
+  private async bindingsFor(setup: Pick<Profile, 'game' | 'gameName'> | undefined): Promise<Found> {
     const { bindings, games } = this.ctx;
     const found = async (reader: BindingReader): Promise<boolean> => {
       try {
@@ -671,32 +892,54 @@ export class OverlayService {
       const reader = bindings.get(setup.game);
       const name =
         reader?.gameName ??
-        (setup.game === 'other' ? setup.gameName : games.get(setup.game)?.name) ??
+        (setup.game === 'other'
+          ? setup.gameName?.trim() || undefined
+          : games.get(setup.game)?.name) ??
         'the game of this setup';
-      if (reader && (await found(reader))) return reader;
-      source.game = { id: setup.game, name };
-      source.problem = reader
-        ? `The bindings of ${name} were not found on this PC, so presses are shown without what they do.`
-        : `RigReady cannot read the bindings of ${name}, so presses are shown without what they do.`;
-      return undefined;
+      if (reader && (await found(reader))) return { reader };
+      return {
+        game: { id: setup.game, name },
+        why: reader
+          ? `the bindings of ${name} were not found on this PC`
+          : `RigReady cannot read the bindings of ${name}`,
+      };
     }
     const here: BindingReader[] = [];
     for (const reader of bindings.all()) {
       if (await found(reader)) here.push(reader);
     }
-    if (here.length === 1) return here[0];
-    source.problem =
-      here.length === 0
-        ? 'No game whose bindings RigReady can read was found on this PC, so presses are shown without what they do.'
-        : 'RigReady can read the bindings of more than one game here and no setup says which one you play, so presses are shown without what they do.';
-    return undefined;
+    if (here.length === 1) return { reader: here[0]! };
+    if (here.length === 0)
+      return { why: 'no game whose bindings RigReady can read was found on this PC' };
+    return {
+      why: setup
+        ? 'RigReady can read the bindings of more than one game here and this setup names none of them'
+        : 'RigReady can read the bindings of more than one game here and no setup says which one you play',
+    };
   }
 
   // ---- the windows ----
 
-  /** Brings what is up in line with the settings. */
+  /** The setup in use, when it has the overlay off. */
+  private offInSetup(): SetupOverlay | undefined {
+    const id = this.source.setup?.id;
+    const setup = id === undefined ? undefined : this.setups.find((s) => s.id === id);
+    return setup && !setup.on ? setup : undefined;
+  }
+
+  /** The overlay is up: turned on, and on in the setup in use (or there is no setup). */
+  private up(): boolean {
+    return this.settings.on && !this.offInSetup();
+  }
+
+  /** Brings what is up in line with the settings and the setup in use. */
   private async reconcile(): Promise<void> {
-    if (!this.settings.on) {
+    if (this.disposed) return;
+    // Bindings that come or go can turn the setup's switch, so they are heard while the
+    // overlay is turned on, up or not: bindings brought back bring it back.
+    if (this.settings.on) this.listenBindings();
+    else this.unlistenBindings();
+    if (!this.up()) {
       await this.takeDown();
       return;
     }
@@ -704,15 +947,24 @@ export class OverlayService {
     for (const kind of WIDGET_KINDS) await this.show(kind);
   }
 
+  /** The controllers, while the overlay is up. */
   private listen(): void {
     if (this.stopInput) return;
     // What is held when the listening starts is how the controllers rest.
     this.tracker.reset();
     this.stopInput = this.ctx.ports.input.subscribe((states) => this.onInput(states));
     void this.watchInput();
+  }
+
+  /** Bindings changed by RigReady (an edit, a restore, an undo), while the overlay is on. */
+  private listenBindings(): void {
+    if (this.stopBindings) return;
     this.stopBindings = this.ctx.bindings.onChanged(() => {
       void this.run(async () => {
-        await this.readSource();
+        await this.readSource(await this.readSetups());
+        // Bindings that came or went can turn the setup's switch: the windows and the
+        // listening follow it before the page and the windows are told.
+        await this.reconcile();
         this.announce();
         return ok(undefined);
       });
@@ -722,6 +974,9 @@ export class OverlayService {
   private unlisten(): void {
     this.stopInput?.();
     this.stopInput = undefined;
+  }
+
+  private unlistenBindings(): void {
     this.stopBindings?.();
     this.stopBindings = undefined;
   }
@@ -744,6 +999,7 @@ export class OverlayService {
 
   /** Shows a widget's window where it belongs, or leaves it when it is there already. */
   private async show(kind: WidgetKind): Promise<void> {
+    if (this.disposed) return;
     const { overlays } = this.ctx.ports;
     const stored = this.settings.widgets[kind.id];
     const size = kind.size(stored?.options);
@@ -774,6 +1030,8 @@ export class OverlayService {
     if (shown.ok) {
       this.shown.set(kind.id, signature);
       this.problems.delete(kind.id);
+      // RigReady quit while it was being shown: it goes, as the others did.
+      if (this.disposed) await this.hide(kind.id);
     } else {
       this.shown.delete(kind.id);
       this.moving.delete(kind.id);
@@ -796,7 +1054,13 @@ export class OverlayService {
     await this.readDisplays();
     const display = screenOf(this.displays.filter(usable), where.value.screen);
     if (!display) return notKept();
-    const place = { monitor: storedMonitor(display, this.nameOf(display)), at: where.value.at };
+    // Following the main screen and let go on it: it goes on following it. On another
+    // monitor it belongs to that one from now on.
+    const followsMain = !this.settings.widgets[kind.id]?.place?.monitor;
+    const place =
+      followsMain && mainScreen(this.displays)?.id === display.id
+        ? { at: where.value.at }
+        : { monitor: storedMonitor(display, this.nameOf(display)), at: where.value.at };
     const written = await this.store.update((current) => ({
       ...current,
       widgets: {
@@ -860,12 +1124,16 @@ export class OverlayService {
   private build(): OverlayState {
     const names = screenNames(this.displays, this.monitorNames);
     const on = this.settings.on;
+    const up = this.up();
+    const offInSetup = on ? this.offInSetup() : undefined;
     const widgets: WidgetState[] = WIDGET_KINDS.map((kind) => {
       const stored = this.settings.widgets[kind.id];
       const options = kind.options(stored?.options);
       const size = kind.size(options);
       const place = resolvePlace(stored?.place, kind.defaultAt, this.displays);
-      const problem = on ? this.problems.get(kind.id) : undefined;
+      const problem = up ? this.problems.get(kind.id) : undefined;
+      const monitor = stored?.place?.monitor;
+      const offIn = monitor ? offInLayouts(monitor, this.setupLayouts, this.displays) : [];
       return {
         id: kind.id,
         title: kind.title,
@@ -881,13 +1149,15 @@ export class OverlayService {
               }
             : {}),
           at: place?.at ?? stored?.place?.at ?? kind.defaultAt,
+          ...(monitor ? {} : { main: true as const }),
           ...(place?.away ? { away: place.away } : {}),
+          ...(offIn.length > 0 ? { offIn } : {}),
         },
         showing: this.shown.has(kind.id),
         moving: this.moving.has(kind.id),
         ...(problem ? { problem } : {}),
-        // Only while it is off: turned on, the preview shows what is pressed.
-        ...(!on && kind.id === RECENT_PRESSES ? { examples: this.exampleLines() } : {}),
+        // Only while it is not up: up, the preview shows what is pressed.
+        ...(!up && kind.id === RECENT_PRESSES ? { examples: this.exampleLines() } : {}),
       };
     });
     const { setup, game, pick, choices, problem } = this.source;
@@ -905,8 +1175,10 @@ export class OverlayService {
       widgets,
       screens: overlayScreens(this.displays, this.monitorNames),
       source,
-      // Known only while the overlay is on: that is when the controllers are read for it.
-      ...(on ? { input: { ...this.input } } : {}),
+      setups: this.setups.map((setup) => ({ ...setup })),
+      ...(offInSetup ? { offInSetup: { id: offInSetup.id, name: offInSetup.name } } : {}),
+      // Known only while the overlay is up: that is when the controllers are read for it.
+      ...(up ? { input: { ...this.input } } : {}),
       ...(this.settingsProblem ? { problem: this.settingsProblem } : {}),
     };
   }
@@ -932,7 +1204,13 @@ export class OverlayService {
   /** Runs one thing after the other, and turns anything thrown into an answer. */
   private run<T>(work: () => Promise<Result<T>>): Promise<Result<T>> {
     const done = this.queue
-      .then(work)
+      .then((): Promise<Result<T>> =>
+        this.disposed
+          ? Promise.resolve(
+              err('overlay.closed', 'RigReady is closing, so the overlay is not changed.')
+            )
+          : work()
+      )
       .catch((e): Result<T> => fromThrown('overlay.failed', 'The overlay could not do that.', e));
     this.queue = done;
     return done;

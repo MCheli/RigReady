@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { generateLayout } from './generate';
+import { otherPositions } from './positions';
 import type { TrainerAnswer, TrainerCard } from './trainer';
 import {
   HOLD_MS,
@@ -395,8 +397,9 @@ describe('a switch that stays where it is put', () => {
     expect(round.session.results().missed).toEqual([]);
   });
 
-  it('in place and asked for: moved away to let go of it, the next card does not wait for it', () => {
-    // Button 11 is held when its card comes up. Away and back answers it; away again lets go.
+  it('in place and asked for: away and back answers it, and the next card comes with it left there', () => {
+    // Button 11 is held when its card comes up: where the switch rests, so a position it
+    // stays in. Away and back answers it, and it is not to be let go: it stays.
     const round = begin(
       [card('flip', on(THROTTLE, 11)), card('b', on(THROTTLE, 6))],
       [[0, THROTTLE, [11]]]
@@ -407,11 +410,13 @@ describe('a switch that stays where it is put', () => {
         [
           [1000, THROTTLE, [10]],
           [1300, THROTTLE, [11]],
-          [2500, THROTTLE, [10]],
         ],
-        8000
+        1999
       )
-    ).toEqual(['1650 kept flip right', '1650 right flip', '2800 asking b']);
+    ).toEqual(['1650 kept flip right', '1650 right flip']);
+    expect(round.holding).toBe(true);
+    expect(round.staysPut).toBe(true);
+    expect(play(round, [], 8000)).toEqual([`${1650 + SHOW_MS} asking b`]);
   });
 
   it('already where the card asks: answers when it is moved away and straight back', () => {
@@ -473,10 +478,15 @@ describe('a switch that stays where it is put', () => {
           [4500, THROTTLE, []],
           [4700, THROTTLE, [10]],
         ],
-        5999
+        5699
       )
     ).toEqual(['5050 corrected rest']);
     expect(round.inPlace).toEqual([]);
+    // Missed, it comes back at the end of the round, which is now. The control is still
+    // where it rests, and is left there: so it is in place again.
+    expect(play(round, [], 5999)).toEqual([`${5050 + SHOW_MS} asking rest`]);
+    expect(round.session.again).toBe(true);
+    expect(round.inPlace).toEqual(there);
   });
 
   it('bound in two places with one of them in place: the other one answers', () => {
@@ -490,6 +500,168 @@ describe('a switch that stays where it is put', () => {
       '1350 right both',
     ]);
     expect(round.inPlace).toEqual([]);
+  });
+});
+
+describe('a position the control stays in: a switch position, a throttle stop', () => {
+  // The owner's throttle at rest, as read on the rig on 13 November 2026: both handles at
+  // IDLE (31 left, 30 right), the two thumb switches, the finger lever and the left handle
+  // switch in the middle. The drawing gives each of those its other positions.
+  const REST = [23, 30, 31, 4, 41, 58];
+  const without = (...gone: number[]): number[] => REST.filter((b) => !gone.includes(b));
+  const at = (control: number, ...others: number[]): TrainerAnswer => ({
+    ...on(THROTTLE, control),
+    otherPositions: others.map((n) => id(n)),
+  });
+  const idle = card('Left throttle to IDLE', at(31, 2));
+  const leftOff = card('Left throttle to OFF', at(2, 31));
+  const speedBrake = card('Speed brake out', at(22, 23, 24));
+  const rightOff = card('Right throttle to OFF', at(1, 30));
+  const other = card('b', on(THROTTLE, 6));
+
+  it('already there as its card comes up: said; moved away, not an answer; back, it answers and stays', () => {
+    const round = begin([idle, other], [[0, THROTTLE, REST]], [THROTTLE]);
+    expect(round.inPlace).toEqual([{ guid: THROTTLE, control: 'button:31' }]);
+    expect(round.movedAway).toEqual([]);
+    // At IDLE for as long as it likes: where it rests is not an answer.
+    expect(play(round, [], 2999)).toEqual([]);
+    // To OFF, and a second there: on its way away and back, as the card asks. Not a miss,
+    // nothing said, nothing weighed; the card says to move it back.
+    expect(
+      play(
+        round,
+        [
+          [3000, THROTTLE, without(31)],
+          [3100, THROTTLE, [...without(31), 2]],
+        ],
+        4099
+      )
+    ).toEqual([]);
+    expect(round.weighing).toBeUndefined();
+    expect(round.note).toBeUndefined();
+    expect(round.inPlace).toEqual([]);
+    expect(round.movedAway).toEqual([{ guid: THROTTLE, control: 'button:31' }]);
+    // Back to IDLE: weighed, then right. It is not let go: the next card comes with it there.
+    expect(
+      play(
+        round,
+        [
+          [4100, THROTTLE, without(31)],
+          [4200, THROTTLE, REST],
+        ],
+        4549
+      )
+    ).toEqual([]);
+    expect(round.weighing?.press.control).toBe('button:31');
+    expect(round.movedAway).toEqual([]);
+    expect(play(round, [], 4999)).toEqual([
+      '4550 kept Left throttle to IDLE right',
+      '4550 right Left throttle to IDLE',
+    ]);
+    expect(round.holding).toBe(true);
+    expect(round.staysPut).toBe(true);
+    expect(play(round, [], 9000)).toEqual([`${4550 + SHOW_MS} asking b`]);
+    expect(round.session.results()).toMatchObject({ firstTry: 1, missed: [] });
+  });
+
+  it('moved to the stop the card asks for: right after a moment, and the next card comes with it left there', () => {
+    const round = begin([leftOff, other], [[0, THROTTLE, REST]], [THROTTLE]);
+    expect(round.inPlace).toEqual([]);
+    expect(
+      play(
+        round,
+        [
+          [1000, THROTTLE, without(31)],
+          [1080, THROTTLE, [...without(31), 2]],
+        ],
+        1999
+      )
+    ).toEqual(['1430 kept Left throttle to OFF right', '1430 right Left throttle to OFF']);
+    expect(round.staysPut).toBe(true);
+    // IDLE, where the handle was, is not waited for: the handle cannot be at both.
+    expect(play(round, [], 9000)).toEqual([`${1430 + SHOW_MS} asking b`]);
+    expect(round.note).toBeUndefined();
+  });
+
+  it("the owner's second look, played back: stops and switch positions answered one after the other, nothing let go", () => {
+    const round = begin([idle, speedBrake, rightOff], [[0, THROTTLE, REST]], [THROTTLE]);
+    expect(
+      play(
+        round,
+        [
+          // The left handle: from IDLE to OFF and back.
+          [1000, THROTTLE, without(31)],
+          [1100, THROTTLE, [...without(31), 2]],
+          [1600, THROTTLE, without(31)],
+          [1700, THROTTLE, REST],
+          // The upper thumb switch from the middle to forward, and left there.
+          [4000, THROTTLE, without(23)],
+          [4030, THROTTLE, [...without(23), 22]],
+          // The right handle from IDLE to OFF, and left there.
+          [7000, THROTTLE, [...without(23, 30), 22]],
+          [7080, THROTTLE, [...without(23, 30), 22, 1]],
+        ],
+        12_000
+      )
+    ).toEqual([
+      '2050 kept Left throttle to IDLE right',
+      '2050 right Left throttle to IDLE',
+      '2700 asking Speed brake out',
+      '4380 kept Speed brake out right',
+      '4380 right Speed brake out',
+      '5030 asking Right throttle to OFF',
+      '7430 kept Right throttle to OFF right',
+      '7430 right Right throttle to OFF',
+      '8080 done -',
+      '8080 finished',
+    ]);
+    expect(round.session.results()).toMatchObject({ firstTry: 3, missed: [] });
+  });
+
+  it('waits for the push of a handle to be let go, though another position of the handle rests: the wing fold handle', () => {
+    // The take-off panel at rest on the owner's rig (13 Nov): its switches where they were
+    // left, the wing fold handle in SPREAD (30). Pushing the handle in gives 31 only while
+    // it is pushed. Its other positions are the ones the trainer reads from the drawing.
+    const PANEL_REST = [3, 7, 8, 10, 12, 15, 18, 30, 32, 35];
+    const positions = otherPositions({
+      name: 'WINWING F18 TAKEOFF PANEL 2',
+      vendorId: '4098',
+      productId: 'BF05',
+      layout: generateLayout({
+        name: 'WINWING F18 TAKEOFF PANEL 2',
+        vendorId: '4098',
+        productId: 'BF05',
+        buttons: 64,
+        axes: [],
+        hats: 0,
+      }),
+      layoutSource: 'generated',
+    });
+    expect(positions.get('button:31')).toBeUndefined();
+    expect([...(positions.get('button:30') ?? [])].sort()).toEqual(['button:28', 'button:29']);
+    const push = card('Wing Fold: PULL/STOW', on(PANEL, 31));
+    const round = begin([push, other], [[0, PANEL, PANEL_REST]], [PANEL]);
+    expect(play(round, [[1000, PANEL, [...PANEL_REST, 31]]], 5000)).toEqual([
+      '1350 kept Wing Fold: PULL/STOW right',
+      '1350 right Wing Fold: PULL/STOW',
+    ]);
+    // Right, and held: it springs back, so the next card waits for it.
+    expect(round.staysPut).toBe(false);
+    expect(round.holding).toBe(true);
+    expect(play(round, [[5000, PANEL, PANEL_REST]], 9000)).toEqual(['5300 asking b']);
+  });
+
+  it('is not told by the drawing alone: a position nothing was seen resting in waits to be let go', () => {
+    // A three-way switch the drawing knows, resting in a middle that reports nothing. It
+    // may spring back, so the card waits for it, as for any button.
+    const round = begin([card('up', at(20, 21)), other], [[0, THROTTLE, []]]);
+    expect(play(round, [[1000, THROTTLE, [20]]], 5000)).toEqual([
+      '1350 kept up right',
+      '1350 right up',
+    ]);
+    expect(round.staysPut).toBe(false);
+    expect(round.holding).toBe(true);
+    expect(play(round, [[5000, THROTTLE, []]], 9000)).toEqual(['5300 asking b']);
   });
 });
 

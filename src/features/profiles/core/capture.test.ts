@@ -161,6 +161,36 @@ describe('capture: devices', () => {
     expect(new Set(ports).size).toBe(2);
     expect(ports.every((s) => typeof s === 'string' && s.startsWith('USB\\'))).toBe(true);
   });
+
+  it('a wheel base that games see as two controllers is one device in a new setup from the game', async () => {
+    app = await wiredApp('mark-racing');
+    // A Podium base is two DirectInput controllers with one USB id; the second has no axes.
+    const dd2 = app.ports.state.input.find((d) => d.productId === '0007')!;
+    app.ports.state.input.push({
+      ...dd2,
+      index: app.ports.state.input.length,
+      guid: 'AAAA0002-0000-0000-0000-444553540000',
+      numButtons: 63,
+      numAxes: 0,
+      numHats: 0,
+      axisNames: [],
+    });
+    const controllers = await app.ports.input.start();
+    expect(controllers.ok && controllers.value.filter((c) => c.productId === '0007')).toHaveLength(
+      2
+    );
+
+    const captured = await capture();
+    const isBase = (c: { type: string; params: Record<string, unknown> }): boolean =>
+      c.type === 'device.connected' &&
+      c.params['vendorId'] === '0EB7' &&
+      c.params['productId'] === '0007';
+    expect(captured.candidates.filter((c) => isBase(c.check))).toHaveLength(1);
+    const created = await app.invoke<Profile>('profiles:create', clickThrough(captured, 'iracing'));
+    expect(created.checks.filter(isBase).map((c) => c.title)).toEqual([
+      'FANATEC Podium Wheel Base DD2',
+    ]);
+  });
 });
 
 describe('capture: apps', () => {
@@ -178,8 +208,23 @@ describe('capture: apps', () => {
     const discord = main.find((c) => c.title === 'Discord')!;
     expect(discord).toMatchObject({ selectedByDefault: false, icon: 'mdi-forum-outline' });
     expect(discord.description).toBe('For voice chat · Discord.exe');
-    // Background programs are offered by image name and kept out of the main list.
-    expect(more.length).toBeGreaterThan(30);
+    // Background programs are offered by image name and kept out of the main list: every
+    // program running from outside the Windows folder is offered once, in one list or the other.
+    const running = await app.ports.processes.list();
+    const outside = new Set(
+      (running.ok ? running.value : [])
+        .filter((p) => p.path !== undefined && !/^[a-z]:\\windows\\/i.test(p.path))
+        .map((p) => p.name.toLowerCase())
+    );
+    const offers = (name: string): number =>
+      apps.filter(
+        (c) =>
+          c.program?.toLowerCase() === name ||
+          (c.covers ?? []).some((covered) => covered.toLowerCase() === name)
+      ).length;
+    expect(outside.size).toBeGreaterThan(8);
+    expect([...outside].filter((name) => offers(name) !== 1)).toEqual([]);
+    expect(more.length).toBeGreaterThan(3);
     expect(more.every((c) => !c.selectedByDefault && c.generic)).toBe(true);
     expect(more.map((c) => c.title)).toContain('msedgewebview2');
     expect(apps.some((c) => /^[a-z]:\\windows\\/i.test(c.description ?? ''))).toBe(false);

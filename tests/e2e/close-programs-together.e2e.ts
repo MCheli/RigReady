@@ -146,7 +146,7 @@ test('close together: the Stream Deck restore says why the app is still running,
     'Elgato',
     'StreamDeck',
     'ProfilesV3',
-    '042F7366-9A23-444F-9AE6-327A9DB7979F.sdProfile',
+    '740F9206-1F71-436A-9AD2-920C8CD6972C.sdProfile',
     'manifest.json'
   );
   const good = await fs.readFile(manifest, 'utf8');

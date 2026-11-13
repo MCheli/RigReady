@@ -1,0 +1,191 @@
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "57f557d9-42cf-416a-bd56-3aab11924cef",
+          "LinkedTitle": false,
+          "Name": "Parent Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/WC1QNPG7TH6LP5I9LM9KC1715CZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.backtoparent"
+        },
+        "3,0": {
+          "ActionID": "406e4581-0e09-4ccf-b7e1-f5809c890316",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Rotary)",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 17,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/8HK13LRQA94H1ARO2S8T1ED4SCZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "SIGHT",
+              "TitleAlignment": "bottom",
+              "TitleColor": "#878787"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 23,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/CB8C8FQ01T2FN103W0TPF19KO4Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.dial.two-state"
+        },
+        "4,1": {
+          "ActionID": "845eeae6-86c2-41c6-90bb-71f25a2eacb1",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Rotary)",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 23,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/5EPEW82BHH3BRF84SHWNKGDGHKZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 23,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/MEAQJVM7B90M70V4QJCBLQWGWOZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.dial.two-state"
+        },
+        "4,2": {
+          "ActionID": "d41bc2cd-af62-4f45-b617-13fceeb8e731",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Rotary)",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 16,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/TPW0ARFVLH3L7B63I24G1RAG2KZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#00ff00"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 16,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/ADVM4FDKDL2LD8SE0Q3L38TDFOZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#aaaa00"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.dial.two-state"
+        },
+        "4,3": {
+          "ActionID": "ea071f3e-4f46-44b9-bf62-eaae980d0846",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Rotary)",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 23,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/P7ISCAV6LT7R711Q7OAQPTWC78Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 23,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/0T4KGNOHW96FH3Q5RFW6AVABDCZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.dial.two-state"
+        },
+        "5,0": {
+          "ActionID": "738833b4-0b38-4802-b965-a7137886eb03",
+          "LinkedTitle": false,
+          "Name": "Incremental Input (Rotary)",
+          "Resources": null,
+          "Settings": {},
+          "State": 1,
+          "States": [
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 23,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/K2NRVGQI4D3FF02OLS5EE3S6R4Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            },
+            {
+              "FontFamily": "Tahoma",
+              "FontSize": 23,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/RVLJDAE4AL1NNF8RKVE1TMHM4OZ.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "TitleAlignment": "middle",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.ctytler.dcs.increment.dial.two-state"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

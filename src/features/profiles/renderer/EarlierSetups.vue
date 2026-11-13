@@ -70,7 +70,8 @@ async function bringOver(): Promise<void> {
   if (!target) return;
   bringing.value = true;
   bringError.value = undefined;
-  const result = await api.bringOver({ id: target.id });
+  // Made only while the plan is still the one confirmed here.
+  const result = await api.bringOver({ id: target.id, seen: target.seen });
   bringing.value = false;
   if (!result.ok) {
     bringError.value = errorText(result.error);

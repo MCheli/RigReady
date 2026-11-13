@@ -10,8 +10,8 @@ import { err, ok, type Result } from '../../../core/result';
  * Every byte of the file is kept (head, the 68 bytes of each record, tail), so a file
  * that was read can be put together again unchanged, and each record says whether
  * RigReady understands all of its bytes (`understood`). This file only reads. The one
- * writer is edit.ts: it changes one record and is behind a switch that is off (see the
- * research for what is still to be proven).
+ * writer is edit.ts: it changes one record (docs/research/iracing-bindings.md has what was
+ * proven on the rig and what is still open).
  */
 
 /** Bytes after the name of each record. */

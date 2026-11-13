@@ -1047,6 +1047,10 @@ pre code {
 .band {
   margin-bottom: clamp(32px, 4vw, 48px);
 }
+/* Controls: the overlay under the tiles, before the steps to a new PC */
+.overlay-band {
+  margin: clamp(32px, 4vw, 48px) 0 0;
+}
 .band figcaption {
   padding: 16px 20px;
   border-top: 1px solid var(--border);
@@ -1131,6 +1135,10 @@ pre code {
   gap: clamp(28px, 4vw, 48px);
   align-items: start;
   margin-top: 28px;
+}
+.games-shots {
+  display: grid;
+  gap: clamp(20px, 3vw, 28px);
 }
 table {
   width: 100%;

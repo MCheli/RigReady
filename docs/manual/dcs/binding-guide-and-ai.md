@@ -1,13 +1,13 @@
 ---
 title: Binding guide and AI help
-description: Binding guides for twenty DCS aircraft, the walkthrough that binds with you, and optional AI help with your own key, with what is sent shown first.
+description: Twenty binding guides for DCS aircraft, guides of your own, the walkthrough that binds with you, and optional AI help with what is sent shown first.
 
 order: 110
 ---
 
-**Configure > Binding guide** explains, for an aircraft you do not know yet, what the important controls do, when you use them and where they belong, and walks you through binding them. Everything on the Walkthrough and Priorities tabs works without any key. AI help is optional and needs your own key from Anthropic, OpenAI, Google Gemini, OpenRouter or Mistral, or a model on your own PC.
+**Configure > Binding guide** explains, for an aircraft you do not know yet, what the important controls do, when you use them and where they belong, and walks you through binding them. The same page has guides for iRacing, by class of car: choose the game in the **Game** picker at the top, and see [Binding guide for iRacing](../games/iracing-binding-guide.md). The menu has the page when DCS World or iRacing is found on this PC; a link to it still opens the page, which then says what was not found. Everything on the Walkthrough and Priorities tabs works without any key. AI help is optional and needs your own key from Anthropic, OpenAI, Google Gemini, OpenRouter or Mistral, or a model on your own PC.
 
-Choose the aircraft at the top right; each one says **Guide included**, **Your own guide**, **Guide drafted by AI** or **No guide yet**.
+With **DCS World** chosen, choose the aircraft at the top right; each one says **Guide included**, **Your own guide**, **Guide drafted by AI** or **No guide yet**.
 
 An AI assistant of your own (Claude Desktop, Claude Code, Cursor and others) can also help with bindings through RigReady's MCP server, without an API key in RigReady; see [AI assistants](../ai/index.md).
 
@@ -29,7 +29,7 @@ A guide is a plain data file in RigReady's source (`packs/`, one file per aircra
 
 The guides were written from general knowledge of the aircraft and of how their switches work in DCS. They have not been reviewed by a pilot and are not affiliated with Eagle Dynamics. What is checked, by a test, is that every action name in a guide exists in DCS's own input files for the aircraft, so a DCS update that renames an action is caught. **Where this guide comes from** at the bottom of the Priorities tab says the same.
 
-The plain labels from the guide are also what the [bindings page](bindings.md) and the [cheat sheets](cheat-sheets.md) show first, with DCS's name beside them.
+The plain labels from the guide are also what the [bindings page](bindings.md) and the [cheat sheets](../controls/cheat-sheets.md) show first, with DCS's name beside them.
 
 ## A guide of your own
 
@@ -46,7 +46,7 @@ The aircraft then says **Your own guide**, and the guide is used wherever a guid
 
 - **Open the file** opens the kept file in Notepad. Change it, save, and press **Read it again**.
 - An edit that does not fit the format is reported with what is wrong, and the guide is not used until the file is fixed or deleted.
-- **Delete this guide** asks first, then removes the file: the aircraft has no guide again, and the file cannot be brought back.
+- **Delete this guide** asks first, then removes the file: the aircraft has no guide again. A copy is kept: the change is listed on [the Safety page](../protect/safety-page.md), where **Undo** puts the file back. No assistant can delete a guide of your own.
 
 The file is `ai-assist\guides\<aircraft>.yaml` under [the data folder](../app/index.md). RigReady writes nothing anywhere else for it.
 
@@ -77,11 +77,11 @@ Once a provider is set up the Binding guide page gets an **AI help** tab, and th
 - **Suggest a setup** asks for a binding plan for this aircraft on your controllers.
 - **Ask about this setup** takes a question of up to 600 characters, for example "What am I missing for carrier landings?", and answers in plain text.
 - **Explain** on an action in the walkthrough asks what it does in the real aircraft and in DCS, when you use it and where it belongs.
-- **Draft a guide**, for an aircraft without one, has the model write a guide in the same format from the aircraft's own action list. It is saved under RigReady's folder, marked as drafted by AI wherever it is shown, and every action in it was checked against the aircraft's real action list; nobody checked the advice. **Delete the drafted guide** removes it. A draft is not offered while a guide file of your own is kept for the aircraft.
+- **Draft a guide**, for an aircraft without one, has the model write a guide in the same format from the aircraft's own action list. It is saved under RigReady's folder, marked as drafted by AI wherever it is shown, and every action in it was checked against the aircraft's real action list; nobody checked the advice. **Delete the drafted guide** removes it, with a copy kept and Undo on the Safety page. A draft is not offered while a guide file of your own is kept for the aircraft.
 
 ### What is sent
 
-Before each request a dialog shows what will be sent: the host it goes to, the model, the size in characters and tokens, what reading it is estimated at and from which prices (where prices are set for the model; it is an estimate, not a bill), what is in it, and under **Show the exact request** the request body itself. Sent are the aircraft's name, DCS's list of its actions with what each is bound to now, for each controller used in DCS its product name, role, number of buttons and hats and axis names, the guide for the aircraft when there is one (RigReady's, one drafted by AI, or your own: its summary and its items), and your question. Never sent are file paths, device IDs, serial numbers, the names you gave devices, your Windows user or PC name, or any other content of your files. All of this is for DCS aircraft; the [built-in assistant](../ai/built-in-assistant.md), which works the same whatever you play, has its own list. The key goes only to the chosen provider's host (api.anthropic.com by default), in a request header; with Ollama or LM Studio nothing leaves the PC. Nothing leaves the PC until you press **Send**. A [monthly budget](../ai/built-in-assistant.md#the-monthly-budget) set in Settings holds these requests back as well. [Privacy](../app/privacy.md) lists everything that ever leaves the PC.
+Before each request a dialog shows what will be sent: the host it goes to, the model, the size in characters and tokens, what reading it is estimated at and from which prices (where prices are set for the model; it is an estimate, not a bill), what is in it, and under **Show the exact request** the request body itself. Sent are the aircraft's name, DCS's list of its actions with what each is bound to now, for each controller used in DCS its product name, role, number of buttons and hats and axis names, the guide for the aircraft when there is one (RigReady's, one drafted by AI, or your own: its summary and its items), and your question. Never sent are file paths, device IDs, serial numbers, the names you gave devices, your Windows user or PC name, or any other content of your files. All of this is for DCS aircraft; for iRacing the dialog lists the class or car, iRacing's actions with what each is bound to now, the product names of the connected controllers they name, the guide and your question ([Binding guide for iRacing](../games/iracing-binding-guide.md#a-guide-of-your-own-and-one-drafted-by-ai)). The [built-in assistant](../ai/built-in-assistant.md), which works the same whatever you play, has its own list. The key goes only to the chosen provider's host (api.anthropic.com by default), in a request header; with Ollama or LM Studio nothing leaves the PC. Nothing leaves the PC until you press **Send**. A [monthly budget](../ai/built-in-assistant.md#the-monthly-budget) set in Settings holds these requests back as well. [Privacy](../app/privacy.md) lists everything that ever leaves the PC.
 
 ![What will be sent](../../../artifacts/screens/ai-assist-suggest/01-payload.png)
 

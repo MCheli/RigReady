@@ -24,8 +24,8 @@ import type {
 import { AiAssist } from './service';
 
 const KEY = 'sk-ant-api03-SECRETSECRETSECRET-abcdEFGH';
-const STICK = '806DDF00-B756-11F0-8023-444553540000';
-const THROTTLE = '806DDF00-B756-11F0-8022-444553540000';
+const STICK = '480FAD44-D166-18C0-8023-444553540000';
+const THROTTLE = '480FAD44-D166-18C0-8022-444553540000';
 const IDS = {
   pickle: 'key:d3003pnilu3003cd13vd1vpnilvu0',
   atc: 'key:d3037pnilu3037cd13vd1vpnilvu0',
@@ -212,7 +212,7 @@ describe('the binding guide without a key', () => {
     await expect(stage(IDS.cage, STICK, 'JOY_X')).rejects.toThrow(/needs a button or hat/);
     await expect(stage(IDS.cage, STICK, 'JOY_BTN99')).rejects.toThrow(/has no such control/);
     await expect(
-      stage(IDS.cage, '20B0BED0-03A4-11F1-8001-444553540000', 'JOY_BTN1')
+      stage(IDS.cage, '45D4BEA1-60A1-17D8-8001-444553540000', 'JOY_BTN1')
     ).rejects.toThrow(/not one DCS uses/);
     await expect(stage(IDS.score, STICK, 'JOY_BTN1')).rejects.toThrow(/cannot write/);
     await expect(stage('key:nope', STICK, 'JOY_BTN1')).rejects.toThrow(/no such action/);
@@ -990,7 +990,7 @@ describe('"Exactly what is sent": true for every use, by use', () => {
     // The assistant first: it is what everyone who sets up AI uses, whatever they play.
     expect(status.whatIsSent.map((p) => p.title)).toEqual([
       'The assistant (any game)',
-      'AI help in the binding guide (DCS aircraft only)',
+      'AI help in the binding guide (DCS aircraft and iRacing cars)',
       'Where it goes',
     ]);
     // The narrow promise is the guide's alone: the assistant sends what its tools answer.
@@ -1011,7 +1011,11 @@ describe('"Exactly what is sent": true for every use, by use', () => {
     // Every word about DCS is under the one use that is about DCS, which says who it is for.
     expect(assistant.replace('a flight sim such as DCS', '')).not.toMatch(/DCS|aircraft/);
     expect(part(status, /guide/)).toMatch(
-      /^Only when you ask for AI help on the Binding guide page, which covers DCS aircraft\. If you do not fly DCS, nothing in this list is ever sent\./
+      /^Only when you ask for AI help on the Binding guide page, which covers DCS aircraft and iRacing cars\. If you play neither, nothing in this list is ever sent\./
+    );
+    // What goes for iRacing is said apart, and names no device id or name the owner gave.
+    expect(part(status, /guide/)).toMatch(
+      /Sent for iRacing: the class or car's name, iRacing's list of actions/
     );
     expect(part(status, /Where/)).toMatch(/Requests go only to api.anthropic.com, over https/);
     expect(part(status, /Where/)).toMatch(/Testing a key sends the key and the name of the model/);

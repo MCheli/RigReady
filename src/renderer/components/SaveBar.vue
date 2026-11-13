@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue';
 import { onBeforeRouteLeave, useRouter, type RouteLocationRaw } from 'vue-router';
+import { useUnsaved, wayOut } from '../unsaved';
 
 /**
  * The bar at the bottom of a page with something to keep. Its button (Save, Import, "Use in
  * DCS") and Back stay in view however far the page is scrolled, and the bar says whether
  * there are changes that are not saved yet. Leaving with unsaved changes, by Back or by any
- * other way out of the page, asks first.
+ * other way out of the page, asks first; so does a command that would open this page afresh
+ * (the palette's link to the page on screen, `shell/go.ts`). While a save runs Back is off,
+ * and a way out by the menu says that the save goes on.
  *
  * Put it last inside the page's `.rr-page`, or last inside a plain block that is itself the
  * last thing in the page (a tab, a panel of the page): the bar stays in view for as long as
@@ -79,16 +82,29 @@ const label = computed(() => {
   return `${props.saveLabel} or ${back}`;
 });
 /**
- * Set while the bar asks about unsaved changes: the route the user was going to, or no
- * route when it was the page's own Back.
+ * Set while the bar asks about unsaved changes: the route the user was going to, no route
+ * when it was the page's own Back, or the answer a command waits for before it opens this
+ * page afresh.
  */
-const asking = ref<{ to?: RouteLocationRaw }>();
-let letGo = false;
+const asking = ref<{ to?: RouteLocationRaw; answer?: (leave: boolean) => void }>();
+/** The way out the user agreed to: let through while it is under way, and only then. */
+const way = wayOut(router);
+const unsaved = (): boolean => props.dirty && props.askBeforeLeaving && !way.open();
 
 onBeforeRouteLeave((to) => {
-  if (!props.dirty || !props.askBeforeLeaving || letGo) return true;
+  if (!unsaved()) return true;
   asking.value = { to: to.fullPath };
   return false;
+});
+
+// The page opened afresh by a command (the palette) runs no route guard: it asks here.
+useUnsaved({
+  dirty: unsaved,
+  ask: () =>
+    new Promise<boolean>((answer) => {
+      asking.value?.answer?.(false);
+      asking.value = { answer };
+    }),
 });
 
 function back(): void {
@@ -105,12 +121,31 @@ function leave(): void {
   const going = asking.value;
   asking.value = undefined;
   if (!going) return;
+  if (going.answer) {
+    // The command opens this page afresh: that move runs no guard of this bar's.
+    going.answer(true);
+    return;
+  }
   if (going.to === undefined) {
     props.onBack?.();
     return;
   }
-  letGo = true;
-  void router.push(going.to);
+  void way.go(going.to);
+}
+
+/** "Keep editing", or the question closed: nothing is dropped. */
+function stay(): void {
+  asking.value?.answer?.(false);
+  asking.value = undefined;
+}
+
+/**
+ * One press, one save. While a save runs the button shows that it is busy, but Vuetify's
+ * busy button still takes Enter and Space from the keyboard: that is not a second save.
+ */
+function save(): void {
+  if (props.saving) return;
+  emit('save');
 }
 
 const bar = ref<HTMLElement>();
@@ -137,6 +172,8 @@ onMounted(() => {
   if (column) watcher.observe(column);
 });
 onBeforeUnmount(() => {
+  // A command still waiting for an answer is told that nothing was dropped.
+  asking.value?.answer?.(false);
   watcher?.disconnect();
   document.documentElement.style.removeProperty(HEIGHT);
 });
@@ -157,9 +194,15 @@ onBeforeUnmount(() => {
       <span v-else class="rr-muted" data-testid="save-bar-clean">{{ cleanLabel }}</span>
       <span v-if="blocked" class="rr-save-bar-why" data-testid="save-bar-why">{{ blocked }}</span>
     </div>
-    <v-btn v-if="hasBack" variant="text" :data-testid="backTestid" @click="back">{{
-      backLabel
-    }}</v-btn>
+    <!-- Off while a save runs: what Back would leave or close is what is being saved. -->
+    <v-btn
+      v-if="hasBack"
+      variant="text"
+      :disabled="saving"
+      :data-testid="backTestid"
+      @click="back"
+      >{{ backLabel }}</v-btn
+    >
     <v-btn
       color="primary"
       variant="flat"
@@ -167,28 +210,27 @@ onBeforeUnmount(() => {
       :aria-describedby="stateId"
       :loading="saving"
       :data-testid="saveTestid"
-      @click="emit('save')"
+      @click="save"
       >{{ saveLabel }}</v-btn
     >
 
-    <v-dialog
-      :model-value="asking !== undefined"
-      max-width="440"
-      @update:model-value="asking = undefined"
-    >
+    <v-dialog :model-value="asking !== undefined" max-width="440" @update:model-value="stay">
       <v-card data-testid="save-bar-leave">
         <v-card-title>Leave without saving?</v-card-title>
-        <v-card-text>Your changes on this page are not saved. Leaving drops them.</v-card-text>
+        <!-- A save under way goes on in RigReady whether the page stays or not. -->
+        <v-card-text v-if="saving" data-testid="save-bar-leave-saving"
+          >The save you started goes on. Changes made after you pressed {{ saveLabel }} are not in
+          it, and leaving drops them.</v-card-text
+        >
+        <v-card-text v-else
+          >Your changes on this page are not saved. Leaving drops them.</v-card-text
+        >
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" data-testid="save-bar-leave-go" @click="leave"
             >Leave without saving</v-btn
           >
-          <v-btn
-            color="primary"
-            variant="flat"
-            data-testid="save-bar-leave-stay"
-            @click="asking = undefined"
+          <v-btn color="primary" variant="flat" data-testid="save-bar-leave-stay" @click="stay"
             >Keep editing</v-btn
           >
         </v-card-actions>

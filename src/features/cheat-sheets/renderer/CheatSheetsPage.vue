@@ -333,9 +333,21 @@ onBeforeUnmount(() => {
           variant="outlined"
           hide-details
           data-testid="sheet-aircraft"
+          :disabled="editing"
           @update:model-value="store.choose(String($event))"
         />
-        <v-btn-toggle v-model="view" mandatory density="compact" variant="outlined" divided>
+        <!--
+          Neither takes an open layout editor away with what is not saved in it: like the
+          devices on the left, they wait until it is saved or closed.
+        -->
+        <v-btn-toggle
+          v-model="view"
+          mandatory
+          density="compact"
+          variant="outlined"
+          divided
+          :disabled="editing"
+        >
           <v-btn value="devices" size="small" data-testid="sheet-view-devices">By device</v-btn>
           <v-btn value="actions" size="small" data-testid="sheet-view-actions">By action</v-btn>
         </v-btn-toggle>

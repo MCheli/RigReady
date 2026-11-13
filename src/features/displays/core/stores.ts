@@ -229,7 +229,10 @@ export class ProvenStore {
     return value.ok && value.value.kept.some((kept) => sameProof(kept, proof));
   }
 
-  /** A person kept this change, and the monitors were read back as it asked. */
+  /**
+   * A person kept this change, and the monitors were read back as it asked; or a person
+   * replaced a layout with the monitors as they are, and they were read back so.
+   */
   async add(proof: Proof): Promise<Result<void>> {
     const keptAt = this.clock.now().toISOString();
     const saved = await this.store.update((current) => ({

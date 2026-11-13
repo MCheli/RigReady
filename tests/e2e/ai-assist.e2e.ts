@@ -177,9 +177,9 @@ test('ai-assist: the key is entered in Settings, tested, never shown again, and 
   await expect(page.getByTestId('ai-what-is-sent')).toContainText(
     'Never sent: file paths, device ids'
   );
-  // What AI is for, said for every game first, and the DCS-only part named as such.
+  // What AI is for, said for every game first, and the binding guide's games named as such.
   await expect(page.getByTestId('ai-who-answers')).toContainText(
-    'With it, the assistant answers questions about your rig, proposes setups and drafts scripts, whatever you play. For DCS aircraft, the Binding guide page can also suggest bindings on your devices and explain actions.'
+    'With it, the assistant answers questions about your rig, proposes setups and drafts scripts, whatever you play. For DCS aircraft and iRacing cars, the Binding guide page can also explain actions and draft guides, and for DCS suggest bindings on your devices.'
   );
   await page.getByTestId('ai-settings').scrollIntoViewIfNeeded();
   expect(await page.content()).not.toContain(KEY);
@@ -192,7 +192,7 @@ test('ai-assist: the key is entered in Settings, tested, never shown again, and 
 
   // "Exactly what is sent", use by use, readable for someone who only plays iRacing: the
   // assistant first, which is for any game, then AI help in the binding guide, which is for
-  // DCS aircraft only. No key is stored at this point, so the picture holds no key hint.
+  // DCS aircraft and iRacing cars. No key is stored at this point, so the picture holds no key hint.
   const sent = page.getByTestId('ai-what-is-sent');
   const parts = sent.getByTestId('ai-what-is-sent-part');
   await expect(parts).toHaveCount(3);
@@ -200,9 +200,11 @@ test('ai-assist: the key is entered in Settings, tested, never shown again, and 
   await expect(parts.nth(0)).toContainText(
     'It works the same whatever you play: a racing sim such as iRacing, a flight sim such as DCS, or anything else.'
   );
-  await expect(parts.nth(1)).toContainText('AI help in the binding guide (DCS aircraft only)');
   await expect(parts.nth(1)).toContainText(
-    'If you do not fly DCS, nothing in this list is ever sent.'
+    'AI help in the binding guide (DCS aircraft and iRacing cars)'
+  );
+  await expect(parts.nth(1)).toContainText(
+    'If you play neither, nothing in this list is ever sent.'
   );
   await expect(parts.nth(2)).toContainText('Where it goes');
   // The whole list in one picture: its last line at the foot of the window, its heading above.
@@ -238,7 +240,7 @@ test('ai-assist: a suggestion round trip shows what is sent, checks the answer, 
   await page.getByTestId('ai-payload-toggle').click();
   await expect(page.getByTestId('ai-payload-body')).toContainText('"cache_control"');
   await expect(page.getByTestId('ai-payload-body')).not.toContainText(KEY);
-  await expect(page.getByTestId('ai-payload-body')).not.toContainText('806DDF00');
+  await expect(page.getByTestId('ai-payload-body')).not.toContainText('480FAD44');
   await shot('payload');
   await page.getByTestId('ai-payload-send').click();
 
@@ -686,7 +688,7 @@ test('ai-assist: a suggestion round trip through an OpenAI-compatible server on 
     await shot('suggestions');
     const sent = server.requests.find((r) => r.body.includes('"stream":true'))!;
     expect(sent.body).toContain('"json_schema"');
-    expect(sent.body).not.toContain('806DDF00');
+    expect(sent.body).not.toContain('480FAD44');
 
     const cage = page.locator('[data-testid="ai-suggestion"][data-action="Cage/Uncage Button"]');
     await cage.getByTestId('ai-suggestion-tick').locator('input').uncheck();
@@ -778,9 +780,11 @@ test('ai-assist: with no AI key, a binding guide is imported from a file or writ
   await page.getByTestId('ai-guide-open').click();
   await expect(page.getByTestId('ai-guide-note')).toContainText('The file is open in Notepad.');
 
-  // Deleting asks first. "Keep it" keeps it.
+  // Deleting asks first, and says a copy is kept. "Keep it" keeps it.
   await page.getByTestId('ai-guide-delete').click();
-  await expect(page.getByTestId('ai-guide-delete-dialog')).toContainText('This cannot be undone.');
+  await expect(page.getByTestId('ai-guide-delete-dialog')).toContainText(
+    'A copy is kept: the Safety page can put it back.'
+  );
   await shot('delete-asks-first');
   await page.getByTestId('ai-guide-delete-no').click();
   await expect(page.getByTestId('ai-guide-delete-dialog')).toHaveCount(0);
@@ -789,6 +793,9 @@ test('ai-assist: with no AI key, a binding guide is imported from a file or writ
   await page.getByTestId('ai-guide-delete-yes').click();
   await expect(page.getByTestId('ai-no-guide')).toContainText(
     'There is no guide for the UH-1H Gunner'
+  );
+  await expect(page.getByTestId('ai-guide-note')).toHaveText(
+    'The guide is deleted. The Safety page can put it back.'
   );
   await expect(fs.stat(kept)).rejects.toThrow();
   // The file it was imported from is where it was.

@@ -745,14 +745,14 @@ describe('DCS screen setup and the monitors', () => {
     // The name given on the Monitors page, and what follows the screen to another port.
     expect(setup.desktop.find((d) => d.id === mfds[0]!.id)).toMatchObject({
       name: 'MFD left',
-      usbSerial: 'WWIN29320221210163532',
+      usbSerial: 'PBOC22104847830214489',
     });
     await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     type Overview = { monitorSetup: { problems: string[] } };
     expect((await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems).toEqual([]);
 
     // Plugged into another USB port: a new id, the same screen, nothing to complain about.
-    mfds[0]!.id = mfds[0]!.id.replace('2c1ac5a9', '77777777');
+    mfds[0]!.id = mfds[0]!.id.replace('5a2ab1a5', '77777777');
     expect((await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems).toEqual([]);
     // Turned off, it is missed by the owner's name for it.
     await mutate(app, [

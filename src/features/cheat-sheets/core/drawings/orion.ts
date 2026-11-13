@@ -1,3 +1,4 @@
+import { resting } from './parts';
 import { circle, fourWay, hat, roundedRect } from './shapes';
 import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silhouette';
 
@@ -8,10 +9,12 @@ import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silh
  * Which number is which control, and where the control is, is written down with its
  * sources in docs/research/controller-drawings.md: the maker's own test screen for each
  * part (which number lights at which place), the default profiles the game ships for the
- * grip, the owner's own bindings, and what the owner found by pressing on 12 Nov 2026.
- * Every input the device reports is on its drawing, except the throttle's buttons 45 to
- * 49, which no source gives a control for. A control is marked `assumed` only where a
- * direction rests on reading an angled picture and nobody has pressed it to check.
+ * grip, the owner's own bindings, and what the owner found by pressing on 12 and 13 Nov
+ * 2026. Every input the device reports is on its drawing, except the throttle's buttons 45
+ * to 49 and 60 to 62, which nothing lit when the owner went round every control. No
+ * control is `assumed` any more: the directions that rested on an angled picture were
+ * pressed on the real grip and throttle. An input marked `rest` is where its control
+ * rests, held with no hand on it; those are the ones seen held before anything was pressed.
  */
 
 const WINWING = '4098';
@@ -58,9 +61,7 @@ export const F16_GRIP: DeviceDrawingInput = {
   author: 'RigReady',
   license: CC0,
   view: 'From behind, as the pilot sees it',
-  notes:
-    'Seen from behind, as you hold it. Dashed parts are on the front, under your fingers. ' +
-    'A label with ? has directions nobody has checked on a real grip yet: press each way and see which row lights up.',
+  notes: 'Seen from behind, as you hold it. Dashed parts are on the front, under your fingers.',
   size: { width: 360, height: 820 },
   paths: [
     // The base plate and the gimbal boot.
@@ -186,19 +187,21 @@ export const F16_GRIP: DeviceDrawingInput = {
       side: 'left',
       inputs: sideHat(10, 13, 12, 11, 9),
     },
-    // Which of 15 to 18 is which way is read off the maker's angled picture; the press
-    // (14) is what the game's own profile binds.
+    // Pressed on the owner's grip on 13 Nov: up 15, right 16, down 17, left 18, press 14,
+    // each way as he named it holding the stick. Its face looks back and to the right, so
+    // it is seen from behind and its ways are named as for the hats on the head.
     {
       id: 'side-hat',
       name: 'Right side hat',
       glyph: 'hat',
       at: { x: 260, y: 328 },
       side: 'right',
-      inputs: sideHat(15, 16, 17, 18, 14),
-      assumed: true,
+      inputs: [...fourWay(15, 16, 17, 18), press(14)],
     },
     // One lever: an axis over its travel, button 1 while it rests, 2 once it leaves rest,
-    // then 41, 42 and 3 one after the other towards the full pull.
+    // then 41, 42 and 3 one after the other towards the full pull. Button 1 is held
+    // whenever the lever is let go (the maker's screen lights it at rest, and the owner's
+    // grip reported it held before anything was pressed).
     {
       id: 'front-lever',
       name: 'Top front lever',
@@ -208,7 +211,7 @@ export const F16_GRIP: DeviceDrawingInput = {
       hidden: true,
       inputs: [
         { id: 'axis:RZ', tag: 'travel' },
-        { id: 'button:1', tag: '1 at rest' },
+        resting({ id: 'button:1', tag: '1 at rest' }),
         { id: 'button:2', tag: '2 off rest' },
         { id: 'button:41', tag: '41 part way' },
         { id: 'button:42', tag: '42 further' },
@@ -227,6 +230,7 @@ export const F16_GRIP: DeviceDrawingInput = {
         { id: 'button:5', tag: '2nd' },
       ],
     },
+    // The same for the paddle: button 7 is held whenever it is let go.
     {
       id: 'paddle',
       name: 'Paddle lever',
@@ -236,7 +240,7 @@ export const F16_GRIP: DeviceDrawingInput = {
       hidden: true,
       inputs: [
         { id: 'axis:SLIDER1', tag: 'travel' },
-        { id: 'button:7', tag: '7 at rest' },
+        resting({ id: 'button:7', tag: '7 at rest' }),
         { id: 'button:8', tag: '8 pulled' },
       ],
     },
@@ -273,8 +277,9 @@ export const F16_GRIP: DeviceDrawingInput = {
  * and the wheel on the corner next to the thumb side. Both fronts run left to right as
  * the pilot has them.
  *
- * Left and right on the two front hats are read off the maker's picture, which looks at
- * the handles from the front, so they are mirrored here and marked `assumed`.
+ * Left and right on the two front hats were read off the maker's picture, which looks at
+ * the handles from the front, and mirrored; the owner's presses on 13 Nov confirmed both
+ * (left handle: left 52, right 54; right handle: left 29, right 33).
  */
 export const ORION_THROTTLE: DeviceDrawingInput = {
   format: DRAWING_FORMAT,
@@ -287,8 +292,7 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
   notes:
     'Four views, top to bottom. The front of the left handle, where your fingers rest, left to right as you sit. ' +
     'The base from above. The side of the right handle your thumb rests on. The front of the right handle. ' +
-    'A label with ? has left and right nobody has checked on a real throttle yet: press each way and see which row lights up. ' +
-    'The throttle also reports buttons 45 to 49, which no control is known to press.',
+    'The throttle also reports buttons 45 to 49 and 60 to 62, which no control was seen to press.',
   size: { width: 340, height: 876 },
   paths: [
     // The front of the left handle, with its outer end at the left.
@@ -351,30 +355,30 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
     { x: 262, y: 864, text: 'thumb side →', size: 8 },
   ],
   controls: [
-    // The left handle.
+    // The left handle. The knurled knob on its outer end is the RZ axis (the maker's
+    // screen ties RZ to it, and RZ stays wherever the knob is left). It gives no button:
+    // nothing of 60 to 62 lit on the owner's throttle, so they are not claimed here.
     {
       id: 'left-knob',
       name: 'Left handle knob',
       glyph: 'knob',
       at: { x: 78, y: 62 },
       side: 'left',
-      inputs: [
-        { id: 'axis:RZ', tag: 'turn' },
-        { id: 'button:60', tag: '60 one end' },
-        { id: 'button:61', tag: '61 centre' },
-        { id: 'button:62', tag: '62 other end' },
-      ],
+      inputs: [{ id: 'axis:RZ', tag: 'turn' }],
     },
+    // Under it, the three-way slider the owner pressed on 13 Nov: 59 at one end, 57 at
+    // the other, and 58 held whenever it rests in the middle. It slides smoothly from end
+    // to end, so it is named a slider, not a switch.
     {
       id: 'left-switch',
-      name: 'Left handle switch',
+      name: 'Left handle slider',
       glyph: 'rocker',
       at: { x: 78, y: 111 },
       side: 'left',
       inputs: [
-        { id: 'button:57', tag: '↑' },
-        { id: 'button:58', tag: 'middle' },
-        { id: 'button:59', tag: '↓' },
+        { id: 'button:59', tag: '59 one end' },
+        resting({ id: 'button:58', tag: 'middle' }),
+        { id: 'button:57', tag: '57 other end' },
       ],
     },
     {
@@ -392,7 +396,6 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
       at: { x: 207, y: 80 },
       side: 'top',
       inputs: [...fourWay(51, 54, 53, 52), press(55)],
-      assumed: true,
     },
     {
       id: 'left-inner-button',
@@ -403,6 +406,7 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
       inputs: [{ id: 'button:50' }],
     },
     // The base. Each handle is an axis over its travel, with a button at IDLE and at OFF.
+    // Pulled back to its IDLE stop is where a throttle rests: the IDLE button is held there.
     {
       id: 'left-throttle',
       name: 'Left throttle',
@@ -411,7 +415,7 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
       side: 'left',
       inputs: [
         { id: 'axis:RY', tag: 'travel' },
-        { id: 'button:31', tag: 'IDLE' },
+        resting({ id: 'button:31', tag: 'IDLE' }),
         { id: 'button:2', tag: 'OFF' },
       ],
     },
@@ -423,7 +427,7 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
       side: 'right',
       inputs: [
         { id: 'axis:RX', tag: 'travel' },
-        { id: 'button:30', tag: 'IDLE' },
+        resting({ id: 'button:30', tag: 'IDLE' }),
         { id: 'button:1', tag: 'OFF' },
       ],
     },
@@ -444,7 +448,7 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
       side: 'left',
       inputs: [
         { id: 'button:22', tag: 'forward' },
-        { id: 'button:23', tag: 'middle' },
+        resting({ id: 'button:23', tag: 'middle' }),
         { id: 'button:24', tag: 'back' },
       ],
     },
@@ -488,7 +492,7 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
       side: 'left',
       inputs: [
         { id: 'button:3', tag: 'forward' },
-        { id: 'button:4', tag: 'middle' },
+        resting({ id: 'button:4', tag: 'middle' }),
         { id: 'button:5', tag: 'back' },
       ],
     },
@@ -502,7 +506,7 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
       inputs: [
         { id: 'axis:Z', tag: 'travel' },
         { id: 'button:40', tag: '↑ end' },
-        { id: 'button:41', tag: 'centre' },
+        resting({ id: 'button:41', tag: 'centre' }),
         { id: 'button:42', tag: '↓ end' },
       ],
     },
@@ -529,7 +533,6 @@ export const ORION_THROTTLE: DeviceDrawingInput = {
       at: { x: 212, y: 794 },
       side: 'bottom',
       inputs: [...fourWay(28, 33, 32, 29), press(34)],
-      assumed: true,
     },
     {
       id: 'wheel',

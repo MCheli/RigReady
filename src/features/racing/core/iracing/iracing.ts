@@ -1,5 +1,11 @@
 import path from 'node:path';
+import { sha256 } from '../../../../core/files/fileStore';
 import { changePreview } from '../../../../core/files/preview';
+import {
+  locateIracingControls,
+  type IracingControls,
+  type IracingControlSet,
+} from '../../../../core/iracingControls';
 import { err, ok, type Result } from '../../../../core/result';
 import type { ChangePreview } from '../../../../shared/changePreview';
 import type { InputDevice } from '../../../../shared/models';
@@ -13,7 +19,7 @@ import {
   refuseWhileRunning,
   type RacingContext,
 } from '../context';
-import { vidPidFromProductGuid } from '../devices';
+import { gameAxisName, vidPidFromProductGuid } from '../devices';
 import {
   devicesInControls,
   parseControlsCfg,
@@ -28,35 +34,53 @@ import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './label
 export const SIM_EXE = 'iRacingSim64DX11.exe';
 
 export interface IracingFiles {
+  /** Documents\iRacing. */
   folder: string;
+  /** Where iRacing keeps the bindings it uses: a control profile, or the older files. */
+  located: IracingControls;
+  /** The set read: the one for all cars, or one car's. Absent when it cannot be found. */
+  set?: IracingControlSet;
   controls?: ControlsCfg;
   calibration?: CalibratedDevice[];
   problems: string[];
 }
 
+/** Documents\iRacing and where iRacing keeps the bindings it uses, or undefined without it. */
+export async function locateFiles(
+  ctx: RacingContext
+): Promise<{ folder: string; located: IracingControls } | undefined> {
+  const folder = await locationOf(ctx, 'iracing', 'documents');
+  if (!folder) return undefined;
+  return { folder, located: await locateIracingControls(ctx.ports.files, folder) };
+}
+
 /**
- * iRacing's bindings and calibration as they are on disk. `car` reads the custom controls
- * iRacing keeps for one car (setups\<car>\controls.cfg) instead of the general ones.
+ * iRacing's bindings and calibration as they are on disk, from the control profile iRacing
+ * uses (or, on an iRacing from before control profiles, the older files). `car` reads the
+ * set iRacing keeps for one car instead of the one for all cars. With control profiles the
+ * older Documents\iRacing\controls.cfg is never read in place of the profile: when the
+ * profile cannot be found, `located.problem` says why and nothing is read. `problems` are
+ * files that are there and cannot be read.
  */
 export async function readFiles(
   ctx: RacingContext,
   car?: string
 ): Promise<IracingFiles | undefined> {
-  const documents = await locationOf(ctx, 'iracing', 'documents');
-  if (!documents) return undefined;
-  const folder = car ? path.join(documents, 'setups', car) : documents;
+  const found = await locateFiles(ctx);
+  if (!found) return undefined;
+  const { folder, located } = found;
   const problems: string[] = [];
-  const result: IracingFiles = { folder, problems };
-  const cfg = path.join(folder, 'controls.cfg');
-  if (await ctx.ports.files.exists(cfg)) {
-    const bytes = await ctx.ports.files.readBytes(cfg);
+  const set = car === undefined ? located.general : located.cars.find((c) => c.car === car);
+  const result: IracingFiles = { folder, located, ...(set ? { set } : {}), problems };
+  if (!set) return result;
+  if (await ctx.ports.files.exists(set.controls)) {
+    const bytes = await ctx.ports.files.readBytes(set.controls);
     const parsed = bytes.ok ? parseControlsCfg(bytes.value) : bytes;
     if (parsed.ok) result.controls = parsed.value;
     else problems.push(parsed.error.message);
   }
-  const calib = path.join(folder, 'joyCalib.yaml');
-  if (await ctx.ports.files.exists(calib)) {
-    const text = await ctx.ports.files.readText(calib);
+  if (await ctx.ports.files.exists(set.calibration)) {
+    const text = await ctx.ports.files.readText(set.calibration);
     const parsed = text.ok ? parseJoyCalib(text.value) : text;
     if (parsed.ok) result.calibration = parsed.value;
     else problems.push(parsed.error.message);
@@ -64,7 +88,7 @@ export async function readFiles(
   return result;
 }
 
-/** The DirectInput collection number in an instance GUID: 20B0BED0-03A4-11F1-8001-... -> "8001". */
+/** The DirectInput collection number in an instance GUID: 45D4BEA1-60A1-17D8-8001-... -> "8001". */
 const collection = (guid: string): string => cleanGuid(guid).split('-')[3] ?? '';
 
 /**
@@ -120,7 +144,7 @@ function deviceViews(files: IracingFiles, live: InputDevice[] | undefined): Irac
       calibrated: calib !== undefined,
       axes: (calib?.axes ?? []).map((a) => ({
         axis: a.axis,
-        name: a.name || `Axis ${a.axis}`,
+        name: a.name ? gameAxisName(a.name, ids?.vendorId, ids?.productId) : `Axis ${a.axis}`,
         range:
           a.min !== undefined && a.max !== undefined
             ? `${a.min}–${a.max}${a.center !== undefined ? `, centre ${a.center}` : ''}`
@@ -159,6 +183,14 @@ export async function iracingView(ctx: RacingContext): Promise<IracingView> {
   };
   if (!files) return view;
   view.userFolder = files.folder;
+  const { located } = files;
+  view.source = {
+    kind: located.kind,
+    ...(located.profile !== undefined ? { profile: located.profile } : {}),
+    ...(located.general ? { folder: path.dirname(located.general.controls) } : {}),
+    ...(located.problem !== undefined ? { problem: located.problem } : {}),
+    oldFiles: located.oldFiles,
+  };
   view.devices = deviceViews(files, live);
   const nameOf = new Map(view.devices.map((d) => [d.key, d.name]));
   for (const record of files.controls?.records ?? []) {
@@ -184,7 +216,11 @@ export async function iracingView(ctx: RacingContext): Promise<IracingView> {
     const deviceName = nameOf.get(device) ?? 'Unknown controller';
     if (b.kind === 'axis') {
       const calib = files.calibration?.find((c) => c.instanceGuid === device);
-      const axisName = calib?.axes.find((a) => a.axis === b.axis)?.name || `Axis ${b.axis}`;
+      const named = calib?.axes.find((a) => a.axis === b.axis)?.name;
+      const ids = vidPidFromProductGuid(b.productGuid);
+      const axisName = named
+        ? gameAxisName(named, ids?.vendorId, ids?.productId)
+        : `Axis ${b.axis}`;
       const half = /^Steer(Left|Right)$/.test(record.action)
         ? b.direction === 1
           ? ', turning right'
@@ -198,12 +234,7 @@ export async function iracingView(ctx: RacingContext): Promise<IracingView> {
       view.bindings.push({ ...base, device, deviceName, input });
     }
   }
-  const cars = await ctx.ports.files.list(path.join(files.folder, 'setups'));
-  for (const car of cars.ok ? cars.value : []) {
-    if (await ctx.ports.files.exists(path.join(files.folder, 'setups', car, 'controls.cfg'))) {
-      view.customCars.push(car);
-    }
-  }
+  view.customCars = located.cars.map((c) => c.car!);
   view.forceFeedback = await forceFeedbackSettings(ctx, files.folder);
   return view;
 }
@@ -240,9 +271,16 @@ export interface GuidMapping {
 interface RepairPlan {
   folder: string;
   planned: { file: string; content: Uint8Array | string }[];
-  /** Bindings in the main controls.cfg that get the new id. */
+  /** Bindings in the controls.cfg for all cars that get the new id. */
   bindings: number;
   names: string[];
+  /** The control profile for all cars, on an iRacing that keeps them. */
+  profile?: string;
+  /**
+   * What the plan was worked out from: the change asked for, which files it writes and what
+   * is in them now. The repair writes nothing when this is not what the preview showed.
+   */
+  seen: string;
 }
 
 /** The files a repair would rewrite and their new content. Reads only. */
@@ -251,6 +289,14 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
     return err('racing.repair', 'Choose at least one controller to update.');
   const files = await readFiles(ctx);
   if (!files) return err('racing.repair', 'The iRacing folder in Documents was not found.');
+  // With control profiles, only the profiles iRacing uses are changed, never the older files.
+  const { general } = files.located;
+  if (!general) {
+    return err(
+      'racing.repair',
+      files.located.problem ?? 'RigReady cannot tell which bindings iRacing uses.'
+    );
+  }
   const live = await liveControllers(ctx);
   if (!live) return err('racing.repair', 'The connected controllers cannot be read right now.');
   const devices = deviceViews(files, live);
@@ -265,18 +311,17 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
     }
   }
 
-  const targets = [
-    path.join(files.folder, 'controls.cfg'),
-    path.join(files.folder, 'joyCalib.yaml'),
-  ];
-  const cars = await ctx.ports.files.list(path.join(files.folder, 'setups'));
-  for (const car of cars.ok ? cars.value : []) {
-    targets.push(
-      path.join(files.folder, 'setups', car, 'controls.cfg'),
-      path.join(files.folder, 'setups', car, 'joyCalib.yaml')
-    );
+  // The set for all cars first, then each car's; a car may share the profile for all cars.
+  const targets: string[] = [];
+  for (const set of [general, ...files.located.cars]) {
+    for (const file of [set.controls, set.calibration]) {
+      if (!targets.some((t) => path.resolve(t).toLowerCase() === path.resolve(file).toLowerCase()))
+        targets.push(file);
+    }
   }
   const planned: { file: string; content: Uint8Array | string }[] = [];
+  /** Each planned file with what was in it, for seen. */
+  const read: { file: string; content: string }[] = [];
   let bindings = 0;
   for (const file of targets) {
     if (!(await ctx.ports.files.exists(file))) continue;
@@ -292,6 +337,7 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
       }
       if (changed > 0) {
         planned.push({ file, content: current });
+        read.push({ file, content: sha256(bytes.value) });
         if (file === targets[0]) bindings = changed;
       }
     } else {
@@ -304,43 +350,70 @@ async function planRepair(ctx: RacingContext, mapping: GuidMapping[]): Promise<R
         current = replaced.text;
         changed += replaced.count;
       }
-      if (changed > 0) planned.push({ file, content: current });
+      if (changed > 0) {
+        planned.push({ file, content: current });
+        read.push({ file, content: sha256(text.value) });
+      }
     }
   }
   if (planned.length === 0)
     return err('racing.repair', 'Nothing in the iRacing files refers to that id.');
 
   const names = mapping.map((m) => devices.find((d) => d.key === cleanGuid(m.from))!.name);
-  return ok({ folder: files.folder, planned, bindings, names });
+  return ok({
+    folder: files.folder,
+    planned,
+    bindings,
+    names,
+    ...(general.profile !== undefined ? { profile: general.profile } : {}),
+    seen: sha256(
+      JSON.stringify({
+        mapping: mapping.map((m) => [cleanGuid(m.from), cleanGuid(m.to)]),
+        files: read.map((r) => [path.resolve(r.file).toLowerCase(), r.content]),
+      })
+    ),
+  });
 }
 
 /** Which iRacing files the repair would change and how. Nothing is written. */
 export async function previewRepairIracing(
   ctx: RacingContext,
   mapping: GuidMapping[]
-): Promise<Result<ChangePreview>> {
+): Promise<Result<ChangePreview & { seen: string }>> {
   const plan = await planRepair(ctx, mapping);
   if (!plan.ok) return plan;
-  return changePreview(
+  const preview = await changePreview(
     ctx.ports.files,
     plan.value.planned.map((p) => ({ path: p.file, content: p.content })),
     (write) => path.relative(plan.value.folder, write.path).replace(/\\/g, '/')
   );
+  return preview.ok ? ok({ ...preview.value, seen: plan.value.seen }) : preview;
 }
 
 /**
  * Points iRacing at a controller's new Windows id: replaces the old instance GUID with the
- * new one in controls.cfg (16 bytes, in place) and joyCalib.yaml (text), and in any car's
- * custom controls. One journaled action; every file is backed up first and read back after.
+ * new one in controls.cfg (16 bytes, in place) and joyCalib.yaml (text) of the set for all
+ * cars, and of any car's own set. With control profiles those are the profiles iRacing uses,
+ * never the older files it no longer reads. One journaled action; every file is backed up
+ * first and read back after.
  */
 export async function repairIracing(
   ctx: RacingContext,
-  mapping: GuidMapping[]
+  mapping: GuidMapping[],
+  seen?: string
 ): Promise<Result<{ message: string; files: string[] }>> {
   const blocked = await refuseWhileRunning(ctx, 'iracing');
   if (!blocked.ok) return blocked;
   const plan = await planRepair(ctx, mapping);
   if (!plan.ok) return plan;
+  // Only what the user approved: other files (app.ini now names another profile, a car got
+  // its own) or other content mean another change than the one shown.
+  if (seen !== undefined && seen !== plan.value.seen) {
+    return err(
+      'racing.repairChanged',
+      'iRacing’s files changed after the change was shown, so nothing was written. Look at the change again.'
+    );
+  }
   const { planned, bindings, names } = plan.value;
   const group = ctx.ports.files.beginGroup(
     `Point iRacing at the new Windows id of ${names.join(', ')}`
@@ -364,8 +437,9 @@ export async function repairIracing(
     if (!same) return err('racing.repair', `${path.basename(file)} did not keep the change.`);
   }
   const what = bindings === 1 ? '1 binding' : `${bindings} bindings`;
+  const where = plan.value.profile ? ` in the control profile “${plan.value.profile}”` : '';
   return ok({
-    message: `Updated ${what} and the calibration of ${names.join(', ')}. Undo is on the Safety page.`,
+    message: `Updated ${what}${where} and the calibration of ${names.join(', ')}. Undo is on the Safety page.`,
     files: planned.map((p) => p.file),
   });
 }

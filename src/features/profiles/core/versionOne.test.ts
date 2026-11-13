@@ -123,6 +123,50 @@ describe('a setup RigReady 1 left behind', () => {
     });
   });
 
+  it('makes nothing when the plan changed after it was shown: another device of that name was plugged in meanwhile', async () => {
+    app = await wiredApp('first-run-after-version-one', {
+      files: ['Program Files (x86)/Steam/**'],
+    });
+    const shown = await app.invoke<EarlierPlan>('profiles:earlierPlan', { id: OLD });
+    expect(shown.checks[0]!.what).toContain('(0EB7:0007)');
+    expect(shown.seen).toMatch(/^[0-9a-f]{64}$/);
+
+    // Before Save: the wheel is swapped for another base whose name has the same words.
+    await mutate(app, [
+      { op: 'unplugDevice', match: WHEEL },
+      {
+        op: 'plugDevice',
+        device: {
+          instanceId: 'USB\\VID_0EB7&PID_0020\\MADE-UP-FOR-THIS-TEST',
+          vendorId: '0EB7',
+          productId: '0020',
+          name: 'FANATEC Podium Wheel Base DD2 (second)',
+          isHid: true,
+          isGameController: true,
+          isHub: false,
+          hubChain: [],
+        },
+      },
+    ]);
+    const now = await app.invoke<EarlierPlan>('profiles:earlierPlan', { id: OLD });
+    expect(now.canBringOver).toBe(true);
+    expect(now.checks[0]!.what).toContain('(0EB7:0020)');
+    expect(now.seen).not.toBe(shown.seen);
+
+    expect(await call(app, 'profiles:bringOver', { id: OLD, seen: shown.seen })).toMatchObject({
+      ok: false,
+      error: {
+        code: 'profile.earlierChanged',
+        message:
+          'What "LMU" would bring over changed since it was shown, so no setup was made. Look at it again.',
+      },
+    });
+    expect(await fs.readdir(path.dirname(oldFile(app)))).toEqual([`${OLD}.yaml`]);
+    // The plan shown now is the one made.
+    const made = await app.invoke<Profile>('profiles:bringOver', { id: OLD, seen: now.seen });
+    expect(made.checks[0]!.params).toMatchObject({ vendorId: '0EB7', productId: '0020' });
+  });
+
   it('guesses nothing: with the wheel unplugged it says to connect it and look again, and writes nothing', async () => {
     app = await wiredApp('first-run-after-version-one', { files: [] });
     await mutate(app, [{ op: 'unplugDevice', match: WHEEL }]);
@@ -144,6 +188,94 @@ describe('a setup RigReady 1 left behind', () => {
     expect((await app.invoke<EarlierPlan>('profiles:earlierPlan', { id: OLD })).canBringOver).toBe(
       true
     );
+  });
+
+  it('a wheel base RigReady 1 listed once for each of its two controllers is asked about and brought over as one check', async () => {
+    const TWICE = 'q7v2rk4tw9x1mze';
+    app = await wiredApp('profiles-version-one-two-controllers', {
+      files: ['Program Files (x86)/Steam/**'],
+    });
+    const plan = await app.invoke<EarlierPlan>('profiles:earlierPlan', { id: TWICE });
+    expect(plan).toMatchObject({ name: 'LMU', canBringOver: true, blocked: [] });
+    // The question lists the base once, where RigReady 1 had it first.
+    expect(plan.checks).toEqual([
+      {
+        title: 'FANATEC Podium Wheel Base DD2',
+        what: 'connected: the FANATEC Podium Wheel Base DD2 plugged in now (0EB7:0007)',
+        required: true,
+      },
+      { title: 'TrackIR 5', what: 'TrackIR5.exe is running', required: false },
+    ]);
+    expect(plan.notes).toContain(
+      'RigReady 1 had "FANATEC Podium Wheel Base DD2" twice, both the same check. The new setup has it once.'
+    );
+    expect(plan.left.map((p) => p.title)).toEqual(['Display: Single Ultrawide']);
+
+    // And the setup it writes checks it once.
+    const made = await app.invoke<Profile>('profiles:bringOver', { id: TWICE, seen: plan.seen });
+    expect(
+      made.checks.map(({ type, title, required, params }) => [type, title, required, params])
+    ).toEqual([
+      ['device.connected', 'FANATEC Podium Wheel Base DD2', true, WHEEL],
+      ['process.running', 'TrackIR 5', false, { name: 'TrackIR5.exe' }],
+    ]);
+    const saved = yaml.load(await fs.readFile(oldFile(app, made.id), 'utf8')) as Profile;
+    expect(saved.checks.filter((c) => c.type === 'device.connected')).toHaveLength(1);
+  });
+
+  it('joins only checks that are the same in every part, and keeps the stricter of required and optional', async () => {
+    app = await wiredApp('flying-fresh', { files: [] });
+    const dir = path.join(app.ports.folders.dataRoot(), 'profiles');
+    await fs.mkdir(dir, { recursive: true });
+    const item = (id: string, name: string, isRequired: boolean, config: object) => ({
+      id,
+      type: 'process',
+      name,
+      isRequired,
+      category: 'software',
+      config,
+    });
+    await fs.writeFile(
+      path.join(dir, 'j4n8w2dupe.yaml'),
+      yaml.dump({
+        id: 'j4n8w2dupe',
+        name: 'Helpers',
+        checklistItems: [
+          item('a', 'TrackIR', false, { processName: 'TrackIR5.exe' }),
+          item('b', 'Head tracking', true, { processName: 'TrackIR5.exe' }),
+          item('c', 'TrackIR again', false, { processName: 'TrackIR5.exe' }),
+          // The same program with a fix is another check.
+          {
+            ...item('d', 'TrackIR with a start', false, { processName: 'TrackIR5.exe' }),
+            remediation: {
+              type: 'notifyUser',
+              config: { message: 'Start TrackIR.' },
+            },
+          },
+          // Two parts that are left out the same way are named once.
+          { id: 'e', type: 'display', name: 'Desk', isRequired: false, config: {} },
+          { id: 'f', type: 'display', name: 'Desk', isRequired: false, config: {} },
+        ],
+      })
+    );
+    const plan = await app.invoke<EarlierPlan>('profiles:earlierPlan', { id: 'j4n8w2dupe' });
+    expect(plan.checks).toEqual([
+      { title: 'TrackIR', what: 'TrackIR5.exe is running', required: true },
+      {
+        title: 'TrackIR with a start',
+        what: 'TrackIR5.exe is running; the fix shows what to do',
+        required: false,
+      },
+    ]);
+    expect(plan.notes).toContain(
+      'RigReady 1 had "TrackIR", "Head tracking" and "TrackIR again", all the same check. The new setup has it once, as "TrackIR".'
+    );
+    expect(plan.left.map((p) => p.title)).toEqual(['Desk']);
+    const made = await app.invoke<Profile>('profiles:bringOver', { id: 'j4n8w2dupe' });
+    expect(made.checks.map((c) => [c.title, c.required, c.remediation?.type])).toEqual([
+      ['TrackIR', true, undefined],
+      ['TrackIR with a start', false, 'instructions.show'],
+    ]);
   });
 
   it('every kind of RigReady 1 check: what has an exact match comes over, the rest is named with why', async () => {

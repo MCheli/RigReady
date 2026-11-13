@@ -3,7 +3,19 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { tempDir } from '../../tests/helpers';
 import { validateLedger } from './ledger';
-import { sanitizeDeep, sanitizeUserPaths } from './sanitize';
+import {
+  guidRegistryBytes,
+  identityReplacements,
+  isPlaceholderSerial,
+  madeUpGuid,
+  madeUpGuidsIn,
+  madeUpParentPrefix,
+  madeUpSerial,
+  replaceIdentity,
+  replaceIdentityBytes,
+  sanitizeDeep,
+  sanitizeUserPaths,
+} from './sanitize';
 
 describe('sanitizeUserPaths', () => {
   it('replaces only the user name segment of paths', () => {
@@ -30,6 +42,174 @@ describe('sanitizeUserPaths', () => {
       a: ['C:\\Users\\User\\x', 5, null],
       b: { c: 'C:\\Users\\User' },
     });
+  });
+});
+
+/** Each character as d (digit), U, l (letters) or itself: the shape of a value. */
+const shape = (value: string): string =>
+  value.replace(/[0-9]/g, 'd').replace(/[A-Z]/g, 'U').replace(/[a-z]/g, 'l');
+
+describe('device identity: stable made-up serials and GUIDs', () => {
+  // Every value here is invented for the test.
+  it('a serial becomes another of the same shape, the same every time', () => {
+    for (const serial of ['K7Q2XW93P1LM', '3fa90c17b2e4', 'AB12-cd34', 'QZ20231115083000']) {
+      const made = madeUpSerial(serial);
+      expect(made).not.toBe(serial);
+      expect(shape(made)).toBe(shape(serial));
+      expect(madeUpSerial(serial)).toBe(made);
+    }
+    // A hex serial stays hex; another one may use any letter.
+    expect(madeUpSerial('3FA90C17B2E4D6A8')).toMatch(/^[0-9A-F]{16}$/);
+    expect(madeUpSerial('3FA90C17B2E4D6A8')).not.toBe(madeUpSerial('3FA90C17B2E4D6A9'));
+  });
+
+  it('serials that name no unit are not counted as serials', () => {
+    for (const placeholder of ['1', 'FF', '000', '000000000000', 'AAAAAA']) {
+      expect(isPlaceholderSerial(placeholder), placeholder).toBe(true);
+    }
+    expect(isPlaceholderSerial('A1B2')).toBe(false);
+  });
+
+  it('a DirectInput GUID gets a made-up time and keeps its version, slot counter and node', () => {
+    const slot7 = '1A2B3C40-5D6E-11F0-8007-444553540000';
+    const slot8 = '1A2B3C40-5D6E-11F0-8008-444553540000';
+    const made = madeUpGuid(slot7);
+    expect(made).not.toBe(slot7);
+    expect(shape(made)).toBe(shape(slot7));
+    expect(made).toMatch(/^[0-9A-F]{8}-[0-9A-F]{4}-1[0-9A-F]{3}-8007-444553540000$/);
+    // Seen by Windows at the same moment, so still the same moment after.
+    expect(madeUpGuid(slot8).slice(0, 18)).toBe(made.slice(0, 18));
+    expect(madeUpGuid(slot8).slice(19)).toBe('8008-444553540000');
+    expect(madeUpGuid(slot7)).toBe(made);
+  });
+
+  it('any other GUID changes everywhere but its version and variant digits', () => {
+    const endpoint = '0a1b2c3d-4e5f-4a6b-9c7d-8e9f0a1b2c3d';
+    const made = madeUpGuid(endpoint);
+    expect(shape(made)).toBe(shape(endpoint));
+    expect(made[14]).toBe('4');
+    expect(made[19]).toBe('9');
+    expect(made.slice(24)).not.toBe(endpoint.slice(24));
+    expect(() => madeUpGuid('not-a-guid')).toThrow();
+  });
+
+  it('a parent id prefix gets made-up hex digits and keeps its level and its shape', () => {
+    for (const prefix of ['7&1a2b3c4d', 'a&9e8d7c6b', '5&cc3f94', '4&2f']) {
+      const made = madeUpParentPrefix(prefix);
+      expect(made).not.toBe(prefix);
+      expect(shape(made)).toBe(shape(prefix));
+      expect(made.split('&')[0]).toBe(prefix.split('&')[0]);
+      expect(made).toMatch(/^[0-9a-f]{1,2}&[1-9a-f][0-9a-f]*$/);
+      expect(madeUpParentPrefix(prefix)).toBe(made);
+    }
+    // Made up from the hex digits: ids that shared a prefix still share one.
+    expect(madeUpParentPrefix('8&1a2b3c4d').slice(2)).toBe(
+      madeUpParentPrefix('7&1a2b3c4d').slice(2)
+    );
+    expect(() => madeUpParentPrefix('USB\\VID_1234')).toThrow();
+  });
+
+  it('every GUID of a Stream Deck profile is made up, the same way in its names and its text', () => {
+    const profile = '1A2B3C4D-5E6F-4A7B-8C9D-0E1F2A3B4C5D';
+    const page = '6E7F8A9B-0C1D-4E2F-9A3B-4C5D6E7F8A9B';
+    const file = `ProfilesV3\\${profile}.sdProfile\\Profiles\\${page}\\manifest.json`;
+    const text = `{"Pages":{"Current":"${page.toLowerCase()}","Pages":["${page}"]},"Name":"DCS World","Model":"20GAT9902"}`;
+    const madeProfile = madeUpGuid(profile);
+    const madePage = madeUpGuid(page);
+    expect(madeUpGuidsIn(file)).toBe(
+      `ProfilesV3\\${madeProfile}.sdProfile\\Profiles\\${madePage}\\manifest.json`
+    );
+    expect(madeUpGuidsIn(text)).toBe(
+      `{"Pages":{"Current":"${madePage.toLowerCase()}","Pages":["${madePage}"]},"Name":"DCS World","Model":"20GAT9902"}`
+    );
+    // Only whole GUIDs: one inside a longer run of hex is left alone.
+    expect(madeUpGuidsIn(`0${profile}`)).toBe(`0${profile}`);
+  });
+
+  it('finds every serial and instance GUID of a recording, placeholders aside', () => {
+    const map = identityReplacements({
+      devices: [{ serial: 'K7Q2XW93P1LM' }, { serial: 'FF' }, {}],
+      displays: [
+        {
+          serial: '1',
+          id: '\\\\?\\display#abc0001#7&1a2b3c4d&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
+        },
+        { serial: 'MON1234567', usbSerial: 'QZ20231115083000' },
+      ],
+      input: [{ guid: '1A2B3C40-5D6E-11F0-8007-444553540000' }],
+      audio: { devices: [{ id: '{0.0.0.00000000}.{0a1b2c3d-4e5f-4a6b-9c7d-8e9f0a1b2c3d}' }] },
+      registry: {
+        'HKCU\\X\\DirectInput\\VID_1234&PID_5678\\Calibration\\0': {
+          GUID: {
+            type: 'binary',
+            value: guidRegistryBytes('9F8E7D60-5C4B-11EE-8001-444553540000'),
+          },
+          'Joystick Id': { type: 'binary', value: '01000000' },
+        },
+        'HKCU\\X\\DirectInput\\VID_1234&PID_5678\\Calibration\\0\\Type': {},
+      },
+    });
+    expect([...map.keys()].sort()).toEqual(
+      [
+        '0A1B2C3D-4E5F-4A6B-9C7D-8E9F0A1B2C3D',
+        '1A2B3C40-5D6E-11F0-8007-444553540000',
+        '7&1a2b3c4d',
+        '9F8E7D60-5C4B-11EE-8001-444553540000',
+        'K7Q2XW93P1LM',
+        'MON1234567',
+        'QZ20231115083000',
+      ].sort()
+    );
+  });
+
+  it('replaces them in every spelling, keeping each one’s letter case, and only whole values', () => {
+    const guid = '1A2B3C40-5D6E-11F0-8007-444553540000';
+    const map = new Map([
+      [guid, madeUpGuid(guid)],
+      ['K7Q2XW93P1LM', madeUpSerial('K7Q2XW93P1LM')],
+      ['7&1a2b3c4d', madeUpParentPrefix('7&1a2b3c4d')],
+    ]);
+    const made = map.get(guid)!;
+    const dcs = (g: string): string =>
+      g.replace(/^(.{14})(.{4})/, (_, a, b) => a + b.toLowerCase());
+    const text = [
+      `"guid": "${guid}",`,
+      `Joystick {${dcs(guid)}}.diff.lua`,
+      `"value": "${guidRegistryBytes(guid).toLowerCase()}"`,
+      `\\\\?\\usb#vid_1234&pid_5678#k7q2xw93p1lm#{a5dcbf10-6530-11d2-901f-00c04fb951ed}`,
+      `USB\\VID_1234&PID_5678\\K7Q2XW93P1LM and XK7Q2XW93P1LM and K7Q2XW93P1LM0`,
+      `"id": "\\\\\\\\?\\\\display#abc0001#7&1a2b3c4d&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}"`,
+    ].join('\n');
+    const out = replaceIdentity(text, map).split('\n');
+    expect(out[0]).toBe(`"guid": "${made}",`);
+    expect(out[1]).toBe(`Joystick {${dcs(made)}}.diff.lua`);
+    expect(out[2]).toBe(`"value": "${guidRegistryBytes(made).toLowerCase()}"`);
+    expect(out[3]).toBe(
+      `\\\\?\\usb#vid_1234&pid_5678#${map.get('K7Q2XW93P1LM')!.toLowerCase()}#{a5dcbf10-6530-11d2-901f-00c04fb951ed}`
+    );
+    expect(out[4]).toBe(
+      `USB\\VID_1234&PID_5678\\${map.get('K7Q2XW93P1LM')} and XK7Q2XW93P1LM and K7Q2XW93P1LM0`
+    );
+    // A monitor's instance id, as the recorded JSON holds it: only the parent id prefix changes.
+    expect(out[5]).toBe(
+      `"id": "\\\\\\\\?\\\\display#abc0001#${map.get('7&1a2b3c4d')}&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}"`
+    );
+    expect(replaceIdentity(text, new Map())).toBe(text);
+  });
+
+  it('replaces a GUID kept as raw bytes, in Windows’ order, and leaves the other bytes alone', () => {
+    const guid = '1A2B3C40-5D6E-11F0-8007-444553540000';
+    const made = madeUpGuid(guid);
+    const raw = (g: string): Buffer => Buffer.from(guidRegistryBytes(g), 'hex');
+    const data = Buffer.concat([Buffer.from([0, 1, 2]), raw(guid), Buffer.from('x'), raw(guid)]);
+    const out = replaceIdentityBytes(data, new Map([[guid, made]]));
+    expect(out).toEqual(
+      Buffer.concat([Buffer.from([0, 1, 2]), raw(made), Buffer.from('x'), raw(made)])
+    );
+    // The input is not changed, and data without the GUID comes back as it was.
+    expect(data.indexOf(raw(guid))).toBe(3);
+    const other = Buffer.from([9, 8, 7]);
+    expect(replaceIdentityBytes(other, new Map([[guid, made]]))).toBe(other);
   });
 });
 
@@ -121,6 +301,72 @@ ${extra}`;
     );
     expect(validateLedger(file, dir).problems).toEqual([
       'FLY-001: done needs at least one automated test as evidence',
+    ]);
+  });
+
+  it('checks a scenario test’s title in its file, as it does a unit test’s', async () => {
+    await fs.mkdir(path.join(dir, 'tests', 'e2e'), { recursive: true });
+    await fs.writeFile(
+      path.join(dir, 'tests', 'e2e', 'fly.e2e.ts'),
+      [
+        "test('fly: Make ready turns every check green', async ({ rig }) => {});",
+        "test('fly: the page says \\'Starting\\' with the game\\'s name', async ({ rig }) => {});",
+        'test("fly: a \\"quoted\\" title", async ({ rig }) => {});',
+      ].join('\n')
+    );
+    await fs.writeFile(
+      file,
+      entry(`    status: done
+    evidence:
+      - "tests/e2e/fly.e2e.ts#fly: Make ready turns every check green"
+      - "tests/e2e/fly.e2e.ts > fly: the page says 'Starting' with the game's name"
+      - 'tests/e2e/fly.e2e.ts::fly: a "quoted" title'
+      - artifacts/screens/fly/ready.png`)
+    );
+    // A scenario test is a test: it is enough on its own for done.
+    expect(validateLedger(file, dir)).toMatchObject({ counts: { done: 1 }, problems: [] });
+
+    await fs.writeFile(
+      file,
+      entry(`    status: done
+    evidence:
+      - "tests/e2e/fly.e2e.ts#fly: a test that was renamed"
+      - "tests/e2e/gone.e2e.ts#fly: Make ready turns every check green"`)
+    );
+    expect(validateLedger(file, dir).problems).toEqual([
+      'FLY-001: test "fly: a test that was renamed" not found in tests/e2e/fly.e2e.ts',
+      'FLY-001: evidence does not exist: tests/e2e/gone.e2e.ts',
+    ]);
+  });
+
+  it('checks the evidence of entries that are not done yet, without asking them for any', async () => {
+    await fs.writeFile(
+      file,
+      `requirements:
+  - id: FLY-001
+    title: A
+    job: fly
+    done_means: [x]
+    status: in_progress
+    evidence:
+      - tests/a.test.ts#opens on the last profile
+      - tests/a.test.ts#a test that was renamed
+      - artifacts/screens/fly/nope.png
+  - id: FLY-002
+    title: B
+    job: fly
+    done_means: [x]
+    status: todo
+  - id: FLY-003
+    title: C
+    job: fly
+    done_means: [x]
+    status: todo
+    evidence: [artifacts/screens/fly/ready.png]`
+    );
+    expect(validateLedger(file, dir).problems).toEqual([
+      'FLY-001: test "a test that was renamed" not found in tests/a.test.ts',
+      'FLY-001: evidence does not exist: artifacts/screens/fly/nope.png',
     ]);
   });
 

@@ -6,7 +6,7 @@ order: 80
 
 RigReady never changes a file outside its own data folder without first keeping a copy of it and writing down what it did. **Configure > Safety** is that record: every change, newest first, each with an **Undo** button.
 
-This is the layer you do not have to think about. It covers restores, imports, snapshots put back, binding edits, the files RigReady writes for DCS, and anything else a feature writes on your behalf.
+This is the layer you do not have to think about. It covers restores, imports, snapshots put back, binding edits, the files RigReady writes for DCS, and anything else a feature writes on your behalf. A few files inside RigReady's own folder are listed too, because removing them would lose your work, for example a binding guide you delete.
 
 ## What is listed
 

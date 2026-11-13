@@ -497,3 +497,60 @@ test('virtual controller: a renamed profile has its new name on the Play page of
   await expect(plan).not.toContainText('My Ace Combat stick');
   await shot('play-says-the-new-name');
 });
+
+test('virtual controller: a change made while a save is running stays on screen, and the bar says it is not saved', async ({
+  rig,
+}) => {
+  const { page, shot, mutate } = await rig.launch(
+    'virtual-controller-ready',
+    'virtual-controller-save-while-editing'
+  );
+  await openPage(page);
+  await profileRow(page, 'my-ace-combat-stick').getByTestId('vc-edit').click();
+  await expect(page.getByTestId('vc-editor')).toBeVisible();
+  const name = page.getByTestId('vc-editor-name').locator('input');
+  const save = page.getByTestId('save-bar-save');
+  await name.fill('Viper stick');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Unsaved changes');
+
+  // A slow PC: every file read and write takes a moment and a half, and a rename also
+  // updates the setups that use the profile, so the save takes a few seconds. The user
+  // goes on typing meanwhile.
+  await mutate([{ op: 'slowFiles', ms: 1500 }]);
+  await save.click();
+  await expect(save).toHaveAttribute('aria-busy', 'true');
+  await name.fill('Viper stick for Ace Combat');
+  // Back waits for the save. Leaving by the menu meanwhile says that the save goes on, and
+  // that only what was typed after it would be dropped.
+  await expect(page.getByTestId('save-bar-back')).toBeDisabled();
+  await page.getByTestId('nav-devices').click();
+  await expect(page.getByTestId('save-bar-leave-saving')).toHaveText(
+    'The save you started goes on. Changes made after you pressed Save are not in it, and leaving drops them.'
+  );
+  await shot('leave-while-saving');
+  await page.getByTestId('save-bar-leave-stay').click();
+  await expect(page.getByTestId('vc-editor')).toBeVisible();
+  await mutate([{ op: 'slowFiles', ms: 0 }]);
+  await expect(save).not.toHaveAttribute('aria-busy', 'true');
+
+  // What was typed during the save is still there, and it is not called saved.
+  await expect(name).toHaveValue('Viper stick for Ace Combat');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Unsaved changes');
+  await expect(page.getByTestId('save-bar-saved')).toHaveCount(0);
+  await page.getByTestId('vc-editor-name').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  await shot('typed-while-saving');
+
+  // Leaving would drop it, so the bar asks.
+  await page.getByTestId('save-bar-back').click();
+  await expect(page.getByTestId('save-bar-leave')).toBeVisible();
+  await page.getByTestId('save-bar-leave-stay').click();
+  await expect(name).toHaveValue('Viper stick for Ace Combat');
+
+  // Saved again, it is all saved, and the list has the name.
+  await save.click();
+  await expect(page.getByTestId('save-bar-saved')).toHaveText('Saved Viper stick for Ace Combat');
+  await page.getByTestId('save-bar-back').click();
+  await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
+  await expect(page.getByTestId('vc-page')).toBeVisible();
+  await expect(profileRow(page, 'my-ace-combat-stick')).toContainText('Viper stick for Ace Combat');
+});

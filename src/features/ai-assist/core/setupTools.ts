@@ -44,49 +44,44 @@ export interface SetupLine {
   name: string;
 }
 
-/** Letters and digits only, so "FA-18C", "f/a 18c" and "F/A-18C" are the same words. */
-const plain = (text: string): string => text.toLowerCase().replace(/[^a-z0-9]+/g, '');
+/**
+ * A name as it is compared: the same letters whatever their case, in any script ("DCS" and
+ * "dcs", "Штурмовик" and "ШТУРМОВИК"), with the spaces around and between words counted
+ * once. Nothing else is taken out: "F/A-18C" and "FA-18C" are two names.
+ */
+const folded = (text: string): string =>
+  text.normalize('NFKC').trim().replace(/\s+/g, ' ').toUpperCase().toLowerCase();
 
 const listed = (setups: SetupLine[]): string =>
   setups.map((s) => `${s.name} (${s.id})`).join(', ') || 'none';
 
 /**
- * The setup an assistant means: by id, by its whole name, or by a part of the name when only
- * one setup has it. More than one that fits is an error that names them, never a guess.
+ * The setup an assistant means: by its id, or by its whole name in any case. A name that two
+ * setups share is an error that names them, never a guess, and so is a name no setup has.
  */
 export function matchSetup(asked: string, setups: SetupLine[]): Result<SetupLine> {
-  const wanted = asked.trim().toLowerCase();
-  const exact = setups.find((s) => s.id === wanted || s.name.trim().toLowerCase() === wanted);
-  if (exact) return ok(exact);
-  const words = plain(asked);
-  const fits =
-    words.length < 2
-      ? []
-      : setups.filter((s) => {
-          const name = plain(s.name);
-          const id = plain(s.id);
-          return name.includes(words) || id.includes(words) || words.includes(name);
-        });
+  const all = `Setups: ${listed(setups)}.`;
+  const wanted = folded(asked);
+  if (wanted === '') return err('ai.setup', 'Name the setup by its id or its whole name.', all);
+  // Ids are unique, so an id said exactly is never in doubt.
+  const byId = setups.find((s) => s.id === asked.trim());
+  if (byId) return ok(byId);
+  const fits = setups.filter((s) => folded(s.id) === wanted || folded(s.name) === wanted);
   if (fits.length === 1) return ok(fits[0]!);
   if (fits.length > 1) {
     return err(
       'ai.setup',
-      `More than one setup fits "${asked}".`,
+      `More than one setup is called "${asked}".`,
       `They are: ${listed(fits)}. Ask again with one id.`
     );
   }
-  return err('ai.setup', `There is no setup "${asked}".`, `Setups: ${listed(setups)}.`);
+  return err('ai.setup', `There is no setup "${asked}". Name it by its id or its whole name.`, all);
 }
 
 // ---- setup_read ------------------------------------------------------------
 
 export const ReadSetupInputSchema = z.object({
-  setup: z
-    .string()
-    .trim()
-    .min(1)
-    .max(120)
-    .describe('The setup, by id or name. A part of the name is enough when only one setup has it.'),
+  setup: z.string().trim().min(1).max(120).describe('The setup, by id or by its whole name.'),
   params: z
     .boolean()
     .default(false)
@@ -289,7 +284,7 @@ export function setupTools(): McpToolDefinition[] {
     name: 'setup_read',
     title: 'Read one setup',
     description:
-      "Answers with one setup, by id or name (a part of the name is enough): what Launch starts, every check with its type, whether it is required, what it is about (the program, file or device) and its fix, and the steps before launch, after launch and at Stand down. Short: a line per item. Use it to answer what a setup checks or starts, and before proposing a change to it. params: true adds every item's params in full. Changes nothing.",
+      "Answers with one setup, by id or by its whole name: what Launch starts, every check with its type, whether it is required, what it is about (the program, file or device) and its fix, and the steps before launch, after launch and at Stand down. Short: a line per item. Use it to answer what a setup checks or starts, and before proposing a change to it. params: true adds every item's params in full. Changes nothing.",
     input: ReadSetupInputSchema,
     output: SetupReadSchema,
     tier: 'read',

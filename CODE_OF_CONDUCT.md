@@ -22,6 +22,6 @@ In this repository (issues, pull requests, reviews and commits) and anywhere som
 
 ## Reporting
 
-If someone's behaviour here breaks these rules, use GitHub's **Report content** on the comment (the three dots at its top right), or write to the maintainer, Mark Cheli, through the contact form on <https://www.markcheli.com>. A report is kept private.
+If someone's behaviour here breaks these rules, use GitHub's **Report content** on the comment (the three dots at its top right), or email the maintainer, Mark Cheli, at <mpcheli7@gmail.com>. A report is kept private.
 
 The maintainer may edit or remove a comment, close or lock a thread, or block an account, and says why when that helps.

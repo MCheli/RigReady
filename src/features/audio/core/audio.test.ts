@@ -33,11 +33,11 @@ afterEach(async () => {
 const NO_FILES = { files: [] };
 
 const HEADPHONES = {
-  id: '{0.0.0.00000000}.{20e0482c-9de0-4efc-bcac-f2b35cff7d43}',
+  id: '{0.0.0.00000000}.{42c6912c-9db0-4efa-beec-f6c03dda1e39}',
   name: 'Headphones (Arctis Pro Wireless Game)',
 };
 const HEADSET_MIC = {
-  id: '{0.0.1.00000000}.{2255b204-0d8f-4fb5-8c8a-10ee65d5a884}',
+  id: '{0.0.1.00000000}.{7826c841-8f5c-4eb2-8a4d-68da05f3e663}',
   name: 'Headset Microphone (Arctis Pro Wireless Chat)',
 };
 const output: AudioParams = { flow: 'playback', ...HEADPHONES, role: 'default' };
@@ -260,7 +260,7 @@ describe('audio capture', () => {
         true,
         {
           flow: 'playback',
-          id: '{0.0.0.00000000}.{5b14908e-d9a8-4e31-a5e6-9d272469e892}',
+          id: '{0.0.0.00000000}.{5a86941f-c2b7-4a73-a1c2-4b292270d739}',
           name: 'Speakers (Realtek(R) Audio)',
           role: 'default',
         },

@@ -1,0 +1,277 @@
+format: 1
+game: iracing
+car:
+  id: formula
+  name: Formula and open-wheel
+summary: >-
+  Formula cars are light, open-wheel cars with a lot of downforce, from the junior formulas to
+  IndyCar, Super Formula and the Formula 1 car. Bind the pedals, the paddles and the pit limiter
+  first, then DRS and push to pass on the rim for the cars that have them. The engine, hybrid
+  and differential settings of the fastest cars belong on the rim or a button box too.
+sources:
+  - >-
+    Written from general knowledge of formula racing and of iRacing's controls. Not reviewed by
+    a racing driver. Not affiliated with or reviewed by iRacing.
+  - >-
+    Every action is named by iRacing's own id, as in its controls file; a test checks each one
+    against iRacing's list of 369 actions (November 2026).
+  - >-
+    Cars differ: DRS only works on cars and in series that have it, push to pass on IndyCar and
+    Super Formula, and a car without a control ignores its binding.
+roles:
+  wheel:
+    summary: >-
+      The paddles, the pit limiter, DRS and push to pass, then brake bias, the black box buttons
+      and push to talk.
+    items: [steering, shift, pit-limiter, drs, push-to-pass, brake-bias, black-box, push-to-talk]
+  pedals:
+    summary: Throttle and brake. The clutch only for a standing start.
+    items: [throttle, brake, clutch]
+  panel:
+    summary: >-
+      On a wheel with many buttons these go on the rim; otherwise on a button box: traction
+      control, the hybrid, engine braking, the differential, the dash pages and the engine map.
+    items: [traction-control, hybrid, engine-braking, differential, dash-page, engine-map]
+  keyboard:
+    summary: Black box settings, force feedback strength and chat are fine on the keyboard.
+    items: [black-box-values, force-feedback, text-chat]
+items:
+  - id: steering
+    title: Steering
+    tier: must
+    place: rim
+    role: wheel
+    input: axis
+    what: >-
+      Turns the front wheels. iRacing stores the wheel as one axis in two halves, one for each
+      way of turning.
+    when: All the time.
+    note: >-
+      Bind it in iRacing: Options, then Controls, then Calibrate. Turn the wheel from lock to
+      lock when iRacing asks.
+    actions:
+      - { name: SteerLeft, label: Steer left }
+      - { name: SteerRight, label: Steer right }
+  - id: throttle
+    title: Throttle
+    tier: must
+    place: rim
+    role: pedals
+    input: axis
+    what: The accelerator pedal.
+    when: All the time.
+    note: Bind and calibrate it in iRacing with the wheel, in the same steps.
+    actions:
+      - { name: Throttle, label: Throttle }
+  - id: brake
+    title: Brake
+    tier: must
+    place: rim
+    role: pedals
+    input: axis
+    what: >-
+      The brake pedal. Most formula cars have no ABS: press hard at the start of the braking
+      zone and ease off as the car slows, or the wheels lock.
+    when: Every corner.
+    note: Bind and calibrate it in iRacing. Press the pedal as hard as you will in a race.
+    actions:
+      - { name: Brake, label: Brake }
+  - id: shift
+    title: Shift up and down
+    tier: must
+    place: rim
+    role: wheel
+    what: The paddles behind the wheel.
+    when: Every corner and every straight.
+    actions:
+      - { name: ShiftUp, label: Shift up }
+      - { name: ShiftDown, label: Shift down }
+  - id: pit-limiter
+    title: Pit speed limiter
+    tier: must
+    place: rim
+    role: wheel
+    what: Holds the car at the pit lane speed limit. Speeding in the pit lane earns a penalty.
+    when: Turn it on before the pit entry line and off after the pit exit line.
+    actions:
+      - { name: PitSpeedLimiter, label: Pit speed limiter }
+  - id: drs
+    title: DRS
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Opens the flap of the rear wing for more speed on a straight. Only in a DRS zone, and in a
+      race only when you are close enough to the car ahead; braking closes it.
+    when: On the straights where the series allows it.
+    actions:
+      - { name: DRS, label: DRS }
+  - id: push-to-pass
+    title: Push to pass
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      More engine power for a few seconds, a limited number of times or seconds per race, on
+      IndyCar and Super Formula.
+    when: To pass, or to defend, on a straight.
+    actions:
+      - { name: PushToPass, label: Push to pass }
+  - id: brake-bias
+    title: Brake bias
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Moves the braking between the front and rear wheels. The black box shows it as the share
+      on the front; up raises it.
+    when: As the fuel burns off, and corner by corner in the fastest cars.
+    actions:
+      - { name: BrakeBiasInc, label: Brake bias up }
+      - { name: BrakeBiasDec, label: Brake bias down }
+  - id: black-box
+    title: Black boxes
+    tier: should
+    place: rim
+    role: wheel
+    what: >-
+      Cycles through iRacing's black boxes: the panels for fuel, tyres, the pit stop, the
+      relative gaps and the car's settings.
+    when: Before every pit stop, and to check the gaps.
+    actions:
+      - { name: BlackBoxShowNext, label: Next black box }
+      - { name: BlackBoxShowPrev, label: Previous black box }
+  - id: push-to-talk
+    title: Push to talk
+    tier: should
+    place: rim
+    role: wheel
+    what: Opens your microphone on iRacing's voice chat while you hold it.
+    when: To talk to your team or the race control.
+    actions:
+      - { name: VChatPushToTalk, label: Push to talk }
+  - id: clutch
+    title: Clutch
+    tier: nice
+    place: rim
+    role: pedals
+    input: axis
+    what: >-
+      The clutch, for a standing start. On a real formula car it is a paddle; a pedal or a
+      paddle with an axis both work in iRacing.
+    when: At a standing start and leaving the pit box.
+    note: Bind it in iRacing.
+    actions:
+      - { name: Clutch, label: Clutch }
+  - id: traction-control
+    title: Traction control
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      Changes how much the traction control cuts power when the rear wheels spin, on cars that
+      have it. Which way is more depends on the car.
+    when: When the tyres are cold or worn, or in the wet.
+    actions:
+      - { name: TractionControlInc, label: Traction control up }
+      - { name: TractionControlDec, label: Traction control down }
+  - id: hybrid
+    title: Hybrid settings
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: >-
+      Changes how the hybrid system uses its electric power and how much it recovers under
+      braking, on cars with a hybrid system.
+    when: To attack or defend, and to save energy when the battery runs low.
+    actions:
+      - { name: MGUKDeployModeInc, label: Hybrid deploy mode up }
+      - { name: MGUKDeployModeDec, label: Hybrid deploy mode down }
+      - { name: MGUKRegenGainInc, label: Hybrid recovery up }
+      - { name: MGUKRegenGainDec, label: Hybrid recovery down }
+  - id: engine-braking
+    title: Engine braking
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      Changes how much the engine slows the car when you lift off the throttle, on cars that let
+      you.
+    when: When the car feels nervous on the way into corners.
+    actions:
+      - { name: EngineBrakingInc, label: Engine braking up }
+      - { name: EngineBrakingDec, label: Engine braking down }
+  - id: differential
+    title: Differential
+    tier: nice
+    place: panel
+    role: panel
+    need: any
+    what: >-
+      Changes how the differential locks on the way into a corner, in the middle and on the way
+      out, on cars that let you.
+    when: To tune the balance corner by corner, once the rest feels right.
+    actions:
+      - { name: DiffEntryInc, label: Differential entry up }
+      - { name: DiffEntryDec, label: Differential entry down }
+      - { name: DiffMiddleInc, label: Differential middle up }
+      - { name: DiffMiddleDec, label: Differential middle down }
+      - { name: DiffExitInc, label: Differential exit up }
+      - { name: DiffExitDec, label: Differential exit down }
+  - id: dash-page
+    title: Dash pages
+    tier: nice
+    place: panel
+    role: panel
+    what: Changes the page of the car's dashboard display, on cars whose dash has pages.
+    when: To see fuel, tyre temperatures or the battery on the dash.
+    actions:
+      - { name: DashPageInc, label: Next dash page }
+      - { name: DashPageDec, label: Previous dash page }
+  - id: engine-map
+    title: Engine map
+    tier: nice
+    place: panel
+    role: panel
+    what: >-
+      Changes the engine map, which iRacing calls the fuel mixture, on cars that have one. A
+      leaner map saves fuel.
+    when: When you need to save fuel to make the end of the race.
+    actions:
+      - { name: FuelMixtureInc, label: Fuel mixture up }
+      - { name: FuelMixtureDec, label: Fuel mixture down }
+  - id: black-box-values
+    title: Change a black box setting
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: >-
+      Moves through the lines of the black box on screen and changes a value, such as the fuel
+      to add at the next stop.
+    when: Before a pit stop.
+    note: iRacing's own keys for these are the arrow keys and Space.
+    actions:
+      - { name: BlackBoxNext, label: Black box next control }
+      - { name: BlackBoxPrev, label: Black box previous control }
+      - { name: BlackBoxInc, label: Black box value up }
+      - { name: BlackBoxDec, label: Black box value down }
+  - id: force-feedback
+    title: Force feedback strength
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Makes the force feedback of the wheel stronger or weaker while you drive.
+    when: When the wheel feels too light or clips in fast corners.
+    actions:
+      - { name: IncFFB, label: Force feedback stronger }
+      - { name: DecFFB, label: Force feedback weaker }
+  - id: text-chat
+    title: Text chat
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens the text chat to type a message.
+    when: Before the start or after the finish, not while driving.
+    actions:
+      - { name: TChatInitiate, label: Text chat }

@@ -1,5 +1,6 @@
 import path from 'node:path';
 import {
+  acknowledgeOffered,
   fixItem,
   makeReady,
   runCheckItem,
@@ -81,7 +82,14 @@ export interface SessionHooks {
   hidden(): void;
   /** Stand down is starting: a countdown to one that would run by itself is over. */
   standDownStarted(): void;
+  /** That Stand down is over, whether it ran to its end or not. */
+  standDownEnded(): void;
   stoodDown(): void;
+  /**
+   * Launch, Make ready or a fix is about to change the rig: a countdown to Stand down is
+   * over before anything starts.
+   */
+  gettingReady(): void;
 }
 
 export interface FlyOptions {
@@ -340,11 +348,32 @@ export class Fly {
     );
   }
 
+  /**
+   * Said by Launch, Make ready and a fix before they change anything. A Stand down that is
+   * running would close what they start, so they do not run beside it. A countdown to one
+   * is over from here on: it would run out in the middle of what they do (sessions.ts).
+   * A check changes nothing, and so leaves both alone.
+   */
+  private readying(): Result<void> {
+    if (this.standDownRunning) {
+      return err(
+        'fly.standDownRunning',
+        'Stand down is running.',
+        'Nothing was changed. Try again when it has finished.'
+      );
+    }
+    this.sessions?.gettingReady();
+    return ok(undefined);
+  }
+
   async fix(
     profileId: string,
     itemId: string,
     confirmed: boolean
   ): Promise<Result<{ step: StepResult; result: CheckResult }>> {
+    // Before anything is awaited: a countdown must not run out while this works.
+    const ready = this.readying();
+    if (!ready.ok) return ready;
     const found = await this.profile(profileId);
     if (!found.ok) return found;
     const fixed = await fixItem(found.value.profile, itemId, this.ctx.checks, this.ctx, {
@@ -361,6 +390,8 @@ export class Fly {
     profileId: string,
     options: { runId?: string; approved?: string[] } = {}
   ): Promise<Result<ActionReport>> {
+    const ready = this.readying();
+    if (!ready.ok) return ready;
     const found = await this.profile(profileId);
     if (!found.ok) return found;
     const approved = options.approved ? new Set(options.approved) : undefined;
@@ -386,13 +417,33 @@ export class Fly {
     }
     const params = definition.params.safeParse(item.params);
     if (!params.success) return err('fly.invalidItem', 'This check is not set up correctly.');
-    const next = await definition.acknowledge.run(params.data, withProfile(this.ctx, profile));
+    const ctx = withProfile(this.ctx, profile);
+    // The button was shown for a result that may be out of date by now.
+    if (!(await acknowledgeOffered(item, this.ctx.checks, ctx))) {
+      return err('fly.noAcknowledge', 'This item has nothing to confirm any more.');
+    }
+    const next = await definition.acknowledge.run(params.data, ctx);
     if (!next.ok) return next;
+    const fixParams =
+      item.remediation &&
+      definition.acknowledge.fixParams?.(
+        { type: item.remediation.type, params: item.remediation.params },
+        params.data,
+        next.value
+      );
     const updated: Profile = {
       ...profile,
       updatedAt: this.ctx.ports.clock.now().toISOString(),
       checks: profile.checks.map((c) =>
-        c.id === itemId ? { ...c, params: next.value as Record<string, unknown> } : c
+        c.id === itemId
+          ? {
+              ...c,
+              params: next.value as Record<string, unknown>,
+              ...(c.remediation && fixParams
+                ? { remediation: { ...c.remediation, params: fixParams } }
+                : {}),
+            }
+          : c
       ),
     };
     const saved = await this.ctx.profiles.save(updated);
@@ -472,6 +523,10 @@ export class Fly {
     profileId: string,
     options: { runId?: string; resumeAfter?: number; approved?: string[] } = {}
   ): Promise<Result<LaunchResult>> {
+    // Play ends the countdown now, not once the game is up: the actions before the launch
+    // and the game's start can take longer than what is left of it.
+    const ready = this.readying();
+    if (!ready.ok) return ready;
     const found = await this.profile(profileId);
     if (!found.ok) return found;
     const profile = found.value.profile;
@@ -654,6 +709,7 @@ export class Fly {
       return await this.runStandDown(profileId, options);
     } finally {
       this.standDownRunning = false;
+      this.sessions?.standDownEnded();
     }
   }
 
@@ -756,6 +812,28 @@ export class Fly {
     this.ctx.log.info(`stand down ${profileId}`, steps);
     this.sessions?.stoodDown();
     return ok({ ...report, steps, headline: parts.join(' · ') });
+  }
+
+  /**
+   * What a Stand down of this setup will need a person at the screens for, one line per
+   * step that will (StandDownStep.needsYou): said with the countdown before a Stand down
+   * by itself. Changes nothing; a step that fails to say is left out and logged.
+   */
+  async standDownNeedsYou(profileId: string): Promise<string[]> {
+    const found = await this.profile(profileId);
+    if (!found.ok) return [];
+    const ctx = withProfile(this.ctx, found.value.profile);
+    const lines: string[] = [];
+    for (const step of this.ctx.checks.standDownSteps()) {
+      if (!step.needsYou) continue;
+      try {
+        const line = await step.needsYou(ctx);
+        if (line) lines.push(line);
+      } catch (thrown) {
+        this.ctx.log.warn(`stand-down step ${step.id} could not say what it needs`, thrown);
+      }
+    }
+    return lines;
   }
 
   // ---- preferences ----

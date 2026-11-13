@@ -4,7 +4,7 @@ description: "What the Play screen shows when you open RigReady: the dial, the s
 order: 20
 ---
 
-The Play screen is what RigReady opens on. It shows the setup you used last, checks everything that setup needs, and says in a word or two whether the rig is ready. This section covers the screen itself, Make ready and launch, Stand down, sessions and history, switching setups, the compact view and the Play menu. Everything you do before and after a session happens here; the rest of the app is under **Configure**, the other mode at the top left of the window (see [Play and Configure](../getting-started/two-modes.md)).
+The Play screen is what RigReady opens on. It shows the setup you used last, checks everything that setup needs, and says in a word or two whether the rig is ready. This section covers the screen itself, Make ready and launch, Stand down, sessions and history, switching setups, the compact view, the Play menu and [the overlay](overlay.md) over the game. Everything you do before and after a session happens here; the rest of the app is under **Configure**, the other mode at the top left of the window (see [Play and Configure](../getting-started/two-modes.md)).
 
 This page explains what is on the screen. [Make ready and launch](make-ready-and-launch.md) covers the buttons, [Stand down](stand-down.md) what happens afterwards.
 
@@ -56,7 +56,7 @@ Each row has:
 - More lines when there is more to say, and a **Program output** panel when a script printed something.
 - A fix button, when the check has a fix, labelled with what the fix does: "Start TrackIR5.exe", "Apply the "Flying" layout", "Restore options.lua from the copy you saved of 2026-10-03 12:00". After it ran, the row says what happened; when the fix did not help, it links to the setup editor.
 - **Show instructions**, when the fix only tells you what to do.
-- The check's own button, when it has one, for example **Mark verified** on the game-updated check.
+- The check's own button, when it has one, for example **Mark verified** on the game-updated check, or **Update the setup** on a DCS check whose values "Use in DCS" changed.
 - **Diagnose** on a device row that is not met, which opens the [Devices page](../hardware/devices.md) on that device.
 - The time it was last checked, and a button to check that row again.
 

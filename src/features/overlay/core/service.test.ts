@@ -1,7 +1,8 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { ProfileSchema } from '../../../core/profile/schema';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { layoutToTargets } from '../../../core/displays/layouts';
+import { ProfileSchema, type Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
 import type { DisplayInfo, InputDevice, InputState } from '../../../shared/models';
 import { BINDING_FILES, diffFile } from '../../../../tests/dcsBindings';
@@ -142,6 +143,29 @@ async function savedSettings(on: WiredApp): Promise<Saved> {
   return JSON.parse(value(await on.ports.files.readText(settingsFile(on)))) as Saved;
 }
 
+/**
+ * A setup for a game, as the setup editor saves one; `overlay` is the switch in it, left out
+ * when the user never touched it.
+ */
+function setup(
+  id: string,
+  name: string,
+  game: { game?: string; gameName?: string },
+  overlay?: boolean,
+  more: Record<string, unknown> = {}
+): Profile {
+  const at = '2026-11-13T09:00:00.000Z';
+  return ProfileSchema.parse({
+    id,
+    name,
+    ...game,
+    createdAt: at,
+    updatedAt: at,
+    ...more,
+    ...(overlay === undefined ? {} : { extensions: { overlay: { on: overlay } } }),
+  });
+}
+
 describe('turning the overlay on and off', () => {
   it('is off until the user turns it on: no window, and nothing is listened to', async () => {
     const { app, service, seen } = await overlay();
@@ -266,6 +290,43 @@ describe('turning the overlay on and off', () => {
     expect(seen.presses).toEqual([]);
     // Still on for the next start.
     expect((await savedSettings(app)).on).toBe(true);
+  });
+
+  it('quit while it is still coming up: nothing comes up after the quit, and nothing is listened to', async () => {
+    const first = await flying();
+    await first.service.dispose();
+    // RigReady starts again with the overlay left on, and is quit while the overlay is still
+    // reading what it needs (the screens here; the bindings of DCS can take a quarter of a
+    // minute). The input reader is stopped right after the quit.
+    const { app } = first;
+    const read = app.ports.displays.read.bind(app.ports.displays);
+    let answer: (() => void) | undefined;
+    app.ports.displays.read = () =>
+      new Promise((resolve) => {
+        answer = () => void read().then(resolve);
+      });
+    let listened = 0;
+    const subscribe = app.ports.input.subscribe.bind(app.ports.input);
+    app.ports.input.subscribe = (listener) => {
+      listened++;
+      return subscribe(listener);
+    };
+    const again = make(app);
+    const starting = again.service.start();
+    await vi.waitFor(() => expect(answer).toBeDefined());
+    await again.service.dispose();
+    answer!();
+    await starting;
+    await again.service.idle();
+    expect(app.ports.overlays.panels.size).toBe(0);
+    expect(listened).toBe(0);
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [5])]);
+    expect(again.seen.presses).toEqual([]);
+    // Asked for anything after the quit, it does nothing and says why.
+    expect(await again.service.setOn(true)).toMatchObject({ ok: false });
+    expect(app.ports.overlays.panels.size).toBe(0);
   });
 
   it('tells the page and the windows only what is new', async () => {
@@ -776,6 +837,129 @@ describe('where the overlay is', () => {
     expect(shown.panel.movable).toBe(false);
     expect(shown.box).toEqual({ x: 2362, y: 1140, width: 396, height: 300 });
   });
+
+  it('"The main screen" goes with whichever monitor is main, and is where it starts', async () => {
+    const { app, service } = await overlay();
+    // Never placed: it follows the main screen.
+    expect(value(await service.state()).widgets[0]!.place).toMatchObject({
+      screenName: 'LC49G95T',
+      main: true,
+    });
+    value(await service.setOn(true));
+    const small = await smallScreen(app);
+    const put = value(
+      await service.place(RECENT_PRESSES, { screen: small.id, at: { x: 0, y: 0 } })
+    );
+    expect(put.widgets[0]!.place.main).toBeUndefined();
+
+    // Back to "The main screen": no monitor is kept, the place on it is.
+    const back = value(await service.place(RECENT_PRESSES, { screen: null, at: { x: 1, y: 0 } }));
+    expect(back.widgets[0]!.place).toMatchObject({
+      screenName: 'LC49G95T',
+      main: true,
+      at: { x: 1, y: 0 },
+    });
+    expect((await savedSettings(app)).widgets[RECENT_PRESSES].place).toEqual({
+      at: { x: 1, y: 0 },
+    });
+    expect(app.ports.overlays.panels.get(PANEL)!.box).toMatchObject({ x: 5120 - 396, y: 0 });
+
+    // Another monitor layout makes another monitor the main one: the overlay goes with it.
+    await mutate(app, [
+      { op: 'setDisplay', match: { name: 'LC49G95T' }, set: { primary: false } },
+      { op: 'setDisplay', match: { id: small.id }, set: { primary: true } },
+    ]);
+    const moved = value(await service.state());
+    expect(moved.widgets[0]!.place).toMatchObject({
+      screen: small.id,
+      screenName: 'USB_Monitor (1 of 3)',
+      main: true,
+    });
+    expect(moved.widgets[0]!.place.away).toBeUndefined();
+    expect(app.ports.overlays.panels.get(PANEL)!.box).toMatchObject({
+      x: small.x + small.width - 396,
+      y: small.y,
+    });
+  });
+
+  it('let go on the main screen it goes on following it; let go on another it belongs there', async () => {
+    const { app, service } = await flying();
+    value(await service.move(RECENT_PRESSES, true));
+    app.ports.overlays.drag(PANEL, { x: 100, y: 200 });
+    const kept = value(await service.move(RECENT_PRESSES, false));
+    expect(kept.widgets[0]!.place).toMatchObject({ screenName: 'LC49G95T', main: true });
+    const saved = (await savedSettings(app)).widgets[RECENT_PRESSES].place;
+    expect(saved).not.toHaveProperty('monitor');
+    expect(app.ports.overlays.panels.get(PANEL)!.box).toMatchObject({ x: 100, y: 200 });
+
+    const small = await smallScreen(app);
+    value(await service.move(RECENT_PRESSES, true));
+    app.ports.overlays.drag(PANEL, { x: small.x + 10, y: small.y + 10 });
+    const there = value(await service.move(RECENT_PRESSES, false));
+    expect(there.widgets[0]!.place.main).toBeUndefined();
+    expect((await savedSettings(app)).widgets[RECENT_PRESSES].place.monitor.id).toBe(small.id);
+  });
+
+  it('says so when the screen it was put on is off in the monitor layout of a setup that has it on', async () => {
+    const { app, service } = await flying();
+    const { profiles, layouts } = app.wiring.context;
+    const small = await smallScreen(app);
+    value(await service.place(RECENT_PRESSES, { screen: small.id, at: { x: 0, y: 0 } }));
+    // A saved layout with that screen off, and the Hornet setup applying it at Make ready.
+    const targets = layoutToTargets({ displays: await displays(app) }).map((t) =>
+      t.id === small.id ? { ...t, enabled: false, primary: false } : t
+    );
+    const flyingLayout = value(await layouts.create('Flying', targets));
+    const check = {
+      id: 'monitors',
+      type: 'display.layout',
+      title: 'Monitor layout',
+      required: true,
+      params: { layoutId: flyingLayout.id, layoutName: 'Flying', displays: targets },
+    };
+    const hornet = value(await profiles.get('dcs-bindings-hornet'));
+    value(await profiles.save({ ...hornet, checks: [...hornet.checks, check] }));
+    // A setup with the overlay off that turns it off too: it does not count.
+    value(
+      await profiles.save(
+        setup('sunday-race', 'Sunday race', { game: 'iracing' }, undefined, {
+          checks: [{ ...check, params: { displays: targets } }],
+        })
+      )
+    );
+    await service.idle();
+    let place = value(await service.state()).widgets[0]!.place;
+    expect(place.offIn).toEqual([{ setup: 'DCS F/A-18C', layout: 'Flying' }]);
+    // It is on now, where it was put: nothing is away.
+    expect(place).toMatchObject({ screen: small.id, screenName: 'USB_Monitor (1 of 3)' });
+
+    // Turned on there, the race counts too, by the layout it keeps of its own.
+    const race = value(await profiles.get('sunday-race'));
+    value(await profiles.save({ ...race, extensions: { overlay: { on: true } } }));
+    await service.idle();
+    place = value(await service.state()).widgets[0]!.place;
+    expect(place.offIn).toEqual([
+      { setup: 'DCS F/A-18C', layout: 'Flying' },
+      { setup: 'Sunday race' },
+    ]);
+
+    // A check switched off is not applied by Make ready.
+    value(
+      await profiles.save({
+        ...race,
+        checks: [{ ...check, params: { displays: targets }, disabled: true }],
+        extensions: { overlay: { on: true } },
+      })
+    );
+    place = value(await service.state()).widgets[0]!.place;
+    expect(place.offIn).toEqual([{ setup: 'DCS F/A-18C', layout: 'Flying' }]);
+
+    // Following the main screen there is nothing to warn of.
+    place = value(await service.place(RECENT_PRESSES, { screen: null, at: { x: 0, y: 0 } }))
+      .widgets[0]!.place;
+    expect(place.offIn).toBeUndefined();
+    expect(place.main).toBe(true);
+  });
 });
 
 describe('when something is in the way', () => {
@@ -939,33 +1123,21 @@ describe('which game and aircraft the words come from', () => {
     expect(await app.ports.files.exists(settingsFile(app))).toBe(false);
   });
 
-  it('another setup played while flying is picked up on a press: the words are never those of another game', async () => {
+  it('another setup played while flying is picked up at once: the words are never those of another game', async () => {
     const { app, service, seen } = await flying();
     const { profiles } = app.wiring.context;
-    const at = app.clock.now().toISOString();
-    value(
-      await profiles.save(
-        ProfileSchema.parse({
-          id: 'falcon',
-          name: 'Falcon',
-          game: 'other',
-          gameName: 'Falcon BMS',
-          createdAt: at,
-          updatedAt: at,
-        })
-      )
-    );
-    value(await profiles.setLastProfileId('falcon'));
-
     const stick = controller(app, 'WINWING Orion');
     app.ports.input.emit([held(stick)]);
     app.ports.input.emit([held(stick, [5])]);
-    await service.idle();
-    // Not looked at yet: it has not been ten seconds.
     expect(rowsOf(service)[0]).toMatchObject({ known: true, actions: [{ action: TRIGGER }] });
 
-    app.clock.advance(QUICK_CHECK_MS);
-    app.ports.input.emit([held(stick, [5, 10])]);
+    // A game RigReady cannot read the bindings of, with the overlay turned on in its setup.
+    value(
+      await profiles.save(
+        setup('falcon', 'Falcon', { game: 'other', gameName: 'Falcon BMS' }, true)
+      )
+    );
+    value(await profiles.setLastProfileId('falcon'));
     await service.idle();
     expect(seen.changed.at(-1)!.source).toEqual({
       setup: { id: 'falcon', name: 'Falcon' },
@@ -981,20 +1153,11 @@ describe('which game and aircraft the words come from', () => {
   it('a setup for a game whose bindings are not on this PC gives presses without words, and says why', async () => {
     const { app, service } = await overlay();
     const { profiles } = app.wiring.context;
-    const at = app.clock.now().toISOString();
-    value(
-      await profiles.save(
-        ProfileSchema.parse({
-          id: 'sunday-race',
-          name: 'Sunday race',
-          game: 'iracing',
-          createdAt: at,
-          updatedAt: at,
-        })
-      )
-    );
+    // Turned on in the setup by the user: without that, it would be off there to begin with.
+    value(await profiles.save(setup('sunday-race', 'Sunday race', { game: 'iracing' }, true)));
     value(await profiles.setLastProfileId('sunday-race'));
     const state = value(await service.setOn(true));
+    expect(state.widgets[0]!.showing).toBe(true);
     expect(state.source).toEqual({
       setup: { id: 'sunday-race', name: 'Sunday race' },
       game: { id: 'iracing', name: 'iRacing' },
@@ -1090,6 +1253,277 @@ describe('which game and aircraft the words come from', () => {
     await service.idle();
     app.ports.input.emit([held(stick, [10, 7])]);
     expect(actionsOf(rowsOf(service)[0])).toContain(TRIGGER);
+  });
+});
+
+describe('each setup has its own switch for the overlay', () => {
+  const XPLANE =
+    'RigReady cannot read the bindings of X-Plane 12, so the overlay cannot say what a press does.';
+  const NO_IRACING =
+    'The bindings of iRacing were not found on this PC, so the overlay cannot say what a press does.';
+
+  it('on to begin with where RigReady can read the game’s bindings, off with the reason where it cannot', async () => {
+    const { app, service } = await overlay();
+    const { profiles } = app.wiring.context;
+    // A game with no binding reader, and one whose reader finds nothing on this PC.
+    value(await profiles.save(setup('xplane', 'X-Plane evening', { game: 'x-plane-12' })));
+    value(await profiles.save(setup('sunday-race', 'Sunday race', { game: 'iracing' })));
+    const state = value(await service.state());
+    expect(state.setups).toEqual([
+      { id: 'dcs-bindings-hornet', name: 'DCS F/A-18C', on: true, chosen: false },
+      { id: 'sunday-race', name: 'Sunday race', on: false, chosen: false, why: NO_IRACING },
+      { id: 'xplane', name: 'X-Plane evening', on: false, chosen: false, why: XPLANE },
+    ]);
+
+    // What the setup editor is told for a game, and whether the overlay itself is on.
+    expect(value(await service.setupDefault({ game: 'dcs' }))).toEqual({
+      startsOn: true,
+      overlayOn: false,
+    });
+    expect(value(await service.setupDefault({ game: 'x-plane-12' }))).toEqual({
+      startsOn: false,
+      why: XPLANE,
+      overlayOn: false,
+    });
+    expect(value(await service.setupDefault({ game: 'other', gameName: 'Falcon BMS' }))).toEqual({
+      startsOn: false,
+      why: 'RigReady cannot read the bindings of Falcon BMS, so the overlay cannot say what a press does.',
+      overlayOn: false,
+    });
+    // A setup for no game in particular: the one game whose bindings are here.
+    expect(value(await service.setupDefault({}))).toMatchObject({ startsOn: true });
+    value(await service.setOn(true));
+    expect(value(await service.setupDefault({ game: 'iracing' }))).toEqual({
+      startsOn: false,
+      why: NO_IRACING,
+      overlayOn: true,
+    });
+  });
+
+  it('down when a setup that has it off is played, and up again with one that has it on, at once', async () => {
+    const { app, service, seen } = await flying();
+    const { profiles } = app.wiring.context;
+    expect(app.ports.overlays.panels.size).toBe(1);
+    value(await profiles.save(setup('sunday-race', 'Sunday race', { game: 'iracing' })));
+    value(await profiles.setLastProfileId('sunday-race'));
+    await service.idle();
+
+    // Nothing pressed, the page not opened: it went with the setup all the same.
+    expect(app.ports.overlays.panels.size).toBe(0);
+    const down = seen.changed.at(-1)!;
+    expect(down).toMatchObject({
+      on: true,
+      offInSetup: { id: 'sunday-race', name: 'Sunday race' },
+    });
+    expect(down.input).toBeUndefined();
+    expect(down.widgets[0]).toMatchObject({ showing: false });
+    expect(down.widgets[0]!.problem).toBeUndefined();
+    // The preview shows its examples again, as while it is off.
+    expect(down.widgets[0]!.examples).toHaveLength(2);
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [5])]);
+    expect(rowsOf(service)).toEqual([]);
+    // Placing it by hand needs it up.
+    expect(await service.move(RECENT_PRESSES, true)).toMatchObject({
+      ok: false,
+      error: {
+        code: 'overlay.offInSetup',
+        message:
+          'The overlay is off in the setup in use, “Sunday race”. Turn it on in that setup first.',
+      },
+    });
+    // The overlay's own switch was not touched.
+    expect((await savedSettings(app)).on).toBe(true);
+
+    value(await profiles.setLastProfileId('dcs-bindings-hornet'));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(1);
+    const up = seen.changed.at(-1)!;
+    expect(up.offInSetup).toBeUndefined();
+    expect(up.widgets[0]).toMatchObject({ showing: true });
+    expect(up.widgets[0]!.examples).toBeUndefined();
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [5])]);
+    expect(actionsOf(rowsOf(service)[0])).toEqual([TRIGGER]);
+  });
+
+  it('the user’s switch in the setup goes before what its game gives, both ways', async () => {
+    const { app, service, seen } = await flying();
+    const { profiles } = app.wiring.context;
+    const hornet = value(await profiles.get('dcs-bindings-hornet'));
+    const read = vi.spyOn(app.wiring.context.bindings.get('dcs')!, 'bindings');
+
+    // Off in the Hornet setup, whose bindings RigReady reads: down, and said so.
+    value(await profiles.save({ ...hornet, extensions: { overlay: { on: false } } }));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(0);
+    expect(seen.changed.at(-1)!.setups).toEqual([
+      { id: 'dcs-bindings-hornet', name: 'DCS F/A-18C', on: false, chosen: true },
+    ]);
+    // The bindings were not read again for a change of the switch alone.
+    expect(read).not.toHaveBeenCalled();
+    expect(seen.changed.at(-1)!.source.aircraft).toMatchObject({ id: 'FA-18C_hornet' });
+
+    // On in a setup for a game RigReady cannot read: up, presses without what they do.
+    value(await profiles.save(setup('xplane', 'X-Plane evening', { game: 'x-plane-12' }, true)));
+    value(await profiles.setLastProfileId('xplane'));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(1);
+    const state = value(await service.state());
+    expect(state.setups.find((s) => s.id === 'xplane')).toEqual({
+      id: 'xplane',
+      name: 'X-Plane evening',
+      on: true,
+      chosen: true,
+      why: XPLANE,
+    });
+    expect(state.offInSetup).toBeUndefined();
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [5])]);
+    expect(rowsOf(service)[0]).toMatchObject({ control: 'Button 5', actions: [], known: false });
+  });
+
+  it('at the owner’s desk: on in the flight and the racing setup, off in X-Plane, and the Dell is off in both layouts', async () => {
+    app = await wiredApp('overlay-setups', {
+      files: [...BINDING_FILES, 'Documents/iRacing/**', 'Program Files (x86)/Steam/steamapps/**'],
+    });
+    const { service } = make(app);
+    const state = value(await service.setOn(true));
+    expect(state.setups).toEqual([
+      { id: 'dcs-f-a-18c', name: 'DCS F/A-18C', on: true, chosen: false },
+      { id: 'racing-iracing', name: 'iRacing', on: true, chosen: false },
+      { id: 'overlay-x-plane', name: 'X-Plane evening', on: false, chosen: false, why: XPLANE },
+    ]);
+    // The Dell is the main screen at the desk: put on it, it is warned about.
+    const dell = state.screens.find((s) => s.name === 'DELL G3223D')!;
+    expect(dell.primary).toBe(true);
+    const put = value(
+      await service.place(RECENT_PRESSES, { screen: dell.id, at: { x: 0.5, y: 1 } })
+    );
+    expect(put.widgets[0]!.place.offIn).toEqual([{ setup: 'DCS F/A-18C' }, { setup: 'iRacing' }]);
+  });
+
+  /**
+   * The overlay turned on over the Hornet setup, which never had its switch set, with the
+   * controllers it listens to counted; then the bindings of DCS are gone from the PC, so the
+   * setup's switch is off from then on.
+   */
+  async function bindingsGoAway(): Promise<Made & { listening: () => number }> {
+    const made = await overlay();
+    let listening = 0;
+    const input = made.app.ports.input;
+    const subscribe = input.subscribe.bind(input);
+    vi.spyOn(input, 'subscribe').mockImplementation((listener) => {
+      listening++;
+      const stop = subscribe(listener);
+      return () => {
+        listening--;
+        stop();
+      };
+    });
+    value(await made.service.setOn(true));
+    expect(made.app.ports.overlays.panels.size).toBe(1);
+    expect(listening).toBe(1);
+    vi.spyOn(made.app.wiring.context.bindings.get('dcs')!, 'available').mockResolvedValue(false);
+    return { ...made, listening: () => listening };
+  }
+
+  /** What the page and the windows were last told is what is up, and nothing is read for it. */
+  function downAndSaidSo(made: Made & { listening: () => number }): void {
+    const { app, service, seen, listening } = made;
+    expect(app.ports.overlays.panels.size).toBe(0);
+    expect(listening()).toBe(0);
+    const told = seen.changed.at(-1)!;
+    expect(told.offInSetup).toEqual({ id: 'dcs-bindings-hornet', name: 'DCS F/A-18C' });
+    expect(told.widgets[0]!.showing).toBe(false);
+    expect(told.input).toBeUndefined();
+    expect(value(service.current())).toEqual(told);
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [5])]);
+    expect(rowsOf(service)).toEqual([]);
+  }
+
+  it('bindings gone while it is up: a bindings change takes it down before anyone is told', async () => {
+    const made = await bindingsGoAway();
+    made.app.wiring.context.bindings.notifyChanged({ game: 'dcs' });
+    await made.service.idle();
+    downAndSaidSo(made);
+  });
+
+  it('bindings gone while it is up: choosing an aircraft takes it down, also when the choice is refused', async () => {
+    const made = await bindingsGoAway();
+    const refused = await made.service.chooseAircraft('UH-1H');
+    expect(refused).toMatchObject({ ok: false, error: { code: 'overlay.aircraft' } });
+    downAndSaidSo(made);
+  });
+
+  it('bindings gone and brought back by RigReady while it is down: it comes up again by itself', async () => {
+    const made = await bindingsGoAway();
+    const { app, service, seen, listening } = made;
+    const { bindings } = app.wiring.context;
+    bindings.notifyChanged({ game: 'dcs' });
+    await service.idle();
+    downAndSaidSo(made);
+
+    // A restore puts the bindings back, and says so.
+    vi.spyOn(bindings.get('dcs')!, 'available').mockResolvedValue(true);
+    bindings.notifyChanged({ game: 'dcs' });
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(1);
+    expect(listening()).toBe(1);
+    expect(seen.changed.at(-1)!.offInSetup).toBeUndefined();
+    expect(seen.changed.at(-1)!.widgets[0]!.showing).toBe(true);
+  });
+
+  it('switched back on in its setup, it comes up with the bindings as they are now', async () => {
+    const { app, service } = await flying();
+    const { profiles } = app.wiring.context;
+    const hornet = value(await profiles.get('dcs-bindings-hornet'));
+    value(await profiles.save({ ...hornet, extensions: { overlay: { on: false } } }));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(0);
+
+    // Changed in the game while the overlay was down: nothing tells RigReady of that.
+    await moveTrigger(app);
+    value(await profiles.save({ ...hornet, extensions: { overlay: { on: true } } }));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(1);
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [7])]);
+    expect(actionsOf(rowsOf(service)[0])).toContain(TRIGGER);
+  });
+
+  it('turned off on the Overlay page it shows in no setup, and nothing is done when setups change', async () => {
+    const { app, service, seen } = await overlay();
+    const { profiles } = app.wiring.context;
+    value(await service.state());
+    const told = seen.changed.length;
+    value(await profiles.save(setup('xplane', 'X-Plane evening', { game: 'x-plane-12' }, true)));
+    value(await profiles.setLastProfileId('xplane'));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(0);
+    expect(seen.changed).toHaveLength(told);
+    // The page reads them when it opens.
+    const state = value(await service.state());
+    expect(state.offInSetup).toBeUndefined();
+    expect(state.source.setup).toEqual({ id: 'xplane', name: 'X-Plane evening' });
+  });
+
+  it('quit, it no longer hears of setups', async () => {
+    const { app, service, seen } = await flying();
+    await service.dispose();
+    const told = seen.changed.length;
+    value(
+      await app.wiring.context.profiles.save(setup('xplane', 'X-Plane', { game: 'x-plane-12' }))
+    );
+    value(await app.wiring.context.profiles.setLastProfileId('xplane'));
+    await service.idle();
+    expect(app.ports.overlays.panels.size).toBe(0);
+    expect(seen.changed).toHaveLength(told);
   });
 });
 

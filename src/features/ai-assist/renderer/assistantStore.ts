@@ -102,6 +102,13 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
     () => !!conversation.value?.waiting && !preview.value && !sending.value && !preparing.value
   );
 
+  /**
+   * The foot of the panel (the box and Send; while a request runs, Stop and what it is doing)
+   * shows while a provider is ready, and for as long as a request runs whatever Settings did
+   * meanwhile: a request on its way can always be stopped.
+   */
+  const footShown = computed(() => keyPresent.value || sending.value);
+
   async function refreshStatus(): Promise<void> {
     const status = await api.status();
     // Ready: a provider is set up, with a key when it needs one.
@@ -480,6 +487,7 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
     api,
     open,
     keyPresent,
+    footShown,
     conversation,
     draft,
     preview,

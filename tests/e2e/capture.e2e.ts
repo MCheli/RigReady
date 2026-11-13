@@ -251,7 +251,7 @@ test('capture: identical devices are told apart, found by pressing a button, and
   for (const n of [1, 2, 3]) {
     const row = candidate(page, `WINWING USB 3.0 Display1 (${n} of 3)`);
     await expect(row).toContainText(`(${n} of 3)`);
-    await expect(row).toContainText('serial WWIN');
+    await expect(row).toContainText(/serial [A-Z]{4}[0-9]{17}/);
     await row.getByRole('checkbox').check();
   }
   await expect(candidate(page, 'ORBIT WIRELESS TB (1 of 2)')).toContainText(
@@ -275,7 +275,7 @@ test('capture: identical devices are told apart, found by pressing a button, and
   expect(byTitle('Left MFD')).toEqual({ vendorId: '4098', productId: 'BEE1' });
   const serials = [1, 2, 3].map((n) => byTitle(`WINWING USB 3.0 Display1 (${n} of 3)`)['serial']);
   expect(new Set(serials).size).toBe(3);
-  expect(serials.every((s) => s?.startsWith('WWIN'))).toBe(true);
+  expect(serials.every((s) => /^[A-Z]{4}[0-9]{17}$/.test(s ?? ''))).toBe(true);
   expect(byTitle('ORBIT WIRELESS TB (1 of 2)')['instanceId']).toMatch(/^USB\\/);
 });
 

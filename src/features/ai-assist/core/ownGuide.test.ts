@@ -31,6 +31,16 @@ async function start(): Promise<BoundAction[]> {
   return actions.value;
 }
 
+/** What the Safety page lists (safety:journal), as far as these tests read it. */
+interface SafetyView {
+  groups: {
+    id: string;
+    reason: string;
+    by?: string;
+    changes: { path: string; kind: string; undone: boolean }[];
+  }[];
+}
+
 type Draft = {
   aircraft: { id: string; name: string };
   drafted?: { by: string; at: string };
@@ -347,15 +357,86 @@ describe('AI-009 a binding guide can be written by hand, with no AI key', () => 
     ]);
   });
 
-  it('deleting takes the guide file away, and the aircraft has no guide again', async () => {
+  it('deleting takes the guide file away, keeps a copy, and the Safety page puts it back', async () => {
     await start();
     await app.invoke('ai-assist:startOwnGuide', { aircraftId: GUNNER });
-    expect(await app.invoke('ai-assist:deleteDraft', { aircraftId: GUNNER })).toEqual({
+    const own = await fs.readFile(keptFile(), 'utf8');
+    expect(await app.invoke('ai-assist:deleteGuide', { aircraftId: GUNNER })).toEqual({
       deleted: true,
     });
     expect(await exists(keptFile())).toBe(false);
     expect(await listed()).toBeNull();
     expect((await view()).stored).toBeNull();
+
+    const journal = await app.invoke<SafetyView>('safety:journal');
+    const action = journal.groups[0]!;
+    expect(action.reason).toBe('Delete a binding guide');
+    expect(action.changes).toMatchObject([{ path: keptFile(), kind: 'deleted', undone: false }]);
+    await app.invoke('safety:undo', { groupId: action.id });
+    expect(await fs.readFile(keptFile(), 'utf8')).toBe(own);
+    expect(await listed()).toBe('own');
+  });
+});
+
+describe('AI-009 an assistant never deletes a guide of your own', () => {
+  const caller = () => ({
+    id: 'builtin-assistant',
+    name: 'Built-in assistant',
+    signal: new AbortController().signal,
+  });
+
+  /** Says yes to the next question an assistant's call raises, as the user would in the window. */
+  function allowNextQuestion(): void {
+    const seen = app.events.length;
+    const timer = setInterval(() => {
+      const asked = app.events.slice(seen).find((e) => e.channel === 'mcp:event:confirm');
+      if (!asked) return;
+      clearInterval(timer);
+      void app.invoke('mcp:answer', { id: (asked.payload as { id: string }).id, allow: true });
+    }, 5);
+  }
+
+  it('refuses it under every confirm policy, and deletes a guide AI drafted with a copy kept', async () => {
+    const actions = await start();
+    const host = app.wiring.context.mcp.host()!;
+    const call = (channel: string) =>
+      host.call(caller(), 'rigready_call', { channel, input: { aircraftId: GUNNER } });
+    await app.invoke('ai-assist:startOwnGuide', { aircraftId: GUNNER });
+    const own = await fs.readFile(keptFile(), 'utf8');
+    // A file that does not read as a guide could be either, so it is the user's to delete too.
+    const unreadable = own.replace('format: 1', 'format: 7');
+
+    for (const confirm of ['never', 'launchOnly', 'ask'] as const) {
+      await app.invoke('mcp:setOptions', { confirm });
+      for (const text of [own, unreadable]) {
+        await fs.writeFile(keptFile(), text, 'utf8');
+        // Even a yes in the window's question does not let an assistant delete it.
+        if (confirm === 'ask') allowNextQuestion();
+        const draft = await call('ai-assist:deleteDraft');
+        expect(!draft.ok && draft.error.code, confirm).toBe('ai.ownGuide');
+        const window = await call('ai-assist:deleteGuide');
+        expect(!window.ok && window.error.code, confirm).toBe('mcp.off');
+        expect(await fs.readFile(keptFile(), 'utf8')).toBe(text);
+      }
+    }
+    expect((await app.invoke<SafetyView>('safety:journal')).groups).toEqual([]);
+
+    // A guide an AI drafted can be deleted by an assistant: backed up, and Undo puts it back.
+    await app.invoke('mcp:setOptions', { confirm: 'never' });
+    const drafted = guideText(actions, (pack) => {
+      pack.drafted = { by: 'some-model', at: '2026-11-12T10:00:00.000Z' };
+    });
+    await fs.writeFile(keptFile(), drafted, 'utf8');
+    const removed = await call('ai-assist:deleteDraft');
+    expect(removed).toMatchObject({ ok: true, value: { deleted: true } });
+    expect(await exists(keptFile())).toBe(false);
+    const action = (await app.invoke<SafetyView>('safety:journal')).groups[0]!;
+    expect(action).toMatchObject({
+      reason: 'Delete a binding guide drafted by AI',
+      by: 'Built-in assistant',
+    });
+    await app.invoke('safety:undo', { groupId: action.id });
+    expect(await fs.readFile(keptFile(), 'utf8')).toBe(drafted);
   });
 });
 
@@ -470,7 +551,7 @@ describe('AI-009 a request for AI help says whose guide it carries', () => {
     const status = await app.invoke<AiStatus>('ai-assist:status');
     const guide = status.whatIsSent.find((p) => /binding guide/.test(p.title))!.lines.join(' ');
     expect(guide).toMatch(
-      /Sent: the guide for the aircraft when there is one \(RigReady's, one drafted by AI, or your own\)/
+      /Sent: the guide when there is one \(RigReady's, one drafted by AI, or your own\)/
     );
     expect(guide).toMatch(/or any other content of your files\./);
   });

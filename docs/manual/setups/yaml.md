@@ -56,8 +56,8 @@ checks:
     params: &layout              # an anchor: the fix below uses the same arrangement
       # layoutId and layoutName name a layout saved on the Monitors page, when there is one
       displays:                  # the arrangement as captured
-        - { id: '\\?\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: LC49G95T, enabled: true, primary: true, x: 0, y: 0, width: 5120, height: 1440, rotation: 0 }
-        - { id: '\\?\display#deld139#5&1509d400&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: DELL G3223D, enabled: false, primary: false, x: 0, y: 0, rotation: 0 }
+        - { id: '\\?\display#sam7053#5&8816e581&0&uid4357#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: LC49G95T, enabled: true, primary: true, x: 0, y: 0, width: 5120, height: 1440, rotation: 0 }
+        - { id: '\\?\display#deld139#5&8816e581&0&uid4355#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}', name: DELL G3223D, enabled: false, primary: false, x: 0, y: 0, rotation: 0 }
     remediation:
       type: display.applyLayout
       params: *layout
@@ -97,6 +97,14 @@ extensions:
     standDownAfterSeconds: 120
 ```
 
+Whether the [overlay](../play/overlay.md) shows while the setup is in use is kept in `overlay`, as `on` (RigReady writes the key in quotes, `'on'`). Without it, or with anything but true or false, the setup has the overlay on when RigReady can read the bindings of its game and off when it cannot.
+
+```yaml
+extensions:
+  overlay:
+    'on': false
+```
+
 ## Comments and anchors
 
 RigReady reads a file with comments without complaint, and leaves them in place as long as the file is only read. But RigReady writes the whole file when a setup is saved from the editor, when a check's **Mark verified** button ([Checks and fixes](checks.md#game-updated-since-you-last-verified-game-updated)) stores a new version, and when another feature keeps its data with the setup. A save from the editor warns first: **Your comments will be lost**. If you keep notes in the file, keep a copy of them elsewhere, or use the setup's **Notes** field instead. The Setups page marks such a file with "YAML comments", so you know before you open the editor.
@@ -130,6 +138,10 @@ RigReady 1 kept its setups in the same folder in another format (a `checklistIte
 | A config file, with or without a pattern | "File exists", or "File content" with the same regular expression |
 | A monitor layout, a script check, or "restore a file" as a fix | Not brought over: RigReady 1 kept its monitor layouts in a form this version cannot match to your monitors, it never ran script checks, and this version puts back only copies it kept itself |
 | A launch program | The same program and arguments. Without one, the game as RigReady finds it on this PC. Scripts around the launch and files kept for backup are named, not brought over |
+
+Two parts that become the same check are brought over once. RigReady 1 listed a wheel base that Windows shows as two controllers (a Fanatec Podium base) once for each, under one name; this version checks the device, which is one, so the question names it once and says "RigReady 1 had "…" twice, both the same check. The new setup has it once." If one of them was required, the check is required.
+
+![The wheel base RigReady 1 listed twice, asked about once](../../../artifacts/screens/profiles-version-one-two-controllers/01-bring-over.png)
 
 When nothing in the file has a match, or something must change first, the line says plainly that RigReady cannot bring the setup over and why; create it again with **New setup from this rig** ([Creating a setup from the rig](capture.md)). **Open the folder** shows the file in Explorer either way. The old file stays where it is until you delete it.
 

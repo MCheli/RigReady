@@ -34,6 +34,30 @@ async function countdownByHand(run: RunningApp, seconds: number): Promise<void> 
   );
 }
 
+const BACKUP = 'TrackBackup.exe';
+
+/**
+ * A step of Stand down that takes as long as the test says: after the apps are closed, it
+ * runs a backup program and waits for it to finish. The test ends it with a stopProcess.
+ */
+async function slowStandDownStep(run: RunningApp): Promise<void> {
+  const text = (await setupFile(run)).trimEnd();
+  await fs.writeFile(
+    setupPath(run),
+    `${text}\nactions:\n  standDown:\n    - { id: d1, title: Back up the tracks, type: process.launch, waitForCompletion: true, timeoutSeconds: 120, params: { exe: 'C:\\Tools\\TrackBackup\\${BACKUP}', args: [] } }\n`
+  );
+}
+
+/** The sessions in the history file, oldest first. */
+async function sessionsKept(run: RunningApp): Promise<unknown[]> {
+  const file = path.join(run.dataRoot, 'fly', 'sessions.json');
+  const kept = JSON.parse(await fs.readFile(file, 'utf8')) as { sessions?: unknown[] };
+  return kept.sessions ?? [];
+}
+
+/** Waits in real time, where what is checked is that nothing happens meanwhile. */
+const nothingFor = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 /** Starts RigReady again in the middle of a session that began 42 minutes ago. */
 async function inSession(run: RunningApp): Promise<RunningApp> {
   const startedAt = new Date(Date.now() - 42 * 60_000).toISOString();
@@ -485,6 +509,76 @@ test('stand down on close: the notice can be moved to the top bar, where it cove
   await shot('cancelled-from-the-top-bar');
 });
 
+test('stand down on close: "Change this for the setup" from the editor of another setup opens the setup counting down, and asks first when the other has unsaved changes', async ({
+  rig,
+}) => {
+  test.setTimeout(120_000);
+  let run = await rig.launch('fly-game-running', 'fly-stand-down-other-setup');
+  await expect(run.page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await countdownByHand(run, 300);
+  // A second setup, the one open in the editor when the countdown starts.
+  await fs.copyFile(
+    path.join('fixtures', 'scenarios', 'profiles', 'fly-dcs-uh-1h.yaml'),
+    path.join(run.dataRoot, 'profiles', 'fly-dcs-uh-1h.yaml')
+  );
+  run = await inSession(run);
+  const { page, shot } = run;
+  await closeGame(run);
+  const notice = page.getByTestId('stand-down-notice');
+  await expect(notice).toHaveAttribute('data-state', 'counting');
+  const name = page.getByTestId('edit-name').locator('input');
+  const openHuey = async (): Promise<void> => {
+    await page.getByTestId('mode-configure').click();
+    await page.getByTestId('nav-profiles').click();
+    await page
+      .locator('[data-testid="profile-row"][data-name="DCS UH-1H"]')
+      .getByTestId('profile-edit')
+      .click();
+    await expect(page.getByTestId('profile-edit-page')).toBeVisible();
+    await expect(name).toHaveValue('DCS UH-1H');
+  };
+
+  // From the Huey's editor with nothing changed: the Hornet's editor, which counts down.
+  await openHuey();
+  await page.getByTestId('stand-down-notice-edit').click();
+  await expect(page).toHaveURL(new RegExp(`#/configure/profiles/${SETUP}$`));
+  await expect(name).toHaveValue('DCS F/A-18C');
+  await page.getByTestId('edit-on-close').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('edit-on-close-seconds')).toContainText('5 minutes');
+  await expect(page.getByTestId('discard-warning')).toHaveCount(0);
+
+  // The Huey renamed and not saved: the editor asks before it drops that, and names it.
+  await openHuey();
+  await name.fill('DCS UH-1H (night)');
+  await page.getByTestId('stand-down-notice-edit').click();
+  await expect(page.getByTestId('discard-warning')).toBeVisible();
+  await expect(page.getByTestId('discard-other-setup')).toHaveText(
+    'You asked to open another setup. Your changes to "DCS UH-1H" are not saved. Its file stays exactly as it was.'
+  );
+  await focusNothing(page);
+  await shot('asks-before-another-setup');
+  // "Keep editing": still the Huey, with the new name.
+  await page.getByTestId('discard-stay').click();
+  await expect(page.getByTestId('discard-warning')).toHaveCount(0);
+  await expect(page).toHaveURL(/#\/configure\/profiles\/fly-dcs-uh-1h$/);
+  await expect(name).toHaveValue('DCS UH-1H (night)');
+
+  // "Discard": the Hornet's editor, and the Huey's file as it was.
+  await page.getByTestId('stand-down-notice-edit').click();
+  await page.getByTestId('discard-confirm').click();
+  await expect(page).toHaveURL(new RegExp(`#/configure/profiles/${SETUP}$`));
+  await expect(name).toHaveValue('DCS F/A-18C');
+  await expect(page.getByTestId('edit-on-close-seconds')).toContainText('5 minutes');
+  await focusNothing(page);
+  await shot('the-setup-counting-down');
+  const huey = await fs.readFile(path.join(run.dataRoot, 'profiles', 'fly-dcs-uh-1h.yaml'), 'utf8');
+  expect(huey).toMatch(/^name: DCS UH-1H\r?$/m);
+  expect(huey).not.toContain('night');
+
+  await page.getByTestId('stand-down-notice-cancel').click();
+  await expect(notice).toHaveCount(0);
+});
+
 test('stand down on close: on a page with the Save bar along the bottom, the notice stands above the bar and Save and Back can be pressed', async ({
   rig,
 }) => {
@@ -598,4 +692,90 @@ test('stand down on close: with RigReady in the tray Windows says when it starts
   await page.getByTestId('stand-down-notice-ok').click();
   await expect(notice).toHaveCount(0);
   await expect(page.getByTestId('fly-session')).toHaveCount(0);
+});
+
+test('stand down on close: Launch during the countdown ends it at once, and nothing is closed while the game is starting, however long that takes', async ({
+  rig,
+}) => {
+  test.setTimeout(150_000);
+  let run = await rig.launch('fly-game-running', 'fly-stand-down-play');
+  await expect(run.page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await countdownByHand(run, 10);
+  run = await inSession(run);
+  const { page, app, shot } = run;
+  await closeGame(run);
+  const notice = page.getByTestId('stand-down-notice');
+  await expect(notice).toHaveAttribute('data-state', 'counting');
+
+  // The game takes its time to show up, longer than the ten seconds of the countdown.
+  await run.mutate([{ op: 'failProcessStart', name: 'DCS.exe', mode: 'neverRuns' }]);
+  await page.getByTestId('launch').click();
+  await expect(page.getByTestId('fly-starting')).toHaveText('Starting DCS World');
+  // The countdown is over the moment Launch is pressed, and the screen says so.
+  await expect(notice).toHaveCount(0);
+  const line = page.getByTestId('fly-session-down');
+  await expect(line).toHaveAttribute('data-state', 'held');
+  await expect(line).toHaveText('Stand down was cancelled. Nothing was closed.');
+  await focusNothing(page);
+  expect(await accessible(page)).toEqual([]);
+  await shot('launch-during-countdown');
+
+  // Past the end of those ten seconds, with the launch still waiting for the game: no
+  // Stand down ran, and none is shown.
+  await nothingFor(11_000);
+  await expect(page.getByTestId('fly-starting')).toHaveText('Starting DCS World');
+  await expect(notice).toHaveCount(0);
+  await expect(line).toHaveText('Stand down was cancelled. Nothing was closed.');
+
+  // The game is there: a session again, with every helper app still running.
+  await run.mutate([
+    { op: 'failProcessStart', name: 'DCS.exe', mode: 'off' },
+    { op: 'startProcess', name: 'DCS.exe', path: GAME },
+  ]);
+  await expect(page.getByTestId('fly-session')).toHaveAttribute('data-phase', 'running');
+  await expect.poll(() => windowVisible(app)).toBe(false);
+  await expect(page.getByTestId('group-apps')).toContainText('3 of 3 OK', { timeout: 15_000 });
+  await expect(notice).toHaveCount(0);
+});
+
+test('stand down on close: Stand down pressed by hand with "close the game" is the only one; no countdown starts under it', async ({
+  rig,
+}) => {
+  test.setTimeout(150_000);
+  let run = await rig.launch('fly-game-running', 'fly-stand-down-by-hand');
+  await expect(run.page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await countdownByHand(run, 10);
+  await slowStandDownStep(run);
+  run = await inSession(run);
+  const { page, shot } = run;
+  const notice = page.getByTestId('stand-down-notice');
+
+  await page.getByTestId('stand-down').click();
+  await page.getByTestId('game-close').click();
+  // The game is closed and its session is in the history. Stand down is still at work: it
+  // waits for the backup to finish.
+  await expect.poll(() => sessionsKept(run), { timeout: 20_000 }).toHaveLength(1);
+  // That is the end of the session, with nothing more to offer: no Welcome back, no
+  // countdown to a second Stand down.
+  await expect(page.getByTestId('fly-session')).toHaveCount(0);
+  await expect(notice).toHaveCount(0);
+  await expect(page.getByTestId('stand-down').first()).toBeDisabled();
+  await focusNothing(page);
+  expect(await accessible(page)).toEqual([]);
+  await shot('by-hand-still-at-work');
+
+  // Longer than any countdown would have taken: still nothing.
+  await nothingFor(11_000);
+  await expect(page.getByTestId('fly-session')).toHaveCount(0);
+  await expect(notice).toHaveCount(0);
+
+  // The backup finishes: Stand down says what it did, and only that.
+  await run.mutate([{ op: 'stopProcess', name: BACKUP }]);
+  await expect(page.getByTestId('fly-activity-headline')).toHaveText('Closed 2 apps');
+  await expect(page.getByTestId('fly-activity')).toContainText(`Ran ${BACKUP} to completion`);
+  await expect(page.getByTestId('fly-session')).toHaveCount(0);
+  await expect(notice).toHaveCount(0);
+  await focusNothing(page);
+  expect(await accessible(page)).toEqual([]);
+  await shot('by-hand-done');
 });

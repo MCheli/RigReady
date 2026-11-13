@@ -66,12 +66,14 @@ export {
   parseDrawing,
   pathBox,
   drawnInputs,
+  restInputs,
   applyChanges,
   drawingMatches,
   DeviceDrawingSchema,
   DrawingChangesSchema,
   DRAWING_FORMAT,
   DRAWING_VERSION,
+  MAX_PICTURE_CHARS,
   MAX_VIEWS,
 } from './silhouette';
 export type {

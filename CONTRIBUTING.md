@@ -2,6 +2,10 @@
 
 Thank you for helping. RigReady changes files that take people many hours to recreate, so the rules below are strict on purpose.
 
+## Add your hardware or game
+
+Clone the repository, open [Claude Code](https://claude.com/claude-code) in it, and describe your hardware or game: "Add support for my Thrustmaster TCA Quadrant", or "I play Automobilista 2, can RigReady read its bindings?". The skills in `.claude/skills/` walk you through it one step at a time, from the research to a proof on your own rig and the pull request, and keep to the rules below. The same steps for a person: [Add your hardware or game](docs/contributing/README.md), [Add your hardware](docs/contributing/add-hardware.md), [Add your game](docs/contributing/add-game.md). To use a change on your own PC without sending it in: [Build and run your own copy](docs/contributing/local-build.md).
+
 ## Before you start
 
 Read `docs/PRODUCT.md` (what the app is), `docs/ARCHITECTURE.md` (how it is put together) and `docs/CONTRIBUTING-FEATURES.md` (how to add a feature, step by step, and what the shared code already provides). The manual in `docs/manual/` describes the app as a user sees it and is published at <https://rigready.io/docs/>; a change to what the app does changes its page too (`site/README.md` says how the manual is built and checked).
@@ -29,18 +33,22 @@ Use `npm run dev:scenario -- <scenario>` to run the app while developing. It run
 
 ## Pull requests
 
-Keep them small. `npm run check` and `npm run test:e2e` must pass (CI runs both on Windows). Say what you tested and, for anything on screen, attach the screenshot the scenario run produced.
+Keep them small: one change each. `npm run check` and `npm run test:e2e` must pass (CI runs both on Windows). The pull request template asks for a short summary, the problem, the solution, what you considered but did not implement, how you tested it, what you would like the reviewer to look at, and how AI assistance was used. For anything on screen, attach the screenshot the scenario run produced.
 
 The maintainer reads every pull request before it is merged, against the rules above: writes go through `FileStore`, programs start with an argument array, the ledger entry and its evidence are in the same pull request. A green CI run is needed, not sufficient.
+
+## Reviews
+
+Open your pull request as a draft while you work on it, and mark it ready for review when its checks pass and you think it can be merged. GitHub Copilot then reviews it automatically, once; please do not request another Copilot review. The maintainer reviews it too. A pull request is merged only when every review conversation is resolved. Answer each comment with a reply: the fix, naming its commit, or why you are not changing it. Then resolve that conversation. Pull requests are merged by squashing them into one commit.
 
 ## AI-assisted contributions
 
 Most of RigReady was written by AI coding agents directed by the maintainer ([how this was built](https://rigready.io/how-it-was-built/)), so a pull request written with one is welcome. The same rules apply to it, plus three:
 
-- Say so in the pull request: which tool, and which parts it wrote.
+- Say so in the template's AI assistance section: the tool or harness, the model, and how it was used.
 - You must be able to explain every change in it. A pull request whose author cannot answer a question about its own diff is closed.
 - The evidence is the test and the screenshot, not the agent's summary. "The agent says it works" is not evidence; a test that exercises the real code path is.
 
 ## Reporting a problem
 
-Open an issue at <https://github.com/MCheli/rigready/issues/new/choose>: there is a form for something that went wrong and one for a report of how RigReady does on your hardware. Paste the diagnostics report (Configure > Diagnostics > Copy diagnostics), which has personal details removed. A security problem is reported privately, as `SECURITY.md` describes.
+Open an issue at <https://github.com/MCheli/rigready/issues/new/choose>: there is a form for something that went wrong, one for a report of how RigReady does on your hardware, and one each to ask for support for your hardware or your game. Paste the diagnostics report (Configure > Diagnostics > Copy diagnostics), which has personal details removed. A security problem is reported privately, as `SECURITY.md` describes.

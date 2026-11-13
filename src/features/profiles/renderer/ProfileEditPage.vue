@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router';
 import {
   CHECK_GROUPS,
   GROUP_TITLES,
@@ -10,7 +10,10 @@ import {
   type Profile,
   type ProfileActions,
 } from '../../../core/profile/schema';
+import { manifests } from '../../../renderer/features';
 import { errorText, useClient } from '../../../renderer/ipc';
+import { useStillHere } from '../../../renderer/stillHere';
+import { useUnsaved, wayOut } from '../../../renderer/unsaved';
 import {
   profilesContract,
   type CheckTypeInfo,
@@ -30,6 +33,16 @@ import { launchKindOf, steamAppShown, steamLaunchFor, type LaunchKind } from './
 
 const props = defineProps<{ id: string }>();
 const api = useClient(profilesContract);
+
+/** Sections other features add for a choice each setup makes (manifest `setupSections`). */
+const featureSections = manifests
+  .flatMap((m) => (m.setupSections ?? []).map((section) => ({ feature: m.id, ...section })))
+  .sort((a, b) => (a.order ?? 500) - (b.order ?? 500) || a.title.localeCompare(b.title))
+  .map((section) => ({
+    feature: section.feature,
+    title: section.title,
+    view: defineAsyncComponent(section.component),
+  }));
 const router = useRouter();
 
 const draft = ref<Profile>();
@@ -50,13 +63,23 @@ const launchKind = ref<LaunchKind>('none');
 /** The number in the "Steam app id" field. */
 const steamApp = ref('');
 const commentsWarning = ref(false);
-const leaving = ref(false);
+/**
+ * Set while "Discard your changes?" is asked: by Cancel (nothing else set), for a move to
+ * another setup in this editor (`to`), for a way out of the editor to another page (`to`
+ * and `away`), or for a command waiting to open the editor afresh (`answer`).
+ */
+const leaving = ref<{ to?: string; away?: boolean; answer?: (discard: boolean) => void }>();
+/**
+ * The user chose to drop the changes for a command that opens the editor afresh: that
+ * command's move goes ahead without asking again, and the next one asks.
+ */
+let letGo = false;
+/** The move the user chose to drop the changes for: let through while it is under way. */
+const way = wayOut(router);
 const fileMessage = ref<string>();
 /** The setup as it was last saved: its desktop shortcut is made from that, not from the draft. */
 const saved = ref<{ name: string; launches: boolean }>();
-/** Set when this page goes away. A save that answers later must not move the user. */
-let gone = false;
-onBeforeUnmount(() => (gone = true));
+const stillHere = useStillHere();
 
 const PHASES = [
   { key: 'preLaunch', title: 'Before launch', sub: 'Run in order before the game starts.' },
@@ -76,14 +99,43 @@ const snapshot = (): string =>
     steamApp: steamApp.value,
   });
 const dirty = computed(() => draft.value !== undefined && snapshot() !== original.value);
+/** What is on screen as a save of it was sent, while that save runs. */
+const sending = ref<string>();
+/**
+ * Changes that leaving now would drop: not saved, and not in a save under way either (that
+ * save goes on in RigReady whether the editor stays or not).
+ */
+const unsaved = computed(() => dirty.value && snapshot() !== sending.value);
 
-onMounted(async () => {
+/**
+ * Counts the loads. The address can change from one setup to another while this editor is
+ * open (the Stand down notice's "Change this for the setup", the assistant's "Open setup"):
+ * a load or a save that answers after the next setup was asked for is not about it.
+ */
+let loads = 0;
+
+/** Reads the setup the address names; nothing of the one shown before stays on screen. */
+async function load(): Promise<void> {
+  const mine = ++loads;
+  draft.value = undefined;
+  saved.value = undefined;
+  original.value = '';
+  loadError.value = undefined;
+  error.value = undefined;
+  problems.value = [];
+  saving.value = false;
+  sending.value = undefined;
+  open.value = {};
+  commentsWarning.value = false;
+  fileMessage.value = undefined;
+  letGo = false;
   const [loaded, types, found, detected] = await Promise.all([
     api.edit({ id: props.id }),
     api.types(),
     api.pickers(),
     api.games(),
   ]);
+  if (mine !== loads) return;
   if (!loaded.ok) {
     loadError.value = errorText(loaded.error);
     return;
@@ -104,7 +156,42 @@ onMounted(async () => {
   steamApp.value = steamAppShown(draft.value);
   saved.value = { name: draft.value.name, launches: launchKind.value !== 'none' };
   original.value = snapshot();
+}
+
+onMounted(load);
+// The same editor is kept from one setup to the next: it reads the new one.
+watch(
+  () => props.id,
+  () => void load()
+);
+
+// A move to another setup drops the changes on screen: asked first.
+onBeforeRouteUpdate((to) => {
+  if (String(to.params['id'] ?? '') === props.id || !unsaved.value || letGo || way.open()) {
+    return true;
+  }
+  leaving.value = { to: to.fullPath };
+  return false;
 });
+
+// So does every other way out of the editor (the menu, Play, a link on the page), by the
+// rule of the Save bar on the other editors.
+onBeforeRouteLeave((to) => {
+  if (!unsaved.value || way.open()) return true;
+  leaving.value = { to: to.fullPath, away: true };
+  return false;
+});
+
+// A command that opens the editor afresh (the palette's) runs no route guard: it asks here.
+useUnsaved({
+  dirty: () => unsaved.value && !letGo,
+  ask: () =>
+    new Promise<boolean>((answer) => {
+      leaving.value?.answer?.(false);
+      leaving.value = { answer };
+    }),
+});
+onBeforeUnmount(() => leaving.value?.answer?.(false));
 
 /** The shortcut carries the setup's name and whether it launches: both must be saved first. */
 const shortcutBlocked = computed(() => {
@@ -328,6 +415,14 @@ const copyChoices = ref<string[]>([]);
 const copyAnyway = ref(false);
 const others = ref<{ title: string; value: string }[]>([]);
 const copyMessage = ref<string>();
+// Another setup opened in this editor starts with the dialog closed and no word of the last.
+watch(
+  () => props.id,
+  () => {
+    copyOpen.value = false;
+    copyMessage.value = undefined;
+  }
+);
 
 async function openCopy(): Promise<void> {
   copyOpen.value = true;
@@ -449,12 +544,20 @@ async function save(): Promise<void> {
   commentsWarning.value = false;
   const next = build();
   if (!next) return;
+  const mine = loads;
+  const sent = snapshot();
+  const launches = launchKind.value !== 'none';
   saving.value = true;
+  sending.value = sent;
   error.value = undefined;
   problems.value = [];
-  const from = router.currentRoute.value.fullPath;
+  const here = stillHere();
   const result = await api.save(next);
+  // Another setup was opened meanwhile, after the user chose to drop this one's changes:
+  // the answer is not about what is on screen now, which keeps its own state.
+  if (mine !== loads) return;
   saving.value = false;
+  sending.value = undefined;
   if (!result.ok) {
     error.value = result.error.message;
     problems.value = (result.error.detail ?? '').split('\n').filter(Boolean);
@@ -465,18 +568,49 @@ async function save(): Promise<void> {
     }
     return;
   }
-  original.value = snapshot();
+  // What was sent is what is saved. A change made while the save ran stays on screen and
+  // still reads as unsaved, and the user stays here with it.
+  original.value = sent;
+  saved.value = { name: next.name, launches };
+  if (snapshot() !== sent) return;
   // A save can answer after the user has gone on to another page (Play, on a slow or busy
   // PC). They stay where they went: only a user still on this editor is taken to the list.
-  if (!gone && router.currentRoute.value.fullPath === from) {
-    await router.push('/configure/profiles');
-  }
+  if (here()) await router.push('/configure/profiles');
 }
 
 function cancel(): void {
-  if (dirty.value) leaving.value = true;
+  if (unsaved.value) leaving.value = {};
   else void router.push('/configure/profiles');
 }
+
+/** "Discard": the changes go, and so does the user, where they were going. */
+function discard(): void {
+  const going = leaving.value;
+  leaving.value = undefined;
+  if (going?.answer) {
+    // The command makes the move itself; once it has settled, the next way out asks again.
+    letGo = true;
+    const off = router.afterEach(() => {
+      off();
+      letGo = false;
+    });
+    going.answer(true);
+    return;
+  }
+  void way.go(going?.to ?? '/configure/profiles');
+}
+
+/** "Keep editing", or the question closed: nothing is dropped. */
+function stay(): void {
+  leaving.value?.answer?.(false);
+  leaving.value = undefined;
+}
+
+/** Asked about a move to another setup, rather than by Cancel or on the way out of the editor. */
+const leavingFor = computed(
+  () =>
+    !leaving.value?.away && (leaving.value?.to !== undefined || leaving.value?.answer !== undefined)
+);
 
 async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
   const result = await api[mode]({ id: props.id });
@@ -743,6 +877,11 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
 
       <StandDownOnCloseEditor :profile="draft" @update:profile="draft = $event" />
 
+      <template v-for="section in featureSections" :key="`${section.feature}/${section.title}`">
+        <h2 class="rr-section-title">{{ section.title }}</h2>
+        <component :is="section.view" :profile="draft" @update:profile="draft = $event" />
+      </template>
+
       <div class="edit-footer">
         <v-alert
           v-if="error"
@@ -846,19 +985,22 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="leaving" max-width="420">
+    <v-dialog :model-value="leaving !== undefined" max-width="420" @update:model-value="stay">
       <v-card data-testid="discard-warning">
         <v-card-title>Discard your changes?</v-card-title>
-        <v-card-text>The setup file stays exactly as it was.</v-card-text>
+        <v-card-text v-if="leaving?.away && saved" data-testid="discard-leave">
+          Your changes to "{{ saved.name }}" are not saved, and leaving the editor drops them. Its
+          file stays exactly as it was.
+        </v-card-text>
+        <v-card-text v-else-if="leavingFor && saved" data-testid="discard-other-setup">
+          You asked to open another setup. Your changes to "{{ saved.name }}" are not saved. Its
+          file stays exactly as it was.
+        </v-card-text>
+        <v-card-text v-else>The setup file stays exactly as it was.</v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="leaving = false">Keep editing</v-btn>
-          <v-btn
-            color="error"
-            data-testid="discard-confirm"
-            @click="router.push('/configure/profiles')"
-            >Discard</v-btn
-          >
+          <v-btn variant="text" data-testid="discard-stay" @click="stay">Keep editing</v-btn>
+          <v-btn color="error" data-testid="discard-confirm" @click="discard">Discard</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

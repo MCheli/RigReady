@@ -35,6 +35,8 @@ export const ActivityEntrySchema = z.object({
   outcome: ActivityOutcomeSchema,
   /** The channel's answer in one line, or why it did not run. */
   message: z.string(),
+  /** For a call that did not work: the error's code ("mcp.denied", "ai.setup"). */
+  code: z.string().optional(),
   ms: z.number().int().min(0),
   /** Journal groups (Safety page actions) this call made. */
   journalGroups: z.array(z.string()).default([]),

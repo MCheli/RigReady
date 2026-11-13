@@ -143,7 +143,7 @@ test('racing: overview, iRacing bindings, and repairing a wheel with a new Windo
 
   // The files now hold the connected wheel's id; the change is on the Safety page.
   const yaml = await fs.readFile(path.join(home, 'Documents', 'iRacing', 'joyCalib.yaml'), 'utf8');
-  expect(yaml).toContain('{20B0BED0-03A4-11F1-8001-444553540000}');
+  expect(yaml).toContain('{45D4BEA1-60A1-17D8-8001-444553540000}');
   await page.getByTestId('nav-safety').click();
   await expect(page.locator('[data-testid="change-group"]').first()).toHaveAttribute(
     'data-reason',
@@ -635,4 +635,58 @@ test('racing: "Save presets" stays in the window from the top of the wheel page 
   await expect(page.getByTestId('games-page')).toBeVisible();
   await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
   await expect(page.getByTestId('save-bar')).toHaveCount(0);
+});
+
+test('racing: presets not saved yet survive "Wheel" chosen in the palette, and a value typed while they save', async ({
+  rig,
+}) => {
+  const { page, shot, mutate } = await rig.launch('racing-fresh', 'racing-wheel-keeps-presets');
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-wheel').click();
+  await expect(page.getByTestId('wheel-name')).toHaveText('FANATEC Podium Wheel Base DD2');
+  const ff = page.getByTestId('preset-FF').locator('input');
+  const ndp = page.getByTestId('preset-NDP').locator('input');
+  const save = page.getByTestId('presets-save');
+  await ff.fill('90');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Tuning presets not saved yet');
+
+  // The palette's "Wheel" while on Wheel: the page is the one asked for, and it stays as it
+  // is, with the value typed and the bar saying it is not saved.
+  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('palette-input')).toBeFocused();
+  await page.keyboard.type('wheel');
+  await expect(
+    page.locator('[data-testid="palette-row"][aria-selected="true"] .rr-palette-title')
+  ).toHaveText('Wheel');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('palette')).toBeHidden();
+  await expect(page.getByTestId('save-bar-leave')).toHaveCount(0);
+  await expect(ff).toHaveValue('90');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Tuning presets not saved yet');
+  await page.getByTestId('wheel-presets').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await shot('palette-kept-the-presets');
+
+  // A slow PC: the save takes a few seconds, and the user types another value meanwhile.
+  await mutate([{ op: 'slowFiles', ms: 1500 }]);
+  await save.click();
+  await expect(save).toHaveAttribute('aria-busy', 'true');
+  await ndp.fill('16');
+  await mutate([{ op: 'slowFiles', ms: 0 }]);
+  await expect(save).not.toHaveAttribute('aria-busy', 'true');
+  // Both values are on screen, and the one typed during the save is not called saved.
+  await expect(ff).toHaveValue('90');
+  await expect(ndp).toHaveValue('16');
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveText('Tuning presets not saved yet');
+  await expect(save).toBeEnabled();
+  await page.getByTestId('wheel-presets').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await shot('typed-while-saving');
+
+  // Saved again, both are kept.
+  await save.click();
+  await expect(page.getByTestId('save-bar-saved')).toContainText('Saved.');
+  await page.getByTestId('nav-games').click();
+  await expect(page.getByTestId('games-page')).toBeVisible();
+  await page.getByTestId('nav-wheel').click();
+  await expect(ff).toHaveValue('90');
+  await expect(ndp).toHaveValue('16');
 });

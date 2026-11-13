@@ -2,7 +2,9 @@
  * Records this machine into fixtures/rigs/<name>/: provider snapshots as JSON (devices,
  * USB tree, displays, processes, services, audio, DirectInput devices, registry keys,
  * HidHide state) plus a copy of the game and tool configuration files listed in
- * scripts/lib/recordPlan.ts, with the Windows user name removed from paths.
+ * scripts/lib/recordPlan.ts, with the Windows user name removed from paths. Device serial
+ * numbers and instance GUIDs become stable made-up values of the same shape (in file names
+ * too), and only the programs and services the tests read are kept (recordPlan.ts).
  *
  * Read-only with respect to the machine. NOTES.md in the rig folder is never touched.
  *
@@ -29,11 +31,21 @@ import {
   UNINSTALL_VALUES,
   filterDcsLog,
   filterLibraryFolders,
+  keepRecordedProcesses,
+  keepRecordedServices,
   redactStreamDeckManifest,
   wantUninstallEntry,
   type RecordRoot,
 } from './lib/recordPlan';
-import { sanitizeDeep, sanitizeIdentifiers, sanitizeUserPaths } from './lib/sanitize';
+import {
+  identityReplacements,
+  madeUpGuidsIn,
+  replaceIdentity,
+  replaceIdentityBytes,
+  sanitizeDeep,
+  sanitizeIdentifiers,
+  sanitizeUserPaths,
+} from './lib/sanitize';
 
 /** Files whose text is searched for the user name and for paths to re-point in scenarios. */
 const TEXT_EXTENSIONS = new Set([
@@ -55,6 +67,8 @@ const DEFAULT_MAX_BYTES = 2 * 1024 * 1024;
 interface Recorder {
   outFiles: string;
   user: string;
+  /** Every device serial and instance GUID of this PC, with its made-up stand-in. */
+  identity: ReadonlyMap<string, string>;
   count: number;
   bytes: number;
   /** Relative paths (forward slashes) of files that contain paths to re-point. */
@@ -78,17 +92,21 @@ async function put(
   content: Buffer,
   transform?: (text: string) => string
 ): Promise<void> {
-  const target = path.join(rec.outFiles, relative);
+  // DCS names binding files after the controller's instance GUID.
+  const named = replaceIdentity(relative, rec.identity);
+  const target = path.join(rec.outFiles, named);
   await fs.mkdir(path.dirname(target), { recursive: true });
   let data = content;
   if (transform || TEXT_EXTENSIONS.has(path.extname(relative).toLowerCase())) {
     // latin1 round-trips every byte, so files keep their encoding and line endings.
     let text = content.toString('latin1');
     if (transform) text = transform(text);
-    text = sanitizeIdentifiers(sanitizeUserPaths(text, rec.user));
-    if (REHOMABLE.test(text)) rec.rehome.push(relative.replace(/\\/g, '/'));
+    text = replaceIdentity(sanitizeIdentifiers(sanitizeUserPaths(text, rec.user)), rec.identity);
+    if (REHOMABLE.test(text)) rec.rehome.push(named.replace(/\\/g, '/'));
     data = Buffer.from(text, 'latin1');
   }
+  // GUIDs kept as raw bytes (iRacing's controls.cfg).
+  data = replaceIdentityBytes(data, rec.identity);
   await fs.writeFile(target, data);
   rec.count++;
   rec.bytes += data.length;
@@ -239,13 +257,14 @@ async function main(): Promise<void> {
 
   const devices = unwrap('devices', await ports.devices.list());
   const displays = unwrap('displays', await ports.displays.read());
-  const processes = unwrap('processes', await ports.processes.list());
-  const services = unwrap('services', await ports.services.list());
+  const allProcesses = unwrap('processes', await ports.processes.list());
+  const processes = keepRecordedProcesses(allProcesses);
+  const services = keepRecordedServices(unwrap('services', await ports.services.list()));
   const audio = unwrap('audio', await ports.audio.read());
   const libraries = unwrap('steam libraries', await ports.folders.steamLibraries());
 
   const notes: string[] = [];
-  let input: unknown[] = [];
+  let input: { guid: string }[] = [];
   const started = await ports.input.start();
   if (started.ok) {
     input = started.value;
@@ -255,12 +274,21 @@ async function main(): Promise<void> {
       `DirectInput devices not recorded: ${started.error.message} ${started.error.detail ?? ''}`.trim()
     );
   }
+  const registry = await recordRegistry(ports, user);
+  // Read from the whole machine every time, so a partial re-record makes up the same values.
+  const identity = identityReplacements({
+    devices,
+    displays: displays.displays,
+    input,
+    audio,
+    registry,
+  });
 
   await fs.mkdir(outDir, { recursive: true });
   const write = async (file: string, value: unknown): Promise<void> => {
     await fs.writeFile(
       path.join(outDir, file),
-      JSON.stringify(sanitizeDeep(value, user), null, 2) + '\n'
+      replaceIdentity(JSON.stringify(sanitizeDeep(value, user), null, 2), identity) + '\n'
     );
   };
   if (want('devices')) {
@@ -272,7 +300,6 @@ async function main(): Promise<void> {
   if (want('services')) await write('services.json', services);
   if (want('audio')) await write('audio.json', audio);
   if (want('input') && started.ok) await write('input.json', input);
-  const registry = await recordRegistry(ports, user);
   if (want('registry')) await write('registry.json', registry);
   if (want('hidhide')) await write('hidhide.json', await recordHidHide(ports, user));
   if (!want('files')) {
@@ -284,6 +311,7 @@ async function main(): Promise<void> {
   const rec: Recorder = {
     outFiles: path.join(outDir, 'files'),
     user,
+    identity,
     count: 0,
     bytes: 0,
     rehome: [],
@@ -364,6 +392,7 @@ async function main(): Promise<void> {
   }
 
   // Stream Deck: two profiles' manifests (settings emptied) and the plugin manifests. No images.
+  // The profile, page and action ids in their names and text are made up (madeUpGuidsIn).
   const streamDeck = path.join(ports.folders.appData(), 'Elgato', 'StreamDeck');
   const profilesDir = path.join(streamDeck, 'ProfilesV3');
   if (await exists(profilesDir)) {
@@ -381,9 +410,15 @@ async function main(): Promise<void> {
       for (const manifest of manifests) {
         await put(
           rec,
-          path.join('AppData\\Roaming\\Elgato\\StreamDeck\\ProfilesV3', profile, manifest.relative),
+          madeUpGuidsIn(
+            path.join(
+              'AppData\\Roaming\\Elgato\\StreamDeck\\ProfilesV3',
+              profile,
+              manifest.relative
+            )
+          ),
           await fs.readFile(manifest.full),
-          redactStreamDeckManifest
+          (text) => madeUpGuidsIn(redactStreamDeckManifest(text))
         );
       }
     }
@@ -413,7 +448,8 @@ async function main(): Promise<void> {
     }
   }
   const helper = /TrackIR|SimAppPro|StreamDeck|Fanatec|HidHide|Tacview|iRacing|steam\.exe$|DCS/i;
-  for (const p of processes) {
+  // Every running helper, also those the trimmed process list leaves out.
+  for (const p of allProcesses) {
     if (!p.path || !helper.test(p.path)) continue;
     for (const root of Object.values(roots)) {
       if (!root.real) continue;

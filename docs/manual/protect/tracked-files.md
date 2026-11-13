@@ -42,7 +42,7 @@ What is suggested, when it is found:
 
 - **DCS World**: "DCS settings and bindings" (everything in `Saved Games\DCS` except logs, tracks, caches, screenshots, movies, mods and liveries), and separately the bindings, `options.lua`, the monitor setups, the export scripts and your kneeboard pages.
 - **DCS bindings by aircraft**: one item per aircraft that has bindings of its own, for a setup that is about one aircraft.
-- **iRacing**, **Le Mans Ultimate**, **BeamNG.drive**, **Assetto Corsa**, **Assetto Corsa EVO**, **Assetto Corsa Rally** and **Microsoft Flight Simulator 2024**: the game's settings folder as a whole, then its bindings, calibration, graphics, audio and other files one by one, each named by what it holds (for example "Bindings (controls.cfg)" for iRacing).
+- **iRacing**, **Le Mans Ultimate**, **BeamNG.drive**, **Assetto Corsa**, **Assetto Corsa EVO**, **Assetto Corsa Rally** and **Microsoft Flight Simulator 2024**: the game's settings folder as a whole, then its bindings, calibration, graphics, audio and other files one by one, each named by what it holds (for example "Bindings (controls.cfg, profile “Baseline”)" for iRacing, the control profile iRacing uses).
 - **Stream Deck**: the profiles, the plugin list (only the manifests, so the plugins can be installed again), and the plugins as whole folders, which are large.
 - **TrackIR**: the settings, the game-to-profile map and every profile.
 - **Fanatec**: the Fanatec App's own preferences. The driver settings in the registry are not a file; a full backup keeps them as a record instead (see [backups](backups.md)).

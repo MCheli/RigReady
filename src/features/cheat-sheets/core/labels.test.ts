@@ -115,16 +115,29 @@ describe('plain-language names from the binding guide (AI-001)', () => {
     expect(deviceFingerprint(without)).not.toBe(deviceFingerprint(stick));
   });
 
-  it('are left out when a game has no guide: the racing games name their actions plainly already', async () => {
+  it('are left out when a game has no guide: the other racing games name their actions plainly already', async () => {
     const running = await racing();
-    expect(await running.wiring.context.bindings.labels('iracing', 'all')).toEqual({});
+    expect(await running.wiring.context.bindings.labels('lmu', 'all')).toEqual({});
+    expect(await running.wiring.context.bindings.labels('assetto-corsa', 'all')).toEqual({});
+  });
+
+  it('for iRacing, come from its class guides by iRacing’s own id, and only where they say more', async () => {
+    const running = await racing();
+    const labels = await running.wiring.context.bindings.labels('iracing', 'all');
+    expect(labels['DashPageInc']).toBe('Next dash page');
+    expect(labels['ShiftUp']).toBe('Shift up');
     const sheet = await running.invoke<Sheet>('cheat-sheets:sheet', {
       game: 'iracing',
       aircraftId: 'all',
     });
-    const bindings = sheet.devices[0]!.controls.flatMap((c) => c.bindings);
-    expect(bindings.every((b) => b.plain === undefined)).toBe(true);
-    expect(bindings.map((b) => b.short)).toContain('Shift up');
+    const bindings = sheet.devices.flatMap((d) => d.controls.flatMap((c) => c.bindings));
+    // The paddle reads the same either way: no second name.
+    const shift = bindings.find((b) => b.short === 'Shift up')!;
+    expect(shift.plain).toBeUndefined();
+    // Every plain name shown is a guide's, by the binding's iRacing id.
+    for (const b of bindings.filter((x) => x.plain !== undefined)) {
+      expect(Object.values(labels)).toContain(b.plain);
+    }
   });
 });
 

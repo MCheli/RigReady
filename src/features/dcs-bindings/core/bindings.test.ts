@@ -104,11 +104,11 @@ describe('reading binding files', () => {
 
   it('splits file names into device name and GUID, also with spaces and braces in the name', () => {
     expect(
-      parseDiffFileName('WINWING UFC1 + HUD1 {806E0610-B756-11f0-8026-444553540000}.diff.lua')
+      parseDiffFileName('WINWING UFC1 + HUD1 {757B5173-A027-19e9-8026-444553540000}.diff.lua')
     ).toEqual({
       deviceName: 'WINWING UFC1 + HUD1',
-      guid: '806E0610-B756-11f0-8026-444553540000',
-      fullId: 'WINWING UFC1 + HUD1 {806E0610-B756-11f0-8026-444553540000}',
+      guid: '757B5173-A027-19e9-8026-444553540000',
+      fullId: 'WINWING UFC1 + HUD1 {757B5173-A027-19e9-8026-444553540000}',
     });
     expect(
       parseDiffFileName(' VKBsim Gladiator  {AAAAAAAA-0000-11ee-8001-444553540000}.diff.lua')

@@ -20,4 +20,8 @@ export default defineFeature({
       meta: { bare: true, title: 'Overlay' },
     },
   ],
+  // Each setup's own switch for the overlay, in the setup editor.
+  setupSections: [
+    { title: 'Overlay', component: () => import('./renderer/OverlaySetupSection.vue') },
+  ],
 });

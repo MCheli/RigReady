@@ -16,7 +16,7 @@ const PRIVATE = 'System\\CurrentControlSet\\Control\\MediaProperties\\PrivatePro
 const DIRECTINPUT = `${PRIVATE}\\DirectInput`;
 const OEM = `${PRIVATE}\\Joystick\\OEM`;
 
-/** 16 registry bytes (hex) to "806E0610-B756-11F0-8024-444553540000". */
+/** 16 registry bytes (hex) to "757B5173-A027-19E9-8024-444553540000". */
 export function guidFromBytes(hex: string): string | undefined {
   const h = hex.toUpperCase();
   if (!/^[0-9A-F]{32}$/.test(h)) return undefined;
@@ -30,7 +30,7 @@ export function guidFromBytes(hex: string): string | undefined {
   ].join('-');
 }
 
-/** DCS writes the third group in lower case: 806E0610-B756-11f0-8024-444553540000. */
+/** DCS writes the third group in lower case: 757B5173-A027-19e9-8024-444553540000. */
 export function dcsGuidText(guid: string): string {
   const parts = guid.replace(/[{}]/g, '').toUpperCase().split('-');
   if (parts.length !== 5) return guid;

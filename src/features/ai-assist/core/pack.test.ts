@@ -76,7 +76,9 @@ items:
 
 describe('binding guides (knowledge packs)', () => {
   it('ships a guide for every aircraft in the list, by its DCS input profile id', () => {
-    expect([...shipped().keys()].sort()).toEqual([...SHIPPED].sort());
+    // The iRacing class guides are keyed "iracing:<class>" (iracingGuides.test.ts).
+    const dcs = [...shipped()].filter(([, p]) => p.game === 'dcs').map(([key]) => key);
+    expect(dcs.sort()).toEqual([...SHIPPED].sort());
     expect(shippedPack('FA-18C_hornet')?.aircraft.name).toBe('F/A-18C Hornet');
     expect(shippedPack('uh-1h')?.aircraft.name).toBe('UH-1H Huey');
     expect(shippedPack('F-16C_50')?.aircraft.name).toBe('F-16C Viper');
@@ -144,7 +146,7 @@ describe('binding guides (knowledge packs)', () => {
     }
   });
 
-  const packs = [...new Set(shipped().values())];
+  const packs = [...new Set(shipped().values())].filter((p) => p.game === 'dcs');
   it.each(packs.map((p) => [p.aircraft.id, p] as const))(
     "every action the %s guide names exists in DCS's input files for each profile it is for",
     (_id, pack) => {

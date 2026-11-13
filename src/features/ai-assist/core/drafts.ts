@@ -72,8 +72,11 @@ interface ScriptDraft {
   id: string;
   by: string;
   at: string;
+  /** As the assistant gave it, with `use.setup` the name of the setup it was found to mean. */
   input: DraftScriptInput;
   text: string;
+  /** The setup the card names, by id: what Save adds the script to. */
+  setupId?: string;
 }
 
 export interface DraftsDeps {
@@ -94,6 +97,11 @@ function guarded(type: string, params: Record<string, unknown>): Record<string, 
 
 export class AssistantDrafts {
   private readonly setupDrafts = new Map<string, SetupDraft>();
+  /** The saves of proposals under way, by draft id. */
+  private readonly savingSetups = new Map<
+    string,
+    Promise<Result<{ setupId: string; name: string; message: string }>>
+  >();
   private readonly scriptDrafts = new Map<string, ScriptDraft>();
   private counter = 0;
 
@@ -283,8 +291,22 @@ export class AssistantDrafts {
     };
   }
 
-  /** The user pressed Save: the setup is written through its own channel, as the editor does. */
-  async saveSetup(
+  /**
+   * The user pressed Save: the setup is written through its own channel, as the editor does.
+   * A second press while the first is still saving (a double click) waits for that one and
+   * gets its answer: one proposal makes one setup.
+   */
+  saveSetup(draftId: string): Promise<Result<{ setupId: string; name: string; message: string }>> {
+    const running = this.savingSetups.get(draftId);
+    if (running) return running;
+    const saving = this.saveSetupOnce(draftId).finally(() => {
+      this.savingSetups.delete(draftId);
+    });
+    this.savingSetups.set(draftId, saving);
+    return saving;
+  }
+
+  private async saveSetupOnce(
     draftId: string
   ): Promise<Result<{ setupId: string; name: string; message: string }>> {
     const draft = this.setupDrafts.get(draftId);
@@ -345,19 +367,24 @@ export class AssistantDrafts {
         `The script asks for administrator rights (${elevation}). RigReady runs scripts as the user only; write it without that.`
       );
     }
+    let kept = input;
+    let setupId: string | undefined;
     if (input.use) {
       const setup = await this.findSetup(input.use.setup);
       if (!setup.ok) return setup;
       if (input.use.as === 'fix' && !input.use.forCheck) {
         return err('ai.input', 'A fix needs forCheck: the check it fixes, by id or title.');
       }
+      // The card names the setup that was found, and Save adds to that one by its id.
+      kept = { ...input, use: { ...input.use, setup: setup.value.name } };
+      setupId = setup.value.id;
     }
     const at = this.now();
     const text =
       scriptHeader({ fileName: input.fileName, by, at, explanation: input.explanation }) +
       input.content.replace(/\r?\n/g, '\r\n');
     const id = this.next('s');
-    this.scriptDrafts.set(id, { id, by, at, input, text });
+    this.scriptDrafts.set(id, { id, by, at, input: kept, text, ...(setupId ? { setupId } : {}) });
     this.deps.changed();
     return ok({
       draftId: id,
@@ -421,7 +448,7 @@ export class AssistantDrafts {
     let setupId: string | undefined;
     let placed = '';
     if (draft.input.use) {
-      const added = await this.placeScript(draft.input.use, stored);
+      const added = await this.placeScript(draft.input.use, stored, draft.setupId);
       if (!added.ok) {
         this.scriptDrafts.delete(draftId);
         this.deps.changed();
@@ -445,13 +472,19 @@ export class AssistantDrafts {
     });
   }
 
+  /** Adds the script's step to the setup the card named: by the id found when it was drafted. */
   private async placeScript(
     use: z.infer<typeof ScriptUseSchema>,
-    stored: string
+    stored: string,
+    setupId: string | undefined
   ): Promise<Result<Profile>> {
-    const line = await this.findSetup(use.setup);
-    if (!line.ok) return line;
-    const profile = unwrap<Profile>(await this.deps.invoke('profiles:get', { id: line.value.id }));
+    let id = setupId;
+    if (!id) {
+      const line = await this.findSetup(use.setup);
+      if (!line.ok) return line;
+      id = line.value.id;
+    }
+    const profile = unwrap<Profile>(await this.deps.invoke('profiles:get', { id }));
     if (!profile.ok) return profile;
     const p = structuredClone(profile.value);
     const run = {

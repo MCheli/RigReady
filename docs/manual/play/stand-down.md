@@ -16,12 +16,13 @@ Stand down goes through the setup's checks and does what each kind has to do at 
 - **TrackIR** and **Stream Deck** checks close their app when their **Close at Stand down** option is on.
 - **Default audio device** checks put back the device that was the default before Make ready changed it, unless you changed the default yourself since.
 - **Monitor layout** checks put back the arrangement from before Make ready, unless a desk layout is chosen (see below).
+- **iRacing control profile** checks: the profile iRacing used for all cars before Make ready switched it is put back in `app.ini`, unless it was changed in iRacing since ([A setup that switches the profile](../games/iracing-bindings.md#a-setup-that-switches-the-profile)). This happens after the game is closed. While the iRacing simulator still runs, the step says so, and the next Stand down puts the profile back.
 
 Then it closes the programs that launch steps started (each step has **Close it at Stand down**, on by default), runs the setup's own **At Stand down** steps, and applies the desk layout. The game's own program is never on this list unless you say so.
 
 ## The desk layout
 
-One saved layout can be the desk layout: choose it with **Use as desk layout** on **Configure > Monitors**, or under **Desk layout** on **Configure > Settings**; the two are the same choice. Stand down applies it last. The first time, it asks **Keep this monitor layout?** with the countdown; once you have kept the desk layout with the same monitors connected, it is applied without the question ([When RigReady asks, and when it does not](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)). When no desk layout is chosen, the step is listed as skipped ("No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are") and the monitor check's own revert is what puts the screens back. When the chosen layout was deleted since, the step fails and says to choose another in either place. See [Monitors and audio](../monitors-and-audio/index.md).
+One saved layout can be the desk layout: choose it with **Use as desk layout** on **Configure > Monitors**, or under **Desk layout** on **Configure > Settings**; the two are the same choice. Stand down applies it last. The first time, it asks **Keep this monitor layout?** with the countdown; once you have kept the desk layout with the same monitors connected, it is applied without the question ([When RigReady asks, and when it does not](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)). Replacing the desk layout with **Replace with the monitors as they are now** counts as keeping it, with the monitors connected at that moment. When no desk layout is chosen, the step is listed as skipped ("No desk layout is chosen (Monitors page: "Use as desk layout", or Settings: "Desk layout"), so the monitors were left as they are") and the monitor check's own revert is what puts the screens back. When the chosen layout was deleted since, the step fails and says to choose another in either place. See [Monitors and audio](../monitors-and-audio/index.md).
 
 ![Back at the desk](../../../artifacts/screens/fly-stand-down-desk/02-at-the-desk.png)
 
@@ -49,16 +50,24 @@ The same is said wherever RigReady asks a program to close before it restores fi
 
 Stand down from the Play screen looks first. If the game is running it asks: **DCS World is still running. Stand down closes the helper apps. Should it close the game too?** with **Leave it running**, **Close it too** and **Cancel**. The game is closed the way an app is: asked, then waited for, never forced. From the tray, the compact view and the command palette the game is always left running; only the Play screen can close it.
 
+When **Close it too** closes the game, no countdown starts: the Stand down you pressed is the one for this session. The same goes for a game you close yourself while that Stand down runs.
+
 ## Stand down when the game closes
 
 Every setup stands down by itself when its game closes, unless you switch that off for the setup. RigReady watches the game. Once it is gone, a notice in the bottom right corner of the window counts down: **Stand down in 1 minute**, then the seconds. It says what will happen: "DCS World has closed. When the time is up, RigReady stands down DCS F/A-18C: it closes the helper apps and puts the rig back, as the Stand down button does." The notice is on every page. The **Welcome back** line on the Play screen says the same in one line, and so does the session line of the [compact view](compact-view.md).
 
 ![The countdown](../../../artifacts/screens/fly-stand-down-countdown/01-countdown.png)
 
+When Stand down will ask a question that needs someone at the screens, the notice says so before the time is up. The one such question is the desk layout's: when the [desk layout](#the-desk-layout) has not been kept with the monitors that are connected now, the notice adds, with a warning sign: "The desk layout "Desk" has not been kept with these monitors yet. Stay and press Keep it when RigReady asks, or the monitors stay as they are." This happens after you swap gear: a desk layout kept with the flight gear's screens connected has not been kept without them.
+
+![The countdown says to stay for the question](../../../artifacts/screens/fly-stand-down-keep-notice/01-not-kept-yet.png)
+
 - **Cancel** ends the countdown. Nothing is closed, the line says "Stand down was cancelled. Nothing was closed.", and the Stand down button is there for when you are done.
 - **Change this for the setup** opens the setup editor, where the switch is.
 - The small button at the top right of the notice moves the countdown to the top bar. Use it when the notice lies over something you need, such as the setup editor's **Save** and **Cancel**. The countdown ("Stand down in 4:05") and its **Cancel** are then in the bar on every page. Press the countdown there to bring the notice back.
 - The game starting again ends the countdown too. So does Stand down pressed by hand (it runs at once, and once), and so does quitting RigReady. Closing the window to the tray is not quitting: the countdown goes on.
+- **Launch**, **Make ready** and a fix end the countdown the moment you press them, before they start anything, and the line says "Stand down was cancelled. Nothing was closed." A launch can take longer than what is left of the countdown, and nothing it starts is closed under it. **Re-check all** does not end the countdown: it changes nothing.
+- Launch, Make ready and a fix do not run while Stand down is running, wherever they are asked for (the tray, a shortcut, an assistant). They say "Stand down is running." Try again when it has finished.
 
 ![The countdown in the top bar](../../../artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png)
 
@@ -66,7 +75,7 @@ When the time is up, Stand down runs: the same one the button runs. The game is 
 
 ![Stood down by itself](../../../artifacts/screens/fly-stand-down-setting/03-stood-down-by-itself.png)
 
-If nobody is at a window of RigReady when the game closes, a Windows notification says when Stand down starts ("DCS F/A-18C: 1 h 42 min. Stand down starts in 1 minute. Open RigReady to cancel."), the window comes back on screen, and a second notification says what was done. See [Sessions and history](sessions.md).
+If nobody is at a window of RigReady when the game closes, a Windows notification says when Stand down starts ("DCS F/A-18C: 1 h 42 min. Stand down starts in 1 minute. Open RigReady to cancel.", followed by the desk layout line above when there is one), the window comes back on screen, and a second notification says what was done. See [Sessions and history](sessions.md).
 
 ### The switch and the countdown length
 
@@ -80,4 +89,6 @@ Both are in the setup editor, under **When the game closes** ([The setup editor]
 - You stood down while the game was still open. Nothing is offered again when it closes.
 - RigReady was not running when the game closed. At its next start it records the session and closes nothing.
 
-A step that asks a question still asks it. The desk layout's **Keep this monitor layout?** is one: when nobody answers, the layout goes back, and Stand down lists that step as not done.
+A step that asks a question still asks it. The desk layout's **Keep this monitor layout?** is one: it is the only way back from a layout that leaves no screen you can see, so it is never skipped because nobody is there. When nobody answers, the layout goes back, and Stand down lists that step as not done: "Desk monitor layout: The new monitor layout was not kept, so the previous one is back. Next time, stay for the question and press Keep it." The monitors are then still as the game left them. To put the desk layout back now, press **Stand down** and then **Keep it**; with these monitors it is not asked about again.
+
+![The desk layout went back with nobody there](../../../artifacts/screens/fly-stand-down-keep-notice/02-went-back.png)

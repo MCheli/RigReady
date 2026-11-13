@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { MainContext } from '../../../core/feature';
+import { sha256 } from '../../../core/files/fileStore';
 import { loadDataYaml } from '../../../core/files/yaml';
 import { allPathVariables, collapsePath, type PathVariables } from '../../../core/pathVariables';
 import { madeByVersionOne } from '../../../core/profile/earlier';
@@ -25,6 +26,10 @@ import { createProfile } from './profiles';
  * - config file: "file exists", or "file content" with the same regular expression.
  * - display, script and the "restore a file" fix have nothing in this version that does the
  *   same with the information the file holds, and are left out.
+ *
+ * Parts that come out as the same check (a wheel base Windows shows as two controllers,
+ * which RigReady 1 listed once for each under one name) are brought over as one, and the
+ * confirmation says so.
  *
  * The old file is only read. Nothing is written until the user says so, and then only the
  * new setup, through the same path as New setup from this rig.
@@ -240,6 +245,63 @@ function valid(ctx: Ctx, check: Proposed): boolean {
   );
 }
 
+/** JSON with the keys of every object in order, so equal values give equal text. */
+function stable(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
+  const object = record(value);
+  if (!object) return JSON.stringify(value) ?? 'undefined';
+  return `{${Object.keys(object)
+    .sort()
+    .filter((key) => object[key] !== undefined)
+    .map((key) => `${JSON.stringify(key)}:${stable(object[key])}`)
+    .join(',')}}`;
+}
+
+/** What a part does, so that two parts which would do the same thing have one key. */
+function keyOf(part: Part): string {
+  if (part.check) {
+    const { type, params, remediation } = part.check;
+    return `check|${stable({ type, params, remediation })}`;
+  }
+  return `${part.blocked ? 'blocked' : 'left'}|${part.title}|${part.blocked ?? part.left ?? ''}`;
+}
+
+/** "a", "a and b", "a, b and c". */
+const andList = (items: string[]): string =>
+  items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
+
+/**
+ * Parts that would do the same, as one: RigReady 1 had a wheel base that Windows shows as two
+ * controllers once for each, under one name, and both became the same check here. The first
+ * keeps its place and title; it is required when any of them was. A note says what was joined.
+ */
+function collapseIdentical(all: Part[]): { parts: Part[]; twice: string[] } {
+  const groups = new Map<string, Part[]>();
+  for (const part of all) {
+    const key = keyOf(part);
+    groups.set(key, [...(groups.get(key) ?? []), part]);
+  }
+  const parts: Part[] = [];
+  const twice: string[] = [];
+  for (const group of groups.values()) {
+    const first = group[0]!;
+    if (!first.check || group.length === 1) {
+      parts.push(first);
+      continue;
+    }
+    const required = group.some((p) => p.check!.required);
+    parts.push({ ...first, check: { ...first.check, required } });
+    const titles = [...new Set(group.map((p) => `"${p.title}"`))];
+    const each = group.length === 2 ? 'both' : 'all';
+    twice.push(
+      titles.length === 1
+        ? `RigReady 1 had ${titles[0]} ${group.length === 2 ? 'twice' : `${group.length} times`}, ${each} the same check. The new setup has it once.`
+        : `RigReady 1 had ${andList(titles)}, ${each} the same check. The new setup has it once, as "${first.title}".`
+    );
+  }
+  return { parts, twice };
+}
+
 /** The game module version 1's game name means on this PC, or why it cannot tell. */
 async function gameOf(ctx: Ctx, game: unknown): Promise<{ id?: string; note?: string }> {
   const named = text(game);
@@ -287,21 +349,23 @@ export async function planEarlier(ctx: Ctx, id: string): Promise<Result<Planned>
   const variables = await allPathVariables(ctx, ctx.games);
   const listed = await ctx.ports.devices.list();
   const devices = listed.ok ? listed.value : [];
-  const parts = (Array.isArray(file['checklistItems']) ? file['checklistItems'] : []).map((item) =>
+  const read = (Array.isArray(file['checklistItems']) ? file['checklistItems'] : []).map((item) =>
     partOf(item, devices, variables)
   );
-  for (const part of parts) {
+  for (const part of read) {
     if (part.check && !valid(ctx, part.check)) {
       part.left = 'This version would not accept it as it is.';
       delete part.check;
     }
   }
-  if (!listed.ok && parts.some((p) => p.blocked)) {
-    for (const part of parts)
+  if (!listed.ok && read.some((p) => p.blocked)) {
+    for (const part of read)
       if (part.blocked) part.blocked = `The devices could not be read: ${listed.error.message}`;
   }
+  // RigReady 1 listed a wheel base that Windows shows as two controllers twice, by one name.
+  const { parts, twice } = collapseIdentical(read);
 
-  const notes: string[] = [];
+  const notes: string[] = [...twice];
   const game = await gameOf(ctx, file['game']);
   if (game.note) notes.push(game.note);
   const module = game.id ? ctx.games.get(game.id) : undefined;
@@ -359,7 +423,7 @@ export async function planEarlier(ctx: Ctx, id: string): Promise<Result<Planned>
 
   const brought = parts.filter((p) => p.check);
   const already = await broughtOverAs(ctx, fileName);
-  const view: EarlierPlan = {
+  const shown: Omit<EarlierPlan, 'seen'> = {
     id,
     file: ctx.profiles.fileFor(id),
     name,
@@ -377,16 +441,17 @@ export async function planEarlier(ctx: Ctx, id: string): Promise<Result<Planned>
     ...(already ? { broughtOver: { id: already.id, name: already.name } } : {}),
     canBringOver: !already && blocked.length === 0 && (brought.length > 0 || launch !== undefined),
   };
-  if (!view.canBringOver) return ok({ view });
-  return ok({
-    view,
-    setup: {
-      name,
-      checks: brought.map((p) => p.check!),
-      ...(module ? { game: module.id } : {}),
-      ...(launch ? { launch } : {}),
-    },
-  });
+  const setup: NewProfile | undefined = shown.canBringOver
+    ? {
+        name,
+        checks: brought.map((p) => p.check!),
+        ...(module ? { game: module.id } : {}),
+        ...(launch ? { launch } : {}),
+      }
+    : undefined;
+  // What the user is shown and what Bring it over would write, as one fingerprint.
+  const view: EarlierPlan = { ...shown, seen: sha256(JSON.stringify({ shown, setup })) };
+  return ok(setup ? { view, setup } : { view });
 }
 
 /** The setup that was brought over from this file, when there is one. */
@@ -397,13 +462,25 @@ async function broughtOverAs(ctx: Ctx, fileName: string): Promise<Profile | unde
 
 /**
  * Makes the setup the plan shows, through the same path as New setup from this rig. The
- * plan is made again here, from the file as it is now: nothing the window sends is used.
- * The old file is not touched.
+ * plan is made again here, from the file as it is now: nothing the window sends is used
+ * but `seen`, the fingerprint of the plan it showed. When the plan made now is another (a
+ * device of that name plugged in or out meanwhile), nothing is made. The old file is not
+ * touched.
  */
-export async function bringOverEarlier(ctx: Ctx, id: string): Promise<Result<Profile>> {
+export async function bringOverEarlier(
+  ctx: Ctx,
+  id: string,
+  seen?: string
+): Promise<Result<Profile>> {
   const planned = await planEarlier(ctx, id);
   if (!planned.ok) return planned;
   const { view, setup } = planned.value;
+  if (seen !== undefined && seen !== view.seen) {
+    return err(
+      'profile.earlierChanged',
+      `What "${view.name}" would bring over changed since it was shown, so no setup was made. Look at it again.`
+    );
+  }
   if (view.broughtOver) {
     return err(
       'profile.earlierDone',

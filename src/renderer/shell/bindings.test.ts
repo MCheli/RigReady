@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BindingsPage, CommandShell, FeatureCommands } from '../../shared/feature';
 import {
+  bindingsOffered,
   bindingsPageAt,
   bindingsTarget,
   chooseBindingsPage,
@@ -17,6 +18,8 @@ const IRACING: BindingsPage = {
   order: 20,
 };
 const PAGES = [DCS, IRACING];
+/** The owner's rig: both games found. */
+const BOTH = ['dcs', 'iracing'];
 
 function memory(start?: string): BindingsMemory & { saved: string[] } {
   let value = start;
@@ -58,13 +61,37 @@ describe('NAV-GAMES-002 which game Bindings opens', () => {
       asked++;
       return 'iracing';
     };
-    expect(await bindingsTarget(PAGES, memory('dcs'), setupGame)).toBe(DCS);
+    expect(await bindingsTarget(PAGES, memory('dcs'), setupGame, BOTH)).toBe(DCS);
     expect(asked).toBe(0);
-    expect(await bindingsTarget(PAGES, memory(), setupGame)).toBe(IRACING);
+    expect(await bindingsTarget(PAGES, memory(), setupGame, BOTH)).toBe(IRACING);
     expect(asked).toBe(1);
     // A remembered game that has no page any more counts as nothing remembered.
-    expect(await bindingsTarget(PAGES, memory('lmu'), setupGame)).toBe(IRACING);
+    expect(await bindingsTarget(PAGES, memory('lmu'), setupGame, BOTH)).toBe(IRACING);
     expect(asked).toBe(2);
+  });
+
+  it('opens only a game found on this PC, and nothing where none is', async () => {
+    const noSetup = async (): Promise<undefined> => undefined;
+    // A PC whose only game is iRacing, no setup, nothing chosen yet: iRacing, not DCS.
+    expect(await bindingsTarget(PAGES, memory(), noSetup, ['iracing'])).toBe(IRACING);
+    // DCS shown last, or the setup in use for DCS, on a PC where DCS is not found any more.
+    expect(await bindingsTarget(PAGES, memory('dcs'), noSetup, ['iracing', 'acc'])).toBe(IRACING);
+    expect(await bindingsTarget(PAGES, memory(), async () => 'dcs', ['iracing'])).toBe(IRACING);
+    // No game with a bindings page found: Bindings says so (NoBindings), and opens no page.
+    expect(await bindingsTarget(PAGES, memory('dcs'), async () => 'dcs', [])).toBeUndefined();
+    expect(await bindingsTarget(PAGES, memory(), noSetup, ['acc', 'lmu'])).toBeUndefined();
+    // When which games are here cannot be told, every game's page is offered, as before.
+    expect(await bindingsTarget(PAGES, memory(), noSetup, undefined)).toBe(DCS);
+  });
+
+  it('the picker lists the games found, and the game on screen, which a link opens anywhere', () => {
+    expect(bindingsOffered(PAGES, BOTH)).toEqual([DCS, IRACING]);
+    expect(bindingsOffered(PAGES, ['iracing'])).toEqual([IRACING]);
+    expect(bindingsOffered(PAGES, [])).toEqual([]);
+    expect(bindingsOffered(PAGES, undefined)).toEqual([DCS, IRACING]);
+    // DCS's bindings opened by a link on a PC with iRacing only: it says which game it is.
+    expect(bindingsOffered(PAGES, ['iracing'], DCS)).toEqual([DCS, IRACING]);
+    expect(bindingsOffered(PAGES, [], IRACING)).toEqual([IRACING]);
   });
 
   it('the page a path is on: the page itself and its tabs, never one that only begins the same', () => {
