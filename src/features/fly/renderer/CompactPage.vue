@@ -301,7 +301,12 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <SessionBanner :session="fly.session" :kind="sessionKind" compact />
+      <SessionBanner
+        :session="fly.session"
+        :kind="sessionKind"
+        compact
+        @cancel="fly.cancelStandDown()"
+      />
 
       <div v-if="line" class="compact-line" :class="line.tone" data-testid="compact-line">
         {{ line.text }}

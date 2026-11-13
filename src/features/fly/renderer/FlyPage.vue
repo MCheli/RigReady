@@ -579,8 +579,10 @@ onBeforeUnmount(() => {
                     :to="`/configure/profiles/${fly.activeId}`"
                     data-testid="fly-edit"
                   />
-                  <!-- The three settings keep the menu open (their click stops here), so the
-                       tick is seen to change. Escape or a click elsewhere closes it. -->
+                  <!-- The two settings keep the menu open (their click stops here), so the
+                       tick is seen to change. Escape or a click elsewhere closes it. Stand
+                       down when the game closes is not here: each setup has its own switch
+                       and its own wait, in the setup editor. -->
                   <v-list-item
                     :prepend-icon="
                       fly.minimizeOnLaunch
@@ -591,16 +593,7 @@ onBeforeUnmount(() => {
                     data-testid="fly-minimize-pref"
                     @click.stop="fly.setMinimizeOnLaunch(!fly.minimizeOnLaunch)"
                   />
-                  <v-list-item
-                    :prepend-icon="
-                      fly.autoStandDown
-                        ? 'mdi-checkbox-marked-outline'
-                        : 'mdi-checkbox-blank-outline'
-                    "
-                    title="Stand down when the game closes"
-                    data-testid="fly-auto-stand-down"
-                    @click.stop="fly.setAutoStandDown(!fly.autoStandDown)"
-                  />
+
                   <v-list-item
                     :prepend-icon="
                       fly.readyTone ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'
@@ -672,7 +665,12 @@ onBeforeUnmount(() => {
           @dismiss="fly.declineSuggestion()"
         />
 
-        <SessionBanner :session="fly.session" :kind="sessionKind" @dismiss="fly.dismissSession()" />
+        <SessionBanner
+          :session="fly.session"
+          :kind="sessionKind"
+          @dismiss="fly.dismissSession()"
+          @cancel="fly.cancelStandDown()"
+        />
 
         <div class="fly-actions" :data-primary="primary ?? 'none'" data-testid="fly-actions">
           <template v-for="action in actions" :key="action">

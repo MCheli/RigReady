@@ -321,6 +321,8 @@ watch(
 }
 .shell-find-text {
   margin-right: 14px;
+  /* When the bar is full, what gives way is the scenario name, not these three words. */
+  white-space: nowrap;
 }
 .shell-find-keys {
   display: inline-flex;

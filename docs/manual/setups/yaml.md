@@ -88,6 +88,15 @@ extensions: {}                   # data other features keep with the setup, for 
 
 A check has `id`, `type`, `title`, `required` (true unless said otherwise), `params`, and may have `remediation` (`type` and `params`), `timeoutSeconds` (1 to 600) and `disabled`. A step has `id`, `title`, `type`, `params`, and may have `continueOnError` (true unless said otherwise), `delaySeconds` (after launch only), `waitForCompletion`, `hidden`, `timeoutSeconds` (1 to 3600) and `closeOnStandDown`. The fields of each type are on [Checks and fixes](checks.md).
 
+What the setup does when its game closes is kept under `extensions`, in `fly`: `standDownOnClose` (true unless it says false) and `standDownAfterSeconds` (60 unless said otherwise, a whole number from 5 to 3600). A value that is not one of those is read as the default. See [Stand down](../play/stand-down.md#stand-down-when-the-game-closes).
+
+```yaml
+extensions:
+  fly:
+    standDownOnClose: true
+    standDownAfterSeconds: 120
+```
+
 ## Comments and anchors
 
 RigReady reads a file with comments without complaint, and leaves them in place as long as the file is only read. But RigReady writes the whole file when a setup is saved from the editor, when a check's **Mark verified** button ([Checks and fixes](checks.md#game-updated-since-you-last-verified-game-updated)) stores a new version, and when another feature keeps its data with the setup. A save from the editor warns first: **Your comments will be lost**. If you keep notes in the file, keep a copy of them elsewhere, or use the setup's **Notes** field instead. The Setups page marks such a file with "YAML comments", so you know before you open the editor.

@@ -17,6 +17,8 @@ import {
   type Profile,
 } from '../../src/core/profile/schema';
 import { Fly } from '../../src/features/fly/core/fly';
+import { FORCE_CLOSE_LABEL } from '../../src/features/processes/core/processCheck';
+import { humanize } from '../../src/features/profiles/renderer/schemaForm';
 import { applyMutations } from '../../src/platform/fake/scenario';
 import {
   batchArgumentProblem,
@@ -799,5 +801,13 @@ describe('the checklist by kind', () => {
     expect(report.results.find((r) => r.group === 'displays')!.summary).toMatch(
       /rotated 0°, expected 90°|differences/
     );
+  });
+});
+
+describe('a hint that points at a switch names it as the setup editor does', () => {
+  it('the switch that lets Stand down force a program closed', () => {
+    // The check that closes a program tells the user to switch this on; the editor is in
+    // another feature, so the two are held together here.
+    expect(humanize('forceClose')).toBe(FORCE_CLOSE_LABEL);
   });
 });

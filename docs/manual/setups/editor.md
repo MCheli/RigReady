@@ -1,6 +1,6 @@
 ---
 title: The setup editor
-description: "Every part of Configure > Setups > Edit: name and game, what Launch starts, the desktop shortcut, the checklist and fixes, the launch and stand-down steps."
+description: "Every part of Configure > Setups > Edit: name and game, what Launch starts, the shortcut, the checklist, the steps, and Stand down when the game closes."
 order: 20
 ---
 
@@ -58,6 +58,15 @@ Three lists of steps, each with **Add step**. A step is any fix type that does s
 - **Seconds after the game starts**, for a step after launch.
 
 What each list means is on [Launch targets and steps](launch.md).
+
+## When the game closes
+
+- **Stand down when the game closes**, on by default. When this setup's game has closed, RigReady counts down on the screen, with a Cancel button, and then does what the Stand down button does. Off: nothing is closed by itself.
+- **Countdown**: how long that countdown is. One minute by default; the list goes from 10 seconds to 10 minutes.
+
+Every setup has its own answer. What the countdown looks like, and when it does not start, is on [Stand down](../play/stand-down.md#stand-down-when-the-game-closes).
+
+![When the game closes](../../../artifacts/screens/fly-stand-down-setting/02-lengths.png)
 
 ## Saving
 

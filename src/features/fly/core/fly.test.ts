@@ -740,7 +740,27 @@ describe('Stand down', () => {
     app.ports.processes.stubborn.add('dcs.exe');
     await f.launch('p');
     const stuck = await f.standDown('p', { closeGame: true });
-    expect(stuck.ok && stuck.value.headline).toBe('Closed 1 app · 1 step need attention');
+    expect(stuck.ok && stuck.value.headline).toBe('Closed 1 app · 1 step needs attention');
+    expect(stuck.ok && stuck.value.steps[0]).toMatchObject({
+      ok: false,
+      message: 'DCS.exe is still running: it did not close when asked. Close it yourself.',
+    });
+    // When Windows says why, the step says why: here the app only went to the tray.
+    await f.launch('p');
+    const close = app.ports.processes.close.bind(app.ports.processes);
+    app.ports.processes.close = async (pid, options) => {
+      const list = await app.ports.processes.list();
+      const name = list.ok ? list.value.find((p) => p.pid === pid)?.name : undefined;
+      return name === 'VoiceAttack.exe'
+        ? err('process.stillRunning', `Process ${pid} did not close within 10 s.`, 'ignored')
+        : close(pid, options);
+    };
+    const tray = await f.standDown('p');
+    expect(tray.ok && tray.value.steps[0]).toMatchObject({
+      ok: false,
+      message:
+        'VoiceAttack.exe is still running: it was asked to close and stayed open. Some apps only go to the tray when asked. Close it yourself.',
+    });
   });
 });
 
@@ -779,35 +799,41 @@ describe('the rest', () => {
 
   it('remembers whether to hide after Launch', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
-    // Hiding after Launch is on; standing down by itself and the ready tone are off, until
-    // the user says otherwise.
+    // Hiding after Launch is on and the ready tone is off, until the user says otherwise.
+    // (Stand down when the game closes is not here: each setup has its own switch.)
     expect(await app.invoke('fly:preferences')).toEqual({
       minimizeOnLaunch: true,
-      autoStandDown: false,
       readyTone: false,
     });
     expect(await app.invoke('fly:setPreferences', { minimizeOnLaunch: false })).toEqual({
       minimizeOnLaunch: false,
-      autoStandDown: false,
       readyTone: false,
     });
     expect(await app.invoke('fly:launch', { profileId: 'dcs-f-a-18c' })).toMatchObject({
       minimize: false,
     });
-    // One choice does not undo the others.
-    expect(await app.invoke('fly:setPreferences', { autoStandDown: true })).toEqual({
-      minimizeOnLaunch: false,
-      autoStandDown: true,
-      readyTone: false,
-    });
+    // One choice does not undo the other.
     expect(await app.invoke('fly:setPreferences', { readyTone: true })).toEqual({
       minimizeOnLaunch: false,
-      autoStandDown: true,
       readyTone: true,
     });
     expect(await app.invoke('fly:preferences')).toEqual({
       minimizeOnLaunch: false,
-      autoStandDown: true,
+      readyTone: true,
+    });
+  });
+
+  it('a preferences file from before the switch moved into the setup still reads', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    // The old file had the choice for every setup at once. It is no longer read: each setup
+    // has its own switch, on unless the setup says otherwise.
+    await app.ports.files.write(
+      path.join(app.ports.folders.dataRoot(), 'fly', 'preferences.json'),
+      JSON.stringify({ minimizeOnLaunch: false, autoStandDown: true, readyTone: true }),
+      { reason: 'An older RigReady' }
+    );
+    expect(await app.invoke('fly:preferences')).toEqual({
+      minimizeOnLaunch: false,
       readyTone: true,
     });
   });

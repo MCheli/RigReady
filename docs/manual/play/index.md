@@ -76,4 +76,4 @@ A check that takes too long is reported as "Timed out after 5 s" and counts as n
 
 ## The menu
 
-The ⋮ button at the top right of the panel has the settings of the Play screen (hide after launch, stand down when the game closes, the ready tone), **History** and **Compact view**. See [The Play menu](the-menu.md).
+The ⋮ button at the top right of the panel has the settings of the Play screen (hide after launch, the ready tone), **History** and **Compact view**. See [The Play menu](the-menu.md).
