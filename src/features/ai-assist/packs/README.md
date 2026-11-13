@@ -65,6 +65,9 @@ Rules the loader enforces (a shipped file that breaks one fails the tests):
   id and DCS's name, recorded from a real install by
   `tests/unit/dcsActionLists.record.test.ts`; run it again after a DCS update or for a new
   module).
+- A pattern (`re`) is at most 100 characters, repeats no group (`(…)+` is refused), uses `*`,
+  `+` or `{…}` at most twice, and a file holds at most 40 patterns. The same rules hold for a
+  guide a user imports or writes by hand and for a guide drafted by AI.
 - Two shipped files may not be for the same profile id.
 - Text is plain: no HTML or Markdown is rendered.
 

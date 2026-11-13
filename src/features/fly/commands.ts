@@ -299,6 +299,12 @@ export default defineCommands({
     return kinds.get(game);
   },
 
+  async setupGame(shell) {
+    const state = await shell.client(flyContract).state();
+    if (!state.ok) return undefined;
+    return state.value.profiles.find((p) => p.id === state.value.activeProfileId)?.game;
+  },
+
   onSetupChanged(shell, changed) {
     const api = shell.client(flyContract);
     // The screen checks the setup it shows: a result for another setup than the last one

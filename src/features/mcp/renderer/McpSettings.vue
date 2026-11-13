@@ -5,12 +5,17 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import ConnectAssistants from './ConnectAssistants.vue';
 import { mcpContract, type McpStatus } from '../contract';
 import type { ActivityEntry } from '../core/activity';
-import { CLIENT_KINDS, type ClientKind } from '../core/clientConfig';
+import { CLIENT_KINDS, needsToken, type ClientKind } from '../core/clientConfig';
+import { outcomeLine, textAsShown } from './outcomeWords';
 
 /**
  * Settings > AI assistants: turn the MCP server on, choose when RigReady asks, connect a
  * client (the text to paste, with a Copy button), pair one over HTTP, forget a pairing,
  * and see what assistants did in this run.
+ *
+ * A pairing's token is on this page only from Pair until the page is left or "Done" is
+ * pressed, and it is never drawn unless the user presses "Show the token": the text to paste
+ * shows a placeholder in its place, and Copy takes the real one along.
  */
 const api = useClient(mcpContract);
 const status = ref<McpStatus>();
@@ -21,6 +26,7 @@ const config = ref<{ text: string; hint: string }>();
 const copied = ref(false);
 const pairName = ref('');
 const fresh = ref<{ name: string; token: string }>();
+const tokenShown = ref(false);
 const activity = ref<ActivityEntry[]>([]);
 
 const policies = [
@@ -52,7 +58,11 @@ const surfaces = [
 
 const kinds = CLIENT_KINDS.map((c) => ({ value: c.kind, title: c.title }));
 const tokenFor = computed(() =>
-  fresh.value && kind.value.endsWith('http') ? fresh.value.token : undefined
+  fresh.value && needsToken(kind.value) ? fresh.value.token : undefined
+);
+/** The text to paste as it is drawn: the token only when the user asked to see it. */
+const shownText = computed(() =>
+  textAsShown(config.value?.text ?? '', tokenFor.value, tokenShown.value)
 );
 const others = computed(() => status.value?.pairings.filter((p) => p.kind === 'http') ?? []);
 const bridge = computed(() => status.value?.pairings.find((p) => p.kind === 'bridge'));
@@ -116,9 +126,19 @@ async function pair(): Promise<void> {
     return;
   }
   fresh.value = { name, token: paired.value.token };
+  tokenShown.value = false;
   status.value = paired.value.status;
   pairName.value = '';
-  if (!kind.value.endsWith('http')) kind.value = 'claude-code-http';
+  // A token is only of use in a form that takes one. The plain one is offered: the address
+  // and the header, for whatever settings the assistant has.
+  if (!needsToken(kind.value)) kind.value = 'http';
+  await loadConfig();
+}
+
+/** The token leaves the page: what is drawn and what Copy takes go back to the placeholder. */
+async function doneWithToken(): Promise<void> {
+  fresh.value = undefined;
+  tokenShown.value = false;
   await loadConfig();
 }
 
@@ -131,15 +151,6 @@ async function copy(): Promise<void> {
 
 const calls = (n: number): string => (n === 1 ? '1 call' : `${n} calls`);
 const when = (iso?: string): string => (iso ? new Date(iso).toLocaleString() : 'never');
-const outcomeWord: Record<ActivityEntry['outcome'], string> = {
-  ok: 'Done',
-  error: 'Failed',
-  denied: 'You said no',
-  timeout: 'Not answered',
-  refused: 'Not offered',
-  busy: 'Busy',
-  rate: 'Too many calls',
-};
 
 let offChanged: (() => void) | undefined;
 let offActivity: (() => void) | undefined;
@@ -266,25 +277,40 @@ onBeforeUnmount(() => {
         />
         <template v-if="config">
           <p class="rr-row-sub mt-2" data-testid="mcp-client-hint">{{ config.hint }}</p>
-          <pre class="rr-mono mcp-config" data-testid="mcp-client-config">{{ config.text }}</pre>
+          <pre class="rr-mono mcp-config" data-testid="mcp-client-config">{{ shownText }}</pre>
           <v-btn size="small" variant="tonal" data-testid="mcp-copy" @click="copy">
-            <v-icon start icon="mdi-content-copy" />Copy
+            <v-icon start icon="mdi-content-copy" />{{ tokenFor ? 'Copy with the token' : 'Copy' }}
           </v-btn>
+          <v-btn
+            v-if="tokenFor"
+            size="small"
+            variant="text"
+            class="ml-1"
+            data-testid="mcp-token-toggle"
+            @click="tokenShown = !tokenShown"
+            >{{ tokenShown ? 'Hide the token' : 'Show the token' }}</v-btn
+          >
           <span v-if="copied" class="ml-2 rr-ok" data-testid="mcp-copied"
-            ><v-icon size="16" icon="mdi-check" /> Copied</span
+            ><v-icon size="16" icon="mdi-check" />
+            {{
+              tokenFor
+                ? 'Copied with the token. It stays on the clipboard until you copy something else.'
+                : 'Copied'
+            }}</span
           >
         </template>
 
         <div class="rr-section-title mt-4">Assistants that connect over HTTP</div>
-        <p class="rr-row-sub">
-          The forms above that start RigReady need nothing more. An assistant that connects to the
-          address directly needs a token of its own: pair it under a name, and what it does is
-          recorded under that name.
+        <p class="rr-row-sub" data-testid="mcp-pair-intro">
+          Most assistants need none of this: Connect and the forms above that start RigReady use no
+          token you ever see, type or paste. Pair only an assistant that has to connect to the
+          address itself. It gets a token of its own, which then sits in that assistant's settings
+          in plain text, and what it does is recorded under its name.
         </p>
         <div class="d-flex ga-2 align-center">
           <v-text-field
             v-model="pairName"
-            label="Name, for example Claude Code"
+            label="Name, for example Workshop agent"
             density="compact"
             hide-details
             maxlength="60"
@@ -300,9 +326,21 @@ onBeforeUnmount(() => {
           class="mt-2"
           data-testid="mcp-fresh-token"
         >
-          The token for {{ fresh.name }} is shown only now and is already in the text above. Copy it
-          before you leave this page.
-          <div class="rr-mono mcp-token">{{ fresh.token }}</div>
+          {{ fresh.name }} is paired. Its token is in the text above, hidden: copy the text and
+          paste it into that assistant's settings before you leave this page. RigReady keeps only a
+          fingerprint of the token and cannot show it again.
+          <div class="mt-1">
+            Treat it like a password: whoever holds it can use RigReady from this PC under this
+            name. <strong>Forget</strong> below ends it at once.
+          </div>
+          <v-btn
+            size="small"
+            variant="text"
+            class="mt-1"
+            data-testid="mcp-token-done"
+            @click="doneWithToken"
+            >Done, take it off this page</v-btn
+          >
         </v-alert>
         <div v-for="p in others" :key="p.id" class="rr-row" data-testid="mcp-pairing">
           <div class="rr-row-main">
@@ -325,7 +363,8 @@ onBeforeUnmount(() => {
           <div class="rr-row-main">
             <div class="rr-row-title">RigReady.exe --mcp</div>
             <div class="rr-row-sub">
-              The assistants started with the command above. Last call
+              The assistants started with the command above. Its token is a file in RigReady's data
+              folder that only this Windows account reads; it is never shown or pasted. Last call
               {{ when(bridge.lastUsedAt) }}, {{ calls(bridge.calls) }}.
             </div>
           </div>
@@ -345,7 +384,7 @@ onBeforeUnmount(() => {
               {{ a.detail }}
             </div>
             <div class="rr-row-sub">
-              {{ outcomeWord[a.outcome] }}. {{ a.message }}
+              {{ outcomeLine(a) }}
               <template v-if="a.journalGroups.length > 0">
                 Changed files; see the Safety page to undo.</template
               >
@@ -379,9 +418,5 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   background: rgb(var(--v-theme-surface-variant), 0.35);
   font-size: 12.5px;
-}
-.mcp-token {
-  word-break: break-all;
-  margin-top: 6px;
 }
 </style>

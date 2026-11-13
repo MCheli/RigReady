@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { scenarioRig } from '../../../../tests/helpers';
+import { loggedApp } from '../../../../tests/loggedApp';
 import { createLogger, parseLog, type LogEntry } from '../../../core/logger';
 import type { Http, HttpRequest, HttpResponse, HttpStreamRequest } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
@@ -406,6 +407,109 @@ describe('the log of the wired app: what is in it after the assistant was used, 
         .join('\n');
       expect(ours).not.toContain(TOOL_ANSWER_MARK);
       expect(ours).not.toContain('TrackIR');
+    } finally {
+      await app.close();
+    }
+  });
+});
+
+describe('PLAT-018 a support export after a provider said no: what happened is in it, the key is not', () => {
+  const MESSAGES = { url: 'api.anthropic.com/v1/messages', method: 'POST' } as const;
+
+  it('holds the status, the reason, the error type and the request id, and what the panel told the user', async () => {
+    const app = await loggedApp('flying-all-good');
+    try {
+      await app.rig.ports.secrets.set(AI_KEY_SECRET, KEY);
+      const http = app.rig.ports.http;
+      http.scripts.push({
+        match: MESSAGES,
+        times: 1,
+        response: {
+          status: 401,
+          headers: { 'request-id': 'req_unit_0001' },
+          json: {
+            type: 'error',
+            error: { type: 'authentication_error', message: 'invalid x-api-key' },
+            request_id: 'req_unit_0001',
+          },
+        },
+      });
+      http.scripts.push({
+        match: { url: 'api.anthropic.com/v1/models/', method: 'GET' },
+        times: 1,
+        response: {
+          status: 403,
+          headers: { 'request-id': 'req_unit_0002' },
+          json: {
+            type: 'error',
+            error: { type: 'permission_error', message: 'This key may not use that model.' },
+          },
+        },
+      });
+
+      // The send in the panel is refused by the provider.
+      const first = await app.invoke<TurnPreview>('ai-assist:assistantPrepare', { text: QUESTION });
+      if (!first.ok) throw new Error(first.error.message);
+      const refused = await app.invoke<TurnOutcome>('ai-assist:assistantSend', {
+        requestId: first.value.requestId,
+      });
+      if (refused.ok) throw new Error('The send was meant to be refused.');
+      // The request is thrown away, and a click on a stale panel sends it once more.
+      await app.invoke('ai-assist:assistantDiscard', { requestId: first.value.requestId });
+      const spent = await app.invoke<TurnOutcome>('ai-assist:assistantSend', {
+        requestId: first.value.requestId,
+      });
+      expect(!spent.ok && spent.error.code).toBe('ai.expired');
+      // And the key test in Settings is refused too.
+      await app.invoke('ai-assist:testKey');
+
+      const zip = await app.exported();
+      const lines = zip['logs/rigready.log']!.split('\n');
+      const about = (text: string): string[] => lines.filter((line) => line.includes(text));
+
+      // The provider's own words about each request it refused.
+      const provider = about('a request to the AI provider failed');
+      expect(provider).toHaveLength(2);
+      for (const part of [
+        '"provider":"api.anthropic.com"',
+        '"path":"/v1/messages"',
+        '"status":401',
+        '"errorType":"authentication_error"',
+        '"message":"invalid x-api-key"',
+        '"requestId":"req_unit_0001"',
+      ]) {
+        expect(provider[0], part).toContain(part);
+      }
+      expect(provider[1]).toContain('"status":403');
+      expect(provider[1]).toContain('"errorType":"permission_error"');
+      expect(provider[1]).toContain('This key may not use that model.');
+
+      // What the panel told the user, under the channel that answered: the code and the words.
+      const panel = about('ai-assist:assistantSend answered with an error');
+      expect(panel).toHaveLength(2);
+      expect(panel[0]).toContain(`"code":"${refused.error.code}"`);
+      expect(panel[0]).toContain(JSON.stringify(refused.error.message).slice(1, 60));
+      // The request that was no longer there to send.
+      expect(panel[1]).toContain('"code":"ai.expired"');
+      expect(panel[1]).toContain('That request is no longer ready.');
+
+      // Copy diagnostics carries the newest lines of the same log.
+      const copied = await app.copied();
+      expect(copied).toContain('a request to the AI provider failed');
+      expect(copied).toContain('"status":401');
+      expect(copied).toContain('ai-assist:assistantSend answered with an error');
+
+      // No file of the export, and nothing on the clipboard, holds the key or the question.
+      const everything = { ...zip, clipboard: copied };
+      expect(Object.keys(zip)).toEqual(
+        expect.arrayContaining(['diagnostics.txt', 'logs/rigready.log'])
+      );
+      for (const [name, text] of Object.entries(everything)) {
+        expect(text, name).not.toContain(KEY);
+        expect(text, name).not.toContain('NOT-A-REAL-KEY');
+        expect(text, name).not.toContain(QUESTION);
+        expect(text, name).not.toContain('TrackIR a required step');
+      }
     } finally {
       await app.close();
     }

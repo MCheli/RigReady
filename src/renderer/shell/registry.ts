@@ -2,6 +2,9 @@ import type { RouteRecordRaw } from 'vue-router';
 import {
   commandProblem,
   MODE_NAMES,
+  navEntriesOf,
+  placeEntriesOf,
+  placesOf,
   type CommandShell,
   type FeatureCommands,
   type FeatureManifest,
@@ -91,9 +94,27 @@ const PLAY_PAGE = {
   keywords: ['fly', 'race', 'ready', 'checklist', 'home'],
 };
 
+/**
+ * A feature's entries for the palette: its menu entries, and its pages that stand under
+ * another's entry (a game page under Games, a bindings page under Bindings), which are
+ * named and placed as entries are.
+ */
+function entriesOf(manifest: FeatureManifest | undefined): NavEntry[] {
+  if (!manifest) return [];
+  return [...(manifest.nav ?? []), ...placeEntriesOf(manifest).map((place) => place.entry)];
+}
+
+/**
+ * Every entry and every place, with the feature it comes from. A place counts as an entry
+ * here: it keeps its name, and the pages below it are named after it ("DCS World: Screens").
+ */
+function navigationOf(manifests: FeatureManifest[]): { entry: NavEntry; feature: string }[] {
+  return [...navEntriesOf(manifests), ...placesOf(manifests)];
+}
+
 /** The heading a feature's commands stand under, and where it stands. */
 export function areaOf(manifest: FeatureManifest | undefined, feature: string) {
-  const first = [...(manifest?.nav ?? [])].sort((a, b) => navRank(a) - navRank(b))[0];
+  const first = entriesOf(manifest).sort((a, b) => navRank(a) - navRank(b))[0];
   if (first) return { title: first.title, order: navRank(first), icon: first.icon };
   const titled = flatten(manifest?.routes ?? []).find((r) => r.title);
   // The feature whose pages are those of Play mode has no navigation entry and comes first,
@@ -110,7 +131,7 @@ export function areaOf(manifest: FeatureManifest | undefined, feature: string) {
  * commands.ts gives it a better one.
  */
 export function pageCommands(manifests: FeatureManifest[]): ListedCommand[] {
-  const nav = manifests.flatMap((m) => (m.nav ?? []).map((entry) => ({ entry, feature: m.id })));
+  const nav = navigationOf(manifests);
   const pages: ListedCommand[] = nav.map(({ entry, feature }) => ({
     id: `page:${entry.to}`,
     feature,
@@ -207,7 +228,7 @@ export function staticCommands(
   modules: FeatureCommands[]
 ): ListedCommand[] {
   const byId = new Map(manifests.map((m) => [m.id, m]));
-  const navigation = new Set(manifests.flatMap((m) => (m.nav ?? []).map((entry) => entry.to)));
+  const navigation = new Set(navigationOf(manifests).map(({ entry }) => entry.to));
   const pages = new Map(pageCommands(manifests).map((page) => [page.to, page]));
   const others: ListedCommand[] = [];
   for (const module of modules) {

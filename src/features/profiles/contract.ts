@@ -127,10 +127,49 @@ export const ProfileOverviewSchema = z.object({
     })
   ),
   /** Setup files RigReady 1 left behind: not read, not broken, listed apart. */
-  earlier: z.array(z.object({ id: z.string(), file: z.string(), name: z.string().optional() })),
+  earlier: z.array(
+    z.object({
+      id: z.string(),
+      file: z.string(),
+      name: z.string().optional(),
+      /** The setup made from it with "Bring it over", while that setup is there. */
+      broughtOver: z.object({ id: z.string(), name: z.string() }).optional(),
+    })
+  ),
   lastProfileId: z.string().optional(),
 });
 export type ProfileOverview = z.infer<typeof ProfileOverviewSchema>;
+
+/** A part of a RigReady 1 setup and what happens to it. */
+const EarlierPartSchema = z.object({ title: z.string(), why: z.string() });
+
+/**
+ * What "Bring it over" would make of a setup file RigReady 1 left, worked out without
+ * writing anything: the checks that become checks of this version, the parts that cannot
+ * (with why), and what stops it now.
+ */
+export const EarlierPlanSchema = z.object({
+  id: z.string(),
+  /** The old file, which is only read. */
+  file: z.string(),
+  /** What RigReady 1 called the setup. */
+  name: z.string(),
+  /** What the new setup is called. */
+  setupName: z.string(),
+  gameName: z.string().optional(),
+  /** What Launch starts, in words. */
+  launch: z.string().optional(),
+  checks: z.array(z.object({ title: z.string(), what: z.string(), required: z.boolean() })),
+  /** Parts this version has nothing for: not brought over. */
+  left: z.array(EarlierPartSchema),
+  /** What stops it being brought over now, and what to do. */
+  blocked: z.array(EarlierPartSchema),
+  /** Said once beside the checks (the game, the launch, backups). */
+  notes: z.array(z.string()),
+  broughtOver: z.object({ id: z.string(), name: z.string() }).optional(),
+  canBringOver: z.boolean(),
+});
+export type EarlierPlan = z.infer<typeof EarlierPlanSchema>;
 
 export const DetectedGameSchema = z.object({
   id: z.string(),
@@ -296,6 +335,18 @@ export const profilesContract = defineContract('profiles', {
       "Deletes a setup's file and its desktop shortcut, if it has one. Both are backed up first and can be put back together from the Safety page. id comes from profiles:list. Ask the user first.",
     tier: 'change',
   }),
+  /** What "Bring it over" would make of a setup file RigReady 1 left. */
+  earlierPlan: channel(ProfileId, EarlierPlanSchema, {
+    describe:
+      'Says what a setup file RigReady 1 left in the setups folder would become in this version: its checks, the parts that cannot be brought over and why, and whether it can be brought over now. id comes from the earlier list of profiles:overview. Changes nothing.',
+    tier: 'read',
+  }),
+  /** Makes a new setup from a RigReady 1 file, as earlierPlan says; the old file stays. */
+  bringOver: channel(ProfileId, ProfileSchema, {
+    describe:
+      'Makes a new setup from a setup file RigReady 1 left, exactly as profiles:earlierPlan says, and writes the new file. The old file is not changed. Show the plan to the user and ask first.',
+    tier: 'change',
+  }),
   /** Makes this the setup the Play screen shows. */
   use: channel(ProfileId, z.object({ used: z.boolean() }), {
     describe:
@@ -314,6 +365,20 @@ export const profilesContract = defineContract('profiles', {
       'Looks at the PC as it is now (games, devices, programs, files worth backing up) and proposes checks for a new setup. Use it before profiles:create. Changes nothing.',
     tier: 'read',
   }),
+  /** "Always offer this app": a candidate the capture lists in every new setup from now on, or not. */
+  remember: channel(
+    z.object({
+      capture: z.string().min(1).max(64),
+      key: z.string().min(1).max(300),
+      on: z.boolean(),
+    }),
+    z.object({ candidate: CaptureCandidateSchema.optional() }),
+    {
+      describe:
+        "Offers a running program RigReady does not know in every new setup from now on (on: true), or stops (on: false). capture and key come from a candidate of profiles:capture that has remember. Answers with the candidate as it is now. Changes RigReady's own list only.",
+      tier: 'change',
+    }
+  ),
   create: channel(NewProfileSchema, ProfileSchema, {
     describe:
       'Creates a new setup from a name, game and launch target and writes its file. Use profiles:capture and profiles:games first to choose the game and what to check.',

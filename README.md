@@ -71,7 +71,7 @@ See [AI assistants](docs/manual/ai/index.md).
 
 | | |
 |---|---|
-| ![Cheat sheet for a stick](artifacts/screens/tour-flying/10-cheat-sheets.png) | ![Restoring a backup](artifacts/screens/restore/02-preview.png) |
+| ![Cheat sheet for a stick](artifacts/screens/tour-flying/07-cheat-sheets.png) | ![Restoring a backup](artifacts/screens/restore/02-preview.png) |
 | Cheat sheets: what every control does | A restore shows what will change before it does |
 | ![The input tester](artifacts/screens/devices-tester-stick/02-stick-in-motion.png) | ![The health check](artifacts/screens/devices-health/04-findings.png) |
 | The input tester: what a game sees | The health check: a stuck button and a rogue input |

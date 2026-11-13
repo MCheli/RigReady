@@ -1,0 +1,8 @@
+description: The data folder RigReady 1 left behind, with the wheel its setup names unplugged
+rig: mark-full
+extends: first-run-after-version-one.yaml
+# The setup RigReady 1 made knows the wheel only by its name. With no device of that name
+# connected, RigReady cannot tell which one it is, and says so instead of guessing.
+mutations:
+  - op: unplugDevice
+    match: { vendorId: '0EB7', productId: '0007' }

@@ -35,10 +35,22 @@ test('mcp: turned on in Settings, an assistant paired, its change asked in the w
   await page.getByTestId('mcp-pair-name').locator('input').fill('Claude Code');
   await page.getByTestId('mcp-pair').click();
   await expect(page.getByTestId('mcp-fresh-token')).toBeVisible();
-  const token = /rr_[0-9a-f]{64}/.exec(await page.getByTestId('mcp-fresh-token').innerText())?.[0];
+  // The token is in the text to paste, drawn as a placeholder: nothing on the page shows it.
+  await expect(page.getByTestId('mcp-client-config')).toContainText('Bearer <token hidden>');
+  expect(await section.innerText()).not.toMatch(/rr_[0-9a-f]{16}/);
+  // It is drawn only when asked for, and put away again the same way.
+  await page.getByTestId('mcp-token-toggle').click();
+  const token = /rr_[0-9a-f]{64}/.exec(
+    await page.getByTestId('mcp-client-config').innerText()
+  )?.[0];
   expect(token).toBeTruthy();
-  await expect(page.getByTestId('mcp-client-config')).toContainText(token!);
+  await page.getByTestId('mcp-token-toggle').click();
+  await expect(page.getByTestId('mcp-client-config')).not.toContainText(token!);
+  // Copy takes the real one along, and says that it did and where it now is.
+  await page.getByTestId('mcp-copy').click();
+  await expect(page.getByTestId('mcp-copied')).toContainText('Copied with the token');
   await expect(page.getByTestId('mcp-pairing')).toContainText('Claude Code');
+  expect(await section.innerText()).not.toMatch(/rr_[0-9a-f]{16}/);
   await shot('paired');
 
   const client = new Client({ name: 'e2e-assistant', version: '1.0.0' });
@@ -141,8 +153,17 @@ test('mcp: a channel called directly is asked about in words with the call under
   expect(url, state).toBeTruthy();
   await page.getByTestId('mcp-pair-name').locator('input').fill('Claude Code');
   await page.getByTestId('mcp-pair').click();
-  const token = /rr_[0-9a-f]{64}/.exec(await page.getByTestId('mcp-fresh-token').innerText())?.[0];
+  await page.getByTestId('mcp-token-toggle').click();
+  const token = /rr_[0-9a-f]{64}/.exec(
+    await page.getByTestId('mcp-client-config').innerText()
+  )?.[0];
   expect(token).toBeTruthy();
+  // "Done" takes the token off the page for good: the placeholder of an unpaired form is back.
+  await page.getByTestId('mcp-token-done').click();
+  await expect(page.getByTestId('mcp-fresh-token')).toHaveCount(0);
+  await expect(page.getByTestId('mcp-client-config')).toContainText(
+    '<token from the Settings page>'
+  );
   const pairing = page.getByTestId('mcp-pairing');
   await expect(pairing).toContainText(', 0 calls');
 
@@ -184,6 +205,11 @@ test('mcp: a channel called directly is asked about in words with the call under
     await shot('question-launch');
     await page.getByTestId('mcp-question-deny').click();
     expect((await launch).isError).toBe(true);
+    // The short line says it as the list does, in the words of the person who said no.
+    await expect(page.getByTestId('mcp-done')).toContainText(
+      `Claude Code: Launch ${setup.name}. You said no.`
+    );
+    await expect(page.getByTestId('mcp-done')).not.toContainText('did not allow');
 
     // What was refused is in the list with the call as it was made, and in the pairing's count.
     const rows = page.getByTestId('mcp-activity');
@@ -197,6 +223,30 @@ test('mcp: a channel called directly is asked about in words with the call under
     await expect(pairing).toContainText(', 3 calls');
     await rows.nth(2).scrollIntoViewIfNeeded();
     await shot('said-no-and-counted');
+
+    // A call too long for the question is cut where the line says so, with how much is left out.
+    const long = client.callTool({
+      name: 'rigready_call',
+      arguments: {
+        channel: 'profiles:save',
+        input: {
+          id: setup.id,
+          name: `${setup.name}, renamed to something far longer than one line under a question holds`,
+          game: 'dcs',
+          checks: [],
+        },
+      },
+    });
+    await expect(question).toBeVisible();
+    await expect(page.getByTestId('mcp-question-detail')).toHaveText(
+      /^profiles:save \{.{119}… \(\d+ more characters not shown\)$/
+    );
+    await shot('question-cut-says-so');
+    await page.getByTestId('mcp-question-deny').click();
+    expect((await long).isError).toBe(true);
+    await expect(rows.nth(0).getByTestId('mcp-activity-detail')).toContainText(
+      'more characters not shown'
+    );
   } finally {
     await client.close();
   }

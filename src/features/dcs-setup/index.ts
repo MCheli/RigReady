@@ -2,13 +2,15 @@ import { defineFeature } from '../../shared/feature';
 
 export default defineFeature({
   id: 'dcs-setup',
-  nav: [
+  // No menu entry of its own: Games offers the page with a card (decision 1A, 12 Nov 2026).
+  gamePages: [
     {
       title: 'DCS World',
       icon: 'mdi-airplane',
       to: '/configure/dcs',
+      about: 'Screens for the cockpit displays, Export.lua and SimAppPro.',
+      games: ['dcs'],
       order: 210,
-      section: 'Games',
     },
   ],
   routes: [

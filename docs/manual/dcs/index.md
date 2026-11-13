@@ -1,6 +1,6 @@
 ---
 title: DCS World
-description: What RigReady does for DCS World, the Configure > DCS World page and its tabs, the files it manages under Saved Games, and the rule that DCS must be closed.
+description: What RigReady does for DCS World, its page under Configure > Games and the tabs, the files it manages under Saved Games, and the rule that DCS must be closed.
 order: 60
 ---
 
@@ -8,14 +8,14 @@ For DCS World RigReady goes further than for any other game: it finds the instal
 
 ## The DCS World page
 
-**Configure > DCS World** has four tabs.
+**Configure > Games > DCS World** has four tabs. It opens from its card on the Games page, which is there when DCS is found on this PC, and from **Set up DCS World** on the DCS World game page.
 
 - **Overview**: the installs with their version and whether an update is waiting, the Saved Games folders, the aircraft, and the state of the screens, Export.lua, the graphics options and SimAppPro at a glance. A warning at the top says when a file RigReady manages was changed by something else, and a note says when DCS is running.
 - **Screens**: the monitor setup, described on [MFD screens and the monitor setup](screens.md).
 - **Export.lua**: the export scripts, described on [Export.lua](export-lua.md).
 - **SimAppPro**: what RigReady does in SimAppPro's place and which setups still need it running, described on [SimAppPro](simapppro.md).
 
-The bindings have their own page, **Configure > DCS bindings**, and the cheat sheets and the binding guide are under **Configure > Cheat sheets** and **Configure > Binding guide**. All of them find DCS the same way, through the installs described on [Installs and aircraft](installs.md).
+The bindings have their own page, **Configure > Bindings** with **DCS** chosen in its game picker, and the cheat sheets and the binding guide are under **Configure > Cheat sheets** and **Configure > Binding guide**. All of them find DCS the same way, through the installs described on [Installs and aircraft](installs.md).
 
 Binding guides are included for the F/A-18C, F-16C, A-10C II, A-10C, A-10A, F-14 (pilot and RIO), F-15E (pilot and WSO), F-15C, MiG-29, Su-27, J-11A, Su-33, Su-25T, Su-25, Ka-50 III, Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. Any other aircraft can have one drafted by AI with your own key; see [Binding guide and AI help](binding-guide-and-ai.md).
 

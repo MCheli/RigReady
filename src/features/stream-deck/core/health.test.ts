@@ -34,7 +34,7 @@ describe('Stream Deck health', () => {
     expect(exportFinding).toMatchObject({
       severity: 'bad',
       title: '32 actions will stay blank in DCS: DCS-ExportScript is not loaded',
-      route: { to: '/configure/dcs-setup' },
+      route: { to: '/configure/dcs/export' },
     });
     expect(exportFinding.detail).toContain('does not load DCS-ExportScript');
     expect(exportFinding.detail).toContain('DCS World (32)');

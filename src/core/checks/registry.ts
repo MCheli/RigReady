@@ -295,6 +295,13 @@ export interface CaptureCandidate {
   monitors?: CaptureMonitor[];
   /** What this item means for Stand down, in a few words ("closed at Stand down"). */
   standDownNote?: string;
+  /**
+   * The capture can offer this candidate in every new setup from now on (a program RigReady
+   * does not know), or does so already because the user asked (`remembered`). The capture
+   * screen offers "Always offer this app" or "Stop offering it" and calls `remember` on the
+   * capture definition named by `capture`, with the candidate's key.
+   */
+  remember?: { capture: string; remembered: boolean };
 }
 
 /** An aircraft or car a capture candidate belongs to. */
@@ -335,6 +342,16 @@ export interface CaptureDefinition {
   id: string;
   label: string;
   capture(ctx: CheckContext): Promise<Result<CaptureCandidate[]>>;
+  /**
+   * Offer the candidate with this key in every capture from now on (`on`), or no longer.
+   * Answers with the candidate as the capture proposes it after the change, read back;
+   * none when the capture no longer proposes it (the program has stopped meanwhile).
+   */
+  remember?(
+    key: string,
+    on: boolean,
+    ctx: CheckContext
+  ): Promise<Result<{ candidate?: CaptureCandidate }>>;
 }
 
 /** Something Stand down does once, whatever the profile's checks are (e.g. apply the desk layout). */

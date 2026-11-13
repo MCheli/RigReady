@@ -24,7 +24,7 @@ The file is yours to read and edit; RigReady notices a change within about two s
 
 ## The Setups page
 
-**Configure > Setups** lists every setup with its game, how many checks it has, what it launches and when it was last used; the one on the Play screen is marked. Each has **Play** (makes it the setup in use and goes to the Play screen), **Edit** ([The setup editor](editor.md)), **Clone** and a menu with **Open the YAML file**, **Show in Explorer** and **Delete…** ([Clone, copy and delete](clone-copy-delete.md)). Files that cannot be read are listed with the reason ([A setup file cannot be read](../troubleshooting/setup-file-cannot-be-read.md)), and files left by RigReady 1 are listed apart under **From RigReady 1** ([Files from RigReady 1](yaml.md#files-from-rigready-1)).
+**Configure > Setups** lists every setup with its game, how many checks it has, what it launches and when it was last used; the one on the Play screen is marked. Each has **Play** (makes it the setup in use and goes to the Play screen), **Edit** ([The setup editor](editor.md)), **Clone** and a menu with **Open the YAML file**, **Show in Explorer** and **Delete…** ([Clone, copy and delete](clone-copy-delete.md)). Files that cannot be read are listed with the reason ([A setup file cannot be read](../troubleshooting/setup-file-cannot-be-read.md)), and files left by RigReady 1 are listed apart under **From RigReady 1**, where RigReady brings a setup over when it can ([Files from RigReady 1](yaml.md#files-from-rigready-1)).
 
 **New setup from this rig** is how a setup is made: RigReady reads the rig as it is and proposes the checks. See [Creating a setup from the rig](capture.md).
 

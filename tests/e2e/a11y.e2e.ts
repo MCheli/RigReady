@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { BINDINGS_ENTRY } from '../../src/shared/feature';
 import { axeViolations, colourOnlyStatus, featureRoutes } from './a11y';
 import { expect, test } from './harness';
 
@@ -127,7 +128,10 @@ test('a11y: every Configure route passes axe on the full rig', async ({ rig }) =
     .getByTestId('configure-nav')
     .locator('a')
     .evaluateAll((all) => all.map((a) => (a.getAttribute('href') ?? '').replace(/^#/, '')));
-  expect(offered.filter((route) => !routes.includes(route))).toEqual([]);
+  // But the shell's Bindings entry, which opens one of them: a game's bindings page.
+  expect(offered.filter((route) => !routes.includes(route) && route !== BINDINGS_ENTRY.to)).toEqual(
+    []
+  );
 
   const problems: Problems = {};
   for (const route of routes) {

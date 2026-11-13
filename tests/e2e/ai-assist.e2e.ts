@@ -181,6 +181,27 @@ test('ai-assist: the key is entered in Settings, tested, never shown again, and 
   await page.getByTestId('ai-key-remove').click();
   await expect(page.getByTestId('ai-settings-key')).toContainText('No key yet');
   await shot('removed');
+
+  // "Exactly what is sent", use by use, readable for someone who only plays iRacing: the
+  // assistant first, which is for any game, then AI help in the binding guide, which is for
+  // DCS aircraft only. No key is stored at this point, so the picture holds no key hint.
+  const sent = page.getByTestId('ai-what-is-sent');
+  const parts = sent.getByTestId('ai-what-is-sent-part');
+  await expect(parts).toHaveCount(3);
+  await expect(parts.nth(0)).toContainText('The assistant (any game)');
+  await expect(parts.nth(0)).toContainText(
+    'It works the same whatever you play: a racing sim such as iRacing, a flight sim such as DCS, or anything else.'
+  );
+  await expect(parts.nth(1)).toContainText('AI help in the binding guide (DCS aircraft only)');
+  await expect(parts.nth(1)).toContainText(
+    'If you do not fly DCS, nothing in this list is ever sent.'
+  );
+  await expect(parts.nth(2)).toContainText('Where it goes');
+  // The whole list in one picture: its last line at the foot of the window, its heading above.
+  await sent.evaluate((el) => el.scrollIntoView({ block: 'end' }));
+  await expect(page.getByText('Exactly what is sent', { exact: true })).toBeInViewport();
+  await expect(page.getByTestId('ai-settings-key')).not.toBeInViewport();
+  await shot('what-is-sent');
 });
 
 test('ai-assist: a suggestion round trip shows what is sent, checks the answer, and applies only what is ticked after review', async ({
@@ -671,4 +692,123 @@ test('ai-assist: a suggestion round trip through an OpenAI-compatible server on 
   } finally {
     await server.close();
   }
+});
+
+/** A guide somebody shared for the Huey's door gunner seat, on that seat's own action names. */
+const SHARED_GUIDE = `# A guide a friend shared.
+format: 1
+aircraft:
+  id: UH-1H_Gunner
+  name: UH-1H door gunner
+summary: "The door gun first: aim it from the stick and fire with the trigger."
+sources:
+  - A friend who flies the Huey.
+roles:
+  stick:
+    summary: Aim and fire from the stick.
+    items: [aim, fire]
+items:
+  - id: aim
+    title: Aim the door gun
+    tier: must
+    place: hotas
+    role: stick
+    what: Swings the machine gun left and right and up and down.
+    when: Whenever you are shooting.
+    actions:
+      - { name: Gun Left/Right, label: Aim left and right }
+      - { name: Gun Up/Down, label: Aim up and down }
+  - id: fire
+    title: Fire the door gun
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the machine gun.
+    when: On target.
+    actions:
+      - { name: Machinegun fire, label: Fire }
+`;
+
+test('ai-assist: with no AI key, a binding guide is imported from a file or written by hand, opened, read again and deleted', async ({
+  rig,
+}) => {
+  const picked = 'Documents/Guides from friends/huey-gunner.yaml';
+  const run = await rig.launch('ai-assist-hornet', 'ai-assist-own-guide', {
+    dialogs: { open: [[picked]] },
+  });
+  const { page, shot } = run;
+  const shared = path.join(run.home, ...picked.split('/'));
+  await fs.mkdir(path.dirname(shared), { recursive: true });
+  await fs.writeFile(shared, SHARED_GUIDE, 'utf8');
+  const kept = path.join(run.dataRoot, 'ai-assist', 'guides', 'UH-1H_Gunner.yaml');
+  const gunner = /UH-1H Gunner w No Head Tracking/;
+
+  await openGuide(page);
+  await page.getByTestId('ai-aircraft').click();
+  await page.getByRole('option', { name: gunner }).click();
+  // No key is stored: both ways in are offered, and a draft by AI is not.
+  await expect(page.getByTestId('ai-no-guide')).toContainText('Neither needs an AI key.');
+  await expect(page.getByTestId('ai-guide-import')).toBeVisible();
+  await expect(page.getByTestId('ai-guide-start')).toBeVisible();
+  await expect(page.getByTestId('ai-open-draft')).toHaveCount(0);
+  await shot('two-ways-in');
+
+  // Import: the file picked in the Windows dialog is checked and copied into the data folder.
+  await page.getByTestId('ai-guide-import').click();
+  await expect(page.getByTestId('ai-guide-note')).toContainText('Imported a guide with 2 items.');
+  await expect(page.getByTestId('ai-guide-own')).toContainText('This is a guide of your own');
+  await expect(page.getByTestId('ai-current-item')).toContainText('Aim the door gun');
+  await expect(page.getByTestId('ai-action')).toHaveCount(2);
+  expect(await fs.readFile(kept, 'utf8')).toBe(SHARED_GUIDE);
+  expect(await fs.readFile(shared, 'utf8')).toBe(SHARED_GUIDE);
+  await shot('imported');
+  await page.getByTestId('ai-aircraft').click();
+  await expect(page.getByRole('option', { name: gunner })).toContainText('Your own guide');
+  await page.keyboard.press('Escape');
+
+  // Open the file: Notepad is started with the kept file. (A scenario starts no real program.)
+  await page.getByTestId('ai-guide-open').click();
+  await expect(page.getByTestId('ai-guide-note')).toContainText('The file is open in Notepad.');
+
+  // Deleting asks first. "Keep it" keeps it.
+  await page.getByTestId('ai-guide-delete').click();
+  await expect(page.getByTestId('ai-guide-delete-dialog')).toContainText('This cannot be undone.');
+  await shot('delete-asks-first');
+  await page.getByTestId('ai-guide-delete-no').click();
+  await expect(page.getByTestId('ai-guide-delete-dialog')).toHaveCount(0);
+  expect(await fs.readFile(kept, 'utf8')).toBe(SHARED_GUIDE);
+  await page.getByTestId('ai-guide-delete').click();
+  await page.getByTestId('ai-guide-delete-yes').click();
+  await expect(page.getByTestId('ai-no-guide')).toContainText(
+    'There is no guide for the UH-1H Gunner'
+  );
+  await expect(fs.stat(kept)).rejects.toThrow();
+  // The file it was imported from is where it was.
+  expect(await fs.readFile(shared, 'utf8')).toBe(SHARED_GUIDE);
+
+  // Write your own: a short starter on real actions of the aircraft, usable as it stands.
+  await page.getByTestId('ai-guide-start').click();
+  await expect(page.getByTestId('ai-guide-note')).toContainText(
+    'A short starter guide was written'
+  );
+  await expect(page.getByTestId('ai-current-item')).toBeVisible();
+  const starter = await fs.readFile(kept, 'utf8');
+  expect(starter).toContain('# Your own binding guide for the');
+  await shot('started');
+
+  // An edit that does not fit the format: the page says what is wrong, and the file can
+  // still be opened, read again or deleted.
+  await fs.writeFile(kept, starter.replace('format: 1', 'format: 7'), 'utf8');
+  await page.getByTestId('ai-guide-reload').click();
+  await expect(page.getByTestId('ai-guide-problem')).toContainText('cannot be used as it is');
+  await expect(page.getByTestId('ai-no-guide')).toContainText('needs a fix');
+  await expect(page.getByTestId('ai-guide-open')).toBeVisible();
+  await expect(page.getByTestId('ai-guide-import')).toHaveCount(0);
+  await shot('needs-a-fix');
+
+  // Put right and read again: the guide is back.
+  await fs.writeFile(kept, starter, 'utf8');
+  await page.getByTestId('ai-guide-reload').click();
+  await expect(page.getByTestId('ai-guide-own')).toBeVisible();
+  await expect(page.getByTestId('ai-current-item')).toBeVisible();
 });

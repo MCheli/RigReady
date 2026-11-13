@@ -6,7 +6,7 @@ order: 70
 
 RigReady knows a fixed set of games. For each one it can find the install, read its version, launch it, and name the files worth backing up. For some it goes further: it reads the bindings as the game's files hold them, matches the controllers the game knows to the ones connected now, and repairs or copies binding files. Any other game still works with a setup of its own.
 
-This section covers every game other than DCS World, which has [its own section](../dcs/index.md): this page lists the games and what each gets, describes **Configure > Games** and **Configure > Racing** and the checks a racing setup gets, and the pages that follow cover each game and the Fanatec wheel.
+This section covers every game other than DCS World, which has [its own section](../dcs/index.md): this page lists the games and what each gets, describes **Configure > Games** and the Racing page under it and the checks a racing setup gets, and the pages that follow cover each game and the Fanatec wheel.
 
 ## Support by game
 
@@ -42,7 +42,9 @@ A game is "running" when one of its known programs is in the process list. For i
 
 The page lists every game RigReady knows, found games first with where they were found (Steam, Standalone, Microsoft Store), the version, "update waiting" when Steam has one, a **Running** chip, and how many settings files are worth backing up. Games not found are listed under **Not found on this PC**.
 
-![The games list](../../../artifacts/screens/racing-game-pages/01-games.png)
+Above the list, a card for each page RigReady has about a game you have: **DCS World** (its screens, Export.lua and SimAppPro; see [DCS World](../dcs/index.md)) when DCS is found, and **Racing** (below) when iRacing, Le Mans Ultimate, BeamNG.drive or Assetto Corsa is. These pages have no entry of their own in the menu, so the menu stays the same whatever games you have, and **Games** stays marked in the menu while one of them is open. Without the game there is no card; the game's own page still leads to its page.
+
+![The games list, with the cards for DCS World and Racing above it](../../../artifacts/screens/games-menu/01-games.png)
 
 Each game's page has the same sections:
 
@@ -51,11 +53,11 @@ Each game's page has the same sections:
 - **Worth backing up**: the files and folders RigReady suggests tracking, each with its path. These are what the Backups page offers for the game; see [backups](../protect/backups.md). A game that was found but has not been run yet says "No settings files were found yet; start the game once."
 - **Good to know**: plain facts about what RigReady can and cannot do for this game.
 
-**Launch** at the top starts the game from its first install and reports "Started <game>" or "Asked Steam to start <game>". It is disabled while the game runs. For a game with a bindings page, **Bindings and controllers** opens that page.
+**Launch** at the top starts the game from its first install and reports "Started <game>" or "Asked Steam to start <game>". It is disabled while the game runs. For a racing game with a page of its own, **Bindings and controllers** opens that page; for DCS World, **Set up DCS World** opens the [DCS World page](../dcs/index.md).
 
 ![A game that was not found](../../../artifacts/screens/racing-game-pages/03-not-found.png)
 
-## Configure > Racing
+## Configure > Games > Racing
 
 The Racing page is the overview for the wheel and the racing games:
 

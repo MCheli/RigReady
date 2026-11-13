@@ -19,7 +19,8 @@ test('without SimAppPro: the WinWing Export.lua lines are managed and the WinWin
   await expect(fs.access(path.join(home, 'AppData', 'Roaming', 'SimAppPro'))).rejects.toThrow();
 
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-dcs').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-dcs').click();
   await page.getByTestId('dcs-tab-simapppro').click();
   await expect(page.getByTestId('sap-status')).toContainText('SimAppPro is not installed');
   await expect(page.getByTestId('sap-status')).toContainText('RigReady configures DCS without it');
@@ -53,7 +54,7 @@ test('without SimAppPro: the WinWing Export.lua lines are managed and the WinWin
   await shot('winwing-line-back');
 
   // Bindings: a snapshot, a WinWing binding file lost, and the restore that brings it back.
-  await page.getByTestId('nav-dcs-bindings').click();
+  await page.getByTestId('nav-bindings').click();
   await expect(page.getByTestId('bind-overview')).toBeVisible();
   await page.getByTestId('bind-tab-snapshots').click();
   await page.getByTestId('snap-name').locator('input').fill('WinWing as flown');

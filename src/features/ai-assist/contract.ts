@@ -189,8 +189,23 @@ export const aiAssistContract = defineContract(
       tier: 'change',
     }),
     deleteDraft: channel(Aircraft, z.object({ deleted: z.boolean() }), {
-      describe: 'Deletes the binding guide the AI drafted for one aircraft.',
+      describe:
+        "Deletes the binding guide kept for one aircraft in RigReady's data folder: one the AI drafted, or the user's own.",
       tier: 'change',
+    }),
+    importGuide: channel(Aircraft, z.object({ imported: z.boolean(), items: z.number().int() }), {
+      describe:
+        "Asks the user for a binding guide file in the Windows file dialog, checks it and copies it into RigReady's data folder for one aircraft. Only a window of the app does this.",
+      tier: 'off',
+    }),
+    startOwnGuide: channel(Aircraft, z.object({ started: z.boolean() }), {
+      describe:
+        "Writes a short starter binding guide for one aircraft into RigReady's data folder, for the user to edit. Only a window of the app does this.",
+      tier: 'off',
+    }),
+    openGuideFile: channel(Aircraft, z.object({ opened: z.boolean() }), {
+      describe: 'Opens the binding guide file kept for one aircraft in Notepad.',
+      tier: 'off',
     }),
 
     // ---------------------------------------------------------------------------------

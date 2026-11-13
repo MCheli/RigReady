@@ -61,7 +61,7 @@ test('manual links: the help button opens the manual page of the screen shown', 
   await help.click();
   await expect.poll(last).toBe(`${DOCS}protect/tracked-files/`);
 
-  await page.getByTestId('nav-dcs-bindings').click();
+  await page.getByTestId('nav-bindings').click();
   await page.getByTestId('bind-tab-device-ids').click();
   await help.click();
   await expect.poll(last).toBe(`${DOCS}dcs/device-ids/`);
@@ -144,7 +144,7 @@ test('manual links: DCS running links to why RigReady will not write its files',
   const { page, app, shot } = await rig.launch('dcs-bindings-dcs-running', 'manual-links-dcs');
   const opened = await recordBrowser(app);
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-dcs-bindings').click();
+  await page.getByTestId('nav-bindings').click();
   const running = page.getByTestId('bind-dcs-running');
   await expect(running).toContainText('DCS is running');
   await shot('dcs-running');

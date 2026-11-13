@@ -44,6 +44,43 @@ describe('where you are in the side navigation', () => {
     expect(currentEntry([], '/configure/racing')).toBeUndefined();
   });
 
+  it('NAV-GAMES-001: a page that stands under an entry belongs to it, and so do the pages below it', () => {
+    // The menu as it is: Games, Bindings and Wheel, with the pages that left it as places.
+    const menu = [
+      '/configure/games',
+      '/configure/bindings',
+      '/configure/racing/wheel',
+      '/configure/cheat-sheets',
+    ];
+    const places = [
+      { to: '/configure/dcs', under: '/configure/games' },
+      { to: '/configure/racing', under: '/configure/games' },
+      { to: '/configure/dcs-bindings', under: '/configure/bindings' },
+      { to: '/configure/iracing-bindings', under: '/configure/bindings' },
+    ];
+    expect(currentEntry(menu, '/configure/dcs', places)).toBe('/configure/games');
+    expect(currentEntry(menu, '/configure/dcs/screens', places)).toBe('/configure/games');
+    expect(currentEntry(menu, '/configure/racing', places)).toBe('/configure/games');
+    expect(currentEntry(menu, '/configure/racing/iracing', places)).toBe('/configure/games');
+    expect(currentEntry(menu, '/configure/games/dcs', places)).toBe('/configure/games');
+    expect(currentEntry(menu, '/configure/dcs-bindings', places)).toBe('/configure/bindings');
+    expect(currentEntry(menu, '/configure/dcs-bindings/device-ids', places)).toBe(
+      '/configure/bindings'
+    );
+    expect(currentEntry(menu, '/configure/iracing-bindings', places)).toBe('/configure/bindings');
+    // The nearest still counts: Wheel lies inside the Racing page's address and stays Wheel.
+    expect(currentEntry(menu, '/configure/racing/wheel', places)).toBe('/configure/racing/wheel');
+    // Only the same address or one below it: DCS World is not the page of its bindings.
+    expect(currentEntry(menu, '/configure/dcsx', places)).toBeUndefined();
+    expect(
+      ariaCurrent(
+        '/configure/games',
+        currentEntry(menu, '/configure/dcs', places),
+        '/configure/dcs'
+      )
+    ).toBe('location');
+  });
+
   it('says "page" on the page itself and "location" on a page below it', () => {
     const path = '/configure/cheat-sheets/learn';
     const current = currentEntry(ENTRIES, path);

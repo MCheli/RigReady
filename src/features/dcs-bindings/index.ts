@@ -3,15 +3,8 @@ import MigrationOpener from './renderer/MigrationOpener.vue';
 
 export default defineFeature({
   id: 'dcs-bindings',
-  nav: [
-    {
-      title: 'DCS bindings',
-      icon: 'mdi-controller',
-      to: '/configure/dcs-bindings',
-      order: 300,
-      section: 'Controls',
-    },
-  ],
+  // Reached from the one Bindings entry and its game picker, not a menu entry of its own.
+  bindings: [{ game: 'dcs', name: 'DCS', to: '/configure/dcs-bindings', order: 10 }],
   routes: [
     {
       path: '/configure/dcs-bindings/:tab?',

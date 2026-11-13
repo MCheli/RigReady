@@ -100,7 +100,7 @@ The aircraft's binding files belong to the device IDs Windows has now, and the c
 
 ### iRacing knows the connected controllers (`racing.iracingDevices`)
 
-The controllers in iRacing's own files are connected, and none has a new Windows ID. No fields, no fix; the row points to Configure > Racing > iRacing ([Repair: a wheel with a new Windows ID](../games/iracing.md#repair-a-wheel-with-a-new-windows-id)).
+The controllers in iRacing's own files are connected, and none has a new Windows ID. No fields, no fix; the row points to Configure > Games > Racing > iRacing ([Repair: a wheel with a new Windows ID](../games/iracing.md#repair-a-wheel-with-a-new-windows-id)).
 
 ### Racing bindings are the saved set (`racing.bindingSet`)
 
