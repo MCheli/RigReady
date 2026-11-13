@@ -10,7 +10,9 @@ import { z } from 'zod';
  *   - a test:        "<test file>#<test title>"   (" > " and "::" also separate file and title)
  *   - a screenshot:  "artifacts/screens/<flow>/<name>.png"
  *   - any other file path, relative to the repository root
- * A test's file must exist and contain the title; a path must exist.
+ * A test's file (a unit test, `.test.ts` or `.spec.ts`, or a scenario test, `.e2e.ts`) must exist
+ * and contain the title; a path must exist. Every entry's evidence is checked, whatever its
+ * status; `done` also needs evidence, and at least one test among it.
  */
 
 const EvidenceSchema = z.union([
@@ -42,7 +44,15 @@ export interface LedgerReport {
   problems: string[];
 }
 
-const TEST_FILE = /\.(test|spec)\.ts$/;
+const TEST_FILE = /\.(test|spec|e2e)\.ts$/;
+
+/**
+ * Source text with JavaScript's quote escapes undone, so that a title is found as it reads:
+ * the source `'the game\'s name'` holds the title "the game's name".
+ */
+function unescapeQuotes(source: string): string {
+  return source.replace(/\\(['"`])/g, '$1');
+}
 
 function splitTest(reference: string): { file: string; title?: string } {
   for (const separator of ['#', ' > ', '::']) {
@@ -77,7 +87,7 @@ function checkEvidence(
     return { problem: `evidence points outside the repository: ${reference}`, isTest };
   if (!existsSync(absolute)) return { problem: `evidence does not exist: ${file}`, isTest };
   if (isTest && title) {
-    const text = readFileSync(absolute, 'utf8');
+    const text = unescapeQuotes(readFileSync(absolute, 'utf8'));
     if (!text.includes(title)) return { problem: `test "${title}" not found in ${file}`, isTest };
   }
   return { isTest };
@@ -131,18 +141,18 @@ export function validateLedger(ledgerFile: string, repoRoot: string): LedgerRepo
     if (seen.has(entry.id)) report.problems.push(`${entry.id}: duplicate id`);
     seen.add(entry.id);
 
-    if (entry.status !== 'done') return;
-    if (entry.evidence.length === 0) {
+    if (entry.status === 'done' && entry.evidence.length === 0) {
       report.problems.push(`${entry.id}: status is done but there is no evidence`);
       return;
     }
+    // Evidence that names a test or a file that is not there is wrong before an entry is done too.
     let tests = 0;
     for (const evidence of entry.evidence) {
       const checked = checkEvidence(evidence, repoRoot);
       if (checked.problem) report.problems.push(`${entry.id}: ${checked.problem}`);
       if (checked.isTest) tests++;
     }
-    if (tests === 0)
+    if (entry.status === 'done' && tests === 0)
       report.problems.push(`${entry.id}: done needs at least one automated test as evidence`);
   });
   return report;

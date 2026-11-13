@@ -20,20 +20,20 @@ mutations:
   - { op: removeFile, path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1-R {757B5173-A027-19e9-8024-444553540000}.diff.lua" }
   # The old files: left, centre and right panel, under IDs no attached device has.
   - op: writeFile
-    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {4B3710E0-9AA7-11EE-801E-444553540000}.diff.lua"
-    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-L {4B3710E0-9AA7-11EE-801E-444553540000}.diff.lua"
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {9C5084A4-0DC2-11DF-801E-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-L {9C5084A4-0DC2-11DF-801E-444553540000}.diff.lua"
   - op: writeFile
-    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
-    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-C {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {6E873B30-5EB0-18bf-8027-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-C {6E873B30-5EB0-18bf-8027-444553540000}.diff.lua"
   - op: writeFile
-    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {5206D720-9AA7-11EE-8028-444553540000}.diff.lua"
-    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-R {5206D720-9AA7-11EE-8028-444553540000}.diff.lua"
+    path: "Saved Games/DCS/Config/Input/FA-18C_hornet/joystick/WINWING MFD1 {3654B162-3EE3-11DE-8028-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/FA-18C_hornet/joystick/WINWING MFD1-R {3654B162-3EE3-11DE-8028-444553540000}.diff.lua"
   - op: writeFile
-    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {4B3710E0-9AA7-11ee-801E-444553540000}.diff.lua"
-    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-L {4B3710E0-9AA7-11ee-801E-444553540000}.diff.lua"
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {9C5084A4-0DC2-11df-801E-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-L {9C5084A4-0DC2-11df-801E-444553540000}.diff.lua"
   - op: writeFile
-    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
-    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-C {4F916A50-9AA7-11ee-8027-444553540000}.diff.lua"
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {6E873B30-5EB0-18bf-8027-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-C {6E873B30-5EB0-18bf-8027-444553540000}.diff.lua"
   - op: writeFile
-    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {5206D720-9AA7-11ee-8028-444553540000}.diff.lua"
-    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-R {5206D720-9AA7-11ee-8028-444553540000}.diff.lua"
+    path: "Saved Games/DCS/Config/Input/UH-1H/joystick/WINWING MFD1 {3654B162-3EE3-11de-8028-444553540000}.diff.lua"
+    from: "data/dcs-bindings/old-ids/UH-1H/joystick/WINWING MFD1-R {3654B162-3EE3-11de-8028-444553540000}.diff.lua"

@@ -752,7 +752,7 @@ describe('DCS screen setup and the monitors', () => {
     expect((await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems).toEqual([]);
 
     // Plugged into another USB port: a new id, the same screen, nothing to complain about.
-    mfds[0]!.id = mfds[0]!.id.replace('2c1ac5a9', '77777777');
+    mfds[0]!.id = mfds[0]!.id.replace('5a2ab1a5', '77777777');
     expect((await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems).toEqual([]);
     // Turned off, it is missed by the owner's name for it.
     await mutate(app, [

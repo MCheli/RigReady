@@ -9,7 +9,7 @@ const STICK = 'WINWING Orion Joystick Base 2 + JGRIP-F16';
 const THROTTLE = 'WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R';
 const WHEEL = 'FANATEC Podium Wheel Base DD2';
 const STICK_ID = '480FAD44-D166-18c0-8023-444553540000';
-const OLD_STICK_ID = 'D3437B70-A035-11EE-8001-444553540000';
+const OLD_STICK_ID = 'B5401E72-C482-10DA-8001-444553540000';
 
 const joystickDir = (run: RunningApp, aircraft = 'FA-18C_hornet'): string =>
   path.join(run.home, 'Saved Games', 'DCS', 'Config', 'Input', aircraft, 'joystick');
@@ -474,7 +474,7 @@ test('bindings: Windows changed the device IDs; move the bindings back, and undo
   await expect(page.getByTestId('ids-orphan')).toHaveCount(10);
   const stick = page.locator(`[data-testid="ids-orphan"][data-device="${STICK}"]`);
   await expect(stick).toHaveAttribute('data-status', 'ready');
-  await expect(stick.getByTestId('ids-old')).toHaveText('D3437B70-A035-11ee-8001-444553540000');
+  await expect(stick.getByTestId('ids-old')).toHaveText('B5401E72-C482-10da-8001-444553540000');
   await expect(stick.getByTestId('ids-new')).toHaveText(STICK_ID);
   await expect(stick).toContainText('2 files in FA-18C_hornet, UH-1H');
   await expect(stick).toContainText('also named in 1 modifier or settings file');

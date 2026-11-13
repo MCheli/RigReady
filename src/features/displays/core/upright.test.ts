@@ -220,8 +220,8 @@ describe('identity on the Monitors page', () => {
     // Every screen on another port: new ids, and the first id now belongs to another screen.
     const usb = app.ports.state.displays.filter((d) => d.name === 'USB_Monitor');
     const firstId = usb[0]!.id;
-    usb[0]!.id = firstId.replace('2c1ac5a9', '11111111');
-    usb[1]!.id = usb[1]!.id.replace('270816bc', '22222222');
+    usb[0]!.id = firstId.replace('5a2ab1a5', '11111111');
+    usb[1]!.id = usb[1]!.id.replace('618400bb', '22222222');
     usb[2]!.id = firstId;
     expect((await check()).results[0]).toMatchObject({ status: 'pass' });
 

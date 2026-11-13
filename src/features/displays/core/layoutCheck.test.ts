@@ -76,9 +76,9 @@ function fixFor(r: TestRig, names: MonitorNames = {}) {
 }
 
 const MFD_NAMES: MonitorNames = {
-  '\\\\?\\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}': 'MFD left',
-  '\\\\?\\display#reg0319#a&270816bc&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}': 'MFD centre',
-  '\\\\?\\display#reg0319#a&2f291759&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}': 'MFD right',
+  '\\\\?\\display#reg0319#a&5a2ab1a5&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}': 'MFD left',
+  '\\\\?\\display#reg0319#a&618400bb&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}': 'MFD centre',
+  '\\\\?\\display#reg0319#a&7e437000&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}': 'MFD right',
 };
 
 describe('display.layout check', () => {
@@ -130,7 +130,7 @@ describe('display.layout check', () => {
     const good = await currentLayout(rig);
     const check = createLayoutCheck(depsFor(rig));
     const tv = {
-      id: '\\\\?\\display#tv00001#5&1509d400&0&uid4361#{x}',
+      id: '\\\\?\\display#tv00001#5&8816e581&0&uid4361#{x}',
       name: 'TV',
       enabled: true,
       primary: false,

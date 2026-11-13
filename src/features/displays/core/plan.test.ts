@@ -19,7 +19,7 @@ const mfd = (instance: string, x: number, extra: Partial<DisplayInfo> = {}): Dis
 });
 
 const ultrawide: DisplayInfo = {
-  id: '\\\\?\\display#sam7053#5&1509d400&0&uid4357#{e6f07b5f}',
+  id: '\\\\?\\display#sam7053#5&8816e581&0&uid4357#{e6f07b5f}',
   name: 'LC49G95T',
   edid: 'SAM7053',
   enabled: true,
@@ -50,8 +50,8 @@ describe('monitor identity', () => {
   });
 
   it('matches two monitors with identical EDID data to the right layout entries by connector', () => {
-    const a = mfd('a&2c1ac5a9', 5120);
-    const b = mfd('a&270816bc', 5888);
+    const a = mfd('a&5a2ab1a5', 5120);
+    const b = mfd('a&618400bb', 5888);
     // Listed in the other order, and with the ids in another case: still each to its own.
     const matches = matchMonitors(
       [asTarget(b), asTarget(a)],
@@ -64,7 +64,7 @@ describe('monitor identity', () => {
   });
 
   it('finds a unique monitor that moved to another connector by its model', () => {
-    const moved = { ...ultrawide, id: '\\\\?\\display#sam7053#5&1509d400&0&uid9999#{e6f07b5f}' };
+    const moved = { ...ultrawide, id: '\\\\?\\display#sam7053#5&8816e581&0&uid9999#{e6f07b5f}' };
     const [match] = matchMonitors([asTarget(ultrawide)], [moved]);
     expect(match).toMatchObject({ how: 'model', actual: { id: moved.id } });
   });
@@ -208,7 +208,7 @@ describe('analyzeLayout', () => {
   it('names the connected monitors a layout does not list: those are left as they are, on or off', () => {
     const tv: DisplayInfo = {
       ...ultrawide,
-      id: '\\\\?\\display#tv00001#5&1509d400&0&uid4999#{e6f07b5f}',
+      id: '\\\\?\\display#tv00001#5&8816e581&0&uid4999#{e6f07b5f}',
       name: 'TV',
       edid: 'TV00001',
       enabled: false,

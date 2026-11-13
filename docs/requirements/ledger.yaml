@@ -3648,7 +3648,7 @@ requirements:
     priority: p1
     done_means:
       - "RigReady compares diff file GUIDs per aircraft with the DirectInput GUIDs of connected devices and lists files whose device name matches a connected device but whose GUID does not ('orphaned bindings')."
-      - "Fixture recreating the owner's 2026-02 situation (backup GUIDs 4F6FD890-..., current 480FAD44-...) lists all ten affected devices with old and new GUIDs."
+      - "Fixture recreating the owner's 2026-02 situation (backup GUIDs 3F7AF279-..., current 480FAD44-...) lists all ten affected devices with old and new GUIDs."
       - "A Fly check (optional by default) warns 'Bindings for WINWING UFC1 + HUD1 belong to an old device ID' when this is detected for the profile's aircraft."
     status: done
     evidence:
@@ -8035,12 +8035,14 @@ requirements:
     priority: p0
     done_means:
       - "npm run ledger:check validates this file's schema and fails if any 'done' entry has no evidence or references a test id or screenshot path that does not exist."
+      - "A test named as file#title is checked for its title in the file, for a unit test (.test.ts, .spec.ts) and a scenario test (.e2e.ts) alike; the evidence of entries that are not done yet is checked the same way."
       - "npm run check (typecheck, lint, unit tests with coverage threshold, ledger check) runs in CI on every push to main and on every pull request into main."
     notes:
       - "2026-10-03: CI ran the check only for pushes to main; .github/workflows/ci.yml now runs it for a push to any branch. The check also includes the format check."
       - "2026-10-31: the push trigger is limited to main again. Every branch reaches main through a pull request (the ruleset requires CI to pass), so the pull_request run checks it; a second push run on the same commit doubled the e2e suite, and a flaky test in either one blocked the merge."
       - "2026-11-06: the unit tests get 120 s each on CI instead of 30 s (vitest.config.ts, as playwright.config.ts already did). The push run of #19 failed with five timeouts on a tree that had passed the same job an hour earlier: for two and a half minutes the runner's disk stalled and every one-second test running then took ten to thirty."
       - "2026-11-12: CI runs the command's parts, not the command: typecheck, lint, format check and ledger check in one job; the unit tests as four shards on four runners (on one runner they took eight to thirteen minutes, the longest job of every run); and one job that puts the shards' coverage reports together and applies the limits of vitest.config.ts to the whole. The check with the required name sums the three up and fails unless each passed. npm run check itself is unchanged. Tried on a desk PC before the change: one shard alone has 54 to 76% of the lines, so a shard is not held to the limits; the merged figures are the one-run figures (93.57% of statements against 93.55%); a limit that cannot be met fails the merge; and three reports of four still clear the limits, so the job counts the reports first."
+      - "2026-11-13: an e2e test named as evidence (tests/e2e/x.e2e.ts#title) was checked for its file only, and the evidence of entries not marked done was not checked at all. Both are checked now (scripts/lib/ledger.ts). A title is looked for as it reads, with the source's quote escapes undone: two titles with an apostrophe (FLY-030, CFG-PROFILE-021) were reported missing until then. With both checks on, today's ledger had no other problem."
     status: done
     evidence:
       - "tests/unit/gates.test.ts#the command exits 0 on a valid ledger and 1, naming the entry, on each kind of broken one"
@@ -8048,6 +8050,8 @@ requirements:
       - "tests/unit/gates.test.ts#check is typecheck, lint, format, unit tests with coverage and the ledger check, in that order"
       - "tests/unit/gates.test.ts#CI runs every part of npm run check on every push to main, and on pull requests into main"
       - "scripts/lib/lib.test.ts#fails done without evidence, with missing evidence, or with screenshots only"
+      - "scripts/lib/lib.test.ts#checks a scenario test’s title in its file, as it does a unit test’s"
+      - "scripts/lib/lib.test.ts#checks the evidence of entries that are not done yet, without asking them for any"
       - ".github/workflows/ci.yml"
 
   - id: PLAT-017

@@ -41,13 +41,14 @@ export function sanitizeIdentifiers(text: string): string {
 
 /**
  * What a recording holds that names one unit of hardware: the serial numbers of devices and
- * monitors, and the instance GUIDs Windows gave game controllers (DirectInput, also in the
- * registry's calibration slots) and audio endpoints. The shapes are those of the recorded
- * JSON files; only the fields read here matter.
+ * monitors, the instance GUIDs Windows gave game controllers (DirectInput, also in the
+ * registry's calibration slots) and audio endpoints, and the parent id prefix in each
+ * monitor's instance id. The shapes are those of the recorded JSON files; only the fields read
+ * here matter.
  */
 export interface RecordedIdentity {
   devices: readonly { serial?: string }[];
-  displays: readonly { serial?: string; usbSerial?: string }[];
+  displays: readonly { id?: string; serial?: string; usbSerial?: string }[];
   input: readonly { guid: string }[];
   audio: { devices: readonly { id: string }[] };
   registry: Record<string, Record<string, { type: string; value: unknown }>>;
@@ -136,6 +137,50 @@ export function madeUpGuid(guid: string): string {
   }
 }
 
+const ANY_GUID =
+  /(?<![0-9a-z])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-z])/gi;
+
+/**
+ * Every GUID in a text replaced by its made-up stand-in (`madeUpGuid`), in the letter case it
+ * was written in. For files whose GUIDs were all made by one PC for its own use: the profile,
+ * page and action ids of Stream Deck's profiles, in their folder names and in their manifests.
+ */
+export function madeUpGuidsIn(text: string): string {
+  return text.replace(ANY_GUID, (found) => inCaseOf(found, madeUpGuid(found.toUpperCase())));
+}
+
+/**
+ * The part of a Windows instance id that Windows made up from where the device sits, its
+ * parent id prefix: a level, "&", and up to eight hex digits in lower case. "a&2f0d36b1" in a
+ * monitor's `\\?\display#reg0319#a&2f0d36b1&0&uid256#{...}`, "6&3c1e07a5" in a USB device's
+ * `USB\VID_1234&PID_5678\6&3c1e07a5&0&2` when it has no serial. The numbers after it only
+ * count ports.
+ */
+const PARENT_PREFIX = /^([0-9a-f]{1,2})&([0-9a-f]{1,8})$/i;
+
+/**
+ * A stable made-up parent id prefix of the same shape: the same level, then as many hex digits,
+ * a digit where the real one has a digit and a letter (A to F) where it has a letter, in its
+ * case, and not starting with 0, as Windows never writes one. It is made up from the hex digits
+ * alone, so ids that shared a prefix still share one.
+ */
+export function madeUpParentPrefix(prefix: string): string {
+  const match = PARENT_PREFIX.exec(prefix);
+  if (!match) throw new Error(`Not a parent id prefix: ${prefix.length} characters`);
+  const [, level, hex] = match as unknown as [string, string, string];
+  const positions = [...hex].map((_, i) => i);
+  for (let attempt = 0; ; attempt++) {
+    const result = madeUp(hex, positions, HEX_LETTERS, `parent\0${hex.toLowerCase()}\0${attempt}`);
+    if (result.toLowerCase() !== hex.toLowerCase() && result[0] !== '0')
+      return `${level}&${result}`;
+  }
+}
+
+/** The parent id prefix in a monitor's instance id, as Windows' display configuration gives it. */
+function displayParentPrefix(id: string | undefined): string | undefined {
+  return id ? /#([0-9a-f]{1,2}&[0-9a-f]{1,8})&/i.exec(id)?.[1] : undefined;
+}
+
 const swapBytes = (part: string): string => part.match(/../g)!.reverse().join('');
 
 /** A GUID's 16 bytes as Windows keeps them in the registry: hex, the first three groups byte-swapped. */
@@ -159,8 +204,8 @@ function guidFromRegistryBytes(hex: string): string | undefined {
 }
 
 /**
- * Every serial number and instance GUID in a recording, each with its made-up stand-in.
- * Serials that name no unit (`isPlaceholderSerial`) are left as they are.
+ * Every serial number, instance GUID and monitor parent id prefix in a recording, each with its
+ * made-up stand-in. Serials that name no unit (`isPlaceholderSerial`) are left as they are.
  */
 export function identityReplacements(recording: RecordedIdentity): Map<string, string> {
   const map = new Map<string, string>();
@@ -174,6 +219,8 @@ export function identityReplacements(recording: RecordedIdentity): Map<string, s
   for (const display of recording.displays) {
     serial(display.serial);
     serial(display.usbSerial);
+    const prefix = displayParentPrefix(display.id);
+    if (prefix) map.set(prefix.toLowerCase(), madeUpParentPrefix(prefix.toLowerCase()));
   }
   for (const controller of recording.input) guid(controller.guid);
   for (const [key, values] of Object.entries(recording.registry)) {

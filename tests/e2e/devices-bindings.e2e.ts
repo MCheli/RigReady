@@ -246,9 +246,9 @@ test('bindings: three identical panels got new device IDs; each old file goes to
   const run = await rig.launch('dcs-bindings-identical', 'bindings-identical');
   const { page, shot, sendInput } = run;
   const OLD = {
-    left: '4B3710E0-9AA7-11EE-801E-444553540000',
-    centre: '4F916A50-9AA7-11ee-8027-444553540000',
-    right: '5206D720-9AA7-11EE-8028-444553540000',
+    left: '9C5084A4-0DC2-11DF-801E-444553540000',
+    centre: '6E873B30-5EB0-18bf-8027-444553540000',
+    right: '3654B162-3EE3-11DE-8028-444553540000',
   };
   const NEW = {
     left: 'A1A1A1A1-C0DE-11f1-8001-444553540000',
@@ -413,7 +413,7 @@ test('names: identical controllers each show the name the owner gave them in DCS
   await page.getByTestId('bind-tab-device-ids').click();
   const orphan = page
     .locator('[data-testid="ids-orphan"][data-device="WINWING MFD1"]')
-    .filter({ hasText: '4B3710E0' });
+    .filter({ hasText: '9C5084A4' });
   await orphan.getByTestId('ids-target').click();
   const options = page.locator('.v-overlay--active .v-list-item');
   await expect(options.filter({ hasText: 'MFD left · WINWING MFD1 · A1A1A1A1' })).toHaveCount(1);

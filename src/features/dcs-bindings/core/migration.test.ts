@@ -41,7 +41,7 @@ async function scan(): Promise<MigrationScan> {
 }
 
 const OLD_STICK =
-  'WINWING Orion Joystick Base 2 + JGRIP-F16 {D3437B70-A035-11EE-8001-444553540000}';
+  'WINWING Orion Joystick Base 2 + JGRIP-F16 {B5401E72-C482-10DA-8001-444553540000}';
 const NEW_STICK =
   'WINWING Orion Joystick Base 2 + JGRIP-F16 {480FAD44-D166-18c0-8023-444553540000}';
 
@@ -75,43 +75,43 @@ describe('detecting device id changes', () => {
     const ids = Object.fromEntries(stale.map((o) => [o.name, [o.oldGuid, o.proposed]]));
     expect(ids).toEqual({
       'R-VPC Panel #1': [
-        '4BB05F90-9AA7-11ee-8021-444553540000',
+        '7CE89E05-8DD9-13df-8021-444553540000',
         'FE8D5FF1-DF2D-17c3-8002-444553540000',
       ],
       'T-Pendular-Rudder': [
-        '4770BA10-9AA7-11ee-801C-444553540000',
+        '2264BD34-4BF7-17ed-801C-444553540000',
         '0F1424B4-D566-14a0-801B-444553540000',
       ],
       'WINWING F18 STARTUP PANEL': [
-        '4B36E9D0-9AA7-11ee-801D-444553540000',
+        '7E46D7D1-6AA6-13ac-801D-444553540000',
         '750F20B7-A796-13e8-801E-444553540000',
       ],
       'WINWING F18 TAKEOFF PANEL 2': [
-        '4F222DC0-9AA7-11ee-8024-444553540000',
+        '9A781AC7-2DF5-16bd-8024-444553540000',
         '757B5173-A027-19e9-8025-444553540000',
       ],
       'WINWING MFD1-C': [
-        '4F916A50-9AA7-11ee-8027-444553540000',
+        '6E873B30-5EB0-18bf-8027-444553540000',
         '480FAD44-D166-18c0-8021-444553540000',
       ],
       'WINWING MFD1-L': [
-        '4B3710E0-9AA7-11ee-801E-444553540000',
+        '9C5084A4-0DC2-11df-801E-444553540000',
         '0F1424B4-D566-14a0-801A-444553540000',
       ],
       'WINWING MFD1-R': [
-        '5206D720-9AA7-11ee-8028-444553540000',
+        '3654B162-3EE3-11de-8028-444553540000',
         '757B5173-A027-19e9-8024-444553540000',
       ],
       'WINWING Orion Joystick Base 2 + JGRIP-F16': [
-        'D3437B70-A035-11ee-8001-444553540000',
+        'B5401E72-C482-10da-8001-444553540000',
         '480FAD44-D166-18c0-8023-444553540000',
       ],
       'WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R': [
-        '4F6FD890-9AA7-11ee-8026-444553540000',
+        '3F7AF279-8AE0-17df-8026-444553540000',
         '480FAD44-D166-18c0-8022-444553540000',
       ],
       'WINWING UFC1 + HUD1': [
-        '4F2206B0-9AA7-11ee-8023-444553540000',
+        '1D7541E7-1CD1-16fa-8023-444553540000',
         '757B5173-A027-19e9-8026-444553540000',
       ],
     });
@@ -411,7 +411,7 @@ describe('identical devices', () => {
         'old-ids',
         HORNET,
         'joystick',
-        'WINWING MFD1-L {4B3710E0-9AA7-11EE-801E-444553540000}.diff.lua'
+        'WINWING MFD1-L {9C5084A4-0DC2-11DF-801E-444553540000}.diff.lua'
       ),
       'utf8'
     );
