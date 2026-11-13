@@ -1511,6 +1511,7 @@ async function copyRecorded(
   try {
     await fs.access(from);
   } catch {
+    // This rig recorded no such folder: there is nothing to copy.
     return false;
   }
   await walk('');
